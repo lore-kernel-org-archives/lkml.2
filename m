@@ -1,557 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1BIOSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 09:18:00 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51660 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab1BIOR6 (ORCPT
+	id S1755707Ab1BIOSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 09:18:13 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59683 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755635Ab1BIOSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 09:17:58 -0500
+	Wed, 9 Feb 2011 09:18:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:message-id
-         :content-type:content-transfer-encoding;
-        b=fDSZ9yJ13wfwl85JPiqIr934gGQGVQxJQ0lTQ4iS5GOa14vcxiCws3f4vFpI+57gcl
-         jMRo2WzCtmYdxjl3dPFIpGqI7DGU5ZJUXHK2kIy5612emCBZkAfm5gME4xQvr+2p5QiR
-         dPrysF8nFJ0T1nabA6BmG8/+z9n3TVIChux7Y=
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: linux-ide@vger.kernel.org
-Subject: [PATCH] ata: add CONFIG_SATA_HOST config option
-Date: Wed, 9 Feb 2011 15:14:30 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NYJuULL7+UlcKcCAvXW8r8uVKCZZ+1MhQ906qJ6YMReBBMNXooPpVKPeOeWX7jA8KN
+         6dbJ3inJSBSHCiuyfeqtWQnNWA1CuZw8o9Lser7zePu5kUdysLaysVfUskGhlhX00pOH
+         VMiMR/9HoV9E2rcO6Yxvbg7O+/nbhjslMalso=
+Date: Wed, 9 Feb 2011 15:18:03 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110209141803.GH3770@htj.dyndns.org>
+References: <20110204105343.GA12133@htj.dyndns.org>
+ <20110204130455.GA3671@redhat.com>
+ <20110204144858.GI12133@htj.dyndns.org>
+ <20110204170602.GB15301@redhat.com>
+ <20110205133926.GM12133@htj.dyndns.org>
+ <20110207134235.GB22538@redhat.com>
+ <20110207141135.GA16992@htj.dyndns.org>
+ <20110207153723.GA27997@redhat.com>
+ <20110207163121.GB16992@htj.dyndns.org>
+ <20110207174821.GA1237@redhat.com>
 MIME-Version: 1.0
-Message-Id: <201102091514.31355.bzolnier@gmail.com>
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110207174821.GA1237@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CONFIG_SATA_HOST config option (for selecting SATA Host
-support) to make setup easier on PATA-only systems.
+Hello, Oleg.
 
-Additionally this allows us to save ~9.5k of the output code
-size (x86-64) on such systems:
+On Mon, Feb 07, 2011 at 06:48:21PM +0100, Oleg Nesterov wrote:
+> > I don't know.  Maybe it's more consistent that way and I'm not
+> > fundamentally against that but it is a big behavior change
+> 
+> Hmm. I tried to describe the current behaviour...
 
-   text    data     bss     dec     hex filename
-  49909    6576      57   56542    dcde drivers/ata/libata-core.o.before
-  31862      16       2   31880    7c88 drivers/ata/libata-eh.o.before
-  20256       0      19   20275    4f33 drivers/ata/libata-sff.o.before
-  44495    6576      57   51128    c7b8 drivers/ata/libata-core.o.after
-  27831      16       2   27849    6cc9 drivers/ata/libata-eh.o.after
-  20144       0      19   20163    4ec3 drivers/ata/libata-sff.o.after
+We can make it behave like the following.  { | } denotes two
+alternative behaviors regarding SIGCONT.
 
-Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
----
-I also wonder if  SATA code should be moved to libata-sata.c (to avoid ifdefs)?
+  If a group stop is initiated while, or was in progress when a task
+  is ptraced, the task will stop for group stop and notify the ptracer
+  accordingly.  Note that the task could be trapped elsewhere delaying
+  this from happening.  When the task stops for group stop, it
+  participates in group stop as if it is not ptraced and the real
+  parent is notified of group stop completion.
 
- drivers/ata/Kconfig       |   25 ++++++++--
- drivers/ata/libata-core.c |  107 +++++++++++++++++++++++++++++++++++++++-------
- drivers/ata/libata-eh.c   |   21 ++++++++-
- drivers/ata/libata-sff.c  |    8 +++
- 4 files changed, 141 insertions(+), 20 deletions(-)
+  Note that { the task is put into TASK_TRACED state and group stop
+  resume by SIGCONT is ignored. | the task is put into TASK_STOPPED
+  state and the following PTRACE request will transition it into
+  TASK_TRACED.  If SIGCONT is received before transition to
+  TASK_TRACED is made, the task will resume execution.  If PTRACE
+  request faces with SIGCONT, PTRACE request may fail. }
 
-Index: b/drivers/ata/Kconfig
-===================================================================
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -50,13 +50,22 @@ config ATA_ACPI
- 	  You can disable this at kernel boot time by using the
- 	  option libata.noacpi=1
- 
-+config SATA_HOST
-+	bool "SATA Host support"
-+	default y
-+	help
-+	  This option adds support for SATA Hosts.
-+
- config SATA_PMP
- 	bool "SATA Port Multiplier support"
-+	depends on SATA_HOST
- 	default y
- 	help
- 	  This option adds support for SATA Port Multipliers
- 	  (the SATA version of an ethernet hub, or SAS expander).
- 
-+if SATA_HOST
-+
- comment "Controllers with non-SFF native interface"
- 
- config SATA_AHCI
-@@ -98,6 +107,8 @@ config SATA_SIL24
- 
- 	  If unsure, say N.
- 
-+endif # SATA_HOST
-+
- config ATA_SFF
- 	bool "ATA SFF support"
- 	default y
-@@ -122,7 +133,7 @@ comment "SFF controllers with custom DMA
- 
- config PDC_ADMA
- 	tristate "Pacific Digital ADMA support"
--	depends on PCI
-+	depends on PCI && SATA_HOST
- 	help
- 	  This option enables support for Pacific Digital ADMA controllers
- 
-@@ -139,7 +150,7 @@ config PATA_OCTEON_CF
- 
- config SATA_QSTOR
- 	tristate "Pacific Digital SATA QStor support"
--	depends on PCI
-+	depends on PCI && SATA_HOST
- 	help
- 	  This option enables support for Pacific Digital Serial ATA QStor.
- 
-@@ -147,7 +158,7 @@ config SATA_QSTOR
- 
- config SATA_SX4
- 	tristate "Promise SATA SX4 support (Experimental)"
--	depends on PCI && EXPERIMENTAL
-+	depends on PCI && SATA_HOST && EXPERIMENTAL
- 	help
- 	  This option enables support for Promise Serial ATA SX4.
- 
-@@ -165,8 +176,6 @@ config ATA_BMDMA
- 
- if ATA_BMDMA
- 
--comment "SATA SFF controllers with BMDMA"
--
- config ATA_PIIX
- 	tristate "Intel ESB, ICH, PIIX3, PIIX4 PATA/SATA support"
- 	depends on PCI
-@@ -177,6 +186,10 @@ config ATA_PIIX
- 
- 	  If unsure, say N.
- 
-+if SATA_HOST
-+
-+comment "SATA/PATA SFF controllers with BMDMA"
-+
- config SATA_DWC
- 	tristate "DesignWare Cores SATA support"
- 	depends on 460EX
-@@ -263,6 +276,8 @@ config SATA_VITESSE
- 
- 	  If unsure, say N.
- 
-+endif # SATA_HOST
-+
- comment "PATA SFF controllers with BMDMA"
- 
- config PATA_ALI
-Index: b/drivers/ata/libata-core.c
-===================================================================
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -70,10 +70,15 @@
- #include "libata.h"
- #include "libata-transport.h"
- 
-+#ifdef CONFIG_SATA_HOST
- /* debounce timing parameters in msecs { interval, duration, timeout } */
- const unsigned long sata_deb_timing_normal[]		= {   5,  100, 2000 };
-+EXPORT_SYMBOL_GPL(sata_deb_timing_normal);
- const unsigned long sata_deb_timing_hotplug[]		= {  25,  500, 2000 };
-+EXPORT_SYMBOL_GPL(sata_deb_timing_hotplug);
- const unsigned long sata_deb_timing_long[]		= { 100, 2000, 5000 };
-+EXPORT_SYMBOL_GPL(sata_deb_timing_long);
-+#endif
- 
- const struct ata_port_operations ata_base_port_ops = {
- 	.prereset		= ata_std_prereset,
-@@ -341,6 +346,7 @@ void ata_force_cbl(struct ata_port *ap)
- 	}
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	ata_force_link_limits - force link limits according to libata.force
-  *	@link: ATA link of interest
-@@ -393,6 +399,7 @@ static void ata_force_link_limits(struct
- 		}
- 	}
- }
-+#endif
- 
- /**
-  *	ata_force_xfermask - force xfermask according to libata.force
-@@ -573,6 +580,7 @@ void ata_tf_to_fis(const struct ata_task
- 	fis[19] = 0;
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	ata_tf_from_fis - Convert SATA FIS to ATA taskfile
-  *	@fis: Buffer from which data will be input
-@@ -601,6 +609,9 @@ void ata_tf_from_fis(const u8 *fis, stru
- 	tf->nsect	= fis[12];
- 	tf->hob_nsect	= fis[13];
- }
-+#else
-+void ata_tf_from_fis(const u8 *fis, struct ata_taskfile *tf) { }
-+#endif
- 
- static const u8 ata_rw_cmds[] = {
- 	/* pio multi */
-@@ -2039,6 +2050,7 @@ retry:
- 	return rc;
- }
- 
-+#ifdef CONFIG_SATA_HOST
- static int ata_do_link_spd_horkage(struct ata_device *dev)
- {
- 	struct ata_link *plink = ata_dev_phys_link(dev);
-@@ -2072,6 +2084,9 @@ static int ata_do_link_spd_horkage(struc
- 	}
- 	return 0;
- }
-+#else
-+static int ata_do_link_spd_horkage(struct ata_device *dev) { return 0; }
-+#endif
- 
- static inline u8 ata_dev_knobble(struct ata_device *dev)
- {
-@@ -2083,6 +2098,7 @@ static inline u8 ata_dev_knobble(struct
- 	return ((ap->cbl == ATA_CBL_SATA) && (!ata_id_is_sata(dev->id)));
- }
- 
-+#ifdef CONFIG_SATA_HOST
- static int ata_dev_config_ncq(struct ata_device *dev,
- 			       char *desc, size_t desc_sz)
- {
-@@ -2127,6 +2143,14 @@ static int ata_dev_config_ncq(struct ata
- 			ddepth, aa_desc);
- 	return 0;
- }
-+#else
-+static int ata_dev_config_ncq(struct ata_device *dev,
-+			       char *desc, size_t desc_sz)
-+{
-+	desc[0] = '\0';
-+	return 0;
-+}
-+#endif
- 
- /**
-  *	ata_dev_configure - Configure the specified ATA/ATAPI device
-@@ -2644,6 +2668,7 @@ int ata_bus_probe(struct ata_port *ap)
- 	goto retry;
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	sata_print_link_status - Print SATA link status
-  *	@link: SATA link to printk link status about
-@@ -2672,6 +2697,9 @@ static void sata_print_link_status(struc
- 				sstatus, scontrol);
- 	}
- }
-+#else
-+static void sata_print_link_status(struct ata_link *link) { }
-+#endif
- 
- /**
-  *	ata_dev_pair		-	return other device on cable
-@@ -2690,6 +2718,7 @@ struct ata_device *ata_dev_pair(struct a
- 	return pair;
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	sata_down_spd_limit - adjust SATA spd limit downward
-  *	@link: Link to adjust SATA spd limit for
-@@ -2843,6 +2872,18 @@ int sata_set_spd(struct ata_link *link)
- 
- 	return 1;
- }
-+#else
-+int sata_down_spd_limit(struct ata_link *link, u32 spd_limit)
-+{
-+	return 0;
-+}
-+
-+int sata_set_spd(struct ata_link *link)
-+{
-+	return 0;
-+}
-+#endif
-+EXPORT_SYMBOL_GPL(sata_set_spd);
- 
- /*
-  * This mode timing computation functionality is ported over from
-@@ -3436,6 +3477,7 @@ int ata_wait_after_reset(struct ata_link
- 	return ata_wait_ready(link, deadline, check_ready);
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	sata_link_debounce - debounce SATA phy status
-  *	@link: ATA link to debounce SATA phy status for
-@@ -3638,6 +3680,26 @@ int sata_link_scr_lpm(struct ata_link *l
- 	ehc->i.serror &= ~SERR_PHYRDY_CHG;
- 	return sata_scr_write(link, SCR_ERROR, SERR_PHYRDY_CHG);
- }
-+#else
-+int sata_link_debounce(struct ata_link *link, const unsigned long *params,
-+		       unsigned long deadline)
-+{
-+	return -EOPNOTSUPP;
-+}
-+int sata_link_resume(struct ata_link *link, const unsigned long *params,
-+		     unsigned long deadline)
-+{
-+	return -EOPNOTSUPP;
-+}
-+int sata_link_scr_lpm(struct ata_link *link, enum ata_lpm_policy policy,
-+		      bool spm_wakeup)
-+{
-+	return -EOPNOTSUPP;
-+}
-+#endif
-+EXPORT_SYMBOL_GPL(sata_link_debounce);
-+EXPORT_SYMBOL_GPL(sata_link_resume);
-+EXPORT_SYMBOL_GPL(sata_link_scr_lpm);
- 
- /**
-  *	ata_std_prereset - prepare for reset
-@@ -3658,23 +3720,26 @@ int sata_link_scr_lpm(struct ata_link *l
-  */
- int ata_std_prereset(struct ata_link *link, unsigned long deadline)
- {
--	struct ata_port *ap = link->ap;
- 	struct ata_eh_context *ehc = &link->eh_context;
--	const unsigned long *timing = sata_ehc_deb_timing(ehc);
--	int rc;
- 
- 	/* if we're about to do hardreset, nothing more to do */
- 	if (ehc->i.action & ATA_EH_HARDRESET)
- 		return 0;
- 
-+#ifdef CONFIG_SATA_HOST
- 	/* if SATA, resume link */
- 	if (ap->flags & ATA_FLAG_SATA) {
-+		struct ata_port *ap = link->ap;
-+		const unsigned long *timing = sata_ehc_deb_timing(ehc);
-+		int rc;
-+
- 		rc = sata_link_resume(link, timing, deadline);
- 		/* whine about phy resume failure but proceed */
- 		if (rc && rc != -EOPNOTSUPP)
- 			ata_link_printk(link, KERN_WARNING, "failed to resume "
- 					"link for reset (errno=%d)\n", rc);
- 	}
-+#endif
- 
- 	/* no point in trying softreset on offline link */
- 	if (ata_phys_link_offline(link))
-@@ -3683,6 +3748,7 @@ int ata_std_prereset(struct ata_link *li
- 	return 0;
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	sata_link_hardreset - reset link via SATA phy reset
-  *	@link: link to reset
-@@ -3821,6 +3887,23 @@ int sata_std_hardreset(struct ata_link *
- 	rc = sata_link_hardreset(link, timing, deadline, &online, NULL);
- 	return online ? -EAGAIN : rc;
- }
-+#else
-+int sata_link_hardreset(struct ata_link *link, const unsigned long *timing,
-+			unsigned long deadline,
-+			bool *online, int (*check_ready)(struct ata_link *))
-+{
-+	*online = false;
-+	return -EOPNOTSUPP;
-+}
-+
-+int sata_std_hardreset(struct ata_link *link, unsigned int *class,
-+		       unsigned long deadline)
-+{
-+	return -EOPNOTSUPP;
-+}
-+#endif
-+EXPORT_SYMBOL_GPL(sata_link_hardreset);
-+EXPORT_SYMBOL_GPL(sata_std_hardreset);
- 
- /**
-  *	ata_std_postreset - standard postreset callback
-@@ -5424,6 +5507,7 @@ void ata_link_init(struct ata_port *ap,
- 	}
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	sata_link_init_spd - Initialize link->sata_spd_limit
-  *	@link: Link to configure sata_spd_limit for
-@@ -5456,6 +5540,12 @@ int sata_link_init_spd(struct ata_link *
- 
- 	return 0;
- }
-+#else
-+int sata_link_init_spd(struct ata_link *link)
-+{
-+	return 0;
-+}
-+#endif
- 
- /**
-  *	ata_port_alloc - allocate and initialize basic ATA port resources
-@@ -6599,9 +6689,6 @@ const struct ata_port_info ata_dummy_por
-  * likely to change as new drivers are added and updated.
-  * Do not depend on ABI/API stability.
-  */
--EXPORT_SYMBOL_GPL(sata_deb_timing_normal);
--EXPORT_SYMBOL_GPL(sata_deb_timing_hotplug);
--EXPORT_SYMBOL_GPL(sata_deb_timing_long);
- EXPORT_SYMBOL_GPL(ata_base_port_ops);
- EXPORT_SYMBOL_GPL(sata_port_ops);
- EXPORT_SYMBOL_GPL(ata_dummy_port_ops);
-@@ -6635,14 +6722,8 @@ EXPORT_SYMBOL_GPL(ata_do_set_mode);
- EXPORT_SYMBOL_GPL(ata_std_qc_defer);
- EXPORT_SYMBOL_GPL(ata_noop_qc_prep);
- EXPORT_SYMBOL_GPL(ata_dev_disable);
--EXPORT_SYMBOL_GPL(sata_set_spd);
- EXPORT_SYMBOL_GPL(ata_wait_after_reset);
--EXPORT_SYMBOL_GPL(sata_link_debounce);
--EXPORT_SYMBOL_GPL(sata_link_resume);
--EXPORT_SYMBOL_GPL(sata_link_scr_lpm);
- EXPORT_SYMBOL_GPL(ata_std_prereset);
--EXPORT_SYMBOL_GPL(sata_link_hardreset);
--EXPORT_SYMBOL_GPL(sata_std_hardreset);
- EXPORT_SYMBOL_GPL(ata_std_postreset);
- EXPORT_SYMBOL_GPL(ata_dev_classify);
- EXPORT_SYMBOL_GPL(ata_dev_pair);
-@@ -6696,12 +6777,10 @@ EXPORT_SYMBOL_GPL(ata_port_schedule_eh);
- EXPORT_SYMBOL_GPL(ata_link_abort);
- EXPORT_SYMBOL_GPL(ata_port_abort);
- EXPORT_SYMBOL_GPL(ata_port_freeze);
--EXPORT_SYMBOL_GPL(sata_async_notification);
- EXPORT_SYMBOL_GPL(ata_eh_freeze_port);
- EXPORT_SYMBOL_GPL(ata_eh_thaw_port);
- EXPORT_SYMBOL_GPL(ata_eh_qc_complete);
- EXPORT_SYMBOL_GPL(ata_eh_qc_retry);
--EXPORT_SYMBOL_GPL(ata_eh_analyze_ncq_error);
- EXPORT_SYMBOL_GPL(ata_do_eh);
- EXPORT_SYMBOL_GPL(ata_std_error_handler);
- 
-Index: b/drivers/ata/libata-eh.c
-===================================================================
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -1080,6 +1080,7 @@ int ata_port_freeze(struct ata_port *ap)
- 	return nr_aborted;
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	sata_async_notification - SATA async notification handler
-  *	@ap: ATA port where async notification is received
-@@ -1152,6 +1153,8 @@ int sata_async_notification(struct ata_p
- 		return 0;
- 	}
- }
-+EXPORT_SYMBOL_GPL(sata_async_notification);
-+#endif
- 
- /**
-  *	ata_eh_freeze_port - EH helper to freeze port
-@@ -1406,6 +1409,7 @@ static const char *ata_err_string(unsign
- 	return "unknown error";
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	ata_read_log_page - read a specific log page
-  *	@dev: target device
-@@ -1497,6 +1501,7 @@ static int ata_eh_read_log_10h(struct at
- 
- 	return 0;
- }
-+#endif
- 
- /**
-  *	atapi_eh_tur - perform ATAPI TEST_UNIT_READY
-@@ -1583,6 +1588,7 @@ static unsigned int atapi_eh_request_sen
- 				 sense_buf, SCSI_SENSE_BUFFERSIZE, 0);
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	ata_eh_analyze_serror - analyze SError for a failed port
-  *	@link: ATA link to analyze SError for
-@@ -1694,6 +1700,11 @@ void ata_eh_analyze_ncq_error(struct ata
- 	qc->err_mask |= AC_ERR_DEV | AC_ERR_NCQ;
- 	ehc->i.err_mask &= ~AC_ERR_DEV;
- }
-+#else
-+static void ata_eh_analyze_serror(struct ata_link *link) { }
-+void ata_eh_analyze_ncq_error(struct ata_link *link) { }
-+#endif
-+EXPORT_SYMBOL_GPL(ata_eh_analyze_ncq_error);
- 
- /**
-  *	ata_eh_analyze_tf - analyze taskfile of a failed qc
-@@ -2349,7 +2360,7 @@ static void ata_eh_link_report(struct at
- 			ata_link_printk(link, KERN_ERR, "%s\n", desc);
- 	}
- 
--#ifdef CONFIG_ATA_VERBOSE_ERROR
-+#if defined(CONFIG_SATA_HOST) && defined(CONFIG_ATA_VERBOSE_ERROR)
- 	if (ehc->i.serror)
- 		ata_link_printk(link, KERN_ERR,
- 		  "SError: { %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s}\n",
-@@ -3252,6 +3263,7 @@ static int ata_eh_maybe_retry_flush(stru
- 	return rc;
- }
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	ata_eh_set_lpm - configure SATA interface power management
-  *	@link: link to configure power management
-@@ -3380,6 +3392,13 @@ fail:
- 		*r_failed_dev = dev;
- 	return rc;
- }
-+#else
-+static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
-+			  struct ata_device **r_failed_dev)
-+{
-+	return 0;
-+}
-+#endif
- 
- static int ata_link_nr_enabled(struct ata_link *link)
- {
-Index: b/drivers/ata/libata-sff.c
-===================================================================
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2061,6 +2061,7 @@ int ata_sff_softreset(struct ata_link *l
- }
- EXPORT_SYMBOL_GPL(ata_sff_softreset);
- 
-+#ifdef CONFIG_SATA_HOST
- /**
-  *	sata_sff_hardreset - reset host port via SATA phy reset
-  *	@link: link to reset
-@@ -2092,6 +2093,13 @@ int sata_sff_hardreset(struct ata_link *
- 	DPRINTK("EXIT, class=%u\n", *class);
- 	return rc;
- }
-+#else
-+int sata_sff_hardreset(struct ata_link *link, unsigned int *class,
-+		       unsigned long deadline)
-+{
-+	return -EOPNOTSUPP;
-+}
-+#endif
- EXPORT_SYMBOL_GPL(sata_sff_hardreset);
- 
- /**
+  The ptracer may resume execution of the task using PTRACE_CONT
+  without affecting other tasks in the group.  The task will not stop
+  for the same group stop again while ptraced.
+
+  On ptrace detach, if group stop is in effect, the task will be put
+  into TASK_STOPPED state and if it is the first time the task is
+  stopping for the current group stop, it will participate in group
+  stop completion.
+
+This can be phrased better but it seems well defined enough for me.  I
+take it that one of your concerns is direct transition into
+TASK_TRACED on group stop while ptraced which prevents the tracee from
+reacting to the following SIGCONT.  I'm not sure how much of an actual
+problem it is given that our notification to real parent hasn't worked
+at all till now but we can definitely implement proper TASK_STOPPED ->
+TRACED transition on the next PTRACE request.  There exists a
+fundamental race condition between SIGCONT and the next PTRACE call
+but I don't think it's such a big deal as long as the transition
+itself is done properly.
+
+If we don't go that route, another solution would be to add a ptrace
+call which can listen to SIGCONT.  ie. PTRACE_WAIT_CONT or whatever
+which the ptracer can call once it knows the tracee entered group
+stop.
+
+In either case, the fundamentals of ptrace operation don't really
+change.  All ptrace operations are still per-task and ptracer almost
+always has control over execution of the tracee.  Sure, it allows
+ptraced task to escape group stop but it seems defined clear enough
+and IMHO actually is a helpful debugging feature.  After all, it's not
+like stop signals can be used for absoultely reliable job control.
+There's an inherent race against SIGCONT.
+
+> > What do you do about PTRACE requests while a task is group stopped?
+> > Reject them?  Block them?
+> 
+> Yes, another known oddity. Of course we shouldn't reject or block.
+> Perhaps we can ignore this initially. If SIGCONT comes after another
+> request does STOPPED/TRACED it clears SIGNAL_STOP_STOPPED, but the
+> tracee won't run until the next PTRACE_CONT, this makes sense.
+
+That conceptually might make sense but other than the conceptual
+integrity it widely changes the assumptions and is less useful than
+the current behavior.  I don't really see why we would want to do
+that.
+
+> The problem is, gdb can't leave the tracee in STOPPED state if it
+> wants. We need to improve this somehow (like in your previous example
+> with gdb).
+>
+> Only if it attaches to every thread in the thread group. Otherwise,
+> if the non-thread has already initiated the group-stop, the tracee
+> will notice TIF_SIGPENDING eventually and call do_signal_stop(),
+> debugger can't control this.
+
+The debugger is still notified and can override it.  gdb already can
+and does.
+
+> > I don't think it's an extreme corner case
+> > we can break.  For example, if a user gdb's a program which raises one
+> > of the stop signals, currently the user expects to be able to continue
+> > the program from whithin the gdb.  If we make group stop override
+> > ptrace, there's no other recourse than sending signal from outside.
+> 
+> Yes. Of course, gdb can be "fixed", it can send SIGCONT.
+> 
+> But yes, this is the noticeable change, that is why I suggested
+> ptrace_resume-acts-as-SIGCONT logic. Ugly, yes, but more or less
+> compatible. (although let me repeat, _pesonally_ I'd prefer to
+> simply tell user-space to learn the new rules ;)
+
+I can't really agree there.  First, to me, it seems like too radical a
+change and secondly the resulting behavior might look conceptually
+pleasing but is not as useful as the current one.  Why make a change
+which results in reduced usefulness while noticeably breaking existing
+users?
+
+> > The only thing it achieves is the integrity of group
+> > stop
+> 
+> Given that SIGCHLD doesn't queue and with or without your changes
+> we send it per-thread, it is not trivial for gdb to detect the
+> group-stop anyway. Again, the kernel should help somehow.
+
+Hmmm?  Isn't this discoverable from the exit code from wait?
+
+> > and I'm not really sure whether that's something worth achieving
+> > at the cost of debugging capabilities especially when we don't _have_
+> > to lose them.
+> 
+> But we do not? I mean, at least this is not worse than the current
+> behaviour.
+
+I think it's worse.  With your changes, debuggers can't diddle the
+tasks behind group stop's back which the current users already expect.
+
+> > > As for SIGCONT. Roland suggests (roughly) to change ptrace_resume()
+> > > so that it doesn't wakeup the stopped tracee until the real SIGCONT
+> > > comes. And this makes sense to me.
+> >
+> > I agree it adds more integrity to group stop but at the cost of
+> > debugging capabilities.  I'm not yet convinced integrity of group stop
+> > is that important.  Why is it such a big deal?
+> 
+> Of course I can't "prove" it is that important. But I think so.
+
+Heh, I'm asking for proof that it is more useful. :-) But I'm still
+curious why you think it's important because the benefits aren't
+apparent to me.  Roland and you seem to share this opinion without
+much dicussion so maybe I'm missing something?
+
+> > CLD_STOPPED is too but while ptrace is attached the notifications are
+> > made per-task and delivered to the tracer.
+> 
+> No, there is a difference. Sure, CLD_STOPPED is per-process without
+> ptrace. But CLD_CONTINUED continues to be per-process even if all
+> threads are traced.
+
+Hmm... I need to think more about it.  I'm not fully following your
+point.
+
+> > I think this is the key question.  Whether to de-throne
+> > PTRACE_CONT such that it cannot override group stop.  As I've already
+> > said several times already, I think it is a pretty fundamental
+> > property of ptrace
+> 
+> Again, I am a bit confused. Note that PTRACE_CONT overrides
+> group stop if we do the above. It should wake up the tracee, in
+> SIGCONT-compatible way (yes, the latter is not exactly clear).
+
+What do you mean?  Waking up in SIGCONT-compatible way?  Sending
+SIGCONT ending the whole group stop?
+
+> But at least this should be visible to real parent. We shouldn't
+> silently make the stopped tracee running while its real_parent
+> thinks everything is stopped.
+
+I think maybe this is where our different POVs come from.  To me, it
+isn't too objectionable to allow debuggers to diddle with tracees
+behind the real parent's back.  In fact, it would be quite useful when
+debugging job control related behaviors.  I wouldn't have much problem
+accepting the other way around - ie. strict job control even while
+being debugged, but given that it is already allowed and visible, I
+fail to see why we should change the behavior.  It doesn't seem to
+have enough benefits to warrant such visible change.
+
+If I change the patchset such that group stop while ptraced first
+enters TASK_STOPPED and then transitions into TASK_TRACED on the next
+PTRACE call, would that be something you guys can agree on?  We would
+still need to ask the tracee to move into TASK_TRACED and so there
+will be race window which would be visible under very convoluted
+situations but IMHO they truly are the extreme corner cases.
+
+Thanks.
+
+-- 
+tejun
