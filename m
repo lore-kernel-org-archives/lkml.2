@@ -1,132 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1BIUKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 15:10:04 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64691 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab1BIUKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 15:10:01 -0500
-Message-ID: <4D52F43F.5040507@ru.mvista.com>
-Date: Wed, 09 Feb 2011 23:08:31 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	id S1754377Ab1BIUKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 15:10:08 -0500
+Received: from imp02.mtu.ru ([62.5.255.19]:56931 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752505Ab1BIUKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 15:10:06 -0500
+Message-ID: <4D52F404.4000709@pavlinux.ru>
+Date: Wed, 09 Feb 2011 23:07:32 +0300
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; ru; rv:1.9.2.13) Gecko/20101206 Microsoft/666 Notepad
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] libata: reduce ata_pci_[sff,bmdma]_init_one() size
-References: <201102091515.22677.bzolnier@gmail.com>
-In-Reply-To: <201102091515.22677.bzolnier@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Andy Isaacson <adi@hexapodia.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: CONFIG_KERNEL_XZ obscure build failure if xz(1) not installed
+References: <20110209195258.GN11874@hexapodia.org>
+In-Reply-To: <20110209195258.GN11874@hexapodia.org>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=03742489
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Spam-Flag: NO
+X-Spam-Yversion: Spamooborona-3.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+09.02.2011 22:52, Andy Isaacson пишет:
+> % uname -m
+> x86_64
+> % git log -1 | head
+> commit 100b33c8bd8a3235fd0b7948338d6cbb3db3c63d
+> % grep XZ .config
+> CONFIG_HAVE_KERNEL_XZ=y
+> CONFIG_KERNEL_XZ=y
+> CONFIG_RD_XZ=y
+> CONFIG_SQUASHFS_XZ=y
+> CONFIG_XZ_DEC=y
+> CONFIG_XZ_DEC_X86=y
+> CONFIG_XZ_DEC_POWERPC=y
+> CONFIG_XZ_DEC_IA64=y
+> CONFIG_XZ_DEC_ARM=y
+> CONFIG_XZ_DEC_ARMTHUMB=y
+> CONFIG_XZ_DEC_SPARC=y
+> CONFIG_XZ_DEC_BCJ=y
+> CONFIG_XZ_DEC_TEST=y
+> CONFIG_DECOMPRESS_XZ=y
+> % make -j4
+> ...
+>   CC      arch/x86/boot/tty.o
+>   CC      arch/x86/oprofile/oprofile.mod.o
+>   XZKERN  arch/x86/boot/compressed/vmlinux.bin.xz
+> exec: 23: xz: not found
+>   CC      arch/x86/boot/video.o
+>   CC      crypto/crc32c.mod.o
+>   CC      crypto/pcrypt.mod.o
+>   CC      arch/x86/boot/video-mode.o
+>   CC      drivers/acpi/acpi_memhotplug.mod.o
+>   MKPIGGY arch/x86/boot/compressed/piggy.S
+> arch/x86/boot/compressed/vmlinux.bin.xz: No such file or directory
+>   CC      arch/x86/boot/version.o
+>   LD      arch/x86/boot/compressed/vmlinux
+> ... [hundreds of lines of output snipped]
+>   LD [M]  net/sched/act_csum.ko
+>   IHEX    firmware/bnx2/bnx2-mips-09-6.2.1.fw
+>   IHEX    firmware/bnx2/bnx2-mips-06-6.2.1.fw
+> % echo $?
+> 2
+> % ls -l arch/x86/boot/bzImage
+> -rw-r--r-- 1 adi adi 1991504 Feb  1 18:41 arch/x86/boot/bzImage
+> 
+> The failure is obscured by trailing make output, and since a broken
+> bzImage is created, "make install" succeeds, and the first visible
+> failure is after reboot when I get the lovely
+> 
+>     Decompressing Linux...
+> 
+>     Input is not in the XZ format (wrong magic bytes)
+> 
+>      -- System halted
+> 
+> Sometimes I run "make -j4 && make install" which would have caught this,
+> but the error should be more prominent and we shouldn't create bzImage
+> if the dependencies are not present.
 
-Bartlomiej Zolnierkiewicz wrote:
+ :)
 
-> Turn both helpers (which are used only during LLDs initialization
-> time and thus are not performance sensitive) into wrappers around
-> the new ata_pci_init_one() function, this cuts 20 LOC and saves
-> ~1.1k of the output code size (x86-64):
+Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
+---
+diff --git a/scripts/xz_wrap.sh b/scripts/xz_wrap.sh
+index 17a5798..5ec9d36 100644
+--- a/scripts/xz_wrap.sh
++++ b/scripts/xz_wrap.sh
+@@ -20,4 +20,4 @@ case $ARCH in
+        sparc)          BCJ=--sparc ;;
+ esac
 
->  text    data     bss     dec     hex filename
->   21392       0      19   21411    53a3 drivers/ata/libata-sff.o.before
->   20256       0      19   20275    4f33 drivers/ata/libata-sff.o.after
+-exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB
++exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB || exit 1
 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> ---
->  drivers/ata/libata-sff.c |  112 +++++++++++++++++++----------------------------
->  1 file changed, 46 insertions(+), 66 deletions(-)
+-- 
 
-> Index: b/drivers/ata/libata-sff.c
-> ===================================================================
-> --- a/drivers/ata/libata-sff.c
-> +++ b/drivers/ata/libata-sff.c
-[...]
-> @@ -2538,14 +2517,22 @@ int ata_pci_sff_init_one(struct pci_dev
->  	if (rc)
->  		goto out;
->  
-> -	/* prepare and activate SFF host */
-> -	rc = ata_pci_sff_prepare_host(pdev, ppi, &host);
-> +	if (bmdma)
-> +		/* prepare and activate BMDMA host */
-> +		rc = ata_pci_bmdma_prepare_host(pdev, ppi, &host);
-> +	else
-> +		/* prepare and activate SFF host */
-> +		rc = ata_pci_sff_prepare_host(pdev, ppi, &host);
->  	if (rc)
->  		goto out;
->  	host->private_data = host_priv;
-> -	host->flags |= hflag;
-> +	host->flags |= hflags;
->  
-> -	rc = ata_pci_sff_activate_host(host, ata_sff_interrupt, sht);
-> +	if (bmdma) {
-> +		pci_set_master(pdev);
-> +		rc = ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
-> +	} else
-> +		rc = ata_pci_sff_activate_host(host, ata_sff_interrupt, sht);
-
-    Perhaps this will save even more:
-
-	if (bmdma)
-		pci_set_master(pdev);
-	rc = ata_pci_sff_activate_host(host, bmdma ? ata_bmdma_interrupt :
-						     ata_sff_interrupt, sht);
-
-> @@ -2554,6 +2541,35 @@ out:
->  
->  	return rc;
->  }
-> +
-> +/**
-> + *	ata_pci_sff_init_one - Initialize/register PIO-only PCI IDE controller
-> + *	@pdev: Controller to be initialized
-> + *	@ppi: array of port_info, must be enough for two ports
-> + *	@sht: scsi_host_template to use when registering the host
-> + *	@host_priv: host private_data
-> + *	@hflag: host flags
-> + *
-> + *	This is a helper function which can be called from a driver's
-> + *	xxx_init_one() probe function if the hardware uses traditional
-> + *	IDE taskfile registers and is PIO only.
-> + *
-> + *	ASSUMPTION:
-> + *	Nobody makes a single channel controller that appears solely as
-> + *	the secondary legacy port on PCI.
-> + *
-> + *	LOCKING:
-> + *	Inherited from PCI layer (may sleep).
-> + *
-> + *	RETURNS:
-> + *	Zero on success, negative on errno-based value on error.
-> + */
-> +int ata_pci_sff_init_one(struct pci_dev *pdev,
-> +		 const struct ata_port_info * const *ppi,
-> +		 struct scsi_host_template *sht, void *host_priv, int hflag)
-
-    s/hflag/hflags/ for consistency?
-
-> +{
-> +	return ata_pci_init_one(pdev, ppi, sht, host_priv, hflag, 0);
-
-    s/0/false/?
-
-> +}
->  EXPORT_SYMBOL_GPL(ata_pci_sff_init_one);
->  
->  #endif /* CONFIG_PCI */
-> @@ -3272,43 +3288,7 @@ int ata_pci_bmdma_init_one(struct pci_de
->  			   struct scsi_host_template *sht, void *host_priv,
->  			   int hflags)
->  {
-[...]
-> +	return ata_pci_init_one(pdev, ppi, sht, host_priv, hflags, 1);
-
-    s/1/true/?
-
-WBR, Sergei
+                                                         Pavel.
