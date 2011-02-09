@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab1BIMgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 07:36:46 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:63237 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab1BIMgp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 07:36:45 -0500
-Subject: Re: [PATCH RESENT#2] [AVR32] don't check platform_get_irq's return
- value against zero
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        David Vrabel <dvrabel@arcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Haavard Skinnemoen <hskinnemoen@atmel.com>
-In-Reply-To: <1297247284-31650-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1288690250.32331.41.camel@hcegtvedt>
-	 <1297247284-31650-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Wed, 09 Feb 2011 13:28:52 +0100
-Message-ID: <1297254532.2968.11.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 09 Feb 2011 12:28:54.0106 (UTC) FILETIME=[EA2173A0:01CBC854]
+	id S1754809Ab1BIMjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 07:39:45 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57043 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754557Ab1BIMjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 07:39:44 -0500
+Message-ID: <4D528B53.7040208@kernel.dk>
+Date: Wed, 09 Feb 2011 13:40:51 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Chris Clayton <chris2553@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>, simon@fire.lp0.eu,
+        kay.sievers@vrfy.org
+Subject: Re: 2.6.38-rc2+ - regresiion copying DVD's
+References: <201101301550.59272.chris2553@googlemail.com> <201101311929.05290.chris2553@googlemail.com> <201102062312.14919.chris2553@googlemail.com> <20110209095556.GD3770@htj.dyndns.org>
+In-Reply-To: <20110209095556.GD3770@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 11:28 +0100, Uwe Kleine-König wrote: 
-> platform_get_irq returns -ENXIO on failure, so !int_irq was probably
-> always true.  Better use (int)int_irq <= 0.  Note that a return value of
-> zero is still handled as error even though this could mean irq0.
+On 2011-02-09 10:55, Tejun Heo wrote:
+> On Sun, Feb 06, 2011 at 11:12:14PM +0000, Chris Clayton wrote:
+>> Hi again,
+>>
+>> On Monday 31 January 2011, Chris Clayton wrote:
+>>> On Sunday 30 January 2011, Chris Clayton wrote:
+>>>> Hi,
+>>>>
+>>>> Firstly, I'm not subscribed, so please cc me on any reply.
+>>>>
+>>>> I'm trying to copy the3 contents of a video DVD from one disc to another,
+>>>> but it fails. There are no messages in the kernel log file, but K3B
+>>>> reports the following:
+>>>
+>>> <snip>
+>>>
+>>> Simon's patch at http://marc.info/?l=linux-kernel&m=129649842110692&w=4
+>>> fixes this problem, so feel free to add
+>>>
+>>> Tested-by: Chris Clayton <chris2553@googlemail.com>
+>>>
+>> I note that Simon's patch hasn't made it through to Linus yet. Which tree is ot 
+>> going through, please?
 > 
-> This is a followup to 305b3228f9ff4d59f49e6d34a7034d44ee8ce2f0 that
-> changed the return value of platform_get_irq from 0 to -ENXIO on error.
-> 
-> Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
-> Hello,
-> 
-> Hans-Christian Egtvedt asked to push this patch via Linus as there is no avr32
-> tree.
-> 
-> @Andrew: do you take it?
+> Block tree.  Jens?
 
-Actually, now I have a tree for AVR32 on git.kernel.org, but I have no
-other updates lined up for 2.6.38. Will you Andrew add it to your
-series, or should I push this one through my git tree?
+Hmm, I was pretty sure it was queued up in for-linus, but that does not
+look like it's the case. I'll shove it in there, thanks!
 
 -- 
-Hans-Christian Egtvedt
+Jens Axboe
 
