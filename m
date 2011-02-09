@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab1BIVxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 16:53:18 -0500
-Received: from tundra.namei.org ([65.99.196.166]:44794 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab1BIVxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 16:53:17 -0500
-Date: Thu, 10 Feb 2011 08:53:08 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-cc: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        "Sakkinen Jarkko.2 (EXT-Tieto/Tampere)" 
-	<ext-jarkko.2.sakkinen@nokia.com>,
-        Janne Karhunen <Janne.Karhunen@nokia.com>,
-        "Reshetova Elena (Nokia-D/Helsinki)" <elena.reshetova@nokia.com>
-Subject: Re: Subject: [PATCH] Smack: mmap controls for library containment
-In-Reply-To: <4D52936A.6010407@schaufler-ca.com>
-Message-ID: <alpine.LRH.2.00.1102100852180.18248@tundra.namei.org>
-References: <4D346C8E.3080408@schaufler-ca.com> <4D51E188.9090008@schaufler-ca.com> <alpine.LRH.2.00.1102091851030.12310@tundra.namei.org> <4D52936A.6010407@schaufler-ca.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755094Ab1BIVyU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 16:54:20 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39873 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab1BIVyS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 16:54:18 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73823202"
+From: David Brown <davidb@codeaurora.org>
+To: Dima Zavin <dima@android.com>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] msm: Remove arch-specific gpiomux tables
+In-Reply-To: <AANLkTimOAOirgH7haDJjf265zdbvoei=f=GGxQEh+5dh@mail.gmail.com>
+	(Dima Zavin's message of "Wed, 9 Feb 2011 12:59:33 -0800")
+References: <4D4CAB63.4050301@codeaurora.org>
+	<AANLkTimOAOirgH7haDJjf265zdbvoei=f=GGxQEh+5dh@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110209:dwalker@codeaurora.org::lnKagIh5cBrga7OF:0000000000000000000000000000000000000000EU7
+X-Hashcash: 1:20:110209:dima@android.com::rnMFWXHhlEdJl5rA:00T57
+X-Hashcash: 1:20:110209:bryanh@codeaurora.org::qkqCyHcP9O2s5Hdc:00000000000000000000000000000000000000000Mzj
+X-Hashcash: 1:20:110209:linux@arm.linux.org.uk::Ds2f03OXhNIyMef6:0000000000000000000000000000000000000000RuB
+X-Hashcash: 1:20:110209:linux-kernel@vger.kernel.org::IBCLJ2LWB+nVYYjT:0000000000000000000000000000000000Ztr
+X-Hashcash: 1:20:110209:rvaswani@codeaurora.org::nF+3p4n6lnfsSiJi:000000000000000000000000000000000000000+Zt
+X-Hashcash: 1:20:110209:linux-arm-kernel@lists.infradead.org::+MINZMALTTWAqWiA:00000000000000000000000006we8
+X-Hashcash: 1:20:110209:linux-arm-msm@vger.kernel.org::gFQvxorTG95XVn8g:00000000000000000000000000000000G3ca
+Date: Wed, 09 Feb 2011 13:54:17 -0800
+Message-ID: <8yaei7gq3g6.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Feb 2011, Casey Schaufler wrote:
+On Wed, Feb 09 2011, Dima Zavin wrote:
 
-> > Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> > Applied to
-> > git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
-> >
-> 
-> James, I made an error and failed to say that this and Shan Wei's clean-up
-> should be pulled from git://gitorious.org/smack-next/kernel.git
+> I don't like this solution of putting the magicly named array into the
+> board file. What if I want multiple boards to be built into the same
+> kernel? What if I want multiple tables in case I have different
+> revisions of the board?
 
-Please use git-request-pull to generate the message.
+Especially since there is a push by some to be able to build everything
+into a single kernel.
 
+> The more correct way would be to add a function to gpiomux.c to be
+> able to apply a list of gpiomux configs, something like:
+>
+> int msm_gpiomux_config_table(struct msm_gpiomux_cfg *table, int num);
 
--- 
-James Morris
-<jmorris@namei.org>
+Good idea.  Although, I think a name like msm_gpiomux_add_configs()
+might fit better with other namings.
+
+David
