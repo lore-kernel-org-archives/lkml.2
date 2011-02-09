@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab1BILk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 06:40:56 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56367 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab1BILkz (ORCPT
+	id S1754689Ab1BILln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 06:41:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48461 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752071Ab1BILlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 06:40:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fRu+XGeYq3gna2z0bQgtHxchdmoVqPJoDD+6v7PLN9DStqFmU6Tu8nBp2YlJDqtto/
-         l3OaaS+fdpsWJS06YXRJcMD0O+4g1S65eVNuh5hmJbxGjkhBTQF1u2X41IKrjKKx1LeE
-         rsTKpVbUXnMEijmdoFdhW11J7F5jTqGoPbpSw=
+	Wed, 9 Feb 2011 06:41:42 -0500
+Date: Wed, 9 Feb 2011 11:41:38 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-embedded@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
+ all the time
+Message-ID: <20110209114137.GA10163@opensource.wolfsonmicro.com>
+References: <4D51D341.3040209@am.sony.com>
 MIME-Version: 1.0
-In-Reply-To: <20110208181204.GF4476@core.coreip.homeip.net>
-References: <1297157786-2004-1-git-send-email-kverlin@gmail.com>
-	<20110208103923.GA2009@polaris.bitmath.org>
-	<20110208181204.GF4476@core.coreip.homeip.net>
-Date: Wed, 9 Feb 2011 14:40:53 +0300
-Message-ID: <AANLkTi=C=3-VrM7L2bdCqY6WpiCLHS_uv-9R5gvPjBSD@mail.gmail.com>
-Subject: Re: [PATCH] HID: added new driver for Panasonic Elite Panaboard
- UB-T780 and UB-T880
-From: Anton Chikin <kverlin@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, jkosina@suse.cz,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anton Chikin <anton.chikin@dataart.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D51D341.3040209@am.sony.com>
+X-Cookie: Never give an inch!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry,
+On Tue, Feb 08, 2011 at 03:35:29PM -0800, Frank Rowand wrote:
 
-Thank you for pointing me on tslib. Could you please provide some
-documentation sources or examples for it?
-As for custom parsing - as far as I remember - Jiri mentioned this
-scenario in the discussion of hid subsystem
-on input mailing list.
+> For 2.6.38-rc4, x86_64, CONFIG_NR_CPUS=4:
 
-On Tue, Feb 8, 2011 at 9:12 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Tue, Feb 08, 2011 at 11:39:23AM +0100, Henrik Rydberg wrote:
->>
->> > +int xold = 0, yold = 0;
->>
->> static
->>
->
-> Not even that. This is an USB device, not a platform one, so it shoudl
-> be opssible to connect more than one to a box. All state should go into
-> per-device structure.
->
-> This is also does not appear to be a HID driver, really - it does not
-> use HID infrastucture but does custom parsing.
->
-> Calibration - normally we offload this task to userspace (tslib
-> or other library/driver).
->
-> Thanks.
->
-> --
-> Dmitry
->
+> size vmlinux
+>    text     data       bss       dec      hex  filename
+> 
+> 6553910  3555020   9994240  20103170  132c002  vmlinux    with    CONFIG_PM
+> 6512652  3553116   9994240  20060008  1321768  vmlinux    without CONFIG_PM
+> 
+>   41258     1904         0     43162                      delta
+
+> That is big enough for me to care.
+
+Hrm, that's pretty surprising.  It'd be interesting to know how much of
+that is due to the PM core itself and how much of that is from drivers.
+For the drivers CONFIG_PM isn't really the option they should be using
+in the first place - they mostly want some combination of PM_SLEEP and
+PM_RUNTIME for the specific functionality.  I'm running some checks now.
+
+>  > CONFIG_PM_SLEEP=y
+
+Raphael's patch will make this a user visible option in place of raw
+CONFIG_PM by default so you'd be able to turn that off.
