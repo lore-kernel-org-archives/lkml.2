@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab1BIOoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 09:44:06 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61463 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab1BIOoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 09:44:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Mnv0LNug9CCM+glDOMs724wGSxlFBILJahtGzDkmYBre3ygXrdXRadZBZtfvMEEYlo
-         GiiiVr1MZlAFxCvu4gBx3Xek72PPSoQEAQqkfJkNBj/IDs+PvKT0B+jA5+ehAd9Ha3Iy
-         I+DIeA8QjYltxZdx0y1NIT5g7eoHaQBVDC+Vw=
-From: Ryota Ozaki <ozaki.ryota@gmail.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: Fix out-of-date comments which refers non-existent functions
-Date: Wed,  9 Feb 2011 23:42:17 +0900
-Message-Id: <1297262537-7425-1-git-send-email-ozaki.ryota@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1755949Ab1BIOxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 09:53:21 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35991 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755677Ab1BIOxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 09:53:20 -0500
+Date: Wed, 9 Feb 2011 15:53:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Michael Witten <mfwitten@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        roland@redhat.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: Bash not reacting to Ctrl-C
+Message-ID: <20110209145304.GB16737@elte.hu>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+ <20110128165455.GA18194@elte.hu>
+ <20110128175532.GA26727@redhat.com>
+ <20110128182947.GB20056@elte.hu>
+ <20110205203422.GA12443@redhat.com>
+ <20110207130841.GA16054@redhat.com>
+ <AANLkTimS7vi_BLV_KUw_AKm4DzhV=43Bm3y_epm0rzj9@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimS7vi_BLV_KUw_AKm4DzhV=43Bm3y_epm0rzj9@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ryota Ozaki <ozaki.ryota@gmail.com>
 
-do_file_page and do_no_page don't exist anymore, but some comments
-still refers them. The patch fixes them by replacing them with
-existing ones.
+* Michael Witten <mfwitten@gmail.com> wrote:
 
-Signed-off-by: Ryota Ozaki <ozaki.ryota@gmail.com>
----
- mm/memory.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> On Mon, Feb 7, 2011 at 07:08, Oleg Nesterov <oleg@redhat.com> wrote:
+> > Now that it is clear what happens, the test-case becomes even more
+> > trivial:
+> >
+> >        bash-4.1$ ./bash -c 'while true; do /bin/true; done'
+> >        ^C^C
+> >
+> > needs 4-5 attempts on my machine.
+> 
+> I feel like the odd penguin out.
+> 
+> I can't reproduce the behavior in question when using that example (I
+> haven't tried the other).
+> 
+> I'm running:
+> 
+>     * bash version 4.1.9(2)-release (i686-pc-linux-gnu)
+> 
+>     * linux 2.6.38-rc4 (100b33c8bd8a3235fd0b7948338d6cbb3db3c63d)
 
-I'm not familiar with the codes very much, so the fix may be wrong.
+Oleg provided another testcase, can you reproduce the Ctrl-C problem with this 
+it?
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 31250fa..3fbf32a 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2115,10 +2115,10 @@ EXPORT_SYMBOL_GPL(apply_to_page_range);
-  * handle_pte_fault chooses page fault handler according to an entry
-  * which was read non-atomically.  Before making any commitment, on
-  * those architectures or configurations (e.g. i386 with PAE) which
-- * might give a mix of unmatched parts, do_swap_page and do_file_page
-+ * might give a mix of unmatched parts, do_swap_page and do_nonlinear_fault
-  * must check under lock before unmapping the pte and proceeding
-  * (but do_wp_page is only called after already making such a check;
-- * and do_anonymous_page and do_no_page can safely check later on).
-+ * and do_anonymous_page can safely check later on).
-  */
- static inline int pte_unmap_same(struct mm_struct *mm, pmd_t *pmd,
- 				pte_t *page_table, pte_t orig_pte)
-@@ -2316,7 +2316,7 @@ reuse:
- 		 * bit after it clear all dirty ptes, but before a racing
- 		 * do_wp_page installs a dirty pte.
- 		 *
--		 * do_no_page is protected similarly.
-+		 * __do_fault is protected similarly.
- 		 */
- 		if (!page_mkwrite) {
- 			wait_on_page_locked(dirty_page);
--- 
-1.7.2.3
+#!/bin/bash
 
+perl -we '$SIG{INT} = sub {exit}; sleep'
+
+echo "Hehe, I am going to sleep after ^C"
+sleep 100
+
+
+Thanks,
+
+	Ingo
