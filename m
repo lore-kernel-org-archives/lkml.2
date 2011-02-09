@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab1BIXbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:31:39 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65207 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab1BIXbi (ORCPT
+	id S1756111Ab1BIXfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:35:51 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:58997 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab1BIXft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:31:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=d8ITmnyj4Ew87RuXvP5CBtKHhScTfAV9wj30gjDE88ghbwA3I+FflS6pRovdCJEgC3
-         /Gy/U0W2kOHQBw9C1SP0c/WO9pxzkLp+bjf2GKaeFE6O5Ayjo134vCeBP4jbLWJvWb/b
-         joH5T5MLNeM3vk1NJVVjifQd1DCveu4OG3fXc=
+	Wed, 9 Feb 2011 18:35:49 -0500
+Date: Wed, 9 Feb 2011 15:35:45 -0800
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] misc: add CARMA DATA-FPGA Access Driver
+Message-ID: <20110209233544.GA5303@ovro.caltech.edu>
+References: <1297208267-27087-1-git-send-email-iws@ovro.caltech.edu>
+ <1297208267-27087-2-git-send-email-iws@ovro.caltech.edu>
+ <20110209083325.GA7256@core.coreip.homeip.net>
+ <20110209173532.GB21766@ovro.caltech.edu>
+ <20110209182740.GC23867@core.coreip.homeip.net>
 MIME-Version: 1.0
-Date: Wed, 9 Feb 2011 18:31:38 -0500
-Message-ID: <AANLkTinZyX26nTJ5rKXiD0UHm_Zt+5jLM2of1vmOgwH-@mail.gmail.com>
-Subject: Linux kernel network stack
-From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-To: Kernel-newbies <kernelnewbies@nl.linux.org>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110209182740.GC23867@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Wed, 09 Feb 2011 15:35:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, Feb 09, 2011 at 10:27:40AM -0800, Dmitry Torokhov wrote:
 
-         I am looking to start Linux kernel network internals. I know
-a good book "understanding Linux Network Internals". I need something
-very quick to start with and remain it as reference in by library. I
-had gone through some online resource, which gave me very good start
-to work on. Now I want to delve little deeper in to kernel code on
-network internals side. Especially I want to learn step by step data
-path in kernel to user space, and how various protocols and wireless
-stack glued together. Can anyone please point me to moderate
-explanation book or online resource. Thanks in advance
+[ snip stuff I've already fixed in the next version ]
 
--- 
-Regards,
-Sri.
+> > 
+> > The requirement is that the device stay open during reconfiguration.
+> > This provides for that. Readers just block for as long as the device is
+> > not producing data.
+> 
+> OK, you still need to make sure you do not touch free/used buffer while
+> device is disabled. Also, you need to kick readers if you unbind the
+> driver, so maybe a new flag priv->exists should be introduced and
+> checked.
+> 
+
+I don't understand what you mean by "kick readers if you unbind the
+driver". The kernel automatically increases the refcount on a module
+when a process is using the module. This shows up in the "Used by"
+column of lsmod's output.
+
+The kernel will not let you rmmod a module with a non-zero refcount. You
+cannot get into the situation where you have rmmod'ed the module and a
+reader is still blocking in read()/poll().
+
+Thanks for the review. A v6 is coming right up.
+
+Ira
