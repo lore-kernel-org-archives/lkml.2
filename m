@@ -1,49 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab1BISiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 13:38:22 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:34592 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754646Ab1BISiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 13:38:20 -0500
-Date: Wed, 9 Feb 2011 13:38:16 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: sedat.dilek@gmail.com
-Cc: Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ext4] Multiple page-io submission (Option "mblk_io_submit")
-Message-ID: <20110209183816.GD9533@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, sedat.dilek@gmail.com,
-	Curt Wohlgemuth <curtw@google.com>, linux-ext4@vger.kernel.org,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTinXsDN4Bhp9_kcbeu6BNMADTSBVN_6+nn63w+kW@mail.gmail.com>
+	id S1755818Ab1BISik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 13:38:40 -0500
+Received: from imp01.mtu.ru ([62.5.255.10]:59802 "EHLO imp01.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755770Ab1BISij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 13:38:39 -0500
+X-Greylist: delayed 12161 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Feb 2011 13:38:38 EST
+Message-ID: <4D52DE96.80408@pavlinux.ru>
+Date: Wed, 09 Feb 2011 21:36:06 +0300
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; ru; rv:1.9.2.13) Gecko/20101206 Microsoft/666 Notepad
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinXsDN4Bhp9_kcbeu6BNMADTSBVN_6+nn63w+kW@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Yinghai Lu <yinghai@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: Not PCI_PROBE_MMCONF by default
+References: <4D52AF15.5070705@pavlinux.ru> <AANLkTindvfxRfgRbLprzX5b2u-4P-XZmycV=ai9ez6H1@mail.gmail.com>
+In-Reply-To: <AANLkTindvfxRfgRbLprzX5b2u-4P-XZmycV=ai9ez6H1@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=03742489
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Spam-Flag: NO
+X-Spam-Yversion: Spamooborona-3.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 06:30:29PM +0100, Sedat Dilek wrote:
-> Hi,
+09.02.2011 19:43, Yinghai Lu пишет:
+> On Wed, Feb 9, 2011 at 7:13 AM, Pavel Vasilyev <pavel@pavlinux.ru> wrote:
+>> Hi All!
+>>
+>> Do not set PCI_PROBE_MMCONF flag by default, and enable
+>> only if configured with  CONFIG_PCI_MMCONFIG
+>>
+>> Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
+>> ---
+>>  arch/x86/pci/common.c |    6 ++++--
+>>  1 files changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+>> index 5fe7502..625b477 100644
+>> --- a/arch/x86/pci/common.c
+>> +++ b/arch/x86/pci/common.c
+>> @@ -17,8 +17,7 @@
+>>  #include <asm/smp.h>
+>>  #include <asm/pci_x86.h>
+>>
+>> -unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
+>> -                               PCI_PROBE_MMCONF;
+>> +unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2;
+>>
+>>  unsigned int pci_early_dump_regs;
+>>  static int pci_bf_sort;
+>> @@ -535,6 +534,9 @@ char * __devinit  pcibios_setup(char *str)
+>>        }
+>>  #endif
+>>  #ifdef CONFIG_PCI_MMCONFIG
+>> +
+>> +       pci_probe |= PCI_PROBE_MMCONF;
+>> +
+>>        else if (!strcmp(str, "nommconf")) {
+>>                pci_probe &= ~PCI_PROBE_MMCONF;
+>>                return NULL;
+>>
 > 
-> while looking at pending patches in ext4.git#{master, for_linus}, I
-> saw "ext4: Fix data corruption with multi-block writepages support"
-> which should fix [2] according to text in the commit-body.
-> 
-> Are you planning to turn on "multiple page-io submission" again by
-> default (as is was disabled in "ext4: Turn off multiple page-io
-> submission by default" [3])?
+> did you try to do the compile test with CONFIG_PCI_MMCONFIG?
 
-I'm planning on turning it on by default post 2.6.38, during the
-2.6.39-rc1 merge window.  That's me being paranoid, since this is so
-late in the -rc cycle for 2.6.38.
+Oops :)
 
-						- Ted
+Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
+---
+ arch/x86/pci/common.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 5fe7502..48af4ce 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -17,8 +17,7 @@
+ #include <asm/smp.h>
+ #include <asm/pci_x86.h>
+
+-unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
+-                               PCI_PROBE_MMCONF;
++unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2;
+
+ unsigned int pci_early_dump_regs;
+ static int pci_bf_sort;
+@@ -535,6 +534,9 @@ char * __devinit  pcibios_setup(char *str)
+        }
+ #endif
+ #ifdef CONFIG_PCI_MMCONFIG
++
++       else if (pci_probe |= PCI_PROBE_MMCONF);
++
+        else if (!strcmp(str, "nommconf")) {
+                pci_probe &= ~PCI_PROBE_MMCONF;
+                return NULL;
+
+-- 
+
+                                                         Pavel.
