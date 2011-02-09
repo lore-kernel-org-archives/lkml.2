@@ -1,194 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab1BIIQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 03:16:46 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37688 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751955Ab1BIIQp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 03:16:45 -0500
-Message-ID: <4D524D3F.70906@dsn.okisemi.com>
-Date: Wed, 09 Feb 2011 17:15:59 +0900
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: ML netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Subject: [PATCH v3] pch_gbe: Fix the issue that the receiving data is not
- normal.
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1752681Ab1BIIUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 03:20:30 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:57674 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab1BIIU3 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Wed, 9 Feb 2011 03:20:29 -0500
+Message-Id: <4D525C7E0200007800030EE1@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 09 Feb 2011 08:21:02 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH, resend] x86: fix section mismatch in LAPIC
+	 initialization
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Devid
+Additionally doing things conditionally upon smp_processor_id() being
+zero is generally a bad idea, as this means CPU 0 cannot be offlined
+and brought back online later again. While there may be other places
+where this is done, I think adding more of those should be avoided so
+that some day SMP can really become "symmetrical".
 
-I resubmit this patch modified.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
- - The memmove() function was used instead of memcpy() + memcpy().
- - Rx packets processing was arranged to four case. 
-
-Please check them.
-
-Best regards
-Toshiharu Okada(OKI semiconductor)
 ---
-This PCH_GBE driver had an issue that the receiving data is not normal.
-This driver had not removed correctly the padding data 
-which the DMA include in receiving data. 
+ arch/x86/include/asm/apic.h |    1 +
+ arch/x86/kernel/apic/apic.c |    9 +++++++--
+ arch/x86/kernel/smpboot.c   |    4 ++--
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
-This patch fixed this issue.
+--- 2.6.38-rc4/arch/x86/include/asm/apic.h
++++ 2.6.38-rc4-x86-end-lapic-setup/arch/x86/include/asm/apic.h
+@@ -233,6 +233,7 @@ extern void sync_Arb_IDs(void);
+ extern void init_bsp_APIC(void);
+ extern void setup_local_APIC(void);
+ extern void end_local_APIC_setup(void);
++extern void bsp_end_local_APIC_setup(void);
+ extern void init_apic_mappings(void);
+ void register_lapic_address(unsigned long address);
+ extern void setup_boot_APIC_clock(void);
+--- 2.6.38-rc4/arch/x86/kernel/apic/apic.c
++++ 2.6.38-rc4-x86-end-lapic-setup/arch/x86/kernel/apic/apic.c
+@@ -1381,12 +1381,17 @@ void __cpuinit end_local_APIC_setup(void
+ #endif
+ 
+ 	apic_pm_activate();
++}
++
++void __init bsp_end_local_APIC_setup(void)
++{
++	end_local_APIC_setup();
+ 
+ 	/*
+ 	 * Now that local APIC setup is completed for BP, configure the fault
+ 	 * handling for interrupt remapping.
+ 	 */
+-	if (!smp_processor_id() && intr_remapping_enabled)
++	if (intr_remapping_enabled)
+ 		enable_drhd_fault_handling();
+ 
+ }
+@@ -1756,7 +1761,7 @@ int __init APIC_init_uniprocessor(void)
+ 		enable_IO_APIC();
+ #endif
+ 
+-	end_local_APIC_setup();
++	bsp_end_local_APIC_setup();
+ 
+ #ifdef CONFIG_X86_IO_APIC
+ 	if (smp_found_config && !skip_ioapic_setup && nr_ioapics)
+--- 2.6.38-rc4/arch/x86/kernel/smpboot.c
++++ 2.6.38-rc4-x86-end-lapic-setup/arch/x86/kernel/smpboot.c
+@@ -1060,7 +1060,7 @@ static int __init smp_sanity_check(unsig
+ 
+ 		connect_bsp_APIC();
+ 		setup_local_APIC();
+-		end_local_APIC_setup();
++		bsp_end_local_APIC_setup();
+ 		return -1;
+ 	}
+ 
+@@ -1137,7 +1137,7 @@ void __init native_smp_prepare_cpus(unsi
+ 	if (!skip_ioapic_setup && nr_ioapics)
+ 		enable_IO_APIC();
+ 
+-	end_local_APIC_setup();
++	bsp_end_local_APIC_setup();
+ 
+ 	map_cpu_to_logical_apicid();
+ 
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/net/pch_gbe/pch_gbe_main.c |   97 ++++++++++++++++++++---------------
- 1 files changed, 55 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index 03a1d28..76a31b0 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -29,6 +29,7 @@ const char pch_driver_version[] = DRV_VERSION;
- #define PCH_GBE_SHORT_PKT		64
- #define DSC_INIT16			0xC000
- #define PCH_GBE_DMA_ALIGN		0
-+#define PCH_GBE_DMA_PADDING		2
- #define PCH_GBE_WATCHDOG_PERIOD		(1 * HZ)	/* watchdog time */
- #define PCH_GBE_COPYBREAK_DEFAULT	256
- #define PCH_GBE_PCI_BAR			1
-@@ -1369,16 +1370,13 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
- 	struct pch_gbe_buffer *buffer_info;
- 	struct pch_gbe_rx_desc *rx_desc;
- 	u32 length;
--	unsigned char tmp_packet[ETH_HLEN];
- 	unsigned int i;
- 	unsigned int cleaned_count = 0;
- 	bool cleaned = false;
--	struct sk_buff *skb;
-+	struct sk_buff *skb, *new_skb;
- 	u8 dma_status;
- 	u16 gbec_status;
- 	u32 tcp_ip_status;
--	u8 skb_copy_flag = 0;
--	u8 skb_padding_flag = 0;
- 
- 	i = rx_ring->next_to_clean;
- 
-@@ -1422,55 +1420,70 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
- 			pr_err("Receive CRC Error\n");
- 		} else {
- 			/* get receive length */
--			/* length convert[-3], padding[-2] */
--			length = (rx_desc->rx_words_eob) - 3 - 2;
-+			/* length convert[-3] */
-+			length = (rx_desc->rx_words_eob) - 3;
- 
- 			/* Decide the data conversion method */
- 			if (!adapter->rx_csum) {
- 				/* [Header:14][payload] */
--				skb_padding_flag = 0;
--				skb_copy_flag = 1;
-+				if (NET_IP_ALIGN) {
-+					/* Because alignment differs,
-+					 * the new_skb is newly allocated,
-+					 * and data is copied to new_skb.*/
-+					new_skb = netdev_alloc_skb(netdev,
-+							 length + NET_IP_ALIGN);
-+					if (!new_skb) {
-+						/* dorrop error */
-+						pr_err("New skb allocation "
-+							"Error\n");
-+						goto dorrop;
-+					}
-+					skb_reserve(new_skb, NET_IP_ALIGN);
-+					memcpy(new_skb->data, skb->data,
-+					       length);
-+					skb = new_skb;
-+				} else {
-+					/* DMA buffer is used as SKB as it is.*/
-+					buffer_info->skb = NULL;
-+				}
- 			} else {
- 				/* [Header:14][padding:2][payload] */
--				skb_padding_flag = 1;
--				if (length < copybreak)
--					skb_copy_flag = 1;
--				else
--					skb_copy_flag = 0;
--			}
--
--			/* Data conversion */
--			if (skb_copy_flag) {	/* recycle  skb */
--				struct sk_buff *new_skb;
--				new_skb =
--				    netdev_alloc_skb(netdev,
--						     length + NET_IP_ALIGN);
--				if (new_skb) {
--					if (!skb_padding_flag) {
--						skb_reserve(new_skb,
--								NET_IP_ALIGN);
-+				/* The length includes padding length */
-+				length = length - PCH_GBE_DMA_PADDING;
-+				if ((length < copybreak) ||
-+				    (NET_IP_ALIGN != PCH_GBE_DMA_PADDING)) {
-+					/* Because alignment differs,
-+					 * the new_skb is newly allocated,
-+					 * and data is copied to new_skb.
-+					 * Padding data is deleted
-+					 * at the time of a copy.*/
-+					new_skb = netdev_alloc_skb(netdev,
-+							 length + NET_IP_ALIGN);
-+					if (!new_skb) {
-+						/* dorrop error */
-+						pr_err("New skb allocation "
-+							"Error\n");
-+						goto dorrop;
- 					}
-+					skb_reserve(new_skb, NET_IP_ALIGN);
- 					memcpy(new_skb->data, skb->data,
--						length);
--					/* save the skb
--					 * in buffer_info as good */
-+					       ETH_HLEN);
-+					memcpy(&new_skb->data[ETH_HLEN],
-+					       &skb->data[ETH_HLEN +
-+					       PCH_GBE_DMA_PADDING],
-+					       length - ETH_HLEN);
- 					skb = new_skb;
--				} else if (!skb_padding_flag) {
--					/* dorrop error */
--					pr_err("New skb allocation Error\n");
--					goto dorrop;
-+				} else {
-+					/* Padding data is deleted
-+					 * by moving header data.*/
-+					memmove(&skb->data[PCH_GBE_DMA_PADDING],
-+						&skb->data[0], ETH_HLEN);
-+					skb_reserve(skb, NET_IP_ALIGN);
-+					buffer_info->skb = NULL;
- 				}
--			} else {
--				buffer_info->skb = NULL;
- 			}
--			if (skb_padding_flag) {
--				memcpy(&tmp_packet[0], &skb->data[0], ETH_HLEN);
--				memcpy(&skb->data[NET_IP_ALIGN], &tmp_packet[0],
--					ETH_HLEN);
--				skb_reserve(skb, NET_IP_ALIGN);
--
--			}
--
-+			/* The length includes FCS length */
-+			length = length - ETH_FCS_LEN;
- 			/* update status of driver */
- 			adapter->stats.rx_bytes += length;
- 			adapter->stats.rx_packets++;
--- 
-1.6.2.5
+
