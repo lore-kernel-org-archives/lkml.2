@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab1BIKTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:19:23 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57811 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab1BIKTV convert rfc822-to-8bit (ORCPT
+	id S1753612Ab1BIKUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:20:50 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:53646 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab1BIKUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:19:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EuVT2wT+XlQ0GWmzTkdcojoxGbUtPxijZGqdVy2qZ68K1u96EJ9m0jMWdCQlG2G0K+
-         jfq5LlmZo91PTsOs1vtA9XkwUocR+3yMlOEGCf/uK2r9ApZY2ZxQBZkkGN0H3wdVw9MS
-         6jYqK2/yEN8ysY7WfAQmFoybP+KvnAxOHNxUE=
+	Wed, 9 Feb 2011 05:20:48 -0500
+Message-ID: <e2336ca0c80cf43f018fcb797de3441d.squirrel@webmail.greenhost.nl>
+In-Reply-To: <b7da2f$qco1ng@fmsmga001.fm.intel.com>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
+    <s5hfws1whq8.wl%tiwai@suse.de>
+    <AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
+    <AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com>
+    <849307$bf0dak@azsmga001.ch.intel.
+    <AANLkTinYnehdaXn=Om-hVdo_U9N47BWFTgFoJbjpzuo=@mail.gmail.com>
+    <d41841c1e5f524f976edea8cdd075238.squirrel@webmail.greenhost.nl>
+    <b7da2f$qco1ng@fmsmga001.fm.intel.com>
+Date: Wed, 9 Feb 2011 11:20:46 +0100 (CET)
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Chris Wilson" <chris@chris-wilson.co.uk>
+Cc: "Jeff Chua" <jeff.chua.linux@gmail.com>, "Takashi Iwai" <tiwai@suse.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, "Len Brown" <lenb@kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin7YeKtH_=M0w_R=AE9OGmckgqp7nEsEzhsz_7M@mail.gmail.com>
-References: <AANLkTin7YeKtH_=M0w_R=AE9OGmckgqp7nEsEzhsz_7M@mail.gmail.com>
-Date: Wed, 9 Feb 2011 11:19:20 +0100
-Message-ID: <AANLkTin4=zFneKTgzLJWHxUgzno-+pgRdsSOetk20NMQ@mail.gmail.com>
-Subject: Re: 2.6.38-rc3: reiserfs: inconsistent lock state
-From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-To: Alexander Beregalov <a.beregalov@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 729ef2e9e2cd27dd49f9ca04774c95e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks lik the bug i am chasing... see post by myself on this list
+On Wed, February 9, 2011 10:32, Chris Wilson wrote:
+> On Wed, 9 Feb 2011 03:56:36 +0100 (CET), "Indan Zupancic" <indan@nul.nu> wrote:
+>> All in all it seems quite wrong, no matter if it happens to work, because
+>> it depends on the calling order done by the drm layer. If *_crtc_enable()
+>> is called instead it won't do anything because of that active = true thing.
+>> This seems to be happening in your case.
+>
+> The order is very well defined.
+>
+> modesetting (upon resume we set the previous mode):
+>   for each enabled crtc:
+>     crtc_helper->prepare -> intel_crtc_disable()
+>     crtc->mode_set -> intel_crtc_mode_set()
+>     crtc_helper->commit -> intel_crtc_enable()
+>   for each !enabled crtc:
+>     crtc->disable -> intel_crtc_disable()
 
-On Sun, Feb 6, 2011 at 6:16 PM, Alexander Beregalov
-<a.beregalov@gmail.com> wrote:
-> Hi Frederic,
->
-> Does it make sense?
->
-> [ INFO: inconsistent lock state ]
-> 2.6.38-rc3-00201-g44f2c5c #1
-> ---------------------------------
-> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> kswapd0/411 [HC0[0]:SC0[0]:HE1:SE1] takes:
->  (&REISERFS_SB(s)->lock){+.+.?.}, at: [<c1119a88>]
-> reiserfs_write_lock_once+0x28/0x50
-> {RECLAIM_FS-ON-W} state was registered at:
->  [<c10537a6>] mark_held_locks+0x56/0x80
->  [<c1053e8c>] lockdep_trace_alloc+0x9c/0xd0
->  [<c1099978>] kmem_cache_alloc+0x28/0xe0
->  [<c1100443>] reiserfs_alloc_inode+0x13/0x40
->  [<c10b2bec>] alloc_inode+0x1c/0x80
->  [<c10b2e77>] iget5_locked+0x77/0x180
->  [<c11024e3>] reiserfs_fill_super+0x543/0xaa0
->  [<c109f5fb>] mount_bdev+0x17b/0x1c0
->  [<c11003aa>] get_super_block+0x1a/0x20
->  [<c109e7a3>] vfs_kern_mount+0x53/0x170
->  [<c109e919>] do_kern_mount+0x39/0xd0
->  [<c10b6ec8>] do_mount+0x348/0x6a0
->  [<c10b74c6>] sys_mount+0x66/0xa0
->  [<c16358ff>] mount_block_root+0xc1/0x234
->  [<c1635acb>] mount_root+0x59/0x5f
->  [<c1635be2>] prepare_namespace+0x111/0x14b
->  [<c163577d>] kernel_init+0x113/0x120
->  [<c100307a>] kernel_thread_helper+0x6/0x1c
-> irq event stamp: 116110169
-> hardirqs last  enabled at (116110169): [<c1065859>] __call_rcu.clone.5+0x39/0x60
-> hardirqs last disabled at (116110168): [<c1065846>] __call_rcu.clone.5+0x26/0x60
-> softirqs last  enabled at (116106756): [<c10304c1>] __do_softirq+0xc1/0x110
-> softirqs last disabled at (116106719): [<c1004136>] do_softirq+0x86/0xd0
->
-> other info that might help us debug this:
-> 2 locks held by kswapd0/411:
->  #0:  (shrinker_rwsem){++++..}, at: [<c107bfe4>] shrink_slab+0x24/0x160
->  #1:  (&type->s_umount_key#17){++++..}, at: [<c10ae769>]
-> shrink_dcache_memory+0xe9/0x180
->
-> stack backtrace:
-> Pid: 411, comm: kswapd0 Not tainted 2.6.38-rc3-00201-g44f2c5c #1
-> Call Trace:
->  [<c1053120>] ? print_usage_bug+0x160/0x1a0
->  [<c10534ea>] ? mark_lock+0x38a/0x5f0
->  [<c1052630>] ? check_usage_forwards+0x0/0xd0
->  [<c105533c>] ? __lock_acquire+0x5ac/0x19a0
->  [<c10551d0>] ? __lock_acquire+0x440/0x19a0
->  [<c1056cca>] ? lock_acquire+0x7a/0xa0
->  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
->  [<c1364d5f>] ? mutex_lock_nested+0x5f/0x2a0
->  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
->  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
->  [<c1050f5b>] ? trace_hardirqs_off+0xb/0x10
->  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
->  [<c10f593c>] ? reiserfs_evict_inode+0x3c/0x110
->  [<c136612c>] ? _raw_spin_lock+0x5c/0x70
->  [<c10b23af>] ? iput+0x19f/0x270
->  [<c10b1a97>] ? evict+0x17/0xa0
->  [<c10b23b6>] ? iput+0x1a6/0x270
->  [<c10addb7>] ? d_kill+0xa7/0xf0
->  [<c10ae4d7>] ? shrink_dentry_list+0x1e7/0x210
->  [<c10ae44d>] ? shrink_dentry_list+0x15d/0x210
->  [<c10ae654>] ? __shrink_dcache_sb+0x154/0x180
->  [<c10ae791>] ? shrink_dcache_memory+0x111/0x180
->  [<c107c0d0>] ? shrink_slab+0x110/0x160
->  [<c107e04a>] ? kswapd+0x49a/0x7f0
->  [<c107dbb0>] ? kswapd+0x0/0x7f0
->  [<c1041fa4>] ? kthread+0x74/0x80
->  [<c1041f30>] ? kthread+0x0/0x80
->  [<c100307a>] ? kernel_thread_helper+0x6/0x1c
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Prepare for what? That could mean anything. Is it only used to
+prepare changing a mode, or suspend, or what? Same for commit.
+Should it have been named modes_set_prepare and mode_set_commit?
+
+It's clear if you've worked a lot on the code, but if you're just
+debugging it's had to tell when anything will be called, the
+function pointer chasing isn't fun. And that doesn't guarantee
+a driver function won't be called in a different way in the
+future anyway.
+
+I'd go as far as saying that if that's always the order, then
+just get rid of prepare and commit and do what's needed in the
+mode_set function. If prepare and commit don't have any other
+purpose or reason for existence.
+
+And back to the original thing, where does that reset() callback
+fit in? It's absent from the very well defined order. And judging
+by its name, it should be okay to call at any moment, but it seems
+that isn't the case.
+
+But the real wrong thing is fiddling with "active" outside of those
+state changing functions to force a certain behaviour later on if a
+specific function is called just after this (fingers crossed).
+
+My advise is to just remove that active = true line and fix any
+breakage that results in some other way. It acts as an out-of-band
+message to *crtc_disable() to re-disable already disabled crtcs,
+which doesn't always work (either now or in the future). If the state
+wasn't already messed up, it is after doing the active = true thing.
+
+Greetings,
+
+Indan
+
+
