@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab1BIPxp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 10:53:45 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52720 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab1BIPxn (ORCPT
+	id S1753154Ab1BIPyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 10:54:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47673 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab1BIPyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 10:53:43 -0500
-Message-ID: <4D52B810.403@oracle.com>
-Date: Wed, 09 Feb 2011 07:51:44 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Patrick McHardy <kaber@trash.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Subject: Re: linux-next: Tree for February 3 (netfilter)
-References: <20110203160034.44ae3247.sfr@canb.auug.org.au> <20110204111511.1f4d6706.randy.dunlap@oracle.com> <4D524079.1000908@trash.net>
-In-Reply-To: <4D524079.1000908@trash.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Feb 2011 10:54:23 -0500
+Subject: Re: [PATCH] sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Nick Piggin <npiggin@gmail.com>
+In-Reply-To: <1297108399.8221.35.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <1296852688-1665-1-git-send-email-venki@google.com>
+	 <1296854731-25039-1-git-send-email-venki@google.com>
+	 <1297086642.13327.15.camel@laptop>
+	 <AANLkTi=xo8bq6uTjYQ7yxJ69ATry1Xs3q0deE7UN9jPj@mail.gmail.com>
+	 <1297108399.8221.35.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Feb 2011 16:55:28 +0100
+Message-ID: <1297266928.13327.216.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D52B870.0071:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/11 23:21, Patrick McHardy wrote:
-> Am 04.02.2011 20:15, schrieb Randy Dunlap:
->> On Thu, 3 Feb 2011 16:00:34 +1100 Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Changes since 20110202:
->>
->> When SYSCTL and PROC_FS and NETFILTER_NETLINK are not enabled:
->>
->> net/built-in.o: In function `try_to_load_type':
->> ip_set_core.c:(.text+0x3ab49): undefined reference to `nfnl_unlock'
->> ip_set_core.c:(.text+0x3ab4e): undefined reference to `nfnl_lock'
+On Mon, 2011-02-07 at 11:53 -0800, Suresh Siddha wrote:
 > 
-> Does this patch fix the problem?
+> Peter, to answer your question of why SMT is treated different to cores
+> sharing cache, performance improvements contributed by SMT is far less
+> compared to the cores and any wrong decisions in SMT load balancing
+> (especially in the presence of idle cores, packages) has a bigger
+> impact.
+> 
+> I think in the tbench case referred by Nick, idle HT siblings in a busy
+> package picked the load instead of the idle packages. And thus we
+> probably had to wait for active load balance to kick in to distribute
+> the load etc by which the damage would have been. Performance impact of
+> this condition wouldn't be as severe in the cores sharing last level
+> cache and other resources.
+> 
+> Also there are lot of changes in this area since 2005. So it would be
+> nice to revisit the tbench case and see if the logic of propagating busy
+> sibling status to the higher level load balances is still needed or not.
+> 
+> On the contrary, perhaps there might be some workloads which may benefit
+> in performance/latency if we completely do away with this less
+> aggressive SMT load balancing. 
 
-Yes, it does.  Thanks.
+Right, but our current capacity logic does exactly that and seems to
+work for more than 2 smt siblings (it does the whole asymmetric power7
+muck).
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+>From a quick glance at the sched.c state at the time of Nick's patch,
+the capacity logic wasn't around then.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+So I see no reason what so ever to keep this SMT exception.
+
