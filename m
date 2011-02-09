@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1BIRKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 12:10:49 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7349 "EHLO mga02.intel.com"
+	id S1754532Ab1BIRQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 12:16:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55769 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636Ab1BIRKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 12:10:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,446,1291622400"; 
-   d="scan'208";a="601010298"
-Message-ID: <4D52CA98.2050100@linux.intel.com>
-Date: Wed, 09 Feb 2011 09:10:48 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.38-rc4 (test_nx: BUG)
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com> <20110209090804.5c1ecf8e.randy.dunlap@oracle.com>
-In-Reply-To: <20110209090804.5c1ecf8e.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751234Ab1BIRQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 12:16:16 -0500
+From: Harald Hoyer <harald@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Harald Hoyer <harald@redhat.com>
+Subject: [PATCH] drivers/scsi/ch.c: print real device name
+Date: Wed,  9 Feb 2011 18:18:53 +0100
+Message-Id: <1297271933-16804-1-git-send-email-harald@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/9/2011 9:08 AM, Randy Dunlap wrote:
-> test_nx BUGs.
-> CONFIG_DEBUG_RODATA=y
-> (nearly allmodconfig, with a few changes)
->
-> Is that expected?
->
-this test should pass...
-so something broke it (I'll call that a success for the test ;-)
+Print the real name "sch[0-9]*" instead of "ch[0-9]".
 
+Signed-off-by: Harald Hoyer <harald@redhat.com>
+---
+ drivers/scsi/ch.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/scsi/ch.c b/drivers/scsi/ch.c
+index a15474e..21ce545 100644
+--- a/drivers/scsi/ch.c
++++ b/drivers/scsi/ch.c
+@@ -87,12 +87,12 @@ static const char * vendor_labels[CH_TYPES-4] = {
+ #define DPRINTK(fmt, arg...)						\
+ do {									\
+ 	if (debug)							\
+-		printk(KERN_DEBUG "%s: " fmt, ch->name, ##arg);		\
++		printk(KERN_DEBUG "s%s: " fmt, ch->name, ##arg);		\
+ } while (0)
+ #define VPRINTK(level, fmt, arg...)					\
+ do {									\
+ 	if (verbose)							\
+-		printk(level "%s: " fmt, ch->name, ##arg);		\
++		printk(level "s%s: " fmt, ch->name, ##arg);		\
+ } while (0)
+ 
+ /* ------------------------------------------------------------------- */
+@@ -940,7 +940,7 @@ static int ch_probe(struct device *dev)
+ 		ch_init_elem(ch);
+ 
+ 	dev_set_drvdata(dev, ch);
+-	sdev_printk(KERN_INFO, sd, "Attached scsi changer %s\n", ch->name);
++	sdev_printk(KERN_INFO, sd, "Attached scsi changer s%s\n", ch->name);
+ 
+ 	return 0;
+ remove_idr:
