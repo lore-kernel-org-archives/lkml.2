@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab1BIDh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 22:37:27 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:35253 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756205Ab1BIDh0 (ORCPT
+	id S1756263Ab1BIDpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 22:45:31 -0500
+Received: from bosmailout05.eigbox.net ([66.96.190.5]:34445 "EHLO
+	bosmailout05.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223Ab1BIDpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 22:37:26 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1905F1Irg506MsOmFSrNFZ/DNqPHMGMaenZ/V+CGa
-	fXv4xyMti3HMsQ
-Subject: Re: [PATCH 3/3] sched: newidle balance set idle_timestamp only on
- successful pull
-From: Mike Galbraith <efault@gmx.de>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Nick Piggin <npiggin@gmail.com>
-In-Reply-To: <1297188819-19999-4-git-send-email-venki@google.com>
-References: <AANLkTikmWfLv3iMNUky7TRvQtUknLckftiQ4-Br614Rm@mail.gmail.com>
-	 <1297188819-19999-4-git-send-email-venki@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Feb 2011 04:37:21 +0100
-Message-ID: <1297222641.8035.4.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	Tue, 8 Feb 2011 22:45:30 -0500
+X-Greylist: delayed 2619 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Feb 2011 22:45:30 EST
+X-EN-OrigOutIP: 10.20.18.10
+X-EN-IMPSID: 5f1n1g0080D2CUy01f1nAA
+Message-ID: <4D520535.6080408@jaysonking.com>
+Date: Tue, 08 Feb 2011 21:08:37 -0600
+From: "Jayson R. King" <dev@jaysonking.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, Stable team <stable@kernel.org>
+Subject: 2.6.27.58-rc1 build error Re: [PATCH 20/23] tracing: Fix panic when
+ lseek() called on "trace" opened for writing
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
+X-EN-AuthUser: jaysonking@jaysonking.com
+X-EN-OrigIP: 67.65.251.18
+X-EN-OrigHost: adsl-67-65-251-18.dsl.okcyok.swbell.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-08 at 10:13 -0800, Venkatesh Pallipadi wrote:
-> load_balance() could return a negative value in the case of
-> SMT sibling CPU being busy. Code in idle_balance() though, uses this
-> return value as an indicator of successful task pull, ignoring the
-> -1 return value.
+Looks like a typo was made in this patch for 2.6.27.58-rc1:
 
-Yup, garden variety bug.
+	kernel/trace/trace.c:2055: error: 'tracing_lseek' undeclared here (not 
+in a function)
 
-> This has two problems:
-> 1) Resets idle_stamp even when this return value is -1.
-> Specific case is on SMT capable system, CPU A is idle and its sibling
-> CPU B is busy. In this case, CPU A avg_idle will not depend on
-> a task sleeping/waking up on it. Instead it will continue to hold stale
-> avg_idle value for extended period of time.
 
-Not good.
 
-Acked-by: Mike Galbraith <efault@gmx.de>
+'tracing_lseek' likely should be 'tracing_seek' in the two occurances in 
+this patch.
 
-	-Mike
+Jayson
 
