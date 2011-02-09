@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab1BILln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 06:41:43 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48461 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752071Ab1BILlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 06:41:42 -0500
-Date: Wed, 9 Feb 2011 11:41:38 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Frank Rowand <frank.rowand@am.sony.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
- all the time
-Message-ID: <20110209114137.GA10163@opensource.wolfsonmicro.com>
-References: <4D51D341.3040209@am.sony.com>
+	id S1754711Ab1BILxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 06:53:46 -0500
+Received: from bar.sig21.net ([80.81.252.164]:47269 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab1BILxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 06:53:45 -0500
+Date: Wed, 9 Feb 2011 12:53:37 +0100
+From: Johannes Stezenbach <js@sig21.net>
+To: anders franzen <anders.franzen@yahoo.se>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH -v3] Only honor the FIGETBSZ ioctl for regular files
+ and directories
+Message-ID: <20110209115336.GA4345@sig21.net>
+References: <4D524CBE.2020300@yahoo.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D51D341.3040209@am.sony.com>
-X-Cookie: Never give an inch!
+In-Reply-To: <4D524CBE.2020300@yahoo.se>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.7 (---)
+X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.663,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 03:35:29PM -0800, Frank Rowand wrote:
+(restore Cc:s)
 
-> For 2.6.38-rc4, x86_64, CONFIG_NR_CPUS=4:
-
-> size vmlinux
->    text     data       bss       dec      hex  filename
+On Wed, Feb 09, 2011 at 09:13:50AM +0100, anders franzen wrote:
 > 
-> 6553910  3555020   9994240  20103170  132c002  vmlinux    with    CONFIG_PM
-> 6512652  3553116   9994240  20060008  1321768  vmlinux    without CONFIG_PM
+> Vad happened with the patch below. It was ''signed off'' more than
+> half a year ago, and it is not in any of the latest kernel yet.
 > 
->   41258     1904         0     43162                      delta
-
-> That is big enough for me to care.
-
-Hrm, that's pretty surprising.  It'd be interesting to know how much of
-that is due to the PM core itself and how much of that is from drivers.
-For the drivers CONFIG_PM isn't really the option they should be using
-in the first place - they mostly want some combination of PM_SLEEP and
-PM_RUNTIME for the specific functionality.  I'm running some checks now.
-
->  > CONFIG_PM_SLEEP=y
-
-Raphael's patch will make this a user visible option in place of raw
-CONFIG_PM by default so you'd be able to turn that off.
+> I ask, because I spend a week debugging the 'dvbloopback' driver,
+> which uses '2' as a private ioctl for a read command. Not easy to
+> find.
+> 
+> Can a driver not have private ioctls?
+> Should this be fixed in the driver?, I have now RESERVED the value 2
+> in the driver. But this does not
+> guarantee that someone invents FIGETBSZ_V2 and assigned the value 3 to it.
+> 
+> Regards
+>   /Anders
+> 
+> 
+> 
+> 
+> FIGETBSZ has an ioctl number of _IO(0x00,2) == 2, which can conflict
+> with device driver ioctls. Let's avoid the potential for problems by
+> only honoring the ioctl number for files where this ioctl is likely
+> going to be useful: for regular files and directories
+> 
+> Thanks to Johannes Stezenbach for pointing this consequence of commit
+> 19ba0559.
+> 
+> Signed-off-by: "Theodore Ts'o" <tytso@xxxxxxx>
+> Cc: Al Viro <viro@xxxxxxxxxxxxxxxxxx>
+> Cc: "Aneesh Kumar K.V" <aneesh.kumar@xxxxxxxxxxxxxxxxxx>
+> Cc: Johannes Stezenbach <js@xxxxxxxxx>
+> ---
+> 
+> Fixed up commit description
+> 
+> fs/compat_ioctl.c | 6 +++++-
+> fs/ioctl.c | 5 ++++-
+> 2 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+> index 641640d..b8607fe 100644
+> --- a/fs/compat_ioctl.c
+> +++ b/fs/compat_ioctl.c
+> @@ -1715,8 +1715,12 @@ asmlinkage long compat_sys_ioctl(unsigned int
+> fd, unsigned int cmd,
+> goto out_fput;
+> #endif
+> - case FIBMAP:
+> case FIGETBSZ:
+> + if (S_ISDIR(filp->f_path.dentry->d_inode->i_mode))
+> + break;
+> + /*FALL THROUGH */
+> +
+> + case FIBMAP:
+> case FIONREAD:
+> if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
+> break;
+> diff --git a/fs/ioctl.c b/fs/ioctl.c
+> index 2d140a7..e578dab 100644
+> --- a/fs/ioctl.c
+> +++ b/fs/ioctl.c
+> @@ -597,7 +597,10 @@ int do_vfs_ioctl(struct file *filp, unsigned
+> int fd, unsigned int cmd,
+> {
+> struct inode *inode = filp->f_path.dentry->d_inode;
+> int __user *p = (int __user *)arg;
+> - return put_user(inode->i_sb->s_blocksize, p);
+> +
+> + if (S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode))
+> + return put_user(inode->i_sb->s_blocksize, p);
+> + /* FALL THROUGH */
+> }
+> 
+> default:
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
