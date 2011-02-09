@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab1BINOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 08:14:54 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:60776 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597Ab1BINOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 08:14:53 -0500
-X-ASG-Debug-ID: 1297257291-01de280c5395b90001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4D52938C.30907@fusionio.com>
-Date: Wed, 9 Feb 2011 14:15:56 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754920Ab1BINP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 08:15:28 -0500
+Received: from smtp106.prem.mail.sp1.yahoo.com ([98.136.44.61]:43869 "HELO
+	smtp106.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754755Ab1BINPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 08:15:24 -0500
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: wUz2oZkVM1mXmrF_EsJY9xfOB_AnyTV5wC1aaGm6viI4so3
+ UX0NqJyhgv7Kc6TMcxk07o2i18dud7ATn9geTvJr0Ac1gu3Q7cT9gy0gWWD.
+ vfR0CykYOJum2U09PKYRiLeKP4im5quI4ls45DJgBY6AoIZEl3I1e7BAdIa1
+ v56FxGd44S7Vve5uzip2aNtgHKWrr2tUm9Dbx7PXdWVmdYEHe3Q4oJ.7HiZC
+ XaqIApvw1pohmqmT6tZBo_o0JClRJ8sN.pD2yInzV.yZsEvV1EGXTKWJ1S_x
+ WgjDm9NkSTsj01bT1BYZ9LSUD2PFmLZH2EenVH6L0
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4D52936A.6010407@schaufler-ca.com>
+Date: Wed, 09 Feb 2011 05:15:22 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Justin TerAvest <teravest@google.com>
-CC: "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "ctalbott@google.com" <ctalbott@google.com>,
-        "mrubin@google.com" <mrubin@google.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "guijianfeng@cn.fujitsu.com" <guijianfeng@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Don't wait if queue already has requests.
-References: <1297192697-29978-1-git-send-email-teravest@google.com>
-X-ASG-Orig-Subj: Re: [PATCH] Don't wait if queue already has requests.
-In-Reply-To: <1297192697-29978-1-git-send-email-teravest@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: James Morris <jmorris@namei.org>
+CC: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        "Sakkinen Jarkko.2 \(EXT-Tieto/Tampere\)" 
+	<ext-jarkko.2.sakkinen@nokia.com>,
+        Janne Karhunen <Janne.Karhunen@nokia.com>,
+        "Reshetova Elena \(Nokia-D/Helsinki\)" <elena.reshetova@nokia.com>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: Subject: [PATCH] Smack: mmap controls for library containment
+References: <4D346C8E.3080408@schaufler-ca.com> <4D51E188.9090008@schaufler-ca.com> <alpine.LRH.2.00.1102091851030.12310@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.00.1102091851030.12310@tundra.namei.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1297257291
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.54833
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-02-08 20:18, Justin TerAvest wrote:
-> Commit 7667aa0630407bc07dc38dcc79d29cc0a65553c1 added logic to wait for
-> the last queue of the group to become busy (have at least one request),
-> so that the group does not lose out for not being continuously
-> backlogged. The commit did not check for the condition that the last
-> queue already has some requests. As a result, if the queue already has
-> requests, wait_busy is set. Later on, cfq_select_queue() checks the
-> flag, and decides that since the queue has a request now and wait_busy
-> is set, the queue is expired.  This results in early expiration of the
-> queue.
-> 
-> This patch fixes the problem by adding a check to see if queue already
-> has requests. If it does, wait_busy is not set. As a result, time slices
-> do not expire early.
-> 
-> The queues with more than one request are usually buffered writers.
-> Testing shows improvement in isolation between buffered writers.
+On 2/8/2011 11:51 PM, James Morris wrote:
+> On Tue, 8 Feb 2011, Casey Schaufler wrote:
+>
+> Subject: [PATCH] Smack: correct behavior in the mmap hook
+>
+>   The mmap policy enforcement was not properly handling the
+>   interaction between the global and local rule lists.
+>   Instead of going through one and then the other, which
+>   missed the important case where a rule specified that
+>   there should be no access, combine the access limitations
+>   where there is a rule in each list.
+>
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+> Applied to
+> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+>
 
-Thanks for catching this in due time, I'll queue it up for 2.6.38 and
-mark it for stable backport.
+James, I made an error and failed to say that this and Shan Wei's clean-up
+should be pulled from git://gitorious.org/smack-next/kernel.git
 
--- 
-Jens Axboe
 
