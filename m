@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab1BIKfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:35:20 -0500
-Received: from mail.roph.ro ([217.10.213.254]:39320 "EHLO roph.ro"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753561Ab1BIKfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:35:18 -0500
-Message-ID: <7720d52c440cbaef0589933ba77650ed.squirrel@mail.roph.ro>
-Date: Wed, 9 Feb 2011 13:02:40 +0200
-Subject: **$5,000USD ENCLOSED**
-From: "UNITED NATIONS" <aesculap.prod@roph.ro>
-Reply-To: unitednations40@rocketmail.com
-User-Agent: SquirrelMail/1.4.19-1.fc9
+	id S1754138Ab1BIKf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:35:29 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55533 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab1BIKf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 05:35:28 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 0/8] Intel MID SSP SPI merged driver
+To: spi-devel-general@lists.sourceforge.net, russ.gorby@intel.com,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+Date: Wed, 09 Feb 2011 10:06:32 +0000
+Message-ID: <20110209100231.555.90520.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-roph-MailScanner-Information: Please contact the ISP for more information
-X-roph-MailScanner-ID: 6D6E1B3C3C5.A2D71
-X-roph-MailScanner: Found to be clean
-X-roph-MailScanner-SpamScore: sssss
-X-roph-MailScanner-From: aesculap.prod@roph.ro
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series of patches begins with Russ Gorby's posted driver for the 
+Medfield platform with the SSP providing clock and adds back support for
+Moorestown in the form of additional quirks, as well as basic support for
+clock slave. This allows the kernel to have one driver which can drive all
+the SSP units in these modes rather than different drivers per device/mode.
 
+---
 
-How are you?
+Russ Gorby (1):
+      Intel SPI master controller driver for the Medfield platform
 
-We happily announce to you the draw of the United Nations programs held on
-the 26th January, 2011 in Nigeria. Your e-mail address attached to ticket
-number: 564 75600545 188. You have been compensated with the sum of
-$500,000.00 USD and payment will be remitted to you via western union
-money transfer.
-
-
-USD$5,000 has already be send to you since last week but we were unable to
-give you the information on phone for the past days but due to bad network
-here, So we decided to send you the details via email today.
-
-Here is the western union information to pick up the USD5000.00.
-
-MTCN : 782 543 4236
-SENDER'S NAME: MARYLIN JOHNSON
-TEXT QUESTION: IN GOD
-ANSWER:WE TRUST
-AMOUNT SENT: $5000.00 USD
-COUNTRY:NIGERIA
-
-Thanks
-Mrs. Linda Hall
+Alan Cox (7):
+      intel_mid_ssp_spi: Implement slave side quirk
+      intel_mid_ssp_spi: Bounce data through the Langwell SRAM when needed
+      intel_mid_ssp_spi: Add the QoS quirk for slave mode
+      intel_mid_ssp_spi: Add chip definitions
+      intel_mid_ssp_spi: Add the uglies needed for Moorestown master mode
+      intel_mid_ssp_spi: Implement the MRST quirk
+      intel_mid_ssp_spi: Re-introduce quirks fields
 
 
 
-
-
-
-
-
+ drivers/spi/Kconfig                 |    7 
+ drivers/spi/Makefile                |    1 
+ drivers/spi/intel_mid_ssp_spi.c     | 1747 +++++++++++++++++++++++++++++++++++
+ drivers/spi/intel_mid_ssp_spi_def.h |  149 +++
+ 4 files changed, 1904 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/spi/intel_mid_ssp_spi.c
+ create mode 100644 drivers/spi/intel_mid_ssp_spi_def.h
 
 -- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+	"It's 106 miles to Chicago, we've got a full tank of gas, the
+	 sat-nav has crashed, it's dark and we're completely lost"
