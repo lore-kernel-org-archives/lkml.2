@@ -1,280 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1BIAwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 19:52:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:15551 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755036Ab1BIAwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 19:52:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,444,1291622400"; 
-   d="scan'208";a="600778252"
-From: jacob.jun.pan@linux.intel.com
-To: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        akpm@linux-foundation.org, rdunlap@xenotime.net,
-        Cedric Le Goater <clg@fr.ibm.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 1/1, v5] cgroup/freezer: add per freezer duty ratio control
-Date: Tue,  8 Feb 2011 16:50:37 -0800
-Message-Id: <1297212637-17667-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756130Ab1BIAxN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 19:53:13 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:41310 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036Ab1BIAxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 19:53:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:in-reply-to:x-operating-system:user-agent;
+        b=Ut0Z8dFgvvxno6Afu+GgJuB6kfGAWdqkkziXI6z8przaBRpTk6N1CC9r3hSAzDLJRo
+         mtUMCrz+rhHyP8OKoJZg==
+Date: Tue, 8 Feb 2011 16:52:31 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, msb@chromium.org, mingo@elte.hu,
+        olofj@chromium.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
+Message-ID: <20110209005231.GE632@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110208135618.b3a849fb.akpm@linux-foundation.org>
+X-Operating-System: Linux/2.6.32-gg370-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Andrew Morton (akpm@linux-foundation.org) wrote:
+> On Tue, 08 Feb 2011 13:52:51 -0800
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > On Tue, 2011-02-08 at 13:49 -0800, akpm@linux-foundation.org wrote:
+> > > The patch titled
+> > >      printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
+> > > has been removed from the -mm tree.
+> > > This patch was dropped because it had testing failures
+> > 
+> > The patch seems pretty simple.
+> > What kind of testing failures did it have?
+> > 
+> 
+> CONFIG_DEFAULT_MESSAGE_LOGLEVEL undefined with CONFIG_PRINTK=n (Randy)
 
-Freezer subsystem is used to manage batch jobs which can start
-stop at the same time. However, sometime it is desirable to let
-the kernel manage the freezer state automatically with a given
-duty ratio.
-For example, if we want to reduce the time that backgroup apps
-are allowed to run we can put them into a freezer subsystem and
-set the kernel to turn them THAWED/FROZEN at given duty ratio.
+D'oh. Fixed.
 
-This patch introduces two file nodes under cgroup
-freezer.duty_ratio_pct and freezer.period_sec
-
-Usage example: set period to be 5 seconds and frozen duty ratio 90%
-[root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
-[root@localhost aoa]# echo 5000 > freezer.period_ms
-
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 ---
- Documentation/cgroups/freezer-subsystem.txt |   23 +++++
- kernel/cgroup_freezer.c                     |  136 ++++++++++++++++++++++++++-
- 2 files changed, 158 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/cgroups/freezer-subsystem.txt b/Documentation/cgroups/freezer-subsystem.txt
-index 41f37fe..7f06f05 100644
---- a/Documentation/cgroups/freezer-subsystem.txt
-+++ b/Documentation/cgroups/freezer-subsystem.txt
-@@ -100,3 +100,26 @@ things happens:
- 		and returns EINVAL)
- 	3) The tasks that blocked the cgroup from entering the "FROZEN"
- 		state disappear from the cgroup's set of tasks.
-+
-+In embedded systems, it is desirable to manage group of applications
-+for power saving. E.g. tasks that are not in the foreground may be
-+frozen unfrozen periodically to save power without affecting user
-+experience. In this case, user/management software can attach tasks
-+into freezer cgroup then specify duty ratio and period that the
-+managed tasks are allowed to run.
-+
-+Usage example:
-+Assuming freezer cgroup is already mounted, application being managed
-+are included the "tasks" file node of the given freezer cgroup.
-+To make the tasks frozen at 90% of the time every 5 seconds, do:
-+
-+[root@localhost ]# echo 90 > freezer.duty_ratio_pct
-+[root@localhost ]# echo 5000 > freezer.period_ms
-+
-+After that, the application in this freezer cgroup will only be
-+allowed to run at the following pattern.
-+     __                    __                    __
-+    |  |<-- 90% frozen -->|  |                  |  |
-+____|  |__________________|  |__________________|  |_____
-+
-+    |<---- 5 seconds ---->|
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index e7bebb7..96bc94a 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -21,6 +21,7 @@
- #include <linux/uaccess.h>
- #include <linux/freezer.h>
- #include <linux/seq_file.h>
-+#include <linux/kthread.h>
+We've been burned by regressions/bugs which we later realized could have
+been triaged quicker if only we'd paid closer attention to dmesg.  To make
+it easier to audit dmesg, we'd like to make DEFAULT_MESSAGE_LEVEL
+Kconfig-settable.  That way we can set it to KERN_NOTICE and audit any
+messages <= KERN_WARNING.
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+---
+ kernel/printk.c   |    2 +-
+ lib/Kconfig.debug |   11 +++++++++++
+ 2 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 2ddbdc7..bddeee8 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -53,7 +53,7 @@ void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
+ #define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
  
- enum freezer_state {
- 	CGROUP_THAWED = 0,
-@@ -28,12 +29,28 @@ enum freezer_state {
- 	CGROUP_FROZEN,
- };
+ /* printk's without a loglevel use this.. */
+-#define DEFAULT_MESSAGE_LOGLEVEL 4 /* KERN_WARNING */
++#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
  
-+enum duty_ratio_params {
-+	FREEZER_DUTY_RATIO = 0,
-+	FREEZER_PERIOD,
-+};
-+
-+struct freezer_duty {
-+	u32 ratio; /* percentage of time frozen */
-+	u32 period_pct_ms; /* one percent of the period in miliseconds */
-+};
-+
- struct freezer {
- 	struct cgroup_subsys_state css;
- 	enum freezer_state state;
-+	struct freezer_duty duty;
-+	struct task_struct *fkh;
- 	spinlock_t lock; /* protects _writes_ to state */
- };
+ /* We show everything that is MORE important than this.. */
+ #define MINIMUM_CONSOLE_LOGLEVEL 1 /* Minimum loglevel we let people use */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 3967c23..bd1760c 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -9,6 +9,17 @@ config PRINTK_TIME
+ 	  operations.  This is useful for identifying long delays
+ 	  in kernel startup.
  
-+static struct task_struct *freezer_task;
-+static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
-+static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
++config DEFAULT_MESSAGE_LOGLEVEL
++	int "Default message log level (1-7)"
++	range 1 7
++	default "4"
++	help
++	  Default log level for printk statements with no specified priority.
 +
- static inline struct freezer *cgroup_freezer(
- 		struct cgroup *cgroup)
- {
-@@ -63,6 +80,35 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
- 	return result;
- }
- 
-+static DECLARE_WAIT_QUEUE_HEAD(freezer_wait);
++	  This was hard-coded to KERN_WARNING since at least 2.6.10 but folks
++	  that are auditing their logs closely may want to set it to a lower
++	  priority.
 +
-+static int freezer_kh(void *data)
-+{
-+	struct cgroup *cgroup = (struct cgroup *)data;
-+	struct freezer *freezer = cgroup_freezer(cgroup);
-+
-+	do {
-+		if (freezer->duty.ratio < 100 && freezer->duty.ratio >= 0 &&
-+			freezer->duty.period_pct_ms) {
-+			if (try_to_freeze_cgroup(cgroup, freezer))
-+				pr_info("cannot freeze\n");
-+			msleep(freezer->duty.period_pct_ms *
-+				freezer->duty.ratio);
-+			unfreeze_cgroup(cgroup, freezer);
-+			msleep(freezer->duty.period_pct_ms *
-+				(100 - freezer->duty.ratio));
-+		} else if (freezer->duty.ratio == 100) {
-+			if (try_to_freeze_cgroup(cgroup, freezer))
-+				pr_info("cannot freeze\n");
-+			sleep_on(&freezer_wait);
-+		} else {
-+			sleep_on(&freezer_wait);
-+			pr_debug("freezer thread wake up\n");
-+		}
-+	} while (!kthread_should_stop());
-+	return 0;
-+}
-+
- /*
-  * cgroups_write_string() limits the size of freezer state strings to
-  * CGROUP_LOCAL_BUFFER_SIZE
-@@ -150,7 +196,12 @@ static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
- static void freezer_destroy(struct cgroup_subsys *ss,
- 			    struct cgroup *cgroup)
- {
--	kfree(cgroup_freezer(cgroup));
-+	struct freezer *freezer;
-+
-+	freezer = cgroup_freezer(cgroup);
-+	if (freezer->fkh)
-+		kthread_stop(freezer->fkh);
-+	kfree(freezer);
- }
- 
- /*
-@@ -282,6 +333,16 @@ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
- 	return 0;
- }
- 
-+static u64 freezer_read_duty_ratio(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	return cgroup_freezer(cgroup)->duty.ratio;
-+}
-+
-+static u64 freezer_read_period(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	return cgroup_freezer(cgroup)->duty.period_pct_ms * 100;
-+}
-+
- static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
- {
- 	struct cgroup_iter it;
-@@ -368,12 +429,85 @@ static int freezer_write(struct cgroup *cgroup,
- 	return retval;
- }
- 
-+#define FREEZER_KH_PREFIX  "freezer_"
-+static int freezer_write_param(struct cgroup *cgroup, struct cftype *cft,
-+		u64 val)
-+{
-+	struct freezer *freezer;
-+	char thread_name[32];
-+	int ret = 0;
-+
-+	freezer = cgroup_freezer(cgroup);
-+
-+	if (!cgroup_lock_live_group(cgroup))
-+		return -ENODEV;
-+
-+	switch (cft->private) {
-+	case FREEZER_DUTY_RATIO:
-+		if (val >= 100 || val < 0) {
-+			ret = -EINVAL;
-+			goto exit;
-+		}
-+		freezer->duty.ratio = val;
-+		break;
-+	case FREEZER_PERIOD:
-+		if (val)
-+			do_div(val, 100);
-+			freezer->duty.period_pct_ms = val;
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	/* start/stop management kthread as needed, the rule is that
-+	 * if both duty ratio and period values are zero, then no management
-+	 * kthread is created. when both are non-zero, we create a kthread
-+	 * for the cgroup. When user set zero to duty ratio and period again
-+	 * the kthread is stopped.
-+	 */
-+	if (freezer->duty.ratio && freezer->duty.period_pct_ms) {
-+		if (!freezer->fkh) {
-+			snprintf(thread_name, 32, "%s%s", FREEZER_KH_PREFIX,
-+				cgroup->dentry->d_name.name);
-+			freezer->fkh = kthread_run(freezer_kh, (void *)cgroup,
-+						thread_name);
-+			if (IS_ERR(freezer_task)) {
-+				pr_err("create %s failed\n", thread_name);
-+				ret = PTR_ERR(freezer_task);
-+				goto exit;
-+			}
-+		} else
-+			wake_up(&freezer_wait);
-+	} else if ((!freezer->duty.ratio || !freezer->duty.period_pct_ms) &&
-+		freezer->fkh) {
-+			kthread_stop(freezer->fkh);
-+			freezer->fkh = NULL;
-+	}
-+
-+exit:
-+	cgroup_unlock();
-+	return ret;
-+}
-+
- static struct cftype files[] = {
- 	{
- 		.name = "state",
- 		.read_seq_string = freezer_read,
- 		.write_string = freezer_write,
- 	},
-+	{
-+		.name = "duty_ratio_pct",
-+		.private = FREEZER_DUTY_RATIO,
-+		.read_u64 = freezer_read_duty_ratio,
-+		.write_u64 = freezer_write_param,
-+	},
-+	{
-+		.name = "period_ms",
-+		.private = FREEZER_PERIOD,
-+		.read_u64 = freezer_read_period,
-+		.write_u64 = freezer_write_param,
-+	},
-+
- };
- 
- static int freezer_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
+ 	default y
 -- 
-1.7.0.4
+1.7.3.1
 
