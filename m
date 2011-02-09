@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab1BIXmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:42:39 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53839 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755700Ab1BIXmi (ORCPT
+	id S1756102Ab1BIXmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:42:55 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:34852 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755970Ab1BIXmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:42:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E8ErUhTxtz7gHkGzoaImMx0SjB5caxk3ha4fpzpeQeuyurm06F7mQbEd0qN2lny03A
-         va+rsXnVydXfIiuOx1HoXQatZ7cPWMVWcriOAMnPP8c6UcdtcYE7gko/Lh8y8/KfprDG
-         IBtQPtbrUg+KVVuh3f5QJUBxTq/ZdPaltp4AI=
-Date: Wed, 9 Feb 2011 15:42:31 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] misc: add CARMA DATA-FPGA Access Driver
-Message-ID: <20110209234231.GA5707@core.coreip.homeip.net>
-References: <1297208267-27087-1-git-send-email-iws@ovro.caltech.edu>
- <1297208267-27087-2-git-send-email-iws@ovro.caltech.edu>
- <20110209083325.GA7256@core.coreip.homeip.net>
- <20110209173532.GB21766@ovro.caltech.edu>
- <20110209182740.GC23867@core.coreip.homeip.net>
- <20110209233544.GA5303@ovro.caltech.edu>
+	Wed, 9 Feb 2011 18:42:45 -0500
+Date: Wed, 9 Feb 2011 18:42:43 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Brendan Cully <brendan@cs.ubc.ca>
+cc: Ian Campbell <ijc@hellion.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <linux-pm@lists.linux-foundation.org>, <xen-devel@lists.xensource.com>,
+        "SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [PATCH 0/2] Fix hangup after creating checkpoint on
+ Xen.
+In-Reply-To: <20110209231659.GB249@zanzibar.kublai.com>
+Message-ID: <Pine.LNX.4.44L0.1102091837050.18843-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110209233544.GA5303@ovro.caltech.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 03:35:45PM -0800, Ira W. Snyder wrote:
-> On Wed, Feb 09, 2011 at 10:27:40AM -0800, Dmitry Torokhov wrote:
-> 
-> [ snip stuff I've already fixed in the next version ]
-> 
+On Wed, 9 Feb 2011, Brendan Cully wrote:
+
+> > > That is odd, and it is quite different from the intended design of the 
+> > > PM core.  Drivers are supposed to put their devices into a known 
+> > > suspended state; then afterwards they put the devices back into an 
+> > > operational state.  What happens while the devices are in the suspended 
+> > > state isn't supposed to matter -- the system transition can fail, but 
+> > > devices get treated exactly the same way as if it succeeded.
 > > > 
-> > > The requirement is that the device stay open during reconfiguration.
-> > > This provides for that. Readers just block for as long as the device is
-> > > not producing data.
+> > > Why do your drivers need to recover differently based on the success of 
+> > > the hypercall?
 > > 
-> > OK, you still need to make sure you do not touch free/used buffer while
-> > device is disabled. Also, you need to kick readers if you unbind the
-> > driver, so maybe a new flag priv->exists should be introduced and
-> > checked.
+> > checkpointing isn't really my area but AIUI you don't want to do a full
+> > device teardown and reconnect like you would with a proper suspend
+> > because of the time that takes which prevents you from doing continuous
+> > rolling checkpoints at granularity which people want to implement
+> > various disaster recovery schemes.
 > > 
+> > Hopefully one of the Xen checkpointing folks will chime in and explain
+> > why this is not possible to achieve at the individual driver level (or,
+> > even better, with a patch which does it that way ;-)).
 > 
-> I don't understand what you mean by "kick readers if you unbind the
-> driver". The kernel automatically increases the refcount on a module
-> when a process is using the module. This shows up in the "Used by"
-> column of lsmod's output.
+> As Ian says, Xen has suspend_cancel because while the normal full
+> suspend/resume path works, it is much slower, and the work done during
+> resume is redundant. I don't remember the numbers offhand, but when we
+> added suspend_cancel I think we could do full suspend/resume in under
+> 100us, which was maybe a couple of orders of magnitude faster than
+> full resume (largely due to slow xenstore handshaking on resume,
+> IIRC). It made a big difference for our Remus HA project, which was
+> checkpointing tens of times per second.
 > 
-> The kernel will not let you rmmod a module with a non-zero refcount. You
-> cannot get into the situation where you have rmmod'ed the module and a
-> reader is still blocking in read()/poll().
+> I'd like to keep the fast resume option, and expect that it can be
+> contained entirely in Xen-specific code. I'll try to get someone to
+> look into it here.
+> 
+> I think fast resume is somewhat orthogonal to the problem of hanging
+> on resume, which just sounds like a xen-specific bug in the slow
+> path.
 
-However you can still unbind the driver from the device by writing into
-driver's sysfs 'unbind' attribute.
+In fact there already is a "fast suspend & resume" path in the PM core.  
+It's the freeze/thaw procedure used when starting to hibernate.  The
+documentation specifically says that drivers' freeze methods are
+supposed to quiesce their devices but not change power levels.  In
+addition, the thaw method is invoked as part of recovery from a failed
+hibernation attempt, so it already has the "cancel" semantics that xen 
+seems to want.
 
-See drivers/base/bus.c::driver_unbind().
+Alan Stern
 
-Thanks.
-
--- 
-Dmitry
