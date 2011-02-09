@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1BIOMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 09:12:54 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:60196 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab1BIOMx (ORCPT
+	id S1755480Ab1BIOQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 09:16:59 -0500
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:33363 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260Ab1BIOQ6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 09:12:53 -0500
-Subject: [PATCH] btrfs: prevent heap corruption in btrfs_ioctl_space_info()
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: chris.mason@oracle.com
-Cc: security@kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Feb 2011 09:12:46 -0500
-Message-ID: <1297260766.2327.40.camel@dan>
+	Wed, 9 Feb 2011 09:16:58 -0500
+Date: Wed, 9 Feb 2011 14:14:44 +0000
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: Alban Crequy <alban.crequy@collabora.co.uk>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ian Molton <ian.molton@collabora.co.uk>
+Subject: Re: [PATCH 7/8] af_unix: implement poll(POLLOUT) for multicast
+ sockets
+Message-ID: <20110209141444.6f496013@chocolatine.cbg.collabora.co.uk>
+In-Reply-To: <1295620788-6002-7-git-send-email-alban.crequy@collabora.co.uk>
+References: <20110121143751.57b1453d@chocolatine.cbg.collabora.co.uk>
+	<1295620788-6002-7-git-send-email-alban.crequy@collabora.co.uk>
+Organization: Collabora
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.23.90; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit bf5fc093c5b625e4259203f1cee7ca73488a5620 refactored
-btrfs_ioctl_space_info() and introduced several security issues.
+Le Fri, 21 Jan 2011 14:39:47 +0000,
+Alban Crequy <alban.crequy@collabora.co.uk> a écrit :
 
-space_args.space_slots is an unsigned 64-bit type controlled by a
-possibly unprivileged caller.  The comparison as a signed int type
-allows providing values that are treated as negative and cause the
-subsequent allocation size calculation to wrap, or be truncated to 0.
-By providing a size that's truncated to 0, kmalloc() will return
-ZERO_SIZE_PTR.  It's also possible to provide a value smaller than the
-slot count.  The subsequent loop ignores the allocation size when
-copying data in, resulting in a heap overflow or write to ZERO_SIZE_PTR.
+> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+> index 4147d64..138d9a2 100644
+> --- a/net/unix/af_unix.c
+> +++ b/net/unix/af_unix.c
+...
+>  	sock_poll_wait(file, sk_sleep(sk), wait);
+                             ^^^^^^^^^^^^
+> +#ifdef CONFIG_UNIX_MULTICAST
+> +	/*
+> +	 * On multicast sockets, we need to check if the receiving queue is
+> +	 * full on all peers who don't have UNIX_MREQ_DROP_WHEN_FULL.
+> +	 */
+> +	if (!other || !unix_sk(other)->mcast_group)
+> +		goto skip_multicast;
+> +	others = unix_find_multicast_recipients(sk,
+> +		unix_sk(other)->mcast_group, &err);
+> +	if (!others)
+> +		goto skip_multicast;
+> +	for (i = others->offset ; i < others->cnt ; i++) {
+> +		if (others->items[i].flags & UNIX_MREQ_DROP_WHEN_FULL)
+> +			continue;
+> +		if (unix_peer(others->items[i].s) != sk) {
+> +			sock_poll_wait(file,
+> +				&unix_sk(others->items[i].s)->peer_wait, wait);
+                                                              ^^^^^^^^^
 
-The fix changes the slot count type and comparison typecast to u64,
-which prevents truncation or signedness errors, and also ensures that we
-don't copy more data than we've allocated in the subsequent loop.  Note
-that zero-size allocations are no longer possible since there is already
-an explicit check for space_args.space_slots being 0 and truncation of
-this value is no longer an issue.
+This code does not work correctly: a poller cannot sleep on two wait
+queues at the same time. When the poller is added in ->peer_wait, it
+will not be in sk_sleep(sk) so it will miss POLLIN events.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
----
- fs/btrfs/ioctl.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 02d224e..f1a43df 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -2208,7 +2208,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
- 	int num_types = 4;
- 	int alloc_size;
- 	int ret = 0;
--	int slot_count = 0;
-+	u64 slot_count = 0;
- 	int i, c;
- 
- 	if (copy_from_user(&space_args,
-@@ -2247,7 +2247,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
- 		goto out;
- 	}
- 
--	slot_count = min_t(int, space_args.space_slots, slot_count);
-+	slot_count = min_t(u64, space_args.space_slots, slot_count);
- 
- 	alloc_size = sizeof(*dest) * slot_count;
- 
-@@ -2267,6 +2267,12 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
- 	for (i = 0; i < num_types; i++) {
- 		struct btrfs_space_info *tmp;
- 
-+		/* Don't copy in more than we allocated */
-+		if (!slot_count)
-+			break;
-+
-+		slot_count--;
-+
- 		info = NULL;
- 		rcu_read_lock();
- 		list_for_each_entry_rcu(tmp, &root->fs_info->space_info,
-
+I think I need another wait queue at the group level for waiters of
+POLLIN|POLLOUT events. Waiters on that global wait queue would be woken
+up when a message is delivered to any peer (in unix_dgram_sendmsg along
+sk_data_ready) and when a member of the group receives a message (in
+unix_dgram_recvmsg along wake_up_interruptible_sync_poll).
 
