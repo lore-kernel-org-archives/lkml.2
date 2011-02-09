@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab1BIKIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:08:23 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46688 "EHLO
+	id S1754512Ab1BIKIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:08:30 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46691 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab1BIKIS (ORCPT
+	with ESMTP id S1754446Ab1BIKI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:08:18 -0500
+	Wed, 9 Feb 2011 05:08:26 -0500
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/10] trivial: fix typos concerning "adjust"
-Date: Wed,  9 Feb 2011 11:07:35 +0100
-Message-Id: <1297246062-23777-3-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 02/10] trivial: fix typos concerning "address"
+Date: Wed,  9 Feb 2011 11:07:34 +0100
+Message-Id: <1297246062-23777-2-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -30,78 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/acpi/video.c                   |    2 +-
- drivers/gpu/drm/radeon/radeon_device.c |    2 +-
- drivers/mtd/maps/dilnetpc.c            |    2 +-
- drivers/scsi/lpfc/lpfc_scsi.c          |    2 +-
- net/caif/caif_socket.c                 |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ arch/blackfin/mach-bf518/include/mach/defBF512.h |    2 +-
+ arch/blackfin/mach-bf527/include/mach/defBF522.h |    2 +-
+ arch/blackfin/mach-bf538/include/mach/defBF538.h |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 90f8f76..fbd4845 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -1201,7 +1201,7 @@ acpi_video_get_next_level(struct acpi_video_device *device,
- 				break;
- 		}
- 	}
--	/* Ajust level_current to closest available level */
-+	/* Adjust level_current to closest available level */
- 	level_current += delta;
- 	for (i = 2; i < device->brightness->count; i++) {
- 		l = device->brightness->levels[i];
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index 0d47893..5d23894 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -307,7 +307,7 @@ void radeon_vram_location(struct radeon_device *rdev, struct radeon_mc *mc, u64
-  *
-  * Function will place try to place GTT before or after VRAM.
-  *
-- * If GTT size is bigger than space left then we ajust GTT size.
-+ * If GTT size is bigger than space left then we adjust GTT size.
-  * Thus function will never fails.
-  *
-  * FIXME: when reducing GTT size align new size on power of 2.
-diff --git a/drivers/mtd/maps/dilnetpc.c b/drivers/mtd/maps/dilnetpc.c
-index 0713e3a..b5517f8 100644
---- a/drivers/mtd/maps/dilnetpc.c
-+++ b/drivers/mtd/maps/dilnetpc.c
-@@ -422,7 +422,7 @@ static int __init init_dnpc(void)
+diff --git a/arch/blackfin/mach-bf518/include/mach/defBF512.h b/arch/blackfin/mach-bf518/include/mach/defBF512.h
+index 2728582..b1e60a9 100644
+--- a/arch/blackfin/mach-bf518/include/mach/defBF512.h
++++ b/arch/blackfin/mach-bf518/include/mach/defBF512.h
+@@ -1098,7 +1098,7 @@
+ #define	SADD_LEN	0x0002		/* Slave Address Length							*/
+ #define	STDVAL		0x0004		/* Slave Transmit Data Valid					*/
+ #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
+-#define	GEN			0x0010		/* General Call Adrress Matching Enabled		*/
++#define	GEN			0x0010		/* General Call Address Matching Enabled		*/
  
- 	/*
- 	** If flash probes fail, try to make flashes accessible
--	** at least as ROM. Ajust erasesize in this case since
-+	** at least as ROM. Adjust erasesize in this case since
- 	** the default one (128M) will break our partitioning
- 	*/
- 	if (!mymtd)
-diff --git a/drivers/scsi/lpfc/lpfc_scsi.c b/drivers/scsi/lpfc/lpfc_scsi.c
-index c97751c..11199ba 100644
---- a/drivers/scsi/lpfc/lpfc_scsi.c
-+++ b/drivers/scsi/lpfc/lpfc_scsi.c
-@@ -1808,7 +1808,7 @@ lpfc_bg_scsi_prep_dma_buf(struct lpfc_hba *phba,
- 		/*
- 		 * We are in DIF Type 1 mode
- 		 * Every data block has a 8 byte DIF (trailer)
--		 * attached to it.  Must ajust FCP data length
-+		 * attached to it.  Must adjust FCP data length
- 		 */
- 		blksize = lpfc_cmd_blksize(scsi_cmnd);
- 		diflen = (fcpdl / blksize) * 8;
-diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
-index 8184c03..3437b07 100644
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -853,7 +853,7 @@ static int caif_connect(struct socket *sock, struct sockaddr *uaddr,
- 	sk->sk_state = CAIF_CONNECTING;
+ /* TWI_SLAVE_STAT Masks															*/
+ #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*)	*/
+diff --git a/arch/blackfin/mach-bf527/include/mach/defBF522.h b/arch/blackfin/mach-bf527/include/mach/defBF522.h
+index 89f5420..565cc69 100644
+--- a/arch/blackfin/mach-bf527/include/mach/defBF522.h
++++ b/arch/blackfin/mach-bf527/include/mach/defBF522.h
+@@ -1099,7 +1099,7 @@
+ #define	SADD_LEN	0x0002		/* Slave Address Length							*/
+ #define	STDVAL		0x0004		/* Slave Transmit Data Valid					*/
+ #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
+-#define	GEN			0x0010		/* General Call Adrress Matching Enabled		*/
++#define	GEN			0x0010		/* General Call Address Matching Enabled		*/
  
- 	/* Check priority value comming from socket */
--	/* if priority value is out of range it will be ajusted */
-+	/* if priority value is out of range it will be adjusted */
- 	if (cf_sk->sk.sk_priority > CAIF_PRIO_MAX)
- 		cf_sk->conn_req.priority = CAIF_PRIO_MAX;
- 	else if (cf_sk->sk.sk_priority < CAIF_PRIO_MIN)
+ /* TWI_SLAVE_STAT Masks															*/
+ #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*)	*/
+diff --git a/arch/blackfin/mach-bf538/include/mach/defBF538.h b/arch/blackfin/mach-bf538/include/mach/defBF538.h
+index d27f81d..cb350a1 100644
+--- a/arch/blackfin/mach-bf538/include/mach/defBF538.h
++++ b/arch/blackfin/mach-bf538/include/mach/defBF538.h
+@@ -1767,7 +1767,7 @@
+ #define	SADD_LEN	0x0002		/* Slave Address Length */
+ #define	STDVAL		0x0004		/* Slave Transmit Data Valid */
+ #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
+-#define	GEN			0x0010		/* General Call	Adrress	Matching Enabled */
++#define	GEN			0x0010		/* General Call	Address	Matching Enabled */
+ 
+ /* TWIx_SLAVE_STAT Masks								 */
+ #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*) */
 -- 
 1.7.2.3
 
