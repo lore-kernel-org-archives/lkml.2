@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab1BIPTW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 10:19:22 -0500
-Received: from imp03.mtu.ru ([62.5.255.20]:43393 "EHLO imp03.mtu.ru"
+	id S1751742Ab1BIPTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 10:19:16 -0500
+Received: from hera.kernel.org ([140.211.167.34]:48332 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab1BIPTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 10:19:18 -0500
-Message-ID: <4D52AF15.5070705@pavlinux.ru>
-Date: Wed, 09 Feb 2011 18:13:25 +0300
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; ru; rv:1.9.2.13) Gecko/20101206 Microsoft/666 Notepad
+	id S1751034Ab1BIPTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 10:19:15 -0500
+Date: Wed, 9 Feb 2011 15:18:53 GMT
+From: tip-bot for Torben Hohn <torbenh@gmx.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        dhowells@redhat.com, torbenh@gmx.de, tglx@linutronix.de,
+        yasutake.koichi@jp.panasonic.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torbenh@gmx.de, dhowells@redhat.com, tglx@linutronix.de,
+        yasutake.koichi@jp.panasonic.com
+In-Reply-To: <20110127150011.23248.62040.stgit@localhost>
+References: <20110127150011.23248.62040.stgit@localhost>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] mn10300: Switch do_timer() to xtimer_update()
+Message-ID: <tip-22b7fcdae562b6792b3f5517e89fd7e0337180ae@git.kernel.org>
+Git-Commit-ID: 22b7fcdae562b6792b3f5517e89fd7e0337180ae
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH]: Not PCI_PROBE_MMCONF by default
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=03742489
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Spam-Flag: NO
-X-Spam-Yversion: Spamooborona-3.0
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Feb 2011 15:18:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All!
+Commit-ID:  22b7fcdae562b6792b3f5517e89fd7e0337180ae
+Gitweb:     http://git.kernel.org/tip/22b7fcdae562b6792b3f5517e89fd7e0337180ae
+Author:     Torben Hohn <torbenh@gmx.de>
+AuthorDate: Thu, 27 Jan 2011 16:00:12 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 9 Feb 2011 16:17:24 +0100
 
-Do not set PCI_PROBE_MMCONF flag by default, and enable
-only if configured with  CONFIG_PCI_MMCONFIG
+mn10300: Switch do_timer() to xtimer_update()
 
-Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
+Only one CPU gets the timer interrupt so mn10300_last_tsc does not
+need to be protected by xtime lock. Remove xtime lovking and use
+xtime_update() which does the locking itself.
+
+Signed-off-by: Torben Hohn <torbenh@gmx.de>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+LKML-Reference: <20110127150011.23248.62040.stgit@localhost>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/pci/common.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ arch/mn10300/kernel/time.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 5fe7502..625b477 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -17,8 +17,7 @@
- #include <asm/smp.h>
- #include <asm/pci_x86.h>
-
--unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
--                               PCI_PROBE_MMCONF;
-+unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2;
-
- unsigned int pci_early_dump_regs;
- static int pci_bf_sort;
-@@ -535,6 +534,9 @@ char * __devinit  pcibios_setup(char *str)
-        }
- #endif
- #ifdef CONFIG_PCI_MMCONFIG
-+
-+       pci_probe |= PCI_PROBE_MMCONF;
-+
-        else if (!strcmp(str, "nommconf")) {
-                pci_probe &= ~PCI_PROBE_MMCONF;
-                return NULL;
-
-
--- 
-                                                         Pavel.
+diff --git a/arch/mn10300/kernel/time.c b/arch/mn10300/kernel/time.c
+index 75da468..5b95500 100644
+--- a/arch/mn10300/kernel/time.c
++++ b/arch/mn10300/kernel/time.c
+@@ -104,8 +104,6 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 	unsigned tsc, elapse;
+ 	irqreturn_t ret;
+ 
+-	write_seqlock(&xtime_lock);
+-
+ 	while (tsc = get_cycles(),
+ 	       elapse = tsc - mn10300_last_tsc, /* time elapsed since last
+ 						 * tick */
+@@ -114,11 +112,9 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 		mn10300_last_tsc += MN10300_TSC_PER_HZ;
+ 
+ 		/* advance the kernel's time tracking system */
+-		do_timer(1);
++		xtime_update(1);
+ 	}
+ 
+-	write_sequnlock(&xtime_lock);
+-
+ 	ret = local_timer_interrupt();
+ #ifdef CONFIG_SMP
+ 	send_IPI_allbutself(LOCAL_TIMER_IPI);
