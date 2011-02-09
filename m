@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1BIT7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:59:24 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39734 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753616Ab1BIT7V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753599Ab1BIT7V (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Feb 2011 14:59:21 -0500
-Date: Wed, 9 Feb 2011 19:59:18 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        Frank Rowand <frank.rowand@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
- all the time
-Message-ID: <20110209195918.GD23747@opensource.wolfsonmicro.com>
-References: <4D51D341.3040209@am.sony.com>
- <20110209114137.GA10163@opensource.wolfsonmicro.com>
- <201102091807.03094.rjw@sisk.pl>
- <4D52DD81.7050401@am.sony.com>
- <20110209184010.GB23747@opensource.wolfsonmicro.com>
- <4D52E441.2000805@am.sony.com>
- <20110209192506.GC23747@opensource.wolfsonmicro.com>
- <4D52F0D0.9020609@am.sony.com>
+Received: from kroah.org ([198.145.64.141]:43497 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753051Ab1BIT7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 14:59:19 -0500
+Date: Wed, 9 Feb 2011 11:52:38 -0800
+From: Greg KH <greg@kroah.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jarod@wilsonet.com>
+Subject: Re: PATCH: drivers/staging/lirc/lirc_serial.c: use IS_ERR()
+Message-ID: <20110209195238.GA8707@kroah.com>
+References: <4D4F0701.5060602@teksavvy.com>
+ <4D51B6EF.5000409@teksavvy.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D52F0D0.9020609@am.sony.com>
-X-Cookie: You dialed 5483.
+In-Reply-To: <4D51B6EF.5000409@teksavvy.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 11:53:52AM -0800, Tim Bird wrote:
-> On 02/09/2011 11:25 AM, Mark Brown wrote:
+On Tue, Feb 08, 2011 at 04:34:39PM -0500, Mark Lord wrote:
+> On 11-02-06 03:39 PM, Mark Lord wrote:
+> > The lirc_serial.c module has never worked with ordinary homebrew
+> > serial blaster hardware, and leaks memory when this is attempted.
+> > 
+> > Fix it by replacing incorrect usage of PTR_ERR() with IS_ERR().
+> > (patch is inline and also attached to bypass mailer issues).
+> > 
+> > Signed-off-by: Mark Lord <mlord@pobox.com>
+> > 
+> > --- linux-2.6.37/drivers/staging/lirc/lirc_serial.c	2011-01-04
+> > 19:50:19.000000000 -0500
+> > +++ linux/drivers/staging/lirc/lirc_serial.c	2011-02-06 15:33:49.854453928 -0500
+> > @@ -966,7 +966,7 @@
+> >  	if (n % sizeof(int) || count % 2 == 0)
+> >  		return -EINVAL;
+> >  	wbuf = memdup_user(buf, n);
+> > -	if (PTR_ERR(wbuf))
+> > +	if (IS_ERR(wbuf))
+> >  		return PTR_ERR(wbuf);
+> >  	spin_lock_irqsave(&hardware[type].lock, flags);
+> >  	if (type == LIRC_IRDEO) {
+> 
+> 
+> Anyone out there?
+> 
+> Greg?
 
-> > Not really, the goal was to simplify the PM config options to ones that
-> > are actually useful and cut down on the number of silly combinations
-> > that the randconfigs turn up.  CONFIG_PM is there mostly for historical
-> > reasons, it doesn't really mean much by itself except as a gate to other
-> > options.
+Patience please, I just got over the flu and am now catching up on
+patches.  I'll go queue this up now.
 
-> I'm confused.  Do you plan to retain the option to
-> turn off PM features completely, or not?  I thought that's
-> what CONFIG_PM did today.
+thanks,
 
-Raphael's patches do that in a much better way than my original patch,
-my original patch would have force CONFIG_PM on but still allowed all
-the PM features that it controls to be turned on and off individually.
+greg k-h
