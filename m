@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab1BIMjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 07:39:45 -0500
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57043 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557Ab1BIMjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 07:39:44 -0500
-Message-ID: <4D528B53.7040208@kernel.dk>
-Date: Wed, 09 Feb 2011 13:40:51 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1754817Ab1BIMov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 07:44:51 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45892 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab1BIMou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 07:44:50 -0500
+Date: Wed, 9 Feb 2011 13:44:46 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        David Vrabel <dvrabel@arcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Haavard Skinnemoen <hskinnemoen@atmel.com>
+Subject: Re: [PATCH RESENT#2] [AVR32] don't check platform_get_irq's return
+ value against zero
+Message-ID: <20110209124446.GR27982@pengutronix.de>
+References: <1288690250.32331.41.camel@hcegtvedt>
+ <1297247284-31650-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <1297254532.2968.11.camel@hcegtvedt>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Chris Clayton <chris2553@googlemail.com>,
-        LKML <linux-kernel@vger.kernel.org>, simon@fire.lp0.eu,
-        kay.sievers@vrfy.org
-Subject: Re: 2.6.38-rc2+ - regresiion copying DVD's
-References: <201101301550.59272.chris2553@googlemail.com> <201101311929.05290.chris2553@googlemail.com> <201102062312.14919.chris2553@googlemail.com> <20110209095556.GD3770@htj.dyndns.org>
-In-Reply-To: <20110209095556.GD3770@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1297254532.2968.11.camel@hcegtvedt>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-02-09 10:55, Tejun Heo wrote:
-> On Sun, Feb 06, 2011 at 11:12:14PM +0000, Chris Clayton wrote:
->> Hi again,
->>
->> On Monday 31 January 2011, Chris Clayton wrote:
->>> On Sunday 30 January 2011, Chris Clayton wrote:
->>>> Hi,
->>>>
->>>> Firstly, I'm not subscribed, so please cc me on any reply.
->>>>
->>>> I'm trying to copy the3 contents of a video DVD from one disc to another,
->>>> but it fails. There are no messages in the kernel log file, but K3B
->>>> reports the following:
->>>
->>> <snip>
->>>
->>> Simon's patch at http://marc.info/?l=linux-kernel&m=129649842110692&w=4
->>> fixes this problem, so feel free to add
->>>
->>> Tested-by: Chris Clayton <chris2553@googlemail.com>
->>>
->> I note that Simon's patch hasn't made it through to Linus yet. Which tree is ot 
->> going through, please?
+On Wed, Feb 09, 2011 at 01:28:52PM +0100, Hans-Christian Egtvedt wrote:
+> On Wed, 2011-02-09 at 11:28 +0100, Uwe Kleine-König wrote: 
+> > platform_get_irq returns -ENXIO on failure, so !int_irq was probably
+> > always true.  Better use (int)int_irq <= 0.  Note that a return value of
+> > zero is still handled as error even though this could mean irq0.
+> > 
+> > This is a followup to 305b3228f9ff4d59f49e6d34a7034d44ee8ce2f0 that
+> > changed the return value of platform_get_irq from 0 to -ENXIO on error.
+> > 
+> > Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > ---
+> > Hello,
+> > 
+> > Hans-Christian Egtvedt asked to push this patch via Linus as there is no avr32
+> > tree.
+> > 
+> > @Andrew: do you take it?
 > 
-> Block tree.  Jens?
+> Actually, now I have a tree for AVR32 on git.kernel.org, but I have no
+> other updates lined up for 2.6.38. Will you Andrew add it to your
+> series, or should I push this one through my git tree?
+I don't consider it that critical.  So for me getting it in the avr32
+tree now and then getting it merged for .39 would be OK for me.
 
-Hmm, I was pretty sure it was queued up in for-linus, but that does not
-look like it's the case. I'll shove it in there, thanks!
+Best regards
+Uwe
 
 -- 
-Jens Axboe
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
