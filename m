@@ -1,67 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253Ab1BITFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:05:49 -0500
-Received: from imp01.mtu.ru ([62.5.255.10]:60749 "EHLO imp01.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab1BITFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:05:49 -0500
-Message-ID: <4D52E4F4.80706@pavlinux.ru>
-Date: Wed, 09 Feb 2011 22:03:16 +0300
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; ru; rv:1.9.2.13) Gecko/20101206 Microsoft/666 Notepad
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH]: Not PCI_PROBE_MMCONF by default
-References: <4D52AF15.5070705@pavlinux.ru> <AANLkTindvfxRfgRbLprzX5b2u-4P-XZmycV=ai9ez6H1@mail.gmail.com> <4D52DE96.80408@pavlinux.ru>
-In-Reply-To: <4D52DE96.80408@pavlinux.ru>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=03742489
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Spam-Flag: NO
-X-Spam-Yversion: Spamooborona-3.0
+	id S1751920Ab1BITRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:17:07 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:23314 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786Ab1BITRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 14:17:05 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73806032"
+From: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+To: alan@linux.intel.com, gregkh@suse.de, linux-kernel@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        swetland@google.com, dima@android.com,
+        Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+Subject: [PATCH v2] tty: Add msm_smd_tty driver
+Date: Wed,  9 Feb 2011 11:16:34 -0800
+Message-Id: <1297278994-22155-1-git-send-email-nvishwan@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09.02.2011 21:36, Pavel Vasilyev пишет:
-> 09.02.2011 19:43, Yinghai Lu пишет:
->> On Wed, Feb 9, 2011 at 7:13 AM, Pavel Vasilyev <pavel@pavlinux.ru> wrote:
->>> Hi All!
->>>
->>> Do not set PCI_PROBE_MMCONF flag by default, and enable
->>> only if configured with  CONFIG_PCI_MMCONFIG
->>>
+msm_smd_tty driver provides tty device interface
+to 'DS' and 'GPSNMEA' streaming SMD ports.
 
-Something was tired already. It's time to sleep :)
-
-
-Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
+Cc: Brian Swetland <swetland@google.com>
+Signed-off-by: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
 ---
- arch/x86/pci/common.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/tty/serial/Kconfig       |    9 ++
+ drivers/tty/serial/Makefile      |    1 +
+ drivers/tty/serial/msm_smd_tty.c |  236 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 246 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/tty/serial/msm_smd_tty.c
 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 5fe7502..0a3e56a 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -17,8 +17,12 @@
- #include <asm/smp.h>
- #include <asm/pci_x86.h>
-
-+#ifdef CONFIG_PCI_MMCONFIG
- unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
-                                PCI_PROBE_MMCONF;
-+#else
-+unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2;
-+#endif
-
- unsigned int pci_early_dump_regs;
- static int pci_bf_sort;
-
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index b1682d7..33cbc89 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1595,4 +1595,13 @@ config SERIAL_PCH_UART
+ 	  This driver is for PCH(Platform controller Hub) UART of Intel EG20T
+ 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+ 	  Enabling PCH_DMA, this PCH UART works as DMA mode.
++
++config SERIAL_MSM_SMD
++	bool "Enable tty device interface for some SMD ports"
++	default n
++	depends on MSM_SMD
++	help
++	  Enables userspace clients to read and write to some streaming SMD
++	  ports via tty device interface for MSM chipset.
++
+ endmenu
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index 8ea92e9..0c6aefb 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -92,3 +92,4 @@ obj-$(CONFIG_SERIAL_MRST_MAX3110)	+= mrst_max3110.o
+ obj-$(CONFIG_SERIAL_MFD_HSU)	+= mfd.o
+ obj-$(CONFIG_SERIAL_IFX6X60)  	+= ifx6x60.o
+ obj-$(CONFIG_SERIAL_PCH_UART)	+= pch_uart.o
++obj-$(CONFIG_SERIAL_MSM_SMD)	+= msm_smd_tty.o
+diff --git a/drivers/tty/serial/msm_smd_tty.c b/drivers/tty/serial/msm_smd_tty.c
+new file mode 100644
+index 0000000..beeff1e
+--- /dev/null
++++ b/drivers/tty/serial/msm_smd_tty.c
+@@ -0,0 +1,236 @@
++/* drivers/tty/serial/msm_smd_tty.c
++ *
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ * Author: Brian Swetland <swetland@google.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/cdev.h>
++#include <linux/device.h>
++#include <linux/wait.h>
++
++#include <linux/tty.h>
++#include <linux/tty_driver.h>
++#include <linux/tty_flip.h>
++
++#include <mach/msm_smd.h>
++
++#define MAX_SMD_TTYS 32
++
++struct smd_tty_info {
++	struct tty_port port;
++	smd_channel_t *ch;
++};
++
++struct smd_tty_channel_desc {
++	int id;
++	const char *name;
++};
++
++static struct smd_tty_info smd_tty[MAX_SMD_TTYS];
++
++static const struct smd_tty_channel_desc smd_default_tty_channels[] = {
++	{ .id = 0, .name = "SMD_DS" },
++	{ .id = 27, .name = "SMD_GPSNMEA" },
++};
++
++static const struct smd_tty_channel_desc *smd_tty_channels =
++		smd_default_tty_channels;
++static int smd_tty_channels_len = ARRAY_SIZE(smd_default_tty_channels);
++
++static void smd_tty_notify(void *priv, unsigned event)
++{
++	unsigned char *ptr;
++	int avail;
++	struct smd_tty_info *info = priv;
++	struct tty_struct *tty;
++
++	if (event != SMD_EVENT_DATA)
++		return;
++
++	tty = tty_port_tty_get(&info->port);
++	if (!tty)
++		return;
++
++	for (;;) {
++		if (test_bit(TTY_THROTTLED, &tty->flags))
++			break;
++		avail = smd_read_avail(info->ch);
++		if (avail == 0)
++			break;
++
++		avail = tty_prepare_flip_string(tty, &ptr, avail);
++
++		if (smd_read(info->ch, ptr, avail) != avail) {
++			/* shouldn't be possible since we're in interrupt
++			** context here and nobody else could 'steal' our
++			** characters.
++			*/
++			pr_err("OOPS - smd_tty_buffer mismatch?!");
++		}
++
++		tty_flip_buffer_push(tty);
++	}
++
++	/* XXX only when writable and necessary */
++	tty_wakeup(tty);
++	tty_kref_put(tty);
++}
++
++static int smd_tty_port_activate(struct tty_port *tport, struct tty_struct *tty)
++{
++	int i, res = 0;
++	int n = tty->index;
++	const char *name = NULL;
++	struct smd_tty_info *info = smd_tty + n;
++
++	for (i = 0; i < smd_tty_channels_len; i++) {
++		if (smd_tty_channels[i].id == n) {
++			name = smd_tty_channels[i].name;
++			break;
++		}
++	}
++	if (!name)
++		return -ENODEV;
++
++	if (info->ch)
++		smd_kick(info->ch);
++	else
++		res = smd_open(name, &info->ch, info, smd_tty_notify);
++
++	if (!res)
++		tty->driver_data = info;
++
++	return res;
++}
++
++static void smd_tty_port_shutdown(struct tty_port *tport)
++{
++	struct smd_tty_info *info;
++	struct tty_struct *tty = tty_port_tty_get(tport);
++
++	info = tty->driver_data;
++	if (info->ch) {
++		smd_close(info->ch);
++		info->ch = 0;
++	}
++
++	tty->driver_data = 0;
++	tty_kref_put(tty);
++}
++
++static int smd_tty_open(struct tty_struct *tty, struct file *f)
++{
++	struct smd_tty_info *info = smd_tty + tty->index;
++
++	return tty_port_open(&info->port, tty, f);
++}
++
++static void smd_tty_close(struct tty_struct *tty, struct file *f)
++{
++	struct smd_tty_info *info = tty->driver_data;
++
++	tty_port_close(&info->port, tty, f);
++}
++
++static int smd_tty_write(struct tty_struct *tty,
++			 const unsigned char *buf, int len)
++{
++	struct smd_tty_info *info = tty->driver_data;
++	int avail;
++
++	/* if we're writing to a packet channel we will
++	** never be able to write more data than there
++	** is currently space for
++	*/
++	avail = smd_write_avail(info->ch);
++	if (len > avail)
++		len = avail;
++
++	return smd_write(info->ch, buf, len);
++}
++
++static int smd_tty_write_room(struct tty_struct *tty)
++{
++	struct smd_tty_info *info = tty->driver_data;
++	return smd_write_avail(info->ch);
++}
++
++static int smd_tty_chars_in_buffer(struct tty_struct *tty)
++{
++	struct smd_tty_info *info = tty->driver_data;
++	return smd_read_avail(info->ch);
++}
++
++static void smd_tty_unthrottle(struct tty_struct *tty)
++{
++	struct smd_tty_info *info = tty->driver_data;
++	smd_kick(info->ch);
++}
++
++static const struct tty_port_operations smd_tty_port_ops = {
++	.shutdown = smd_tty_port_shutdown,
++	.activate = smd_tty_port_activate,
++};
++
++static const struct tty_operations smd_tty_ops = {
++	.open = smd_tty_open,
++	.close = smd_tty_close,
++	.write = smd_tty_write,
++	.write_room = smd_tty_write_room,
++	.chars_in_buffer = smd_tty_chars_in_buffer,
++	.unthrottle = smd_tty_unthrottle,
++};
++
++static struct tty_driver *smd_tty_driver;
++
++static int __init smd_tty_init(void)
++{
++	int ret, i;
++
++	smd_tty_driver = alloc_tty_driver(MAX_SMD_TTYS);
++	if (smd_tty_driver == 0)
++		return -ENOMEM;
++
++	smd_tty_driver->owner = THIS_MODULE;
++	smd_tty_driver->driver_name = "smd_tty_driver";
++	smd_tty_driver->name = "smd";
++	smd_tty_driver->major = 0;
++	smd_tty_driver->minor_start = 0;
++	smd_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
++	smd_tty_driver->subtype = SERIAL_TYPE_NORMAL;
++	smd_tty_driver->init_termios = tty_std_termios;
++	smd_tty_driver->init_termios.c_iflag = 0;
++	smd_tty_driver->init_termios.c_oflag = 0;
++	smd_tty_driver->init_termios.c_cflag = B38400 | CS8 | CREAD;
++	smd_tty_driver->init_termios.c_lflag = 0;
++	smd_tty_driver->flags = TTY_DRIVER_RESET_TERMIOS |
++		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
++	tty_set_operations(smd_tty_driver, &smd_tty_ops);
++
++	ret = tty_register_driver(smd_tty_driver);
++	if (ret)
++		return ret;
++
++	for (i = 0; i < smd_tty_channels_len; i++) {
++		tty_port_init(&smd_tty[smd_tty_channels[i].id].port);
++		smd_tty[smd_tty_channels[i].id].port.ops = &smd_tty_port_ops;
++		tty_register_device(smd_tty_driver, smd_tty_channels[i].id, 0);
++	}
++
++	return 0;
++}
++
++module_init(smd_tty_init);
 -- 
+1.5.6.3
 
-                                                         Pavel.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
