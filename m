@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab1BIHDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 02:03:30 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53630
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750898Ab1BIHD3 (ORCPT
+	id S1752013Ab1BIHSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 02:18:52 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33376 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab1BIHSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 02:03:29 -0500
-Date: Tue, 08 Feb 2011 23:04:04 -0800 (PST)
-Message-Id: <20110208.230404.189683472.davem@davemloft.net>
-To: toshiharu-linux@dsn.okisemi.com
-Cc: netdev@vger.kernel.org, tomoya-linux@dsn.okisemi.com, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pch_gbe: Fix the issue which a driver locks when rx
- offload is set by ethtool
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110208.225702.104076116.davem@davemloft.net>
-References: <20110208.164030.242137610.davem@davemloft.net>
-	<3F7E1C17407A45E3834BF70553CB294C@hacdom.okisemi.com>
-	<20110208.225702.104076116.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Feb 2011 02:18:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=aiYhy00T0QYeDDAivS06ys+3xs4KdY3ZBO/eOQtY0QRT8ZT7YIHgyxVkfaHhLQVXDP
+         5SLeK/p1a2ubRdTIPbuPEAqMMkU/JUI7RmPi7eAj7mcQL3CDQxBdPGez1XR2IprHpOHy
+         weJZTMgreTR3SFdmkhKfBQkI37b8kmRMCBNIU=
+From: Alexander Strakh <cromlehg@gmail.com>
+To: dmitry.torokhov@gmail.com
+Cc: rydberg@euromail.se, oneukum@suse.de, oblivian@users.sourceforge.net,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Strakh <cromlehg@gmail.com>,
+        Alexander Strakh <strakh@ispras.ru>
+Subject: [PATCH 1/1] Fix error path in wacom_probe
+Date: Wed,  9 Feb 2011 10:37:28 +0300
+Message-Id: <1297237048-32714-1-git-send-email-strakh@ispras.ru>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 08 Feb 2011 22:57:02 -0800 (PST)
+From: Alexander Strakh <cromlehg@gmail.com>
 
-> From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
-> Date: Wed, 9 Feb 2011 11:04:11 +0900
-> 
->> From: David Miller <davem@davemloft.net>
->> Date: Tue, 08 Feb 2011 16:40:30 -0800 (PST)
->> 
->>>> @@ -531,12 +533,8 @@ void pch_gbe_reinit_locked(struct pch_gbe_adapter 
->>>> *adapter)
->>>>  {
->>>>  struct net_device *netdev = adapter->netdev;
->>>>
->>>> - rtnl_lock();
->>>> - if (netif_running(netdev)) {
->>>> - pch_gbe_down(adapter);
->>>> - pch_gbe_up(adapter);
->>>> - }
->>>> - rtnl_unlock();
->>>> + pch_gbe_down(adapter);
->>>> + pch_gbe_up(adapter);
->>>
->>>Are you sure you can just blindly delete the netif_running() check here?
->> 
->> Yes, sure.
->> pch_gbe_reinit_locked() is called after confirming of netif_running() except 
->> for pch_gbe_reset_task() function.
->> This netif_running() was redundant.
-> 
-> Thanks for explaining, applied, thank you.
+  In file drivers/input/tablet/wacom_sys.c in
+wacom_probe after error we can goto label2. In
+ this case function usb_free was not called. 
+ It will be right goto for the label tail3.
 
-Actually, I had to revert, this patch introduces an obvious compiler warning:
+        wacom->irq = usb_alloc_urb(0, GFP_KERNEL);
 
-drivers/net/pch_gbe/pch_gbe_main.c: In function 'pch_gbe_reinit_locked':
-drivers/net/pch_gbe/pch_gbe_main.c:533:21: warning: unused variable 'netdev'
+	...
 
-Sloppy build issues like this reflects very poorly upon the patch
-submitter.
+        /* Retrieve the physical and logical size for OEM devices */
+        error = wacom_retrieve_hid_descriptor(intf, features);
+        if (error)
+                goto fail2;
+	...
+	 fail3: usb_free_urb(wacom->irq);
+	 fail2: usb_free_coherent(dev, WACOM_PKGLEN_MAX, wacom_wac->data, wacom->data_dma);
+
+Replaced wrong transition.
+
+Signed-off-by: Alexander Strakh <strakh@ispras.ru>
+---
+ drivers/input/tablet/wacom_sys.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index fc38149..cf8fb9f 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -519,7 +519,7 @@ static int wacom_probe(struct usb_interface *intf, const struct usb_device_id *i
+ 	/* Retrieve the physical and logical size for OEM devices */
+ 	error = wacom_retrieve_hid_descriptor(intf, features);
+ 	if (error)
+-		goto fail2;
++		goto fail3;
+ 
+ 	wacom_setup_device_quirks(features);
+ 
+-- 
+1.7.1
+
