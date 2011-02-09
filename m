@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab1BIXy6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:54:58 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:47202 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755640Ab1BIXy5 (ORCPT
+	id S1756187Ab1BIX4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:56:46 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55450 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986Ab1BIX4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:54:57 -0500
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: wg@grandegger.com, socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com,
-        toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH 1/3 v2] pch_can: fix 800k comms issue
-Date: Thu, 10 Feb 2011 08:56:16 +0900
-Message-Id: <1297295776-3735-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.3.4
+	Wed, 9 Feb 2011 18:56:45 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 10 Feb 2011 08:50:34 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/4] memcg: operate on page quantities internally
+Message-Id: <20110210085034.a6c5d703.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
+References: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous patch "[PATCH 1/3] pch_can: fix 800k comms issue" is wrong.
-I should have modified tseg1_min not tseg2_min.
-Please discard previous patch and use this patch.
+On Wed,  9 Feb 2011 12:01:49 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-Currently, 800k comms fails since prop_seg set zero.
-(EG20T PCH CAN register of prop_seg must be set more than 1)
-To prevent prop_seg set to zero, change tseg2_min 1 to 2.
+> Hi,
+> 
+> this patch set converts the memcg charge and uncharge paths to operate
+> on multiples of pages instead of bytes.  It already was a good idea
+> before, but with the merge of THP we made a real mess by specifying
+> huge pages alternatingly in bytes or in number of regular pages.
+> 
+> If I did not miss anything, this should leave only res_counter and
+> user-visible stuff in bytes.  The ABI probably won't change, so next
+> up is converting res_counter to operate on page quantities.
+> 
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hmm, I think this should be done but think this should be postphoned, too.
+Because, IIUC, some guys will try to discuss charging against kernel objects
+in the next mm-summit. IMHO, it will be done against PAGE not against
+Object even if we do kernel object accouting. So this patch is okay for me.
+But I think it's better to go ahead after we confirm the way we go.
+How do you think ?
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index c42e972..0534eed 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -185,7 +185,7 @@ struct pch_can_priv {
- 
- static struct can_bittiming_const pch_can_bittiming_const = {
- 	.name = KBUILD_MODNAME,
--	.tseg1_min = 1,
-+	.tseg1_min = 2,
- 	.tseg1_max = 16,
- 	.tseg2_min = 1,
- 	.tseg2_max = 8,
--- 
-1.7.3.4
+Anyway, I welcome this patch.
+
+Thanks,
+-Kame
+
+
+
+> 	Hannes
+> 
+>  include/linux/sched.h |    4 +-
+>  mm/memcontrol.c       |  157 ++++++++++++++++++++++++-------------------------
+>  2 files changed, 78 insertions(+), 83 deletions(-)
+> 
 
