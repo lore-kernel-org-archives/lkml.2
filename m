@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab1BIJ6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 04:58:32 -0500
-Received: from mx1.zhaw.ch ([160.85.104.50]:64816 "EHLO mx1.zhaw.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001Ab1BIJ6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 04:58:30 -0500
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
-Cc: nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] MAINTAINERS: Add myself as a maintainer for altera_uart/altera_jtaguart
-Date: Wed,  9 Feb 2011 10:58:29 +0100
-Message-Id: <04c107d8032cbaffada91066c1d010b9274aebe1.1297245277.git.tklauser@distanz.ch>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1297245277.git.tklauser@distanz.ch>
-References: <cover.1297245277.git.tklauser@distanz.ch>
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.2.9.94515
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_800_899 0, __FRAUD_BODY_WEBMAIL 0, __FRAUD_WEBMAIL 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __LINES_OF_YELLING 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
+	id S1754001Ab1BIKHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:07:23 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51259 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab1BIKHW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 05:07:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=OnKwy2lLXo1dP4bSlGFdDTs/YMNqxOFEgN8ue9z1dy7boPeN7VrbWzJUQ7pvTMps0a
+         OtgslwBSPdrxa71uoQIxNAzK12G0EIH8okz/D8x+r5n9nUdrpVC1iO9rCZQS+jUS8hm9
+         ljBass+p3o1C6ZtVFpYNvg2vWcEcwTVsixoqQ=
+MIME-Version: 1.0
+In-Reply-To: <20110208163531.GO4384@bicker>
+References: <1296042555-29145-1-git-send-email-marek.belisko@open-nandra.com>
+	<1296042555-29145-4-git-send-email-marek.belisko@open-nandra.com>
+	<20110126130718.GN2721@bicker>
+	<20110126143045.GP2721@bicker>
+	<AANLkTi=ygn3Go7kCYe1fAo6OrKQaVVGaV_=xMgxM=u5s@mail.gmail.com>
+	<20110208163531.GO4384@bicker>
+Date: Wed, 9 Feb 2011 11:07:19 +0100
+Message-ID: <AANLkTi=u1M1Gu1y7kmaPSTd4CDUWkgowYLpQRSpwRyEY@mail.gmail.com>
+Subject: Re: [PATCH 4/5] staging: ft1000: Fix coding style in write_blk_fifo() function.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Dan Carpenter <error27@gmail.com>, Belisko Marek <marek.belisko@gmail.com>,
+        Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- MAINTAINERS |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+On Tue, Feb 8, 2011 at 5:35 PM, Dan Carpenter <error27@gmail.com> wrote:
+> On Tue, Feb 08, 2011 at 02:40:49PM +0100, Belisko Marek wrote:
+>> On Wed, Jan 26, 2011 at 3:30 PM, Dan Carpenter <error27@gmail.com> wrote:
+>> > Also when it does:
+>> >        memcpy(ft1000dev->tx_buf, *pUcFile, byte_length);
+>> >
+>> > That should probably be:
+>> >        memcpy(ft1000dev->tx_buf, *pUcFile, word_length * 4);
+>> No this shouldn't because before you have additional check:
+>> if (byte_length && ((byte_length % 64) == 0))
+>>         byte_length += 4;
+>>
+>> if (byte_length < 64)
+>>         byte_length = 68;
+>> So in my opinion byte_length should stay.
+>
+> Yes.  We make byte_length longer than the caller intended.  The caller
+> knows the size of the source buffer.  We have to pad the length of the
+> other buffer, but we should fill up the last part with zeroes instead
+> of reading past the end of the source buffer.
+>
+> (I am not very familiar with the code and I haven't looked outside this
+> function, so I may be wrong).
+>
+> Also I really bet that the thing where byte_length can't be a multiple
+> of 64 is bogus.  I've never heard of anything with a requirement like
+> that.
+Well I test it and it seems very strange and can't figure out why.
+Will remove all byte_length manipulations and device doesn't boot properly
+(finish with error). Add some prinkt to code figure out following:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ecef0f1..4e86a11 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -465,6 +465,16 @@ M:	Matt Turner <mattst88@gmail.com>
- L:	linux-alpha@vger.kernel.org
- F:	arch/alpha/
- 
-+ALTERA UART/JTAG UART SERIAL DRIVERS
-+M:	Tobias Klauser <tklauser@distanz.ch>
-+L:	linux-serial@vger.kernel.org
-+L:	nios2-dev@sopc.et.ntust.edu.tw (moderated for non-subscribers)
-+S:	Maintained
-+F:	drivers/tty/serial/altera_uart.c
-+F:	drivers/tty/serial/altera_jtaguart.c
-+F:	include/linux/altera_uart.h
-+F:	include/linux/altera_jtaguart.h
-+
- AMD GEODE CS5536 USB DEVICE CONTROLLER DRIVER
- M:	Thomas Dahlmann <dahlmann.thomas@arcor.de>
- L:	linux-geode@lists.infradead.org (moderated for non-subscribers)
+1. byte_length = word_length *4 is < 64 we need to send via usb 68
+bytes (despite
+4 bytes are behind 64 (without this it can't boot).
+
+2. also when e.g. word_length is 400 (400*4 = 1600) condition
+1600%64 == 0 is valid and we send 1604 bytes to usb (also not sure why
+but without this change it also doesn't work).
+
+For little explanation when we get to state code load we ask device
+how many bytes should send
+so we will get reply and send block via usb. So maybe it's related
+that we send in our assumption correct data
+but usb request something else to properly working ;)
+>
+> regards,
+> dan carpenter
+>
+>
+>
+
+thanks,
+
+marek
+
 -- 
-1.7.0.4
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+icq: 290551086
+web: http://open-nandra.com
