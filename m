@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab1BIODO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 09:03:14 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36706 "EHLO
+	id S1755541Ab1BIOD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 09:03:26 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44431 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494Ab1BIODC (ORCPT
+	with ESMTP id S1755571Ab1BIODX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 09:03:02 -0500
+	Wed, 9 Feb 2011 09:03:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=eCRmt5A8r2KgG4PAyuSwBXCQNesvLz4591OzYKIX2UnFdbfMC+EPhPmWkurJJEDZhM
-         b5DMrKLbUtzaMueBKM72YwWapVtY6Ay+7soc7VJO7/Qe25QuZ+4o3lNQyZaOUIcjf/57
-         8OSP93WQoyJSyCzrkD8gSPnR2Ehp5RDf+dLSc=
+        b=GzQipoKQzBkD/zsUZRHmEhHRr/dCFaM68T95MeAdj9DkFZorR4EvIiz47gsH6j1F1F
+         p6risvMX8XmqZL1aPfuQyKCZyUBdycNBFTYrcWJFC2o5KtX7l9SybU+4Ep6WJuY3onVc
+         uoIcRDkxofP8zWdlANQP4xrUt2KMwTfNk52TU=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 9/9] staging: ft1000: Fix coding style in card_reset_dsp function.
-Date: Wed,  9 Feb 2011 15:02:42 +0100
-Message-Id: <1297260162-19263-9-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 7/9] staging: ft1000: Fix coding style in fix_ft1000_read_dpram32 function.
+Date: Wed,  9 Feb 2011 15:02:40 +0100
+Message-Id: <1297260162-19263-7-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297260162-19263-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1297260162-19263-1-git-send-email-marek.belisko@open-nandra.com>
@@ -30,80 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   59 ++++++++++++++-----------
- 1 files changed, 33 insertions(+), 26 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   49 +++++++++++--------------
+ 1 files changed, 22 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 437aee3..e3b9934 100644
+index aa4ad7b..6195ee9 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -430,33 +430,40 @@ int fix_ft1000_write_dpram32(struct ft1000_device *ft1000dev, u16 indx, u8 *buff
+@@ -319,36 +319,31 @@ int ft1000_write_dpram16(struct ft1000_device *ft1000dev, u16 indx, u16 value, u
+ // Notes:
  //
- //  Returns:    None
- //-----------------------------------------------------------------------
--static void card_reset_dsp (struct ft1000_device *ft1000dev, bool value)
-+static void card_reset_dsp(struct ft1000_device *ft1000dev, bool value)
+ //---------------------------------------------------------------------------
+-int fix_ft1000_read_dpram32(struct ft1000_device *ft1000dev, u16 indx, u8 *buffer)
++int fix_ft1000_read_dpram32(struct ft1000_device *ft1000dev, u16 indx,
++			    u8 *buffer)
  {
--    u16 status = STATUS_SUCCESS;
--    u16 tempword;
+-    u8 buf[16];
+-    u16 pos;
+-    int ret = STATUS_SUCCESS;
 -
--    status = ft1000_write_register (ft1000dev, HOST_INTF_BE, FT1000_REG_SUP_CTRL);
--    status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_SUP_CTRL);
--    if (value)
+-    //DEBUG("fix_ft1000_read_dpram32: indx: %d  \n", indx);
+-    pos = (indx / 4)*4;
+-    ret = ft1000_read_dpram32(ft1000dev, pos, buf, 16);
+-    if (ret == STATUS_SUCCESS)
 -    {
--        DEBUG("Reset DSP\n");
--        status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
--        tempword |= DSP_RESET_BIT;
--        status = ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
+-        pos = (indx % 4)*4;
+-        *buffer++ = buf[pos++];
+-        *buffer++ = buf[pos++];
+-        *buffer++ = buf[pos++];
+-        *buffer++ = buf[pos++];
 -    }
 -    else
 -    {
--        DEBUG("Activate DSP\n");
--        status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
--	tempword |= DSP_ENCRYPTED;
--	tempword &= ~DSP_UNENCRYPTED;
--	status = ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
--        status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
--        tempword &= ~EFUSE_MEM_DISABLE;
--        tempword &= ~DSP_RESET_BIT;
--        status = ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
--        status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
+-        DEBUG("fix_ft1000_read_dpram32: DPRAM32 Read failed\n");
+-        *buffer++ = 0;
+-        *buffer++ = 0;
+-        *buffer++ = 0;
+-        *buffer++ = 0;
++	u8 buf[16];
++	u16 pos;
++	int ret = STATUS_SUCCESS;
+ 
 -    }
-+	u16 status = STATUS_SUCCESS;
-+	u16 tempword;
-+
-+	status = ft1000_write_register(ft1000dev, HOST_INTF_BE,
-+					FT1000_REG_SUP_CTRL);
-+	status = ft1000_read_register(ft1000dev, &tempword,
-+				      FT1000_REG_SUP_CTRL);
-+
-+	if (value) {
-+		DEBUG("Reset DSP\n");
-+		status = ft1000_read_register(ft1000dev, &tempword,
-+					      FT1000_REG_RESET);
-+		tempword |= DSP_RESET_BIT;
-+		status = ft1000_write_register(ft1000dev, tempword,
-+					       FT1000_REG_RESET);
++	pos = (indx / 4) * 4;
++	ret = ft1000_read_dpram32(ft1000dev, pos, buf, 16);
+ 
+-   //DEBUG("fix_ft1000_read_dpram32: data is  %x \n", *buffer);
+-   return ret;
++	if (ret == STATUS_SUCCESS) {
++		pos = (indx % 4) * 4;
++		*buffer++ = buf[pos++];
++		*buffer++ = buf[pos++];
++		*buffer++ = buf[pos++];
++		*buffer++ = buf[pos++];
 +	} else {
-+		DEBUG("Activate DSP\n");
-+		status = ft1000_read_register(ft1000dev, &tempword,
-+					      FT1000_REG_RESET);
-+		tempword |= DSP_ENCRYPTED;
-+		tempword &= ~DSP_UNENCRYPTED;
-+		status = ft1000_write_register(ft1000dev, tempword,
-+					       FT1000_REG_RESET);
-+		status = ft1000_read_register(ft1000dev, &tempword,
-+					      FT1000_REG_RESET);
-+		tempword &= ~EFUSE_MEM_DISABLE;
-+		tempword &= ~DSP_RESET_BIT;
-+		status = ft1000_write_register(ft1000dev, tempword,
-+					       FT1000_REG_RESET);
-+		status = ft1000_read_register(ft1000dev, &tempword,
-+					      FT1000_REG_RESET);
++		DEBUG("fix_ft1000_read_dpram32: DPRAM32 Read failed\n");
++		*buffer++ = 0;
++		*buffer++ = 0;
++		*buffer++ = 0;
++		*buffer++ = 0;
 +	}
+ 
++	return ret;
  }
  
- //---------------------------------------------------------------------------
+ 
 -- 
 1.7.1
 
