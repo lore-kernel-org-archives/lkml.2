@@ -1,92 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab1BIRaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 12:30:15 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19076 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab1BIRaA (ORCPT
+	id S1755410Ab1BIRar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 12:30:47 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:59767 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173Ab1BIR3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 12:30:00 -0500
-Date: Wed, 9 Feb 2011 09:28:51 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        scsi <linux-scsi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.38-rc4 (target_core: rmmod GP fault)
-Message-Id: <20110209092851.bba6c40c.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D52CEE2.0146:SCFMA4539814,ss=1,fgs=0
+	Wed, 9 Feb 2011 12:29:55 -0500
+X-SpamScore: -2
+X-BigFish: VPS-2(zzbb2cKzz1202hzz8275bhz32i668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LGD1XP-01-3VM-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Zachary Amsden <zamsden@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 3/6] KVM: X86: Let kvm-clock report the right tsc frequency
+Date: Wed, 9 Feb 2011 18:29:41 +0100
+Message-ID: <1297272584-22689-4-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1297272584-22689-1-git-send-email-joerg.roedel@amd.com>
+References: <1297272584-22689-1-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_64, nearly allmodconfig.  No target hardware.
+This patch changes the kvm_guest_time_update function to use
+TSC frequency the guest actually has for updating its clock.
 
-
-[  144.508473] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-[  144.509901] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.1/usb6/6-1/6-1.3/devnum
-[  144.512026] CPU 1 
-[  144.512026] Modules linked in: target_core_mod(-) configfs af_packet nfsd lockd nfs_acl auth_rpcgss exportfs sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf binfmt_misc dm_mirror dm_region_hash dm_log dm_multipath scsi_dh dm_mod mousedev joydev evdev mac_hid snd_hda_codec_analog usbmouse snd_hda_intel snd_hda_codec usbkbd usbhid hid snd_hwdep snd_seq 8250_pnp snd_seq_device dcdbas pcspkr sr_mod i2c_i801 cdrom tg3 sg iTCO_wdt snd_pcm 8250 iTCO_vendor_support rtc_cmos serial_core rtc_core snd_timer rtc_lib snd processor button thermal_sys soundcore intel_agp hwmon snd_page_alloc intel_gtt unix ide_pci_generic ide_core ata_generic pata_acpi ata_piix sd_mod crc_t10dif ext3 jbd mbcache uhci_hcd ohci_hcd ssb mmc_core pcmcia pcmcia_core firmware_class ehci_hcd usbcore nls_base [last unload!
- ed: microcode]
-[  144.512026] 
-[  144.512026] Pid: 2597, comm: rmmod Not tainted 2.6.38-rc4 #1 0TY565/OptiPlex 745                 
-[  144.512026] RIP: 0010:[<ffffffff810c3e5f>]  [<ffffffff810c3e5f>] __lock_acquire+0xd8/0x4e8
-[  144.512026] RSP: 0018:ffff88006df1bb78  EFLAGS: 00010006
-[  144.512026] RAX: 0000000000000002 RBX: 6b6b6b6b6b6b6be3 RCX: 0000000000000000
-[  144.512026] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 6b6b6b6b6b6b6be3
-[  144.512026] RBP: ffff88006df1bbd8 R08: 0000000000000001 R09: 0000000000000000
-[  144.512026] R10: 0000000000000006 R11: ffffffffa06ab0ef R12: 0000000000000000
-[  144.512026] R13: ffff88006dec3000 R14: 0000000000000000 R15: 0000000000000000
-[  144.512026] FS:  00007fe0320d36f0(0000) GS:ffff88007c600000(0000) knlGS:0000000000000000
-[  144.512026] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  144.512026] CR2: 0000003fadc7bf20 CR3: 000000006de4f000 CR4: 00000000000006e0
-[  144.512026] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  144.512026] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  144.512026] Process rmmod (pid: 2597, threadinfo ffff88006df1a000, task ffff88006dec3000)
-[  144.512026] Stack:
-[  144.512026]  0000000000000118 ffff8800000003a7 0000000000000005 00000000810b175b
-[  144.512026]  ffff88006df1bba8 0000000000000000 ffff88006dec3000 0000000000000000
-[  144.512026]  ffff88006dec3000 ffffffffa06ab0ef 0000000000000001 0000000000000000
-[  144.512026] Call Trace:
-[  144.512026]  [<ffffffffa06ab0ef>] ? spin_lock+0x15/0x1e [configfs]
-[  144.512026]  [<ffffffff810c436f>] lock_acquire+0x100/0x150
-[  144.512026]  [<ffffffffa06ab0ef>] ? spin_lock+0x15/0x1e [configfs]
-[  144.512026]  [<ffffffffa06ac40f>] ? detach_groups+0x91/0x12e [configfs]
-[  144.512026]  [<ffffffffa06ac40f>] ? detach_groups+0x91/0x12e [configfs]
-[  144.512026]  [<ffffffff81556300>] _raw_spin_lock+0x44/0xaf
-[  144.512026]  [<ffffffffa06ab0ef>] ? spin_lock+0x15/0x1e [configfs]
-[  144.512026]  [<ffffffff810c47db>] ? lock_release_nested+0xfb/0x133
-[  144.512026]  [<ffffffffa06ab0ef>] spin_lock+0x15/0x1e [configfs]
-[  144.512026]  [<ffffffffa06ab144>] dget+0x2e/0x56 [configfs]
-[  144.512026]  [<ffffffffa06ac3a4>] detach_groups+0x26/0x12e [configfs]
-[  144.512026]  [<ffffffffa06ac363>] configfs_detach_group+0x2d/0x48 [configfs]
-[  144.512026]  [<ffffffffa06ac41f>] detach_groups+0xa1/0x12e [configfs]
-[  144.512026]  [<ffffffffa06ac363>] configfs_detach_group+0x2d/0x48 [configfs]
-[  144.512026]  [<ffffffffa06ac41f>] detach_groups+0xa1/0x12e [configfs]
-[  144.512026]  [<ffffffffa06ac363>] configfs_detach_group+0x2d/0x48 [configfs]
-[  144.512026]  [<ffffffffa06ac41f>] detach_groups+0xa1/0x12e [configfs]
-[  144.512026]  [<ffffffffa06ac363>] configfs_detach_group+0x2d/0x48 [configfs]
-[  144.512026]  [<ffffffffa06ac41f>] detach_groups+0xa1/0x12e [configfs]
-[  144.512026]  [<ffffffffa06ac363>] configfs_detach_group+0x2d/0x48 [configfs]
-[  144.512026]  [<ffffffffa06ace26>] configfs_unregister_subsystem+0x105/0x194 [configfs]
-[  144.512026]  [<ffffffffa06baf55>] target_core_exit_configfs+0x185/0x1eb [target_core_mod]
-[  144.512026]  [<ffffffff810d46a8>] sys_delete_module+0x2d6/0x368
-[  144.512026]  [<ffffffff8155602d>] ? lockdep_sys_exit_thunk+0x35/0x67
-[  144.512026]  [<ffffffff81555fb7>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[  144.512026]  [<ffffffff8100e942>] system_call_fastpath+0x16/0x1b
-[  144.512026] Code: 05 8f 32 8d 01 e8 6c b1 fb ff 48 ff 05 8b 32 8d 01 48 ff 05 8c 32 8d 01 48 ff 05 95 32 8d 01 e9 e3 03 00 00 48 ff 05 81 32 8d 01 <48> 81 3b 40 5f 26 82 75 07 48 ff 05 81 32 8d 01 83 fe 01 77 13 
-[  144.512026] RIP  [<ffffffff810c3e5f>] __lock_acquire+0xd8/0x4e8
-[  144.512026]  RSP <ffff88006df1bb78>
-[  144.512026] ---[ end trace 37e0ba5347875330 ]---
-
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ arch/x86/include/asm/kvm_host.h |    2 ++
+ arch/x86/kvm/svm.c              |    8 ++++++++
+ arch/x86/kvm/vmx.c              |    6 ++++++
+ arch/x86/kvm/x86.c              |   12 ++++++++++--
+ 4 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index ffd7f8d..9686950 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -592,6 +592,8 @@ struct kvm_x86_ops {
+ 
+ 	void (*write_tsc_offset)(struct kvm_vcpu *vcpu, u64 offset);
+ 
++	bool (*use_virtual_tsc_khz)(struct kvm_vcpu *vcpu);
++
+ 	void (*get_exit_info)(struct kvm_vcpu *vcpu, u64 *info1, u64 *info2);
+ 	const struct trace_print_flags *exit_reasons_str;
+ };
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index c96c0a6..f51f757 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -905,6 +905,13 @@ static void svm_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
+ 	mark_dirty(svm->vmcb, VMCB_INTERCEPTS);
+ }
+ 
++static bool svm_use_virtual_tsc_khz(struct kvm_vcpu *vcpu)
++{
++	struct vcpu_svm *svm = to_svm(vcpu);
++
++	return svm->tsc_scale.enabled;
++}
++
+ static void init_vmcb(struct vcpu_svm *svm)
+ {
+ 	struct vmcb_control_area *control = &svm->vmcb->control;
+@@ -3976,6 +3983,7 @@ static struct kvm_x86_ops svm_x86_ops = {
+ 
+ 	.write_tsc_offset = svm_write_tsc_offset,
+ 	.adjust_tsc_offset = svm_adjust_tsc_offset,
++	.use_virtual_tsc_khz = svm_use_virtual_tsc_khz,
+ 
+ 	.set_tdp_cr3 = set_tdp_cr3,
+ };
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index ae4f02d..c227a6b 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1164,6 +1164,11 @@ static void vmx_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
+ 	vmcs_write64(TSC_OFFSET, offset + adjustment);
+ }
+ 
++static bool vmx_use_virtual_tsc_khz(struct kvm_vcpu *vcpu)
++{
++	return false;
++}
++
+ /*
+  * Reads an msr value (of 'msr_index') into 'pdata'.
+  * Returns 0 on success, non-0 otherwise.
+@@ -4443,6 +4448,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 
+ 	.write_tsc_offset = vmx_write_tsc_offset,
+ 	.adjust_tsc_offset = vmx_adjust_tsc_offset,
++	.use_virtual_tsc_khz = vmx_use_virtual_tsc_khz,
+ 
+ 	.set_tdp_cr3 = vmx_set_cr3,
+ };
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8575d85..597abc8 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -979,6 +979,14 @@ static inline int kvm_tsc_changes_freq(void)
+ 	return ret;
+ }
+ 
++static u64 vcpu_tsc_khz(struct kvm_vcpu *vcpu)
++{
++	if (kvm_x86_ops->use_virtual_tsc_khz(vcpu))
++		return vcpu->kvm->arch.virtual_tsc_khz;
++	else
++		return __this_cpu_read(cpu_tsc_khz);
++}
++
+ static inline u64 nsec_to_cycles(u64 nsec)
+ {
+ 	u64 ret;
+@@ -1010,6 +1018,7 @@ static u64 compute_guest_tsc(struct kvm_vcpu *vcpu, s64 kernel_ns)
+ 	return tsc;
+ }
+ 
++
+ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+ {
+ 	struct kvm *kvm = vcpu->kvm;
+@@ -1072,8 +1081,7 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+ 	local_irq_save(flags);
+ 	kvm_get_msr(v, MSR_IA32_TSC, &tsc_timestamp);
+ 	kernel_ns = get_kernel_ns();
+-	this_tsc_khz = __this_cpu_read(cpu_tsc_khz);
+-
++	this_tsc_khz = vcpu_tsc_khz(v);
+ 	if (unlikely(this_tsc_khz == 0)) {
+ 		local_irq_restore(flags);
+ 		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
+-- 
+1.7.1
+
+
