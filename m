@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab1BIJnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 04:43:31 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:57903 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab1BIJna convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Wed, 9 Feb 2011 04:43:30 -0500
-Message-Id: <4D526FF40200007800030FEF@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 09 Feb 2011 09:44:04 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jiri Slaby" <jslaby@suse.cz>
-Cc: "Tim Deegan" <Tim.Deegan@citrix.com>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>, <akpm@linux-foundation.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix jiffy calculations in calibrate_delay_direct
-	 to handle overflow
-References: <4D525EF00200007800030F0F@vpn.id2.novell.com>
- <4D525CA8.60604@suse.cz>
-In-Reply-To: <4D525CA8.60604@suse.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753529Ab1BIJqS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 04:46:18 -0500
+Received: from www.tglx.de ([62.245.132.106]:45350 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753058Ab1BIJqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 04:46:17 -0500
+Date: Wed, 9 Feb 2011 10:46:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/4] XEN: Interrupt cleanups
+In-Reply-To: <1297243631.9388.258.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.LFD.2.00.1102091041450.31804@localhost6.localdomain6>
+References: <20110205200108.921707839@linutronix.de>  <4D50641B.2090006@goop.org>  <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>  <4D506AE6.6080900@goop.org>  <1297173811.9388.95.camel@zakaz.uk.xensource.com> 
+ <alpine.LFD.2.00.1102081544290.31804@localhost6.localdomain6>  <1297177506.9388.135.camel@zakaz.uk.xensource.com>  <alpine.LFD.2.00.1102081619410.31804@localhost6.localdomain6>  <20110208162045.GB4606@dumpdata.com>
+ <1297243631.9388.258.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 09.02.11 at 10:21, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 02/09/2011 09:31 AM, Jan Beulich wrote:
->> Fixes a hang when booting as dom0 under Xen, when jiffies can be
->> quite large by the time the kernel init gets this far.
+B1;2401;0cOn Wed, 9 Feb 2011, Ian Campbell wrote:
+
+> On Tue, 2011-02-08 at 16:20 +0000, Konrad Rzeszutek Wilk wrote:
 > 
-> As I wrote this might happen if the boot till this point takes ~ 5
-> minutes because we start at -5 minutes.
+> > This is what I've in the stable/irq.rework [...] Please tell me if I messed up.
 > 
-> That said, is this a candidate for stable? (If so, please CC stable.)
+> I tested v2.6.38-rc4:
+> += git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip irq/for-xen
+> += git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen stable/irq.rework
+> 
+> and all seems fine.
 
-Honestly, I'm not certain (given that mainline Xen Dom0 support
-is still only in its beginnings).
+stable/irq.rework still has the resume hackery inside.
 
-Jan
+Thanks,
 
+	tglx
