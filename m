@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab1BIXqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:46:42 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56586 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab1BIXql convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:46:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NshZuXEO4TeahGJsZlJSxm3EJhAmqfMdDaKd9xag5Eq2FIGtqXUJJuO3HV3f1ly7KO
-         MJID+fCI73v5fTL9Yq8T1rH6ryDXD+u5HcUIRYZLvX4RzT117M4HErylr4svKjZikFlM
-         aBAnGiJ0nGt9RVF6e9CsxheZzrV7G/yxgRpV4=
+	id S1756141Ab1BIXtC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:49:02 -0500
+Received: from mail001.aei.ca ([206.123.6.130]:34055 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755232Ab1BIXtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 18:49:00 -0500
+From: Ed Tomlinson <edt@aei.ca>
+To: Anand Gadiyar <gadiyar@ti.com>
+Subject: Re: [BUG] usb problems in .38-rc3+
+Date: Wed, 9 Feb 2011 18:48:50 -0500
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc4-crc+; KDE/4.6.0; x86_64; ; )
+Cc: Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-usb@vger.kernel.org
+References: <201102051417.58953.edt@aei.ca> <201102082331.27644.edt@aei.ca> <c037b856cfa01b5c7014873850cd07a9@mail.gmail.com>
+In-Reply-To: <c037b856cfa01b5c7014873850cd07a9@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4D52D091.1000504@vflare.org>
-References: <AANLkTi=CEXiOdqPZgQZmQwatHqZ_nsnmnVhwpdt=7q3f@mail.gmail.com>
-	<5c529b08-cf36-43c7-b368-f3f602faf358@default>
-	<4D52D091.1000504@vflare.org>
-Date: Thu, 10 Feb 2011 08:46:40 +0900
-Message-ID: <AANLkTimuivx6kroZ0v0J8GZQmBngHHDTfztGamnp2UJk@mail.gmail.com>
-Subject: Re: [PATCH V2 2/3] drivers/staging: zcache: host services and PAM services
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, gregkh@suse.de,
-        Chris Mason <chris.mason@oracle.com>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, matthew@wil.cx,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        kosaki.motohiro@jp.fujitsu.com, sfr@canb.auug.org.au,
-        wfg@mail.ustc.edu.cn, tytso@mit.edu, viro@zeniv.linux.org.uk,
-        hughd@google.com, hannes@cmpxchg.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102091848.51492.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nitin,
+On Wednesday 09 February 2011 01:17:40 Anand Gadiyar wrote:
+> Ed Tomlinson wrote:
+> > On Tuesday 08 February 2011 01:46:16 Gadiyar, Anand wrote:
+> > > On Tue, Feb 8, 2011 at 7:45 AM, Ed Tomlinson <edt@aei.ca> wrote:
+> > > > I tried bisecting without much luck.  It started with about 4000
+> commits to check.  It was still bad
+> > > > when it reached the first 1000 commits post .37.  Then all boots
+> started crashing.  I think its possible
+> > > > to restrict a bisect to a directory - if so, what dir should I try?
+> > > >
+> > >
+> > > Maybe drivers/ or drivers/usb would be enough for a first attempt?
+> > > I usually start there.
+> > >
+> > > You could just do:
+> > >
+> > > git bisect start -- [path]
+> > >
+> > > to restrict bisection to commits that touch [path].
+> >
+> > This is as far as I can get:
+> >
+> > # bad: [100b33c8bd8a3235fd0b7948338d6cbb3db3c63d] Linux 2.6.38-rc4
+> > # good: [3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5] Linux 2.6.37
+> > # good: [387c31c7e5c9805b0aef8833d1731a5fe7bdea14] Linux 2.6.37-rc8
+> > # good: [90a8a73c06cc32b609a880d48449d7083327e11a] Linux 2.6.37-rc7
+> > # good: [c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4] Linux 2.6.37-rc1
+> > git bisect start 'v2.6.38-rc4' 'v2.6.37' 'v2.6.37-rc8' 'v2.6.37-rc7'
+> 'v2.6.37-rc1' '--' 'drivers/usb' 'drivers/bluetooth'
+> > # good: [5cdc5bd8b2b1190cb54548c03194b154b4892e2a] Merge branch
+> 'musb-hw' of git://gitorious.org/usb/usb into musb
+> > git bisect good 5cdc5bd8b2b1190cb54548c03194b154b4892e2a
+> > # bad: [f2c565e223af39ed38be5c84b1a37b591b22db83] xHCI: replace
+> dev_dbg() with xhci_dbg()
+> > git bisect bad f2c565e223af39ed38be5c84b1a37b591b22db83
+> > # good: [2af10844eb6ed104f9505bf3a7ba3ceb02264f31] USB: Merge 2.6.37-rc5
+> into usb-next
+> > git bisect good 2af10844eb6ed104f9505bf3a7ba3ceb02264f31
+> > # bad: [3e5b08cbbf78bedd316904ab0cf3b27119433ee5] Merge branch
+> 'usb-next' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6
+> > git bisect bad 3e5b08cbbf78bedd316904ab0cf3b27119433ee5
+> > # good: [1051b9f0f9eab8091fe3bf98320741adf36b4cfa] Merge branch
+> 'for-rmk' of git://git.pengutronix.de/git/imx/linux-2.6 into devel-stable
+> > git bisect good 1051b9f0f9eab8091fe3bf98320741adf36b4cfa
+> >
+> > After this the kernel does not build.
+> >
+> > Any clues?
+> 
+> Is it easier to just fix the build break locally and proceed?
+> 
+> I'm afraid I don't know how to skip a step during bisection.
+> I try narrowing things down manually.
+> 
+> Given that 2.6.37 is fine, can you check if v2.6.38-rc1 works?
+> If it doesn't work, then this break was caused by something that
+> went in during the merge window (which I believe is most likely).
+> 
+> You may be able to get somewhere by using snapshots of
+> linux-next as of particular days. They are available at [1]
+> as a single patch against a tag from Linus' tree.
+> Warning: This could be tedious, maybe not much more than a
+> git-bisect. Maybe easier to try and work it out from the
+> code.
 
-Sorry for late response.
+one interesting point.  Its NOT 
 
-On Thu, Feb 10, 2011 at 2:36 AM, Nitin Gupta <ngupta@vflare.org> wrote:
-> On 02/09/2011 11:39 AM, Dan Magenheimer wrote:
->>
->>
->>> From: Minchan Kim [mailto:minchan.kim@gmail.com]
->>
->>> As I read your comment, I can't find the benefit of zram compared to
->>> frontswap.
->>
->> Well, I am biased, but I agree that frontswap is a better technical
->> solution than zram. ;-)  But "dynamic-ity" is very important to
->> me and may be less important to others.
->>
->
->
-> I agree that frontswap is better than zram when considering swap as the use
-> case - no bio overhead, dynamic resizing. However, zram being a *generic*
-> block-device has some unique cases too like hosting files on /tmp, various
-> caches under /var or any place where a compressed in-memory block device can
-> help.
+3e5b08cbbf78bedd316904ab0cf3b27119433ee5 Merge branch 'usb-next' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6
 
-Yes. I mentioned that benefit but I am not sure the reason is enough.
-What I had in mind long time ago is that zram's functionality into brd.
-So someone who want to compress contents could use it with some mount
-option to enable compression.
-By such way, many ramdisk user can turn it on easily.
-If many user begin using the brd, we can see many report about
-performance then solve brd performance s as well as zcache world-wide
-usage.
+Building a kernel with the merge preceeding this one (da40d036fd716f0efb2917076220814b1e927ae1) still has the problem.  
 
-Hmm,  the idea is too late?
+One other symptom I've noticed.  With .37 kde 4.5/6's bluedevil bluetooth control sees the adapter, 
+with the failing post .37 kernels it does not.
 
->
-> So, frontswap and zram have overlapping use case of swap but are not the
-> same.
-
-If we can insert zram's functionality into brd, maybe there is no
-reason to coexist.
-
-
->
-> Thanks,
-> Nitin
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Ed
