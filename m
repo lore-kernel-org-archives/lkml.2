@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab1BIN3N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 08:29:13 -0500
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:47228 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754718Ab1BIN3M (ORCPT
+	id S1755117Ab1BINeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 08:34:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52083 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754718Ab1BINeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 08:29:12 -0500
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Viktar Palstsiuk <viktar.palstsiuk@promwad.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [PATCH] atmel_serial: enable PPS support
-Date: Wed,  9 Feb 2011 14:26:13 +0100
-Message-Id: <1297257973-11173-1-git-send-email-plagnioj@jcrosoft.com>
-X-Mailer: git-send-email 1.7.2.3
-X-Ovh-Tracer-Id: 10855363953281051645
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Wed, 9 Feb 2011 08:34:05 -0500
+Date: Wed, 9 Feb 2011 14:34:00 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
+        "Arnd Bergmann (maintainer:GENERIC INCLUDE/A...)" <arnd@arndb.de>,
+        "Andrew Morton (commit_signer:4/8=50%)" <akpm@linux-foundation.org>,
+        "Mark Brown (commit_signer:1/8=12%)" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "Anton Vorontsov (commit_signer:1/8=12%)" <cbouatmailru@gmail.com>,
+        "Greg Kroah-Hartman (commit_signer:1/8=12%)" <greg@kroah.com>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] gpio: make newer functionality available outside of
+ GPIOLIB
+Message-ID: <20110209133400.GB2366@pengutronix.de>
+References: <1297205075-11396-1-git-send-email-w.sang@pengutronix.de>
+ <4D51CF3D.9000103@metafoo.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
+Content-Disposition: inline
+In-Reply-To: <4D51CF3D.9000103@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
 
-Enables PPS support in atmel serial driver to make PPS API working.
+--hQiwHBbRI9kgIhsi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
----
- drivers/tty/serial/atmel_serial.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 2a1d52f..4caf017 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1240,6 +1240,21 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-+static void atmel_set_ldisc(struct uart_port *port)
-+{
-+	int line = port->line;
-+
-+	if (line >= port->state->port.tty->driver->num)
-+		return;
-+
-+	if (port->state->port.tty->ldisc->ops->num == N_PPS) {
-+		port->flags |= UPF_HARDPPS_CD;
-+		atmel_enable_ms(port);
-+	} else {
-+		port->flags &= ~UPF_HARDPPS_CD;
-+	}
-+}
-+
- /*
-  * Return string describing the specified port
-  */
-@@ -1380,6 +1395,7 @@ static struct uart_ops atmel_pops = {
- 	.shutdown	= atmel_shutdown,
- 	.flush_buffer	= atmel_flush_buffer,
- 	.set_termios	= atmel_set_termios,
-+	.set_ldisc	= atmel_set_ldisc,
- 	.type		= atmel_type,
- 	.release_port	= atmel_release_port,
- 	.request_port	= atmel_request_port,
--- 
-1.7.2.3
+> Given that these functions are pretty generic and build on top of the gen=
+eric
+> gpio interface I think they should be available if GENERIC_GPIO is select=
+ed and
+> not only just through GPIOLIB. Otherwise all the archs not using gpiolib =
+but
+> providing the gpio api would have to be patched as well.
 
+I agree that could be argumented for these calls. Will try something
+later if nobody objects that approach.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--hQiwHBbRI9kgIhsi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk1Sl8gACgkQD27XaX1/VRtilACfXnxlKX0baCO8Dj6/Ax0JLw7I
+Jh8An3e8cIiFkGF0I2Tvz7TadpMSBTFF
+=P6FG
+-----END PGP SIGNATURE-----
+
+--hQiwHBbRI9kgIhsi--
