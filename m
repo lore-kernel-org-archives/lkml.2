@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab1BIO3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 09:29:12 -0500
-Received: from 26.mail-out.ovh.net ([91.121.27.225]:55597 "HELO
-	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755014Ab1BIO3L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 09:29:11 -0500
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Viktar Palstsiuk <viktar.palstsiuk@promwad.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [PATCH v2] atmel_serial: enable PPS support
-Date: Wed,  9 Feb 2011 15:26:13 +0100
-Message-Id: <1297261573-17244-1-git-send-email-plagnioj@jcrosoft.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1297257973-11173-1-git-send-email-plagnioj@jcrosoft.com>
-References: <1297257973-11173-1-git-send-email-plagnioj@jcrosoft.com>
-X-Ovh-Tracer-Id: 11867547968129641469
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	id S1755639Ab1BIOfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 09:35:48 -0500
+Received: from mail.roph.ro ([217.10.213.254]:44740 "EHLO roph.ro"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755214Ab1BIOfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 09:35:47 -0500
+Message-ID: <bc92dc236890e6735079a9f21b37cd7b.squirrel@mail.roph.ro>
+Date: Wed, 9 Feb 2011 17:06:09 +0200
+Subject: (($5,000USD ENCLOSED))
+From: "UNITED NATIONS" <aesculap.prod@roph.ro>
+Reply-To: unitednations_organization03@rocketmail.com
+User-Agent: SquirrelMail/1.4.19-1.fc9
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-roph-MailScanner-Information: Please contact the ISP for more information
+X-roph-MailScanner-ID: 89FF6B3C271.A567E
+X-roph-MailScanner: Found to be clean
+X-roph-MailScanner-SpamScore: ssss
+X-roph-MailScanner-From: aesculap.prod@roph.ro
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
 
-Enables PPS support in atmel serial driver to make PPS API working.
 
-Signed-off-by: Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
----
-v2:
 
-	forget to update the prototype when rebase to upstream
+How are you?
 
-Best Regards,
-J.
- drivers/tty/serial/atmel_serial.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+We happily announce to you the draw of the United Nations programs held on
+the 26th January, 2011 in Nigeria. Your e-mail address attached to ticket
+number: 564 75600545 188. You have been compensated with the sum of 
+$500,000.00 USD and payment will be remitted to you via western union
+money transfer.
 
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 2a1d52f..f119d17 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -1240,6 +1240,21 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
- 	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
-+static void atmel_set_ldisc(struct uart_port *port, int new)
-+{
-+	int line = port->line;
-+
-+	if (line >= port->state->port.tty->driver->num)
-+		return;
-+
-+	if (port->state->port.tty->ldisc->ops->num == N_PPS) {
-+		port->flags |= UPF_HARDPPS_CD;
-+		atmel_enable_ms(port);
-+	} else {
-+		port->flags &= ~UPF_HARDPPS_CD;
-+	}
-+}
-+
- /*
-  * Return string describing the specified port
-  */
-@@ -1380,6 +1395,7 @@ static struct uart_ops atmel_pops = {
- 	.shutdown	= atmel_shutdown,
- 	.flush_buffer	= atmel_flush_buffer,
- 	.set_termios	= atmel_set_termios,
-+	.set_ldisc	= atmel_set_ldisc,
- 	.type		= atmel_type,
- 	.release_port	= atmel_release_port,
- 	.request_port	= atmel_request_port,
+
+USD$5,000 has already be send to you since last week but we were unable to
+give you the information on phone for the past days but due to bad network
+here, So we decided to send you the details via email today.
+
+Here is the western union information to pick up the USD5000.00.
+
+MTCN : 782 543 4236
+SENDER'S NAME: MARYLIN JOHNSON
+TEXT QUESTION: IN GOD
+ANSWER:WE TRUST
+AMOUNT SENT: $5000.00 USD
+COUNTRY:NIGERIA
+
+Thanks
+Mrs. Linda Hall
+
+
+
+
+
+
+
+
 -- 
-1.7.2.3
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
 
