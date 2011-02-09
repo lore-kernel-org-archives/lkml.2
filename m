@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab1BIBqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 20:46:46 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:39012 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab1BIBqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 20:46:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=qlBy8nEZKsuIX2Ox5ReGG76JuQanZRmwYAyrn6HD/r2RjA0zc/q2xxyu4jAG9sPhz/
-         uVgBm/ft/yUAIIsXmbHlkZK7U/Ze3Bo7999d6ulR+ZMbItJ27bQVpR5lSdycu/53omXe
-         pDlcQ9ykIAO4u3rj/uFs2++lQGg7wAdyEbwx0=
-MIME-Version: 1.0
-In-Reply-To: <1297174680.13327.107.camel@laptop>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
-	<20110208101730.GB7020@liondog.tnic>
-	<1297161712.13327.100.camel@laptop>
-	<20110208121108.GA4824@zhy>
-	<20110208133457.GA5813@zhy>
-	<1297172906.13327.104.camel@laptop>
-	<1297174680.13327.107.camel@laptop>
-Date: Wed, 9 Feb 2011 09:46:44 +0800
-Message-ID: <AANLkTikb8-4+5xmuHQ-woA30Xtmaf95aKifnPSx8yTCJ@mail.gmail.com>
-Subject: Re: lockdep: possible reason: unannotated irqs-off. (was: Re: Linux 2.6.38-rc4)
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, tglx <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756194Ab1BICBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 21:01:30 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:60268 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756171Ab1BICB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 21:01:28 -0500
+Date: Wed, 9 Feb 2011 13:01:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dtor@vmware.com>
+Subject: linux-next: build failure after merge of the rr tree
+Message-Id: <20110209130115.f340396e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__9_Feb_2011_13_01_15_+1100_3R4j2E/Ed4RVv.YA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 10:18 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-02-08 at 14:48 +0100, Peter Zijlstra wrote:
->>
->> Well that and modifying softirq bits for a lockdep annotation really
->> feels wrong.
->
-> How about we revert it for this release and try again later?
+--Signature=_Wed__9_Feb_2011_13_01_15_+1100_3R4j2E/Ed4RVv.YA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No problem.
+Hi Rusty,
 
-I'll take another look at this issue later.
+After merging the rr tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Thanks,
-Yong
+drivers/net/myri10ge/myri10ge.c: In function 'myri10ge_select_firmware':
+drivers/net/myri10ge/myri10ge.c:3341: error: request for member 'perm' in s=
+omething not a structure or union
+drivers/net/myri10ge/myri10ge.c:3341: error: request for member 'perm' in s=
+omething not a structure or union
+drivers/net/myri10ge/myri10ge.c:3341: error: request for member 'perm' in s=
+omething not a structure or union
+drivers/net/myri10ge/myri10ge.c:3349: error: request for member 'perm' in s=
+omething not a structure or union
+drivers/net/myri10ge/myri10ge.c:3349: error: request for member 'perm' in s=
+omething not a structure or union
+drivers/net/myri10ge/myri10ge.c:3349: error: request for member 'perm' in s=
+omething not a structure or union
+
+Caused by commit b3e402b450f954d0a8ec04e05433654d4a9df2a6 ("module: deal
+with alignment issues in built-in module parameters") so I have used the
+rr tree from next-20110208 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__9_Feb_2011_13_01_15_+1100_3R4j2E/Ed4RVv.YA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNUfVrAAoJEDMEi1NhKgbs72kH/i1xJs8LlC6wkBvHYxhpU0x9
+pHalxu1tFHycy1XcB2kgiaxUeA7jeRPwPNnKCTv6ENO0XPf7+08z6dt//2rJrxGy
+lTNWDrxzfxcdOkM0sM0WQSfUAz7s9xpV6yL2Okk0V6tnwwiMYr9CPvEL1fKHkxmr
+bf7rduEENo6qzPw+5tcaIzw+XybjJ2mg+p2854rxoLv47kOjB94r8JPzrvGnK+xJ
+aUMFROWcyKeKnyu9sknFPlQBvQB0WT6FS658HDBRgn/n5UhHktmxOqn6/Ws8nBww
+YEnEX29M9COdrJza7ct2TFdOlTnlOVZH3QJEbH8pZKcSGM8snA4GrV8pE6cSP94=
+=d4BN
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__9_Feb_2011_13_01_15_+1100_3R4j2E/Ed4RVv.YA--
