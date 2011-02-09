@@ -1,70 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1BIKQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:16:34 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:31029 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab1BIKQd (ORCPT
+	id S1753380Ab1BIKTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:19:23 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57811 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab1BIKTV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:16:33 -0500
-X-IronPort-AV: E=Sophos;i="4.60,446,1291611600"; 
-   d="scan'208";a="134991118"
-Subject: Re: [patch 0/4] XEN: Interrupt cleanups
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1102091046240.31804@localhost6.localdomain6>
-References: <20110205200108.921707839@linutronix.de>
-	 <4D50641B.2090006@goop.org>
-	 <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>
-	 <4D506AE6.6080900@goop.org>
-	 <1297173811.9388.95.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.00.1102081544290.31804@localhost6.localdomain6>
-	 <1297177506.9388.135.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.00.1102081619410.31804@localhost6.localdomain6>
-	 <20110208162045.GB4606@dumpdata.com>
-	 <1297243631.9388.258.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.00.1102091041450.31804@localhost6.localdomain6>
-	 <alpine.LFD.2.00.1102091046240.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Wed, 9 Feb 2011 10:16:30 +0000
-Message-ID: <1297246590.9388.329.camel@zakaz.uk.xensource.com>
+	Wed, 9 Feb 2011 05:19:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EuVT2wT+XlQ0GWmzTkdcojoxGbUtPxijZGqdVy2qZ68K1u96EJ9m0jMWdCQlG2G0K+
+         jfq5LlmZo91PTsOs1vtA9XkwUocR+3yMlOEGCf/uK2r9ApZY2ZxQBZkkGN0H3wdVw9MS
+         6jYqK2/yEN8ysY7WfAQmFoybP+KvnAxOHNxUE=
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTin7YeKtH_=M0w_R=AE9OGmckgqp7nEsEzhsz_7M@mail.gmail.com>
+References: <AANLkTin7YeKtH_=M0w_R=AE9OGmckgqp7nEsEzhsz_7M@mail.gmail.com>
+Date: Wed, 9 Feb 2011 11:19:20 +0100
+Message-ID: <AANLkTin4=zFneKTgzLJWHxUgzno-+pgRdsSOetk20NMQ@mail.gmail.com>
+Subject: Re: 2.6.38-rc3: reiserfs: inconsistent lock state
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: Alexander Beregalov <a.beregalov@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 09:48 +0000, Thomas Gleixner wrote:
-> On Wed, 9 Feb 2011, Thomas Gleixner wrote:
-> 
-> > B1;2401;0cOn Wed, 9 Feb 2011, Ian Campbell wrote:
-> > 
-> > > On Tue, 2011-02-08 at 16:20 +0000, Konrad Rzeszutek Wilk wrote:
-> > > 
-> > > > This is what I've in the stable/irq.rework [...] Please tell me if I messed up.
-> > > 
-> > > I tested v2.6.38-rc4:
-> > > += git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip irq/for-xen
-> > > += git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen stable/irq.rework
-> > > 
-> > > and all seems fine.
-> > 
-> > stable/irq.rework still has the resume hackery inside.
-> 
-> Also please check whether your stuff compiles and works with the
-> following patch. x86 should be fine, if not please yell.
+It looks lik the bug i am chasing... see post by myself on this list
 
-Applied on top of the above += your 4/4 patch.
-
-Compiled and tested as dom0 and PV domU -- Works For Me (tm), incl PV
-migration.
-
-Thanks,
-Ian.
-
-
+On Sun, Feb 6, 2011 at 6:16 PM, Alexander Beregalov
+<a.beregalov@gmail.com> wrote:
+> Hi Frederic,
+>
+> Does it make sense?
+>
+> [ INFO: inconsistent lock state ]
+> 2.6.38-rc3-00201-g44f2c5c #1
+> ---------------------------------
+> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+> kswapd0/411 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>  (&REISERFS_SB(s)->lock){+.+.?.}, at: [<c1119a88>]
+> reiserfs_write_lock_once+0x28/0x50
+> {RECLAIM_FS-ON-W} state was registered at:
+>  [<c10537a6>] mark_held_locks+0x56/0x80
+>  [<c1053e8c>] lockdep_trace_alloc+0x9c/0xd0
+>  [<c1099978>] kmem_cache_alloc+0x28/0xe0
+>  [<c1100443>] reiserfs_alloc_inode+0x13/0x40
+>  [<c10b2bec>] alloc_inode+0x1c/0x80
+>  [<c10b2e77>] iget5_locked+0x77/0x180
+>  [<c11024e3>] reiserfs_fill_super+0x543/0xaa0
+>  [<c109f5fb>] mount_bdev+0x17b/0x1c0
+>  [<c11003aa>] get_super_block+0x1a/0x20
+>  [<c109e7a3>] vfs_kern_mount+0x53/0x170
+>  [<c109e919>] do_kern_mount+0x39/0xd0
+>  [<c10b6ec8>] do_mount+0x348/0x6a0
+>  [<c10b74c6>] sys_mount+0x66/0xa0
+>  [<c16358ff>] mount_block_root+0xc1/0x234
+>  [<c1635acb>] mount_root+0x59/0x5f
+>  [<c1635be2>] prepare_namespace+0x111/0x14b
+>  [<c163577d>] kernel_init+0x113/0x120
+>  [<c100307a>] kernel_thread_helper+0x6/0x1c
+> irq event stamp: 116110169
+> hardirqs last  enabled at (116110169): [<c1065859>] __call_rcu.clone.5+0x39/0x60
+> hardirqs last disabled at (116110168): [<c1065846>] __call_rcu.clone.5+0x26/0x60
+> softirqs last  enabled at (116106756): [<c10304c1>] __do_softirq+0xc1/0x110
+> softirqs last disabled at (116106719): [<c1004136>] do_softirq+0x86/0xd0
+>
+> other info that might help us debug this:
+> 2 locks held by kswapd0/411:
+>  #0:  (shrinker_rwsem){++++..}, at: [<c107bfe4>] shrink_slab+0x24/0x160
+>  #1:  (&type->s_umount_key#17){++++..}, at: [<c10ae769>]
+> shrink_dcache_memory+0xe9/0x180
+>
+> stack backtrace:
+> Pid: 411, comm: kswapd0 Not tainted 2.6.38-rc3-00201-g44f2c5c #1
+> Call Trace:
+>  [<c1053120>] ? print_usage_bug+0x160/0x1a0
+>  [<c10534ea>] ? mark_lock+0x38a/0x5f0
+>  [<c1052630>] ? check_usage_forwards+0x0/0xd0
+>  [<c105533c>] ? __lock_acquire+0x5ac/0x19a0
+>  [<c10551d0>] ? __lock_acquire+0x440/0x19a0
+>  [<c1056cca>] ? lock_acquire+0x7a/0xa0
+>  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
+>  [<c1364d5f>] ? mutex_lock_nested+0x5f/0x2a0
+>  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
+>  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
+>  [<c1050f5b>] ? trace_hardirqs_off+0xb/0x10
+>  [<c1119a88>] ? reiserfs_write_lock_once+0x28/0x50
+>  [<c10f593c>] ? reiserfs_evict_inode+0x3c/0x110
+>  [<c136612c>] ? _raw_spin_lock+0x5c/0x70
+>  [<c10b23af>] ? iput+0x19f/0x270
+>  [<c10b1a97>] ? evict+0x17/0xa0
+>  [<c10b23b6>] ? iput+0x1a6/0x270
+>  [<c10addb7>] ? d_kill+0xa7/0xf0
+>  [<c10ae4d7>] ? shrink_dentry_list+0x1e7/0x210
+>  [<c10ae44d>] ? shrink_dentry_list+0x15d/0x210
+>  [<c10ae654>] ? __shrink_dcache_sb+0x154/0x180
+>  [<c10ae791>] ? shrink_dcache_memory+0x111/0x180
+>  [<c107c0d0>] ? shrink_slab+0x110/0x160
+>  [<c107e04a>] ? kswapd+0x49a/0x7f0
+>  [<c107dbb0>] ? kswapd+0x0/0x7f0
+>  [<c1041fa4>] ? kthread+0x74/0x80
+>  [<c1041f30>] ? kthread+0x0/0x80
+>  [<c100307a>] ? kernel_thread_helper+0x6/0x1c
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
