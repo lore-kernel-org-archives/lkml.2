@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab1BIKIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:08:30 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46691 "EHLO
+	id S1754189Ab1BIKIF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:08:05 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46677 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab1BIKI0 (ORCPT
+	with ESMTP id S1754143Ab1BIKIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:08:26 -0500
+	Wed, 9 Feb 2011 05:08:02 -0500
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 02/10] trivial: fix typos concerning "address"
-Date: Wed,  9 Feb 2011 11:07:34 +0100
-Message-Id: <1297246062-23777-2-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 09/10] trivial: fix typos concerning "registration"
+Date: Wed,  9 Feb 2011 11:07:41 +0100
+Message-Id: <1297246062-23777-9-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -30,50 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/blackfin/mach-bf518/include/mach/defBF512.h |    2 +-
- arch/blackfin/mach-bf527/include/mach/defBF522.h |    2 +-
- arch/blackfin/mach-bf538/include/mach/defBF538.h |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-s5pv210/mach-goni.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/blackfin/mach-bf518/include/mach/defBF512.h b/arch/blackfin/mach-bf518/include/mach/defBF512.h
-index 2728582..b1e60a9 100644
---- a/arch/blackfin/mach-bf518/include/mach/defBF512.h
-+++ b/arch/blackfin/mach-bf518/include/mach/defBF512.h
-@@ -1098,7 +1098,7 @@
- #define	SADD_LEN	0x0002		/* Slave Address Length							*/
- #define	STDVAL		0x0004		/* Slave Transmit Data Valid					*/
- #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
--#define	GEN			0x0010		/* General Call Adrress Matching Enabled		*/
-+#define	GEN			0x0010		/* General Call Address Matching Enabled		*/
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index e22d511..c18bd42 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -824,14 +824,14 @@ static void __init goni_map_io(void)
  
- /* TWI_SLAVE_STAT Masks															*/
- #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*)	*/
-diff --git a/arch/blackfin/mach-bf527/include/mach/defBF522.h b/arch/blackfin/mach-bf527/include/mach/defBF522.h
-index 89f5420..565cc69 100644
---- a/arch/blackfin/mach-bf527/include/mach/defBF522.h
-+++ b/arch/blackfin/mach-bf527/include/mach/defBF522.h
-@@ -1099,7 +1099,7 @@
- #define	SADD_LEN	0x0002		/* Slave Address Length							*/
- #define	STDVAL		0x0004		/* Slave Transmit Data Valid					*/
- #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
--#define	GEN			0x0010		/* General Call Adrress Matching Enabled		*/
-+#define	GEN			0x0010		/* General Call Address Matching Enabled		*/
+ static void __init goni_machine_init(void)
+ {
+-	/* Radio: call before I2C 1 registeration */
++	/* Radio: call before I2C 1 registration */
+ 	goni_radio_init();
  
- /* TWI_SLAVE_STAT Masks															*/
- #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*)	*/
-diff --git a/arch/blackfin/mach-bf538/include/mach/defBF538.h b/arch/blackfin/mach-bf538/include/mach/defBF538.h
-index d27f81d..cb350a1 100644
---- a/arch/blackfin/mach-bf538/include/mach/defBF538.h
-+++ b/arch/blackfin/mach-bf538/include/mach/defBF538.h
-@@ -1767,7 +1767,7 @@
- #define	SADD_LEN	0x0002		/* Slave Address Length */
- #define	STDVAL		0x0004		/* Slave Transmit Data Valid */
- #define	NAK			0x0008		/* NAK/ACK* Generated At Conclusion Of Transfer */
--#define	GEN			0x0010		/* General Call	Adrress	Matching Enabled */
-+#define	GEN			0x0010		/* General Call	Address	Matching Enabled */
+ 	/* I2C1 */
+ 	s3c_i2c1_set_platdata(NULL);
+ 	i2c_register_board_info(1, i2c1_devs, ARRAY_SIZE(i2c1_devs));
  
- /* TWIx_SLAVE_STAT Masks								 */
- #define	SDIR		0x0001		/* Slave Transfer Direction (Transmit/Receive*) */
+-	/* TSP: call before I2C 2 registeration */
++	/* TSP: call before I2C 2 registration */
+ 	goni_tsp_init();
+ 
+ 	/* I2C2 */
 -- 
 1.7.2.3
 
