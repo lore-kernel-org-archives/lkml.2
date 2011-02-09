@@ -1,199 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab1BIAoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 19:44:13 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41042 "EHLO hera.kernel.org"
+	id S1756080Ab1BIAvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 19:51:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53796 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755036Ab1BIAoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 19:44:11 -0500
-Date: Wed, 9 Feb 2011 00:43:40 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate: Fix annotate context lines regression
-Message-ID: <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
-Git-Commit-ID: d5e3d747007fdb541e57ed72e020ff0b94db3470
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Feb 2011 00:43:41 +0000 (UTC)
+	id S1755036Ab1BIAvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 19:51:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,444,1291622400"; 
+   d="scan'208";a="600778101"
+From: jacob.jun.pan@linux.intel.com
+To: LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        akpm@linux-foundation.org, rdunlap@xenotime.net,
+        Cedric Le Goater <clg@fr.ibm.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 0/1, v5] cgroup/freezer: add per freezer duty ratio control
+Date: Tue,  8 Feb 2011 16:49:35 -0800
+Message-Id: <1297212575-17630-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d5e3d747007fdb541e57ed72e020ff0b94db3470
-Gitweb:     http://git.kernel.org/tip/d5e3d747007fdb541e57ed72e020ff0b94db3470
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 8 Feb 2011 15:29:25 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 8 Feb 2011 15:29:25 -0200
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-perf annotate: Fix annotate context lines regression
+Fixing subject in cover letter, should be v4 instead of v3
 
-The live annotation done in 'perf top' needs to limit the context before
-lines that aren't filtered out by the min percent filter, if we don't do
-that, the screen in a tty often is not enough for showing what is
-interesting: lines with hits and a few source code lines before it.
+Changelog:
+v5:	- improve error handling in duty ratio/ period writes
+	- fix the logic to avoid kthread creation when ratio and
+	  period are invalid.
+	- 100% frozen is not permitted in duty ratio set up
 
-Reported-by: Mike Galbraith <efault@gmx.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c   |    2 +-
- tools/perf/util/annotate.c |   47 +++++++++++++++++++++++++++++++++++++------
- tools/perf/util/annotate.h |    3 +-
- 3 files changed, 43 insertions(+), 9 deletions(-)
+v4:	- limit kthread creation only when valid duty ratio
+	  parameters are given.
+	- changed period back to milisecond
+	- consolidated paramter write functions
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 7dbf22d..210c736 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -231,7 +231,7 @@ static void show_details(struct sym_entry *syme)
- 	printf("  Events  Pcnt (>=%d%%)\n", sym_pcnt_filter);
- 
- 	more = symbol__annotate_printf(symbol, syme->map, top.sym_evsel->idx,
--				       0, sym_pcnt_filter, top.print_entries);
-+				       0, sym_pcnt_filter, top.print_entries, 4);
- 	if (top.zero)
- 		symbol__annotate_zero_histogram(symbol, top.sym_evsel->idx);
- 	else
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index c777bda..02976b8 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -111,7 +111,8 @@ struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
- 
- static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
- 			       int evidx, u64 len, int min_pcnt,
--			       int printed, int max_lines)
-+			       int printed, int max_lines,
-+			       struct objdump_line *queue)
- {
- 	static const char *prev_line;
- 	static const char *prev_color;
-@@ -150,6 +151,15 @@ static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
- 		if (max_lines && printed >= max_lines)
- 			return 1;
- 
-+		if (queue != NULL) {
-+			list_for_each_entry_from(queue, &notes->src->source, node) {
-+				if (queue == oline)
-+					break;
-+				objdump_line__print(queue, sym, evidx, len,
-+						    0, 0, 1, NULL);
-+			}
-+		}
-+
- 		color = get_percent_color(percent);
- 
- 		/*
-@@ -172,6 +182,9 @@ static int objdump_line__print(struct objdump_line *oline, struct symbol *sym,
- 	} else if (max_lines && printed >= max_lines)
- 		return 1;
- 	else {
-+		if (queue)
-+			return -1;
-+
- 		if (!*oline->line)
- 			printf("         :\n");
- 		else
-@@ -452,13 +465,14 @@ static void symbol__annotate_hits(struct symbol *sym, int evidx)
- }
- 
- int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
--			    bool full_paths, int min_pcnt, int max_lines)
-+			    bool full_paths, int min_pcnt, int max_lines,
-+			    int context)
- {
- 	struct dso *dso = map->dso;
- 	const char *filename = dso->long_name, *d_filename;
- 	struct annotation *notes = symbol__annotation(sym);
--	struct objdump_line *pos;
--	int printed = 2;
-+	struct objdump_line *pos, *queue = NULL;
-+	int printed = 2, queue_len = 0;
- 	int more = 0;
- 	u64 len;
- 
-@@ -476,10 +490,20 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 		symbol__annotate_hits(sym, evidx);
- 
- 	list_for_each_entry(pos, &notes->src->source, node) {
-+		if (context && queue == NULL) {
-+			queue = pos;
-+			queue_len = 0;
-+		}
-+
- 		switch (objdump_line__print(pos, sym, evidx, len, min_pcnt,
--					    printed, max_lines)) {
-+					    printed, max_lines, queue)) {
- 		case 0:
- 			++printed;
-+			if (context) {
-+				printed += queue_len;
-+				queue = NULL;
-+				queue_len = 0;
-+			}
- 			break;
- 		case 1:
- 			/* filtered by max_lines */
-@@ -487,7 +511,16 @@ int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
- 			break;
- 		case -1:
- 		default:
--			/* filtered by min_pcnt */
-+			/*
-+			 * Filtered by min_pcnt or non IP lines when
-+			 * context != 0
-+			 */
-+			if (!context)
-+				break;
-+			if (queue_len == context)
-+				queue = list_entry(queue->node.next, typeof(*queue), node);
-+			else
-+				++queue_len;
- 			break;
- 		}
- 	}
-@@ -550,7 +583,7 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
- 	}
- 
- 	symbol__annotate_printf(sym, map, evidx, full_paths,
--				min_pcnt, max_lines);
-+				min_pcnt, max_lines, 0);
- 	if (print_lines)
- 		symbol__free_source_line(sym, len);
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index b237c86..e848803 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -78,7 +78,8 @@ void symbol__annotate_zero_histograms(struct symbol *sym);
- int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize);
- int symbol__annotate_init(struct map *map __used, struct symbol *sym);
- int symbol__annotate_printf(struct symbol *sym, struct map *map, int evidx,
--			    bool full_paths, int min_pcnt, int max_lines);
-+			    bool full_paths, int min_pcnt, int max_lines,
-+			    int context);
- void symbol__annotate_zero_histogram(struct symbol *sym, int evidx);
- void symbol__annotate_decay_histogram(struct symbol *sym, int evidx);
- void objdump_line_list__purge(struct list_head *head);
+v3:	- added documentation
+
+v2:
+	- use read_u64/write_u64 instead of string read/write
+	- use period in second instead of ms
+	- renamed duty_ratio to duty_ratio_pct, be more specific
+	- removed locking around period and duty_ratio reads
+
+
+Jacob Pan (1):
+  cgroup/freezer: add per freezer duty ratio control
+
+ Documentation/cgroups/freezer-subsystem.txt |   23 ++++++
+ kernel/cgroup_freezer.c                     |  109 ++++++++++++++++++++++++++-
+ 2 files changed, 130 insertions(+), 2 deletions(-)
+
