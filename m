@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab1BICNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 21:13:51 -0500
-Received: from ozlabs.org ([203.10.76.45]:41288 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961Ab1BICNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 21:13:50 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the rr tree
-Date: Wed, 9 Feb 2011 12:43:46 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; i686; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dtor@vmware.com>
-References: <20110209130115.f340396e.sfr@canb.auug.org.au>
-In-Reply-To: <20110209130115.f340396e.sfr@canb.auug.org.au>
+	id S1756190Ab1BICWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 21:22:16 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:17411 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753310Ab1BICWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 21:22:15 -0500
+Message-ID: <3F7E1C17407A45E3834BF70553CB294C@hacdom.okisemi.com>
+From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+To: "David Miller" <davem@davemloft.net>
+Cc: <netdev@vger.kernel.org>, <tomoya-linux@dsn.okisemi.com>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>, <linux-kernel@vger.kernel.org>
+References: <4D512A27.2030406@dsn.okisemi.com> <20110208.164030.242137610.davem@davemloft.net>
+Subject: Re: [PATCH] pch_gbe: Fix the issue which a driver locks when rx offload is set by ethtool
+Date: Wed, 9 Feb 2011 11:04:11 +0900
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+Content-Type: text/plain;
+	charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102091243.46227.rusty@rustcorp.com.au>
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Feb 2011 12:31:15 pm Stephen Rothwell wrote:
-> Hi Rusty,
-> 
-> After merging the rr tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> drivers/net/myri10ge/myri10ge.c: In function 'myri10ge_select_firmware':
-> drivers/net/myri10ge/myri10ge.c:3341: error: request for member 'perm' in something not a structure or union
-> drivers/net/myri10ge/myri10ge.c:3341: error: request for member 'perm' in something not a structure or union
-> drivers/net/myri10ge/myri10ge.c:3341: error: request for member 'perm' in something not a structure or union
-> drivers/net/myri10ge/myri10ge.c:3349: error: request for member 'perm' in something not a structure or union
-> drivers/net/myri10ge/myri10ge.c:3349: error: request for member 'perm' in something not a structure or union
-> drivers/net/myri10ge/myri10ge.c:3349: error: request for member 'perm' in something not a structure or union
-> 
-> Caused by commit b3e402b450f954d0a8ec04e05433654d4a9df2a6 ("module: deal
-> with alignment issues in built-in module parameters") so I have used the
-> rr tree from next-20110208 for today.
+From: David Miller <davem@davemloft.net>
+Date: Tue, 08 Feb 2011 16:40:30 -0800 (PST)
 
-Thanks!  Fix is obvious, I will write it now...
+>> @@ -531,12 +533,8 @@ void pch_gbe_reinit_locked(struct pch_gbe_adapter 
+>> *adapter)
+>>  {
+>>  struct net_device *netdev = adapter->netdev;
+>>
+>> - rtnl_lock();
+>> - if (netif_running(netdev)) {
+>> - pch_gbe_down(adapter);
+>> - pch_gbe_up(adapter);
+>> - }
+>> - rtnl_unlock();
+>> + pch_gbe_down(adapter);
+>> + pch_gbe_up(adapter);
+>
+>Are you sure you can just blindly delete the netif_running() check here?
 
-Cheers,
-Rusty.
+Yes, sure.
+pch_gbe_reinit_locked() is called after confirming of netif_running() except 
+for pch_gbe_reset_task() function.
+This netif_running() was redundant.
+
+Best regards
+Toshiharu Okada(OKI semiconductor) 
+
