@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab1BILCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 06:02:53 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:40722 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754539Ab1BILCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 06:02:21 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [patch 2/4] memcg: convert per-cpu stock from bytes to page granularity
-Date: Wed,  9 Feb 2011 12:01:51 +0100
-Message-Id: <1297249313-23746-3-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
-References: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
+	id S1754539Ab1BILEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 06:04:13 -0500
+Received: from nm29-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.236]:42282 "HELO
+	nm29-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753566Ab1BILEL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 06:04:11 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 541805.50617.bm@omp1030.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=0waP8p+75OxMAXf5gQRBE5dZ0LanagA59h5qdd+6NlPsMLCRaKsYM8dUTb/TJr3XQDB4esh1bmCOlcmTe8G+YC2E022DGuCAzL5zrLy/nYIDk5w+6RHfZlI5QJkABu2kjUI1rm+gELbPGYdJVbGAXvmqVje09APmwyfOSPsdJ88=;
+Message-ID: <143565.70888.qm@web110315.mail.gq1.yahoo.com>
+X-YMail-OSG: yq.cmXEVM1nSEH80uQ.bFn18RqYklHRrVceQaB.JSGrWwQc
+ bziUaaFLWwyjSTAy9J4XiVa9QlgPAiFIUdFoDNPSU2dJwx.TAiRroXfMBNkD
+ J7tCyE1UpJ_yipWfmU2_JA92ESkm1gVuVf8nNsfqT_k2hFunFUdfT80iW5HG
+ Z5KRwWhUWBipfMvP51WAkppjUWxghq8H0BCCgvXr7tlrHclpOZHEIVGvanwB
+ 7KKT4fVQecdnt6rCBVDMwtRuh7y1Ej_oM1CiToU0rHbMPfFOnPBp.QrOiDBT
+ jTvOExb2eFVrR96nZMdmyfRd5mRql17R3uO1vjEqH.N15nkA_zAdA.cjM.hS
+ VZNUYW7ZGIrS5Aqo2bf9KSxawciDZrxe9v69cfH3bAF4TrprHnU_gms2lRgP
+ 2s3GdZQPr6AI-
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
+Date: Wed, 9 Feb 2011 03:04:10 -0800 (PST)
+From: Ken Stailey <kstailey@yahoo.com>
+Subject: [PATCH] virtio-net: add schedule check to napi_enable call, kernel 2.6.38-RC4
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We never keep subpage quantities in the per-cpu stock.
+Several people are experiencing virtio-net driver lock ups while attempting to do real work and this patch which was submitted in the past and ignored fixes that.  For details see:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/579276
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cabf421..179fd74 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1624,14 +1624,14 @@ EXPORT_SYMBOL(mem_cgroup_update_page_stat);
- #define CHARGE_SIZE	(32 * PAGE_SIZE)
- struct memcg_stock_pcp {
- 	struct mem_cgroup *cached; /* this never be root cgroup */
--	int charge;
-+	unsigned int nr_pages;
- 	struct work_struct work;
- };
- static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
- static atomic_t memcg_drain_count;
+--- drivers/net/virtio_net.c.orig    2011-02-08 14:34:51.444099190 -0500
++++ drivers/net/virtio_net.c    2011-02-08 14:18:00.484400134 -0500
+@@ -446,6 +446,20 @@
+     }
+ }
  
- /*
-- * Try to consume stocked charge on this cpu. If success, PAGE_SIZE is consumed
-+ * Try to consume stocked charge on this cpu. If success, one page is consumed
-  * from local stock and true is returned. If the stock is 0 or charges from a
-  * cgroup which is not current target, returns false. This stock will be
-  * refilled.
-@@ -1642,8 +1642,8 @@ static bool consume_stock(struct mem_cgroup *mem)
- 	bool ret = true;
- 
- 	stock = &get_cpu_var(memcg_stock);
--	if (mem == stock->cached && stock->charge)
--		stock->charge -= PAGE_SIZE;
-+	if (mem == stock->cached && stock->nr_pages)
-+		stock->nr_pages--;
- 	else /* need to call res_counter_charge */
- 		ret = false;
- 	put_cpu_var(memcg_stock);
-@@ -1657,13 +1657,15 @@ static void drain_stock(struct memcg_stock_pcp *stock)
- {
- 	struct mem_cgroup *old = stock->cached;
- 
--	if (stock->charge) {
--		res_counter_uncharge(&old->res, stock->charge);
-+	if (stock->nr_pages) {
-+		unsigned long bytes = stock->nr_pages * PAGE_SIZE;
++static void virtnet_napi_enable(struct virtnet_info *vi)
++{
++    napi_enable(&vi->napi);
 +
-+		res_counter_uncharge(&old->res, bytes);
- 		if (do_swap_account)
--			res_counter_uncharge(&old->memsw, stock->charge);
-+			res_counter_uncharge(&old->memsw, bytes);
-+		stock->nr_pages = 0;
- 	}
- 	stock->cached = NULL;
--	stock->charge = 0;
- }
- 
- /*
-@@ -1680,7 +1682,7 @@ static void drain_local_stock(struct work_struct *dummy)
-  * Cache charges(val) which is from res_counter, to local per_cpu area.
-  * This will be consumed by consume_stock() function, later.
-  */
--static void refill_stock(struct mem_cgroup *mem, int val)
-+static void refill_stock(struct mem_cgroup *mem, unsigned int nr_pages)
++    /* If all buffers were filled by other side before we napi_enabled, we
++     * won't get another interrupt, so process any outstanding packets
++     * now.  virtnet_poll wants re-enable the queue, so we disable here.
++     * We synchronize against interrupts via NAPI_STATE_SCHED */
++    if (napi_schedule_prep(&vi->napi)) {
++        virtqueue_disable_cb(vi->rvq);
++        __napi_schedule(&vi->napi);
++    }
++}
++
+ static void refill_work(struct work_struct *work)
  {
- 	struct memcg_stock_pcp *stock = &get_cpu_var(memcg_stock);
+     struct virtnet_info *vi;
+@@ -454,7 +468,7 @@
+     vi = container_of(work, struct virtnet_info, refill.work);
+     napi_disable(&vi->napi);
+     still_empty = !try_fill_recv(vi, GFP_KERNEL);
+-    napi_enable(&vi->napi);
++    virtnet_napi_enable(vi);
  
-@@ -1688,7 +1690,7 @@ static void refill_stock(struct mem_cgroup *mem, int val)
- 		drain_stock(stock);
- 		stock->cached = mem;
- 	}
--	stock->charge += val;
-+	stock->nr_pages += nr_pages;
- 	put_cpu_var(memcg_stock);
+     /* In theory, this can happen: if we don't get any buffers in
+      * we will *never* try to fill again. */
+@@ -638,16 +652,7 @@
+ {
+     struct virtnet_info *vi = netdev_priv(dev);
+ 
+-    napi_enable(&vi->napi);
+-
+-    /* If all buffers were filled by other side before we napi_enabled, we
+-     * won't get another interrupt, so process any outstanding packets
+-     * now.  virtnet_poll wants re-enable the queue, so we disable here.
+-     * We synchronize against interrupts via NAPI_STATE_SCHED */
+-    if (napi_schedule_prep(&vi->napi)) {
+-        virtqueue_disable_cb(vi->rvq);
+-        __napi_schedule(&vi->napi);
+-    }
++    virtnet_napi_enable(vi);
+     return 0;
  }
- 
-@@ -1986,7 +1988,7 @@ again:
- 	} while (ret != CHARGE_OK);
- 
- 	if (csize > page_size)
--		refill_stock(mem, csize - page_size);
-+		refill_stock(mem, (csize - page_size) >> PAGE_SHIFT);
- 	css_put(&mem->css);
- done:
- 	*memcg = mem;
--- 
-1.7.4
+
 
