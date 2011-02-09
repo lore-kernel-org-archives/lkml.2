@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab1BIKhi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:37:38 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58133 "EHLO
+	id S1754437Ab1BIKh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:37:59 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58138 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754460Ab1BIKhg (ORCPT
+	with ESMTP id S1754048Ab1BIKh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:37:36 -0500
+	Wed, 9 Feb 2011 05:37:58 -0500
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 5/8] intel_mid_ssp_spi: Add chip definitions
+Subject: [PATCH 6/8] intel_mid_ssp_spi: Add the QoS quirk for slave mode
 To: spi-devel-general@lists.sourceforge.net, russ.gorby@intel.com,
         grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
-Date: Wed, 09 Feb 2011 10:08:47 +0000
-Message-ID: <20110209100838.555.90298.stgit@bob.linux.org.uk>
+Date: Wed, 09 Feb 2011 10:09:08 +0000
+Message-ID: <20110209100857.555.54454.stgit@bob.linux.org.uk>
 In-Reply-To: <20110209100231.555.90520.stgit@bob.linux.org.uk>
 References: <20110209100231.555.90520.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,39 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-The quirk tweaks so far are sufficient for us to support master mode on all
-the devices. Put the PCI identifiers back. If they are in use for other
-things the vendor bits will ensure the driver doesn't claim the wrong ones.
+This is needed for Moorestown. Again we add this so that the default is off
+and the code changed is all within if (quirks & ).
 
-Add the missing MODULE tag so we can do autoloading
-
-Based on previous generic driver work by Mathieu SOULARD
+Baed on previous generic driver work by Mathieu SOULARD
 <mathieux.soulard@intel.com>
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/spi/intel_mid_ssp_spi.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/spi/intel_mid_ssp_spi.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
 
 diff --git a/drivers/spi/intel_mid_ssp_spi.c b/drivers/spi/intel_mid_ssp_spi.c
-index 6435adc..c8cd3bb 100644
+index c8cd3bb..26e41c2 100644
 --- a/drivers/spi/intel_mid_ssp_spi.c
 +++ b/drivers/spi/intel_mid_ssp_spi.c
-@@ -1574,9 +1574,14 @@ static const struct dev_pm_ops intel_mid_ssp_spi_pm = {
+@@ -186,6 +186,8 @@ struct driver_data {
+ 	int rxdma_done;
+ 	struct callback_param tx_param;
+ 	struct callback_param rx_param;
++	/* PM_QOS request (for Moorestown) */
++	struct pm_qos_request_list pm_qos_req;
  };
  
- static const struct pci_device_id pci_ids[] __devinitdata = {
-+	{ PCI_VDEVICE(INTEL, 0x0815),
-+			QUIRKS_PLATFORM_MRST | QUIRKS_BIT_BANGING },
- 	{ PCI_VDEVICE(INTEL, 0x0816) },
-+	{ PCI_VDEVICE(INTEL, 0x0825) },
-+	{ PCI_VDEVICE(INTEL, 0x0832) },
- 	{ }
- };
-+MODULE_DEVICE_TABLE(pci, pci_ids);
+ struct chip_data {
+@@ -443,6 +445,10 @@ static void dma_transfer_complete(void *arg)
+ 	/* Stop getting Time Outs */
+ 	iowrite32(0, reg + SSTO);
  
- static struct pci_driver intel_mid_ssp_spi_driver = {
- 	.driver = {
++	if (drv_data->quirks & QUIRKS_USE_PM_QOS)
++		pm_qos_update_request(&drv_data->pm_qos_req,
++						PM_QOS_DEFAULT_VALUE);
++
+ 	/* release DMA mappings */
+ 	unmap_dma_buffers(drv_data, drv_data->cur_msg);
+ 
+@@ -556,6 +562,8 @@ static void dma_transfer(struct driver_data *drv_data)
+ 	struct dma_slave_config *txconf, *rxconf;
+ 	struct device *dev = &drv_data->pdev->dev;
+ 
++	if (drv_data->quirks & QUIRKS_USE_PM_QOS)
++		pm_qos_update_request(&drv_data->pm_qos_req, MIN_EXIT_LATENCY);
+ 	/* get Data Read/Write address */
+ 	ssdr_addr = (dma_addr_t)(drv_data->paddr + 0x10);
+ 	flag = DMA_PREP_INTERRUPT | DMA_CTRL_ACK;
+@@ -1186,6 +1194,9 @@ static void cleanup(struct spi_device *spi)
+ 
+ 	if (drv_data->dma_inited)
+ 		intel_mid_ssp_spi_dma_exit(drv_data);
++	/* Remove the PM_QOS request */
++	if (drv_data->quirks & QUIRKS_USE_PM_QOS)
++		pm_qos_remove_request(&drv_data->pm_qos_req);
+ 	kfree(chip);
+ 	spi_set_ctldata(spi, NULL);
+ }
+@@ -1332,6 +1343,11 @@ static int intel_mid_ssp_spi_probe(struct pci_dev *pdev,
+ 
+ 	pci_set_drvdata(pdev, drv_data);
+ 
++	/* Create the PM_QOS request */
++	if (drv_data->quirks & QUIRKS_USE_PM_QOS)
++		pm_qos_add_request(&drv_data->pm_qos_req,
++			PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
++
+ 	pm_runtime_set_active(&pdev->dev);
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_idle(&pdev->dev);
 
