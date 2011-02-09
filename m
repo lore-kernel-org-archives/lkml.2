@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab1BITyU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:54:20 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52351 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab1BITyS (ORCPT
+	id S1752974Ab1BITyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:54:24 -0500
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:6122
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752507Ab1BITyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:54:18 -0500
-Subject: [PATCH 3/5] pass pte size argument in to smaps_pte_entry()
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Wed, 09 Feb 2011 11:54:10 -0800
-References: <20110209195406.B9F23C9F@kernel>
-In-Reply-To: <20110209195406.B9F23C9F@kernel>
-Message-Id: <20110209195410.1C408075@kernel>
+	Wed, 9 Feb 2011 14:54:21 -0500
+X-SpamScore: -23
+X-BigFish: VPS-23(zzbb2dK1432N98dN9371Pzz1202hzzz2fh637h668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4D52F0D0.9020609@am.sony.com>
+Date: Wed, 9 Feb 2011 11:53:52 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Frank Rowand <frank.rowand@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
+ all the time
+References: <4D51D341.3040209@am.sony.com> <20110209114137.GA10163@opensource.wolfsonmicro.com> <201102091807.03094.rjw@sisk.pl> <4D52DD81.7050401@am.sony.com> <20110209184010.GB23747@opensource.wolfsonmicro.com> <4D52E441.2000805@am.sony.com> <20110209192506.GC23747@opensource.wolfsonmicro.com>
+In-Reply-To: <20110209192506.GC23747@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/09/2011 11:25 AM, Mark Brown wrote:
+> On Wed, Feb 09, 2011 at 11:00:17AM -0800, Frank Rowand wrote:
+> 
+>> and my understanding of this proposal was a goal to remove the ability
+>> to have CONFIG_PM disabled, which results in increased memory usage
+>> for some configurations.
+> 
+> Not really, the goal was to simplify the PM config options to ones that
+> are actually useful and cut down on the number of silly combinations
+> that the randconfigs turn up.  CONFIG_PM is there mostly for historical
+> reasons, it doesn't really mean much by itself except as a gate to other
+> options.
 
-This patch adds an argument to the new smaps_pte_entry()
-function to let it account in things other than PAGE_SIZE
-units.  I changed all of the PAGE_SIZE sites, even though
-not all of them can be reached for transparent huge pages,
-just so this will continue to work without changes as THPs
-are improved.
+I'm confused.  Do you plan to retain the option to
+turn off PM features completely, or not?  I thought that's
+what CONFIG_PM did today.
+ -- Tim
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
+=============================
+Tim Bird
+Architecture Group Chair, CE Linux Forum
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
- linux-2.6.git-dave/fs/proc/task_mmu.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
-
-diff -puN fs/proc/task_mmu.c~give-smaps_pte_range-a-size-arg fs/proc/task_mmu.c
---- linux-2.6.git/fs/proc/task_mmu.c~give-smaps_pte_range-a-size-arg	2011-02-09 11:41:43.407557537 -0800
-+++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-02-09 11:41:43.423557525 -0800
-@@ -335,7 +335,7 @@ struct mem_size_stats {
- 
- 
- static void smaps_pte_entry(pte_t ptent, unsigned long addr,
--		struct mm_walk *walk)
-+		unsigned long ptent_size, struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
- 	struct vm_area_struct *vma = mss->vma;
-@@ -343,7 +343,7 @@ static void smaps_pte_entry(pte_t ptent,
- 	int mapcount;
- 
- 	if (is_swap_pte(ptent)) {
--		mss->swap += PAGE_SIZE;
-+		mss->swap += ptent_size;
- 		return;
- 	}
- 
-@@ -355,25 +355,25 @@ static void smaps_pte_entry(pte_t ptent,
- 		return;
- 
- 	if (PageAnon(page))
--		mss->anonymous += PAGE_SIZE;
-+		mss->anonymous += ptent_size;
- 
--	mss->resident += PAGE_SIZE;
-+	mss->resident += ptent_size;
- 	/* Accumulate the size in pages that have been accessed. */
- 	if (pte_young(ptent) || PageReferenced(page))
--		mss->referenced += PAGE_SIZE;
-+		mss->referenced += ptent_size;
- 	mapcount = page_mapcount(page);
- 	if (mapcount >= 2) {
- 		if (pte_dirty(ptent) || PageDirty(page))
--			mss->shared_dirty += PAGE_SIZE;
-+			mss->shared_dirty += ptent_size;
- 		else
--			mss->shared_clean += PAGE_SIZE;
--		mss->pss += (PAGE_SIZE << PSS_SHIFT) / mapcount;
-+			mss->shared_clean += ptent_size;
-+		mss->pss += (ptent_size << PSS_SHIFT) / mapcount;
- 	} else {
- 		if (pte_dirty(ptent) || PageDirty(page))
--			mss->private_dirty += PAGE_SIZE;
-+			mss->private_dirty += ptent_size;
- 		else
--			mss->private_clean += PAGE_SIZE;
--		mss->pss += (PAGE_SIZE << PSS_SHIFT);
-+			mss->private_clean += ptent_size;
-+		mss->pss += (ptent_size << PSS_SHIFT);
- 	}
- }
- 
-@@ -389,7 +389,7 @@ static int smaps_pte_range(pmd_t *pmd, u
- 
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE)
--		smaps_pte_entry(*pte, addr, walk);
-+		smaps_pte_entry(*pte, addr, PAGE_SIZE, walk);
- 	pte_unmap_unlock(pte - 1, ptl);
- 	cond_resched();
- 	return 0;
-_
