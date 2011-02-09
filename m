@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab1BIKJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:09:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46667 "EHLO
+	id S1754162Ab1BIKJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:09:39 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46670 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab1BIKHy (ORCPT
+	with ESMTP id S1753898Ab1BIKHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Feb 2011 05:07:54 -0500
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] trivial: fix typos concerning "implementation"
-Date: Wed,  9 Feb 2011 11:07:39 +0100
-Message-Id: <1297246062-23777-7-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 10/10] trivial: fix typos concerning "resource"
+Date: Wed,  9 Feb 2011 11:07:42 +0100
+Message-Id: <1297246062-23777-10-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -30,176 +30,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- Documentation/power/opp.txt        |    2 +-
- Documentation/scsi/ChangeLog.lpfc  |    2 +-
- arch/powerpc/include/asm/mmzone.h  |    2 +-
- arch/tile/include/asm/mmzone.h     |    2 +-
- arch/x86/include/asm/mmzone_32.h   |    2 +-
- drivers/media/video/cx18/cx18-io.h |    2 +-
- drivers/net/irda/toim3232-sir.c    |    2 +-
- drivers/scsi/cxgbi/cxgb3i/cxgb3i.c |    2 +-
- drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |    2 +-
- fs/nfsd/nfs4callback.c             |    2 +-
- fs/ocfs2/cluster/heartbeat.c       |    2 +-
- include/net/sctp/structs.h         |    2 +-
- 12 files changed, 12 insertions(+), 12 deletions(-)
+ arch/powerpc/kvm/book3s.c               |    2 +-
+ drivers/hwmon/applesmc.c                |    4 ++--
+ drivers/isdn/act2000/act2000_isa.c      |    2 +-
+ drivers/isdn/gigaset/bas-gigaset.c      |    2 +-
+ drivers/isdn/gigaset/common.c           |    4 ++--
+ drivers/isdn/hysdn/hycapi.c             |    2 +-
+ drivers/isdn/mISDN/l1oip_core.c         |    2 +-
+ drivers/media/video/bt8xx/bttv-driver.c |    4 ++--
+ drivers/net/spider_net.c                |    2 +-
+ drivers/video/efifb.c                   |    2 +-
+ 10 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/Documentation/power/opp.txt b/Documentation/power/opp.txt
-index cd44558..95961de 100644
---- a/Documentation/power/opp.txt
-+++ b/Documentation/power/opp.txt
-@@ -82,7 +82,7 @@ opp_get_{voltage, freq, opp_count} fall into this category.
- 
- opp_{add,enable,disable} are updaters which use mutex and implement it's own
- RCU locking mechanisms. opp_init_cpufreq_table acts as an updater and uses
--mutex to implment RCU updater strategy. These functions should *NOT* be called
-+mutex to implement RCU updater strategy. These functions should *NOT* be called
- under RCU locks and other contexts that prevent blocking functions in RCU or
- mutex operations from working.
- 
-diff --git a/Documentation/scsi/ChangeLog.lpfc b/Documentation/scsi/ChangeLog.lpfc
-index 5e83769..8b5bfa3 100644
---- a/Documentation/scsi/ChangeLog.lpfc
-+++ b/Documentation/scsi/ChangeLog.lpfc
-@@ -174,7 +174,7 @@ Changes from 20050201 to 20050208
- 	  lpfc_sli_chipset_init static.
- 	* Cleaned up references to list_head->next field in the driver.
- 	* Replaced lpfc_discq_post_event with lpfc_workq_post_event.
--	* Implmented Christoph Hellwig's review from 2/5: Check for return
-+	* Implemented Christoph Hellwig's review from 2/5: Check for return
- 	  values of kmalloc.
- 	* Integrated Christoph Hellwig's patch from 1/30: Protecting
- 	  scan_tmo and friends in !FC_TRANSPORT_PATCHES_V2 &&
-diff --git a/arch/powerpc/include/asm/mmzone.h b/arch/powerpc/include/asm/mmzone.h
-index fd3fd58..60344eb 100644
---- a/arch/powerpc/include/asm/mmzone.h
-+++ b/arch/powerpc/include/asm/mmzone.h
-@@ -39,7 +39,7 @@ u64 memory_hotplug_max(void);
- #endif
- 
- /*
-- * Following are macros that each numa implmentation must define.
-+ * Following are macros that each numa implementation must define.
+diff --git a/arch/powerpc/kvm/book3s.c b/arch/powerpc/kvm/book3s.c
+index badc983..27d98fd 100644
+--- a/arch/powerpc/kvm/book3s.c
++++ b/arch/powerpc/kvm/book3s.c
+@@ -476,7 +476,7 @@ pfn_t kvmppc_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn)
+  * emulate 32 bytes dcbz length.
+  *
+  * The Book3s_64 inventors also realized this case and implemented a special bit
+- * in the HID5 register, which is a hypervisor ressource. Thus we can't use it.
++ * in the HID5 register, which is a hypervisor resource. Thus we can't use it.
+  *
+  * My approach here is to patch the dcbz instruction on executing pages.
   */
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 4c07436..d980338 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -1089,7 +1089,7 @@ out:
+ 	return ret;
+ }
  
- #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-diff --git a/arch/tile/include/asm/mmzone.h b/arch/tile/include/asm/mmzone.h
-index c6344c4..a56937d 100644
---- a/arch/tile/include/asm/mmzone.h
-+++ b/arch/tile/include/asm/mmzone.h
-@@ -41,7 +41,7 @@ static inline int pfn_to_nid(unsigned long pfn)
+-/* Create accelerometer ressources */
++/* Create accelerometer resources */
+ static int applesmc_create_accelerometer(void)
+ {
+ 	struct input_dev *idev;
+@@ -1142,7 +1142,7 @@ out:
+ 	return ret;
+ }
+ 
+-/* Release all ressources used by the accelerometer */
++/* Release all resources used by the accelerometer */
+ static void applesmc_release_accelerometer(void)
+ {
+ 	if (!smcreg.has_accelerometer)
+diff --git a/drivers/isdn/act2000/act2000_isa.c b/drivers/isdn/act2000/act2000_isa.c
+index fea5b78..d6600bc 100644
+--- a/drivers/isdn/act2000/act2000_isa.c
++++ b/drivers/isdn/act2000/act2000_isa.c
+@@ -175,7 +175,7 @@ act2000_isa_config_port(act2000_card * card, unsigned short portbase)
  }
  
  /*
-- * Following are macros that each numa implmentation must define.
-+ * Following are macros that each numa implementation must define.
+- * Release ressources, used by an adaptor.
++ * Release resources, used by an adaptor.
   */
+ void
+ act2000_isa_release(act2000_card * card)
+diff --git a/drivers/isdn/gigaset/bas-gigaset.c b/drivers/isdn/gigaset/bas-gigaset.c
+index 8a3c5cf..3a79745 100644
+--- a/drivers/isdn/gigaset/bas-gigaset.c
++++ b/drivers/isdn/gigaset/bas-gigaset.c
+@@ -2423,7 +2423,7 @@ static void gigaset_disconnect(struct usb_interface *interface)
+ 	/* stop driver (common part) */
+ 	gigaset_stop(cs);
  
- #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
-index 91df7c5..7288148 100644
---- a/arch/x86/include/asm/mmzone_32.h
-+++ b/arch/x86/include/asm/mmzone_32.h
-@@ -69,7 +69,7 @@ static inline int pfn_to_nid(unsigned long pfn)
+-	/* stop delayed work and URBs, free ressources */
++	/* stop delayed work and URBs, free resources */
+ 	del_timer_sync(&ucs->timer_ctrl);
+ 	del_timer_sync(&ucs->timer_atrdy);
+ 	del_timer_sync(&ucs->timer_cmd_in);
+diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/common.c
+index db621db..b8d5b16 100644
+--- a/drivers/isdn/gigaset/common.c
++++ b/drivers/isdn/gigaset/common.c
+@@ -455,7 +455,7 @@ static void make_invalid(struct cardstate *cs, unsigned mask)
  }
  
- /*
-- * Following are macros that each numa implmentation must define.
-+ * Following are macros that each numa implementation must define.
-  */
- 
- #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
-diff --git a/drivers/media/video/cx18/cx18-io.h b/drivers/media/video/cx18/cx18-io.h
-index 18974d8..b29fe69 100644
---- a/drivers/media/video/cx18/cx18-io.h
-+++ b/drivers/media/video/cx18/cx18-io.h
-@@ -28,7 +28,7 @@
- /*
-  * Readback and retry of MMIO access for reliability:
-  * The concept was suggested by Steve Toth <stoth@linuxtv.org>.
-- * The implmentation is the fault of Andy Walls <awalls@md.metrocast.net>.
-+ * The implementation is the fault of Andy Walls <awalls@md.metrocast.net>.
+ /**
+- * gigaset_freecs() - free all associated ressources of a device
++ * gigaset_freecs() - free all associated resources of a device
+  * @cs:		device descriptor structure.
   *
-  * *write* functions are implied to retry the mmio unless suffixed with _noretry
-  * *read* functions never retry the mmio (it never helps to do so)
-diff --git a/drivers/net/irda/toim3232-sir.c b/drivers/net/irda/toim3232-sir.c
-index 99e1ec0..17ef584 100644
---- a/drivers/net/irda/toim3232-sir.c
-+++ b/drivers/net/irda/toim3232-sir.c
-@@ -336,7 +336,7 @@ static int toim3232_change_speed(struct sir_dev *dev, unsigned speed)
-  * high, but it seems to have the same effect.
-  *
-  * This behaviour will probably work on dongles that have the RESET line connected,
-- * but if not, add a flag for the IR320ST-2, and implment the above-listed proper
-+ * but if not, add a flag for the IR320ST-2, and implement the above-listed proper
-  * behaviour.
-  *
-  * RTS is inverted and then fed to BR/~D, so to put it in programming mode, we
-diff --git a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
-index a129a17..dde8dbc 100644
---- a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
-+++ b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
-@@ -164,7 +164,7 @@ static struct scsi_transport_template *cxgb3i_stt;
- /*
-  * CPL (Chelsio Protocol Language) defines a message passing interface between
-  * the host driver and Chelsio asic.
-- * The section below implments CPLs that related to iscsi tcp connection
-+ * The section below implements CPLs that related to iscsi tcp connection
-  * open/close/abort and data send/receive.
-  */
- 
-diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-index 8c04fad..af92770 100644
---- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-+++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-@@ -165,7 +165,7 @@ static struct scsi_transport_template *cxgb4i_stt;
- /*
-  * CPL (Chelsio Protocol Language) defines a message passing interface between
-  * the host driver and Chelsio asic.
-- * The section below implments CPLs that related to iscsi tcp connection
-+ * The section below implements CPLs that related to iscsi tcp connection
-  * open/close/abort and data send/receive.
-  */
- #define DIV_ROUND_UP(n, d)	(((n) + (d) - 1) / (d))
-diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-index 3be975e..93ab180 100644
---- a/fs/nfsd/nfs4callback.c
-+++ b/fs/nfsd/nfs4callback.c
-@@ -414,7 +414,7 @@ static void encode_cb_sequence4args(struct xdr_stream *xdr,
-  *		void;
-  *	};
-  *
-- * Our current back channel implmentation supports a single backchannel
-+ * Our current back channel implementation supports a single backchannel
-  * with a single slot.
-  */
- static int decode_cb_sequence4resok(struct xdr_stream *xdr,
-diff --git a/fs/ocfs2/cluster/heartbeat.c b/fs/ocfs2/cluster/heartbeat.c
-index b108e86..1c7a8c8 100644
---- a/fs/ocfs2/cluster/heartbeat.c
-+++ b/fs/ocfs2/cluster/heartbeat.c
-@@ -924,7 +924,7 @@ out:
- 	return changed;
+  * Stops all tasklets and timers, unregisters the device from all
+@@ -1057,7 +1057,7 @@ struct cardstate *gigaset_get_cs_by_tty(struct tty_struct *tty)
  }
  
--/* This could be faster if we just implmented a find_last_bit, but I
-+/* This could be faster if we just implemented a find_last_bit, but I
-  * don't think the circumstances warrant it. */
- static int o2hb_highest_node(unsigned long *nodes,
- 			     int numbits)
-diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-index cc9185c..21531d9 100644
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -1248,7 +1248,7 @@ typedef enum {
- } sctp_endpoint_type_t;
+ /**
+- * gigaset_freedriver() - free all associated ressources of a driver
++ * gigaset_freedriver() - free all associated resources of a driver
+  * @drv:	driver descriptor structure.
+  *
+  * Unregisters the driver from the system and deallocates the driver
+diff --git a/drivers/isdn/hysdn/hycapi.c b/drivers/isdn/hysdn/hycapi.c
+index 6299b06..fca559a 100644
+--- a/drivers/isdn/hysdn/hycapi.c
++++ b/drivers/isdn/hysdn/hycapi.c
+@@ -691,7 +691,7 @@ int hycapi_init(void)
+ hycapi_cleanup(void)
  
- /*
-- * A common base class to bridge the implmentation view of a
-+ * A common base class to bridge the implementation view of a
-  * socket (usually listening) endpoint versus an association's
-  * local endpoint.
-  * This common structure is useful for several purposes:
+ detach the capi-driver to the kernel-capi. Actually this should
+-free some more ressources. Do that later.
++free some more resources. Do that later.
+ **************************************************************/
+ 
+ void 
+diff --git a/drivers/isdn/mISDN/l1oip_core.c b/drivers/isdn/mISDN/l1oip_core.c
+index bd526f6..2f84194 100644
+--- a/drivers/isdn/mISDN/l1oip_core.c
++++ b/drivers/isdn/mISDN/l1oip_core.c
+@@ -46,7 +46,7 @@
+ 	limitation of B-channels to control bandwidth (1...126)
+ 	BRI: 1 or 2
+ 	PRI: 1-30, 31-126 (126, because dchannel ist not counted here)
+-	Also limited ressources are used for stack, resulting in less channels.
++	Also limited resources are used for stack, resulting in less channels.
+ 	It is possible to have more channels than 30 in PRI mode, this must
+ 	be supported by the application.
+ 
+diff --git a/drivers/media/video/bt8xx/bttv-driver.c b/drivers/media/video/bt8xx/bttv-driver.c
+index 91399c9..be10ba7 100644
+--- a/drivers/media/video/bt8xx/bttv-driver.c
++++ b/drivers/media/video/bt8xx/bttv-driver.c
+@@ -940,7 +940,7 @@ static
+ void free_btres_lock(struct bttv *btv, struct bttv_fh *fh, int bits)
+ {
+ 	if ((fh->resources & bits) != bits) {
+-		/* trying to free ressources not allocated by us ... */
++		/* trying to free resources not allocated by us ... */
+ 		printk("bttv: BUG! (btres)\n");
+ 	}
+ 	fh->resources  &= ~bits;
+@@ -4460,7 +4460,7 @@ static void __devexit bttv_remove(struct pci_dev *pci_dev)
+ 	/* free allocated memory */
+ 	btcx_riscmem_free(btv->c.pci,&btv->main);
+ 
+-	/* free ressources */
++	/* free resources */
+ 	free_irq(btv->c.pci->irq,btv);
+ 	iounmap(btv->bt848_mmio);
+ 	release_mem_region(pci_resource_start(btv->c.pci,0),
+diff --git a/drivers/net/spider_net.c b/drivers/net/spider_net.c
+index cb6bcca..c788013 100644
+--- a/drivers/net/spider_net.c
++++ b/drivers/net/spider_net.c
+@@ -2401,7 +2401,7 @@ spider_net_alloc_card(void)
+ }
+ 
+ /**
+- * spider_net_undo_pci_setup - releases PCI ressources
++ * spider_net_undo_pci_setup - releases PCI resources
+  * @card: card structure
+  *
+  * spider_net_undo_pci_setup releases the mapped regions
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 70477c2..d1dc68e 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -335,7 +335,7 @@ static int __devinit efifb_probe(struct platform_device *dev)
+ 	size_vmode = efifb_defined.yres * efifb_fix.line_length;
+ 
+ 	/*   size_total -- all video memory we have. Used for
+-	 *                 entries, ressource allocation and bounds
++	 *                 entries, resource allocation and bounds
+ 	 *                 checking. */
+ 	size_total = screen_info.lfb_size;
+ 	if (size_total < size_vmode)
 -- 
 1.7.2.3
 
