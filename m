@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1BIJ4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 04:56:33 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:30507 "EHLO SMTP.CITRIX.COM"
+	id S1754012Ab1BIJ4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 04:56:43 -0500
+Received: from symlink.to.noone.org ([85.10.207.172]:51238 "EHLO sym.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764Ab1BIJ4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 04:56:32 -0500
-X-IronPort-AV: E=Sophos;i="4.60,446,1291611600"; 
-   d="scan'208";a="12447420"
-Subject: Re: [patch 0/4] XEN: Interrupt cleanups
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1102091041450.31804@localhost6.localdomain6>
-References: <20110205200108.921707839@linutronix.de>
-	 <4D50641B.2090006@goop.org>
-	 <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>
-	 <4D506AE6.6080900@goop.org>
-	 <1297173811.9388.95.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.00.1102081544290.31804@localhost6.localdomain6>
-	 <1297177506.9388.135.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.00.1102081619410.31804@localhost6.localdomain6>
-	 <20110208162045.GB4606@dumpdata.com>
-	 <1297243631.9388.258.camel@zakaz.uk.xensource.com>
-	 <alpine.LFD.2.00.1102091041450.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Wed, 9 Feb 2011 09:56:28 +0000
-Message-ID: <1297245388.9388.289.camel@zakaz.uk.xensource.com>
+	id S1753816Ab1BIJ4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 04:56:42 -0500
+Date: Wed, 9 Feb 2011 10:56:41 +0100
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
+Cc: nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH 1/4] tty: serial: altera_uart: Handle pdev->id == -1 in
+	altera_uart_remove
+Message-ID: <20110209095641.GU29757@distanz.ch>
+References: <cover.1297244810.git.tklauser@distanz.ch> <9212990ebdb34f2b80d6858a9ba2a88b4d53a207.1297244810.git.tklauser@distanz.ch>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9212990ebdb34f2b80d6858a9ba2a88b4d53a207.1297244810.git.tklauser@distanz.ch>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 09:46 +0000, Thomas Gleixner wrote:
-> B1;2401;0cOn Wed, 9 Feb 2011, Ian Campbell wrote:
+On 2011-02-09 at 10:51:34 +0100, Tobias Klauser <tklauser@distanz.ch> wrote:
+> Commit 6b5756f176568a710d008d3b478128fafb6707f0 introduced the
+> possibility for pdev->id being -1 but the change was not done equally in
+> altera_uart_remove. This patch fixes this.
+
+Please disregard this patch. I'll send it again as a follow up to the
+correct cover letter.
+
+Sorry for the mess
+Tobias
+
 > 
-> > On Tue, 2011-02-08 at 16:20 +0000, Konrad Rzeszutek Wilk wrote:
-> > 
-> > > This is what I've in the stable/irq.rework [...] Please tell me if I messed up.
-> > 
-> > I tested v2.6.38-rc4:
-> > += git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip irq/for-xen
-> > += git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen stable/irq.rework
-> > 
-> > and all seems fine.
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+> ---
+>  drivers/tty/serial/altera_uart.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
 > 
-> stable/irq.rework still has the resume hackery inside.
-
-ACK, yes I missed that. Konrad -- looks looks you didn't pick up Thomas'
-patch 4/4?
-
-I added that one patch to the above set of merges and tested again --
-all fine.
-
-Ian.
-
+> diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
+> index 7212162..dee7a0e 100644
+> --- a/drivers/tty/serial/altera_uart.c
+> +++ b/drivers/tty/serial/altera_uart.c
+> @@ -561,9 +561,15 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
+>  
+>  static int __devexit altera_uart_remove(struct platform_device *pdev)
+>  {
+> -	struct uart_port *port = &altera_uart_ports[pdev->id].port;
+> +	struct uart_port *port;
+> +	int i = pdev->id;
+>  
+> +	if (i == -1)
+> +		i = 0;
+> +
+> +	port = &altera_uart_ports[i].port;
+>  	uart_remove_one_port(&altera_uart_driver, port);
+> +
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.0.4
+> 
