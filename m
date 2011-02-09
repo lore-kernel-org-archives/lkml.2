@@ -1,148 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab1BIT6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:58:19 -0500
-Received: from mail.atheros.com ([12.19.149.2]:51054 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab1BIT6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:58:18 -0500
-Date: Wed, 9 Feb 2011 11:58:15 -0800
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: Mohammed Shajakhan <Mohammed.Shajakhan@atheros.com>
-CC: "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Mark Gross <mgross@linux.intel.com>
-Subject: Re: [RFC] ath9k: Fix ath9k prevents CPU to enter C3 states
-Message-ID: <20110209195815.GB2192@tux>
-References: <1297262007-15128-1-git-send-email-mshajakhan@atheros.com>
+	id S1753854Ab1BIT7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:59:24 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39734 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753616Ab1BIT7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 14:59:21 -0500
+Date: Wed, 9 Feb 2011 19:59:18 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Frank Rowand <frank.rowand@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
+ all the time
+Message-ID: <20110209195918.GD23747@opensource.wolfsonmicro.com>
+References: <4D51D341.3040209@am.sony.com>
+ <20110209114137.GA10163@opensource.wolfsonmicro.com>
+ <201102091807.03094.rjw@sisk.pl>
+ <4D52DD81.7050401@am.sony.com>
+ <20110209184010.GB23747@opensource.wolfsonmicro.com>
+ <4D52E441.2000805@am.sony.com>
+ <20110209192506.GC23747@opensource.wolfsonmicro.com>
+ <4D52F0D0.9020609@am.sony.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297262007-15128-1-git-send-email-mshajakhan@atheros.com>
+In-Reply-To: <4D52F0D0.9020609@am.sony.com>
+X-Cookie: You dialed 5483.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 06:33:27AM -0800, Mohammed Shajakhan wrote:
-> From: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
-> 
-> The DMA latency issue is observed only in Intel pinetrail platforms but
-> in the driver we had a default PM-QOS value of 55. This caused
-> unnecessary power consumption and battery drain in other platforms.
-> Address this issue by disabling PM-QOS by default by setting it's value
-> as '0' and making code changes appropriately.This addresses the bug:
-> https://bugzilla.kernel.org/show_bug.cgi?id=27532
-> 	If the user sees some DMA latency issue he can still use the pmqos as a
-> module parameter to trade power for throughput as below:
-> sudo modprobe ath9k pmqos=55
+On Wed, Feb 09, 2011 at 11:53:52AM -0800, Tim Bird wrote:
+> On 02/09/2011 11:25 AM, Mark Brown wrote:
 
-How many times are we going to write some work around for some
-platform unpatched BIOS bug ?
+> > Not really, the goal was to simplify the PM config options to ones that
+> > are actually useful and cut down on the number of silly combinations
+> > that the randconfigs turn up.  CONFIG_PM is there mostly for historical
+> > reasons, it doesn't really mean much by itself except as a gate to other
+> > options.
 
-mcgrof@tux ~/wireless-testing (git::master)$ git grep pm_qos_update_request drivers/
-drivers/net/e1000e/netdev.c:                    pm_qos_update_request(&adapter->netdev->pm_qos_req, 55);
-drivers/net/e1000e/netdev.c:                    pm_qos_update_request(&adapter->netdev->pm_qos_req,
-drivers/net/wireless/ath/ath9k/main.c:  pm_qos_update_request(&sc->pm_qos_req, ath9k_pm_qos_value);
-drivers/net/wireless/ath/ath9k/main.c:  pm_qos_update_request(&sc->pm_qos_req, PM_QOS_DEFAULT_VALUE);
-drivers/net/wireless/ipw2x00/ipw2100.c: pm_qos_update_request(&ipw2100_pm_qos_req, 175);
-drivers/net/wireless/ipw2x00/ipw2100.c: pm_qos_update_request(&ipw2100_pm_qos_req, PM_QOS_DEFAULT_VALUE);
+> I'm confused.  Do you plan to retain the option to
+> turn off PM features completely, or not?  I thought that's
+> what CONFIG_PM did today.
 
-Can't we punt this crap to userspace?
-
-http://www.kernel.org/pub/linux/kernel/people/mcgrof/scripts/cpudmalatency.c
-
-Can distributions just autodetect this issue and call something like this?
-
-  Luis
-
-> Signed-off-by: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
-> ---
->  drivers/net/wireless/ath/ath9k/ath9k.h |    4 +++-
->  drivers/net/wireless/ath/ath9k/init.c  |    9 +++++----
->  drivers/net/wireless/ath/ath9k/main.c  |    9 +++++----
->  3 files changed, 13 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/ath/ath9k/ath9k.h b/drivers/net/wireless/ath/ath9k/ath9k.h
-> index 9272278..55fcd01 100644
-> --- a/drivers/net/wireless/ath/ath9k/ath9k.h
-> +++ b/drivers/net/wireless/ath/ath9k/ath9k.h
-> @@ -57,7 +57,9 @@ struct ath_node;
->  
->  #define A_MAX(a, b) ((a) > (b) ? (a) : (b))
->  
-> -#define ATH9K_PM_QOS_DEFAULT_VALUE	55
-> +/* By default PM QOS is disabled */
-> +#define ATH9K_PM_QOS_DEFAULT_VALUE	0
-> +
->  
->  #define TSF_TO_TU(_h,_l) \
->  	((((u32)(_h)) << 22) | (((u32)(_l)) >> 10))
-> diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
-> index e5c1eea..658ea02 100644
-> --- a/drivers/net/wireless/ath/ath9k/init.c
-> +++ b/drivers/net/wireless/ath/ath9k/init.c
-> @@ -43,7 +43,7 @@ MODULE_PARM_DESC(btcoex_enable, "Enable wifi-BT coexistence");
->  
->  int ath9k_pm_qos_value = ATH9K_PM_QOS_DEFAULT_VALUE;
->  module_param_named(pmqos, ath9k_pm_qos_value, int, S_IRUSR | S_IRGRP | S_IROTH);
-> -MODULE_PARM_DESC(pmqos, "User specified PM-QOS value");
-> +MODULE_PARM_DESC(pmqos, "User specified PM-QOS value, by default disabled");
->  
->  bool is_ath9k_unloaded;
->  /* We use the hw_value as an index into our private channel structure */
-> @@ -759,8 +759,8 @@ int ath9k_init_device(u16 devid, struct ath_softc *sc, u16 subsysid,
->  
->  	ath_init_leds(sc);
->  	ath_start_rfkill_poll(sc);
-> -
-> -	pm_qos_add_request(&sc->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
-> +	if (ath9k_pm_qos_value)
-> +		pm_qos_add_request(&sc->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
->  			   PM_QOS_DEFAULT_VALUE);
->  
->  	return 0;
-> @@ -819,7 +819,8 @@ void ath9k_deinit_device(struct ath_softc *sc)
->  	ath9k_ps_restore(sc);
->  
->  	ieee80211_unregister_hw(hw);
-> -	pm_qos_remove_request(&sc->pm_qos_req);
-> +	if (ath9k_pm_qos_value)
-> +		pm_qos_remove_request(&sc->pm_qos_req);
->  	ath_rx_cleanup(sc);
->  	ath_tx_cleanup(sc);
->  	ath9k_deinit_softc(sc);
-> diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-> index 4ed43b2..3855092 100644
-> --- a/drivers/net/wireless/ath/ath9k/main.c
-> +++ b/drivers/net/wireless/ath/ath9k/main.c
-> @@ -1119,9 +1119,10 @@ static int ath9k_start(struct ieee80211_hw *hw)
->  
->  	/* User has the option to provide pm-qos value as a module
->  	 * parameter rather than using the default value of
-> -	 * 'ATH9K_PM_QOS_DEFAULT_VALUE'.
-> +	 * 'ATH9K_PM_QOS_DEFAULT_VALUE' which disables PM QOS.
->  	 */
-> -	pm_qos_update_request(&sc->pm_qos_req, ath9k_pm_qos_value);
-> +	if (ath9k_pm_qos_value)
-> +		pm_qos_update_request(&sc->pm_qos_req, ath9k_pm_qos_value);
->  
->  	if (ah->caps.pcie_lcr_extsync_en && common->bus_ops->extn_synch_en)
->  		common->bus_ops->extn_synch_en(common);
-> @@ -1266,8 +1267,8 @@ static void ath9k_stop(struct ieee80211_hw *hw)
->  	ath_radio_disable(sc, hw);
->  
->  	sc->sc_flags |= SC_OP_INVALID;
-> -
-> -	pm_qos_update_request(&sc->pm_qos_req, PM_QOS_DEFAULT_VALUE);
-> +	if (ath9k_pm_qos_value)
-> +		pm_qos_update_request(&sc->pm_qos_req, PM_QOS_DEFAULT_VALUE);
->  
->  	mutex_unlock(&sc->mutex);
->  
-> -- 
-> 1.7.0.4
-> 
+Raphael's patches do that in a much better way than my original patch,
+my original patch would have force CONFIG_PM on but still allowed all
+the PM features that it controls to be turned on and off individually.
