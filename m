@@ -1,39 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab1BIX5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:57:16 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34413
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755986Ab1BIX5P (ORCPT
+	id S1756216Ab1BIX5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:57:38 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47939 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986Ab1BIX5h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:57:15 -0500
-Date: Wed, 09 Feb 2011 15:57:50 -0800 (PST)
-Message-Id: <20110209.155750.48510069.davem@davemloft.net>
-To: tomoya-linux@dsn.okisemi.com
-Cc: wg@grandegger.com, socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-Subject: Re: [PATCH 1/3 v2] pch_can: fix 800k comms issue
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1297295776-3735-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-References: <1297295776-3735-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Feb 2011 18:57:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=i+PaA85PxlC0SHGquaj3YGHn3+ImjNevZjQTvSsfUE2IvXwTfXHPDO5z5FgeFL0tGB
+         sJYab2BF8d3OVt1Qyx3TEOJI3uA0zesdKh/m8oJedIQTmdHFIDpLVc/XBTgCah4yrj9X
+         aX3ASyi+3mM9+PAlNPSeU2hz5H+RbXHiIlGHk=
+MIME-Version: 1.0
+In-Reply-To: <5c529b08-cf36-43c7-b368-f3f602faf358@default>
+References: <AANLkTi=CEXiOdqPZgQZmQwatHqZ_nsnmnVhwpdt=7q3f@mail.gmail.com>
+	<AANLkTimm8o6FnDon=eMTepDaoViU9tjteAYE9kmJhMsx@mail.gmail.com>
+	<5c529b08-cf36-43c7-b368-f3f602faf358@default>
+Date: Thu, 10 Feb 2011 08:57:36 +0900
+Message-ID: <AANLkTinwZJrAWo_Fat3e6WwLn+MPdZyFVgT6sckLCUo3@mail.gmail.com>
+Subject: Re: [PATCH V2 2/3] drivers/staging: zcache: host services and PAM services
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: gregkh@suse.de, Chris Mason <chris.mason@oracle.com>,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        ngupta@vflare.org, jeremy@goop.org,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
+        kosaki.motohiro@jp.fujitsu.com, sfr@canb.auug.org.au,
+        wfg@mail.ustc.edu.cn, tytso@mit.edu, viro@zeniv.linux.org.uk,
+        hughd@google.com, hannes@cmpxchg.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Date: Thu, 10 Feb 2011 08:56:16 +0900
+On Thu, Feb 10, 2011 at 1:39 AM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+>
+>
+>> From: Minchan Kim [mailto:minchan.kim@gmail.com]
+>
+>> As I read your comment, I can't find the benefit of zram compared to
+>> frontswap.
+>
+> Well, I am biased, but I agree that frontswap is a better technical
+> solution than zram. ;-)  But "dynamic-ity" is very important to
+> me and may be less important to others.
+>
+> I thought of these other differences, both technical and
+> non-technical:
+>
+> - Zram is minimally invasive to the swap subsystem, requiring only
+>  one hook which is already upstream (though see below) and is
+>  apparently already used by some Linux users.  Frontswap is somewhat
 
-> Previous patch "[PATCH 1/3] pch_can: fix 800k comms issue" is wrong.
-> I should have modified tseg1_min not tseg2_min.
-> Please discard previous patch and use this patch.
+Yes. I think what someone is using it is a problem.
 
-I can't "discard" the previous patch as it's already pushed upstream
-into my GIT tree and therefore cannot be reverted.
+>  more invasive and, UNTIL zcache-was-kztmem was posted a few weeks
+>  ago, had no non-Xen users (though some distros are already shipping
+>  the hooks in their kernels because Xen supports it); as a result,
+>  frontswap has gotten almost no review by kernel swap subsystem
+>  experts who I'm guessing weren't interested in anything that
+>  required Xen to use... hopefully that barrier is now resolved
+>  (but bottom line is frontswap is not yet upstream).
 
-You need to send a relative fix-up patch.
+That's why I suggested to remove frontswap in this turn.
+If any swap experts has a interest, maybe you can't receive any ack or
+review about the part in this series. Maybe  maintainers ends up
+hesitating the merge.
+
+If zcache except frontswap is merged into mainline or receive enough
+review, then you can try merging frontswap as further step.
+
+Thanks.
+
+-- 
+Kind regards,
+Minchan Kim
