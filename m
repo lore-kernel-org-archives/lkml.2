@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab1BIARW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 19:17:22 -0500
+	id S1756112Ab1BIAS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 19:18:57 -0500
 Received: from mga09.intel.com ([134.134.136.24]:58012 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755998Ab1BIARV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 19:17:21 -0500
+	id S1756024Ab1BIARW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 19:17:22 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,444,1291622400"; 
-   d="scan'208";a="705558311"
+   d="scan'208";a="705558313"
 From: james_p_freyensee@linux.intel.com
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
         james_p_freyensee@linux.intel.com
-Subject: [PATCH 02/12] Kernel documentation for the PTI feature.
-Date: Tue,  8 Feb 2011 16:17:07 -0800
-Message-Id: <1297210637-5934-2-git-send-email-james_p_freyensee@linux.intel.com>
+Subject: [PATCH 04/12] PTI Kconfig change in misc.
+Date: Tue,  8 Feb 2011 16:17:09 -0800
+Message-Id: <1297210637-5934-4-git-send-email-james_p_freyensee@linux.intel.com>
 X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <james_p_freyensee@linux.intel.com>
+In-Reply-To: <1297210637-5934-3-git-send-email-james_p_freyensee@linux.intel.com>
 References: <james_p_freyensee@linux.intel.com>
+ <1297210637-5934-2-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297210637-5934-3-git-send-email-james_p_freyensee@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-This provides Kernel documentation for the PTI
-feature for Linux mobile solutions.
+This adds the Intel PTI Kconfig option.
 
 Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- Documentation/pti/pti_intel_mid.txt |   89 +++++++++++++++++++++++++++++++++++
- 1 files changed, 89 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/pti/pti_intel_mid.txt
+ drivers/misc/Kconfig |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/pti/pti_intel_mid.txt b/Documentation/pti/pti_intel_mid.txt
-new file mode 100644
-index 0000000..b9c3f3a
---- /dev/null
-+++ b/Documentation/pti/pti_intel_mid.txt
-@@ -0,0 +1,89 @@
-+The Intel MID PTI project is HW implemented in Intel Atom
-+system-on-a-chip designs based on the Parallel Trace
-+Interface for MIPI P1149.7 cJTAG standard.  The kernel solution
-+for this platform involves the following files:
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 4d073f1..f8076f1 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -136,6 +136,18 @@ config PHANTOM
+ 	  If you choose to build module, its name will be phantom. If unsure,
+ 	  say N here.
+ 
++config INTEL_MID_PTI
++        tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
++        help
++          The PTI (Parallel Trace Interface) driver directs
++          trace data routed from various parts in the system out
++          through an Intel Penwell PTI port and out of the mobile
++          device for analysis with a debugging tool (Lauterbach or Fido).
 +
-+./include/linux/pti.h
-+./include/linux/n_tracesink.h
-+./drivers/.../n_tracerouter.c
-+./drivers/.../n_tracesink.c
-+./drivers/.../pti.c
++          You should select this driver if the target kernel is meant for
++          an Intel Atom (non-netbook) mobile device containing a MIPI
++          P1149.7 standard implementation.
 +
-+pti.c is the driver that enables various debugging features
-+popular on certain mobile manufacturers.  n_tracerouter.c
-+and n_tracesink.c allow extra system information to be
-+collected and routed to the pti driver, such as trace
-+debugging data from a modem.  Altough n_tracerouter
-+and n_tracesink are a part of the complete PTI solution,
-+these two line disciplines can work separate from
-+pti.c and route any data stream from one /dev/tty node
-+to another /dev/tty node via kernel-space.  This provides
-+a stable, reliable connection that will not break unless
-+the user-space application shuts down (plus avoids
-+kernel->user->kernel context switch overheads of routing
-+data).
-+
-+An example debugging usage for this driver system:
-+   *Hook /dev/ttyPTI0 to syslogd.  Opening this port will also start
-+    a console device to further capture debugging messages to PTI.
-+   *Hook /dev/ttyPTI1 to modem debugging data to write to PTI HW.
-+    This is where n_tracerouter and n_tracesink are used.
-+   *Hook /dev/pti to a user-level debugging application for writing
-+    to PTI HW.
-+   *Use mipi_* Kernel Driver API in other device drivers for
-+    debugging to PTI by first requesting a PTI write address via
-+    mipi_request_masterchannel(1).
-+
-+Example 'privileged' (normal user privileges are not enough)
-+user-space code on how to setup the n_tracerouter and n_tracesink
-+ldisc drivers (note: n_tracerouter depends on n_tracesink):
-+
-+/////////// To hook up n_tracerouter and n_tracesink /////////
-+
-+#include <errno.h>
-+#define ONE_TTY "/dev/ttyOne"
-+#define TWO_TTY "/dev/ttyTwo"
-+
-+// needed global to hand onto ldisc connection
-+static int g_fd_source = -1;
-+static int g_fd_sink  = -1;
-+
-+// grab LDISC values from loaded ldisc drivers from /proc/tty/ldiscs
-+int source_ldisc_num, sink_ldisc_num = -1;
-+int retval;
-+
-+g_fd_source = open(ONE_TTY, O_RDWR); // must be R/W
-+g_fd_sink   = open(TWO_TTY, O_RDWR); // must be R/W
-+
-+if (g_fd_source <= 0) || (g_fd_sink <= 0) {
-+   // doubt you'll want to use these exact error lines of code
-+   printf("Error on open(). errno: %d\n",errno);
-+   return errno;
-+}
-+
-+retval = ioctl(g_fd_sink, TIOCSETD, &sink_ldisc_num);
-+if (retval < 0) {
-+   printf("Error on ioctl().  errno: %d\n", errno);
-+   return errno;
-+}
-+
-+retval = ioctl(g_fd_source, TIOCSETD, &source_ldisc_num);
-+if (retval < 0) {
-+   printf("Error on ioctl().  errno: %d\n", errno);
-+   return errno;
-+}
-+
-+/////////// To disconnect n_tracerouter and n_tracesink ////////
-+
-+// First make sure data through the ldiscs has stopped.
-+
-+// Second, disconnect ldiscs.  This provides a
-+// little cleaner shutdown on tty stack.
-+sink_ldisc_num = 0;
-+source_ldisc_num = 0;
-+ioctl(g_fd_uart, TIOCSETD, &sink_ldisc_num);
-+ioctl(g_fd_gadget, TIOCSETD, &source_ldisc_num);
-+
-+// Three, program closes connection:
-+close(g_fd_uart);
-+close(g_fd_gadget);
+ config SGI_IOC4
+ 	tristate "SGI IOC4 Base IO support"
+ 	depends on PCI
 -- 
 1.6.6.1
 
