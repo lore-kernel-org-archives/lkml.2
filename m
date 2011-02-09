@@ -1,163 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab1BITzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:55:12 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57757 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab1BITyQ (ORCPT
+	id S1752519Ab1BIT4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:56:46 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:31376 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab1BIT4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:54:16 -0500
-Subject: [PATCH 1/5] pagewalk: only split huge pages when necessary
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Wed, 09 Feb 2011 11:54:07 -0800
-References: <20110209195406.B9F23C9F@kernel>
-In-Reply-To: <20110209195406.B9F23C9F@kernel>
-Message-Id: <20110209195407.2CE28EA0@kernel>
+	Wed, 9 Feb 2011 14:56:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=ggfpCVNht8nxCD4usYSQF6WIezbzqDuYgRSSzaw/M5GAE8OtbxTXTLArXTUuM5jwkc
+         g29wHFqiuLLuR7ZMVL9Q==
+From: Ian Lance Taylor <iant@google.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Martin Capitanio <m@capitanio.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, golang-dev <golang-dev@googlegroups.com>,
+        Russ Cox <rsc@golang.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Albert Strasheim <fullung@gmail.com>
+Subject: Re: [golang-dev] Re: mmap, the language go, problems with the linux kernel
+References: <1297168678.2190.21.camel@marvin>
+	<AANLkTim7YVg1BTEjyhYShgZNL3oKu+zFywC7+NgFvT3z@mail.gmail.com>
+	<1297269019.4888.91.camel@marvin> <20110209191755.GE9533@thunk.org>
+Date: Wed, 09 Feb 2011 11:56:13 -0800
+In-Reply-To: <20110209191755.GE9533@thunk.org> (Ted Ts'o's message of "Wed, 9
+	Feb 2011 14:17:55 -0500")
+Message-ID: <mcrei7hnfs2.fsf@google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"Ted Ts'o" <tytso@mit.edu> writes:
 
-v2 - rework if() block, and remove  now redundant split_huge_page()
+> Linux has interpreted it to mean "virtual address space", and in fact
+> it's documented as such in the its version of the getrlimit man page.
+> I'd have to agree with Linus that it's probably way too late to change
+> what it means (or what Linux thinks it means, anyway).
 
-Right now, if a mm_walk has either ->pte_entry or ->pmd_entry
-set, it will unconditionally split any transparent huge pages
-it runs in to.  In practice, that means that anyone doing a
+I don't think anybody seriously expects Linux to change the meaning of
+ulimit -v at this point.  Obviously Go is going to do something
+different here.
 
-	cat /proc/$pid/smaps
+However, I think it's still worth pointing out that while ulimit -v no
+doubt has specialized applications, it does not do exactly what I think
+most people want.  I think most people want some way to say "do not let
+this program cause my machine to start thrashing."  That's what I use
+ulimit -v for; if I don't, a program which accidentally allocates memory
+in an endless loop starts thrashing.  But I don't actually care how much
+virtual memory the program is using; what I care about is limiting the
+amount of physical memory it is using, so that it doesn't take over my
+machine.
 
-will unconditionally break down every huge page in the process
-and depend on khugepaged to re-collapse it later.  This is
-fairly suboptimal.
+I think that would be a useful feature to implement regardless of how we
+feel about ulimit -v and Go.  I think we can reasonably expect more and
+more programs to try to advantage of large virtual address spaces.  Lets
+have a way to use them while still having a way to keep them from
+thrashing.
 
-This patch changes that behavior.  It teaches each ->pmd_entry
-handler (there are five) that they must break down the THPs
-themselves.  Also, the _generic_ code will never break down
-a THP unless a ->pte_entry handler is actually set.
-
-This means that the ->pmd_entry handlers can now choose to
-deal with THPs without breaking them down.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/fs/proc/task_mmu.c |    6 ++++++
- linux-2.6.git-dave/include/linux/mm.h |    3 +++
- linux-2.6.git-dave/mm/memcontrol.c    |    5 +++--
- linux-2.6.git-dave/mm/pagewalk.c      |   24 ++++++++++++++++++++----
- 4 files changed, 32 insertions(+), 6 deletions(-)
-
-diff -puN fs/proc/task_mmu.c~pagewalk-dont-always-split-thp fs/proc/task_mmu.c
---- linux-2.6.git/fs/proc/task_mmu.c~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.299558364 -0800
-+++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-02-09 11:41:42.319558349 -0800
-@@ -343,6 +343,8 @@ static int smaps_pte_range(pmd_t *pmd, u
- 	struct page *page;
- 	int mapcount;
- 
-+	split_huge_page_pmd(walk->mm, pmd);
-+
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE) {
- 		ptent = *pte;
-@@ -467,6 +469,8 @@ static int clear_refs_pte_range(pmd_t *p
- 	spinlock_t *ptl;
- 	struct page *page;
- 
-+	split_huge_page_pmd(walk->mm, pmd);
-+
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE) {
- 		ptent = *pte;
-@@ -623,6 +627,8 @@ static int pagemap_pte_range(pmd_t *pmd,
- 	pte_t *pte;
- 	int err = 0;
- 
-+	split_huge_page_pmd(walk->mm, pmd);
-+
- 	/* find the first VMA at or above 'addr' */
- 	vma = find_vma(walk->mm, addr);
- 	for (; addr != end; addr += PAGE_SIZE) {
-diff -puN include/linux/mm.h~pagewalk-dont-always-split-thp include/linux/mm.h
---- linux-2.6.git/include/linux/mm.h~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.303558361 -0800
-+++ linux-2.6.git-dave/include/linux/mm.h	2011-02-09 11:41:42.323558346 -0800
-@@ -899,6 +899,9 @@ unsigned long unmap_vmas(struct mmu_gath
-  * @pgd_entry: if set, called for each non-empty PGD (top-level) entry
-  * @pud_entry: if set, called for each non-empty PUD (2nd-level) entry
-  * @pmd_entry: if set, called for each non-empty PMD (3rd-level) entry
-+ * 	       this handler is required to be able to handle
-+ * 	       pmd_trans_huge() pmds.  They may simply choose to
-+ * 	       split_huge_page() instead of handling it explicitly.
-  * @pte_entry: if set, called for each non-empty PTE (4th-level) entry
-  * @pte_hole: if set, called for each hole at all levels
-  * @hugetlb_entry: if set, called for each hugetlb entry
-diff -puN mm/memcontrol.c~pagewalk-dont-always-split-thp mm/memcontrol.c
---- linux-2.6.git/mm/memcontrol.c~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.311558355 -0800
-+++ linux-2.6.git-dave/mm/memcontrol.c	2011-02-09 11:41:42.327558343 -0800
-@@ -4737,7 +4737,8 @@ static int mem_cgroup_count_precharge_pt
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
--	VM_BUG_ON(pmd_trans_huge(*pmd));
-+	split_huge_page_pmd(walk->mm, pmd);
-+
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE)
- 		if (is_target_pte_for_mc(vma, addr, *pte, NULL))
-@@ -4899,8 +4900,8 @@ static int mem_cgroup_move_charge_pte_ra
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
-+	split_huge_page_pmd(walk->mm, pmd);
- retry:
--	VM_BUG_ON(pmd_trans_huge(*pmd));
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; addr += PAGE_SIZE) {
- 		pte_t ptent = *(pte++);
-diff -puN mm/pagewalk.c~pagewalk-dont-always-split-thp mm/pagewalk.c
---- linux-2.6.git/mm/pagewalk.c~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.315558352 -0800
-+++ linux-2.6.git-dave/mm/pagewalk.c	2011-02-09 11:41:42.331558340 -0800
-@@ -33,19 +33,35 @@ static int walk_pmd_range(pud_t *pud, un
- 
- 	pmd = pmd_offset(pud, addr);
- 	do {
-+	again:
- 		next = pmd_addr_end(addr, end);
--		split_huge_page_pmd(walk->mm, pmd);
--		if (pmd_none_or_clear_bad(pmd)) {
-+		if (pmd_none(*pmd)) {
- 			if (walk->pte_hole)
- 				err = walk->pte_hole(addr, next, walk);
- 			if (err)
- 				break;
- 			continue;
- 		}
-+		/*
-+		 * This implies that each ->pmd_entry() handler
-+		 * needs to know about pmd_trans_huge() pmds
-+		 */
- 		if (walk->pmd_entry)
- 			err = walk->pmd_entry(pmd, addr, next, walk);
--		if (!err && walk->pte_entry)
--			err = walk_pte_range(pmd, addr, next, walk);
-+		if (err)
-+			break;
-+
-+		/*
-+		 * Check this here so we only break down trans_huge
-+		 * pages when we _need_ to
-+		 */
-+		if (!walk->pte_entry)
-+			continue;
-+
-+		split_huge_page_pmd(walk->mm, pmd);
-+		if (pmd_none_or_clear_bad(pmd))
-+			goto again;
-+		err = walk_pte_range(pmd, addr, next, walk);
- 		if (err)
- 			break;
- 	} while (pmd++, addr = next, addr != end);
-_
+Ian
