@@ -1,290 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab1BITdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:33:12 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:8704 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab1BITdK (ORCPT
+	id S1752555Ab1BITiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:38:01 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49467 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587Ab1BITiA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:33:10 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73807805"
-From: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        swetland@google.com, dima@android.com,
-        Niranjana Vishwanathapura <nvishwan@codeaurora.org>
-Subject: [PATCH v2] msm: rmnet: msm rmnet smd virtual network driver
-Date: Wed,  9 Feb 2011 11:32:41 -0800
-Message-Id: <1297279961-22386-1-git-send-email-nvishwan@codeaurora.org>
-X-Mailer: git-send-email 1.7.1
+	Wed, 9 Feb 2011 14:38:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=iAHXbQojEufNsIwdU9nB8on5rZ/8RP4L5SGumzJ3WiGm0Y/RxUhWVxSJg1OKd89gx5
+         37zYQU5sdalV4p2uRL1vXWXyr/TOoBBnbzuSBrl3f7sWsPJioUMNiSad7BXTuVdcqKvH
+         pXdkYT13CXRlkd89t0yf3JxwJBdKGBBG2N1o0=
+MIME-Version: 1.0
+In-Reply-To: <20110209145304.GB16737@elte.hu>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+ <20110128165455.GA18194@elte.hu> <20110128175532.GA26727@redhat.com>
+ <20110128182947.GB20056@elte.hu> <20110205203422.GA12443@redhat.com>
+ <20110207130841.GA16054@redhat.com> <AANLkTimS7vi_BLV_KUw_AKm4DzhV=43Bm3y_epm0rzj9@mail.gmail.com>
+ <20110209145304.GB16737@elte.hu>
+From: Michael Witten <mfwitten@gmail.com>
+Date: Wed, 9 Feb 2011 13:37:28 -0600
+Message-ID: <AANLkTi=HxRZjXKPTg1d3A+Z21PoDFWx7VYwGZDizUf6b@mail.gmail.com>
+Subject: Re: Bash not reacting to Ctrl-C
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        roland@redhat.com, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        bug-bash@gnu.org, Chet Ramey <chet.ramey@case.edu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Virtual network interface for MSM RMNET SMD transport.
-This driver creates network devices which use underlying
-SMD ports as transport.  This driver enables sending and
-receving IP packets to baseband processor in MSM chipsets.
+On Wed, Feb 9, 2011 at 08:53, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Michael Witten <mfwitten@gmail.com> wrote:
+>
+>> On Mon, Feb 7, 2011 at 07:08, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > Now that it is clear what happens, the test-case becomes even more
+>> > trivial:
+>> >
+>> >        bash-4.1$ ./bash -c 'while true; do /bin/true; done'
+>> >        ^C^C
+>> >
+>> > needs 4-5 attempts on my machine.
+>>
+>> I feel like the odd penguin out.
+>>
+>> I can't reproduce the behavior in question when using that example (I
+>> haven't tried the other).
+>>
+>> I'm running:
+>>
+>>     * bash version 4.1.9(2)-release (i686-pc-linux-gnu)
+>>
+>>     * linux 2.6.38-rc4 (100b33c8bd8a3235fd0b7948338d6cbb3db3c63d)
+>
+> Oleg provided another testcase, can you reproduce the Ctrl-C problem with this
+> it?
+>
+> #!/bin/bash
+>
+> perl -we '$SIG{INT} = sub {exit}; sleep'
+>
+> echo "Hehe, I am going to sleep after ^C"
+> sleep 100
+>
+>
+> Thanks,
+>
+>        Ingo
+>
 
-Cc: Brian Swetland <swetland@google.com>
-Signed-off-by: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
----
- drivers/net/Kconfig         |   10 ++
- drivers/net/Makefile        |    1 +
- drivers/net/msm_rmnet_smd.c |  213 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 224 insertions(+), 0 deletions(-)
- create mode 100644 drivers/net/msm_rmnet_smd.c
+Yes, that requires me to press Ctrl-C twice in order to escape the
+entire script. However, what do you expect the following to do:
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 0382332..b4f39bb 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -3422,4 +3422,14 @@ config VMXNET3
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called vmxnet3.
- 
-+config MSM_RMNET_SMD
-+	bool "MSM RMNET Virtual Network Device over SMD transport"
-+	depends on MSM_SMD
-+	default n
-+	help
-+	  Virtual network interface for MSM RMNET SMD transport.
-+	  This driver creates network devices which use underlying
-+	  SMD ports as transport.  This driver enables sending and
-+	  receving IP packets to baseband processor in MSM chipsets.
-+
- endif # NETDEVICES
-diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index b90738d..2bb4025 100644
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -302,3 +302,4 @@ obj-$(CONFIG_CAIF) += caif/
- obj-$(CONFIG_OCTEON_MGMT_ETHERNET) += octeon/
- obj-$(CONFIG_PCH_GBE) += pch_gbe/
- obj-$(CONFIG_TILE_NET) += tile/
-+obj-$(CONFIG_MSM_RMNET_SMD) += msm_rmnet_smd.o
-diff --git a/drivers/net/msm_rmnet_smd.c b/drivers/net/msm_rmnet_smd.c
-new file mode 100644
-index 0000000..03a0d14
---- /dev/null
-+++ b/drivers/net/msm_rmnet_smd.c
-@@ -0,0 +1,213 @@
-+/* drivers/net/msm_rmnet_smd.c
-+ *
-+ * Virtual Ethernet Interface for MSM7K Networking
-+ *
-+ * Copyright (C) 2007 Google, Inc.
-+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-+ * Author: Brian Swetland <swetland@google.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/delay.h>
-+#include <linux/errno.h>
-+#include <linux/interrupt.h>
-+#include <linux/init.h>
-+#include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
-+#include <linux/skbuff.h>
-+
-+#include <mach/msm_smd.h>
-+
-+struct rmnet_private {
-+	smd_channel_t *ch;
-+	const char *chname;
-+};
-+
-+static int count_this_packet(void *_hdr, int len)
-+{
-+	struct ethhdr *hdr = _hdr;
-+
-+	if (len >= ETH_HLEN && hdr->h_proto == htons(ETH_P_ARP))
-+		return 0;
-+
-+	return 1;
-+}
-+
-+/* Called in soft-irq context */
-+static void smd_net_data_handler(unsigned long arg)
-+{
-+	struct net_device *dev = (struct net_device *) arg;
-+	struct rmnet_private *p = netdev_priv(dev);
-+	struct sk_buff *skb;
-+	void *ptr = 0;
-+	int sz;
-+
-+	for (;;) {
-+		sz = smd_cur_packet_size(p->ch);
-+		if (sz == 0)
-+			break;
-+		if (smd_read_avail(p->ch) < sz)
-+			break;
-+
-+		if (sz > 1514) {
-+			pr_err("rmnet_recv() discarding %d len\n", sz);
-+			ptr = 0;
-+		} else {
-+			skb = dev_alloc_skb(sz + NET_IP_ALIGN);
-+			if (skb == NULL) {
-+				pr_err("rmnet_recv() cannot allocate skb\n");
-+			} else {
-+				skb->dev = dev;
-+				skb_reserve(skb, NET_IP_ALIGN);
-+				ptr = skb_put(skb, sz);
-+				if (smd_read(p->ch, ptr, sz) != sz) {
-+					pr_err("rmnet_recv() smd read fail\n");
-+					ptr = 0;
-+					dev_kfree_skb_irq(skb);
-+				} else {
-+					skb->protocol = eth_type_trans(skb,
-+								       dev);
-+					if (count_this_packet(ptr, skb->len)) {
-+						dev->stats.rx_packets++;
-+						dev->stats.rx_bytes += skb->len;
-+					}
-+					netif_receive_skb(skb);
-+				}
-+				continue;
-+			}
-+		}
-+		if (smd_read(p->ch, ptr, sz) != sz)
-+			pr_err("rmnet_recv() smd lied about avail?!");
-+	}
-+}
-+
-+static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
-+
-+static void smd_net_notify(void *_dev, unsigned event)
-+{
-+	if (event != SMD_EVENT_DATA)
-+		return;
-+
-+	smd_net_data_tasklet.data = (unsigned long) _dev;
-+
-+	tasklet_schedule(&smd_net_data_tasklet);
-+}
-+
-+static int rmnet_open(struct net_device *dev)
-+{
-+	int r;
-+	struct rmnet_private *p = netdev_priv(dev);
-+
-+	pr_info("rmnet_open()\n");
-+	if (!p->ch) {
-+		r = smd_open(p->chname, &p->ch, dev, smd_net_notify);
-+
-+		if (r < 0)
-+			return -ENODEV;
-+	}
-+
-+	netif_start_queue(dev);
-+	return 0;
-+}
-+
-+static int rmnet_stop(struct net_device *dev)
-+{
-+	pr_info("rmnet_stop()\n");
-+	netif_stop_queue(dev);
-+	return 0;
-+}
-+
-+static int rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
-+{
-+	struct rmnet_private *p = netdev_priv(dev);
-+	smd_channel_t *ch = p->ch;
-+
-+	if (smd_write_atomic(ch, skb->data, skb->len) != skb->len) {
-+		pr_err("rmnet fifo full, dropping packet\n");
-+	} else {
-+		if (count_this_packet(skb->data, skb->len)) {
-+			dev->stats.tx_packets++;
-+			dev->stats.tx_bytes += skb->len;
-+		}
-+	}
-+
-+	dev_kfree_skb_irq(skb);
-+	return 0;
-+}
-+
-+static void rmnet_set_multicast_list(struct net_device *dev)
-+{
-+}
-+
-+static void rmnet_tx_timeout(struct net_device *dev)
-+{
-+	pr_info("rmnet_tx_timeout()\n");
-+}
-+
-+static struct net_device_ops rmnet_ops = {
-+	.ndo_open = rmnet_open,
-+	.ndo_stop = rmnet_stop,
-+	.ndo_start_xmit = rmnet_xmit,
-+	.ndo_set_multicast_list = rmnet_set_multicast_list,
-+	.ndo_tx_timeout = rmnet_tx_timeout,
-+};
-+
-+static void __init rmnet_setup(struct net_device *dev)
-+{
-+	dev->netdev_ops = &rmnet_ops;
-+
-+	dev->watchdog_timeo = 20;
-+
-+	ether_setup(dev);
-+
-+	random_ether_addr(dev->dev_addr);
-+}
-+
-+
-+static const char *ch_name[3] = {
-+	"SMD_DATA5",
-+	"SMD_DATA6",
-+	"SMD_DATA7",
-+};
-+
-+static int __init rmnet_init(void)
-+{
-+	int ret;
-+	struct device *d;
-+	struct net_device *dev;
-+	struct rmnet_private *p;
-+	unsigned n;
-+
-+	for (n = 0; n < 3; n++) {
-+		dev = alloc_netdev(sizeof(struct rmnet_private),
-+				   "rmnet%d", rmnet_setup);
-+
-+		if (!dev)
-+			return -ENOMEM;
-+
-+		d = &(dev->dev);
-+		p = netdev_priv(dev);
-+		p->chname = ch_name[n];
-+
-+		ret = register_netdev(dev);
-+		if (ret) {
-+			free_netdev(dev);
-+			return ret;
-+		}
-+	}
-+	return 0;
-+}
-+
-+module_init(rmnet_init);
--- 
-1.5.6.3
+#!/bin/bash
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+perl -we '$SIG{INT} = "IGNORE"; sleep 10'
 
+echo "Hehe, I am going to sleep after ^C"
+sleep 100
