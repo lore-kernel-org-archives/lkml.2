@@ -1,57 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab1BITZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:25:10 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33364 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751126Ab1BITZI (ORCPT
+	id S1752343Ab1BITdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:33:12 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8704 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab1BITdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:25:08 -0500
-Date: Wed, 9 Feb 2011 19:25:06 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: frank.rowand@am.sony.com, Frank Rowand <frank.rowand@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
- all the time
-Message-ID: <20110209192506.GC23747@opensource.wolfsonmicro.com>
-References: <4D51D341.3040209@am.sony.com>
- <20110209114137.GA10163@opensource.wolfsonmicro.com>
- <201102091807.03094.rjw@sisk.pl>
- <4D52DD81.7050401@am.sony.com>
- <20110209184010.GB23747@opensource.wolfsonmicro.com>
- <4D52E441.2000805@am.sony.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D52E441.2000805@am.sony.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 9 Feb 2011 14:33:10 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73807805"
+From: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        swetland@google.com, dima@android.com,
+        Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+Subject: [PATCH v2] msm: rmnet: msm rmnet smd virtual network driver
+Date: Wed,  9 Feb 2011 11:32:41 -0800
+Message-Id: <1297279961-22386-1-git-send-email-nvishwan@codeaurora.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 11:00:17AM -0800, Frank Rowand wrote:
+Virtual network interface for MSM RMNET SMD transport.
+This driver creates network devices which use underlying
+SMD ports as transport.  This driver enables sending and
+receving IP packets to baseband processor in MSM chipsets.
 
-> and my understanding of this proposal was a goal to remove the ability
-> to have CONFIG_PM disabled, which results in increased memory usage
-> for some configurations.
+Cc: Brian Swetland <swetland@google.com>
+Signed-off-by: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+---
+ drivers/net/Kconfig         |   10 ++
+ drivers/net/Makefile        |    1 +
+ drivers/net/msm_rmnet_smd.c |  213 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 224 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/net/msm_rmnet_smd.c
 
-Not really, the goal was to simplify the PM config options to ones that
-are actually useful and cut down on the number of silly combinations
-that the randconfigs turn up.  CONFIG_PM is there mostly for historical
-reasons, it doesn't really mean much by itself except as a gate to other
-options.
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index 0382332..b4f39bb 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -3422,4 +3422,14 @@ config VMXNET3
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called vmxnet3.
+ 
++config MSM_RMNET_SMD
++	bool "MSM RMNET Virtual Network Device over SMD transport"
++	depends on MSM_SMD
++	default n
++	help
++	  Virtual network interface for MSM RMNET SMD transport.
++	  This driver creates network devices which use underlying
++	  SMD ports as transport.  This driver enables sending and
++	  receving IP packets to baseband processor in MSM chipsets.
++
+ endif # NETDEVICES
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index b90738d..2bb4025 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -302,3 +302,4 @@ obj-$(CONFIG_CAIF) += caif/
+ obj-$(CONFIG_OCTEON_MGMT_ETHERNET) += octeon/
+ obj-$(CONFIG_PCH_GBE) += pch_gbe/
+ obj-$(CONFIG_TILE_NET) += tile/
++obj-$(CONFIG_MSM_RMNET_SMD) += msm_rmnet_smd.o
+diff --git a/drivers/net/msm_rmnet_smd.c b/drivers/net/msm_rmnet_smd.c
+new file mode 100644
+index 0000000..03a0d14
+--- /dev/null
++++ b/drivers/net/msm_rmnet_smd.c
+@@ -0,0 +1,213 @@
++/* drivers/net/msm_rmnet_smd.c
++ *
++ * Virtual Ethernet Interface for MSM7K Networking
++ *
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ * Author: Brian Swetland <swetland@google.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/delay.h>
++#include <linux/errno.h>
++#include <linux/interrupt.h>
++#include <linux/init.h>
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
++#include <linux/skbuff.h>
++
++#include <mach/msm_smd.h>
++
++struct rmnet_private {
++	smd_channel_t *ch;
++	const char *chname;
++};
++
++static int count_this_packet(void *_hdr, int len)
++{
++	struct ethhdr *hdr = _hdr;
++
++	if (len >= ETH_HLEN && hdr->h_proto == htons(ETH_P_ARP))
++		return 0;
++
++	return 1;
++}
++
++/* Called in soft-irq context */
++static void smd_net_data_handler(unsigned long arg)
++{
++	struct net_device *dev = (struct net_device *) arg;
++	struct rmnet_private *p = netdev_priv(dev);
++	struct sk_buff *skb;
++	void *ptr = 0;
++	int sz;
++
++	for (;;) {
++		sz = smd_cur_packet_size(p->ch);
++		if (sz == 0)
++			break;
++		if (smd_read_avail(p->ch) < sz)
++			break;
++
++		if (sz > 1514) {
++			pr_err("rmnet_recv() discarding %d len\n", sz);
++			ptr = 0;
++		} else {
++			skb = dev_alloc_skb(sz + NET_IP_ALIGN);
++			if (skb == NULL) {
++				pr_err("rmnet_recv() cannot allocate skb\n");
++			} else {
++				skb->dev = dev;
++				skb_reserve(skb, NET_IP_ALIGN);
++				ptr = skb_put(skb, sz);
++				if (smd_read(p->ch, ptr, sz) != sz) {
++					pr_err("rmnet_recv() smd read fail\n");
++					ptr = 0;
++					dev_kfree_skb_irq(skb);
++				} else {
++					skb->protocol = eth_type_trans(skb,
++								       dev);
++					if (count_this_packet(ptr, skb->len)) {
++						dev->stats.rx_packets++;
++						dev->stats.rx_bytes += skb->len;
++					}
++					netif_receive_skb(skb);
++				}
++				continue;
++			}
++		}
++		if (smd_read(p->ch, ptr, sz) != sz)
++			pr_err("rmnet_recv() smd lied about avail?!");
++	}
++}
++
++static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
++
++static void smd_net_notify(void *_dev, unsigned event)
++{
++	if (event != SMD_EVENT_DATA)
++		return;
++
++	smd_net_data_tasklet.data = (unsigned long) _dev;
++
++	tasklet_schedule(&smd_net_data_tasklet);
++}
++
++static int rmnet_open(struct net_device *dev)
++{
++	int r;
++	struct rmnet_private *p = netdev_priv(dev);
++
++	pr_info("rmnet_open()\n");
++	if (!p->ch) {
++		r = smd_open(p->chname, &p->ch, dev, smd_net_notify);
++
++		if (r < 0)
++			return -ENODEV;
++	}
++
++	netif_start_queue(dev);
++	return 0;
++}
++
++static int rmnet_stop(struct net_device *dev)
++{
++	pr_info("rmnet_stop()\n");
++	netif_stop_queue(dev);
++	return 0;
++}
++
++static int rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	struct rmnet_private *p = netdev_priv(dev);
++	smd_channel_t *ch = p->ch;
++
++	if (smd_write_atomic(ch, skb->data, skb->len) != skb->len) {
++		pr_err("rmnet fifo full, dropping packet\n");
++	} else {
++		if (count_this_packet(skb->data, skb->len)) {
++			dev->stats.tx_packets++;
++			dev->stats.tx_bytes += skb->len;
++		}
++	}
++
++	dev_kfree_skb_irq(skb);
++	return 0;
++}
++
++static void rmnet_set_multicast_list(struct net_device *dev)
++{
++}
++
++static void rmnet_tx_timeout(struct net_device *dev)
++{
++	pr_info("rmnet_tx_timeout()\n");
++}
++
++static struct net_device_ops rmnet_ops = {
++	.ndo_open = rmnet_open,
++	.ndo_stop = rmnet_stop,
++	.ndo_start_xmit = rmnet_xmit,
++	.ndo_set_multicast_list = rmnet_set_multicast_list,
++	.ndo_tx_timeout = rmnet_tx_timeout,
++};
++
++static void __init rmnet_setup(struct net_device *dev)
++{
++	dev->netdev_ops = &rmnet_ops;
++
++	dev->watchdog_timeo = 20;
++
++	ether_setup(dev);
++
++	random_ether_addr(dev->dev_addr);
++}
++
++
++static const char *ch_name[3] = {
++	"SMD_DATA5",
++	"SMD_DATA6",
++	"SMD_DATA7",
++};
++
++static int __init rmnet_init(void)
++{
++	int ret;
++	struct device *d;
++	struct net_device *dev;
++	struct rmnet_private *p;
++	unsigned n;
++
++	for (n = 0; n < 3; n++) {
++		dev = alloc_netdev(sizeof(struct rmnet_private),
++				   "rmnet%d", rmnet_setup);
++
++		if (!dev)
++			return -ENOMEM;
++
++		d = &(dev->dev);
++		p = netdev_priv(dev);
++		p->chname = ch_name[n];
++
++		ret = register_netdev(dev);
++		if (ret) {
++			free_netdev(dev);
++			return ret;
++		}
++	}
++	return 0;
++}
++
++module_init(rmnet_init);
+-- 
+1.5.6.3
 
-This comes from the fact that the options exposed and the use of them
-doesn't really reflect the kernel power management infrastructure any
-more.  The PM options at Kconfig level are really SUSPEND, HIBERNATION
-and PM_RUNTIME but for historical reasons the idoms are all based on the
-root PM option.  This gets fiddly and confusing as you move over build
-coverage.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
