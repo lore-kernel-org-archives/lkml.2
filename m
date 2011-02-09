@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab1BIXCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:02:12 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56785 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187Ab1BIXCL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:02:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vlXcI+bXfA87tyePq9bSnKr+liICcfdqFWEvtY+QJp1734v2+cUjHSmB7R71w0UMy+
-         pszfqnfKK21g4ssjOgx8c+3njWt4Gtv3MC7CU5vV3WWo/O56+vjCpQRwvqpichZf+QAt
-         A6zkx+q9th+WRn2EyAzKDarvKRos4/JI8z38A=
+	id S1755775Ab1BIXDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:03:19 -0500
+Received: from kroah.org ([198.145.64.141]:35021 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755337Ab1BIXDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 18:03:18 -0500
+Date: Wed, 9 Feb 2011 15:02:59 -0800
+From: Greg KH <greg@kroah.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110209230259.GA475@kroah.com>
+References: <20110209224006.GA11202@kroah.com>
+ <20110209225056.GA25009@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <4D5315FB.8020004@zytor.com>
-References: <AANLkTikA3MT=eeMKg58HyYZRswUR+PMhYW978HEc0sst@mail.gmail.com>
-	<4D5315FB.8020004@zytor.com>
-Date: Wed, 9 Feb 2011 18:02:09 -0500
-Message-ID: <AANLkTimN2oM6E9E34fMffgtH81ZfYcGj6J5nnjGrxGfA@mail.gmail.com>
-Subject: Re: Can anyone explain "movl %eax %eax"?
-From: Jidong Xiao <jidong.xiao@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110209225056.GA25009@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh, I see. Thank you. So similarly, the operation "xorl %eax,%eax" is
-used for the same reason, right? I see that appears in more files.
+On Wed, Feb 09, 2011 at 10:50:56PM +0000, Matthew Garrett wrote:
+> \o/
+> 
+> A quick glance suggests that the firmware interface is an abomination 
+> and really there's no reason for them not to have used an existing 
+> interface of some sort, but that's par for the course. I'll review it 
+> properly now.
 
-Regards
-Jidong
+The firmware interface pre-dates ACPI.  Samsung seems to have only
+started using ACPI for their newest models, as it's a requirement for
+Win7 certification.  But even there, they still rely on their SABI
+interface for the majority of the "odd" hardware control knobs,
+including the backlight control, which baffles me even to this day.
 
-On Wed, Feb 9, 2011 at 5:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/09/2011 02:24 PM, Jidong Xiao wrote:
->> Hi,
->>
->> In the kernel source, I see in a couple of places, there is "movl %eax
->> %eax". Is this used for alignment purpose?
->>
->> For example, in the following piece of code we can see "movl %eax,%eax".
->>
->
-> In x86-64, a dword (long) operation clears the upper 32 bits of the
-> target register, so "movl %eax,%eax" clears the upper 32 bits of %rax.
->
->        -hpa
->
->
+thanks,
+
+greg k-h
