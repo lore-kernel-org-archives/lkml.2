@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1BIJky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 04:40:54 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46357 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753369Ab1BIJkw (ORCPT
+	id S1753491Ab1BIJmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 04:42:12 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:45641 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab1BIJmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 04:40:52 -0500
-Date: Wed, 9 Feb 2011 09:44:34 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Jayson R. King" <dev@jaysonking.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Stable team <stable@kernel.org>
-Subject: Re: 2.6.27.58-rc1 build error Re: [PATCH 21/23] hvc_console: Fix
- race between hvc_close and hvc_remove
-Message-ID: <20110209094434.3928bf26@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D52080A.1090100@jaysonking.com>
-References: <4D52080A.1090100@jaysonking.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Feb 2011 04:42:10 -0500
+Message-ID: <88546787bbe2f26026d6f291fdadef52.squirrel@webmail.greenhost.nl>
+In-Reply-To: <AANLkTikWdpvDCf=tGry1WrJx9SrOjdSnEw75DSihcg0h@mail.gmail.com>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
+    <s5hfws1whq8.wl%tiwai@suse.de>
+    <AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
+    <AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com>
+    <AANLkTinYnehdaXn=Om-hVdo_U9N47BWFTgFoJbjpzuo=@mail.gmail.com>
+    <d41841c1e5f524f976edea8cdd075238.squirrel@webmail.greenhost.nl>
+    <AANLkTikWdpvDCf=tGry1WrJx9SrOjdSnEw75DSihcg0h@mail.gmail.com>
+Date: Wed, 9 Feb 2011 10:42:05 +0100 (CET)
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Jeff Chua" <jeff.chua.linux@gmail.com>
+Cc: "Chris Wilson" <chris@chris-wilson.co.uk>, "Takashi Iwai" <tiwai@suse.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, "Len Brown" <lenb@kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 2ecd0b53b7de9511489f92806276a3d7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Feb 2011 21:20:42 -0600
-"Jayson R. King" <dev@jaysonking.com> wrote:
+On Wed, February 9, 2011 06:45, Jeff Chua wrote:
+>
+> This may help a little. I added printk("intel_crtc 2") inside
+> intel_crtc_reset() and added printk("intel_crtc 1") before calling
+> intel_crtc_reset().
+>
+> Looking at  dmesg, it looks like something else is calling
+> intel_crtc_reset() and not from intel_crtc_init() during resume.
 
-> drivers/char/hvc_console.c: In function 'hvc_open':
-> drivers/char/hvc_console.c:315: error: implicit declaration of function 
-> 'tty_kref_get'
-> drivers/char/hvc_console.c:324: warning: assignment makes pointer from 
-> integer without a cast
-> drivers/char/hvc_console.c:341: error: implicit declaration of function 
-> 'tty_kref_put'
-> drivers/char/hvc_console.c: In function 'hvc_poll':
-> drivers/char/hvc_console.c:558: warning: assignment makes pointer from 
-> integer without a cast
-> drivers/char/hvc_console.c: In function 'hvc_remove':
-> drivers/char/hvc_console.c:759: warning: assignment makes pointer from 
-> integer without a cast
-> 
-> I don't see a tty_kref_get or tty_kref_put on 2.6.27. Those functions 
-> first appeared in 2.6.28.
+That something else is the drm layer.
 
-Correct - for 2.6.27 I don't think you *can* make the tty layer
-non-exploitable without a major backport
+(I must say it's very unclear what the the ordering of driver function
+calls will be from just looking at drm the code. I hope the drm
+abstraction is working out well for others, to me it all seems a bit
+awkward. If state needs to be tracked, fine, but do it either in the
+drm layer or let the driver handle it.)
 
-Alan
+> intel_crtc 2 ffff880239cdf000
+> intel_crtc 2 ffff880239cdf800
+
+This doesn't really help, all it probably means is that you've got
+multiple crtc outputs, or something like that. It might help if you
+get two calls with the offending commit, but only one without it.
+
+I'd add printk's to the *_crtc_disable()/*_crtc_enable() calls with
+info whether it actually enables or disables something and compare
+the result between a working suspend and a broken one.
+
+Greetings,
+
+Indan
+
+
