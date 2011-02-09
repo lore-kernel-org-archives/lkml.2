@@ -1,60 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab1BIVUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 16:20:52 -0500
-Received: from nm1-vm1.bullet.mail.kr3.yahoo.com ([111.67.240.243]:46215 "HELO
-	nm1-vm1.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750946Ab1BIVUv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 16:20:51 -0500
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 686799.56298.bm@omp1001.mail.kr3.yahoo.com
-Message-ID: <549517.74890.qm@web70806.mail.kr3.yahoo.com>
-X-YMail-OSG: 8aTtfLcVM1n_yyIjX28rzSx4GcMknR5DLlF2_vvUGSjeRHP
- KQi9._4GNGN21qwt10Fe7zgl_qrA96M3DXrWZCbFLOlyvIfIkYhO4gFtnpjw
- XOgwzRTuNGyZtBiPWy1LwHXZ79PnAJzBL5MwJIA5tGRgkl1FViXJcUD_tgnU
- h0LyH.AVTTqNVowmOpaoONZydN4Rq5X2XBaUUuEaLpQWjBKWFkSLk8rwp5t.
- PzgPJMU6P4JiwhPwgm1nYlMo9_U6jv82p4CjBff5Q1Svf18VUEwBM_S8suhP
- pDRPttWAKrRdt8oQOavy3j1SK2T8.kyModSeZ0OMl6NxoQdKcMuB65164GrS
- bmJjTMrSXXfMAVMynMALCw36.GT_KLnHoFl5esm_DVGIVst_96QWIpcs80xK
- Q_CLlrU1qiGi3Ru7RmU0Qr4.9o2lttQ5wRMmgDRhic12Ii0BvGBw2I8MBIq3
- Cz1f34zrDxpxSpITv90PmprZc1_UZRVEiZQrpyDzaP.fHmUOdPG0SWM2lqRL
- I5s8gbRIxTVvr38QRxsNkJX9Id6BwWh1S2LitWsnkuerqi27ioN.W4qpBXv2
- QEIpNVpJBnzbohZRWsyTYV1E5adKA3Mit42r7cm9hCFzrNtfQ6VVASq8PkfW
- yB9DYMqiPwK1CEm36PZrQ9XA9p7.ob_4FwSqDnHMk46VFYhLLG9q6K9OGzCF
- .qlcwHuWHpmnljSTW4UBqE1G2SLMjfrchL9sTff7jkePAlzwWUuIPDvNGx69
- 9ak7WkUE9x8wMoQ7ZJoVs5ljS6XSeGIumOvsjL0mx7Wkn6mUHUo0VqNOJB74
- PgQ--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
-Date: Thu, 10 Feb 2011 06:20:46 +0900 (KST)
-From: "paulcompaore14@gmail.com" <paulcompaore12@gmail.com>
-Reply-To: paulcompaore14@gmail.com
-Subject: Dear Friend,
-To: undisclosed recipients:;
+	id S1755551Ab1BIVWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 16:22:39 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:34040
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750946Ab1BIVWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 16:22:38 -0500
+Date: Wed, 9 Feb 2011 21:23:29 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: david@lang.hm, Gergely Nagy <algernon@balabit.hu>,
+        James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: CAP_SYSLOG, 2.6.38 and user space
+Message-ID: <20110209212329.GA24777@mail.hallyn.com>
+References: <1296733177.14846.26.camel@moria>
+ <20110203153252.GA24153@mail.hallyn.com>
+ <20110204160513.GB17396@mail.hallyn.com>
+ <1296837186.24742.15.camel@moria>
+ <20110204171502.GA24226@mail.hallyn.com>
+ <alpine.DEB.2.00.1102042301420.8162@asgard.lang.hm>
+ <20110206011831.GB15805@mail.hallyn.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110206011831.GB15805@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Serge E. Hallyn (serge@hallyn.com):
+> Quoting david@lang.hm (david@lang.hm):
+> > On Fri, 4 Feb 2011, Serge E. Hallyn wrote:
+> > 
+> > >Quoting Gergely Nagy (algernon@balabit.hu):
+> > >>On Fri, 2011-02-04 at 16:05 +0000, Serge E. Hallyn wrote:
+> > >>>Quoting Serge E. Hallyn (serge@hallyn.com):
+> > >>>>>From 2d7408541dd3a6e19a4265b028233789be6a40f4 Mon Sep 17 00:00:00 2001
+> > >>>>From: Serge Hallyn <serge@peq.(none)>
+> > >>>>
+> > >>>>At 2.6.39 or 2.6.40, let's add a sysctl which defaults to 0.  When
+> > >>>>0, refuse if cap_sys_admin, if 1, then allow.  This will allow
+> > >>>>users to acknowledge (permanently, if they must, using /etc/sysctl.conf)
+> > >>>>that they've seen the syslog message about cap_sys_admin being
+> > >>>>deprecated for syslog.
+> > >>>>
+> > >>>>Signed-off-by: Serge Hallyn <serge@hallyn.com>
+> > >-			goto warn; /* switch to return -EPERM after 2.6.39 */
+> > >+		     !capable(CAP_SYSLOG)) {
+> > >+			/* remove after 2.6.39 */
+> > >+			if (capable(CAP_SYS_ADMIN))
+> > >+				WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
+> > >+				  "but no CAP_SYSLOG (deprecated).\n");
+> > >+			else
+> > >+				return -EPERM;
+> > >+		}
+> > >	}
+> > 
+> > why does this need to be removed after 2.6.39?
+> > 
+> > whenever you go to remove it you will break userspace, what's the
+> > benifit of breaking userspace?
+> > 
+> > I can understand that it's better to have a syslog daemon with
+> > CAP_SYSLOG instead of CAP_SYS_ADMIN, but does "it would be better to
+> > have userspace changed" really translate into "it's so important to
+> > have userspace changed that we need to break any userspace that
+> > hasn't changed"?
+> > 
+> > I really don't think so.
+> 
+> I think I agree with you.  If someone wants to grant one of the other
+> CAP_SYS_ADMIN powers without CAP_SYSLOG, then they can break that into
+> yet another, i.e. CAP_IPCSET.  Makes sense.
 
-Dear Friend,
+So if that's how we're leaning, then the following patch is much more
+concise.  I'll send this to Linus and any appropriate -stable tomorrow
+ if noone objects.
 
-I am Mr.Paul Compaore; I am in charge of auditing section in Banque Internationale Du Burkina (BIB). I need your urgent assistance to transfer the sum of ($11.3 million to your account. I will send you full details on how the business will be executed and also note that you will receive 50% of the above mentioned amount if you agree to assist me execute this business transaction. If you are interested and capable to handle this business transaction, come up with the information's shown below:- 
+>From 5166e114d6a7c508addbadd763322089eb0b02f5 Mon Sep 17 00:00:00 2001
+From: Serge Hallyn <serge@hallyn.com>
+Date: Thu, 3 Feb 2011 09:26:15 -0600
+Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now (v2)
 
-1). Your full name: 
-2). Your contact cell phone number: 
-3). Your age: 
-4). Your sex: 
-5). Your occupations: 
-6). Your country and city:
+It'd be nice to do that later, but it's not strictly necessary,
+and it'll be hard to do without breaking somebody's userspace.
 
-As soon as possible all these information's is submitted to me immediately i will send you full details of this business transaction on the receipt of your response.Reply to my private email: paulcompaore12@gmail.com
+Signed-off-by: Serge Hallyn <serge@hallyn.com>
+---
+ kernel/printk.c |   14 ++++----------
+ 1 files changed, 4 insertions(+), 10 deletions(-)
 
-Thanks.
-Mr Paul Compaore
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 2ddbdc7..ff58136 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -274,12 +274,12 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 	 * at open time.
+ 	 */
+ 	if (type == SYSLOG_ACTION_OPEN || !from_file) {
+-		if (dmesg_restrict && !capable(CAP_SYSLOG))
+-			goto warn; /* switch to return -EPERM after 2.6.39 */
++		if (dmesg_restrict && !capable(CAP_SYSLOG) && !capable(CAP_SYS_ADMIN))
++			return -EPERM;
+ 		if ((type != SYSLOG_ACTION_READ_ALL &&
+ 		     type != SYSLOG_ACTION_SIZE_BUFFER) &&
+-		    !capable(CAP_SYSLOG))
+-			goto warn; /* switch to return -EPERM after 2.6.39 */
++		     !capable(CAP_SYSLOG) && !capable(CAP_SYS_ADMIN))
++			return -EPERM;
+ 	}
+ 
+ 	error = security_syslog(type);
+@@ -423,12 +423,6 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+ 	}
+ out:
+ 	return error;
+-warn:
+-	/* remove after 2.6.39 */
+-	if (capable(CAP_SYS_ADMIN))
+-		WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
+-		  "but no CAP_SYSLOG (deprecated and denied).\n");
+-	return -EPERM;
+ }
+ 
+ SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
+-- 
+1.7.2.3
 
-
-
-      
