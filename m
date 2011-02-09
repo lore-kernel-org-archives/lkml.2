@@ -1,106 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab1BIUKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 15:10:08 -0500
-Received: from imp02.mtu.ru ([62.5.255.19]:56931 "EHLO imp02.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab1BIUKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 15:10:06 -0500
-Message-ID: <4D52F404.4000709@pavlinux.ru>
-Date: Wed, 09 Feb 2011 23:07:32 +0300
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; ru; rv:1.9.2.13) Gecko/20101206 Microsoft/666 Notepad
-MIME-Version: 1.0
-To: Andy Isaacson <adi@hexapodia.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_KERNEL_XZ obscure build failure if xz(1) not installed
-References: <20110209195258.GN11874@hexapodia.org>
-In-Reply-To: <20110209195258.GN11874@hexapodia.org>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=03742489
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Spam-Flag: NO
-X-Spam-Yversion: Spamooborona-3.0
+	id S1755005Ab1BIUKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 15:10:40 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:56145 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab1BIUKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 15:10:34 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=J-06X1p54oQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=WfulkdPnAAAA:8 a=meVymXHHAAAA:8 a=RHwrXTnBX2QY_OcBMyIA:9 a=5st3kZkZh1QIbPRXH-YA:7 a=Gc_8wBNt-tI1EFh42fR3lPDSzv8A:4 a=jEp0ucaQiEUA:10 a=l29vjEC0CZ8A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110209201030.363842508@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 09 Feb 2011 15:02:53 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [RFC][PATCH 4/4] ftrace/x86: Add support for -mfentry to x86_64
+References: <20110209200249.111932716@goodmis.org>
+Content-Disposition: inline; filename=0004-ftrace-x86-Add-support-for-mfentry-to-x86_64.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09.02.2011 22:52, Andy Isaacson пишет:
-> % uname -m
-> x86_64
-> % git log -1 | head
-> commit 100b33c8bd8a3235fd0b7948338d6cbb3db3c63d
-> % grep XZ .config
-> CONFIG_HAVE_KERNEL_XZ=y
-> CONFIG_KERNEL_XZ=y
-> CONFIG_RD_XZ=y
-> CONFIG_SQUASHFS_XZ=y
-> CONFIG_XZ_DEC=y
-> CONFIG_XZ_DEC_X86=y
-> CONFIG_XZ_DEC_POWERPC=y
-> CONFIG_XZ_DEC_IA64=y
-> CONFIG_XZ_DEC_ARM=y
-> CONFIG_XZ_DEC_ARMTHUMB=y
-> CONFIG_XZ_DEC_SPARC=y
-> CONFIG_XZ_DEC_BCJ=y
-> CONFIG_XZ_DEC_TEST=y
-> CONFIG_DECOMPRESS_XZ=y
-> % make -j4
-> ...
->   CC      arch/x86/boot/tty.o
->   CC      arch/x86/oprofile/oprofile.mod.o
->   XZKERN  arch/x86/boot/compressed/vmlinux.bin.xz
-> exec: 23: xz: not found
->   CC      arch/x86/boot/video.o
->   CC      crypto/crc32c.mod.o
->   CC      crypto/pcrypt.mod.o
->   CC      arch/x86/boot/video-mode.o
->   CC      drivers/acpi/acpi_memhotplug.mod.o
->   MKPIGGY arch/x86/boot/compressed/piggy.S
-> arch/x86/boot/compressed/vmlinux.bin.xz: No such file or directory
->   CC      arch/x86/boot/version.o
->   LD      arch/x86/boot/compressed/vmlinux
-> ... [hundreds of lines of output snipped]
->   LD [M]  net/sched/act_csum.ko
->   IHEX    firmware/bnx2/bnx2-mips-09-6.2.1.fw
->   IHEX    firmware/bnx2/bnx2-mips-06-6.2.1.fw
-> % echo $?
-> 2
-> % ls -l arch/x86/boot/bzImage
-> -rw-r--r-- 1 adi adi 1991504 Feb  1 18:41 arch/x86/boot/bzImage
-> 
-> The failure is obscured by trailing make output, and since a broken
-> bzImage is created, "make install" succeeds, and the first visible
-> failure is after reboot when I get the lovely
-> 
->     Decompressing Linux...
-> 
->     Input is not in the XZ format (wrong magic bytes)
-> 
->      -- System halted
-> 
-> Sometimes I run "make -j4 && make install" which would have caught this,
-> but the error should be more prominent and we shouldn't create bzImage
-> if the dependencies are not present.
+From: Steven Rostedt <srostedt@redhat.com>
 
- :)
+If the kernel is compiled with gcc 4.6.0 which supports -mfentry,
+then use that instead of mcount.
 
-Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-diff --git a/scripts/xz_wrap.sh b/scripts/xz_wrap.sh
-index 17a5798..5ec9d36 100644
---- a/scripts/xz_wrap.sh
-+++ b/scripts/xz_wrap.sh
-@@ -20,4 +20,4 @@ case $ARCH in
-        sparc)          BCJ=--sparc ;;
- esac
+ arch/x86/Kconfig                 |    1 +
+ arch/x86/include/asm/ftrace.h    |    7 ++++++-
+ arch/x86/kernel/entry_64.S       |   17 ++++++++++++++++-
+ arch/x86/kernel/x8664_ksyms_64.c |    6 +++++-
+ 4 files changed, 28 insertions(+), 3 deletions(-)
 
--exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB
-+exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB || exit 1
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d5ed94d..ac1a47e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -32,6 +32,7 @@ config X86
+ 	select HAVE_KRETPROBES
+ 	select HAVE_OPTPROBES
+ 	select HAVE_FTRACE_MCOUNT_RECORD
++	select HAVE_FENTRY if X86_64
+ 	select HAVE_C_RECORDMCOUNT
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FUNCTION_TRACER
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index db24c22..b1386d8 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -29,11 +29,16 @@
+ #endif
+ 
+ #ifdef CONFIG_FUNCTION_TRACER
+-#define MCOUNT_ADDR		((long)(mcount))
++#ifdef CC_HAS_FENTRY
++# define MCOUNT_ADDR		((long)(__fentry__))
++#else
++# define MCOUNT_ADDR		((long)(mcount))
++#endif
+ #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
+ 
+ #ifndef __ASSEMBLY__
+ extern void mcount(void);
++extern void __fentry__(void);
+ 
+ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+ {
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index aed1ffb..44031ee 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -63,9 +63,16 @@
+ 	.code64
+ #ifdef CONFIG_FUNCTION_TRACER
+ #ifdef CONFIG_DYNAMIC_FTRACE
++
++#ifdef CC_HAS_FENTRY
++ENTRY(__fentry__)
++	retq
++END(__fentry__)
++#else
+ ENTRY(mcount)
+ 	retq
+ END(mcount)
++#endif
+ 
+ ENTRY(ftrace_caller)
+ 	cmpl $0, function_trace_stop
+@@ -74,7 +81,11 @@ ENTRY(ftrace_caller)
+ 	MCOUNT_SAVE_FRAME
+ 
+ 	movq 0x38(%rsp), %rdi
++#ifdef CC_HAS_FENTRY
++	movq 0x40(%rsp), %rsi
++#else
+ 	movq 8(%rbp), %rsi
++#endif
+ 	subq $MCOUNT_INSN_SIZE, %rdi
+ 
+ GLOBAL(ftrace_call)
+@@ -133,9 +144,13 @@ ENTRY(ftrace_graph_caller)
+ 
+ 	MCOUNT_SAVE_FRAME
+ 
++#ifdef CC_HAS_FENTRY
++	leaq 0x40(%rsp), %rdi
++#else
+ 	leaq 8(%rbp), %rdi
+-	movq 0x38(%rsp), %rsi
+ 	movq (%rbp), %rdx
++#endif
++	movq 0x38(%rsp), %rsi
+ 	subq $MCOUNT_INSN_SIZE, %rsi
+ 
+ 	call	prepare_ftrace_return
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 1b950d1..7fa3a78 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -13,9 +13,13 @@
+ #include <asm/ftrace.h>
+ 
+ #ifdef CONFIG_FUNCTION_TRACER
+-/* mcount is defined in assembly */
++/* mcount and __fentry__ are defined in assembly */
++#ifdef CC_HAS_FENTRY
++EXPORT_SYMBOL(__fentry__);
++#else
+ EXPORT_SYMBOL(mcount);
+ #endif
++#endif
+ 
+ EXPORT_SYMBOL(__get_user_1);
+ EXPORT_SYMBOL(__get_user_2);
 -- 
+1.7.2.3
 
-                                                         Pavel.
+
