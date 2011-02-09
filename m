@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab1BINeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 08:34:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52083 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab1BINeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 08:34:05 -0500
-Date: Wed, 9 Feb 2011 14:34:00 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
-        "Arnd Bergmann (maintainer:GENERIC INCLUDE/A...)" <arnd@arndb.de>,
-        "Andrew Morton (commit_signer:4/8=50%)" <akpm@linux-foundation.org>,
-        "Mark Brown (commit_signer:1/8=12%)" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "Anton Vorontsov (commit_signer:1/8=12%)" <cbouatmailru@gmail.com>,
-        "Greg Kroah-Hartman (commit_signer:1/8=12%)" <greg@kroah.com>,
-        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] gpio: make newer functionality available outside of
- GPIOLIB
-Message-ID: <20110209133400.GB2366@pengutronix.de>
-References: <1297205075-11396-1-git-send-email-w.sang@pengutronix.de>
- <4D51CF3D.9000103@metafoo.de>
+	id S1755179Ab1BINmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 08:42:03 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:60876 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754893Ab1BINmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 08:42:01 -0500
+X-ASG-Debug-ID: 1297258919-01de280c5395ce0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D5299E8.7060006@fusionio.com>
+Date: Wed, 9 Feb 2011 14:43:04 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
-Content-Disposition: inline
-In-Reply-To: <4D51CF3D.9000103@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Justin TerAvest <teravest@google.com>
+CC: "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "ctalbott@google.com" <ctalbott@google.com>,
+        "mrubin@google.com" <mrubin@google.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>,
+        "guijianfeng@cn.fujitsu.com" <guijianfeng@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Don't wait if queue already has requests.
+References: <1297192697-29978-1-git-send-email-teravest@google.com> <4D52938C.30907@fusionio.com>
+X-ASG-Orig-Subj: Re: [PATCH] Don't wait if queue already has requests.
+In-Reply-To: <4D52938C.30907@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1297258919
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.54835
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011-02-09 14:15, Jens Axboe wrote:
+> On 2011-02-08 20:18, Justin TerAvest wrote:
+>> Commit 7667aa0630407bc07dc38dcc79d29cc0a65553c1 added logic to wait for
+>> the last queue of the group to become busy (have at least one request),
+>> so that the group does not lose out for not being continuously
+>> backlogged. The commit did not check for the condition that the last
+>> queue already has some requests. As a result, if the queue already has
+>> requests, wait_busy is set. Later on, cfq_select_queue() checks the
+>> flag, and decides that since the queue has a request now and wait_busy
+>> is set, the queue is expired.  This results in early expiration of the
+>> queue.
+>>
+>> This patch fixes the problem by adding a check to see if queue already
+>> has requests. If it does, wait_busy is not set. As a result, time slices
+>> do not expire early.
+>>
+>> The queues with more than one request are usually buffered writers.
+>> Testing shows improvement in isolation between buffered writers.
+> 
+> Thanks for catching this in due time, I'll queue it up for 2.6.38 and
 
---hQiwHBbRI9kgIhsi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+BTW, this was not meant as a snide remark, I initially thought the bad
+commit was from dec 2010 when it is from 2009 :-)
 
+-- 
+Jens Axboe
 
-> Given that these functions are pretty generic and build on top of the gen=
-eric
-> gpio interface I think they should be available if GENERIC_GPIO is select=
-ed and
-> not only just through GPIOLIB. Otherwise all the archs not using gpiolib =
-but
-> providing the gpio api would have to be patched as well.
-
-I agree that could be argumented for these calls. Will try something
-later if nobody objects that approach.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---hQiwHBbRI9kgIhsi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk1Sl8gACgkQD27XaX1/VRtilACfXnxlKX0baCO8Dj6/Ax0JLw7I
-Jh8An3e8cIiFkGF0I2Tvz7TadpMSBTFF
-=P6FG
------END PGP SIGNATURE-----
-
---hQiwHBbRI9kgIhsi--
