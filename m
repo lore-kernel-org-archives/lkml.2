@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab1BIARY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 19:17:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58012 "EHLO mga09.intel.com"
+	id S932065Ab1BIARZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 19:17:25 -0500
+Received: from mga09.intel.com ([134.134.136.24]:40362 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756006Ab1BIARV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 19:17:21 -0500
+	id S1755998Ab1BIARX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 19:17:23 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,444,1291622400"; 
-   d="scan'208";a="705558315"
+   d="scan'208";a="705558322"
 From: james_p_freyensee@linux.intel.com
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
         james_p_freyensee@linux.intel.com
-Subject: [PATCH 07/12] n_tracerouter and n_tracesink additions.
-Date: Tue,  8 Feb 2011 16:17:12 -0800
-Message-Id: <1297210637-5934-7-git-send-email-james_p_freyensee@linux.intel.com>
+Subject: [PATCH 09/12] n_tracesink header file.
+Date: Tue,  8 Feb 2011 16:17:14 -0800
+Message-Id: <1297210637-5934-9-git-send-email-james_p_freyensee@linux.intel.com>
 X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1297210637-5934-6-git-send-email-james_p_freyensee@linux.intel.com>
+In-Reply-To: <1297210637-5934-8-git-send-email-james_p_freyensee@linux.intel.com>
 References: <james_p_freyensee@linux.intel.com>
  <1297210637-5934-2-git-send-email-james_p_freyensee@linux.intel.com>
  <1297210637-5934-3-git-send-email-james_p_freyensee@linux.intel.com>
  <1297210637-5934-4-git-send-email-james_p_freyensee@linux.intel.com>
  <1297210637-5934-5-git-send-email-james_p_freyensee@linux.intel.com>
  <1297210637-5934-6-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297210637-5934-7-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297210637-5934-8-git-send-email-james_p_freyensee@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-This patch adds line discipline numbers to n_tracerouter and
-n_tracesink line disciplines for the Intel-Atom PTI implementation
-for mobile devices.
+This header file allows the n_tracerouter to send it's information
+to the n_tracesink ldisc driver.  It's part of the Intel-Atom
+PTI implementation solution.
 
 Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- include/linux/tty.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ include/linux/n_tracesink.h |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/n_tracesink.h
 
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 54e4eaa..c507f53 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -50,6 +50,8 @@
- #define N_CAIF		20      /* CAIF protocol for talking to modems */
- #define N_GSM0710	21	/* GSM 0710 Mux */
- #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
-+#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
-+#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
- 
- /*
-  * This character is the same as _POSIX_VDISABLE: it cannot be used as
+diff --git a/include/linux/n_tracesink.h b/include/linux/n_tracesink.h
+new file mode 100644
+index 0000000..b1a3ad8
+--- /dev/null
++++ b/include/linux/n_tracesink.h
+@@ -0,0 +1,32 @@
++/*
++ *  n_tracesink.h - Kernel driver API to route trace data in kernel space.
++ *
++ *  Copyright (C) Intel 2010
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2
++ *  as published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ *  02110-1301, USA
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * The implementation of the function seen in this file can be found in
++ * char/n_tracesink.c
++ */
++
++#ifndef N_TRACESINK_H_
++#define N_TRACESINK_H_
++
++void n_tracesink_datadrain(u8 *cp, int count);
++
++#endif
 -- 
 1.6.6.1
 
