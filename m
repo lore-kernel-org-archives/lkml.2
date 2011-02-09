@@ -1,53 +1,45 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab1BCPCy (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 3 Feb 2011 10:02:54 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:52805 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab1BCPCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 10:02:52 -0500
-Date: Thu, 3 Feb 2011 20:32:47 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: memcg: save 20% of per-page memcg memory overhead
-Message-ID: <20110203150247.GD16409@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1296743166-9412-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1296743166-9412-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754807Ab1BIRYt (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 9 Feb 2011 12:24:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23723 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753885Ab1BIRYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 12:24:48 -0500
+From: y@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: Harald Hoyer <harald@redhat.com>
+Subject: [PATCH] CREDITS: update
+Date: Wed,  9 Feb 2011 18:27:36 +0100
+Message-Id: <1297272456-16908-1-git-send-email-y>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Johannes Weiner <hannes@cmpxchg.org> [2011-02-03 15:26:01]:
+From: Harald Hoyer <harald@redhat.com>
 
-> This patch series removes the direct page pointer from struct
-> page_cgroup, which saves 20% of per-page memcg memory overhead (Fedora
-> and Ubuntu enable memcg per default, openSUSE apparently too).
-> 
-> The node id or section number is encoded in the remaining free bits of
-> pc->flags which allows calculating the corresponding page without the
-> extra pointer.
-> 
-> I ran, what I think is, a worst-case microbenchmark that just cats a
-> large sparse file to /dev/null, because it means that walking the LRU
-> list on behalf of per-cgroup reclaim and looking up pages from
-> page_cgroups is happening constantly and at a high rate.  But it made
-> no measurable difference.  A profile reported a 0.11% share of the new
-> lookup_cgroup_page() function in this benchmark.
+Signed-off-by: Harald Hoyer <harald@redhat.com>
+---
+ CREDITS |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Wow! defintely worth a deeper look.
-
-> 
-> 	Hannes
-
--- 
-	Three Cheers,
-	Balbir
+diff --git a/CREDITS b/CREDITS
+index 1d39a6d..e74fec6 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -1552,12 +1552,12 @@ S: Wantage, New Jersey 07461
+ S: USA
+ 
+ N: Harald Hoyer
+-E: harald.hoyer@parzelle.de
+-W: http://parzelle.de/
++E: harald@harald-hoyer.de
++W: http://harald-hoyer.de
+ D: ip_masq_quake
+ D: md boot support
+-S: Hohe Strasse 30
+-S: D-70176 Stuttgart
++S: Am Strand 5
++S: D-19063 Schwerin
+ S: Germany
+ 
+ N: Jan Hubicka
