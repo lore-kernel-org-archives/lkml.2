@@ -1,226 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab1BIOSN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 09:18:13 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59683 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635Ab1BIOSK (ORCPT
+	id S1755811Ab1BIOSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 09:18:40 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49014 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755394Ab1BIOR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 09:18:10 -0500
+	Wed, 9 Feb 2011 09:17:59 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NYJuULL7+UlcKcCAvXW8r8uVKCZZ+1MhQ906qJ6YMReBBMNXooPpVKPeOeWX7jA8KN
-         6dbJ3inJSBSHCiuyfeqtWQnNWA1CuZw8o9Lser7zePu5kUdysLaysVfUskGhlhX00pOH
-         VMiMR/9HoV9E2rcO6Yxvbg7O+/nbhjslMalso=
-Date: Wed, 9 Feb 2011 15:18:03 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
- PTRACE_ATTACH
-Message-ID: <20110209141803.GH3770@htj.dyndns.org>
-References: <20110204105343.GA12133@htj.dyndns.org>
- <20110204130455.GA3671@redhat.com>
- <20110204144858.GI12133@htj.dyndns.org>
- <20110204170602.GB15301@redhat.com>
- <20110205133926.GM12133@htj.dyndns.org>
- <20110207134235.GB22538@redhat.com>
- <20110207141135.GA16992@htj.dyndns.org>
- <20110207153723.GA27997@redhat.com>
- <20110207163121.GB16992@htj.dyndns.org>
- <20110207174821.GA1237@redhat.com>
+        h=from:to:subject:date:user-agent:cc:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=A1lxLMJtb08C7pgCbiXo2Px6J8TNxokFtGgkSyUm1qRk1ES/yC3GhOVasYxT6zf160
+         g+GsZd+DXnfPJZ9unxuOy7qe8pCrwVQc86CPbsa6FBjY3Fi02o9FG9h8KPb+9QoNjDLQ
+         eGGdbTf0Yr1JQExBqkd2Qc/vSVy88J6NJ6k3M=
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: linux-scsi@vger.kernel.org
+Subject: [PATCH] scsi: make scsi_devinfo infrastructure optional
+Date: Wed, 9 Feb 2011 15:15:15 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110207174821.GA1237@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102091515.16202.bzolnier@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+Add SCSI_QUIRKS config option (default y and dependent on EMBEDDED
+config option) to allow disabling of scsi_devinfo infrastructure.
 
-On Mon, Feb 07, 2011 at 06:48:21PM +0100, Oleg Nesterov wrote:
-> > I don't know.  Maybe it's more consistent that way and I'm not
-> > fundamentally against that but it is a big behavior change
-> 
-> Hmm. I tried to describe the current behaviour...
+The output code size savings are ~14k for CONFIG_SCSI_QUIRKS=n
+(as measured on x86-32):
 
-We can make it behave like the following.  { | } denotes two
-alternative behaviors regarding SIGCONT.
+CONFIG_SCSI_QUIRKS=y:
+   text    data     bss     dec     hex filename
+  47342    4368     628   52338    cc72 drivers/scsi/scsi_mod.o
+   3897    2776     260    6933    1b15 drivers/scsi/scsi_devinfo.o
 
-  If a group stop is initiated while, or was in progress when a task
-  is ptraced, the task will stop for group stop and notify the ptracer
-  accordingly.  Note that the task could be trapped elsewhere delaying
-  this from happening.  When the task stops for group stop, it
-  participates in group stop as if it is not ptraced and the real
-  parent is notified of group stop completion.
+CONFIG_SCSI_QUIRKS=n:
+   text    data     bss     dec     hex filename
+  42968    1592     368   44928    af80 drivers/scsi/scsi_mod.o
 
-  Note that { the task is put into TASK_TRACED state and group stop
-  resume by SIGCONT is ignored. | the task is put into TASK_STOPPED
-  state and the following PTRACE request will transition it into
-  TASK_TRACED.  If SIGCONT is received before transition to
-  TASK_TRACED is made, the task will resume execution.  If PTRACE
-  request faces with SIGCONT, PTRACE request may fail. }
+Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+---
+Using CONFIG_SCSI_QUIRKS=n it was possible to shrink the binary
+code size of the minimal SCSI core configuration by 14% (as measured
+on x86-32 few kernel versions ago)..
 
-  The ptracer may resume execution of the task using PTRACE_CONT
-  without affecting other tasks in the group.  The task will not stop
-  for the same group stop again while ptraced.
+ drivers/scsi/Kconfig     |    9 +++++++++
+ drivers/scsi/Makefile    |    3 ++-
+ drivers/scsi/scsi_priv.h |   33 +++++++++++++++++++++++++++++++++
+ 3 files changed, 44 insertions(+), 1 deletion(-)
 
-  On ptrace detach, if group stop is in effect, the task will be put
-  into TASK_STOPPED state and if it is the first time the task is
-  stopping for the current group stop, it will participate in group
-  stop completion.
-
-This can be phrased better but it seems well defined enough for me.  I
-take it that one of your concerns is direct transition into
-TASK_TRACED on group stop while ptraced which prevents the tracee from
-reacting to the following SIGCONT.  I'm not sure how much of an actual
-problem it is given that our notification to real parent hasn't worked
-at all till now but we can definitely implement proper TASK_STOPPED ->
-TRACED transition on the next PTRACE request.  There exists a
-fundamental race condition between SIGCONT and the next PTRACE call
-but I don't think it's such a big deal as long as the transition
-itself is done properly.
-
-If we don't go that route, another solution would be to add a ptrace
-call which can listen to SIGCONT.  ie. PTRACE_WAIT_CONT or whatever
-which the ptracer can call once it knows the tracee entered group
-stop.
-
-In either case, the fundamentals of ptrace operation don't really
-change.  All ptrace operations are still per-task and ptracer almost
-always has control over execution of the tracee.  Sure, it allows
-ptraced task to escape group stop but it seems defined clear enough
-and IMHO actually is a helpful debugging feature.  After all, it's not
-like stop signals can be used for absoultely reliable job control.
-There's an inherent race against SIGCONT.
-
-> > What do you do about PTRACE requests while a task is group stopped?
-> > Reject them?  Block them?
-> 
-> Yes, another known oddity. Of course we shouldn't reject or block.
-> Perhaps we can ignore this initially. If SIGCONT comes after another
-> request does STOPPED/TRACED it clears SIGNAL_STOP_STOPPED, but the
-> tracee won't run until the next PTRACE_CONT, this makes sense.
-
-That conceptually might make sense but other than the conceptual
-integrity it widely changes the assumptions and is less useful than
-the current behavior.  I don't really see why we would want to do
-that.
-
-> The problem is, gdb can't leave the tracee in STOPPED state if it
-> wants. We need to improve this somehow (like in your previous example
-> with gdb).
->
-> Only if it attaches to every thread in the thread group. Otherwise,
-> if the non-thread has already initiated the group-stop, the tracee
-> will notice TIF_SIGPENDING eventually and call do_signal_stop(),
-> debugger can't control this.
-
-The debugger is still notified and can override it.  gdb already can
-and does.
-
-> > I don't think it's an extreme corner case
-> > we can break.  For example, if a user gdb's a program which raises one
-> > of the stop signals, currently the user expects to be able to continue
-> > the program from whithin the gdb.  If we make group stop override
-> > ptrace, there's no other recourse than sending signal from outside.
-> 
-> Yes. Of course, gdb can be "fixed", it can send SIGCONT.
-> 
-> But yes, this is the noticeable change, that is why I suggested
-> ptrace_resume-acts-as-SIGCONT logic. Ugly, yes, but more or less
-> compatible. (although let me repeat, _pesonally_ I'd prefer to
-> simply tell user-space to learn the new rules ;)
-
-I can't really agree there.  First, to me, it seems like too radical a
-change and secondly the resulting behavior might look conceptually
-pleasing but is not as useful as the current one.  Why make a change
-which results in reduced usefulness while noticeably breaking existing
-users?
-
-> > The only thing it achieves is the integrity of group
-> > stop
-> 
-> Given that SIGCHLD doesn't queue and with or without your changes
-> we send it per-thread, it is not trivial for gdb to detect the
-> group-stop anyway. Again, the kernel should help somehow.
-
-Hmmm?  Isn't this discoverable from the exit code from wait?
-
-> > and I'm not really sure whether that's something worth achieving
-> > at the cost of debugging capabilities especially when we don't _have_
-> > to lose them.
-> 
-> But we do not? I mean, at least this is not worse than the current
-> behaviour.
-
-I think it's worse.  With your changes, debuggers can't diddle the
-tasks behind group stop's back which the current users already expect.
-
-> > > As for SIGCONT. Roland suggests (roughly) to change ptrace_resume()
-> > > so that it doesn't wakeup the stopped tracee until the real SIGCONT
-> > > comes. And this makes sense to me.
-> >
-> > I agree it adds more integrity to group stop but at the cost of
-> > debugging capabilities.  I'm not yet convinced integrity of group stop
-> > is that important.  Why is it such a big deal?
-> 
-> Of course I can't "prove" it is that important. But I think so.
-
-Heh, I'm asking for proof that it is more useful. :-) But I'm still
-curious why you think it's important because the benefits aren't
-apparent to me.  Roland and you seem to share this opinion without
-much dicussion so maybe I'm missing something?
-
-> > CLD_STOPPED is too but while ptrace is attached the notifications are
-> > made per-task and delivered to the tracer.
-> 
-> No, there is a difference. Sure, CLD_STOPPED is per-process without
-> ptrace. But CLD_CONTINUED continues to be per-process even if all
-> threads are traced.
-
-Hmm... I need to think more about it.  I'm not fully following your
-point.
-
-> > I think this is the key question.  Whether to de-throne
-> > PTRACE_CONT such that it cannot override group stop.  As I've already
-> > said several times already, I think it is a pretty fundamental
-> > property of ptrace
-> 
-> Again, I am a bit confused. Note that PTRACE_CONT overrides
-> group stop if we do the above. It should wake up the tracee, in
-> SIGCONT-compatible way (yes, the latter is not exactly clear).
-
-What do you mean?  Waking up in SIGCONT-compatible way?  Sending
-SIGCONT ending the whole group stop?
-
-> But at least this should be visible to real parent. We shouldn't
-> silently make the stopped tracee running while its real_parent
-> thinks everything is stopped.
-
-I think maybe this is where our different POVs come from.  To me, it
-isn't too objectionable to allow debuggers to diddle with tracees
-behind the real parent's back.  In fact, it would be quite useful when
-debugging job control related behaviors.  I wouldn't have much problem
-accepting the other way around - ie. strict job control even while
-being debugged, but given that it is already allowed and visible, I
-fail to see why we should change the behavior.  It doesn't seem to
-have enough benefits to warrant such visible change.
-
-If I change the patchset such that group stop while ptraced first
-enters TASK_STOPPED and then transitions into TASK_TRACED on the next
-PTRACE call, would that be something you guys can agree on?  We would
-still need to ask the tracee to move into TASK_TRACED and so there
-will be race window which would be visible under very convoluted
-situations but IMHO they truly are the extreme corner cases.
-
-Thanks.
-
--- 
-tejun
+Index: b/drivers/scsi/Kconfig
+===================================================================
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -47,6 +47,15 @@ config SCSI_TGT
+ 	  If you want to use SCSI target mode drivers enable this option.
+ 	  If you choose M, the module will be called scsi_tgt.
+ 
++config SCSI_QUIRKS
++	bool "SCSI quirks support" if EMBEDDED
++	default y
++	help
++	  This option enables support for devices that require settings
++	  that differ from the default.
++
++	  If unsure say Y.
++
+ config SCSI_NETLINK
+ 	bool
+ 	default	n
+Index: b/drivers/scsi/Makefile
+===================================================================
+--- a/drivers/scsi/Makefile
++++ b/drivers/scsi/Makefile
+@@ -160,7 +160,8 @@ obj-$(CONFIG_SCSI_WAIT_SCAN)	+= scsi_wai
+ scsi_mod-y			+= scsi.o hosts.o scsi_ioctl.o constants.o \
+ 				   scsicam.o scsi_error.o scsi_lib.o
+ scsi_mod-$(CONFIG_SCSI_DMA)	+= scsi_lib_dma.o
+-scsi_mod-y			+= scsi_scan.o scsi_sysfs.o scsi_devinfo.o
++scsi_mod-y			+= scsi_scan.o scsi_sysfs.o
++scsi_mod-$(CONFIG_SCSI_QUIRKS)	+= scsi_devinfo.o
+ scsi_mod-$(CONFIG_SCSI_NETLINK)	+= scsi_netlink.o
+ scsi_mod-$(CONFIG_SYSCTL)	+= scsi_sysctl.o
+ scsi_mod-$(CONFIG_SCSI_PROC_FS)	+= scsi_proc.o
+Index: b/drivers/scsi/scsi_priv.h
+===================================================================
+--- a/drivers/scsi/scsi_priv.h
++++ b/drivers/scsi/scsi_priv.h
+@@ -47,6 +47,7 @@ enum {
+ 	SCSI_DEVINFO_SPI,
+ };
+ 
++#ifdef CONFIG_SCSI_QUIRKS
+ extern int scsi_get_device_flags(struct scsi_device *sdev,
+ 				 const unsigned char *vendor,
+ 				 const unsigned char *model);
+@@ -61,6 +62,38 @@ extern int scsi_dev_info_remove_list(int
+ 
+ extern int __init scsi_init_devinfo(void);
+ extern void scsi_exit_devinfo(void);
++#else
++static inline int scsi_get_device_flags(struct scsi_device *sdev,
++					const unsigned char *vendor,
++					const unsigned char *model)
++{
++	return 0;
++}
++static inline int scsi_get_device_flags_keyed(struct scsi_device *sdev,
++					      const unsigned char *vendor,
++					      const unsigned char *model,
++					      int key)
++{
++	return 0;
++}
++static inline int scsi_dev_info_list_add_keyed(int compatible, char *vendor,
++					       char *model, char *strflags,
++					       int flags, int key)
++{
++	return 0;
++}
++static inline int scsi_dev_info_add_list(int key, const char *name)
++{
++	return 0;
++}
++static inline int scsi_dev_info_remove_list(int key)
++{
++	return 0;
++}
++
++static inline int scsi_init_devinfo(void) { return 0; }
++static inline void scsi_exit_devinfo(void) { }
++#endif
+ 
+ /* scsi_error.c */
+ extern enum blk_eh_timer_return scsi_times_out(struct request *req);
