@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab1BIUin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 15:38:43 -0500
-Received: from straum.hexapodia.org ([207.7.131.186]:54058 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab1BIUim (ORCPT
+	id S1755310Ab1BIUjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 15:39:42 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50645 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755024Ab1BIUji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 15:38:42 -0500
-Date: Wed, 9 Feb 2011 12:38:41 -0800
-From: Andy Isaacson <adi@hexapodia.org>
-To: Pavel Vasilyev <pavel@pavlinux.ru>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CONFIG_KERNEL_XZ obscure build failure if xz(1) not installed
-Message-ID: <20110209203841.GQ11874@hexapodia.org>
-References: <20110209195258.GN11874@hexapodia.org> <4D52F404.4000709@pavlinux.ru>
+	Wed, 9 Feb 2011 15:39:38 -0500
+Date: Wed, 9 Feb 2011 21:39:00 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
+Message-ID: <20110209203900.GT27982@pengutronix.de>
+References: <1297233693.242364.862698430999.1.gpush@pororo>
+ <4D52F73A.4010707@bluewatersys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D52F404.4000709@pavlinux.ru>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D52F73A.4010707@bluewatersys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 11:07:32PM +0300, Pavel Vasilyev wrote:
-> > The failure is obscured by trailing make output, and since a broken
-> > bzImage is created, "make install" succeeds, and the first visible
-[snip]
->  :)
+Hi Ryan,
+
+On Thu, Feb 10, 2011 at 09:21:14AM +1300, Ryan Mallon wrote:
+> > +int clk_enable(struct clk *clk)
+> > +{
+> > +	unsigned long flags;
+> > +	int ret = 0;
+> > +
+> > +	spin_lock_irqsave(&clk->enable_lock, flags);
 > 
-> Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
-> ---
-> diff --git a/scripts/xz_wrap.sh b/scripts/xz_wrap.sh
-> index 17a5798..5ec9d36 100644
-> --- a/scripts/xz_wrap.sh
-> +++ b/scripts/xz_wrap.sh
-> @@ -20,4 +20,4 @@ case $ARCH in
->         sparc)          BCJ=--sparc ;;
->  esac
-> 
-> -exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB
-> +exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB || exit 1
-> 
+> 	WARN_ON(clk->prepare_count == 0); ?
+This is added in patch 3/3
 
-I get the same behavior with and without your patch, tested with both
-bash and dash.  (FWIW, /bin/sh on my systems is a symlink to /bin/dash.)
+Best regards
+Uwe
 
-% printf '#!/bin/bash\nexec /no/such/file\n' > foo.sh
-% chmod +x foo.sh
-% ./foo.sh; echo $?
-./foo.sh: line 2: /no/such/file: No such file or directory
-./foo.sh: line 2: exec: /no/such/file: cannot execute: No such file or directory
-126
-% printf '#!/bin/bash\nexec /no/such/file\n' > foo.sh
-% ./foo.sh; echo $?
-./foo.sh: line 2: /no/such/file: No such file or directory
-./foo.sh: line 2: exec: /no/such/file: cannot execute: No such file or
-directory
-126
-
-% printf '#!/bin/dash\nexec /no/such/file\n' > foo.sh
-% ./foo.sh; echo $?
-exec: 2: /no/such/file: not found
-2
-% printf '#!/bin/dash\nexec /no/such/file || exit 1\n' > foo.sh
-% ./foo.sh; echo $?
-exec: 2: /no/such/file: not found
-2
-
--andy
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
