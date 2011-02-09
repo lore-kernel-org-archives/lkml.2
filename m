@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab1BIPwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 10:52:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954Ab1BIPwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 10:52:05 -0500
-Date: Wed, 9 Feb 2011 10:51:33 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: chris.mason@oracle.com, security@kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] btrfs: prevent heap corruption in
-	btrfs_ioctl_space_info()
-Message-ID: <20110209155130.GA2564@localhost.localdomain>
-References: <1297260766.2327.40.camel@dan>
+	id S1752931Ab1BIPxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 10:53:45 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52720 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075Ab1BIPxn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 10:53:43 -0500
+Message-ID: <4D52B810.403@oracle.com>
+Date: Wed, 09 Feb 2011 07:51:44 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297260766.2327.40.camel@dan>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Patrick McHardy <kaber@trash.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        netfilter-devel@vger.kernel.org,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Subject: Re: linux-next: Tree for February 3 (netfilter)
+References: <20110203160034.44ae3247.sfr@canb.auug.org.au> <20110204111511.1f4d6706.randy.dunlap@oracle.com> <4D524079.1000908@trash.net>
+In-Reply-To: <4D524079.1000908@trash.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D52B870.0071:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 09:12:46AM -0500, Dan Rosenberg wrote:
-> Commit bf5fc093c5b625e4259203f1cee7ca73488a5620 refactored
-> btrfs_ioctl_space_info() and introduced several security issues.
+On 02/08/11 23:21, Patrick McHardy wrote:
+> Am 04.02.2011 20:15, schrieb Randy Dunlap:
+>> On Thu, 3 Feb 2011 16:00:34 +1100 Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Changes since 20110202:
+>>
+>> When SYSCTL and PROC_FS and NETFILTER_NETLINK are not enabled:
+>>
+>> net/built-in.o: In function `try_to_load_type':
+>> ip_set_core.c:(.text+0x3ab49): undefined reference to `nfnl_unlock'
+>> ip_set_core.c:(.text+0x3ab4e): undefined reference to `nfnl_lock'
 > 
-> space_args.space_slots is an unsigned 64-bit type controlled by a
-> possibly unprivileged caller.  The comparison as a signed int type
-> allows providing values that are treated as negative and cause the
-> subsequent allocation size calculation to wrap, or be truncated to 0.
-> By providing a size that's truncated to 0, kmalloc() will return
-> ZERO_SIZE_PTR.  It's also possible to provide a value smaller than the
-> slot count.  The subsequent loop ignores the allocation size when
-> copying data in, resulting in a heap overflow or write to ZERO_SIZE_PTR.
-> 
-> The fix changes the slot count type and comparison typecast to u64,
-> which prevents truncation or signedness errors, and also ensures that we
-> don't copy more data than we've allocated in the subsequent loop.  Note
-> that zero-size allocations are no longer possible since there is already
-> an explicit check for space_args.space_slots being 0 and truncation of
-> this value is no longer an issue.
-> 
-> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+> Does this patch fix the problem?
 
-Reviewed-by: Josef Bacik <josef@redhat.com>
+Yes, it does.  Thanks.
 
-Thanks,
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Josef
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
