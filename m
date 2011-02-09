@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1BITuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:50:51 -0500
-Received: from brother.balabit.com ([195.70.62.219]:56218 "EHLO
-	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab1BITuu (ORCPT
+	id S1751113Ab1BITw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:52:59 -0500
+Received: from straum.hexapodia.org ([207.7.131.186]:56794 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786Ab1BITw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:50:50 -0500
-Subject: Re: CAP_SYSLOG, 2.6.38 and user space
-From: Gergely Nagy <algernon@balabit.hu>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: James Morris <jmorris@namei.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110204171502.GA24226@mail.hallyn.com>
-References: <1296733177.14846.26.camel@moria>
-	 <20110203153252.GA24153@mail.hallyn.com>
-	 <20110204160513.GB17396@mail.hallyn.com> <1296837186.24742.15.camel@moria>
-	 <20110204171502.GA24226@mail.hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: BalaBit
-Date: Wed, 09 Feb 2011 20:50:47 +0100
-Message-ID: <1297281047.13055.25.camel@luthien.mhp>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Feb 2011 14:52:58 -0500
+Date: Wed, 9 Feb 2011 11:52:58 -0800
+From: Andy Isaacson <adi@hexapodia.org>
+To: linux-kernel@vger.kernel.org
+Cc: Lasse Collin <lasse.collin@tukaani.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: CONFIG_KERNEL_XZ obscure build failure if xz(1) not installed
+Message-ID: <20110209195258.GN11874@hexapodia.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-04 at 17:15 +0000, Serge E. Hallyn wrote:
-[...snip...] 
-> > > James, do you mind taking this patch?
-> > 
-> > Would it be possible to change the commit message to say that 1 would be
-> > the default? Just to avoid future confusion... (having it at 0 default
-> > later would just postpone the userspace breakage)
-> > 
-> 
-> Good point, attached.
-[...snip...]
+% uname -m
+x86_64
+% git log -1 | head
+commit 100b33c8bd8a3235fd0b7948338d6cbb3db3c63d
+% grep XZ .config
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_KERNEL_XZ=y
+CONFIG_RD_XZ=y
+CONFIG_SQUASHFS_XZ=y
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_X86=y
+CONFIG_XZ_DEC_POWERPC=y
+CONFIG_XZ_DEC_IA64=y
+CONFIG_XZ_DEC_ARM=y
+CONFIG_XZ_DEC_ARMTHUMB=y
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+CONFIG_XZ_DEC_TEST=y
+CONFIG_DECOMPRESS_XZ=y
+% make -j4
+...
+  CC      arch/x86/boot/tty.o
+  CC      arch/x86/oprofile/oprofile.mod.o
+  XZKERN  arch/x86/boot/compressed/vmlinux.bin.xz
+exec: 23: xz: not found
+  CC      arch/x86/boot/video.o
+  CC      crypto/crc32c.mod.o
+  CC      crypto/pcrypt.mod.o
+  CC      arch/x86/boot/video-mode.o
+  CC      drivers/acpi/acpi_memhotplug.mod.o
+  MKPIGGY arch/x86/boot/compressed/piggy.S
+arch/x86/boot/compressed/vmlinux.bin.xz: No such file or directory
+  CC      arch/x86/boot/version.o
+  LD      arch/x86/boot/compressed/vmlinux
+... [hundreds of lines of output snipped]
+  LD [M]  net/sched/act_csum.ko
+  IHEX    firmware/bnx2/bnx2-mips-09-6.2.1.fw
+  IHEX    firmware/bnx2/bnx2-mips-06-6.2.1.fw
+% echo $?
+2
+% ls -l arch/x86/boot/bzImage
+-rw-r--r-- 1 adi adi 1991504 Feb  1 18:41 arch/x86/boot/bzImage
 
-Just a friendly reminder that - as far as I see - neither this, nor
-anything similar, did not make it into Linus' tree yet.
+The failure is obscured by trailing make output, and since a broken
+bzImage is created, "make install" succeeds, and the first visible
+failure is after reboot when I get the lovely
 
-I'd love if it would, would hate to tell users to avoid 2.6.38 due to it
-being broken.
+    Decompressing Linux...
 
--- 
-|8]
+    Input is not in the XZ format (wrong magic bytes)
 
+     -- System halted
 
+Sometimes I run "make -j4 && make install" which would have caught this,
+but the error should be more prominent and we shouldn't create bzImage
+if the dependencies are not present.
 
+-andy
