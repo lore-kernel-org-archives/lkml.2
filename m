@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1BIKk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:40:57 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34462 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752618Ab1BIKk4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:40:56 -0500
-Date: Wed, 9 Feb 2011 10:43:10 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Uwe =?ISO-8859-14?B?S2xlaW5lLUv2bmln?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        David Vrabel <dvrabel@arcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Haavard Skinnemoen <hskinnemoen@atmel.com>
-Subject: Re: [PATCH RESENT#2] [AVR32] don't check platform_get_irq's return
- value against zero
-Message-ID: <20110209104310.71c12826@lxorguk.ukuu.org.uk>
-In-Reply-To: <1297247284-31650-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1288690250.32331.41.camel@hcegtvedt>
-	<1297247284-31650-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+	id S1754121Ab1BIKou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:44:50 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:41034 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752817Ab1BIKot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 05:44:49 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [patch] memcg: charged pages always have valid per-memcg zone info
+Date: Wed,  9 Feb 2011 11:44:35 +0100
+Message-Id: <1297248275-23521-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  9 Feb 2011 11:28:04 +0100
-Uwe Kleine-König  <u.kleine-koenig@pengutronix.de> wrote:
+page_cgroup_zoneinfo() will never return NULL for a charged page,
+remove the check for it in mem_cgroup_get_reclaim_stat_from_page().
 
-> platform_get_irq returns -ENXIO on failure, so !int_irq was probably
-> always true.  Better use (int)int_irq <= 0.  Note that a return value of
-> zero is still handled as error even though this could mean irq0.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-We don't have an IRQ 0 in Linux so that's fine.
+Andrew, this is a follow-up to 'memcg: no uncharged pages reach
+page_cgroup_zoneinfo'.
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 686f1ce..6d007d6 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1017,9 +1017,6 @@ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
+ 	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
+ 	smp_rmb();
+ 	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
+-	if (!mz)
+-		return NULL;
+-
+ 	return &mz->reclaim_stat;
+ }
+ 
+-- 
+1.7.4
+
