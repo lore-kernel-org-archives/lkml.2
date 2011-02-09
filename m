@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab1BIQKA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 11:10:00 -0500
-Received: from stinky.trash.net ([213.144.137.162]:54362 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab1BIQJ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 11:09:59 -0500
-Message-ID: <4D52BC47.8080709@trash.net>
-Date: Wed, 09 Feb 2011 17:09:43 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753483Ab1BIQRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 11:17:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752105Ab1BIQRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 11:17:23 -0500
+Date: Wed, 9 Feb 2011 11:16:55 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, chris.mason@oracle.com,
+        security@kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] btrfs: prevent heap corruption in
+	btrfs_ioctl_space_info()
+Message-ID: <20110209161654.GB2564@localhost.localdomain>
+References: <1297260766.2327.40.camel@dan> <20110209155130.GA2564@localhost.localdomain>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Subject: Re: linux-next: Tree for February 3 (netfilter)
-References: <20110203160034.44ae3247.sfr@canb.auug.org.au> <20110204111511.1f4d6706.randy.dunlap@oracle.com> <4D524079.1000908@trash.net> <4D52B810.403@oracle.com>
-In-Reply-To: <4D52B810.403@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110209155130.GA2564@localhost.localdomain>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.02.2011 16:51, schrieb Randy Dunlap:
-> On 02/08/11 23:21, Patrick McHardy wrote:
->> Am 04.02.2011 20:15, schrieb Randy Dunlap:
->>> On Thu, 3 Feb 2011 16:00:34 +1100 Stephen Rothwell wrote:
->>>
->>>> Hi all,
->>>>
->>>> Changes since 20110202:
->>>
->>> When SYSCTL and PROC_FS and NETFILTER_NETLINK are not enabled:
->>>
->>> net/built-in.o: In function `try_to_load_type':
->>> ip_set_core.c:(.text+0x3ab49): undefined reference to `nfnl_unlock'
->>> ip_set_core.c:(.text+0x3ab4e): undefined reference to `nfnl_lock'
->>
->> Does this patch fix the problem?
+On Wed, Feb 09, 2011 at 10:51:33AM -0500, Josef Bacik wrote:
+> On Wed, Feb 09, 2011 at 09:12:46AM -0500, Dan Rosenberg wrote:
+> > Commit bf5fc093c5b625e4259203f1cee7ca73488a5620 refactored
+> > btrfs_ioctl_space_info() and introduced several security issues.
+> > 
+> > space_args.space_slots is an unsigned 64-bit type controlled by a
+> > possibly unprivileged caller.  The comparison as a signed int type
+> > allows providing values that are treated as negative and cause the
+> > subsequent allocation size calculation to wrap, or be truncated to 0.
+> > By providing a size that's truncated to 0, kmalloc() will return
+> > ZERO_SIZE_PTR.  It's also possible to provide a value smaller than the
+> > slot count.  The subsequent loop ignores the allocation size when
+> > copying data in, resulting in a heap overflow or write to ZERO_SIZE_PTR.
+> > 
+> > The fix changes the slot count type and comparison typecast to u64,
+> > which prevents truncation or signedness errors, and also ensures that we
+> > don't copy more data than we've allocated in the subsequent loop.  Note
+> > that zero-size allocations are no longer possible since there is already
+> > an explicit check for space_args.space_slots being 0 and truncation of
+> > this value is no longer an issue.
+> > 
+> > Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
 > 
-> Yes, it does.  Thanks.
-> 
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Reviewed-by: Josef Bacik <josef@redhat.com>
 > 
 
-Thanks, I'll push it upstream with my next batch of patches.
+Argh sorry I take it back, this is wrong, we can have multiple raid types per
+space info, so you need to put the slot_count-- in the inner loop farther down
+to count the actual slots we're adding.  Thanks,
+
+Signed-off-by: Josef Bacik <josef@redhat.com>
+
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index b72520b..89bfd41 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2203,7 +2203,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+ 	int num_types = 4;
+ 	int alloc_size;
+ 	int ret = 0;
+-	int slot_count = 0;
++	u64 slot_count = 0;
+ 	int i, c;
+ 
+ 	if (copy_from_user(&space_args,
+@@ -2242,7 +2242,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+ 		goto out;
+ 	}
+ 
+-	slot_count = min_t(int, space_args.space_slots, slot_count);
++	slot_count = min_t(u64, space_args.space_slots, slot_count);
+ 
+ 	alloc_size = sizeof(*dest) * slot_count;
+ 
+@@ -2262,6 +2262,9 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+ 	for (i = 0; i < num_types; i++) {
+ 		struct btrfs_space_info *tmp;
+ 
++		if (!slot_count)
++			break;
++
+ 		info = NULL;
+ 		rcu_read_lock();
+ 		list_for_each_entry_rcu(tmp, &root->fs_info->space_info,
+@@ -2283,7 +2286,10 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
+ 				memcpy(dest, &space, sizeof(space));
+ 				dest++;
+ 				space_args.total_spaces++;
++				slot_count--;
+ 			}
++			if (!slot_count)
++				break;
+ 		}
+ 		up_read(&info->groups_sem);
+ 	}
