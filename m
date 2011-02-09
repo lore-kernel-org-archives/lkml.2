@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab1BIN0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 08:26:12 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:57149 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab1BIN0L convert rfc822-to-8bit (ORCPT
+	id S1755090Ab1BIN3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 08:29:13 -0500
+Received: from 26.mail-out.ovh.net ([91.121.27.225]:47228 "HELO
+	26.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754718Ab1BIN3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 08:26:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=IaAag1QDGUzF7xoLQCgcuTtGs6nMo0iu8eVado+TgqESnvZvgwRclfSie2F8hagBwX
-         uQMiY3EavPFPERGt8xEZv92NsMx58nt/wQF3h7hbLKgFHZUhn5xJMpGf6vTCBqgtR8AN
-         XHVs/zaZyma60C9K6Q7TFWC0mhFLkYRf+k2y4=
-MIME-Version: 1.0
-In-Reply-To: <m3y65qv7m8.fsf@fleche.redhat.com>
-References: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
- <m3hbcfzu9u.fsf@fleche.redhat.com> <AANLkTinMx8mJYiDps3TuuaA1B4NLHi-PuCKm2=sTqyR0@mail.gmail.com>
- <m3y65qv7m8.fsf@fleche.redhat.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Wed, 9 Feb 2011 21:25:50 +0800
-Message-ID: <AANLkTi=UrBZUttP9Q=2DrNXs8MAw4FXWhv6f_Pz8ad8o@mail.gmail.com>
-Subject: Re: [PATCH] Linux Kernel GDB tracepoint module 2011-02-05
-To: Tom Tromey <tromey@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Snyder <msnyder@vmware.com>,
-        Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        "gdb@sourceware.org" <gdb@sourceware.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Feb 2011 08:29:12 -0500
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Viktar Palstsiuk <viktar.palstsiuk@promwad.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [PATCH] atmel_serial: enable PPS support
+Date: Wed,  9 Feb 2011 14:26:13 +0100
+Message-Id: <1297257973-11173-1-git-send-email-plagnioj@jcrosoft.com>
+X-Mailer: git-send-email 1.7.2.3
+X-Ovh-Tracer-Id: 10855363953281051645
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 9, 2011 at 00:00, Tom Tromey <tromey@redhat.com> wrote:
->>>>>> ">" == Hui Zhu <teawater@gmail.com> writes:
->
->>> My gcc is 4.4.5.  Does it have VTA?
->
-> Nope.  VTA went in for 4.5.
->
->>> Use the patch is easier than update gcc sometimes, right?  :)
->
-> Yeah.
->
->>> BTW does VTA can handle the issue that after -O2 a lot of code
->>> execution order is worong?
->>> It affect me when I debug the Linux Kernel in qemu.
->
-> My understanding is that VTA is solely about better tracking of values
-> through optimization passes.  It doesn't affect code reordering, by
-> design.
->
-> Tom
->
+From: Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
 
-Thanks Tom.
+Enables PPS support in atmel serial driver to make PPS API working.
 
-Handle the var is enough for KGTP.  Could you send me a introduce link for VTA?
-I will post the the VTA to the HOWTO of the kgtp.
+Signed-off-by: Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+---
+ drivers/tty/serial/atmel_serial.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-Best,
-Hui
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 2a1d52f..4caf017 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -1240,6 +1240,21 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
++static void atmel_set_ldisc(struct uart_port *port)
++{
++	int line = port->line;
++
++	if (line >= port->state->port.tty->driver->num)
++		return;
++
++	if (port->state->port.tty->ldisc->ops->num == N_PPS) {
++		port->flags |= UPF_HARDPPS_CD;
++		atmel_enable_ms(port);
++	} else {
++		port->flags &= ~UPF_HARDPPS_CD;
++	}
++}
++
+ /*
+  * Return string describing the specified port
+  */
+@@ -1380,6 +1395,7 @@ static struct uart_ops atmel_pops = {
+ 	.shutdown	= atmel_shutdown,
+ 	.flush_buffer	= atmel_flush_buffer,
+ 	.set_termios	= atmel_set_termios,
++	.set_ldisc	= atmel_set_ldisc,
+ 	.type		= atmel_type,
+ 	.release_port	= atmel_release_port,
+ 	.request_port	= atmel_request_port,
+-- 
+1.7.2.3
+
