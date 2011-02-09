@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab1BIR26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 12:28:58 -0500
-Received: from exprod7og104.obsmtp.com ([64.18.2.161]:60065 "EHLO
-	exprod7og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab1BIR25 (ORCPT
+	id S1755099Ab1BIR3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 12:29:53 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:46606 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab1BIR3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 12:28:57 -0500
-Message-ID: <4D52CEC1.2050605@genband.com>
-Date: Wed, 09 Feb 2011 11:28:33 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Wed, 9 Feb 2011 12:29:51 -0500
+X-SpamScore: -3
+X-BigFish: VPS-3(zz4015Lzz1202hzzz32i668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LGD1XL-01-3VD-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Zachary Amsden <zamsden@redhat.com>
+Subject: [PATCH 0/6] KVM support for TSC scaling
+Date: Wed, 9 Feb 2011 18:29:38 +0100
+Message-ID: <1297272584-22689-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: /proc/<pid>/sched should contain cumulative data for all
- threads in process
-References: <4D50723B.7020400@genband.com>	 <1297156865.13327.57.camel@laptop>  <20110208121144.GA7550@elte.hu> <1297172742.13327.102.camel@laptop>
-In-Reply-To: <1297172742.13327.102.camel@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Feb 2011 17:28:34.0349 (UTC) FILETIME=[C730CDD0:01CBC87E]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17946.000
-X-TM-AS-Result: No--13.986500-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2011 07:45 AM, Peter Zijlstra wrote:
-> On Tue, 2011-02-08 at 13:11 +0100, Ingo Molnar wrote:
+Hi Avi, Marcelo,
 
->> So assuming a tool would want to capture such stats of the system, what would be its 
->> options? Could we do all this via system-wide counters and perf stat alike cheap, 
->> transparent gathering without having to patch/rebuild the kernel?
-> 
-> Very much depends on what is wanted, but most of the stuff inside those
-> files is very specific to the implementation and pinning any of that to
-> an ABI is like silly.
+here is the patch-set to implement the TSC-scaling feature of upcoming
+AMD CPUs. When this feature is supported the CPU provides a new MSR
+which holds a multiplier for the hardware TSC which is applied on the
+value rdtsc[p] and reads of MSR 0x10. This feature can be used to
+emulate a given tsc frequency for the guest.
+Patch 1 is not directly related to this patch-set because it only fixes
+a bug which prevented me from testing these patches. In fact it fixes
+the same bug Andre sent a patch for. But after the discussion about his
+patch he told me to just post my patch and thus here it is.
 
-Currently we're using the following fields from
-/proc/<pid>/task/<tid>/sched:
+Thanks,
 
-sum_exec_runtime
-wait_sum
-wait_max
-exec_max
-iowait_sum
-iowait_count
-nr_switches
+	Joerg
 
-If there's a better way to get this information (with the precision
-available from this interface) then I'd love to hear about it.
+Diff-stat:
 
-Chris
+ arch/x86/include/asm/kvm_host.h  |    4 ++
+ arch/x86/include/asm/msr-index.h |    1 +
+ arch/x86/kvm/svm.c               |   91 +++++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/vmx.c               |   12 +++++
+ arch/x86/kvm/x86.c               |   60 ++++++++++++++++++++++---
+ include/linux/kvm.h              |    4 ++
+ 6 files changed, 164 insertions(+), 8 deletions(-)
 
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+Shortlog:
+
+Joerg Roedel (6):
+      KVM: SVM: Advance instruction pointer in dr_intercept
+      KVM: SVM: Implement infrastructure for TSC_RATE_MSR
+      KVM: X86: Let kvm-clock report the right tsc frequency
+      KVM: SVM: Propagate requested TSC frequency on vcpu init
+      KVM: X86: Delegate tsc-offset calculation to architecture code
+      KVM: X86: Implement userspace interface to set virtual_tsc_khz
+
+
