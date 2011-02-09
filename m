@@ -1,90 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab1BITiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:38:01 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49467 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab1BITiA convert rfc822-to-8bit (ORCPT
+	id S1752648Ab1BITo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:44:26 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36983 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752470Ab1BIToY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:38:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=iAHXbQojEufNsIwdU9nB8on5rZ/8RP4L5SGumzJ3WiGm0Y/RxUhWVxSJg1OKd89gx5
-         37zYQU5sdalV4p2uRL1vXWXyr/TOoBBnbzuSBrl3f7sWsPJioUMNiSad7BXTuVdcqKvH
-         pXdkYT13CXRlkd89t0yf3JxwJBdKGBBG2N1o0=
+	Wed, 9 Feb 2011 14:44:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110209145304.GB16737@elte.hu>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
- <20110128165455.GA18194@elte.hu> <20110128175532.GA26727@redhat.com>
- <20110128182947.GB20056@elte.hu> <20110205203422.GA12443@redhat.com>
- <20110207130841.GA16054@redhat.com> <AANLkTimS7vi_BLV_KUw_AKm4DzhV=43Bm3y_epm0rzj9@mail.gmail.com>
- <20110209145304.GB16737@elte.hu>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Wed, 9 Feb 2011 13:37:28 -0600
-Message-ID: <AANLkTi=HxRZjXKPTg1d3A+Z21PoDFWx7VYwGZDizUf6b@mail.gmail.com>
-Subject: Re: Bash not reacting to Ctrl-C
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        roland@redhat.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        bug-bash@gnu.org, Chet Ramey <chet.ramey@case.edu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110209092419.2b335697.randy.dunlap@oracle.com>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com> <20110209092419.2b335697.randy.dunlap@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 9 Feb 2011 11:44:00 -0800
+Message-ID: <AANLkTimUg8Dm9mZotubcgPHz8_at=_hnbeWUo-LfSALp@mail.gmail.com>
+Subject: Re: Linux 2.6.38-rc4 (hysdn: BUG)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Karsten Keil <isdn@linux-pingi.de>
+Content-Type: multipart/mixed; boundary=000325576096f762a8049bdeb0b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 9, 2011 at 08:53, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Michael Witten <mfwitten@gmail.com> wrote:
->
->> On Mon, Feb 7, 2011 at 07:08, Oleg Nesterov <oleg@redhat.com> wrote:
->> > Now that it is clear what happens, the test-case becomes even more
->> > trivial:
->> >
->> >        bash-4.1$ ./bash -c 'while true; do /bin/true; done'
->> >        ^C^C
->> >
->> > needs 4-5 attempts on my machine.
->>
->> I feel like the odd penguin out.
->>
->> I can't reproduce the behavior in question when using that example (I
->> haven't tried the other).
->>
->> I'm running:
->>
->>     * bash version 4.1.9(2)-release (i686-pc-linux-gnu)
->>
->>     * linux 2.6.38-rc4 (100b33c8bd8a3235fd0b7948338d6cbb3db3c63d)
->
-> Oleg provided another testcase, can you reproduce the Ctrl-C problem with this
-> it?
->
-> #!/bin/bash
->
-> perl -we '$SIG{INT} = sub {exit}; sleep'
->
-> echo "Hehe, I am going to sleep after ^C"
-> sleep 100
->
->
-> Thanks,
->
->        Ingo
->
+--000325576096f762a8049bdeb0b8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yes, that requires me to press Ctrl-C twice in order to escape the
-entire script. However, what do you expect the following to do:
+On Wed, Feb 9, 2011 at 9:24 AM, Randy Dunlap <randy.dunlap@oracle.com> wrot=
+e:
+>
+> on x86_64. =A0no HYSDN hardware found (correct).
+> Nearly allmodconfig.
+>
+>
+> [ =A0 65.397577] HYSDN: module Rev: 1.6.6.6 loaded
+> [ =A0 65.397584] HYSDN: network interface Rev: 1.8.6.4
+> [ =A0 65.398057] HYSDN: 0 card(s) found.
+> [ =A0 65.398121] BUG: unable to handle kernel paging request at ffffffffa=
+06c99f0
+> [ =A0 65.398269] IP: [<ffffffffa06c68ba>] hysdn_getrev+0x2e/0x50 [hysdn]
+> [ =A0 65.398379] PGD 1a14067 PUD 1a18063 PMD 6f6c1067 PTE 800000006ce8c16=
+1
+> [ =A0 65.398613] Oops: 0003 [#1] SMP DEBUG_PAGEALLOC
+> [ =A0 65.400030]
+> [ =A0 65.400030] Pid: 2497, comm: modprobe Not tainted 2.6.38-rc4 #1 0TY5=
+65/OptiPlex 745
+> [ =A0 65.400030] RIP: 0010:[<ffffffffa06c68ba>] =A0[<ffffffffa06c68ba>] h=
+ysdn_getrev+0x2e/0x50 [hysdn]
+> [ =A0 65.400030] RSP: 0018:ffff88006eec1e68 =A0EFLAGS: 00010206
+> [ =A0 65.400030] RAX: ffffffffa06c99f1 RBX: ffffffffa06c99e9 RCX: ffff880=
+07c4159a0
 
-#!/bin/bash
+The instruction sequence decodes to
 
-perl -we '$SIG{INT} = "IGNORE"; sleep 10'
+  1e:	be 24 00 00 00       	mov    $0x24,%esi
+  23:	48 89 df             	mov    %rbx,%rdi
+  26:	e8 5b 39 c0 e0       	callq  0xffffffffe0c03986
+  2b:*	c6 40 ff 00          	movb   $0x0,-0x1(%rax)     <-- trapping instru=
+ction
 
-echo "Hehe, I am going to sleep after ^C"
-sleep 100
+which seems to be this
+
+                p =3D strchr(rev, '$');
+                *--p =3D 0;
+
+code. And yes, it's total crap, because while "p" and "rev" are "char
+*", the string that is passed in is actually of type "const char *",
+so that function is seriously broken. It's also seriously broken to
+not test that "p" is non-NULL - the function would just break if there
+is a colon in the string but not a '$'.
+
+And hysdn_procconf_init() passes in a constant string to the thing:
+
+    static char *hysdn_procconf_revision =3D "$Revision: 1.8.6.4 $";
+
+What happens is that it breaks when we mark the constant section as
+read-only, because you have CONFIG_DEBUG_RODATA enabled.
+
+So the fix seems to be to
+ - fix the prototype for hysdn_getrev() to not have "const".
+ - fix hysdn_procconf_init() to not pass in a constant string to it
+
+The minimal patch would appear to be something like the appended. UNTESTED!
+
+Btw, all of this code seems to go back to before the git history even
+started, so it doesn't seem to be new. I assume you haven't tried
+booting these all-module kernels before? Or is it just the
+DEBUG_RODATA thing that is new for you?
+
+                    Linus
+
+--000325576096f762a8049bdeb0b8
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gjynaju80
+
+IGRyaXZlcnMvaXNkbi9oeXNkbi9oeXNkbl9kZWZzLmggICAgIHwgICAgMiArLQogZHJpdmVycy9p
+c2RuL2h5c2RuL2h5c2RuX2luaXQuYyAgICAgfCAgICAyICstCiBkcml2ZXJzL2lzZG4vaHlzZG4v
+aHlzZG5fcHJvY2NvbmYuYyB8ICAgIDIgKy0KIDMgZmlsZXMgY2hhbmdlZCwgMyBpbnNlcnRpb25z
+KCspLCAzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvaXNkbi9oeXNkbi9oeXNk
+bl9kZWZzLmggYi9kcml2ZXJzL2lzZG4vaHlzZG4vaHlzZG5fZGVmcy5oCmluZGV4IDcyOWRmNDAu
+LmQyMWI0YTAgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvaXNkbi9oeXNkbi9oeXNkbl9kZWZzLmgKKysr
+IGIvZHJpdmVycy9pc2RuL2h5c2RuL2h5c2RuX2RlZnMuaApAQCAtMjI3LDcgKzIyNyw3IEBAIGV4
+dGVybiBoeXNkbl9jYXJkICpjYXJkX3Jvb3Q7CS8qIHBvaW50ZXIgdG8gZmlyc3QgY2FyZCAqLwog
+LyoqKioqKioqKioqKioqKioqKioqKioqKiovCiAvKiBpbS9leHBvcnRlZCBmdW5jdGlvbnMgKi8K
+IC8qKioqKioqKioqKioqKioqKioqKioqKioqLwotZXh0ZXJuIGNoYXIgKmh5c2RuX2dldHJldihj
+b25zdCBjaGFyICopOworZXh0ZXJuIGNoYXIgKmh5c2RuX2dldHJldihjaGFyICopOwogCiAvKiBo
+eXNkbl9wcm9jY29uZi5jICovCiBleHRlcm4gaW50IGh5c2RuX3Byb2Njb25mX2luaXQodm9pZCk7
+CS8qIGluaXQgcHJvYyBjb25maWcgZmlsZXN5cyAqLwpkaWZmIC0tZ2l0IGEvZHJpdmVycy9pc2Ru
+L2h5c2RuL2h5c2RuX2luaXQuYyBiL2RyaXZlcnMvaXNkbi9oeXNkbi9oeXNkbl9pbml0LmMKaW5k
+ZXggYjdjYzVjMi4uNGJhMjEyMyAxMDA2NDQKLS0tIGEvZHJpdmVycy9pc2RuL2h5c2RuL2h5c2Ru
+X2luaXQuYworKysgYi9kcml2ZXJzL2lzZG4vaHlzZG4vaHlzZG5faW5pdC5jCkBAIC01Myw3ICs1
+Myw3IEBAIHN0YXRpYyBoeXNkbl9jYXJkICpjYXJkX2xhc3QgPSBOVUxMOwkvKiBwb2ludGVyIHRv
+IGZpcnN0IGNhcmQgKi8KIC8qIGV4dHJhY3QgcmV2aXNpb24gbnVtYmVyIGZyb20gc3RyaW5nIGZv
+ciBsb2cgb3V0cHV0ICovCiAvKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioq
+KioqKioqKioqKioqKioqLwogY2hhciAqCi1oeXNkbl9nZXRyZXYoY29uc3QgY2hhciAqcmV2aXNp
+b24pCitoeXNkbl9nZXRyZXYoY2hhciAqcmV2aXNpb24pCiB7CiAJY2hhciAqcmV2OwogCWNoYXIg
+KnA7CmRpZmYgLS1naXQgYS9kcml2ZXJzL2lzZG4vaHlzZG4vaHlzZG5fcHJvY2NvbmYuYyBiL2Ry
+aXZlcnMvaXNkbi9oeXNkbi9oeXNkbl9wcm9jY29uZi5jCmluZGV4IDk2YjNlMzkuLjFjMzk2ZTEg
+MTAwNjQ0Ci0tLSBhL2RyaXZlcnMvaXNkbi9oeXNkbi9oeXNkbl9wcm9jY29uZi5jCisrKyBiL2Ry
+aXZlcnMvaXNkbi9oeXNkbi9oeXNkbl9wcm9jY29uZi5jCkBAIC0yMyw3ICsyMyw3IEBACiAjaW5j
+bHVkZSAiaHlzZG5fZGVmcy5oIgogCiBzdGF0aWMgREVGSU5FX01VVEVYKGh5c2RuX2NvbmZfbXV0
+ZXgpOwotc3RhdGljIGNoYXIgKmh5c2RuX3Byb2Njb25mX3JldmlzaW9uID0gIiRSZXZpc2lvbjog
+MS44LjYuNCAkIjsKK3N0YXRpYyBjaGFyIGh5c2RuX3Byb2Njb25mX3JldmlzaW9uW10gPSAiJFJl
+dmlzaW9uOiAxLjguNi40ICQiOwogCiAjZGVmaW5lIElORk9fT1VUX0xFTiA4MAkJLyogbGVuZ3Ro
+IG9mIGluZm8gbGluZSBpbmNsdWRpbmcgbGYgKi8KIAo=
+--000325576096f762a8049bdeb0b8--
