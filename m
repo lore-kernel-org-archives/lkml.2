@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1BIRBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 12:01:42 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:17263
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754550Ab1BIRBC (ORCPT
+	id S1754376Ab1BIRDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 12:03:31 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:38703 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab1BIRDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 12:01:02 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-From: John Linn <john.linn@xilinx.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <glikely@secretlab.ca>
-CC: John Linn <john.linn@xilinx.com>
-Subject: [PATCH V2 4/4] ARM: Xilinx: Adding Xilinx platform infrastructure support
-Date: Wed, 9 Feb 2011 10:00:45 -0700
-X-Mailer: git-send-email 1.5.6.6
-In-Reply-To: <1297270845-18802-4-git-send-email-john.linn@xilinx.com>
-References: <1297270845-18802-1-git-send-email-john.linn@xilinx.com>
- <1297270845-18802-2-git-send-email-john.linn@xilinx.com>
- <1297270845-18802-3-git-send-email-john.linn@xilinx.com>
- <1297270845-18802-4-git-send-email-john.linn@xilinx.com>
-X-RCIS-Action: ALLOW
+	Wed, 9 Feb 2011 12:03:30 -0500
+Date: Wed, 9 Feb 2011 09:03:27 -0800
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] misc: add CARMA DATA-FPGA Access Driver
+Message-ID: <20110209170327.GA21766@ovro.caltech.edu>
+References: <1297121021-3522-2-git-send-email-iws@ovro.caltech.edu>
+ <AE90C24D6B3A694183C094C60CF0A2F6D8AC45@saturn3.aculab.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-Message-ID: <d67dd91b-2b36-49c5-bb30-744c0de00e8b@VA3EHSMHS004.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AC45@saturn3.aculab.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Wed, 09 Feb 2011 09:03:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minimum infrastructure to add the Xilinx machine and allow it to
-be selected in the build.
+On Wed, Feb 09, 2011 at 04:30:23PM -0000, David Laight wrote:
+>  
+> > This driver allows userspace to access the data processing 
+> > FPGAs on the OVRO CARMA board. It has two modes of operation:
+> > 
+> > 1) random access
+> > 
+> > This allows users to poke any DATA-FPGA registers by using mmap to map
+> > the address region directly into their memory map.
+> 
+> I needed something similar, but used pread() and pwrite()
+> to request the transfers.
+> While this does require a system call per transfer, it allows
+> the driver to use dma (if available) to speed up the request.
+> In my case doing single cycle transfers would be too slow.
+> 
 
-Signed-off-by: John Linn <john.linn@xilinx.com>
----
+We initially started with a read()/write() interface for individual
+register reads and writes, just like you describe. It turned out that
+mmap was plenty fast for our use. I made the decision to ditch all of
+the extra code needed to setup and execute the DMA for the much simpler
+mmap code.
 
-V2 Changes
+In our case, going all the way through the DMA engine code just to
+transfer 4 bytes is overkill. The local bus is already quite fast, and
+we can increase the clock speed if needed.
 
-Updates based on Russell King's comments	
-	Cleanup of the Kconfig
-	Moved this patch to be last in the patch series
-
-
-
- arch/arm/Kconfig    |   13 +++++++++++++
- arch/arm/Makefile   |    1 +
- arch/arm/mm/Kconfig |    2 +-
- 3 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5cff165..3317671 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -875,6 +875,17 @@ config PLAT_SPEAR
- 	help
- 	  Support for ST's SPEAr platform (SPEAr3xx, SPEAr6xx and SPEAr13xx).
- 
-+config ARCH_XILINX
-+	bool "Xilinx ARM Cortex A9 Based FPGA"
-+	select CPU_V7
-+	select GENERIC_TIME
-+	select GENERIC_CLOCKEVENTS
-+	select CLKDEV_LOOKUP
-+	select ARM_GIC
-+	select ARM_AMBA
-+	help
-+	  Support for Xilinx ARM Cortex A9 Based FPGA
-+
- endchoice
- 
- #
-@@ -1009,6 +1020,8 @@ source "arch/arm/mach-vexpress/Kconfig"
- 
- source "arch/arm/mach-w90x900/Kconfig"
- 
-+source "arch/arm/mach-xilinx/Kconfig"
-+
- # Definitions to make life easier
- config ARCH_ACORN
- 	bool
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index c22c1ad..4bad6ef 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -197,6 +197,7 @@ machine-$(CONFIG_MACH_SPEAR300)		:= spear3xx
- machine-$(CONFIG_MACH_SPEAR310)		:= spear3xx
- machine-$(CONFIG_MACH_SPEAR320)		:= spear3xx
- machine-$(CONFIG_MACH_SPEAR600)		:= spear6xx
-+machine-$(CONFIG_ARCH_XILINX)		:= xilinx
- 
- # Platform directory name.  This list is sorted alphanumerically
- # by CONFIG_* macro name.
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 9d30c6f..c8a9f5c 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -813,7 +813,7 @@ config CACHE_L2X0
- 	depends on REALVIEW_EB_ARM11MP || MACH_REALVIEW_PB11MP || MACH_REALVIEW_PB1176 || \
- 		   REALVIEW_EB_A9MP || ARCH_MX35 || ARCH_MX31 || MACH_REALVIEW_PBX || \
- 		   ARCH_NOMADIK || ARCH_OMAP4 || ARCH_S5PV310 || ARCH_TEGRA || \
--		   ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_SHMOBILE
-+		   ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_SHMOBILE || ARCH_XILINX
- 	default y
- 	select OUTER_CACHE
- 	select OUTER_CACHE_SYNC
--- 
-1.6.2.1
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+Ira
