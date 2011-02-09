@@ -1,176 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1BIJvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 04:51:43 -0500
-Received: from sputnik.urmx.de ([88.198.51.18]:56461 "EHLO sputnik.urmx.de"
+	id S1753845Ab1BIJvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 04:51:32 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:44437 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753851Ab1BIJvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 04:51:38 -0500
-From: Dirk Eibach <eibach@gdsys.de>
-To: linux-kernel@vger.kernel.org
-Cc: khali@linux-fr.org, guenter.roeck@ericsson.com, lm-sensors@lm-sensors.org,
-        Dirk Eibach <eibach@gdsys.de>
-Subject: [PATCH v2] hwmon: Consider LM64 temperature offset
-Date: Wed,  9 Feb 2011 10:51:34 +0100
-Message-Id: <1297245094-13681-1-git-send-email-eibach@gdsys.de>
-In-Reply-To: <20110208152815.GA13436@ericsson.com>
-References: <20110208152815.GA13436@ericsson.com>
-X-SafeGuard_MailGateway: Version: 5.60.3.10058 SGMG Date: 20110209095138Z
-X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.4.162; VDF: 7.11.2.104; host: mailrelay)
+	id S1753681Ab1BIJva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 04:51:30 -0500
+Date: Wed, 9 Feb 2011 10:51:22 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH][BUGFIX] memcg: fix leak of accounting at failure path of
+ hugepage collapsing.
+Message-ID: <20110209095122.GG27110@cmpxchg.org>
+References: <20110209151036.f24a36a6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110209162324.ea7e2e52.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110209162324.ea7e2e52.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LM64 has 16 degrees Celsius temperature offset on all
-remote sensor registers.
-This was not considered When LM64 support was added to lm63.c.
+On Wed, Feb 09, 2011 at 04:23:24PM +0900, KAMEZAWA Hiroyuki wrote:
+> There was a big bug. Anyway, thank you for adding new bad_page for memcg.
 
-Signed-off-by: Dirk Eibach <eibach@gdsys.de>
----
-Changes since v1:
-- avoid calculating offset repeatedly
-- gave reasonable names to 8bit temperature accessors
-- removed redundant chip id detection
-- added comment why temp2_crit cannot be set
+That check is really awesome :-)
 
- drivers/hwmon/lm63.c |   56 +++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 44 insertions(+), 12 deletions(-)
+> mem_cgroup_uncharge_page() should be called in all failure case
+> after mem_cgroup_charge_newpage() is called in 
+> huge_memory.c::collapse_huge_page()
+>
+>  [ 4209.076861] BUG: Bad page state in process khugepaged  pfn:1e9800
+>  [ 4209.077601] page:ffffea0006b14000 count:0 mapcount:0 mapping:          (null) index:0x2800
+>  [ 4209.078674] page flags: 0x40000000004000(head)
+>  [ 4209.079294] pc:ffff880214a30000 pc->flags:2146246697418756 pc->mem_cgroup:ffffc9000177a000
+>  [ 4209.082177] (/A)
+>  [ 4209.082500] Pid: 31, comm: khugepaged Not tainted 2.6.38-rc3-mm1 #1
+>  [ 4209.083412] Call Trace:
+>  [ 4209.083678]  [<ffffffff810f4454>] ? bad_page+0xe4/0x140
+>  [ 4209.084240]  [<ffffffff810f53e6>] ? free_pages_prepare+0xd6/0x120
+>  [ 4209.084837]  [<ffffffff8155621d>] ? rwsem_down_failed_common+0xbd/0x150
+>  [ 4209.085509]  [<ffffffff810f5462>] ? __free_pages_ok+0x32/0xe0
+>  [ 4209.086110]  [<ffffffff810f552b>] ? free_compound_page+0x1b/0x20
+>  [ 4209.086699]  [<ffffffff810fad6c>] ? __put_compound_page+0x1c/0x30
+>  [ 4209.087333]  [<ffffffff810fae1d>] ? put_compound_page+0x4d/0x200
+>  [ 4209.087935]  [<ffffffff810fb015>] ? put_page+0x45/0x50
+>  [ 4209.097361]  [<ffffffff8113f779>] ? khugepaged+0x9e9/0x1430
+>  [ 4209.098364]  [<ffffffff8107c870>] ? autoremove_wake_function+0x0/0x40
+>  [ 4209.099121]  [<ffffffff8113ed90>] ? khugepaged+0x0/0x1430
+>  [ 4209.099780]  [<ffffffff8107c236>] ? kthread+0x96/0xa0
+>  [ 4209.100452]  [<ffffffff8100dda4>] ? kernel_thread_helper+0x4/0x10
+>  [ 4209.101214]  [<ffffffff8107c1a0>] ? kthread+0x0/0xa0
+>  [ 4209.101842]  [<ffffffff8100dda0>] ? kernel_thread_helper+0x0/0x10
+> 
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
-index 776aeb3..2d0cf6d 100644
---- a/drivers/hwmon/lm63.c
-+++ b/drivers/hwmon/lm63.c
-@@ -98,6 +98,9 @@ static const unsigned short normal_i2c[] = { 0x18, 0x4c, 0x4e, I2C_CLIENT_END };
-  * value, it uses signed 8-bit values with LSB = 1 degree Celsius.
-  * For remote temperature, low and high limits, it uses signed 11-bit values
-  * with LSB = 0.125 degree Celsius, left-justified in 16-bit registers.
-+ * For LM64 the actual remote diode temperature is 16 degree Celsius higher
-+ * than the register reading. Remote temperature setpoints have to be
-+ * adapted accordingly.
-  */
- 
- #define FAN_FROM_REG(reg)	((reg) == 0xFFFC || (reg) == 0 ? 0 : \
-@@ -165,6 +168,8 @@ struct lm63_data {
- 	struct mutex update_lock;
- 	char valid; /* zero until following fields are valid */
- 	unsigned long last_updated; /* in jiffies */
-+	int kind;
-+	int temp2_offset;
- 
- 	/* registers values */
- 	u8 config, config_fan;
-@@ -247,16 +252,34 @@ static ssize_t show_pwm1_enable(struct device *dev, struct device_attribute *dum
- 	return sprintf(buf, "%d\n", data->config_fan & 0x20 ? 1 : 2);
- }
- 
--static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
--			  char *buf)
-+/*
-+ * There are 8bit registers for both local(temp1) and remote(temp2) sensor.
-+ * For remote sensor registers temp2_offset has to be considered,
-+ * for local sensor it must not.
-+ * So we need separate 8bit accessors for local and remote sensor.
-+ */
-+static ssize_t show_local_temp8(struct device *dev,
-+				struct device_attribute *devattr,
-+				char *buf)
- {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
- 	struct lm63_data *data = lm63_update_device(dev);
- 	return sprintf(buf, "%d\n", TEMP8_FROM_REG(data->temp8[attr->index]));
- }
- 
--static ssize_t set_temp8(struct device *dev, struct device_attribute *dummy,
--			 const char *buf, size_t count)
-+static ssize_t show_remote_temp8(struct device *dev,
-+				 struct device_attribute *devattr,
-+				 char *buf)
-+{
-+	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-+	struct lm63_data *data = lm63_update_device(dev);
-+	return sprintf(buf, "%d\n", TEMP8_FROM_REG(data->temp8[attr->index])
-+		       + data->temp2_offset);
-+}
-+
-+static ssize_t set_local_temp8(struct device *dev,
-+			       struct device_attribute *dummy,
-+			       const char *buf, size_t count)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct lm63_data *data = i2c_get_clientdata(client);
-@@ -274,7 +297,8 @@ static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
- {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
- 	struct lm63_data *data = lm63_update_device(dev);
--	return sprintf(buf, "%d\n", TEMP11_FROM_REG(data->temp11[attr->index]));
-+	return sprintf(buf, "%d\n", TEMP11_FROM_REG(data->temp11[attr->index])
-+		       + data->temp2_offset);
- }
- 
- static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
-@@ -294,7 +318,7 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
- 	int nr = attr->index;
- 
- 	mutex_lock(&data->update_lock);
--	data->temp11[nr] = TEMP11_TO_REG(val);
-+	data->temp11[nr] = TEMP11_TO_REG(val - data->temp2_offset);
- 	i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2],
- 				  data->temp11[nr] >> 8);
- 	i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2 + 1],
-@@ -310,6 +334,7 @@ static ssize_t show_temp2_crit_hyst(struct device *dev, struct device_attribute
- {
- 	struct lm63_data *data = lm63_update_device(dev);
- 	return sprintf(buf, "%d\n", TEMP8_FROM_REG(data->temp8[2])
-+		       + data->temp2_offset
- 		       - TEMP8_FROM_REG(data->temp2_crit_hyst));
- }
- 
-@@ -324,7 +349,7 @@ static ssize_t set_temp2_crit_hyst(struct device *dev, struct device_attribute *
- 	long hyst;
- 
- 	mutex_lock(&data->update_lock);
--	hyst = TEMP8_FROM_REG(data->temp8[2]) - val;
-+	hyst = TEMP8_FROM_REG(data->temp8[2]) + data->temp2_offset - val;
- 	i2c_smbus_write_byte_data(client, LM63_REG_REMOTE_TCRIT_HYST,
- 				  HYST_TO_REG(hyst));
- 	mutex_unlock(&data->update_lock);
-@@ -355,16 +380,18 @@ static SENSOR_DEVICE_ATTR(fan1_min, S_IWUSR | S_IRUGO, show_fan,
- static DEVICE_ATTR(pwm1, S_IWUSR | S_IRUGO, show_pwm1, set_pwm1);
- static DEVICE_ATTR(pwm1_enable, S_IRUGO, show_pwm1_enable, NULL);
- 
--static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp8, NULL, 0);
--static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp8,
--	set_temp8, 1);
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_local_temp8, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_local_temp8,
-+	set_local_temp8, 1);
- 
- static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp11, NULL, 0);
- static SENSOR_DEVICE_ATTR(temp2_min, S_IWUSR | S_IRUGO, show_temp11,
- 	set_temp11, 1);
- static SENSOR_DEVICE_ATTR(temp2_max, S_IWUSR | S_IRUGO, show_temp11,
- 	set_temp11, 2);
--static SENSOR_DEVICE_ATTR(temp2_crit, S_IRUGO, show_temp8, NULL, 2);
-+/* temp2_crit can only be set once which should be job of the bootloader */
-+static SENSOR_DEVICE_ATTR(temp2_crit, S_IRUGO, show_remote_temp8,
-+	NULL, 2);
- static DEVICE_ATTR(temp2_crit_hyst, S_IWUSR | S_IRUGO, show_temp2_crit_hyst,
- 	set_temp2_crit_hyst);
- 
-@@ -479,7 +506,12 @@ static int lm63_probe(struct i2c_client *new_client,
- 	data->valid = 0;
- 	mutex_init(&data->update_lock);
- 
--	/* Initialize the LM63 chip */
-+	/* Set the device type */
-+	data->kind = id->driver_data;
-+	if (data->kind == lm64)
-+		data->temp2_offset = 16000;
-+
-+	/* Initialize chip */
- 	lm63_init_client(new_client);
- 
- 	/* Register sysfs hooks */
--- 
-1.5.6.5
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 
+Thanks for debugging this.
