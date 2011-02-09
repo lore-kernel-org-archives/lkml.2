@@ -1,43 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab1BIXDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:03:19 -0500
-Received: from kroah.org ([198.145.64.141]:35021 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755337Ab1BIXDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:03:18 -0500
-Date: Wed, 9 Feb 2011 15:02:59 -0800
-From: Greg KH <greg@kroah.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110209230259.GA475@kroah.com>
-References: <20110209224006.GA11202@kroah.com>
- <20110209225056.GA25009@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110209225056.GA25009@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755796Ab1BIXEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:04:39 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36742
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750989Ab1BIXEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 18:04:39 -0500
+Date: Wed, 09 Feb 2011 15:05:14 -0800 (PST)
+Message-Id: <20110209.150514.115926470.davem@davemloft.net>
+To: jidong.xiao@gmail.com
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: Can anyone explain "movl %eax %eax"?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTimN2oM6E9E34fMffgtH81ZfYcGj6J5nnjGrxGfA@mail.gmail.com>
+References: <AANLkTikA3MT=eeMKg58HyYZRswUR+PMhYW978HEc0sst@mail.gmail.com>
+	<4D5315FB.8020004@zytor.com>
+	<AANLkTimN2oM6E9E34fMffgtH81ZfYcGj6J5nnjGrxGfA@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 10:50:56PM +0000, Matthew Garrett wrote:
-> \o/
-> 
-> A quick glance suggests that the firmware interface is an abomination 
-> and really there's no reason for them not to have used an existing 
-> interface of some sort, but that's par for the course. I'll review it 
-> properly now.
+From: Jidong Xiao <jidong.xiao@gmail.com>
+Date: Wed, 9 Feb 2011 18:02:09 -0500
 
-The firmware interface pre-dates ACPI.  Samsung seems to have only
-started using ACPI for their newest models, as it's a requirement for
-Win7 certification.  But even there, they still rely on their SABI
-interface for the majority of the "odd" hardware control knobs,
-including the backlight control, which baffles me even to this day.
+> Oh, I see. Thank you. So similarly, the operation "xorl %eax,%eax" is
+> used for the same reason, right? I see that appears in more files.
 
-thanks,
-
-greg k-h
+The xorl clears the entire register.
