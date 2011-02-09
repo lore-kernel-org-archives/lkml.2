@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254Ab1BIGSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 01:18:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57889 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab1BIGSF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 01:18:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=GLX9ZppXYBHnTIQ+ab2NUfm/GRShchuTkca0iQR6mkRXPtNNE7vnjy1inuerU5Fg85
-         43L4la5H1aT9tXt/MHtKwOLStwJ3cR9uP0CzNffeyZans8jTR9TJEXvJJaCYory0su04
-         1KZMBrrZxQKTU9euwZJ0o8whF9WQEIKl+JdjA=
+	id S1751550Ab1BIGlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 01:41:47 -0500
+Received: from ozlabs.org ([203.10.76.45]:44458 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab1BIGlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 01:41:44 -0500
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-In-Reply-To: <20110207130841.GA16054@redhat.com>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
- <20110128165455.GA18194@elte.hu> <20110128175532.GA26727@redhat.com>
- <20110128182947.GB20056@elte.hu> <20110205203422.GA12443@redhat.com> <20110207130841.GA16054@redhat.com>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Wed, 9 Feb 2011 00:17:34 -0600
-Message-ID: <AANLkTimS7vi_BLV_KUw_AKm4DzhV=43Bm3y_epm0rzj9@mail.gmail.com>
-Subject: Re: Bash not reacting to Ctrl-C
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>, roland@redhat.com,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+Subject: [RFC,
+	PATCH 3/3] clk: add warnings for incorrect enable/prepare semantics
+Message-Id: <1297233693.243373.411051105619.3.gpush@pororo>
+In-Reply-To: <1297233693.241680.897691111624.0.gpush@pororo>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Dima Zavin <dmitriyz@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Russell King <linux@arm.linux.org.uk>
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+Date: Wed, 09 Feb 2011 14:41:33 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 07:08, Oleg Nesterov <oleg@redhat.com> wrote:
-> Now that it is clear what happens, the test-case becomes even more
-> trivial:
->
->        bash-4.1$ ./bash -c 'while true; do /bin/true; done'
->        ^C^C
->
-> needs 4-5 attempts on my machine.
+This change adds warnings to check for:
 
-I feel like the odd penguin out.
+ 1) enabling a clock that hasn't been prepared; and
 
-I can't reproduce the behavior in question when using that example (I
-haven't tried the other).
+ 2) unpreparing a clock that is still enabled
 
-I'm running:
+While the correctness can't be guaranteed, the warnings should cover
+most situations, and won't indicate false positives.
 
-    * bash version 4.1.9(2)-release (i686-pc-linux-gnu)
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 
-    * linux 2.6.38-rc4 (100b33c8bd8a3235fd0b7948338d6cbb3db3c63d)
+---
+ drivers/clk/clk.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index bbbdb0d..8c96623 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -29,6 +29,8 @@ EXPORT_SYMBOL_GPL(clk_prepare);
+ 
+ void clk_unprepare(struct clk *clk)
+ {
++	WARN_ON(clk->enable_count != 0);
++
+ 	mutex_lock(&clk->prepare_lock);
+ 
+ 	WARN_ON(clk->prepare_count == 0);
+@@ -45,6 +47,8 @@ int clk_enable(struct clk *clk)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 
++	WARN_ON(clk->prepare_count == 0);
++
+ 	spin_lock_irqsave(&clk->enable_lock, flags);
+ 	if (clk->enable_count == 0 && clk->ops->enable)
+ 		ret = clk->ops->enable(clk);
