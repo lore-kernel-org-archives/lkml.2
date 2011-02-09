@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab1BIKeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:34:14 -0500
-Received: from 1wt.eu ([62.212.114.60]:60450 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817Ab1BIKeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 05:34:13 -0500
-Date: Wed, 9 Feb 2011 11:34:01 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Jayson R. King" <dev@jaysonking.com>, LKML <linux-kernel@vger.kernel.org>,
-        Stable team <stable@kernel.org>
-Subject: Re: [stable] 2.6.27.58-rc1 build error Re: [PATCH 21/23] hvc_console: Fix race between hvc_close and hvc_remove
-Message-ID: <20110209103401.GB18732@1wt.eu>
-References: <4D52080A.1090100@jaysonking.com> <20110209094434.3928bf26@lxorguk.ukuu.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110209094434.3928bf26@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.4.2.3i
+	id S1754094Ab1BIKfU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:35:20 -0500
+Received: from mail.roph.ro ([217.10.213.254]:39320 "EHLO roph.ro"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753561Ab1BIKfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 05:35:18 -0500
+Message-ID: <7720d52c440cbaef0589933ba77650ed.squirrel@mail.roph.ro>
+Date: Wed, 9 Feb 2011 13:02:40 +0200
+Subject: **$5,000USD ENCLOSED**
+From: "UNITED NATIONS" <aesculap.prod@roph.ro>
+Reply-To: unitednations40@rocketmail.com
+User-Agent: SquirrelMail/1.4.19-1.fc9
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-roph-MailScanner-Information: Please contact the ISP for more information
+X-roph-MailScanner-ID: 6D6E1B3C3C5.A2D71
+X-roph-MailScanner: Found to be clean
+X-roph-MailScanner-SpamScore: sssss
+X-roph-MailScanner-From: aesculap.prod@roph.ro
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 09:44:34AM +0000, Alan Cox wrote:
-> On Tue, 08 Feb 2011 21:20:42 -0600
-> "Jayson R. King" <dev@jaysonking.com> wrote:
-> 
-> > drivers/char/hvc_console.c: In function 'hvc_open':
-> > drivers/char/hvc_console.c:315: error: implicit declaration of function 
-> > 'tty_kref_get'
-> > drivers/char/hvc_console.c:324: warning: assignment makes pointer from 
-> > integer without a cast
-> > drivers/char/hvc_console.c:341: error: implicit declaration of function 
-> > 'tty_kref_put'
-> > drivers/char/hvc_console.c: In function 'hvc_poll':
-> > drivers/char/hvc_console.c:558: warning: assignment makes pointer from 
-> > integer without a cast
-> > drivers/char/hvc_console.c: In function 'hvc_remove':
-> > drivers/char/hvc_console.c:759: warning: assignment makes pointer from 
-> > integer without a cast
-> > 
-> > I don't see a tty_kref_get or tty_kref_put on 2.6.27. Those functions 
-> > first appeared in 2.6.28.
-> 
-> Correct - for 2.6.27 I don't think you *can* make the tty layer
-> non-exploitable without a major backport
 
-So unless the bug is critical (I don't think it is), I'd rather avoid
-a major backport at this stage.
 
-Willy
+How are you?
+
+We happily announce to you the draw of the United Nations programs held on
+the 26th January, 2011 in Nigeria. Your e-mail address attached to ticket
+number: 564 75600545 188. You have been compensated with the sum of
+$500,000.00 USD and payment will be remitted to you via western union
+money transfer.
+
+
+USD$5,000 has already be send to you since last week but we were unable to
+give you the information on phone for the past days but due to bad network
+here, So we decided to send you the details via email today.
+
+Here is the western union information to pick up the USD5000.00.
+
+MTCN : 782 543 4236
+SENDER'S NAME: MARYLIN JOHNSON
+TEXT QUESTION: IN GOD
+ANSWER:WE TRUST
+AMOUNT SENT: $5000.00 USD
+COUNTRY:NIGERIA
+
+Thanks
+Mrs. Linda Hall
+
+
+
+
+
+
+
+
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
 
