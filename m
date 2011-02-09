@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1BICWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 21:22:16 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:17411 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753310Ab1BICWP (ORCPT
+	id S1756202Ab1BICbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 21:31:20 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:8834 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755507Ab1BICbS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 21:22:15 -0500
-Message-ID: <3F7E1C17407A45E3834BF70553CB294C@hacdom.okisemi.com>
-From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
-To: "David Miller" <davem@davemloft.net>
-Cc: <netdev@vger.kernel.org>, <tomoya-linux@dsn.okisemi.com>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <linux-kernel@vger.kernel.org>
-References: <4D512A27.2030406@dsn.okisemi.com> <20110208.164030.242137610.davem@davemloft.net>
-Subject: Re: [PATCH] pch_gbe: Fix the issue which a driver locks when rx offload is set by ethtool
-Date: Wed, 9 Feb 2011 11:04:11 +0900
+	Tue, 8 Feb 2011 21:31:18 -0500
+X-SpamScore: -18
+X-BigFish: VPS-18(zz542N1432N9371Pzz1202hzz1497iz32i668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LGBWBU-02-4NY-02
+X-M-MSG: 
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: linux-next: manual merge of the usb tree with Linus' tree
+Date: Wed, 9 Feb 2011 10:31:02 +0800
+Message-ID: <2DEEA3AB13739D45A22ADDB5086AEA0BF085DD@sshaexmb1.amd.com>
+In-Reply-To: <20110207150802.4869bd47.sfr@canb.auug.org.au>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: linux-next: manual merge of the usb tree with Linus' tree
+Thread-Index: AcvGfKY3QEvQ3wLSQ8ygr9GxX6xg3QBhJSPw
+References: <20110207150802.4869bd47.sfr@canb.auug.org.au>
+From: "Xu, Andiry" <Andiry.Xu@amd.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "He, Alex" <Alex.He@amd.com>, Alan Stern <stern@rowland.harvard.edu>
+X-OriginalArrivalTime: 09 Feb 2011 02:31:06.0051 (UTC) FILETIME=[671A9930:01CBC801]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 08 Feb 2011 16:40:30 -0800 (PST)
+Hi,
 
->> @@ -531,12 +533,8 @@ void pch_gbe_reinit_locked(struct pch_gbe_adapter 
->> *adapter)
->>  {
->>  struct net_device *netdev = adapter->netdev;
->>
->> - rtnl_lock();
->> - if (netif_running(netdev)) {
->> - pch_gbe_down(adapter);
->> - pch_gbe_up(adapter);
->> - }
->> - rtnl_unlock();
->> + pch_gbe_down(adapter);
->> + pch_gbe_up(adapter);
->
->Are you sure you can just blindly delete the netif_running() check here?
+I'll resend the PLL quirk moving patchset based on the latest linux-next
+tree. 
 
-Yes, sure.
-pch_gbe_reinit_locked() is called after confirming of netif_running() except 
-for pch_gbe_reset_task() function.
-This netif_running() was redundant.
-
-Best regards
-Toshiharu Okada(OKI semiconductor) 
+Thanks & Best regards,
+Andiry
+ 
+> -----Original Message-----
+> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
+> Sent: Monday, February 07, 2011 12:08 PM
+> To: Greg KH
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Xu,
+Andiry;
+> He, Alex
+> Subject: linux-next: manual merge of the usb tree with Linus' tree
+> 
+> Hi Greg,
+> 
+> Today's linux-next merge of the usb tree got a conflict in
+> drivers/usb/host/ehci-pci.c between commit
+> baab93afc2844b68d57b0dcca5e1d34c5d7cf411 ("USB: EHCI: ASPM quirk of
+ISOC
+> on AMD Hudson") from Linus' tree and commit
+> b7d5b439b7a40dd0a0202fe1c118615a3fcc3b25 ("USB host: Move AMD PLL
+quirk
+> to pci-quirks.c") from the usb tree.
+> 
+> I just use the version from the usb tree, but this may need fixing up
+in
+> pci-quirks.c.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
 
