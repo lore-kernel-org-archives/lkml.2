@@ -1,40 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab1BIUnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 15:43:19 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43953
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751010Ab1BIUnS (ORCPT
+	id S1755465Ab1BIUow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 15:44:52 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53568 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab1BIUou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 15:43:18 -0500
-Date: Wed, 09 Feb 2011 12:43:53 -0800 (PST)
-Message-Id: <20110209.124353.104047600.davem@davemloft.net>
-To: randy.dunlap@Oracle.COM
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de
-Subject: Re: [PATCH -next] can: softing_cs needs slab.h
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110209084456.802370fa.randy.dunlap@oracle.com>
-References: <20110209170225.94eae681.sfr@canb.auug.org.au>
-	<20110209084456.802370fa.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 9 Feb 2011 15:44:50 -0500
+Subject: Re: Linux 2.6.38-rc4 (target_core: rmmod GP fault)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+In-Reply-To: <1297283335.3016.48.camel@mulgrave.site>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+	 <20110209092851.bba6c40c.randy.dunlap@oracle.com>
+	 <AANLkTikvGppAi1JCGY1vjAugzpk3g5rDriBjc8k6M9Qg@mail.gmail.com>
+	 <1297281744.18212.44.camel@haakon2.linux-iscsi.org>
+	 <1297282433.3016.43.camel@mulgrave.site>
+	 <1297282835.18212.57.camel@haakon2.linux-iscsi.org>
+	 <1297283335.3016.48.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Wed, 09 Feb 2011 12:44:45 -0800
+Message-Id: <1297284285.18212.71.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@Oracle.COM>
-Date: Wed, 9 Feb 2011 08:44:56 -0800
+On Wed, 2011-02-09 at 14:28 -0600, James Bottomley wrote:
+> On Wed, 2011-02-09 at 12:20 -0800, Nicholas A. Bellinger wrote:
+> > On Wed, 2011-02-09 at 14:13 -0600, James Bottomley wrote:
+> > > Firstly, could we get the serious bug fixes identified and separated
+> > > from the general enhancement updates, so they can go in a fixes tree
+> > > without depending on enhancements?  The former category would include
+> > > the /proc interface removal, since we don't want the legacy interface to
+> > > be in a released kernel.
+> > > 
+> > 
+> > Everything in those two series should be considered bug fixes and
+> > immediate for-38 mainline material.
+> 
+> Things like this:
+> 
+> target: remove EXTRA_CFLAGS
+> target: Remove unnecessary container_of() pointer check
+> target: Remove unnecessary se_clear_dev_ports legacy code
+> target: Remove spurious double cast from structure macro accessors
+> target: Convert TMR REQ/RSP definitions to target namespace
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> softing_cs.c uses kzalloc & kfree, so it needs to include linux/slab.h.
-> 
-> drivers/net/can/softing/softing_cs.c:234: error: implicit declaration of function 'kfree'
-> drivers/net/can/softing/softing_cs.c:271: error: implicit declaration of function 'kzalloc'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+This is an important one, as using w/o TMR_* prefixed definitions for
+task management response/response defs, we run into problems with
+existing include/scsi/scsi.h message codes.
 
-Applied, thanks Randy.
+> target: Minor sparse warning fixes and annotations
+> target: Remove unneeded test of se_cmd
+> 
+> Are not serious bug fixes.  I could go either way on some of the error path changes.
+> 
+
+Yes, these others are minor items that have been submitted by people
+(hch, roland, jesper, danc) who have been reviewing target code since it
+was merged for .38-rc1.
+
+Considering how minor these are I would prefer to have these merged,
+than deferring for-39.  If not, then I will need to respin tree w/o
+their cleanups if what you prefer to be sent to Linus for-38, there are
+3 other bugfix patches in the upstream LIO tree that I have been saving
+for-38-rc5 since for-38-rc4 was cut(considering the two outstanding
+series).  I would like to have these included as well.
+
+Do you want me to send them all to the linux-scsi list again...?
+
+--nab
+
+  
+
+
+
+> James
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
