@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab1BIKHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 05:07:55 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46665 "EHLO
+	id S1754243Ab1BIKJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 05:09:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46667 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab1BIKHy (ORCPT
+	with ESMTP id S1753764Ab1BIKHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Feb 2011 05:07:54 -0500
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/10] trivial: fix typos concerning "access"
-Date: Wed,  9 Feb 2011 11:07:33 +0100
-Message-Id: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 07/10] trivial: fix typos concerning "implementation"
+Date: Wed,  9 Feb 2011 11:07:39 +0100
+Message-Id: <1297246062-23777-7-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1297246062-23777-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,86 +30,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/arm/mach-omap2/control.h                  |    2 +-
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 ++++----
- drivers/target/target_core_transport.c         |    2 +-
- drivers/usb/gadget/mv_udc_core.c               |    2 +-
- 4 files changed, 7 insertions(+), 7 deletions(-)
+ Documentation/power/opp.txt        |    2 +-
+ Documentation/scsi/ChangeLog.lpfc  |    2 +-
+ arch/powerpc/include/asm/mmzone.h  |    2 +-
+ arch/tile/include/asm/mmzone.h     |    2 +-
+ arch/x86/include/asm/mmzone_32.h   |    2 +-
+ drivers/media/video/cx18/cx18-io.h |    2 +-
+ drivers/net/irda/toim3232-sir.c    |    2 +-
+ drivers/scsi/cxgbi/cxgb3i/cxgb3i.c |    2 +-
+ drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |    2 +-
+ fs/nfsd/nfs4callback.c             |    2 +-
+ fs/ocfs2/cluster/heartbeat.c       |    2 +-
+ include/net/sctp/structs.h         |    2 +-
+ 12 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
-index f0629ae..a1981e9 100644
---- a/arch/arm/mach-omap2/control.h
-+++ b/arch/arm/mach-omap2/control.h
-@@ -233,7 +233,7 @@
- #define OMAP343X_CONTROL_WKUP_DEBOBS3 (OMAP343X_CONTROL_GENERAL_WKUP + 0x014)
- #define OMAP343X_CONTROL_WKUP_DEBOBS4 (OMAP343X_CONTROL_GENERAL_WKUP + 0x018)
+diff --git a/Documentation/power/opp.txt b/Documentation/power/opp.txt
+index cd44558..95961de 100644
+--- a/Documentation/power/opp.txt
++++ b/Documentation/power/opp.txt
+@@ -82,7 +82,7 @@ opp_get_{voltage, freq, opp_count} fall into this category.
  
--/* 36xx-only RTA - Retention till Accesss control registers and bits */
-+/* 36xx-only RTA - Retention till Access control registers and bits */
- #define OMAP36XX_CONTROL_MEM_RTA_CTRL	0x40C
- #define OMAP36XX_RTA_DISABLE		0x0
+ opp_{add,enable,disable} are updaters which use mutex and implement it's own
+ RCU locking mechanisms. opp_init_cpufreq_table acts as an updater and uses
+-mutex to implment RCU updater strategy. These functions should *NOT* be called
++mutex to implement RCU updater strategy. These functions should *NOT* be called
+ under RCU locks and other contexts that prevent blocking functions in RCU or
+ mutex operations from working.
  
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-index 4819747..7b70e51 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -3329,26 +3329,26 @@ static int ar9300_eeprom_restore_internal(struct ath_hw *ah,
- 	else
- 		cptr = AR9300_BASE_ADDR;
- 	ath_dbg(common, ATH_DBG_EEPROM,
--		"Trying EEPROM accesss at Address 0x%04x\n", cptr);
-+		"Trying EEPROM access at Address 0x%04x\n", cptr);
- 	if (ar9300_check_eeprom_header(ah, read, cptr))
- 		goto found;
+diff --git a/Documentation/scsi/ChangeLog.lpfc b/Documentation/scsi/ChangeLog.lpfc
+index 5e83769..8b5bfa3 100644
+--- a/Documentation/scsi/ChangeLog.lpfc
++++ b/Documentation/scsi/ChangeLog.lpfc
+@@ -174,7 +174,7 @@ Changes from 20050201 to 20050208
+ 	  lpfc_sli_chipset_init static.
+ 	* Cleaned up references to list_head->next field in the driver.
+ 	* Replaced lpfc_discq_post_event with lpfc_workq_post_event.
+-	* Implmented Christoph Hellwig's review from 2/5: Check for return
++	* Implemented Christoph Hellwig's review from 2/5: Check for return
+ 	  values of kmalloc.
+ 	* Integrated Christoph Hellwig's patch from 1/30: Protecting
+ 	  scan_tmo and friends in !FC_TRANSPORT_PATCHES_V2 &&
+diff --git a/arch/powerpc/include/asm/mmzone.h b/arch/powerpc/include/asm/mmzone.h
+index fd3fd58..60344eb 100644
+--- a/arch/powerpc/include/asm/mmzone.h
++++ b/arch/powerpc/include/asm/mmzone.h
+@@ -39,7 +39,7 @@ u64 memory_hotplug_max(void);
+ #endif
  
- 	cptr = AR9300_BASE_ADDR_512;
- 	ath_dbg(common, ATH_DBG_EEPROM,
--		"Trying EEPROM accesss at Address 0x%04x\n", cptr);
-+		"Trying EEPROM access at Address 0x%04x\n", cptr);
- 	if (ar9300_check_eeprom_header(ah, read, cptr))
- 		goto found;
+ /*
+- * Following are macros that each numa implmentation must define.
++ * Following are macros that each numa implementation must define.
+  */
  
- 	read = ar9300_read_otp;
- 	cptr = AR9300_BASE_ADDR;
- 	ath_dbg(common, ATH_DBG_EEPROM,
--		"Trying OTP accesss at Address 0x%04x\n", cptr);
-+		"Trying OTP access at Address 0x%04x\n", cptr);
- 	if (ar9300_check_eeprom_header(ah, read, cptr))
- 		goto found;
+ #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+diff --git a/arch/tile/include/asm/mmzone.h b/arch/tile/include/asm/mmzone.h
+index c6344c4..a56937d 100644
+--- a/arch/tile/include/asm/mmzone.h
++++ b/arch/tile/include/asm/mmzone.h
+@@ -41,7 +41,7 @@ static inline int pfn_to_nid(unsigned long pfn)
+ }
  
- 	cptr = AR9300_BASE_ADDR_512;
- 	ath_dbg(common, ATH_DBG_EEPROM,
--		"Trying OTP accesss at Address 0x%04x\n", cptr);
-+		"Trying OTP access at Address 0x%04x\n", cptr);
- 	if (ar9300_check_eeprom_header(ah, read, cptr))
- 		goto found;
+ /*
+- * Following are macros that each numa implmentation must define.
++ * Following are macros that each numa implementation must define.
+  */
  
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 28b6292..40328e6 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -3087,7 +3087,7 @@ static int transport_generic_cmd_sequencer(
- 	if (ret != 0) {
- 		cmd->transport_wait_for_tasks = &transport_nop_wait_for_tasks;
- 		/*
--		 * Set SCSI additional sense code (ASC) to 'LUN Not Accessable';
-+		 * Set SCSI additional sense code (ASC) to 'LUN Not Accessible';
- 		 * The ALUA additional sense code qualifier (ASCQ) is determined
- 		 * by the ALUA primary or secondary access state..
- 		 */
-diff --git a/drivers/usb/gadget/mv_udc_core.c b/drivers/usb/gadget/mv_udc_core.c
-index d5468a7..afe907d 100644
---- a/drivers/usb/gadget/mv_udc_core.c
-+++ b/drivers/usb/gadget/mv_udc_core.c
-@@ -1974,7 +1974,7 @@ int mv_udc_probe(struct platform_device *dev)
- 		goto error;
- 	}
+ #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
+index 91df7c5..7288148 100644
+--- a/arch/x86/include/asm/mmzone_32.h
++++ b/arch/x86/include/asm/mmzone_32.h
+@@ -69,7 +69,7 @@ static inline int pfn_to_nid(unsigned long pfn)
+ }
  
--	/* we will acces controller register, so enable the clk */
-+	/* we will access controller register, so enable the clk */
- 	clk_enable(udc->clk);
- 	retval = mv_udc_phy_init(udc->phy_regs);
- 	if (retval) {
+ /*
+- * Following are macros that each numa implmentation must define.
++ * Following are macros that each numa implementation must define.
+  */
+ 
+ #define node_start_pfn(nid)	(NODE_DATA(nid)->node_start_pfn)
+diff --git a/drivers/media/video/cx18/cx18-io.h b/drivers/media/video/cx18/cx18-io.h
+index 18974d8..b29fe69 100644
+--- a/drivers/media/video/cx18/cx18-io.h
++++ b/drivers/media/video/cx18/cx18-io.h
+@@ -28,7 +28,7 @@
+ /*
+  * Readback and retry of MMIO access for reliability:
+  * The concept was suggested by Steve Toth <stoth@linuxtv.org>.
+- * The implmentation is the fault of Andy Walls <awalls@md.metrocast.net>.
++ * The implementation is the fault of Andy Walls <awalls@md.metrocast.net>.
+  *
+  * *write* functions are implied to retry the mmio unless suffixed with _noretry
+  * *read* functions never retry the mmio (it never helps to do so)
+diff --git a/drivers/net/irda/toim3232-sir.c b/drivers/net/irda/toim3232-sir.c
+index 99e1ec0..17ef584 100644
+--- a/drivers/net/irda/toim3232-sir.c
++++ b/drivers/net/irda/toim3232-sir.c
+@@ -336,7 +336,7 @@ static int toim3232_change_speed(struct sir_dev *dev, unsigned speed)
+  * high, but it seems to have the same effect.
+  *
+  * This behaviour will probably work on dongles that have the RESET line connected,
+- * but if not, add a flag for the IR320ST-2, and implment the above-listed proper
++ * but if not, add a flag for the IR320ST-2, and implement the above-listed proper
+  * behaviour.
+  *
+  * RTS is inverted and then fed to BR/~D, so to put it in programming mode, we
+diff --git a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
+index a129a17..dde8dbc 100644
+--- a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
++++ b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
+@@ -164,7 +164,7 @@ static struct scsi_transport_template *cxgb3i_stt;
+ /*
+  * CPL (Chelsio Protocol Language) defines a message passing interface between
+  * the host driver and Chelsio asic.
+- * The section below implments CPLs that related to iscsi tcp connection
++ * The section below implements CPLs that related to iscsi tcp connection
+  * open/close/abort and data send/receive.
+  */
+ 
+diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
+index 8c04fad..af92770 100644
+--- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
++++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
+@@ -165,7 +165,7 @@ static struct scsi_transport_template *cxgb4i_stt;
+ /*
+  * CPL (Chelsio Protocol Language) defines a message passing interface between
+  * the host driver and Chelsio asic.
+- * The section below implments CPLs that related to iscsi tcp connection
++ * The section below implements CPLs that related to iscsi tcp connection
+  * open/close/abort and data send/receive.
+  */
+ #define DIV_ROUND_UP(n, d)	(((n) + (d) - 1) / (d))
+diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+index 3be975e..93ab180 100644
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -414,7 +414,7 @@ static void encode_cb_sequence4args(struct xdr_stream *xdr,
+  *		void;
+  *	};
+  *
+- * Our current back channel implmentation supports a single backchannel
++ * Our current back channel implementation supports a single backchannel
+  * with a single slot.
+  */
+ static int decode_cb_sequence4resok(struct xdr_stream *xdr,
+diff --git a/fs/ocfs2/cluster/heartbeat.c b/fs/ocfs2/cluster/heartbeat.c
+index b108e86..1c7a8c8 100644
+--- a/fs/ocfs2/cluster/heartbeat.c
++++ b/fs/ocfs2/cluster/heartbeat.c
+@@ -924,7 +924,7 @@ out:
+ 	return changed;
+ }
+ 
+-/* This could be faster if we just implmented a find_last_bit, but I
++/* This could be faster if we just implemented a find_last_bit, but I
+  * don't think the circumstances warrant it. */
+ static int o2hb_highest_node(unsigned long *nodes,
+ 			     int numbits)
+diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
+index cc9185c..21531d9 100644
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -1248,7 +1248,7 @@ typedef enum {
+ } sctp_endpoint_type_t;
+ 
+ /*
+- * A common base class to bridge the implmentation view of a
++ * A common base class to bridge the implementation view of a
+  * socket (usually listening) endpoint versus an association's
+  * local endpoint.
+  * This common structure is useful for several purposes:
 -- 
 1.7.2.3
 
