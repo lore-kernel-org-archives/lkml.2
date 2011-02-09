@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab1BIUif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 15:38:35 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53916 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751364Ab1BIUie (ORCPT
+	id S1755161Ab1BIUin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 15:38:43 -0500
+Received: from straum.hexapodia.org ([207.7.131.186]:54058 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754880Ab1BIUim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 15:38:34 -0500
-Date: Wed, 9 Feb 2011 12:38:03 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] mm: batch-free pcp list if possible
-Message-Id: <20110209123803.4bb6291c.akpm@linux-foundation.org>
-In-Reply-To: <1297257677-12287-1-git-send-email-namhyung@gmail.com>
-References: <1297257677-12287-1-git-send-email-namhyung@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Feb 2011 15:38:42 -0500
+Date: Wed, 9 Feb 2011 12:38:41 -0800
+From: Andy Isaacson <adi@hexapodia.org>
+To: Pavel Vasilyev <pavel@pavlinux.ru>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: CONFIG_KERNEL_XZ obscure build failure if xz(1) not installed
+Message-ID: <20110209203841.GQ11874@hexapodia.org>
+References: <20110209195258.GN11874@hexapodia.org> <4D52F404.4000709@pavlinux.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D52F404.4000709@pavlinux.ru>
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  9 Feb 2011 22:21:17 +0900
-Namhyung Kim <namhyung@gmail.com> wrote:
-
-> free_pcppages_bulk() frees pages from pcp lists in a round-robin
-> fashion by keeping batch_free counter. But it doesn't need to spin
-> if there is only one non-empty list. This can be checked by
-> batch_free == MIGRATE_PCPTYPES.
+On Wed, Feb 09, 2011 at 11:07:32PM +0300, Pavel Vasilyev wrote:
+> > The failure is obscured by trailing make output, and since a broken
+> > bzImage is created, "make install" succeeds, and the first visible
+[snip]
+>  :)
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
 > ---
->  mm/page_alloc.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+> diff --git a/scripts/xz_wrap.sh b/scripts/xz_wrap.sh
+> index 17a5798..5ec9d36 100644
+> --- a/scripts/xz_wrap.sh
+> +++ b/scripts/xz_wrap.sh
+> @@ -20,4 +20,4 @@ case $ARCH in
+>         sparc)          BCJ=--sparc ;;
+>  esac
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index a873e61e312e..470fb42e303c 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -614,6 +614,10 @@ static void free_pcppages_bulk(struct zone *zone, int count,
->  			list = &pcp->lists[migratetype];
->  		} while (list_empty(list));
->  
-> +		/* This is an only non-empty list. Free them all. */
-> +		if (batch_free == MIGRATE_PCPTYPES)
-> +			batch_free = to_free;
-> +
->  		do {
->  			page = list_entry(list->prev, struct page, lru);
->  			/* must delete as __free_one_page list manipulates */
+> -exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB
+> +exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=32MiB || exit 1
+> 
 
-free_pcppages_bulk() hurts my brain.
+I get the same behavior with and without your patch, tested with both
+bash and dash.  (FWIW, /bin/sh on my systems is a symlink to /bin/dash.)
 
-What is it actually trying to do, and why?  It counts up the number of
-contiguous empty lists and then frees that number of pages from the
-first-encountered non-empty list and then advances onto the next list?
+% printf '#!/bin/bash\nexec /no/such/file\n' > foo.sh
+% chmod +x foo.sh
+% ./foo.sh; echo $?
+./foo.sh: line 2: /no/such/file: No such file or directory
+./foo.sh: line 2: exec: /no/such/file: cannot execute: No such file or directory
+126
+% printf '#!/bin/bash\nexec /no/such/file\n' > foo.sh
+% ./foo.sh; echo $?
+./foo.sh: line 2: /no/such/file: No such file or directory
+./foo.sh: line 2: exec: /no/such/file: cannot execute: No such file or
+directory
+126
 
-What's the point in that?  What relationship does the number of
-contiguous empty lists have with the number of pages to free from one
-list?
+% printf '#!/bin/dash\nexec /no/such/file\n' > foo.sh
+% ./foo.sh; echo $?
+exec: 2: /no/such/file: not found
+2
+% printf '#!/bin/dash\nexec /no/such/file || exit 1\n' > foo.sh
+% ./foo.sh; echo $?
+exec: 2: /no/such/file: not found
+2
 
-The comment "This is so more pages are freed off fuller lists instead
-of spinning excessively around empty lists" makes no sense - the only
-way this can be true is if the code knows the number of elements on
-each list, and it doesn't know that.
-
-Also, the covering comments over free_pcppages_bulk() regarding the
-pages_scanned counter and the "all pages pinned" logic appear to be out
-of date.  Or, alternatively, those comments do reflect the desired
-design, but we broke it.
-
-
-Methinks that free_pcppages_bulk() is an area ripe for simplification
-and clarification.
+-andy
