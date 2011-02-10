@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab1BJSuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:50:54 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:33819 "EHLO ogre.sisk.pl"
+	id S1754874Ab1BJSv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:51:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53097 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752481Ab1BJSuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:50:52 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos before entering idle
-Date: Thu, 10 Feb 2011 19:50:30 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, mark gross <markgross@thegnar.org>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-References: <1297300864.2645.128.camel@schen9-DESK> <1297359914.4933.56.camel@mulgrave.site>
-In-Reply-To: <1297359914.4933.56.camel@mulgrave.site>
+	id S1753130Ab1BJSv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:51:26 -0500
+Date: Thu, 10 Feb 2011 10:47:13 -0800
+From: Greg KH <gregkh@suse.de>
+To: Tomas Winkler <tomasw@gmail.com>
+Cc: Oren Weil <oren.jer.weil@intel.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, david@woodhou.se,
+        david.woodhouse@intel.com
+Subject: Re: [RFC PATCH 00/13] Intel(R) MEI Driver
+Message-ID: <20110210184713.GA15882@suse.de>
+References: <0d30dc$l1diqi@orsmga001.jf.intel.com>
+ <20110210175855.GC13795@suse.de>
+ <AANLkTimyxSy2FDBjh-xR1XmuZ9c7KjYHN-CjFAfp4Eu_@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102101950.30757.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimyxSy2FDBjh-xR1XmuZ9c7KjYHN-CjFAfp4Eu_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 10, 2011, James Bottomley wrote:
-> On Wed, 2011-02-09 at 17:21 -0800, Tim Chen wrote:
-> > I noticed that before entering idle state, the menu idle governor will
-> > look up the current pm_qos value according to the list of qos request
-> > received.  This look up currently needs the acquisition of a lock to go
-> > down a list of qos requests to find the qos value, slowing down the
-> > entrance into idle state due to contention by multiple cpus to traverse
-> > this list.  The contention is severe when there are a lot of cpus waking
-> > and going into idle.  For example, for a simple workload that has 32
-> > pair of processes ping ponging messages to each other, where 64 cores
-> > cores are active in test system, I see the following profile:
-> > 
-> > -     37.82%          swapper  [kernel.kallsyms]          [k]
-> > _raw_spin_lock_irqsave
-> >    - _raw_spin_lock_irqsave
-> >       - 95.65% pm_qos_request             
-> >            menu_select                                             
-> >            cpuidle_idle_call                      
-> >          - cpu_idle                                                     
-> >               99.98% start_secondary
-> > 
-> > Perhaps a better approach will be to cache the updated pm_qos value so
-> > reading it does not require lock acquisition as in the patch below.   
-> > 
-> > Tim
-> > 
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+On Thu, Feb 10, 2011 at 08:43:57PM +0200, Tomas Winkler wrote:
+> On Thu, Feb 10, 2011 at 7:58 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Thu, Feb 10, 2011 at 01:54:54AM -0800, Oren Weil wrote:
+> >> Intel(R) Management Engine Interface (Intel(R) MEI) Driver
+> >> ==========================================================
+> >>
+> >> This patch contains a new Intel driver for the Linux kernel: The Intel(R) MEI Driver.
+> >
+> > This patch?  What patch, there is no patch here.
+> >
+> > You sent out 13 emails with the same exact Subject line, which is not
+> > acceptable at all, and mighty confusing.
+> >
+> >> This set of patches is for review purposes; the driver code
+> >> for pull is in the David Woodhouse public git repository:
+> >> http://git.infradead.org/linux-2.6-mei.git
+> >
+> > No, we need these as patches, not as a pull request.  Please work on
+> > fixing up your individual patches, that's the only way this is going to
+> > be accepted.
 > 
-> What you say is true as long as the value is 32 bits ... perhaps a note
-> of that should be made somewhere?
-> 
-> Otherwise, it looks like a good lockless optimisation on the read path,
-> so you can add my ack.
+> There was a suggestion of splitting the driver into per file patches
+> to be reviewable  rather then creating gigantic driver patch.
+> I personally would prefer the later one  would happy to here any other
+> suggestions how to split driver.
 
-Thanks James, I'm going to take the patch.
+Per-file is ok, but just provide proper documentation, don't break the
+build, and do it the correct way, like everyone else does every day.
+This isn't something new people...
 
-Rafael
+greg k-h
