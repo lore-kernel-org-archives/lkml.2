@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab1BJDmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 22:42:03 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:57333 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755023Ab1BJDl7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 22:41:59 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/SxjUWM+vSsoz35WFUveNnD826uMH68CDN7bsh+b
-	KYH3PFMnzhzLBq
-Subject: Re: [tip:perf/core] perf annotate: Fix annotate context lines
- regression
-From: Mike Galbraith <efault@gmx.de>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, eranian@google.com,
-        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110209164154.GA15607@ghostprotocols.net>
-References: <new-submission>
-	 <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
-	 <1297224378.8035.7.camel@marge.simson.net>
-	 <20110209164154.GA15607@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 04:41:53 +0100
-Message-ID: <1297309313.7996.11.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1755014Ab1BJDq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 22:46:27 -0500
+Received: from mga03.intel.com ([143.182.124.21]:9124 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752761Ab1BJDq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 22:46:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,450,1291622400"; 
+   d="scan'208";a="386686311"
+Date: Wed, 9 Feb 2011 19:46:56 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
+        Len <len.brown@intel.com>, Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
+ before entering idle
+Message-ID: <20110210034656.GA22753@gargoyle.amr.corp.intel.com>
+References: <1297300864.2645.128.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297300864.2645.128.camel@schen9-DESK>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 14:41 -0200, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Feb 09, 2011 at 05:06:18AM +0100, Mike Galbraith escreveu:
-> > On Wed, 2011-02-09 at 00:43 +0000, tip-bot for Arnaldo Carvalho de Melo wrote
-> > > Gitweb:     http://git.kernel.org/tip/d5e3d747007fdb541e57ed72e020ff0b94db3470
-> > > Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-> > > 
-> > > perf annotate: Fix annotate context lines regression
-> > > 
-> > > The live annotation done in 'perf top' needs to limit the context before
-> > > lines that aren't filtered out by the min percent filter, if we don't do
-> > > that, the screen in a tty often is not enough for showing what is
-> > > interesting: lines with hits and a few source code lines before it.
-> > 
-> > Looks to me like this went from regress a bit while waiting for tui
-> > thing to progress a bit immediately :)
-> 
-> :-) Can you please apply the two patches and give 'perf top --tui' live
-> annotation a shot? Just press enter or -> (right key) on a symbol you
-> want to annotate.
-> 
-> I'm still polishing it a bit, want to avoid trying the notes->lock on
-> each time record_precise_ip is called, for that I need to share the
-> current symbol being annotated (sym_filter_entry) with the annotate
-> browser, the timer should not always run, etc, but just so that I can
-> get some feedback on how it is shaping up, please try it and report your
-> impressions :-)
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
-Initial impression: can I have a pony too? :)
+Patch looks good to me. Thanks Tim.
 
-I like this a lot, great for live rummaging.   One thing that would help
-with large files maybe - a jump to next spot hotter than N%, but as is
-is quite nice.
+I expect this will also improve other pm-qos users, but of course they
+are likely not as frequently used as the idle governour.
 
-I managed to lock it up once, but shiny new gizmos usually do hiccup.
+(and before anyone makes jokes about optimizing the idle loop: idle 
+latency is very important for workloads with lots of wakeups out of
+idle)
 
-	-Mike
-
+-Andi
