@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab1BJCoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 21:44:13 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57235 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab1BJCoM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 21:44:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ov8TzZKb2alqHjywawFuynBDl7+7RmOtdta+LBNLs1SckvQVD8hnIxyWWXNOe/K10J
-         GfA5zJwpW69oomp2F4hUsj3T+jD2hfYKguX0cYSJSkrMQjlvWIbVT7YgzLHVdSulzVG5
-         qbLVOAlvE0JAxEiVAA44oNAPRKLMZHoSvXqDI=
+	id S1754624Ab1BJCpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 21:45:10 -0500
+Received: from tundra.namei.org ([65.99.196.166]:57013 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750946Ab1BJCpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 21:45:08 -0500
+Date: Thu, 10 Feb 2011 13:44:58 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ftp.linux.org.uk>, Stephen Smalley <sds@tycho.nsa.gov>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [SECURITY] /proc/$pid/ leaks contents across setuid exec
+In-Reply-To: <m1ipwu5lj2.fsf@fess.ebiederm.org>
+Message-ID: <alpine.LRH.2.00.1102101337100.19432@tundra.namei.org>
+References: <20110207231416.GD1457@outflux.net> <alpine.LRH.2.00.1102081127330.3342@tundra.namei.org> <20110208011445.GF1457@outflux.net> <alpine.LRH.2.00.1102081437430.3879@tundra.namei.org> <20110208042708.GG1457@outflux.net>
+ <m1ipwu5lj2.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1297248362-23579-1-git-send-email-hannes@cmpxchg.org>
-References: <1297248362-23579-1-git-send-email-hannes@cmpxchg.org>
-Date: Thu, 10 Feb 2011 11:44:11 +0900
-Message-ID: <AANLkTimKqORYc+fjX2hQbMAatdwR1zF43MBgnGfmTYVW@mail.gmail.com>
-Subject: Re: [patch] memcg: remove memcg->reclaim_param_lock
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 9, 2011 at 7:46 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> The reclaim_param_lock is only taken around single reads and writes to
-> integer variables and is thus superfluous.  Drop it.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Tue, 8 Feb 2011, Eric W. Biederman wrote:
 
+> Kees Cook <kees.cook@canonical.com> writes:
+> 
+> > On Tue, Feb 08, 2011 at 02:43:15PM +1100, James Morris wrote:
+
+> >> > I don't think /proc/$pid/* needs to stay open across execs, does it? Or at
+> >> > least the non-0444 files should be handled separately.
+> >> 
+> >> Actually, this seems like a more general kind of bug in proc rather than a 
+> >> leaked fd.  Each child task should only see its own /proc/[pid] data.
+> >
+> > Right, that's precisely the problem. The unprivileged process can read
+> > the setuid process's /proc files.
+> 
+> If these are things that we actually care about we should sprinkle in a
+> few more ptrace_may_access calls into implementations of the relevant
+> proc files.
+
+This seems to be papering over a bug.
+
+It is plainly broken to return an access error to a task which is 
+legitimately accessing a file.  The task should not receive the wrong 
+information from /proc/[pid]/* .
+
+
+- James
 -- 
-Kind regards,
-Minchan Kim
+James Morris
+<jmorris@namei.org>
