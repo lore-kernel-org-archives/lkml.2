@@ -1,82 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751026Ab1BJFYG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 00:24:06 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46287 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab1BJFYE (ORCPT
+	id S1751096Ab1BJF2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 00:28:12 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:60560 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750985Ab1BJF2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 00:24:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=f4/OdSMWEnuzNUzbZn/wOkURPDdTJf19oBL/18ZKIyCAf9ciZIVBW8eh3/85itf8pl
-         dfcwo5Al7yDeFYixBZ8ZCbpf6eFpm24/uXpTZmYKU300u0A0r5YL1sEX3ZUArBb6osMr
-         oNR0FdpFhLt3Vj0GjGwOh6JKB7Imn1nboPWb0=
-Date: Thu, 10 Feb 2011 13:23:35 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
-        davem@davemloft.net, greg@kroah.com, acme@ghostprotocols.net,
-        eric.piel@tremplin-utc.net
-Subject: [PATCH]Sort a Maintainer in MAINTAINERS according to alphabetical
- order
-Message-ID: <20110210052330.GA5376@gmail.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-	joe@perches.com, davem@davemloft.net, greg@kroah.com,
-	acme@ghostprotocols.net, eric.piel@tremplin-utc.net
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 10 Feb 2011 00:28:10 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18CaFg5sjcCbEB+f3u9uvZYIt9Nu1xXiHkXPkk97g
+	824GivJMYlvhZW
+Subject: Re: Linux 2.6.27.58
+From: Mike Galbraith <efault@gmx.de>
+To: Willy Tarreau <wtarreau@hera.kernel.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org
+In-Reply-To: <20110209220430.GA17820@hera.kernel.org>
+References: <20110209220430.GA17820@hera.kernel.org>
+Content-Type: multipart/mixed; boundary="=-3PcCXgaJMULh69+/klci"
+Date: Thu, 10 Feb 2011 06:28:06 +0100
+Message-ID: <1297315686.7996.50.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi us,
-    When i see MAINTAINERS i find a maintainer who is not in right position. So i patched for it like following :) I have also emailed to himself ;)
 
-    Thanks.
-    Best Regards.
-    Harry Wei.
+--=-3PcCXgaJMULh69+/klci
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+On Wed, 2011-02-09 at 22:04 +0000, Willy Tarreau wrote:
+> I've just released Linux 2.6.27.58.
+
+For users of 27 who wish the scheduler had a bit less overhead, attached
+is a small set of sched patches I considered mandatory for my 27 tree.
+First patch cuts overhead quite a bit, the others are just fixes I
+considered important enough to carry around.
+
+I'm not proposing inclusion, just making it available once because I
+happened to notice this release message, and thought of some issues.
+
+Disposable tarball attached, refreshed against .58 pull.
+
+	-Mike
+
+--=-3PcCXgaJMULh69+/klci
+Content-Type: application/x-compressed-tar; name="sched-patches-2.6.27.tar.gz"
+Content-Disposition: attachment; filename="sched-patches-2.6.27.tar.gz"
+Content-Transfer-Encoding: base64
+
+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
 
 
-Signed-off-by: Harry Wei <harryxiyou@gmail.com>
----
- MAINTAINERS |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3b4c67a..7e792bf 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3877,6 +3877,12 @@ L:	linux-security-module@vger.kernel.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/chrisw/lsm-2.6.git
- S:	Supported
- 
-+LIS3LV02D ACCELEROMETER DRIVER
-+M:	Eric Piel <eric.piel@tremplin-utc.net>
-+S:	Maintained
-+F:	Documentation/hwmon/lis3lv02d
-+F:	drivers/hwmon/lis3lv02d.*
-+
- LLC (802.2)
- M:	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
- S:	Maintained
-@@ -3884,12 +3890,6 @@ F:	include/linux/llc.h
- F:	include/net/llc*
- F:	net/llc/
- 
--LIS3LV02D ACCELEROMETER DRIVER
--M:	Eric Piel <eric.piel@tremplin-utc.net>
--S:	Maintained
--F:	Documentation/hwmon/lis3lv02d
--F:	drivers/hwmon/lis3lv02d.*
--
- LM73 HARDWARE MONITOR DRIVER
- M:	Guillaume Ligneul <guillaume.ligneul@gmail.com>
- L:	lm-sensors@lm-sensors.org
--- 
-1.7.0.4
-
+--=-3PcCXgaJMULh69+/klci--
 
