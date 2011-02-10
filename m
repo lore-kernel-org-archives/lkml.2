@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab1BJVnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:43:12 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49474 "EHLO mail.skyhub.de"
+	id S1757021Ab1BJV5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:57:16 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:39458 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756766Ab1BJVnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:43:10 -0500
-Date: Thu, 10 Feb 2011 22:43:04 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Borislav Petkov <bp@amd64.org>, Greg KH <greg@kroah.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/30] amd64_edac: Add Bulldozer support
-Message-ID: <20110210214304.GB19248@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Borislav Petkov <bp@amd64.org>, Greg KH <greg@kroah.com>,
-	Ingo Molnar <mingo@elte.hu>,
-	"linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1297358133-14320-1-git-send-email-bp@amd64.org>
- <20110210185637.GA16128@kroah.com>
- <20110210192034.GI12244@aftab>
- <20110210112249.255aa016@jbarnes-desktop>
+	id S1752172Ab1BJV5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 16:57:15 -0500
+Date: Thu, 10 Feb 2011 13:57:10 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: benh@kernel.crashing.org, paulus@samba.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH powerpc 0/2] powerpc CONFIG_PREEMPT fixes
+Message-ID: <20110210215710.GA18429@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110210112249.255aa016@jbarnes-desktop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 11:22:49AM -0800, Jesse Barnes wrote:
-> > Jesse, do you want the patch at
-> > http://marc.info/?l=linux-edac&m=129735827731488&w=2 rerouted over your
-> > tree or would you rather ack it?
-> 
-> You can have my ack:
-> 
-> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Hello!
 
-Thanks.
+This series provides fixes for a couple of CONFIG_PREEMPT problems on
+Power:
 
-> Though if that's the only place that PCI ID is used, you may as well
-> just put it into the corresponding file and remove it from pci_ids.h
-> altogether.
+1.	The hpte_need_flush() function accesses per-CPU variables without
+	protection.
+2.	The rtas_event_scan() function needs to use raw_smp_processor_id()
+	to get a starting point to avoid debugging splats.
 
-Yeah, this patchset adds another user of PCI_DEVICE_ID_AMD_15H_NB_F3 in
-amd64_edac.c, this was the reasoning to move it to pci_ids.h
+There are probably a few more where these came from.  ;-)
 
-In contrast, I'm also introducing PCI_DEVICE_ID_AMD_15H_NB_F[12] which
-are used only in this driver and thus I've left them in its header.
-We'll move them to pci_ids.h only if some other user of them appears.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+								Thanx, Paul
