@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1BJJy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 04:54:58 -0500
-Received: from mga09.intel.com ([134.134.136.24]:28138 "EHLO mga09.intel.com"
+	id S1755637Ab1BJJzD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 04:55:03 -0500
+Received: from mga02.intel.com ([134.134.136.20]:57377 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab1BJJy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 04:54:57 -0500
-Message-Id: <0d30dc$l1diqi@orsmga001.jf.intel.com>
-Date: 10 Feb 2011 01:54:54 -0800
+	id S1755546Ab1BJJzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 04:55:00 -0500
+Message-Id: <b9dded$htd8nk@orsmga002.jf.intel.com>
+Date: 10 Feb 2011 01:54:57 -0800
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,451,1291622400"; 
-   d="scan'";a="706136922"
+   d="scan'";a="601268990"
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
 Cc: david@woodhou.se, david.woodhouse@intel.com
-Subject: [RFC PATCH 00/13] Intel(R) MEI Driver
+Subject: [RFC PATCH 01/13] Intel(R) MEI Driver
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel(R) Management Engine Interface (Intel(R) MEI) Driver 
-==========================================================
-
-This patch contains a new Intel driver for the Linux kernel: The Intel(R) MEI Driver.
-
-The Intel(R) MEI driver allows applications to access
-the Intel(R) Management Engine (Intel(R) ME) FW via the host
-interface.
-
-
-The Intel(R) MEI driver is meant to be used mainly by the
-Local Manageability Service (LMS).
-
-Note: This driver was previously called the HECI driver that was
-a part of the Staging area in the Kernel and was removed.
-
-The old MEI Driver and LMS are located on openamt.org, and are not updated
-with the latest versions. A new version of LMS is under development and will be released
-soon.
-
-This set of patches is for review purposes; the driver code
-for pull is in the David Woodhouse public git repository:
-http://git.infradead.org/linux-2.6-mei.git
-
-The patches is divided according to the driver files for better review process.
-
-For more information about the MEI Driver and its usage, see:
-http://software.intel.com/en-us/manageability-security/
-http://software.intel.com/sites/manageability/AMT_Implementation_and_Reference_Guide/default.htm?turl=WordDocuments%2Fconnectingwiththeintelmeidriver.htm
-
-
-
-
- drivers/char/Kconfig           |   11 +
- drivers/char/Makefile          |    1 +
- drivers/char/mei/Makefile      |   23 +
- drivers/char/mei/hw.h          |  518 ++++++++++++++
- drivers/char/mei/init.c        |  837 ++++++++++++++++++++++
- drivers/char/mei/interface.c   |  478 ++++++++++++
- drivers/char/mei/interface.h   |  134 ++++
- drivers/char/mei/interrupt.c   | 1552 ++++++++++++++++++++++++++++++++++++++++
- drivers/char/mei/iorw.c        |  822 +++++++++++++++++++++
- drivers/char/mei/main.c        | 1466 +++++++++++++++++++++++++++++++++++++
- drivers/char/mei/mei.h         |  166 +++++
- drivers/char/mei/mei_version.h |   35 +
- include/linux/mei.h            |  118 +++
- 13 files changed, 6161 insertions(+), 0 deletions(-)
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index b7980a8..0a54b26 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -1144,5 +1144,16 @@ config RAMOOPS
+ 	  This enables panic and oops messages to be logged to a circular
+ 	  buffer in RAM where it can be read back at some later point.
+ 
++config INTEL_MEI
++	tristate "Intel(R) Management Engine Interface (Intel(R) MEI)"
++	default m
++	depends on EXPERIMENTAL && X86
++	help
++	  If you have an Intel(R) ME chip in your system 
++	  say Yes to enable the Intel(R) Managment Engine interface.
++	  for more informaiton see
++	  <http://software.intel.com/en-us/manageability/>
++
++
+ endmenu
+ 
 
 
 ---------------------------------------------------------------------
