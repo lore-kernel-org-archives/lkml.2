@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab1BJDl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 22:41:56 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:53676 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab1BJDly (ORCPT
+	id S1755346Ab1BJDmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 22:42:03 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:57333 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755023Ab1BJDl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 22:41:54 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: James Morris <jmorris@namei.org>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ftp.linux.org.uk>, Stephen Smalley <sds@tycho.nsa.gov>,
-        linux-security-module@vger.kernel.org
-References: <20110207231416.GD1457@outflux.net>
-	<alpine.LRH.2.00.1102081127330.3342@tundra.namei.org>
-	<20110208011445.GF1457@outflux.net>
-	<alpine.LRH.2.00.1102081437430.3879@tundra.namei.org>
-	<20110208042708.GG1457@outflux.net> <m1ipwu5lj2.fsf@fess.ebiederm.org>
-	<alpine.LRH.2.00.1102101337100.19432@tundra.namei.org>
-Date: Wed, 09 Feb 2011 19:41:41 -0800
-In-Reply-To: <alpine.LRH.2.00.1102101337100.19432@tundra.namei.org> (James
-	Morris's message of "Thu, 10 Feb 2011 13:44:58 +1100 (EST)")
-Message-ID: <m1r5bglfnu.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/eV/NdW929kZfDIqQQ0mJkd2FtYIn54ME=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;James Morris <jmorris@namei.org>
-X-Spam-Relay-Country: 
-Subject: Re: [SECURITY] /proc/$pid/ leaks contents across setuid exec
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 9 Feb 2011 22:41:59 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/SxjUWM+vSsoz35WFUveNnD826uMH68CDN7bsh+b
+	KYH3PFMnzhzLBq
+Subject: Re: [tip:perf/core] perf annotate: Fix annotate context lines
+ regression
+From: Mike Galbraith <efault@gmx.de>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110209164154.GA15607@ghostprotocols.net>
+References: <new-submission>
+	 <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
+	 <1297224378.8035.7.camel@marge.simson.net>
+	 <20110209164154.GA15607@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 04:41:53 +0100
+Message-ID: <1297309313.7996.11.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Morris <jmorris@namei.org> writes:
+On Wed, 2011-02-09 at 14:41 -0200, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Feb 09, 2011 at 05:06:18AM +0100, Mike Galbraith escreveu:
+> > On Wed, 2011-02-09 at 00:43 +0000, tip-bot for Arnaldo Carvalho de Melo wrote
+> > > Gitweb:     http://git.kernel.org/tip/d5e3d747007fdb541e57ed72e020ff0b94db3470
+> > > Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+> > > 
+> > > perf annotate: Fix annotate context lines regression
+> > > 
+> > > The live annotation done in 'perf top' needs to limit the context before
+> > > lines that aren't filtered out by the min percent filter, if we don't do
+> > > that, the screen in a tty often is not enough for showing what is
+> > > interesting: lines with hits and a few source code lines before it.
+> > 
+> > Looks to me like this went from regress a bit while waiting for tui
+> > thing to progress a bit immediately :)
+> 
+> :-) Can you please apply the two patches and give 'perf top --tui' live
+> annotation a shot? Just press enter or -> (right key) on a symbol you
+> want to annotate.
+> 
+> I'm still polishing it a bit, want to avoid trying the notes->lock on
+> each time record_precise_ip is called, for that I need to share the
+> current symbol being annotated (sym_filter_entry) with the annotate
+> browser, the timer should not always run, etc, but just so that I can
+> get some feedback on how it is shaping up, please try it and report your
+> impressions :-)
 
-> On Tue, 8 Feb 2011, Eric W. Biederman wrote:
->
->> Kees Cook <kees.cook@canonical.com> writes:
->> 
->> > On Tue, Feb 08, 2011 at 02:43:15PM +1100, James Morris wrote:
->
->> >> > I don't think /proc/$pid/* needs to stay open across execs, does it? Or at
->> >> > least the non-0444 files should be handled separately.
->> >> 
->> >> Actually, this seems like a more general kind of bug in proc rather than a 
->> >> leaked fd.  Each child task should only see its own /proc/[pid] data.
->> >
->> > Right, that's precisely the problem. The unprivileged process can read
->> > the setuid process's /proc files.
->> 
->> If these are things that we actually care about we should sprinkle in a
->> few more ptrace_may_access calls into implementations of the relevant
->> proc files.
->
-> This seems to be papering over a bug.
->
-> It is plainly broken to return an access error to a task which is 
-> legitimately accessing a file.  The task should not receive the wrong 
-> information from /proc/[pid]/* .
+Initial impression: can I have a pony too? :)
 
-Per task files are special because of exec.  The permission needed
-change dynamically.  The common solution to this problem (see ttys) is
-to revoke anyone who has file descriptors open.  Proc does something a
-little different and simply gives you a permission error when you read
-or write if it would be a problem.
+I like this a lot, great for live rummaging.   One thing that would help
+with large files maybe - a jump to next spot hotter than N%, but as is
+is quite nice.
 
-We happen to call the test to see if you should have permission
-security_may_ptrace because ptrace lets you get the information anyway
-so we might as well allow the information from /proc.
+I managed to lock it up once, but shiny new gizmos usually do hiccup.
 
-Given that security_may_ptrace is the existing model, and that we don't
-return wrong data, but a clear an unambiguous error I don't see problems
-with the approach.
+	-Mike
 
-The practical question is, is the data sensitive enough that we want
-this protection.
-
-Eric
