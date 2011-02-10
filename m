@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab1BJTLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 14:11:36 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:60810 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755945Ab1BJTLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 14:11:34 -0500
-Date: Thu, 10 Feb 2011 11:11:17 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>, jacob.jun.pan@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        akpm@linux-foundation.org, rdunlap@xenotime.net,
-        Cedric Le Goater <clg@vnet.ibm.com>,
-        Wysocki Rafael Wysocki <rjw@sisk.pl>
-Subject: Re: [PATCH 1/1, v6] cgroup/freezer: add per freezer duty ratio
- control
-Message-ID: <20110210191117.GI16432@count0.beaverton.ibm.com>
-References: <1297213541-18156-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <20110210030442.GG16432@count0.beaverton.ibm.com>
- <4D535627.9090606@linux.intel.com>
+	id S1756132Ab1BJTOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 14:14:17 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39241 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1BJTOP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 14:14:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ljQamuhTU+De5l5LIJjYmo3WWNXmKuSQkxl8gQH3JmrSgmHB6AyXYIn+0GXYfSMgET
+         xLNckimltcLhskgSvnjYoOoSdMfeG68dXEZPqvJYQR0JDqBp4sMQFOxQbxegnbDAw6WJ
+         9WTPescphkepAMyUktrGacK7FTyaXiA3ACy9U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D535627.9090606@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <20110210184713.GA15882@suse.de>
+References: <0d30dc$l1diqi@orsmga001.jf.intel.com>
+	<20110210175855.GC13795@suse.de>
+	<AANLkTimyxSy2FDBjh-xR1XmuZ9c7KjYHN-CjFAfp4Eu_@mail.gmail.com>
+	<20110210184713.GA15882@suse.de>
+Date: Thu, 10 Feb 2011 21:14:14 +0200
+Message-ID: <AANLkTi=7_WH_7t1SPJW4rKxz380iA7RSLKrYWeT8HTce@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/13] Intel(R) MEI Driver
+From: Tomas Winkler <tomasw@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Oren Weil <oren.jer.weil@intel.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, david@woodhou.se,
+        david.woodhouse@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 07:06:15PM -0800, Arjan van de Ven wrote:
-> On 2/9/2011 7:04 PM, Matt Helsley wrote:
-> >On Tue, Feb 08, 2011 at 05:05:41PM -0800, jacob.jun.pan@linux.intel.com wrote:
-> >>From: Jacob Pan<jacob.jun.pan@linux.intel.com>
-> >>
-> >>Freezer subsystem is used to manage batch jobs which can start
-> >>stop at the same time. However, sometime it is desirable to let
-> >>the kernel manage the freezer state automatically with a given
-> >>duty ratio.
-> >>For example, if we want to reduce the time that backgroup apps
-> >>are allowed to run we can put them into a freezer subsystem and
-> >>set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> >>
-> >>This patch introduces two file nodes under cgroup
-> >>freezer.duty_ratio_pct and freezer.period_sec
-> >>
-> >>Usage example: set period to be 5 seconds and frozen duty ratio 90%
-> >>[root@localhost aoa]# echo 90>  freezer.duty_ratio_pct
-> >>[root@localhost aoa]# echo 5000>  freezer.period_ms
-> >I kept wondering how this was useful when we've got the "cpu" subsystem
-> >because for some reason "duty cycle" made me think this was a scheduling
-> >policy knob. In fact, I'm pretty sure it is -- it just happens to
-> >sometimes reduce power consumption.
-> >
-> >Have you tried using the cpu cgroup subsystem's share to see if it can
-> >have a similar effect?
-> 
-> does the cpu cgroup system work on a 20 to 30 second time window?
+On Thu, Feb 10, 2011 at 8:47 PM, Greg KH <gregkh@suse.de> wrote:
+> On Thu, Feb 10, 2011 at 08:43:57PM +0200, Tomas Winkler wrote:
+>> On Thu, Feb 10, 2011 at 7:58 PM, Greg KH <gregkh@suse.de> wrote:
+>> > On Thu, Feb 10, 2011 at 01:54:54AM -0800, Oren Weil wrote:
+>> >> Intel(R) Management Engine Interface (Intel(R) MEI) Driver
+>> >> ==========================================================
+>> >>
+>> >> This patch contains a new Intel driver for the Linux kernel: The Intel(R) MEI Driver.
+>> >
+>> > This patch?  What patch, there is no patch here.
+>> >
+>> > You sent out 13 emails with the same exact Subject line, which is not
+>> > acceptable at all, and mighty confusing.
+>> >
+>> >> This set of patches is for review purposes; the driver code
+>> >> for pull is in the David Woodhouse public git repository:
+>> >> http://git.infradead.org/linux-2.6-mei.git
+>> >
+>> > No, we need these as patches, not as a pull request.  Please work on
+>> > fixing up your individual patches, that's the only way this is going to
+>> > be accepted.
+>>
+>> There was a suggestion of splitting the driver into per file patches
+>> to be reviewable  rather then creating gigantic driver patch.
+>> I personally would prefer the later one  would happy to here any other
+>> suggestions how to split driver.
+>
+> Per-file is ok, but just provide proper documentation, don't break the
+> build, and do it the correct way, like everyone else does every day.
+> This isn't something new people...
 
-I don't think so -- it works directly with the scheduler IIRC.
+I was actually looking into Documentation/SubmittingDrivers and
+SubmittingPatches and there is much suggestion how to handle that.
+I'll spell it  just make sure I understand correctly, we do per file
+patches with Kconfig + Makefile patch as last in the series so the
+build won't break....
 
-> the objective is to have the CPU idle, without wakeups, for that long...
-> (to save power)
 
-Hmm. Maybe these need some "scheduler slack" so that when they're
-runnable they'll either run with other scheduled entities that are
-keeping the cpu awake or wait until the slack runs out before doing
-a wakeup. Then you can toss this in the cgroup timer slack subsystem
-and rename it to the "wakeup slack" subsystem or something. That
-will probably get you better race-to-idle behavior, avoid/reduce 
-latencies added by duty cycles, and avoid shoehorning into the cgroup
-freezer subsystem. Of course it would require some scheduler hacking
-which will probably be much more controversial than modifying a cgroup
-subsystem :).
-
-Cheers,
-	-Matt Helsley
+Thanks
+Tomas
