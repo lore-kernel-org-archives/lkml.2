@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab1BJJ5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 04:57:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23566 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755655Ab1BJJzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 04:55:05 -0500
-Message-Id: <b7da2f$qd3ne6@fmsmga001.fm.intel.com>
-Date: 10 Feb 2011 01:55:03 -0800
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,451,1291622400"; 
-   d="scan'";a="886169044"
-From: Oren Weil <oren.jer.weil@intel.com>
-To: gregkh@suse.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: david@woodhou.se, david.woodhouse@intel.com
-Subject: [RFC PATCH 03/13] Intel(R) MEI Driver
-Content-Transfer-Encoding: 7bit
+	id S1755655Ab1BJKDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 05:03:35 -0500
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:2255
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755359Ab1BJKDd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 05:03:33 -0500
+X-SpamScore: -25
+X-BigFish: VS-25(z37d5kzbb2dK1418M1432N98dN9371Pzz1202hzzz2dh2a8h637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw02.freescale.net;RD:az33egw02.freescale.net;EFVD:NLI
+Date: Thu, 10 Feb 2011 18:03:19 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Ryan Mallon <ryan@bluewatersys.com>
+CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, <linux-kernel@vger.kernel.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
+Message-ID: <20110210100319.GB24710@b20223-02.ap.freescale.net>
+References: <1297233693.242364.862698430999.1.gpush@pororo>
+ <4D52F73A.4010707@bluewatersys.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4D52F73A.4010707@bluewatersys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/drivers/char/mei/Makefile b/drivers/char/mei/Makefile
-new file mode 100644
-index 0000000..a9ac1cb
---- /dev/null
-+++ b/drivers/char/mei/Makefile
-@@ -0,0 +1,23 @@
-+#
-+# Kbuild - Intel(R) Management Engine Interface (Intel(R) MEI) Linux driver
-+# Copyright (c) 2003-2011, Intel Corporation.
-+#
-+# This program is free software; you can redistribute it and/or modify it
-+# under the terms and conditions of the GNU General Public License,
-+# version 2, as published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope it will be useful, but WITHOUT
-+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+# more details.
-+#
-+# You should have received a copy of the GNU General Public License along with
-+# this program; if not, write to the Free Software Foundation, Inc.,
-+# 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+#
-+obj-$(CONFIG_INTEL_MEI) += mei.o
-+mei-objs := init.o
-+mei-objs += interrupt.o
-+mei-objs += interface.o
-+mei-objs += iorw.o
-+mei-objs += main.o
+On Thu, Feb 10, 2011 at 09:21:14AM +1300, Ryan Mallon wrote:
+> On 02/09/2011 07:41 PM, Jeremy Kerr wrote:
+> 
+> Hi Jeremy,
+> 
+> Couple more comments below.
+> 
+> ~Ryan
+> 
+[...]
+> > +int clk_enable(struct clk *clk)
+> > +{
+> > +     unsigned long flags;
+> > +     int ret = 0;
+> > +
+> > +     spin_lock_irqsave(&clk->enable_lock, flags);
+> 
+>         WARN_ON(clk->prepare_count == 0); ?
+> 
+> > +     if (clk->enable_count == 0 && clk->ops->enable)
+> > +             ret = clk->ops->enable(clk);
+> 
+> Does it make sense to have a clock with no enable function which still
+> returns success from clk_enable? Do we have any platforms which have
+> NULL clk_enable functions?
+> 
+> I think that for enable/disable at least we should require platforms to
+> provide functions and oops if they have failed to do so. In the rare
+> case that a platform doesn't need to do anything for enable/disable they
+> can just supply empty functions.
+It's possible to be NULL. So are set_rate/get_rate.
+Ideally, if it's NULL: 
+prepare/unprepare: only call parent's prepare/unprepare
+enable/disable: only call parent's enable/disable
+set_rate: fail
+get_rate: reture parent's get_rate
+set_parent: fail
+get_parent: fail
 
-
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+Thanks
+Richard
+> 
+> > +
+> > +     if (!ret)
+> > +             clk->enable_count++;
+> > +     spin_unlock_irqrestore(&clk->enable_lock, flags);
+> > +
+> > +     return ret;
+> > +}
+> > +EXPORT_SYMBOL_GPL(clk_enable);
+> > +
 
