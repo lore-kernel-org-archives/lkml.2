@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751028Ab1BJMSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:18:46 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45683 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750696Ab1BJMSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:18:44 -0500
-Date: Thu, 10 Feb 2011 13:18:35 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-Cc: Ingo Molnar <mingo@redhead.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: fused  X86_UP_APIC and  X86_UP_IOAPIC ?
-Message-ID: <20110210121835.GB26094@elte.hu>
-References: <4D53BF67.50601@nachtwindheim.de>
+	id S1751273Ab1BJMUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:20:22 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:13487 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab1BJMUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:20:20 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73906286"
+Message-ID: <4D53D7FE.9070206@codeaurora.org>
+Date: Thu, 10 Feb 2011 17:50:14 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D53BF67.50601@nachtwindheim.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Eric Miao <eric.y.miao@gmail.com>
+CC: Anirudh Ghayal <aghayal@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-arm-msm@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [RFC v2 PATCH 1/7] matrix_keypad: Increase the max limit of rows
+ and columns
+References: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org> <1296568063-12010-2-git-send-email-aghayal@codeaurora.org> <AANLkTimZ9UwcQp5QQjyHVsRdEAcf6+rL18mCesishPoC@mail.gmail.com>
+In-Reply-To: <AANLkTimZ9UwcQp5QQjyHVsRdEAcf6+rL18mCesishPoC@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dmitry,
 
-* Henrik Kretzschmar <henne@nachtwindheim.de> wrote:
-
-> Hi there,
+On 2/9/2011 1:32 PM, Eric Miao wrote:
+> On Tue, Feb 1, 2011 at 9:47 PM, Anirudh Ghayal <aghayal@codeaurora.org> wrote:
+>> From: Trilok Soni <tsoni@codeaurora.org>
+>>
+>> Some keyboard controller have support for more than
+>> 16 columns and rows. Moving this value to 32.
+>>
+>> Cc: Eric Miao <eric.y.miao@gmail.com>
+>> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
 > 
-> In commit 7cd92366a593246650cc7d6198e2c7d3af8c1d8a (x86/Voyager: remove 
-> APIC/IO-APIC Kbuild quirk / just before 2.6.29-rc4) Ingo replaced the 
-> X86_UP_IOAPIC with X86_UP_APIC.
+> This looks good to me, as long as the bits don't exceed 256, which
+> is used in the #KEY() macro. So far, 32 looks to be a sane number
+> to me, unless we have further requirement to get this larger.
 > 
-> Was this intended or by accident?
+> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+> 
 
-Looks accidental. Wondering why it didn't cause problems. Mind sending a patch 
-against the latest x86 tree:
+Are you going to pick up this patch only from the series you want us to get
+it submitted it separately?
 
-  http://people.redhat.com/mingo/tip.git/README
+---Trilok Soni
 
-Thanks,
-
-	Ingo
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
