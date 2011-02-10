@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab1BJN52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 08:57:28 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44402 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab1BJN51 (ORCPT
+	id S1756304Ab1BJN5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 08:57:37 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41157 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756238Ab1BJN5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 08:57:27 -0500
-Message-ID: <4D53EEC1.5020101@monstr.eu>
-Date: Thu, 10 Feb 2011 14:57:21 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Thu, 10 Feb 2011 08:57:36 -0500
+Date: Thu, 10 Feb 2011 14:57:55 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] amd64_edac for .38-rc5
+Message-ID: <20110210135755.GF12244@aftab>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH OF 07/14] of: move of_irq_map_pci() into generic code
-References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de> <1295843342-1122-8-git-send-email-bigeasy@linutronix.de>
-In-Reply-To: <1295843342-1122-8-git-send-email-bigeasy@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian Andrzej Siewior wrote:
-> From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-> 
-> There is a tiny difference between PPC32 and PPC64. Microblaze uses the
-> PPC32 variant.
-> 
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Hi Linus,
 
-> ---
->  arch/microblaze/include/asm/pci-bridge.h |   12 ++++
->  arch/microblaze/include/asm/prom.h       |   15 -----
->  arch/microblaze/kernel/prom_parse.c      |   77 ---------------------------
->  arch/microblaze/pci/pci-common.c         |    1 +
+please pull the below fix for ganged DCT mode.
 
-Please always CC me for Microblaze changes. I want to at least compile it.
+Thanks.
 
-Thanks,
-Michal
+The following changes since commit 100b33c8bd8a3235fd0b7948338d6cbb3db3c63d:
+
+  Linux 2.6.38-rc4 (2011-02-07 16:03:55 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
+
+Borislav Petkov (1):
+      amd64_edac: Fix DIMMs per DCTs output
+
+ drivers/edac/amd64_edac.c |   28 ++++++++--------------------
+ 1 files changed, 8 insertions(+), 20 deletions(-)
+
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
