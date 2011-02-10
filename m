@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab1BJOGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 09:06:11 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:57481 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab1BJOGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 09:06:09 -0500
-Date: Thu, 10 Feb 2011 14:05:43 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: handle simple case in free_pcppages_bulk()
-Message-ID: <20110210140543.GJ17873@csn.ul.ie>
-References: <1297338408-3590-1-git-send-email-namhyung@gmail.com> <AANLkTikEigbPsNMqqkmixYbCfD7Dz12YMcW2+GZbhUQq@mail.gmail.com> <1297343929.1449.3.camel@leonhard> <AANLkTimcLgsdEm6XKESc34Z=nsJkZqz8H1jR-ARZo_Gq@mail.gmail.com>
+	id S1756380Ab1BJOL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 09:11:27 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49544 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756353Ab1BJOLZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 09:11:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=DEPT9jiFKqhScVj3BXe8U6ELQ/rvenVn8xnh4MhWa5yoMEeZJBvVkXCjpr7UGObXSR
+         VGiZMiWWlsh9ddRox+IUOvu0+E2AstOGTIT/YhXolT2c4Lg8TdQgfNdSfCo+0/y83ukV
+         9o7H6yYDlBWYzeVO86qguxH+nNRzur6DDVsVA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <AANLkTimcLgsdEm6XKESc34Z=nsJkZqz8H1jR-ARZo_Gq@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4C1AE64C.6040609@jp.fujitsu.com>
+References: <4C1AE64C.6040609@jp.fujitsu.com>
+Date: Thu, 10 Feb 2011 23:11:24 +0900
+X-Google-Sender-Auth: UKYg55Xns2T-Ulic7Ue3k0xw7eY
+Message-ID: <AANLkTinhN1+bM6qABR28fR41T0+X_xSN8C4R2Ev1g-Gt@mail.gmail.com>
+Subject: Re: [BUG][PATCH 0/2 (v.3)] x86: ioremap() problem in X86_32 PAE
+From: TAKADA Yoshihito <takada@mbf.nifty.com>
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, matthew@wil.cx, macro@linux-mips.org,
+        kamezawa.hiroyu@jp.fujitsu.com, eike-kernel@sf-tec.de, jeremy@goop.org,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 10:38:59PM +0900, Minchan Kim wrote:
-> On Thu, Feb 10, 2011 at 10:18 PM, Namhyung Kim <namhyung@gmail.com> wrote:
-> > 2011-02-10 (???), 22:10 +0900, Minchan Kim:
-> >> Hello Namhyung,
-> >>
-> >
-> > Hi Minchan,
-> >
-> >
-> >> On Thu, Feb 10, 2011 at 8:46 PM, Namhyung Kim <namhyung@gmail.com> wrote:
-> >> > Now I'm seeing that there are some cases to free all pages in a
-> >> > pcp lists. In that case, just frees all pages in the lists instead
-> >> > of being bothered with round-robin lists traversal.
-> >>
-> >> I though about that but I didn't send the patch.
-> >> That's because many cases which calls free_pcppages_bulk(,
-> >> pcp->count,..) are slow path so it adds comparison overhead on fast
-> >> path while it loses the effectiveness in slow path.
-> >>
-> >
-> > Hmm.. How about adding unlikely() then? Doesn't it help much here?
-> 
-> Yes. It would help but I am not sure how much it is.
-> AFAIR, when Mel submit the patch, he tried to prove the effectiveness
-> with some experiment and profiler.
+Hi.
+I faced same probrem, too. I use x86_64 kernel.
+Your patch fix it. it's very effective.
+Thanks!
 
-Yep. Principally I *think* used netperf running UDP_STREAM for different
-buffer sizes and compared oprofile output but I also ran a battery of
-benchmarks to check for any other unexpected regression without profiling.
-
--- 
-Mel Gorman
-SUSE Labs
+2010年6月18日12:21 Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>:
+> Hi,
+>
+> Here is a updated version (v.3) of patchset to fix ioremap() related
+> problem found in x86 32-bit mode. The problem is that ioremap() maps
+> wrong address for the device to which phisical addres higer than
+> 32-bit is assigned (ioat device in my case).
+>
+> The v.3 patches are:
+>
+> - [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+> - [PATCH 2/2] x86: ioremap: fix normal ram range check
+>
+> Changelog
+> ---------
+> v.2=>v.3:
+> - Matthew Wilcox suggested changing PAGE_MASK definition. But I think
+>  it is a little risky. Instead of changing PAGE_MASK, v.3 patch uses
+>  PHYSICAL_PAGE_MASK(*) to mask physical address again, as v.1 patch
+>  did. The PHYSICAL_PAGE_MASK doesn't work for higher than 2^44
+>  physical address because __PHYSICAL_MASK_SHIFT is 44 in x86_32
+>  PAE(*). But this time, I focus on making 2^44 work correctly.
+>
+> (*) Current X86_32 PAE kernel would not work with physical address
+>    higher than 2^44, because PFNs are handled using 32-bit variable
+>    (unsigned long) probably in many places. This seems the reason why
+>    __PHYSICAL_MASK_SHIFT is limited to 44 (=32+12 is the limit we can
+>    fit into an unsigned long pfn). When x86 PAE linux becomes above
+>    2^44 physical address capable in someday, __PHYSICAL_MASK_SHIFT
+>    should become greater value than 44.
+>
+>
+> v.1=>v.2:
+> The v.1 patchset was based on my misunderstanding about architectural
+> limit and linux memory management limit of physical address. So some
+> patches in v.1 were totally wrong fixes and they are removed. Thanks
+> to the feedbacks for v.1 patchset, it turned out that phsical address
+> is handled improperly (higher 32-bits are cleared unexpectedly) also
+> in the other places than where v.1 patchset fixed. Here are summary of
+> changes.
+>
+> - Stop using PHYSICAL_PAGE_MASK to align physical address because
+>  PHYSICAL_PAGE_MASK would not work if physical address is higher than
+>  44-bit.
+> - Fix remaining bugs of physical address handling in ioremap() code
+>  path according to the feedbacks.
+> - Fix s_show() in vmalloc.c to show high physical address properly.
+> - Removed changes against phys_addr_valid() ([PATCH 2/4] in v.1).
+> - Removed changes against warning message in ioremap() ([PATCH 3/4] in
+>  v.1).
+>
+> Thanks,
+> Kenji Kaneshige
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
