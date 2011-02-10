@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1BJJia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 04:38:30 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:31941
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752745Ab1BJJi2 (ORCPT
+	id S1754803Ab1BJJlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 04:41:03 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:57534 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab1BJJlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 04:38:28 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzz8275bh8275dhz2dh2a8h637h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
-Date: Thu, 10 Feb 2011 17:37:57 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        <linux-sh@vger.kernel.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect
- enable/prepare semantics
-Message-ID: <20110210093756.GA24710@b20223-02.ap.freescale.net>
-References: <1297233693.241680.897691111624.0.gpush@pororo>
- <1297233693.243373.411051105619.3.gpush@pororo>
+	Thu, 10 Feb 2011 04:41:01 -0500
+Message-ID: <4D53FFFA.40704@linux.vnet.ibm.com>
+Date: Thu, 10 Feb 2011 20:40:50 +0530
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1297233693.243373.411051105619.3.gpush@pororo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.net
+To: Peter Zijlstra <peterz@infradead.org>
+CC: arjan@linux.intel.com, lenb@kernel.org, suresh.b.siddha@intel.com,
+        benh@kernel.crashing.org, venki@google.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V3 0/3] cpuidle: Cleanup pm_idle and include driver/cpuidle.c
+ in-kernel
+References: <20110208105146.9998.22103.stgit@tringupt.in.ibm.com> <1297250478.13327.162.camel@laptop>
+In-Reply-To: <1297250478.13327.162.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
+> On Tue, 2011-02-08 at 16:21 +0530, Trinabh Gupta wrote:
+>>
+>>   arch/x86/kernel/process.c     |  340 -------------------------------
+>>   arch/x86/kernel/process_32.c  |    4
+>>   arch/x86/kernel/process_64.c  |    4
+>>   arch/x86/xen/setup.c          |    1
+>>   drivers/acpi/processor_idle.c |    2
+>>   drivers/cpuidle/Kconfig       |    9 +
+>>   drivers/cpuidle/cpuidle.c     |   43 +++-
+>>   drivers/cpuidle/driver.c      |  112 ++++++++++
+>>   drivers/idle/Makefile         |    2
+>>   drivers/idle/default_driver.c |  453 +++++++++++++++++++++++++++++++++++++++++
+>>   include/linux/cpuidle.h       |    3
+>>   11 files changed, 613 insertions(+), 360 deletions(-)
+>>   create mode 100644 drivers/idle/default_driver.c
+>
+>
+> # git grep -l "\<pm_idle\>" arch/x86/
+> arch/x86/kernel/apm_32.c
+> arch/x86/kernel/process.c
+> arch/x86/kernel/process_32.c
+> arch/x86/kernel/process_64.c
+> arch/x86/xen/setup.c
+>
+> You seemed to have missed touching apm_32.c
+>
 
-On Wed, Feb 09, 2011 at 02:41:33PM +0800, Jeremy Kerr wrote:
-> This change adds warnings to check for:
-> 
->  1) enabling a clock that hasn't been prepared; and
-> 
->  2) unpreparing a clock that is still enabled
-> 
-> While the correctness can't be guaranteed, the warnings should cover
-> most situations, and won't indicate false positives.
-> 
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-> 
-> ---
->  drivers/clk/clk.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index bbbdb0d..8c96623 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -29,6 +29,8 @@ EXPORT_SYMBOL_GPL(clk_prepare);
->  
->  void clk_unprepare(struct clk *clk)
->  {
-> +	WARN_ON(clk->enable_count != 0);
-> +
-Other drivers may be using the clock and increased the enable_count.
-This check may be moved to where we actually do unprepare.
+Hi Peter,
 
-Thanks
-Richard
->  	mutex_lock(&clk->prepare_lock);
->  
->  	WARN_ON(clk->prepare_count == 0);
-> @@ -45,6 +47,8 @@ int clk_enable(struct clk *clk)
->  	unsigned long flags;
->  	int ret = 0;
->  
-> +	WARN_ON(clk->prepare_count == 0);
-> +
->  	spin_lock_irqsave(&clk->enable_lock, flags);
->  	if (clk->enable_count == 0 && clk->ops->enable)
->  		ret = clk->ops->enable(clk);
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+Thanks for the review. Yes, I missed this; will take care of
+this and cpu_idle_wait() in the next version.
 
+Thanks,
+-Trinabh
