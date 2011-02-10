@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab1BJVUM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:20:12 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58121 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891Ab1BJVUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:20:10 -0500
-Message-ID: <4D5456AD.5010703@vflare.org>
-Date: Fri, 11 Feb 2011 02:50:45 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1756999Ab1BJVZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:25:46 -0500
+Received: from kroah.org ([198.145.64.141]:60557 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507Ab1BJVZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 16:25:45 -0500
+Date: Thu, 10 Feb 2011 13:20:30 -0800
+From: Greg KH <greg@kroah.com>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: manual merge of the tty tree with the m68knommu
+ tree
+Message-ID: <20110210212030.GA19226@kroah.com>
+References: <20110210162914.eec2f4b5.sfr@canb.auug.org.au>
+ <20110210185115.GB15944@kroah.com>
+ <4D5452E5.9080304@snapgear.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Allow sharing xvmalloc for zram and zcache
-References: <1297371646-11604-1-git-send-email-ngupta@vflare.org> <4D5453CB.7050206@oracle.com> <4D5454CC.1000609@vflare.org> <4D5455CD.3000507@oracle.com>
-In-Reply-To: <4D5455CD.3000507@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5452E5.9080304@snapgear.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 02:47 AM, Randy Dunlap wrote:
-> On 02/10/11 13:12, Nitin Gupta wrote:
->> On 02/11/2011 02:38 AM, Randy Dunlap wrote:
->>> On 02/10/11 13:00, Nitin Gupta wrote:
->>>> Both zram and zcache use xvmalloc allocator. If xvmalloc
->>>> is compiled separately for both of them, we will get linker
->>>> error if they are both selected as "built-in". We can also
->>>> get linker error regarding missing xvmalloc symbols if zram
->>>> is not built.
->>>>
->>>> So, we now compile xvmalloc separately and export its symbols
->>>> which are then used by both of zram and zcache.
->>>>
->>>> Signed-off-by: Nitin Gupta<ngupta@vflare.org>
->>>
->>> Acked-by: Randy Dunlap<randy.dunlap@oracle.com>
->>>
->>>
->>> but what does this patch apply to?  It does not apply cleanly to
->>> linux-next of 20110210.
->>>
->>
->> This applies to staging-2.6. I thought linux-next won't be that
->> different so as to produce conflicts. Can you please send reject files,
->> or let me fetch linux-next tree and will soon post patch against the same.
->
-> I'll let you fetch linux-next.  I merged it by hand and test-built it
-> successfully.
->
+On Fri, Feb 11, 2011 at 07:04:37AM +1000, Greg Ungerer wrote:
+> On 11/02/11 04:51, Greg KH wrote:
+> >On Thu, Feb 10, 2011 at 04:29:14PM +1100, Stephen Rothwell wrote:
+> >>Hi Greg,
+> >>
+> >>Today's linux-next merge of the tty tree got a conflict in
+> >>drivers/tty/serial/68328serial.c between commit
+> >>abf67e214f867d16df6a9c4ac7d8fc0b98ebad97 ("m68knommu: fix derefernce of
+> >>port.tty") from the m68knommu tree and commit
+> >>f094298bae5f5d0e1cb3bff4621aae7ef486812a ("68328serial: remove unsed
+> >>m68k_serial->tqueue_hangup") from the tty tree.
+> >>
+> >>I just used the latter since it removed some of the code modified by the
+> >>former.
+> >
+> >Sounds fine, thanks.
+> 
+> The fix in commit abf67e214f867d16df6a9c4ac7d8fc0b98ebad97 ("m68knommu:
+> fix derefernce of port.tty") are needed to get that file to compile.
+> So I will be sending that to Linus for 2.6.38 (ie very soon).
 
-So, can you post the patch against linux-next then? :)
+That's fine with me, thanks for doing that.
 
-Thanks,
-Nitin
-
+greg k-h
