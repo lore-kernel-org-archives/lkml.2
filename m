@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab1BJXdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:33:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34460 "EHLO ogre.sisk.pl"
+	id S1757323Ab1BJXd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:33:59 -0500
+Received: from www.tglx.de ([62.245.132.106]:58869 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386Ab1BJXdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:33:08 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-pm@lists.linux-foundation.org
-Subject: [Updated][PATCH 5/5] PM: Clean up PM_TRACE dependencies and drop unnecessary Kconfig option
-Date: Fri, 11 Feb 2011 00:32:48 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com> <201102082218.28015.rjw@sisk.pl> <201102082223.37975.rjw@sisk.pl>
-In-Reply-To: <201102082223.37975.rjw@sisk.pl>
+	id S1756844Ab1BJXd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:33:58 -0500
+Date: Fri, 11 Feb 2011 00:33:53 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Daney <ddaney@caviumnetworks.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genirq: Call chip_bus_lock()/chip_bus_sync_unlock() in
+ setup_irq().
+In-Reply-To: <1297296265-18680-1-git-send-email-ddaney@caviumnetworks.com>
+Message-ID: <alpine.LFD.2.00.1102110029170.31804@localhost6.localdomain6>
+References: <1297296265-18680-1-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102110032.48810.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 08, 2011, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> CONFIG_PM_SLEEP_ADVANCED_DEBUG should depend on CONFIG_PM_SLEEP
-> and CONFIG_CAN_PM_TRACE need not depend on EXPERIMENTAL.  Modify
-> kernel/power/Kconfig along those lines.
+On Wed, 9 Feb 2011, David Daney wrote:
 
-It turns out that CONFIG_PM_SLEEP_ADVANCED_DEBUG is not used any more, so we
-can simply get rid of it.
+> irq_chips that supply .irq_bus_lock/.irq_bus_sync_unlock functions,
+> expect that the other chip methods will be called inside of calls to
+> the pair.  If this expectation is not met, things tend to not work.
+> 
+> Make setup_irq() call chip_bus_lock()/chip_bus_sync_unlock() too.
+> 
+> For the vast majority of irq_chips, this will be a NOP as most don't
+> have these bus lock functions.
+> 
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+
+Ralf,
+
+please pull that change from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq/for-mips
+
+so you can apply David's patches which depend on that one.
+
+That's 38-rc4 based w/o any other changes to the core code. I pull
+that into irq/core so we have no dependecies or collision for Linus.
 
 Thanks,
-Rafael
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM: Clean up PM_TRACE dependencies and drop unnecessary Kconfig option
-
-CONFIG_PM_SLEEP_ADVANCED_DEBUG is not used any more, so drop it
-and CONFIG_CAN_PM_TRACE need not depend on EXPERIMENTAL, so remove
-that dependency.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- kernel/power/Kconfig |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-Index: linux-2.6/kernel/power/Kconfig
-===================================================================
---- linux-2.6.orig/kernel/power/Kconfig
-+++ linux-2.6/kernel/power/Kconfig
-@@ -140,11 +140,6 @@ config PM_ADVANCED_DEBUG
- 	fields of device objects from user space.  If you are not a kernel
- 	developer interested in debugging/testing Power Management, say "no".
- 
--config PM_SLEEP_ADVANCED_DEBUG
--	bool
--	depends on PM_ADVANCED_DEBUG
--	default n
--
- config PM_TEST_SUSPEND
- 	bool "Test suspend/resume and wakealarm during bootup"
- 	depends on SUSPEND && PM_DEBUG && RTC_CLASS=y
-@@ -158,7 +153,7 @@ config PM_TEST_SUSPEND
- 
- config CAN_PM_TRACE
- 	def_bool y
--	depends on PM_DEBUG && PM_SLEEP && EXPERIMENTAL
-+	depends on PM_DEBUG && PM_SLEEP
- 
- config PM_TRACE
- 	bool
+	tglx
