@@ -1,143 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab1BJQeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 11:34:16 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:33633 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756285Ab1BJQeO (ORCPT
+	id S1756565Ab1BJQfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 11:35:14 -0500
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:38091 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756432Ab1BJQfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 11:34:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=pnlg+YAFQfDZygZ2p3PilMVX+jR3MfO3H/viVt3P8cm7RFu/QFBeJ5XdxjfdoX5w5K
-         zYAHY4gYtCffKd+OPgprcm8u6rEaP9eiVE+YqHfsqRGarkikCHWRcUO5nFpum5LAZ1uO
-         XC9BG8mSylKMCCdWyex9XExWGq+sn3pYvBLVA=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH] mm: optimize replace_page_cache_page
-Date: Fri, 11 Feb 2011 01:33:46 +0900
-Message-Id: <1297355626-5152-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 10 Feb 2011 11:35:13 -0500
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Brendan Cully <brendan@cs.ubc.ca>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>
+In-Reply-To: <Pine.LNX.4.44L0.1102101043010.2029-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1102101043010.2029-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 16:34:48 +0000
+Message-ID: <1297355688.21980.488.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [Xen-devel] Re: [linux-pm] [PATCH 0/2] Fix hangup after
+ creating checkpoint on Xen.
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=wRiPVX2u-SEA:10 a=IkcTkHD0fZMA:10 a=55PpCY4J7TVtE7DOIrkA:9 a=REzEPONeQ46m5Ty-hPAL3dybLT0A:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch optmizes replace_page_cache_page.
+On Thu, 2011-02-10 at 11:00 -0500, Alan Stern wrote:
+> On Thu, 10 Feb 2011, Ian Campbell wrote:
+> 
+> > On Wed, 2011-02-09 at 23:42 +0000, Alan Stern wrote:
+> > > In fact there already is a "fast suspend & resume" path in the PM core.  
+> > > It's the freeze/thaw procedure used when starting to hibernate.  The
+> > > documentation specifically says that drivers' freeze methods are
+> > > supposed to quiesce their devices but not change power levels.  In
+> > > addition, the thaw method is invoked as part of recovery from a failed
+> > > hibernation attempt, so it already has the "cancel" semantics that xen 
+> > > seems to want.
+> > 
+> > Sounds like that would work and I would much prefer to simply make
+> > correct use of the core functionality.
+> 
+> It seems like a reasonable approach.  Whether it will actually _work_ 
+> is a harder question...  :-)
 
-1) remove radix_tree_preload
-2) single radix_tree_lookup_slot and replace radix tree slot
-3) page accounting optimization if both pages are in same zone.
+Heh.
 
-Cc: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/filemap.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 51 insertions(+), 10 deletions(-)
+> > So PMSG_FREEZE is balanced by either PMSG_RECOVER or PMSG_THAW depending
+> > on whether the suspend was cancelled or not?
+> 
+> Basically yes.  It is also "balanced" by PMSG_RESTORE, which is used
+> after a memory image has been restored (although this isn't relevant to
+> your snapshotting).  See the comments in include/linux/pm.h.
 
-Hi Miklos,
-This patch is totally not tested.
-Could you test this patch?
+The documentation of the individual events in pm.h is good. Is there a
+reference for the sequence of events for the different types of
+suspend/hibernate/etc?
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index a25c898..918ef1e 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -148,6 +148,56 @@ void __remove_from_page_cache(struct page *page)
- 	}
- }
- 
-+/*
-+ * Replace a page from the page cache with a new one.
-+ * Both the old and new page must be locked.
-+ * The caller must hold the mapping's tree_lock.
-+ */
-+void __replace_page_cache_page(struct page *old, struct page *new)
-+{
-+	void **pslot;
-+	struct address_space *mapping = old->mapping;
-+	struct zone *old_zone, *new_zone;
-+
-+	old_zone = page_zone(old);
-+	new_zone = page_zone(new);
-+	/*
-+	 * if we're uptodate, flush out into the cleancache, otherwise
-+	 * invalidate any existing cleancache entries.  We can't leave
-+	 * stale data around in the cleancache once our page is gone
-+	 */
-+	if (PageUptodate(old))
-+		cleancache_put_page(old);
-+	else
-+		cleancache_flush_page(mapping, old);
-+
-+	pslot = radix_tree_lookup_slot(&mapping->page_tree,
-+			page_index(old));
-+	get_page(new);      /* add cache reference */
-+	radix_tree_replace_slot(pslot, new);
-+	old->mapping = NULL;
-+	if (old_zone != new_zone) {
-+		__dec_zone_page_state(old, NR_FILE_PAGES);
-+		__inc_zone_page_state(new, NR_FILE_PAGES);
-+		if (PageSwapBacked(old)) {
-+			__dec_zone_page_state(old, NR_SHMEM);
-+			__inc_zone_page_state(new, NR_SHMEM);
-+		}
-+	}
-+	BUG_ON(page_mapped(old));
-+	/*
-+	 * Some filesystems seem to re-dirty the page even after
-+	 * the VM has canceled the dirty bit (eg ext3 journaling).
-+	 *
-+	 * Fix it up by doing a final dirty accounting check after
-+	 * having removed the page entirely.
-+	 */
-+	if (PageDirty(old) && mapping_cap_account_dirty(mapping)) {
-+		dec_zone_page_state(old, NR_FILE_DIRTY);
-+		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-+	}
-+}
-+
- void remove_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
-@@ -433,7 +483,6 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 	if (error)
- 		return error;
- 
--	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (!error) {
- 		struct address_space *mapping = old->mapping;
- 		void (*freepage)(struct page *);
-@@ -441,20 +490,12 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 		pgoff_t offset = old->index;
- 		freepage = mapping->a_ops->freepage;
- 
--		page_cache_get(new);
- 		new->mapping = mapping;
- 		new->index = offset;
- 
- 		spin_lock_irq(&mapping->tree_lock);
--		__remove_from_page_cache(old);
--		error = radix_tree_insert(&mapping->page_tree, offset, new);
--		BUG_ON(error);
--		mapping->nrpages++;
--		__inc_zone_page_state(new, NR_FILE_PAGES);
--		if (PageSwapBacked(new))
--			__inc_zone_page_state(new, NR_SHMEM);
-+		__replace_page_cache_page(old, new);
- 		spin_unlock_irq(&mapping->tree_lock);
--		radix_tree_preload_end();
- 		if (freepage)
- 			freepage(old);
- 		page_cache_release(old);
+> >  So the sequence of events
+> > is something like:
+> > 	dpm_suspend_start(PMSG_FREEZE);
+> >          
+> > 		dpm_suspend_noirq(PMSG_FREEZE);
+> >                          
+> > 			sysdev_suspend(PMSG_QUIESCE);
+> 
+> This should say sysdev_suspend(PMSG_FREEZE).
+> 
+> > 			cancelled = suspend_hypercall()
+> 
+> At this point swsusp_arch_suspend() is called.  If that translates to 
+> suspend_hypercall() in your setting, then yes.
+> 
+> > 			sysdev_resume();
+> >                  
+> > 		dpm_resume_noirq(cancelled ? PMSG_RECOVER : PMSG_THAW);
+> >          
+> > 	dpm_resume_end(cancelled ? PMSG_RECOVER : PMSG_THAW);
+> > ?
+> 
+> Yes.
+
+Both of those call ->thaw ->complete. Did I mean "cancelled ?
+PMSG_THAW : PMSG_RESTORE"? (or s/THAW/RECOVER?)
+
+If the suspend was cancelled then we want the devices to simply pickup
+where they were before the freeze, wereas if we really did suspend (or
+migrate or whatever) then they need to do a more complete reset and
+reconnect operation so we want some sort of indication to the driver
+which happened.
+
+> > (For comparison we currently have:
+> > > > >         dpm_suspend_start(PMSG_SUSPEND);
+> > > > >         
+> > > > >                 dpm_suspend_noirq(PMSG_SUSPEND);
+> > > > >                         
+> > > > >                         sysdev_suspend(PMSG_SUSPEND);
+> > > > >                         /* suspend hypercall */
+> > > > >                         sysdev_resume();
+> > > > >                 
+> > > > >                 dpm_resume_noirq(PMSG_RESUME);
+> > > > >         
+> > > > >         dpm_resume_end(PMSG_RESUME);
+> > )
+> 
+> Right.  The sequence of calls is the same, but the PMSG_ argument is 
+> different so drivers are expected to act differently in response.
+
+The drivers don't actually see the PMSG_* though right? They only see a
+differing sequence of hooks from dev_pm_ops called.
+
+Thanks,
+Ian.
+
+> 
+> Alan Stern
+> 
+> 
+
 -- 
-1.7.1
+Ian Campbell
+Current Noise: Sworn Amongst - Useless
+
+Accident, n.:
+	A condition in which presence of mind is good, but absence of
+	body is better.
+		-- Foolish Dictionary
 
