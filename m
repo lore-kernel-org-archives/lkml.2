@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab1BJTjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 14:39:22 -0500
-Received: from bosmailout13.eigbox.net ([66.96.189.13]:53235 "EHLO
-	bosmailout13.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab1BJTjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 14:39:20 -0500
-X-Greylist: delayed 2379 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Feb 2011 14:39:20 EST
-X-EN-OrigOutIP: 10.20.18.3
-X-EN-IMPSID: 6JzY1g00503yW7601JzYA1
-Message-ID: <4D543738.3080206@jaysonking.com>
-Date: Thu, 10 Feb 2011 13:06:32 -0600
-From: "Jayson R. King" <dev@jaysonking.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	id S1756652Ab1BJTkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 14:40:06 -0500
+Received: from imp02.mtu.ru ([62.5.255.19]:59322 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953Ab1BJTkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 14:40:05 -0500
+Message-ID: <4D543E76.6000303@pavlinux.ru>
+Date: Thu, 10 Feb 2011 22:37:26 +0300
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; ru; rv:1.9.2.13) Gecko/20101206 Microsoft/666 Notepad
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Willy Tarreau <w@1wt.eu>
-Subject: Re: Linux 2.6.27.58
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
-X-EN-AuthUser: jaysonking@jaysonking.com
-X-EN-OrigIP: 67.65.251.18
-X-EN-OrigHost: adsl-67-65-251-18.dsl.okcyok.swbell.net
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]: Not PCI_PROBE_MMCONF by default
+References: <4D52AF15.5070705@pavlinux.ru> <AANLkTindvfxRfgRbLprzX5b2u-4P-XZmycV=ai9ez6H1@mail.gmail.com> <4D52DE96.80408@pavlinux.ru>
+In-Reply-To: <4D52DE96.80408@pavlinux.ru>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=03742489
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Spam-Flag: NO
+X-Spam-Yversion: Spamooborona-3.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry if I missed CC'ing anyone, I'm not subscribed to the list)
+09.02.2011 21:36, Pavel Vasilyev пишет:
+>>>
+>>> Do not set PCI_PROBE_MMCONF flag by default, and enable
+>>> only if configured with  CONFIG_PCI_MMCONFIG
 
-Mike Galbraith wrote:
-> For users of 27 who wish the scheduler had a bit less overhead,
-> attached is a small set of sched patches I considered mandatory for
-> my 27 tree. First patch cuts overhead quite a bit, the others are
-> just fixes I considered important enough to carry around.
+>> did you try to do the compile test with CONFIG_PCI_MMCONFIG?
+> 
 
-Mike,
+Yet another version
 
-Thanks for this patch set. I think it's a good idea.
+Signed-off-by: Pavel Vasilyev <pavel@pavlinux.ru>
+--
+ arch/x86/pci/common.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Back in Dec 2008, we discussed a regression associated with the first
-patch in this series, "sched: revert back to per-rq vruntime".
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 5fe7502..0a3e56a 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -17,8 +17,12 @@
+ #include <asm/smp.h>
+ #include <asm/pci_x86.h>
 
-You proposed a fix which was committed as 0a582440 and then that was
-followed by another fix by Lin Ming 6272d68c. Should these two
-additional patches be included in the patch series above?
++#ifdef CONFIG_PCI_MMCONFIG
+ unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2 |
+                                PCI_PROBE_MMCONF;
++#else
++unsigned int pci_probe = PCI_PROBE_BIOS | PCI_PROBE_CONF1 | PCI_PROBE_CONF2;
++#endif
 
-Jayson
+ unsigned int pci_early_dump_regs;
+ static int pci_bf_sort;
+-- 
 
+                                                         Pavel.
