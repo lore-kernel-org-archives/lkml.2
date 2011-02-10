@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab1BJTQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 14:16:33 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:40170 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab1BJTQc (ORCPT
+	id S1756728Ab1BJTRY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 14:17:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40073 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756339Ab1BJTRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 14:16:32 -0500
-Subject: Re: [RFC] perf tool: load data variable symbols
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, mingo@elte.hu,
-        Stephane Eranian <eranian@google.com>, fweisbec@gmail.com,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110210162555.GB20676@ghostprotocols.net>
-References: <1297347333.2272.37.camel@localhost>
-	 <20110210162555.GB20676@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 20:17:35 +0100
-Message-ID: <1297365455.5226.22.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Feb 2011 14:17:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110210144057.GA7193@mail.hallyn.com>
+References: <20110210144057.GA7193@mail.hallyn.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 10 Feb 2011 11:16:58 -0800
+Message-ID: <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now (v3)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Gergely Nagy <algernon@balabit.hu>, david@lang.hm,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Marc Koschewski <marc@osknowledge.org>,
+        lkml <linux-kernel@vger.kernel.org>, James Morris <jmorris@namei.org>,
+        Nick Bowler <nbowler@elliptictech.com>
+Content-Type: multipart/mixed; boundary=90e6ba4fc4a2239bff049bf26e0c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-10 at 14:25 -0200, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Feb 10, 2011 at 10:15:33PM +0800, Lin Ming escreveu:
-> > Hi, all
-> > 
-> > Currently, perf tool only load function symbols when parsing perf.data.
-> > 
-> > But it is also helpful if variable symbols can be loaded.
-> > 
-> > For example, Intel load latency monitoring facility records data linear
-> > address of the load operation. It's useful if the data linear address is
-> > resolved into symbol, just like functions.
-> > 
-> > enum map_type {
-> >         MAP__FUNCTION = 0,
-> >         MAP__VARIABLE,
-> > };
-> > 
-> > We already have MAP__VARIABLE defined, although it's not used now.
-> > 
-> > For both kernel and userspace applications, we can load the variable
-> > symbols from .data and .bss section.
-> > 
-> > What do you think?
-> 
-> It suposedly already works, as you noticed there are no users in the
-> tree, IIRC I wrote that because somebody at IBM asked for it for some
-> tool and since then I haven't heard about such tool.
-> 
-> It will load global variable locations from the symtab, like:
-> 
-> [acme@felicio linux]$ readelf -s ~/bin/perf  | grep OBJECT | grep nr_
->   216: 000000000076b9b0  8 OBJECT  LOCAL  DEFAULT   29 nr_tasks
->   222: 00000000007eba48  8 OBJECT  LOCAL  DEFAULT   29 nr_run_events
->   223: 00000000007eba50  8 OBJECT  LOCAL  DEFAULT   29 nr_sleep_events
->   224: 00000000007eba58  8 OBJECT  LOCAL  DEFAULT   29 nr_wakeup_events
->   225: 00000000007eba60  8 OBJECT  LOCAL  DEFAULT   29 nr_sleep_corrections
->   226: 00000000007eba68  8 OBJECT  LOCAL  DEFAULT   29 nr_run_events_optimized
->   233: 00000000007ebaa0  8 OBJECT  LOCAL  DEFAULT   29 nr_runs
->   238: 00000000007ebac0  8 OBJECT  LOCAL  DEFAULT   29 nr_timestamps
->   239: 00000000007ebac8  8 OBJECT  LOCAL  DEFAULT   29 nr_unordered_timestamps
->   240: 00000000007ebad0  8 OBJECT  LOCAL  DEFAULT   29 nr_state_machine_bugs
->   241: 00000000007ebad8  8 OBJECT  LOCAL  DEFAULT   29 nr_context_switch_bugs
->   242: 00000000007ebae0  8 OBJECT  LOCAL  DEFAULT   29 nr_events
->   243: 00000000007ebae8  8 OBJECT  LOCAL  DEFAULT   29 nr_lost_chunks
->   244: 00000000007ebaf0  8 OBJECT  LOCAL  DEFAULT   29 nr_lost_events
->   624: 0000000000817d28  8 OBJECT  LOCAL  DEFAULT   29 nr_unordered
->   700: 000000000081a200  8 OBJECT  LOCAL  DEFAULT   29 nr_allocs
->   701: 000000000081a208  8 OBJECT  LOCAL  DEFAULT   29 nr_cross_allocs
->  1145: 0000000000831180  4 OBJECT  LOCAL  DEFAULT   29 vmlinux_path__nr_entries
-> [acme@felicio linux]$ 
-> 
-> But for things to start to get interesting we need to extend what we have in
-> 'perf probe', i.e. the DWARF location expressions, to do reverse lookup based
-> on data address from sample, register file snapshots, and those DWARF location
-> expressions.
+--90e6ba4fc4a2239bff049bf26e0c
+Content-Type: text/plain; charset=ISO-8859-1
 
-Another way is to reverse map the reported IP (PEBS + fixup) to a data
-access using the dwarf info. That would also work for dynamically
-allocated data structures.
+On Thu, Feb 10, 2011 at 6:40 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>
+> Please apply.
 
-(clearly you'd loose variable things like which entry in an array, but
-you should still be able to identify the structure members)
+Hmm. So I detest the duplication and the ugly resulting code.  It was
+a bit hard to follow before, now it's just nasty.
 
+Why not make this all into some nicer helper functions instead -
+something simple like the attached?
 
+UNTESTED! I'm not going to apply it unless I get acks/tested-by's.
+
+                                  Linus
+
+--90e6ba4fc4a2239bff049bf26e0c
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gk01ugb20
+
+IGtlcm5lbC9wcmludGsuYyB8ICAgNTQgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KystLS0tLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDM1IGluc2VydGlvbnMoKyks
+IDE5IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2tlcm5lbC9wcmludGsuYyBiL2tlcm5lbC9w
+cmludGsuYwppbmRleCAyZGRiZGM3Li5mNTEyMTRjIDEwMDY0NAotLS0gYS9rZXJuZWwvcHJpbnRr
+LmMKKysrIGIva2VybmVsL3ByaW50ay5jCkBAIC0yNjIsMjUgKzI2Miw0NyBAQCBpbnQgZG1lc2df
+cmVzdHJpY3QgPSAxOwogaW50IGRtZXNnX3Jlc3RyaWN0OwogI2VuZGlmCiAKK3N0YXRpYyBpbnQg
+c3lzbG9nX2FjdGlvbl9yZXN0cmljdGVkKGludCB0eXBlKQoreworCWlmIChkbWVzZ19yZXN0cmlj
+dCkKKwkJcmV0dXJuIDE7CisJLyogVW5sZXNzIHJlc3RyaWN0ZWQsIHdlIGFsbG93ICJyZWFkIGFs
+bCIgYW5kICJnZXQgYnVmZmVyIHNpemUiIGZvciBldmVyeWJvZHkgKi8KKwlyZXR1cm4gdHlwZSAh
+PSBTWVNMT0dfQUNUSU9OX1JFQURfQUxMICYmIHR5cGUgIT0gU1lTTE9HX0FDVElPTl9TSVpFX0JV
+RkZFUjsKK30KKworc3RhdGljIGludCBjaGVja19zeXNsb2dfcGVybWlzc2lvbnMoaW50IHR5cGUs
+IGJvb2wgZnJvbV9maWxlKQoreworCS8qCisJICogSWYgdGhpcyBpcyBmcm9tIC9wcm9jL2ttc2cg
+YW5kIHdlJ3ZlIGFscmVhZHkgb3BlbmVkIGl0LCB0aGVuIHdlJ3ZlCisJICogYWxyZWFkeSB0aGUg
+Y2FwYWJpbGl0aWVzIGNoZWNrcyBhdCBvcGVuIHRpbWUuCisJICovCisJaWYgKGZyb21fZmlsZSAm
+JiB0eXBlICE9IFNZU0xPR19BQ1RJT05fT1BFTikKKwkJcmV0dXJuIDA7CisKKwlpZiAoc3lzbG9n
+X2FjdGlvbl9yZXN0cmljdGVkKHR5cGUpKSB7CisJCWlmIChjYXBhYmxlKENBUF9TWVNMT0cpKQor
+CQkJcmV0dXJuIDA7CisJCS8qIEZvciBoaXN0b3JpY2FsIHJlYXNvbnMsIGFjY2VwdCBDQVBfU1lT
+X0FETUlOIHRvbywgd2l0aCBhIHdhcm5pbmcgKi8KKwkJaWYgKGNhcGFibGUoQ0FQX1NZU19BRE1J
+TikpIHsKKwkJCVdBUk5fT05DRSgxLCAiQXR0ZW1wdCB0byBhY2Nlc3Mgc3lzbG9nIHdpdGggQ0FQ
+X1NZU19BRE1JTiAiCisJCQkJICJidXQgbm8gQ0FQX1NZU0xPRyAoZGVwcmVjYXRlZCkuXG4iKTsK
+KwkJCXJldHVybiAwOworCQl9CisJCXJldHVybiAtRVBFUk07CisJfQorCXJldHVybiAwOworfQor
+CiBpbnQgZG9fc3lzbG9nKGludCB0eXBlLCBjaGFyIF9fdXNlciAqYnVmLCBpbnQgbGVuLCBib29s
+IGZyb21fZmlsZSkKIHsKIAl1bnNpZ25lZCBpLCBqLCBsaW1pdCwgY291bnQ7CiAJaW50IGRvX2Ns
+ZWFyID0gMDsKIAljaGFyIGM7Ci0JaW50IGVycm9yID0gMDsKKwlpbnQgZXJyb3I7CiAKLQkvKgot
+CSAqIElmIHRoaXMgaXMgZnJvbSAvcHJvYy9rbXNnIHdlIG9ubHkgZG8gdGhlIGNhcGFiaWxpdGll
+cyBjaGVja3MKLQkgKiBhdCBvcGVuIHRpbWUuCi0JICovCi0JaWYgKHR5cGUgPT0gU1lTTE9HX0FD
+VElPTl9PUEVOIHx8ICFmcm9tX2ZpbGUpIHsKLQkJaWYgKGRtZXNnX3Jlc3RyaWN0ICYmICFjYXBh
+YmxlKENBUF9TWVNMT0cpKQotCQkJZ290byB3YXJuOyAvKiBzd2l0Y2ggdG8gcmV0dXJuIC1FUEVS
+TSBhZnRlciAyLjYuMzkgKi8KLQkJaWYgKCh0eXBlICE9IFNZU0xPR19BQ1RJT05fUkVBRF9BTEwg
+JiYKLQkJICAgICB0eXBlICE9IFNZU0xPR19BQ1RJT05fU0laRV9CVUZGRVIpICYmCi0JCSAgICAh
+Y2FwYWJsZShDQVBfU1lTTE9HKSkKLQkJCWdvdG8gd2FybjsgLyogc3dpdGNoIHRvIHJldHVybiAt
+RVBFUk0gYWZ0ZXIgMi42LjM5ICovCi0JfQorCWVycm9yID0gY2hlY2tfc3lzbG9nX3Blcm1pc3Np
+b25zKHR5cGUsIGZyb21fZmlsZSk7CisJaWYgKGVycm9yKQorCQlnb3RvIG91dDsKIAogCWVycm9y
+ID0gc2VjdXJpdHlfc3lzbG9nKHR5cGUpOwogCWlmIChlcnJvcikKQEAgLTQyMywxMiArNDQ1LDYg
+QEAgaW50IGRvX3N5c2xvZyhpbnQgdHlwZSwgY2hhciBfX3VzZXIgKmJ1ZiwgaW50IGxlbiwgYm9v
+bCBmcm9tX2ZpbGUpCiAJfQogb3V0OgogCXJldHVybiBlcnJvcjsKLXdhcm46Ci0JLyogcmVtb3Zl
+IGFmdGVyIDIuNi4zOSAqLwotCWlmIChjYXBhYmxlKENBUF9TWVNfQURNSU4pKQotCQlXQVJOX09O
+Q0UoMSwgIkF0dGVtcHQgdG8gYWNjZXNzIHN5c2xvZyB3aXRoIENBUF9TWVNfQURNSU4gIgotCQkg
+ICJidXQgbm8gQ0FQX1NZU0xPRyAoZGVwcmVjYXRlZCBhbmQgZGVuaWVkKS5cbiIpOwotCXJldHVy
+biAtRVBFUk07CiB9CiAKIFNZU0NBTExfREVGSU5FMyhzeXNsb2csIGludCwgdHlwZSwgY2hhciBf
+X3VzZXIgKiwgYnVmLCBpbnQsIGxlbikK
+--90e6ba4fc4a2239bff049bf26e0c--
