@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab1BJQic (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 11:38:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820Ab1BJQia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 11:38:30 -0500
-Date: Thu, 10 Feb 2011 14:38:09 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, eranian@google.com,
-        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: perf annotate: new TUI features
-Message-ID: <20110210163809.GC20676@ghostprotocols.net>
-References: <new-submission> <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org> <1297224378.8035.7.camel@marge.simson.net> <20110209164154.GA15607@ghostprotocols.net> <1297309313.7996.11.camel@marge.simson.net> <1297309891.7996.13.camel@marge.simson.net>
+	id S1756612Ab1BJQp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 11:45:28 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7744 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1BJQp1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 11:45:27 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Thu, 10 Feb 2011 08:45:23 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Colin Cross <ccross@android.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "konkers@android.com" <konkers@android.com>,
+        Gary King <gking@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 10 Feb 2011 08:45:21 -0800
+Subject: RE: [PATCH v4 10/15] ARM: tegra: iomap: Add missing devices, fix
+ use of SZ_8, SZ_64
+Thread-Topic: [PATCH v4 10/15] ARM: tegra: iomap: Add missing devices, fix
+ use of SZ_8, SZ_64
+Thread-Index: AcvI7h6oQtR6h1tQT2CRvd3Y6DU5CQAU65Vw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF0310F60414@HQMAIL01.nvidia.com>
+References: <1297320204-31882-1-git-send-email-ccross@android.com>
+ <1297320204-31882-11-git-send-email-ccross@android.com>
+In-Reply-To: <1297320204-31882-11-git-send-email-ccross@android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297309891.7996.13.camel@marge.simson.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Feb 10, 2011 at 04:51:31AM +0100, Mike Galbraith escreveu:
-> On Thu, 2011-02-10 at 04:41 +0100, Mike Galbraith wrote:
+Colin Cross wrote at Wednesday, February 09, 2011 11:43 PM:
 > 
-> > I like this a lot, great for live rummaging.   One thing that would help
-> > with large files maybe - a jump to next spot hotter than N%, but as is
- 
-> (and callgraphs, and a snapshot logger with notes insertion and and...
+> From: Gary King <gking@nvidia.com>
+> 
+> Adds gart, hdmi, avp, host1x, and pwm controllers to mach/iomap.h
+> There is no SZ_8 or SZ_64, replace them with constants
 
-Right, when testing the top TUI I keep trying to use the same menu we
-have on the report, to filter by DSO or thread (the Zoom/Unzoom
-operations in report TUI).
+Can't we add those SZ_* constants?
 
-So eventually I want to get that struct sym_entry used by top merged
-with hist_entry, used by report, in an efficient fashion, so that we can
-merge all these interfaces.
+-- 
+nvpublic
 
-Live callgraphs if one presses enter on a annotate line seems like a
-nice thing to have, indeed, exactly as we have statically in the perf
-report TUI :)
-
-> boy, tui thingy adds a _lot_ of potential to top:) 
-
-Yeah, and all the work done to have it working on a TUI paves the way
-for a GUI, but I want to have the TUI streamlined first, so that the GUI
-becomes just a boilerplatish matter :-)
-
-- Arnaldo
