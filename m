@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1BJQUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 11:20:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27917 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997Ab1BJQUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 11:20:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,451,1291622400"; 
-   d="scan'208";a="706254181"
-Date: Thu, 10 Feb 2011 08:20:37 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: mark gross <markgross@thegnar.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@suse.de>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-Message-ID: <20110210162037.GA19389@tassilo.jf.intel.com>
-References: <1297300864.2645.128.camel@schen9-DESK>
- <20110210051042.GC4897@gvim.org>
+	id S1756370Ab1BJQZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 11:25:05 -0500
+Received: from smtp105.prem.mail.sp1.yahoo.com ([98.136.44.60]:39127 "HELO
+	smtp105.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750820Ab1BJQZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 11:25:03 -0500
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: f4PCJq0VM1lE3FdMX004bC1D.HBHHOxot2f9GAK0Mfd1Hg8
+ 9W2z_gZvaiMt5cnnPwY1iFwXIsODWzdlIqMU6SuK5WsjaZsmuIHnz78nboe3
+ OqCfJ0FeeKF7wXCTqGSqiK.espk_sGPiPFjiv_aP3R94EwnAFCFhLaGBBJZd
+ FvL6jgN64e6OhTna9ywQluCr0nzgZZm.xinjtO8H8ssavBBkVmYcTuZ0xVBx
+ B89GdF.jmI6GayhB4A_wFLgqlAflwsDeAMWVR4N5Hvy23iY4uo2qSN.9qbY5
+ szqstqe2.1cCnJP7cghOdDS0LW0nvTXu9Pg--
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4D54115C.6090403@schaufler-ca.com>
+Date: Thu, 10 Feb 2011 08:25:00 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110210051042.GC4897@gvim.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Wright <chrisw@sous-sol.org>
+CC: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eric Paris <eparis@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 1/2] security: add cred argument to security_capable()
+References: <1297318312-14309-1-git-send-email-chrisw@sous-sol.org> <1297318312-14309-2-git-send-email-chrisw@sous-sol.org> <4D540BCE.5020007@schaufler-ca.com> <20110210160837.GB9869@sequoia.sous-sol.org>
+In-Reply-To: <20110210160837.GB9869@sequoia.sous-sol.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 09:10:42PM -0800, mark gross wrote:
-> On Wed, Feb 09, 2011 at 05:21:04PM -0800, Tim Chen wrote:
-> > I noticed that before entering idle state, the menu idle governor will
-> > look up the current pm_qos value according to the list of qos request
-> > received.  This look up currently needs the acquisition of a lock to go
-> > down a list of qos requests to find the qos value, slowing down the
-> 
-> wait a second... It gets the target_value (that is an atomic variable)
-> humpf.  I was looking at 2.6.35, where this is true.  If you want to put
-> back a target_value why not put it back the way it was?
+On 2/10/2011 8:08 AM, Chris Wright wrote:
+> * Casey Schaufler (casey@schaufler-ca.com) wrote:
+>> On 2/9/2011 10:11 PM, Chris Wright wrote:
+>>> Expand security_capable() to include cred, so that it can be usable in a
+>>> wider range of call sites.
+>> I'll bite. What to plan to use this for? I wouldn't see this getting
+>> accepted on its own without a user. I don't see anything wrong with
+>> the change other than that it is not used by anything.
+> Casey, the user is in 2/2.
 
-I don't think the goal is to make the code look like it was before,
-just to have clean and scalable code going forwards.
+Which didn't show up on the LSM list. I see it now, but
+had to go looking. Ok, no worries
 
-> I'm surprised by this as the last update to the pm_qos replaced the
-> lists with a O(1) data structure so there was no more walking of pending
-> requests.
-> 
-> What is the profile after the patch the Plist should be only one
-> dereference and an if instruction slower than a cached value.
+> https://lkml.org/lkml/2011/2/10/16
+>
+>
 
-The problem with the plist is that you need to take a lock for reading
-the first value. The lock is a performance problem on servers.
-The reference doesn't matter at all.
-
-> Does your patch remove the need for the locks because if it doesn't I
-> don't see how it will make much of a difference?
-
-The value itself doesn't need a lock, just the list access.
-
-> 
-> > Perhaps a better approach will be to cache the updated pm_qos value so
-> > reading it does not require lock acquisition as in the patch below.   
-> 
-> See v2.6.35 for an possible instance of the better approach.
-
-Tim's new code seems simpler and cleaner than what was in .35.
-
--Andi
