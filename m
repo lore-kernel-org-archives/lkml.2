@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab1BJVMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:12:09 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45463 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab1BJVMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:12:08 -0500
-Message-ID: <4D5454CC.1000609@vflare.org>
-Date: Fri, 11 Feb 2011 02:42:44 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1757148Ab1BJVNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:13:38 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:32777 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757118Ab1BJVNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 16:13:37 -0500
+Date: Thu, 10 Feb 2011 15:12:23 -0600
+From: Jack Steiner <steiner@sgi.com>
+To: David Miller <davem@davemloft.net>
+Cc: mingo@elte.hu, raz@scalemp.com, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de, cpw@sgi.com,
+        travis@sgi.com, tglx@linutronix.de, hpa@zytor.com
+Subject: Re: [BUG] soft lockup while booting machine with more than 700
+	cores
+Message-ID: <20110210211223.GB10757@sgi.com>
+References: <1297236453.2756.9.camel@raz.scalemp.com> <20110210123937.GD26094@elte.hu> <20110210205648.GA10341@sgi.com> <20110210.130325.112603217.davem@davemloft.net>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Allow sharing xvmalloc for zram and zcache
-References: <1297371646-11604-1-git-send-email-ngupta@vflare.org> <4D5453CB.7050206@oracle.com>
-In-Reply-To: <4D5453CB.7050206@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110210.130325.112603217.davem@davemloft.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 02:38 AM, Randy Dunlap wrote:
-> On 02/10/11 13:00, Nitin Gupta wrote:
->> Both zram and zcache use xvmalloc allocator. If xvmalloc
->> is compiled separately for both of them, we will get linker
->> error if they are both selected as "built-in". We can also
->> get linker error regarding missing xvmalloc symbols if zram
->> is not built.
->>
->> So, we now compile xvmalloc separately and export its symbols
->> which are then used by both of zram and zcache.
->>
->> Signed-off-by: Nitin Gupta<ngupta@vflare.org>
->
-> Acked-by: Randy Dunlap<randy.dunlap@oracle.com>
->
->
-> but what does this patch apply to?  It does not apply cleanly to
-> linux-next of 20110210.
->
+On Thu, Feb 10, 2011 at 01:03:25PM -0800, David Miller wrote:
+> From: Jack Steiner <steiner@sgi.com>
+> Date: Thu, 10 Feb 2011 14:56:48 -0600
+> 
+> > We also noticed that the rebalance_domains() code references many per-cpu
+> > run queue structures. All of the structures have identical offsets relative
+> > to the size of a cache leaf. The result is that all index into the same lines in the
+> > L3 caches. That causes many evictions. We tried an experimental to
+> > stride the run queues at 128 byte offsets. That helped in some cases but the
+> > results were mixed.  We are still experimenting with the patch.
+> 
+> I think chasing after cache alignment issues misses the point entirely.
+> 
+> The core issue is that rebalance_domains() is insanely expensive, by
+> design.  It's complexity is N factorial for the idle non-HZ cpu that is
+> selected to balance every single domain.
+> 
+> A statistic datastructure that is approximately 128 bytes in size is
+> repopulated N! times each time this global rebalance thing runs.
+> 
+> I've been seeing rebalance_domains() in my perf top output on 128 cpu
+> machines for several years now.  Even on an otherwise idle machine,
+> the system churns in thus code path endlessly.
 
-This applies to staging-2.6. I thought linux-next won't be that 
-different so as to produce conflicts. Can you please send reject files, 
-or let me fetch linux-next tree and will soon post patch against the same.
+Completely agree! Idle rebalancing is also a big problem. We've seen
+significant improvements on large systems in network thruput by
+disabling IDLE load balancing for the higher (2 & 3) scheduling domains.
 
-Thanks,
-Nitin
+This is not a real fix but points to a problem.
+
+--- jack
