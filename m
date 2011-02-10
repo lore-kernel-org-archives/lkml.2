@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab1BJURR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 15:17:17 -0500
-Received: from kroah.org ([198.145.64.141]:42877 "EHLO coco.kroah.org"
+	id S1756912Ab1BJUUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 15:20:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25876 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756910Ab1BJURP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 15:17:15 -0500
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Ken Mills <ken.k.mills@intel.com>, Alan Cox <alan@linux.intel.com>,
-        stable@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 2/4] n_gsm: copy mtu over when configuring via ioctl interface
-Date: Thu, 10 Feb 2011 12:17:10 -0800
-Message-Id: <1297369032-18502-2-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110210201520.GA18283@kroah.com>
-References: <20110210201520.GA18283@kroah.com>
+	id S1756560Ab1BJUU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 15:20:28 -0500
+Date: Thu, 10 Feb 2011 18:20:23 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Arun Sharma <arun@sharma-home.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-perf-users@vger.kernel.org
+Subject: Re: 2.6.37 kernel warning in perf_events code
+Message-ID: <20110210202023.GG20676@ghostprotocols.net>
+References: <AANLkTi=4_p73eHhQbj5DDDEzTWaLou+u2igiY+yNiPQ9@mail.gmail.com> <20110210190843.GE20676@ghostprotocols.net> <AANLkTi=WRrBnyiDqOeR7PnqVhh8wLFx5W0tgjNaPvkLg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=WRrBnyiDqOeR7PnqVhh8wLFx5W0tgjNaPvkLg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ken Mills <ken.k.mills@intel.com>
+Em Thu, Feb 10, 2011 at 12:02:20PM -0800, Arun Sharma escreveu:
+> On Thu, Feb 10, 2011 at 11:08 AM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+> > Em Wed, Feb 09, 2011 at 06:50:09PM -0800, Arun Sharma escreveu:
+> >> [ Not sure if this is known and fixed in newer kernels. My machine
+> >> becomes unusable after this warning triggers ]
+> >>
+> >> perf record -g -p <pid> cs -o csw.data -- sleep 3
 
-This field is settable but did not get copied.
+Arun, are you shure the above line is right? I guess it should read:
 
-Signed-off-by: Ken Mills <ken.k.mills@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: stable@kernel.org
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/tty/n_gsm.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+perf record -g -p <pid> -e cs -o csw.data -- sleep 3
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 44b8412..aa2e5d3 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2414,6 +2414,7 @@ static int gsmld_config(struct tty_struct *tty, struct gsm_mux *gsm,
- 
- 	gsm->initiator = c->initiator;
- 	gsm->mru = c->mru;
-+	gsm->mtu = c->mtu;
- 	gsm->encoding = c->encapsulation;
- 	gsm->adaption = c->adaption;
- 	gsm->n2 = c->n2;
--- 
-1.7.3.2
+To specify the context switches soft event, right?
 
+> > What kernel are you using? Peter, rings any bells?
+> 
+> Stock 2.6.37.
+
+- Arnaldo
