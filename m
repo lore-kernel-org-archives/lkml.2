@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab1BJEqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 23:46:53 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:40895 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755627Ab1BJEqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 23:46:51 -0500
-Date: Thu, 10 Feb 2011 15:46:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: linux-next: build failure after merge of the xen-two tree
-Message-Id: <20110210154648.8b3b994e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755863Ab1BJErR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 23:47:17 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:38624 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755585Ab1BJErQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 23:47:16 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18xI3gmWQUxN6cf8zwRTgaI26geVQHfYAZO+fLtYf
+	FM2cmAjRuWvNkc
+Subject: Re: [BUG] soft lockup while booting machine with more than 700
+ cores
+From: Mike Galbraith <efault@gmx.de>
+To: raz ben yehuda <raz@scalemp.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
+In-Reply-To: <1297236453.2756.9.camel@raz.scalemp.com>
+References: <1297236453.2756.9.camel@raz.scalemp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 05:47:12 +0100
+Message-ID: <1297313232.7996.33.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__10_Feb_2011_15_46_48_+1100_xqNk3X5Wvb3N5A70"
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_Feb_2011_15_46_48_+1100_xqNk3X5Wvb3N5A70
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2011-02-09 at 09:27 +0200, raz ben yehuda wrote:
+> Mingo Hello
+> 
+> Bellow is a boot of a 2.6.32.19 kernel over a machine with more than 700 cores.
 
-Hi Konrad,
+A couple comments.
 
-After merging the xen-two tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+1. A lot of scheduler fixes were backported since then, so trying the
+latest .32 stable kernel is worth investigating.
 
-drivers/gpio/langwell_gpio.c: In function 'lnw_irq_handler':
-drivers/gpio/langwell_gpio.c:210: error: 'struct irq_desc' has no member na=
-med 'chip'
-drivers/gpio/langwell_gpio.c:211: error: 'struct irq_desc' has no member na=
-med 'chip'
+2. Nasty thing with huge boxen is that they can get into big trouble
+with the rt throttle during boot.  You might try defaulting that thing
+to off until booted.  Dunno if this box is big enough to hit that, 2048
+cores definitely is.
 
-Caused by commit e22ff7614860bc282ba1eb25440d8fc56975e357 ("xen:
-Interrupt cleanups").
+	-Mike
 
-I have used the version of the xen-two tree from next-20110209 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__10_Feb_2011_15_46_48_+1100_xqNk3X5Wvb3N5A70
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNU224AAoJEDMEi1NhKgbsZ7IH/2EJbZsENGxTGA55TX8/5FUZ
-AJSlrbsp8qZtFNeCXUD6ImZKLQLoWihSrSS2tXYmH3m3T4qjjoZLfXYLpSDduemz
-ifjk/OZnZJ6ZHCH1U2hSrqzPSvSyKM8+wiBfL42NrIAywt1DSMLLF0CK1kyQVNcU
-DF71w+nVvoscD4GcCLT+zjpVn6SwFaWyxUhfHiF7FU1wsM37ryA6ndFC7vurq4wY
-R1tTz7P5JxQSH06PuVE0XwqPV6iWdUx7DN8xLPFpDstLoqvJAbYXTOPUNZGojiUu
-WA57XlyYM36zCeAw096pgKJsI2/gb2hOZ00awvcu57XEGPGJiJbPQLHZjNpjjY8=
-=+SCN
------END PGP SIGNATURE-----
-
---Signature=_Thu__10_Feb_2011_15_46_48_+1100_xqNk3X5Wvb3N5A70--
