@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757504Ab1BJXhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:37:09 -0500
-Received: from www.tglx.de ([62.245.132.106]:44129 "EHLO www.tglx.de"
+	id S1757544Ab1BJXs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:48:28 -0500
+Received: from www.tglx.de ([62.245.132.106]:44158 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757357Ab1BJXhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:37:04 -0500
-Message-Id: <20110210223256.156113172@linutronix.de>
+	id S1757494Ab1BJXhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:37:08 -0500
+Message-Id: <20110210223257.299042487@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:36:33 -0000
+Date: Thu, 10 Feb 2011 23:37:01 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: [patch 19/75] m68knommu: 5772: Replace private irq flow handler
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: [patch 31/75] genirq: Fixup core code namespace fallout
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline;
-	filename=m68knommu-5772-replace-private-irq-flow-handler.patch
+Content-Disposition: inline; filename=genirq-fixup-core.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That handler lacks the minimal checks for action being zero etc. Keep
-the weird flow - ack before handling - intact and call into
-handle_simple_irq which does the right thing.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-LKML-Reference: <20110202212552.413849952@linutronix.de>
 ---
- arch/m68knommu/platform/5272/intc.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ kernel/irq/chip.c   |    6 +++---
+ kernel/irq/manage.c |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-Index: linux-2.6-tip/arch/m68knommu/platform/5272/intc.c
+Index: linux-2.6-tip/kernel/irq/chip.c
 ===================================================================
---- linux-2.6-tip.orig/arch/m68knommu/platform/5272/intc.c
-+++ linux-2.6-tip/arch/m68knommu/platform/5272/intc.c
-@@ -137,11 +137,8 @@ static int intc_irq_set_type(unsigned in
-  */
- static void intc_external_irq(unsigned int irq, struct irq_desc *desc)
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -616,7 +616,7 @@ out_unlock:
+ void
+ handle_percpu_irq(unsigned int irq, struct irq_desc *desc)
  {
--	kstat_incr_irqs_this_cpu(irq, desc);
--	desc->status |= IRQ_INPROGRESS;
--	desc->chip->ack(irq);
--	handle_IRQ_event(irq, desc->action);
--	desc->status &= ~IRQ_INPROGRESS;
-+	get_irq_desc_chip(desc)->irq_ack(irq);
-+	handle_simple_irq(irq, desc);
+-	struct irq_chip *chip = get_irq_desc_chip(desc);
++	struct irq_chip *chip = irq_desc_get_chip(desc);
+ 
+ 	kstat_incr_irqs_this_cpu(irq, desc);
+ 
+@@ -683,7 +683,7 @@ void
+ set_irq_chip_and_handler(unsigned int irq, struct irq_chip *chip,
+ 			 irq_flow_handler_t handle)
+ {
+-	set_irq_chip(irq, chip);
++	irq_set_chip(irq, chip);
+ 	__set_irq_handler(irq, handle, 0, NULL);
  }
  
- static struct irq_chip intc_irq_chip = {
+@@ -691,7 +691,7 @@ void
+ set_irq_chip_and_handler_name(unsigned int irq, struct irq_chip *chip,
+ 			      irq_flow_handler_t handle, const char *name)
+ {
+-	set_irq_chip(irq, chip);
++	irq_set_chip(irq, chip);
+ 	__set_irq_handler(irq, handle, 0, name);
+ }
+ 
+Index: linux-2.6-tip/kernel/irq/manage.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/manage.c
++++ linux-2.6-tip/kernel/irq/manage.c
+@@ -260,7 +260,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notif
+ static int
+ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
+ {
+-	struct irq_chip *chip = get_irq_desc_chip(desc);
++	struct irq_chip *chip = irq_desc_get_chip(desc);
+ 	struct cpumask *set = irq_default_affinity;
+ 	int ret;
+ 
 
 
