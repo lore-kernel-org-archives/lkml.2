@@ -1,67 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab1BJRxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:53:47 -0500
-Received: from zakopane.cs.ubc.ca ([198.162.52.68]:42718 "EHLO
-	mail.quuxuum.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679Ab1BJRxq (ORCPT
+	id S1756683Ab1BJR4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:56:11 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48078 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab1BJR4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:53:46 -0500
-Date: Thu, 10 Feb 2011 09:53:44 -0800
-From: Brendan Cully <brendan@cs.ubc.ca>
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>, Alan@cs.ubc.ca,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Stern <stern@rowland.harvard.edu>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>
-Subject: Re: [Xen-devel] Re: [linux-pm] [PATCH 0/2] Fix hangup after creating
- checkpoint on Xen.
-Message-ID: <20110210175344.GB380@zanzibar.kublai.com>
-Mail-Followup-To: Ian Campbell <ijc@hellion.org.uk>,
-	"xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-	LKML <linux-kernel@vger.kernel.org>, Alan@cs.ubc.ca,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Stern <stern@rowland.harvard.edu>,
-	"linux-pm@lists.linux-foundation.org" <linux-pm@lists.linux-foundation.org>,
-	"SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>
-References: <Pine.LNX.4.44L0.1102081143470.2100-100000@iolanthe.rowland.org>
- <1297186554.9388.248.camel@zakaz.uk.xensource.com>
- <20110209231659.GB249@zanzibar.kublai.com>
- <1297337473.20491.144.camel@zakaz.uk.xensource.com>
+	Thu, 10 Feb 2011 12:56:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:reply-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=YoszpGwWZHrfvRN6DY3/HkEHV23FqKpgrAcl/0qUpVg/zWINMDW4ccz4WEcqFz2soK
+         3uPfETKr+yKGi/eoy8GI8MhgVOsMJthzzWtLMWnWNJGh1+WPrH36ceiWtDHenfyTR4oo
+         vfvcSQqY01yP/uDUfX+LQ6/zEY9CEwj/Ui5mw=
+Date: Thu, 10 Feb 2011 09:55:52 -0800
+From: mark gross <markgross@thegnar.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
+        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
+ before entering idle
+Message-ID: <20110210175552.GA10754@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <1297300864.2645.128.camel@schen9-DESK>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297337473.20491.144.camel@zakaz.uk.xensource.com>
-X-Operating-System: Darwin 10.6.0 i386
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1297300864.2645.128.camel@schen9-DESK>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, 10 February 2011 at 11:31, Ian Campbell wrote:
-> On Wed, 2011-02-09 at 23:16 +0000, Brendan Cully wrote:
-> > I'd like to keep the fast resume option, and expect that it can be
-> > contained entirely in Xen-specific code. I'll try to get someone to
-> > look into it here.
+On Wed, Feb 09, 2011 at 05:21:04PM -0800, Tim Chen wrote:
+> I noticed that before entering idle state, the menu idle governor will
+> look up the current pm_qos value according to the list of qos request
+> received.  This look up currently needs the acquisition of a lock to go
+> down a list of qos requests to find the qos value, slowing down the
+> entrance into idle state due to contention by multiple cpus to traverse
+> this list.  The contention is severe when there are a lot of cpus waking
+> and going into idle.  For example, for a simple workload that has 32
+> pair of processes ping ponging messages to each other, where 64 cores
+> cores are active in test system, I see the following profile:
 > 
-> Thanks, please put them in contact with Kazuhiro who has already been
-> looking into this.
+> -     37.82%          swapper  [kernel.kallsyms]          [k]
+> _raw_spin_lock_irqsave
+>    - _raw_spin_lock_irqsave
+>       - 95.65% pm_qos_request             
+>            menu_select                                             
+>            cpuidle_idle_call                      
+>          - cpu_idle                                                     
+>               99.98% start_secondary
 > 
-> > I think fast resume is somewhat orthogonal to the problem of hanging
-> > on resume, which just sounds like a xen-specific bug in the slow
-> > path.
+> Perhaps a better approach will be to cache the updated pm_qos value so
+> reading it does not require lock acquisition as in the patch below.   
 > 
-> The bug on the Xen side is taking the slow path when the suspend was
-> actually cancelled, which is what the original patch tries to fix.
+> Tim
 > 
-> Or should/could the slow path be able cope either way?
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
+> index 77cbddb..a7d87f9 100644
+> --- a/include/linux/pm_qos_params.h
+> +++ b/include/linux/pm_qos_params.h
+> @@ -16,6 +16,10 @@
+>  #define PM_QOS_NUM_CLASSES 4
+>  #define PM_QOS_DEFAULT_VALUE -1
+>  
+> +#define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+> +#define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+> +#define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
+> +
+>  struct pm_qos_request_list {
+>  	struct plist_node list;
+>  	int pm_qos_class;
+> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> index aeaa7f8..b6310d1 100644
+> --- a/kernel/pm_qos_params.c
+> +++ b/kernel/pm_qos_params.c
+> @@ -58,6 +58,7 @@ struct pm_qos_object {
+>  	struct blocking_notifier_head *notifiers;
+>  	struct miscdevice pm_qos_power_miscdev;
+>  	char *name;
+> +	s32 value;
+>  	s32 default_value;
+>  	enum pm_qos_type type;
+>  };
+> @@ -70,7 +71,8 @@ static struct pm_qos_object cpu_dma_pm_qos = {
+>  	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
+>  	.notifiers = &cpu_dma_lat_notifier,
+>  	.name = "cpu_dma_latency",
+> -	.default_value = 2000 * USEC_PER_SEC,
+> +	.value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
+>  	.type = PM_QOS_MIN,
+>  };
+>  
+> @@ -79,7 +81,8 @@ static struct pm_qos_object network_lat_pm_qos = {
+>  	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
+>  	.notifiers = &network_lat_notifier,
+>  	.name = "network_latency",
+> -	.default_value = 2000 * USEC_PER_SEC,
+> +	.value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
+>  	.type = PM_QOS_MIN
+>  };
+>  
+> @@ -89,7 +92,8 @@ static struct pm_qos_object network_throughput_pm_qos = {
+>  	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
+>  	.notifiers = &network_throughput_notifier,
+>  	.name = "network_throughput",
+> -	.default_value = 0,
+> +	.value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
+>  	.type = PM_QOS_MAX,
+>  };
+>  
+> @@ -132,6 +136,16 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
+>  	}
+>  }
+>  
+> +static inline s32 pm_qos_read_value(struct pm_qos_object *o)
+> +{
+> +	return o->value;
+> +}
+> +
+> +static inline int pm_qos_set_value(struct pm_qos_object *o, s32 value)
+> +{
+> +	o->value = value;
+> +}
+> +
+>  static void update_target(struct pm_qos_object *o, struct plist_node *node,
+>  			  int del, int value)
+>  {
+> @@ -156,6 +170,7 @@ static void update_target(struct pm_qos_object *o, struct plist_node *node,
+>  		plist_add(node, &o->requests);
+>  	}
+>  	curr_value = pm_qos_get_value(o);
+> +	pm_qos_set_value(o, curr_value);
+>  	spin_unlock_irqrestore(&pm_qos_lock, flags);
+>  
+>  	if (prev_value != curr_value)
+> @@ -190,18 +205,11 @@ static int find_pm_qos_object_by_minor(int minor)
+>   * pm_qos_request - returns current system wide qos expectation
+>   * @pm_qos_class: identification of which qos value is requested
+>   *
+> - * This function returns the current target value in an atomic manner.
+> + * This function returns the current target value.
+>   */
+>  int pm_qos_request(int pm_qos_class)
+>  {
+> -	unsigned long flags;
+> -	int value;
+> -
+> -	spin_lock_irqsave(&pm_qos_lock, flags);
+> -	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
+> -	spin_unlock_irqrestore(&pm_qos_lock, flags);
+> -
+> -	return value;
+> +	return pm_qos_read_value(pm_qos_array[pm_qos_class]);
+>  }
+>  EXPORT_SYMBOL_GPL(pm_qos_request);
+>  
+> 
+Never mind my silliness lastnight.  This looks like a good change.
 
-I haven't looked at what's actually happening yet, but what should be
-happening is that the pvops kernel should not advertise SUSPEND_CANCEL
-since it doesn't yet support it. So xm save -c should call
-xc_domain_resume with the fast argument set to 0, to do slow path
-resumption, and that slow path should be able to handle resuming on
-the same host where it suspended. Slow path resumption from checkpoint
-was supported in the pre-pvops kernel.
+Signed-off-by: mark gross <markgross@thegnar.org>
+
+
+Ack 
+
+-- mgross
+
+> 
