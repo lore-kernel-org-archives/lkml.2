@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab1BJX07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:26:59 -0500
-Received: from cooldavid.org ([114.33.45.68]:37319 "EHLO cooldavid.org"
+	id S1757303Ab1BJXbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:31:07 -0500
+Received: from hera.kernel.org ([140.211.167.34]:43591 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756018Ab1BJX06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:26:58 -0500
-From: "Guo-Fu Tseng" <cooldavid@cooldavid.org>
-To: "Leonardo  L. P. da Mata" <barroca@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: jme driver loses connection after resuming from suspend
-Date: Fri, 11 Feb 2011 07:26:58 +0800
-Message-Id: <20110210232658.M45636@cooldavid.org>
-In-Reply-To: <AANLkTikV9Ncy3Jki1G20SrzA_HMiAk_hF3qY8U+vpZ1D@mail.gmail.com>
-References: <AANLkTikrKEY7Zt5HvxQcJLk9eGne0BGD82NFEiWO4smt@mail.gmail.com> <20110128163315.1e4e8346.akpm@linux-foundation.org> <AANLkTikV9Ncy3Jki1G20SrzA_HMiAk_hF3qY8U+vpZ1D@mail.gmail.com>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 114.33.146.108 (cooldavid)
+	id S1752386Ab1BJXbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:31:05 -0500
+Date: Thu, 10 Feb 2011 23:30:48 GMT
+From: tip-bot for David Daney <ddaney@caviumnetworks.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        ddaney@caviumnetworks.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ddaney@caviumnetworks.com, tglx@linutronix.de
+In-Reply-To: <1297296265-18680-1-git-send-email-ddaney@caviumnetworks.com>
+References: <1297296265-18680-1-git-send-email-ddaney@caviumnetworks.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Call bus_lock/unlock functions in setup_irq()
+Message-ID: <tip-986c011ddbb3ed44b35e1bfd67f6aa60b293b495@git.kernel.org>
+Git-Commit-ID: 986c011ddbb3ed44b35e1bfd67f6aa60b293b495
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Feb 2011 23:30:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leonardo  L. P. da Mata:
-The value of register which holds receive Unicast MAC Address somehow
-get messed-up after resume!
+Commit-ID:  986c011ddbb3ed44b35e1bfd67f6aa60b293b495
+Gitweb:     http://git.kernel.org/tip/986c011ddbb3ed44b35e1bfd67f6aa60b293b495
+Author:     David Daney <ddaney@caviumnetworks.com>
+AuthorDate: Wed, 9 Feb 2011 16:04:25 -0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 11 Feb 2011 00:25:13 +0100
 
-Would you see if this source fix the issue:
-http://bbs.cooldavid.org/git/?p=jme.git;a=snapshot;h=refs/heads/resumefix;sf=tbz2
+genirq: Call bus_lock/unlock functions in setup_irq()
 
-The shortlog is here:
-http://bbs.cooldavid.org/git/?p=jme.git;a=shortlog;h=refs/heads/resumefix
+irq_chips that supply .irq_bus_lock/.irq_bus_sync_unlock functions,
+expect that the other chip methods will be called inside of calls to
+the pair.  If this expectation is not met, things tend to not work.
 
+Make setup_irq() call chip_bus_lock()/chip_bus_sync_unlock() too.
 
-On Thu, 10 Feb 2011 19:07:31 -0200, Leonardo  L. P. da Mata wrote
-> Updated information on the bug, Guo-Fu Tseng says that might not be a
-> bug on the driver, but i've tested other network cards and they don't
-> share the same issue.
-> 
-> Also, on interesting update that people may consider is that after
-> running tcpdump on the device, the network starts working again.
-> Information are updated in the bug.
-> 
-> On Fri, Jan 28, 2011 at 10:33 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > (cc's added)
-> >
-> > On Fri, 28 Jan 2011 16:03:11 -0200
-> > "Leonardo &#160;L. P. da Mata" <barroca@gmail.com> wrote:
-> >
-> >> Hello, i'm testing the kernel 2.6.37 on my hardware, Once connect on
-> >> wired network, i call the suspend with:
-> >> echo "mem" >/sys/power/state
-> >>
-> >> The system goes on suspend. After resuming from suspend, the network card
-> >> cannot be used anymore.
-> >>
-> >>
-> >> The bug is reported here:
-> >> &#160;https://bugzilla.kernel.org/show_bug.cgi?id=27692
-> >>
-> >> Can you please point me to similar problems on other network cards so
-> >> i can get possible solutions on this.
-> >
-> >
-> 
-> -- 
-> Leonardo Luiz Padovani da Mata
-> barroca@gmail.com
-> 
-> "May the force be with you, always"
-> "Nerd Pride... eu tenho. Voce tem?"
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+For the vast majority of irq_chips, this will be a NOP as most don't
+have these bus lock functions.
 
+[ tglx: No we don't want to call that in __setup_irq(). Way too many
+  	error exit pathes. ]
 
-Guo-Fu Tseng
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+LKML-Reference: <1297296265-18680-1-git-send-email-ddaney@caviumnetworks.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/manage.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0caa59f..a00bf2c 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -871,9 +871,14 @@ out_thread:
+  */
+ int setup_irq(unsigned int irq, struct irqaction *act)
+ {
++	int retval;
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 
+-	return __setup_irq(irq, desc, act);
++	chip_bus_lock(desc);
++	retval = __setup_irq(irq, desc, act);
++	chip_bus_sync_unlock(desc);
++
++	return retval;
+ }
+ EXPORT_SYMBOL_GPL(setup_irq);
+ 
