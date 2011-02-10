@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab1BJP1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 10:27:18 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18005 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211Ab1BJP1Q (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 10 Feb 2011 10:27:16 -0500
-Date: Thu, 10 Feb 2011 10:24:57 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Stephen Rothwell <sfr@au1.ibm.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen-two tree with the tip tree
-Message-ID: <20110210152457.GB12087@dumpdata.com>
-References: <20110210145528.95c90b63.sfr@au1.ibm.com>
- <alpine.LFD.2.00.1102101319440.31804@localhost6.localdomain6>
- <20110210122423.GC26094@elte.hu>
+	id S1756544Ab1BJPog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 10:44:36 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54681 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756361Ab1BJPof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 10:44:35 -0500
+Date: Thu, 10 Feb 2011 15:43:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Sachin Verma <imschnvrm@gmail.com>, Rabin Vincent <rabin@rab.in>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Dave Martin <dave.martin@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        catalin.marinas@arm.com
+Subject: Re: ARM: relocation out of range (when loading a module)
+Message-ID: <20110210154322.GE1742@n2100.arm.linux.org.uk>
+References: <4D2BFA08.5030104@ahsoftware.de> <AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com> <20110111155930.GH11039@n2100.arm.linux.org.uk> <4D2D1942.4050905@ahsoftware.de> <AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com> <alpine.LFD.2.00.1101121314470.25498@xanadu.home> <20110112184258.GH11039@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1101121350350.25498@xanadu.home> <AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com> <alpine.LFD.2.00.1101270030220.8580@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110210122423.GC26094@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D5403A2.0208:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <alpine.LFD.2.00.1101270030220.8580@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 01:24:23PM +0100, Ingo Molnar wrote:
+On Thu, Jan 27, 2011 at 12:43:54AM -0500, Nicolas Pitre wrote:
+> The MMU-less kernel should still favor allocations close to the kernel 
+> text for modules, and anything else away from the kernel going 
+> downwards.
 > 
-> * Thomas Gleixner <tglx@linutronix.de> wrote:
+> Otherwise a veneer should be created by the module symbol resolver such 
+> that if the branch distance to reach, say, printk is too large, then the 
+> following code would have to be dynamically generated right next to the 
+> module:
 > 
-> > 
-> > 
-> > On Thu, 10 Feb 2011, Stephen Rothwell wrote:
-> > 
-> > > Hi Konrad,
-> > > 
-> > > Today's linux-next merge of the xen-two tree got a conflict in
-> > > kernel/irq/manage.c between commit
-> > > dc5f219e88294b93009eef946251251ffffb6d60 ("genirq: Add
-> > > IRQF_FORCE_RESUME") from the tip tree and commit
-> > > c6c5596743c2a333a8e31b0247f44cd367484a5e ("genirq: Add
-> > > IRQF_FORCE_RESUME") from the xen-two tree.
-> > > 
-> > > Despite having the same Author time stamps, these commits are not quite the
-> > > same.  I used the version from the tip tree which kept the line:
-> > > 
-> > > 		desc->status &= ~IRQ_SUSPENDED;
-> > 
-> > That's the correct one. I fear I messed up, when I gave xen folks the
-> > git url to pull from. I had the first version pushed out, and zapped
-> > right away when I noticed the missing line. Then fixed it and
-> > repushed. I should have checked git://..... which obviously had
-> > already picked up the borked one and did not pick up the correct one
-> > before xen folks pulled. Sorry about that.
+> 	ldr	pc, [pc, #-4]
+> 	.word	<far_away_symbol>
 > 
-> The resolution would be for the Xen tree to pull again and pick the new commit's 
-> content as the conflict resolution result. That will resolve the linux-next conflict 
-> as well.
+> Then, in your module, you patch the branch relocation for printk so that 
+> it branches to the code above instead, and then store the address of 
+> printk at the location represented by the .word directive.
 
-Should be all fixed now.
+What you're suggesting is what we used to do with the old user-space
+module tools, which would've been nice to carry forwards to the new
+module code.  I never found a way to do it.
+
+The problems:
+1. Where do you create those veneers?
+2. How many veneers do you allocate space for?
+3. How do you determine that you need a veneer?
+
+While you can say "next to the module" for (1), you can only do that at
+the point in time when the space for the module is allocated, and you
+need to know at that point how much space you require.
+
+For (2), you could always allocate space for one veneer per symbol present
+in the module, but that's very wasteful.
+
+(3) is almost impossible to know ahead of time as you don't have the
+relocations, realistically you have to allocate one veneer per symbol,
+and as you don't know whether it's a data or code symbol, you'll have
+to allocate one veneer for every symbol in a module.
+
+I really don't like it, and I don't see that this is sanely solvable
+without giving architectures much more control over module loading,
+which I don't think will ever happen.  It's probably simpler to build
+modules with whatever that magic option is to tell GCC to always generate
+'far call' veneers for everything rather than trying to 'fix' the kernel
+module loader.
