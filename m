@@ -1,104 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab1BJXi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:38:29 -0500
-Received: from www.tglx.de ([62.245.132.106]:44473 "EHLO www.tglx.de"
+	id S932418Ab1BJXie (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:38:34 -0500
+Received: from www.tglx.de ([62.245.132.106]:44523 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932366Ab1BJXiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:38:21 -0500
-Message-Id: <20110210223300.086945047@linutronix.de>
+	id S932366Ab1BJXib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:38:31 -0500
+Message-Id: <20110210223300.376194902@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:38:10 -0000
+Date: Thu, 10 Feb 2011 23:38:18 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 60/75] genirq: Force wrapped access to desc->status in core
-	code
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [patch 63/75] genirq: Add IRQCHIP_SET_TYPE_MASKED flag and
+	IRQD_WAKE_SET
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=genirq-protect-tglx-even-more.patch
+Content-Disposition: inline; filename=genirq-add-set-type-masked-flag.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Force the usage of wrappers by another nasty CPP substitution.
+irq_chips, which require to mask the chip before changing the trigger
+type should set this flag. So the core takes care of it and the
+requirement for looking into desc->status in the chip goes away.
+
+Add also a flag which reflects the WAKEUP state of the interrupt line,
+which is also required by some of those chips.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>
 ---
- kernel/irq/handle.c   |    6 +++---
- kernel/irq/irqdesc.c  |    4 ++--
- kernel/irq/settings.h |    3 +++
- 3 files changed, 8 insertions(+), 5 deletions(-)
+ include/linux/irq.h    |    9 +++++++++
+ kernel/irq/chip.c      |    4 ++--
+ kernel/irq/internals.h |    2 ++
+ kernel/irq/manage.c    |   14 ++++++++++++--
+ 4 files changed, 25 insertions(+), 4 deletions(-)
 
-Index: linux-2.6-tip/kernel/irq/handle.c
+Index: linux-2.6-tip/include/linux/irq.h
 ===================================================================
---- linux-2.6-tip.orig/kernel/irq/handle.c
-+++ linux-2.6-tip/kernel/irq/handle.c
-@@ -55,7 +55,7 @@ irqreturn_t
- handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
- {
- 	irqreturn_t ret, retval = IRQ_NONE;
--	unsigned int status = 0, irq = desc->irq_data.irq;
-+	unsigned int random = 0, irq = desc->irq_data.irq;
+--- linux-2.6-tip.orig/include/linux/irq.h
++++ linux-2.6-tip/include/linux/irq.h
+@@ -305,6 +305,15 @@ struct irq_chip {
+ #endif
+ };
  
- 	do {
- 		trace_irq_handler_entry(irq, action);
-@@ -98,7 +98,7 @@ handle_irq_event_percpu(struct irq_desc 
- 
- 			/* Fall through to add to randomness */
- 		case IRQ_HANDLED:
--			status |= action->flags;
-+			random |= action->flags;
- 			break;
- 
- 		default:
-@@ -109,7 +109,7 @@ handle_irq_event_percpu(struct irq_desc 
- 		action = action->next;
- 	} while (action);
- 
--	if (status & IRQF_SAMPLE_RANDOM)
-+	if (random & IRQF_SAMPLE_RANDOM)
- 		add_interrupt_randomness(irq);
- 
- 	if (!noirqdebug)
-Index: linux-2.6-tip/kernel/irq/irqdesc.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/irqdesc.c
-+++ linux-2.6-tip/kernel/irq/irqdesc.c
-@@ -79,7 +79,7 @@ static void desc_set_defaults(unsigned i
- 	desc->irq_data.chip_data = NULL;
- 	desc->irq_data.handler_data = NULL;
- 	desc->irq_data.msi_desc = NULL;
--	desc->status = _IRQ_DEFAULT_INIT_FLAGS;
-+	irq_settings_clr_and_set(desc, ~0, _IRQ_DEFAULT_INIT_FLAGS);
- 	desc->istate = IRQS_DISABLED;
- 	desc->handle_irq = handle_bad_irq;
- 	desc->depth = 1;
-@@ -230,7 +230,6 @@ int __init early_irq_init(void)
- 
- struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
- 	[0 ... NR_IRQS-1] = {
--		.status		= _IRQ_DEFAULT_INIT_FLAGS,
- 		.istate		= IRQS_DISABLED,
- 		.handle_irq	= handle_bad_irq,
- 		.depth		= 1,
-@@ -254,6 +253,7 @@ int __init early_irq_init(void)
- 		desc[i].irq_data.irq = i;
- 		desc[i].irq_data.chip = &no_irq_chip;
- 		desc[i].kstat_irqs = alloc_percpu(unsigned int);
-+		irq_settings_clr_and_set(desc, ~0, _IRQ_DEFAULT_INIT_FLAGS);
- 		alloc_masks(desc + i, GFP_KERNEL, node);
- 		desc_smp_init(desc + i, node);
- 		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
-Index: linux-2.6-tip/kernel/irq/settings.h
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/settings.h
-+++ linux-2.6-tip/kernel/irq/settings.h
-@@ -140,3 +140,6 @@ static inline bool irq_settings_can_auto
- {
- 	return !(desc->status & _IRQ_NOAUTOEN);
- }
++/*
++ * irq_chip specific flags
++ *
++ * IRQCHIP_SET_TYPE_MASKED:		Mask before calling chip.irq_set_type()
++ */
++enum {
++	IRQCHIP_SET_TYPE_MASKED		= (1 <<  0),
++};
 +
-+/* Nothing should touch desc->status from now on */
-+#define status		USE_THE_PROPER_WRAPPERS_YOU_MORON
+ /* This include will go away once we isolated irq_desc usage to core code */
+ #include <linux/irqdesc.h>
+ 
+Index: linux-2.6-tip/kernel/irq/chip.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -393,7 +393,7 @@ static inline void mask_ack_irq(struct i
+ 	irq_state_set_masked(desc);
+ }
+ 
+-static inline void mask_irq(struct irq_desc *desc)
++void mask_irq(struct irq_desc *desc)
+ {
+ 	if (desc->irq_data.chip->irq_mask) {
+ 		desc->irq_data.chip->irq_mask(&desc->irq_data);
+@@ -401,7 +401,7 @@ static inline void mask_irq(struct irq_d
+ 	}
+ }
+ 
+-static inline void unmask_irq(struct irq_desc *desc)
++void unmask_irq(struct irq_desc *desc)
+ {
+ 	if (desc->irq_data.chip->irq_unmask) {
+ 		desc->irq_data.chip->irq_unmask(&desc->irq_data);
+Index: linux-2.6-tip/kernel/irq/internals.h
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/internals.h
++++ linux-2.6-tip/kernel/irq/internals.h
+@@ -81,6 +81,8 @@ extern int irq_startup(struct irq_desc *
+ extern void irq_shutdown(struct irq_desc *desc);
+ extern void irq_enable(struct irq_desc *desc);
+ extern void irq_disable(struct irq_desc *desc);
++extern void mask_irq(struct irq_desc *desc);
++extern void unmask_irq(struct irq_desc *desc);
+ 
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+ 
+Index: linux-2.6-tip/kernel/irq/manage.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/manage.c
++++ linux-2.6-tip/kernel/irq/manage.c
+@@ -560,8 +560,8 @@ void compat_irq_chip_set_default_handler
+ int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
+ 		      unsigned long flags)
+ {
+-	int ret;
+ 	struct irq_chip *chip = desc->irq_data.chip;
++	int ret, unmask = 0;
+ 
+ 	if (!chip || !chip->irq_set_type) {
+ 		/*
+@@ -574,6 +574,14 @@ int __irq_set_trigger(struct irq_desc *d
+ 	}
+ 
+ 	flags &= IRQ_TYPE_SENSE_MASK;
++
++	if (chip->flags & IRQCHIP_SET_TYPE_MASKED) {
++		if (!(desc->istate & IRQS_MASKED))
++			mask_irq(desc);
++		if (!(desc->istate & IRQS_DISABLED))
++			unmask = 1;
++	}
++
+ 	/* caller masked out all except trigger mode flags */
+ 	ret = chip->irq_set_type(&desc->irq_data, flags);
+ 
+@@ -599,6 +607,8 @@ int __irq_set_trigger(struct irq_desc *d
+ 		pr_err("setting trigger mode %lu for irq %u failed (%pF)\n",
+ 		       flags, irq, chip->irq_set_type);
+ 	}
++	if (unmask)
++		unmask_irq(desc);
+ 	return ret;
+ }
+ 
+@@ -675,7 +685,7 @@ again:
+ 
+ #ifdef CONFIG_SMP
+ /*
+- * Check whether we need to change the affinity of the interrupt thread.
++ * Check whether we need to chasnge the affinity of the interrupt thread.
+  */
+ static void
+ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
 
 
