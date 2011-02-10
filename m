@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab1BJTsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 14:48:50 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47221 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab1BJTss (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 14:48:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=FTeWSAim0yGOQ4VQJF1U5lXLZfvXwSH1KZD2MynIhmDD5uvseJPOC2kfQS81+xEII+
-         QWLnjWlpjWH/9u1Jkwe5cRDLvpx8GcOnja+1dmkAQ1XW/e6piexPpogNRclXn4xVaZ3C
-         WOCiSonYPivGkq4ckRjdRuzYGC3iSvQtZzyT0=
-Message-ID: <4D54411C.5040607@gmail.com>
-Date: Thu, 10 Feb 2011 22:48:44 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1756753Ab1BJTuU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 14:50:20 -0500
+Received: from mail.tpi.com ([70.99.223.143]:2360 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752114Ab1BJTuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 14:50:19 -0500
+X-Greylist: delayed 1692 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Feb 2011 14:50:19 EST
+Message-ID: <4D543AD6.4000908@canonical.com>
+Date: Thu, 10 Feb 2011 12:21:58 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
-        gorcunov@gmail.com, mingo@elte.hu
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86: Fix section mismatch in LAPIC initialization
-References: <4D525C7E0200007800030EE1@vpn.id2.novell.com> <tip-2fb270f3212a1e6a73f86f76c85caee93aae4386@git.kernel.org>
-In-Reply-To: <tip-2fb270f3212a1e6a73f86f76c85caee93aae4386@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Haefliger, Juerg" <Juerg.Haefliger@hp.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Block IO throttling disabled in distros
+References: <59DD1BA8FD3C0F4C90771C18F2B5B53A653FF7284B@GVW0432EXB.americas.hpqcorp.net> <20110207160451.GH7437@redhat.com> <59DD1BA8FD3C0F4C90771C18F2B5B53A653FF72FB5@GVW0432EXB.americas.hpqcorp.net>
+In-Reply-To: <59DD1BA8FD3C0F4C90771C18F2B5B53A653FF72FB5@GVW0432EXB.americas.hpqcorp.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2011 05:43 PM, tip-bot for Jan Beulich wrote:
-> Commit-ID:  2fb270f3212a1e6a73f86f76c85caee93aae4386
-...
+On 02/08/2011 12:24 AM, Haefliger, Juerg wrote:
+>> On Mon, Feb 07, 2011 at 03:33:38PM +0000, Haefliger, Juerg wrote:
+>>> Hi,
+>>>
+>>> Both RHEL6 and Ubuntu 10.10 have block IO throttling disabled in
+>> their kernels. Does anybody know why that is? Are there performance or
+>> stability issues with the throttling controller or does it somehow
+>> negatively interfere with the rest of the kernel and/or system?
+>>
+>> Block IO throttling support was not even upstream at that time hence
+>> you don't see it.
+>
+> Duh! I thought I checked that the code was there but just not enabled. I just double-checked and sure enough block IO throttling is not in the RHEL6 kernel source. Sorry for the noise.
+>
+> Thanks
+> ...Juerg
+>
+>
+>> I have not heard about any stability issues so far. Of course more
+>> testing will reveal that.
+>>
+>> The only thing I have thinking is that should we limit the number of
+>> bios queued per IO context on the device. Currently there is no such limit
+>> and one can queue up as many bios as one want to.
+>>
+>>
+>> Thanks
+>> Vivek
+> --
 
-Thanks a lot Jan!
+CONFIG_BLK_DEV_THROTTLING=y in what will be Ubuntu 11.04
 
+rtg
 -- 
-    Cyrill
+Tim Gardner tim.gardner@canonical.com
