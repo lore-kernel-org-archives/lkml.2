@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab1BJE0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 23:26:46 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:39082 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550Ab1BJE0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 23:26:45 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73654480"
-Message-ID: <4D536904.5080708@codeaurora.org>
-Date: Wed, 09 Feb 2011 20:26:44 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1755668Ab1BJEhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 23:37:23 -0500
+Received: from void.printf.net ([89.145.121.20]:34749 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755228Ab1BJEhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 23:37:22 -0500
+Date: Thu, 10 Feb 2011 04:37:18 +0000
+From: Chris Ball <cjb@laptop.org>
+To: Pierre Tardy <pierre.tardy@intel.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yunpeng Gao <yunpeng.gao@intel.com>
+Subject: Re: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
+Message-ID: <20110210043718.GA7585@void.printf.net>
+References: <cover.1297014479.git.pierre.tardy@intel.com> <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Jeremy Kerr <jeremy.kerr@canonical.com>, Dima Zavin <dmitriyz@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Ben Dooks <ben-linux@fluff.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect enable/prepare
- semantics
-References: <201102011711.31258.jeremy.kerr@canonical.com>	<1297058877.800990.238556019385.3.gpush@pororo>	<20110207080555.GC27982@pengutronix.de>	<201102071608.42855.jeremy.kerr@canonical.com> <alpine.LFD.2.00.1102070908120.14920@xanadu.home>
-In-Reply-To: <alpine.LFD.2.00.1102070908120.14920@xanadu.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 06:24 AM, Nicolas Pitre wrote:
-> On Mon, 7 Feb 2011, Jeremy Kerr wrote:
->
->> Hi Uwe,
->>
->>> This implies the warning is only issued on clocks that have a prepare
->>> callback.  If we want to enforce the new API the warning here shouldn't
->>> depend on clk->ops->prepare.  (clk_prepare and clk_unprepare need to
->>> be changed then to adapt the prepare_count even in the absence of
->>> clk->ops->prepare.)
->>
->> Yeah, it's a decision about either adding a small cost to all clk_prepare()s
->> (ie, adding cost when there is no prepare callback), or checking for the
->> correct prepare/enable semantics for all clocks (even when it doesn't matter
->> for that particular clock). I chose the first as more important, but happy to
->> go either way here.
->
-> The prepare method being called from non-atomic context cannot be
-> considered to be in a speed critical path.  Most of the time, this is
-> going to be called on driver initialization or the like, and that's a
-> relatively rare event. Therefore this really small cost to clk_prepare()
-> is definitively worth it to help proper usage of the API.  If this ever
-> becomes a problem then this could be confined to some CONFIG_CLK_DEBUG
-> or the like.  But when introducing a new API it is best to be more
-> strict to help people get its usage right (without going overboard with
-> it of course).
->
+Hi Pierre,
 
-Agree with Nicholas and Uwe. +1 for this request.
+On Sun, Feb 06, 2011 at 07:02:49PM +0100, Pierre Tardy wrote:
+> From: Yunpeng Gao <yunpeng.gao@intel.com>
+> 
+> Follow the kernel runtime PM framework, enable runtime PM support of the
+> sdhci host controller with pci interface.
+> 
+> Note that this patch implements runtime_pm but now actually detects
+> activity.
+> It relies on higher level (childrens) to do actual waking up
+> Activity detection is put in following patch
 
--Saravana
+Testing this patchset in linux-next-20100208 gives:
+
+[   10.829223] sdhci: Secure Digital Host Controller Interface driver
+[   10.829548] sdhci: Copyright(c) Pierre Ossman
+[   10.883906] sdhci-pci 0000:0d:00.0: SDHCI controller found [1180:e822] (rev 1)
+[   10.884533] sdhci-pci 0000:0d:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+[   10.885189] sdhci-pci 0000:0d:00.0: Will use DMA mode even though HW doesn't fully claim to support it.
+[   10.886176] sdhci-pci 0000:0d:00.0: setting latency timer to 64
+[   10.886819] Registered led device: mmc0::
+[   10.887281] mmc0: SDHCI controller on PCI [0000:0d:00.0] using DMA
+[   10.887724] sdhci-pci 0000:0d:00.0: Unbalanced pm_runtime_enable!
+[   10.888498] sdhci-pci 0000:17:00.0: SDHCI controller found [1180:e822] (rev 1)
+[   10.889179] sdhci-pci 0000:17:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
+[   10.889876] sdhci-pci 0000:17:00.0: Will use DMA mode even though HW doesn't fully claim to support it.
+[   10.890924] sdhci-pci 0000:17:00.0: setting latency timer to 64
+[   10.891387] Registered led device: mmc1::
+[   10.891900] mmc1: SDHCI controller on PCI [0000:17:00.0] using DMA
+[   10.892280] sdhci-pci 0000:17:00.0: Unbalanced pm_runtime_enable!
+
+(Note the last line above.)
+
+I then removed the card and reinserted it, but there's no dmesg output
+related to the reinsert, only to the card removal:
+
+[   65.381047] mmc0: card d555 removed
+
+So, card insertion is broken.  I then did rmmod sdhci-pci && modprobe
+sdhci-pci, and it picked up the card again.
+
+There was also a weird UI hang for a few hundred msecs around the time
+the second modprobe happened, but I don't expect you to be able to do
+anything about that without a more helpful report; if it happens again
+I'll try to record what's going on using ftrace.
+
+Full dmesg is at:
+   http://dev.laptop.org/~cjb/logs/runtime-pm-sdhci-20100209.log
+
+Thanks,
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
