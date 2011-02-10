@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab1BJSbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:31:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62469 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab1BJSbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:31:07 -0500
-Date: Thu, 10 Feb 2011 13:30:53 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 0/6 v4] cfq-iosched: Introduce CFQ group hierarchical
- scheduling and "use_hierarchy" interface
-Message-ID: <20110210183053.GD2524@redhat.com>
-References: <4D5397A9.6040404@cn.fujitsu.com>
+	id S1754135Ab1BJSdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:33:16 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:58755 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab1BJSdP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:33:15 -0500
 MIME-Version: 1.0
+Message-ID: <7f8a2950-7145-438a-9118-2a71a0502fdd@default>
+Date: Thu, 10 Feb 2011 10:24:18 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
+        devel@driverdev.osuosl.org
+Subject: RE: [PATCH] staging: zcache: fix memory leak
+References: <1297360839-21602-1-git-send-email-segoon@openwall.com>
+In-Reply-To: <1297360839-21602-1-git-send-email-segoon@openwall.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6550.5003]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5397A9.6040404@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A010206.4D542F44.01A5:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 03:45:45PM +0800, Gui Jianfeng wrote:
-> Hi
+> From: Vasiliy Kulikov [mailto:segoon@openwall.com]
+> Sent: Thursday, February 10, 2011 11:01 AM
 > 
-> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
-> in the way that it puts all CFQ queues in a hidden group and schedules with other 
-> CFQ group under their parent. The patchset is available here,
-> http://lkml.org/lkml/2010/8/30/30
+> obj is not freed if __get_free_page() failed.
 > 
-> Vivek think this approach isn't so instinct that we should treat CFQ queues
-> and groups at the same level. Here is the new approach for hierarchical 
-> scheduling based on Vivek's suggestion. The most big change of CFQ is that
-> it gets rid of cfq_slice_offset logic, and makes use of vdisktime for CFQ
-> queue scheduling just like CFQ group does. But I still give cfqq some jump 
-> in vdisktime based on ioprio, thanks for Vivek to point out this. Now CFQ 
-> queue and CFQ group use the same scheduling algorithm. 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+
+Thanks Vasiliy!  Good catch!
+
+>  drivers/staging/zcache/zcache.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> "use_hierarchy" interface is now added to switch between hierarchical mode
-> and flat mode. It works as memcg.
-> 
-> --
-> V3 -> V4 Changes:
-> - Take io class into account when calculating the boost value.
-> - Refine the vtime boosting logic as Vivek's Suggestion.
+> diff --git a/drivers/staging/zcache/zcache.c
+> b/drivers/staging/zcache/zcache.c
+> index 61be849..b8a2b30 100644
+> --- a/drivers/staging/zcache/zcache.c
+> +++ b/drivers/staging/zcache/zcache.c
+> @@ -790,6 +790,7 @@ static int zcache_do_preload(struct tmem_pool
+> *pool)
+>  	page = (void *)__get_free_page(ZCACHE_GFP_MASK);
+>  	if (unlikely(page == NULL)) {
+>  		zcache_failed_get_free_pages++;
+> +		kmem_cache_free(zcache_obj_cache, obj);
+>  		goto unlock_out;
+>  	}
+>  	preempt_disable();
 
-Hi Gui,
-
-What testing did you do to make sure that this vtime boosting logic is working
-and is good replacement for slice_offset() logic for cfqq?
-
-Secondly, did you get a chance to look at chad's patch of keeping track
-of previous assigned vdisktime and keeping track of genrations. I think
-his patch is going to coflict with yours, so one of you will have to
-make adjustments. I think both the boost logic and keeping track of generation
-logic can be combined.
-
-	if (entity->gneration_number > cfqd->active_generation)
-		Use_boost_logic;
-	else
-		Use_previously_assigned_vdisktime;
-
-
-That way if we generation has changed then we really don't have a valid
-vdisktime and we can use boost logic to come up with differential
-vdisktime and if generation has not changed then we can continue to make
-use of previous vdisktime.
-
-Thanks
-Vivek
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
