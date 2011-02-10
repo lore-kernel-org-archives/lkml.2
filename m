@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab1BJXyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:54:06 -0500
-Received: from www.tglx.de ([62.245.132.106]:43880 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757276Ab1BJXgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:36:07 -0500
-Message-Id: <20110210223254.610019049@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:35:56 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 03/75] genirq: Rremove redundant check
+	id S1757443Ab1BJXyX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:54:23 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56262 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757240Ab1BJXyU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:54:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110210222908.661199947@linutronix.de>
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=genirq-remove-redundant-check.patch
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 10 Feb 2011 15:53:41 -0800
+Message-ID: <AANLkTi=waRQcvdxyKUgcLZ1r-hwUcAVZeVDcBa-apyK2@mail.gmail.com>
+Subject: Re: [patch 00/75] genirq: Overhaul for 2.6.39
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IRQ_NO_BALANCING is already checked in irq_can_set_affinity() above,
-no need to check it again.
+On Thu, Feb 10, 2011 at 3:35 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> A preview is available at:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/tglx/linux-2.6-genirq.git irq/core
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/manage.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+For things like this, please just always include a diffstat so that
+people can tell from the email whether they care or not.
 
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -256,6 +256,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notif
-  */
- static int setup_affinity(unsigned int irq, struct irq_desc *desc)
- {
-+	/* Excludes PER_CPU and NO_BALANCE interrupts */
- 	if (!irq_can_set_affinity(irq))
- 		return 0;
- 
-@@ -263,7 +264,7 @@ static int setup_affinity(unsigned int i
- 	 * Preserve an userspace affinity setup, but make sure that
- 	 * one of the targets is online.
- 	 */
--	if (desc->status & (IRQ_AFFINITY_SET | IRQ_NO_BALANCING)) {
-+	if (desc->status & (IRQ_AFFINITY_SET)) {
- 		if (cpumask_any_and(desc->irq_data.affinity, cpu_online_mask)
- 		    < nr_cpu_ids)
- 			goto set_affinity;
-
-
+                  Linus
