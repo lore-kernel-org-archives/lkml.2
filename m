@@ -1,36 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab1BJPAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 10:00:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44819 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054Ab1BJPAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 10:00:30 -0500
-Message-ID: <4D53FD8D.8080404@suse.cz>
-Date: Thu, 10 Feb 2011 16:00:29 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: Dick Streefland <dick@streefland.net>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arkadiusz Miskiewicz <arekm@maven.pl>
-Subject: Re: [PATCH] scripts/extract-ikconfig: add xz compression support
-References: <20110123234457.GB2321@streefland.net> <20110124052053.GD6971@cr0.nay.redhat.com>
-In-Reply-To: <20110124052053.GD6971@cr0.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1756238Ab1BJPCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 10:02:12 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:53670 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab1BJPCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 10:02:11 -0500
+Subject: Re: [PATCH 5/5] have smaps show transparent huge pages
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <20110210112032.GG17873@csn.ul.ie>
+References: <20110209195406.B9F23C9F@kernel>
+	 <20110209195413.6D3CB37F@kernel>  <20110210112032.GG17873@csn.ul.ie>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 10 Feb 2011 07:01:55 -0800
+Message-ID: <1297350115.6737.14208.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.1.2011 06:20, Américo Wang wrote:
-> On Mon, Jan 24, 2011 at 12:44:57AM +0100, Dick Streefland wrote:
->> Add support for kernels compressed with xz to the extract-ikconfig script.
->>
->> Signed-off-by: Dick Streefland <dick@streefland.net>
+On Thu, 2011-02-10 at 11:20 +0000, Mel Gorman wrote:
+> > @@ -394,6 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, u
+> >                       spin_lock(&walk->mm->page_table_lock);
+> >               } else {
+> >                       smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_SIZE, walk);
+> > +                     mss->anonymous_thp += HPAGE_SIZE;
 > 
-> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+> I should have thought of this for the previous patch but should this be
+> HPAGE_PMD_SIZE instead of HPAGE_SIZE? Right now, they are the same value
+> but they are not the same thing.
 
-Thanks, applied.
+Probably.  There's also a nice BUG() in HPAGE_PMD_SIZE if the THP config
+option is off, which is an added bonus.
 
-Michal
+-- Dave
+
