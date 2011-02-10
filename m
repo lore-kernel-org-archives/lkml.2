@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab1BJT3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 14:29:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14984 "EHLO mx1.redhat.com"
+	id S1756602Ab1BJTcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 14:32:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45597 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab1BJT3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 14:29:48 -0500
-Date: Thu, 10 Feb 2011 14:29:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
- for CFQ queue
-Message-ID: <20110210192940.GA2600@redhat.com>
-References: <4D51ED26.8050809@cn.fujitsu.com>
- <4D539804.9090308@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D539804.9090308@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755139Ab1BJTce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 14:32:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,451,1291622400"; 
+   d="scan'208";a="601434600"
+Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
+ before entering idle
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
+        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
+        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+In-Reply-To: <1297359914.4933.56.camel@mulgrave.site>
+References: <1297300864.2645.128.camel@schen9-DESK>
+	 <1297359914.4933.56.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 11:33:04 -0800
+Message-ID: <1297366384.2645.175.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
-> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
-> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
-> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
-> group scheduling on the same service tree.
+On Thu, 2011-02-10 at 11:45 -0600, James Bottomley wrote:
+
 > 
-> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-> ---
->  block/cfq-iosched.c |  219 +++++++++++++++++++++++++++++++++++++++------------
->  1 files changed, 167 insertions(+), 52 deletions(-)
+> What you say is true as long as the value is 32 bits ... perhaps a note
+> of that should be made somewhere?
 > 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index f3a126e..41cef2e 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -39,6 +39,13 @@ static const int cfq_hist_divisor = 4;
->   */
->  #define CFQ_IDLE_DELAY		(HZ / 5)
->  
-> +/* 
-> + * The base boosting value.
-> + */
-> +#define CFQ_BOOST_SYNC_BASE          (HZ / 10)
-> +#define CFQ_BOOST_ASYNC_BASE          (HZ / 25)
-> +
 
-These are same as cfq_slice_sync and cfq_slice_async. Looking at
-boost logic, this is equivalent of starting a new queue/group as
-if it is being requeued after conuming a full slice. So may be we can divide
-it by some const number say 4 or something like that. This is a minor
-point though as this algorimthm will kind of evolve and we will learn
-what works best.
+It seems like pm_qos_add_request, pm_qos_update_request only uses 32
+bits value.  Did I miss some cases where the target value for
+pm_qos_object be non-32 bit under some situation?
 
-Secondly, I think you wanted to SYNC vs ASYNC logic seem to be reversed.
-We would like to give ASYNC queues higher boost (Put these farther in 
-tree) and lesser boost to SYNC queues. Looks like above constants will
-do the reverse? 
+Tim
 
-
-[..]
-> +	if (RB_EMPTY_NODE(&cfqe->rb_node)) {
-> +		/*
-> +		 * If this CFQ queue moves to another group, the original
-> +		 * vdisktime makes no sense any more, reset the vdisktime
-> +		 * here.
-> +		 */
-> +		parent = rb_last(&service_tree->rb);
-> +		if (parent) {
-> +			u64 pos_offset;
-> +
-> +			/*
-> +			 * Estimate the position according to its weight and
-> +			 * ioprio.
-> +			 */
-> +			pos_offset = cfq_get_boost(cfqd, cfqq);
-> +			/* Debug purpose, should remove. */
-> +			cfq_log_cfqq(cfqd, cfqq, "pos_offset: %llu",
-> +				     pos_offset);
-
-You wanted to get rid of above debugging comment?
-
-Thanks
-Vivek
