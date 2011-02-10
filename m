@@ -1,96 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab1BJQA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 11:00:56 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:56740 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751147Ab1BJQAz (ORCPT
+	id S1756591Ab1BJQBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 11:01:22 -0500
+Received: from smtp104.prem.mail.sp1.yahoo.com ([98.136.44.59]:33706 "HELO
+	smtp104.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756567Ab1BJQBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 11:00:55 -0500
-Date: Thu, 10 Feb 2011 11:00:51 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ian Campbell <ijc@hellion.org.uk>
-cc: Brendan Cully <brendan@cs.ubc.ca>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>
-Subject: Re: [Xen-devel] Re: [linux-pm] [PATCH 0/2] Fix hangup after creating
- checkpoint on Xen.
-In-Reply-To: <1297338005.20491.163.camel@zakaz.uk.xensource.com>
-Message-ID: <Pine.LNX.4.44L0.1102101043010.2029-100000@iolanthe.rowland.org>
+	Thu, 10 Feb 2011 11:01:20 -0500
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: eu7YZfgVM1lFUl2wP6Jcr3ejbnEcqMtlnvsWSB8DNMll_ge
+ Kp33ZiKUNqMYGsVwpnoxv66jYdUHPCkh0.XEzqG2XcIOeMdFvr0IM9ChvQyS
+ OCXDyAH1AHljIL.Gvb9yp1l_ou8N5UazaF.UjQtv1nYgR.gbuDNToNsRiYwT
+ wNAM5vqNs92eB_Ool9L3p7JxVMEDElRlGXYyZRtcANywdpHQ4c.vL.ylc9pZ
+ wkZtNCw3djvK_msFxUaXNh1OprCg2To2bMq1q5rbvUPzGBc_8AJnbcy_2cJQ
+ VvY9Xo7FZTz0_CUROQz2goyKAYmOMetJmXrIGReXg
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4D540BCE.5020007@schaufler-ca.com>
+Date: Thu, 10 Feb 2011 08:01:18 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Chris Wright <chrisw@sous-sol.org>
+CC: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eric Paris <eparis@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 1/2] security: add cred argument to security_capable()
+References: <1297318312-14309-1-git-send-email-chrisw@sous-sol.org> <1297318312-14309-2-git-send-email-chrisw@sous-sol.org>
+In-Reply-To: <1297318312-14309-2-git-send-email-chrisw@sous-sol.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Feb 2011, Ian Campbell wrote:
+On 2/9/2011 10:11 PM, Chris Wright wrote:
+> Expand security_capable() to include cred, so that it can be usable in a
+> wider range of call sites.
 
-> On Wed, 2011-02-09 at 23:42 +0000, Alan Stern wrote:
-> > In fact there already is a "fast suspend & resume" path in the PM core.  
-> > It's the freeze/thaw procedure used when starting to hibernate.  The
-> > documentation specifically says that drivers' freeze methods are
-> > supposed to quiesce their devices but not change power levels.  In
-> > addition, the thaw method is invoked as part of recovery from a failed
-> > hibernation attempt, so it already has the "cancel" semantics that xen 
-> > seems to want.
-> 
-> Sounds like that would work and I would much prefer to simply make
-> correct use of the core functionality.
+I'll bite. What to plan to use this for? I wouldn't see this getting
+accepted on its own without a user. I don't see anything wrong with
+the change other than that it is not used by anything.
 
-It seems like a reasonable approach.  Whether it will actually _work_ 
-is a harder question...  :-)
 
-> So PMSG_FREEZE is balanced by either PMSG_RECOVER or PMSG_THAW depending
-> on whether the suspend was cancelled or not?
-
-Basically yes.  It is also "balanced" by PMSG_RESTORE, which is used
-after a memory image has been restored (although this isn't relevant to
-your snapshotting).  See the comments in include/linux/pm.h.
-
->  So the sequence of events
-> is something like:
-> 	dpm_suspend_start(PMSG_FREEZE);
->          
-> 		dpm_suspend_noirq(PMSG_FREEZE);
->                          
-> 			sysdev_suspend(PMSG_QUIESCE);
-
-This should say sysdev_suspend(PMSG_FREEZE).
-
-> 			cancelled = suspend_hypercall()
-
-At this point swsusp_arch_suspend() is called.  If that translates to 
-suspend_hypercall() in your setting, then yes.
-
-> 			sysdev_resume();
->                  
-> 		dpm_resume_noirq(cancelled ? PMSG_RECOVER : PMSG_THAW);
->          
-> 	dpm_resume_end(cancelled ? PMSG_RECOVER : PMSG_THAW);
-> ?
-
-Yes.
-
-> (For comparison we currently have:
-> > > >         dpm_suspend_start(PMSG_SUSPEND);
-> > > >         
-> > > >                 dpm_suspend_noirq(PMSG_SUSPEND);
-> > > >                         
-> > > >                         sysdev_suspend(PMSG_SUSPEND);
-> > > >                         /* suspend hypercall */
-> > > >                         sysdev_resume();
-> > > >                 
-> > > >                 dpm_resume_noirq(PMSG_RESUME);
-> > > >         
-> > > >         dpm_resume_end(PMSG_RESUME);
-> )
-
-Right.  The sequence of calls is the same, but the PMSG_ argument is 
-different so drivers are expected to act differently in response.
-
-Alan Stern
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Eric Paris <eparis@redhat.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: linux-security-module@vger.kernel.org
+> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+> ---
+>
+>  include/linux/security.h |    6 +++---
+>  kernel/capability.c      |    2 +-
+>  security/security.c      |    5 ++---
+>  3 files changed, 6 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/security.h b/include/linux/security.h
+> index c642bb8..b2b7f97 100644
+> --- a/include/linux/security.h
+> +++ b/include/linux/security.h
+> @@ -1662,7 +1662,7 @@ int security_capset(struct cred *new, const struct cred *old,
+>  		    const kernel_cap_t *effective,
+>  		    const kernel_cap_t *inheritable,
+>  		    const kernel_cap_t *permitted);
+> -int security_capable(int cap);
+> +int security_capable(const struct cred *cred, int cap);
+>  int security_real_capable(struct task_struct *tsk, int cap);
+>  int security_real_capable_noaudit(struct task_struct *tsk, int cap);
+>  int security_sysctl(struct ctl_table *table, int op);
+> @@ -1856,9 +1856,9 @@ static inline int security_capset(struct cred *new,
+>  	return cap_capset(new, old, effective, inheritable, permitted);
+>  }
+>  
+> -static inline int security_capable(int cap)
+> +static inline int security_capable(const struct cred *cred, int cap)
+>  {
+> -	return cap_capable(current, current_cred(), cap, SECURITY_CAP_AUDIT);
+> +	return cap_capable(current, cred, cap, SECURITY_CAP_AUDIT);
+>  }
+>  
+>  static inline int security_real_capable(struct task_struct *tsk, int cap)
+> diff --git a/kernel/capability.c b/kernel/capability.c
+> index 2f05303..9e9385f 100644
+> --- a/kernel/capability.c
+> +++ b/kernel/capability.c
+> @@ -306,7 +306,7 @@ int capable(int cap)
+>  		BUG();
+>  	}
+>  
+> -	if (security_capable(cap) == 0) {
+> +	if (security_capable(current_cred(), cap) == 0) {
+>  		current->flags |= PF_SUPERPRIV;
+>  		return 1;
+>  	}
+> diff --git a/security/security.c b/security/security.c
+> index 739e403..7b7308a 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -154,10 +154,9 @@ int security_capset(struct cred *new, const struct cred *old,
+>  				    effective, inheritable, permitted);
+>  }
+>  
+> -int security_capable(int cap)
+> +int security_capable(const struct cred *cred, int cap)
+>  {
+> -	return security_ops->capable(current, current_cred(), cap,
+> -				     SECURITY_CAP_AUDIT);
+> +	return security_ops->capable(current, cred, cap, SECURITY_CAP_AUDIT);
+>  }
+>  
+>  int security_real_capable(struct task_struct *tsk, int cap)
 
