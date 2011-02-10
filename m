@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab1BJR0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:26:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33514 "EHLO mga09.intel.com"
+	id S1755579Ab1BJRaD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:30:03 -0500
+Received: from lo.gmane.org ([80.91.229.12]:54739 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756528Ab1BJR0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:26:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,451,1291622400"; 
-   d="scan'208";a="706281544"
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: markgross@thegnar.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@suse.de>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-In-Reply-To: <20110210051042.GC4897@gvim.org>
-References: <1297300864.2645.128.camel@schen9-DESK>
-	 <20110210051042.GC4897@gvim.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 09:27:24 -0800
-Message-ID: <1297358844.2645.140.camel@schen9-DESK>
+	id S1750820Ab1BJRaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 12:30:00 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: ael <law_ence.dev@ntlworld.com>
+Subject: Re: [PATCH 7/8] sr: implement sr_check_events()
+Date: Thu, 10 Feb 2011 17:30:36 +0000
+Message-ID: <ij17a5$825$1@dough.gmane.org>
+References: <1291838262-21274-1-git-send-email-tj@kernel.org> <1291838262-21274-8-git-send-email-tj@kernel.org> <4D44BE3E.5080107@simon.arlott.org.uk>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: cpc1-oxfd6-0-0-cust236.4-3.cable.virginmedia.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+In-Reply-To: <4D44BE3E.5080107@simon.arlott.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 21:10 -0800, mark gross wrote:
+Not sure whether these patches are responsible, but I have been seeing 
+problems mounting dvd media since 2.6.38-rc3. It improved slightly with
+2.6.38-rc4, but I have to use 2.6.38-rc1 (rc2 not tested) to mount some 
+of my dvd-rw media.
 
-> 
-> I'm surprised by this as the last update to the pm_qos replaced the
-> lists with a O(1) data structure so there was no more walking of pending
-> requests.
+Message is (from memory & approximately) media already mounted or device 
+busy after
 
-But you need to acquire a lock before you can read the value on the list
-within the function pm_qos_request.  This is a problem if there are a
-lot of cpus doing so.
+mount /dev/dvd /dvd
 
-> 
-> What is the profile after the patch the Plist should be only one
-> dereference and an if instruction slower than a cached value.
+Apologies for such a vague report not properly investigated, but maybe. 
+or maybe not, better than nothing.
 
-After the patch, the acquisition of the lock on plist go away from the
-profile, and I see a 12% improvement in throughput to the message
-passing benchmark I was running.
-
-> 
-> Does your patch remove the need for the locks because if it doesn't I
-> don't see how it will make much of a difference?
-
-We still need the lock to update/remove/insert values in the plist and
-to update the cached value.  The intention of the patch is to avoid lock
-acquisition by reading from a cached value that is up to date. Lock
-acquisition is needed --every time-- when a cpu go into idle, which is
-bad as you want to let a cpu go to idle ASAP.
-
-
-Tim
+ael
 
