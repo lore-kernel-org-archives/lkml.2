@@ -1,125 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1BJJgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 04:36:14 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:47115 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934Ab1BJJgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 04:36:11 -0500
-Date: Thu, 10 Feb 2011 09:35:44 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] mm: batch-free pcp list if possible
-Message-ID: <20110210093544.GA17873@csn.ul.ie>
-References: <1297257677-12287-1-git-send-email-namhyung@gmail.com> <20110209123803.4bb6291c.akpm@linux-foundation.org>
+	id S1754790Ab1BJJia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 04:38:30 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:31941
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752745Ab1BJJi2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 04:38:28 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz1432N98dNzz1202hzz8275bh8275dhz2dh2a8h637h668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
+Date: Thu, 10 Feb 2011 17:37:57 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect
+ enable/prepare semantics
+Message-ID: <20110210093756.GA24710@b20223-02.ap.freescale.net>
+References: <1297233693.241680.897691111624.0.gpush@pororo>
+ <1297233693.243373.411051105619.3.gpush@pororo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110209123803.4bb6291c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1297233693.243373.411051105619.3.gpush@pororo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 12:38:03PM -0800, Andrew Morton wrote:
-> On Wed,  9 Feb 2011 22:21:17 +0900
-> Namhyung Kim <namhyung@gmail.com> wrote:
-> 
-> > free_pcppages_bulk() frees pages from pcp lists in a round-robin
-> > fashion by keeping batch_free counter. But it doesn't need to spin
-> > if there is only one non-empty list. This can be checked by
-> > batch_free == MIGRATE_PCPTYPES.
-> > 
-> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> > ---
-> >  mm/page_alloc.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index a873e61e312e..470fb42e303c 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -614,6 +614,10 @@ static void free_pcppages_bulk(struct zone *zone, int count,
-> >  			list = &pcp->lists[migratetype];
-> >  		} while (list_empty(list));
-> >  
-> > +		/* This is an only non-empty list. Free them all. */
-> > +		if (batch_free == MIGRATE_PCPTYPES)
-> > +			batch_free = to_free;
-> > +
-> >  		do {
-> >  			page = list_entry(list->prev, struct page, lru);
-> >  			/* must delete as __free_one_page list manipulates */
-> 
-> free_pcppages_bulk() hurts my brain.
-> 
+Hi Jeremy,
 
-I vaguely recall trying to make it easier to understand. Each attempt
-made it easier to read, but slower. At the time there were complaints
-about the overhead of the page allocator so making it slower was not an
-option. "Overhead" was what oprofile reported as the time spent in each
-function.
-
-> What is it actually trying to do, and why? It counts up the number of
-> contiguous empty lists and then frees that number of pages from the
-> first-encountered non-empty list and then advances onto the next list?
+On Wed, Feb 09, 2011 at 02:41:33PM +0800, Jeremy Kerr wrote:
+> This change adds warnings to check for:
 > 
+>  1) enabling a clock that hasn't been prepared; and
+> 
+>  2) unpreparing a clock that is still enabled
+> 
+> While the correctness can't be guaranteed, the warnings should cover
+> most situations, and won't indicate false positives.
+> 
+> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+> 
+> ---
+>  drivers/clk/clk.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index bbbdb0d..8c96623 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -29,6 +29,8 @@ EXPORT_SYMBOL_GPL(clk_prepare);
+>  
+>  void clk_unprepare(struct clk *clk)
+>  {
+> +	WARN_ON(clk->enable_count != 0);
+> +
+Other drivers may be using the clock and increased the enable_count.
+This check may be moved to where we actually do unprepare.
 
-Yes. This is potentially unfair because lists for one migratetype can get
-drained heavier than others. However, checking empty lists was showing up as
-a reasonably significant cost according to profiles for allocator-intensive
-workloads. I *think* the workload I was using was netperf-based.
-
-> What's the point in that?  What relationship does the number of
-> contiguous empty lists have with the number of pages to free from one
-> list?
+Thanks
+Richard
+>  	mutex_lock(&clk->prepare_lock);
+>  
+>  	WARN_ON(clk->prepare_count == 0);
+> @@ -45,6 +47,8 @@ int clk_enable(struct clk *clk)
+>  	unsigned long flags;
+>  	int ret = 0;
+>  
+> +	WARN_ON(clk->prepare_count == 0);
+> +
+>  	spin_lock_irqsave(&clk->enable_lock, flags);
+>  	if (clk->enable_count == 0 && clk->ops->enable)
+>  		ret = clk->ops->enable(clk);
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
 
-The point is to avoid excessive checking of empty lists. There is no
-relationship between the number of empty lists and the size of the next
-list. The size of the lists is related to the workload and the resulting
-allocator/free pattern.
-
-> The comment "This is so more pages are freed off fuller lists instead
-> of spinning excessively around empty lists" makes no sense - the only
-> way this can be true is if the code knows the number of elements on
-> each list, and it doesn't know that.
-> 
-
-batch_free gets preserved if a list empties so if batch_free was 2 but
-there was only 1 page on the next list, more pages are taken off a
-larger list. We know what the total size of all the lists are so there
-are always pages to find. You're right in that we don't know the size of
-individual lists because space in the pcp structure is tight.
-
-> Also, the covering comments over free_pcppages_bulk() regarding the
-> pages_scanned counter and the "all pages pinned" logic appear to be out
-> of date.  Or, alternatively, those comments do reflect the desired
-> design, but we broke it.
-> 
-
-This comment is really old.... heh, you introduced it back in 2.5.49
-apparently.
-
-The comment is referring to the clearing of all_unreclaimable. By clearing it,
-kswapd will scan that zone again and set all_unreclaimable back if necessary
-and that is still valid.
-
-More importantly, if there is another process in direct reclaim and it failed
-to reclaim any pages, the clearing of all_unreclaimable will avoid the direct
-reclaimer entering OOM.
-
-The comment could be better but it doesn't look wrong, just not
-particularly helpful.
-
-> Methinks that free_pcppages_bulk() is an area ripe for simplification
-> and clarification.
-> 
-
-Probably but any patch that simplifies it needs to be accompanied with
-profiles of an allocator-intensive workload showing it's not worse as a result.
-
--- 
-Mel Gorman
