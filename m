@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab1BJXs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:48:28 -0500
-Received: from www.tglx.de ([62.245.132.106]:44158 "EHLO www.tglx.de"
+	id S1757490Ab1BJXhH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:37:07 -0500
+Received: from www.tglx.de ([62.245.132.106]:44131 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757494Ab1BJXhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:37:08 -0500
-Message-Id: <20110210223257.299042487@linutronix.de>
+	id S1757479Ab1BJXhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:37:04 -0500
+Message-Id: <20110210223257.011349671@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:37:01 -0000
+Date: Thu, 10 Feb 2011 23:36:54 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 31/75] genirq: Fixup core code namespace fallout
+Subject: [patch 28/75] genirq: Use handle_irq_event() in the spurious poll code
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=genirq-fixup-core.patch
+Content-Disposition: inline; filename=genirq-convert-spurious.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/irq/chip.c   |    6 +++---
- kernel/irq/manage.c |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/irq/spurious.c |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
-Index: linux-2.6-tip/kernel/irq/chip.c
+Index: linux-2.6-tip/kernel/irq/spurious.c
 ===================================================================
---- linux-2.6-tip.orig/kernel/irq/chip.c
-+++ linux-2.6-tip/kernel/irq/chip.c
-@@ -616,7 +616,7 @@ out_unlock:
- void
- handle_percpu_irq(unsigned int irq, struct irq_desc *desc)
- {
--	struct irq_chip *chip = get_irq_desc_chip(desc);
-+	struct irq_chip *chip = irq_desc_get_chip(desc);
- 
- 	kstat_incr_irqs_this_cpu(irq, desc);
- 
-@@ -683,7 +683,7 @@ void
- set_irq_chip_and_handler(unsigned int irq, struct irq_chip *chip,
- 			 irq_flow_handler_t handle)
- {
--	set_irq_chip(irq, chip);
-+	irq_set_chip(irq, chip);
- 	__set_irq_handler(irq, handle, 0, NULL);
+--- linux-2.6-tip.orig/kernel/irq/spurious.c
++++ linux-2.6-tip/kernel/irq/spurious.c
+@@ -56,13 +56,14 @@ bool irq_wait_for_poll(struct irq_desc *
+ #endif
  }
  
-@@ -691,7 +691,7 @@ void
- set_irq_chip_and_handler_name(unsigned int irq, struct irq_chip *chip,
- 			      irq_flow_handler_t handle, const char *name)
++
+ /*
+  * Recovery handler for misrouted interrupts.
+  */
+ static int try_one_irq(int irq, struct irq_desc *desc, bool force)
  {
--	set_irq_chip(irq, chip);
-+	irq_set_chip(irq, chip);
- 	__set_irq_handler(irq, handle, 0, name);
++	irqreturn_t ret = IRQ_NONE;
+ 	struct irqaction *action;
+-	int ok = 0;
+ 
+ 	raw_spin_lock(&desc->lock);
+ 
+@@ -96,21 +97,17 @@ static int try_one_irq(int irq, struct i
+ 		goto out;
+ 	}
+ 
+-	/* Honour the normal IRQ locking and mark it poll in progress */
+-	desc->status |= IRQ_INPROGRESS | IRQ_POLL_INPROGRESS;
++	/* Mark it poll in progress */
++	desc->status |= IRQ_POLL_INPROGRESS;
+ 	do {
+-		desc->status &= ~IRQ_PENDING;
+-		raw_spin_unlock(&desc->lock);
+-		if (handle_IRQ_event(irq, action) != IRQ_NONE)
+-			ok = 1;
+-		raw_spin_lock(&desc->lock);
++		if (handle_irq_event(desc) == IRQ_HANDLED)
++			ret = IRQ_HANDLED;
+ 		action = desc->action;
+-	}  while ((desc->status & IRQ_PENDING) && action);
+-
+-	desc->status &= ~(IRQ_INPROGRESS | IRQ_POLL_INPROGRESS);
++	} while ((desc->status & IRQ_PENDING) && action);
++	desc->status &= ~IRQ_POLL_INPROGRESS;
+ out:
+ 	raw_spin_unlock(&desc->lock);
+-	return ok;
++	return ret == IRQ_HANDLED;
  }
  
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -260,7 +260,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notif
- static int
- setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- {
--	struct irq_chip *chip = get_irq_desc_chip(desc);
-+	struct irq_chip *chip = irq_desc_get_chip(desc);
- 	struct cpumask *set = irq_default_affinity;
- 	int ret;
- 
+ static int misrouted_irq(int irq)
 
 
