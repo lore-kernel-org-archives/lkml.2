@@ -1,174 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab1BJM32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:29:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37622 "EHLO mx2.suse.de"
+	id S1756475Ab1BJM3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:29:32 -0500
+Received: from cantor.suse.de ([195.135.220.2]:34122 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755675Ab1BJMY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:24:57 -0500
-From: stable-bot for Nikhil Rao <ncrao@google.com>
-Date: Thu, 10 Feb 2011 10:23:25 +0100
-Subject: [PATCH 11/28] sched: Force balancing on newidle balance if local
- group has capacity
-To: stable@kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>
-Message-ID: <1297340643.5512.11.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1756429Ab1BJM3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:29:30 -0500
+Date: Thu, 10 Feb 2011 13:29:27 +0100
+From: Petr Uzel <petr.uzel@suse.cz>
+To: Chris Samuel <chris@csamuel.org>
+Cc: Felix Blanke <felixblanke@gmail.com>, kreijack@inwind.it,
+        Hugo Mills <hugo-lkml@carfax.org.uk>, linux-btrfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: LOOP_GET_STATUS(64) truncates pathnames to 64 chars (was Re:
+ Bug in mkfs.btrfs?!)
+Message-ID: <20110210122927.GB20488@foxbat.suse.cz>
+Mail-Followup-To: Chris Samuel <chris@csamuel.org>,
+	Felix Blanke <felixblanke@gmail.com>, kreijack@inwind.it,
+	Hugo Mills <hugo-lkml@carfax.org.uk>, linux-btrfs@vger.kernel.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20110122144513.GA2539@scooter>
+ <20110122145222.GB2539@scooter>
+ <20110122151124.GC29985@carfax.org.uk>
+ <20110122155612.GA3664@scooter>
+ <20110123181827.GF29985@carfax.org.uk>
+ <4D3CA568.7050506@libero.it>
+ <20110124130104.GA7354@scooter>
+ <4D3E160F.4050006@csamuel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oLBj+sq0vYjzfsbl"
+Content-Disposition: inline
+In-Reply-To: <4D3E160F.4050006@csamuel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit: fab476228ba37907ad75216d0fd9732ada9c119e upstream
-Author: Nikhil Rao <ncrao@google.com>
-AuthorDate: Fri Oct 15 13:12:29 2010 -0700
 
-This patch forces a load balance on a newly idle cpu when the local group has
-extra capacity and the busiest group does not have any. It improves system
-utilization when balancing tasks with a large weight differential.
+--oLBj+sq0vYjzfsbl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Under certain situations, such as a niced down task (i.e. nice = -15) in the
-presence of nr_cpus NICE0 tasks, the niced task lands on a sched group and
-kicks away other tasks because of its large weight. This leads to sub-optimal
-utilization of the machine. Even though the sched group has capacity, it does
-not pull tasks because sds.this_load >> sds.max_load, and f_b_g() returns NULL.
+On Tue, Jan 25, 2011 at 11:15:11AM +1100, Chris Samuel wrote:
+> /*
+>  * CC'd to linux-kernel in case they have any feedback on this.
+>  *
+>  * Long thread, trying to work out why mkfs.btrfs failed to
+>  * make a filesystem on an encrypted loopback mount called
+>  * /dev/loop2. Cause turned out to be mkfs.btrfs calling
+>  * LOOP_GET_STATUS to find out if the block device was mounted
+>  * and getting a truncated device name back and so it later
+>  * fails when lstat() is called on the truncated device path.
+>  *
+>  * The long device name for the encrypted loopback mount was
+>  * because /dev/disk/by-id/$ID was used when Felix created it
+>  * to cope with devices moving around.
+>  */
+>=20
+> On 25/01/11 00:01, Felix Blanke wrote:
+>=20
+> > you were talking about the LOOP_GET_STATUS function. I'm not
+> > quite sure where does it came from. Is it part of the kernel?
+> > Or does it come from the util-linux package?
+>=20
+> It's in the kernel, and there is both LOOP_GET_STATUS (old
+> implementation) and LOOP_GET_STATUS64 (new implementation).
+>=20
+> They return structures called loop_info and loop_info64
+> respectively and both are defined in include/linux/loop.h .
+>=20
+> Sadly in both cases the lengths of paths are defined to be
+> LO_NAME_SIZE which is currently 64 and hence either
+> implementation will cause the problematic:
+>=20
+> lstat("/dev/disk/by-id/ata-INTEL_SSDSA2M160G2GC_CVPO939201JX160AGN-par",
+> 0x7fffa30b3cf0) =3D -1 ENOENT (No such file or directory)
+>=20
+> I've CC'd this to the LKML in case they have any feedback on
+> this apparent problem with the API.
+=20
+Since 2.6.37, you can get full path to the backing file from sys:
+cat /sys/block/loopX/loop/backing_file
 
-With this patch, if the local group has extra capacity, we shortcut the checks
-in f_b_g() and try to pull a task over. A sched group has extra capacity if the
-group capacity is greater than the number of running tasks in that group.
-
-Thanks to Mike Galbraith for discussions leading to this patch and for the
-insight to reuse SD_NEWIDLE_BALANCE.
-
-Signed-off-by: Nikhil Rao <ncrao@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1287173550-30365-4-git-send-email-ncrao@google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched.c |   28 +++++++++++++++++++++++++---
- 1 files changed, 25 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index d985956..f33788b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3208,6 +3208,10 @@ static void pull_task(struct rq *src_rq, struct task_struct *p,
- 	set_task_cpu(p, this_cpu);
- 	activate_task(this_rq, p, 0);
- 	check_preempt_curr(this_rq, p, 0);
-+
-+	/* re-arm NEWIDLE balancing when moving tasks */
-+	src_rq->avg_idle = this_rq->avg_idle = 2*sysctl_sched_migration_cost;
-+	this_rq->idle_stamp = 0;
- }
- 
- /*
-@@ -3425,12 +3429,14 @@ struct sd_lb_stats {
- 	unsigned long this_load;
- 	unsigned long this_load_per_task;
- 	unsigned long this_nr_running;
-+	unsigned long this_has_capacity;
- 
- 	/* Statistics of the busiest group */
- 	unsigned long max_load;
- 	unsigned long busiest_load_per_task;
- 	unsigned long busiest_nr_running;
- 	unsigned long busiest_group_capacity;
-+	unsigned long busiest_has_capacity;
- 
- 	int group_imb; /* Is there imbalance in this sd */
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-@@ -3453,6 +3459,7 @@ struct sg_lb_stats {
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long group_capacity;
- 	int group_imb; /* Is there an imbalance in the group ? */
-+	int group_has_capacity; /* Is there extra capacity in the group? */
- };
- 
- /**
-@@ -3822,6 +3829,9 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 		sgs->group_imb = 1;
- 
- 	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
-+
-+	if (sgs->group_capacity > sgs->sum_nr_running)
-+		sgs->group_has_capacity = 1;
- }
- 
- /**
-@@ -3878,6 +3888,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 			sds->this = group;
- 			sds->this_nr_running = sgs.sum_nr_running;
- 			sds->this_load_per_task = sgs.sum_weighted_load;
-+			sds->this_has_capacity = sgs.group_has_capacity;
- 		} else if (sgs.avg_load > sds->max_load &&
- 			   (sgs.sum_nr_running > sgs.group_capacity ||
- 				sgs.group_imb)) {
-@@ -3886,6 +3897,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 			sds->busiest_nr_running = sgs.sum_nr_running;
- 			sds->busiest_group_capacity = sgs.group_capacity;
- 			sds->busiest_load_per_task = sgs.sum_weighted_load;
-+			sds->busiest_has_capacity = sgs.group_has_capacity;
- 			sds->group_imb = sgs.group_imb;
- 		}
- 
-@@ -4031,6 +4043,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
- 		return fix_small_imbalance(sds, this_cpu, imbalance);
- 
- }
-+
- /******* find_busiest_group() helpers end here *********************/
- 
- /**
-@@ -4082,6 +4095,11 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	 * 4) This group is more busy than the avg busieness at this
- 	 *    sched_domain.
- 	 * 5) The imbalance is within the specified limit.
-+	 *
-+	 * Note: when doing newidle balance, if the local group has excess
-+	 * capacity (i.e. nr_running < group_capacity) and the busiest group
-+	 * does not have any capacity, we force a load balance to pull tasks
-+	 * to the local group. In this case, we skip past checks 3, 4 and 5.
- 	 */
- 	if (balance && !(*balance))
- 		goto ret;
-@@ -4089,6 +4107,11 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	if (!sds.busiest || sds.busiest_nr_running == 0)
- 		goto out_balanced;
- 
-+	/*  SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
-+	if (idle == CPU_NEWLY_IDLE && sds.this_has_capacity &&
-+			!sds.busiest_has_capacity)
-+		goto force_balance;
-+
- 	if (sds.this_load >= sds.max_load)
- 		goto out_balanced;
- 
-@@ -4100,6 +4123,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
- 		goto out_balanced;
- 
-+force_balance:
- 	/* Looks like there is an imbalance. Compute it */
- 	calculate_imbalance(&sds, this_cpu, imbalance);
- 	return sds.busiest;
-@@ -4515,10 +4539,8 @@ static void idle_balance(int this_cpu, struct rq *this_rq)
- 		interval = msecs_to_jiffies(sd->balance_interval);
- 		if (time_after(next_balance, sd->last_balance + interval))
- 			next_balance = sd->last_balance + interval;
--		if (pulled_task) {
--			this_rq->idle_stamp = 0;
-+		if (pulled_task)
- 			break;
--		}
- 	}
- 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
- 		/*
--- 
-1.7.4
+See
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-07/msg10996.html
 
 
+HTH,
+
+Petr
+
+--
+Petr Uzel
+IRC: ptr_uzl @ freenode
+
+--oLBj+sq0vYjzfsbl
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEARECAAYFAk1T2icACgkQnZxG0T6qDD3EvwCfWVdiSyrEIBvZSo9HnxLVhRsb
+GB0AniX6XMlBTu8BuRw2gUTDUDYaluPA
+=Zaep
+-----END PGP SIGNATURE-----
+
+--oLBj+sq0vYjzfsbl--
