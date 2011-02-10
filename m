@@ -1,200 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045Ab1BJV1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:27:44 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53414 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab1BJV1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:27:42 -0500
-Message-ID: <4D545812.9050801@oracle.com>
-Date: Thu, 10 Feb 2011 13:26:42 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1757041Ab1BJVat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:30:49 -0500
+Received: from nm1-vm1.bullet.mail.kr3.yahoo.com ([111.67.240.243]:30022 "HELO
+	nm1-vm1.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755660Ab1BJVas convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 16:30:48 -0500
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 723827.33367.bm@omp1002.mail.kr3.yahoo.com
+Message-ID: <655865.3592.qm@web70804.mail.kr3.yahoo.com>
+X-YMail-OSG: g8HZtawVM1lg8ZHMerWv07X2FwyU.BRB03SizDS53y__qYO
+ OeEDPikGyE4ADB.1kCZkWBtyMxU1MgpEhHzB.yiJWxLzE6vTY4Lfi5MSR6DG
+ HbQWT97PdT8omBGSCcFP4mC1Mlj01ZV2oaNzJwhVUMcuQ4M_KG.1bsoK5x2V
+ b85YwSfj71o13XmmRcBuXNZYo0stJxtrXZN9r7iixYolwzcN0ERhbkHFFWag
+ 9_Jmuo4S9.1cgsrik92wlpnMhvYWZ84Onn.Dl0RtZsyu5vUc4eRxn_2FI8nU
+ C.xfXCCiBistgbqCmRmDAEs1abCwg7m.RFpHdzbV.8f8D6IikhQ19MVSFTFC
+ 30eQ3j3F8viDjtvLi1Rp5ZL_1IsdixKcUmmXovxknnJadRS75W8dx4x.Hsdj
+ Z1AiF2AOWWBu_Z4VU56_nzhwoc0F1LJOFDD._KoPaYKNqrYZW0YBEDs_w4J7
+ FH61lrbo7VbNaf_TCxFphlKXy3JTrr4lhwXOq2DczWpF2T.7svYziY2jLPM0
+ vG2pyESJ4EimI5LNOgkw2tMY.SYpXKBzrFn76HdSzP22JaOJPhT84dLTTOfM
+ uKG75dAdPdYI1o8PVse_3gsbr90JNXoN_0dRZYHwpA5BTfXwwN1pL1aJYmA1
+ LtZ9ZkzrSQ9Pl1q1VtNgexu476tbwtZCtpLsX21wdwwh7Awg8WN_oXw8VJ1u
+ _xbzAYCIWtfvRQkE3DwZWi8xwbdHsfN5QTrV4zqF1xtMge1K9M2jqYLWb4P0
+ NmXGiCVHa5VYgBqH353Ix8QGTkEkKs58TPCF.STaSjNWDa3wVlkN5owZH5jV
+ 6qwmTvGkmGTDae_bz4lYTQfLD0JDwgAZp1tvevoIHIGhxI.gnlTPb6AoldZn
+ iwtug
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
+Date: Fri, 11 Feb 2011 06:30:40 +0900 (KST)
+From: Paul Compaore <paulcompaore12@gmail.com>
+Reply-To: paulcompaore14@gmail.com
+Subject: Dear Friend,
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Allow sharing xvmalloc for zram and zcache
-References: <1297371646-11604-1-git-send-email-ngupta@vflare.org> <4D5453CB.7050206@oracle.com> <4D5454CC.1000609@vflare.org> <4D5455CD.3000507@oracle.com> <4D5456AD.5010703@vflare.org>
-In-Reply-To: <4D5456AD.5010703@vflare.org>
-Content-Type: multipart/mixed;
- boundary="------------020207040302050900010607"
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D545842.0004:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020207040302050900010607
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 
-On 02/10/11 13:20, Nitin Gupta wrote:
-> On 02/11/2011 02:47 AM, Randy Dunlap wrote:
->> On 02/10/11 13:12, Nitin Gupta wrote:
->>> On 02/11/2011 02:38 AM, Randy Dunlap wrote:
->>>> On 02/10/11 13:00, Nitin Gupta wrote:
->>>>> Both zram and zcache use xvmalloc allocator. If xvmalloc
->>>>> is compiled separately for both of them, we will get linker
->>>>> error if they are both selected as "built-in". We can also
->>>>> get linker error regarding missing xvmalloc symbols if zram
->>>>> is not built.
->>>>>
->>>>> So, we now compile xvmalloc separately and export its symbols
->>>>> which are then used by both of zram and zcache.
->>>>>
->>>>> Signed-off-by: Nitin Gupta<ngupta@vflare.org>
->>>>
->>>> Acked-by: Randy Dunlap<randy.dunlap@oracle.com>
->>>>
->>>>
->>>> but what does this patch apply to?  It does not apply cleanly to
->>>> linux-next of 20110210.
->>>>
->>>
->>> This applies to staging-2.6. I thought linux-next won't be that
->>> different so as to produce conflicts. Can you please send reject files,
->>> or let me fetch linux-next tree and will soon post patch against the
->>> same.
->>
->> I'll let you fetch linux-next.  I merged it by hand and test-built it
->> successfully.
->>
-> 
-> So, can you post the patch against linux-next then? :)
+Dear Friend,
+
+I am Mr.Paul Compaore; I am in charge of auditing section in Banque Internationale Du Burkina (BIB). I need your urgent assistance to transfer the sum of ($11.3 million to your account. I will send you full details on how the business will be executed and also note that you will receive 50% of the above mentioned amount if you agree to assist me execute this business transaction. If you are interested and capable to handle this business transaction, come up with the information's shown below:- 
+
+1). Your full name: 
+2). Your contact cell phone number: 
+3). Your age: 
+4). Your sex: 
+5). Your occupations: 
+6). Your country and city:
+
+As soon as possible all these information's is submitted to me immediately i will send you full details of this business transaction on the receipt of your response.Reply to my private email: paulcompaore14@gmail.com
+
+Thanks.
+Mr Paul Compaore
 
 
-it's attached since I don't trust thunderbird.
 
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-
---------------020207040302050900010607
-Content-Type: text/x-patch;
- name="xvmalloc-sharing.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="xvmalloc-sharing.patch"
-
-Both zram and zcache use xvmalloc allocator. If xvmalloc
-is compiled separately for both of them, we will get linker
-error if they are both selected as "built-in". We can also
-get linker error regarding missing xvmalloc symbols if zram
-is not built.
-
-So, we now compile xvmalloc separately and export its symbols
-which are then used by both of zram and zcache.
-
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
----
- drivers/staging/Makefile        |    1 +
- drivers/staging/zcache/Makefile |    4 +++-
- drivers/staging/zram/Kconfig    |    5 +++++
- drivers/staging/zram/Makefile   |    3 ++-
- drivers/staging/zram/xvmalloc.c |    8 ++++++++
- 5 files changed, 19 insertions(+), 2 deletions(-)
-
---- linux-next-20110210.orig/drivers/staging/Makefile
-+++ linux-next-20110210/drivers/staging/Makefile
-@@ -46,6 +46,7 @@ obj-$(CONFIG_DX_SEP)            += sep/
- obj-$(CONFIG_IIO)		+= iio/
- obj-$(CONFIG_CS5535_GPIO)	+= cs5535_gpio/
- obj-$(CONFIG_ZRAM)		+= zram/
-+obj-$(CONFIG_XVMALLOC)		+= zram/
- obj-$(CONFIG_ZCACHE)		+= zcache/
- obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
- obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
---- linux-next-20110210.orig/drivers/staging/zcache/Makefile
-+++ linux-next-20110210/drivers/staging/zcache/Makefile
-@@ -1 +1,3 @@
--obj-$(CONFIG_ZCACHE)	+=	zcache.o tmem.o
-+zcache-y	:=	tmem.o
-+
-+obj-$(CONFIG_ZCACHE)	+=	zcache.o
---- linux-next-20110210.orig/drivers/staging/zram/Kconfig
-+++ linux-next-20110210/drivers/staging/zram/Kconfig
-@@ -1,6 +1,11 @@
-+config XVMALLOC
-+	bool
-+	default n
-+
- config ZRAM
- 	tristate "Compressed RAM block device support"
- 	depends on BLOCK && SYSFS
-+	select XVMALLOC
- 	select LZO_COMPRESS
- 	select LZO_DECOMPRESS
- 	default n
---- linux-next-20110210.orig/drivers/staging/zram/Makefile
-+++ linux-next-20110210/drivers/staging/zram/Makefile
-@@ -1,3 +1,4 @@
--zram-y	:=	zram_drv.o zram_sysfs.o xvmalloc.o
-+zram-y	:=	zram_drv.o zram_sysfs.o
- 
- obj-$(CONFIG_ZRAM)	+=	zram.o
-+obj-$(CONFIG_XVMALLOC)	+=	xvmalloc.o
-\ No newline at end of file
---- linux-next-20110210.orig/drivers/staging/zram/xvmalloc.c
-+++ linux-next-20110210/drivers/staging/zram/xvmalloc.c
-@@ -14,6 +14,8 @@
- #define DEBUG
- #endif
- 
-+#include <linux/module.h>
-+#include <linux/kernel.h>
- #include <linux/bitops.h>
- #include <linux/errno.h>
- #include <linux/highmem.h>
-@@ -315,11 +317,13 @@ struct xv_pool *xv_create_pool(void)
- 
- 	return pool;
- }
-+EXPORT_SYMBOL_GPL(xv_create_pool);
- 
- void xv_destroy_pool(struct xv_pool *pool)
- {
- 	kfree(pool);
- }
-+EXPORT_SYMBOL_GPL(xv_destroy_pool);
- 
- /**
-  * xv_malloc - Allocate block of given size from pool.
-@@ -408,6 +412,7 @@ int xv_malloc(struct xv_pool *pool, u32 
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(xv_malloc);
- 
- /*
-  * Free block identified with <page, offset>
-@@ -484,6 +489,7 @@ void xv_free(struct xv_pool *pool, struc
- 	put_ptr_atomic(page_start, KM_USER0);
- 	spin_unlock(&pool->lock);
- }
-+EXPORT_SYMBOL_GPL(xv_free);
- 
- u32 xv_get_object_size(void *obj)
- {
-@@ -492,6 +498,7 @@ u32 xv_get_object_size(void *obj)
- 	blk = (struct block_header *)((char *)(obj) - XV_ALIGN);
- 	return blk->size;
- }
-+EXPORT_SYMBOL_GPL(xv_get_object_size);
- 
- /*
-  * Returns total memory used by allocator (userdata + metadata)
-@@ -500,3 +507,4 @@ u64 xv_get_total_size_bytes(struct xv_po
- {
- 	return pool->total_pages << PAGE_SHIFT;
- }
-+EXPORT_SYMBOL_GPL(xv_get_total_size_bytes);
-
---------------020207040302050900010607--
+      
