@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab1BJIuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 03:50:06 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:35557 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab1BJIuE convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Thu, 10 Feb 2011 03:50:04 -0500
-Message-Id: <4D53B4F10200007800031323@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 10 Feb 2011 08:50:41 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <akpm@linux-foundation.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "Tim Deegan" <Tim.Deegan@citrix.com>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>, <stable@kernel.org>,
-        "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fix jiffy calculations in calibrate_delay_direct to
-	 handle overflow
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754212Ab1BJJFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 04:05:23 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:49405 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753180Ab1BJJFR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 04:05:17 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Subject: RE: [PATCH 1/2] misc: add CARMA DATA-FPGA Access Driver
+Date: Thu, 10 Feb 2011 09:02:47 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AC47@saturn3.aculab.com>
+In-Reply-To: <20110210003935.GA6034@core.coreip.homeip.net>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 1/2] misc: add CARMA DATA-FPGA Access Driver
+Thread-Index: AcvIurmZ9BgTQ11VT8amBAn4Qe4jBgARmS6A
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Cc: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Deegan <Tim.Deegan@citrix.com>
-
-Fixes a hang when booting as dom0 under Xen, when jiffies can be
-quite large by the time the kernel init gets this far.
-
-Signed-off-by: Tim Deegan <Tim.Deegan@citrix.com>
-[jbeulich@novell.com: !time_after() -> time_before_eq() as suggested by Jiri Slaby]
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: stable@kernel.org 
-
----
- init/calibrate.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- 2.6.38-rc4/init/calibrate.c
-+++ 2.6.38-rc4-calibrate-jiffy-overflow/init/calibrate.c
-@@ -66,7 +66,7 @@ static unsigned long __cpuinit calibrate
- 		pre_start = 0;
- 		read_current_timer(&start);
- 		start_jiffies = jiffies;
--		while (jiffies <= (start_jiffies + 1)) {
-+		while (time_before_eq(jiffies, start_jiffies + 1)) {
- 			pre_start = start;
- 			read_current_timer(&start);
- 		}
-@@ -74,8 +74,8 @@ static unsigned long __cpuinit calibrate
  
- 		pre_end = 0;
- 		end = post_start;
--		while (jiffies <=
--		       (start_jiffies + 1 + DELAY_CALIBRATION_TICKS)) {
-+		while (time_before_eq(jiffies, start_jiffies + 1 +
-+					       DELAY_CALIBRATION_TICKS)) {
- 			pre_end = end;
- 			read_current_timer(&end);
- 		}
+> > I was completely unaware of that "feature". I hunch that many
+drivers
+> > are incapable of dealing with an unbind while they are still open.
+> 
+> Hmm, maybe older drivers... Anythig hotpluggable (USB, PCI, etc)
+should
+> be in a better shape because they expect to be yanked at any time.
 
+Whim and prayer ???
+
+	David
 
 
