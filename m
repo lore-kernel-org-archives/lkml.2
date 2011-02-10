@@ -1,179 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab1BJR4L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:56:11 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48078 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1BJR4J (ORCPT
+	id S1756700Ab1BJR5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:57:23 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33988 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab1BJR5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:56:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=YoszpGwWZHrfvRN6DY3/HkEHV23FqKpgrAcl/0qUpVg/zWINMDW4ccz4WEcqFz2soK
-         3uPfETKr+yKGi/eoy8GI8MhgVOsMJthzzWtLMWnWNJGh1+WPrH36ceiWtDHenfyTR4oo
-         vfvcSQqY01yP/uDUfX+LQ6/zEY9CEwj/Ui5mw=
-Date: Thu, 10 Feb 2011 09:55:52 -0800
-From: mark gross <markgross@thegnar.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-Message-ID: <20110210175552.GA10754@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <1297300864.2645.128.camel@schen9-DESK>
+	Thu, 10 Feb 2011 12:57:22 -0500
+Message-ID: <4D5426A9.60903@mvista.com>
+Date: Thu, 10 Feb 2011 20:55:53 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297300864.2645.128.camel@schen9-DESK>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before slave_data
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>	<4D53F4ED.10903@ru.mvista.com> <AANLkTinPYo+mhiRwsNpdNgqADQbk7bvQX=RcZoiN0pbS@mail.gmail.com>
+In-Reply-To: <AANLkTinPYo+mhiRwsNpdNgqADQbk7bvQX=RcZoiN0pbS@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 05:21:04PM -0800, Tim Chen wrote:
-> I noticed that before entering idle state, the menu idle governor will
-> look up the current pm_qos value according to the list of qos request
-> received.  This look up currently needs the acquisition of a lock to go
-> down a list of qos requests to find the qos value, slowing down the
-> entrance into idle state due to contention by multiple cpus to traverse
-> this list.  The contention is severe when there are a lot of cpus waking
-> and going into idle.  For example, for a simple workload that has 32
-> pair of processes ping ponging messages to each other, where 64 cores
-> cores are active in test system, I see the following profile:
-> 
-> -     37.82%          swapper  [kernel.kallsyms]          [k]
-> _raw_spin_lock_irqsave
->    - _raw_spin_lock_irqsave
->       - 95.65% pm_qos_request             
->            menu_select                                             
->            cpuidle_idle_call                      
->          - cpu_idle                                                     
->               99.98% start_secondary
-> 
-> Perhaps a better approach will be to cache the updated pm_qos value so
-> reading it does not require lock acquisition as in the patch below.   
-> 
-> Tim
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
-> index 77cbddb..a7d87f9 100644
-> --- a/include/linux/pm_qos_params.h
-> +++ b/include/linux/pm_qos_params.h
-> @@ -16,6 +16,10 @@
->  #define PM_QOS_NUM_CLASSES 4
->  #define PM_QOS_DEFAULT_VALUE -1
->  
-> +#define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-> +#define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-> +#define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-> +
->  struct pm_qos_request_list {
->  	struct plist_node list;
->  	int pm_qos_class;
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index aeaa7f8..b6310d1 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -58,6 +58,7 @@ struct pm_qos_object {
->  	struct blocking_notifier_head *notifiers;
->  	struct miscdevice pm_qos_power_miscdev;
->  	char *name;
-> +	s32 value;
->  	s32 default_value;
->  	enum pm_qos_type type;
->  };
-> @@ -70,7 +71,8 @@ static struct pm_qos_object cpu_dma_pm_qos = {
->  	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
->  	.notifiers = &cpu_dma_lat_notifier,
->  	.name = "cpu_dma_latency",
-> -	.default_value = 2000 * USEC_PER_SEC,
-> +	.value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
->  	.type = PM_QOS_MIN,
->  };
->  
-> @@ -79,7 +81,8 @@ static struct pm_qos_object network_lat_pm_qos = {
->  	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
->  	.notifiers = &network_lat_notifier,
->  	.name = "network_latency",
-> -	.default_value = 2000 * USEC_PER_SEC,
-> +	.value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
->  	.type = PM_QOS_MIN
->  };
->  
-> @@ -89,7 +92,8 @@ static struct pm_qos_object network_throughput_pm_qos = {
->  	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
->  	.notifiers = &network_throughput_notifier,
->  	.name = "network_throughput",
-> -	.default_value = 0,
-> +	.value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
->  	.type = PM_QOS_MAX,
->  };
->  
-> @@ -132,6 +136,16 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
->  	}
->  }
->  
-> +static inline s32 pm_qos_read_value(struct pm_qos_object *o)
-> +{
-> +	return o->value;
-> +}
-> +
-> +static inline int pm_qos_set_value(struct pm_qos_object *o, s32 value)
-> +{
-> +	o->value = value;
-> +}
-> +
->  static void update_target(struct pm_qos_object *o, struct plist_node *node,
->  			  int del, int value)
->  {
-> @@ -156,6 +170,7 @@ static void update_target(struct pm_qos_object *o, struct plist_node *node,
->  		plist_add(node, &o->requests);
->  	}
->  	curr_value = pm_qos_get_value(o);
-> +	pm_qos_set_value(o, curr_value);
->  	spin_unlock_irqrestore(&pm_qos_lock, flags);
->  
->  	if (prev_value != curr_value)
-> @@ -190,18 +205,11 @@ static int find_pm_qos_object_by_minor(int minor)
->   * pm_qos_request - returns current system wide qos expectation
->   * @pm_qos_class: identification of which qos value is requested
->   *
-> - * This function returns the current target value in an atomic manner.
-> + * This function returns the current target value.
->   */
->  int pm_qos_request(int pm_qos_class)
->  {
-> -	unsigned long flags;
-> -	int value;
-> -
-> -	spin_lock_irqsave(&pm_qos_lock, flags);
-> -	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
-> -	spin_unlock_irqrestore(&pm_qos_lock, flags);
-> -
-> -	return value;
-> +	return pm_qos_read_value(pm_qos_array[pm_qos_class]);
->  }
->  EXPORT_SYMBOL_GPL(pm_qos_request);
->  
-> 
-Never mind my silliness lastnight.  This looks like a good change.
+Hello.
 
-Signed-off-by: mark gross <markgross@thegnar.org>
+Bartlomiej Zolnierkiewicz wrote:
 
+>> On 08-02-2011 15:24, Bartlomiej Zolnierkiewicz wrote:
+>> [...]
 
-Ack 
+>>> We may need to set SITRE before programming slave_data.
+>>> This makes pata_efar match the behavior of IDE's slc90e66 host driver
+>>> and also of libata's ata_piix one.
 
--- mgross
+>>> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+>> [...]
 
-> 
+>>> diff --git a/drivers/ata/pata_efar.c b/drivers/ata/pata_efar.c
+>>> index 1e2ff7d..7f564d7 100644
+>>> --- a/drivers/ata/pata_efar.c
+>>> +++ b/drivers/ata/pata_efar.c
+>>> @@ -74,10 +74,12 @@ static void efar_set_timings(struct ata_port *ap,
+>>> struct ata_device *adev,
+>>>                             u8 pio, bool use_mwdma)
+>>>  {
+>>>        struct pci_dev *dev     = to_pci_dev(ap->host->dev);
+>>> +       unsigned int is_slave   = (adev->devno != 0);
+
+>>   What's the point of this variable? To save one pointer dereference? :-)
+
+> Make code more similar to ata_piix.c and thus easier for comparisons
+> through 'diff -ub'.
+
+> In reality it doesn't matter now that much as pata_efar (same for
+> pata_oldpiix) vanishes completely at the end of the patch series.. :-)
+
+    Yeah, I understood that. Just don't have time to review the full series yet.
+
+> Thanks,
+> Bartlomiej
+
+WBR, Sergei
