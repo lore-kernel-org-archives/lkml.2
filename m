@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab1BJSTB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:19:01 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23104 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab1BJSTA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:19:00 -0500
-Date: Thu, 10 Feb 2011 19:17:49 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Alex Williamson <alex.williamson@redhat.com>
-cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        iommu@lists.linux-foundation.org,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] Intel IOMMU: get_domain_for_dev() leaks a bit of mem if
- dmar_find_matched_drhd_unit() fails.
-In-Reply-To: <1297357174.2963.4.camel@x201>
-Message-ID: <alpine.LNX.2.00.1102101914440.26035@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102062102390.13593@swampdragon.chaosbits.net> <1297357174.2963.4.camel@x201>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753937Ab1BJSTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:19:11 -0500
+Received: from mailhost.tue.nl ([131.155.2.19]:50876 "EHLO mailhost.tue.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753002Ab1BJSTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:19:08 -0500
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Feb 2011 13:19:08 EST
+Date: Thu, 10 Feb 2011 19:12:21 +0100
+From: Andries Brouwer <aebr@win.tue.nl>
+To: Roland McGrath <roland@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linasvepstas@gmail.com,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org, linux-api@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
+Message-ID: <20110210181221.GA19413@win.tue.nl>
+References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+ <201101251529.24779.arnd@arndb.de>
+ <20110125174515.C1DC2183C19@magilla.sf.frob.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125174515.C1DC2183C19@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Feb 2011, Alex Williamson wrote:
+On Tue, Jan 25, 2011 at 09:45:15AM -0800, Roland McGrath wrote:
 
-> On Sun, 2011-02-06 at 21:11 +0100, Jesper Juhl wrote:
-> > I believe that there's a small memory leak in 
-> > drivers/pci/intel-iommu.c:get_domain_for_dev().
-> > 
-> > If the call to alloc_domain() succeeds but the subsequent call to 
-> > dmar_find_matched_drhd_unit() fails, then the current code will return 
-> > NULL without calling domain_exit(domain) which will leak the memory that 
-> > alloc_domain() allocated.
-> > 
-> > The easy fix for that is to simply move the call to alloc_domain() below 
-> > the call to dmar_find_matched_drhd_unit() since the latter does not depend 
-> > on the former.
-> > 
-> > I also made the change of moving the assignment to local variable 'iommu' 
-> > below both calls since there is no point in doing that work if either of 
-> > those those calls fail.
-> > 
-> > I also changed the 'return NULL' in the dmar_find_matched_drhd_unit() 
-> > failure case to a 'goto error' since I figured that if rechecking 
-> > 'find_domain(pdev)' makes sense after a alloc_domain() failure then it 
-> > would also make sense after a dmar_find_matched_drhd_unit() failure.
-> 
-> I don't think this change buys us anything.  The goto error here seems
-> to be a hope that another cpu may have beat us and succeeded at
-> something we failed.  In the case of matching the pci device to a drhd,
-> this should be deterministic (unless maybe we're racing a hot added
-> drhd).  The rest seems fine to me.  Thanks,
-> 
-> Alex
-> 
+> the empty string has never been a valid relative pathname.
 
-Ok. Updated patch below that leaves out the 'goto error' bit for 
-dmar_find_matched_drhd_unit() failures.
+Hmm. I definitely recall otherwise.
 
+The old Unix definition is that the empty string stands for "."
+so that 'ls ""' means the same as 'ls .'
+and 'ls /tmp/""' the same as 'ls /tmp/.'.
 
+Let me try.
 
-There is a small memory leak in 
-drivers/pci/intel-iommu.c:get_domain_for_dev().
+On a recent Linux system:
 
-If the call to alloc_domain() succeeds but the subsequent call to 
-dmar_find_matched_drhd_unit() fails, then the current code will return 
-NULL without calling domain_exit(domain) which will leak the memory that 
-alloc_domain() allocated.
+% ls -l ""
+ls: cannot access : No such file or directory
 
-The easy fix for that is to simply move the call to alloc_domain() below 
-the call to dmar_find_matched_drhd_unit() since the latter does not depend 
-on the former.
+On an old Unix system:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- intel-iommu.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+# ls -l ""
+drwxr-xr-x  2 bin      1040 Jan  1  1970 bin
+drwxr-xr-x  2 bin       352 Jan  1  1970 dev
+drwxr-xr-x  2 bin       304 Aug 20 12:39 etc
+...
 
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 4789f8e..3cfb021 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -1820,10 +1820,6 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
- 		}
- 	}
- 
--	domain = alloc_domain();
--	if (!domain)
--		goto error;
--
- 	/* Allocate new domain for the device */
- 	drhd = dmar_find_matched_drhd_unit(pdev);
- 	if (!drhd) {
-@@ -1831,8 +1827,11 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
- 			pci_name(pdev));
- 		return NULL;
- 	}
--	iommu = drhd->iommu;
-+	domain = alloc_domain();
-+	if (!domain)
-+		goto error;
- 
-+	iommu = drhd->iommu;
- 	ret = iommu_attach_domain(domain, iommu);
- 	if (ret) {
- 		domain_exit(domain);
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Andries
