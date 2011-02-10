@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab1BJUPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 15:15:52 -0500
-Received: from kroah.org ([198.145.64.141]:40789 "EHLO coco.kroah.org"
+	id S1756874Ab1BJUQF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 15:16:05 -0500
+Received: from kroah.org ([198.145.64.141]:40793 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114Ab1BJUPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 15:15:49 -0500
-Date: Thu, 10 Feb 2011 12:15:33 -0800
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] STAGING fixes for .38
-Message-ID: <20110210201533.GB18283@kroah.com>
+	id S1756764Ab1BJUPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 15:15:51 -0500
+Date: Thu, 10 Feb 2011 12:15:44 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for .38
+Message-ID: <20110210201544.GC18283@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a few bug fixes for the staging tree for .38
+Here are some USB fixes for your .38 tree.
 
-Not much really, a broadcom driver fix, zram fix, and other small
-things.
+Another round of tiny musb fixes, and other driver fixes and device ids.
 
 Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
 
-All of these patches have been in the -next trees for a while.
+All of these patches have been in the linux-next and mm trees for a
+while.
 
-These patches will be sent to the linux driver project list for all to
-see.
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
 
 thanks,
 
 greg k-h
 
---------------
+------------
 
- drivers/staging/brcm80211/sys/wl_mac80211.c     |   12 ++++++++++--
- drivers/staging/brcm80211/sys/wlc_mac80211.c    |   13 +++++++++++++
- drivers/staging/brcm80211/sys/wlc_pub.h         |    2 ++
- drivers/staging/comedi/Kconfig                  |    5 ++++-
- drivers/staging/comedi/drivers/mite.c           |    2 --
- drivers/staging/comedi/drivers/ni_6527.c        |    4 ++++
- drivers/staging/comedi/drivers/ni_65xx.c        |    4 ++++
- drivers/staging/comedi/drivers/ni_660x.c        |    4 ++++
- drivers/staging/comedi/drivers/ni_670x.c        |    4 ++++
- drivers/staging/comedi/drivers/ni_pcidio.c      |    4 ++++
- drivers/staging/comedi/drivers/ni_pcimio.c      |    4 ++++
- drivers/staging/hv/netvsc_drv.c                 |    1 +
- drivers/staging/intel_sst/intelmid_v2_control.c |    5 ++++-
- drivers/staging/zram/zram_drv.c                 |    4 ++++
- 14 files changed, 62 insertions(+), 6 deletions(-)
+ drivers/usb/class/cdc-acm.c           |    1 +
+ drivers/usb/core/hcd.c                |    2 +-
+ drivers/usb/core/hub.c                |    5 ++
+ drivers/usb/gadget/Kconfig            |    2 +
+ drivers/usb/gadget/f_mass_storage.c   |    3 +-
+ drivers/usb/gadget/r8a66597-udc.c     |    2 +-
+ drivers/usb/host/Kconfig              |    2 +
+ drivers/usb/host/ehci-au1xxx.c        |    2 +-
+ drivers/usb/host/ehci-hub.c           |    7 +++
+ drivers/usb/host/ehci-omap.c          |    6 +-
+ drivers/usb/host/ehci-pci.c           |    2 +-
+ drivers/usb/host/sl811-hcd.c          |    1 +
+ drivers/usb/musb/blackfin.c           |    1 +
+ drivers/usb/musb/musb_core.c          |   10 +----
+ drivers/usb/musb/musb_core.h          |   12 ++++++
+ drivers/usb/musb/musb_dma.h           |    3 +
+ drivers/usb/musb/musb_gadget.c        |   71 ++++++++++++++++++++++----------
+ drivers/usb/musb/musb_gadget.h        |    8 +++-
+ drivers/usb/musb/musb_host.c          |   11 ++---
+ drivers/usb/musb/musbhsdma.h          |   19 ++++++--
+ drivers/usb/otg/Kconfig               |    2 +
+ drivers/usb/serial/ftdi_sio.c         |   27 ++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h     |   12 ++++++
+ drivers/usb/serial/io_edgeport.c      |    4 +-
+ drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
+ drivers/usb/storage/unusual_devs.h    |   14 ++++++
+ include/linux/usb/msm_hsusb_hw.h      |    4 --
+ 27 files changed, 178 insertions(+), 57 deletions(-)
 
 ---------------
 
-Haiyang Zhang (1):
-      staging: hv: Enable sending GARP packet after live migration
+Alan Stern (3):
+      USB: prevent buggy hubs from crashing the USB stack
+      USB: fix race between root-hub resume and wakeup requests
+      USB: usb-storage: unusual_devs entry for Coby MP3 player
 
-Harsha Priya (1):
-      staging: sst: Fix for dmic capture on v2 pmic
+Arvid Ephraim Picciani (1):
+      USB: cdc-acm: Adding second ACM channel support for Nokia N8
 
-Ian Abbott (2):
-      Staging: comedi: Add MODULE_LICENSE and similar to NI modules
-      Staging: Comedi: Fix a few NI module dependencies
+Bjørn Mork (1):
+      USB: io_edgeport: fix the reported firmware major and minor
 
-Nitin Gupta (1):
-      staging: zram: fix data corruption issue
+Bob Liu (1):
+      usb: musb: hsdma: change back to use musb_read/writew
 
-Roland Vossen (1):
-      staging: brcm80211: bugfix for softmac crash on multi cpu configurations
+Felipe Balbi (1):
+      usb: musb: disable double buffering when it's broken
+
+Ionut Nicu (1):
+      USB: ti_usb: fix module removal
+
+Jarkko Nikula (1):
+      usb: ehci-omap: Show fatal probing time errors to end user
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      USB: ftdi_sio: add ST Micro Connect Lite uart support
+
+Jesper Juhl (2):
+      USB SL811HS HCD: Fix memory leak in sl811h_urb_enqueue()
+      USB, Mass Storage, composite, gadget: Fix build failure and memset of a struct
+
+Mian Yousaf Kaukab (2):
+      usb: musb: maintain three states for buffer mappings instead of two
+      usb: musb: introduce api for dma code to check compatibility with usb request
+
+Michael Williamson (1):
+      USB: ftdi_sio: Add VID=0x0647, PID=0x0100 for Acton Research spectrograph
+
+Ming Lei (1):
+      usb: musb: fix kernel panic during s2ram(v2)
+
+Nick Holloway (1):
+      USB: Storage: Add unusual_devs entry for VTech Kidizoom
+
+Pavankumar Kondeti (1):
+      USB: Fix trout build failure with ci13xxx_msm gadget
+
+Sergei Shtylyov (1):
+      usb: musb: core: fix IRQ check
+
+Yin Kangkai (1):
+      USB: EHCI: fix scheduling while atomic during suspend
+
+Yusuke Goda (1):
+      usb: r8a66597-udc: Fixed bufnum of Bulk
 
