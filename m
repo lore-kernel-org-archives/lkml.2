@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab1BJH06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 02:26:58 -0500
-Received: from mswedge2.sunplus.com ([124.219.29.227]:56255 "EHLO
-	mswedge2.sunplus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab1BJH05 (ORCPT
+	id S1751898Ab1BJHil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 02:38:41 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:49933 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab1BJHil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 02:26:57 -0500
-In-Reply-To: <20110206222246.281228273@linutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/2] score: Select GENERIC_HARDIRQS_NO_DEPRECATED
+	Thu, 10 Feb 2011 02:38:41 -0500
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Feb 2011 02:38:40 EST
+X-Spam-ASN: 
+From: "Nikita V. Youshchenko" <nyoushchenko@mvista.com>
+To: linux-kernel@vger.kernel.org
+Subject: Likely race between sys_rt_sigtimedwait() and complete_signal()
+Date: Thu, 10 Feb 2011 10:32:16 +0300
+User-Agent: KMail/1.9.9
+Cc: Alexander Kaliadin <akaliadin@mvista.com>, oishi.y@sys.yzk.co.jp
 MIME-Version: 1.0
-X-KeepSent: 6CAF901B:FBFD5FE8-48257833:0025EC26;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 7.0.3 September 26, 2007
-Message-ID: <OF6CAF901B.FBFD5FE8-ON48257833.0025EC26-48257833.00260476@sunplusct.com>
-From: liqin.chen@sunplusct.com
-Date: Thu, 10 Feb 2011 14:55:15 +0800
-X-MIMETrack: Serialize by Router on ctmail01/SunplusCT(Release 8.5.1|September 28, 2009) at 2011/02/10 ?? 02:55:15,
-	Serialize complete at 2011/02/10 ?? 02:55:15
-Content-Type: text/plain; charset="GB2312"
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201102101032.16401@blacky.localdomain>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1A7R8ii024533
 
-Thomas Gleixner <tglx@linutronix.de> Ğ´ÓÚ 2011-02-07 06:23:50:
+Hello linux-kernel.
 
-> All chips converted and proper accessor functions used.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/score/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> Index: linux-next/arch/score/Kconfig
-> ===================================================================
-> --- linux-next.orig/arch/score/Kconfig
-> +++ linux-next/arch/score/Kconfig
-> @@ -3,6 +3,7 @@ menu "Machine selection"
->  config SCORE
->         def_bool y
->         select HAVE_GENERIC_HARDIRQS
-> +       select GENERIC_HARDIRQS_NO_DEPRECATED
-> 
->  choice
->     prompt "System type"
-> 
-> 
+Within project we are working on, we are facing a "rare" situation when 
+setitimer() / sigwait() - based periodic task execution hangs. "Rare" 
+means once per several hours for 1000 Hz timer.
 
-Acked-by: Chen Liqin <liqin.chen@sunplusct.com>
---
+For hanged thread, cat /proc/pid/status shows
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+...
+State:	S (sleeping)
+...
+SigPnd:	0000000000000000
+ShdPnd:	0000000000002000
+SigBlk:	0000000000000000
+...
+
+and SysRq - T shows
+
+[<c015b1b0>] (__schedule+0x2fc/0x37c) from [<c015b7b8>] 
+(schedule+0x1c/0x30)
+[<c015b7b8>] (schedule+0x1c/0x30) from [<c015b8c4>] 
+(schedule_timeout+0x18/0x1dc)
+[<c015b8c4>] (schedule_timeout+0x18/0x1dc) from [<c004a084>] 
+(sys_rt_sigtimedwait+0x1b4/0x288)
+[<c004a084>] (sys_rt_sigtimedwait+0x1b4/0x288) from [<c001cf00>] 
+(ret_fast_syscall+0x0/0x28)
+
+All other threads have SIGALRM blocked as they should, looking 
+through /proc/X/status proves this.
+
+So for some reason, SIGALRM was successfully delivered by timer, bit was 
+set in ShdPnd [I guess at the bottom of __send_signal()], but that still 
+resulted somehow in thread going to schedule() and not waking.
+
+I guess this is some sort of race between sys_rt_sigtimedwait() and 
+complete_signal().
+
+This is on embedded system running vendor 2.6.31-based kernel, moving 
+forward is unfortunately impossible because of hardware support issues. 
+However I've looked through
+
+git log -p HEAD..linus/master -- kernel/signal.c
+
+and did not notice anything that could be related.
+
+Unfortunately we don't currently have resources for futher analysis - 
+especially with simple workarounds existing, such as switch to 
+timerfd-based periodic execution (which looks working without hangs).
+
+However I guess the race we faced still exists in the current upstream 
+kernel, so maybe somebody on this mailing list could be interested into 
+looking at this?
+
+Nikita
