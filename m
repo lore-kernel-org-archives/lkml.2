@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab1BJSUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:20:39 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50164 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917Ab1BJSUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:20:38 -0500
-Subject: Re: [PATCH 5/5] have smaps show transparent huge pages
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <20110210180924.GB3347@random.random>
-References: <20110209195406.B9F23C9F@kernel>
-	 <20110209195413.6D3CB37F@kernel> <20110210112032.GG17873@csn.ul.ie>
-	 <1297350115.6737.14208.camel@nimitz> <20110210150942.GL17873@csn.ul.ie>
-	 <20110210180924.GB3347@random.random>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Thu, 10 Feb 2011 10:20:32 -0800
-Message-ID: <1297362032.6737.14622.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753714Ab1BJSUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:20:43 -0500
+Received: from mail.digidescorp.com ([66.244.163.200]:9316 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab1BJSUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:20:40 -0500
+X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Feb 2011 13:20:40 EST
+X-Spam-Processed: mail.digidescorp.com, Thu, 10 Feb 2011 12:12:44 -0600
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1022247c17=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: microblaze-uclinux@itee.uq.edu.au
+Cc: monstr@monstr.eu, linux-kernel@vger.kernel.org,
+        "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH] microblaze: fix /dev/zero corruption from __clear_user()
+Date: Thu, 10 Feb 2011 12:12:13 -0600
+Message-Id: <1297361533-24627-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-10 at 19:09 +0100, Andrea Arcangeli wrote:
-> Maybe it'd be cleaner if we didn't need to cast the pmd to pte_t but I
-> guess this makes things simpler. 
+A userland read of more than PAGE_SIZE bytes from /dev/zero results in
+(a) not all of the bytes returned being zero, and
+(b) memory corruption due to zeroing of bytes beyond the user buffer.
 
-Yeah, I'm not a huge fan of doing that, either.  But, I'm not sure what
-the alternatives are.  We could basically copy smaps_pte_entry() to
-smaps_pmd_entry(), and then try to make pmd variants of all of the pte
-functions and macros we call in there.
+This is caused by improper constraints on the assembly __clear_user function.
+The constrints don't indicate to the compiler that the pointer argument is
+modified. Since the function is inline, this results in double-incrementing
+of the pointer when __clear_user() is invoked through a multi-page read() of
+/dev/zero. 
 
-I know there's a least a bit of precedent in the hugetlbfs code for
-doing things like this, but it's not a _great_ excuse. :)
-
--- Dave
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+diff -uprN a/arch/microblaze/include/asm/uaccess.h b/arch/microblaze/include/asm/uaccess.h
+--- a/arch/microblaze/include/asm/uaccess.h	2011-02-10 11:51:52.319226513 -0600
++++ b/arch/microblaze/include/asm/uaccess.h	2011-02-10 11:53:01.064857179 -0600
+@@ -120,16 +120,16 @@ static inline unsigned long __must_check
+ {
+ 	/* normal memset with two words to __ex_table */
+ 	__asm__ __volatile__ (				\
+-			"1:	sb	r0, %2, r0;"	\
++			"1:	sb	r0, %1, r0;"	\
+ 			"	addik	%0, %0, -1;"	\
+ 			"	bneid	%0, 1b;"	\
+-			"	addik	%2, %2, 1;"	\
++			"	addik	%1, %1, 1;"	\
+ 			"2:			"	\
+ 			__EX_TABLE_SECTION		\
+ 			".word	1b,2b;"			\
+ 			".previous;"			\
+-		: "=r"(n)				\
+-		: "0"(n), "r"(to)
++		: "=r"(n), "=r"(to)			\
++		: "0"(n), "1"(to)
+ 	);
+ 	return n;
+ }
 
