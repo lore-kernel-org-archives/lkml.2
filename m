@@ -1,121 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab1BJRQr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:16:47 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:46115 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203Ab1BJRQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:16:45 -0500
-Subject: Re: [PATCH R3 7/7] xen/balloon: Memory hotplug support for Xen
- balloon driver
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
-        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20110210170152.GE12087@dumpdata.com>
-References: <20110203163033.GJ1364@router-fw-old.local.net-space.pl>
-	 <1296756744.8299.1440.camel@nimitz>
-	 <20110207141227.GA10852@router-fw-old.local.net-space.pl>
-	 <1297185746.6737.12110.camel@nimitz>  <20110210170152.GE12087@dumpdata.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Thu, 10 Feb 2011 09:16:34 -0800
-Message-ID: <1297358194.6737.14488.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S932273Ab1BJRRE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:17:04 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44686 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab1BJRQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 12:16:12 -0500
+From: Borislav Petkov <bp@amd64.org>
+To: <linux-edac@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 29/30] amd64_edac: Adjust ECC symbol size to F15h
+Date: Thu, 10 Feb 2011 18:15:32 +0100
+Message-Id: <1297358133-14320-30-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1297358133-14320-1-git-send-email-bp@amd64.org>
+References: <1297358133-14320-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-10 at 12:01 -0500, Konrad Rzeszutek Wilk wrote:
-> On Tue, Feb 08, 2011 at 09:22:26AM -0800, Dave Hansen wrote:
-> > On Mon, 2011-02-07 at 15:12 +0100, Daniel Kiper wrote:
-> > > I agree. I discussed a bit about this problem with Jeremy, too. However,
-> > > there are some problems to implement that solution now. First of all it is
-> > > possible to online hotplugged memory using sysfs interface only in chunks
-> > > called sections. It means that it is not possible online once again section
-> > > which was onlined ealier partialy populated and now it contains new pages
-> > > to online. In this situation sysfs interface emits Invalid argument error.
-> > > In theory it should be possible to offline and then online whole section
-> > > once again, however, if memory from this section was used is not possible
-> > > to do that. It means that those properties does not allow hotplug memory
-> > > in guest in finer granulity than section and sysfs interface is too inflexible
-> > > to be used in that solution. That is why I decided to online hoplugged memory
-> > > using API which does not have those limitations.
-> > 
-> > Sure, you have to _online_ the whole thing at once, but you don't have
-> > to actually make the pages available.  You also don't need to hook in to
-> > the memory resource code like you're doing.  It's sufficient to just try
-> > and add the memory.  If you get -EEXIST, then you can't add it there, so
-> > move up and try again.  
-> > 
-> > int xen_balloon_add_memory(u64 size)
-> > {
-> > 	unsigned long top_of_mem = max_pfn;
-> > 	top_of_mem = section_align_up(top_of_mem);
-> > 
-> > 	while (1) {
-> > 		int ret = add_memory(nid, top_of_mem, size);
-> > 		if (ret == -EEXIST)
-> > 			continue;
-> > 		// error handling...
-> > 		break;
-> > 	}
-> > 	return...;
-> > }
-> > 
-> > As for telling the hypervisor where you've mapped things, that should be
-> > done in arch_add_memory().  
-> > 
-> > When it comes down to online_page(), you don't want your pages freed
-> > back in to the buddy allocator, you want them put in to the balloon.
-> > So, take the __free_page() in online_page(), and put a Xen hook in
-> > there.  
-> > 
-> > +void __attribute__((weak)) arch_free_hotplug_page(struct page *page)
-> > +{
-> > +	__free_page(page);
-> > +}
-> 
-> I somehow have a vague recollection that the __weak was frowned upon? The issues
-> were that when you compile a pv-ops kernel it can run as baremetal so the..
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-There are a bunch of alternatives to using 'weak'.  Any of those would
-probably be fine as well.  Anything that allows us to check whether the
-page should go back in to the allocator or the balloon.
+F15h has the same ECC symbol size options as F10h revD and later so
+adjust checks to that. Simplify code a bit.
 
-> > void online_page(struct page *page)
-> > {
-> >         unsigned long pfn = page_to_pfn(page);
-> > ...
-> > -       __free_page(page);
-> > +	arch_free_hotplug_page(page);
-> > }
-> > 
-> > Then, have Xen override it:
-> > 
-> > void arch_free_hotplug_page(struct page *page)
-> > {
-> > 	if (xen_need_to_inflate_balloon())
-> > 		put_page_in_balloon(page);	
-> > 	else
-> > 		__free_page(page);
-> 
->  call above would get called even on baremetal (and would require the header
-> file arch/x86/include/memory_hotplug.h to pull in header file from the balloon
-> driver). If we are going to persue this it might be prudent to follow what we did for MSI:
-> 
-> 1525bf0d8f059a38c6e79353583854e1981b2e67
-> 294ee6f89cfd629e276f632a6003a0fad7785dce
-> b5401a96b59475c1c878439caecb8c521bdfd4ad
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ drivers/edac/amd64_edac.c |   32 +++++++++++++++-----------------
+ drivers/edac/amd64_edac.h |    2 +-
+ 2 files changed, 16 insertions(+), 18 deletions(-)
 
-That looks a bit complicated for what I'm trying to do here, but
-whatever works.  
-
--- Dave
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 0caf05e..e4b2792 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -824,7 +824,7 @@ static void dump_misc_regs(struct amd64_pvt *pvt)
+ 
+ 	amd64_debug_display_dimm_sizes(1, pvt);
+ 
+-	amd64_info("using %s syndromes.\n", ((pvt->syn_type == 8) ? "x8" : "x4"));
++	amd64_info("using %s syndromes.\n", ((pvt->ecc_sym_sz == 8) ? "x8" : "x4"));
+ 
+ 	/* Only if NOT ganged does dclr1 have valid info */
+ 	if (!dct_ganging_enabled(pvt))
+@@ -1778,20 +1778,20 @@ static int get_channel_from_ecc_syndrome(struct mem_ctl_info *mci, u16 syndrome)
+ 	struct amd64_pvt *pvt = mci->pvt_info;
+ 	int err_sym = -1;
+ 
+-	if (pvt->syn_type == 8)
++	if (pvt->ecc_sym_sz == 8)
+ 		err_sym = decode_syndrome(syndrome, x8_vectors,
+ 					  ARRAY_SIZE(x8_vectors),
+-					  pvt->syn_type);
+-	else if (pvt->syn_type == 4)
++					  pvt->ecc_sym_sz);
++	else if (pvt->ecc_sym_sz == 4)
+ 		err_sym = decode_syndrome(syndrome, x4_vectors,
+ 					  ARRAY_SIZE(x4_vectors),
+-					  pvt->syn_type);
++					  pvt->ecc_sym_sz);
+ 	else {
+-		amd64_warn("Illegal syndrome type: %u\n", pvt->syn_type);
++		amd64_warn("Illegal syndrome type: %u\n", pvt->ecc_sym_sz);
+ 		return err_sym;
+ 	}
+ 
+-	return map_err_sym_to_channel(err_sym, pvt->syn_type);
++	return map_err_sym_to_channel(err_sym, pvt->ecc_sym_sz);
+ }
+ 
+ /*
+@@ -1936,6 +1936,7 @@ static void free_mc_sibling_devs(struct amd64_pvt *pvt)
+  */
+ static void read_mc_regs(struct amd64_pvt *pvt)
+ {
++	struct cpuinfo_x86 *c = &boot_cpu_data;
+ 	u64 msr_val;
+ 	u32 tmp;
+ 	int range;
+@@ -1997,19 +1998,16 @@ static void read_mc_regs(struct amd64_pvt *pvt)
+ 		amd64_read_dct_pci_cfg(pvt, DCHR1, &pvt->dchr1);
+ 	}
+ 
+-	if (boot_cpu_data.x86 >= 0x10) {
++	pvt->ecc_sym_sz = 4;
++
++	if (c->x86 >= 0x10) {
+ 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
+ 		amd64_read_dct_pci_cfg(pvt, DBAM1, &pvt->dbam1);
+-	}
+-
+-	if (boot_cpu_data.x86 == 0x10 &&
+-	    boot_cpu_data.x86_model > 7 &&
+-	    /* F3x180[EccSymbolSize]=1 => x8 symbols */
+-	    tmp & BIT(25))
+-		pvt->syn_type = 8;
+-	else
+-		pvt->syn_type = 4;
+ 
++		/* F10h, revD and later can do x8 ECC too */
++		if ((c->x86 > 0x10 || c->x86_model > 7) && tmp & BIT(25))
++			pvt->ecc_sym_sz = 8;
++	}
+ 	dump_misc_regs(pvt);
+ }
+ 
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index 3f853ed..4de31c8 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -363,7 +363,7 @@ struct amd64_pvt {
+ 	u32 online_spare;	/* On-Line spare Reg */
+ 
+ 	/* x4 or x8 syndromes in use */
+-	u8 syn_type;
++	u8 ecc_sym_sz;
+ 
+ 	/* place to store error injection parameters prior to issue */
+ 	struct error_injection injection;
+-- 
+1.7.4.rc2
 
