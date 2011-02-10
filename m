@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab1BJPKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 10:10:10 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:56023 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629Ab1BJPKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 10:10:09 -0500
-Date: Thu, 10 Feb 2011 15:09:42 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 5/5] have smaps show transparent huge pages
-Message-ID: <20110210150942.GL17873@csn.ul.ie>
-References: <20110209195406.B9F23C9F@kernel> <20110209195413.6D3CB37F@kernel> <20110210112032.GG17873@csn.ul.ie> <1297350115.6737.14208.camel@nimitz>
+	id S1756518Ab1BJPN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 10:13:27 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:38190 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752313Ab1BJPN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 10:13:26 -0500
+Date: Thu, 10 Feb 2011 10:13:25 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: gregkh@suse.de, <linux-arm-msm@vger.kernel.org>,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v7 1/5] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <001601cbc922$a0abb630$e2032290$@org>
+Message-ID: <Pine.LNX.4.44L0.1102101011480.2029-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1297350115.6737.14208.camel@nimitz>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 07:01:55AM -0800, Dave Hansen wrote:
-> On Thu, 2011-02-10 at 11:20 +0000, Mel Gorman wrote:
-> > > @@ -394,6 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, u
-> > >                       spin_lock(&walk->mm->page_table_lock);
-> > >               } else {
-> > >                       smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_SIZE, walk);
-> > > +                     mss->anonymous_thp += HPAGE_SIZE;
+On Thu, 10 Feb 2011, Tanya Brokhman wrote:
+
+> > > +	if (dum->gadget.speed < USB_SPEED_SUPER)
+> > > +		max &= 0x3ff;
 > > 
-> > I should have thought of this for the previous patch but should this be
-> > HPAGE_PMD_SIZE instead of HPAGE_SIZE? Right now, they are the same value
-> > but they are not the same thing.
+> > Strictly speaking, both the old and the new code are wrong.  For all
+> > devices, regardless of speed, we should say:
+> > 
+> > 	max = le16_to_cpu(desc->wMaxPacketSize) & 0x7ff;
+> > 
+> > In other words, the speed is contained in bits 0..10 (not 0..9).
+> > 
 > 
-> Probably.  There's also a nice BUG() in HPAGE_PMD_SIZE if the THP config
-> option is off, which is an added bonus.
+> You're right about HS/FS/LS devices but I see something different in the
+> USB30 spec for SS devices. Could you please refer me to what errata this was
+> mentioned in? I looked through them and according to errata from 01/15/09
+> the definition of wMaxPacketSize field in the SS endpoint descriptor is:
 > 
+> "Maximum packet size this endpoint is capable of sending or receiving when
+> this configuration is selected. For control endpoints this field shall be
+> set to 512. For bulk endpoint types this field shall be set to 1024."
+> 
+> So according to the above, for SS devices, the whole 2 bytes contain the
+> maxpacketsize and not only bits 0..10. 
+> Am I missing something?
 
-Unless Andrea has an objection, I'd prefer to see HPAGE_PMD_SIZE.
-Assuming that's ok;
+No, you are right.  However, it is still true even with SS that the
+value is contained in bits 0..10, since the value can never be larger
+than 2047.
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Alan Stern
 
-for the whole series.
-
-Thanks Dave.
-
--- 
-Mel Gorman
-SUSE Labs
