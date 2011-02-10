@@ -1,118 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab1BJOon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 09:44:43 -0500
-Received: from hera.kernel.org ([140.211.167.34]:46351 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756337Ab1BJOok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 09:44:40 -0500
-Date: Thu, 10 Feb 2011 14:44:22 GMT
-From: tip-bot for Jan Beulich <JBeulich@novell.com>
-Cc: linux-kernel@vger.kernel.org, hans.rosenfeld@amd.com, hpa@zytor.com,
-        mingo@redhat.com, Andreas.Herrmann3@amd.com, jbeulich@novell.com,
-        JBeulich@novell.com, tglx@linutronix.de, mingo@elte.hu,
-        borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, hans.rosenfeld@amd.com,
-        linux-kernel@vger.kernel.org, Andreas.Herrmann3@amd.com,
-        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
-        mingo@elte.hu, borislav.petkov@amd.com
-In-Reply-To: <4D525DDD0200007800030F07@vpn.id2.novell.com>
-References: <4D525DDD0200007800030F07@vpn.id2.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/amd-nb] x86: Adjust section placement in AMD northbridge related code
-Message-ID: <tip-691269f0d918cd72454c254f97722f194c07b9a8@git.kernel.org>
-Git-Commit-ID: 691269f0d918cd72454c254f97722f194c07b9a8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756326Ab1BJOqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 09:46:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61345 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab1BJOqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 09:46:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=AN/S8Qel2UZIIJGNUJ7Y6SMS25UuIzbQ5VAnOjKJybChkK3VNb7gvQKrNtXEok1uEV
+         i0vf979JuKnmogK8C8wDCKpeKQqxvs3kPU/lHN8ZW42EWIsqhBAXQUoFrZqX15u7pQw1
+         o2+Mfbr2f3H+tnb3Zw2bDHURYWo1COPV+3wAQ=
 MIME-Version: 1.0
+In-Reply-To: <AANLkTim54zTKwhTEKF-ppq-nbtPRAYRvxH3YL0RJ4Vuc@mail.gmail.com>
+References: <46685.88.65.119.194.1297295587.squirrel@88.65.119.194>
+ <AANLkTikHbJ+x0nEvdXQpzADwT3XfJNqR6O_WzaEtFWnh@mail.gmail.com>
+ <AANLkTin1q=KP5xmj5mzEwOfHsMf=Mz4Ts1EbpGzJPcQX@mail.gmail.com> <AANLkTim54zTKwhTEKF-ppq-nbtPRAYRvxH3YL0RJ4Vuc@mail.gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 10 Feb 2011 22:46:24 +0800
+Message-ID: <AANLkTi=k3D=1qwBX4E2rmo3pAun0BtBXZVG5mGwA74Y8@mail.gmail.com>
+Subject: Re: [PATCH]ARM: mmp: add Trizeps6 board support
+To: Yupeng Schneider <yupeng.schneider@googlemail.com>
+Cc: yupeng.schneider@ipms.fraunhofer.de,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Feb 2011 14:44:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  691269f0d918cd72454c254f97722f194c07b9a8
-Gitweb:     http://git.kernel.org/tip/691269f0d918cd72454c254f97722f194c07b9a8
-Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Wed, 9 Feb 2011 08:26:53 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 10 Feb 2011 13:32:52 +0100
+>
+> AC97+UCB1400: Sound and Touchscreen is ok. The related pxa2xx-ac97 files
+> have to be modified, the changes are not in this patch. If u want, i can
+> patch them later too.
+>
 
-x86: Adjust section placement in AMD northbridge related code
+If it doesn't create a building regression, you can submit the patches
+later. For completeness, you may want to do this as a whole though,
+and CC Mark Brown <broonie@opensource.wolfsonmicro.com> and
+Liam Girdwood <lrg@slimlogic.co.uk> for the sound related patches.
 
-amd_nb_misc_ids[] can live in .rodata, and enable_pci_io_ecs()
-can be moved into .cpuinit.text.
-
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <4D525DDD0200007800030F07@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/amd_nb.h |    2 +-
- arch/x86/kernel/amd_nb.c      |    7 ++++---
- arch/x86/pci/amd_bus.c        |    2 +-
- 3 files changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index 423f11c..2b33c4d 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -9,7 +9,7 @@ struct amd_nb_bus_dev_range {
- 	u8 dev_limit;
- };
- 
--extern struct pci_device_id amd_nb_misc_ids[];
-+extern const struct pci_device_id amd_nb_misc_ids[];
- extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
- struct bootnode;
- 
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index bf79a4a..ed3c2e5 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -12,7 +12,7 @@
- 
- static u32 *flush_words;
- 
--struct pci_device_id amd_nb_misc_ids[] = {
-+const struct pci_device_id amd_nb_misc_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_K8_NB_MISC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_MISC) },
-@@ -36,7 +36,7 @@ struct amd_northbridge_info amd_northbridges;
- EXPORT_SYMBOL(amd_northbridges);
- 
- static struct pci_dev *next_northbridge(struct pci_dev *dev,
--					struct pci_device_id *ids)
-+					const struct pci_device_id *ids)
- {
- 	do {
- 		dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev);
-@@ -107,8 +107,9 @@ EXPORT_SYMBOL_GPL(amd_cache_northbridges);
-    they're useless anyways */
- int __init early_is_amd_nb(u32 device)
- {
--	struct pci_device_id *id;
-+	const struct pci_device_id *id;
- 	u32 vendor = device & 0xffff;
-+
- 	device >>= 16;
- 	for (id = amd_nb_misc_ids; id->vendor; id++)
- 		if (vendor == id->vendor && device == id->device)
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index e27dffb..026e493 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -350,7 +350,7 @@ static int __init early_fill_mp_bus_info(void)
- 
- #define ENABLE_CF8_EXT_CFG      (1ULL << 46)
- 
--static void enable_pci_io_ecs(void *unused)
-+static void __cpuinit enable_pci_io_ecs(void *unused)
- {
- 	u64 reg;
- 	rdmsrl(MSR_AMD64_NB_CFG, reg);
+Thanks
