@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab1BJVlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:41:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60700 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab1BJVlk (ORCPT
+	id S1756894Ab1BJVmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:42:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34503 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756766Ab1BJVme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:41:40 -0500
-Date: Thu, 10 Feb 2011 22:41:31 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Antony Pavlov <antony@niisi.msk.ru>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mtd: cfi_cmdset_0002: fix sector erase command for
- AM29LV040B
-Message-ID: <20110210214131.GA6561@pengutronix.de>
-References: <1297371877-32123-1-git-send-email-antony@niisi.msk.ru>
+	Thu, 10 Feb 2011 16:42:34 -0500
+Message-ID: <4D545B93.9010109@oracle.com>
+Date: Thu, 10 Feb 2011 13:41:39 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-In-Reply-To: <1297371877-32123-1-git-send-email-antony@niisi.msk.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Corey Minyard <minyard@acm.org>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>
+Subject: Re: Linux 2.6.38-rc4 (other bugs: ipmi Oops)
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com> <20110209093656.2b23b80b.randy.dunlap@oracle.com> <20110210113456.93e8bc56.randy.dunlap@oracle.com> <AANLkTim5G9x7UKS8f=kcS+u7LgEUYsPCfT8Yk+BiX0we@mail.gmail.com>
+In-Reply-To: <AANLkTim5G9x7UKS8f=kcS+u7LgEUYsPCfT8Yk+BiX0we@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4D545BA2.00EE:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/10/11 12:03, Linus Torvalds wrote:
+> On Thu, Feb 10, 2011 at 11:34 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>
+>> Loading ipmi_si module a second time causes an Oops:
+>>
+>> [   68.120143] RIP: 0010:[<ffffffff813fc579>]  [<ffffffff813fc579>] put_driver+0x10/0x22
+> 
+> The disassembly is
+> 
+>   	55                   	push   %rbp
+>   	48 89 e5             	mov    %rsp,%rbp
+>   	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+>   	48 ff 05 c7 af 80 01 	incq   0x180afc7(%rip)        # 0x180aff2
+>   *	48 8b 7f 60          	mov    0x60(%rdi),%rdi     <-- trapping instruction
+>   	e8 38 27 ec ff       	callq  0xffffffffffec276c
+>   	48 ff 05 bf af 80 01 	incq   0x180afbf(%rip)        # 0x180affa
+>   	c9                   	leaveq
+>   	c3                   	retq
+> 
+> which is the access of "drv->p" in that function:
+> 
+>    kobject_put(&drv->p->kobj);
+> 
+> so "drv" that was passed in was just bogus. (it's
+> "0xffffffffa06a8430", looks like it's the DEBUG_PAGEALLOC that has
+> caused the page to be free'd).
+> 
+>> [   68.340115] Call Trace:
+>> [   68.340115]  [<ffffffff813fc64b>] driver_register+0xc0/0x1b2
+>> [   68.340115]  [<ffffffff8137f5de>] pnp_register_driver+0x28/0x31
+>> [   68.340115]  [<ffffffffa06b888d>] init_ipmi_si+0x1a4/0x4cd [ipmi_si]
+>> [   68.340115]  [<ffffffff810020a6>] do_one_initcall+0x6c/0x1e3
+>> [   68.340115]  [<ffffffff810d4998>] sys_init_module+0x12b/0x307
+> 
+> And I think that - as usual - the problem is that the damn driver
+> cleanup is very ugly, and has this duplicate set of code to unregister
+> all the random crap. Except one of the duplicates is missing one case.
+> I think the bug was introduced by Gjorn Helgaas in commit 9e368fa011d4
+> ("ipmi: add PNP discovery (ACPI namespace via PNPACPI)") which added
+> the acpi pnp case, but only unregistered it on the regular module exit
+> path, not on the "module loaded with no pnp devices" path.
+> 
+> Does this patch fix it? And Corey - this is a good example of why the
+> code shouldn't duplicate the "unregister stuff" in the module load
+> error case vs the module exit path, and there should be a shared
+> "cleanup()" function that is called by both. Can this be cleaned up,
+> please?
+> 
+> PATCH IS UNTESTED!
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That works.
 
-On Fri, Feb 11, 2011 at 12:04:37AM +0300, Antony Pavlov wrote:
-> The AM29LV040B chips use 0x50 as sector erase command instead of 0x30 [1].
->=20
-> [1] http://www.datasheetcatalog.com/datasheets_pdf/A/M/2/9/AM29LV040B.sht=
-ml
+Acked-and-tested-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-I am confused. The datasheet says on page 15 it uses 0x30 while your
-description above says it uses 0x50...
-
-> Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
-> ---
->  drivers/mtd/chips/cfi_cmdset_0002.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_=
-cmdset_0002.c
-> index f072fcf..a401dbe 100644
-> --- a/drivers/mtd/chips/cfi_cmdset_0002.c
-> +++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-> @@ -332,6 +332,14 @@ static void fixup_s29gl032n_sectors(struct mtd_info =
-*mtd)
->  	}
->  }
-> =20
-> +static void fixup_use_sector_erase_cmd_30(struct mtd_info *mtd)
-> +{
-> +	struct map_info *map =3D mtd->priv;
-> +	struct cfi_private *cfi =3D map->fldrv_priv;
-> +
-> +	cfi->sector_erase_cmd =3D CMD(0x30);
-
-=2E.. but here you change it to 0x30 (which is the default) instead of 0x50?
-
-Please clarify,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAk1UW4gACgkQD27XaX1/VRsalQCfddhBiMSGntZ6bVY1JuQ73sX8
-P+oAoMjvwvOA5r/GfV8sTalXBtjByucG
-=IYNr
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
+thanks,
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
