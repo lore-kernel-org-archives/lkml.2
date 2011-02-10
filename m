@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab1BJRPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:15:51 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44645 "EHLO
+	id S932143Ab1BJRTp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:19:45 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44639 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab1BJRPs (ORCPT
+	with ESMTP id S1756753Ab1BJRPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:15:48 -0500
+	Thu, 10 Feb 2011 12:15:45 -0500
 From: Borislav Petkov <bp@amd64.org>
 To: <linux-edac@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 16/30] amd64_edac: Adjust channel counting to F15h
-Date: Thu, 10 Feb 2011 18:15:19 +0100
-Message-Id: <1297358133-14320-17-git-send-email-bp@amd64.org>
+Subject: [PATCH 14/30] amd64_edac: Cleanup NBSH cruft
+Date: Thu, 10 Feb 2011 18:15:17 +0100
+Message-Id: <1297358133-14320-15-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1297358133-14320-1-git-send-email-bp@amd64.org>
 References: <1297358133-14320-1-git-send-email-bp@amd64.org>
@@ -22,55 +22,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-The only difference is that F10h used to sport ganged DCTs and F15h
-doesn't so adjust the F10h routine and reuse it.
+Remove reporting of errors with UC bit set - this is done by the MCE
+decoding code anyway and this driver deals with DRAM ECC errors only. UC
+(NB uncorrectable error) doesn't necessarily mean it is a DRAM error.
+Remove unused macros while at it.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/amd64_edac.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+ drivers/edac/amd64_edac.c |   15 ++-------------
+ drivers/edac/mce_amd.c    |    2 +-
+ drivers/edac/mce_amd.h    |   18 +++++-------------
+ 3 files changed, 8 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 729d9f1..1ec0145 100644
+index dfa7ac7..04d481b 100644
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -1082,15 +1082,13 @@ static int k8_dbam_to_chip_select(struct amd64_pvt *pvt, int cs_mode)
-  * Pass back:
-  *	contents of the DCL0_LOW register
-  */
--static int f10_early_channel_count(struct amd64_pvt *pvt)
-+static int f1x_early_channel_count(struct amd64_pvt *pvt)
- {
- 	int i, j, channels = 0;
+@@ -1748,7 +1748,7 @@ static void amd64_handle_ce(struct mem_ctl_info *mci,
+ 	u64 sys_addr;
  
--	/* If we are in 128 bit mode, then we are using 2 channels */
--	if (pvt->dclr0 & F10_WIDTH_128) {
--		channels = 2;
--		return channels;
--	}
-+	/* On F10h, if we are in 128 bit mode, then we are using 2 channels */
-+	if (boot_cpu_data.x86 == 0x10 && (pvt->dclr0 & F10_WIDTH_128))
-+		return 2;
+ 	/* Ensure that the Error Address is VALID */
+-	if (!(info->nbsh & K8_NBSH_VALID_ERROR_ADDR)) {
++	if (!(info->nbsh & NBSH_VALID_ERROR_ADDR)) {
+ 		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
+ 		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
+ 		return;
+@@ -1773,7 +1773,7 @@ static void amd64_handle_ue(struct mem_ctl_info *mci,
  
- 	/*
- 	 * Need to check if in unganged mode: In such, there are 2 channels,
-@@ -1540,7 +1538,7 @@ static struct amd64_family_type amd64_family_types[] = {
- 		.f1_id = PCI_DEVICE_ID_AMD_10H_NB_MAP,
- 		.f3_id = PCI_DEVICE_ID_AMD_10H_NB_MISC,
- 		.ops = {
--			.early_channel_count	= f10_early_channel_count,
-+			.early_channel_count	= f1x_early_channel_count,
- 			.get_error_address	= f10_get_error_address,
- 			.read_dram_ctl_register	= f10_read_dram_ctl_register,
- 			.map_sysaddr_to_csrow	= f10_map_sysaddr_to_csrow,
-@@ -1551,6 +1549,7 @@ static struct amd64_family_type amd64_family_types[] = {
- 	[F15_CPUS] = {
- 		.ctl_name = "F15h",
- 		.ops = {
-+			.early_channel_count	= f1x_early_channel_count,
- 			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
- 		}
- 	},
+ 	log_mci = mci;
+ 
+-	if (!(info->nbsh & K8_NBSH_VALID_ERROR_ADDR)) {
++	if (!(info->nbsh & NBSH_VALID_ERROR_ADDR)) {
+ 		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
+ 		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
+ 		return;
+@@ -1839,17 +1839,6 @@ void amd64_decode_bus_error(int node_id, struct mce *m, u32 nbcfg)
+ 	regs.nbcfg = nbcfg;
+ 
+ 	__amd64_decode_bus_error(mci, &regs);
+-
+-	/*
+-	 * Check the UE bit of the NB status high register, if set generate some
+-	 * logs. If NOT a GART error, then process the event as a NO-INFO event.
+-	 * If it was a GART error, skip that process.
+-	 *
+-	 * FIXME: this should go somewhere else, if at all.
+-	 */
+-	if (regs.nbsh & K8_NBSH_UC_ERR && !report_gart_errors)
+-		edac_mc_handle_ue_no_info(mci, "UE bit is set");
+-
+ }
+ 
+ /*
+diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
+index f6cf73d..1afca60 100644
+--- a/drivers/edac/mce_amd.c
++++ b/drivers/edac/mce_amd.c
+@@ -604,7 +604,7 @@ void amd_decode_nb_mce(int node_id, struct mce *m, u32 nbcfg)
+ 	/* F10h, revD can disable ErrCpu[3:0] through ErrCpuVal */
+ 	if ((boot_cpu_data.x86 == 0x10) &&
+ 	    (boot_cpu_data.x86_model > 7)) {
+-		if (nbsh & K8_NBSH_ERR_CPU_VAL)
++		if (nbsh & NBSH_ERR_CPU_VAL)
+ 			core = nbsh & nb_err_cpumask;
+ 	} else {
+ 		u8 assoc_cpus = nbsh & nb_err_cpumask;
+diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
+index 45dda47..70a0bb2 100644
+--- a/drivers/edac/mce_amd.h
++++ b/drivers/edac/mce_amd.h
+@@ -31,19 +31,11 @@
+ #define R4(x)				(((x) >> 4) & 0xf)
+ #define R4_MSG(x)			((R4(x) < 9) ?  rrrr_msgs[R4(x)] : "Wrong R4!")
+ 
+-#define K8_NBSH				0x4C
+-
+-#define K8_NBSH_VALID_BIT		BIT(31)
+-#define K8_NBSH_OVERFLOW		BIT(30)
+-#define K8_NBSH_UC_ERR			BIT(29)
+-#define K8_NBSH_ERR_EN			BIT(28)
+-#define K8_NBSH_MISCV			BIT(27)
+-#define K8_NBSH_VALID_ERROR_ADDR	BIT(26)
+-#define K8_NBSH_PCC			BIT(25)
+-#define K8_NBSH_ERR_CPU_VAL		BIT(24)
+-#define K8_NBSH_CECC			BIT(14)
+-#define K8_NBSH_UECC			BIT(13)
+-#define K8_NBSH_ERR_SCRUBER		BIT(8)
++/*
++ * F3x4C bits (MCi_STATUS' high half)
++ */
++#define NBSH_VALID_ERROR_ADDR		BIT(26)
++#define NBSH_ERR_CPU_VAL		BIT(24)
+ 
+ enum tt_ids {
+ 	TT_INSTR = 0,
 -- 
 1.7.4.rc2
 
