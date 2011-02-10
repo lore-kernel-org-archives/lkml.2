@@ -1,116 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab1BJLDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 06:03:18 -0500
-Received: from compulab.co.il ([67.18.134.219]:40308 "EHLO compulab.co.il"
+	id S1756046Ab1BJLLx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 06:11:53 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:43324 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab1BJLDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 06:03:17 -0500
-Message-ID: <4D53C5F3.9050100@compulab.co.il>
-Date: Thu, 10 Feb 2011 13:03:15 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.13) Gecko/20101211 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1751664Ab1BJLLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 06:11:52 -0500
+Date: Thu, 10 Feb 2011 11:11:25 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 1/5] pagewalk: only split huge pages when necessary
+Message-ID: <20110210111125.GC17873@csn.ul.ie>
+References: <20110209195406.B9F23C9F@kernel> <20110209195407.2CE28EA0@kernel>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PXA] A question about PXA310 cpufreq for 806Mhz
-References: <1297329771.21848.6.camel@mola>
-In-Reply-To: <1297329771.21848.6.camel@mola>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110209195407.2CE28EA0@kernel>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 02/10/11 11:22, Axel Lin wrote:
-
-> hi,
->
-> I have a device equipped with 806Mhz PXA310 cpu.
-> After bootup, the system shows it is running with 624Mhz.
->
-> # cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-> 624000
-> # cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-> 624000
->
-> # cat /proc/cpuinfo
-> Processor       : XScale-V3 based processor rev 2 (v5l)
-> BogoMIPS        : 623.00
-> Features        : swp half thumb fastmult edsp iwmmxt 
-> CPU implementer : 0x69
-> CPU architecture: 5TE
-> CPU variant     : 0x0
-> CPU part        : 0x689
-> CPU revision    : 2
->
-> Hardware        : Getac PS236 Handheld Platform
-> Revision        : 0000
-> Serial          : 0000000000000000
->
-> I fix it by below patch and it looks ok on my device.
-> I'm not sure if this is a proper way to fix it, I appreciate to see your comments.
->
-> It is strange that I cannot find 806Mhz PXA31x CPU 
-> in the datasheet Section 6.1 PXA3XX Processor Differences.
-
-I think the reason for this is that it is not true for all PXA31x SoCs.
-PXA3xx Specification Update document states, that the 806MHz
-operating points were added for PXA31x processors A2 stepping.
-This means that it is not true at least for A1 and A0 stepping and
-Also, there is nothing stated about the B0 and B1 stepping.
-
-> But in Section 6.7, Table 55: PXA31x Core PLL, Turbo and Run Mode Output Frequencies,
-> I do see 806Mhz support on the table.
-
-But no details regarding stepping... Marvell's mess...
-
-> diff --git a/arch/arm/mach-pxa/cpufreq-pxa3xx.c b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-> index 88fbec0..abf7d7a 100644
-> --- a/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-> +++ b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-> @@ -210,15 +210,14 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
+On Wed, Feb 09, 2011 at 11:54:07AM -0800, Dave Hansen wrote:
+> 
+> v2 - rework if() block, and remove  now redundant split_huge_page()
+> 
+> Right now, if a mm_walk has either ->pte_entry or ->pmd_entry
+> set, it will unconditionally split any transparent huge pages
+> it runs in to.  In practice, that means that anyone doing a
+> 
+> 	cat /proc/$pid/smaps
+> 
+> will unconditionally break down every huge page in the process
+> and depend on khugepaged to re-collapse it later.  This is
+> fairly suboptimal.
+> 
+> This patch changes that behavior.  It teaches each ->pmd_entry
+> handler (there are five) that they must break down the THPs
+> themselves.  Also, the _generic_ code will never break down
+> a THP unless a ->pte_entry handler is actually set.
+> 
+> This means that the ->pmd_entry handlers can now choose to
+> deal with THPs without breaking them down.
+> 
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> ---
+> 
+>  linux-2.6.git-dave/fs/proc/task_mmu.c |    6 ++++++
+>  linux-2.6.git-dave/include/linux/mm.h |    3 +++
+>  linux-2.6.git-dave/mm/memcontrol.c    |    5 +++--
+>  linux-2.6.git-dave/mm/pagewalk.c      |   24 ++++++++++++++++++++----
+>  4 files changed, 32 insertions(+), 6 deletions(-)
+> 
+> diff -puN fs/proc/task_mmu.c~pagewalk-dont-always-split-thp fs/proc/task_mmu.c
+> --- linux-2.6.git/fs/proc/task_mmu.c~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.299558364 -0800
+> +++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-02-09 11:41:42.319558349 -0800
+> @@ -343,6 +343,8 @@ static int smaps_pte_range(pmd_t *pmd, u
+>  	struct page *page;
+>  	int mapcount;
 >  
->  	/* set default policy and cpuinfo */
->  	policy->cpuinfo.min_freq = 104000;
-> -	policy->cpuinfo.max_freq = (cpu_is_pxa320()) ? 806000 : 624000;
-> +	policy->cpuinfo.max_freq = (cpu_is_pxa300()) ? 624000 : 806000;
->  	policy->cpuinfo.transition_latency = 1000; /* FIXME: 1 ms, assumed */
->  	policy->max = pxa3xx_get_clk_frequency_khz(0);
->  	policy->cur = policy->min = policy->max;
+> +	split_huge_page_pmd(walk->mm, pmd);
+> +
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; pte++, addr += PAGE_SIZE) {
+>  		ptent = *pte;
+> @@ -467,6 +469,8 @@ static int clear_refs_pte_range(pmd_t *p
+>  	spinlock_t *ptl;
+>  	struct page *page;
 >  
-> -	if (cpu_is_pxa300() || cpu_is_pxa310())
-> +	if (cpu_is_pxa300())
->  		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa300_freqs));
-> -
-> -	if (cpu_is_pxa320())
-> +	else if (cpu_is_pxa310() || cpu_is_pxa320())
->  		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa320_freqs));
+> +	split_huge_page_pmd(walk->mm, pmd);
+> +
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; pte++, addr += PAGE_SIZE) {
+>  		ptent = *pte;
+> @@ -623,6 +627,8 @@ static int pagemap_pte_range(pmd_t *pmd,
+>  	pte_t *pte;
+>  	int err = 0;
 >  
->  	if (ret) {
->
+> +	split_huge_page_pmd(walk->mm, pmd);
+> +
+>  	/* find the first VMA at or above 'addr' */
+>  	vma = find_vma(walk->mm, addr);
+>  	for (; addr != end; addr += PAGE_SIZE) {
+> diff -puN include/linux/mm.h~pagewalk-dont-always-split-thp include/linux/mm.h
+> --- linux-2.6.git/include/linux/mm.h~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.303558361 -0800
+> +++ linux-2.6.git-dave/include/linux/mm.h	2011-02-09 11:41:42.323558346 -0800
+> @@ -899,6 +899,9 @@ unsigned long unmap_vmas(struct mmu_gath
+>   * @pgd_entry: if set, called for each non-empty PGD (top-level) entry
+>   * @pud_entry: if set, called for each non-empty PUD (2nd-level) entry
+>   * @pmd_entry: if set, called for each non-empty PMD (3rd-level) entry
+> + * 	       this handler is required to be able to handle
+> + * 	       pmd_trans_huge() pmds.  They may simply choose to
+> + * 	       split_huge_page() instead of handling it explicitly.
+>   * @pte_entry: if set, called for each non-empty PTE (4th-level) entry
+>   * @pte_hole: if set, called for each hole at all levels
+>   * @hugetlb_entry: if set, called for each hugetlb entry
+> diff -puN mm/memcontrol.c~pagewalk-dont-always-split-thp mm/memcontrol.c
+> --- linux-2.6.git/mm/memcontrol.c~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.311558355 -0800
+> +++ linux-2.6.git-dave/mm/memcontrol.c	2011-02-09 11:41:42.327558343 -0800
+> @@ -4737,7 +4737,8 @@ static int mem_cgroup_count_precharge_pt
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+>  
+> -	VM_BUG_ON(pmd_trans_huge(*pmd));
+> +	split_huge_page_pmd(walk->mm, pmd);
+> +
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; pte++, addr += PAGE_SIZE)
+>  		if (is_target_pte_for_mc(vma, addr, *pte, NULL))
+> @@ -4899,8 +4900,8 @@ static int mem_cgroup_move_charge_pte_ra
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+>  
+> +	split_huge_page_pmd(walk->mm, pmd);
+>  retry:
+> -	VM_BUG_ON(pmd_trans_huge(*pmd));
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; addr += PAGE_SIZE) {
+>  		pte_t ptent = *(pte++);
 
-It is obviously, not a good patch in light of what I've said above.
-May be we should build the pxa3xx_freqs table dynamically according
-to cpu type and stepping? And set the policy->cpuinfo on the way?
+Before we goto this retry, there is at a cond_resched(). Just to confirm,
+we are depending on mmap_sem to prevent khugepaged promoting this back to
+a hugepage, right? I don't see a problem with that but I want to be
+sure.
 
+> diff -puN mm/pagewalk.c~pagewalk-dont-always-split-thp mm/pagewalk.c
+> --- linux-2.6.git/mm/pagewalk.c~pagewalk-dont-always-split-thp	2011-02-09 11:41:42.315558352 -0800
+> +++ linux-2.6.git-dave/mm/pagewalk.c	2011-02-09 11:41:42.331558340 -0800
+> @@ -33,19 +33,35 @@ static int walk_pmd_range(pud_t *pud, un
+>  
+>  	pmd = pmd_offset(pud, addr);
+>  	do {
+> +	again:
+>  		next = pmd_addr_end(addr, end);
+> -		split_huge_page_pmd(walk->mm, pmd);
+> -		if (pmd_none_or_clear_bad(pmd)) {
+> +		if (pmd_none(*pmd)) {
+>  			if (walk->pte_hole)
+>  				err = walk->pte_hole(addr, next, walk);
+>  			if (err)
+>  				break;
+>  			continue;
+>  		}
+> +		/*
+> +		 * This implies that each ->pmd_entry() handler
+> +		 * needs to know about pmd_trans_huge() pmds
+> +		 */
+>  		if (walk->pmd_entry)
+>  			err = walk->pmd_entry(pmd, addr, next, walk);
+> -		if (!err && walk->pte_entry)
+> -			err = walk_pte_range(pmd, addr, next, walk);
+> +		if (err)
+> +			break;
+> +
+> +		/*
+> +		 * Check this here so we only break down trans_huge
+> +		 * pages when we _need_ to
+> +		 */
+> +		if (!walk->pte_entry)
+> +			continue;
+> +
+> +		split_huge_page_pmd(walk->mm, pmd);
+> +		if (pmd_none_or_clear_bad(pmd))
+> +			goto again;
+> +		err = walk_pte_range(pmd, addr, next, walk);
+>  		if (err)
+>  			break;
+>  	} while (pmd++, addr = next, addr != end);
 
 -- 
-Regards,
-Igor.
-
+Mel Gorman
+SUSE Labs
