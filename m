@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab1BJPHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 10:07:42 -0500
-Received: from cantor.suse.de ([195.135.220.2]:41893 "EHLO mx1.suse.de"
+	id S1756499Ab1BJPKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 10:10:10 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:56023 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147Ab1BJPHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 10:07:41 -0500
-Subject: Re: [PATCH] scsi: make scsi_devinfo infrastructure optional
-From: James Bottomley <James.Bottomley@suse.de>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTimE1H=hos+YMW3Ge9vkETC9f1k1Dt6AMi5iLHGW@mail.gmail.com>
-References: <201102091515.16202.bzolnier@gmail.com>
-	 <1297274408.3016.29.camel@mulgrave.site>
-	 <AANLkTimE1H=hos+YMW3Ge9vkETC9f1k1Dt6AMi5iLHGW@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 09:07:36 -0600
-Message-ID: <1297350456.4933.25.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1752629Ab1BJPKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 10:10:09 -0500
+Date: Thu, 10 Feb 2011 15:09:42 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 5/5] have smaps show transparent huge pages
+Message-ID: <20110210150942.GL17873@csn.ul.ie>
+References: <20110209195406.B9F23C9F@kernel> <20110209195413.6D3CB37F@kernel> <20110210112032.GG17873@csn.ul.ie> <1297350115.6737.14208.camel@nimitz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1297350115.6737.14208.camel@nimitz>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-10 at 10:18 +0100, Bartlomiej Zolnierkiewicz wrote:
-> On Wed, Feb 9, 2011 at 7:00 PM, James Bottomley <James.Bottomley@suse.de> wrote:
-> > On Wed, 2011-02-09 at 15:15 +0100, Bartlomiej Zolnierkiewicz wrote:
-> >> Add SCSI_QUIRKS config option (default y and dependent on EMBEDDED
-> >> config option) to allow disabling of scsi_devinfo infrastructure.
-> >>
-> >> The output code size savings are ~14k for CONFIG_SCSI_QUIRKS=n
-> >> (as measured on x86-32):
-> >
-> > I don't understand the point of this patch ... without the quirks SCSI
-> > will do the wrong thing on a whole bunch of stuff.  The savings look to
-> > be tiny ... since the SCSI module is habitually a lot larger than your
-> > figures suggest.
+On Thu, Feb 10, 2011 at 07:01:55AM -0800, Dave Hansen wrote:
+> On Thu, 2011-02-10 at 11:20 +0000, Mel Gorman wrote:
+> > > @@ -394,6 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, u
+> > >                       spin_lock(&walk->mm->page_table_lock);
+> > >               } else {
+> > >                       smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_SIZE, walk);
+> > > +                     mss->anonymous_thp += HPAGE_SIZE;
+> > 
+> > I should have thought of this for the previous patch but should this be
+> > HPAGE_PMD_SIZE instead of HPAGE_SIZE? Right now, they are the same value
+> > but they are not the same thing.
 > 
-> The patch was originally done for embedded ATA-only setups.
+> Probably.  There's also a nice BUG() in HPAGE_PMD_SIZE if the THP config
+> option is off, which is an added bonus.
+> 
 
-Well, if it's for ATA only then the better course would be extracting
-libata from scsi.  It's also a bit misleading to do sizings on x86,
-because that doesn't imply embedded to me.  Aren't there still ATAPI
-devices that require the quirks?
+Unless Andrea has an objection, I'd prefer to see HPAGE_PMD_SIZE.
+Assuming that's ok;
 
-Most embedded setups include some form of USB ... again, the pluggable
-CD/DVD use the quirks table.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-Given the potential for disaster even on embedded systems, I don't
-really think something like this is a good idea.
+for the whole series.
 
-James
+Thanks Dave.
 
-
+-- 
+Mel Gorman
+SUSE Labs
