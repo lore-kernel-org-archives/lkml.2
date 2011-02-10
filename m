@@ -1,38 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518Ab1BJGMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 01:12:19 -0500
-Received: from sous-sol.org ([216.99.217.87]:45007 "EHLO sequoia.sous-sol.org"
+	id S1752120Ab1BJGMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 01:12:31 -0500
+Received: from sous-sol.org ([216.99.217.87]:45010 "EHLO sequoia.sous-sol.org"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751372Ab1BJGMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 01:12:15 -0500
+	id S1751569Ab1BJGMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 01:12:19 -0500
 From: Chris Wright <chrisw@sous-sol.org>
 To: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: Eric Paris <eparis@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        chrisw@sous-sol.org
-Subject: [PATCH 0/2] pci: refer to LSM when accessing device dependent config space
-Date: Wed,  9 Feb 2011 22:11:50 -0800
-Message-Id: <1297318312-14309-1-git-send-email-chrisw@sous-sol.org>
+        chrisw@sous-sol.org, James Morris <jmorris@namei.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH 1/2] security: add cred argument to security_capable()
+Date: Wed,  9 Feb 2011 22:11:51 -0800
+Message-Id: <1297318312-14309-2-git-send-email-chrisw@sous-sol.org>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1297318312-14309-1-git-send-email-chrisw@sous-sol.org>
+References: <1297318312-14309-1-git-send-email-chrisw@sous-sol.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Short patch series to make sure LSM gets visibility into attempt to
-access device dependent config space.  Fixes a buglet I introduced in
-de139a3 ("pci: check caps from sysfs file open to read device dependent
-config space")
+Expand security_capable() to include cred, so that it can be usable in a
+wider range of call sites.
 
-Chris Wright (2):
-  security: add cred argument to security_capable()
-  pci: use security_capable() when checking capablities during config
-    space read
+Cc: James Morris <jmorris@namei.org>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: linux-security-module@vger.kernel.org
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
 
- drivers/pci/pci-sysfs.c  |    3 ++-
  include/linux/security.h |    6 +++---
  kernel/capability.c      |    2 +-
  security/security.c      |    5 ++---
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/security.h b/include/linux/security.h
+index c642bb8..b2b7f97 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1662,7 +1662,7 @@ int security_capset(struct cred *new, const struct cred *old,
+ 		    const kernel_cap_t *effective,
+ 		    const kernel_cap_t *inheritable,
+ 		    const kernel_cap_t *permitted);
+-int security_capable(int cap);
++int security_capable(const struct cred *cred, int cap);
+ int security_real_capable(struct task_struct *tsk, int cap);
+ int security_real_capable_noaudit(struct task_struct *tsk, int cap);
+ int security_sysctl(struct ctl_table *table, int op);
+@@ -1856,9 +1856,9 @@ static inline int security_capset(struct cred *new,
+ 	return cap_capset(new, old, effective, inheritable, permitted);
+ }
+ 
+-static inline int security_capable(int cap)
++static inline int security_capable(const struct cred *cred, int cap)
+ {
+-	return cap_capable(current, current_cred(), cap, SECURITY_CAP_AUDIT);
++	return cap_capable(current, cred, cap, SECURITY_CAP_AUDIT);
+ }
+ 
+ static inline int security_real_capable(struct task_struct *tsk, int cap)
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 2f05303..9e9385f 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -306,7 +306,7 @@ int capable(int cap)
+ 		BUG();
+ 	}
+ 
+-	if (security_capable(cap) == 0) {
++	if (security_capable(current_cred(), cap) == 0) {
+ 		current->flags |= PF_SUPERPRIV;
+ 		return 1;
+ 	}
+diff --git a/security/security.c b/security/security.c
+index 739e403..7b7308a 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -154,10 +154,9 @@ int security_capset(struct cred *new, const struct cred *old,
+ 				    effective, inheritable, permitted);
+ }
+ 
+-int security_capable(int cap)
++int security_capable(const struct cred *cred, int cap)
+ {
+-	return security_ops->capable(current, current_cred(), cap,
+-				     SECURITY_CAP_AUDIT);
++	return security_ops->capable(current, cred, cap, SECURITY_CAP_AUDIT);
+ }
+ 
+ int security_real_capable(struct task_struct *tsk, int cap)
 -- 
 1.7.3.4
+
