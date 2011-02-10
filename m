@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1BJRLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:11:30 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17210 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1BJRL3 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 10 Feb 2011 12:11:29 -0500
-Date: Thu, 10 Feb 2011 12:10:20 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: jeremy@goop.org, xen-devel@lists.xensource.com, ian.campbell@citrix.com,
-        haicheng.li@linux.intel.com, linux-kernel@vger.kernel.org,
-        dan.magenheimer@oracle.com, v.tolstov@selfip.ru,
-        dave@linux.vnet.ibm.com, linux-mm@kvack.org, rientjes@google.com,
-        andi.kleen@intel.com, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, wdauchy@gmail.com
-Subject: Re: [Xen-devel] Re: [PATCH R3 5/7] xen/balloon: Protect against
- CPU exhaust by event/x proces
-Message-ID: <20110210171020.GB3993@dumpdata.com>
-References: <20110203162851.GH1364@router-fw-old.local.net-space.pl>
- <20110210155142.GC12087@dumpdata.com>
+	id S1756657Ab1BJRO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:14:57 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:34580 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1BJRO4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 12:14:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=w3tECb7bGMRy5ELgRJT7p+yVXnA84qtq+MlBd1+wWJaGpYIytqPtOh9fYIMuZEUTlD
+         3Lur8ZtnoCop/VHTLf9eapCzvRB97DaIeu6h+NoS7zWJtw2eUuEt+pLZePcugo+SDroo
+         SVcOboW2SeGIR3uE3ISrhCD9zddud9fyLfnHQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110210155142.GC12087@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4D541C23.0022:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <4D53F4ED.10903@ru.mvista.com>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
+	<4D53F4ED.10903@ru.mvista.com>
+Date: Thu, 10 Feb 2011 18:14:54 +0100
+Message-ID: <AANLkTinPYo+mhiRwsNpdNgqADQbk7bvQX=RcZoiN0pbS@mail.gmail.com>
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before slave_data
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 10:51:42AM -0500, Konrad Rzeszutek Wilk wrote:
-> On Thu, Feb 03, 2011 at 05:28:51PM +0100, Daniel Kiper wrote:
-> > Protect against CPU exhaust by event/x process during
-> > errors by adding some delays in scheduling next event.
-> > 
-> > Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-> > ---
-> >  drivers/xen/balloon.c |   99 +++++++++++++++++++++++++++++++++++++++---------
-> >  1 files changed, 80 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-> > index 4223f64..ed103d4 100644
-> > --- a/drivers/xen/balloon.c
-> > +++ b/drivers/xen/balloon.c
-> > @@ -66,6 +66,20 @@
-> >  
-> >  #define BALLOON_CLASS_NAME "xen_memory"
-> >  
-> > +/*
-> > + * balloon_process() state:
-> > + *
-> > + * BP_ERROR: error, go to sleep,
-> > + * BP_DONE: done or nothing to do,
-> > + * BP_HUNGRY: hungry.
-> > + */
-> > +
-> > +enum bp_state {
-> > +	BP_ERROR,
-> 
-> BP_EAGAIN?
-> 
-> So if we fail to increase the first hour, we would keep on trying to
-> increase forever (with a 32 second delay between each call). Do you
-> think it makes sense (as a future patch, not tied in with this patchset)
-> to printout a printk(KERN_INFO that we have been trying to increase
-> for the last X hours, seconds and have not gone anywhere (and perhaps
-> stop trying to allocate more memory?).
+Hi,
 
-Duh, you did that in the next patch with the mh_policy.
+On Thu, Feb 10, 2011 at 3:23 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+> Hello.
+>
+> On 08-02-2011 15:24, Bartlomiej Zolnierkiewicz wrote:
+> [...]
+>
+>> We may need to set SITRE before programming slave_data.
+>
+>> This makes pata_efar match the behavior of IDE's slc90e66 host driver
+>> and also of libata's ata_piix one.
+>
+>> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+>
+> [...]
+>
+>> diff --git a/drivers/ata/pata_efar.c b/drivers/ata/pata_efar.c
+>> index 1e2ff7d..7f564d7 100644
+>> --- a/drivers/ata/pata_efar.c
+>> +++ b/drivers/ata/pata_efar.c
+>> @@ -74,10 +74,12 @@ static void efar_set_timings(struct ata_port *ap,
+>> struct ata_device *adev,
+>>                             u8 pio, bool use_mwdma)
+>>  {
+>>        struct pci_dev *dev     = to_pci_dev(ap->host->dev);
+>> +       unsigned int is_slave   = (adev->devno != 0);
+>
+>   What's the point of this variable? To save one pointer dereference? :-)
+
+Make code more similar to ata_piix.c and thus easier for comparisons
+through 'diff -ub'.
+
+In reality it doesn't matter now that much as pata_efar (same for
+pata_oldpiix) vanishes completely at the end of the patch series.. :-)
+
+Thanks,
+Bartlomiej
