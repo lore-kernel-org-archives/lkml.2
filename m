@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab1BJUK7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 15:10:59 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60341 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab1BJUK6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 15:10:58 -0500
-Subject: Re: [PATCH 1/1] perf tools: Fix thread_map event synthesizing in
- top and record
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-In-Reply-To: <20110210200000.GF20676@ghostprotocols.net>
-References: <1297363899-21466-1-git-send-email-acme@infradead.org>
-	 <1297363899-21466-2-git-send-email-acme@infradead.org>
-	 <x49aai38yqa.fsf@segfault.boston.devel.redhat.com>
-	 <20110210200000.GF20676@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 21:11:45 +0100
-Message-ID: <1297368705.5226.23.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756718Ab1BJUPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 15:15:49 -0500
+Received: from kroah.org ([198.145.64.141]:40787 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752114Ab1BJUPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 15:15:48 -0500
+Date: Thu, 10 Feb 2011 12:15:20 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] TTY/serial driver fixes for .38
+Message-ID: <20110210201520.GA18283@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-10 at 18:00 -0200, Arnaldo Carvalho de Melo wrote:
-> And do you or others have any
-> > interest in trying to work out why perf is hanging my system?
-> 
-> Peter? 
+Here are a few tty and serial fixes for your .38 tree.
 
-Its on the todo list, but stuff seems to be coming in faster than I can
-process once again :/
+A file got moved back that shouldn't have been moved in the tty/hvc
+renames, and a few other tiny bugfixes, nothing major.
+
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/tty-2.6.git/ tty-linus
+
+All of these patches have been in the -mm and -next trees for the past
+week or so.
+
+Patches will be sent to the linux-kernel mailing list, if anyone wants
+to see them.
+
+thanks,
+
+greg k-h
+
+------------
+
+ arch/blackfin/include/asm/bfin_serial.h    |    2 ++
+ drivers/char/Makefile                      |    1 +
+ drivers/{tty/hvc => char}/virtio_console.c |    2 +-
+ drivers/tty/hvc/Makefile                   |    1 -
+ drivers/tty/n_gsm.c                        |    1 +
+ drivers/tty/serial/68360serial.c           |    1 +
+ drivers/tty/serial/bfin_5xx.c              |   15 ++++++---------
+ 7 files changed, 12 insertions(+), 11 deletions(-)
+ rename drivers/{tty/hvc => char}/virtio_console.c (99%)
+
+---------------
+
+Amit Shah (1):
+      virtio: console: Move file back to drivers/char/
+
+Ben Hutchings (1):
+      68360serial: Plumb in rs_360_get_icount()
+
+Ken Mills (1):
+      n_gsm: copy mtu over when configuring via ioctl interface
+
+Sonic Zhang (1):
+      serial: bfin_5xx: split uart RX lock from uart port lock to avoid deadlock
 
