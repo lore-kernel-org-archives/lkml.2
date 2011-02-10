@@ -1,144 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab1BJXiO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:38:14 -0500
-Received: from www.tglx.de ([62.245.132.106]:44397 "EHLO www.tglx.de"
+	id S932359Ab1BJXiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:38:19 -0500
+Received: from www.tglx.de ([62.245.132.106]:44451 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932294Ab1BJXiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:38:05 -0500
-Message-Id: <20110210223258.750843019@linutronix.de>
+	id S932294Ab1BJXiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:38:17 -0500
+Message-Id: <20110210223259.893998722@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:37:37 -0000
+Date: Thu, 10 Feb 2011 23:38:06 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 46/75] genirq: Move IRQ_SUSPENDED to core
+Subject: [patch 58/75] genirq: Mirror irq trigger type bits in irq_data.state
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=genirq-move-suspended.patch
+Content-Disposition: inline; filename=genirq-mirror-type-mask.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No users outside of core.
+That's the data structure chip functions get provided. Also allow them
+to signal the core code that they updated the flags in irq_data.state
+by returning IRQ_SET_MASK_OK_NOCOPY. The default is unchanged.
+
+The type bits should be accessed via:
+
+val = irqd_get_trigger_type(irqdata);
+and
+irqd_set_trigger_type(irqdata, val);
+
+Coders who access them directly will be tracked down and slapped with
+stinking trouts.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/irq.h    |    2 --
- kernel/irq/internals.h |    2 ++
- kernel/irq/manage.c    |    8 ++++----
- kernel/irq/pm.c        |    6 +++---
- 4 files changed, 9 insertions(+), 9 deletions(-)
+
+---
+ include/linux/irq.h   |   26 +++++++++++++++++++++++++-
+ kernel/irq/chip.c     |    5 ++++-
+ kernel/irq/manage.c   |   44 +++++++++++++++++++++++++++-----------------
+ kernel/irq/resend.c   |    2 +-
+ kernel/irq/settings.h |   30 ++++++++++++++++++++++++++++++
+ 5 files changed, 87 insertions(+), 20 deletions(-)
 
 Index: linux-2.6-tip/include/linux/irq.h
 ===================================================================
 --- linux-2.6-tip.orig/include/linux/irq.h
 +++ linux-2.6-tip/include/linux/irq.h
-@@ -60,7 +60,6 @@ typedef	void (*irq_flow_handler_t)(unsig
- #define IRQ_MASKED		0x00002000	/* DEPRECATED */
- #endif
+@@ -46,7 +46,9 @@ typedef	void (*irq_flow_handler_t)(unsig
+ #define IRQ_TYPE_EDGE_BOTH (IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING)
+ #define IRQ_TYPE_LEVEL_HIGH	0x00000004	/* Level high type */
+ #define IRQ_TYPE_LEVEL_LOW	0x00000008	/* Level low type */
++#define IRQ_TYPE_LEVEL_MASK	(IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH)
+ #define IRQ_TYPE_SENSE_MASK	0x0000000f	/* Mask of the above */
++
+ #define IRQ_TYPE_PROBE		0x00000010	/* Probing in progress */
  
--
- #define IRQ_LEVEL		0x00004000	/* IRQ level triggered */
- #define IRQ_PER_CPU		0x00010000	/* IRQ is per CPU */
- #define IRQ_NOPROBE		0x00020000	/* IRQ is not valid for probing */
-@@ -71,7 +70,6 @@ typedef	void (*irq_flow_handler_t)(unsig
- #define IRQ_NO_BALANCING	0x00400000	/* IRQ is excluded from balancing */
- #define IRQ_MOVE_PCNTXT		0x01000000	/* IRQ migration from process context */
- #define IRQ_AFFINITY_SET	0x02000000	/* IRQ affinity was set from userspace*/
--#define IRQ_SUSPENDED		0x04000000	/* IRQ has gone through suspend sequence */
- 
- #define IRQF_MODIFY_MASK	\
- 	(IRQ_TYPE_SENSE_MASK | IRQ_NOPROBE | IRQ_NOREQUEST | \
-Index: linux-2.6-tip/kernel/irq/internals.h
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/internals.h
-+++ linux-2.6-tip/kernel/irq/internals.h
-@@ -44,6 +44,7 @@ enum {
-  * IRQS_DISABLED		- irq is disabled
-  * IRQS_PENDING			- irq is pending and replayed later
-  * IRQS_MASKED			- irq is masked
-+ * IRQS_SUSPENDED		- irq is suspended
+ /* Internal flags */
+@@ -129,17 +131,20 @@ struct irq_data {
+ /*
+  * Bit masks for irq_data.state
+  *
++ * IRQD_TRIGGER_MASK		- Mask for the trigger type bits
+  * IRQD_SETAFFINITY_PENDING	- Affinity setting is pending
+  * IRQD_NO_BALANCING		- Balancing disabled for this IRQ
+  * IRQD_PER_CPU			- Interrupt is per cpu
+  * IRQD_AFFINITY_SET		- Interrupt affinity was set
++ * IRQD_LEVEL			- Interrupt is level triggered
   */
  enum {
- 	IRQS_AUTODETECT		= 0x00000001,
-@@ -57,6 +58,7 @@ enum {
- 	IRQS_DISABLED		= 0x00000100,
- 	IRQS_PENDING		= 0x00000200,
- 	IRQS_MASKED		= 0x00000400,
-+	IRQS_SUSPENDED		= 0x00000800,
+-	/* Bit 0 - 7 reserved for TYPE will use later */
++	IRQD_TRIGGER_MASK		= 0xf,
+ 	IRQD_SETAFFINITY_PENDING	= (1 <<  8),
+ 	IRQD_NO_BALANCING		= (1 << 10),
+ 	IRQD_PER_CPU			= (1 << 11),
+ 	IRQD_AFFINITY_SET		= (1 << 12),
++	IRQD_LEVEL			= (1 << 13),
  };
  
- #define irq_data_to_desc(data)	container_of(data, struct irq_desc, irq_data)
+ static inline bool irqd_is_setaffinity_pending(struct irq_data *d)
+@@ -162,6 +167,25 @@ static inline bool irqd_affinity_was_set
+ 	return d->state_use_accessors & IRQD_AFFINITY_SET;
+ }
+ 
++static inline u32 irqd_get_trigger_type(struct irq_data *d)
++{
++	return d->state_use_accessors & IRQD_TRIGGER_MASK;
++}
++
++/*
++ * Must only be called inside irq_chip.irq_set_type() functions.
++ */
++static inline void irqd_set_trigger_type(struct irq_data *d, u32 type)
++{
++	d->state_use_accessors &= ~IRQD_TRIGGER_MASK;
++	d->state_use_accessors |= type & IRQD_TRIGGER_MASK;
++}
++
++static inline bool irqd_is_level_type(struct irq_data *d)
++{
++	return d->state_use_accessors & IRQD_LEVEL;
++}
++
+ /**
+  * struct irq_chip - hardware interrupt chip descriptor
+  *
+Index: linux-2.6-tip/kernel/irq/chip.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -736,11 +736,14 @@ void irq_modify_status(unsigned int irq,
+ 
+ 	irq_settings_clr_and_set(desc, clr, set);
+ 
+-	irqd_clear(&desc->irq_data, IRQD_NO_BALANCING | IRQD_PER_CPU);
++	irqd_clear(&desc->irq_data, IRQD_NO_BALANCING | IRQD_PER_CPU |
++		   IRQD_TRIGGER_MASK | IRQD_LEVEL);
+ 	if (irq_settings_has_no_balance_set(desc))
+ 		irqd_set(&desc->irq_data, IRQD_NO_BALANCING);
+ 	if (irq_settings_is_per_cpu(desc))
+ 		irqd_set(&desc->irq_data, IRQD_PER_CPU);
+ 
++	irqd_set(&desc->irq_data, irq_settings_get_trigger_mask(desc));
++
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ }
 Index: linux-2.6-tip/kernel/irq/manage.c
 ===================================================================
 --- linux-2.6-tip.orig/kernel/irq/manage.c
 +++ linux-2.6-tip/kernel/irq/manage.c
-@@ -334,7 +334,7 @@ void __disable_irq(struct irq_desc *desc
- 	if (suspend) {
- 		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
- 			return;
--		desc->status |= IRQ_SUSPENDED;
-+		desc->istate |= IRQS_SUSPENDED;
+@@ -573,23 +573,32 @@ int __irq_set_trigger(struct irq_desc *d
+ 		return 0;
  	}
  
- 	if (!desc->depth++)
-@@ -396,7 +396,7 @@ EXPORT_SYMBOL(disable_irq);
- void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
- {
- 	if (resume) {
--		if (!(desc->status & IRQ_SUSPENDED)) {
-+		if (!(desc->istate & IRQS_SUSPENDED)) {
- 			if (!desc->action)
- 				return;
- 			if (!(desc->action->flags & IRQF_FORCE_RESUME))
-@@ -404,7 +404,7 @@ void __enable_irq(struct irq_desc *desc,
- 			/* Pretend that it got disabled ! */
- 			desc->depth++;
- 		}
--		desc->status &= ~IRQ_SUSPENDED;
-+		desc->istate &= ~IRQS_SUSPENDED;
- 	}
++	flags &= IRQ_TYPE_SENSE_MASK;
+ 	/* caller masked out all except trigger mode flags */
+ 	ret = chip->irq_set_type(&desc->irq_data, flags);
  
- 	switch (desc->depth) {
-@@ -413,7 +413,7 @@ void __enable_irq(struct irq_desc *desc,
- 		WARN(1, KERN_WARNING "Unbalanced enable for IRQ %d\n", irq);
- 		break;
- 	case 1: {
--		if (desc->status & IRQ_SUSPENDED)
-+		if (desc->istate & IRQS_SUSPENDED)
- 			goto err_out;
- 		/* Prevent probing on this irq: */
- 		desc->status |= IRQ_NOPROBE;
-Index: linux-2.6-tip/kernel/irq/pm.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/pm.c
-+++ linux-2.6-tip/kernel/irq/pm.c
-@@ -18,7 +18,7 @@
-  * During system-wide suspend or hibernation device drivers need to be prevented
-  * from receiving interrupts and this function is provided for this purpose.
-  * It marks all interrupt lines in use, except for the timer ones, as disabled
-- * and sets the IRQ_SUSPENDED flag for each of them.
-+ * and sets the IRQS_SUSPENDED flag for each of them.
-  */
- void suspend_device_irqs(void)
- {
-@@ -34,7 +34,7 @@ void suspend_device_irqs(void)
- 	}
+-	if (ret)
+-		pr_err("setting trigger mode %lu for irq %u failed (%pF)\n",
+-		       flags, irq, chip->irq_set_type);
+-	else {
+-		if (flags & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_LEVEL_HIGH))
+-			flags |= IRQ_LEVEL;
+-		/* note that IRQF_TRIGGER_MASK == IRQ_TYPE_SENSE_MASK */
+-		desc->status &= ~(IRQ_LEVEL | IRQ_TYPE_SENSE_MASK);
+-		desc->status |= flags;
++	switch (ret) {
++	case IRQ_SET_MASK_OK:
++		irqd_clear(&desc->irq_data, IRQD_TRIGGER_MASK);
++		irqd_set(&desc->irq_data, flags);
++
++	case IRQ_SET_MASK_OK_NOCOPY:
++		flags = irqd_get_trigger_type(&desc->irq_data);
++		irq_settings_set_trigger_mask(desc, flags);
++		irqd_clear(&desc->irq_data, IRQD_LEVEL);
++		irq_settings_clr_level(desc);
++		if (flags & IRQ_TYPE_LEVEL_MASK) {
++			irq_settings_set_level(desc);
++			irqd_set(&desc->irq_data, IRQD_LEVEL);
++		}
  
- 	for_each_irq_desc(irq, desc)
--		if (desc->status & IRQ_SUSPENDED)
-+		if (desc->istate & IRQS_SUSPENDED)
- 			synchronize_irq(irq);
+ 		if (chip != desc->irq_data.chip)
+ 			irq_chip_set_defaults(desc->irq_data.chip);
++		return 0;
++	default:
++		pr_err("setting trigger mode %lu for irq %u failed (%pF)\n",
++		       flags, irq, chip->irq_set_type);
+ 	}
+-
+ 	return ret;
  }
- EXPORT_SYMBOL_GPL(suspend_device_irqs);
-@@ -43,7 +43,7 @@ EXPORT_SYMBOL_GPL(suspend_device_irqs);
-  * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-  *
-  * Enable all interrupt lines previously disabled by suspend_device_irqs() that
-- * have the IRQ_SUSPENDED flag set.
-+ * have the IRQS_SUSPENDED flag set.
-  */
- void resume_device_irqs(void)
+ 
+@@ -929,13 +938,14 @@ __setup_irq(unsigned int irq, struct irq
+ 		/* Set default affinity mask once everything is setup */
+ 		setup_affinity(irq, desc, mask);
+ 
+-	} else if ((new->flags & IRQF_TRIGGER_MASK)
+-			&& (new->flags & IRQF_TRIGGER_MASK)
+-				!= (desc->status & IRQ_TYPE_SENSE_MASK)) {
+-		/* hope the handler works with the actual trigger mode... */
+-		pr_warning("IRQ %d uses trigger mode %d; requested %d\n",
+-				irq, (int)(desc->status & IRQ_TYPE_SENSE_MASK),
+-				(int)(new->flags & IRQF_TRIGGER_MASK));
++	} else if (new->flags & IRQF_TRIGGER_MASK) {
++		unsigned int nmsk = new->flags & IRQF_TRIGGER_MASK;
++		unsigned int omsk = irq_settings_get_trigger_mask(desc);
++
++		if (nmsk != omsk)
++			/* hope the handler works with current  trigger mode */
++			pr_warning("IRQ %d uses trigger mode %u; requested %u\n",
++				   irq, nmsk, omsk);
+ 	}
+ 
+ 	new->irq = irq;
+Index: linux-2.6-tip/kernel/irq/resend.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/resend.c
++++ linux-2.6-tip/kernel/irq/resend.c
+@@ -60,7 +60,7 @@ void check_irq_resend(struct irq_desc *d
+ 	 * interrupts are resent by hardware when they are still
+ 	 * active.
+ 	 */
+-	if (desc->status & IRQ_LEVEL)
++	if (irq_settings_is_level(desc))
+ 		return;
+ 	if (desc->istate & IRQS_REPLAY)
+ 		return;
+Index: linux-2.6-tip/kernel/irq/settings.h
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/settings.h
++++ linux-2.6-tip/kernel/irq/settings.h
+@@ -5,6 +5,7 @@
+ enum {
+ 	_IRQ_DEFAULT_INIT_FLAGS	= IRQ_DEFAULT_INIT_FLAGS,
+ 	_IRQ_PER_CPU		= IRQ_PER_CPU,
++	_IRQ_LEVEL		= IRQ_LEVEL,
+ 	_IRQ_NO_BALANCING	= IRQ_NO_BALANCING,
+ 	_IRQF_MODIFY_MASK	= IRQF_MODIFY_MASK,
+ };
+@@ -31,6 +32,8 @@ enum {
+ #define IRQ_NO_BALANCING	GOT_YOU_MORON
+ #undef IRQ_AFFINITY_SET
+ #define IRQ_AFFINITY_SET	GOT_YOU_MORON
++#undef IRQ_LEVEL
++#define IRQ_LEVEL		GOT_YOU_MORON
+ #undef IRQF_MODIFY_MASK
+ #define IRQF_MODIFY_MASK	GOT_YOU_MORON
+ 
+@@ -60,3 +63,30 @@ static inline bool irq_settings_has_no_b
  {
+ 	return desc->status & _IRQ_NO_BALANCING;
+ }
++
++static inline u32 irq_settings_get_trigger_mask(struct irq_desc *desc)
++{
++	return desc->status & IRQ_TYPE_SENSE_MASK;
++}
++
++static inline void
++irq_settings_set_trigger_mask(struct irq_desc *desc, u32 mask)
++{
++	desc->status &= ~IRQ_TYPE_SENSE_MASK;
++	desc->status |= mask & IRQ_TYPE_SENSE_MASK;
++}
++
++static inline bool irq_settings_is_level(struct irq_desc *desc)
++{
++	return desc->status & _IRQ_LEVEL;
++}
++
++static inline void irq_settings_clr_level(struct irq_desc *desc)
++{
++	desc->status &= ~_IRQ_LEVEL;
++}
++
++static inline void irq_settings_set_level(struct irq_desc *desc)
++{
++	desc->status |= _IRQ_LEVEL;
++}
 
 
