@@ -1,90 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab1BJLU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 06:20:59 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:32837 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab1BJLU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 06:20:58 -0500
-Date: Thu, 10 Feb 2011 11:20:32 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 5/5] have smaps show transparent huge pages
-Message-ID: <20110210112032.GG17873@csn.ul.ie>
-References: <20110209195406.B9F23C9F@kernel> <20110209195413.6D3CB37F@kernel>
+	id S1756220Ab1BJLXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 06:23:47 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:38231 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755578Ab1BJLXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 06:23:46 -0500
+Message-ID: <4D53CAE8.1060007@vflare.org>
+Date: Thu, 10 Feb 2011 16:54:24 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110209195413.6D3CB37F@kernel>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: linux-next: manual merge of the staging tree with the staging.current
+ tree
+References: <20110210163527.3b2cc580.sfr@canb.auug.org.au>
+In-Reply-To: <20110210163527.3b2cc580.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 11:54:13AM -0800, Dave Hansen wrote:
-> 
-> Now that the mere act of _looking_ at /proc/$pid/smaps will not
-> destroy transparent huge pages, tell how much of the VMA is
-> actually mapped with them.
-> 
-> This way, we can make sure that we're getting THPs where we
-> expect to see them.
-> 
-> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> ---
-> 
->  linux-2.6.git-dave/fs/proc/task_mmu.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff -puN fs/proc/task_mmu.c~teach-smaps-thp fs/proc/task_mmu.c
-> --- linux-2.6.git/fs/proc/task_mmu.c~teach-smaps-thp	2011-02-09 11:41:44.423556779 -0800
-> +++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-02-09 11:41:52.611550670 -0800
-> @@ -331,6 +331,7 @@ struct mem_size_stats {
->  	unsigned long private_dirty;
->  	unsigned long referenced;
->  	unsigned long anonymous;
-> +	unsigned long anonymous_thp;
->  	unsigned long swap;
->  	u64 pss;
->  };
-> @@ -394,6 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, u
->  			spin_lock(&walk->mm->page_table_lock);
->  		} else {
->  			smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_SIZE, walk);
-> +			mss->anonymous_thp += HPAGE_SIZE;
+On 02/10/2011 11:05 AM, Stephen Rothwell wrote:
+>
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/zram/zram_drv.c between commit
+> 5414e557fca545614ceedc3d3496f747457e2e3b ("staging: zram: fix data
+> corruption issue") from the staging.current tree and commit
+> 2787f959d6c5fb258d964218ac75346019f49ee9 ("zram: Return zero'd pages on
+> new reads") from the staging tree.
+>
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-I should have thought of this for the previous patch but should this be
-HPAGE_PMD_SIZE instead of HPAGE_SIZE? Right now, they are the same value
-but they are not the same thing.
+The fix looks correct to me. Thanks for fixing this.
 
->  			return 0;
->  		}
->  	}
-> @@ -435,6 +437,7 @@ static int show_smap(struct seq_file *m,
->  		   "Private_Dirty:  %8lu kB\n"
->  		   "Referenced:     %8lu kB\n"
->  		   "Anonymous:      %8lu kB\n"
-> +		   "AnonHugePages:  %8lu kB\n"
->  		   "Swap:           %8lu kB\n"
->  		   "KernelPageSize: %8lu kB\n"
->  		   "MMUPageSize:    %8lu kB\n"
-> @@ -448,6 +451,7 @@ static int show_smap(struct seq_file *m,
->  		   mss.private_dirty >> 10,
->  		   mss.referenced >> 10,
->  		   mss.anonymous >> 10,
-> +		   mss.anonymous_thp >> 10,
->  		   mss.swap >> 10,
->  		   vma_kernel_pagesize(vma) >> 10,
->  		   vma_mmu_pagesize(vma) >> 10,
-> _
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+Nitin
