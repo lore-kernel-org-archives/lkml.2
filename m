@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab1BJN5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 08:57:37 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41157 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756238Ab1BJN5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 08:57:36 -0500
-Date: Thu, 10 Feb 2011 14:57:55 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] amd64_edac for .38-rc5
-Message-ID: <20110210135755.GF12244@aftab>
+	id S1755713Ab1BJOGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 09:06:11 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:57481 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880Ab1BJOGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 09:06:09 -0500
+Date: Thu, 10 Feb 2011 14:05:43 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: handle simple case in free_pcppages_bulk()
+Message-ID: <20110210140543.GJ17873@csn.ul.ie>
+References: <1297338408-3590-1-git-send-email-namhyung@gmail.com> <AANLkTikEigbPsNMqqkmixYbCfD7Dz12YMcW2+GZbhUQq@mail.gmail.com> <1297343929.1449.3.camel@leonhard> <AANLkTimcLgsdEm6XKESc34Z=nsJkZqz8H1jR-ARZo_Gq@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimcLgsdEm6XKESc34Z=nsJkZqz8H1jR-ARZo_Gq@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Feb 10, 2011 at 10:38:59PM +0900, Minchan Kim wrote:
+> On Thu, Feb 10, 2011 at 10:18 PM, Namhyung Kim <namhyung@gmail.com> wrote:
+> > 2011-02-10 (???), 22:10 +0900, Minchan Kim:
+> >> Hello Namhyung,
+> >>
+> >
+> > Hi Minchan,
+> >
+> >
+> >> On Thu, Feb 10, 2011 at 8:46 PM, Namhyung Kim <namhyung@gmail.com> wrote:
+> >> > Now I'm seeing that there are some cases to free all pages in a
+> >> > pcp lists. In that case, just frees all pages in the lists instead
+> >> > of being bothered with round-robin lists traversal.
+> >>
+> >> I though about that but I didn't send the patch.
+> >> That's because many cases which calls free_pcppages_bulk(,
+> >> pcp->count,..) are slow path so it adds comparison overhead on fast
+> >> path while it loses the effectiveness in slow path.
+> >>
+> >
+> > Hmm.. How about adding unlikely() then? Doesn't it help much here?
+> 
+> Yes. It would help but I am not sure how much it is.
+> AFAIR, when Mel submit the patch, he tried to prove the effectiveness
+> with some experiment and profiler.
 
-please pull the below fix for ganged DCT mode.
-
-Thanks.
-
-The following changes since commit 100b33c8bd8a3235fd0b7948338d6cbb3db3c63d:
-
-  Linux 2.6.38-rc4 (2011-02-07 16:03:55 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
-
-Borislav Petkov (1):
-      amd64_edac: Fix DIMMs per DCTs output
-
- drivers/edac/amd64_edac.c |   28 ++++++++--------------------
- 1 files changed, 8 insertions(+), 20 deletions(-)
-
+Yep. Principally I *think* used netperf running UDP_STREAM for different
+buffer sizes and compared oprofile output but I also ran a battery of
+benchmarks to check for any other unexpected regression without profiling.
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Mel Gorman
+SUSE Labs
