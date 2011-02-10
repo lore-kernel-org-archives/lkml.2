@@ -1,83 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab1BJBYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 20:24:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55632 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab1BJBYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 20:24:54 -0500
-Message-ID: <4D533EB0.6060405@cn.fujitsu.com>
-Date: Thu, 10 Feb 2011 09:26:08 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753698Ab1BJBcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 20:32:33 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:1088 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab1BJBcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 20:32:32 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=a/w7GQLGZkIaynx456KiyJrluDO+5bJvcReeSoNoGFDvJMPyVdecMoeM6BLYSndBR
+	8phSr8t+n8rE53v5vojwg==
+Subject: [PATCH] Avoid preferential treatment of groups that aren't backlogged
+To: jaxboe@fusionio.com, vgoyal@redhat.com
+From: Chad Talbott <ctalbott@google.com>
+Cc: guijianfeng@cn.fujitsu.com, mrubin@google.com, teravest@google.com,
+        jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Date: Wed, 09 Feb 2011 17:32:11 -0800
+Message-ID: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: jacob pan <jacob.jun.pan@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Paul Menage <menage@google.com>, akpm@linux-foundation.org,
-        rdunlap@xenotime.net, Cedric Le Goater <clg@fr.ibm.com>
-Subject: Re: [PATCH 1/1, v6] cgroup/freezer: add per freezer duty ratio control
-References: <1297213541-18156-1-git-send-email-jacob.jun.pan@linux.intel.com>	<4D52050F.3060907@cn.fujitsu.com> <20110209101631.5f265687@jacob-laptop>
-In-Reply-To: <20110209101631.5f265687@jacob-laptop>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-10 09:23:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-10 09:24:01,
-	Serialize complete at 2011-02-10 09:24:01
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jacob pan wrote:
-> On Wed, 09 Feb 2011 11:07:59 +0800
-> Li Zefan <lizf@cn.fujitsu.com> wrote:
-> 
->> jacob.jun.pan@linux.intel.com wrote:
->>> From: Jacob Pan <jacob.jun.pan@linux.intel.com>
->>>
->>> Freezer subsystem is used to manage batch jobs which can start
->>> stop at the same time. However, sometime it is desirable to let
->>> the kernel manage the freezer state automatically with a given
->>> duty ratio.
->>> For example, if we want to reduce the time that backgroup apps
->>> are allowed to run we can put them into a freezer subsystem and
->>> set the kernel to turn them THAWED/FROZEN at given duty ratio.
->>>
->>> This patch introduces two file nodes under cgroup
->>> freezer.duty_ratio_pct and freezer.period_sec
->>>
->>> Usage example: set period to be 5 seconds and frozen duty ratio 90%
->>> [root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
->>> [root@localhost aoa]# echo 5000 > freezer.period_ms
->>>
->>
->> So after:
->>
->> # echo FROZEN > freezer.state
->> # echo 90 > freezer.duty_ratio_pct
->> # echo 5000 > freezer.period_ms
->> ...
->> # echo 0 > freezer.duty_ratio_pct
->>
->> All the tasks in this cgroup are in THAWED state, but the cgroup is
->> in FROZEN state. This should be fixed.
-> I don't know how could this ever happen. Is it based on your testing?
-> Whenever tasks in a cgroup are thawed/frozen, its freezer state would
-> change accordingly.
-> After your example, freezer.state should have THAWED. It matches
-> user's intention, i.e. if a user do
-> echo 0 > freezer.duty_ratio_pct
-> It must want 0% to be frozen, which is THAWED.
-> 
-> Am I missing anything?
-> 
+Problem: If a group isn't backlogged, we remove it from the service
+tree. When it becomes active again, it gets the minimum vtime of the
+tree. That is true even when the group was idle for a very small time,
+and it consumed some IO time right before it became idle.  If group
+has small weight, it can end up using more disk time than its fair
+share.
 
-You're right. I made a mistake when looking into the patch.
+Solution: We solve the problem by assigning the group its old vtime if
+it has not been idle long enough. Otherise we assign it the service
+tree's min vtime.
 
-btw, I made a few other comments in your code, that you may have
-overlooked.
+Complications: When an entire service tree becomes completely idle, we
+lose the vtime state. All the old vtime values are not relevant any
+more. For example, consider the case when the service tree is idle and
+a brand new group sends IO. That group would have an old vtime value
+of zero, but the service tree's vtime would become closer to zero. In
+such a case, it would be unfair for the older groups to get a much
+higher old vtime stored in them.
+
+We solve that issue by keeping a generation number that counts the
+number of instances when the service tree becomes completely
+empty. The generation number is stored in each group too. If a group
+becomes backlogged after a service tree has been empty, we compare its
+stored generation number with the current service tree generation
+number, and discard the old vtime if the group generation number is
+stale.
+
+The preemption specific code is taken care of automatically because we
+allow preemption checks after inserting a group back into the service
+tree and assigning it an appropriate vtime.
+
+Signed-off-by: Chad Talbott <ctalbott@google.com>
+---
+ block/cfq-iosched.c |   24 +++++++++++++-----------
+ 1 files changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 501ffdf..f09f3fe 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -178,6 +178,7 @@ struct cfq_group {
+ 
+ 	/* group service_tree key */
+ 	u64 vdisktime;
++	u64 generation_num;
+ 	unsigned int weight;
+ 
+ 	/* number of cfqq currently on this group */
+@@ -300,6 +301,9 @@ struct cfq_data {
+ 	/* List of cfq groups being managed on this device*/
+ 	struct hlist_head cfqg_list;
+ 	struct rcu_head rcu;
++
++	/* Generation number, counts service tree empty events */
++	u64 active_generation;
+ };
+ 
+ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+@@ -873,18 +877,13 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+ 		return;
+ 
+-	/*
+-	 * Currently put the group at the end. Later implement something
+-	 * so that groups get lesser vtime based on their weights, so that
+-	 * if group does not loose all if it was not continously backlogged.
+-	 */
+-	n = rb_last(&st->rb);
+-	if (n) {
+-		__cfqg = rb_entry_cfqg(n);
+-		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+-	} else
++	if (cfqd->active_generation > cfqg->generation_num)
+ 		cfqg->vdisktime = st->min_vdisktime;
+-
++	else
++		/* We assume that vdisktime was not modified when the task
++		   was off the service tree.
++		 */
++		cfqg->vdisktime = max(st->min_vdisktime, cfqg->vdisktime);
+ 	__cfq_group_service_tree_add(st, cfqg);
+ 	st->total_weight += cfqg->weight;
+ }
+@@ -906,6 +905,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+ 		cfq_rb_erase(&cfqg->rb_node, st);
+ 	cfqg->saved_workload_slice = 0;
++	cfqg->generation_num = cfqd->active_generation;
++	if (RB_EMPTY_ROOT(&st->rb))
++		cfqd->active_generation++;
+ 	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+ }
+ 
+
