@@ -1,37 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab1BJS7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:59:21 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:33849 "EHLO ogre.sisk.pl"
+	id S1755341Ab1BJTAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 14:00:33 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:56548 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752333Ab1BJS7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:59:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andi Kleen <ak@linux.intel.com>
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos before entering idle
-Date: Thu, 10 Feb 2011 19:59:02 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, mark gross <markgross@thegnar.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Arjan van de Ven <arjan@linux.intel.com>
-References: <1297300864.2645.128.camel@schen9-DESK> <20110210034656.GA22753@gargoyle.amr.corp.intel.com>
-In-Reply-To: <20110210034656.GA22753@gargoyle.amr.corp.intel.com>
+	id S1752212Ab1BJTAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 14:00:32 -0500
+Date: Thu, 10 Feb 2011 10:58:52 -0800
+From: Matt Helsley <matthltc@us.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Matt Helsley <matthltc@us.ibm.com>, jacob.jun.pan@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        akpm@linux-foundation.org, rdunlap@xenotime.net,
+        Cedric Le Goater <clg@vnet.ibm.com>,
+        Wysocki Rafael Wysocki <rjw@sisk.pl>
+Subject: Re: [PATCH 1/1, v6] cgroup/freezer: add per freezer duty ratio
+ control
+Message-ID: <20110210185851.GH16432@count0.beaverton.ibm.com>
+References: <1297213541-18156-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <20110210030442.GG16432@count0.beaverton.ibm.com>
+ <20110210091522.GA28511@shutemov.name>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102101959.02733.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110210091522.GA28511@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 10, 2011, Andi Kleen wrote:
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+On Thu, Feb 10, 2011 at 11:15:22AM +0200, Kirill A. Shutemov wrote:
+> On Wed, Feb 09, 2011 at 07:04:42PM -0800, Matt Helsley wrote:
+> > > +{
+> > > +	struct cgroup *cgroup = (struct cgroup *)data;
+> > > +	struct freezer *freezer = cgroup_freezer(cgroup);
+> > > +
+> > > +	do {
+> > > +		if (freezer->duty.ratio < 100 && freezer->duty.ratio > 0 &&
+> > > +			freezer->duty.period_pct_ms) {
+> > > +			if (try_to_freeze_cgroup(cgroup, freezer))
+> > > +				pr_info("cannot freeze\n");
+> > > +			msleep(freezer->duty.period_pct_ms *
+> > > +				freezer->duty.ratio);
+> > > +			unfreeze_cgroup(cgroup, freezer);
+> > > +			msleep(freezer->duty.period_pct_ms *
+> > > +				(100 - freezer->duty.ratio));
+> > > +		} else {
+> > > +			sleep_on(&freezer_wait);
+> > > +			pr_debug("freezer thread wake up\n");
+> > > +		}
+> > > +	} while (!kthread_should_stop());
+> > > +	return 0;
+> > > +}
+> > 
+> > Seems to me you could avoid the thread-per-cgroup overhead and the
+> > sleep-loop code by using one timer-per-cgroup. When the timer expires
+> > you freeze/thaw the cgroup associated with the timer, setup the next
+> > wakeup timer, and use only one kernel thread to do it all. If you
+> > use workqueues you might even avoid the single kernel thread.
+> > 
+> > Seems to me like that'd be a good fit for embedded devices.
 > 
-> Patch looks good to me. Thanks Tim.
+> I proposed to use delayed workqueues (schedule_delayed_work()).
 
-I'm taking that as an ACK.
+Even better.
 
-Thanks,
-Rafael
+> 
+> > > +#define FREEZER_KH_PREFIX  "freezer_"
+> > > +static int freezer_write_param(struct cgroup *cgroup, struct cftype *cft,
+> > > +		u64 val)
+> > > +{
+> > > +	struct freezer *freezer;
+> > > +	char thread_name[32];
+> > > +	int ret = 0;
+> > > +
+> > > +	freezer = cgroup_freezer(cgroup);
+> > > +
+> > > +	if (!cgroup_lock_live_group(cgroup))
+> > > +		return -ENODEV;
+> > > +
+> > > +	switch (cft->private) {
+> > > +	case FREEZER_DUTY_RATIO:
+> > > +		if (val >= 100 || val < 0) {
+> > > +			ret = -EINVAL;
+> > > +			goto exit;
+> > > +		}
+> > > +		freezer->duty.ratio = val;
+> > 
+> > Why can't val == 100? At that point it's always THAWED and no kernel
+> > thread is necessary (just like at 0 it's always FROZEN and no kernel
+> > thread is necessary).
+> 
+> val == 100 is interface abuse, I think. I just turn off the feature, if
+> you want.
+
+And how is userspace supposed to do that at runtime if we can't disable
+it by writing to the state file (see below)? Then I don't see anyway
+to get rid of the duty cycling unless you clear out the cgroup and
+recreate it.
+
+Frankly, I think 0 and 100 percent aren't interface abuse. Anybody
+who knows it's a percent value will naturally try to put 0 or 100
+there.
+
+> > >  static struct cftype files[] = {
+> > >  	{
+> > >  		.name = "state",
+> > >  		.read_seq_string = freezer_read,
+> > >  		.write_string = freezer_write,
+> > 
+> > It's not clear what should happen when userspace writes the state
+> > file after writing a duty_ratio_pct.
+> 
+> It should return -EBUSY, I think.
+
+Ahh, that is another solution I hadn't considered. That further proves my
+point though :). It's not obvious what should happen and that's a red-flag
+that we're defining policy and should be careful which solution we select.
+
+> 
+> > >  	},
+> > > +	{
+> > > +		.name = "duty_ratio_pct",
+> > > +		.private = FREEZER_DUTY_RATIO,
+> > > +		.read_u64 = freezer_read_duty_ratio,
+> > > +		.write_u64 = freezer_write_param,
+> > > +	},
+> > 
+> > nit: Why use a u64 for a value that can only be 0-100? (or perhaps
+> > 0-1000 if you wanted sub-1% granularity...)
+> 
+> .read_u64/.write_64 is a standard cgroup's interface.
+
+Oops -- I was thinking there was a smaller variant of these.
+
+Cheers,
+	-Matt Helsley
