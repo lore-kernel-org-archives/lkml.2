@@ -1,126 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab1BJRBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:01:39 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:33529 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756529Ab1BJRBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:01:38 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ian Campbell <ijc@hellion.org.uk>
-Subject: Re: [Xen-devel] Re: [linux-pm] [PATCH 0/2] Fix hangup after creating checkpoint on Xen.
-Date: Thu, 10 Feb 2011 18:01:20 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, Brendan Cully <brendan@cs.ubc.ca>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>
-References: <Pine.LNX.4.44L0.1102101043010.2029-100000@iolanthe.rowland.org> <1297355688.21980.488.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1297355688.21980.488.camel@zakaz.uk.xensource.com>
+	id S1756659Ab1BJRDE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:03:04 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31487 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1BJRDB (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 10 Feb 2011 12:03:01 -0500
+Date: Thu, 10 Feb 2011 12:01:52 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
+        akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
+        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH R3 7/7] xen/balloon: Memory hotplug support for Xen
+ balloon driver
+Message-ID: <20110210170152.GE12087@dumpdata.com>
+References: <20110203163033.GJ1364@router-fw-old.local.net-space.pl>
+ <1296756744.8299.1440.camel@nimitz>
+ <20110207141227.GA10852@router-fw-old.local.net-space.pl>
+ <1297185746.6737.12110.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102101801.20345.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297185746.6737.12110.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D541A06.0064:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 10, 2011, Ian Campbell wrote:
-> On Thu, 2011-02-10 at 11:00 -0500, Alan Stern wrote:
-> > On Thu, 10 Feb 2011, Ian Campbell wrote:
+On Tue, Feb 08, 2011 at 09:22:26AM -0800, Dave Hansen wrote:
+> On Mon, 2011-02-07 at 15:12 +0100, Daniel Kiper wrote:
+> > On Thu, Feb 03, 2011 at 10:12:24AM -0800, Dave Hansen wrote:
+> > > On Thu, 2011-02-03 at 17:30 +0100, Daniel Kiper wrote:
+> > > > +static struct resource *allocate_memory_resource(unsigned long nr_pages)
+> > > > +{
+> > > > +	resource_size_t r_min, r_size;
+> > > > +	struct resource *r;
+> > > > +
+> > > > +	/*
+> > > > +	 * Look for first unused memory region starting at page
+> > > > +	 * boundary. Skip last memory section created at boot time
+> > > > +	 * because it may contains unused memory pages with PG_reserved
+> > > > +	 * bit not set (online_pages() require PG_reserved bit set).
+> > > > +	 */
+> > >
+> > > Could you elaborate on this comment a bit?  I think it's covering both
+> > > the "PAGE_SIZE" argument to allocate_resource() and something else, but
+> > > I'm not quite sure.
 > > 
-> > > On Wed, 2011-02-09 at 23:42 +0000, Alan Stern wrote:
-> > > > In fact there already is a "fast suspend & resume" path in the PM core.  
-> > > > It's the freeze/thaw procedure used when starting to hibernate.  The
-> > > > documentation specifically says that drivers' freeze methods are
-> > > > supposed to quiesce their devices but not change power levels.  In
-> > > > addition, the thaw method is invoked as part of recovery from a failed
-> > > > hibernation attempt, so it already has the "cancel" semantics that xen 
-> > > > seems to want.
-> > > 
-> > > Sounds like that would work and I would much prefer to simply make
-> > > correct use of the core functionality.
-> > 
-> > It seems like a reasonable approach.  Whether it will actually _work_ 
-> > is a harder question...  :-)
+> > Yes, you are right. Aligment to PAGE_SIZE is done by allocate_resource().
+> > Additionally, r_min (calculated below) sets lower limit at which hoplugged
+> > memory could be installed (due to PG_reserved bit requirment set up by
+> > online_pages()). Later r_min is put as an argument to allocate_resource() call.
 > 
-> Heh.
+> OK, and you'll update the comment on that?
 > 
-> > > So PMSG_FREEZE is balanced by either PMSG_RECOVER or PMSG_THAW depending
-> > > on whether the suspend was cancelled or not?
+> > > > +	r = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> > > > +
+> > > > +	if (!r)
+> > > > +		return NULL;
+> > > > +
+> > > > +	r->name = "System RAM";
+> > > > +	r->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+> > > > +	r_min = PFN_PHYS(section_nr_to_pfn(pfn_to_section_nr(balloon_stats.boot_max_pfn) + 1));
+> > >
+> > > Did you do this for alignment reasons?  It might be a better idea to
+> > > just make a nice sparsemem function to do alignment.
 > > 
-> > Basically yes.  It is also "balanced" by PMSG_RESTORE, which is used
-> > after a memory image has been restored (although this isn't relevant to
-> > your snapshotting).  See the comments in include/linux/pm.h.
+> > Please look above.
 > 
-> The documentation of the individual events in pm.h is good. Is there a
-> reference for the sequence of events for the different types of
-> suspend/hibernate/etc?
+> You spoke about page alignment up there.  Why is this section-aligned?
+> Should we make an "align to section" function in generic sparsemem code?
 > 
-> > >  So the sequence of events
-> > > is something like:
-> > > 	dpm_suspend_start(PMSG_FREEZE);
-> > >          
-> > > 		dpm_suspend_noirq(PMSG_FREEZE);
-> > >                          
-> > > 			sysdev_suspend(PMSG_QUIESCE);
+> > > > +	r_size = nr_pages << PAGE_SHIFT;
+> > > > +
+> > > > +	if (allocate_resource(&iomem_resource, r, r_size, r_min,
+> > > > +					ULONG_MAX, PAGE_SIZE, NULL, NULL) < 0) {
+> > > > +		kfree(r);
+> > > > +		return NULL;
+> > > > +	}
+> > > > +
+> > > > +	return r;
+> > > > +}
+> > >
+> > > This function should probably be made generic.  I bet some more
+> > > hypervisors come around and want to use this.  They generally won't care
+> > > where the memory goes, and the kernel can allocate a spot for them.
 > > 
-> > This should say sysdev_suspend(PMSG_FREEZE).
-> > 
-> > > 			cancelled = suspend_hypercall()
-> > 
-> > At this point swsusp_arch_suspend() is called.  If that translates to 
-> > suspend_hypercall() in your setting, then yes.
-> > 
-> > > 			sysdev_resume();
-> > >                  
-> > > 		dpm_resume_noirq(cancelled ? PMSG_RECOVER : PMSG_THAW);
-> > >          
-> > > 	dpm_resume_end(cancelled ? PMSG_RECOVER : PMSG_THAW);
-> > > ?
-> > 
-> > Yes.
+> > Yes, you are right. I think about new project in which
+> > this function will be generic and then I would move it to
+> > some more generic place. Now, I think it should stay here.
 > 
-> Both of those call ->thaw ->complete. Did I mean "cancelled ?
-> PMSG_THAW : PMSG_RESTORE"? (or s/THAW/RECOVER?)
+> Please move it to generic code.  It doesn't belong in Xen code.  
 > 
-> If the suspend was cancelled then we want the devices to simply pickup
-> where they were before the freeze, wereas if we really did suspend (or
-> migrate or whatever) then they need to do a more complete reset and
-> reconnect operation so we want some sort of indication to the driver
-> which happened.
+> > > In other words, I think you can take everything from and including
+> > > online_pages() down in the function and take it out.  Use a udev hotplug
+> > > rule to online it immediately if that's what you want.
+> > 
+> > I agree. I discussed a bit about this problem with Jeremy, too. However,
+> > there are some problems to implement that solution now. First of all it is
+> > possible to online hotplugged memory using sysfs interface only in chunks
+> > called sections. It means that it is not possible online once again section
+> > which was onlined ealier partialy populated and now it contains new pages
+> > to online. In this situation sysfs interface emits Invalid argument error.
+> > In theory it should be possible to offline and then online whole section
+> > once again, however, if memory from this section was used is not possible
+> > to do that. It means that those properties does not allow hotplug memory
+> > in guest in finer granulity than section and sysfs interface is too inflexible
+> > to be used in that solution. That is why I decided to online hoplugged memory
+> > using API which does not have those limitations.
+> 
+> Sure, you have to _online_ the whole thing at once, but you don't have
+> to actually make the pages available.  You also don't need to hook in to
+> the memory resource code like you're doing.  It's sufficient to just try
+> and add the memory.  If you get -EEXIST, then you can't add it there, so
+> move up and try again.  
+> 
+> int xen_balloon_add_memory(u64 size)
+> {
+> 	unsigned long top_of_mem = max_pfn;
+> 	top_of_mem = section_align_up(top_of_mem);
+> 
+> 	while (1) {
+> 		int ret = add_memory(nid, top_of_mem, size);
+> 		if (ret == -EEXIST)
+> 			continue;
+> 		// error handling...
+> 		break;
+> 	}
+> 	return...;
+> }
+> 
+> As for telling the hypervisor where you've mapped things, that should be
+> done in arch_add_memory().  
+> 
+> When it comes down to online_page(), you don't want your pages freed
+> back in to the buddy allocator, you want them put in to the balloon.
+> So, take the __free_page() in online_page(), and put a Xen hook in
+> there.  
+> 
+> +void __attribute__((weak)) arch_free_hotplug_page(struct page *page)
+> +{
+> +	__free_page(page);
+> +}
 
-In that case you should probably use PMSG_THAW (or PMSG_RECOVER) for the
-"cancel" case and PMSG_RESTORE for the "success" case (pretty much what
-hibernation does).
+I somehow have a vague recollection that the __weak was frowned upon? The issues
+were that when you compile a pv-ops kernel it can run as baremetal so the..
 
-And please don't forget to update the comments in pm.h to cover your usage
-case. :-)
-
-> > > (For comparison we currently have:
-> > > > > >         dpm_suspend_start(PMSG_SUSPEND);
-> > > > > >         
-> > > > > >                 dpm_suspend_noirq(PMSG_SUSPEND);
-> > > > > >                         
-> > > > > >                         sysdev_suspend(PMSG_SUSPEND);
-> > > > > >                         /* suspend hypercall */
-> > > > > >                         sysdev_resume();
-> > > > > >                 
-> > > > > >                 dpm_resume_noirq(PMSG_RESUME);
-> > > > > >         
-> > > > > >         dpm_resume_end(PMSG_RESUME);
-> > > )
-> > 
-> > Right.  The sequence of calls is the same, but the PMSG_ argument is 
-> > different so drivers are expected to act differently in response.
 > 
-> The drivers don't actually see the PMSG_* though right? They only see a
-> differing sequence of hooks from dev_pm_ops called.
+> void online_page(struct page *page)
+> {
+>         unsigned long pfn = page_to_pfn(page);
+> ...
+> -       __free_page(page);
+> +	arch_free_hotplug_page(page);
+> }
+> 
+> Then, have Xen override it:
+> 
+> void arch_free_hotplug_page(struct page *page)
+> {
+> 	if (xen_need_to_inflate_balloon())
+> 		put_page_in_balloon(page);	
+> 	else
+> 		__free_page(page);
 
-That's correct.
+ call above would get called even on baremetal (and would require the header
+file arch/x86/include/memory_hotplug.h to pull in header file from the balloon
+driver). If we are going to persue this it might be prudent to follow what we did for MSI:
 
-Thanks,
-Rafael
+
+1525bf0d8f059a38c6e79353583854e1981b2e67
+294ee6f89cfd629e276f632a6003a0fad7785dce
+b5401a96b59475c1c878439caecb8c521bdfd4ad
