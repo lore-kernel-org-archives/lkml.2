@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab1BJEv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 23:51:56 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:47764 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab1BJEvy (ORCPT
+	id S1755905Ab1BJE4Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 23:56:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48118 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755741Ab1BJE4Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 23:51:54 -0500
+	Wed, 9 Feb 2011 23:56:24 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=WIrH2bnYtGWRFi0h9WiLYrTE7wBIqEoY9Wvek/ZNxC6LtXwoD1r6eebT0weUROmB9i
-         7kHzNnTf+uvuvLsg3Sg4pzrSPAVlyv7fbfrtmxmwGackhFcM1Pu+no6LW6/k/UoVabr/
-         XNmoA2GveLkeu8rO2ATj0URygmsqPliP2ot40=
-Date: Thu, 10 Feb 2011 12:51:31 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
-        davem@davemloft.net, greg@kroah.com, rdunlap@xenotime.com
-Subject: [PATCH]add topgit for T: in MAINTAINERS doc.
-Message-ID: <20110210045129.GA5281@gmail.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-	joe@perches.com, davem@davemloft.net, greg@kroah.com,
-	rdunlap@xenotime.com
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cACvlgpczHPXZkol39N8rp7S1T6quc7GOnnOka9LvL8kI88cSRF9Q3L3b3cUJ9YHm2
+         aYpvnvEw2hQz08PgOEt0Rlmssqf3ob0R+EAR3AMtn09GQ5DWKxkWZZTdNsobpHjW5YxI
+         OpyebelEcFITfkePRBo0aExFovyar5q5eLN9M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTik36rhvou2Bu99LMkAXx+BYQJysPxZG1gAAJwyv@mail.gmail.com>
+References: <1297262537-7425-1-git-send-email-ozaki.ryota@gmail.com>
+ <20110210085823.2f99b81c.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTikdBhSWAoP6TDRExSV2rHmWDkEc0foSKvqJt=tx@mail.gmail.com>
+ <AANLkTik36rhvou2Bu99LMkAXx+BYQJysPxZG1gAAJwyv@mail.gmail.com>
+From: Ryota Ozaki <ozaki.ryota@gmail.com>
+Date: Thu, 10 Feb 2011 13:56:03 +0900
+Message-ID: <AANLkTi=n1hvQKBOcLtP1FY07x8yBEvawH3mKYeGyR0xX@mail.gmail.com>
+Subject: Re: [PATCH] mm: Fix out-of-date comments which refers non-existent functions
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi us,
-     When i see MAINTAINERS, i didn't find topgit in T:. It only reads that "T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit."
-     But there is topgit used in MAINTAINERS doc like following.
-           
-	   ARM/EZX SMARTPHONES (A780, A910, A1200, E680, ROKR E2 and ROKR E6)
-	    M:      Daniel Ribeiro <drwyrm@gmail.com>
-	    M:      Stefan Schmidt <stefan@openezx.org>
-	    M:      Harald Welte <laforge@openezx.org>
-	    L:      openezx-devel@lists.openezx.org (subscribers-only)
-	    W:      http://www.openezx.org/
-	    S:      Maintained
-	    T:      topgit git://git.openezx.org/openezx.git      
-	    F:      arch/arm/mach-pxa/ezx.c
-   My patcher like following.
+On Thu, Feb 10, 2011 at 1:44 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Thu, Feb 10, 2011 at 12:58 PM, Ryota Ozaki <ozaki.ryota@gmail.com> wrote:
+>> On Thu, Feb 10, 2011 at 8:58 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>> On Wed,  9 Feb 2011 23:42:17 +0900
+>>> Ryota Ozaki <ozaki.ryota@gmail.com> wrote:
+>>>
+>>>> From: Ryota Ozaki <ozaki.ryota@gmail.com>
+>>>>
+>>>> do_file_page and do_no_page don't exist anymore, but some comments
+>>>> still refers them. The patch fixes them by replacing them with
+>>>> existing ones.
+>>>>
+>>>> Signed-off-by: Ryota Ozaki <ozaki.ryota@gmail.com>
+>>>
+>>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>
+>> Thanks, Kamezawa-san.
+>>
+>>>
+>>> It seems there are other ones ;)
+>>> ==
+>>>    Searched full:do_no_page (Results 1 - 3 of 3) sorted by relevancy
+>>>
+>>>  /linux-2.6-git/arch/alpha/include/asm/
+>>> H A D   cacheflush.h    66 /* This is used only in do_no_page and do_swap_page. */
+>>>  /linux-2.6-git/arch/avr32/mm/
+>>> H A D   cache.c         116 * This one is called from do_no_page(), do_swap_page() and install_page().
+>>>  /linux-2.6-git/mm/
+>>> H A D   memory.c        2121 * and do_anonymous_page and do_no_page can safely check later on).
+>>> 2319 * do_no_page is protected similarly.
+>>
+>> Nice catch :-) Cloud I assemble all fixes into one patch?
+>>
+>>  ozaki-r
+>>
+>
+> When you resend the patch, Please Cc Jiri Kosina <trivial@kernel.org>
 
-Signed-off-by: Harry Wei <harryxiyou@gmail.com>
----
- MAINTAINERS |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+OK, will do.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 95ac55c..3b4c67a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -72,7 +72,7 @@ Descriptions of section entries:
- 	L: Mailing list that is relevant to this area
- 	W: Web-page with status/info
- 	Q: Patchwork web based patch tracking system site
--	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit.
-+	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit, topgit.
- 	S: Status, one of the following:
- 	   Supported:	Someone is actually paid to look after this.
- 	   Maintained:	Someone actually looks after it.
--- 
-1.7.0.4
+  ozaki-r
 
-
+>
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
