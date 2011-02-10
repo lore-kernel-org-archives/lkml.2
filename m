@@ -1,204 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab1BJPvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 10:51:12 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:54383 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab1BJPvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 10:51:11 -0500
-Message-ID: <4D540969.9090507@panasas.com>
-Date: Thu, 10 Feb 2011 17:51:05 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1756587Ab1BJPwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 10:52:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41553 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab1BJPwc (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 10 Feb 2011 10:52:32 -0500
+Date: Thu, 10 Feb 2011 10:51:42 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
+        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH R3 5/7] xen/balloon: Protect against CPU exhaust by
+ event/x proces
+Message-ID: <20110210155142.GC12087@dumpdata.com>
+References: <20110203162851.GH1364@router-fw-old.local.net-space.pl>
 MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: Regression with calibrate_xor_blocks, probably UML related
-References: <4D52E4E1.7070705@panasas.com>
-In-Reply-To: <4D52E4E1.7070705@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Feb 2011 15:51:09.0814 (UTC) FILETIME=[55FD4960:01CBC93A]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110203162851.GH1364@router-fw-old.local.net-space.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D54099C.00C5:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2011 09:02 PM, Boaz Harrosh wrote:
-> I have a new module that uses the async_tx.h lib.
+On Thu, Feb 03, 2011 at 05:28:51PM +0100, Daniel Kiper wrote:
+> Protect against CPU exhaust by event/x process during
+> errors by adding some delays in scheduling next event.
 > 
-> On an exact same module code based on 3.6.37 I see the:
-> 	xor: measuring software checksum speed
-> 	   8regs     : 11312.000 MB/sec
-> 	   8regs_prefetch:  9792.800 MB/sec
-> 	   32regs    : 11220.400 MB/sec
-> 	   32regs_prefetch:  9750.800 MB/sec
-> 	xor: using function: 8regs (11312.000 MB/sec)
+> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+> ---
+>  drivers/xen/balloon.c |   99 +++++++++++++++++++++++++++++++++++++++---------
+>  1 files changed, 80 insertions(+), 19 deletions(-)
 > 
-> And all is well. But on code based on 2.6.38-rc4 I get hard stuck
-> right after:
-> 	xor: measuring software checksum speed
-> 
+> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> index 4223f64..ed103d4 100644
+> --- a/drivers/xen/balloon.c
+> +++ b/drivers/xen/balloon.c
+> @@ -66,6 +66,20 @@
+>  
+>  #define BALLOON_CLASS_NAME "xen_memory"
+>  
+> +/*
+> + * balloon_process() state:
+> + *
+> + * BP_ERROR: error, go to sleep,
+> + * BP_DONE: done or nothing to do,
+> + * BP_HUNGRY: hungry.
+> + */
+> +
+> +enum bp_state {
+> +	BP_ERROR,
 
-OK this is not dependent on Kernel version it is the same for both
-.38-rc4 and .37. I was just lucky with .37 more.
+BP_EAGAIN?
 
-And the same things happen with raid456 module. I do
-[]$ modprobe raid456; modprobe --remove raid456
-A few times it loads, printing the above checks, Then At one
-time it freezes. Sometimes at first attempt sometimes at 4-7
-attempts. I never went 10 times strait.
+So if we fail to increase the first hour, we would keep on trying to
+increase forever (with a 32 second delay between each call). Do you
+think it makes sense (as a future patch, not tied in with this patchset)
+to printout a printk(KERN_INFO that we have been trying to increase
+for the last X hours, seconds and have not gone anywhere (and perhaps
+stop trying to allocate more memory?).
 
-When it freezes (hard) I can see in my host that the UML is
-at 100% CPU.
-
-BTW: when I manage to pass the tests I get the above numbers
-But when I load directly on the host I get:
-
- xor: automatically using best checksumming function: generic_sse
-   generic_sse:  7596.000 MB/sec
- xor: using function: generic_sse (7596.000 MB/sec)
- raid6: int64x1   1660 MB/s
- raid6: int64x2   1832 MB/s
- raid6: int64x4   1566 MB/s
- raid6: int64x8   1175 MB/s
- raid6: sse2x1    3699 MB/s
- raid6: sse2x2    4398 MB/s
- raid6: sse2x4    5863 MB/s
- raid6: using algorithm sse2x4 (5863 MB/s)
-
-and on the UML:
-
- raid6: int64x1   2019 MB/s
- raid6: int64x2   2208 MB/s
- raid6: int64x4   1892 MB/s
- raid6: int64x8   1528 MB/s
- raid6: using algorithm int64x2 (2208 MB/s)
- xor: measuring software checksum speed
-   8regs     : 11308.000 MB/sec
-   8regs_prefetch:  9795.600 MB/sec
-   32regs    : 11236.000 MB/sec
-   32regs_prefetch:  9752.400 MB/sec
- xor: using function: 8regs (11308.000 MB/sec)
-
-So the raid6 sse is better, but comparing it64xX the UML is faster than host
-But raid5? that's 33% better results. Does that say that UML's clock has
-a bug?
-
-Any way I'm trying to debug that xor.ko loading problem see what
-comes up. Any help is welcome
-
-Thanks
-Boaz
-
-> the UML is completely frozen. When I kill the uml from the host
-> I can sometimes get this trace.
-> 
-
-
-
-
-
-> 750c7498:  [<6005f936>] bad_page+0xd8/0xf3
-> 750c74c8:  [<60060c93>] get_page_from_freelist+0x333/0x47b
-> 750c7508:  [<60131243>] put_dec+0x20/0x3c
-> 750c75a0:  [<6001a0ac>] change_pre_exec+0x0/0x24
-> 750c75b8:  [<60060ef1>] __alloc_pages_nodemask+0x116/0x65b
-> 750c7668:  [<60132e25>] sprintf+0xa1/0xa3
-> 750c76a0:  [<6001a0ac>] change_pre_exec+0x0/0x24
-> 750c76b8:  [<60061446>] __get_free_pages+0x10/0x43
-> 750c76c8:  [<60012875>] alloc_stack+0x1b/0x1d
-> 750c76d8:  [<6001fe27>] run_helper+0x26/0x1b5
-> 750c76e8:  [<60021553>] set_signals+0x1c/0x2e
-> 750c7708:  [<6007efac>] __kmalloc+0x9e/0xc4
-> 750c7748:  [<6001a544>] change+0x124/0x189
-> 750c77e8:  [<601b77db>] _raw_spin_unlock+0x9/0xb
-> 750c7818:  [<6001a5a9>] close_addr+0x0/0x1c
-> 750c7828:  [<6001a5c3>] close_addr+0x1a/0x1c
-> 750c7838:  [<6001926a>] iter_addresses+0x5f/0x76
-> 750c7858:  [<6007e8e8>] kfree+0x92/0x9b
-> 750c7898:  [<60022d01>] tuntap_close+0x24/0x38
-> 750c78b8:  [<600194e4>] close_devices+0x4a/0x7f
-> 750c78d8:  [<600121bf>] do_uml_exitcalls+0x12/0x23
-> 750c78f8:  [<60012cd2>] uml_cleanup+0x1a/0x87
-> 750c7928:  [<6002039b>] last_ditch_exit+0x9/0x16
-> 750c79e8:  [<78817031>] xor_8regs_2+0x31/0x58 [xor]
-> 750c7a18:  [<7881b000>] calibrate_xor_blocks+0x0/0xdf [xor]
-> 750c7aa8:  [<601b77ce>] _raw_spin_unlock_irqrestore+0x18/0x1c
-> 750c7ac8:  [<60029d8d>] try_to_wake_up+0x86/0x98
-> 750c7d78:  [<601b548d>] printk+0xa0/0xa3
-> 750c7e08:  [<78817633>] do_xor_speed+0x54/0xaf [xor]
-> 750c7e20:  [<7881b000>] calibrate_xor_blocks+0x0/0xdf [xor]
-> 750c7e58:  [<7881b057>] calibrate_xor_blocks+0x57/0xdf [xor]
-> 750c7e68:  [<7881b000>] calibrate_xor_blocks+0x0/0xdf [xor]
-> 750c7e78:  [<6001105a>] do_one_initcall+0x76/0x121
-> 750c7eb8:  [<600563fd>] sys_init_module+0x78/0x1a6
-> 750c7ee8:  [<60014d60>] handle_syscall+0x58/0x70
-> 750c7f08:  [<60024163>] userspace+0x2dd/0x38a
-> 750c7fc8:  [<600126af>] fork_handler+0x62/0x69
-> 
-> (gdb) list *(xor_8regs_2+0x31)
-> 0x55 is in xor_8regs_2 (/usr0/export/dev/bharrosh/git/pub/scsi-misc/include/asm-generic/xor.h:29).
-> 24                      p1[0] ^= p2[0];
-> 25                      p1[1] ^= p2[1];
-> 26                      p1[2] ^= p2[2];
-> 27                      p1[3] ^= p2[3];
-> 28                      p1[4] ^= p2[4];
-> 29                      p1[5] ^= p2[5];
-> 30                      p1[6] ^= p2[6];
-> 31                      p1[7] ^= p2[7];
-> 32                      p1 += 8;
-> 33                      p2 += 8;
-> (gdb) list *(calibrate_xor_blocks+0x0)
-> 0xd52 is in calibrate_xor_blocks (/usr0/export/dev/bharrosh/git/pub/scsi-misc/crypto/xor.c:101).
-> 96                     speed / 1000, speed % 1000);
-> 97      }
-> 98
-> 99      static int __init
-> 100     calibrate_xor_blocks(void)
-> 101     {
-> 102             void *b1, *b2;
-> 103             struct xor_block_template *f, *fastest;
-> 104
-> 105             /*
-> (gdb) list *(do_xor_speed+0x54)
-> 0x657 is in do_xor_speed (/usr0/export/dev/bharrosh/git/pub/scsi-misc/crypto/xor.c:84).
-> 79                      now = jiffies;
-> 80                      count = 0;
-> 81                      while (jiffies == now) {
-> 82                              mb(); /* prevent loop optimzation */
-> 83                              tmpl->do_2(BENCH_SIZE, b1, b2);
-> 84                              mb();
-> 85                              count++;
-> 86                              mb();
-> 87                      }
-> 88                      if (count > max)
-> (gdb) list *(calibrate_xor_blocks+0x57)
-> 0xda9 is in calibrate_xor_blocks (/usr0/export/dev/bharrosh/git/pub/scsi-misc/crypto/xor.c:137).
-> 132                             "checksumming function: %s\n",
-> 133                             fastest->name);
-> 134                     xor_speed(fastest);
-> 135             } else {
-> 136                     printk(KERN_INFO "xor: measuring software checksum speed\n");
-> 137                     XOR_TRY_TEMPLATES;
-> 138                     fastest = template_list;
-> 139                     for (f = fastest; f; f = f->next)
-> 140                             if (f->speed > fastest->speed)
-> 141                                     fastest = f;
-> (gdb) q
-> 
-> So it looks like the code in UML links the include/asm-generic/xor.h and that it gets
-> stuck. Any thing changed in this area in last merge window?
-> 
-> Before I start the very difficult bisect?
-> 
-> Thanks for any tips
-> Boaz
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+> +	BP_DONE,
+> +	BP_HUNGRY
+> +};
+> +
+>  struct balloon_stats {
+>  	/* We aim for 'current allocation' == 'target allocation'. */
+>  	unsigned long current_pages;
+> @@ -73,6 +87,8 @@ struct balloon_stats {
+>  	/* Number of pages in high- and low-memory balloons. */
+>  	unsigned long balloon_low;
+>  	unsigned long balloon_high;
+> +	unsigned long schedule_delay;
+> +	unsigned long max_schedule_delay;
+>  };
+>  
+>  static DEFINE_MUTEX(balloon_mutex);
+> @@ -171,6 +187,25 @@ static struct page *balloon_next_page(struct page *page)
+>  	return list_entry(next, struct page, lru);
+>  }
+>  
+> +static void update_schedule_delay(enum bp_state state)
+> +{
+> +	unsigned long new_schedule_delay;
+> +
+> +	if (state != BP_ERROR) {
+> +		balloon_stats.schedule_delay = 1;
+> +		return;
+> +	}
+> +
+> +	new_schedule_delay = balloon_stats.schedule_delay << 1;
+> +
+> +	if (new_schedule_delay > balloon_stats.max_schedule_delay) {
+> +		balloon_stats.schedule_delay = balloon_stats.max_schedule_delay;
+> +		return;
+> +	}
+> +
+> +	balloon_stats.schedule_delay = new_schedule_delay;
+> +}
+> +
+>  static unsigned long current_target(void)
+>  {
+>  	unsigned long target = balloon_stats.target_pages;
+> @@ -183,11 +218,12 @@ static unsigned long current_target(void)
+>  	return target;
+>  }
+>  
+> -static int increase_reservation(unsigned long nr_pages)
+> +static enum bp_state increase_reservation(unsigned long nr_pages)
+>  {
+> +	enum bp_state state = BP_DONE;
+> +	int rc;
+>  	unsigned long  pfn, i;
+>  	struct page   *page;
+> -	long           rc;
+>  	struct xen_memory_reservation reservation = {
+>  		.address_bits = 0,
+>  		.extent_order = 0,
+> @@ -198,8 +234,15 @@ static int increase_reservation(unsigned long nr_pages)
+>  		nr_pages = ARRAY_SIZE(frame_list);
+>  
+>  	page = balloon_first_page();
+> +
+> +	if (!page)
+> +		return BP_ERROR;
+> +
+>  	for (i = 0; i < nr_pages; i++) {
+> -		BUG_ON(page == NULL);
+> +		if (!page) {
+> +			nr_pages = i;
+> +			break;
+> +		}
+>  		frame_list[i] = page_to_pfn(page);
+>  		page = balloon_next_page(page);
+>  	}
+> @@ -207,8 +250,11 @@ static int increase_reservation(unsigned long nr_pages)
+>  	set_xen_guest_handle(reservation.extent_start, frame_list);
+>  	reservation.nr_extents = nr_pages;
+>  	rc = HYPERVISOR_memory_op(XENMEM_populate_physmap, &reservation);
+> -	if (rc < 0)
+> -		goto out;
+> +	if (rc < nr_pages) {
+> +		if (rc <= 0)
+> +			return BP_ERROR;
+> +		state = BP_HUNGRY;
+> +	}
+>  
+>  	for (i = 0; i < rc; i++) {
+>  		page = balloon_retrieve();
+> @@ -238,15 +284,14 @@ static int increase_reservation(unsigned long nr_pages)
+>  
+>  	balloon_stats.current_pages += rc;
+>  
+> - out:
+> -	return rc < 0 ? rc : rc != nr_pages;
+> +	return state;
+>  }
+>  
+> -static int decrease_reservation(unsigned long nr_pages)
+> +static enum bp_state decrease_reservation(unsigned long nr_pages)
+>  {
+> +	enum bp_state state = BP_DONE;
+>  	unsigned long  pfn, i;
+>  	struct page   *page;
+> -	int            need_sleep = 0;
+>  	int ret;
+>  	struct xen_memory_reservation reservation = {
+>  		.address_bits = 0,
+> @@ -260,7 +305,7 @@ static int decrease_reservation(unsigned long nr_pages)
+>  	for (i = 0; i < nr_pages; i++) {
+>  		if ((page = alloc_page(GFP_BALLOON)) == NULL) {
+>  			nr_pages = i;
+> -			need_sleep = 1;
+> +			state = BP_ERROR;
+>  			break;
+>  		}
+>  
+> @@ -296,7 +341,7 @@ static int decrease_reservation(unsigned long nr_pages)
+>  
+>  	balloon_stats.current_pages -= nr_pages;
+>  
+> -	return need_sleep;
+> +	return state;
+>  }
+>  
+>  /*
+> @@ -307,27 +352,35 @@ static int decrease_reservation(unsigned long nr_pages)
+>   */
+>  static void balloon_process(struct work_struct *work)
+>  {
+> -	int need_sleep = 0;
+> +	enum bp_state rc, state = BP_DONE;
+>  	long credit;
+>  
+>  	mutex_lock(&balloon_mutex);
+>  
+>  	do {
+>  		credit = current_target() - balloon_stats.current_pages;
+> -		if (credit > 0)
+> -			need_sleep = (increase_reservation(credit) != 0);
+> -		if (credit < 0)
+> -			need_sleep = (decrease_reservation(-credit) != 0);
+> +
+> +		if (credit > 0) {
+> +			rc = increase_reservation(credit);
+> +			state = (rc == BP_ERROR) ? BP_ERROR : state;
+> +		}
+> +
+> +		if (credit < 0) {
+> +			rc = decrease_reservation(-credit);
+> +			state = (rc == BP_ERROR) ? BP_ERROR : state;
+> +		}
+> +
+> +		update_schedule_delay(state);
+>  
+>  #ifndef CONFIG_PREEMPT
+>  		if (need_resched())
+>  			schedule();
+>  #endif
+> -	} while ((credit != 0) && !need_sleep);
+> +	} while (credit && state != BP_ERROR);
+>  
+>  	/* Schedule more work if there is some still to be done. */
+> -	if (current_target() != balloon_stats.current_pages)
+> -		schedule_delayed_work(&balloon_worker, HZ);
+> +	if (state == BP_ERROR)
+> +		schedule_delayed_work(&balloon_worker, balloon_stats.schedule_delay * HZ);
+>  
+>  	mutex_unlock(&balloon_mutex);
+>  }
+> @@ -394,6 +447,9 @@ static int __init balloon_init(void)
+>  	balloon_stats.balloon_low   = 0;
+>  	balloon_stats.balloon_high  = 0;
+>  
+> +	balloon_stats.schedule_delay = 1;
+> +	balloon_stats.max_schedule_delay = 32;
+> +
+>  	register_balloon(&balloon_sysdev);
+>  
+>  	/*
+> @@ -447,6 +503,9 @@ BALLOON_SHOW(current_kb, "%lu\n", PAGES2KB(balloon_stats.current_pages));
+>  BALLOON_SHOW(low_kb, "%lu\n", PAGES2KB(balloon_stats.balloon_low));
+>  BALLOON_SHOW(high_kb, "%lu\n", PAGES2KB(balloon_stats.balloon_high));
+>  
+> +static SYSDEV_ULONG_ATTR(schedule_delay, 0644, balloon_stats.schedule_delay);
+> +static SYSDEV_ULONG_ATTR(max_schedule_delay, 0644, balloon_stats.max_schedule_delay);
+> +
+>  static ssize_t show_target_kb(struct sys_device *dev, struct sysdev_attribute *attr,
+>  			      char *buf)
+>  {
+> @@ -508,6 +567,8 @@ static SYSDEV_ATTR(target, S_IRUGO | S_IWUSR,
+>  static struct sysdev_attribute *balloon_attrs[] = {
+>  	&attr_target_kb,
+>  	&attr_target,
+> +	&attr_schedule_delay.attr,
+> +	&attr_max_schedule_delay.attr
+>  };
+>  
+>  static struct attribute *balloon_info_attrs[] = {
+> -- 
+> 1.5.6.5
