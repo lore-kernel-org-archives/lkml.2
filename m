@@ -1,157 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab1BJXhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:37:17 -0500
-Received: from www.tglx.de ([62.245.132.106]:44166 "EHLO www.tglx.de"
+	id S1757548Ab1BJXh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:37:27 -0500
+Received: from www.tglx.de ([62.245.132.106]:44216 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757357Ab1BJXhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:37:10 -0500
-Message-Id: <20110210223256.249292010@linutronix.de>
+	id S1757433Ab1BJXhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:37:24 -0500
+Message-Id: <20110210223257.489197200@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:36:35 -0000
+Date: Thu, 10 Feb 2011 23:37:05 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [patch 20/75] arm: Ns9xxx: Remove private irq flow handler
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [patch 33/75] gpio: Remove broken irq_desc hackery.
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline;
-	filename=arm-ns9xxx-remove-private-irq-flow-handler.patch
+Content-Disposition: inline; filename=gpio-kill-broken-hack.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-handle_prio_irq is almost identical with handle_fasteoi_irq. The
-subtle differences are
-
-1) The handler checks for IRQ_DISABLED after the device handler has
-   been called. In case it's set it masks the interrupt.
-
-2) When the handler sees IRQ_DISABLED on entry it masks the interupt
-   in the same way as handle_fastoei_irq, but does not set the
-   IRQ_PENDING flag.
-
-3) Instead of gracefully handling a recursive interrupt it crashes the
-   kernel.
-
-#1 is just relevant when a device handler calls disable_irq_nosync()
-   and it does not matter whether we mask the interrupt right away or
-   not. We handle lazy masking for disable_irq anyway, so there is no
-   real reason to have this extra mask in place.
-
-#2 will prevent the resend of a pending interrupt, which can result in
-   lost interrupts for edge type interrupts. For level type interrupts
-   the resend is a noop in the generic code. According to the
-   datasheet all interrupts are level type, so marking them as such
-   will result in the exact same behaviour as the private
-   handle_prio_irq implementation.
-
-#3 is just stupid. Crashing the kernel instead of handling a problem
-   gracefully is just wrong. With the current semantics- all handlers
-   run with interrupts disabled - this is even more wrong.
-
-Rename ack to eoi, remove the unused mask_ack, switch to
-handle_fasteoi_irq and remove the private function.
+No code outside of core is supposed to fiddle with this. If there is
+something missing in core, then talk to me and we'll fix it. But
+fiddling in core guts just because it can be done is a nono. Using it
+unlocked and writing a comment about it is ....
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org
-LKML-Reference: <20110202212552.299898447@linutronix.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/arm/mach-ns9xxx/irq.c |   58 +++------------------------------------------
- 1 file changed, 4 insertions(+), 54 deletions(-)
+ drivers/gpio/gpiolib.c |   44 --------------------------------------------
+ 1 file changed, 44 deletions(-)
 
-Index: linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
+Index: linux-2.6-tip/drivers/gpio/gpiolib.c
 ===================================================================
---- linux-2.6-tip.orig/arch/arm/mach-ns9xxx/irq.c
-+++ linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
-@@ -31,17 +31,11 @@ static void ns9xxx_mask_irq(struct irq_d
- 	__raw_writel(ic, SYS_IC(prio / 4));
- }
+--- linux-2.6-tip.orig/drivers/gpio/gpiolib.c
++++ linux-2.6-tip/drivers/gpio/gpiolib.c
+@@ -1657,50 +1657,6 @@ static void gpiolib_dbg_show(struct seq_
+ 				? (chip->get(chip, i) ? "hi" : "lo")
+ 				: "?  ");
  
--static void ns9xxx_ack_irq(struct irq_data *d)
-+static void ns9xxx_eoi_irq(struct irq_data *d)
- {
- 	__raw_writel(0, SYS_ISRADDR);
- }
- 
--static void ns9xxx_maskack_irq(struct irq_data *d)
--{
--	ns9xxx_mask_irq(d);
--	ns9xxx_ack_irq(d);
--}
+-		if (!is_out) {
+-			int		irq = gpio_to_irq(gpio);
+-			struct irq_desc	*desc = irq_to_desc(irq);
 -
- static void ns9xxx_unmask_irq(struct irq_data *d)
- {
- 	/* XXX: better use cpp symbols */
-@@ -52,56 +46,11 @@ static void ns9xxx_unmask_irq(struct irq
- }
- 
- static struct irq_chip ns9xxx_chip = {
--	.irq_ack	= ns9xxx_ack_irq,
-+	.irq_eoi	= ns9xxx_eoi_irq,
- 	.irq_mask	= ns9xxx_mask_irq,
--	.irq_mask_ack	= ns9xxx_maskack_irq,
- 	.irq_unmask	= ns9xxx_unmask_irq,
- };
- 
--#if 0
--#define handle_irq handle_level_irq
--#else
--static void handle_prio_irq(unsigned int irq, struct irq_desc *desc)
--{
--	struct irqaction *action;
--	irqreturn_t action_ret;
+-			/* This races with request_irq(), set_irq_type(),
+-			 * and set_irq_wake() ... but those are "rare".
+-			 *
+-			 * More significantly, trigger type flags aren't
+-			 * currently maintained by genirq.
+-			 */
+-			if (irq >= 0 && desc->action) {
+-				char *trigger;
 -
--	raw_spin_lock(&desc->lock);
+-				switch (desc->status & IRQ_TYPE_SENSE_MASK) {
+-				case IRQ_TYPE_NONE:
+-					trigger = "(default)";
+-					break;
+-				case IRQ_TYPE_EDGE_FALLING:
+-					trigger = "edge-falling";
+-					break;
+-				case IRQ_TYPE_EDGE_RISING:
+-					trigger = "edge-rising";
+-					break;
+-				case IRQ_TYPE_EDGE_BOTH:
+-					trigger = "edge-both";
+-					break;
+-				case IRQ_TYPE_LEVEL_HIGH:
+-					trigger = "level-high";
+-					break;
+-				case IRQ_TYPE_LEVEL_LOW:
+-					trigger = "level-low";
+-					break;
+-				default:
+-					trigger = "?trigger?";
+-					break;
+-				}
 -
--	BUG_ON(desc->status & IRQ_INPROGRESS);
+-				seq_printf(s, " irq-%d %s%s",
+-					irq, trigger,
+-					(desc->status & IRQ_WAKEUP)
+-						? " wakeup" : "");
+-			}
+-		}
 -
--	desc->status &= ~(IRQ_REPLAY | IRQ_WAITING);
--	kstat_incr_irqs_this_cpu(irq, desc);
--
--	action = desc->action;
--	if (unlikely(!action || (desc->status & IRQ_DISABLED)))
--		goto out_mask;
--
--	desc->status |= IRQ_INPROGRESS;
--	raw_spin_unlock(&desc->lock);
--
--	action_ret = handle_IRQ_event(irq, action);
--
--	/* XXX: There is no direct way to access noirqdebug, so check
--	 * unconditionally for spurious irqs...
--	 * Maybe this function should go to kernel/irq/chip.c? */
--	note_interrupt(irq, desc, action_ret);
--
--	raw_spin_lock(&desc->lock);
--	desc->status &= ~IRQ_INPROGRESS;
--
--	if (desc->status & IRQ_DISABLED)
--out_mask:
--		desc->irq_data.chip->irq_mask(&desc->irq_data);
--
--	/* ack unconditionally to unmask lower prio irqs */
--	desc->irq_data.chip->irq_ack(&desc->irq_data);
--
--	raw_spin_unlock(&desc->lock);
--}
--#define handle_irq handle_prio_irq
--#endif
--
- void __init ns9xxx_init_irq(void)
- {
- 	int i;
-@@ -119,7 +68,8 @@ void __init ns9xxx_init_irq(void)
- 
- 	for (i = 0; i <= 31; ++i) {
- 		set_irq_chip(i, &ns9xxx_chip);
--		set_irq_handler(i, handle_irq);
-+		set_irq_handler(i, handle_fasteoi_irq);
- 		set_irq_flags(i, IRQF_VALID);
-+		irq_set_status_flags(i, IRQ_LEVEL);
+ 		seq_printf(s, "\n");
  	}
  }
 
