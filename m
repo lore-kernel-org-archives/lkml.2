@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab1BJM0C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:26:02 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33824 "EHLO mx1.suse.de"
+	id S1756464Ab1BJM0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:26:40 -0500
+Received: from cantor.suse.de ([195.135.220.2]:33784 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756364Ab1BJMZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:25:36 -0500
+	id S1756314Ab1BJMZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:25:24 -0500
 From: stable-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Thu, 10 Feb 2011 10:23:29 +0100
-Subject: [PATCH 28/28] sched: Fix wake_affine() vs RT tasks
+Date: Thu, 10 Feb 2011 10:23:28 +0100
+Subject: [PATCH 23/28] sched, cgroup: Fixup broken cgroup movement
 To: stable@kernel.org
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@elte.hu>
-Message-ID: <1297340644.5512.28.camel@marge.simson.net>
+Message-ID: <1297340644.5512.23.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
@@ -20,143 +20,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit: e51fd5e22e12b39f49b1bb60b37b300b17378a43 upstream
+Commit: b2b5ce022acf5e9f52f7b78c5579994fdde191d4 upstream
 Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon May 31 12:37:30 2010 +0200
+AuthorDate: Fri Oct 15 15:24:15 2010 +0200
 
-Mike reports that since e9e9250b (sched: Scale down cpu_power due to RT
-tasks), wake_affine() goes funny on RT tasks due to them still having a
-!0 weight and wake_affine() still subtracts that from the rq weight.
+Dima noticed that we fail to correct the ->vruntime of sleeping tasks
+when we move them between cgroups.
 
-Since nobody should be using se->weight for RT tasks, set the value to
-zero. Also, since we now use ->cpu_power to normalize rq weights to
-account for RT cpu usage, add that factor into the imbalance computation.
-
-Reported-by: Mike Galbraith <efault@gmx.de>
-Tested-by: Mike Galbraith <efault@gmx.de>
+Reported-by: Dima Zavin <dima@android.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1275316109.27810.22969.camel@twins>
+Tested-by: Mike Galbraith <efault@gmx.de>
+LKML-Reference: <1287150604.29097.1513.camel@twins>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c      |   25 +++++++------------------
- kernel/sched_fair.c |   22 ++++++++++++++++------
- 2 files changed, 23 insertions(+), 24 deletions(-)
+ include/linux/sched.h |    2 +-
+ kernel/sched.c        |    8 ++++----
+ kernel/sched_fair.c   |   25 +++++++++++++++++++------
+ 3 files changed, 24 insertions(+), 11 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1ca5d04..4c9c426 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1113,7 +1113,7 @@ struct sched_class {
+ 					 struct task_struct *task);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-	void (*moved_group) (struct task_struct *p, int on_rq);
++	void (*task_move_group) (struct task_struct *p, int on_rq);
+ #endif
+ };
+ 
 diff --git a/kernel/sched.c b/kernel/sched.c
-index f4e1f4e..df16a0a 100644
+index c8272e7..d8a2155 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -533,6 +533,8 @@ struct rq {
- 	struct root_domain *rd;
- 	struct sched_domain *sd;
+@@ -10224,12 +10224,12 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		tsk->sched_class->put_prev_task(rq, tsk);
  
-+	unsigned long cpu_power;
-+
- 	unsigned char idle_at_tick;
- 	/* For active balancing */
- 	int post_schedule;
-@@ -1520,24 +1522,9 @@ static unsigned long target_load(int cpu, int type)
- 	return max(rq->cpu_load[type-1], total);
- }
- 
--static struct sched_group *group_of(int cpu)
--{
--	struct sched_domain *sd = rcu_dereference(cpu_rq(cpu)->sd);
+-	set_task_rq(tsk, task_cpu(tsk));
 -
--	if (!sd)
--		return NULL;
--
--	return sd->groups;
--}
--
- static unsigned long power_of(int cpu)
- {
--	struct sched_group *group = group_of(cpu);
--
--	if (!group)
--		return SCHED_LOAD_SCALE;
--
--	return group->cpu_power;
-+	return cpu_rq(cpu)->cpu_power;
- }
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-	if (tsk->sched_class->moved_group)
+-		tsk->sched_class->moved_group(tsk, on_rq);
++	if (tsk->sched_class->task_move_group)
++		tsk->sched_class->task_move_group(tsk, on_rq);
++	else
+ #endif
++		set_task_rq(tsk, task_cpu(tsk));
  
- static int task_hot(struct task_struct *p, u64 now, struct sched_domain *sd);
-@@ -1932,8 +1919,8 @@ static void dec_nr_running(struct rq *rq)
- static void set_load_weight(struct task_struct *p)
- {
- 	if (task_has_rt_policy(p)) {
--		p->se.load.weight = prio_to_weight[0] * 2;
--		p->se.load.inv_weight = prio_to_wmult[0] >> 1;
-+		p->se.load.weight = 0;
-+		p->se.load.inv_weight = WMULT_CONST;
- 		return;
- 	}
- 
-@@ -3833,6 +3820,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
- 	if (!power)
- 		power = 1;
- 
-+	cpu_rq(cpu)->cpu_power = power;
- 	sdg->cpu_power = power;
- }
- 
-@@ -9788,6 +9776,7 @@ void __init sched_init(void)
- #ifdef CONFIG_SMP
- 		rq->sd = NULL;
- 		rq->rd = NULL;
-+		rq->cpu_power = SCHED_LOAD_SCALE;
- 		rq->post_schedule = 0;
- 		rq->active_balance = 0;
- 		rq->next_balance = jiffies;
+ 	if (unlikely(running))
+ 		tsk->sched_class->set_curr_task(rq);
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 4e0aca0..cd9a40b 100644
+index c07663e..4e0aca0 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -1222,7 +1222,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	unsigned long this_load, load;
- 	int idx, this_cpu, prev_cpu;
- 	unsigned long tl_per_task;
--	unsigned int imbalance;
- 	struct task_group *tg;
- 	unsigned long weight;
- 	int balanced;
-@@ -1262,8 +1261,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	tg = task_group(p);
- 	weight = p->se.load.weight;
+@@ -2068,13 +2068,26 @@ static void set_curr_task_fair(struct rq *rq)
+ }
  
--	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-static void moved_group_fair(struct task_struct *p, int on_rq)
++static void task_move_group_fair(struct task_struct *p, int on_rq)
+ {
+-	struct cfs_rq *cfs_rq = task_cfs_rq(p);
 -
- 	/*
- 	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
- 	 * due to the sync cause above having dropped this_load to 0, we'll
-@@ -1273,9 +1270,22 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	 * Otherwise check if either cpus are near enough in load to allow this
- 	 * task to be woken on this_cpu.
- 	 */
--	balanced = !this_load ||
--		100*(this_load + effective_load(tg, this_cpu, weight, weight)) <=
--		imbalance*(load + effective_load(tg, prev_cpu, 0, weight));
-+	if (this_load) {
-+		unsigned long this_eff_load, prev_eff_load;
-+
-+		this_eff_load = 100;
-+		this_eff_load *= power_of(prev_cpu);
-+		this_eff_load *= this_load +
-+			effective_load(tg, this_cpu, weight, weight);
-+
-+		prev_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
-+		prev_eff_load *= power_of(this_cpu);
-+		prev_eff_load *= load + effective_load(tg, prev_cpu, 0, weight);
-+
-+		balanced = this_eff_load <= prev_eff_load;
-+	} else
-+		balanced = true;
-+
- 	rcu_read_unlock();
+-	update_curr(cfs_rq);
++	/*
++	 * If the task was not on the rq at the time of this cgroup movement
++	 * it must have been asleep, sleeping tasks keep their ->vruntime
++	 * absolute on their old rq until wakeup (needed for the fair sleeper
++	 * bonus in place_entity()).
++	 *
++	 * If it was on the rq, we've just 'preempted' it, which does convert
++	 * ->vruntime to a relative base.
++	 *
++	 * Make sure both cases convert their relative position when migrating
++	 * to another cgroup's rq. This does somewhat interfere with the
++	 * fair sleeper stuff for the first placement, but who cares.
++	 */
++	if (!on_rq)
++		p->se.vruntime -= cfs_rq_of(&p->se)->min_vruntime;
++	set_task_rq(p, task_cpu(p));
+ 	if (!on_rq)
+-		place_entity(cfs_rq, &p->se, 1);
++		p->se.vruntime += cfs_rq_of(&p->se)->min_vruntime;
+ }
+ #endif
  
- 	/*
+@@ -2128,7 +2141,7 @@ static const struct sched_class fair_sched_class = {
+ 	.get_rr_interval	= get_rr_interval_fair,
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-	.moved_group		= moved_group_fair,
++	.task_move_group	= task_move_group_fair,
+ #endif
+ };
+ 
 -- 
 1.7.4
+
 
