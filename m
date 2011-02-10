@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab1BJMqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:46:18 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:36845 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1BJMqQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:46:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oNouZjCQbFUL/YWlG9JS+QMiM8UiK+ybMWbw9mvwXrjS8IQKUutjZ2GarlKj6VijoA
-         nV+ZITDGFdAH4ikykWXCSdS5c8lcvkZCe6Y1eYkZjhObU1XOLaBrI1uSEmsmd4URpNiI
-         SdpGPa1/Ni9DgQ6uMk1H0+exVpJqyWf5Z5keA=
-Date: Thu, 10 Feb 2011 20:45:43 +0800
-From: Richard Zhao <linuxzsc@gmail.com>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Richard Zhao <richard.zhao@freescale.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dima Zavin <dmitriyz@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
-Message-ID: <20110210124543.GA3316@richard-laptop>
-References: <1297233693.242364.862698430999.1.gpush@pororo>
- <4D52F73A.4010707@bluewatersys.com>
- <20110210100319.GB24710@b20223-02.ap.freescale.net>
- <4D53B9AC.8020609@bluewatersys.com>
+	id S1756093Ab1BJMtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:49:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751969Ab1BJMtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:49:40 -0500
+Date: Thu, 10 Feb 2011 13:48:38 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Kent Overstreet <kent.overstreet@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] vmscan: fix zone shrinking exit when scan work is done
+Message-ID: <20110210124838.GU3347@random.random>
+References: <20110209154606.GJ27110@cmpxchg.org>
+ <20110209164656.GA1063@csn.ul.ie>
+ <20110209182846.GN3347@random.random>
+ <20110210102109.GB17873@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D53B9AC.8020609@bluewatersys.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110210102109.GB17873@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 11:10:52PM +1300, Ryan Mallon wrote:
-> On 10/02/11 23:03, Richard Zhao wrote:
-> >On Thu, Feb 10, 2011 at 09:21:14AM +1300, Ryan Mallon wrote:
-> >>On 02/09/2011 07:41 PM, Jeremy Kerr wrote:
-> >>
-> >>Hi Jeremy,
-> >>
-> >>Couple more comments below.
-> >>
-> >>~Ryan
-> >>
-> >[...]
-> >>>+int clk_enable(struct clk *clk)
-> >>>+{
-> >>>+     unsigned long flags;
-> >>>+     int ret = 0;
-> >>>+
-> >>>+     spin_lock_irqsave(&clk->enable_lock, flags);
-> >>         WARN_ON(clk->prepare_count == 0); ?
-> >>
-> >>>+     if (clk->enable_count == 0&&  clk->ops->enable)
-> >>>+             ret = clk->ops->enable(clk);
-> >>Does it make sense to have a clock with no enable function which still
-> >>returns success from clk_enable? Do we have any platforms which have
-> >>NULL clk_enable functions?
-> >>
-> >>I think that for enable/disable at least we should require platforms to
-> >>provide functions and oops if they have failed to do so. In the rare
-> >>case that a platform doesn't need to do anything for enable/disable they
-> >>can just supply empty functions.
-> >It's possible to be NULL. So are set_rate/get_rate.
-> >Ideally, if it's NULL:
-> >prepare/unprepare: only call parent's prepare/unprepare
-> >enable/disable: only call parent's enable/disable
+On Thu, Feb 10, 2011 at 10:21:10AM +0000, Mel Gorman wrote:
+> We should not be ending up in a situation with the LRU list of only
+> page_evictable pages and that situation persisting causing excessive (or
+> infinite) looping. As unevictable pages are encountered on the LRU list,
+> they should be moved to the unevictable lists by putback_lru_page().  Are you
+> aware of a situation where this becomes broken?
 > 
-> No, the whole point of the generic framework is that _all_ clock
-> users must call prepare/enable and disable/unprepare. Drivers, etc
-> should not rely on underlying knowledge of a platform. This is why,
-> for instance, clk_enable will warn if prepare count is zero.
+> I recognise that SWAP_CLUSTER_MAX pages could all be unevictable and they
+> are all get moved. In this case, nr_scanned is positive and we continue
+> to scan but this is expected and desirable: Reclaim/compaction needs more
+> pages to be freed before it starts compaction. If it stops scanning early,
+> then it would just fail the allocation later. This is what the "NOTE" is about.
 > 
-> However, I can see that a clock may be fully enabled by its prepare
-> function and so the enable function is a no-op. User must still call
-> both prepare and enable though. Perhaps this is what you meant?
-I mean prepare/unprepare, enable/disable and get_rate ops null can be handled
-in the common clock code. But it needs parent clock pointer.
+> I prefer Johannes' fix for the observed problem.
 
-Thanks
-Richard
-> 
-> ~Ryan
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+should_continue_reclaim is only needed for compaction. It tries to
+free enough pages so that compaction can succeed in its defrag
+attempt. So breaking the loop faster isn't going to cause failures for
+0 order pages. My worry is that we loop too much in shrink_zone just
+for compaction even when we don't do any progress. shrink_zone would
+never scan more than SWAP_CLUSTER_MAX pages, before this change. Now
+it can loop over the whole lru as long as we're scanning stuff. Ok to
+overboost shrink_zone if we're making progress to allow compaction at
+the next round, but if we don't visibly make progress, I'm concerned
+that it may be too aggressive to scan the whole list. The performance
+benefit of having an hugepage isn't as huge as scanning all pages in
+the lru when before we would have broken the loop and declared failure
+after only SWAP_CLUSTER_MAX pages, and then we would have fallen back
+in a order 0 allocation. The fix may help of course, maybe it's enough
+for his case I don't know, but I don't see it making a whole lot of
+difference, except now it will stop when the lru is practically empty
+which clearly is an improvement. I think we shouldn't be so worried
+about succeeding compaction, the important thing is we don't waste
+time in compaction if there's not enough free memory but
+compaction_suitable used by both logics should be enough for that.
+
+I'd rather prefer that if hugetlbfs has special needs it uses a __GFP_
+flag or similar that increases how compaction is strict in succeeding,
+up to scanning the whole lru in one go in order to make some free
+memory for compaction to succeed.
+
+Going ahead with the scan until compaction_suitable is true instead
+makes sense when there's absence of memory pressure and nr_reclaimed
+is never zero.
+
+Maybe we should try a bit more times than just nr_reclaim but going
+over the whole lru, sounds a bit extreme.
+
+The issue isn't just for unevictable pages, that will be refiled
+during the scan but it will also happen in presence of lots of
+referenced pages. For example if we don't apply my fix, the current
+code can take down all young bits in all ptes in one go in the whole
+system before returning from shrink_zone, that is too much in my view,
+and losing all that information in one go (not even to tell the cost
+associated with losing it) can hardly be offseted by the improvement
+given by 1 more hugepage.
+
+But please let me know if I've misread something...
+
+Thanks,
+Andrea
