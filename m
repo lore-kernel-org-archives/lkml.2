@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab1BJPSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 10:18:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21361 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab1BJPSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 10:18:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,451,1291622400"; 
-   d="scan'208";a="656406909"
-Subject: Re: [regression][2.6.38-rcX][net][iwlagn] WiFi signal after period
- of time tanks causing contant drops
-From: wwguy <wey-yi.w.guy@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Shawn Starr <shawn.starr@rogers.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20110209231526.cce3e7b7.akpm@linux-foundation.org>
-References: <613373.34172.qm@smtp106.rog.mail.re2.yahoo.com>
-	 <20110209231526.cce3e7b7.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 07:16:24 -0800
-Message-ID: <1297350984.20613.68.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756365Ab1BJPXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 10:23:23 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40012 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab1BJPXV (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 10 Feb 2011 10:23:21 -0500
+Date: Thu, 10 Feb 2011 10:22:43 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the xen-two tree
+Message-ID: <20110210152243.GA12087@dumpdata.com>
+References: <20110210154648.8b3b994e.sfr@canb.auug.org.au>
+ <alpine.LFD.2.00.1102101322450.31804@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1102101322450.31804@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D5402DA.0040:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 23:15 -0800, Andrew Morton wrote:
-> (cc linux-wireless)
+On Thu, Feb 10, 2011 at 01:24:58PM +0100, Thomas Gleixner wrote:
+> On Thu, 10 Feb 2011, Stephen Rothwell wrote:
 > 
-> On Sun, 06 Feb 2011 22:54 -0500 Shawn Starr <shawn.starr@rogers.com> wrote:
+> > Hi Konrad,
+> > 
+> > After merging the xen-two tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > drivers/gpio/langwell_gpio.c: In function 'lnw_irq_handler':
+> > drivers/gpio/langwell_gpio.c:210: error: 'struct irq_desc' has no member named 'chip'
+> > drivers/gpio/langwell_gpio.c:211: error: 'struct irq_desc' has no member named 'chip'
+> > 
+> > Caused by commit e22ff7614860bc282ba1eb25440d8fc56975e357 ("xen:
+> > Interrupt cleanups").
 > 
-> > 
-> > Using a Intel Corporation PRO/Wireless 5100 AGN [Shiloh] card after rebooting 
-> > and a period of of seveal hours signal begins to drop to low levels:
-> > 
-> > 
-> > wlan0     IEEE 802.11abgn  ESSID:"XXXXXXXX"  
-> >           Mode:Managed  Frequency:2.462 GHz  Access Point: AA:BB:CC:DD:EE:FF   
-> >           Bit Rate=11 Mb/s   Tx-Power=15 dBm   
-> >           Retry  long limit:7   RTS thr:off   Fragment thr:off
-> >           Power Management:off
-> >           Link Quality=12/70  Signal level=-98 dBm  
-> >           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-> >           Tx excessive retries:0  Invalid misc:35   Missed beacon:0
-> > 
-> > ...
-> > 
-> >           Link Quality=12/70  Signal level=-98 dBm  
-> >           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-> >           Tx excessive retries:0  Invalid misc:40   Missed beacon:0
-> > 
-> > I start seeing lots of Invalid misc errors and connection drops. If I reboot, 
-> > then signal will be back to normal for a period of time again.
-> > 
-> > My official kernel is from Fedora rawhide (2.6.38-0.rc3.git4.1.fc15.x86_64)
-> > 
-> > Anyone else notice poor link/signal levels?
-> > 
-> > .37 showed no such issues.
+> Argh, it selects:
+> 
+> +       select GENERIC_HARDIRQS_NO_DEPRECATED
+> 
+> Konrad, I merily asked you to test XEN with that flag set, not to
+> apply the change.
 
-
-did not see anything special from the log, is any environment or
-condition changed? what AP you are using?
-
-Thanks
-Wey
-
+Whoops. Looks that I forgot to back out the change after I tested it. It is gone now.
