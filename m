@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1BJLkT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 06:40:19 -0500
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:40628 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751647Ab1BJLkR (ORCPT
+	id S1754614Ab1BJLqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 06:46:54 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60365 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab1BJLqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 06:40:17 -0500
-From: Ian Campbell <ijc@hellion.org.uk>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Brendan Cully <brendan@cs.ubc.ca>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>
-In-Reply-To: <Pine.LNX.4.44L0.1102091837050.18843-100000@netrider.rowland.org>
-References: <Pine.LNX.4.44L0.1102091837050.18843-100000@netrider.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 11:40:05 +0000
-Message-ID: <1297338005.20491.163.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 62.200.22.2
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [Xen-devel] Re: [linux-pm] [PATCH 0/2] Fix hangup after
- creating checkpoint on Xen.
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=wRiPVX2u-SEA:10 a=IkcTkHD0fZMA:10 a=svgH3AAeiMK6LjIMaxgA:9 a=hAIPPl5yHFH87OLcuY2wHPVeBecA:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Thu, 10 Feb 2011 06:46:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZsrJytounXjhaoInTN8uNb9y1MTI1Ge4nCOTZcUS0o5datLP3pB2aH6IB+knh2UoEB
+         IRyzVGDRSxPu4lGKt1VH4tzhLk7kN+QBrhppkI7xrMZllFStG49SmSV6JK5hilb2de/Q
+         6JgMfENaf9zrOGFEAl0O2u9fYmS1uEy0JRQPQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] mm: handle simple case in free_pcppages_bulk()
+Date: Thu, 10 Feb 2011 20:46:48 +0900
+Message-Id: <1297338408-3590-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.600.g982838b0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 23:42 +0000, Alan Stern wrote:
-> In fact there already is a "fast suspend & resume" path in the PM core.  
-> It's the freeze/thaw procedure used when starting to hibernate.  The
-> documentation specifically says that drivers' freeze methods are
-> supposed to quiesce their devices but not change power levels.  In
-> addition, the thaw method is invoked as part of recovery from a failed
-> hibernation attempt, so it already has the "cancel" semantics that xen 
-> seems to want.
+Now I'm seeing that there are some cases to free all pages in a
+pcp lists. In that case, just frees all pages in the lists instead
+of being bothered with round-robin lists traversal.
 
-Sounds like that would work and I would much prefer to simply make
-correct use of the core functionality.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ mm/page_alloc.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-So PMSG_FREEZE is balanced by either PMSG_RECOVER or PMSG_THAW depending
-on whether the suspend was cancelled or not? So the sequence of events
-is something like:
-	dpm_suspend_start(PMSG_FREEZE);
-         
-		dpm_suspend_noirq(PMSG_FREEZE);
-                         
-			sysdev_suspend(PMSG_QUIESCE);
-			cancelled = suspend_hypercall()
-			sysdev_resume();
-                 
-		dpm_resume_noirq(cancelled ? PMSG_RECOVER : PMSG_THAW);
-         
-	dpm_resume_end(cancelled ? PMSG_RECOVER : PMSG_THAW);
-?
-
-(For comparison we currently have:
-> > >         dpm_suspend_start(PMSG_SUSPEND);
-> > >         
-> > >                 dpm_suspend_noirq(PMSG_SUSPEND);
-> > >                         
-> > >                         sysdev_suspend(PMSG_SUSPEND);
-> > >                         /* suspend hypercall */
-> > >                         sysdev_resume();
-> > >                 
-> > >                 dpm_resume_noirq(PMSG_RESUME);
-> > >         
-> > >         dpm_resume_end(PMSG_RESUME);
-)
-
-Ian.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e8b02771ccea..959c54450ddf 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -596,6 +596,28 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
++	/* Simple case: Free all */
++	if (to_free == pcp->count) {
++		LIST_HEAD(freelist);
++
++		for (; migratetype < MIGRATE_PCPTYPES; migratetype++)
++			if (!list_empty(&pcp->lists[migratetype]))
++				list_move(&pcp->lists[migratetype], &freelist);
++
++		while (!list_empty(&freelist)) {
++			struct page *page;
++
++			page = list_first_entry(&freelist, struct page, lru);
++			/* must delete as __free_one_page list manipulates */
++			list_del(&page->lru);
++			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
++			__free_one_page(page, zone, 0, page_private(page));
++			trace_mm_page_pcpu_drain(page, 0, page_private(page));
++			to_free--;
++		}
++		VM_BUG_ON(to_free);
++	}
++
+ 	while (to_free) {
+ 		struct page *page;
+ 		struct list_head *list;
 -- 
-Ian Campbell
-Current Noise: Neil Young - Angry World
-
-If only one could get that wonderful feeling of accomplishment without
-having to accomplish anything.
+1.7.4
 
