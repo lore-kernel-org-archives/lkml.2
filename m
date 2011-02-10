@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab1BJALF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 19:11:05 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:54756 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab1BJALE (ORCPT
+	id S1751921Ab1BJATo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 19:19:44 -0500
+Received: from smtp2.caviumnetworks.com ([209.113.159.134]:2084 "EHLO
+	smtp2.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1BJATn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 19:11:04 -0500
-Date: Wed, 9 Feb 2011 16:10:55 -0800
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] misc: add CARMA DATA-FPGA Access Driver
-Message-ID: <20110210001055.GB5303@ovro.caltech.edu>
-References: <1297208267-27087-1-git-send-email-iws@ovro.caltech.edu>
- <1297208267-27087-2-git-send-email-iws@ovro.caltech.edu>
- <20110209083325.GA7256@core.coreip.homeip.net>
- <20110209173532.GB21766@ovro.caltech.edu>
- <20110209182740.GC23867@core.coreip.homeip.net>
- <20110209233544.GA5303@ovro.caltech.edu>
- <20110209234231.GA5707@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110209234231.GA5707@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Wed, 09 Feb 2011 16:10:56 -0800 (PST)
+	Wed, 9 Feb 2011 19:19:43 -0500
+X-Greylist: delayed 908 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Feb 2011 19:19:43 EST
+From: David Daney <ddaney@caviumnetworks.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH] genirq: Call chip_bus_lock()/chip_bus_sync_unlock() in setup_irq().
+Date: Wed,  9 Feb 2011 16:04:25 -0800
+Message-Id: <1297296265-18680-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 10 Feb 2011 00:04:33.0566 (UTC) FILETIME=[18C99BE0:01CBC8B6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 03:42:31PM -0800, Dmitry Torokhov wrote:
-> On Wed, Feb 09, 2011 at 03:35:45PM -0800, Ira W. Snyder wrote:
-> > On Wed, Feb 09, 2011 at 10:27:40AM -0800, Dmitry Torokhov wrote:
-> > 
-> > [ snip stuff I've already fixed in the next version ]
-> > 
-> > > > 
-> > > > The requirement is that the device stay open during reconfiguration.
-> > > > This provides for that. Readers just block for as long as the device is
-> > > > not producing data.
-> > > 
-> > > OK, you still need to make sure you do not touch free/used buffer while
-> > > device is disabled. Also, you need to kick readers if you unbind the
-> > > driver, so maybe a new flag priv->exists should be introduced and
-> > > checked.
-> > > 
-> > 
-> > I don't understand what you mean by "kick readers if you unbind the
-> > driver". The kernel automatically increases the refcount on a module
-> > when a process is using the module. This shows up in the "Used by"
-> > column of lsmod's output.
-> > 
-> > The kernel will not let you rmmod a module with a non-zero refcount. You
-> > cannot get into the situation where you have rmmod'ed the module and a
-> > reader is still blocking in read()/poll().
-> 
-> However you can still unbind the driver from the device by writing into
-> driver's sysfs 'unbind' attribute.
-> 
-> See drivers/base/bus.c::driver_unbind().
-> 
+irq_chips that supply .irq_bus_lock/.irq_bus_sync_unlock functions,
+expect that the other chip methods will be called inside of calls to
+the pair.  If this expectation is not met, things tend to not work.
 
-I was completely unaware of that "feature". I hunch that many drivers
-are incapable of dealing with an unbind while they are still open.
+Make setup_irq() call chip_bus_lock()/chip_bus_sync_unlock() too.
 
-Matter of fact, I don't see how this can EVER be safe. The driver core
-automatically calls the data_of_remove() routine while there are still
-blocked readers. This kfree()s the private data structure, which
-contains the suggested priv->exists flag. What happens if the memory
-allocator re-allocates that memory to a different driver before the
-reader process is woken up to check the priv->exists flag?
+For the vast majority of irq_chips, this will be a NOP as most don't
+have these bus lock functions.
 
-The only way to solve this is to count the number of open()s and
-close()s, and block the unbind until all users have close()d the device.
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ kernel/irq/manage.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-Thanks,
-Ira
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0caa59f..a00bf2c 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -871,9 +871,14 @@ out_thread:
+  */
+ int setup_irq(unsigned int irq, struct irqaction *act)
+ {
++	int retval;
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 
+-	return __setup_irq(irq, desc, act);
++	chip_bus_lock(desc);
++	retval = __setup_irq(irq, desc, act);
++	chip_bus_sync_unlock(desc);
++
++	return retval;
+ }
+ EXPORT_SYMBOL_GPL(setup_irq);
+ 
+-- 
+1.7.2.3
+
