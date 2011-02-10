@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab1BJW7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 17:59:37 -0500
-Received: from tundra.namei.org ([65.99.196.166]:37071 "EHLO tundra.namei.org"
+	id S1757284Ab1BJXG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:06:29 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38739 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756844Ab1BJW7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 17:59:36 -0500
-Date: Fri, 11 Feb 2011 09:59:07 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: "Serge E. Hallyn" <serge@hallyn.com>, Gergely Nagy <algernon@balabit.hu>,
-        david@lang.hm, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Marc Koschewski <marc@osknowledge.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now
- (v3)
-In-Reply-To: <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1102110957380.27143@tundra.namei.org>
-References: <20110210144057.GA7193@mail.hallyn.com> <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755794Ab1BJXG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:06:28 -0500
+Subject: Re: [PATCH 1/4] RTC: Include information about UIE and PIE in RTC
+ driver proc.
+From: John Stultz <john.stultz@linaro.org>
+To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de, a.zummo@towertech.it
+In-Reply-To: <1297113368-27174-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+References: <1297113368-27174-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+	 <1297113368-27174-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 10 Feb 2011 15:06:13 -0800
+Message-ID: <1297379173.1865.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Feb 2011, Linus Torvalds wrote:
+On Mon, 2011-02-07 at 19:16 -0200, Marcelo Roberto Jimenez wrote:
+> Generic RTC code is always able to provide the necessary information
+> about update and periodic interrupts. This patch add such information to
+> the proc interface.
 
-> On Thu, Feb 10, 2011 at 6:40 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> >
-> > Please apply.
-> 
-> Hmm. So I detest the duplication and the ugly resulting code.  It was
-> a bit hard to follow before, now it's just nasty.
-> 
-> Why not make this all into some nicer helper functions instead -
-> something simple like the attached?
->
-> UNTESTED! I'm not going to apply it unless I get acks/tested-by's.
+This seems to be mostly formatting changes. Are you sure we wont' break
+applications expecting the existing format?
 
-Reviewed-by: James Morris <jmorris@namei.org>
+thanks
+-john
 
 
--- 
-James Morris
-<jmorris@namei.org>
