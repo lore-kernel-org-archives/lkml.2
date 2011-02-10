@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1BJSNj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:13:39 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:47744 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752012Ab1BJSNh (ORCPT
+	id S1752300Ab1BJSOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:14:21 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44678 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab1BJSOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:13:37 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18JgrhPOnAJih5hW52khTfIOMiGosyNWZyQ/NP20q
-	wlJcRSIqtl/jCR
-Subject: Re: [tip:perf/core] perf annotate: Fix annotate context lines
- regression
-From: Mike Galbraith <efault@gmx.de>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, mingo@redhat.com, hpa@zytor.com,
-        paulus@samba.org, eranian@google.com, linux-kernel@vger.kernel.org,
-        tzanussi@gmail.com, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110210161537.GA20676@ghostprotocols.net>
-References: <new-submission>
-	 <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
-	 <1297224378.8035.7.camel@marge.simson.net>
-	 <20110209164154.GA15607@ghostprotocols.net>
-	 <1297309313.7996.11.camel@marge.simson.net>
-	 <20110210121559.GA26094@elte.hu>
-	 <1297341811.5512.36.camel@marge.simson.net>
-	 <20110210161537.GA20676@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 19:13:29 +0100
-Message-ID: <1297361609.5364.2.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Thu, 10 Feb 2011 13:14:19 -0500
+Date: Thu, 10 Feb 2011 16:14:41 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Alan Ott <alan@signal11.us>, Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michael Poole <mdpoole@troilus.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] Adding HID Feature Report Support to hidraw
+Message-ID: <20110210181441.GB2173@joana>
+References: <1295337880-12452-1-git-send-email-alan@signal11.us>
+ <alpine.LNX.2.00.1101191316230.26685@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1101191316230.26685@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-10 at 14:15 -0200, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Feb 10, 2011 at 01:43:31PM +0100, Mike Galbraith escreveu:
-> > On Thu, 2011-02-10 at 13:15 +0100, Ingo Molnar wrote:
-> > > * Mike Galbraith <efault@gmx.de> wrote:
-> > > 
-> > > > Initial impression: can I have a pony too? :)
-> > > > 
-> > > > I like this a lot, great for live rummaging.  One thing that would help with large 
-> > > > files maybe - a jump to next spot hotter than N%, but as is is quite nice.
+Hi Jiri,
+
+* Jiri Kosina <jkosina@suse.cz> [2011-01-19 13:17:00 +0100]:
+
+> On Tue, 18 Jan 2011, Alan Ott wrote:
 > 
-> It already does that if you use TAB/shift-TAB, first one goes to the
-> hottest line, next one to the 2nd place, etc, shift-TAB goes the other
-> direction.
+> > This patch adds Feature Report support for USB and Bluetooth HID devices
+> > through hidraw.
+> > 
+> > The first two patches prepare the bluetooth side for the change.
+> > 	a. Make sure the hidp_session() thread is started before
+> > 	   device's probe() functions are called.
+> > 	b. Wait for ACK/NAK on sent reports, and return proper
+> > 	   error codes.
+> > The third patch is the hidraw core and USB changes.
+> > The fourth patch is the Bluetooth changes.
+> > 
+> > Thanks to Antonio Ospite and Bill Good for providing testing and feedback.
+> > 
+> > 
+> > Alan Ott (4):
+> >   bt hidp: Move hid_add_device() call to after hidp_session() has
+> >     started.
+> >   bt hidp: Wait for ACK on Sent Reports
+> >   HID: Add Support for Setting and Getting Feature Reports from hidraw
+> >   Bluetooth hidp: Add support for hidraw HIDIOCGFEATURE and
+> >     HIDIOCSFEATURE
+> > 
+> >  drivers/hid/hidraw.c          |  106 +++++++++++++++++++-
+> >  drivers/hid/usbhid/hid-core.c |   35 +++++++
+> >  include/linux/hid.h           |    3 +
+> >  include/linux/hidraw.h        |    3 +
+> >  net/bluetooth/hidp/core.c     |  214 ++++++++++++++++++++++++++++++++++++++---
+> >  net/bluetooth/hidp/hidp.h     |   15 +++
+> 
+> Before proceeding with these patches, I'd really like to have comment 
+> (ideally 'Acked-by') from Marcel on the net/bluetooth/hidp part, 
+> obviously.
 
-Cool, exactly what I was thinking.  Intuitive already built in, I just
-didn't know it.
+I have tested it and it seems ok to me and to Marcel. For net/bluetooth/
 
-> There are some problems with that as on the first snapshot, just after
-> parsing the sources, all lines have zero hits, I plan to fix that doing
-> something like 'top' does, which is to wait a bit, say 2 seconds
-> collecting samples, then show the annotation centered on the hottest
-> line so far.
+Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
 
-Rock on :)
+Regards,
 
-	-Mike
-
+-- 
+Gustavo F. Padovan
+http://profusion.mobi
