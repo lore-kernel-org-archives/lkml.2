@@ -1,129 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab1BJSMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:12:13 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22919 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756707Ab1BJSMM (ORCPT
+	id S1753415Ab1BJSNj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:13:39 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:47744 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752012Ab1BJSNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:12:12 -0500
-Date: Thu, 10 Feb 2011 19:11:02 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Tadashi Abe <tabe@mvista.com>
-cc: x86@kernel.org, tglx@linutronix.de, hpa@zytor.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Fix io_bitmap_ptr memory leak on copy_process()
-In-Reply-To: <alpine.LNX.2.00.1102101901420.26035@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1102101909520.26035@swampdragon.chaosbits.net>
-References: <4D50CDE6.5000903@mvista.com> <alpine.LNX.2.00.1102101901420.26035@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 10 Feb 2011 13:13:37 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18JgrhPOnAJih5hW52khTfIOMiGosyNWZyQ/NP20q
+	wlJcRSIqtl/jCR
+Subject: Re: [tip:perf/core] perf annotate: Fix annotate context lines
+ regression
+From: Mike Galbraith <efault@gmx.de>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, mingo@redhat.com, hpa@zytor.com,
+        paulus@samba.org, eranian@google.com, linux-kernel@vger.kernel.org,
+        tzanussi@gmail.com, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110210161537.GA20676@ghostprotocols.net>
+References: <new-submission>
+	 <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
+	 <1297224378.8035.7.camel@marge.simson.net>
+	 <20110209164154.GA15607@ghostprotocols.net>
+	 <1297309313.7996.11.camel@marge.simson.net>
+	 <20110210121559.GA26094@elte.hu>
+	 <1297341811.5512.36.camel@marge.simson.net>
+	 <20110210161537.GA20676@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 19:13:29 +0100
+Message-ID: <1297361609.5364.2.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Small correction to my previous mail below.
+On Thu, 2011-02-10 at 14:15 -0200, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Feb 10, 2011 at 01:43:31PM +0100, Mike Galbraith escreveu:
+> > On Thu, 2011-02-10 at 13:15 +0100, Ingo Molnar wrote:
+> > > * Mike Galbraith <efault@gmx.de> wrote:
+> > > 
+> > > > Initial impression: can I have a pony too? :)
+> > > > 
+> > > > I like this a lot, great for live rummaging.  One thing that would help with large 
+> > > > files maybe - a jump to next spot hotter than N%, but as is is quite nice.
+> 
+> It already does that if you use TAB/shift-TAB, first one goes to the
+> hottest line, next one to the 2nd place, etc, shift-TAB goes the other
+> direction.
 
-On Thu, 10 Feb 2011, Jesper Juhl wrote:
+Cool, exactly what I was thinking.  Intuitive already built in, I just
+didn't know it.
 
-> On Tue, 8 Feb 2011, Tadashi Abe wrote:
-> 
-> > x86 copy_thread() allocates io_bitmap_ptr area in child's thread_struct
-> > when the parent has TIF_IO_BITMAP flag via ioperm().
-> > And in this case, if copy_process() terminates with errors
-> > after copy_thread() success,
-> > this io_bitmap_ptr area is being left without kfree().
-> > 
-> > Signed-off-by: Tadashi Abe <tabe@mvista.com>
-> > ---
-> >  arch/x86/kernel/process.c |    6 ++++++
-> >  include/linux/sched.h     |    5 +++++
-> >  kernel/fork.c             |    4 +++-
-> >  3 files changed, 14 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> > index b3feabc..290e98b 100644
-> > --- a/arch/x86/kernel/process.c
-> > +++ b/arch/x86/kernel/process.c
-> > @@ -122,6 +122,12 @@ void flush_thread(void)
-> >  	clear_used_math();
-> >  }
-> >  
-> > +void free_thread_struct(struct task_struct *p)
-> > +{
-> > +	if (p->thread.io_bitmap_ptr)
-> > +		kfree(p->thread.io_bitmap_ptr);
-> 
-> kfree(NULL) is perfectly legal, so the 'if' is not needed.
-> 
-> Why is this a new function? Why not simply call kfree() when needed.
-> 
-> 
-> > +}
-> > +
-> >  static void hard_disable_TSC(void)
-> >  {
-> >  	write_cr4(read_cr4() | X86_CR4_TSD);
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 23e9c27..2345391 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -2159,6 +2159,11 @@ extern int copy_thread(unsigned long, unsigned long, unsigned long,
-> >  			struct task_struct *, struct pt_regs *);
-> >  extern void flush_thread(void);
-> >  extern void exit_thread(void);
-> > +#ifdef CONFIG_X86
-> > +extern void free_thread_struct(struct task_struct *p);
-> > +#else
-> > +#define free_thread_struct(p) do { } while (0)
-> > +#endif
-> >  
-> 
-> This should just go away IMHO.
-> 
-> >  extern void exit_files(struct task_struct *);
-> >  extern void __cleanup_sighand(struct sighand_struct *);
-> > diff --git a/kernel/fork.c b/kernel/fork.c
-> > index 25e4291..ffcabf3 100644
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -1179,7 +1179,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
-> >  		retval = -ENOMEM;
-> >  		pid = alloc_pid(p->nsproxy->pid_ns);
-> >  		if (!pid)
-> > -			goto bad_fork_cleanup_io;
-> > +			goto bad_fork_free_thread;
-> >  
-> >  		if (clone_flags & CLONE_NEWPID) {
-> >  			retval = pid_ns_prepare_proc(p->nsproxy->pid_ns);
-> > @@ -1315,6 +1315,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
-> >  bad_fork_free_pid:
-> >  	if (pid != &init_struct_pid)
-> >  		free_pid(pid);
-> > +bad_fork_free_thread:
-> > +	free_thread_struct(p);
-> 
-> kfree(p);
->   and be done with it..
+> There are some problems with that as on the first snapshot, just after
+> parsing the sources, all lines have zero hits, I plan to fix that doing
+> something like 'top' does, which is to wait a bit, say 2 seconds
+> collecting samples, then show the annotation centered on the hottest
+> line so far.
 
-I mean kfree(p->thread.io_bitmap_ptr); of course.
+Rock on :)
 
-
-> 
-> >  bad_fork_cleanup_io:
-> >  	if (p->io_context)
-> >  		exit_io_context(p);
-> > 
-> 
-> Perhaps I'm overlooking something, in which case I'd be happy to be 
-> corrected, but I really can't see why this can't just be as simple as I 
-> outlined above.
-> 
-> 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+	-Mike
 
