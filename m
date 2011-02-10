@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab1BJX6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:58:03 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19370 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335Ab1BJX6B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:58:01 -0500
-Message-ID: <4D547B74.1030302@kernel.org>
-Date: Thu, 10 Feb 2011 15:57:40 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1757397Ab1BJX7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:59:23 -0500
+Received: from sous-sol.org ([216.99.217.87]:34639 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757328Ab1BJX7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:59:21 -0500
+Date: Thu, 10 Feb 2011 15:58:56 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: James Morris <jmorris@namei.org>
+Cc: Chris Wright <chrisw@sous-sol.org>, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eric Paris <eparis@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-pci@vger.kernel.org
+Subject: [PATCH 2/2 v2] pci: use security_capable() when checking capablities
+ during config space read
+Message-ID: <20110210235856.GD9869@sequoia.sous-sol.org>
+References: <1297318312-14309-1-git-send-email-chrisw@sous-sol.org>
+ <1297318312-14309-3-git-send-email-chrisw@sous-sol.org>
+ <alpine.LRH.2.00.1102101915000.20298@tundra.namei.org>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
- mappings
-References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop> <4D4A3782.3050702@zytor.com> <alpine.DEB.2.00.1102031114030.7277@kaball-desktop> <4D4ADFAD.7060507@zytor.com> <alpine.DEB.2.00.1102041130060.7277@kaball-desktop> <4D4CA568.70907@goop.org> <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com> <4D4E4E0D.2080806@zytor.com> <4D4EF553.6000000@kernel.org> <alpine.DEB.2.00.1102071524140.7277@kaball-desktop> <4D50343E.1020906@kernel.org> <alpine.DEB.2.00.1102071839060.7277@kaball-desktop> <4D504161.2060900@kernel.org> <4D506A85.9030802@goop.org> <4D50B4B5.4050505@kernel.org> <4D519AAA.8070309@zytor.com> <4D547962.8040403@goop.org>
-In-Reply-To: <4D547962.8040403@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D547B7A.01BC,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1102101915000.20298@tundra.namei.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2011 03:48 PM, Jeremy Fitzhardinge wrote:
-> On 02/08/2011 11:34 AM, H. Peter Anvin wrote:
->> On 02/07/2011 07:12 PM, Yinghai Lu wrote:
->>> why punishing native path with those checking?
->>>
->> What happens if you end up with a reserved range in an unfortunate place
->> on real hardware?
+* James Morris (jmorris@namei.org) wrote:
+> What about these other users of cap_raised?
 > 
-> Yes, exactly.  The reserved region code isn't very useful if you can't
-> rely on it to reserve stuff.
+> drivers/block/drbd/drbd_nl.c:   if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN)) {
+> drivers/md/dm-log-userspace-transfer.c: if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN))
+> drivers/staging/pohmelfs/config.c:      if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN))
+> drivers/video/uvesafb.c:        if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN))
 
-assume context is under:
-moving cleanup_highmap() down after brk is concluded, and check memblock_reserved there.
+Those are a security_netlink_recv() variant.  They should be converted
+although makes sense as a different patchset.
 
-one case for that: native path, bootloader could put initrd under 512M. and it is with memblock reserved.
-if we check those range with memblock_reserved, initial kernel mapping will not be cleaned up.
+> Also, should this have a reported-by for Eric ?
 
-or worse if we are checking if there is any range from __pa(_brk_end) to 512M is with memblock reserved to decide
-if we need to clean-up highmap. it will skip for whole range.
+Yes it should, thanks.  Below is patch with Reported-by added (seemed
+overkill to respin the series; holler if that's perferred).
 
-Yinghai
+thanks,
+-chris
+---
+
+From: Chris Wright <chrisw@sous-sol.org>
+Subject: [PATCH 2/2 v2] pci: use security_capable() when checking capablities during config space read
+
+Eric Paris noted that commit de139a3 ("pci: check caps from sysfs file
+open to read device dependent config space") caused the capability check
+to bypass security modules and potentially auditing.  Rectify this by
+calling security_capable() when checking the open file's capabilities
+for config space reads.
+
+Reported-by: Eric Paris <eparis@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-pci@vger.kernel.org
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
+ drivers/pci/pci-sysfs.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 8ecaac9..f7771f3 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -23,6 +23,7 @@
+ #include <linux/mm.h>
+ #include <linux/fs.h>
+ #include <linux/capability.h>
++#include <linux/security.h>
+ #include <linux/pci-aspm.h>
+ #include <linux/slab.h>
+ #include "pci.h"
+@@ -368,7 +369,7 @@ pci_read_config(struct file *filp, struct kobject *kobj,
+ 	u8 *data = (u8*) buf;
+ 
+ 	/* Several chips lock up trying to read undefined config space */
+-	if (cap_raised(filp->f_cred->cap_effective, CAP_SYS_ADMIN)) {
++	if (security_capable(filp->f_cred, CAP_SYS_ADMIN)) {
+ 		size = dev->cfg_size;
+ 	} else if (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+ 		size = 128;
