@@ -1,82 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1BJKLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 05:11:14 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:14525 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751934Ab1BJKLL (ORCPT
+	id S1755975Ab1BJKQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 05:16:27 -0500
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:53919
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755787Ab1BJKQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 05:11:11 -0500
-Message-ID: <4D53B9AC.8020609@bluewatersys.com>
-Date: Thu, 10 Feb 2011 23:10:52 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Richard Zhao <richard.zhao@freescale.com>
-CC: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
-References: <1297233693.242364.862698430999.1.gpush@pororo> <4D52F73A.4010707@bluewatersys.com> <20110210100319.GB24710@b20223-02.ap.freescale.net>
-In-Reply-To: <20110210100319.GB24710@b20223-02.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Feb 2011 05:16:25 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>, stable@kernel.org
+Subject: [PATCH] drm/i915/tv: Use polling rather than interrupt-based hotplug
+Date: Thu, 10 Feb 2011 10:16:06 +0000
+Message-Id: <1297332966-17647-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <alpine.LSU.2.00.1102081132160.1591@sister.anvils>
+References: <alpine.LSU.2.00.1102081132160.1591@sister.anvils>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/11 23:03, Richard Zhao wrote:
-> On Thu, Feb 10, 2011 at 09:21:14AM +1300, Ryan Mallon wrote:
->> On 02/09/2011 07:41 PM, Jeremy Kerr wrote:
->>
->> Hi Jeremy,
->>
->> Couple more comments below.
->>
->> ~Ryan
->>
-> [...]
->>> +int clk_enable(struct clk *clk)
->>> +{
->>> +     unsigned long flags;
->>> +     int ret = 0;
->>> +
->>> +     spin_lock_irqsave(&clk->enable_lock, flags);
->>          WARN_ON(clk->prepare_count == 0); ?
->>
->>> +     if (clk->enable_count == 0&&  clk->ops->enable)
->>> +             ret = clk->ops->enable(clk);
->> Does it make sense to have a clock with no enable function which still
->> returns success from clk_enable? Do we have any platforms which have
->> NULL clk_enable functions?
->>
->> I think that for enable/disable at least we should require platforms to
->> provide functions and oops if they have failed to do so. In the rare
->> case that a platform doesn't need to do anything for enable/disable they
->> can just supply empty functions.
-> It's possible to be NULL. So are set_rate/get_rate.
-> Ideally, if it's NULL:
-> prepare/unprepare: only call parent's prepare/unprepare
-> enable/disable: only call parent's enable/disable
+The documentation recommends that we should use a polling method for TV
+detection as this is more power efficient than the interrupt based
+mechanism (as the encoder can be completely switched off). A secondary
+effect is that leaving the hotplug enabled seems to be causing pipe
+underruns as reported by Hugh Dickins on his Crestline.
 
-No, the whole point of the generic framework is that _all_ clock users 
-must call prepare/enable and disable/unprepare. Drivers, etc should not 
-rely on underlying knowledge of a platform. This is why, for instance, 
-clk_enable will warn if prepare count is zero.
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: stable@kernel.org
+---
 
-However, I can see that a clock may be fully enabled by its prepare 
-function and so the enable function is a no-op. User must still call 
-both prepare and enable though. Perhaps this is what you meant?
+Hugh, does this prevent the persistent PIPE UNDERRUN issue?
 
-~Ryan
+---
+ drivers/gpu/drm/i915/intel_tv.c |   43 +++++++++++++++++++++++++++-----------
+ 1 files changed, 30 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index 93206e4..fe4a53a 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1234,7 +1234,8 @@ static const struct drm_display_mode reported_modes[] = {
+  * \return false if TV is disconnected.
+  */
+ static int
+-intel_tv_detect_type (struct intel_tv *intel_tv)
++intel_tv_detect_type (struct intel_tv *intel_tv,
++		      struct drm_connector *connector)
+ {
+ 	struct drm_encoder *encoder = &intel_tv->base.base;
+ 	struct drm_device *dev = encoder->dev;
+@@ -1245,11 +1246,13 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
+ 	int type;
+ 
+ 	/* Disable TV interrupts around load detect or we'll recurse */
+-	spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+-	i915_disable_pipestat(dev_priv, 0,
+-			      PIPE_HOTPLUG_INTERRUPT_ENABLE |
+-			      PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
+-	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
++	if (connector->polled & DRM_CONNECTOR_POLL_HPD) {
++		spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
++		i915_disable_pipestat(dev_priv, 0,
++				      PIPE_HOTPLUG_INTERRUPT_ENABLE |
++				      PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
++		spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
++	}
+ 
+ 	save_tv_dac = tv_dac = I915_READ(TV_DAC);
+ 	save_tv_ctl = tv_ctl = I915_READ(TV_CTL);
+@@ -1302,11 +1305,13 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
+ 	I915_WRITE(TV_CTL, save_tv_ctl);
+ 
+ 	/* Restore interrupt config */
+-	spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+-	i915_enable_pipestat(dev_priv, 0,
+-			     PIPE_HOTPLUG_INTERRUPT_ENABLE |
+-			     PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
+-	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
++	if (connector->polled & DRM_CONNECTOR_POLL_HPD) {
++		spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
++		i915_enable_pipestat(dev_priv, 0,
++				     PIPE_HOTPLUG_INTERRUPT_ENABLE |
++				     PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
++		spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
++	}
+ 
+ 	return type;
+ }
+@@ -1356,7 +1361,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+ 	drm_mode_set_crtcinfo(&mode, CRTC_INTERLACE_HALVE_V);
+ 
+ 	if (intel_tv->base.base.crtc && intel_tv->base.base.crtc->enabled) {
+-		type = intel_tv_detect_type(intel_tv);
++		type = intel_tv_detect_type(intel_tv, connector);
+ 	} else if (force) {
+ 		struct drm_crtc *crtc;
+ 		int dpms_mode;
+@@ -1364,7 +1369,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+ 		crtc = intel_get_load_detect_pipe(&intel_tv->base, connector,
+ 						  &mode, &dpms_mode);
+ 		if (crtc) {
+-			type = intel_tv_detect_type(intel_tv);
++			type = intel_tv_detect_type(intel_tv, connector);
+ 			intel_release_load_detect_pipe(&intel_tv->base, connector,
+ 						       dpms_mode);
+ 		} else
+@@ -1658,6 +1663,18 @@ intel_tv_init(struct drm_device *dev)
+ 	intel_encoder = &intel_tv->base;
+ 	connector = &intel_connector->base;
+ 
++	/* The documentation, for the older chipsets at least, recommend
++	 * using a polling method rather than hotplug detection for TVs.
++	 * This is because in order to perform the hotplug detection, the PLLs
++	 * for the TV must be kept alive increasing power drain and starving
++	 * bandwidth from other encoders. Notably for instance, it causes
++	 * pipe underruns on Crestline when this encoder is supposedly idle.
++	 *
++	 * More recent chipsets favour HDMI rather than integrated S-Video.
++	 */
++	connector->polled =
++		DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR_POLL_DISCONNECT;
++
+ 	drm_connector_init(dev, connector, &intel_tv_connector_funcs,
+ 			   DRM_MODE_CONNECTOR_SVIDEO);
+ 
+-- 
+1.7.2.3
+
