@@ -1,117 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab1BJXoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:44:34 -0500
-Received: from www.tglx.de ([62.245.132.106]:44358 "EHLO www.tglx.de"
+	id S1757357Ab1BJXhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:37:50 -0500
+Received: from www.tglx.de ([62.245.132.106]:44296 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757574Ab1BJXhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:37:55 -0500
-Message-Id: <20110210223259.231195512@linutronix.de>
+	id S932205Ab1BJXhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:37:42 -0500
+Message-Id: <20110210223257.694466031@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:37:49 -0000
+Date: Thu, 10 Feb 2011 23:37:11 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 51/75] genirq: Remove CONFIG_IRQ_PER_CPU
+Subject: [patch 35/75] genirq: Protect tglx from tripping over his own feet
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=genirq-remove-config-irq-per-cpu.patch
+Content-Disposition: inline; filename=genirq-protect-myself.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The saving of this switch is minimal versus the ifdef mess it
-creates. Simple enable PER_CPU unconditionally and remove the config
-switch.
+The irq_desc.status field will either go away or renamed to
+settings. Anyway we need to maintain compatibility to avoid breaking
+the world and some more. While moving bits into the core, I need to
+avoid that I use any of the still existing IRQ_ bits in the core code
+by typos. So that file will hold the inline wrappers and some nasty
+CPP tricks to break the build when typoed.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/irq.h    |    5 -----
- kernel/irq/Kconfig     |    3 ---
- kernel/irq/internals.h |    2 --
- kernel/irq/manage.c    |    9 +++------
- 4 files changed, 3 insertions(+), 16 deletions(-)
+ kernel/irq/internals.h |    2 ++
+ kernel/irq/irqdesc.c   |    4 ++--
+ kernel/irq/settings.h  |    7 +++++++
+ 3 files changed, 11 insertions(+), 2 deletions(-)
 
-Index: linux-2.6-tip/include/linux/irq.h
-===================================================================
---- linux-2.6-tip.orig/include/linux/irq.h
-+++ linux-2.6-tip/include/linux/irq.h
-@@ -76,13 +76,8 @@ typedef	void (*irq_flow_handler_t)(unsig
- 	 IRQ_NOAUTOEN | IRQ_MOVE_PCNTXT | IRQ_LEVEL | IRQ_NO_BALANCING | \
- 	 IRQ_PER_CPU)
- 
--#ifdef CONFIG_IRQ_PER_CPU
- # define CHECK_IRQ_PER_CPU(var) ((var) & IRQ_PER_CPU)
- # define IRQ_NO_BALANCING_MASK	(IRQ_PER_CPU | IRQ_NO_BALANCING)
--#else
--# define CHECK_IRQ_PER_CPU(var) 0
--# define IRQ_NO_BALANCING_MASK	IRQ_NO_BALANCING
--#endif
- 
- /*
-  * Return value for chip->irq_set_affinity()
-Index: linux-2.6-tip/kernel/irq/Kconfig
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/Kconfig
-+++ linux-2.6-tip/kernel/irq/Kconfig
-@@ -32,9 +32,6 @@ config GENERIC_PENDING_IRQ
- config AUTO_IRQ_AFFINITY
-        def_bool n
- 
--config IRQ_PER_CPU
--       def_bool n
--
- config HARDIRQS_SW_RESEND
-        def_bool n
- 
 Index: linux-2.6-tip/kernel/irq/internals.h
 ===================================================================
 --- linux-2.6-tip.orig/kernel/irq/internals.h
 +++ linux-2.6-tip/kernel/irq/internals.h
-@@ -161,9 +161,7 @@ static inline void print_irq_desc(unsign
- 	}
+@@ -7,6 +7,8 @@
+  */
+ #include <linux/irqdesc.h>
  
- 	P(IRQ_LEVEL);
--#ifdef CONFIG_IRQ_PER_CPU
- 	P(IRQ_PER_CPU);
--#endif
- 	P(IRQ_NOPROBE);
- 	P(IRQ_NOREQUEST);
- 	P(IRQ_NOAUTOEN);
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -871,12 +871,10 @@ __setup_irq(unsigned int irq, struct irq
- 			goto mismatch;
- 		}
- 
--#if defined(CONFIG_IRQ_PER_CPU)
- 		/* All handlers must agree on per-cpuness */
- 		if ((old->flags & IRQF_PERCPU) !=
- 		    (new->flags & IRQF_PERCPU))
- 			goto mismatch;
--#endif
- 
- 		/* add new interrupt at end of irq queue */
- 		do {
-@@ -900,15 +898,14 @@ __setup_irq(unsigned int irq, struct irq
- 				goto out_mask;
- 		} else
- 			compat_irq_chip_set_default_handler(desc);
--#if defined(CONFIG_IRQ_PER_CPU)
--		if (new->flags & IRQF_PERCPU)
--			desc->status |= IRQ_PER_CPU;
--#endif
- 
- 		desc->istate &= ~(IRQS_AUTODETECT | IRQS_SPURIOUS_DISABLED | \
- 				  IRQS_INPROGRESS | IRQS_ONESHOT | \
- 				  IRQS_WAITING);
- 
-+		if (new->flags & IRQF_PERCPU)
-+			desc->status |= IRQ_PER_CPU;
++#include "settings.h"
 +
- 		if (new->flags & IRQF_ONESHOT)
- 			desc->istate |= IRQS_ONESHOT;
+ #define istate core_internal_state__do_not_mess_with_it
  
+ extern int noirqdebug;
+Index: linux-2.6-tip/kernel/irq/irqdesc.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/irqdesc.c
++++ linux-2.6-tip/kernel/irq/irqdesc.c
+@@ -79,7 +79,7 @@ static void desc_set_defaults(unsigned i
+ 	desc->irq_data.chip_data = NULL;
+ 	desc->irq_data.handler_data = NULL;
+ 	desc->irq_data.msi_desc = NULL;
+-	desc->status = IRQ_DEFAULT_INIT_FLAGS;
++	desc->status = _IRQ_DEFAULT_INIT_FLAGS;
+ 	desc->handle_irq = handle_bad_irq;
+ 	desc->depth = 1;
+ 	desc->irq_count = 0;
+@@ -229,7 +229,7 @@ int __init early_irq_init(void)
+ 
+ struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
+ 	[0 ... NR_IRQS-1] = {
+-		.status		= IRQ_DEFAULT_INIT_FLAGS,
++		.status		= _IRQ_DEFAULT_INIT_FLAGS,
+ 		.handle_irq	= handle_bad_irq,
+ 		.depth		= 1,
+ 		.lock		= __RAW_SPIN_LOCK_UNLOCKED(irq_desc->lock),
+Index: linux-2.6-tip/kernel/irq/settings.h
+===================================================================
+--- /dev/null
++++ linux-2.6-tip/kernel/irq/settings.h
+@@ -0,0 +1,7 @@
++/*
++ * Internal header to deal with irq_desc->status which will be renamed
++ * to irq_desc->settings.
++ */
++enum {
++	_IRQ_DEFAULT_INIT_FLAGS	= IRQ_DEFAULT_INIT_FLAGS,
++};
 
 
