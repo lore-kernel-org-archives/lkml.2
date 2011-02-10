@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1BJNKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 08:10:40 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34175 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab1BJNKj (ORCPT
+	id S1754186Ab1BJNOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 08:14:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36594 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab1BJNOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 08:10:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=weD019IeD3NxUPQkvI/nNH3ZT3YIDKpa5cPGkh6hxB6KnTUzaW3lO/oJFKG2SGR0Nq
-         hs29esLF6bF7a4EPWln95yO9SJe5GDLYoJL2e2R9FpIUnBfvtlxl0MGkagz+PnDJDn00
-         9lIioCPfMIG2E1mjlO+Rtg5/cp2fbkHNbkTD0=
+	Thu, 10 Feb 2011 08:14:39 -0500
+Date: Thu, 10 Feb 2011 13:13:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Richard Zhao <linuxzsc@gmail.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Ryan Mallon <ryan@bluewatersys.com>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
+Message-ID: <20110210131308.GB1742@n2100.arm.linux.org.uk>
+References: <1297233693.242364.862698430999.1.gpush@pororo> <4D52F73A.4010707@bluewatersys.com> <20110210100319.GB24710@b20223-02.ap.freescale.net> <20110210104639.GZ27982@pengutronix.de> <20110210130800.GB3316@richard-laptop>
 MIME-Version: 1.0
-In-Reply-To: <1297338408-3590-1-git-send-email-namhyung@gmail.com>
-References: <1297338408-3590-1-git-send-email-namhyung@gmail.com>
-Date: Thu, 10 Feb 2011 22:10:38 +0900
-Message-ID: <AANLkTikEigbPsNMqqkmixYbCfD7Dz12YMcW2+GZbhUQq@mail.gmail.com>
-Subject: Re: [RFC PATCH] mm: handle simple case in free_pcppages_bulk()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110210130800.GB3316@richard-laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Namhyung,
+On Thu, Feb 10, 2011 at 09:08:00PM +0800, Richard Zhao wrote:
+> Why? what restriction will it cause to add parent in clk?
+> Two benifits at least I can see:
+> 1. null ops handle, as I said above.
+> 2. export clock tree to user level for debug. It's very helpfull.
 
-On Thu, Feb 10, 2011 at 8:46 PM, Namhyung Kim <namhyung@gmail.com> wrote:
-> Now I'm seeing that there are some cases to free all pages in a
-> pcp lists. In that case, just frees all pages in the lists instead
-> of being bothered with round-robin lists traversal.
+Don't be tempted to expand what's done at the generic level.  Platforms
+may need special handling at the current clock level before the parent
+clock level is considered.  Also platforms may not have parents so it
+becomes mere bloat.
 
-I though about that but I didn't send the patch.
-That's because many cases which calls free_pcppages_bulk(,
-pcp->count,..) are slow path so it adds comparison overhead on fast
-path while it loses the effectiveness in slow path.
-
--- 
-Kind regards,
-Minchan Kim
+The more complicated the generic level becomes, the more platforms won't
+covert to it.
