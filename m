@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab1BJRaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:30:03 -0500
-Received: from lo.gmane.org ([80.91.229.12]:54739 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820Ab1BJRaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:30:00 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: ael <law_ence.dev@ntlworld.com>
-Subject: Re: [PATCH 7/8] sr: implement sr_check_events()
-Date: Thu, 10 Feb 2011 17:30:36 +0000
-Message-ID: <ij17a5$825$1@dough.gmane.org>
-References: <1291838262-21274-1-git-send-email-tj@kernel.org> <1291838262-21274-8-git-send-email-tj@kernel.org> <4D44BE3E.5080107@simon.arlott.org.uk>
+	id S1756546Ab1BJRjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:39:10 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35000 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754346Ab1BJRjI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 12:39:08 -0500
+Date: Thu, 10 Feb 2011 09:38:47 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: gregkh@suse.de
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] kobject.h: fix build when CONFIG_HOTPLUG is
+ disabled
+Message-Id: <20110210093847.995e6f97.randy.dunlap@oracle.com>
+In-Reply-To: <20110206215718.185b6262.randy.dunlap@oracle.com>
+References: <20110207161902.a4c36e08.sfr@canb.auug.org.au>
+	<20110206215718.185b6262.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: cpc1-oxfd6-0-0-cust236.4-3.cable.virginmedia.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-In-Reply-To: <4D44BE3E.5080107@simon.arlott.org.uk>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D5422B0.0085:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure whether these patches are responsible, but I have been seeing 
-problems mounting dvd media since 2.6.38-rc3. It improved slightly with
-2.6.38-rc4, but I have to use 2.6.38-rc1 (rc2 not tested) to mount some 
-of my dvd-rw media.
+On Sun, 6 Feb 2011 21:57:18 -0800 Randy Dunlap wrote:
 
-Message is (from memory & approximately) media already mounted or device 
-busy after
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> When CONFIG_HOTPLUG is not enabled, the inline function add_uevent_var()
+> needs to have its __attribute__ before the function name/parameters,
+> otherwise there are syntax errors.
+> 
+> linux-next-20110207/include/linux/kobject.h:232: error: expected ',' or ';' before '{' token
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-mount /dev/dvd /dvd
+Greg,
+This patch is still needed in linux-next, please...
 
-Apologies for such a vague report not properly investigated, but maybe. 
-or maybe not, better than nothing.
 
-ael
+> ---
+>  include/linux/kobject.h |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> --- linux/include/linux/kobject.h.ORG	2011-02-06 21:47:23.000000000 -0800
+> +++ linux/include/linux/kobject.h	2011-02-06 21:44:56.000000000 -0800
+> @@ -226,9 +226,8 @@
+>  				      char *envp[])
+>  { return 0; }
+>  
+> -static inline int add_uevent_var(struct kobj_uevent_env *env,
+> -				 const char *format, ...)
+> -	__attribute__((format(printf, 2, 3)))
+> +static inline __attribute__((format(printf, 2, 3)))
+> +int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
+>  { return 0; }
+>  
+>  static inline int kobject_action_type(const char *buf, size_t count,
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
