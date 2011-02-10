@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1BJSTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:19:11 -0500
-Received: from mailhost.tue.nl ([131.155.2.19]:50876 "EHLO mailhost.tue.nl"
+	id S1752928Ab1BJSUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:20:39 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:50164 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753002Ab1BJSTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:19:08 -0500
-X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Feb 2011 13:19:08 EST
-Date: Thu, 10 Feb 2011 19:12:21 +0100
-From: Andries Brouwer <aebr@win.tue.nl>
-To: Roland McGrath <roland@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linasvepstas@gmail.com,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-Message-ID: <20110210181221.GA19413@win.tue.nl>
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
- <201101251529.24779.arnd@arndb.de>
- <20110125174515.C1DC2183C19@magilla.sf.frob.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110125174515.C1DC2183C19@magilla.sf.frob.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1750917Ab1BJSUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:20:38 -0500
+Subject: Re: [PATCH 5/5] have smaps show transparent huge pages
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>
+In-Reply-To: <20110210180924.GB3347@random.random>
+References: <20110209195406.B9F23C9F@kernel>
+	 <20110209195413.6D3CB37F@kernel> <20110210112032.GG17873@csn.ul.ie>
+	 <1297350115.6737.14208.camel@nimitz> <20110210150942.GL17873@csn.ul.ie>
+	 <20110210180924.GB3347@random.random>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 10 Feb 2011 10:20:32 -0800
+Message-ID: <1297362032.6737.14622.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 09:45:15AM -0800, Roland McGrath wrote:
+On Thu, 2011-02-10 at 19:09 +0100, Andrea Arcangeli wrote:
+> Maybe it'd be cleaner if we didn't need to cast the pmd to pte_t but I
+> guess this makes things simpler. 
 
-> the empty string has never been a valid relative pathname.
+Yeah, I'm not a huge fan of doing that, either.  But, I'm not sure what
+the alternatives are.  We could basically copy smaps_pte_entry() to
+smaps_pmd_entry(), and then try to make pmd variants of all of the pte
+functions and macros we call in there.
 
-Hmm. I definitely recall otherwise.
+I know there's a least a bit of precedent in the hugetlbfs code for
+doing things like this, but it's not a _great_ excuse. :)
 
-The old Unix definition is that the empty string stands for "."
-so that 'ls ""' means the same as 'ls .'
-and 'ls /tmp/""' the same as 'ls /tmp/.'.
+-- Dave
 
-Let me try.
-
-On a recent Linux system:
-
-% ls -l ""
-ls: cannot access : No such file or directory
-
-On an old Unix system:
-
-# ls -l ""
-drwxr-xr-x  2 bin      1040 Jan  1  1970 bin
-drwxr-xr-x  2 bin       352 Jan  1  1970 dev
-drwxr-xr-x  2 bin       304 Aug 20 12:39 etc
-...
-
-Andries
