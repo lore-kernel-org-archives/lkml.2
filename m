@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab1BJSkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:40:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752567Ab1BJSkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:40:12 -0500
-Date: Thu, 10 Feb 2011 19:39:31 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 5/5] have smaps show transparent huge pages
-Message-ID: <20110210183931.GC3347@random.random>
-References: <20110209195406.B9F23C9F@kernel>
- <20110209195413.6D3CB37F@kernel>
- <20110210112032.GG17873@csn.ul.ie>
- <1297350115.6737.14208.camel@nimitz>
- <20110210150942.GL17873@csn.ul.ie>
- <20110210180924.GB3347@random.random>
- <1297362032.6737.14622.camel@nimitz>
+	id S1754665Ab1BJSn7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:43:59 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63650 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab1BJSn6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:43:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vIZpUXoxyH+UAfYTJqEeIZaqnTWSW9m8WYXikJh86NeUIEJzAOfcvFl9MCPzqa2se9
+         d2JDTE6dqeEOTRoManrCH2CEa+A0jUjKlWQmNDwzuYQuontvqI3ZGQTwpnQh69vivGkh
+         4MtskZpuY/9s8TltPr8QFjnMUqQGOXVGvb2tY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297362032.6737.14622.camel@nimitz>
+In-Reply-To: <20110210175855.GC13795@suse.de>
+References: <0d30dc$l1diqi@orsmga001.jf.intel.com>
+	<20110210175855.GC13795@suse.de>
+Date: Thu, 10 Feb 2011 20:43:57 +0200
+Message-ID: <AANLkTimyxSy2FDBjh-xR1XmuZ9c7KjYHN-CjFAfp4Eu_@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/13] Intel(R) MEI Driver
+From: Tomas Winkler <tomasw@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Oren Weil <oren.jer.weil@intel.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, david@woodhou.se,
+        david.woodhouse@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 10:20:32AM -0800, Dave Hansen wrote:
-> On Thu, 2011-02-10 at 19:09 +0100, Andrea Arcangeli wrote:
-> > Maybe it'd be cleaner if we didn't need to cast the pmd to pte_t but I
-> > guess this makes things simpler. 
-> 
-> Yeah, I'm not a huge fan of doing that, either.  But, I'm not sure what
-> the alternatives are.  We could basically copy smaps_pte_entry() to
-> smaps_pmd_entry(), and then try to make pmd variants of all of the pte
-> functions and macros we call in there.
+On Thu, Feb 10, 2011 at 7:58 PM, Greg KH <gregkh@suse.de> wrote:
+> On Thu, Feb 10, 2011 at 01:54:54AM -0800, Oren Weil wrote:
+>> Intel(R) Management Engine Interface (Intel(R) MEI) Driver
+>> ==========================================================
+>>
+>> This patch contains a new Intel driver for the Linux kernel: The Intel(R) MEI Driver.
+>
+> This patch?  What patch, there is no patch here.
+>
+> You sent out 13 emails with the same exact Subject line, which is not
+> acceptable at all, and mighty confusing.
+>
+>> This set of patches is for review purposes; the driver code
+>> for pull is in the David Woodhouse public git repository:
+>> http://git.infradead.org/linux-2.6-mei.git
+>
+> No, we need these as patches, not as a pull request.  Please work on
+> fixing up your individual patches, that's the only way this is going to
+> be accepted.
 
-I thought at the smaps_pmd_entry possibility too, but I would expect
-it to plain duplicate a bit of code just to avoid a single cast, which
-is why I thought the cast was ok in this case.
+There was a suggestion of splitting the driver into per file patches
+to be reviewable  rather then creating gigantic driver patch.
+I personally would prefer the later one  would happy to here any other
+suggestions how to split driver.
 
-> I know there's a least a bit of precedent in the hugetlbfs code for
-> doing things like this, but it's not a _great_ excuse. :)
-
-;)
+Thanks
+Tomas
