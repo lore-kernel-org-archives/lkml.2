@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab1BJEvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 23:51:35 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29722 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755734Ab1BJEve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 23:51:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,450,1291622400"; 
-   d="scan'208";a="656266803"
-Date: Wed, 9 Feb 2011 20:51:33 -0800
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Paul Menage <menage@google.com>, akpm@linux-foundation.org,
-        rdunlap@xenotime.net, Cedric Le Goater <clg@fr.ibm.com>
-Subject: Re: [PATCH 1/1, v6] cgroup/freezer: add per freezer duty ratio
- control
-Message-ID: <20110209205133.5146a9fb@jacob-laptop>
-In-Reply-To: <4D52050F.3060907@cn.fujitsu.com>
-References: <1297213541-18156-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<4D52050F.3060907@cn.fujitsu.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755917Ab1BJEv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 23:51:56 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47764 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755741Ab1BJEvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 23:51:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=WIrH2bnYtGWRFi0h9WiLYrTE7wBIqEoY9Wvek/ZNxC6LtXwoD1r6eebT0weUROmB9i
+         7kHzNnTf+uvuvLsg3Sg4pzrSPAVlyv7fbfrtmxmwGackhFcM1Pu+no6LW6/k/UoVabr/
+         XNmoA2GveLkeu8rO2ATj0URygmsqPliP2ot40=
+Date: Thu, 10 Feb 2011 12:51:31 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
+        davem@davemloft.net, greg@kroah.com, rdunlap@xenotime.com
+Subject: [PATCH]add topgit for T: in MAINTAINERS doc.
+Message-ID: <20110210045129.GA5281@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+	joe@perches.com, davem@davemloft.net, greg@kroah.com,
+	rdunlap@xenotime.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Feb 2011 11:07:59 +0800
-Li Zefan <lizf@cn.fujitsu.com> wrote:
+Hi us,
+     When i see MAINTAINERS, i didn't find topgit in T:. It only reads that "T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit."
+     But there is topgit used in MAINTAINERS doc like following.
+           
+	   ARM/EZX SMARTPHONES (A780, A910, A1200, E680, ROKR E2 and ROKR E6)
+	    M:      Daniel Ribeiro <drwyrm@gmail.com>
+	    M:      Stefan Schmidt <stefan@openezx.org>
+	    M:      Harald Welte <laforge@openezx.org>
+	    L:      openezx-devel@lists.openezx.org (subscribers-only)
+	    W:      http://www.openezx.org/
+	    S:      Maintained
+	    T:      topgit git://git.openezx.org/openezx.git      
+	    F:      arch/arm/mach-pxa/ezx.c
+   My patcher like following.
+
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+---
+ MAINTAINERS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 95ac55c..3b4c67a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -72,7 +72,7 @@ Descriptions of section entries:
+ 	L: Mailing list that is relevant to this area
+ 	W: Web-page with status/info
+ 	Q: Patchwork web based patch tracking system site
+-	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit.
++	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit, topgit.
+ 	S: Status, one of the following:
+ 	   Supported:	Someone is actually paid to look after this.
+ 	   Maintained:	Someone actually looks after it.
+-- 
+1.7.0.4
 
 
-> >  
-> > +#define FREEZER_KH_PREFIX  "freezer_"
-> > +static int freezer_write_param(struct cgroup *cgroup, struct
-> > cftype *cft,
-> > +		u64 val)
-> > +{
-> > +	struct freezer *freezer;
-> > +	char thread_name[32];
-> > +	int ret = 0;
-> > +
-> > +	freezer = cgroup_freezer(cgroup);
-> > +
-> > +	if (!cgroup_lock_live_group(cgroup))
-> > +		return -ENODEV;
-> > +
-> > +	switch (cft->private) {
-> > +	case FREEZER_DUTY_RATIO:
-> > +		if (val >= 100 || val < 0) {
-> 
-> val will never < 0.
-good point, I will fix it.
-
-> 
-> > +			ret = -EINVAL;
-> > +			goto exit;
-> > +		}
-> > +		freezer->duty.ratio = val;
-> > +		break;
-> > +	case FREEZER_PERIOD:
-> > +		if (val)
-> > +			do_div(val, 100);
-> 
-> Is 0 an invalid value for do_div()?
-0 is valid. I was thinking about divide by 0 by mistake. will fix it.
-
-> 
-> > +			freezer->duty.period_pct_ms = val;
-> > +		break;
-> > +	default:
-> > +		BUG();
-> > +	}
-> > +
-> > +	/* start/stop management kthread as needed, the rule is
-> > that
-> > +	 * if both duty ratio and period values are zero, then no
-> > management
-> > +	 * kthread is created. when both are non-zero, we create a
-> > kthread
-> > +	 * for the cgroup. When user set zero to duty ratio and
-> > period again
-> > +	 * the kthread is stopped.
-> > +	 */
-> > +	if (freezer->duty.ratio && freezer->duty.period_pct_ms) {
-> > +		if (!freezer->fkh) {
-> > +			snprintf(thread_name, 32, "%s%s",
-> > FREEZER_KH_PREFIX,
-> > +				cgroup->dentry->d_name.name);
-> > +			freezer->fkh = kthread_run(freezer_kh,
-> > (void *)cgroup,
-> > +						thread_name);
-> > +			if (IS_ERR(freezer_task)) {
-> 
-> You mean IS_ERR(freezer->fkh)?
-Right, same bug for PTR_ERR. will fix.
-
-thanks.
