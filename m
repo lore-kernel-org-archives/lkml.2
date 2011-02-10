@@ -1,126 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab1BJRV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:21:59 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44587 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab1BJRP1 (ORCPT
+	id S1756669Ab1BJRYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:24:18 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:19052 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756529Ab1BJRYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:15:27 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: <linux-edac@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 01/30] EDAC: Shut up sysfs registration debug code
-Date: Thu, 10 Feb 2011 18:15:04 +0100
-Message-Id: <1297358133-14320-2-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <1297358133-14320-1-git-send-email-bp@amd64.org>
-References: <1297358133-14320-1-git-send-email-bp@amd64.org>
+	Thu, 10 Feb 2011 12:24:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=lK1X7GsvI1+7BztnKWbl7j64hibOurulaTcrKq3HNOvcjwSPdvnA25Q/L8BavW0ik/
+         gaRDDxQWQEHZwI+O3jDw==
+MIME-Version: 1.0
+In-Reply-To: <1297243778.13327.143.camel@laptop>
+References: <AANLkTikmWfLv3iMNUky7TRvQtUknLckftiQ4-Br614Rm@mail.gmail.com>
+	<1297188819-19999-1-git-send-email-venki@google.com>
+	<1297243778.13327.143.camel@laptop>
+Date: Thu, 10 Feb 2011 09:24:11 -0800
+Message-ID: <AANLkTi=fKQB1sYzh=rfPRMMmjXEOd9REvg+J05bfkwFv@mail.gmail.com>
+Subject: Re: Misc sd_idle related fixes
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, Feb 9, 2011 at 1:29 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2011-02-08 at 10:13 -0800, Venkatesh Pallipadi wrote:
+>> Here are the 3 sd_idle related changes I tested with, for reference. Among
+>> the three, the third patch is the one that helps us in reducing idle cycles
+>> with one of our workloads and thus improves the latency response.
+>
+> Have you tried what happens if you simply rip all that SMT stuff out and
+> simplify the code? Afaict much of the capacity stuff we have should have
+> a similar effect and is less confusing, no?
+>
 
-Raise the debug level of these routines so that their output get issued
-out only when the highest debug level is selected. Otherwise, don't
-pollute driver debug output.
+Among the benchmarks I looked at (tbench and internal workload that
+showed benefit with these fixes), I see both no sd_idle and
+sd_idle+fixes have similar effect. So, I do not see any problems with
+ripping out sd_idle altogether.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- drivers/edac/edac_mc_sysfs.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+We may still need to change first_idle_cpu logic a bit for SMT though.
+It can prevent 2 hop migrations in cases like:
+{ [ (A B) (C D) ] [ (E F) (G H) ] } grouping, if B is busy, EFGH are
+busy and ACD are idle;
+As A happens to be first idle CPU, it will be the one bringing in the
+load from socket EFGH and then C or D have to pull the load from A.
+Instead if C or D is nominated to pull the task from other socket, we
+can reduce one hop.
+I do not see capacity logic handling this case. But, this is more of a
+micro-optimization and may affect workloads like SPECjbb at low
+utilization, etc. I haven't seen this affecting the workloads we care
+about.
 
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 39d97cf..73196f7 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -785,10 +785,10 @@ static int edac_create_mci_instance_attributes(struct mem_ctl_info *mci,
- {
- 	int err;
- 
--	debugf1("%s()\n", __func__);
-+	debugf4("%s()\n", __func__);
- 
- 	while (sysfs_attrib) {
--		debugf1("%s() sysfs_attrib = %p\n",__func__, sysfs_attrib);
-+		debugf4("%s() sysfs_attrib = %p\n",__func__, sysfs_attrib);
- 		if (sysfs_attrib->grp) {
- 			struct mcidev_sysfs_group_kobj *grp_kobj;
- 
-@@ -818,7 +818,7 @@ static int edac_create_mci_instance_attributes(struct mem_ctl_info *mci,
- 			if (err < 0)
- 				return err;
- 		} else if (sysfs_attrib->attr.name) {
--			debugf0("%s() file %s\n", __func__,
-+			debugf4("%s() file %s\n", __func__,
- 				sysfs_attrib->attr.name);
- 
- 			err = sysfs_create_file(kobj, &sysfs_attrib->attr);
-@@ -853,26 +853,26 @@ static void edac_remove_mci_instance_attributes(struct mem_ctl_info *mci,
- 	 * Remove first all the atributes
- 	 */
- 	while (sysfs_attrib) {
--		debugf1("%s() sysfs_attrib = %p\n",__func__, sysfs_attrib);
-+		debugf4("%s() sysfs_attrib = %p\n",__func__, sysfs_attrib);
- 		if (sysfs_attrib->grp) {
--			debugf1("%s() seeking for group %s\n",
-+			debugf4("%s() seeking for group %s\n",
- 				__func__, sysfs_attrib->grp->name);
- 			list_for_each_entry(grp_kobj,
- 					    &mci->grp_kobj_list, list) {
--				debugf1("%s() grp_kobj->grp = %p\n",__func__, grp_kobj->grp);
-+				debugf4("%s() grp_kobj->grp = %p\n",__func__, grp_kobj->grp);
- 				if (grp_kobj->grp == sysfs_attrib->grp) {
- 					edac_remove_mci_instance_attributes(mci,
- 						    grp_kobj->grp->mcidev_attr,
- 						    &grp_kobj->kobj, count + 1);
--					debugf0("%s() group %s\n", __func__,
-+					debugf4("%s() group %s\n", __func__,
- 						sysfs_attrib->grp->name);
- 					kobject_put(&grp_kobj->kobj);
- 				}
- 			}
--			debugf1("%s() end of seeking for group %s\n",
-+			debugf4("%s() end of seeking for group %s\n",
- 				__func__, sysfs_attrib->grp->name);
- 		} else if (sysfs_attrib->attr.name) {
--			debugf0("%s() file %s\n", __func__,
-+			debugf4("%s() file %s\n", __func__,
- 				sysfs_attrib->attr.name);
- 			sysfs_remove_file(kobj, &sysfs_attrib->attr);
- 		} else
-@@ -979,7 +979,7 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
- 	debugf0("%s()\n", __func__);
- 
- 	/* remove all csrow kobjects */
--	debugf0("%s()  unregister this mci kobj\n", __func__);
-+	debugf4("%s()  unregister this mci kobj\n", __func__);
- 	for (i = 0; i < mci->nr_csrows; i++) {
- 		if (mci->csrows[i].nr_pages > 0) {
- 			debugf0("%s()  unreg csrow-%d\n", __func__, i);
-@@ -989,18 +989,18 @@ void edac_remove_sysfs_mci_device(struct mem_ctl_info *mci)
- 
- 	/* remove this mci instance's attribtes */
- 	if (mci->mc_driver_sysfs_attributes) {
--		debugf0("%s()  unregister mci private attributes\n", __func__);
-+		debugf4("%s()  unregister mci private attributes\n", __func__);
- 		edac_remove_mci_instance_attributes(mci,
- 						mci->mc_driver_sysfs_attributes,
- 						&mci->edac_mci_kobj, 0);
- 	}
- 
- 	/* remove the symlink */
--	debugf0("%s()  remove_link\n", __func__);
-+	debugf4("%s()  remove_link\n", __func__);
- 	sysfs_remove_link(&mci->edac_mci_kobj, EDAC_DEVICE_SYMLINK);
- 
- 	/* unregister this instance's kobject */
--	debugf0("%s()  remove_mci_instance\n", __func__);
-+	debugf4("%s()  remove_mci_instance\n", __func__);
- 	kobject_put(&mci->edac_mci_kobj);
- }
- 
--- 
-1.7.4.rc2
-
+Thanks,
+Venki
