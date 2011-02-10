@@ -1,88 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab1BJWka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 17:40:30 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:51883 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752507Ab1BJWk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 17:40:29 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+AysFGNnmAQuAZ0IiqKceb8+Fb3sINuQk6aNOPY5
-	bvXYhCIuNFv6fN
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: minyard@acm.org
-Subject: Re: [PATCH] char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
-Date: Thu, 10 Feb 2011 23:40:27 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; x86_64; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Torvalds <torvalds@linux-foundation.org>, stable@kernel.org,
-        openipmi-developer@lists.sourceforge.net,
-        Randy Dunlap <randy.dunlap@oracle.com>
-References: <20110210220838.GA25539@mail.minyard.local>
-In-Reply-To: <20110210220838.GA25539@mail.minyard.local>
+	id S1757098Ab1BJWmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 17:42:10 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:33811
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755870Ab1BJWmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 17:42:08 -0500
+Date: Thu, 10 Feb 2011 22:43:01 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Gergely Nagy <algernon@balabit.hu>,
+        david@lang.hm, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Marc Koschewski <marc@osknowledge.org>,
+        lkml <linux-kernel@vger.kernel.org>, James Morris <jmorris@namei.org>,
+        Nick Bowler <nbowler@elliptictech.com>
+Subject: Re: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now (v3)
+Message-ID: <20110210224301.GA26562@mail.hallyn.com>
+References: <20110210144057.GA7193@mail.hallyn.com>
+ <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102102340.28151.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 10 Februar 2011, 23:08:38 schrieb Corey Minyard:
-> This patch fixes an OOPS triggered when calling modprobe ipmi_si a
-> second time after the first modprobe returned without finding any ipmi
-> devices.  This can happen if you reload the module after having the
-> first module load fail.  The driver was not deregistering from
-> PNP in that case.
+Quoting Linus Torvalds (torvalds@linux-foundation.org):
+> On Thu, Feb 10, 2011 at 6:40 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> >
+> > Please apply.
 > 
-> Peter Huewe originally reported this patch and supplied a fix, I have
-> a different patch based on Linus' suggestion that cleans things up a
-> bit more.
+> Hmm. So I detest the duplication and the ugly resulting code.  It was
+> a bit hard to follow before, now it's just nasty.
 > 
-> KernelVersion: 2.6.37
-> Cc: <stable@kernel.org>
-> Cc: <openipmi-developer@lists.sourceforge.net>
-> Cc: Peter Huewe <peterhuewe@gmx.de>
-> Cc: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Corey Minyard <cminyard@mvista.com>
-> ---
->  drivers/char/ipmi/ipmi_si_intf.c |   12 ++----------
->  1 files changed, 2 insertions(+), 10 deletions(-)
+> Why not make this all into some nicer helper functions instead -
+> something simple like the attached?
 > 
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
-> b/drivers/char/ipmi/ipmi_si_intf.c index b6ae6e9..7855f9f 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -320,6 +320,7 @@ static int unload_when_empty = 1;
->  static int add_smi(struct smi_info *smi);
->  static int try_smi_init(struct smi_info *smi);
->  static void cleanup_one_si(struct smi_info *to_clean);
-> +static void cleanup_ipmi_si(void);
+> UNTESTED! I'm not going to apply it unless I get acks/tested-by's.
 > 
->  static ATOMIC_NOTIFIER_HEAD(xaction_notifier_list);
->  static int register_xaction_notifier(struct notifier_block *nb)
-> @@ -3450,16 +3451,7 @@ static int __devinit init_ipmi_si(void)
->  	mutex_lock(&smi_infos_lock);
->  	if (unload_when_empty && list_empty(&smi_infos)) {
->  		mutex_unlock(&smi_infos_lock);
-> -#ifdef CONFIG_PCI
-> -		if (pci_registered)
-> -			pci_unregister_driver(&ipmi_pci_driver);
-> -#endif
-> -
-> -#ifdef CONFIG_PPC_OF
-> -		if (of_registered)
-> -			of_unregister_platform_driver(&ipmi_of_platform_driver);
-> -#endif
-> -		driver_unregister(&ipmi_driver.driver);
-> +		cleanup_ipmi_si();
->  		printk(KERN_WARNING PFX
->  		       "Unable to find any System Interface(s)\n");
->  		return -ENODEV;
+>                                   Linus
 
-Looks good to me - thanks.
+It looks correct (and much nicer indeed)
 
-Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+Acked-by: Serge Hallyn <serge@hallyn.com>
+
+Setting up a box to actually test on...
+
+thanks,
+-serge
+
+>  kernel/printk.c |   54 +++++++++++++++++++++++++++++++++++-------------------
+>  1 files changed, 35 insertions(+), 19 deletions(-)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 2ddbdc7..f51214c 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -262,25 +262,47 @@ int dmesg_restrict = 1;
+>  int dmesg_restrict;
+>  #endif
+>  
+> +static int syslog_action_restricted(int type)
+> +{
+> +	if (dmesg_restrict)
+> +		return 1;
+> +	/* Unless restricted, we allow "read all" and "get buffer size" for everybody */
+> +	return type != SYSLOG_ACTION_READ_ALL && type != SYSLOG_ACTION_SIZE_BUFFER;
+> +}
+> +
+> +static int check_syslog_permissions(int type, bool from_file)
+> +{
+> +	/*
+> +	 * If this is from /proc/kmsg and we've already opened it, then we've
+> +	 * already the capabilities checks at open time.
+> +	 */
+> +	if (from_file && type != SYSLOG_ACTION_OPEN)
+> +		return 0;
+> +
+> +	if (syslog_action_restricted(type)) {
+> +		if (capable(CAP_SYSLOG))
+> +			return 0;
+> +		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
+> +		if (capable(CAP_SYS_ADMIN)) {
+> +			WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
+> +				 "but no CAP_SYSLOG (deprecated).\n");
+> +			return 0;
+> +		}
+> +		return -EPERM;
+> +	}
+> +	return 0;
+> +}
+> +
+>  int do_syslog(int type, char __user *buf, int len, bool from_file)
+>  {
+>  	unsigned i, j, limit, count;
+>  	int do_clear = 0;
+>  	char c;
+> -	int error = 0;
+> +	int error;
+>  
+> -	/*
+> -	 * If this is from /proc/kmsg we only do the capabilities checks
+> -	 * at open time.
+> -	 */
+> -	if (type == SYSLOG_ACTION_OPEN || !from_file) {
+> -		if (dmesg_restrict && !capable(CAP_SYSLOG))
+> -			goto warn; /* switch to return -EPERM after 2.6.39 */
+> -		if ((type != SYSLOG_ACTION_READ_ALL &&
+> -		     type != SYSLOG_ACTION_SIZE_BUFFER) &&
+> -		    !capable(CAP_SYSLOG))
+> -			goto warn; /* switch to return -EPERM after 2.6.39 */
+> -	}
+> +	error = check_syslog_permissions(type, from_file);
+> +	if (error)
+> +		goto out;
+>  
+>  	error = security_syslog(type);
+>  	if (error)
+> @@ -423,12 +445,6 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
+>  	}
+>  out:
+>  	return error;
+> -warn:
+> -	/* remove after 2.6.39 */
+> -	if (capable(CAP_SYS_ADMIN))
+> -		WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
+> -		  "but no CAP_SYSLOG (deprecated and denied).\n");
+> -	return -EPERM;
+>  }
+>  
+>  SYSCALL_DEFINE3(syslog, int, type, char __user *, buf, int, len)
+
