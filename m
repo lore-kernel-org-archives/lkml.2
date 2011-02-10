@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1BJMnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:43:06 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:56858 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751123Ab1BJMnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:43:05 -0500
-Date: Thu, 10 Feb 2011 13:42:53 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/4] memcg: operate on page quantities internally
-Message-ID: <20110210124253.GO27110@cmpxchg.org>
-References: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
- <20110210085034.a6c5d703.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110210085034.a6c5d703.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755886Ab1BJMni (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:43:38 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:46768 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751123Ab1BJMng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:43:36 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+QmDwXTWSQDOaZqJito1hXVh3Rs5GPvB7dScn1T6
+	Ay/cPNEzpKFMIa
+Subject: Re: [tip:perf/core] perf annotate: Fix annotate context lines
+ regression
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@redhat.com,
+        hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
+        fweisbec@gmail.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110210121559.GA26094@elte.hu>
+References: <new-submission>
+	 <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
+	 <1297224378.8035.7.camel@marge.simson.net>
+	 <20110209164154.GA15607@ghostprotocols.net>
+	 <1297309313.7996.11.camel@marge.simson.net>
+	 <20110210121559.GA26094@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 13:43:31 +0100
+Message-ID: <1297341811.5512.36.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 08:50:34AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed,  9 Feb 2011 12:01:49 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > If I did not miss anything, this should leave only res_counter and
-> > user-visible stuff in bytes.  The ABI probably won't change, so next
-> > up is converting res_counter to operate on page quantities.
+On Thu, 2011-02-10 at 13:15 +0100, Ingo Molnar wrote:
+> * Mike Galbraith <efault@gmx.de> wrote:
 > 
-> Hmm, I think this should be done but think this should be postphoned, too.
-> Because, IIUC, some guys will try to discuss charging against kernel objects
-> in the next mm-summit. IMHO, it will be done against PAGE not against
-> Object even if we do kernel object accouting. So this patch is okay for me.
-> But I think it's better to go ahead after we confirm the way we go.
-> How do you think ?
+> > Initial impression: can I have a pony too? :)
+> > 
+> > I like this a lot, great for live rummaging.  One thing that would help with large 
+> > files maybe - a jump to next spot hotter than N%, but as is is quite nice.
+> > 
+> > I managed to lock it up once, but shiny new gizmos usually do hiccup.
+> 
+> The TUI locked up or the kernel? If it's the TUI then a gdb dump of the lockup would 
+> be nice.
 
-That makes sense, let's leave res_counter alone until we have hashed
-this out.
+TUI stopped responding to my key poking.  I'll see if it'll repeat
+(weekend).
 
-> Anyway, I welcome this patch.
+	-Mike
 
-Thanks for reviewing,
-
-	Hannes
