@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab1BJSdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:33:16 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58755 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab1BJSdP convert rfc822-to-8bit (ORCPT
+	id S1754513Ab1BJSfn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:35:43 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56377 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab1BJSfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:33:15 -0500
+	Thu, 10 Feb 2011 13:35:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=YgOM9fV0cPy/4Sb79l8aB1B/1cF5g2PK90oKgxgpretJMjp5NYhc7LQv+6Jvxhtlpr
+         f4SG66Pnoz8KYbx7rWR6+1+L8Qm8b4hIyOAU/eEso2mjfdd0UmqZnw9z+YMTqmAtiwUf
+         /FSVUbbPxawRYBRfwuYrtkVh+jJPDhzZjNRX8=
 MIME-Version: 1.0
-Message-ID: <7f8a2950-7145-438a-9118-2a71a0502fdd@default>
-Date: Thu, 10 Feb 2011 10:24:18 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
-        devel@driverdev.osuosl.org
-Subject: RE: [PATCH] staging: zcache: fix memory leak
-References: <1297360839-21602-1-git-send-email-segoon@openwall.com>
-In-Reply-To: <1297360839-21602-1-git-send-email-segoon@openwall.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6550.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A010206.4D542F44.01A5:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <AANLkTikLM=Q_p0dk3USsYtLJ6GXKZsNoQuK3J+dA_z9V@mail.gmail.com>
+References: <1297340643.5512.1.camel@marge.simson.net>
+	<AANLkTikLM=Q_p0dk3USsYtLJ6GXKZsNoQuK3J+dA_z9V@mail.gmail.com>
+Date: Thu, 10 Feb 2011 19:35:41 +0100
+Message-ID: <AANLkTimbHE9H5_vmS3=L84z=OkL0GNAxg4xOUjnco5SL@mail.gmail.com>
+Subject: Re: [PATCH 01/28] sched: Remove USER_SCHED
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Vasiliy Kulikov [mailto:segoon@openwall.com]
-> Sent: Thursday, February 10, 2011 11:01 AM
-> 
-> obj is not freed if __get_free_page() failed.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+>
+> There were a few more patches after this which cleaned up a few things
+> as well. Let me search them out and let you know the commit IDs.
+>
 
-Thanks Vasiliy!  Good catch!
+6427462bfa50f50dc6c088c07037264fcc73eca1
+32bd7eb5a7f4596c8440dd9440322fe9e686634d
+571428be550fbe37160596995e96ad398873fcbd
 
->  drivers/staging/zcache/zcache.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/zcache.c
-> b/drivers/staging/zcache/zcache.c
-> index 61be849..b8a2b30 100644
-> --- a/drivers/staging/zcache/zcache.c
-> +++ b/drivers/staging/zcache/zcache.c
-> @@ -790,6 +790,7 @@ static int zcache_do_preload(struct tmem_pool
-> *pool)
->  	page = (void *)__get_free_page(ZCACHE_GFP_MASK);
->  	if (unlikely(page == NULL)) {
->  		zcache_failed_get_free_pages++;
-> +		kmem_cache_free(zcache_obj_cache, obj);
->  		goto unlock_out;
->  	}
->  	preempt_disable();
-
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Thanks!
+Dhaval
