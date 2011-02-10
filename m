@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab1BJOZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 09:25:12 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:63274 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756507Ab1BJOZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 09:25:10 -0500
-Subject: [PATCH] xfs: prevent leaking uninitialized stack memory in
- FSGEOMETRY_V1
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: aelder@sgi.com, xfs-masters@oss.sgi.com, xfs@oss.sgi.com
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, security@kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 09:25:04 -0500
-Message-ID: <1297347904.13370.9.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756526Ab1BJO2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 09:28:46 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:36848
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756472Ab1BJO2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 09:28:45 -0500
+Date: Thu, 10 Feb 2011 14:29:38 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Gergely Nagy <algernon@balabit.hu>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, david@lang.hm,
+        James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: CAP_SYSLOG, 2.6.38 and user space
+Message-ID: <20110210142938.GA1475@mail.hallyn.com>
+References: <1296733177.14846.26.camel@moria>
+ <20110203153252.GA24153@mail.hallyn.com>
+ <20110204160513.GB17396@mail.hallyn.com>
+ <1296837186.24742.15.camel@moria>
+ <20110204171502.GA24226@mail.hallyn.com>
+ <alpine.DEB.2.00.1102042301420.8162@asgard.lang.hm>
+ <20110206011831.GB15805@mail.hallyn.com>
+ <20110209212329.GA24777@mail.hallyn.com>
+ <1297286934.13055.57.camel@luthien.mhp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297286934.13055.57.camel@luthien.mhp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FSGEOMETRY_V1 ioctl (and its compat equivalent) calls out to
-xfs_fs_geometry() with a version number of 3.  This code path does not
-fill in the logsunit member of the passed xfs_fsop_geom_t, leading to
-the leaking of four bytes of uninitialized stack data to potentially
-unprivileged callers.  Since all other members are filled in all code
-paths and there are no padding bytes in this structure, it's safe to
-avoid an expensive memset() in favor of just clearing this one field.
+Quoting Gergely Nagy (algernon@balabit.hu):
+> On Wed, 2011-02-09 at 21:23 +0000, Serge E. Hallyn wrote: 
+> > So if that's how we're leaning, then the following patch is much more
+> > concise.  I'll send this to Linus and any appropriate -stable tomorrow
+> >  if noone objects.
+> > 
+> > From 5166e114d6a7c508addbadd763322089eb0b02f5 Mon Sep 17 00:00:00 2001
+> > From: Serge Hallyn <serge@hallyn.com>
+> > Date: Thu, 3 Feb 2011 09:26:15 -0600
+> > Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now (v2)
+> > 
+> > It'd be nice to do that later, but it's not strictly necessary,
+> > and it'll be hard to do without breaking somebody's userspace.
+> > 
+> > Signed-off-by: Serge Hallyn <serge@hallyn.com>
+> > ---
+> >  kernel/printk.c |   14 ++++----------
+> >  1 files changed, 4 insertions(+), 10 deletions(-)
+> 
+> Personally, I'd prefer the sysctl idea in the long run, because
+> userspace can easily and automatically adapt to the running kernel then.
+> Ie, this patch is fine for 2.6.38, but later on, a sysctl could be
+> introduced, that when set (but defaulting to unset, as to not break
+> userspace), would make CAP_SYS_ADMIN return -EPERM. That way, syslogds
+> could look at the setting, and act accordingly. This would mean that old
+> userspace wouldn't break, and upgraded userspace could work on both old
+> and new kernels, depending on the setting. Distros or admins could then
+> enable the sysctl once they made sure that all neccessary applications
+> have been upgraded.
+> 
+> But this works too, for now. My immediate concern is making sure 2.6.38
+> doesn't break capability-using syslogds.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
----
- fs/xfs/xfs_fsops.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Ok, I'll forward the previous patch.
 
-diff --git a/fs/xfs/xfs_fsops.c b/fs/xfs/xfs_fsops.c
-index cec89dd..17c4785 100644
---- a/fs/xfs/xfs_fsops.c
-+++ b/fs/xfs/xfs_fsops.c
-@@ -102,6 +102,7 @@ xfs_fs_geometry(
- 				mp->m_sb.sb_logsectsize : BBSIZE;
- 		geo->rtsectsize = mp->m_sb.sb_blocksize;
- 		geo->dirblocksize = mp->m_dirblksize;
-+		geo->logsunit = 0;
- 	}
- 	if (new_version >= 4) {
- 		geo->flags |=
-
-
+thanks,
+-serge
