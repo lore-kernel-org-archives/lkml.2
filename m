@@ -1,81 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab1BJXkD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:40:03 -0500
-Received: from www.tglx.de ([62.245.132.106]:44573 "EHLO www.tglx.de"
+	id S932489Ab1BJXkp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:40:45 -0500
+Received: from www.tglx.de ([62.245.132.106]:38099 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932421Ab1BJXin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:38:43 -0500
-Message-Id: <20110210223301.147770641@linutronix.de>
+	id S932304Ab1BJXkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:40:42 -0500
+Message-Id: <20110210223300.571228558@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:38:37 -0000
+Date: Thu, 10 Feb 2011 23:38:23 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 71/75] x86: ioapic: Use irq_data->state
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [patch 65/75] genirq: Reflect IRQ_INPROGRESS/DISABLED in
+	irq_data.state
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=x86-ioapic-use-irqdata-state.patch
+Content-Disposition: inline;
+	filename=genirq-reflect-inprogress-disabled-in-irqdata-state.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the state information in irq_data. That avoids a radix-tree lookup
-from apic_ack_level() and simplifies setup_ioapic_dest().
+Some irq_chips check irq_desc->state for IRQ_DISABLED or
+IRQ_INPROGRESS in their irq_eoi() function. Reflect the state in
+irq_data.state so they can access it there.
+
+Note, that this state is only valid in the irq_chip callbacks. Looking
+at the state in other context has no guarantee for correctness.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: David Daney <ddaney@caviumnetworks.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/x86/kernel/apic/io_apic.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ include/linux/irq.h |   16 ++++++++++++++++
+ kernel/irq/chip.c   |    2 ++
+ kernel/irq/handle.c |    2 ++
+ 3 files changed, 20 insertions(+)
 
-Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
+Index: linux-2.6-tip/include/linux/irq.h
 ===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -2462,7 +2462,7 @@ static void ack_apic_level(struct irq_da
- 	irq_complete_move(cfg);
- #ifdef CONFIG_GENERIC_PENDING_IRQ
- 	/* If we are moving the irq we need to mask it */
--	if (unlikely(irq_to_desc(irq)->status & IRQ_MOVE_PENDING)) {
-+	if (unlikely(irqd_is_setaffinity_pending(data))) {
- 		do_unmask_irq = 1;
- 		mask_ioapic(cfg);
- 	}
-@@ -3868,8 +3868,8 @@ int acpi_get_override_irq(u32 gsi, int *
- void __init setup_ioapic_dest(void)
- {
- 	int pin, ioapic, irq, irq_entry;
--	struct irq_desc *desc;
- 	const struct cpumask *mask;
-+	struct irq_data *idata;
+--- linux-2.6-tip.orig/include/linux/irq.h
++++ linux-2.6-tip/include/linux/irq.h
+@@ -167,6 +167,10 @@ struct irq_data {
+  * IRQD_LEVEL			- Interrupt is level triggered
+  * IRQD_WAKEUP_STATE		- Interrupt is configured for wakeup
+  *				  from suspend
++ * IRDQ_DISABLED		- Interrupt is disabled, only
++ *				  valid in irq_chip.functions
++ * IRDQ_INPROGRESS		- Interrupt is in progress, only
++ *				  valid in irq_chip.functions
+  */
+ enum {
+ 	IRQD_TRIGGER_MASK		= 0xf,
+@@ -176,6 +180,8 @@ enum {
+ 	IRQD_AFFINITY_SET		= (1 << 12),
+ 	IRQD_LEVEL			= (1 << 13),
+ 	IRQD_WAKEUP_STATE		= (1 << 14),
++	IRQD_DISABLED			= (1 << 15),
++	IRQD_INPROGRESS			= (1 << 16),
+ };
  
- 	if (skip_ioapic_setup == 1)
- 		return;
-@@ -3884,21 +3884,20 @@ void __init setup_ioapic_dest(void)
- 		if ((ioapic > 0) && (irq > 16))
- 			continue;
- 
--		desc = irq_to_desc(irq);
-+		idata = irq_get_irq_data(irq);
- 
- 		/*
- 		 * Honour affinities which have been set in early boot
- 		 */
--		if (desc->status &
--		    (IRQ_NO_BALANCING | IRQ_AFFINITY_SET))
--			mask = desc->irq_data.affinity;
-+		if (!irqd_can_balance(idata) || irqd_affinity_was_set(idata))
-+			mask = idata->affinity;
- 		else
- 			mask = apic->target_cpus();
- 
- 		if (intr_remapping_enabled)
--			ir_ioapic_set_affinity(&desc->irq_data, mask, false);
-+			ir_ioapic_set_affinity(idata, mask, false);
- 		else
--			ioapic_set_affinity(&desc->irq_data, mask, false);
-+			ioapic_set_affinity(idata, mask, false);
- 	}
- 
+ static inline bool irqd_is_setaffinity_pending(struct irq_data *d)
+@@ -222,6 +228,16 @@ static inline bool irqd_is_wakeup_set(st
+ 	return d->state_use_accessors & IRQD_WAKEUP_STATE;
  }
+ 
++static inline bool irqd_is_inprogres(struct irq_data *d)
++{
++	return d->state_use_accessors & IRQD_INPROGRESS;
++}
++
++static inline bool irqd_is_disabled(struct irq_data *d)
++{
++	return d->state_use_accessors & IRQD_DISABLED;
++}
++
+ /**
+  * struct irq_chip - hardware interrupt chip descriptor
+  *
+Index: linux-2.6-tip/kernel/irq/chip.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -194,12 +194,14 @@ static void irq_state_clr_disabled(struc
+ {
+ 	desc->istate &= ~IRQS_DISABLED;
+ 	irq_compat_clr_disabled(desc);
++	irqd_clear(&desc->irq_data, IRQD_DISABLED);
+ }
+ 
+ static void irq_state_set_disabled(struct irq_desc *desc)
+ {
+ 	desc->istate |= IRQS_DISABLED;
+ 	irq_compat_set_disabled(desc);
++	irqd_set(&desc->irq_data, IRQD_DISABLED);
+ }
+ 
+ static void irq_state_clr_masked(struct irq_desc *desc)
+Index: linux-2.6-tip/kernel/irq/handle.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/handle.c
++++ linux-2.6-tip/kernel/irq/handle.c
+@@ -126,6 +126,7 @@ irqreturn_t handle_irq_event(struct irq_
+ 	desc->istate &= ~IRQS_PENDING;
+ 	irq_compat_set_progress(desc);
+ 	desc->istate |= IRQS_INPROGRESS;
++	irqd_set(&desc->irq_data, IRQD_INPROGRESS);
+ 	raw_spin_unlock(&desc->lock);
+ 
+ 	ret = handle_irq_event_percpu(desc, action);
+@@ -133,6 +134,7 @@ irqreturn_t handle_irq_event(struct irq_
+ 	raw_spin_lock(&desc->lock);
+ 	desc->istate &= ~IRQS_INPROGRESS;
+ 	irq_compat_clr_progress(desc);
++	irqd_clear(&desc->irq_data, IRQD_INPROGRESS);
+ 	return ret;
+ }
+ 
 
 
