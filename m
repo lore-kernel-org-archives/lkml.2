@@ -1,264 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab1BJIhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 03:37:53 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40169 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab1BJIhu (ORCPT
+	id S1754091Ab1BJIiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 03:38:20 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46017 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752341Ab1BJIiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 03:37:50 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4D53A3AA.5050908@jp.fujitsu.com>
-Date: Thu, 10 Feb 2011 17:36:58 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Thu, 10 Feb 2011 03:38:19 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-kernel@vger.kernel.org, David Jander <david@protonic.nl>
+Subject: [PATCH] led/mc13783: convert to mc13xxx MFD
+Date: Thu, 10 Feb 2011 09:38:14 +0100
+Message-Id: <1297327094-15212-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "hpa@zytor.com" <hpa@zytor.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "bp@alien8.de" <bp@alien8.de>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "amwang@redhat.com" <amwang@redhat.com>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH v2] Controlling kexec behaviour when hardware error
- happened.
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C1494DBE0@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C1494DBE0@USINDEVS01.corp.hds.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/02/10 1:35), Seiji Aguchi wrote:
-> Hi,
-> 
-> I submitted a quite similar patch last December.
-> 
-> http://www.spinics.net/lists/linux-mm/msg13157.html
-> 
-> I retry it with different description of the purpose.
-> 
-> [Changelog]
-> from v1:
->     - Change name of sysctl parameter ,kexec_on_mce, to kexec_on_hwerr. 
->     - Move variable declaration from <asm/mce.h> to <kernel/panic.h>.
->     - Remove CONFIG_X86_MCE in *.c files.
->     - Modify [Purpose]/[Patch Description].
-> 
-> [Purpose]
-> There are some logging features of firmware/hardware, SEL,BMC, etc, in enterprise servers.
-> We investigate the firmware/hardware logs first when MCE occurred and replace the broken hardware.
-> So, memory dump is not necessary for detecting root cause of machine check.
-> Also, we can reduce down-time by skipping kdump.
-> 
-> Of course, there are a lot of servers which don't have logging features of firmware/hardware.
-> So, I proposed a option controlling kexec behaviour when hardware error occurred. 
-> 
-> [Patch Description]
-> This patch adds a sysctl option ,kernel.kexec_on_hwerr, controlling kexec behaviour when hardware error occurred.
-> 
->  - Permission
-> $B!!!!(B- 0644
->  - Value(default is "1")
->    - non-zero: Kexec is enabled regardless of hardware error.
->    - 0: Kexec is disabled when MCE occurred.
->    
-> 
-> Matrix of kernel.kexec_on_hwerr value ,hardware error and kexec
-> 
-> --------------------------------------------------
-> kernel.kexec_on_hwerr| hardware error | kexec
-> --------------------------------------------------
-> non-zero             | occurred       | enabled
->                      -----------------------------
->                      | not occurred   | enabled
-> --------------------------------------------------
-> 0                    | occurred       | disabled
->                      |----------------------------
->                      | not occurred   | enabled
-> --------------------------------------------------
-> 
-> 
-> Any comments and suggestions are welcome.
-> 
->  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> 
-> ---
->  Documentation/sysctl/kernel.txt  |   11 +++++++++++
->  arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
->  include/linux/kernel.h           |    2 ++
->  include/linux/sysctl.h           |    1 +
->  kernel/panic.c                   |   15 ++++++++++++++-
->  kernel/sysctl.c                  |    8 ++++++++
->  kernel/sysctl_binary.c           |    1 +
->  mm/memory-failure.c              |    2 ++
->  8 files changed, 41 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt index 11d5ced..3159111 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -34,6 +34,7 @@ show up in /proc/sys/kernel:
->  - hotplug
->  - java-appletviewer           [ binfmt_java, obsolete ]
->  - java-interpreter            [ binfmt_java, obsolete ]
-> +- kexec_on_hwerr              [ x86 only ]
->  - kptr_restrict
->  - kstack_depth_to_print       [ X86 only ]
->  - l2cr                        [ PPC only ]
-> @@ -261,6 +262,16 @@ This flag controls the L2 cache of G3 processor boards. If  0, the cache is disabled. Enabled if nonzero.
->  
->  ==============================================================
-> +kexec_on_hwerr: (X86 only)
-> +
-> +Controls the behaviour of kexec when panic occurred due to hardware 
-> +error.
-> +Default value is 1.
-> +
-> +0: Kexec is disabled.
-> +non-zero: Kexec is enabled.
-> +
-> +==============================================================
->  
->  kptr_restrict:
->  
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index d916183..e76b47b 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -944,6 +944,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->  
->  	percpu_inc(mce_exception_count);
->  
-> +	hwerr_flag = 1;
-> +
->  	if (notify_die(DIE_NMI, "machine check", regs, error_code,
->  			   18, SIGKILL) == NOTIFY_STOP)
->  		goto out;
+From: David Jander <david@protonic.nl>
 
-Now x86 supports some recoverable machine check, so setting
-flag here will prevent running kexec on systems that have
-encountered such recoverable machine check and recovered.
+mc13xxx is the more general API and most of the mc13783_... functions
+are going to die.
 
-I think mce_panic() is proper place to set this flag "hwerr_flag".
+Signed-off-by: David Jander <david@protonic.nl>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/leds/leds-mc13783.c |   52 +++++++++++++++++++++---------------------
+ 1 files changed, 26 insertions(+), 26 deletions(-)
 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h index 2fe6e84..c2fba7c 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -242,6 +242,8 @@ extern void add_taint(unsigned flag);  extern int test_taint(unsigned flag);  extern unsigned long get_taint(void);  extern int root_mountflags;
-> +extern int kexec_on_hwerr;
-> +extern int hwerr_flag;
->  
->  extern bool early_boot_irqs_disabled;
->  
-> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h index 7bb5cb6..8ae5bfe 100644
-> --- a/include/linux/sysctl.h
-> +++ b/include/linux/sysctl.h
-> @@ -153,6 +153,7 @@ enum
->  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
->  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
->  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
-> +	KERN_KEXEC_ON_HWERR=77, /* int: bevaviour of kexec for hardware error 
-> +*/
->  };
->  
->  
-> diff --git a/kernel/panic.c b/kernel/panic.c index 991bb87..84c1d2e 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -28,6 +28,8 @@
->  #define PANIC_BLINK_SPD 18
->  
->  int panic_on_oops;
-> +int kexec_on_hwerr = 1;
-> +int hwerr_flag;
->  static unsigned long tainted_mask;
->  static int pause_on_oops;
->  static int pause_on_oops_flag;
-> @@ -45,6 +47,16 @@ static long no_blink(int state)
->  	return 0;
->  }
->  
-> +static int kexec_should_skip(void)
-> +{
-> +	if (!kexec_on_hwerr && hwerr_flag) {
-> +		printk(KERN_WARNING "Kexec is skipped because hardware error "
-> +		       "occurred.\n");
-> +		return 1;
-> +	}
-> +	return 0;
-> +}
-> +
->  /* Returns how long it waited in ms */
->  long (*panic_blink)(int state);
->  EXPORT_SYMBOL(panic_blink);
-> @@ -86,7 +98,8 @@ NORET_TYPE void panic(const char * fmt, ...)
->  	 * everything else.
->  	 * Do we want to call this before we try to display a message?
->  	 */
-> -	crash_kexec(NULL);
-> +	if (!kexec_should_skip())
-> +		crash_kexec(NULL);
->  
->  	kmsg_dump(KMSG_DUMP_PANIC);
->  
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c index 0f1bd83..f78edd8 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -811,6 +811,14 @@ static struct ctl_table kern_table[] = {
->  		.mode		= 0644,
->  		.proc_handler	= proc_dointvec,
->  	},
-> +	{
-> +		.procname	= "kexec_on_hwerr",
-> +		.data		= &kexec_on_hwerr,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec,
-> +	},
-> +
->  #endif
->  #if defined(CONFIG_MMU)
->  	{
-> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c index b875bed..8d572ca 100644
-> --- a/kernel/sysctl_binary.c
-> +++ b/kernel/sysctl_binary.c
-> @@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
->  	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
->  	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
->  	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
-> +	{ CTL_INT,	KERN_KEXEC_ON_HWERR,		"kexec_on_hwerr" },
->  	{}
->  };
->  
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c index 0207c2f..0178f47 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -994,6 +994,8 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
->  	int res;
->  	unsigned int nr_pages;
->  
-> +	hwerr_flag = 1;
-> +
->  	if (!sysctl_memory_failure_recovery)
->  		panic("Memory failure from trap %d on page %lx", trapno, pfn);
->  
-
-For similar reason, setting flag here is not good for
-systems working after isolating some poisoned memory page.
-
-Why not:
- if (!sysctl_memory_failure_recovery) {
- 	hwerr_flag = 1;
- 	panic("Memory failure from trap %d on page %lx", trapno, pfn);
+diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
+index f05bb08..3ab3247 100644
+--- a/drivers/leds/leds-mc13783.c
++++ b/drivers/leds/leds-mc13783.c
+@@ -21,13 +21,13 @@
+ #include <linux/platform_device.h>
+ #include <linux/leds.h>
+ #include <linux/workqueue.h>
+-#include <linux/mfd/mc13783.h>
++#include <linux/mfd/mc13xxx.h>
+ #include <linux/slab.h>
+ 
+ struct mc13783_led {
+ 	struct led_classdev	cdev;
+ 	struct work_struct	work;
+-	struct mc13783		*master;
++	struct mc13xxx		*master;
+ 	enum led_brightness	new_brightness;
+ 	int			id;
+ };
+@@ -111,11 +111,11 @@ static void mc13783_led_work(struct work_struct *work)
+ 		break;
+ 	}
+ 
+-	mc13783_lock(led->master);
++	mc13xxx_lock(led->master);
+ 
+-	mc13783_reg_rmw(led->master, reg, mask, value);
++	mc13xxx_reg_rmw(led->master, reg, mask, value);
+ 
+-	mc13783_unlock(led->master);
++	mc13xxx_unlock(led->master);
  }
-
-Thanks,
-H.Seto
+ 
+ static void mc13783_led_set(struct led_classdev *led_cdev,
+@@ -172,23 +172,23 @@ static int __devinit mc13783_led_setup(struct mc13783_led *led, int max_current)
+ 		break;
+ 	}
+ 
+-	mc13783_lock(led->master);
++	mc13xxx_lock(led->master);
+ 
+-	ret = mc13783_reg_rmw(led->master, reg, mask << shift,
++	ret = mc13xxx_reg_rmw(led->master, reg, mask << shift,
+ 						value << shift);
+ 
+-	mc13783_unlock(led->master);
++	mc13xxx_unlock(led->master);
+ 	return ret;
+ }
+ 
+ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+ {
+ 	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
+-	struct mc13783 *dev = dev_get_drvdata(pdev->dev.parent);
++	struct mc13xxx *dev = dev_get_drvdata(pdev->dev.parent);
+ 	int ret = 0;
+ 	int reg = 0;
+ 
+-	mc13783_lock(dev);
++	mc13xxx_lock(dev);
+ 
+ 	if (pdata->flags & MC13783_LED_TC1HALF)
+ 		reg |= MC13783_LED_C1_TC1HALF_BIT;
+@@ -196,7 +196,7 @@ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+ 	if (pdata->flags & MC13783_LED_SLEWLIMTC)
+ 		reg |= MC13783_LED_Cx_SLEWLIM_BIT;
+ 
+-	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_1, reg);
++	ret = mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_1, reg);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -206,7 +206,7 @@ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+ 	if (pdata->flags & MC13783_LED_SLEWLIMBL)
+ 		reg |= MC13783_LED_Cx_SLEWLIM_BIT;
+ 
+-	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_2, reg);
++	ret = mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_2, reg);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -216,7 +216,7 @@ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+ 	if (pdata->flags & MC13783_LED_TRIODE_TC1)
+ 		reg |= MC13783_LED_Cx_TRIODE_TC_BIT;
+ 
+-	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_3, reg);
++	ret = mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_3, reg);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -226,7 +226,7 @@ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+ 	if (pdata->flags & MC13783_LED_TRIODE_TC2)
+ 		reg |= MC13783_LED_Cx_TRIODE_TC_BIT;
+ 
+-	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_4, reg);
++	ret = mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_4, reg);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -236,7 +236,7 @@ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+ 	if (pdata->flags & MC13783_LED_TRIODE_TC3)
+ 		reg |= MC13783_LED_Cx_TRIODE_TC_BIT;;
+ 
+-	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_5, reg);
++	ret = mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_5, reg);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -255,10 +255,10 @@ static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+ 	reg |= (pdata->abref & MC13783_LED_C0_ABREF_MASK) <<
+ 							MC13783_LED_C0_ABREF;
+ 
+-	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_0, reg);
++	ret = mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_0, reg);
+ 
+ out:
+-	mc13783_unlock(dev);
++	mc13xxx_unlock(dev);
+ 	return ret;
+ }
+ 
+@@ -353,7 +353,7 @@ static int __devexit mc13783_led_remove(struct platform_device *pdev)
+ {
+ 	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct mc13783_led *led = platform_get_drvdata(pdev);
+-	struct mc13783 *dev = dev_get_drvdata(pdev->dev.parent);
++	struct mc13xxx *dev = dev_get_drvdata(pdev->dev.parent);
+ 	int i;
+ 
+ 	for (i = 0; i < pdata->num_leds; i++) {
+@@ -361,16 +361,16 @@ static int __devexit mc13783_led_remove(struct platform_device *pdev)
+ 		cancel_work_sync(&led[i].work);
+ 	}
+ 
+-	mc13783_lock(dev);
++	mc13xxx_lock(dev);
+ 
+-	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_0, 0);
+-	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_1, 0);
+-	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_2, 0);
+-	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_3, 0);
+-	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_4, 0);
+-	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_5, 0);
++	mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_0, 0);
++	mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_1, 0);
++	mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_2, 0);
++	mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_3, 0);
++	mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_4, 0);
++	mc13xxx_reg_write(dev, MC13783_REG_LED_CONTROL_5, 0);
+ 
+-	mc13783_unlock(dev);
++	mc13xxx_unlock(dev);
+ 
+ 	kfree(led);
+ 	return 0;
+-- 
+1.7.2.3
 
