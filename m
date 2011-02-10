@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab1BJXg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:36:29 -0500
-Received: from www.tglx.de ([62.245.132.106]:43957 "EHLO www.tglx.de"
+	id S1757419Ab1BJXgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:36:31 -0500
+Received: from www.tglx.de ([62.245.132.106]:43964 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757360Ab1BJXgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:36:25 -0500
-Message-Id: <20110210223255.481469865@linutronix.de>
+	id S1757390Ab1BJXg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:36:26 -0500
+Message-Id: <20110210223255.283320059@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:36:17 -0000
+Date: Thu, 10 Feb 2011 23:36:12 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 12/75] genirq: Move irq thread flags to core
+Subject: [patch 10/75] genirq: spurious: Run only one poller at a time
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=genirq-move-thread-flags-to-core.patch
+Content-Disposition: inline; filename=genirq-spurious-run-only-one-poller.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Soleley used in core code.
+No point in running concurrent pollers which confuse each other by
+setting PENDING.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/interrupt.h |   14 --------------
- kernel/irq/internals.h    |   14 ++++++++++++++
- 2 files changed, 14 insertions(+), 14 deletions(-)
+ kernel/irq/spurious.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-Index: linux-2.6-tip/include/linux/interrupt.h
+Index: linux-2.6-tip/kernel/irq/spurious.c
 ===================================================================
---- linux-2.6-tip.orig/include/linux/interrupt.h
-+++ linux-2.6-tip/include/linux/interrupt.h
-@@ -74,20 +74,6 @@
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
+--- linux-2.6-tip.orig/kernel/irq/spurious.c
++++ linux-2.6-tip/kernel/irq/spurious.c
+@@ -21,6 +21,8 @@ static int irqfixup __read_mostly;
+ #define POLL_SPURIOUS_IRQ_INTERVAL (HZ/10)
+ static void poll_spurious_irqs(unsigned long dummy);
+ static DEFINE_TIMER(poll_spurious_irq_timer, poll_spurious_irqs, 0, 0);
++static int irq_poll_cpu;
++static atomic_t irq_poll_active;
  
  /*
-- * Bits used by threaded handlers:
-- * IRQTF_RUNTHREAD - signals that the interrupt handler thread should run
-- * IRQTF_DIED      - handler thread died
-- * IRQTF_WARNED    - warning "IRQ_WAKE_THREAD w/o thread_fn" has been printed
-- * IRQTF_AFFINITY  - irq thread is requested to adjust affinity
-- */
--enum {
--	IRQTF_RUNTHREAD,
--	IRQTF_DIED,
--	IRQTF_WARNED,
--	IRQTF_AFFINITY,
--};
--
--/*
-  * These values can be returned by request_any_context_irq() and
-  * describe the context the interrupt will be run in.
-  *
-Index: linux-2.6-tip/kernel/irq/internals.h
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/internals.h
-+++ linux-2.6-tip/kernel/irq/internals.h
-@@ -5,6 +5,20 @@
+  * Recovery handler for misrouted interrupts.
+@@ -92,6 +94,11 @@ static int misrouted_irq(int irq)
+ 	struct irq_desc *desc;
+ 	int i, ok = 0;
  
- extern int noirqdebug;
- 
-+/*
-+ * Bits used by threaded handlers:
-+ * IRQTF_RUNTHREAD - signals that the interrupt handler thread should run
-+ * IRQTF_DIED      - handler thread died
-+ * IRQTF_WARNED    - warning "IRQ_WAKE_THREAD w/o thread_fn" has been printed
-+ * IRQTF_AFFINITY  - irq thread is requested to adjust affinity
-+ */
-+enum {
-+	IRQTF_RUNTHREAD,
-+	IRQTF_DIED,
-+	IRQTF_WARNED,
-+	IRQTF_AFFINITY,
-+};
++	if (atomic_inc_return(&irq_poll_active) == 1)
++		goto out;
 +
- #define irq_data_to_desc(data)	container_of(data, struct irq_desc, irq_data)
++	irq_poll_cpu = smp_processor_id();
++
+ 	for_each_irq_desc(i, desc) {
+ 		if (!i)
+ 			 continue;
+@@ -102,6 +109,8 @@ static int misrouted_irq(int irq)
+ 		if (try_one_irq(i, desc, false))
+ 			ok = 1;
+ 	}
++out:
++	atomic_dec(&irq_poll_active);
+ 	/* So the caller can adjust the irq error counts */
+ 	return ok;
+ }
+@@ -111,6 +120,10 @@ static void poll_spurious_irqs(unsigned 
+ 	struct irq_desc *desc;
+ 	int i;
  
- /* Set default functions for irq_chip structures: */
++	if (atomic_inc_return(&irq_poll_active) != 1)
++		goto out;
++	irq_poll_cpu = smp_processor_id();
++
+ 	for_each_irq_desc(i, desc) {
+ 		unsigned int status;
+ 
+@@ -127,7 +140,8 @@ static void poll_spurious_irqs(unsigned 
+ 		try_one_irq(i, desc, true);
+ 		local_irq_enable();
+ 	}
+-
++out:
++	atomic_dec(&irq_poll_active);
+ 	mod_timer(&poll_spurious_irq_timer,
+ 		  jiffies + POLL_SPURIOUS_IRQ_INTERVAL);
+ }
 
 
