@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab1BJM1p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:27:45 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33773 "EHLO mx1.suse.de"
+	id S1756266Ab1BJM2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:28:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37660 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756235Ab1BJMZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:25:17 -0500
+	id S1756174Ab1BJMZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:25:08 -0500
 From: stable-bot for Venkatesh Pallipadi <venki@google.com>
 Date: Thu, 10 Feb 2011 10:23:27 +0100
-Subject: [PATCH 20/28] sched: Remove irq time from available CPU power
+Subject: [PATCH 16/28] sched: Add a PF flag for ksoftirqd identification
 To: stable@kernel.org
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@elte.hu>
-Message-ID: <1297340644.5512.20.camel@marge.simson.net>
+Message-ID: <1297340644.5512.16.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
@@ -20,120 +20,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit: aa483808516ca5cacfa0e5849691f64fec25828e upstream
+Commit: 6cdd5199daf0cb7b0fcc8dca941af08492612887 upstream
 Author: Venkatesh Pallipadi <venki@google.com>
-AuthorDate: Mon Oct 4 17:03:22 2010 -0700
+AuthorDate: Mon Oct 4 17:03:18 2010 -0700
 
-The idea was suggested by Peter Zijlstra here:
+To account softirq time cleanly in scheduler, we need to identify whether
+softirq is invoked in ksoftirqd context or softirq at hardirq tail context.
+Add PF_KSOFTIRQD for that purpose.
 
-  http://marc.info/?l=linux-kernel&m=127476934517534&w=2
-
-irq time is technically not available to the tasks running on the CPU.
-This patch removes irq time from CPU power piggybacking on
-sched_rt_avg_update().
-
-Tested this by keeping CPU X busy with a network intensive task having 75%
-oa a single CPU irq processing (hard+soft) on a 4-way system. And start seven
-cycle soakers on the system. Without this change, there will be two tasks on
-each CPU. With this change, there is a single task on irq busy CPU X and
-remaining 7 tasks are spread around among other 3 CPUs.
+As all PF flag bits are currently taken, create space by moving one of the
+infrequently used bits (PF_THREAD_BOUND) down in task_struct to be along
+with some other state fields.
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286237003-12406-8-git-send-email-venki@google.com>
+LKML-Reference: <1286237003-12406-4-git-send-email-venki@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- kernel/sched.c          |   26 +++++++++++++++++++++++++-
- kernel/sched_features.h |    5 +++++
- 2 files changed, 30 insertions(+), 1 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/softirq.c      |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 5761f09..4f86094 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -553,6 +553,10 @@ struct rq {
- 	u64 avg_idle;
- #endif
- 
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
-+	u64 prev_irq_time;
-+#endif
-+
- 	/* calc_load related fields */
- 	unsigned long calc_load_update;
- 	long calc_load_active;
-@@ -622,6 +626,7 @@ static inline int cpu_of(struct rq *rq)
- #define raw_rq()		(&__raw_get_cpu_var(runqueues))
- 
- static u64 irq_time_cpu(int cpu);
-+static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
- 
- inline void update_rq_clock(struct rq *rq)
- {
-@@ -632,6 +637,8 @@ inline void update_rq_clock(struct rq *rq)
- 	irq_time = irq_time_cpu(cpu);
- 	if (rq->clock - irq_time > rq->clock_task)
- 		rq->clock_task = rq->clock - irq_time;
-+
-+	sched_irq_time_avg_update(rq, irq_time);
- }
- 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 32bf471..63d5aea 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1728,6 +1728,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
  /*
-@@ -1883,6 +1890,15 @@ void account_system_vtime(struct task_struct *curr)
- 	local_irq_restore(flags);
- }
- 
-+static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
-+{
-+	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
-+		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
-+		rq->prev_irq_time = curr_irq_time;
-+		sched_rt_avg_update(rq, delta_irq);
-+	}
-+}
-+
- #else
- 
- static u64 irq_time_cpu(int cpu)
-@@ -1890,6 +1906,8 @@ static u64 irq_time_cpu(int cpu)
- 	return 0;
- }
- 
-+static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
-+
- #endif
- 
- #include "sched_stats.h"
-@@ -3755,7 +3773,13 @@ unsigned long scale_rt_power(int cpu)
- 	u64 total, available;
- 
- 	total = sched_avg_period() + (rq->clock - rq->age_stamp);
--	available = total - rq->rt_avg;
-+
-+	if (unlikely(total < rq->rt_avg)) {
-+		/* Ensures that power won't end up being negative */
-+		available = 0;
-+	} else {
-+		available = total - rq->rt_avg;
-+	}
- 
- 	if (unlikely((s64)total < SCHED_LOAD_SCALE))
- 		total = SCHED_LOAD_SCALE;
-diff --git a/kernel/sched_features.h b/kernel/sched_features.h
-index 0d94083..f8df3ee 100644
---- a/kernel/sched_features.h
-+++ b/kernel/sched_features.h
-@@ -121,3 +121,8 @@ SCHED_FEAT(ASYM_EFF_LOAD, 1)
-  * release the lock. Decreases scheduling overhead.
+  * Per process flags
   */
- SCHED_FEAT(OWNER_SPIN, 1)
-+
-+/*
-+ * Decrement CPU power based on irq activity
-+ */
-+SCHED_FEAT(NONIRQ_POWER, 1)
++#define PF_KSOFTIRQD	0x00000001	/* I am ksoftirqd */
+ #define PF_STARTING	0x00000002	/* being created */
+ #define PF_EXITING	0x00000004	/* getting shut down */
+ #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 0ed8343..0a617de 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -718,6 +718,7 @@ static int ksoftirqd(void * __bind_cpu)
+ {
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
++	current->flags |= PF_KSOFTIRQD;
+ 	while (!kthread_should_stop()) {
+ 		preempt_disable();
+ 		if (!local_softirq_pending()) {
 -- 
 1.7.4
 
