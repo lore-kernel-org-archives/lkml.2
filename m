@@ -1,204 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750948Ab1BJFKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 00:10:53 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:33149 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab1BJFKw (ORCPT
+	id S1750972Ab1BJFQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 00:16:13 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22568 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab1BJFQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 00:10:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=pojqRmRvgMHiihuNgM8WnyemvEHAlLxjoAZ8tRW28YOYqdhfA5tFboy1Haf8fRAYrz
-         OaSIXYfdEzoDzjHxK4c4lIW7/45UBxdI2ZhDCj5dhE/Bq6YANCgqdtRNL9mTM7NPgI1u
-         ClDQ740m3gCqGBsFbmx1tmzZ9mWkjQrl8qgeI=
-Date: Wed, 9 Feb 2011 21:10:42 -0800
-From: mark gross <markgross@thegnar.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-Message-ID: <20110210051042.GC4897@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <1297300864.2645.128.camel@schen9-DESK>
+	Thu, 10 Feb 2011 00:16:11 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73658340"
+Message-ID: <4D53749B.6010102@codeaurora.org>
+Date: Wed, 09 Feb 2011 21:16:11 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297300864.2645.128.camel@schen9-DESK>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Ben Dooks <ben-linux@fluff.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
+References: <1297233693.242364.862698430999.1.gpush@pororo>
+In-Reply-To: <1297233693.242364.862698430999.1.gpush@pororo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 05:21:04PM -0800, Tim Chen wrote:
-> I noticed that before entering idle state, the menu idle governor will
-> look up the current pm_qos value according to the list of qos request
-> received.  This look up currently needs the acquisition of a lock to go
-> down a list of qos requests to find the qos value, slowing down the
+On 02/08/2011 10:41 PM, Jeremy Kerr wrote:
 
-wait a second... It gets the target_value (that is an atomic variable)
-humpf.  I was looking at 2.6.35, where this is true.  If you want to put
-back a target_value why not put it back the way it was?
+[snip]
 
-> entrance into idle state due to contention by multiple cpus to traverse
-> this list.  The contention is severe when there are a lot of cpus waking
-> and going into idle.  For example, for a simple workload that has 32
-> pair of processes ping ponging messages to each other, where 64 cores
-> cores are active in test system, I see the following profile:
-> 
-> -     37.82%          swapper  [kernel.kallsyms]          [k]
-> _raw_spin_lock_irqsave
->    - _raw_spin_lock_irqsave
->       - 95.65% pm_qos_request             
->            menu_select                                             
->            cpuidle_idle_call                      
->          - cpu_idle                                                     
->               99.98% start_secondary
-> 
-
-I'm surprised by this as the last update to the pm_qos replaced the
-lists with a O(1) data structure so there was no more walking of pending
-requests.
-
-What is the profile after the patch the Plist should be only one
-dereference and an if instruction slower than a cached value.
-
-Does your patch remove the need for the locks because if it doesn't I
-don't see how it will make much of a difference?
-
-> Perhaps a better approach will be to cache the updated pm_qos value so
-> reading it does not require lock acquisition as in the patch below.   
-
-See v2.6.35 for an possible instance of the better approach.
-
-> 
-> Tim
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
-> index 77cbddb..a7d87f9 100644
-> --- a/include/linux/pm_qos_params.h
-> +++ b/include/linux/pm_qos_params.h
-> @@ -16,6 +16,10 @@
->  #define PM_QOS_NUM_CLASSES 4
->  #define PM_QOS_DEFAULT_VALUE -1
->  
-> +#define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-> +#define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-> +#define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
 > +
->  struct pm_qos_request_list {
->  	struct plist_node list;
->  	int pm_qos_class;
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index aeaa7f8..b6310d1 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -58,6 +58,7 @@ struct pm_qos_object {
->  	struct blocking_notifier_head *notifiers;
->  	struct miscdevice pm_qos_power_miscdev;
->  	char *name;
-> +	s32 value;
->  	s32 default_value;
->  	enum pm_qos_type type;
->  };
-> @@ -70,7 +71,8 @@ static struct pm_qos_object cpu_dma_pm_qos = {
->  	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
->  	.notifiers = &cpu_dma_lat_notifier,
->  	.name = "cpu_dma_latency",
-> -	.default_value = 2000 * USEC_PER_SEC,
-> +	.value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
->  	.type = PM_QOS_MIN,
->  };
->  
-> @@ -79,7 +81,8 @@ static struct pm_qos_object network_lat_pm_qos = {
->  	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
->  	.notifiers = &network_lat_notifier,
->  	.name = "network_latency",
-> -	.default_value = 2000 * USEC_PER_SEC,
-> +	.value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
->  	.type = PM_QOS_MIN
->  };
->  
-> @@ -89,7 +92,8 @@ static struct pm_qos_object network_throughput_pm_qos = {
->  	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
->  	.notifiers = &network_throughput_notifier,
->  	.name = "network_throughput",
-> -	.default_value = 0,
-> +	.value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
->  	.type = PM_QOS_MAX,
->  };
->  
-> @@ -132,6 +136,16 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
->  	}
->  }
->  
-> +static inline s32 pm_qos_read_value(struct pm_qos_object *o)
+> +int clk_set_rate(struct clk *clk, unsigned long rate)
 > +{
-> +	return o->value;
+
+Shouldn't you be grabbing the prepare_lock here? Set rate and 
+prepare/unprepare would be working on the same shared resource (say, 
+PLL). That was the reason we are making set_rate() sleepable too.
+
+As a nice side effect, it will also enforce the "might sleep" nature of 
+this API.
+
+You should probably rename the lock to something else since it's not 
+limited to prepare/unprepare. How about resource_lock?
+
+> +	if (clk->ops->set_rate)
+> +		return clk->ops->set_rate(clk, rate);
+> +	return -ENOSYS;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_set_rate);
+> +
+> +int clk_set_parent(struct clk *clk, struct clk *parent)
+> +{
+> +	if (clk->ops->set_parent)
+> +		return clk->ops->set_parent(clk, parent);
+
+I'm not sure on this one. If the prepare ops for a clock also calls the 
+prepare ops on the parent, shouldn't we prevent changing the parent 
+while the prepare/unprepare is going on?
+
+
+> +	return -ENOSYS;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_set_parent);
+> +
+
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index 1d37f42..fe806b7 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -3,6 +3,7 @@
+
+[snip]
+
+> +
+> +/* static initialiser for clocks */
+> +#define INIT_CLK(name, o) {						\
+> +	.ops		=&o,						\
+> +	.enable_count	= 0,						\
+> +	.prepare_count	= 0,						\
+
+Do we need these inits? Doesn't check patch complain about initing 
+static/global to 0? If it's generally frowned upon, why the exception 
+here. I realize that checkpatch won't catch this, but still...
+
+> +	.enable_lock	= __SPIN_LOCK_UNLOCKED(name.enable_lock),	\
+> +	.prepare_lock	= __MUTEX_INITIALIZER(name.prepare_lock),	\
+
+After a long day, I'm not able to wrap my head around this. Probably a 
+stupid question, but will this name.xxx thing prevent using this 
+INIT_CLK macro to initialize an array of clocks? More specifically, 
+prevent the sub class macro (like INIT_CLK_FIXED) from being used to 
+initialize an array of clocks?
+
 > +}
 > +
-> +static inline int pm_qos_set_value(struct pm_qos_object *o, s32 value)
-> +{
-> +	o->value = value;
-> +}
+> +/**
+> + * struct clk_ops -  Callback operations for clocks; these are to be provided
+> + * by the clock implementation, and will be called by drivers through the clk_*
+> + * API.
+> + *
+> + * @prepare:	Prepare the clock for enabling. This must not return until
+> + *		the clock is fully prepared, and it's safe to call clk_enable.
+> + *		This callback is intended to allow clock implementations to
+> + *		do any initialisation that may block. Called with
+> + *		clk->prepare_lock held.
+> + *
+> + * @unprepare:	Release the clock from its prepared state. This will typically
+> + *		undo any work done in the @prepare callback. Called with
+> + *		clk->prepare_lock held.
+> + *
+> + * @enable:	Enable the clock atomically. This must not return until the
+> + *		clock is generating a valid clock signal, usable by consumer
+> + *		devices. Called with clk->enable_lock held. This function
+> + *		must not sleep.
+> + *
+> + * @disable:	Disable the clock atomically. Called with clk->enable_lock held.
+> + *		This function must not sleep.
+> + *
+> + * @get:	Called by the core clock code when a device driver acquires a
+> + *		clock via clk_get(). Optional.
+> + *
+> + * @put:	Called by the core clock code when a devices driver releases a
+> + *		clock via clk_put(). Optional.
+> + *
+> + * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
+> + * implementations to split any work between atomic (enable) and sleepable
+> + * (prepare) contexts.  If a clock requires blocking code to be turned on, this
+
+Aren't all locks blocking? Shouldn't it be, "If turning on a clock 
+requires code that might sleep, it should be done in clk_prepare"? 
+Replace all "blocking" with "sleepable" or "sleeping" in the comments?
+
+> + * should be done in clk_prepare. Switching that will not block should be done
+> + * in clk_enable.
+> + *
+> + * Typically, drivers will call clk_prepare when a clock may be needed later
+> + * (eg. when a device is opened), and clk_enable when the clock is actually
+> + * required (eg. from an interrupt). Note that clk_prepare *must* have been
+> + * called before clk_enable.
+> + *
+> + * For other callbacks, see the corresponding clk_* functions. Parameters and
+> + * return values are passed directly from/to these API functions, or
+> + * -ENOSYS (or zero, in the case of clk_get_rate) is returned if the callback
+> + * is NULL, see kernel/clk.c for implementation details. All are optional.
+
+is NULL. See kernel... ?
+> + */
+> +struct clk_ops {
+> +	int		(*prepare)(struct clk *);
+> +	void		(*unprepare)(struct clk *);
+> +	int		(*enable)(struct clk *);
+> +	void		(*disable)(struct clk *);
+> +	int		(*get)(struct clk *);
+> +	void		(*put)(struct clk *);
+> +	unsigned long	(*get_rate)(struct clk *);
+> +	long		(*round_rate)(struct clk *, unsigned long);
+> +	int		(*set_rate)(struct clk *, unsigned long);
+> +	int		(*set_parent)(struct clk *, struct clk *);
+> +	struct clk *	(*get_parent)(struct clk *);
+> +};
 > +
->  static void update_target(struct pm_qos_object *o, struct plist_node *node,
->  			  int del, int value)
->  {
-> @@ -156,6 +170,7 @@ static void update_target(struct pm_qos_object *o, struct plist_node *node,
->  		plist_add(node, &o->requests);
->  	}
->  	curr_value = pm_qos_get_value(o);
-> +	pm_qos_set_value(o, curr_value);
->  	spin_unlock_irqrestore(&pm_qos_lock, flags);
->  
->  	if (prev_value != curr_value)
-> @@ -190,18 +205,11 @@ static int find_pm_qos_object_by_minor(int minor)
->   * pm_qos_request - returns current system wide qos expectation
->   * @pm_qos_class: identification of which qos value is requested
->   *
-> - * This function returns the current target value in an atomic manner.
-> + * This function returns the current target value.
->   */
->  int pm_qos_request(int pm_qos_class)
->  {
-> -	unsigned long flags;
-> -	int value;
-> -
-> -	spin_lock_irqsave(&pm_qos_lock, flags);
-> -	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
-Hmmm, I was looking at 2.6.35 where we had the return of an
-atomic value here.
 
-what happened to the atomic value in the 2.6.35 kernel?
+Thanks,
+Saravana
 
-> -	spin_unlock_irqrestore(&pm_qos_lock, flags);
-> -
-> -	return value;
-> +	return pm_qos_read_value(pm_qos_array[pm_qos_class]);
-
-why does this not need a lock?  This value is getting updated by
-multiple CPU's concurrently  It probably should at least be an atomic
-read like it used to be in 2.6.35.
-
-it looks to me that your change is really just remove the locks around
-the current QoS target.  The caching of the target to avoid hitting the
-plist is really close to a noop.  
-
---mark
->  }
->  EXPORT_SYMBOL_GPL(pm_qos_request);
->  
-> 
-> 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
