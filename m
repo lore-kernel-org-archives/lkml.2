@@ -1,81 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751141Ab1BJHB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 02:01:59 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:47558 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab1BJHB6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 02:01:58 -0500
-Date: Thu, 10 Feb 2011 12:30:31 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Trinabh Gupta <trinabh@linux.vnet.ibm.com>, arjan@linux.intel.com,
-        lenb@kernel.org, suresh.b.siddha@intel.com, benh@kernel.crashing.org,
-        venki@google.com, ak@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V3 2/3] cpuidle: list based cpuidle driver
- registration and selection
-Message-ID: <20110210070031.GA5448@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <20110208105146.9998.22103.stgit@tringupt.in.ibm.com>
- <20110208105203.9998.35678.stgit@tringupt.in.ibm.com>
- <1297250263.13327.159.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1297250263.13327.159.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751391Ab1BJHFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 02:05:31 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:38502 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab1BJHF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 02:05:29 -0500
+Date: Thu, 10 Feb 2011 18:05:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for February 10
+Message-Id: <20110210180525.54ec83e9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__10_Feb_2011_18_05_25_+1100_nDwmyPe9t+o5N/xB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-02-09 12:17:43]:
+--Signature=_Thu__10_Feb_2011_18_05_25_+1100_nDwmyPe9t+o5N/xB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, 2011-02-08 at 16:22 +0530, Trinabh Gupta wrote:
-> > A cpuidle_driver is global in nature as it provides routines
-> > for all the CPUS. Each CPU registered with the cpuidle subsystem is
-> > represented as a cpuidle_device. A cpuidle_device structure
-> > points to the low level idle routines for that CPU provided by
-> > a certain driver. In other words, a cpuidle driver creates a
-> > cpuidle_device structure for each CPU that it registers with the
-> > cpuidle subsystem. Whenever cpuidle idle loop is called, the cpuidle
-> > subsystem picks the cpuidle_device structure for that cpu and
-> > calls one of the low level idle routines through that structure. 
-> 
-> Why all this per-cpu nonsense? I thought we all agreed that ACPI tables
-> specifying non-uniform C states were considered buggy and we should
-> simply use the intersection of all cpus.
+Hi all,
 
-Hi Peter,
+[The kernel.org mirroring is being slow ...]
 
-We discussed this in the previous posts.  On ppc64 we would like to
-have single global registration, but for x86 Arjan recommended that we
-keep the per-cpu registration or else we may break legacy or buggy
-devices.
+Changes since 20110209:
 
-Ref: http://lkml.org/lkml/2009/10/7/210
+Dropped tree: xen
 
-One corner case that was against using lowest common C-State is that
-we could have cores/packages sporting a new lower C-State if they are
-at a thermal limit and want the OS to go to much lower C-State and
-sacrifice performance.  Our global design will prevent that cpu from
-going to a state lower than the rest of the system.
+The net tree lost a conflict.
 
-This is only a remote possibility, but could happen on battery
-operated devices, under low battery mode etc.  Basically we would have
-to keep our design open to allow individual CPUs to goto 'their'
-deepest allowed sleep state even in a asymmetric case.
+The rr tree still had a build failure so I used the version from
+next-20110208.
 
-Having a design to allow global registration as long as C-States are
-symmetric (non-x86 or boot param) and use per-cpu for asymmetric
-C-States (x86) case will be ideal.
+The xen-two tree gained a conflict against the tip tree and a build
+failure do I used the version from next-20110209.
 
-This patch series is only the first step to remove pm_idle() from x86
-and incrementally from all other architectures.  Once we get this
-working, tested and accepted, we could remove the per-cpu data
-structures and have a global states table.
+The workqueues tree lost its build failure.
 
-Thanks for the review.
+The tty tree gained a conflict against the m68knommu tree.
 
---Vaidy
+The staging tree gained a conflict against the staging.current tree.
 
+The powerpc allyesconfig build is still broken by some obscure bloating
+of the low memory code.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 186 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
+.h
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-tegra/timer.c
+Merging ux500-core/ux500-core
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+$ git reset --hard HEAD^
+Merging refs/next/20110208/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen-two/linux-next
+CONFLICT (content): Merge conflict in kernel/irq/manage.c
+$ git reset --hard HEAD^
+Merging refs/next/20110209/xen-two
+CONFLICT (content): Merge conflict in kernel/irq/manage.c
+[master 11c064f] Merge commit 'refs/next/20110209/xen-two'
+Merging xen-pvhvm/linux-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/tty/serial/68328serial.c
+CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
+CONFLICT (content): Merge conflict in drivers/usb/host/ehci-pci.c
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/zram/zram_drv.c
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
+nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
+ing/stradis/Kconfig left in tree.
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+$ git rm -f drivers/staging/stradis/Kconfig
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Thu__10_Feb_2011_18_05_25_+1100_nDwmyPe9t+o5N/xB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNU441AAoJEDMEi1NhKgbsg0gH/3dfVn6tZO7vUvKGGhkATqZH
+JgYpF1jN+ZasBrKJPlI0i8oGDsJo4+NTZZPaJejbxKnWhiB2oyCiRMu8yMovGACG
+ri+J3sOIs7gCbq5qCeayaCV6C4svuvu94b5a3BINJtbtRdKyvxkvpCF+h7bWPon0
+oDns0RIJeAUqyLPWwU8U7MwmFeqGtSVCBN8tublhxuVTyvV0mDA6CVKQ18RlUqMd
+rgBHwhCuch2TGSLMjxGH055I/TxeGY/0AkczItrjvQGRvYBhEXPZnqg+eNdhy/5Z
+jURJAKFkT22JW1SPLdOHRBMqLpw2hj4ihU8EMYFaINYn40kwYM5ezWCNhLW+nng=
+=UbS8
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__10_Feb_2011_18_05_25_+1100_nDwmyPe9t+o5N/xB--
