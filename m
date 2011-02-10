@@ -1,31 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab1BJMQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:16:20 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45375 "EHLO mx3.mail.elte.hu"
+	id S1751028Ab1BJMSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:18:46 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45683 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748Ab1BJMQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:16:18 -0500
-Date: Thu, 10 Feb 2011 13:15:59 +0100
+	id S1750696Ab1BJMSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:18:44 -0500
+Date: Thu, 10 Feb 2011 13:18:35 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, mingo@redhat.com,
-        hpa@zytor.com, paulus@samba.org, eranian@google.com,
-        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf annotate: Fix annotate context lines
- regression
-Message-ID: <20110210121559.GA26094@elte.hu>
-References: <new-submission>
- <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
- <1297224378.8035.7.camel@marge.simson.net>
- <20110209164154.GA15607@ghostprotocols.net>
- <1297309313.7996.11.camel@marge.simson.net>
+To: Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: Ingo Molnar <mingo@redhead.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: fused  X86_UP_APIC and  X86_UP_IOAPIC ?
+Message-ID: <20110210121835.GB26094@elte.hu>
+References: <4D53BF67.50601@nachtwindheim.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297309313.7996.11.camel@marge.simson.net>
+In-Reply-To: <4D53BF67.50601@nachtwindheim.de>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,17 +32,20 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Mike Galbraith <efault@gmx.de> wrote:
+* Henrik Kretzschmar <henne@nachtwindheim.de> wrote:
 
-> Initial impression: can I have a pony too? :)
+> Hi there,
 > 
-> I like this a lot, great for live rummaging.  One thing that would help with large 
-> files maybe - a jump to next spot hotter than N%, but as is is quite nice.
+> In commit 7cd92366a593246650cc7d6198e2c7d3af8c1d8a (x86/Voyager: remove 
+> APIC/IO-APIC Kbuild quirk / just before 2.6.29-rc4) Ingo replaced the 
+> X86_UP_IOAPIC with X86_UP_APIC.
 > 
-> I managed to lock it up once, but shiny new gizmos usually do hiccup.
+> Was this intended or by accident?
 
-The TUI locked up or the kernel? If it's the TUI then a gdb dump of the lockup would 
-be nice.
+Looks accidental. Wondering why it didn't cause problems. Mind sending a patch 
+against the latest x86 tree:
+
+  http://people.redhat.com/mingo/tip.git/README
 
 Thanks,
 
