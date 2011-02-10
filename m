@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab1BJUh1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 15:37:27 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44038 "EHLO mga11.intel.com"
+	id S1756916Ab1BJUhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 15:37:51 -0500
+Received: from cantor.suse.de ([195.135.220.2]:54281 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756327Ab1BJUh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 15:37:26 -0500
-Message-Id: <1bdc18$ji32t3@fmsmga002.fm.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,451,1291622400"; 
-   d="scan'208";a="656509859"
-Date: Thu, 10 Feb 2011 20:37:23 +0000
-To: chris2553@googlemail.com
-Subject: Re: [PATCH] drm/i915: Handle the no-interrupts case for UMS by polling
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <201101231128.22951.chris2553@googlemail.com> <201101231538.41929.chris2553@googlemail.com> <0d30dc$kr9795@orsmga001.jf.intel.com> <201102101958.12842.chris2553@googlemail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <201102101958.12842.chris2553@googlemail.com>
+	id S1756865Ab1BJUhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 15:37:50 -0500
+Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
+ before entering idle
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
+        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
+        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+In-Reply-To: <1297366384.2645.175.camel@schen9-DESK>
+References: <1297300864.2645.128.camel@schen9-DESK>
+	 <1297359914.4933.56.camel@mulgrave.site>
+	 <1297366384.2645.175.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 14:37:43 -0600
+Message-ID: <1297370263.4933.74.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Feb 2011 19:58:12 +0000, Chris Clayton <chris2553@googlemail.com> wrote:
-> OK, I haven't raised the bug report yet, but I now know how to create it - 
-> reboot via kexec which is what I must have done when I built and installed the 
-> kernel to test your patches. I guess not having booted via the bios is leaving 
-> the card in an odd state. Do you care any more, please? If you do, I'll open 
-> the bug report. 
+On Thu, 2011-02-10 at 11:33 -0800, Tim Chen wrote:
+> On Thu, 2011-02-10 at 11:45 -0600, James Bottomley wrote:
+> 
+> > 
+> > What you say is true as long as the value is 32 bits ... perhaps a note
+> > of that should be made somewhere?
+> > 
+> 
+> It seems like pm_qos_add_request, pm_qos_update_request only uses 32
+> bits value.  Did I miss some cases where the target value for
+> pm_qos_object be non-32 bit under some situation?
 
-Please, I think we left my very small field of expertise so a bug may help
-attract the attention of those in the know...
--Chris
+No ... I'm thinking of the future.  On the face of it, if we needed
+larger quantities (like s64), the obvious approach would be to change
+s32 to s64 which would fail ... horribly.  I was just suggesting a nice
+reminder comment for this.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+James
+
+
