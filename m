@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab1BJLXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 06:23:47 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38231 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755578Ab1BJLXq (ORCPT
+	id S1754143Ab1BJLbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 06:31:35 -0500
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:34141 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751188Ab1BJLbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 06:23:46 -0500
-Message-ID: <4D53CAE8.1060007@vflare.org>
-Date: Thu, 10 Feb 2011 16:54:24 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: linux-next: manual merge of the staging tree with the staging.current
- tree
-References: <20110210163527.3b2cc580.sfr@canb.auug.org.au>
-In-Reply-To: <20110210163527.3b2cc580.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 10 Feb 2011 06:31:34 -0500
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Brendan Cully <brendan@cs.ubc.ca>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "SUZUKI, Kazuhiro" <kaz@jp.fujitsu.com>
+In-Reply-To: <20110209231659.GB249@zanzibar.kublai.com>
+References: <Pine.LNX.4.44L0.1102081143470.2100-100000@iolanthe.rowland.org>
+	 <1297186554.9388.248.camel@zakaz.uk.xensource.com>
+	 <20110209231659.GB249@zanzibar.kublai.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 11:31:13 +0000
+Message-ID: <1297337473.20491.144.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [Xen-devel] Re: [linux-pm] [PATCH 0/2] Fix hangup after
+ creating checkpoint on Xen.
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=wRiPVX2u-SEA:10 a=IkcTkHD0fZMA:10 a=-sTdsVom9iR7ZWCKvasA:9 a=n2dU9LdhXCZDUdYWtp4A:7 a=yNDPfrPXKMDJ0tV6DxpCCLP5AsUA:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2011 11:05 AM, Stephen Rothwell wrote:
->
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/staging/zram/zram_drv.c between commit
-> 5414e557fca545614ceedc3d3496f747457e2e3b ("staging: zram: fix data
-> corruption issue") from the staging.current tree and commit
-> 2787f959d6c5fb258d964218ac75346019f49ee9 ("zram: Return zero'd pages on
-> new reads") from the staging tree.
->
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+On Wed, 2011-02-09 at 23:16 +0000, Brendan Cully wrote:
+> I'd like to keep the fast resume option, and expect that it can be
+> contained entirely in Xen-specific code. I'll try to get someone to
+> look into it here.
 
-The fix looks correct to me. Thanks for fixing this.
+Thanks, please put them in contact with Kazuhiro who has already been
+looking into this.
 
-Nitin
+> I think fast resume is somewhat orthogonal to the problem of hanging
+> on resume, which just sounds like a xen-specific bug in the slow
+> path.
+
+The bug on the Xen side is taking the slow path when the suspend was
+actually cancelled, which is what the original patch tries to fix.
+
+Or should/could the slow path be able cope either way?
+
+Ian.
+
+-- 
+Ian Campbell
+Current Noise: Neil Young - Love And War
+
+For every complex problem, there is a solution that is simple, neat, and wrong.
+		-- H. L. Mencken
+
