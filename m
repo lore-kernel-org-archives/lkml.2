@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab1BJMZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:25:29 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33797 "EHLO mx1.suse.de"
+	id S1755578Ab1BJMYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:24:54 -0500
+Received: from cantor.suse.de ([195.135.220.2]:33724 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756330Ab1BJMZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:25:27 -0500
-From: stable-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 10 Feb 2011 10:23:28 +0100
-Subject: [PATCH 24/28] sched: Use group weight, idle cpu metrics to fix
- imbalances during idle
+	id S1755287Ab1BJMYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:24:51 -0500
+From: stable-bot for Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 10 Feb 2011 10:23:08 +0100
+Subject: [PATCH 08/28] sched: fix RCU lockdep splat from task_group()
 To: stable@kernel.org
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@elte.hu>
-Message-ID: <1297340644.5512.24.camel@marge.simson.net>
+Message-ID: <1297340643.5512.8.camel@marge.simson.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
@@ -21,162 +20,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit: aae6d3ddd8b90f5b2c8d79a2b914d1706d124193 upstream
-Author: Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Fri Sep 17 15:02:32 2010 -0700
+Commit: 6506cf6ce68d78a5470a8360c965dafe8e4b78e3 upstream
+Author: Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu Sep 16 17:50:31 2010 +0200
 
-Currently we consider a sched domain to be well balanced when the imbalance
-is less than the domain's imablance_pct. As the number of cores and threads
-are increasing, current values of imbalance_pct (for example 25% for a
-NUMA domain) are not enough to detect imbalances like:
+This addresses the following RCU lockdep splat:
 
-a) On a WSM-EP system (two sockets, each having 6 cores and 12 logical threads),
-24 cpu-hogging tasks get scheduled as 13 on one socket and 11 on another
-socket. Leading to an idle HT cpu.
+[0.051203] CPU0: AMD QEMU Virtual CPU version 0.12.4 stepping 03
+[0.052999] lockdep: fixing up alternatives.
+[0.054105]
+[0.054106] ===================================================
+[0.054999] [ INFO: suspicious rcu_dereference_check() usage. ]
+[0.054999] ---------------------------------------------------
+[0.054999] kernel/sched.c:616 invoked rcu_dereference_check() without protection!
+[0.054999]
+[0.054999] other info that might help us debug this:
+[0.054999]
+[0.054999]
+[0.054999] rcu_scheduler_active = 1, debug_locks = 1
+[0.054999] 3 locks held by swapper/1:
+[0.054999]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff814be933>] cpu_up+0x42/0x6a
+[0.054999]  #1:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810400d8>] cpu_hotplug_begin+0x2a/0x51
+[0.054999]  #2:  (&rq->lock){-.-...}, at: [<ffffffff814be2f7>] init_idle+0x2f/0x113
+[0.054999]
+[0.054999] stack backtrace:
+[0.054999] Pid: 1, comm: swapper Not tainted 2.6.35 #1
+[0.054999] Call Trace:
+[0.054999]  [<ffffffff81068054>] lockdep_rcu_dereference+0x9b/0xa3
+[0.054999]  [<ffffffff810325c3>] task_group+0x7b/0x8a
+[0.054999]  [<ffffffff810325e5>] set_task_rq+0x13/0x40
+[0.054999]  [<ffffffff814be39a>] init_idle+0xd2/0x113
+[0.054999]  [<ffffffff814be78a>] fork_idle+0xb8/0xc7
+[0.054999]  [<ffffffff81068717>] ? mark_held_locks+0x4d/0x6b
+[0.054999]  [<ffffffff814bcebd>] do_fork_idle+0x17/0x2b
+[0.054999]  [<ffffffff814bc89b>] native_cpu_up+0x1c1/0x724
+[0.054999]  [<ffffffff814bcea6>] ? do_fork_idle+0x0/0x2b
+[0.054999]  [<ffffffff814be876>] _cpu_up+0xac/0x127
+[0.054999]  [<ffffffff814be946>] cpu_up+0x55/0x6a
+[0.054999]  [<ffffffff81ab562a>] kernel_init+0xe1/0x1ff
+[0.054999]  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
+[0.054999]  [<ffffffff814c353c>] ? restore_args+0x0/0x30
+[0.054999]  [<ffffffff81ab5549>] ? kernel_init+0x0/0x1ff
+[0.054999]  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
+[0.056074] Booting Node   0, Processors  #1lockdep: fixing up alternatives.
+[0.130045]  #2lockdep: fixing up alternatives.
+[0.203089]  #3 Ok.
+[0.275286] Brought up 4 CPUs
+[0.276005] Total of 4 processors activated (16017.17 BogoMIPS).
 
-b) On a hypothetial 2 socket NHM-EX system (each socket having 8 cores and
-16 logical threads), 16 cpu-hogging tasks can get scheduled as 9 on one
-socket and 7 on another socket. Leaving one core in a socket idle
-whereas in another socket we have a core having both its HT siblings busy.
+The cgroup_subsys_state structures referenced by idle tasks are never
+freed, because the idle tasks should be part of the root cgroup,
+which is not removable.
 
-While this issue can be fixed by decreasing the domain's imbalance_pct
-(by making it a function of number of logical cpus in the domain), it
-can potentially cause more task migrations across sched groups in an
-overloaded case.
+The problem is that while we do in-fact hold rq->lock, the newly spawned
+idle thread's cpu is not yet set to the correct cpu so the lockdep check
+in task_group():
 
-Fix this by using imbalance_pct only during newly_idle and busy
-load balancing. And during idle load balancing, check if there
-is an imbalance in number of idle cpu's across the busiest and this
-sched_group or if the busiest group has more tasks than its weight that
-the idle cpu in this_group can pull.
+  lockdep_is_held(&task_rq(p)->lock)
 
-Reported-by: Nikhil Rao <ncrao@google.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+will fail.
+
+But this is a chicken and egg problem.  Setting the CPU's runqueue requires
+that the CPU's runqueue already be set.  ;-)
+
+So insert an RCU read-side critical section to avoid the complaint.
+
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1284760952.2676.11.camel@sbsiddha-MOBL3.sc.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/sched.h |    1 +
- kernel/sched.c        |   36 +++++++++++++++++++++++++++++++++---
- 2 files changed, 34 insertions(+), 3 deletions(-)
+ kernel/sched.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4c9c426..71849bf 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -894,6 +894,7 @@ struct sched_group {
- 	 * single CPU.
- 	 */
- 	unsigned int cpu_power;
-+	unsigned int group_weight;
- 
- 	/*
- 	 * The CPUs this group covers.
 diff --git a/kernel/sched.c b/kernel/sched.c
-index d8a2155..590d73b 100644
+index 56554db..87e3b2b 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -3534,13 +3534,16 @@ struct sd_lb_stats {
- 	unsigned long this_load_per_task;
- 	unsigned long this_nr_running;
- 	unsigned long this_has_capacity;
-+	unsigned int  this_idle_cpus;
+@@ -7090,7 +7090,19 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+ 	idle->se.exec_start = sched_clock();
  
- 	/* Statistics of the busiest group */
-+	unsigned int  busiest_idle_cpus;
- 	unsigned long max_load;
- 	unsigned long busiest_load_per_task;
- 	unsigned long busiest_nr_running;
- 	unsigned long busiest_group_capacity;
- 	unsigned long busiest_has_capacity;
-+	unsigned int  busiest_group_weight;
- 
- 	int group_imb; /* Is there imbalance in this sd */
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-@@ -3562,6 +3565,8 @@ struct sg_lb_stats {
- 	unsigned long sum_nr_running; /* Nr tasks running in the group */
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long group_capacity;
-+	unsigned long idle_cpus;
-+	unsigned long group_weight;
- 	int group_imb; /* Is there an imbalance in the group ? */
- 	int group_has_capacity; /* Is there extra capacity in the group? */
- };
-@@ -3905,7 +3910,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 		sgs->group_load += load;
- 		sgs->sum_nr_running += rq->nr_running;
- 		sgs->sum_weighted_load += weighted_cpuload(i);
--
-+		if (idle_cpu(i))
-+			sgs->idle_cpus++;
- 	}
- 
- 	/*
-@@ -3939,6 +3945,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 		sgs->group_imb = 1;
- 
- 	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
-+	sgs->group_weight = group->group_weight;
- 
- 	if (sgs->group_capacity > sgs->sum_nr_running)
- 		sgs->group_has_capacity = 1;
-@@ -4004,13 +4011,16 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 			sds->this_nr_running = sgs.sum_nr_running;
- 			sds->this_load_per_task = sgs.sum_weighted_load;
- 			sds->this_has_capacity = sgs.group_has_capacity;
-+			sds->this_idle_cpus = sgs.idle_cpus;
- 		} else if (sgs.avg_load > sds->max_load &&
- 			   (sgs.sum_nr_running > sgs.group_capacity ||
- 				sgs.group_imb)) {
- 			sds->max_load = sgs.avg_load;
- 			sds->busiest = group;
- 			sds->busiest_nr_running = sgs.sum_nr_running;
-+			sds->busiest_idle_cpus = sgs.idle_cpus;
- 			sds->busiest_group_capacity = sgs.group_capacity;
-+			sds->busiest_group_weight = sgs.group_weight;
- 			sds->busiest_load_per_task = sgs.sum_weighted_load;
- 			sds->busiest_has_capacity = sgs.group_has_capacity;
- 			sds->group_imb = sgs.group_imb;
-@@ -4235,8 +4245,26 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	if (sds.this_load >= sds.avg_load)
- 		goto out_balanced;
- 
--	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
--		goto out_balanced;
+ 	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
 +	/*
-+	 * In the CPU_NEWLY_IDLE, use imbalance_pct to be conservative.
-+	 * And to check for busy balance use !idle_cpu instead of
-+	 * CPU_NOT_IDLE. This is because HT siblings will use CPU_NOT_IDLE
-+	 * even when they are idle.
++	 * We're having a chicken and egg problem, even though we are
++	 * holding rq->lock, the cpu isn't yet set to this cpu so the
++	 * lockdep check in task_group() will fail.
++	 *
++	 * Similar case to sched_fork(). / Alternatively we could
++	 * use task_rq_lock() here and obtain the other rq->lock.
++	 *
++	 * Silence PROVE_RCU
 +	 */
-+	if (idle == CPU_NEWLY_IDLE || !idle_cpu(this_cpu)) {
-+		if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
-+			goto out_balanced;
-+	} else {
-+		/*
-+		 * This cpu is idle. If the busiest group load doesn't
-+		 * have more tasks than the number of available cpu's and
-+		 * there is no imbalance between this and busiest group
-+		 * wrt to idle cpu's, it is balanced.
-+		 */
-+		if ((sds.this_idle_cpus  <= sds.busiest_idle_cpus + 1) &&
-+		    sds.busiest_nr_running <= sds.busiest_group_weight)
-+			goto out_balanced;
-+	}
++	rcu_read_lock();
+ 	__set_task_cpu(idle, cpu);
++	rcu_read_unlock();
  
- force_balance:
- 	/* Looks like there is an imbalance. Compute it */
-@@ -8751,6 +8779,8 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
- 	if (cpu != group_first_cpu(sd->groups))
- 		return;
- 
-+	sd->groups->group_weight = cpumask_weight(sched_group_cpus(sd->groups));
-+
- 	child = sd->child;
- 
- 	sd->groups->cpu_power = 0;
+ 	rq->curr = rq->idle = idle;
+ #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
 -- 
 1.7.4
 
