@@ -1,157 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab1BJXgn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 18:36:43 -0500
-Received: from www.tglx.de ([62.245.132.106]:44012 "EHLO www.tglx.de"
+	id S1757536Ab1BJXhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 18:37:17 -0500
+Received: from www.tglx.de ([62.245.132.106]:44166 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757421Ab1BJXgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 18:36:38 -0500
-Message-Id: <20110210223255.861337689@linutronix.de>
+	id S1757357Ab1BJXhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 18:37:10 -0500
+Message-Id: <20110210223256.249292010@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 10 Feb 2011 23:36:26 -0000
+Date: Thu, 10 Feb 2011 23:36:35 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 16/75] genirq: Remove default magic
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [patch 20/75] arm: Ns9xxx: Remove private irq flow handler
 References: <20110210222908.661199947@linutronix.de>
-Content-Disposition: inline; filename=genirq-remove-default-hackery.patch
+Content-Disposition: inline;
+	filename=arm-ns9xxx-remove-private-irq-flow-handler.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that everything uses the wrappers, we can remove the default
-functions. None of those functions is performance critical.
+handle_prio_irq is almost identical with handle_fasteoi_irq. The
+subtle differences are
 
-That makes the IRQ_MASKED flag tracking fully consistent.
+1) The handler checks for IRQ_DISABLED after the device handler has
+   been called. In case it's set it masks the interrupt.
+
+2) When the handler sees IRQ_DISABLED on entry it masks the interupt
+   in the same way as handle_fastoei_irq, but does not set the
+   IRQ_PENDING flag.
+
+3) Instead of gracefully handling a recursive interrupt it crashes the
+   kernel.
+
+#1 is just relevant when a device handler calls disable_irq_nosync()
+   and it does not matter whether we mask the interrupt right away or
+   not. We handle lazy masking for disable_irq anyway, so there is no
+   real reason to have this extra mask in place.
+
+#2 will prevent the resend of a pending interrupt, which can result in
+   lost interrupts for edge type interrupts. For level type interrupts
+   the resend is a noop in the generic code. According to the
+   datasheet all interrupts are level type, so marking them as such
+   will result in the exact same behaviour as the private
+   handle_prio_irq implementation.
+
+#3 is just stupid. Crashing the kernel instead of handling a problem
+   gracefully is just wrong. With the current semantics- all handlers
+   run with interrupts disabled - this is even more wrong.
+
+Rename ack to eoi, remove the unused mask_ack, switch to
+handle_fasteoi_irq and remove the private function.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org
+LKML-Reference: <20110202212552.299898447@linutronix.de>
 ---
- kernel/irq/chip.c   |   73 ++++++++++------------------------------------------
- kernel/irq/manage.c |    4 +-
- 2 files changed, 17 insertions(+), 60 deletions(-)
+ arch/arm/mach-ns9xxx/irq.c |   58 +++------------------------------------------
+ 1 file changed, 4 insertions(+), 54 deletions(-)
 
-Index: linux-2.6-tip/kernel/irq/chip.c
+Index: linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
 ===================================================================
---- linux-2.6-tip.orig/kernel/irq/chip.c
-+++ linux-2.6-tip/kernel/irq/chip.c
-@@ -206,45 +206,29 @@ void irq_shutdown(struct irq_desc *desc)
- {
- 	desc->status |= IRQ_MASKED | IRQ_DISABLED;
- 	desc->depth = 1;
--	desc->irq_data.chip->irq_shutdown(&desc->irq_data);
-+	if (desc->irq_data.chip->irq_shutdown)
-+		desc->irq_data.chip->irq_shutdown(&desc->irq_data);
-+	if (desc->irq_data.chip->irq_disable)
-+		desc->irq_data.chip->irq_disable(&desc->irq_data);
-+	else
-+		desc->irq_data.chip->irq_mask(&desc->irq_data);
+--- linux-2.6-tip.orig/arch/arm/mach-ns9xxx/irq.c
++++ linux-2.6-tip/arch/arm/mach-ns9xxx/irq.c
+@@ -31,17 +31,11 @@ static void ns9xxx_mask_irq(struct irq_d
+ 	__raw_writel(ic, SYS_IC(prio / 4));
  }
  
- void irq_enable(struct irq_desc *desc)
+-static void ns9xxx_ack_irq(struct irq_data *d)
++static void ns9xxx_eoi_irq(struct irq_data *d)
  {
--	desc->irq_data.chip->irq_enable(&desc->irq_data);
--}
--
--void irq_disable(struct irq_desc *desc)
--{
--	desc->irq_data.chip->irq_disable(&desc->irq_data);
--}
--
--/*
-- * default enable function
-- */
--static void default_enable(struct irq_data *data)
--{
--	struct irq_desc *desc = irq_data_to_desc(data);
--
--	desc->irq_data.chip->irq_unmask(&desc->irq_data);
-+	if (desc->irq_data.chip->irq_enable)
-+		desc->irq_data.chip->irq_enable(&desc->irq_data);
-+	else
-+		desc->irq_data.chip->irq_unmask(&desc->irq_data);
- 	desc->status &= ~IRQ_MASKED;
+ 	__raw_writel(0, SYS_ISRADDR);
  }
  
--/*
-- * default disable function
-- */
--static void default_disable(struct irq_data *data)
+-static void ns9xxx_maskack_irq(struct irq_data *d)
 -{
+-	ns9xxx_mask_irq(d);
+-	ns9xxx_ack_irq(d);
 -}
 -
--/*
-- * default shutdown function
-- */
--static void default_shutdown(struct irq_data *data)
-+void irq_disable(struct irq_desc *desc)
+ static void ns9xxx_unmask_irq(struct irq_data *d)
  {
--	struct irq_desc *desc = irq_data_to_desc(data);
--
--	desc->irq_data.chip->irq_mask(&desc->irq_data);
-+	if (desc->irq_data.chip->irq_disable) {
-+		desc->irq_data.chip->irq_disable(&desc->irq_data);
-+		desc->status |= IRQ_MASKED;
-+	}
+ 	/* XXX: better use cpp symbols */
+@@ -52,56 +46,11 @@ static void ns9xxx_unmask_irq(struct irq
  }
  
- #ifndef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
-@@ -332,10 +316,6 @@ static void compat_bus_sync_unlock(struc
- void irq_chip_set_defaults(struct irq_chip *chip)
- {
- #ifndef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
--	/*
--	 * Compat fixup functions need to be before we set the
--	 * defaults for enable/disable/startup/shutdown
--	 */
- 	if (chip->enable)
- 		chip->irq_enable = compat_irq_enable;
- 	if (chip->disable)
-@@ -344,31 +324,8 @@ void irq_chip_set_defaults(struct irq_ch
- 		chip->irq_shutdown = compat_irq_shutdown;
- 	if (chip->startup)
- 		chip->irq_startup = compat_irq_startup;
+ static struct irq_chip ns9xxx_chip = {
+-	.irq_ack	= ns9xxx_ack_irq,
++	.irq_eoi	= ns9xxx_eoi_irq,
+ 	.irq_mask	= ns9xxx_mask_irq,
+-	.irq_mask_ack	= ns9xxx_maskack_irq,
+ 	.irq_unmask	= ns9xxx_unmask_irq,
+ };
+ 
+-#if 0
+-#define handle_irq handle_level_irq
+-#else
+-static void handle_prio_irq(unsigned int irq, struct irq_desc *desc)
+-{
+-	struct irqaction *action;
+-	irqreturn_t action_ret;
+-
+-	raw_spin_lock(&desc->lock);
+-
+-	BUG_ON(desc->status & IRQ_INPROGRESS);
+-
+-	desc->status &= ~(IRQ_REPLAY | IRQ_WAITING);
+-	kstat_incr_irqs_this_cpu(irq, desc);
+-
+-	action = desc->action;
+-	if (unlikely(!action || (desc->status & IRQ_DISABLED)))
+-		goto out_mask;
+-
+-	desc->status |= IRQ_INPROGRESS;
+-	raw_spin_unlock(&desc->lock);
+-
+-	action_ret = handle_IRQ_event(irq, action);
+-
+-	/* XXX: There is no direct way to access noirqdebug, so check
+-	 * unconditionally for spurious irqs...
+-	 * Maybe this function should go to kernel/irq/chip.c? */
+-	note_interrupt(irq, desc, action_ret);
+-
+-	raw_spin_lock(&desc->lock);
+-	desc->status &= ~IRQ_INPROGRESS;
+-
+-	if (desc->status & IRQ_DISABLED)
+-out_mask:
+-		desc->irq_data.chip->irq_mask(&desc->irq_data);
+-
+-	/* ack unconditionally to unmask lower prio irqs */
+-	desc->irq_data.chip->irq_ack(&desc->irq_data);
+-
+-	raw_spin_unlock(&desc->lock);
+-}
+-#define handle_irq handle_prio_irq
 -#endif
--	/*
--	 * The real defaults
--	 */
--	if (!chip->irq_enable)
--		chip->irq_enable = default_enable;
--	if (!chip->irq_disable)
--		chip->irq_disable = default_disable;
--	/*
--	 * We use chip->irq_disable, when the user provided its own. When
--	 * we have default_disable set for chip->irq_disable, then we need
--	 * to use default_shutdown, otherwise the irq line is not
--	 * disabled on free_irq():
--	 */
--	if (!chip->irq_shutdown)
--		chip->irq_shutdown = chip->irq_disable != default_disable ?
--			chip->irq_disable : default_shutdown;
 -
--#ifndef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
- 	if (!chip->end)
- 		chip->end = dummy_irq_chip.end;
--
--	/*
--	 * Now fix up the remaining compat handlers
--	 */
- 	if (chip->bus_lock)
- 		chip->irq_bus_lock = compat_bus_lock;
- 	if (chip->bus_sync_unlock)
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -448,8 +448,8 @@ void enable_irq(unsigned int irq)
- 	if (!desc)
- 		return;
+ void __init ns9xxx_init_irq(void)
+ {
+ 	int i;
+@@ -119,7 +68,8 @@ void __init ns9xxx_init_irq(void)
  
--	if (WARN(!desc->irq_data.chip || !desc->irq_data.chip->irq_enable,
--	    KERN_ERR "enable_irq before setup/request_irq: irq %u\n", irq))
-+	if (WARN(!desc->irq_data.chip,
-+		 KERN_ERR "enable_irq before setup/request_irq: irq %u\n", irq))
- 		return;
- 
- 	chip_bus_lock(desc);
+ 	for (i = 0; i <= 31; ++i) {
+ 		set_irq_chip(i, &ns9xxx_chip);
+-		set_irq_handler(i, handle_irq);
++		set_irq_handler(i, handle_fasteoi_irq);
+ 		set_irq_flags(i, IRQF_VALID);
++		irq_set_status_flags(i, IRQ_LEVEL);
+ 	}
+ }
 
 
