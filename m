@@ -1,103 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab1BJWue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 17:50:34 -0500
-Received: from smtp.scorch.co.nz ([27.110.127.199]:56531 "HELO scorch.co.nz"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1757161Ab1BJWud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 17:50:33 -0500
-X-Virus-Checked: Checked by ClamAV on scorch.co.nz
-From: Charles Manning <manningc2@actrix.gen.nz>
-To: Jesper Juhl <jj@chaosbits.net>
-Subject: Re: [PATCH 03/10] Add yaffs2 file system: checkpoint streaming
-Date: Fri, 11 Feb 2011 11:50:31 +1300
-User-Agent: KMail/1.9.10
-Cc: Ryan Mallon <ryan@bluewatersys.com>,
-        Charles Manning <cdhmanning@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
-References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <alpine.LNX.2.00.1102102324530.8012@swampdragon.chaosbits.net> <4D546A5B.5090301@bluewatersys.com>
-In-Reply-To: <4D546A5B.5090301@bluewatersys.com>
+	id S1757274Ab1BJW5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 17:57:12 -0500
+Received: from www.tglx.de ([62.245.132.106]:59127 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756844Ab1BJW5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 17:57:10 -0500
+Date: Thu, 10 Feb 2011 23:56:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: liqin.chen@sunplusct.com
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 2/2] score: Select GENERIC_HARDIRQS_NO_DEPRECATED
+In-Reply-To: <OF6CAF901B.FBFD5FE8-ON48257833.0025EC26-48257833.00260476@sunplusct.com>
+Message-ID: <alpine.LFD.2.00.1102102355570.31804@localhost6.localdomain6>
+References: <OF6CAF901B.FBFD5FE8-ON48257833.0025EC26-48257833.00260476@sunplusct.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201102111150.31375.manningc2@actrix.gen.nz>
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-207249132-1297378603=:31804"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 February 2011 11:44:43 Ryan Mallon wrote:
-> On 02/11/2011 11:27 AM, Jesper Juhl wrote:
-> > On Wed, 9 Feb 2011, Charles Manning wrote:
-> >> Signed-off-by: Charles Manning <cdhmanning@gmail.com>
-> >> ---
-> >>  fs/yaffs2/yaffs_checkptrw.c |  408
-> >> +++++++++++++++++++++++++++++++++++++++++++ fs/yaffs2/yaffs_checkptrw.h
-> >> |   33 ++++
-> >>  2 files changed, 441 insertions(+), 0 deletions(-)
-> >>  create mode 100644 fs/yaffs2/yaffs_checkptrw.c
-> >>  create mode 100644 fs/yaffs2/yaffs_checkptrw.h
-> >>
-> >> diff --git a/fs/yaffs2/yaffs_checkptrw.c b/fs/yaffs2/yaffs_checkptrw.c
-> >> new file mode 100644
-> >> index 0000000..997a618
-> >> --- /dev/null
-> >> +++ b/fs/yaffs2/yaffs_checkptrw.c
-> >> @@ -0,0 +1,408 @@
-> >> +/*
-> >> + * YAFFS: Yet Another Flash File System. A NAND-flash specific file
-> >> system. + *
-> >> + * Copyright (C) 2002-2011 Aleph One Ltd.
-> >> + *   for Toby Churchill Ltd and Brightstar Engineering
-> >> + *
-> >> + * Created by Charles Manning <charles@aleph1.co.uk>
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or modify
-> >> + * it under the terms of the GNU General Public License version 2 as
-> >> + * published by the Free Software Foundation.
-> >> + */
-> >> +
-> >> +#include "yaffs_checkptrw.h"
-> >> +#include "yaffs_getblockinfo.h"
-> >> +
-> >> +static int yaffs2_checkpt_space_ok(struct yaffs_dev *dev)
-> >> +{
-> >> +	int blocks_avail = dev->n_erased_blocks -
-> >> dev->param.n_reserved_blocks; +
-> >> +	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-> >> +		"checkpt blocks_avail = %d", blocks_avail);
-> >> +
-> >> +	return (blocks_avail <= 0) ? 0 : 1;
-> >> +}
-> >> +
-> >> +static int yaffs_checkpt_erase(struct yaffs_dev *dev)
-> >> +{
-> >> +	int i;
-> >> +
-> >> +	if (!dev->param.erase_fn)
-> >> +		return 0;
-> >> +	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
-> >> +		"checking blocks %d to %d",
-> >> +		dev->internal_start_block, dev->internal_end_block);
-> >> +
-> >> +	for (i = dev->internal_start_block; i <= dev->internal_end_block; i++)
-> >> {
-> >
-> > Why does 'i' need 'function scope'? can't it just have 'for scope'?
-> >
-> >      for (int i = dev->internal_start_block; i <=
-> > dev->internal_end_block; i++) {
->
-> Because we don't do that in kernel code.
->
-> ryan@okiwi:linux-2.6$ grep "for (int" * -R | wc -l
-> 16
->
-> Those sixteen should be fixed :-). Half of them are in drivers/staging.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-It is also not very portable. For us older codgers it is also very ugly.
+---1463795968-207249132-1297378603=:31804
+Content-Type: TEXT/PLAIN; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 
--- Charles
+On Thu, 10 Feb 2011, liqin.chen@sunplusct.com wrote:
 
+> Thomas Gleixner <tglx@linutronix.de> Ð´ÓÚ 2011-02-07 06:23:50:
+> 
+> > All chips converted and proper accessor functions used.
+> > 
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  arch/score/Kconfig |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > Index: linux-next/arch/score/Kconfig
+> > ===================================================================
+> > --- linux-next.orig/arch/score/Kconfig
+> > +++ linux-next/arch/score/Kconfig
+> > @@ -3,6 +3,7 @@ menu "Machine selection"
+> >  config SCORE
+> >         def_bool y
+> >         select HAVE_GENERIC_HARDIRQS
+> > +       select GENERIC_HARDIRQS_NO_DEPRECATED
+> > 
+> >  choice
+> >     prompt "System type"
+> > 
+> > 
+> 
+> Acked-by: Chen Liqin <liqin.chen@sunplusct.com>
 
+Can you take that through your tree for .39 ?
+
+Thanks,
+
+	tglx
+---1463795968-207249132-1297378603=:31804--
