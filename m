@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab1BJDze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 22:55:34 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52007 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab1BJDzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 22:55:32 -0500
-Date: Thu, 10 Feb 2011 14:55:28 +1100
-From: Stephen Rothwell <sfr@au1.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the xen-two tree with the tip tree
-Message-Id: <20110210145528.95c90b63.sfr@au1.ibm.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__10_Feb_2011_14_55_28_+1100_qyFY07p2UL58zaqe"
+	id S1755526Ab1BJD5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 22:57:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9000 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754550Ab1BJD5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 22:57:52 -0500
+Date: Wed, 9 Feb 2011 22:57:38 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
+        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid preferential treatment of groups that aren't
+ backlogged
+Message-ID: <20110210035738.GC27040@redhat.com>
+References: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
+ <20110210020946.GA27040@redhat.com>
+ <AANLkTi=dZDK6VosLX8JH4gJyRQ0KXGKMA5vhJ-7D93s7@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=dZDK6VosLX8JH4gJyRQ0KXGKMA5vhJ-7D93s7@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_Feb_2011_14_55_28_+1100_qyFY07p2UL58zaqe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Feb 09, 2011 at 06:45:25PM -0800, Chad Talbott wrote:
+> On Wed, Feb 9, 2011 at 6:09 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > In upstream code once a group gets backlogged we put it at the end
+> > and not at the beginning of the tree. (I am wondering are you looking
+> > at the google internal code :-))
+> >
+> > So I don't think that issue of a low weight group getting more disk
+> > time than its fair share is present in upstream kernels.
+> 
+> You've caught me re-using a commit description.  :)
+> 
+> Here's an example of the kind of tests that fail without this patch
+> (run via the test that Justin and Akshay have posted):
+> 
+> 15:35:35 INFO ----- Running experiment 14: 950 rdrand, 50 rdrand.delay10
+> 15:35:55 INFO Experiment completed in 20.4 seconds
+> 15:35:55 INFO experiment 14 achieved DTFs: 886, 113
+> 15:35:55 INFO experiment 14 FAILED: max observed error is 64, allowed is 50
+> 
+> 15:35:55 INFO ----- Running experiment 15: 950 rdrand, 50 rdrand.delay50
+> 15:36:16 INFO Experiment completed in 20.5 seconds
+> 15:36:16 INFO experiment 15 achieved DTFs: 891, 108
+> 15:36:16 INFO experiment 15 FAILED: max observed error is 59, allowed is 50
+> 
+> Since this is Jens' unmodified tree, I've had to change
+> BLKIO_WEIGHT_MIN to 10 to allow this test to proceed.  We typically
+> run many jobs with small weights, and achieve the requested isolation:
+> see below results with this patch:
+> 
+> 14:59:17 INFO ----- Running experiment 14: 950 rdrand, 50 rdrand.delay10
+> 14:59:36 INFO Experiment completed in 19.0 seconds
+> 14:59:36 INFO experiment 14 achieved DTFs: 947, 52
+> 14:59:36 INFO experiment 14 PASSED: max observed error is 3, allowed is 50
+> 
+> 14:59:36 INFO ----- Running experiment 15: 950 rdrand, 50 rdrand.delay50
+> 14:59:55 INFO Experiment completed in 18.5 seconds
+> 14:59:55 INFO experiment 15 achieved DTFs: 944, 55
+> 14:59:55 INFO experiment 15 PASSED: max observed error is 6, allowed is 50
+> 
+> As you can see, it's with seeky workloads that come and go from the
+> service tree where this patch is required.
 
-Hi Konrad,
+I have not look into or run the tests posted by Justin and Akshay. Can you
+give more details about these tests.
 
-Today's linux-next merge of the xen-two tree got a conflict in
-kernel/irq/manage.c between commit
-dc5f219e88294b93009eef946251251ffffb6d60 ("genirq: Add
-IRQF_FORCE_RESUME") from the tip tree and commit
-c6c5596743c2a333a8e31b0247f44cd367484a5e ("genirq: Add
-IRQF_FORCE_RESUME") from the xen-two tree.
+Are you running with group_isolation=0 or 1. These tests seem to be random
+read and if group_isolation=0 (default), then all the random read queues
+should go in root group and there will be no service differentiation.
 
-Despite having the same Author time stamps, these commits are not quite the
-same.  I used the version from the tip tree which kept the line:
+If you ran different random readers in different groups of differnet
+weight with group_isolation=1, then there is a case of having service
+differentiation. In that case we will idle for 8ms on each group before
+we expire the group. So in these test cases are low weight groups not
+submitting IO with-in 8ms? Putting a random reader in separate group
+with think time > 8, I think is going to hurt a lot because for every
+single IO dispatched group is going to weight for 8ms before it is
+expired.
 
-		desc->status &=3D ~IRQ_SUSPENDED;
+So the only case which comes to my mind where this patch can help is 
+when there are lots of groups doing IO with different weights. These
+groups have think time greater than 8ms and hence get deleted from
+service tree. When next time a low weight group has IO, instead of being
+put at the end of service tree, it might be put even farther allowing
+a higher weight group to get backlogged ahead of it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Can you run blktrace and verify what's happenig?
 
---Signature=_Thu__10_Feb_2011_14_55_28_+1100_qyFY07p2UL58zaqe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNU2GwAAoJEDMEi1NhKgbsHJ8IAIvoYEdoob1NyNO0hrKm/nV5
-OzzPpigLFxeIcRBil5QOep7LCceNyfqwu73azYffSaZ0HLHyV+EplJVnNKFrONCb
-OthgnQqqo40oEtXDzZsiggZzNqP+9nZa+vhhv4kzE/f2orWHM4vXVQrGFODT1LKP
-QdnO8LejbuWbaxB7CoHIwbKZKhJbOlTQ0N0YyQEHIOhtFvWM60Y9Xe5Ty4sjfa2B
-Ny7DU9Ez3VmeJjfQ7Aqb2T/ZQaQrbLng1P5n8ALU2rrQOq2weLpyVnu2kxWCyWvd
-ObgFvSJ5jbJTITmE/svckgVJ/6ffZykh1ICXtZZJGWEZYu8tweFgaWcMVaGbW/E=
-=+cDo
------END PGP SIGNATURE-----
-
---Signature=_Thu__10_Feb_2011_14_55_28_+1100_qyFY07p2UL58zaqe--
+Thanks
+Vivek
