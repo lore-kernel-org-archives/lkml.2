@@ -1,93 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab1BJJU5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 04:20:57 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:48931 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1BJJUy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 04:20:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=KdC431eXvTizs1LisUCqBCUcyg6peG7OAYD6sah7Xh++WCGZqYxR+LaWhqzzGA7EZT
-         29Pu0fb/djKZnkdsT91jx67aBUjViSgcqTDIfLbgzSxS/IvUEnbr2JirHAd2jWHNOFdz
-         bUEJdJTZNsF+960njsGGGFg/yu22GSBLMh6Ew=
-Subject: [PXA] A question about PXA310 cpufreq for 806Mhz
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-arm-kernel@lists.infradead.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>
-Content-Type: text/plain
-Date: Thu, 10 Feb 2011 17:22:51 +0800
-Message-Id: <1297329771.21848.6.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1753978Ab1BJJgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 04:36:14 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:47115 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934Ab1BJJgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 04:36:11 -0500
+Date: Thu, 10 Feb 2011 09:35:44 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] mm: batch-free pcp list if possible
+Message-ID: <20110210093544.GA17873@csn.ul.ie>
+References: <1297257677-12287-1-git-send-email-namhyung@gmail.com> <20110209123803.4bb6291c.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110209123803.4bb6291c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On Wed, Feb 09, 2011 at 12:38:03PM -0800, Andrew Morton wrote:
+> On Wed,  9 Feb 2011 22:21:17 +0900
+> Namhyung Kim <namhyung@gmail.com> wrote:
+> 
+> > free_pcppages_bulk() frees pages from pcp lists in a round-robin
+> > fashion by keeping batch_free counter. But it doesn't need to spin
+> > if there is only one non-empty list. This can be checked by
+> > batch_free == MIGRATE_PCPTYPES.
+> > 
+> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> > ---
+> >  mm/page_alloc.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index a873e61e312e..470fb42e303c 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -614,6 +614,10 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+> >  			list = &pcp->lists[migratetype];
+> >  		} while (list_empty(list));
+> >  
+> > +		/* This is an only non-empty list. Free them all. */
+> > +		if (batch_free == MIGRATE_PCPTYPES)
+> > +			batch_free = to_free;
+> > +
+> >  		do {
+> >  			page = list_entry(list->prev, struct page, lru);
+> >  			/* must delete as __free_one_page list manipulates */
+> 
+> free_pcppages_bulk() hurts my brain.
+> 
 
-I have a device equipped with 806Mhz PXA310 cpu.
-After bootup, the system shows it is running with 624Mhz.
+I vaguely recall trying to make it easier to understand. Each attempt
+made it easier to read, but slower. At the time there were complaints
+about the overhead of the page allocator so making it slower was not an
+option. "Overhead" was what oprofile reported as the time spent in each
+function.
 
-# cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-624000
-# cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-624000
+> What is it actually trying to do, and why? It counts up the number of
+> contiguous empty lists and then frees that number of pages from the
+> first-encountered non-empty list and then advances onto the next list?
+> 
 
-# cat /proc/cpuinfo
-Processor       : XScale-V3 based processor rev 2 (v5l)
-BogoMIPS        : 623.00
-Features        : swp half thumb fastmult edsp iwmmxt 
-CPU implementer : 0x69
-CPU architecture: 5TE
-CPU variant     : 0x0
-CPU part        : 0x689
-CPU revision    : 2
+Yes. This is potentially unfair because lists for one migratetype can get
+drained heavier than others. However, checking empty lists was showing up as
+a reasonably significant cost according to profiles for allocator-intensive
+workloads. I *think* the workload I was using was netperf-based.
 
-Hardware        : Getac PS236 Handheld Platform
-Revision        : 0000
-Serial          : 0000000000000000
+> What's the point in that?  What relationship does the number of
+> contiguous empty lists have with the number of pages to free from one
+> list?
+> 
 
-I fix it by below patch and it looks ok on my device.
-I'm not sure if this is a proper way to fix it, I appreciate to see your comments.
+The point is to avoid excessive checking of empty lists. There is no
+relationship between the number of empty lists and the size of the next
+list. The size of the lists is related to the workload and the resulting
+allocator/free pattern.
 
-It is strange that I cannot find 806Mhz PXA31x CPU 
-in the datasheet Section 6.1 PXA3XX Processor Differences.
-But in Section 6.7, Table 55: PXA31x Core PLL, Turbo and Run Mode Output Frequencies,
-I do see 806Mhz support on the table.
+> The comment "This is so more pages are freed off fuller lists instead
+> of spinning excessively around empty lists" makes no sense - the only
+> way this can be true is if the code knows the number of elements on
+> each list, and it doesn't know that.
+> 
 
-Regards,
-Axel
+batch_free gets preserved if a list empties so if batch_free was 2 but
+there was only 1 page on the next list, more pages are taken off a
+larger list. We know what the total size of all the lists are so there
+are always pages to find. You're right in that we don't know the size of
+individual lists because space in the pcp structure is tight.
 
-diff --git a/arch/arm/mach-pxa/cpufreq-pxa3xx.c b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-index 88fbec0..abf7d7a 100644
---- a/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-+++ b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-@@ -210,15 +210,14 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
- 
- 	/* set default policy and cpuinfo */
- 	policy->cpuinfo.min_freq = 104000;
--	policy->cpuinfo.max_freq = (cpu_is_pxa320()) ? 806000 : 624000;
-+	policy->cpuinfo.max_freq = (cpu_is_pxa300()) ? 624000 : 806000;
- 	policy->cpuinfo.transition_latency = 1000; /* FIXME: 1 ms, assumed */
- 	policy->max = pxa3xx_get_clk_frequency_khz(0);
- 	policy->cur = policy->min = policy->max;
- 
--	if (cpu_is_pxa300() || cpu_is_pxa310())
-+	if (cpu_is_pxa300())
- 		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa300_freqs));
--
--	if (cpu_is_pxa320())
-+	else if (cpu_is_pxa310() || cpu_is_pxa320())
- 		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa320_freqs));
- 
- 	if (ret) {
+> Also, the covering comments over free_pcppages_bulk() regarding the
+> pages_scanned counter and the "all pages pinned" logic appear to be out
+> of date.  Or, alternatively, those comments do reflect the desired
+> design, but we broke it.
+> 
 
+This comment is really old.... heh, you introduced it back in 2.5.49
+apparently.
 
+The comment is referring to the clearing of all_unreclaimable. By clearing it,
+kswapd will scan that zone again and set all_unreclaimable back if necessary
+and that is still valid.
 
+More importantly, if there is another process in direct reclaim and it failed
+to reclaim any pages, the clearing of all_unreclaimable will avoid the direct
+reclaimer entering OOM.
+
+The comment could be better but it doesn't look wrong, just not
+particularly helpful.
+
+> Methinks that free_pcppages_bulk() is an area ripe for simplification
+> and clarification.
+> 
+
+Probably but any patch that simplifies it needs to be accompanied with
+profiles of an allocator-intensive workload showing it's not worse as a result.
+
+-- 
+Mel Gorman
