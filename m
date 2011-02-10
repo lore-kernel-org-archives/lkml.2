@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab1BJSOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:14:21 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:44678 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab1BJSOT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:14:19 -0500
-Date: Thu, 10 Feb 2011 16:14:41 -0200
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alan Ott <alan@signal11.us>, Marcel Holtmann <marcel@holtmann.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michael Poole <mdpoole@troilus.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] Adding HID Feature Report Support to hidraw
-Message-ID: <20110210181441.GB2173@joana>
-References: <1295337880-12452-1-git-send-email-alan@signal11.us>
- <alpine.LNX.2.00.1101191316230.26685@pobox.suse.cz>
+	id S1752383Ab1BJSRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:17:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820Ab1BJSRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:17:34 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1101191316230.26685@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Andries Brouwer <aebr@win.tue.nl>
+X-Fcc: ~/Mail/linus
+Cc: Arnd Bergmann <arnd@arndb.de>, linasvepstas@gmail.com,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org, linux-api@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
+In-Reply-To: Andries Brouwer's message of  Thursday, 10 February 2011 19:12:21 +0100 <20110210181221.GA19413@win.tue.nl>
+References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+	<201101251529.24779.arnd@arndb.de>
+	<20110125174515.C1DC2183C19@magilla.sf.frob.com>
+	<20110210181221.GA19413@win.tue.nl>
+X-Windows: more than enough rope.
+Message-Id: <20110210181720.475EE1806EE@magilla.sf.frob.com>
+Date: Thu, 10 Feb 2011 10:17:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-* Jiri Kosina <jkosina@suse.cz> [2011-01-19 13:17:00 +0100]:
-
-> On Tue, 18 Jan 2011, Alan Ott wrote:
+> On Tue, Jan 25, 2011 at 09:45:15AM -0800, Roland McGrath wrote:
 > 
-> > This patch adds Feature Report support for USB and Bluetooth HID devices
-> > through hidraw.
-> > 
-> > The first two patches prepare the bluetooth side for the change.
-> > 	a. Make sure the hidp_session() thread is started before
-> > 	   device's probe() functions are called.
-> > 	b. Wait for ACK/NAK on sent reports, and return proper
-> > 	   error codes.
-> > The third patch is the hidraw core and USB changes.
-> > The fourth patch is the Bluetooth changes.
-> > 
-> > Thanks to Antonio Ospite and Bill Good for providing testing and feedback.
-> > 
-> > 
-> > Alan Ott (4):
-> >   bt hidp: Move hid_add_device() call to after hidp_session() has
-> >     started.
-> >   bt hidp: Wait for ACK on Sent Reports
-> >   HID: Add Support for Setting and Getting Feature Reports from hidraw
-> >   Bluetooth hidp: Add support for hidraw HIDIOCGFEATURE and
-> >     HIDIOCSFEATURE
-> > 
-> >  drivers/hid/hidraw.c          |  106 +++++++++++++++++++-
-> >  drivers/hid/usbhid/hid-core.c |   35 +++++++
-> >  include/linux/hid.h           |    3 +
-> >  include/linux/hidraw.h        |    3 +
-> >  net/bluetooth/hidp/core.c     |  214 ++++++++++++++++++++++++++++++++++++++---
-> >  net/bluetooth/hidp/hidp.h     |   15 +++
+> > the empty string has never been a valid relative pathname.
 > 
-> Before proceeding with these patches, I'd really like to have comment 
-> (ideally 'Acked-by') from Marcel on the net/bluetooth/hidp part, 
-> obviously.
+> Hmm. I definitely recall otherwise.
+> 
+> The old Unix definition is that the empty string stands for "."
+> so that 'ls ""' means the same as 'ls .'
+> and 'ls /tmp/""' the same as 'ls /tmp/.'.
 
-I have tested it and it seems ok to me and to Marcel. For net/bluetooth/
+I'm aware of that.  I was talking about Linux and POSIX.
 
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
 
-Regards,
-
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+Thanks,
+Roland
