@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab1BJVhZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:37:25 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:37708 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab1BJVhY (ORCPT
+	id S1756881Ab1BJVlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:41:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60700 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab1BJVlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:37:24 -0500
-Subject: Re: perf on 2.6.38-rc4 wedges my box
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-In-Reply-To: <x49k4h9az25.fsf@segfault.boston.devel.redhat.com>
-References: <x49k4h9az25.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 22:38:25 +0100
-Message-ID: <1297373905.5226.31.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Feb 2011 16:41:40 -0500
+Date: Thu, 10 Feb 2011 22:41:31 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Antony Pavlov <antony@niisi.msk.ru>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: cfi_cmdset_0002: fix sector erase command for
+ AM29LV040B
+Message-ID: <20110210214131.GA6561@pengutronix.de>
+References: <1297371877-32123-1-git-send-email-antony@niisi.msk.ru>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
+Content-Disposition: inline
+In-Reply-To: <1297371877-32123-1-git-send-email-antony@niisi.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-09 at 12:38 -0500, Jeff Moyer wrote:
-> Hi,
-> 
-> I'm trying out willy's ata_ram driver[1], and in so doing have managed to
-> wedge my box while using perf record on an aio-stress run:
-> 
-> [root@metallica ~]# modprobe ata_ram capacity=2097152 preallocate=1
-> [root@metallica ~]# ./aio-stress -O -o 0 -r 4 -d 32 -b 16 /dev/sds
-> adding stage write
-> starting with write
-> file size 1024MB, record size 4KB, depth 32, ios per iteration 8
-> max io_submit 16, buffer alignment set to 4KB
-> threads 1 files 1 contexts 1 context offset 2MB verification off
-> adding file /dev/sds thread 0
-> write on /dev/sds (621.30 MB/s) 1024.00 MB in 1.65s
-> thread 0 write totals (621.27 MB/s) 1024.00 MB in 1.65s
-> [root@metallica ~]# perf record -- ./aio-stress -O -o 0 -r 4 -d 32 -b 16
-> /dev/sds
-> adding stage write
-> starting with write
-> file size 1024MB, record size 4KB, depth 32, ios per iteration 8
-> max io_submit 16, buffer alignment set to 4KB
-> threads 1 files 1 contexts 1 context offset 2MB verification off
-> adding file /dev/sds thread 0
-> 
-> and there it sits.  On the console, I see:
-> 
-> NOHZ: local_softirq_pending 100
-> NOHZ: local_softirq_pending 100
-> NOHZ: local_softirq_pending 100
-> NOHZ: local_softirq_pending 100
-> NOHZ: local_softirq_pending 100
-> 
-> The number of messages varies, but this is the most I've seen (it
-> doesn't keep repeating).  At this point, the machine does not respond to
-> pings.  As I don't have physical access at the moment, I can't try
-> alt-sysrq, but might be able to do that tomorrow.  It's probably worth
-> noting that I've witnessed similar behavior with real devices, so it's
-> not just the ata_ram driver.
-> 
-> Any ideas on how to track this down?
 
-So I took linus' tree of about half an hour ago, added
-git://git.kernel.org/pub/scm/linux/kernel/git/willy/misc.git ata-ram
-(fixed up some Kconfig/Makefile rejects), google'd aio-stress
-(http://fsbench.filesystems.org/bench/aio-stress.c) and set out to
-reproduce the above..
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sadly it all seems to work here, its spending ~15% in
-_raw_spin_lock_irq, which when I use -g looks to break down like:
+On Fri, Feb 11, 2011 at 12:04:37AM +0300, Antony Pavlov wrote:
+> The AM29LV040B chips use 0x50 as sector erase command instead of 0x30 [1].
+>=20
+> [1] http://www.datasheetcatalog.com/datasheets_pdf/A/M/2/9/AM29LV040B.sht=
+ml
 
--     14.13%  aio-stress  [kernel.kallsyms]  [k] _raw_spin_lock_irq 
-   - _raw_spin_lock_irq                                             
-      + 44.14% __make_request                                       
-      + 20.91% __aio_get_req                                        
-      + 10.15% aio_run_iocb                                         
-      + 7.37% do_io_submit                                          
-      + 6.55% scsi_request_fn                                       
-      + 5.48% generic_unplug_device                                 
-      + 3.58% aio_put_req                                           
-      + 0.92% generic_make_request                                  
-      + 0.91% __generic_unplug_device
+I am confused. The datasheet says on page 15 it uses 0x30 while your
+description above says it uses 0x50...
 
+> Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
+> ---
+>  drivers/mtd/chips/cfi_cmdset_0002.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_=
+cmdset_0002.c
+> index f072fcf..a401dbe 100644
+> --- a/drivers/mtd/chips/cfi_cmdset_0002.c
+> +++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+> @@ -332,6 +332,14 @@ static void fixup_s29gl032n_sectors(struct mtd_info =
+*mtd)
+>  	}
+>  }
+> =20
+> +static void fixup_use_sector_erase_cmd_30(struct mtd_info *mtd)
+> +{
+> +	struct map_info *map =3D mtd->priv;
+> +	struct cfi_private *cfi =3D map->fldrv_priv;
+> +
+> +	cfi->sector_erase_cmd =3D CMD(0x30);
 
+=2E.. but here you change it to 0x30 (which is the default) instead of 0x50?
 
+Please clarify,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--sdtB3X0nJg68CQEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk1UW4gACgkQD27XaX1/VRsalQCfddhBiMSGntZ6bVY1JuQ73sX8
+P+oAoMjvwvOA5r/GfV8sTalXBtjByucG
+=IYNr
+-----END PGP SIGNATURE-----
+
+--sdtB3X0nJg68CQEu--
