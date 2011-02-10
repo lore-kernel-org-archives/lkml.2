@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab1BJMUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:20:22 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:13487 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab1BJMUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:20:20 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73906286"
-Message-ID: <4D53D7FE.9070206@codeaurora.org>
-Date: Thu, 10 Feb 2011 17:50:14 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1751788Ab1BJMWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:22:54 -0500
+Received: from www.tglx.de ([62.245.132.106]:34617 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab1BJMWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:22:52 -0500
+Date: Thu, 10 Feb 2011 13:22:30 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Rothwell <sfr@au1.ibm.com>
+cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the xen-two tree with the tip tree
+In-Reply-To: <20110210145528.95c90b63.sfr@au1.ibm.com>
+Message-ID: <alpine.LFD.2.00.1102101319440.31804@localhost6.localdomain6>
+References: <20110210145528.95c90b63.sfr@au1.ibm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Eric Miao <eric.y.miao@gmail.com>
-CC: Anirudh Ghayal <aghayal@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [RFC v2 PATCH 1/7] matrix_keypad: Increase the max limit of rows
- and columns
-References: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org> <1296568063-12010-2-git-send-email-aghayal@codeaurora.org> <AANLkTimZ9UwcQp5QQjyHVsRdEAcf6+rL18mCesishPoC@mail.gmail.com>
-In-Reply-To: <AANLkTimZ9UwcQp5QQjyHVsRdEAcf6+rL18mCesishPoC@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
 
-On 2/9/2011 1:32 PM, Eric Miao wrote:
-> On Tue, Feb 1, 2011 at 9:47 PM, Anirudh Ghayal <aghayal@codeaurora.org> wrote:
->> From: Trilok Soni <tsoni@codeaurora.org>
->>
->> Some keyboard controller have support for more than
->> 16 columns and rows. Moving this value to 32.
->>
->> Cc: Eric Miao <eric.y.miao@gmail.com>
->> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
+
+On Thu, 10 Feb 2011, Stephen Rothwell wrote:
+
+> Hi Konrad,
 > 
-> This looks good to me, as long as the bits don't exceed 256, which
-> is used in the #KEY() macro. So far, 32 looks to be a sane number
-> to me, unless we have further requirement to get this larger.
+> Today's linux-next merge of the xen-two tree got a conflict in
+> kernel/irq/manage.c between commit
+> dc5f219e88294b93009eef946251251ffffb6d60 ("genirq: Add
+> IRQF_FORCE_RESUME") from the tip tree and commit
+> c6c5596743c2a333a8e31b0247f44cd367484a5e ("genirq: Add
+> IRQF_FORCE_RESUME") from the xen-two tree.
 > 
-> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+> Despite having the same Author time stamps, these commits are not quite the
+> same.  I used the version from the tip tree which kept the line:
 > 
+> 		desc->status &= ~IRQ_SUSPENDED;
 
-Are you going to pick up this patch only from the series you want us to get
-it submitted it separately?
+That's the correct one. I fear I messed up, when I gave xen folks the
+git url to pull from. I had the first version pushed out, and zapped
+right away when I noticed the missing line. Then fixed it and
+repushed. I should have checked git://..... which obviously had
+already picked up the borked one and did not pick up the correct one
+before xen folks pulled. Sorry about that.
 
----Trilok Soni
+Thanks,
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+	tglx
