@@ -1,73 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1BJCDs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 21:03:48 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60053 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab1BJCDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 21:03:47 -0500
-Message-ID: <4D5347C9.2030909@cn.fujitsu.com>
-Date: Thu, 10 Feb 2011 10:04:57 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1754184Ab1BJCKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 21:10:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753618Ab1BJCJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 21:09:59 -0500
+Date: Wed, 9 Feb 2011 21:09:47 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
+        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid preferential treatment of groups that aren't
+ backlogged
+Message-ID: <20110210020946.GA27040@redhat.com>
+References: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Paul Menage <menage@google.com>, balbir@linux.vnet.ibm.com,
-        eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        acme@redhat.com
-Subject: Re: [RFC][PATCH] cgroup: Fix cgroup_subsys::exit callback
-References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>	 <1295534345.28776.175.camel@laptop> <1296646160.26581.315.camel@laptop>	 <20110202115012.GA16409@balbir.in.ibm.com>	 <1296650792.26581.319.camel@laptop>	 <20110202190251.GB16409@balbir.in.ibm.com>	 <1297095033.13327.46.camel@laptop>	 <AANLkTimF+8XAZxF4psrXSKx1CHFxin6AW=tu5OLGUgNi@mail.gmail.com>	 <1297108959.13327.54.camel@laptop>	 <AANLkTikWS86TPjp+J=iiwCQJ56pqYTQo8Z9_V20GEcEz@mail.gmail.com> <1297160655.13327.92.camel@laptop>
-In-Reply-To: <1297160655.13327.92.camel@laptop>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-10 10:02:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-10 10:02:49,
-	Serialize complete at 2011-02-10 10:02:49
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(just came back from vacation)
-
->> How about if the exit callback was moved before the preceding
->> task_unlock()? Since I think the scheduler is still the only user of
->> the exit callback, redefining the locking semantics should be fine.
-> 
-> Like the below? Both the perf and sched exit callback are fine with
-> being called under task_lock afaict, but I haven't actually ran with
-> lockdep enabled to see if I missed something.
+On Wed, Feb 09, 2011 at 05:32:11PM -0800, Chad Talbott wrote:
+> Problem: If a group isn't backlogged, we remove it from the service
+> tree. When it becomes active again, it gets the minimum vtime of the
+> tree. That is true even when the group was idle for a very small time,
+> and it consumed some IO time right before it became idle.  If group
+> has small weight, it can end up using more disk time than its fair
+> share.
 > 
 
-This change should be fine.
+Hi Chad,
 
-...
+In upstream code once a group gets backlogged we put it at the end 
+and not at the beginning of the tree. (I am wondering are you looking
+at the google internal code :-))
 
+So I don't think that issue of a low weight group getting more disk
+time than its fair share is present in upstream kernels.
+
+cfq_group_service_tree_add() {
+        /*
+         * Currently put the group at the end. Later implement something
+         * so that groups get lesser vtime based on their weights, so that
+         * if group does not loose all if it was not continously
+         * backlogged.
+         */
+        n = rb_last(&st->rb);
+        if (n) {
+                __cfqg = rb_entry_cfqg(n);
+                cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+        } else
+                cfqg->vdisktime = st->min_vdisktime;
+}
+
+Thanks
+Vivek
+
+> Solution: We solve the problem by assigning the group its old vtime if
+> it has not been idle long enough. Otherise we assign it the service
+> tree's min vtime.
+> 
+> Complications: When an entire service tree becomes completely idle, we
+> lose the vtime state. All the old vtime values are not relevant any
+> more. For example, consider the case when the service tree is idle and
+> a brand new group sends IO. That group would have an old vtime value
+> of zero, but the service tree's vtime would become closer to zero. In
+> such a case, it would be unfair for the older groups to get a much
+> higher old vtime stored in them.
+> 
+> We solve that issue by keeping a generation number that counts the
+> number of instances when the service tree becomes completely
+> empty. The generation number is stored in each group too. If a group
+> becomes backlogged after a service tree has been empty, we compare its
+> stored generation number with the current service tree generation
+> number, and discard the old vtime if the group generation number is
+> stale.
+> 
+> The preemption specific code is taken care of automatically because we
+> allow preemption checks after inserting a group back into the service
+> tree and assigning it an appropriate vtime.
+> 
+> Signed-off-by: Chad Talbott <ctalbott@google.com>
+> ---
+>  block/cfq-iosched.c |   24 +++++++++++++-----------
+>  1 files changed, 13 insertions(+), 11 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 501ffdf..f09f3fe 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -178,6 +178,7 @@ struct cfq_group {
+>  
+>  	/* group service_tree key */
+>  	u64 vdisktime;
+> +	u64 generation_num;
+>  	unsigned int weight;
+>  
+>  	/* number of cfqq currently on this group */
+> @@ -300,6 +301,9 @@ struct cfq_data {
+>  	/* List of cfq groups being managed on this device*/
+>  	struct hlist_head cfqg_list;
+>  	struct rcu_head rcu;
 > +
-> +	if (run_callbacks && need_forkexit_callback) {
-> +		/*
-> +		 * modular subsystems can't use callbacks, so no need to lock
-> +		 * the subsys array
+> +	/* Generation number, counts service tree empty events */
+> +	u64 active_generation;
+>  };
+>  
+>  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+> @@ -873,18 +877,13 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		return;
+>  
+> -	/*
+> -	 * Currently put the group at the end. Later implement something
+> -	 * so that groups get lesser vtime based on their weights, so that
+> -	 * if group does not loose all if it was not continously backlogged.
+> -	 */
+> -	n = rb_last(&st->rb);
+> -	if (n) {
+> -		__cfqg = rb_entry_cfqg(n);
+> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+> -	} else
+> +	if (cfqd->active_generation > cfqg->generation_num)
+>  		cfqg->vdisktime = st->min_vdisktime;
+> -
+> +	else
+> +		/* We assume that vdisktime was not modified when the task
+> +		   was off the service tree.
 > +		 */
-> +		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
-> +			struct cgroup_subsys *ss = subsys[i];
-> +			if (ss->exit) {
-> +				struct cgroup *old_cgrp =
-> +					rcu_dereference_raw(cg->subsys[i])->cgroup;
-> +				struct cgroup *cgrp = task_cgroup(tsk, i);
-> +				ss->exit(ss, cgrp, old_cgrp, tsk);
-
-Since both sched and perf won't use the 2 args @cgrp and @old_cgrp,
-don't bother to change the ->exit interface?
-
-> +			}
-> +		}
-> +	}
->  	task_unlock(tsk);
-> +
->  	if (cg)
->  		put_css_set_taskexit(cg);
+> +		cfqg->vdisktime = max(st->min_vdisktime, cfqg->vdisktime);
+>  	__cfq_group_service_tree_add(st, cfqg);
+>  	st->total_weight += cfqg->weight;
 >  }
+> @@ -906,6 +905,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		cfq_rb_erase(&cfqg->rb_node, st);
+>  	cfqg->saved_workload_slice = 0;
+> +	cfqg->generation_num = cfqd->active_generation;
+> +	if (RB_EMPTY_ROOT(&st->rb))
+> +		cfqd->active_generation++;
+>  	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+>  }
+>  
