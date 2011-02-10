@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab1BJRTp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 12:19:45 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44639 "EHLO
+	id S932173Ab1BJRTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 12:19:46 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44634 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753Ab1BJRPp (ORCPT
+	with ESMTP id S1756748Ab1BJRPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 12:15:45 -0500
+	Thu, 10 Feb 2011 12:15:44 -0500
 From: Borislav Petkov <bp@amd64.org>
 To: <linux-edac@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 14/30] amd64_edac: Cleanup NBSH cruft
-Date: Thu, 10 Feb 2011 18:15:17 +0100
-Message-Id: <1297358133-14320-15-git-send-email-bp@amd64.org>
+Subject: [PATCH 13/30] amd64_edac: Cleanup NBCFG handling
+Date: Thu, 10 Feb 2011 18:15:16 +0100
+Message-Id: <1297358133-14320-14-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1297358133-14320-1-git-send-email-bp@amd64.org>
 References: <1297358133-14320-1-git-send-email-bp@amd64.org>
@@ -22,100 +22,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Remove reporting of errors with UC bit set - this is done by the MCE
-decoding code anyway and this driver deals with DRAM ECC errors only. UC
-(NB uncorrectable error) doesn't necessarily mean it is a DRAM error.
-Remove unused macros while at it.
+The fact whether we are chipkill capable or not does not have any
+bearing when computing the channel index on a ganged DCT configuration
+so remove that. Also, simplify debug statements. Finally, remove old
+error injection leftovers, while at it.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/amd64_edac.c |   15 ++-------------
- drivers/edac/mce_amd.c    |    2 +-
- drivers/edac/mce_amd.h    |   18 +++++-------------
- 3 files changed, 8 insertions(+), 27 deletions(-)
+ drivers/edac/amd64_edac.c |   45 +++++++++++++++++++++------------------------
+ drivers/edac/amd64_edac.h |    9 +++------
+ 2 files changed, 24 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index dfa7ac7..04d481b 100644
+index 9a8a313..dfa7ac7 100644
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -1748,7 +1748,7 @@ static void amd64_handle_ce(struct mem_ctl_info *mci,
- 	u64 sys_addr;
+@@ -1011,7 +1011,7 @@ static void k8_map_sysaddr_to_csrow(struct mem_ctl_info *mci,
+ 	syndrome = extract_syndrome(err_info);
  
- 	/* Ensure that the Error Address is VALID */
--	if (!(info->nbsh & K8_NBSH_VALID_ERROR_ADDR)) {
-+	if (!(info->nbsh & NBSH_VALID_ERROR_ADDR)) {
- 		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
- 		edac_mc_handle_ce_no_info(mci, EDAC_MOD_STR);
- 		return;
-@@ -1773,7 +1773,7 @@ static void amd64_handle_ue(struct mem_ctl_info *mci,
+ 	/* CHIPKILL enabled */
+-	if (err_info->nbcfg & K8_NBCFG_CHIPKILL) {
++	if (err_info->nbcfg & NBCFG_CHIPKILL) {
+ 		channel = get_channel_from_ecc_syndrome(mci, syndrome);
+ 		if (channel < 0) {
+ 			/*
+@@ -1461,7 +1461,7 @@ static void f10_map_sysaddr_to_csrow(struct mem_ctl_info *mci,
+ 	 * ganged. Otherwise @chan should already contain the channel at
+ 	 * this point.
+ 	 */
+-	if (dct_ganging_enabled(pvt) && (pvt->nbcfg & K8_NBCFG_CHIPKILL))
++	if (dct_ganging_enabled(pvt))
+ 		chan = get_channel_from_ecc_syndrome(mci, syndrome);
  
- 	log_mci = mci;
+ 	if (chan >= 0)
+@@ -2050,14 +2050,13 @@ static int init_csrows(struct mem_ctl_info *mci)
+ 	u32 val;
+ 	int i, empty = 1;
  
--	if (!(info->nbsh & K8_NBSH_VALID_ERROR_ADDR)) {
-+	if (!(info->nbsh & NBSH_VALID_ERROR_ADDR)) {
- 		amd64_mc_err(mci, "HW has no ERROR_ADDRESS available\n");
- 		edac_mc_handle_ue_no_info(log_mci, EDAC_MOD_STR);
- 		return;
-@@ -1839,17 +1839,6 @@ void amd64_decode_bus_error(int node_id, struct mce *m, u32 nbcfg)
- 	regs.nbcfg = nbcfg;
+-	amd64_read_pci_cfg(pvt->F3, K8_NBCFG, &val);
++	amd64_read_pci_cfg(pvt->F3, NBCFG, &val);
  
- 	__amd64_decode_bus_error(mci, &regs);
--
--	/*
--	 * Check the UE bit of the NB status high register, if set generate some
--	 * logs. If NOT a GART error, then process the event as a NO-INFO event.
--	 * If it was a GART error, skip that process.
--	 *
--	 * FIXME: this should go somewhere else, if at all.
--	 */
--	if (regs.nbsh & K8_NBSH_UC_ERR && !report_gart_errors)
--		edac_mc_handle_ue_no_info(mci, "UE bit is set");
--
+ 	pvt->nbcfg = val;
+-	pvt->ctl_error_info.nbcfg = val;
+ 
+ 	debugf0("node %d, NBCFG=0x%08x[ChipKillEccCap: %d|DramEccEn: %d]\n",
+ 		pvt->mc_node_id, val,
+-		!!(val & K8_NBCFG_CHIPKILL), !!(val & K8_NBCFG_ECC_ENABLE));
++		!!(val & NBCFG_CHIPKILL), !!(val & NBCFG_ECC_ENABLE));
+ 
+ 	for_each_chip_select(i, 0, pvt) {
+ 		csrow = &mci->csrows[i];
+@@ -2099,9 +2098,9 @@ static int init_csrows(struct mem_ctl_info *mci)
+ 		/*
+ 		 * determine whether CHIPKILL or JUST ECC or NO ECC is operating
+ 		 */
+-		if (pvt->nbcfg & K8_NBCFG_ECC_ENABLE)
++		if (pvt->nbcfg & NBCFG_ECC_ENABLE)
+ 			csrow->edac_mode =
+-			    (pvt->nbcfg & K8_NBCFG_CHIPKILL) ?
++			    (pvt->nbcfg & NBCFG_CHIPKILL) ?
+ 			    EDAC_S4ECD4ED : EDAC_SECDED;
+ 		else
+ 			csrow->edac_mode = EDAC_NONE;
+@@ -2211,24 +2210,23 @@ static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
+ 	value |= mask;
+ 	amd64_write_pci_cfg(F3, NBCTL, value);
+ 
+-	amd64_read_pci_cfg(F3, K8_NBCFG, &value);
++	amd64_read_pci_cfg(F3, NBCFG, &value);
+ 
+-	debugf0("1: node %d, NBCFG=0x%08x[ChipKillEccCap: %d|DramEccEn: %d]\n",
+-		nid, value,
+-		!!(value & K8_NBCFG_CHIPKILL), !!(value & K8_NBCFG_ECC_ENABLE));
++	debugf0("1: node %d, NBCFG=0x%08x[DramEccEn: %d]\n",
++		nid, value, !!(value & NBCFG_ECC_ENABLE));
+ 
+-	if (!(value & K8_NBCFG_ECC_ENABLE)) {
++	if (!(value & NBCFG_ECC_ENABLE)) {
+ 		amd64_warn("DRAM ECC disabled on this node, enabling...\n");
+ 
+ 		s->flags.nb_ecc_prev = 0;
+ 
+ 		/* Attempt to turn on DRAM ECC Enable */
+-		value |= K8_NBCFG_ECC_ENABLE;
+-		amd64_write_pci_cfg(F3, K8_NBCFG, value);
++		value |= NBCFG_ECC_ENABLE;
++		amd64_write_pci_cfg(F3, NBCFG, value);
+ 
+-		amd64_read_pci_cfg(F3, K8_NBCFG, &value);
++		amd64_read_pci_cfg(F3, NBCFG, &value);
+ 
+-		if (!(value & K8_NBCFG_ECC_ENABLE)) {
++		if (!(value & NBCFG_ECC_ENABLE)) {
+ 			amd64_warn("Hardware rejected DRAM ECC enable,"
+ 				   "check memory DIMM configuration.\n");
+ 			ret = false;
+@@ -2239,9 +2237,8 @@ static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
+ 		s->flags.nb_ecc_prev = 1;
+ 	}
+ 
+-	debugf0("2: node %d, NBCFG=0x%08x[ChipKillEccCap: %d|DramEccEn: %d]\n",
+-		nid, value,
+-		!!(value & K8_NBCFG_CHIPKILL), !!(value & K8_NBCFG_ECC_ENABLE));
++	debugf0("2: node %d, NBCFG=0x%08x[DramEccEn: %d]\n",
++		nid, value, !!(value & NBCFG_ECC_ENABLE));
+ 
+ 	return ret;
  }
+@@ -2263,9 +2260,9 @@ static void restore_ecc_error_reporting(struct ecc_settings *s, u8 nid,
  
- /*
-diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
-index f6cf73d..1afca60 100644
---- a/drivers/edac/mce_amd.c
-+++ b/drivers/edac/mce_amd.c
-@@ -604,7 +604,7 @@ void amd_decode_nb_mce(int node_id, struct mce *m, u32 nbcfg)
- 	/* F10h, revD can disable ErrCpu[3:0] through ErrCpuVal */
- 	if ((boot_cpu_data.x86 == 0x10) &&
- 	    (boot_cpu_data.x86_model > 7)) {
--		if (nbsh & K8_NBSH_ERR_CPU_VAL)
-+		if (nbsh & NBSH_ERR_CPU_VAL)
- 			core = nbsh & nb_err_cpumask;
- 	} else {
- 		u8 assoc_cpus = nbsh & nb_err_cpumask;
-diff --git a/drivers/edac/mce_amd.h b/drivers/edac/mce_amd.h
-index 45dda47..70a0bb2 100644
---- a/drivers/edac/mce_amd.h
-+++ b/drivers/edac/mce_amd.h
-@@ -31,19 +31,11 @@
- #define R4(x)				(((x) >> 4) & 0xf)
- #define R4_MSG(x)			((R4(x) < 9) ?  rrrr_msgs[R4(x)] : "Wrong R4!")
+ 	/* restore previous BIOS DRAM ECC "off" setting we force-enabled */
+ 	if (!s->flags.nb_ecc_prev) {
+-		amd64_read_pci_cfg(F3, K8_NBCFG, &value);
+-		value &= ~K8_NBCFG_ECC_ENABLE;
+-		amd64_write_pci_cfg(F3, K8_NBCFG, value);
++		amd64_read_pci_cfg(F3, NBCFG, &value);
++		value &= ~NBCFG_ECC_ENABLE;
++		amd64_write_pci_cfg(F3, NBCFG, value);
+ 	}
  
--#define K8_NBSH				0x4C
+ 	/* restore the NB Enable MCGCTL bit */
+@@ -2291,9 +2288,9 @@ static bool ecc_enabled(struct pci_dev *F3, u8 nid)
+ 	u8 ecc_en = 0;
+ 	bool nb_mce_en = false;
+ 
+-	amd64_read_pci_cfg(F3, K8_NBCFG, &value);
++	amd64_read_pci_cfg(F3, NBCFG, &value);
+ 
+-	ecc_en = !!(value & K8_NBCFG_ECC_ENABLE);
++	ecc_en = !!(value & NBCFG_ECC_ENABLE);
+ 	amd64_info("DRAM ECC %s.\n", (ecc_en ? "enabled" : "disabled"));
+ 
+ 	nb_mce_en = amd64_nb_mce_bank_enabled_on_node(nid);
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index fc609d1..6c52736 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -246,9 +246,9 @@
+  */
+ #define NBCTL				0x40
+ 
+-#define K8_NBCFG			0x44
+-#define K8_NBCFG_CHIPKILL		BIT(23)
+-#define K8_NBCFG_ECC_ENABLE		BIT(22)
++#define NBCFG				0x44
++#define NBCFG_CHIPKILL			BIT(23)
++#define NBCFG_ECC_ENABLE		BIT(22)
+ 
+ #define K8_NBSL				0x48
+ 
+@@ -420,9 +420,6 @@ struct amd64_pvt {
+ 	/* x4 or x8 syndromes in use */
+ 	u8 syn_type;
+ 
+-	/* temp storage for when input is received from sysfs */
+-	struct err_regs ctl_error_info;
 -
--#define K8_NBSH_VALID_BIT		BIT(31)
--#define K8_NBSH_OVERFLOW		BIT(30)
--#define K8_NBSH_UC_ERR			BIT(29)
--#define K8_NBSH_ERR_EN			BIT(28)
--#define K8_NBSH_MISCV			BIT(27)
--#define K8_NBSH_VALID_ERROR_ADDR	BIT(26)
--#define K8_NBSH_PCC			BIT(25)
--#define K8_NBSH_ERR_CPU_VAL		BIT(24)
--#define K8_NBSH_CECC			BIT(14)
--#define K8_NBSH_UECC			BIT(13)
--#define K8_NBSH_ERR_SCRUBER		BIT(8)
-+/*
-+ * F3x4C bits (MCi_STATUS' high half)
-+ */
-+#define NBSH_VALID_ERROR_ADDR		BIT(26)
-+#define NBSH_ERR_CPU_VAL		BIT(24)
+ 	/* place to store error injection parameters prior to issue */
+ 	struct error_injection injection;
  
- enum tt_ids {
- 	TT_INSTR = 0,
 -- 
 1.7.4.rc2
 
