@@ -1,124 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab1BJBcd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 20:32:33 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:1088 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab1BJBcc (ORCPT
+	id S1754088Ab1BJBco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 20:32:44 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47558 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab1BJBcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 20:32:32 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=a/w7GQLGZkIaynx456KiyJrluDO+5bJvcReeSoNoGFDvJMPyVdecMoeM6BLYSndBR
-	8phSr8t+n8rE53v5vojwg==
-Subject: [PATCH] Avoid preferential treatment of groups that aren't backlogged
-To: jaxboe@fusionio.com, vgoyal@redhat.com
-From: Chad Talbott <ctalbott@google.com>
-Cc: guijianfeng@cn.fujitsu.com, mrubin@google.com, teravest@google.com,
-        jmoyer@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 09 Feb 2011 17:32:11 -0800
-Message-ID: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Wed, 9 Feb 2011 20:32:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=HxAJhARs/MWihcQrvXSoKdT4HMyrJ/Vo/Nsv3d/+m/BqaG692++GHXFwI/637oxB43
+         vx1xP3Yo8We6irmsknvVronMPtWK7fu01AkeNULnQ6SApByG0O47r7/HfwI0J4RK/zbg
+         2jtwORYcuK91L9Oas/I/CcTCELCVwCFJ8AFA0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+In-Reply-To: <20110209.150514.115926470.davem@davemloft.net>
+References: <AANLkTikA3MT=eeMKg58HyYZRswUR+PMhYW978HEc0sst@mail.gmail.com>
+	<4D5315FB.8020004@zytor.com>
+	<AANLkTimN2oM6E9E34fMffgtH81ZfYcGj6J5nnjGrxGfA@mail.gmail.com>
+	<20110209.150514.115926470.davem@davemloft.net>
+Date: Wed, 9 Feb 2011 20:32:39 -0500
+Message-ID: <AANLkTinbLbdPDS-MaSQ3b2BP_ykERx6EfBoJuD0ZxWdr@mail.gmail.com>
+Subject: Re: Can anyone explain "movl %eax %eax"?
+From: Jidong Xiao <jidong.xiao@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Problem: If a group isn't backlogged, we remove it from the service
-tree. When it becomes active again, it gets the minimum vtime of the
-tree. That is true even when the group was idle for a very small time,
-and it consumed some IO time right before it became idle.  If group
-has small weight, it can end up using more disk time than its fair
-share.
+Thank you David and Peter.
 
-Solution: We solve the problem by assigning the group its old vtime if
-it has not been idle long enough. Otherise we assign it the service
-tree's min vtime.
+And I found more information in the following website, other people
+who are not very clear can have a look at this document:
 
-Complications: When an entire service tree becomes completely idle, we
-lose the vtime state. All the old vtime values are not relevant any
-more. For example, consider the case when the service tree is idle and
-a brand new group sends IO. That group would have an old vtime value
-of zero, but the service tree's vtime would become closer to zero. In
-such a case, it would be unfair for the older groups to get a much
-higher old vtime stored in them.
+http://www.x86-64.org/documentation/assembly.html
 
-We solve that issue by keeping a generation number that counts the
-number of instances when the service tree becomes completely
-empty. The generation number is stored in each group too. If a group
-becomes backlogged after a service tree has been empty, we compare its
-stored generation number with the current service tree generation
-number, and discard the old vtime if the group generation number is
-stale.
+======================
+Implicit zero extend
 
-The preemption specific code is taken care of automatically because we
-allow preemption checks after inserting a group back into the service
-tree and assigning it an appropriate vtime.
+Results of 32-bit operations are implicitly zero extended to 64-bit
+values. This differs from 16 and 8 bit operations, that don't affect
+the upper part of registers. This can be used for code size
+optimisations in some cases, such as:
 
-Signed-off-by: Chad Talbott <ctalbott@google.com>
----
- block/cfq-iosched.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
+  movl $1, %eax                 # one byte shorter movq $1, %rax
+  xorq %rax, %rax		# three byte equivalent of mov $0,%rax
+  andl $5, %eax			# equivalent for andq $5, %eax
+======================
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 501ffdf..f09f3fe 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -178,6 +178,7 @@ struct cfq_group {
- 
- 	/* group service_tree key */
- 	u64 vdisktime;
-+	u64 generation_num;
- 	unsigned int weight;
- 
- 	/* number of cfqq currently on this group */
-@@ -300,6 +301,9 @@ struct cfq_data {
- 	/* List of cfq groups being managed on this device*/
- 	struct hlist_head cfqg_list;
- 	struct rcu_head rcu;
-+
-+	/* Generation number, counts service tree empty events */
-+	u64 active_generation;
- };
- 
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
-@@ -873,18 +877,13 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
- 		return;
- 
--	/*
--	 * Currently put the group at the end. Later implement something
--	 * so that groups get lesser vtime based on their weights, so that
--	 * if group does not loose all if it was not continously backlogged.
--	 */
--	n = rb_last(&st->rb);
--	if (n) {
--		__cfqg = rb_entry_cfqg(n);
--		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
--	} else
-+	if (cfqd->active_generation > cfqg->generation_num)
- 		cfqg->vdisktime = st->min_vdisktime;
--
-+	else
-+		/* We assume that vdisktime was not modified when the task
-+		   was off the service tree.
-+		 */
-+		cfqg->vdisktime = max(st->min_vdisktime, cfqg->vdisktime);
- 	__cfq_group_service_tree_add(st, cfqg);
- 	st->total_weight += cfqg->weight;
- }
-@@ -906,6 +905,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
- 		cfq_rb_erase(&cfqg->rb_node, st);
- 	cfqg->saved_workload_slice = 0;
-+	cfqg->generation_num = cfqd->active_generation;
-+	if (RB_EMPTY_ROOT(&st->rb))
-+		cfqd->active_generation++;
- 	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
- }
- 
+Regards
+Jidong
 
+On Wed, Feb 9, 2011 at 6:05 PM, David Miller <davem@davemloft.net> wrote:
+> From: Jidong Xiao <jidong.xiao@gmail.com>
+> Date: Wed, 9 Feb 2011 18:02:09 -0500
+>
+>> Oh, I see. Thank you. So similarly, the operation "xorl %eax,%eax" is
+>> used for the same reason, right? I see that appears in more files.
+>
+> The xorl clears the entire register.
+>
