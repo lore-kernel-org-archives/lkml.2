@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab1BJEhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 23:37:23 -0500
-Received: from void.printf.net ([89.145.121.20]:34749 "EHLO void.printf.net"
+	id S1755700Ab1BJEnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 23:43:22 -0500
+Received: from mga14.intel.com ([143.182.124.37]:30586 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755228Ab1BJEhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 23:37:22 -0500
-Date: Thu, 10 Feb 2011 04:37:18 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Pierre Tardy <pierre.tardy@intel.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yunpeng Gao <yunpeng.gao@intel.com>
-Subject: Re: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
-Message-ID: <20110210043718.GA7585@void.printf.net>
-References: <cover.1297014479.git.pierre.tardy@intel.com> <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754997Ab1BJEnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 23:43:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,450,1291622400"; 
+   d="scan'208";a="386698706"
+Date: Wed, 9 Feb 2011 20:43:07 -0800
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Paul Menage <menage@google.com>, akpm@linux-foundation.org,
+        rdunlap@xenotime.net, Cedric Le Goater <clg@fr.ibm.com>
+Subject: Re: [PATCH 1/1, v6] cgroup/freezer: add per freezer duty ratio
+ control
+Message-ID: <20110209204307.17f552fd@jacob-laptop>
+In-Reply-To: <4D533EB0.6060405@cn.fujitsu.com>
+References: <1297213541-18156-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<4D52050F.3060907@cn.fujitsu.com>
+	<20110209101631.5f265687@jacob-laptop>
+	<4D533EB0.6060405@cn.fujitsu.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pierre,
+On Thu, 10 Feb 2011 09:26:08 +0800
+Li Zefan <lizf@cn.fujitsu.com> wrote:
 
-On Sun, Feb 06, 2011 at 07:02:49PM +0100, Pierre Tardy wrote:
-> From: Yunpeng Gao <yunpeng.gao@intel.com>
+> jacob pan wrote:
+> > On Wed, 09 Feb 2011 11:07:59 +0800
+> > Li Zefan <lizf@cn.fujitsu.com> wrote:
+> > 
+> >> jacob.jun.pan@linux.intel.com wrote:
+> >>> From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> >>>
+> >>> Freezer subsystem is used to manage batch jobs which can start
+> >>> stop at the same time. However, sometime it is desirable to let
+> >>> the kernel manage the freezer state automatically with a given
+> >>> duty ratio.
+> >>> For example, if we want to reduce the time that backgroup apps
+> >>> are allowed to run we can put them into a freezer subsystem and
+> >>> set the kernel to turn them THAWED/FROZEN at given duty ratio.
+> >>>
+> >>> This patch introduces two file nodes under cgroup
+> >>> freezer.duty_ratio_pct and freezer.period_sec
+> >>>
+> >>> Usage example: set period to be 5 seconds and frozen duty ratio
+> >>> 90% [root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
+> >>> [root@localhost aoa]# echo 5000 > freezer.period_ms
+> >>>
+> >>
+> >> So after:
+> >>
+> >> # echo FROZEN > freezer.state
+> >> # echo 90 > freezer.duty_ratio_pct
+> >> # echo 5000 > freezer.period_ms
+> >> ...
+> >> # echo 0 > freezer.duty_ratio_pct
+> >>
+> >> All the tasks in this cgroup are in THAWED state, but the cgroup is
+> >> in FROZEN state. This should be fixed.
+> > I don't know how could this ever happen. Is it based on your
+> > testing? Whenever tasks in a cgroup are thawed/frozen, its freezer
+> > state would change accordingly.
+> > After your example, freezer.state should have THAWED. It matches
+> > user's intention, i.e. if a user do
+> > echo 0 > freezer.duty_ratio_pct
+> > It must want 0% to be frozen, which is THAWED.
+> > 
+> > Am I missing anything?
+> > 
 > 
-> Follow the kernel runtime PM framework, enable runtime PM support of the
-> sdhci host controller with pci interface.
+> You're right. I made a mistake when looking into the patch.
 > 
-> Note that this patch implements runtime_pm but now actually detects
-> activity.
-> It relies on higher level (childrens) to do actual waking up
-> Activity detection is put in following patch
-
-Testing this patchset in linux-next-20100208 gives:
-
-[   10.829223] sdhci: Secure Digital Host Controller Interface driver
-[   10.829548] sdhci: Copyright(c) Pierre Ossman
-[   10.883906] sdhci-pci 0000:0d:00.0: SDHCI controller found [1180:e822] (rev 1)
-[   10.884533] sdhci-pci 0000:0d:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[   10.885189] sdhci-pci 0000:0d:00.0: Will use DMA mode even though HW doesn't fully claim to support it.
-[   10.886176] sdhci-pci 0000:0d:00.0: setting latency timer to 64
-[   10.886819] Registered led device: mmc0::
-[   10.887281] mmc0: SDHCI controller on PCI [0000:0d:00.0] using DMA
-[   10.887724] sdhci-pci 0000:0d:00.0: Unbalanced pm_runtime_enable!
-[   10.888498] sdhci-pci 0000:17:00.0: SDHCI controller found [1180:e822] (rev 1)
-[   10.889179] sdhci-pci 0000:17:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
-[   10.889876] sdhci-pci 0000:17:00.0: Will use DMA mode even though HW doesn't fully claim to support it.
-[   10.890924] sdhci-pci 0000:17:00.0: setting latency timer to 64
-[   10.891387] Registered led device: mmc1::
-[   10.891900] mmc1: SDHCI controller on PCI [0000:17:00.0] using DMA
-[   10.892280] sdhci-pci 0000:17:00.0: Unbalanced pm_runtime_enable!
-
-(Note the last line above.)
-
-I then removed the card and reinserted it, but there's no dmesg output
-related to the reinsert, only to the card removal:
-
-[   65.381047] mmc0: card d555 removed
-
-So, card insertion is broken.  I then did rmmod sdhci-pci && modprobe
-sdhci-pci, and it picked up the card again.
-
-There was also a weird UI hang for a few hundred msecs around the time
-the second modprobe happened, but I don't expect you to be able to do
-anything about that without a more helpful report; if it happens again
-I'll try to record what's going on using ftrace.
-
-Full dmesg is at:
-   http://dev.laptop.org/~cjb/logs/runtime-pm-sdhci-20100209.log
-
-Thanks,
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+> btw, I made a few other comments in your code, that you may have
+> overlooked.
+sorry, I missed them.
