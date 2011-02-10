@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab1BJCpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 21:45:31 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:55987 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab1BJCpa (ORCPT
+	id S1755217Ab1BJCtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 21:49:09 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:46584 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab1BJCtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 21:45:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=YRyG1G8nzXhyuSea8LwMOytCINIW8KR0ga9Diks1n91pJNC6SMby9OeHHlKw7bamgX
-         tJBzYuHQZRSgG+7MEWbQ==
-MIME-Version: 1.0
-In-Reply-To: <20110210020946.GA27040@redhat.com>
-References: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
-	<20110210020946.GA27040@redhat.com>
-Date: Wed, 9 Feb 2011 18:45:25 -0800
-Message-ID: <AANLkTi=dZDK6VosLX8JH4gJyRQ0KXGKMA5vhJ-7D93s7@mail.gmail.com>
-Subject: Re: [PATCH] Avoid preferential treatment of groups that aren't backlogged
-From: Chad Talbott <ctalbott@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
-        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Wed, 9 Feb 2011 21:49:08 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: Grant Likely <grant.likely@secretlab.ca>, Ben Dooks <ben-linux@fluff.org>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH] i2c-ocores: register devices on child nodes
+Date: Thu, 10 Feb 2011 10:51:54 +0800
+Message-Id: <1297306314-11483-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.4
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 9, 2011 at 6:09 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> In upstream code once a group gets backlogged we put it at the end
-> and not at the beginning of the tree. (I am wondering are you looking
-> at the google internal code :-))
->
-> So I don't think that issue of a low weight group getting more disk
-> time than its fair share is present in upstream kernels.
+This patch registers devices on the devicetree child nodes to the bus.
+Also removes one trailing whitespace.
 
-You've caught me re-using a commit description.  :)
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+---
+ drivers/i2c/busses/i2c-ocores.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Here's an example of the kind of tests that fail without this patch
-(run via the test that Justin and Akshay have posted):
+diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+index ef3bcb1..c63838f 100644
+--- a/drivers/i2c/busses/i2c-ocores.c
++++ b/drivers/i2c/busses/i2c-ocores.c
+@@ -18,7 +18,7 @@
+  * - interrupts      : interrupt number
+  * - regstep         : size of device registers in bytes
+  * - clock-frequency : frequency of bus clock in Hz
+- * 
++ *
+  * Example:
+  *
+  *  i2c0: ocores@a0000000 {
+@@ -55,6 +55,7 @@
+ #include <linux/i2c-ocores.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
++#include <linux/of_i2c.h>
+ 
+ struct ocores_i2c {
+ 	void __iomem *base;
+@@ -347,6 +348,9 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+ 			i2c_new_device(&i2c->adap, pdata->devices + i);
+ 	}
+ 
++	/* Now register all the child nodes */
++	of_i2c_register_devices(&i2c->adap);
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.4
 
-15:35:35 INFO ----- Running experiment 14: 950 rdrand, 50 rdrand.delay10
-15:35:55 INFO Experiment completed in 20.4 seconds
-15:35:55 INFO experiment 14 achieved DTFs: 886, 113
-15:35:55 INFO experiment 14 FAILED: max observed error is 64, allowed is 50
-
-15:35:55 INFO ----- Running experiment 15: 950 rdrand, 50 rdrand.delay50
-15:36:16 INFO Experiment completed in 20.5 seconds
-15:36:16 INFO experiment 15 achieved DTFs: 891, 108
-15:36:16 INFO experiment 15 FAILED: max observed error is 59, allowed is 50
-
-Since this is Jens' unmodified tree, I've had to change
-BLKIO_WEIGHT_MIN to 10 to allow this test to proceed.  We typically
-run many jobs with small weights, and achieve the requested isolation:
-see below results with this patch:
-
-14:59:17 INFO ----- Running experiment 14: 950 rdrand, 50 rdrand.delay10
-14:59:36 INFO Experiment completed in 19.0 seconds
-14:59:36 INFO experiment 14 achieved DTFs: 947, 52
-14:59:36 INFO experiment 14 PASSED: max observed error is 3, allowed is 50
-
-14:59:36 INFO ----- Running experiment 15: 950 rdrand, 50 rdrand.delay50
-14:59:55 INFO Experiment completed in 18.5 seconds
-14:59:55 INFO experiment 15 achieved DTFs: 944, 55
-14:59:55 INFO experiment 15 PASSED: max observed error is 6, allowed is 50
-
-As you can see, it's with seeky workloads that come and go from the
-service tree where this patch is required.
-
-Chad
