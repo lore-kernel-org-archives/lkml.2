@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab1BJDq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 22:46:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:9124 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752761Ab1BJDq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 22:46:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,450,1291622400"; 
-   d="scan'208";a="386686311"
-Date: Wed, 9 Feb 2011 19:46:56 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-Message-ID: <20110210034656.GA22753@gargoyle.amr.corp.intel.com>
-References: <1297300864.2645.128.camel@schen9-DESK>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297300864.2645.128.camel@schen9-DESK>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755321Ab1BJDvi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 22:51:38 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:60918 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752761Ab1BJDvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 22:51:36 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+2RgIy3fu2zplDgXAQt+hvd1nQHDP4P9PBTXn9px
+	qQr1miRRP6dcB6
+Subject: Re: [tip:perf/core] perf annotate: Fix annotate context lines
+ regression
+From: Mike Galbraith <efault@gmx.de>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, eranian@google.com,
+        linux-kernel@vger.kernel.org, tzanussi@gmail.com, peterz@infradead.org,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <1297309313.7996.11.camel@marge.simson.net>
+References: <new-submission>
+	 <tip-d5e3d747007fdb541e57ed72e020ff0b94db3470@git.kernel.org>
+	 <1297224378.8035.7.camel@marge.simson.net>
+	 <20110209164154.GA15607@ghostprotocols.net>
+	 <1297309313.7996.11.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Feb 2011 04:51:31 +0100
+Message-ID: <1297309891.7996.13.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+On Thu, 2011-02-10 at 04:41 +0100, Mike Galbraith wrote:
 
-Patch looks good to me. Thanks Tim.
+> I like this a lot, great for live rummaging.   One thing that would help
+> with large files maybe - a jump to next spot hotter than N%, but as is
 
-I expect this will also improve other pm-qos users, but of course they
-are likely not as frequently used as the idle governour.
+(and callgraphs, and a snapshot logger with notes insertion and and...
+boy, tui thingy adds a _lot_ of potential to top:) 
 
-(and before anyone makes jokes about optimizing the idle loop: idle 
-latency is very important for workloads with lots of wakeups out of
-idle)
-
--Andi
