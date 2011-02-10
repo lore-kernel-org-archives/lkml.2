@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab1BJVCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:02:51 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37573
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756996Ab1BJVCu (ORCPT
+	id S1757024Ab1BJVEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:04:52 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40851 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab1BJVEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:02:50 -0500
-Date: Thu, 10 Feb 2011 13:03:25 -0800 (PST)
-Message-Id: <20110210.130325.112603217.davem@davemloft.net>
-To: steiner@sgi.com
-Cc: mingo@elte.hu, raz@scalemp.com, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de, cpw@sgi.com,
-        travis@sgi.com, tglx@linutronix.de, hpa@zytor.com
-Subject: Re: [BUG] soft lockup while booting machine with more than 700
- cores
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110210205648.GA10341@sgi.com>
-References: <1297236453.2756.9.camel@raz.scalemp.com>
-	<20110210123937.GD26094@elte.hu>
-	<20110210205648.GA10341@sgi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 10 Feb 2011 16:04:50 -0500
+Message-ID: <4D545316.2030809@vflare.org>
+Date: Fri, 11 Feb 2011 02:35:26 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@ORACLE.COM>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dan Magenheimer <dan.magenheimer@ORACLE.COM>
+Subject: Re: linux-next: Tree for February 10 (zcache)
+References: <20110210180525.54ec83e9.sfr@canb.auug.org.au> <20110210110037.39f4b7b3.randy.dunlap@oracle.com>
+In-Reply-To: <20110210110037.39f4b7b3.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jack Steiner <steiner@sgi.com>
-Date: Thu, 10 Feb 2011 14:56:48 -0600
+On 02/11/2011 12:30 AM, Randy Dunlap wrote:
+> On Thu, 10 Feb 2011 18:05:25 +1100 Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> [The kernel.org mirroring is being slow ...]
+>>
+>> Changes since 20110209:
+>
+>
+> ZCACHE=m
+> ZRAM is not enabled (since BLOCK is not enabled)
+>
+> ERROR: "xv_malloc" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "tmem_put" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "tmem_new_pool" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "tmem_get" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "tmem_flush_object" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "tmem_destroy_pool" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "xv_free" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "xv_get_object_size" [drivers/staging/zcache/zcache.ko] undefined!
+> ERROR: "tmem_flush_page" [drivers/staging/zcache/zcache.ko] undefined!
+>
+> Also, in zcache/Kconfig, there is:
+> 	select XVMALLOC
+> but that kconfig symbol does not exist.  What should that be?
+>
 
-> We also noticed that the rebalance_domains() code references many per-cpu
-> run queue structures. All of the structures have identical offsets relative
-> to the size of a cache leaf. The result is that all index into the same lines in the
-> L3 caches. That causes many evictions. We tried an experimental to
-> stride the run queues at 128 byte offsets. That helped in some cases but the
-> results were mixed.  We are still experimenting with the patch.
 
-I think chasing after cache alignment issues misses the point entirely.
+Just posted fix for this:
+https://lkml.org/lkml/2011/2/10/367
 
-The core issue is that rebalance_domains() is insanely expensive, by
-design.  It's complexity is N factorial for the idle non-HZ cpu that is
-selected to balance every single domain.
-
-A statistic datastructure that is approximately 128 bytes in size is
-repopulated N! times each time this global rebalance thing runs.
-
-I've been seeing rebalance_domains() in my perf top output on 128 cpu
-machines for several years now.  Even on an otherwise idle machine,
-the system churns in thus code path endlessly.
-
-
-
+Thanks,
+Nitin
