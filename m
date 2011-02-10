@@ -1,165 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab1BJOSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 09:18:18 -0500
-Received: from mail.atheros.com ([12.19.149.2]:47928 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756387Ab1BJOSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 09:18:16 -0500
-Message-ID: <4D53F3A0.6050900@atheros.com>
-Date: Thu, 10 Feb 2011 19:48:08 +0530
-From: Mohammed Shafi <mshajakhan@atheros.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+	id S1756504Ab1BJOZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 09:25:00 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61722 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab1BJOY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 09:24:58 -0500
+Message-ID: <4D53F4ED.10903@ru.mvista.com>
+Date: Thu, 10 Feb 2011 17:23:41 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Luis Rodriguez <Luis.Rodriguez@atheros.com>
-CC: Mohammed Shajakhan <Mohammed.Shajakhan@atheros.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Mark Gross <mgross@linux.intel.com>,
-        Senthilkumar Balasubramanian 
-	<Senthilkumar.Balasubramanian@atheros.com>
-Subject: Re: [RFC] ath9k: Fix ath9k prevents CPU to enter C3 states
-References: <1297262007-15128-1-git-send-email-mshajakhan@atheros.com> <20110209195815.GB2192@tux>
-In-Reply-To: <20110209195815.GB2192@tux>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before slave_data
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site> <20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
+In-Reply-To: <20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 February 2011 01:28 AM, Luis Rodriguez wrote:
-> On Wed, Feb 09, 2011 at 06:33:27AM -0800, Mohammed Shajakhan wrote:
->    
->> From: Mohammed Shafi Shajakhan<mshajakhan@atheros.com>
->>
->> The DMA latency issue is observed only in Intel pinetrail platforms but
->> in the driver we had a default PM-QOS value of 55. This caused
->> unnecessary power consumption and battery drain in other platforms.
->> Address this issue by disabling PM-QOS by default by setting it's value
->> as '0' and making code changes appropriately.This addresses the bug:
->> https://bugzilla.kernel.org/show_bug.cgi?id=27532
->> 	If the user sees some DMA latency issue he can still use the pmqos as a
->> module parameter to trade power for throughput as below:
->> sudo modprobe ath9k pmqos=55
->>      
-> How many times are we going to write some work around for some
-> platform unpatched BIOS bug ?
->
-> mcgrof@tux ~/wireless-testing (git::master)$ git grep pm_qos_update_request drivers/
-> drivers/net/e1000e/netdev.c:                    pm_qos_update_request(&adapter->netdev->pm_qos_req, 55);
-> drivers/net/e1000e/netdev.c:                    pm_qos_update_request(&adapter->netdev->pm_qos_req,
-> drivers/net/wireless/ath/ath9k/main.c:  pm_qos_update_request(&sc->pm_qos_req, ath9k_pm_qos_value);
-> drivers/net/wireless/ath/ath9k/main.c:  pm_qos_update_request(&sc->pm_qos_req, PM_QOS_DEFAULT_VALUE);
-> drivers/net/wireless/ipw2x00/ipw2100.c: pm_qos_update_request(&ipw2100_pm_qos_req, 175);
-> drivers/net/wireless/ipw2x00/ipw2100.c: pm_qos_update_request(&ipw2100_pm_qos_req, PM_QOS_DEFAULT_VALUE);
->
-> Can't we punt this crap to userspace?
->    
-Luis thanks for the script and sorry I missed it in the bugzilla. Luis I 
-agree these workarounds are better placed to be in user place and the 
-only thing is those have issues must be aware of the script.
-I am ccing Senthil to have his views.
+Hello.
 
-thanks,
-shafi
-> http://www.kernel.org/pub/linux/kernel/people/mcgrof/scripts/cpudmalatency.c
+On 08-02-2011 15:24, Bartlomiej Zolnierkiewicz wrote:
+[...]
+
+> We may need to set SITRE before programming slave_data.
+
+> This makes pata_efar match the behavior of IDE's slc90e66 host driver
+> and also of libata's ata_piix one.
+
+> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+[...]
+
+> diff --git a/drivers/ata/pata_efar.c b/drivers/ata/pata_efar.c
+> index 1e2ff7d..7f564d7 100644
+> --- a/drivers/ata/pata_efar.c
+> +++ b/drivers/ata/pata_efar.c
+> @@ -74,10 +74,12 @@ static void efar_set_timings(struct ata_port *ap, struct ata_device *adev,
+>   			     u8 pio, bool use_mwdma)
+>   {
+>   	struct pci_dev *dev	= to_pci_dev(ap->host->dev);
+> +	unsigned int is_slave	= (adev->devno != 0);
+
+    What's the point of this variable? To save one pointer dereference? :-)
+
+>   	unsigned long flags;
+>   	u8 master_port		= ap->port_no ? 0x42 : 0x40;
+>   	u16 master_data;
+>   	u8 udma_enable;
+> +	u8 slave_data;
+>   	int control = 0;
 >
-> Can distributions just autodetect this issue and call something like this?
+>   	/*
+> @@ -110,14 +112,13 @@ static void efar_set_timings(struct ata_port *ap, struct ata_device *adev,
+>   	pci_read_config_word(dev, master_port,&master_data);
 >
->    Luis
+>   	/* Set PPE, IE, and TIME as appropriate */
+> -	if (adev->devno == 0) {
+> +	if (is_slave == 0) {
+
+    !is_slave appeals more to me. :-)
+
+> @@ -126,12 +127,14 @@ static void efar_set_timings(struct ata_port *ap, struct ata_device *adev,
+>   		pci_read_config_byte(dev, 0x44,&slave_data);
+>   		slave_data&= ap->port_no ? 0x0F : 0xF0;
+>   		slave_data |= ((timings[pio][0]<<  2) | timings[pio][1])<<  shift;
+> -		pci_write_config_byte(dev, 0x44, slave_data);
+>   	}
 >
->    
->> Signed-off-by: Mohammed Shafi Shajakhan<mshajakhan@atheros.com>
->> ---
->>   drivers/net/wireless/ath/ath9k/ath9k.h |    4 +++-
->>   drivers/net/wireless/ath/ath9k/init.c  |    9 +++++----
->>   drivers/net/wireless/ath/ath9k/main.c  |    9 +++++----
->>   3 files changed, 13 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/net/wireless/ath/ath9k/ath9k.h b/drivers/net/wireless/ath/ath9k/ath9k.h
->> index 9272278..55fcd01 100644
->> --- a/drivers/net/wireless/ath/ath9k/ath9k.h
->> +++ b/drivers/net/wireless/ath/ath9k/ath9k.h
->> @@ -57,7 +57,9 @@ struct ath_node;
->>
->>   #define A_MAX(a, b) ((a)>  (b) ? (a) : (b))
->>
->> -#define ATH9K_PM_QOS_DEFAULT_VALUE	55
->> +/* By default PM QOS is disabled */
->> +#define ATH9K_PM_QOS_DEFAULT_VALUE	0
->> +
->>
->>   #define TSF_TO_TU(_h,_l) \
->>   	((((u32)(_h))<<  22) | (((u32)(_l))>>  10))
->> diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
->> index e5c1eea..658ea02 100644
->> --- a/drivers/net/wireless/ath/ath9k/init.c
->> +++ b/drivers/net/wireless/ath/ath9k/init.c
->> @@ -43,7 +43,7 @@ MODULE_PARM_DESC(btcoex_enable, "Enable wifi-BT coexistence");
->>
->>   int ath9k_pm_qos_value = ATH9K_PM_QOS_DEFAULT_VALUE;
->>   module_param_named(pmqos, ath9k_pm_qos_value, int, S_IRUSR | S_IRGRP | S_IROTH);
->> -MODULE_PARM_DESC(pmqos, "User specified PM-QOS value");
->> +MODULE_PARM_DESC(pmqos, "User specified PM-QOS value, by default disabled");
->>
->>   bool is_ath9k_unloaded;
->>   /* We use the hw_value as an index into our private channel structure */
->> @@ -759,8 +759,8 @@ int ath9k_init_device(u16 devid, struct ath_softc *sc, u16 subsysid,
->>
->>   	ath_init_leds(sc);
->>   	ath_start_rfkill_poll(sc);
->> -
->> -	pm_qos_add_request(&sc->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
->> +	if (ath9k_pm_qos_value)
->> +		pm_qos_add_request(&sc->pm_qos_req, PM_QOS_CPU_DMA_LATENCY,
->>   			   PM_QOS_DEFAULT_VALUE);
->>
->>   	return 0;
->> @@ -819,7 +819,8 @@ void ath9k_deinit_device(struct ath_softc *sc)
->>   	ath9k_ps_restore(sc);
->>
->>   	ieee80211_unregister_hw(hw);
->> -	pm_qos_remove_request(&sc->pm_qos_req);
->> +	if (ath9k_pm_qos_value)
->> +		pm_qos_remove_request(&sc->pm_qos_req);
->>   	ath_rx_cleanup(sc);
->>   	ath_tx_cleanup(sc);
->>   	ath9k_deinit_softc(sc);
->> diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
->> index 4ed43b2..3855092 100644
->> --- a/drivers/net/wireless/ath/ath9k/main.c
->> +++ b/drivers/net/wireless/ath/ath9k/main.c
->> @@ -1119,9 +1119,10 @@ static int ath9k_start(struct ieee80211_hw *hw)
->>
->>   	/* User has the option to provide pm-qos value as a module
->>   	 * parameter rather than using the default value of
->> -	 * 'ATH9K_PM_QOS_DEFAULT_VALUE'.
->> +	 * 'ATH9K_PM_QOS_DEFAULT_VALUE' which disables PM QOS.
->>   	 */
->> -	pm_qos_update_request(&sc->pm_qos_req, ath9k_pm_qos_value);
->> +	if (ath9k_pm_qos_value)
->> +		pm_qos_update_request(&sc->pm_qos_req, ath9k_pm_qos_value);
->>
->>   	if (ah->caps.pcie_lcr_extsync_en&&  common->bus_ops->extn_synch_en)
->>   		common->bus_ops->extn_synch_en(common);
->> @@ -1266,8 +1267,8 @@ static void ath9k_stop(struct ieee80211_hw *hw)
->>   	ath_radio_disable(sc, hw);
->>
->>   	sc->sc_flags |= SC_OP_INVALID;
->> -
->> -	pm_qos_update_request(&sc->pm_qos_req, PM_QOS_DEFAULT_VALUE);
->> +	if (ath9k_pm_qos_value)
->> +		pm_qos_update_request(&sc->pm_qos_req, PM_QOS_DEFAULT_VALUE);
->>
->>   	mutex_unlock(&sc->mutex);
->>
->> -- 
->> 1.7.0.4
->>
->>      
-> .
+>   	master_data |= 0x4000;	/* Ensure SITRE is set */
+>   	pci_write_config_word(dev, master_port, master_data);
 >
->    
+> +	if (is_slave)
+> +		pci_write_config_byte(dev, 0x44, slave_data);
+> +
+>   	pci_read_config_byte(dev, 0x48,&udma_enable);
+>   	udma_enable&= ~(1<<  (2 * ap->port_no + adev->devno));
+>   	pci_write_config_byte(dev, 0x48, udma_enable);
+
+WBR, Sergei
