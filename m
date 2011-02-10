@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab1BJSAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 13:00:47 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38039 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab1BJSAq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 13:00:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=jlNwadhDCRdgZ4VdYzuUyRFf7yK+oQF2+8YD4jxQ1UQq9uh9A0ir5/ri+6zfD59CB9
-         jFHNSrm31HE52lh/a9IxdNLYuM+DNYnX973nWbjGbrfPeK1OKQhKl0cEKhXKJXZfbiTb
-         ERfVbXymFxnvk6Q265Ch9PaHagplN14NBX5M8=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, devel@driverdev.osuosl.org
-Subject: [PATCH] staging: zcache: fix memory leak
-Date: Thu, 10 Feb 2011 21:00:39 +0300
-Message-Id: <1297360839-21602-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756716Ab1BJSCC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 13:02:02 -0500
+Received: from cantor.suse.de ([195.135.220.2]:48756 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab1BJSCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 13:02:00 -0500
+Date: Thu, 10 Feb 2011 09:58:55 -0800
+From: Greg KH <gregkh@suse.de>
+To: Oren Weil <oren.jer.weil@intel.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, david@woodhou.se,
+        david.woodhouse@intel.com
+Subject: Re: [RFC PATCH 00/13] Intel(R) MEI Driver
+Message-ID: <20110210175855.GC13795@suse.de>
+References: <0d30dc$l1diqi@orsmga001.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0d30dc$l1diqi@orsmga001.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-obj is not freed if __get_free_page() failed.
+On Thu, Feb 10, 2011 at 01:54:54AM -0800, Oren Weil wrote:
+> Intel(R) Management Engine Interface (Intel(R) MEI) Driver 
+> ==========================================================
+> 
+> This patch contains a new Intel driver for the Linux kernel: The Intel(R) MEI Driver.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Compile tested only.
+This patch?  What patch, there is no patch here.
 
- drivers/staging/zcache/zcache.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+You sent out 13 emails with the same exact Subject line, which is not
+acceptable at all, and mighty confusing.
 
-diff --git a/drivers/staging/zcache/zcache.c b/drivers/staging/zcache/zcache.c
-index 61be849..b8a2b30 100644
---- a/drivers/staging/zcache/zcache.c
-+++ b/drivers/staging/zcache/zcache.c
-@@ -790,6 +790,7 @@ static int zcache_do_preload(struct tmem_pool *pool)
- 	page = (void *)__get_free_page(ZCACHE_GFP_MASK);
- 	if (unlikely(page == NULL)) {
- 		zcache_failed_get_free_pages++;
-+		kmem_cache_free(zcache_obj_cache, obj);
- 		goto unlock_out;
- 	}
- 	preempt_disable();
--- 
-1.7.0.4
+> This set of patches is for review purposes; the driver code
+> for pull is in the David Woodhouse public git repository:
+> http://git.infradead.org/linux-2.6-mei.git
 
+No, we need these as patches, not as a pull request.  Please work on
+fixing up your individual patches, that's the only way this is going to
+be accepted.
+
+thanks,
+
+greg k-h
