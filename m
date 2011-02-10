@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756703Ab1BJTW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 14:22:58 -0500
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:44685 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755870Ab1BJTW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 14:22:56 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=KtuuMIiMRBF/Qk+r9K4dXcnmJO2g6KEHiMQHN6iKyCaJDAMQaW0PhxUE891XOpscBYJ5lJdH4Od9luffUsOGbWzg3GHS2rpqCgmMRlAr8KPwa930f2HjTvBgy7MHReLl;
-Date: Thu, 10 Feb 2011 11:22:49 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Greg KH <greg@kroah.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/30] amd64_edac: Add Bulldozer support
-Message-ID: <20110210112249.255aa016@jbarnes-desktop>
-In-Reply-To: <20110210192034.GI12244@aftab>
-References: <1297358133-14320-1-git-send-email-bp@amd64.org>
-	<20110210185637.GA16128@kroah.com>
-	<20110210192034.GI12244@aftab>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S1756651Ab1BJT3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 14:29:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14984 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507Ab1BJT3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 14:29:48 -0500
+Date: Thu, 10 Feb 2011 14:29:41 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
+ for CFQ queue
+Message-ID: <20110210192940.GA2600@redhat.com>
+References: <4D51ED26.8050809@cn.fujitsu.com>
+ <4D539804.9090308@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D539804.9090308@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Feb 2011 20:20:34 +0100
-Borislav Petkov <bp@amd64.org> wrote:
-
-> On Thu, Feb 10, 2011 at 01:56:37PM -0500, Greg KH wrote:
-> > On Thu, Feb 10, 2011 at 06:15:03PM +0100, Borislav Petkov wrote:
-> > > From: Borislav Petkov <borislav.petkov@amd.com>
-> > > 
-> > > Hi all,
-> > > 
-> > > the following patchset that adds support for our upcoming F15h CPUs.
-> > > Besides adding a new family support, it cleans up a lot in the driver
-> > > and the diffstat says it all:
-> > > 
-> > >  arch/x86/kernel/amd_nb.c      |    2 +-
-> > >  drivers/edac/amd64_edac.c     | 1412 +++++++++++++++++++----------------------
-> > >  drivers/edac/amd64_edac.h     |  357 ++++-------
-> > >  drivers/edac/amd64_edac_inj.c |    8 +-
-> > >  drivers/edac/edac_mc_sysfs.c  |   26 +-
-> > >  drivers/edac/mce_amd.c        |    8 +-
-> > >  drivers/edac/mce_amd.h        |   28 +-
-> > >  include/linux/pci_ids.h       |    2 +-
-> > >  8 files changed, 825 insertions(+), 1018 deletions(-)
-> > > 
-> > > @Greg/@Ingo: Guys, let me know if patch 27/30 should be rerouted over
-> > > your trees or would you rather like to ACK it?
-> > 
-> > I don't need to ack it or take it as it doesn't pertain to any of the
-> > files I maintain :)
+On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
+> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
+> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
+> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
+> group scheduling on the same service tree.
 > 
-> Ah, sorry for the confusion, it should be Jesse Barnes instead, added to
-> Cc.
+> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> ---
+>  block/cfq-iosched.c |  219 +++++++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 167 insertions(+), 52 deletions(-)
 > 
-> Jesse, do you want the patch at
-> http://marc.info/?l=linux-edac&m=129735827731488&w=2 rerouted over your
-> tree or would you rather ack it?
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index f3a126e..41cef2e 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -39,6 +39,13 @@ static const int cfq_hist_divisor = 4;
+>   */
+>  #define CFQ_IDLE_DELAY		(HZ / 5)
+>  
+> +/* 
+> + * The base boosting value.
+> + */
+> +#define CFQ_BOOST_SYNC_BASE          (HZ / 10)
+> +#define CFQ_BOOST_ASYNC_BASE          (HZ / 25)
+> +
 
-You can have my ack:
+These are same as cfq_slice_sync and cfq_slice_async. Looking at
+boost logic, this is equivalent of starting a new queue/group as
+if it is being requeued after conuming a full slice. So may be we can divide
+it by some const number say 4 or something like that. This is a minor
+point though as this algorimthm will kind of evolve and we will learn
+what works best.
 
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Secondly, I think you wanted to SYNC vs ASYNC logic seem to be reversed.
+We would like to give ASYNC queues higher boost (Put these farther in 
+tree) and lesser boost to SYNC queues. Looks like above constants will
+do the reverse? 
 
-Though if that's the only place that PCI ID is used, you may as well
-just put it into the corresponding file and remove it from pci_ids.h
-altogether.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+[..]
+> +	if (RB_EMPTY_NODE(&cfqe->rb_node)) {
+> +		/*
+> +		 * If this CFQ queue moves to another group, the original
+> +		 * vdisktime makes no sense any more, reset the vdisktime
+> +		 * here.
+> +		 */
+> +		parent = rb_last(&service_tree->rb);
+> +		if (parent) {
+> +			u64 pos_offset;
+> +
+> +			/*
+> +			 * Estimate the position according to its weight and
+> +			 * ioprio.
+> +			 */
+> +			pos_offset = cfq_get_boost(cfqd, cfqq);
+> +			/* Debug purpose, should remove. */
+> +			cfq_log_cfqq(cfqd, cfqq, "pos_offset: %llu",
+> +				     pos_offset);
+
+You wanted to get rid of above debugging comment?
+
+Thanks
+Vivek
