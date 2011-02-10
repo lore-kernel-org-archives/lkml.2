@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab1BJMk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 07:40:59 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:56852 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab1BJMk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 07:40:58 -0500
-Date: Thu, 10 Feb 2011 13:40:43 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/4] memcg: operate on page quantities internally
-Message-ID: <20110210124043.GN27110@cmpxchg.org>
-References: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
- <20110209133757.735b08ab.akpm@linux-foundation.org>
+	id S1755658Ab1BJMlR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 07:41:17 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52540 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab1BJMlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 07:41:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=EBbYVD/nQCIB2qQhUBsKs7Walr6X89W34kzOiSUZsT0TyFbLw+TgB5tGTqDr/hX5wF
+         mKe1Yq8iBcqKtfNjgW3TZZ/WkA6pY7KdxsaVR51K04UbRNEOOgBECa/dACWtctpRjEKM
+         PWehHMHlRRhFO0+7QCaDY6A2a/FgIk4R2QDhI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110209133757.735b08ab.akpm@linux-foundation.org>
+In-Reply-To: <4D53D7FE.9070206@codeaurora.org>
+References: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org>
+ <1296568063-12010-2-git-send-email-aghayal@codeaurora.org>
+ <AANLkTimZ9UwcQp5QQjyHVsRdEAcf6+rL18mCesishPoC@mail.gmail.com> <4D53D7FE.9070206@codeaurora.org>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 10 Feb 2011 20:40:54 +0800
+Message-ID: <AANLkTi=MX0h-YU_Y_LSgZ1gLxS0iXSDGbRyHx4u4TVC1@mail.gmail.com>
+Subject: Re: [RFC v2 PATCH 1/7] matrix_keypad: Increase the max limit of rows
+ and columns
+To: Trilok Soni <tsoni@codeaurora.org>
+Cc: Anirudh Ghayal <aghayal@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-arm-msm@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 01:37:57PM -0800, Andrew Morton wrote:
-> On Wed,  9 Feb 2011 12:01:49 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > Hi,
-> > 
-> > this patch set converts the memcg charge and uncharge paths to operate
-> > on multiples of pages instead of bytes.  It already was a good idea
-> > before, but with the merge of THP we made a real mess by specifying
-> > huge pages alternatingly in bytes or in number of regular pages.
-> > 
-> > If I did not miss anything, this should leave only res_counter and
-> > user-visible stuff in bytes.  The ABI probably won't change, so next
-> > up is converting res_counter to operate on page quantities.
-> > 
-> 
-> I worry that there will be unconverted code and we'll end up adding
-> bugs.
-> 
-> A way to minimise the risk is to force compilation errors and warnings:
-> rename fields and functions, reorder function arguments.  Did your
-> patches do this as much as they could have?
+On Thu, Feb 10, 2011 at 8:20 PM, Trilok Soni <tsoni@codeaurora.org> wrote:
+> Hi Dmitry,
+>
+> On 2/9/2011 1:32 PM, Eric Miao wrote:
+>> On Tue, Feb 1, 2011 at 9:47 PM, Anirudh Ghayal <aghayal@codeaurora.org> wrote:
+>>> From: Trilok Soni <tsoni@codeaurora.org>
+>>>
+>>> Some keyboard controller have support for more than
+>>> 16 columns and rows. Moving this value to 32.
+>>>
+>>> Cc: Eric Miao <eric.y.miao@gmail.com>
+>>> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>> Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
+>>
+>> This looks good to me, as long as the bits don't exceed 256, which
+>> is used in the #KEY() macro. So far, 32 looks to be a sane number
+>> to me, unless we have further requirement to get this larger.
+>>
+>> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+>>
+>
+> Are you going to pick up this patch only from the series you want us to get
+> it submitted it separately?
 
-I sent you fixes/replacements for 1/4 and 4/4. 2/4 and 3/4 adjusted
-the names of changed structure members already.
+I believe Dmitry will pick this series once all the patches are reviewed?
