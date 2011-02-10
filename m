@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab1BJEXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 23:23:50 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45818 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab1BJEXt (ORCPT
+	id S1755604Ab1BJE0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 23:26:46 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:39082 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550Ab1BJE0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 23:23:49 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 10 Feb 2011 13:16:44 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ryota Ozaki <ozaki.ryota@gmail.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Fix out-of-date comments which refers non-existent
- functions
-Message-Id: <20110210131644.4c3dc48d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTikdBhSWAoP6TDRExSV2rHmWDkEc0foSKvqJt=tx@mail.gmail.com>
-References: <1297262537-7425-1-git-send-email-ozaki.ryota@gmail.com>
-	<20110210085823.2f99b81c.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTikdBhSWAoP6TDRExSV2rHmWDkEc0foSKvqJt=tx@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 9 Feb 2011 23:26:45 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6252"; a="73654480"
+Message-ID: <4D536904.5080708@codeaurora.org>
+Date: Wed, 09 Feb 2011 20:26:44 -0800
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Jeremy Kerr <jeremy.kerr@canonical.com>, Dima Zavin <dmitriyz@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>, Ben Dooks <ben-linux@fluff.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect enable/prepare
+ semantics
+References: <201102011711.31258.jeremy.kerr@canonical.com>	<1297058877.800990.238556019385.3.gpush@pororo>	<20110207080555.GC27982@pengutronix.de>	<201102071608.42855.jeremy.kerr@canonical.com> <alpine.LFD.2.00.1102070908120.14920@xanadu.home>
+In-Reply-To: <alpine.LFD.2.00.1102070908120.14920@xanadu.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Feb 2011 12:58:21 +0900
-Ryota Ozaki <ozaki.ryota@gmail.com> wrote:
+On 02/07/2011 06:24 AM, Nicolas Pitre wrote:
+> On Mon, 7 Feb 2011, Jeremy Kerr wrote:
+>
+>> Hi Uwe,
+>>
+>>> This implies the warning is only issued on clocks that have a prepare
+>>> callback.  If we want to enforce the new API the warning here shouldn't
+>>> depend on clk->ops->prepare.  (clk_prepare and clk_unprepare need to
+>>> be changed then to adapt the prepare_count even in the absence of
+>>> clk->ops->prepare.)
+>>
+>> Yeah, it's a decision about either adding a small cost to all clk_prepare()s
+>> (ie, adding cost when there is no prepare callback), or checking for the
+>> correct prepare/enable semantics for all clocks (even when it doesn't matter
+>> for that particular clock). I chose the first as more important, but happy to
+>> go either way here.
+>
+> The prepare method being called from non-atomic context cannot be
+> considered to be in a speed critical path.  Most of the time, this is
+> going to be called on driver initialization or the like, and that's a
+> relatively rare event. Therefore this really small cost to clk_prepare()
+> is definitively worth it to help proper usage of the API.  If this ever
+> becomes a problem then this could be confined to some CONFIG_CLK_DEBUG
+> or the like.  But when introducing a new API it is best to be more
+> strict to help people get its usage right (without going overboard with
+> it of course).
+>
 
-> On Thu, Feb 10, 2011 at 8:58 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Wed,  9 Feb 2011 23:42:17 +0900
-> > Ryota Ozaki <ozaki.ryota@gmail.com> wrote:
-> >
-> >> From: Ryota Ozaki <ozaki.ryota@gmail.com>
-> >>
-> >> do_file_page and do_no_page don't exist anymore, but some comments
-> >> still refers them. The patch fixes them by replacing them with
-> >> existing ones.
-> >>
-> >> Signed-off-by: Ryota Ozaki <ozaki.ryota@gmail.com>
-> >
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Thanks, Kamezawa-san.
-> 
-> >
-> > It seems there are other ones ;)
-> > ==
-> >    Searched full:do_no_page (Results 1 - 3 of 3) sorted by relevancy
-> >
-> >  /linux-2.6-git/arch/alpha/include/asm/
-> > H A D   cacheflush.h    66 /* This is used only in do_no_page and do_swap_page. */
-> >  /linux-2.6-git/arch/avr32/mm/
-> > H A D   cache.c         116 * This one is called from do_no_page(), do_swap_page() and install_page().
-> >  /linux-2.6-git/mm/
-> > H A D   memory.c        2121 * and do_anonymous_page and do_no_page can safely check later on).
-> > 2319 * do_no_page is protected similarly.
-> 
-> Nice catch :-) Cloud I assemble all fixes into one patch?
-> 
->   ozaki-r
-> 
+Agree with Nicholas and Uwe. +1 for this request.
 
-Yes, I think it's allowed. 
+-Saravana
 
-Thanks,
--Kame
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
