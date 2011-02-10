@@ -1,75 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab1BJIho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 03:37:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39892 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab1BJIhn convert rfc822-to-8bit (ORCPT
+	id S1754055Ab1BJIhx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 03:37:53 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40169 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571Ab1BJIhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 03:37:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=PGhigHWmfgCr4RIl3d8t6MiE3eU55HvYRAISfDVf8L/5PQEPip4denmbFTWRt7/uvr
-         VplUok5dXcc3R7shzbddg8zrAvwVFfLUnEeofm1IfdtvXq9m5DG7JcZ8KqCXaWDybm+b
-         TlRstuiWL1TiS11yPUkSn8OxvzG/oNjkRlAjg=
+	Thu, 10 Feb 2011 03:37:50 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4D53A3AA.5050908@jp.fujitsu.com>
+Date: Thu, 10 Feb 2011 17:36:58 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110206.111705.183051866.davem@davemloft.net>
-References: <1296989469-7844-1-git-send-email-geert@linux-m68k.org>
-	<1296989469-7844-5-git-send-email-geert@linux-m68k.org>
-	<20110206.111705.183051866.davem@davemloft.net>
-Date: Thu, 10 Feb 2011 09:37:41 +0100
-X-Google-Sender-Auth: xEUmAOp61VtU2HcJj5kcQ572J6k
-Message-ID: <AANLkTi=j7X0LShJs6EVt0c_uE3vUvZ9EdGLwv7i43vx+@mail.gmail.com>
-Subject: Re: [PATCH 4/4] m68k/atari: ARAnyM - Add support for network access
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
-        aranym@lists.bobek.cz, schmitz@opal.biophys.uni-duesseldorf.de,
-        pstehlik@sophics.cz, milan.jurik@xylab.cz, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: "hpa@zytor.com" <hpa@zytor.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "bp@alien8.de" <bp@alien8.de>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "amwang@redhat.com" <amwang@redhat.com>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH v2] Controlling kexec behaviour when hardware error
+ happened.
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C1494DBE0@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C1494DBE0@USINDEVS01.corp.hds.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 6, 2011 at 20:17, David Miller <davem@davemloft.net> wrote:
-> From: Geert Uytterhoeven <geert@linux-m68k.org>
-> Date: Sun,  6 Feb 2011 11:51:09 +0100
->
->> +     dev->trans_start = jiffies;
->
-> Device drivers no longer make this operation, the generic code
-> does it (see net/core/dev.c:dev_hard_start_xmit() and how it
-> invokes txq_trans_update() on ->ndo_start_xmit() success).
->
-> Therefore, please remove this line.
+(2011/02/10 1:35), Seiji Aguchi wrote:
+> Hi,
+> 
+> I submitted a quite similar patch last December.
+> 
+> http://www.spinics.net/lists/linux-mm/msg13157.html
+> 
+> I retry it with different description of the purpose.
+> 
+> [Changelog]
+> from v1:
+>     - Change name of sysctl parameter ,kexec_on_mce, to kexec_on_hwerr. 
+>     - Move variable declaration from <asm/mce.h> to <kernel/panic.h>.
+>     - Remove CONFIG_X86_MCE in *.c files.
+>     - Modify [Purpose]/[Patch Description].
+> 
+> [Purpose]
+> There are some logging features of firmware/hardware, SEL,BMC, etc, in enterprise servers.
+> We investigate the firmware/hardware logs first when MCE occurred and replace the broken hardware.
+> So, memory dump is not necessary for detecting root cause of machine check.
+> Also, we can reduce down-time by skipping kdump.
+> 
+> Of course, there are a lot of servers which don't have logging features of firmware/hardware.
+> So, I proposed a option controlling kexec behaviour when hardware error occurred. 
+> 
+> [Patch Description]
+> This patch adds a sysctl option ,kernel.kexec_on_hwerr, controlling kexec behaviour when hardware error occurred.
+> 
+>  - Permission
+> $B!!!!(B- 0644
+>  - Value(default is "1")
+>    - non-zero: Kexec is enabled regardless of hardware error.
+>    - 0: Kexec is disabled when MCE occurred.
+>    
+> 
+> Matrix of kernel.kexec_on_hwerr value ,hardware error and kexec
+> 
+> --------------------------------------------------
+> kernel.kexec_on_hwerr| hardware error | kexec
+> --------------------------------------------------
+> non-zero             | occurred       | enabled
+>                      -----------------------------
+>                      | not occurred   | enabled
+> --------------------------------------------------
+> 0                    | occurred       | disabled
+>                      |----------------------------
+>                      | not occurred   | enabled
+> --------------------------------------------------
+> 
+> 
+> Any comments and suggestions are welcome.
+> 
+>  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> 
+> ---
+>  Documentation/sysctl/kernel.txt  |   11 +++++++++++
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
+>  include/linux/kernel.h           |    2 ++
+>  include/linux/sysctl.h           |    1 +
+>  kernel/panic.c                   |   15 ++++++++++++++-
+>  kernel/sysctl.c                  |    8 ++++++++
+>  kernel/sysctl_binary.c           |    1 +
+>  mm/memory-failure.c              |    2 ++
+>  8 files changed, 41 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt index 11d5ced..3159111 100644
+> --- a/Documentation/sysctl/kernel.txt
+> +++ b/Documentation/sysctl/kernel.txt
+> @@ -34,6 +34,7 @@ show up in /proc/sys/kernel:
+>  - hotplug
+>  - java-appletviewer           [ binfmt_java, obsolete ]
+>  - java-interpreter            [ binfmt_java, obsolete ]
+> +- kexec_on_hwerr              [ x86 only ]
+>  - kptr_restrict
+>  - kstack_depth_to_print       [ X86 only ]
+>  - l2cr                        [ PPC only ]
+> @@ -261,6 +262,16 @@ This flag controls the L2 cache of G3 processor boards. If  0, the cache is disabled. Enabled if nonzero.
+>  
+>  ==============================================================
+> +kexec_on_hwerr: (X86 only)
+> +
+> +Controls the behaviour of kexec when panic occurred due to hardware 
+> +error.
+> +Default value is 1.
+> +
+> +0: Kexec is disabled.
+> +non-zero: Kexec is enabled.
+> +
+> +==============================================================
+>  
+>  kptr_restrict:
+>  
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index d916183..e76b47b 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -944,6 +944,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  
+>  	percpu_inc(mce_exception_count);
+>  
+> +	hwerr_flag = 1;
+> +
+>  	if (notify_die(DIE_NMI, "machine check", regs, error_code,
+>  			   18, SIGKILL) == NOTIFY_STOP)
+>  		goto out;
 
-Will do.
+Now x86 supports some recoverable machine check, so setting
+flag here will prevent running kexec on systems that have
+encountered such recoverable machine check and recovered.
 
-(180 more to go in drivers/net/?)
+I think mce_panic() is proper place to set this flag "hwerr_flag".
 
->> +     pr_debug(DRV_NAME ": send %d bytes\n", len);
->
-> For consistency with other network drivers, add an appropriate CPP
-> define for "pr_fmt" and use netdev_info(), netdev_debug(), etc.
->
-> In situations where a netdev pointer is not available
-> (ie. pre-register_netdev()), use "dev_*()" instead.
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h index 2fe6e84..c2fba7c 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -242,6 +242,8 @@ extern void add_taint(unsigned flag);  extern int test_taint(unsigned flag);  extern unsigned long get_taint(void);  extern int root_mountflags;
+> +extern int kexec_on_hwerr;
+> +extern int hwerr_flag;
+>  
+>  extern bool early_boot_irqs_disabled;
+>  
+> diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h index 7bb5cb6..8ae5bfe 100644
+> --- a/include/linux/sysctl.h
+> +++ b/include/linux/sysctl.h
+> @@ -153,6 +153,7 @@ enum
+>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
+> +	KERN_KEXEC_ON_HWERR=77, /* int: bevaviour of kexec for hardware error 
+> +*/
+>  };
+>  
+>  
+> diff --git a/kernel/panic.c b/kernel/panic.c index 991bb87..84c1d2e 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -28,6 +28,8 @@
+>  #define PANIC_BLINK_SPD 18
+>  
+>  int panic_on_oops;
+> +int kexec_on_hwerr = 1;
+> +int hwerr_flag;
+>  static unsigned long tainted_mask;
+>  static int pause_on_oops;
+>  static int pause_on_oops_flag;
+> @@ -45,6 +47,16 @@ static long no_blink(int state)
+>  	return 0;
+>  }
+>  
+> +static int kexec_should_skip(void)
+> +{
+> +	if (!kexec_on_hwerr && hwerr_flag) {
+> +		printk(KERN_WARNING "Kexec is skipped because hardware error "
+> +		       "occurred.\n");
+> +		return 1;
+> +	}
+> +	return 0;
+> +}
+> +
+>  /* Returns how long it waited in ms */
+>  long (*panic_blink)(int state);
+>  EXPORT_SYMBOL(panic_blink);
+> @@ -86,7 +98,8 @@ NORET_TYPE void panic(const char * fmt, ...)
+>  	 * everything else.
+>  	 * Do we want to call this before we try to display a message?
+>  	 */
+> -	crash_kexec(NULL);
+> +	if (!kexec_should_skip())
+> +		crash_kexec(NULL);
+>  
+>  	kmsg_dump(KMSG_DUMP_PANIC);
+>  
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c index 0f1bd83..f78edd8 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -811,6 +811,14 @@ static struct ctl_table kern_table[] = {
+>  		.mode		= 0644,
+>  		.proc_handler	= proc_dointvec,
+>  	},
+> +	{
+> +		.procname	= "kexec_on_hwerr",
+> +		.data		= &kexec_on_hwerr,
+> +		.maxlen		= sizeof(int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec,
+> +	},
+> +
+>  #endif
+>  #if defined(CONFIG_MMU)
+>  	{
+> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c index b875bed..8d572ca 100644
+> --- a/kernel/sysctl_binary.c
+> +++ b/kernel/sysctl_binary.c
+> @@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
+>  	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
+>  	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
+>  	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
+> +	{ CTL_INT,	KERN_KEXEC_ON_HWERR,		"kexec_on_hwerr" },
+>  	{}
+>  };
+>  
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c index 0207c2f..0178f47 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -994,6 +994,8 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+>  	int res;
+>  	unsigned int nr_pages;
+>  
+> +	hwerr_flag = 1;
+> +
+>  	if (!sysctl_memory_failure_recovery)
+>  		panic("Memory failure from trap %d on page %lx", trapno, pfn);
+>  
 
-Will fix.
+For similar reason, setting flag here is not good for
+systems working after isolating some poisoned memory page.
 
-Thanks for reviewing!
+Why not:
+ if (!sysctl_memory_failure_recovery) {
+ 	hwerr_flag = 1;
+ 	panic("Memory failure from trap %d on page %lx", trapno, pfn);
+ }
 
-Gr{oetje,eeting}s,
+Thanks,
+H.Seto
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
