@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab1BJV5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 16:57:36 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:52011 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757160Ab1BJV5e (ORCPT
+	id S1757197Ab1BJV61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 16:58:27 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:28014 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756974Ab1BJV60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 16:57:34 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org, paulus@samba.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH powerpc 2/2] powerpc: mask smp_processor_id() false positive
-Date: Thu, 10 Feb 2011 13:57:27 -0800
-Message-Id: <1297375047-18608-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110210215710.GA18429@linux.vnet.ibm.com>
-References: <20110210215710.GA18429@linux.vnet.ibm.com>
+	Thu, 10 Feb 2011 16:58:26 -0500
+Date: Thu, 10 Feb 2011 22:57:16 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: netdev@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Dan Carpenter <error27@gmail.com>,
+        Shmulik Ravid <shmulikr@broadcom.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Lucy Liu <lucy.liu@intel.com>
+Subject: [PATCH] Don't potentially dereference NULL in
+ net/dcb/dcbnl.c:dcbnl_getapp()
+Message-ID: <alpine.LNX.2.00.1102102253230.8012@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rtas_event_scan() function uses smp_processor_id() to select a
-starting point in cpu_online_mask, and does so under the protection
-of get_online_cpus().  This might not select the current processor
-in any case, so switch to raw_smp_processor_id().
+nla_nest_start() may return NULL. If it does then we'll blow up in 
+nla_nest_end() when we dereference the pointer.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- arch/powerpc/kernel/rtasd.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ dcbnl.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/powerpc/kernel/rtasd.c b/arch/powerpc/kernel/rtasd.c
-index 049dbec..7980ec0 100644
---- a/arch/powerpc/kernel/rtasd.c
-+++ b/arch/powerpc/kernel/rtasd.c
-@@ -412,7 +412,8 @@ static void rtas_event_scan(struct work_struct *w)
+  only compile tested.
+
+diff --git a/net/dcb/dcbnl.c b/net/dcb/dcbnl.c
+index 6b03f56..13cdc30 100644
+--- a/net/dcb/dcbnl.c
++++ b/net/dcb/dcbnl.c
+@@ -626,6 +626,9 @@ static int dcbnl_getapp(struct net_device *netdev, struct nlattr **tb,
+ 	dcb->cmd = DCB_CMD_GAPP;
  
- 	get_online_cpus();
- 
--	cpu = cpumask_next(smp_processor_id(), cpu_online_mask);
-+	/* raw_ OK because just using CPU as starting point. */
-+	cpu = cpumask_next(raw_smp_processor_id(), cpu_online_mask);
-         if (cpu >= nr_cpu_ids) {
- 		cpu = cpumask_first(cpu_online_mask);
- 
+ 	app_nest = nla_nest_start(dcbnl_skb, DCB_ATTR_APP);
++	if (!app_nest)
++		goto out_cancel;
++
+ 	ret = nla_put_u8(dcbnl_skb, DCB_APP_ATTR_IDTYPE, idtype);
+ 	if (ret)
+ 		goto out_cancel;
 -- 
-1.7.3.2
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
 
