@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab1BKXfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 18:35:21 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:14758 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757300Ab1BKXfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 18:35:17 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6254"; a="74126227"
-Subject: Re: [PATCH 2/3] msm: iommu: Generalize platform data for multiple
- targets
-From: Daniel Walker <dwalker@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <8ya1v3ekvqg.fsf@huya.qualcomm.com>
-References: <1297456098-3241-1-git-send-email-stepanm@codeaurora.org>
-	 <1297456098-3241-2-git-send-email-stepanm@codeaurora.org>
-	 <1297462350.4852.31.camel@m0nster> <8ya7hd6kxk1.fsf@huya.qualcomm.com>
-	 <1297464456.4852.34.camel@m0nster>  <8ya1v3ekvqg.fsf@huya.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 15:35:17 -0800
-Message-ID: <1297467317.4852.36.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758181Ab1BKXjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 18:39:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21703 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758107Ab1BKXjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 18:39:14 -0500
+Date: Fri, 11 Feb 2011 18:38:44 -0500
+From: David Teigland <teigland@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, swhiteho@redhat.com
+Subject: [GIT PULL] dlm fix for 2.6.38
+Message-ID: <20110211233844.GC30276@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 15:16 -0800, David Brown wrote:
-> On Fri, Feb 11 2011, Daniel Walker wrote:
-> 
-> > On Fri, 2011-02-11 at 14:37 -0800, David Brown wrote:
-> 
-> >> It is functionality that will be shared across multiple socs.  Putting
-> >> the name of a specific soc would just be misleading.  Currently, it's
-> >> our only iommu.  Support for another family that uses a different iommu
-> >> could perhaps call it iommu2.
-> >
-> > Your missing my point. I'm saying it doesn't look flexible enough to
-> > allow support for multiple SoCs .. Is everything going to be identical
-> > across all the supported socs ?
-> 
-> It wouldn't help, though.  If the addresses differ across targets, we
-> don't want defines that are conditionally defined, so we would need
-> multiple tables, giving the address for specific targets.  Still no
-> reason to have an indirection on the names.
+Linus,
 
-I'm talking about the whole deal here, this whole patch series. It
-doesn't seem like this has been thought out too well. 
+Please pull this fix for a dlm regression from:
 
-Daniel
+git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git for-linus
 
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
+Thanks,
+Dave
+
+Author: David Teigland <teigland@redhat.com>
+Date:   Fri Feb 11 16:44:31 2011 -0600
+
+    dlm: use single thread workqueues
+    
+    The recent commit to use cmwq for send and recv threads
+    dcce240ead802d42b1e45ad2fcb2ed4a399cb255 introduced problems,
+    apparently due to multiple workqueue threads.  Single threads
+    make the problems go away, so return to that until we fully
+    understand the concurrency issues with multiple threads.
+    
+    Signed-off-by: David Teigland <teigland@redhat.com>
+
+diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+index 9c64ae9..2d8c87b 100644
+--- a/fs/dlm/lowcomms.c
++++ b/fs/dlm/lowcomms.c
+@@ -1468,15 +1468,13 @@ static void work_stop(void)
+ 
+ static int work_start(void)
+ {
+-	recv_workqueue = alloc_workqueue("dlm_recv", WQ_MEM_RECLAIM |
+-					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
++	recv_workqueue = create_singlethread_workqueue("dlm_recv");
+ 	if (!recv_workqueue) {
+ 		log_print("can't start dlm_recv");
+ 		return -ENOMEM;
+ 	}
+ 
+-	send_workqueue = alloc_workqueue("dlm_send", WQ_MEM_RECLAIM |
+-					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
++	send_workqueue = create_singlethread_workqueue("dlm_send");
+ 	if (!send_workqueue) {
+ 		log_print("can't start dlm_send");
+ 		destroy_workqueue(recv_workqueue);
 
 
