@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab1BKCVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 21:21:16 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:5913 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757070Ab1BKCVP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 21:21:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=ly909FY5yyCMN2QCODctYVT4WMaR7p1DCVsyDefhrdzyZA4IxCiTn6RBEKQ6S8V5W3
-         jsKeiJANmOvoeTDFFkVw==
+	id S932401Ab1BKCrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 21:47:31 -0500
+Received: from nm2-vm1.bullet.mail.kr3.yahoo.com ([111.67.240.245]:20019 "HELO
+	nm2-vm1.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932381Ab1BKCr3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 21:47:29 -0500
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 694018.79209.bm@omp1002.mail.kr3.yahoo.com
+Message-ID: <595151.26581.qm@web70805.mail.kr3.yahoo.com>
+X-YMail-OSG: sw6j_s0VM1kOPjITEfwJNls6Rw2GNAMYIrl7VGutibZ3HVB
+ gtIxbtCOthpa7R_uB5t4m5cpuD9CcfC8VNesLZuZnwdD90yY0Aor4462HlNg
+ Sjv1_8CWlgA3b9nhXIOFan9B6TA9VCxZsR.0uki_BwYS5IouRJjQmH3L5RZr
+ xLkQU1KG6GGgCASvVEeRAdMfOMpBH.R5ziwOxBF0PZeSqD.IsA_tpS4vNp1a
+ aDK6i62J44zK7GcmGDXbJ4UPQvGEaoITWaL9AkzqfudE1_Bf7VeLiErvvJCz
+ hyxAQ9M5S3wn0dVLCfxLBHffqV2v1JFESUO1TokwAl06xy2CqwZKQh0DNn2z
+ IPfF7j2AlaWqNX5RV_P12IRQysQTcIWd22P5_R8B0KVKpXauU7MQKFHX6gHo
+ fQsQMFWfb7_Y0yLHjruVmS2EERWh_zWL7raPejYsjWfSptud_EozEs4ctE_8
+ AOFPHryKQE6wCUMUB.eGixOpoSgBfQB.RqTj6beyuaTOJ2JGjx5SIkKZkpmv
+ 0NSGWMq5auT10yy_y5ylw3x14cd0HH1kTVZeqrXT37e2RP3PiWcS1zJf.Ne8
+ dz78xtO_lFr4vsnDb82a44jFwLWlwqthPQHu8IHAPJC50YgKREpOHUoFLpVP
+ 4zC_ALi9JyKj.Cc.EnRh42gCd2Zn5b7d7J4wkM9uYB0VgLvxfoMf4lw44VBq
+ dQEi57HV8Ti.lq07PaSS96eVX19DSliZnE5b2wNVYOz0A62nyRYBAG987enz
+ O7Hk6seC3Q33D.PRASGJC.WTyR.oljlmZEbb7ogZ71Ejn6ScWiolvXJ2.mpb
+ v_YBu3QjPORrov30tWKfFVY2fRqLcYC2ho.OlSlxKDMEs4j1W91C_ootnr0D
+ 0kv8U4SHVL9Bu_qZQ9e35Gnk-
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
+Date: Fri, 11 Feb 2011 11:47:20 +0900 (KST)
+From: Paul Compaore <paulcompaore12@gmail.com>
+Reply-To: paulcompaore14@gmail.com
+Subject: Dear Friend,
+To: undisclosed recipients:;
 MIME-Version: 1.0
-In-Reply-To: <20110211012552.GA28995@kroah.com>
-References: <4D547236.6080702@google.com> <20110211012552.GA28995@kroah.com>
-From: Tim Hockin <thockin@google.com>
-Date: Thu, 10 Feb 2011 18:20:52 -0800
-Message-ID: <AANLkTi=tbYj_bonu2i+NHpNY3KUMpsTVT8YDsLhDz_Nm@mail.gmail.com>
-Subject: Re: SMBIOS / DMI Event Logs in Linux?
-To: Greg KH <greg@kroah.com>
-Cc: Mike Waychison <mikew@google.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caveat: I kind of loathe the proliferation of single use filesystems
-for things that just aren't well mapped to the model.
 
-That said, maybe smbiosfs is not so horrible of a mapping.  I'm
-reticent to dredge up my spec, but I think it fits well enough, and
-you can can leave most OEM-specific processing in userspace.
+Dear Friend,
 
-So for the type 15, something like:
+I am Mr.Paul Compaore; I am in charge of auditing section in Banque Internationale Du Burkina (BIB). I need your urgent assistance to transfer the sum of ($11.3 million to your account. I will send you full details on how the business will be executed and also note that you will receive 50% of the above mentioned amount if you agree to assist me execute this business transaction. If you are interested and capable to handle this business transaction, come up with the information's shown below:- 
 
-/smbios/              # mountpoint
-    15/                  # record type (decimal)
-        0/                # instance number (decimal)
-            change_token # change token from the type 15 struct
-            header    # binary dump of the header section (if present)
-            0/            # one dir for each record (decimal)
-                id        # event ID (decimal)
-                id_str  # event ID (stringified, if possible)
-                size    # event size (decimal, bytes)
-                timestamp   # year, month, day, hour, minute, second
-                data   # binary dump of the payload
-                raw    # binary dump of the whole event
+1). Your full name: 
+2). Your contact cell phone number: 
+3). Your age: 
+4). Your sex: 
+5). Your occupations: 
+6). Your country and city:
 
-This does not handle type descriptors, but I know *we* don't use them..
+As soon as possible all these information's is submitted to me immediately i will send you full details of this business transaction on the receipt of your response.Reply to my private email: paulcompaore14@gmail.com
 
-This does not address operations such as clearing the log or writing a
-new event or locking/unlocking the log.  If there's an OEM-specific
-driver loaded it could augment the above.
-
-            clear_log       # write a number to this to clear some
-percent of the log
-            write_events # write a binary dump of an event, including timestamp?
-
-I don't hate it.  IT would be cool to have all of SMBIOS available this way.
-
-I'm not sure its worth the work, though.  Most Type 15 logs are in
-memory-mapped ROM or in RAM, so tools can access it via /dev/mem (if
-you have privs to do so).  I thought the SMI ioctl() interface worked
-just fine for logging and clearing.  And hell, we could do that from
-userspace if we had to, it's just IO ports, I think.  Maybe you need a
-userspace V-to-P translation, too.
-
-Tim
+Thanks.
+Mr Paul Compaore
 
 
-On Thu, Feb 10, 2011 at 5:25 PM, Greg KH <greg@kroah.com> wrote:
-> On Thu, Feb 10, 2011 at 03:18:14PM -0800, Mike Waychison wrote:
->> Hey guys,
->>
->> I need some guidance. Do either of you know of any attempts to have
->> the kernel decode and display/interact with DMI type 15: System
->> Event Log?
->
-> I don't have any experience in this area, but I do have one comment on
-> your proposal below:
->
->> The event log I'm dealing with while cleaning up the "gsmi" driver
->> interacts with a log that is modeled after the System Event Log.
->> I'm wondering if there is any precedent for a clean way to expose
->> the event log, I'd like to use it (replacing the ioctls from my
->> earlier patch series send-out).
->>
->> FYI, we use OEM specific headers and descriptors, which probably
->> doesn't help.
->>
->> Do most folks that need access to this data rely on /dev/mem and
->> dmidecode?  I'd like to avoid going that route if possible.
->>
->> Lacking any better ideas though, I was thinking of something along
->> the lines of the following:
->>
->>
->> $ cat /sys/firmware/gsmi/eventlog
->> <offset> <boot number> <recorded time> <quoted reason> <optional data>
->> ...
->>
->> with a single event log entry per line.
->>   <offset> would be the record number,
->>   <boot number> is the recorded boot number
->>   <recorded time> comes from each record,
->>   <quoted reason> is the English translation of Event Log Types from
->> the DMTF standard + vendor extended types we use.
->>   <optional data> is space separated values associated with <quoted reason>
->
-> Ick, no, remember, sysfs is "one value per file".  doing even a single
-> line like you describe here isn't ok, not to mention a huge buffer of
-> these lines.
->
-> And no, a "binary" sysfs file is not ok either.
->
-> Now your idea for such a log file is fine, I'm not saying that's not ok,
-> or acceptable, just don't put it in sysfs, sorry.  Try using the ring
-> buffer framework from the tracing code perhaps?
->
-> Or use debugfs?  Or make a 'firmwarefs'?  I can easily knock that
-> together if you need it.
->
-> thanks,
->
-> greg k-h
->
+
+      
