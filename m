@@ -1,177 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab1BKUsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 15:48:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:61136 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758087Ab1BKUsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 15:48:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,457,1291622400"; 
-   d="scan'208";a="706795936"
-Subject: [Patch v2] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: James Bottomley <James.Bottomley@suse.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        David Alan Gilbert <linux@treblig.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 12:49:04 -0800
-Message-ID: <1297457344.2645.323.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1758155Ab1BKUv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 15:51:57 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34608 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758096Ab1BKUvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 15:51:55 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6254"; a="73899893"
+Message-ID: <4D55A16A.7030300@codeaurora.org>
+Date: Fri, 11 Feb 2011 12:51:54 -0800
+From: Steve Muckle <smuckle@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110119 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Daniel Walker <dwalker@codeaurora.org>
+CC: Stepan Moskovchenko <stepanm@codeaurora.org>, davidb@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] msm: iommu: Generalize platform data for multiple
+ targets
+References: <1297456098-3241-1-git-send-email-stepanm@codeaurora.org>	 <1297456098-3241-2-git-send-email-stepanm@codeaurora.org> <1297456934.4852.11.camel@m0nster>
+In-Reply-To: <1297456934.4852.11.camel@m0nster>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks to the reviews and comments by Rafael, James, Mark and Andi.
-Here's version 2 of the patch incorporating your comments and also some
-update to my previous patch comments.
+On 02/11/11 12:42, Daniel Walker wrote:
+>>  static struct resource msm_iommu_jpegd_resources[] = {
+>>  	{
+>> -		.start = MSM_IOMMU_JPEGD_PHYS,
+>> -		.end   = MSM_IOMMU_JPEGD_PHYS + MSM_IOMMU_JPEGD_SIZE - 1,
+>> +		.start = 0x07300000,
+>> +		.end   = 0x07300000 + SZ_1M - 1,
+> 
+> Looks worse .. Just put the macros into a static header file for both.
 
-I noticed that before entering idle state, the menu idle governor will
-look up the current pm_qos target value according to the list of qos
-requests received.  This look up currently needs the acquisition of a
-lock to access the list of qos requests to find the qos target value,
-slowing down the entrance into idle state due to contention by multiple
-cpus to access this list.  The contention is severe when there are a lot
-of cpus waking and going into idle.  For example, for a simple workload
-that has 32 pair of processes ping ponging messages to each other, where
-64 cpu cores are active in test system, I see the following profile with
-37.82% of cpu cycles spent in contention of pm_qos_lock:
+Why bother defining macros for these if they only appear here? I don't
+think that adds any value or readability - these addresses are clearly
+the physical area for the msm_iommu_jpegd. It just makes it more
+annoying to have to look up the values in a separate file if you are
+wondering what they are.
 
--     37.82%          swapper  [kernel.kallsyms]          [k]
-_raw_spin_lock_irqsave
-   - _raw_spin_lock_irqsave
-      - 95.65% pm_qos_request             
-           menu_select                                             
-           cpuidle_idle_call                      
-         - cpu_idle                                                     
-              99.98% start_secondary
+thanks,
+Steve
 
-A better approach will be to cache the updated pm_qos target value so
-reading it does not require lock acquisition as in the patch below.  
-With this patch the contention for pm_qos_lock is removed and I saw a
-2.2X increase in throughput for my message passing workload. 
-
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
-index 77cbddb..a7d87f9 100644
---- a/include/linux/pm_qos_params.h
-+++ b/include/linux/pm_qos_params.h
-@@ -16,6 +16,10 @@
- #define PM_QOS_NUM_CLASSES 4
- #define PM_QOS_DEFAULT_VALUE -1
- 
-+#define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-+#define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-+#define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-+
- struct pm_qos_request_list {
- 	struct plist_node list;
- 	int pm_qos_class;
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index aeaa7f8..6a8fad8 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -53,11 +53,17 @@ enum pm_qos_type {
- 	PM_QOS_MIN		/* return the smallest value */
- };
- 
-+/*
-+ * Note: The lockless read path depends on the CPU accessing
-+ * target_value atomically.  Atomic access is only guaranteed on all CPU
-+ * types linux supports for 32 bit quantites
-+ */
- struct pm_qos_object {
- 	struct plist_head requests;
- 	struct blocking_notifier_head *notifiers;
- 	struct miscdevice pm_qos_power_miscdev;
- 	char *name;
-+	s32 target_value;	/* Do not change to 64 bit */
- 	s32 default_value;
- 	enum pm_qos_type type;
- };
-@@ -70,7 +76,8 @@ static struct pm_qos_object cpu_dma_pm_qos = {
- 	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
- 	.notifiers = &cpu_dma_lat_notifier,
- 	.name = "cpu_dma_latency",
--	.default_value = 2000 * USEC_PER_SEC,
-+	.target_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
-+	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
- 	.type = PM_QOS_MIN,
- };
- 
-@@ -79,7 +86,8 @@ static struct pm_qos_object network_lat_pm_qos = {
- 	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
- 	.notifiers = &network_lat_notifier,
- 	.name = "network_latency",
--	.default_value = 2000 * USEC_PER_SEC,
-+	.target_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
-+	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
- 	.type = PM_QOS_MIN
- };
- 
-@@ -89,7 +97,8 @@ static struct pm_qos_object network_throughput_pm_qos = {
- 	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
- 	.notifiers = &network_throughput_notifier,
- 	.name = "network_throughput",
--	.default_value = 0,
-+	.target_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
-+	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
- 	.type = PM_QOS_MAX,
- };
- 
-@@ -132,6 +141,16 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
- 	}
- }
- 
-+static inline s32 pm_qos_read_value(struct pm_qos_object *o)
-+{
-+	return o->target_value;
-+}
-+
-+static inline void pm_qos_set_value(struct pm_qos_object *o, s32 value)
-+{
-+	o->target_value = value;
-+}
-+
- static void update_target(struct pm_qos_object *o, struct plist_node *node,
- 			  int del, int value)
- {
-@@ -156,6 +175,7 @@ static void update_target(struct pm_qos_object *o, struct plist_node *node,
- 		plist_add(node, &o->requests);
- 	}
- 	curr_value = pm_qos_get_value(o);
-+	pm_qos_set_value(o, curr_value);
- 	spin_unlock_irqrestore(&pm_qos_lock, flags);
- 
- 	if (prev_value != curr_value)
-@@ -190,18 +210,11 @@ static int find_pm_qos_object_by_minor(int minor)
-  * pm_qos_request - returns current system wide qos expectation
-  * @pm_qos_class: identification of which qos value is requested
-  *
-- * This function returns the current target value in an atomic manner.
-+ * This function returns the current target value.
-  */
- int pm_qos_request(int pm_qos_class)
- {
--	unsigned long flags;
--	int value;
--
--	spin_lock_irqsave(&pm_qos_lock, flags);
--	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
--	spin_unlock_irqrestore(&pm_qos_lock, flags);
--
--	return value;
-+	return pm_qos_read_value(pm_qos_array[pm_qos_class]);
- }
- EXPORT_SYMBOL_GPL(pm_qos_request);
- 
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
