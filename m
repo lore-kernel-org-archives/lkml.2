@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab1BKN7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 08:59:22 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57101 "EHLO mx3.mail.elte.hu"
+	id S1756567Ab1BKOBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 09:01:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8720 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756214Ab1BKN7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 08:59:21 -0500
-Date: Fri, 11 Feb 2011 14:59:06 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [patch 00/75] genirq: Overhaul for 2.6.39
-Message-ID: <20110211135906.GA16358@elte.hu>
-References: <20110210222908.661199947@linutronix.de>
- <AANLkTi=waRQcvdxyKUgcLZ1r-hwUcAVZeVDcBa-apyK2@mail.gmail.com>
- <alpine.LFD.2.00.1102110058450.31804@localhost6.localdomain6>
- <AANLkTin3o9eFjpe6TMmKb5LSRUT+0Y2EpD4OU4LzN8Kd@mail.gmail.com>
- <alpine.LFD.2.00.1102110135320.31804@localhost6.localdomain6>
- <alpine.LFD.2.00.1102111359580.31804@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1102111359580.31804@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756214Ab1BKOBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 09:01:06 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: ebiederm@xmission.com, tglx@linutronix.de, mingo@redhat.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] x86_64: disable identity mappings statically
+Date: Fri, 11 Feb 2011 15:00:30 +0100
+Message-Id: <1297432830-3912-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hi,
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+while browsing the page table setup code, I noticed the x86_64 head
+code might not need the identity mappings at all.
+It seems it's ok to switch it off completely from the begining,
+unless I'm missing something.
 
-> B1;2401;0cOn Fri, 11 Feb 2011, Thomas Gleixner wrote:
-> > On Thu, 10 Feb 2011, Linus Torvalds wrote:
-> > So yes, it's net more source lines, but not resulting in any binary
-> > bloat.
-> 
-> Just checked. When the compat layer goes away it will kill about 500
-> lines. So it's less code with better encapsulation.
-> 
-> Once all genirq archs convert to the generic irq_show_interrupts(),
-> this will kill another 1000+ lines.
+wbr,
+jirka
 
-So while this is the first step:
 
->  29 files changed, 1353 insertions(+), 899 deletions(-)
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ arch/x86/kernel/head64.c  |   10 ----------
+ arch/x86/kernel/head_64.S |    9 ++++-----
+ 2 files changed, 4 insertions(+), 15 deletions(-)
 
-It turns into this end result (mockup):
-
->  129 files changed, 1353 insertions(+), 2400 deletions(-)
-
-Right? Or, more likely, considering all the surrounding code changes, something 
-like:
-
->  129 files changed, 4353 insertions(+), 5400 deletions(-)
-
-Did I get the file count right - roughtly how many files are affected throughout all 
-architectures? The changes are massively intrusive and widely spread out so we 
-cannot do them in one go, right?
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 2d2673c..620a9c3 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -27,13 +27,6 @@
+ #include <asm/trampoline.h>
+ #include <asm/bios_ebda.h>
+ 
+-static void __init zap_identity_mappings(void)
+-{
+-	pgd_t *pgd = pgd_offset_k(0UL);
+-	pgd_clear(pgd);
+-	__flush_tlb_all();
+-}
+-
+ /* Don't add a printk in there. printk relies on the PDA which is not initialized 
+    yet. */
+ static void __init clear_bss(void)
+@@ -74,9 +67,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	/* clear bss before set_intr_gate with early_idt_handler */
+ 	clear_bss();
+ 
+-	/* Make NULL pointers segfault */
+-	zap_identity_mappings();
+-
+ 	/* Cleanup the over mapped high alias */
+ 	cleanup_highmap();
+ 
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 239046b..c55e6fa 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -341,13 +341,12 @@ ENTRY(name)
+ 
+ 	.data
+ 	/*
+-	 * This default setting generates an ident mapping at address 0x100000
+-	 * and a mapping for the kernel that precisely maps virtual address
+-	 * 0xffffffff80000000 to physical address 0x000000. (always using
+-	 * 2Mbyte large pages provided by PAE mode)
++	 * This default setting generates a mapping for the kernel that
++	 * precisely maps virtual address 0xffffffff80000000 to physical
++	 * address 0x000000. (always using * 2Mbyte large pages provided
++	 * by PAE mode)
+ 	 */
+ NEXT_PAGE(init_level4_pgt)
+-	.quad	level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
+ 	.org	init_level4_pgt + L4_PAGE_OFFSET*8, 0
+ 	.quad	level3_ident_pgt - __START_KERNEL_map + _KERNPG_TABLE
+ 	.org	init_level4_pgt + L4_START_KERNEL*8, 0
+-- 
+1.7.1
