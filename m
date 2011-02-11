@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab1BKKDJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 05:03:09 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53872 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291Ab1BKKDH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 05:03:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=tRMcY2hrnVaXr3VVa+cH/HgaonvvpJeUX9Q+tp+Ssh9DeV/RPp5+0jDFqfolfnlfSq
-         v7/Y4SI/PFoFOzS06X3J1ipa/vELG0C0+QCLu1j0ZUUxk8DPEzBlPk09DoIL0/qxm/cc
-         ulVHZOQ2uuT3VaoZNfjDZ8alMJxo//VVvk6Oo=
+	id S1755950Ab1BKKDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 05:03:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755568Ab1BKKDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 05:03:16 -0500
+Message-ID: <4D550913.5060508@redhat.com>
+Date: Fri, 11 Feb 2011 11:01:55 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru>
-References: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru>
-From: Guillaume LECERF <glecerf@gmail.com>
-Date: Fri, 11 Feb 2011 11:02:46 +0100
-X-Google-Sender-Auth: Wu4Nf4duJF_cj8L7mf-AcWyzH8o
-Message-ID: <AANLkTik_KdzX-3CTyE1CxyOauHgd5p75VApuTX7DGZn1@mail.gmail.com>
-Subject: Re: [PATCH] mtd: jedec_probe: initialise make sector erase command variable
-To: Antony Pavlov <antony@niisi.msk.ru>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, Alexander Kjeldaas <astor@fast.no>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: NULL deref in drivers/md/dm-crypt.c:crypt_convert()
+References: <alpine.LNX.2.00.1102062320230.13593@swampdragon.chaosbits.net> <4D4F25A3.1090401@redhat.com> <alpine.LNX.2.00.1102102004140.26035@swampdragon.chaosbits.net> <4D54E753.9090906@redhat.com> <alpine.LNX.2.00.1102111020260.13370@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1102111020260.13370@swampdragon.chaosbits.net>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-2011/2/11 Antony Pavlov <antony@niisi.msk.ru>:
-> In the commit 08968041bef437ec363623cd3218c2b083537ada
->  (mtd: cfi_cmdset_0002: make sector erase command variable)
-> introdused a field sector_erase_cmd. In the same commit initialisation
-> of cfi->sector_erase_cmd made in cfi_chip_setup()
-> (file drivers/mtd/chips/cfi_probe.c), so the CFI chip has no problem:
+On 02/11/2011 10:26 AM, Jesper Juhl wrote:
+> On Fri, 11 Feb 2011, Milan Broz wrote:
+> But, is that really where it says the problem is? That's not how I read 
+> it.
 >
+> The problem is the second time through the while loop, not the first :
 > ...
->        cfi->cfi_mode = CFI_MODE_CFI;
->        cfi->sector_erase_cmd = CMD(0x30);
-> ...
+> 776             while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
+> 777                   ctx->idx_out < ctx->bio_out->bi_vcnt) {
+> 778
+> 779                     crypt_alloc_req(cc, ctx);
+> 780
+> 781                     atomic_inc(&ctx->pending);
+> 782
+> 783                     r = crypt_convert_block(cc, ctx, this_cc->req);
 >
-> But for the JEDEC chips this initialisation is not carried out,
-> so the JEDEC chips have sector_erase_cmd == 0.
+> first time through the loop this is fine, but if we then subsequently hit 
+> the -EINPROGRESS case in the switch below we'll explictly assign NULL to 
+> this_cc->req and the the 'continue' ensures that we do one more trip 
+> around the loop and on that second pass we pass a NULL this_cc->req to 
+> crypt_convert_block()
 >
-> It's not possible symply add the line
->        p_cfi->sector_erase_cmd = CMD(0x30);
-> to the cfi_jedec_setup() function be cause CMD() macros needs
-> map and cfi variables. So this patch makes necessary changes.
->
-> Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
+Sigh. Did you read my first email? It is false positive.
 
-Acked-by: Guillaume LECERF <glecerf@gmail.com>
+this_cc->req is allocated in crypt_alloc_req(cc, ctx);
 
--- 
-Guillaume LECERF
-GeeXboX developer - www.geexbox.org
+this_cc is simple per cpu struct, common in both functions.
+
+The code here tries to simply support both sync and async cryptAPI operation.
+
+In sync, we can reuse this_cc->req immediately (this is common case).
+
+In async mode (returns EBUSY, EINPROGRESS) we must not use it again (because it is
+still processing) so we explicitly set it here to NULL and in the NEXT iteration
+crypt_alloc_req(cc, ctx) allocates new this_cc->req from pool.
+
+crypt_alloc_req can probably take this_cc as argument directly and not calculate
+it again, but compiler will inline and optimise the code anyway.
+
+You can easily test async path, just apply in crypt_ctr and use some crypt mapping
+-                      "%s(%s)", chainmode, cipher);                                                                                       
++                      "cryptd(%s(%s-generic))", chainmode, cipher);                                                                       
+
+To make coverity happy, see patch below.
+-
+Tidy code to reuse per cpu pointer
+
+Signed-off-by: Milan Broz <mbroz@redhat.com>
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index ad2a6df..a2312e3 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -748,9 +748,9 @@ static void kcryptd_async_done(struct crypto_async_request *async_req,
+ 			       int error);
+ 
+ static void crypt_alloc_req(struct crypt_config *cc,
+-			    struct convert_context *ctx)
++			    struct convert_context *ctx,
++			    struct crypt_cpu *this_cc)
+ {
+-	struct crypt_cpu *this_cc = this_crypt_config(cc);
+ 	unsigned key_index = ctx->sector & (cc->tfms_count - 1);
+ 
+ 	if (!this_cc->req)
+@@ -776,7 +776,7 @@ static int crypt_convert(struct crypt_config *cc,
+ 	while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
+ 	      ctx->idx_out < ctx->bio_out->bi_vcnt) {
+ 
+-		crypt_alloc_req(cc, ctx);
++		crypt_alloc_req(cc, ctx, this_cc);
+ 
+ 		atomic_inc(&ctx->pending);
+ 
+
+Milan
+
+
