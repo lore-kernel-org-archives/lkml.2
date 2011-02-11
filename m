@@ -1,102 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab1BKUpz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 15:45:55 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7232 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab1BKUpy (ORCPT
+	id S1758136Ab1BKUrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 15:47:00 -0500
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:19992 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756813Ab1BKUq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 15:45:54 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6254"; a="74107318"
-Subject: Re: [PATCH 2/3] msm: iommu: Generalize platform data for multiple
- targets
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: davidb@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1297456098-3241-2-git-send-email-stepanm@codeaurora.org>
-References: <1297456098-3241-1-git-send-email-stepanm@codeaurora.org>
-	 <1297456098-3241-2-git-send-email-stepanm@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 12:42:14 -0800
-Message-ID: <1297456934.4852.11.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Feb 2011 15:46:59 -0500
+From: Daniel Drake <dsd@laptop.org>
+To: cbou@mail.ru
+To: dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org
+Cc: tglx@linutronix.de
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: dilinger@queued.net
+Subject: [PATCH] olpc_battery: convert to platform device
+Message-Id: <20110211204653.9A32D9D401D@zog.reactivated.net>
+Date: Fri, 11 Feb 2011 20:46:53 +0000 (GMT)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=am4SJff_dVAA:10 a=Op-mwl0xAAAA:8 a=n_1kXKBb8GsEM_GdpjgA:9 a=be8ZKTYAML4vlnC78wMA:7 a=D5LCNYvBywwQQ8SYeLjn2SBAt3oA:4 a=d4CUUju0HPYA:10 a=-BSgVoH9Ny4Tj_rs:21 a=84AilM4vJw53C3Zx:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 12:28 -0800, Stepan Moskovchenko wrote:
-> Make the IOMMU platform data target-independent in
-> preparation for adding MSM8960 IOMMU support. The IOMMU
-> configuration on MSM8x60 and MSM8960 is identical and the
-> same platform data can be used for both.
-> 
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> ---
->  arch/arm/mach-msm/Makefile                         |    4 +-
->  .../{devices-msm8x60-iommu.c => devices-iommu.c}   |   54 +++++++++----------
->  arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |   36 -------------
->  3 files changed, 28 insertions(+), 66 deletions(-)
->  rename arch/arm/mach-msm/{devices-msm8x60-iommu.c => devices-iommu.c} (93%)
-> 
-> diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-> index 81f4811..2099c97 100644
-> --- a/arch/arm/mach-msm/Makefile
-> +++ b/arch/arm/mach-msm/Makefile
-> @@ -4,12 +4,12 @@ obj-$(CONFIG_DEBUG_FS) += clock-debug.o
->  endif
-> 
->  obj-$(CONFIG_MSM_VIC) += irq-vic.o
-> -obj-$(CONFIG_MSM_IOMMU) += iommu.o iommu_dev.o
-> +obj-$(CONFIG_MSM_IOMMU) += iommu.o iommu_dev.o devices-iommu.o
-> 
->  obj-$(CONFIG_ARCH_MSM7X00A) += dma.o irq.o acpuclock-arm11.o
->  obj-$(CONFIG_ARCH_MSM7X30) += dma.o
->  obj-$(CONFIG_ARCH_QSD8X50) += dma.o sirc.o
-> -obj-$(CONFIG_ARCH_MSM8X60) += clock-dummy.o devices-msm8x60-iommu.o
-> +obj-$(CONFIG_ARCH_MSM8X60) += clock-dummy.o
->  obj-$(CONFIG_ARCH_MSM8960) += clock-dummy.o
-> 
->  obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
-> diff --git a/arch/arm/mach-msm/devices-msm8x60-iommu.c b/arch/arm/mach-msm/devices-iommu.c
-> similarity index 93%
-> rename from arch/arm/mach-msm/devices-msm8x60-iommu.c
-> rename to arch/arm/mach-msm/devices-iommu.c
-> index f9e7bd3..c0206b7 100644
-> --- a/arch/arm/mach-msm/devices-msm8x60-iommu.c
-> +++ b/arch/arm/mach-msm/devices-iommu.c
-> @@ -1,4 +1,4 @@
-> -/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> +/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 and
-> @@ -18,15 +18,13 @@
->  #include <linux/kernel.h>
->  #include <linux/platform_device.h>
->  #include <linux/bootmem.h>
-> -
-> -#include <mach/msm_iomap-8x60.h>
-> -#include <mach/irqs-8x60.h>
-> +#include <mach/irqs.h>
->  #include <mach/iommu.h>
-> 
->  static struct resource msm_iommu_jpegd_resources[] = {
->  	{
-> -		.start = MSM_IOMMU_JPEGD_PHYS,
-> -		.end   = MSM_IOMMU_JPEGD_PHYS + MSM_IOMMU_JPEGD_SIZE - 1,
-> +		.start = 0x07300000,
-> +		.end   = 0x07300000 + SZ_1M - 1,
+This is needed so that suspend/resume (wakeup) support can be added.
 
-Looks worse .. Just put the macros into a static header file for both.
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ arch/x86/platform/olpc/olpc.c |   15 +++++++++++
+ drivers/power/olpc_battery.c  |   52 ++++++++++++++++++++++------------------
+ 2 files changed, 44 insertions(+), 23 deletions(-)
 
-Daniel
+Wakeup support (requiring .suspend handler, enabled by this patch) will
+be submitted in a future patch, after the relevant mfd and x86 groundwork has
+been merged.
 
+diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
+index edaf3fe..a5fb933 100644
+--- a/arch/x86/platform/olpc/olpc.c
++++ b/arch/x86/platform/olpc/olpc.c
+@@ -239,6 +239,17 @@ static int __init add_xo1_platform_devices(void)
+ 	return 0;
+ }
+ 
++static int __init add_common_platform_devices(void)
++{
++	struct platform_device *pdev;
++
++	pdev = platform_device_register_simple("olpc-battery", -1, NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	return 0;
++}
++
+ static int __init olpc_init(void)
+ {
+ 	int r = 0;
+@@ -269,6 +280,10 @@ static int __init olpc_init(void)
+ 			olpc_platform_info.boardrev >> 4,
+ 			olpc_platform_info.ecver);
+ 
++	r = add_common_platform_devices();
++	if (r)
++		return r;
++
+ 	if (olpc_platform_info.boardrev < olpc_board_pre(0xd0)) { /* XO-1 */
+ 		r = add_xo1_platform_devices();
+ 		if (r)
+diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
+index 0b0ff3a..e378726 100644
+--- a/drivers/power/olpc_battery.c
++++ b/drivers/power/olpc_battery.c
+@@ -519,8 +519,6 @@ static struct device_attribute olpc_bat_error = {
+  *		Initialisation
+  *********************************************************************/
+ 
+-static struct platform_device *bat_pdev;
+-
+ static struct power_supply olpc_bat = {
+ 	.get_property = olpc_bat_get_property,
+ 	.use_for_apm = 1,
+@@ -534,14 +532,11 @@ void olpc_battery_trigger_uevent(unsigned long cause)
+ 		kobject_uevent(&olpc_bat.dev->kobj, KOBJ_CHANGE);
+ }
+ 
+-static int __init olpc_bat_init(void)
++static int __devinit olpc_battery_probe(struct platform_device *pdev)
+ {
+-	int ret = 0;
++	int ret;
+ 	uint8_t status;
+ 
+-	if (!olpc_platform_info.ecver)
+-		return -ENXIO;
+-
+ 	/*
+ 	 * We've seen a number of EC protocol changes; this driver requires
+ 	 * the latest EC protocol, supported by 0x44 and above.
+@@ -552,21 +547,16 @@ static int __init olpc_bat_init(void)
+ 		return -ENXIO;
+ 	}
+ 
++	/* Ignore the status. It doesn't actually matter */
+ 	ret = olpc_ec_cmd(EC_BAT_STATUS, NULL, 0, &status, 1);
+ 	if (ret)
+ 		return ret;
+ 
+-	/* Ignore the status. It doesn't actually matter */
+-
+-	bat_pdev = platform_device_register_simple("olpc-battery", 0, NULL, 0);
+-	if (IS_ERR(bat_pdev))
+-		return PTR_ERR(bat_pdev);
+-
+-	ret = power_supply_register(&bat_pdev->dev, &olpc_ac);
++	ret = power_supply_register(&pdev->dev, &olpc_ac);
+ 	if (ret)
+-		goto ac_failed;
++		return ret;
+ 
+-	olpc_bat.name = bat_pdev->name;
++	olpc_bat.name = pdev->name;
+ 	if (olpc_board_at_least(olpc_board_pre(0xd0))) { /* XO-1.5 */
+ 		olpc_bat.properties = olpc_xo15_bat_props;
+ 		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo15_bat_props);
+@@ -575,7 +565,7 @@ static int __init olpc_bat_init(void)
+ 		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo1_bat_props);
+ 	}
+ 
+-	ret = power_supply_register(&bat_pdev->dev, &olpc_bat);
++	ret = power_supply_register(&pdev->dev, &olpc_bat);
+ 	if (ret)
+ 		goto battery_failed;
+ 
+@@ -587,7 +577,7 @@ static int __init olpc_bat_init(void)
+ 	if (ret)
+ 		goto error_failed;
+ 
+-	goto success;
++	return 0;
+ 
+ error_failed:
+ 	device_remove_bin_file(olpc_bat.dev, &olpc_bat_eeprom);
+@@ -595,19 +585,35 @@ eeprom_failed:
+ 	power_supply_unregister(&olpc_bat);
+ battery_failed:
+ 	power_supply_unregister(&olpc_ac);
+-ac_failed:
+-	platform_device_unregister(bat_pdev);
+-success:
+ 	return ret;
+ }
+ 
+-static void __exit olpc_bat_exit(void)
++static int __exit olpc_battery_remove(struct platform_device *pdev)
+ {
+ 	device_remove_file(olpc_bat.dev, &olpc_bat_error);
+ 	device_remove_bin_file(olpc_bat.dev, &olpc_bat_eeprom);
+ 	power_supply_unregister(&olpc_bat);
+ 	power_supply_unregister(&olpc_ac);
+-	platform_device_unregister(bat_pdev);
++	return 0;
++}
++
++static struct platform_driver olpc_battery_drv = {
++	.driver = {
++		.name = "olpc-battery",
++		.owner = THIS_MODULE,
++	},
++	.probe = olpc_battery_probe,
++	.remove = __devexit_p(olpc_battery_remove),
++};
++
++static int __init olpc_bat_init(void)
++{
++	return platform_driver_register(&olpc_battery_drv);
++}
++
++static void __exit olpc_bat_exit(void)
++{
++	platform_driver_unregister(&olpc_battery_drv);
+ }
+ 
+ module_init(olpc_bat_init);
 -- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
+1.7.4
 
