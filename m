@@ -1,161 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab1BKAtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 19:49:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:50971 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756906Ab1BKAts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 19:49:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,452,1291622400"; 
-   d="scan'208";a="601533470"
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: mark gross <markgross@thegnar.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-In-Reply-To: <201102110017.16066.rjw@sisk.pl>
-References: <1297300864.2645.128.camel@schen9-DESK>
-	 <201102110017.16066.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Feb 2011 16:50:16 -0800
-Message-ID: <1297385416.2645.262.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1756955Ab1BKAyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 19:54:24 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53648 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756757Ab1BKAyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 19:54:23 -0500
+Message-ID: <4D548904.9000003@cn.fujitsu.com>
+Date: Fri, 11 Feb 2011 08:55:32 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com, acme@redhat.com,
+        Paul Menage <menage@google.com>
+Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
+References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>	<1297095037.13327.47.camel@laptop>	<AANLkTi=abaUN6m9ZWQuri_Y-487YZzjnTujQMP61QdmW@mail.gmail.com>	<1297244844.13327.155.camel@laptop> <AANLkTingFKyux-u6Aw8jg=cKca7QV7bQEHjDzC-4Dg04@mail.gmail.com>
+In-Reply-To: <AANLkTingFKyux-u6Aw8jg=cKca7QV7bQEHjDzC-4Dg04@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-11 08:53:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-11 08:53:29,
+	Serialize complete at 2011-02-11 08:53:29
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 00:17 +0100, Rafael J. Wysocki wrote:
-
-> > +static inline int pm_qos_set_value(struct pm_qos_object *o, s32 value)
-> > +{
-> > +	o->value = value;
-> > +}
+>>> while there is already cgroup monitoring active. In that case and if we do not
+>>> want to wait until there is at least one ctxsw on all CPUs, then we have to
+>>> check if the other threads are not already running on the other CPUs.If so,
+>>> we need to do a cgroup switch on those CPUs. Otherwise, we have nothing to
+>>> do. Am I getting this right?
+>>
+>> Right, so if any of those tasks is currently running, that cpu will be
+>> monitoring their old cgroup, hence we send an IPI to flip cgroups.
+>>
+> I have built a test case where this would trigger. I launched a multi-threaded
+> app, and then I move the pid into a cgroup via: echo PID >/cgroup/tests/tasks.
+> I don't see any perf_cgroup move beyond the PID passed.
 > 
-> This requires a fixup, the above function is supposed to return an int.
+> I looked at kernel/cgroup.c and I could not find a invocation of
+> ss->attach() that
+> would pass threadgroup = true. So I am confused here.
 > 
-> Also, please add a comment about the requisite 32-bitness as suggested by James.
+> I wonder how the cgroupfs 'echo PID >tasks' interface would make the distinction
+> between PID and TID. It seems possible to move one thread of a multi-threaded
+> process into a cgroup but not the others.
 > 
-> Thanks,
-> Rafael
 
-I've fixed the above function, and also included a comment warning
-people not to change target value to 64 bit.  
+You can do this:
 
-Thanks.
+	# echo PID > cgroup.procs
 
-Tim
+When the patchset that implements the above feature is accepted. See:
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
-index 77cbddb..a7d87f9 100644
---- a/include/linux/pm_qos_params.h
-+++ b/include/linux/pm_qos_params.h
-@@ -16,6 +16,10 @@
- #define PM_QOS_NUM_CLASSES 4
- #define PM_QOS_DEFAULT_VALUE -1
- 
-+#define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-+#define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-+#define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-+
- struct pm_qos_request_list {
- 	struct plist_node list;
- 	int pm_qos_class;
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index aeaa7f8..7b6333b 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -58,6 +58,7 @@ struct pm_qos_object {
- 	struct blocking_notifier_head *notifiers;
- 	struct miscdevice pm_qos_power_miscdev;
- 	char *name;
-+	s32 target_value;	/* Do not change this to 64 bit */
- 	s32 default_value;
- 	enum pm_qos_type type;
- };
-@@ -70,7 +71,8 @@ static struct pm_qos_object cpu_dma_pm_qos = {
- 	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
- 	.notifiers = &cpu_dma_lat_notifier,
- 	.name = "cpu_dma_latency",
--	.default_value = 2000 * USEC_PER_SEC,
-+	.target_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
-+	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
- 	.type = PM_QOS_MIN,
- };
- 
-@@ -79,7 +81,8 @@ static struct pm_qos_object network_lat_pm_qos = {
- 	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
- 	.notifiers = &network_lat_notifier,
- 	.name = "network_latency",
--	.default_value = 2000 * USEC_PER_SEC,
-+	.target_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
-+	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
- 	.type = PM_QOS_MIN
- };
- 
-@@ -89,7 +92,8 @@ static struct pm_qos_object network_throughput_pm_qos = {
- 	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
- 	.notifiers = &network_throughput_notifier,
- 	.name = "network_throughput",
--	.default_value = 0,
-+	.target_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
-+	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
- 	.type = PM_QOS_MAX,
- };
- 
-@@ -132,6 +136,16 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
- 	}
- }
- 
-+static inline s32 pm_qos_read_value(struct pm_qos_object *o)
-+{
-+	return o->target_value;
-+}
-+
-+static inline void pm_qos_set_value(struct pm_qos_object *o, s32 value)
-+{
-+	o->value = target_value;
-+}
-+
- static void update_target(struct pm_qos_object *o, struct plist_node *node,
- 			  int del, int value)
- {
-@@ -156,6 +170,7 @@ static void update_target(struct pm_qos_object *o, struct plist_node *node,
- 		plist_add(node, &o->requests);
- 	}
- 	curr_value = pm_qos_get_value(o);
-+	pm_qos_set_value(o, curr_value);
- 	spin_unlock_irqrestore(&pm_qos_lock, flags);
- 
- 	if (prev_value != curr_value)
-@@ -190,18 +205,11 @@ static int find_pm_qos_object_by_minor(int minor)
-  * pm_qos_request - returns current system wide qos expectation
-  * @pm_qos_class: identification of which qos value is requested
-  *
-- * This function returns the current target value in an atomic manner.
-+ * This function returns the current target value.
-  */
- int pm_qos_request(int pm_qos_class)
- {
--	unsigned long flags;
--	int value;
--
--	spin_lock_irqsave(&pm_qos_lock, flags);
--	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
--	spin_unlock_irqrestore(&pm_qos_lock, flags);
--
--	return value;
-+	return pm_qos_read_value(pm_qos_array[pm_qos_class]);
- }
- EXPORT_SYMBOL_GPL(pm_qos_request);
- 
+	https://lkml.org/lkml/2011/2/7/418
 
+The below commit that confused you is actually a part of the above patchset,
+but it sneaked into the kernel accidentally:
 
+commit be367d09927023d081f9199665c8500f69f14d22
+Author: Ben Blum <bblum@google.com>
+Date:   Wed Sep 23 15:56:31 2009 -0700
+
+    cgroups: let ss->can_attach and ss->attach do whole threadgroups at a time
