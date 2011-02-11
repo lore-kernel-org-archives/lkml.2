@@ -1,33 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab1BKWQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 17:16:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758168Ab1BKWQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 17:16:51 -0500
-Date: Fri, 11 Feb 2011 17:15:50 -0500
-From: Jason Baron <jbaron@redhat.com>
+	id S1758289Ab1BKWUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 17:20:31 -0500
+Received: from blu0-omc1-s12.blu0.hotmail.com ([65.55.116.23]:9032 "EHLO
+	blu0-omc1-s12.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756829Ab1BKWUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 17:20:30 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP4078FDA13D3CAAEA18602E96EF0@phx.gbl>
+Date: Fri, 11 Feb 2011 17:20:25 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+CC: Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-Message-ID: <20110211221550.GA9148@redhat.com>
 References: <cover.1294239591.git.jbaron@redhat.com> <1297452328.5226.89.camel@laptop> <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl> <1297460297.5226.99.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
 In-Reply-To: <1297460297.5226.99.camel@laptop>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 17:10:50 up 310 days,  8:00,  5 users,  load average: 0.06, 0.04,
+	0.01
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 11 Feb 2011 22:20:29.0688 (UTC) FILETIME=[E3F8EF80:01CBCA39]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:38:17PM +0100, Peter Zijlstra wrote:
+* Peter Zijlstra (peterz@infradead.org) wrote:
 > On Fri, 2011-02-11 at 16:13 -0500, Mathieu Desnoyers wrote:
 > > 
 > > Thoughts ? 
@@ -57,8 +67,6 @@ On Fri, Feb 11, 2011 at 10:38:17PM +0100, Peter Zijlstra wrote:
 > 
 > #endif
 > 
-> 
-> 
 > So why can't we make that jump_label_entry::refcount and
 > jump_label_key::state an atomic_t and be done with it?
 > 
@@ -66,20 +74,22 @@ On Fri, Feb 11, 2011 at 10:38:17PM +0100, Peter Zijlstra wrote:
 > 1), and the disabled atomic_inc(&key->state).
 > 
 
-a bit of history...
+OK, by "enabled" you mean #if defined(CC_HAVE_ASM_GOTO) &&
+defined(CONFIG_JUMP_LABEL), and "disabled", the #else.
 
-For the disabled jump label case, we didn't want to incur an atomic_read() to
-check if the branch was enabled.
+I guess the only downside is the extra volatile for the atomic_read for
+the fallback case, which is not really much of problem realistically
+speaking: anyway, the volatile is a good thing to have in the fallback
+case to force the compiler to re-read the variable. Let's go with your
+idea.
 
-So, I separated the API, to have one for the non-atomic case, and one
-for the atomic case. Nobody liked that.
+Thanks,
 
-So now, I'm proposing to leave the core API based around a non-atomic
-variable, and have any callers that want to use this atomic interface,
-to call into the non-atomic interface. If another user besides perf
-wants to use the same type of atomic interface, we can re-visit the
-decsion? 
+Mathieu
 
-thanks,
 
--Jason
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
