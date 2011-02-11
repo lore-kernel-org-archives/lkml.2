@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab1BKHCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 02:02:47 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46130 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab1BKHCq convert rfc822-to-8bit (ORCPT
+	id S1753416Ab1BKHDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 02:03:05 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:25438 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab1BKHDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 02:02:46 -0500
+	Fri, 11 Feb 2011 02:03:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=DPtAd49lvR2mtxqa411wYx3LfMDTycFOgoPaR1Az5GXRRUvrudA+DqapEqrZGehYeE
-         Yi9IUFe9NDreYQehArBQZQlWFL1Y4kC7MgV0GTyj405HlJBQVGN8aiKmeqCzbX3dMw4N
-         bZcmxi1/Dz3RB8cL2gDgFkcyxVPKSu9pDJ+bs=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=c4I3wgFwEzkBJPIyqOnktfLtvulpPior6RAPz9791MokF3H8FL50vdSW44lwGf/mCj
+         hKZ5ZQfpeeK7abl74Fwg==
+Date: Thu, 10 Feb 2011 23:02:50 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [mmotm] BUG: Bad page state in process khugepaged ?
+In-Reply-To: <20110209200728.GQ3347@random.random>
+Message-ID: <alpine.LSU.2.00.1102102243160.2331@sister.anvils>
+References: <20110209151036.f24a36a6.kamezawa.hiroyu@jp.fujitsu.com> <20110209155001.0e369475.nishimura@mxp.nes.nec.co.jp> <20110209155246.69a7f3a1.kamezawa.hiroyu@jp.fujitsu.com> <20110209200728.GQ3347@random.random>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1102080856020.12521@router.home>
-References: <20110207180606.GB2966@flint.arm.linux.org.uk>
-	<AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com>
-	<20110208125546.GA4286@flint.arm.linux.org.uk>
-	<alpine.DEB.2.00.1102080856020.12521@router.home>
-Date: Fri, 11 Feb 2011 09:02:45 +0200
-X-Google-Sender-Auth: uC6n3KcGGLfTiFibsBnAGiaJDgY
-Message-ID: <AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com>
-Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Russell King <rmk@arm.linux.org.uk>, Shiyong Li <shi-yong.li@motorola.com>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 5:02 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Tue, 8 Feb 2011, Russell King wrote:
->
->> > I thought the fix was for ARM, actually, but unfortunately the
->> > changelog is somewhat terse (shame on me). Hmm?
->>
->> As you say, the changelog is soo terse that we now have no idea why this
->> commit was created.
->>
->> So, what's the fix here?  It looks to me like a revert is in order.
->>
->> I suggest that if it does get reverted, a copy of my original bug report
->> is included in the revert commit so that all the details are available if
->> it needs revisiting.
->
-> Uhh.. That first hunk in commit 5c5e3b33b7cb959a401f823707bee006caadd76e
-> looks wrong to me. ralign is usually a power of two and greater than
-> alignof(unsigned long long). The & operation will result in 0 and never
-> exempt any caches.
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index bac0f4f..525c664 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2220,8 +2220,8 @@ kmem_cache_create (const char *name, size_t size,
-> size_t align,
->        if (ralign < align) {
->                ralign = align;
->        }
-> -       /* disable debug if necessary */
-> -       if (ralign > __alignof__(unsigned long long))
-> +       /* disable debug if not aligning with REDZONE_ALIGN */
-> +       if (ralign & (__alignof__(unsigned long long) - 1))
->                flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
->        /*
->         * 4) Store it.
->
->
-> Did you mean
->
->        if (ralign > REDZONE_ALIGN) ...
->
-> ?
+On Wed, 9 Feb 2011, Andrea Arcangeli wrote:
+> On Wed, Feb 09, 2011 at 03:52:46PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 9 Feb 2011 15:50:01 +0900
+> > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> > 
+> > > > 
+> > > > In hex, pc->flags was 7A00000000004 and this means PCG_USED bit is set.
+> > > > This implies page_remove_rmap() may not be called but ->mapping is NULL. Hmm?
+> > > > (7A is encoding of section number.)
+> > > > 
+> > > Sigh.. it seems another freed-but-not-uncharged problem..
+> > > 
+> > 
+> > Ah, ok, this is maybe caused by this. I'm sorry that I missed this.
+> > ==
+> > static inline int free_pages_check(struct page *page)
+> > {
+> >         if (unlikely(page_mapcount(page) |
+> >                 (page->mapping != NULL)  |
+> >                 (atomic_read(&page->_count) != 0) |
+> >                 (page->flags & PAGE_FLAGS_CHECK_AT_FREE) |
+> >                 (mem_cgroup_bad_page_check(page)))) {    <==========(*)
+> >                 bad_page(page);
+> >                 return 1;
+> > ==
+> > 
+> > Then, ok, this is a memcgroup and hugepage issue.
+> > 
+> > I'll look into.
+> 
+> Yes, the rest of the info on the page looked ok and shouldn't have
+> triggered a bad_page call. Thanks so much for looking into it.
 
-Ping. Any arm-capable tester out there that can verify this fix? OTOH,
-since Shiyong Li hasn't showed up, I'm inclined to just revert the
-commit...
+There is a separate little issue here, Andrea.
+
+Although we went to some trouble for bad_page() to take the page out
+of circulation yet let the system continue, your VM_BUG_ON(!PageBuddy)
+inside __ClearPageBuddy(page), from two callsites in bad_page(), is
+turning it into a fatal error when CONFIG_DEBUG_VM.
+
+You could that only MM developers switch CONFIG_DEBUG_VM=y, and they
+would like bad_page() to be fatal; maybe, but if so we should do that
+as an intentional patch, rather than as an unexpected side-effect ;)
+
+I noticed this a few days ago, but hadn't quite decided whether just to
+remove the VM_BUG_ON, or move it to __ClearPageBuddy's third callsite,
+or... doesn't matter much.
+
+I do also wonder if PageBuddy would better be _mapcount -something else:
+if we've got a miscounted page (itself unlikely of course), there's a
+chance that its _mapcount will be further decremented after it has been
+freed: whereupon it will go from -1 to -2, PageBuddy at present.  The
+special avoidance of PageBuddy being that it can pull a whole block of
+pages into misuse if its mistaken.
+
+Hugh
