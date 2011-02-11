@@ -1,63 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab1BKUYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 15:24:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6717 "EHLO mx1.redhat.com"
+	id S1758092Ab1BKUZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 15:25:58 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8803 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758085Ab1BKUYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 15:24:49 -0500
-Date: Fri, 11 Feb 2011 21:24:31 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [mmotm] BUG: Bad page state in process khugepaged ?
-Message-ID: <20110211202431.GJ3347@random.random>
-References: <20110209151036.f24a36a6.kamezawa.hiroyu@jp.fujitsu.com>
- <20110209155001.0e369475.nishimura@mxp.nes.nec.co.jp>
- <20110209155246.69a7f3a1.kamezawa.hiroyu@jp.fujitsu.com>
- <20110209200728.GQ3347@random.random>
- <alpine.LSU.2.00.1102102243160.2331@sister.anvils>
- <20110211104906.GE3347@random.random>
- <alpine.LSU.2.00.1102111132560.3814@sister.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1102111132560.3814@sister.anvils>
+	id S1757749Ab1BKUZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 15:25:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,457,1291622400"; 
+   d="scan'208";a="706789678"
+From: jacob.jun.pan@linux.intel.com
+To: LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        akpm@linux-foundation.org, rdunlap@xenotime.net,
+        Cedric Le Goater <clg@fr.ibm.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 1/1, v8] cgroup/freezer: add per freezer duty ratio control
+Date: Fri, 11 Feb 2011 12:22:41 -0800
+Message-Id: <1297455761-15875-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 11:58:58AM -0800, Hugh Dickins wrote:
-> Oh, I hadn't realized Fedora use it.  I wonder if that's wise, I thought
-> Nick introduced it partly for the more expensive checks, and there might
-> be one or two of those around - those bad_range()s in page_alloc.c?
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-I doubt the more expensive checks are very measurable.. benchmarks
-usually run on enterprise distro. I'm sure when they enabled, they
-were aware of having to run more expensive runtime checks.
+Freezer subsystem is used to manage batch jobs which can start
+stop at the same time. However, sometime it is desirable to let
+the kernel manage the freezer state automatically with a given
+duty ratio.
+For example, if we want to reduce the time that backgroup apps
+are allowed to run we can put them into a freezer subsystem and
+set the kernel to turn them THAWED/FROZEN at given duty ratio.
 
-> But the patch actually says -1024*1024: either would do.
+This patch introduces two file nodes under cgroup
+freezer.duty_ratio_pct and freezer.period_sec
 
-I actually increased it to -1024*1024 after writing the email ;) sorry
-the for the confusion.
+Usage example: set period to be 5 seconds and frozen duty ratio 90%
+[root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
+[root@localhost aoa]# echo 5000 > freezer.period_ms
 
-> Yes, that's fine, 0xfff00000 looks unlikely enough (and my
-> imagination for "deadbeef"-like magic is too drowsy today).
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ Documentation/cgroups/freezer-subsystem.txt |   23 ++++
+ kernel/cgroup_freezer.c                     |  146 ++++++++++++++++++++++++++-
+ 2 files changed, 167 insertions(+), 2 deletions(-)
 
-I used a negative power of two even if I doubt the compiler can make
-much use of it.
+diff --git a/Documentation/cgroups/freezer-subsystem.txt b/Documentation/cgroups/freezer-subsystem.txt
+index 41f37fe..2022b32 100644
+--- a/Documentation/cgroups/freezer-subsystem.txt
++++ b/Documentation/cgroups/freezer-subsystem.txt
+@@ -100,3 +100,26 @@ things happens:
+ 		and returns EINVAL)
+ 	3) The tasks that blocked the cgroup from entering the "FROZEN"
+ 		state disappear from the cgroup's set of tasks.
++
++In embedded systems, it is desirable to manage group of applications
++for power saving. E.g. tasks that are not in the foreground may be
++frozen and unfrozen periodically to save power without affecting user
++experience. In this case, user/management software can attach tasks
++into freezer cgroup then specify duty ratio and period that the
++managed tasks are allowed to run.
++
++Usage example:
++Assuming freezer cgroup is already mounted, application being managed
++are included the "tasks" file node of the given freezer cgroup.
++To make the tasks frozen at 90% of the time every 5 seconds, do:
++
++[root@localhost ]# echo 90 > freezer.duty_ratio_pct
++[root@localhost ]# echo 5000 > freezer.period_ms
++
++After that, the application in this freezer cgroup will only be
++allowed to run at the following pattern.
++     __                    __                    __
++    |  |<-- 90% frozen -->|  |                  |  |
++____|  |__________________|  |__________________|  |_____
++
++    |<---- 5 seconds ---->|
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index e7bebb7..0024b89 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -28,12 +28,33 @@ enum freezer_state {
+ 	CGROUP_FROZEN,
+ };
+ 
++enum duty_ratio_params {
++	FREEZER_DUTY_RATIO = 0,
++	FREEZER_PERIOD,
++};
++
++struct freezer_toggle {
++	unsigned int enabled:1;
++	unsigned int freeze_thaw:1; /* 1: freeze 0: thaw */
++} __packed;
++
++struct freezer_duty {
++	u32 ratio; /* percentage of time frozen */
++	u32 period_pct_ms; /* one percent of the period in miliseconds */
++};
++
+ struct freezer {
+ 	struct cgroup_subsys_state css;
+ 	enum freezer_state state;
++	struct freezer_duty duty;
++	struct delayed_work freezer_work; /* work to duty-cycle a cgroup */
++	struct freezer_toggle toggle;
+ 	spinlock_t lock; /* protects _writes_ to state */
+ };
+ 
++static int freezer_change_state(struct cgroup *cgroup,
++				enum freezer_state goal_state);
++
+ static inline struct freezer *cgroup_freezer(
+ 		struct cgroup *cgroup)
+ {
+@@ -63,6 +84,38 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
+ 	return result;
+ }
+ 
++static void freezer_work_fn(struct work_struct *work)
++{
++	struct freezer *freezer;
++	unsigned long delay_jiffies = 0;
++	enum freezer_state goal_state;
++
++	freezer = container_of(work, struct freezer, freezer_work.work);
++	/* toggle between THAWED and FROZEN state.
++	 * thaw if freezer->toggle.freeze_thaw = 0; freeze otherwise
++	 * skip the first round if already in the target states.
++	 */
++	if ((freezer->toggle.freeze_thaw && freezer->state == CGROUP_FROZEN) ||
++		(!freezer->toggle.freeze_thaw &&
++			freezer->state == CGROUP_THAWED)) {
++		delay_jiffies = 0;
++		goto exit_toggle;
++	} else if (freezer->toggle.freeze_thaw) {
++		goal_state = CGROUP_FROZEN;
++		delay_jiffies = msecs_to_jiffies(freezer->duty.ratio *
++						freezer->duty.period_pct_ms);
++	} else  {
++		goal_state = CGROUP_THAWED;
++		delay_jiffies = msecs_to_jiffies((100 - freezer->duty.ratio) *
++						freezer->duty.period_pct_ms);
++	}
++	freezer_change_state(freezer->css.cgroup, goal_state);
++
++exit_toggle:
++	schedule_delayed_work(&freezer->freezer_work, delay_jiffies);
++	freezer->toggle.freeze_thaw ^= 1;
++}
++
+ /*
+  * cgroups_write_string() limits the size of freezer state strings to
+  * CGROUP_LOCAL_BUFFER_SIZE
+@@ -150,7 +203,12 @@ static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
+ static void freezer_destroy(struct cgroup_subsys *ss,
+ 			    struct cgroup *cgroup)
+ {
+-	kfree(cgroup_freezer(cgroup));
++	struct freezer *freezer;
++
++	freezer = cgroup_freezer(cgroup);
++	if (freezer->toggle.enabled)
++		cancel_delayed_work_sync(&freezer->freezer_work);
++	kfree(freezer);
+ }
+ 
+ /*
+@@ -282,6 +340,16 @@ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
+ 	return 0;
+ }
+ 
++static u64 freezer_read_duty_ratio(struct cgroup *cgroup, struct cftype *cft)
++{
++	return cgroup_freezer(cgroup)->duty.ratio;
++}
++
++static u64 freezer_read_period(struct cgroup *cgroup, struct cftype *cft)
++{
++	return cgroup_freezer(cgroup)->duty.period_pct_ms * 100;
++}
++
+ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+ {
+ 	struct cgroup_iter it;
+@@ -353,6 +421,7 @@ static int freezer_write(struct cgroup *cgroup,
+ {
+ 	int retval;
+ 	enum freezer_state goal_state;
++	struct freezer *freezer;
+ 
+ 	if (strcmp(buffer, freezer_state_strs[CGROUP_THAWED]) == 0)
+ 		goal_state = CGROUP_THAWED;
+@@ -360,7 +429,18 @@ static int freezer_write(struct cgroup *cgroup,
+ 		goal_state = CGROUP_FROZEN;
+ 	else
+ 		return -EINVAL;
+-
++	/* we should stop duty ratio toggling if user wants to
++	 * force change to a valid state.
++	 */
++	freezer = cgroup_freezer(cgroup);
++	if (freezer->duty.period_pct_ms && freezer->duty.ratio < 100) {
++		if (freezer->toggle.enabled)
++			cancel_delayed_work_sync(&freezer->freezer_work);
++		freezer->duty.ratio = 0;
++		freezer->duty.period_pct_ms = 0;
++		freezer->toggle.enabled = 0;
++		pr_info("freezer state changed by user, stop duty ratio\n");
++	}
+ 	if (!cgroup_lock_live_group(cgroup))
+ 		return -ENODEV;
+ 	retval = freezer_change_state(cgroup, goal_state);
+@@ -368,12 +448,74 @@ static int freezer_write(struct cgroup *cgroup,
+ 	return retval;
+ }
+ 
++static int freezer_write_param(struct cgroup *cgroup, struct cftype *cft,
++		u64 val)
++{
++	struct freezer *freezer;
++	int ret = 0;
++
++	freezer = cgroup_freezer(cgroup);
++
++	if (!cgroup_lock_live_group(cgroup))
++		return -ENODEV;
++
++	switch (cft->private) {
++	case FREEZER_DUTY_RATIO:
++		if (val >= 100) {
++			ret = -EINVAL;
++			goto exit;
++		}
++		freezer->duty.ratio = val;
++		break;
++	case FREEZER_PERIOD:
++		do_div(val, 100);
++		freezer->duty.period_pct_ms = val;
++		break;
++	default:
++		BUG();
++	}
++
++	/* only use delayed work when valid params are given. */
++	if (freezer->duty.ratio && freezer->duty.period_pct_ms &&
++		!freezer->toggle.enabled) {
++		pr_debug("starting duty ratio mode\n");
++		INIT_DELAYED_WORK(&freezer->freezer_work, freezer_work_fn);
++		freezer->toggle.enabled = 1;
++		schedule_delayed_work(&freezer->freezer_work, 0);
++	} else if ((!freezer->duty.ratio || !freezer->duty.period_pct_ms) &&
++		freezer->toggle.enabled) {
++		pr_debug("invalid param, stop duty ratio mode %p\n",
++			freezer->freezer_work.work.func);
++		cancel_delayed_work_sync(&freezer->freezer_work);
++		freezer->toggle.enabled = 0;
++		/* thaw the cgroup if we are not toggling */
++		freezer_change_state(freezer->css.cgroup, CGROUP_THAWED);
++
++	}
++exit:
++	cgroup_unlock();
++	return ret;
++}
++
+ static struct cftype files[] = {
+ 	{
+ 		.name = "state",
+ 		.read_seq_string = freezer_read,
+ 		.write_string = freezer_write,
+ 	},
++	{
++		.name = "duty_ratio_pct",
++		.private = FREEZER_DUTY_RATIO,
++		.read_u64 = freezer_read_duty_ratio,
++		.write_u64 = freezer_write_param,
++	},
++	{
++		.name = "period_ms",
++		.private = FREEZER_PERIOD,
++		.read_u64 = freezer_read_period,
++		.write_u64 = freezer_write_param,
++	},
++
+ };
+ 
+ static int freezer_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
+-- 
+1.7.0.4
 
-> Okay I suppose: it seems rather laboured to me, I think I'd have just
-> moved the VM_BUG_ON into rmv_page_order() if I'd done the patch; but
-> since I was too lazy to do it, I'd better be grateful for yours!
-
-Ok the reason I didn't move the VM_BUG_ON is to be stricter in case
-there are more usages of __ClearPageBuddy in the future. I guess it's
-not so important, but when I initially implemented it, it wasn't
-entirely obvious it would work safe with memory hotplug, compaction
-and all other bits using PageBuddy, so...
