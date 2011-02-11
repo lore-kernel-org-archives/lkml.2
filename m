@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab1BKVcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 16:32:10 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11339 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab1BKVcI (ORCPT
+	id S932387Ab1BKVhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 16:37:15 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48365 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab1BKVhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 16:32:08 -0500
-Date: Fri, 11 Feb 2011 22:30:59 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-raid@vger.kernel.org, Neil Brown <neilb@suse.de>,
-        Neil Brown <neilb@cse.unsw.edu.au>
-Subject: [PATCH] md: Remove risk of overflow via sprintf) by using snprintf()
- in md_check_recovery()
-Message-ID: <alpine.LNX.2.00.1102112227040.16994@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 11 Feb 2011 16:37:13 -0500
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
+References: <cover.1294239591.git.jbaron@redhat.com>
+	 <1297452328.5226.89.camel@laptop>
+	 <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Feb 2011 22:38:17 +0100
+Message-ID: <1297460297.5226.99.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sprintf() is dangerous - given the wrong source string it will overflow 
-the destination. snprintf() is safer in that at least we'll never overflow 
-the destination. Even if overflow will never happen today, code changes 
-over time and snprintf() is just safer in the long run.
+On Fri, 2011-02-11 at 16:13 -0500, Mathieu Desnoyers wrote:
+> 
+> Thoughts ? 
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- md.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
++
++struct jump_label_key {
++       void *ptr;
++};
 
- just compile tested
+ struct jump_label_entry {
+        struct hlist_node hlist;
+        struct jump_entry *table;
+-       int nr_entries;
+        /* hang modules off here */
+        struct hlist_head modules;
+        unsigned long key;
++       u32 nr_entries;
++       int refcount;
+ };
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 0cc30ec..6283658 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7164,7 +7164,7 @@ void md_check_recovery(mddev_t *mddev)
- 					if (mddev->pers->hot_remove_disk(
- 						    mddev, rdev->raid_disk)==0) {
- 						char nm[20];
--						sprintf(nm,"rd%d", rdev->raid_disk);
-+						snprintf(nm, sizeof(nm), "rd%d", rdev->raid_disk);
- 						sysfs_remove_link(&mddev->kobj, nm);
- 						rdev->raid_disk = -1;
- 					}
+#else
+
++struct jump_label_key {
++       int state;
++};
+
+#endif
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
+So why can't we make that jump_label_entry::refcount and
+jump_label_key::state an atomic_t and be done with it?
+
+Then the enabled case uses if (atomic_inc_return(&key->ptr->refcount) ==
+1), and the disabled atomic_inc(&key->state).
 
