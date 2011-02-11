@@ -1,150 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab1BKEtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 23:49:31 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:43096 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750973Ab1BKEta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 23:49:30 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19OxNFQLfJOPKom/oCnyU3OphYlmk0jU826nHwlGi
-	2PFleA7ronhL6u
-Subject: Re: Linux 2.6.27.58
-From: Mike Galbraith <efault@gmx.de>
-To: "Jayson R. King" <dev@jaysonking.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>
-In-Reply-To: <4D543738.3080206@jaysonking.com>
-References: <4D543738.3080206@jaysonking.com>
-Content-Type: multipart/mixed; boundary="=-c9Mfc+O4ZiWiz8ENX1jP"
-Date: Fri, 11 Feb 2011 05:49:22 +0100
-Message-ID: <1297399762.7865.17.camel@marge.simson.net>
+	id S1751145Ab1BKFFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 00:05:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55660 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab1BKFFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 00:05:51 -0500
+Date: Fri, 11 Feb 2011 00:02:47 -0500
+From: Chuck Ebbert <cebbert@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Nick Piggin <npiggin@kernel.dk>
+Subject: BUG at fs/namei.c:405 (nameidata_drop_rcu)
+Message-ID: <20110211000247.5e8fbed8@katamari>
+Organization: Red Hat, Inc.
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Apparently hit this very early in nameidata_drop_rcu():
 
---=-c9Mfc+O4ZiWiz8ENX1jP
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+        BUG_ON(!(nd->flags & LOOKUP_RCU));
 
-On Thu, 2011-02-10 at 13:06 -0600, Jayson R. King wrote:
+The user reports he ran "fuser /var/cache/yum" while logged in to
+an X session with his home directory mounted via NFS4. Home dirs
+are normally automounted, but manually mounting the dir still
+reproduces the problem.
 
-> Back in Dec 2008, we discussed a regression associated with the first
-> patch in this series, "sched: revert back to per-rq vruntime".
-> 
-> You proposed a fix which was committed as 0a582440 and then that was
-> followed by another fix by Lin Ming 6272d68c. Should these two
-> additional patches be included in the patch series above?
-
-Yeah, anybody wanting the rest will want those as well.
-
-	-Mike
-
---=-c9Mfc+O4ZiWiz8ENX1jP
-Content-Type: application/x-compressed-tar; name="sched-patches-2.6.27.tar.gz"
-Content-Disposition: attachment; filename="sched-patches-2.6.27.tar.gz"
-Content-Transfer-Encoding: base64
-
-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
-
-
---=-c9Mfc+O4ZiWiz8ENX1jP--
-
+kernel BUG at fs/namei.c:405!
+invalid opcode: 0000 [#1] SMP 
+last sysfs file: /sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
+CPU 0 
+Modules linked in: fuse nfs lockd fscache nfs_acl rpcsec_gss_krb5 auth_rpcgss
+des_generic sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf ipv6 uinput
+snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_seq
+snd_seq_device snd_pcm serio_raw snd_timer snd e1000e iTCO_wdt soundcore
+snd_page_alloc i2c_i801 microcode iTCO_vendor_support firewire_ohci
+firewire_core pata_acpi crc_itu_t ata_generic i915 drm_kms_helper drm
+i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
+Pid: 2689, comm: fuser Not tainted 2.6.38-0.rc3.git4.1.fc15.x86_64 #1
+DQ45CB/DQ45CB
+RIP: 0010:[<ffffffff8112a1f8>]  [<ffffffff8112a1f8>]
+nameidata_drop_rcu+0x2d/0xca
+RSP: 0018:ffff880057e9fc78  EFLAGS: 00010246
+RAX: ffff880070715c80 RBX: ffff880057e9fdd0 RCX: ffff880057cb0b40
+RDX: 0000000000000000 RSI: 00000000f42f9d10 RDI: ffff880057e9fdd0
+RBP: ffff880057e9fc98 R08: 0000000000000000 R09: 00000000000007ff
+R10: 00000000000007ff R11: ffff880065c9f180 R12: ffff880070684300
+R13: ffff880065c9f180 R14: 0000000000000000 R15: 0000000000000000
+FS:  00007fe65d919720(0000) GS:ffff880079800000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000001ac74b8 CR3: 0000000071fc0000 CR4: 00000000000406f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process fuser (pid: 2689, threadinfo ffff880057e9e000, task ffff880070715c80)
+Stack:
+ 00000000000007ff ffff880065c9f180 ffff880057e9fdd0 ffff880057e9fd10
+ ffff880057e9fcb8 ffffffff8112ae6a ffff880057e9fdd0 0000000000000000
+ ffff880057e9fcf8 ffffffff8112b004 ffff880052b47a80 ffff880057e9fdd0
+Call Trace:
+ [<ffffffff8112ae6a>] force_reval_path.isra.24+0x39/0x5a
+ [<ffffffff8112b004>] do_follow_link+0x179/0x1e8
+ [<ffffffff8112b32b>] link_path_walk+0x2b8/0x430
+ [<ffffffff8112b6ce>] do_path_lookup+0x4d/0xf6
+ [<ffffffff8112c4d0>] user_path_at+0x57/0x94
+ [<ffffffff8146f37c>] ? _cond_resched+0xe/0x22
+ [<ffffffff81124a2f>] ? might_fault+0x21/0x23
+ [<ffffffff81124b28>] ? cp_new_stat+0xf7/0x10d
+ [<ffffffff81124d16>] vfs_fstatat+0x39/0x63
+ [<ffffffff81124d7b>] vfs_stat+0x1b/0x1d
+ [<ffffffff81124e7a>] sys_newstat+0x1a/0x33
+ [<ffffffff8112985f>] ? path_put+0x1f/0x23
+ [<ffffffff81009bc2>] system_call_fastpath+0x16/0x1b
+Code: 89 e5 41 55 41 54 53 41 52 0f 1f 44 00 00 65 48 8b 04 25 c0 cc 00 00 f6
+47 40 40 48 89 fb 4c 8b a0 20 05 00 00 4c 8b 6f 08 75 02 <0f> 0b 48 83 7f 20 00
+74 20 49 8d 7c 24 04 e8 a5 66 34 00 49 8b 
