@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab1BKJyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:54:46 -0500
-Received: from t111.niisi.ras.ru ([193.232.173.111]:59086 "EHLO
-	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333Ab1BKJyo (ORCPT
+	id S1755892Ab1BKJ4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:56:34 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:43384 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241Ab1BKJ4c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:54:44 -0500
-From: Antony Pavlov <antony@niisi.msk.ru>
-To: dwmw2@infradead.org
-Cc: w.sang@pengutronix.de, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Antony Pavlov <antony@niisi.msk.ru>
-Subject: [PATCH] mtd: jedec_probe: initialise make sector erase command variable
-Date: Fri, 11 Feb 2011 13:00:37 +0300
-Message-Id: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru>
-X-Mailer: git-send-email 1.7.1
-X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
-X-Antivirus-Code: 100000
+	Fri, 11 Feb 2011 04:56:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YoVb9S46U2E2WTWNDniIBfVEBtup7TyESdG1C6yvUN0UpGA2GDhAW+W3cbmLygjuWO
+         +/gUgdVDydlVLJIjogZg==
+MIME-Version: 1.0
+In-Reply-To: <4D548904.9000003@cn.fujitsu.com>
+References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
+	<1297095037.13327.47.camel@laptop>
+	<AANLkTi=abaUN6m9ZWQuri_Y-487YZzjnTujQMP61QdmW@mail.gmail.com>
+	<1297244844.13327.155.camel@laptop>
+	<AANLkTingFKyux-u6Aw8jg=cKca7QV7bQEHjDzC-4Dg04@mail.gmail.com>
+	<4D548904.9000003@cn.fujitsu.com>
+Date: Fri, 11 Feb 2011 10:56:28 +0100
+Message-ID: <AANLkTimPGpg13BbwHQCFF0yqSH01d+UUcutnNo9WCYp9@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
+From: Stephane Eranian <eranian@google.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        robert.richter@amd.com, acme@redhat.com,
+        Paul Menage <menage@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the commit 08968041bef437ec363623cd3218c2b083537ada
- (mtd: cfi_cmdset_0002: make sector erase command variable)
-introdused a field sector_erase_cmd. In the same commit initialisation
-of cfi->sector_erase_cmd made in cfi_chip_setup()
-(file drivers/mtd/chips/cfi_probe.c), so the CFI chip has no problem:
+Li,
 
-...
-        cfi->cfi_mode = CFI_MODE_CFI;
-        cfi->sector_erase_cmd = CMD(0x30);
-...
-
-But for the JEDEC chips this initialisation is not carried out,
-so the JEDEC chips have sector_erase_cmd == 0.
-
-It's not possible symply add the line
-        p_cfi->sector_erase_cmd = CMD(0x30);
-to the cfi_jedec_setup() function be cause CMD() macros needs
-map and cfi variables. So this patch makes necessary changes.
-
-Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
----
- drivers/mtd/chips/jedec_probe.c |   35 ++++++++++++++++++-----------------
- 1 files changed, 18 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/mtd/chips/jedec_probe.c b/drivers/mtd/chips/jedec_probe.c
-index d72a5fb..4e1be51 100644
---- a/drivers/mtd/chips/jedec_probe.c
-+++ b/drivers/mtd/chips/jedec_probe.c
-@@ -1935,14 +1935,14 @@ static void jedec_reset(u32 base, struct map_info *map, struct cfi_private *cfi)
- }
- 
- 
--static int cfi_jedec_setup(struct cfi_private *p_cfi, int index)
-+static int cfi_jedec_setup(struct map_info *map, struct cfi_private *cfi, int index)
- {
- 	int i,num_erase_regions;
- 	uint8_t uaddr;
- 
--	if (! (jedec_table[index].devtypes & p_cfi->device_type)) {
-+	if (!(jedec_table[index].devtypes & cfi->device_type)) {
- 		DEBUG(MTD_DEBUG_LEVEL1, "Rejecting potential %s with incompatible %d-bit device type\n",
--		      jedec_table[index].name, 4 * (1<<p_cfi->device_type));
-+		      jedec_table[index].name, 4 * (1<<cfi->device_type));
- 		return 0;
- 	}
- 
-@@ -1950,27 +1950,28 @@ static int cfi_jedec_setup(struct cfi_private *p_cfi, int index)
- 
- 	num_erase_regions = jedec_table[index].nr_regions;
- 
--	p_cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
--	if (!p_cfi->cfiq) {
-+	cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
-+	if (!cfi->cfiq) {
- 		//xx printk(KERN_WARNING "%s: kmalloc failed for CFI ident structure\n", map->name);
- 		return 0;
- 	}
- 
--	memset(p_cfi->cfiq,0,sizeof(struct cfi_ident));
-+	memset(cfi->cfiq, 0, sizeof(struct cfi_ident));
- 
--	p_cfi->cfiq->P_ID = jedec_table[index].cmd_set;
--	p_cfi->cfiq->NumEraseRegions = jedec_table[index].nr_regions;
--	p_cfi->cfiq->DevSize = jedec_table[index].dev_size;
--	p_cfi->cfi_mode = CFI_MODE_JEDEC;
-+	cfi->cfiq->P_ID = jedec_table[index].cmd_set;
-+	cfi->cfiq->NumEraseRegions = jedec_table[index].nr_regions;
-+	cfi->cfiq->DevSize = jedec_table[index].dev_size;
-+	cfi->cfi_mode = CFI_MODE_JEDEC;
-+	cfi->sector_erase_cmd = CMD(0x30);
- 
- 	for (i=0; i<num_erase_regions; i++){
--		p_cfi->cfiq->EraseRegionInfo[i] = jedec_table[index].regions[i];
-+		cfi->cfiq->EraseRegionInfo[i] = jedec_table[index].regions[i];
- 	}
--	p_cfi->cmdset_priv = NULL;
-+	cfi->cmdset_priv = NULL;
- 
- 	/* This may be redundant for some cases, but it doesn't hurt */
--	p_cfi->mfr = jedec_table[index].mfr_id;
--	p_cfi->id = jedec_table[index].dev_id;
-+	cfi->mfr = jedec_table[index].mfr_id;
-+	cfi->id = jedec_table[index].dev_id;
- 
- 	uaddr = jedec_table[index].uaddr;
- 
-@@ -1978,8 +1979,8 @@ static int cfi_jedec_setup(struct cfi_private *p_cfi, int index)
- 	   our brains explode when we see the datasheets talking about address
- 	   lines numbered from A-1 to A18. The CFI table has unlock addresses
- 	   in device-words according to the mode the device is connected in */
--	p_cfi->addr_unlock1 = unlock_addrs[uaddr].addr1 / p_cfi->device_type;
--	p_cfi->addr_unlock2 = unlock_addrs[uaddr].addr2 / p_cfi->device_type;
-+	cfi->addr_unlock1 = unlock_addrs[uaddr].addr1 / cfi->device_type;
-+	cfi->addr_unlock2 = unlock_addrs[uaddr].addr2 / cfi->device_type;
- 
- 	return 1;	/* ok */
- }
-@@ -2175,7 +2176,7 @@ static int jedec_probe_chip(struct map_info *map, __u32 base,
- 				       "MTD %s(): matched device 0x%x,0x%x unlock_addrs: 0x%.4x 0x%.4x\n",
- 				       __func__, cfi->mfr, cfi->id,
- 				       cfi->addr_unlock1, cfi->addr_unlock2 );
--				if (!cfi_jedec_setup(cfi, i))
-+				if (!cfi_jedec_setup(map, cfi, i))
- 					return 0;
- 				goto ok_out;
- 			}
--- 
-1.7.1
-
+On Fri, Feb 11, 2011 at 1:55 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>>>> while there is already cgroup monitoring active. In that case and if we do not
+>>>> want to wait until there is at least one ctxsw on all CPUs, then we have to
+>>>> check if the other threads are not already running on the other CPUs.If so,
+>>>> we need to do a cgroup switch on those CPUs. Otherwise, we have nothing to
+>>>> do. Am I getting this right?
+>>>
+>>> Right, so if any of those tasks is currently running, that cpu will be
+>>> monitoring their old cgroup, hence we send an IPI to flip cgroups.
+>>>
+>> I have built a test case where this would trigger. I launched a multi-threaded
+>> app, and then I move the pid into a cgroup via: echo PID >/cgroup/tests/tasks.
+>> I don't see any perf_cgroup move beyond the PID passed.
+>>
+>> I looked at kernel/cgroup.c and I could not find a invocation of
+>> ss->attach() that
+>> would pass threadgroup = true. So I am confused here.
+>>
+>> I wonder how the cgroupfs 'echo PID >tasks' interface would make the distinction
+>> between PID and TID. It seems possible to move one thread of a multi-threaded
+>> process into a cgroup but not the others.
+>>
+>
+> You can do this:
+>
+>        # echo PID > cgroup.procs
+>
+> When the patchset that implements the above feature is accepted. See:
+>
+>        https://lkml.org/lkml/2011/2/7/418
+>
+> The below commit that confused you is actually a part of the above patchset,
+> but it sneaked into the kernel accidentally:
+>
+> commit be367d09927023d081f9199665c8500f69f14d22
+> Author: Ben Blum <bblum@google.com>
+> Date:   Wed Sep 23 15:56:31 2009 -0700
+>
+>    cgroups: let ss->can_attach and ss->attach do whole threadgroups at a time
+>
+Ok, that makes more sense now. I wil try with the above patchset applied to
+verify this work as expected.
