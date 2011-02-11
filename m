@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab1BKPHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:07:38 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58209 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756256Ab1BKPHh (ORCPT
+	id S1757080Ab1BKPIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:08:07 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:60670 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756937Ab1BKPIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:07:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=FgbnMgxyNW0GcHlIhNea29rUdmbBJ/7CWB2gXjUKShQSQdcrw77r2Joo7rZ2Pdjg3l
-         BxOIW7pD/xr5Smeys64SHQPtA0BbO3ITk9vlz8/7/5ukwrKv1QJsW7wzetsx1aLPByjl
-         rs4hrAgiUU0oOUVn45T0UUCZuYQ1Uc5WnGc+s=
-Subject: Re: [PATCH] mtd: jedec_probe: initialise make sector erase command
- variable
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Antony Pavlov <antony@niisi.msk.ru>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru>
-References: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 17:06:27 +0200
-Message-ID: <1297436787.2760.47.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Fri, 11 Feb 2011 10:08:05 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX1+85ZJppMe88Th101th4HyeAKrO43F48sp+iQE0Q1
+	IvaMRvF3cfb9AR
+Date: Fri, 11 Feb 2011 16:04:20 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH] inotify: fix race when adding a new watch
+Message-ID: <20110211150420.GB14459@lsanfilippo.unix.rd.tt.avira.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 13:00 +0300, Antony Pavlov wrote:
-> In the commit 08968041bef437ec363623cd3218c2b083537ada
->  (mtd: cfi_cmdset_0002: make sector erase command variable)
-> introdused a field sector_erase_cmd. In the same commit initialisation
-> of cfi->sector_erase_cmd made in cfi_chip_setup()
-> (file drivers/mtd/chips/cfi_probe.c), so the CFI chip has no problem:
-> 
-> ...
->         cfi->cfi_mode = CFI_MODE_CFI;
->         cfi->sector_erase_cmd = CMD(0x30);
-> ...
-> 
-> But for the JEDEC chips this initialisation is not carried out,
-> so the JEDEC chips have sector_erase_cmd == 0.
-> 
-> It's not possible symply add the line
->         p_cfi->sector_erase_cmd = CMD(0x30);
-> to the cfi_jedec_setup() function be cause CMD() macros needs
-> map and cfi variables. So this patch makes necessary changes.
-> 
-> Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
 
-Pushed to l2-mtd-2.6.git, thanks.
+In inotify_new_watch() the number of watches for a group is compared against
+the max number of allowed watches and increased afterwards.
+The check and incrementation is not done atomically, so it is possible for
+multiple concurrent threads to pass the check and increment the number of
+marks above the allowed max.
+This patch uses a groups mark_lock to ensure that both check and incrementation
+are done atomic.
+With this lock held it is also not longer necessary to check for an already existing 
+mark after inotify_new_watch() has returned, since mark lookup and addition are also
+synchronized now.
 
+Signed-off-by: Lino Sanfilippo <LinoSanfilppo@gmx.de>
+---
+This patch depends on the the patch series
+"fsnotify: use a groups mark_mutex to synchronize access to its mark list" sent 
+earlier this day.
+
+ fs/notify/inotify/inotify_user.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index 1637820..8e8b236 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -656,7 +656,8 @@ static int inotify_new_watch(struct fsnotify_group *group,
+ 		goto out_err;
+ 
+ 	/* we are on the idr, now get on the inode */
+-	ret = fsnotify_add_mark(&tmp_i_mark->fsn_mark, group, inode, NULL, 0);
++	ret = fsnotify_add_mark_locked(&tmp_i_mark->fsn_mark, group, inode,
++				       NULL, 0);
+ 	if (ret) {
+ 		/* we failed to get on the inode, get off the idr */
+ 		inotify_remove_from_idr(group, tmp_i_mark);
+@@ -680,19 +681,13 @@ static int inotify_update_watch(struct fsnotify_group *group, struct inode *inod
+ {
+ 	int ret = 0;
+ 
+-retry:
++	mutex_lock(&group->mark_mutex);
+ 	/* try to update and existing watch with the new arg */
+ 	ret = inotify_update_existing_watch(group, inode, arg);
+ 	/* no mark present, try to add a new one */
+ 	if (ret == -ENOENT)
+ 		ret = inotify_new_watch(group, inode, arg);
+-	/*
+-	 * inotify_new_watch could race with another thread which did an
+-	 * inotify_new_watch between the update_existing and the add watch
+-	 * here, go back and try to update an existing mark again.
+-	 */
+-	if (ret == -EEXIST)
+-		goto retry;
++	mutex_unlock(&group->mark_mutex);
+ 
+ 	return ret;
+ }
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.5.6.5
 
