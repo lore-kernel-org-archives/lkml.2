@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab1BKO1L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 09:27:11 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:44781 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756439Ab1BKO1J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 09:27:09 -0500
-Date: Fri, 11 Feb 2011 15:26:47 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: tadeusz.struk@intel.com, herbert@gondor.hengli.com.au,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        aidan.o.mahony@intel.com, gabriele.paoloni@intel.com,
-        adrian.hoban@intel.com
-Subject: Re: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
- rfc4106_set_hash_subkey().
-Message-ID: <20110211142647.GA3920@ucw.cz>
-References: <4d502ccb.p+rKcuFjWCnBlXY9%tadeusz.struk@intel.com>
- <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net>
+	id S1756795Ab1BKO1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 09:27:21 -0500
+Received: from www.tglx.de ([62.245.132.106]:35840 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756674Ab1BKO1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 09:27:19 -0500
+Date: Fri, 11 Feb 2011 15:26:11 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [patch 00/75] genirq: Overhaul for 2.6.39
+In-Reply-To: <20110211135906.GA16358@elte.hu>
+Message-ID: <alpine.LFD.2.00.1102111516020.31804@localhost6.localdomain6>
+References: <20110210222908.661199947@linutronix.de> <AANLkTi=waRQcvdxyKUgcLZ1r-hwUcAVZeVDcBa-apyK2@mail.gmail.com> <alpine.LFD.2.00.1102110058450.31804@localhost6.localdomain6> <AANLkTin3o9eFjpe6TMmKb5LSRUT+0Y2EpD4OU4LzN8Kd@mail.gmail.com>
+ <alpine.LFD.2.00.1102110135320.31804@localhost6.localdomain6> <alpine.LFD.2.00.1102111359580.31804@localhost6.localdomain6> <20110211135906.GA16358@elte.hu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1375176427-1297434372=:31804"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2011-02-07 19:24:43, Jesper Juhl wrote:
-> On Mon, 7 Feb 2011, tadeusz.struk@intel.com wrote:
-> 
-> > From: 
-> > Date: Sun, 16 Jan 2011 16:41:11 +0000
-> > Subject: RE: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in rfc4106_set_hash_subkey().
-> > 
-> > Hi Jesper,
-> > Thanks, but I think there is still a problem here. You don't want to kfree req_data
-> > when the kmalloc failed. I think it should look as follows.  
-> > Are you ok with this?
-> > 
-> Fine by me.
-> 
-> I was aware of the kfree(NULL) thing, but desided to leave it as is for 
-> two reasons - 1) kfree(NULL) is harmless and this is an error path, so the 
-> extra function call doesn't matter much. 2) I wanted to preserve 
-> deallocations in the reverse order of the allocations. But sure, moving 
-> that kfree is a tiny optimization of the error path, so I'm fine with it.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I don't think such optimalization is worth doing... original code is
-as good but shorter and less complex...
+---1463795968-1375176427-1297434372=:31804
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+On Fri, 11 Feb 2011, Ingo Molnar wrote:
+> * Thomas Gleixner <tglx@linutronix.de> wrote:
+> >  129 files changed, 4353 insertions(+), 5400 deletions(-)
+> 
+> Did I get the file count right - roughtly how many files are affected throughout all 
+> architectures? The changes are massively intrusive and widely spread out so we 
+> cannot do them in one go, right?
+
+Alone the stuff which fiddles in irq_desc->status for whatever reasons
+is >100 files in arch/. And that has do be done manually case by case.
+
+The namespace cleanup affects about 300 files in arch, but that can be
+done in one go right after -rc1 if I manage to get the regex straight :)
+
+Thanks,
+
+	tglx
+---1463795968-1375176427-1297434372=:31804--
