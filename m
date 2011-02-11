@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab1BKJur (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:50:47 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46304 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755207Ab1BKJuq (ORCPT
+	id S1755670Ab1BKJw0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:52:26 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37969 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425Ab1BKJwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:50:46 -0500
-Date: Fri, 11 Feb 2011 09:54:55 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Mike Waychison <mikew@google.com>, Tim Hockin <thockin@google.com>,
-        Robert Lippert <rlippert@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: SMBIOS / DMI Event Logs in Linux?
-Message-ID: <20110211095455.657d2868@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110211012552.GA28995@kroah.com>
-References: <4D547236.6080702@google.com>
-	<20110211012552.GA28995@kroah.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Feb 2011 04:52:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Dd0xpMYgFxYUiqUHjBd0G7yJz5XMfLwr5w4aKOWaweN+BncvfM5gZOmMSi4pCqPFSl
+         /hE1ZNJ/AX2LksBHcs9OI8EQmKJCrN5m4CsiVPSdOgaTQRNENk+q4fftB4RUixcBzjGW
+         GZ9STb8+pimzkwuTr71errMuYYtkaIZrg/lVc=
+Date: Fri, 11 Feb 2011 10:52:18 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@novell.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the percpu tree with the tip tree
+Message-ID: <20110211095218.GQ3770@htj.dyndns.org>
+References: <20110211145810.bdea73a3.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110211145810.bdea73a3.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now your idea for such a log file is fine, I'm not saying that's not ok,
-> or acceptable, just don't put it in sysfs, sorry.  Try using the ring
-> buffer framework from the tracing code perhaps?
+On Fri, Feb 11, 2011 at 02:58:10PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the percpu tree got a conflict in
+> arch/x86/kernel/vmlinux.lds.S between commit
+> 94d1ac8b55799be10487fff9766cce6d6628462a ("x86: Reduce back the alignment
+> of the per-CPU data section") from the tip tree and commit
+> 19df0c2fef010e94e90df514aaf4e73f6b80145c ("percpu: align percpu
+> readmostly subsection to cacheline") from the percpu tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Thats probably overkill unless you need to field messages very fast and
-synchronize them with other trace data (in which case it's probably not
-overkill)
+Thanks.  Looks good to me.
 
-> Or use debugfs?  Or make a 'firmwarefs'?  I can easily knock that
-> together if you need it.
-
-netlink, connector, or even just a simple misc device that tosses them
-down a kfifo ?
-
-Alan
+-- 
+tejun
