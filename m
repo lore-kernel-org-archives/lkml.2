@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab1BKD2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 22:28:44 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:36469 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab1BKD2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 22:28:43 -0500
-Date: Fri, 11 Feb 2011 14:28:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the edac-amd tree with the tip tree
-Message-Id: <20110211142835.5ef24abe.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752262Ab1BKDtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 22:49:41 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:49119 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751226Ab1BKDtk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 22:49:40 -0500
+X-Sasl-enc: giTAH3dnEeU8hpY9AZkCrmY6bgNstCaKRGJnNu1iDF09 1297396178
+Subject: Re: vfs-scale, general questions (Re: NFS root lockups with -next
+ 20110113)
+From: Ian Kent <raven@themaw.net>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Nick Piggin <npiggin@gmail.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Nick Piggin <npiggin@kernel.dk>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <909.1295419383@jrobl>
+References: <20110113120626.GB30351@opensource.wolfsonmicro.com>
+	 <8138.1294924927@jrobl> <676f5c24375e1cc2aa14fe6630ef1324@mail.gmail.com>
+	 <8482.1294926315@jrobl>
+	 <AANLkTim=VY7+fo6d_nUXVxs+iZ_f79qWu_eYMUjvhVJO@mail.gmail.com>
+	 <909.1295419383@jrobl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Feb 2011 11:49:29 +0800
+Message-ID: <1297396169.3844.11.camel@perseus>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+On Wed, 2011-01-19 at 15:43 +0900, J. R. Okajima wrote:
+> Hi,
+> 
+> Nick Piggin:
+> > Thanks for your help, can you see how I've fixed it in my vfs-scale
+> > tree? What do you think?
+> 
+> Your fix is great. I have no objection at all.
+> Other than the fix, here are more generic questions about vfs-scale work.
+> I am happy if you reply when you have time.
+> 
+> - getcwd(2) needs d_lock?
+>   It acquires rename_lock and then tests whether the pwd is removed by
+>   d_unhashed(). If a race condition between vfs_rename_dir() which may
+>   unhash/rehash the dentry happens, then getcwd() may return the wrong
+>   result due to unprotected d_unhashed() call, I am afraid. rename_lock
+>   doesn't help this case.
+> 
+> - what is the right order of dget() and mntget()?
+>   If I remember correctly, someone said "mntget() first and then
+>   dget(). when putting, do in reverse" in the discussion when
+>   path_{get,put}() were born. So it is called "the right order" in the
+>   commit log.
+>   It was many years ago. Is it still true? And should rcu-walk follow it
+>   too? The current implementation doesn't seem to care about this order.
 
-Today's linux-next merge of the edac-amd tree got a conflict in
-include/linux/pci_ids.h between commit
-41b2610c3443e6c4760e61fc10eef73f96f9f6a5 ("x86, amd: Extend AMD
-northbridge caching code to support "Link Control" devices") from the tip
-tree and commit 3d019f87099415f5f0a2f75b6f828db17e6e9445 ("PCI: Rename
-CPU PCI id define") from the edac-amd tree.
+I didn't spot that, where did you see this?
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'm not sure about the get but I fairly sure the dput() has to be before
+the mntput() because the shrink_dcache_*() cleanup routines object to
+dentrys that have a reference count of more than one.
 
-diff --cc include/linux/pci_ids.h
-index 5aaf45e,5411e7b..0000000
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@@ -517,8 -517,7 +517,8 @@@
-  #define PCI_DEVICE_ID_AMD_11H_NB_DRAM	0x1302
-  #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
-  #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
-- #define PCI_DEVICE_ID_AMD_15H_NB_MISC	0x1603
-+ #define PCI_DEVICE_ID_AMD_15H_NB_F3	0x1603
- +#define PCI_DEVICE_ID_AMD_15H_NB_LINK	0x1604
-  #define PCI_DEVICE_ID_AMD_CNB17H_F3	0x1703
-  #define PCI_DEVICE_ID_AMD_LANCE		0x2000
-  #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
+Ian
+
+
