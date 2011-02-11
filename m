@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab1BKJp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:45:56 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60878 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130Ab1BKJpz convert rfc822-to-8bit (ORCPT
+	id S1755580Ab1BKJur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:50:47 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46304 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755207Ab1BKJuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:45:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110211093853.GA23404@n2100.arm.linux.org.uk>
-References: <4D2D1942.4050905@ahsoftware.de>
-	<AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com>
-	<alpine.LFD.2.00.1101121314470.25498@xanadu.home>
-	<20110112184258.GH11039@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.00.1101121350350.25498@xanadu.home>
-	<AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com>
-	<alpine.LFD.2.00.1101270030220.8580@xanadu.home>
-	<20110210154322.GE1742@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.00.1102101405010.14920@xanadu.home>
-	<AANLkTi=KtFf5BU-iH-sUUL=Q30S90bk608JR4zFz2CKf@mail.gmail.com>
-	<20110211093853.GA23404@n2100.arm.linux.org.uk>
-Date: Fri, 11 Feb 2011 09:45:53 +0000
-Message-ID: <AANLkTikBJw4tS6cGjUMSPjCGCkURBUdZCfwvmMtsDcG4@mail.gmail.com>
-Subject: Re: ARM: relocation out of range (when loading a module)
-From: Dave Martin <dave.martin@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Sachin Verma <imschnvrm@gmail.com>, Rabin Vincent <rabin@rab.in>,
-        Alexander Holler <holler@ahsoftware.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        catalin.marinas@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 Feb 2011 04:50:46 -0500
+Date: Fri, 11 Feb 2011 09:54:55 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Mike Waychison <mikew@google.com>, Tim Hockin <thockin@google.com>,
+        Robert Lippert <rlippert@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: SMBIOS / DMI Event Logs in Linux?
+Message-ID: <20110211095455.657d2868@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110211012552.GA28995@kroah.com>
+References: <4D547236.6080702@google.com>
+	<20110211012552.GA28995@kroah.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 9:38 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Feb 11, 2011 at 09:31:04AM +0000, Dave Martin wrote:
->> You could probably cook up a good upper bound based on the size of the
->> kernel and the number of symbols in the module: i.e., assume that
->> every undefined symbol in the module needs to be fixed up to point at
->> the most distant symbol in the kernel.
->>
->> For people with normal-sized kernels, this bound will probably work
->> out as zero most of the time (i.e., the current situation).  For
->> people with big kernels, or when many modules are already loaded, it
->> may work out at 100% -- but that's the price to pay for guaranteed
->> preallocation of the space required for the veneers.  And anyway, you
->> may really need a substantial chunk of those veneers in such cases.
->
-> I think it's going to be easier just to re-order the kernel image link
-> order to solve that problem.  That just leaves uclinux...
->
+> Now your idea for such a log file is fine, I'm not saying that's not ok,
+> or acceptable, just don't put it in sysfs, sorry.  Try using the ring
+> buffer framework from the tracing code perhaps?
 
-But if the kernel is big, or there are many modules, changing the
-order can't solve the problem surely?  Or is the problem purely caused
-by having the initramfs in the way, and we think the amount of actual
-code will never be big enough to cause a problem?
+Thats probably overkill unless you need to field messages very fast and
+synchronize them with other trace data (in which case it's probably not
+overkill)
 
-Cheers
----Dave
+> Or use debugfs?  Or make a 'firmwarefs'?  I can easily knock that
+> together if you need it.
+
+netlink, connector, or even just a simple misc device that tosses them
+down a kfifo ?
+
+Alan
