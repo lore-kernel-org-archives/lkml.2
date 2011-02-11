@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab1BKCBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 21:01:42 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:44123 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756097Ab1BKCBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 21:01:41 -0500
-Date: Thu, 10 Feb 2011 18:01:38 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: cjb@laptop.org
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jon.nettleton@gmail.com,
-        devel@driverdev.osuosl.org, dsd@laptop.org
-Subject: Re: [PATCH 06/10] olpc_dcon: add config options for XO_1 and
- XO_1_5, drop hardcoded XO-1 stuff
-Message-ID: <20110210180138.6c7af1ef@queued.net>
-In-Reply-To: <20110210175324.6d40a5ca@queued.net>
-References: <20110210175324.6d40a5ca@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757682Ab1BKCFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 21:05:20 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:2986 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757539Ab1BKCFT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 21:05:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=qVHPsAeqzkk2YlaOhlTKCaApRengnAcOSYz/hElCdrglMvELNnRXZPx3FnO3RNno1P
+         iq213IIwQ6JYPOOS8Hcg==
+MIME-Version: 1.0
+In-Reply-To: <4D547236.6080702@google.com>
+References: <4D547236.6080702@google.com>
+From: Rob Lippert <rlippert@google.com>
+Date: Thu, 10 Feb 2011 18:04:55 -0800
+Message-ID: <AANLkTi=ievTRgtUHyEjTcXJ_08PZGFTaLsaj0UOcD+PX@mail.gmail.com>
+Subject: Re: SMBIOS / DMI Event Logs in Linux?
+To: Mike Waychison <mikew@google.com>
+Cc: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Tim Hockin <thockin@google.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 10, 2011 at 3:18 PM, Mike Waychison <mikew@google.com> wrote:
+> Hey guys,
+>
+> I need some guidance. Do either of you know of any attempts to have the
+> kernel decode and display/interact with DMI type 15: System Event Log?
+>
 
-Note one subtlety of this patch that I should've mentioned - due to
-the Makefile maneuvering, the module has been renamed from olpc_dcon.ko
-to olpc-dcon.ko.  For things like modprobe and /etc/modules, this
-doesn't make a difference.  But, it might affect the OLPC'ers.
+I don't know what the benefit of the having the kernel decode the SEL
+would be besides the ability to printk() the contents during boot
+time.
+Since it generally contains vendor/OEM/machine specific data having to
+have each vendor provide their own kernel module to decode seems like
+a maintenance pain.  Also having the decoding in the kernel means that
+adding any new event types requires respinning a kernel.
 
+> The event log I'm dealing with while cleaning up the "gsmi" driver interacts
+> with a log that is modeled after the System Event Log.  I'm wondering if
+> there is any precedent for a clean way to expose the event log, I'd like to
+> use it (replacing the ioctls from my earlier patch series send-out).
+>
+> FYI, we use OEM specific headers and descriptors, which probably doesn't
+> help.
+>
+> Do most folks that need access to this data rely on /dev/mem and dmidecode?
+>  I'd like to avoid going that route if possible.
+>
+> Lacking any better ideas though, I was thinking of something along the lines
+> of the following:
+>
+>
+> $ cat /sys/firmware/gsmi/eventlog
+> <offset> <boot number> <recorded time> <quoted reason> <optional data>
+> ...
+>
+> with a single event log entry per line.
+>  <offset> would be the record number,
+>  <boot number> is the recorded boot number
+>  <recorded time> comes from each record,
+>  <quoted reason> is the English translation of Event Log Types from the DMTF
+> standard + vendor extended types we use.
+>  <optional data> is space separated values associated with <quoted reason>
+>
 
-On Thu, 10 Feb 2011 17:53:24 -0800
-Andres Salomon <dilinger@queued.net> wrote:
+What about just exposing the "raw" bytes of the eventlog similar to
+how the kernel currently exposes the ACPI tables at e.g.:
 
-> 
-> This adds CONFIG_FB_OLPC_DCON_1 and CONFIG_FB_OLPC_DCON_1_5 options
-> for allowing selection of XO-1 and/or XO-1.5 DCON support.  In the
-> process, it also forces the xo_1.c and xo_1_5.c files to build as
-> separate units, correctly selects between XO-1 and XO-1.5 at runtime,
-> and adds some hacks to allow xo_1_5.c to build.
-> 
-> This isn't the cleanest patch, but it'll get better as more global
-> variables are dropped.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-[...]
-> diff --git a/drivers/staging/olpc_dcon/Makefile
-> b/drivers/staging/olpc_dcon/Makefile index cd8f289..36c7e67 100644
-> --- a/drivers/staging/olpc_dcon/Makefile
-> +++ b/drivers/staging/olpc_dcon/Makefile
-> @@ -1 +1,6 @@
-> -obj-$(CONFIG_FB_OLPC_DCON)	+= olpc_dcon.o
-> +olpc-dcon-objs += olpc_dcon.o
-> +olpc-dcon-$(CONFIG_FB_OLPC_DCON_1)	+= olpc_dcon_xo_1.o
-> +olpc-dcon-$(CONFIG_FB_OLPC_DCON_1_5)	+= olpc_dcon_xo_1_5.o
-> +obj-$(CONFIG_FB_OLPC_DCON)	+= olpc-dcon.o
-[...]
+/sys/firmware/acpi/tables/DSDT
+
+That would avoid the userspace app having to do the mmio or port io to
+actually read the eventlog and the kernel can export it in a standard
+fashion on any machine which supports an SMBIOS-style event log table.
+
+> We also have a interfaces for clearing a fraction of the log, which I'm
+> thinking is probably best expressed as a value of 0 through 100 written to a
+> file, maybe /sys/firmware/gsmi/clear_eventlog ?
+>
+
+This is definitely a vendor-specific extension as I know some other
+eventlog interfaces (like IPMI) support things like deleting
+individual entries.
+
+> As well, we need to export to userland a way to append data to the log.  I
+> was thinking we could write a parser to take in an entry and ensure it is
+> well-formatted, but I'm a little hesitant to go this route as our records
+> embed a timestamp, which I'd rather not have to figure out from within the
+> kernel.  Perhaps a raw (binary) interface to write records to the log would
+> suffice?  /sys/firmware/gsmi/append_to_eventlog ?
+>
+
+Verification of the data is probably best left to the
+BIOS/BMC/whatever that is storing the event data and that can return
+an error back to userspace if a record is invalid.  Otherwise you're
+again potentially duplicating the parsing/verifying work that is
+already being done in userspace and the BIOS.
+
+> If so, does /sys/firmware/gsmi/raw_eventlog make sense too?
+>
+>
+> Thanks,
+>
+> Mike Waychison
+>
