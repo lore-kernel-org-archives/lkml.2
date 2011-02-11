@@ -1,55 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1BKItI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 03:49:08 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61372 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab1BKItG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 03:49:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=K5rbY7iKaBgV/Rifo5wvaFkzshXB95XYD8IvpIJQ8tHb6A7rCyoaMLA0wxy8H8kFHZ
-         Z2oucguJ9oET4zQiVy4s8deuqFcQnrsFidY6wtgiwg9WVmCcbBmhtrxxloGJII7cCK+b
-         rCnACN8tckIBdA2YQwgxFndeN1HpYcmr4aEAM=
-Subject: [PATCH] video: s3c-fb: return proper error if clk_get fails
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
-Content-Type: text/plain
-Date: Fri, 11 Feb 2011 16:51:10 +0800
-Message-Id: <1297414270.14046.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1754313Ab1BKI6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 03:58:47 -0500
+Received: from mga01.intel.com ([192.55.52.88]:2444 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751094Ab1BKI6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 03:58:46 -0500
+Content-Type: multipart/mixed; boundary="===============1809038919=="
+MIME-Version: 1.0
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,454,1291622400"; 
+   d="p7s'?scan'208";a="886514229"
+From: "Weil, Oren jer" <oren.jer.weil@intel.com>
+To: Greg KH <gregkh@suse.de>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "david@woodhou.se" <david@woodhou.se>,
+        "Woodhouse, David" <david.woodhouse@intel.com>
+Date: Fri, 11 Feb 2011 10:57:31 +0200
+Subject: RE: [RFC PATCH 01/13] Intel(R) MEI Driver
+Thread-Topic: [RFC PATCH 01/13] Intel(R) MEI Driver
+Thread-Index: AcvJTKzciPUkV9RbSSKEbV52HKWFuwAfCwWQ
+Message-ID: <F28B59AD52D84B479DCA46982447533506505D9ACE@hasmsx503.ger.corp.intel.com>
+References: <b9dded$htd8nk@orsmga002.jf.intel.com>
+ <20110210180044.GD13795@suse.de>
+In-Reply-To: <20110210180044.GD13795@suse.de>
+Accept-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return PTR_ERR(sfb->bus_clk) instead of 0 if clk_get fails.
+--===============1809038919==
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
+	micalg=SHA1; boundary="----=_NextPart_000_001D_01CBC9DA.7B0304C0"
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/s3c-fb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+------=_NextPart_000_001D_01CBC9DA.7B0304C0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 
-diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-index 83ce9a0..6817d18 100644
---- a/drivers/video/s3c-fb.c
-+++ b/drivers/video/s3c-fb.c
-@@ -1340,6 +1340,7 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
- 	sfb->bus_clk = clk_get(dev, "lcd");
- 	if (IS_ERR(sfb->bus_clk)) {
- 		dev_err(dev, "failed to get bus clock\n");
-+		ret = PTR_ERR(sfb->bus_clk);
- 		goto err_sfb;
- 	}
- 
--- 
-1.7.2
+Hi
+
+1) For the review purpose we wanted to split the patches into files, so the
+only way we found to do it is using "git diff", this is they there is not
+signed-off-by line
+Maybe I should have adding a description for every file, I can send another
+mail with the descriptions, sorry for the mess.
+
+2) "Intel(R) Management Engine Interface (Intel(R) MEI)" - is our official
+name.
+
+3) we ran checkpatch.pl on every file, this file my by skipped by mistake.
 
 
+-----Original Message-----
+From: Greg KH [mailto:gregkh@suse.de] 
+Sent: Thursday, February 10, 2011 20:01
+To: Weil, Oren jer
+Cc: akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
+david@woodhou.se; Woodhouse, David
+Subject: Re: [RFC PATCH 01/13] Intel(R) MEI Driver
 
+On Thu, Feb 10, 2011 at 01:54:57AM -0800, Oren Weil wrote:
+> diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+
+Where is the description?
+
+Where is the signed-off-by line?
+
+> index b7980a8..0a54b26 100644
+> --- a/drivers/char/Kconfig
+> +++ b/drivers/char/Kconfig
+> @@ -1144,5 +1144,16 @@ config RAMOOPS
+>  	  This enables panic and oops messages to be logged to a circular
+>  	  buffer in RAM where it can be read back at some later point.
+>  
+> +config INTEL_MEI
+> +	tristate "Intel(R) Management Engine Interface (Intel(R) MEI)"
+
+What's with the (R) symbols everywhere?  The Linux kernel is not a place for
+this.
+
+> +	default m
+
+No, this is not a valid default.
+
+> +	depends on EXPERIMENTAL && X86
+> +	help
+> +	  If you have an Intel(R) ME chip in your system
+
+Trailing whitespace, which shows that you didn't take the simple time to run
+your patches through scripts/checkpatch.pl, so why should we take time to
+review them?
+
+And you don't add a config option as your first patch, it does nothing at
+this point in time for any code that is existing in the kernel.
+
+greg k-h
+
+------=_NextPart_000_001D_01CBC9DA.7B0304C0
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIduzCCAyAw
+ggKJoAMCAQICBDXe9M8wDQYJKoZIhvcNAQEFBQAwTjELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0Vx
+dWlmYXgxLTArBgNVBAsTJEVxdWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTAeFw05
+ODA4MjIxNjQxNTFaFw0xODA4MjIxNjQxNTFaME4xCzAJBgNVBAYTAlVTMRAwDgYDVQQKEwdFcXVp
+ZmF4MS0wKwYDVQQLEyRFcXVpZmF4IFNlY3VyZSBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkwgZ8wDQYJ
+KoZIhvcNAQEBBQADgY0AMIGJAoGBAMFdsVhnCGLuoJotHwhtkRRomAoe/toEbxOEYiHD0XzOnwXg
+uAHwTjTs4oqVBGSs8WtTXwWzy2eAv0ICjv7dAQns4QAUT/z78AzdQ7pbK+EfgHCZFVeTFvEPl2q3
+wmgjHMxNWTCsUR47ryvW7mNFe8XZX1DS41APOojnvxT94Me5AgMBAAGjggEJMIIBBTBwBgNVHR8E
+aTBnMGWgY6BhpF8wXTELMAkGA1UEBhMCVVMxEDAOBgNVBAoTB0VxdWlmYXgxLTArBgNVBAsTJEVx
+dWlmYXggU2VjdXJlIENlcnRpZmljYXRlIEF1dGhvcml0eTENMAsGA1UEAxMEQ1JMMTAaBgNVHRAE
+EzARgQ8yMDE4MDgyMjE2NDE1MVowCwYDVR0PBAQDAgEGMB8GA1UdIwQYMBaAFEjmaPkr0rKV10fY
+IyAQTzOYkJ/UMB0GA1UdDgQWBBRI5mj5K9KylddH2CMgEE8zmJCf1DAMBgNVHRMEBTADAQH/MBoG
+CSqGSIb2fQdBAAQNMAsbBVYzLjBjAwIGwDANBgkqhkiG9w0BAQUFAAOBgQBYzinq/Pfetc4CuRe1
+hdG54+CVzCUxDQCmkm5/tpJjnlCV0Zpv5BHeY4VumO6o/1rI01WyZnFX3sAh6z0qpyNJAQSGQnv8
+7n+iFlK1Z2fTQNs7JliyKHc9rhR3Ydb6KmYnoA36p3Nc6nDxlCFlRF/6/O8paKmih3nvee9PrAd3
+ODCCAz0wggKmoAMCAQICAwWw/zANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJVUzEQMA4GA1UE
+ChMHRXF1aWZheDEtMCsGA1UECxMkRXF1aWZheCBTZWN1cmUgQ2VydGlmaWNhdGUgQXV0aG9yaXR5
+MB4XDTA2MDIxNjE4MDEzMFoXDTE2MDIxOTE4MDEzMFowUjELMAkGA1UEBhMCVVMxGjAYBgNVBAoT
+EUludGVsIENvcnBvcmF0aW9uMScwJQYDVQQDEx5JbnRlbCBFeHRlcm5hbCBCYXNpYyBQb2xpY3kg
+Q0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBpd/XOb9QVqEZ8mQ1042TdOIq3ATD
+IsV2xDyt30yLyMR5Wjtus0bn3B+he89BiNO/LP6+rFzEwlD55PlX+HLGIKeNNG97dqyc30FElEUj
+ZzTZFq2N4e3kVJ/XAEEgANzV8v9qp7qWwxugPgfc3z9BkYot+CifozexHLb/hEZj+yISCU61kRZv
+uSQ0E11yYL4dRgcglJeaHo3oX57rvIckaLsYV5/1Aj+R8DM1Ppk965XQAKsHfnyT7C4S50T4lVn4
+lz36wOdNZn/zegG1zp41lnoTFfT4KuKVJH5x7YD1p6KbgJCKLovnujGuohquBNfdXKpZkvz6pGv+
+iC1HawJdAgMBAAGjgaAwgZ0wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQaxgxKxEdvqNutK/D0
+Vgaj7TdUDDA6BgNVHR8EMzAxMC+gLaArhilodHRwOi8vY3JsLmdlb3RydXN0LmNvbS9jcmxzL3Nl
+Y3VyZWNhLmNybDAfBgNVHSMEGDAWgBRI5mj5K9KylddH2CMgEE8zmJCf1DAPBgNVHRMBAf8EBTAD
+AQH/MA0GCSqGSIb3DQEBBQUAA4GBABMQOK2kVKVIlUWwLTdywJ+e2O+PC/uQltK2F3lRyrPfBn69
+tOkIP4SgDJOfsxyobIrPLe75kBLw+Dom13OBDp/EMZJZ1CglQfVV8co9mT3aZMjSGGQiMgkJLR3j
+Mfr900fXZKj5XeqCJ+JP0mEhJGEdVCY+FFlksJjV86fDrq1QMIIFYzCCBEugAwIBAgIKYSyl/gAA
+AAAABjANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UEChMRSW50ZWwgQ29ycG9y
+YXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGljeSBDQTAeFw0wNjAzMjIy
+MjIyNDdaFw0xMjAzMjIyMjMyNDdaMFYxCzAJBgNVBAYTAlVTMRowGAYDVQQKExFJbnRlbCBDb3Jw
+b3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNzdWluZyBDQSAzQjCCASIw
+DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMDoHJYUGvcdR4k0Qv8/RrwNX4+vEe5PN2LnGn4x
+fIWwdUbk5+zvrRy1HjoKdG/AShZfxAuFoVyNIah5GJLpiS/vGbsDYKK+EZcIcmtPfvbB9Yg09EnQ
+0OpsZ2ORRd5lYUfMUU+zkpgL96vKFdkiG+eeHEwnSS3VikGVrF7UDdKfvxZwRwQCx6rEHAFPCjBD
+VfGYZuYT1EDhSDvzEiU7KzBsxrdBCFU4RYL7kh+do+vyMDlBzpw3WKvMVbf3s5lxYiY7AjEhU8OS
+yZEQlgtK8PNyifHjmyrSaeJrPshM3PuLFG4d3gm1UJEiGNzxcHGb6YLP29IQAwY5mAk8j+UOVcsC
+AwEAAaOCAjUwggIxMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFG/DcREooZ0ZV/VnV8/ZKSaI
+1aWiMAsGA1UdDwQEAwIBhjAQBgkrBgEEAYI3FQEEAwIBADAZBgkrBgEEAYI3FAIEDB4KAFMAdQBi
+AEMAQTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGs
+oIGphk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFs
+JTIwQmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29t
+L3JlcG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNy
+bDCB4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3Jl
+cG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUy
+MENBLmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3Np
+dG9yeS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0Eu
+Y3J0MA0GCSqGSIb3DQEBBQUAA4IBAQBAiWWHL6T21QXFZDyaUIye0jh7f40GXqi75Ro5JbpROtlZ
+BqyRq6oPMAG6Igxd5Bd9TMtNkOvguknFnK1y17UdMhLOl+FuInE+FAWk803aRW27OsX+ot0KmPio
+KnZ3L1K5qcQS3tp6or7AaZzd0w0qFitm4UfP9nnTXQtY9XM5QJ07IKFDE3tlOlamKhjbiJV3FKig
+CVesPZSx9h2G7Ve4irEfz915Vks26AJHGZagEHNxM9exkgem4ENsG+t0vYqn9x7YsqJ6fmbOSyrz
+jzb3CYeEfyE5SL+f3Vx9uMsQDyb8LVCDBXQtxLEHnFEBPrRSSF9kPmyjavx4UqFdPEyCMIIFijCC
+BHKgAwIBAgIKYSCKYgAAAAAACDANBgkqhkiG9w0BAQUFADBSMQswCQYDVQQGEwJVUzEaMBgGA1UE
+ChMRSW50ZWwgQ29ycG9yYXRpb24xJzAlBgNVBAMTHkludGVsIEV4dGVybmFsIEJhc2ljIFBvbGlj
+eSBDQTAeFw0wOTA1MTUxOTI3MjZaFw0xNTA1MTUxOTM3MjZaMFYxCzAJBgNVBAYTAlVTMRowGAYD
+VQQKExFJbnRlbCBDb3Jwb3JhdGlvbjErMCkGA1UEAxMiSW50ZWwgRXh0ZXJuYWwgQmFzaWMgSXNz
+dWluZyBDQSAzQjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKQEM1Wn9TU9vc9C+/Tc
+7KB+eiYElmrcEWE32WUdHvWG+IcQHVQsikTmMyKKojNLw2B5s6Iekc8ivDo/wCfjZzX9JyftMnc+
+AArc0la87Olybzm8K9jXEfTBvTnUSFSiI9ZYefITdiUgqlAFuljFZEHYKYtLuhrRacpmQfP4mV63
+NKdc2bT804HRf6YptZFa4k6YN94zlrGNrBuQQ74WFzz/jLBusbUpEkro6Mu/ZYFOFWQrV9lBhF9R
+uk8yN+3N6n9fUo/qBigiF2kEn9xVh1ykl7SCGL2jBUkXx4qgV27a6Si8lRRdgrHGtN/HWnSWlLXT
+H5l575H4Lq++77OFv38CAwEAAaOCAlwwggJYMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFA7G
+KvdZsggQkCVvw939imYxMCvFMAsGA1UdDwQEAwIBhjASBgkrBgEEAYI3FQEEBQIDAQABMCMGCSsG
+AQQBgjcVAgQWBBQ5oFY2ekKQ/5Ktim+VdMeSWb4QWTAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMA
+QTAfBgNVHSMEGDAWgBQaxgxKxEdvqNutK/D0Vgaj7TdUDDCBvQYDVR0fBIG1MIGyMIGvoIGsoIGp
+hk5odHRwOi8vd3d3LmludGVsLmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIw
+QmFzaWMlMjBQb2xpY3klMjBDQS5jcmyGV2h0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50ZWwuY29tL3Jl
+cG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENBLmNybDCB
+4wYIKwYBBQUHAQEEgdYwgdMwYwYIKwYBBQUHMAKGV2h0dHA6Ly93d3cuaW50ZWwuY29tL3JlcG9z
+aXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMFBvbGljeSUyMENB
+LmNydDBsBggrBgEFBQcwAoZgaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9y
+eS9jZXJ0aWZpY2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwUG9saWN5JTIwQ0EuY3J0
+MA0GCSqGSIb3DQEBBQUAA4IBAQCxtQEHchVQhXyjEqtMVUMe6gkmPsIczHxSeqNbo9dsD+6xbT65
+JT+oYgpIAtfEsYXeUJu1cChqpb22U5bMAz7eaQcW5bzefufWvA6lg2048B8oczBj/q+5P5NpYrUO
+8jOmN4jTjfJq3ElZ7yFWpy7rB3Vm/aN6ATYqWfMbS/xfh+JCxmH3droUmMJI0/aZJHsLtjbjFnNs
+HDNrJZX1vxlM78Lb1hjskTENPmhbVbfTj5i/ZGnhv4tmI8QZPCNtcegXJrfhRl2D9bWpdTOPrWiL
+DUqzy1Z6KL7TcOS/PCl8RHCJXkPau/thTQCpIoDa2+c+3XA++gRTfAQ4svTO260NMIIGDzCCBPeg
+AwIBAgIKMs1vuQABAABZejANBgkqhkiG9w0BAQUFADBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMR
+SW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
+Q0EgM0IwHhcNMTAwODI0MDYzMDUxWhcNMTMwODA4MDYzMDUxWjBBMRcwFQYDVQQDEw5XZWlsLCBP
+cmVuIGplcjEmMCQGCSqGSIb3DQEJARYXb3Jlbi5qZXIud2VpbEBpbnRlbC5jb20wggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDxlb9m9/wf9QwTgd/XeUNG0D67Q+l59M9/V5cOdU47brPj
+alIOAyXrhfkc+15RlpMpqFYc6Ho5XpTtovaeTCgsB9LOUNvgGlNzR3G3EG+tCbIXXRjOFf+2/PIB
+IdJoeTzf9sqZGT9h2TO5QzeQyIh2euHF8s5WiHT4skTHqw4b9QiNPOcWAAVFcrdNLiEq/aiTkhuZ
+A/6eUVxslcFQvPDZbePWDVYAzNIBhXKsGATzpYXlJ+dYtEgK54cggxbEqR56c1PJEwyUzXrqYVll
+/XeCHhonA+wFThBUUB0L2UtN+AhIvBto9CeIePVIH/MfTIIr78qcdZe3aHyORWwq5SNLAgMBAAGj
+ggLyMIIC7jALBgNVHQ8EBAMCB4AwPAYJKwYBBAGCNxUHBC8wLQYlKwYBBAGCNxUIhsOMdYSZ5VGD
+/YEohY6fU4KRwAlngd69OZXwQwIBZAIBCDAdBgNVHQ4EFgQUp2yd+HenU0oNT2u96HK1ahdvblMw
+HwYDVR0jBBgwFoAUDsYq91myCBCQJW/D3f2KZjEwK8Uwgc8GA1UdHwSBxzCBxDCBwaCBvqCBu4ZX
+aHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJh
+c2ljJTIwSXNzdWluZyUyMENBJTIwM0IoMSkuY3JshmBodHRwOi8vY2VydGlmaWNhdGVzLmludGVs
+LmNvbS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIw
+Q0ElMjAzQigxKS5jcmwwgfUGCCsGAQUFBwEBBIHoMIHlMGwGCCsGAQUFBzAChmBodHRwOi8vd3d3
+LmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFz
+aWMlMjBJc3N1aW5nJTIwQ0ElMjAzQigxKS5jcnQwdQYIKwYBBQUHMAKGaWh0dHA6Ly9jZXJ0aWZp
+Y2F0ZXMuaW50ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwl
+MjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDNCKDEpLmNydDAfBgNVHSUEGDAWBggrBgEFBQcDBAYK
+KwYBBAGCNwoDDDApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUFBwMEMAwGCisGAQQBgjcKAwwwSwYD
+VR0RBEQwQqAnBgorBgEEAYI3FAIDoBkMF29yZW4uamVyLndlaWxAaW50ZWwuY29tgRdvcmVuLmpl
+ci53ZWlsQGludGVsLmNvbTANBgkqhkiG9w0BAQUFAAOCAQEAjIH2RdlavZjoCNfS+3S5qGkBifxo
+K3FPbv1/bqfR+5KkBpwF+T3rMGTou5tBYBMyK1mZq5QkezC69ADLVGsvqd0VjuQPu9QGtbtVQaFz
+atCe3SWeiiPUDNE0KApdhdEUTtQZPEWEMcCmKVc5a9dPx54pJVzggWeZndPKkalFLvmmV/JVyCDg
+sGxMcasa+Vyo1KVEeuS/x0TrZKZYznABl75T1YB6yX3+XbqjqPOMN6iXzUtKz8EqPzM71DCRETHm
+fz29bE/nTHNsyC4DBOAsSzWKc6jX/jMtPEcyoShDXmdvx3uyBfMeDmOjMeJruhA61J5D7klJLhNK
+hnbNTm1LQDCCBkowggUyoAMCAQICChTFJ3cAAAAAPJwwDQYJKoZIhvcNAQEFBQAwVjELMAkGA1UE
+BhMCVVMxGjAYBgNVBAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5h
+bCBCYXNpYyBJc3N1aW5nIENBIDNCMB4XDTA5MDcyMjEwMjgwOVoXDTEyMDEwODEwMjgwOVowQTEX
+MBUGA1UEAxMOV2VpbCwgT3JlbiBqZXIxJjAkBgkqhkiG9w0BCQEWF29yZW4uamVyLndlaWxAaW50
+ZWwuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmnvUzxK68joxNOKb80igSM/X
+tJrq3/B/9nCud/OQwxe9RzO90y0fimeg+7DxbjvdmMVxfpYXVc6xa9pcJPm5Ecd1NZLxGgSbZaAZ
+bXIWrGqqovEmBJrNHcEoQFwqvonsT1aniIXQ/MoTyWwsh+MDY8ZPYSME5JuBZqoFA2cP4yDxpdLn
+Hfz/lCQyYdhSVmierzRxopONFRq59EVI2PvYrtyNthu4TaAey7HU2hCn28YwSm58+PYdrf8L8SY9
+fNYSm5yq9R/NsUgvgM6OPG0dGH0/jvRc9C0GTGlrLefNB7hUH2l+bksl8S2Lxbco/jvLFCtnvm54
+XY4MrXiNHQHL8QIDAQABo4IDLTCCAykwCwYDVR0PBAQDAgQwMEQGCSqGSIb3DQEJDwQ3MDUwDgYI
+KoZIhvcNAwICAgCAMA4GCCqGSIb3DQMEAgIAgDAHBgUrDgMCBzAKBggqhkiG9w0DBzAdBgNVHQ4E
+FgQU79YjzVs1KXgP8glZgp+ptq2yMw4wHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwQw
+HwYDVR0jBBgwFoAUb8NxESihnRlX9WdXz9kpJojVpaIwgckGA1UdHwSBwTCBvjCBu6CBuKCBtYZU
+aHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwlMjBFeHRlcm5hbCUyMEJh
+c2ljJTIwSXNzdWluZyUyMENBJTIwM0IuY3Jshl1odHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNv
+bS9yZXBvc2l0b3J5L0NSTC9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0El
+MjAzQi5jcmwwge8GCCsGAQUFBwEBBIHiMIHfMGkGCCsGAQUFBzAChl1odHRwOi8vd3d3LmludGVs
+LmNvbS9yZXBvc2l0b3J5L2NlcnRpZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJ
+c3N1aW5nJTIwQ0ElMjAzQi5jcnQwcgYIKwYBBQUHMAKGZmh0dHA6Ly9jZXJ0aWZpY2F0ZXMuaW50
+ZWwuY29tL3JlcG9zaXRvcnkvY2VydGlmaWNhdGVzL0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUy
+MElzc3VpbmclMjBDQSUyMDNCLmNydDA9BgkrBgEEAYI3FQcEMDAuBiYrBgEEAYI3FQiGw4x1hJnl
+UYP9gSiFjp9TgpHACWeEudlBh4T/TgIBZAIBCzApBgkrBgEEAYI3FQoEHDAaMAoGCCsGAQUFBwME
+MAwGCisGAQQBgjcKAwQwSwYDVR0RBEQwQqAnBgorBgEEAYI3FAIDoBkMF29yZW4uamVyLndlaWxA
+aW50ZWwuY29tgRdvcmVuLmplci53ZWlsQGludGVsLmNvbTANBgkqhkiG9w0BAQUFAAOCAQEAOUK4
+cUiRAFsaa7/Q/4EOb636TNk/0c7CY7wRyhFWlOT9GnvqglDRYzIzsc0W7PBQoXRLuQWcpTTj04Yk
+TrMBSixS2qv4evZVgXbb9eF+hvlpMSkk7NJO9WHAKktTa+fdStnZmRPLyodRch/AyxqIRLY6iK1u
+Rqzm1XzFPRfYZZPHZhGCKWNOXpETwa0E+Nwi2Daydru+VmqLNGEeDE7Qh7PUYBkvh3xxTJTQ9jNV
+sV42lGKEMYI/EX8ZGvB32s+e61Ml1Vy2/UXFlk1ot228Zdy4PelHKFwdTL47YBhU+L6ex6Z/fwq6
+ArRZ5VjkohfuIpQof/3pizp7Ob2vGpXIADGCA5IwggOOAgEBMGQwVjELMAkGA1UEBhMCVVMxGjAY
+BgNVBAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJ
+c3N1aW5nIENBIDNCAgoyzW+5AAEAAFl6MAkGBSsOAwIaBQCgggIDMBgGCSqGSIb3DQEJAzELBgkq
+hkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTExMDIxMTA4NTczMVowIwYJKoZIhvcNAQkEMRYEFLzU
++LYeyxqJKiIIH93mEXPj6FD9MHMGCSsGAQQBgjcQBDFmMGQwVjELMAkGA1UEBhMCVVMxGjAYBgNV
+BAoTEUludGVsIENvcnBvcmF0aW9uMSswKQYDVQQDEyJJbnRlbCBFeHRlcm5hbCBCYXNpYyBJc3N1
+aW5nIENBIDNCAgoUxSd3AAAAADycMHUGCyqGSIb3DQEJEAILMWagZDBWMQswCQYDVQQGEwJVUzEa
+MBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2lj
+IElzc3VpbmcgQ0EgM0ICChTFJ3cAAAAAPJwwgbcGCSqGSIb3DQEJDzGBqTCBpjALBglghkgBZQME
+ASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFlAwQBAjAOBggqhkiG9w0DAgICAIAw
+BwYFKw4DAgcwDQYIKoZIhvcNAwICAUAwDQYIKoZIhvcNAwICASgwBwYFKw4DAhowCwYJYIZIAWUD
+BAIDMAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwCgYIKoZIhvcNAgUwDQYJKoZIhvcNAQEBBQAE
+ggEALiL4387jaHKTZEikMh7F2BOtSpT5Ka6wvZb4voofLUNXwYdBRLxOI87Z+9TvvH/ng80DWxJG
+0w17ESlosBHS7t/LUIsOWZngLfB4GHKALtx1RHnZI3wI6jnxeQUbjpqToM8SDCxzh0vsioBm85O9
+yf8JzgSbk89oVbcTeM86sPZcVI326CfqFsoNhQAIweqAl3R/INUeT5je3panHzp8YuZ+KRgE+ip6
+Cw/fS3Ng12DT3dE01wOE1PmK8Z8WenqJeqfeiHLY7Zd6Sx3tgscNUR3A7Iu9s+48D+/8JletLWG+
+jerrLDS6lT2oLh4qiRT7k20hYwnx/u1evKztYhjZegAAAAAAAA==
+
+------=_NextPart_000_001D_01CBC9DA.7B0304C0--
+--===============1809038919==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
+
+---------------------------------------------------------------------
+Intel Israel (74) Limited
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+
+--===============1809038919==--
