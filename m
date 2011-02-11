@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab1BKBWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 20:22:11 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41698 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756899Ab1BKBWI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 20:22:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sbhoh1tUFicNKB4m+Z9ggOm4YY1eEY1s78h4ElPabDLXVKT+nDX6Xn/5OYOuiMtNyC
-         W255KrbTbVEaz6r7ORkPPF15k5NJ8Ltj94KWZ/PMj4JFT/R1PmID/uoAyjejOQkt6qxt
-         lzuL7D72GFx163UOBo6y3RkePjhFjjX8p2aFk=
-Date: Thu, 10 Feb 2011 17:21:57 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Terry Lambert <tlambert@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: fixed EVIOCGRAB iterative grab/release.
-Message-ID: <20110211012156.GB12313@core.coreip.homeip.net>
-References: <1297381370-16388-1-git-send-email-tlambert@chromium.org>
- <20110210235447.GA12313@core.coreip.homeip.net>
- <AANLkTinjPG-KY-ee3ya7bca8F5QechRhE88+uO6odgjE@mail.gmail.com>
+	id S1757594Ab1BKBY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 20:24:59 -0500
+Received: from kroah.org ([198.145.64.141]:53451 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab1BKBY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 20:24:58 -0500
+Date: Thu, 10 Feb 2011 17:25:52 -0800
+From: Greg KH <greg@kroah.com>
+To: Mike Waychison <mikew@google.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Tim Hockin <thockin@google.com>,
+        Robert Lippert <rlippert@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: SMBIOS / DMI Event Logs in Linux?
+Message-ID: <20110211012552.GA28995@kroah.com>
+References: <4D547236.6080702@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinjPG-KY-ee3ya7bca8F5QechRhE88+uO6odgjE@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D547236.6080702@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 04:41:52PM -0800, Terry Lambert wrote:
-> Sure.  First patch to linux in 16 years and all, I didn't want to be
-> too noisy...
+On Thu, Feb 10, 2011 at 03:18:14PM -0800, Mike Waychison wrote:
+> Hey guys,
 > 
-> Problem:
+> I need some guidance. Do either of you know of any attempts to have
+> the kernel decode and display/interact with DMI type 15: System
+> Event Log?
+
+I don't have any experience in this area, but I do have one comment on
+your proposal below:
+
+> The event log I'm dealing with while cleaning up the "gsmi" driver
+> interacts with a log that is modeled after the System Event Log.
+> I'm wondering if there is any precedent for a clean way to expose
+> the event log, I'd like to use it (replacing the ioctls from my
+> earlier patch series send-out).
 > 
-> If you use EVIOCGRAB, such as when you are using a Cr-48 with the
-> Synaptics trackpad driver, the grab on the input device has to be
-> dropped before you zero out the grab on the evdev, or you can't grab
-> it again without rebooting.  The X Server does this; it's usually not
-> an issue for Chromium OS because it tends to just reboot, but everyone
-> else gets a locked up pointer.
-
-Older versions of X evdev and X synaptics drivers used to grab event
-device and release the grab when switching to another VT, then reqacuire
-the grab when switching back to X's VT. This works (-ed?) just fine with
-the current code.
-
-Could you please explain how exactly current order of operations
-prevents subsequent grabs and why changing it resolves the issue?
-
-FWIW the current pattern is old and true "release resources in the order
-opposite to which they were acquired".
-
-> This is pretty easy to reproduce with a modified evtest program that
-> does an EVIOCGRAB, if you don't have a Synaptics touchpad to use for
-> testing (but you won't get whatever you grab back unless you use the
-> same fd or reboot).
-
-Could you probably share this modified version?
-
+> FYI, we use OEM specific headers and descriptors, which probably
+> doesn't help.
 > 
-> I have some patches to a number of bugs in the Synaptics driver, and
-> some additional code cleanup vs. checkpatch.pl for
-> drivers/input/evdev.c too, but I thought I'd start small.
+> Do most folks that need access to this data rely on /dev/mem and
+> dmidecode?  I'd like to avoid going that route if possible.
 > 
+> Lacking any better ideas though, I was thinking of something along
+> the lines of the following:
+> 
+> 
+> $ cat /sys/firmware/gsmi/eventlog
+> <offset> <boot number> <recorded time> <quoted reason> <optional data>
+> ...
+> 
+> with a single event log entry per line.
+>   <offset> would be the record number,
+>   <boot number> is the recorded boot number
+>   <recorded time> comes from each record,
+>   <quoted reason> is the English translation of Event Log Types from
+> the DMTF standard + vendor extended types we use.
+>   <optional data> is space separated values associated with <quoted reason>
 
-Send them on, please.
+Ick, no, remember, sysfs is "one value per file".  doing even a single
+line like you describe here isn't ok, not to mention a huge buffer of
+these lines.
 
-Thanks.
+And no, a "binary" sysfs file is not ok either.
 
--- 
-Dmitry
+Now your idea for such a log file is fine, I'm not saying that's not ok,
+or acceptable, just don't put it in sysfs, sorry.  Try using the ring
+buffer framework from the tracing code perhaps?
+
+Or use debugfs?  Or make a 'firmwarefs'?  I can easily knock that
+together if you need it.
+
+thanks,
+
+greg k-h
