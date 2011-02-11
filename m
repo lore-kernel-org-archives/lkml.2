@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab1BKBzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 20:55:03 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:57295 "EHLO lunge.queued.net"
+	id S932327Ab1BKB4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 20:56:32 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:56692 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932256Ab1BKBzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 20:55:01 -0500
-Date: Thu, 10 Feb 2011 17:54:58 -0800
+	id S932231Ab1BKB4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 20:56:31 -0500
+Date: Thu, 10 Feb 2011 17:56:27 -0800
 From: Andres Salomon <dilinger@queued.net>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, jon.nettleton@gmail.com,
         devel@driverdev.osuosl.org
-Subject: [PATCH 08/10] olpc_dcon: move more global variables into dcon_priv
-Message-ID: <20110210175458.78a57508@queued.net>
+Subject: [PATCH 09/10] olpc_dcon: clean up backlight handling
+Message-ID: <20110210175627.4cda6ab4@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -22,152 +22,241 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Global variables dcon_switched, dcon_irq_time, and dcon_load_time can all be moved
-into the dcon_priv struct now that dcon_interrupt has access to dcon_priv.
+ - Move bl_val and bl_dev into dcon_priv struct....
+ - The only time we ever read the backlight val from the dcon is
+   at probe time.  Rather than calling dcon_get_backlight for that, just
+   read from the register.
+ - Drop dcon_get_backlight; it's just returning dcon->bl_val.
+ - Rename dcon_set_backlight_hw to dcon_set_backlight, and drop the
+   old dcon_set_backlight function.  Move contents of old dcon_set_backlight
+   function into dconbl_set.
+ - Shuffle backlight_ops callbacks around to be closer to struct, and
+   rename them.
+ - Make use of new backlight_properties arg to backlight_device_register,
+   drop old code that set this manually.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/staging/olpc_dcon/olpc_dcon.c |   39 ++++++++++++++------------------
- drivers/staging/olpc_dcon/olpc_dcon.h |    5 ++++
- 2 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/staging/olpc_dcon/olpc_dcon.c |  113 +++++++++++++--------------------
+ drivers/staging/olpc_dcon/olpc_dcon.h |    4 +
+ 2 files changed, 47 insertions(+), 70 deletions(-)
 
 diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index cdd8718..07abdfa 100644
+index 07abdfa..b90c2cf 100644
 --- a/drivers/staging/olpc_dcon/olpc_dcon.c
 +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -53,11 +53,6 @@ static struct platform_device *dcon_device;
- /* Backlight device */
- static struct backlight_device *dcon_bl_dev;
+@@ -50,9 +50,6 @@ static struct dcon_platform_data *pdata;
+ /* Platform devices */
+ static struct platform_device *dcon_device;
  
--/* Variables used during switches */
--static int dcon_switched;
--static struct timespec dcon_irq_time;
--static struct timespec dcon_load_time;
+-/* Backlight device */
+-static struct backlight_device *dcon_bl_dev;
 -
  static DECLARE_WAIT_QUEUE_HEAD(dcon_wait_queue);
  
  static unsigned short normal_i2c[] = { 0x0d, I2C_CLIENT_END };
-@@ -297,12 +292,12 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
-  * normally we don't change it this fast, so in general we won't
-  * delay here.
-  */
--void dcon_load_holdoff(void)
-+static void dcon_load_holdoff(struct dcon_priv *dcon)
+@@ -67,9 +64,6 @@ static s32 dcon_read(struct dcon_priv *dcon, u8 reg)
+ 	return i2c_smbus_read_word_data(dcon->client, reg);
+ }
+ 
+-/* The current backlight value - this saves us some smbus traffic */
+-static int bl_val = -1;
+-
+ /* ===== API functions - these are called by a variety of users ==== */
+ 
+ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
+@@ -185,25 +179,13 @@ power_up:
+ 	return 0;
+ }
+ 
+-static int dcon_get_backlight(struct dcon_priv *dcon)
++static void dcon_set_backlight(struct dcon_priv *dcon, u8 level)
  {
- 	struct timespec delta_t, now;
- 	while (1) {
- 		getnstimeofday(&now);
--		delta_t = timespec_sub(now, dcon_load_time);
-+		delta_t = timespec_sub(now, dcon->load_time);
- 		if (delta_t.tv_sec != 0 ||
- 			delta_t.tv_nsec > NSEC_PER_MSEC * 20) {
- 			break;
-@@ -346,9 +341,9 @@ static void dcon_source_switch(struct work_struct *work)
- 	if (dcon->curr_src == source)
- 		return;
+-	if (!dcon || !dcon->client)
+-		return 0;
+-
+-	if (bl_val == -1)
+-		bl_val = dcon_read(dcon, DCON_REG_BRIGHT) & 0x0F;
+-
+-	return bl_val;
+-}
+-
+-
+-static void dcon_set_backlight_hw(struct dcon_priv *dcon, int level)
+-{
+-	bl_val = level & 0x0F;
+-	dcon_write(dcon, DCON_REG_BRIGHT, bl_val);
++	dcon->bl_val = level;
++	dcon_write(dcon, DCON_REG_BRIGHT, dcon->bl_val);
  
--	dcon_load_holdoff();
-+	dcon_load_holdoff(dcon);
+ 	/* Purposely turn off the backlight when we go to level 0 */
+-	if (bl_val == 0) {
++	if (dcon->bl_val == 0) {
+ 		dcon->disp_mode &= ~MODE_BL_ENABLE;
+ 		dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode);
+ 	} else if (!(dcon->disp_mode & MODE_BL_ENABLE)) {
+@@ -212,17 +194,6 @@ static void dcon_set_backlight_hw(struct dcon_priv *dcon, int level)
+ 	}
+ }
  
--	dcon_switched = 0;
-+	dcon->switched = false;
+-static void dcon_set_backlight(struct dcon_priv *dcon, int level)
+-{
+-	if (!dcon || !dcon->client)
+-		return;
+-
+-	if (bl_val == (level & 0x0F))
+-		return;
+-
+-	dcon_set_backlight_hw(dcon, level);
+-}
+-
+ /* Set the output type to either color or mono */
+ static int dcon_set_mono_mode(struct dcon_priv *dcon, bool enable_mono)
+ {
+@@ -271,7 +242,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
+ 			dcon->asleep = sleep;
+ 	} else {
+ 		/* Only re-enable the backlight if the backlight value is set */
+-		if (bl_val != 0)
++		if (dcon->bl_val != 0)
+ 			dcon->disp_mode |= MODE_BL_ENABLE;
+ 		x = dcon_bus_stabilize(dcon, 1);
+ 		if (x)
+@@ -281,7 +252,7 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
+ 			dcon->asleep = sleep;
  
- 	switch (source) {
- 	case DCON_SOURCE_CPU:
-@@ -361,10 +356,10 @@ static void dcon_source_switch(struct work_struct *work)
- 		else {
- 			/* Wait up to one second for the scanline interrupt */
- 			wait_event_timeout(dcon_wait_queue,
--					   dcon_switched == 1, HZ);
-+					   dcon->switched == true, HZ);
+ 		/* Restore backlight */
+-		dcon_set_backlight_hw(dcon, bl_val);
++		dcon_set_backlight(dcon, dcon->bl_val);
+ 	}
+ 
+ 	/* We should turn off some stuff in the framebuffer - but what? */
+@@ -458,24 +429,6 @@ static void dcon_set_source_sync(struct dcon_priv *dcon, int arg)
+ 	flush_scheduled_work();
+ }
+ 
+-static int dconbl_set(struct backlight_device *dev)
+-{
+-	struct dcon_priv *dcon = bl_get_data(dev);
+-	int level = dev->props.brightness;
+-
+-	if (dev->props.power != FB_BLANK_UNBLANK)
+-		level = 0;
+-
+-	dcon_set_backlight(dcon, level);
+-	return 0;
+-}
+-
+-static int dconbl_get(struct backlight_device *dev)
+-{
+-	struct dcon_priv *dcon = bl_get_data(dev);
+-	return dcon_get_backlight(dcon);
+-}
+-
+ static ssize_t dcon_mode_show(struct device *dev,
+ 	struct device_attribute *attr, char *buf)
+ {
+@@ -594,11 +547,35 @@ static struct device_attribute dcon_device_files[] = {
+ 	__ATTR(resumeline, 0644, dcon_resumeline_show, dcon_resumeline_store),
+ };
+ 
++static int dcon_bl_update(struct backlight_device *dev)
++{
++	struct dcon_priv *dcon = bl_get_data(dev);
++	u8 level = dev->props.brightness & 0x0F;
++
++	if (dev->props.power != FB_BLANK_UNBLANK)
++		level = 0;
++
++	if (level != dcon->bl_val)
++		dcon_set_backlight(dcon, level);
++
++	return 0;
++}
++
++static int dcon_bl_get(struct backlight_device *dev)
++{
++	struct dcon_priv *dcon = bl_get_data(dev);
++	return dcon->bl_val;
++}
++
+ static const struct backlight_ops dcon_bl_ops = {
+-	.get_brightness = dconbl_get,
+-	.update_status = dconbl_set
++	.update_status = dcon_bl_update,
++	.get_brightness = dcon_bl_get,
+ };
+ 
++static struct backlight_properties dcon_bl_props = {
++	.max_brightness = 15,
++	.power = FB_BLANK_UNBLANK,
++};
+ 
+ static int dcon_reboot_notify(struct notifier_block *nb,
+ 			      unsigned long foo, void *bar)
+@@ -707,20 +684,16 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
  		}
+ 	}
  
--		if (!dcon_switched)
-+		if (!dcon->switched)
- 			printk(KERN_ERR "olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
+-	/* Add the backlight device for the DCON */
+-	dcon_bl_dev = backlight_device_register("dcon-bl", &dcon_device->dev,
+-		dcon, &dcon_bl_ops, NULL);
+-
+-	if (IS_ERR(dcon_bl_dev)) {
+-		printk(KERN_ERR "Cannot register the backlight device (%ld)\n",
+-		       PTR_ERR(dcon_bl_dev));
+-		dcon_bl_dev = NULL;
+-	} else {
+-		dcon_bl_dev->props.max_brightness = 15;
+-		dcon_bl_dev->props.power = FB_BLANK_UNBLANK;
+-		dcon_bl_dev->props.brightness = dcon_get_backlight(dcon);
++	dcon->bl_val = dcon_read(dcon, DCON_REG_BRIGHT) & 0x0F;
  
- 		/* Turn off the scanline interrupt */
-@@ -387,7 +382,7 @@ static void dcon_source_switch(struct work_struct *work)
+-		backlight_update_status(dcon_bl_dev);
++	/* Add the backlight device for the DCON */
++	dcon_bl_props.brightness = dcon->bl_val;
++	dcon->bl_dev = backlight_device_register("dcon-bl", &dcon_device->dev,
++		dcon, &dcon_bl_ops, &dcon_bl_props);
++	if (IS_ERR(dcon->bl_dev)) {
++		dev_err(&client->dev, "cannot register backlight dev (%ld)\n",
++				PTR_ERR(dcon->bl_dev));
++		dcon->bl_dev = NULL;
+ 	}
  
- 		/* And turn off the DCON */
- 		pdata->set_dconload(1);
--		getnstimeofday(&dcon_load_time);
-+		getnstimeofday(&dcon->load_time);
+ 	register_reboot_notifier(&dcon->reboot_nb);
+@@ -755,8 +728,8 @@ static int dcon_remove(struct i2c_client *client)
  
- 		printk(KERN_INFO "olpc-dcon: The CPU has control\n");
- 		break;
-@@ -403,13 +398,13 @@ static void dcon_source_switch(struct work_struct *work)
+ 	free_irq(DCON_IRQ, dcon);
  
- 		/* Clear DCONLOAD - this implies that the DCON is in control */
- 		pdata->set_dconload(0);
--		getnstimeofday(&dcon_load_time);
-+		getnstimeofday(&dcon->load_time);
+-	if (dcon_bl_dev != NULL)
+-		backlight_device_unregister(dcon_bl_dev);
++	if (dcon->bl_dev)
++		backlight_device_unregister(dcon->bl_dev);
  
- 		t = schedule_timeout(HZ/2);
- 		remove_wait_queue(&dcon_wait_queue, &wait);
- 		set_current_state(TASK_RUNNING);
- 
--		if (!dcon_switched) {
-+		if (!dcon->switched) {
- 			printk(KERN_ERR "olpc-dcon: Timeout entering DCON mode; expect a screen glitch.\n");
- 		} else {
- 			/* sometimes the DCON doesn't follow its own rules,
-@@ -423,14 +418,14 @@ static void dcon_source_switch(struct work_struct *work)
- 			 * deassert and reassert, and hope for the best.
- 			 * see http://dev.laptop.org/ticket/9664
- 			 */
--			delta_t = timespec_sub(dcon_irq_time, dcon_load_time);
--			if (dcon_switched && delta_t.tv_sec == 0 &&
-+			delta_t = timespec_sub(dcon->irq_time, dcon->load_time);
-+			if (dcon->switched && delta_t.tv_sec == 0 &&
- 					delta_t.tv_nsec < NSEC_PER_MSEC * 20) {
- 				printk(KERN_ERR "olpc-dcon: missed loading, retrying\n");
- 				pdata->set_dconload(1);
- 				mdelay(41);
- 				pdata->set_dconload(0);
--				getnstimeofday(&dcon_load_time);
-+				getnstimeofday(&dcon->load_time);
- 				mdelay(41);
- 			}
- 		}
-@@ -815,8 +810,8 @@ irqreturn_t dcon_interrupt(int irq, void *id)
- 
- 	case 2:	/* switch to DCON mode */
- 	case 1: /* switch to CPU mode */
--		dcon_switched = 1;
--		getnstimeofday(&dcon_irq_time);
-+		dcon->switched = true;
-+		getnstimeofday(&dcon->irq_time);
- 		wake_up(&dcon_wait_queue);
- 		break;
- 
-@@ -828,9 +823,9 @@ irqreturn_t dcon_interrupt(int irq, void *id)
- 		 * of the DCON happened long before this point.
- 		 * see http://dev.laptop.org/ticket/9869
- 		 */
--		if (dcon->curr_src != dcon->pending_src && !dcon_switched) {
--			dcon_switched = 1;
--			getnstimeofday(&dcon_irq_time);
-+		if (dcon->curr_src != dcon->pending_src && !dcon->switched) {
-+			dcon->switched = true;
-+			getnstimeofday(&dcon->irq_time);
- 			wake_up(&dcon_wait_queue);
- 			printk(KERN_DEBUG "olpc-dcon: switching w/ status 0/0\n");
- 		} else {
+ 	if (dcon_device != NULL)
+ 		platform_device_unregister(dcon_device);
 diff --git a/drivers/staging/olpc_dcon/olpc_dcon.h b/drivers/staging/olpc_dcon/olpc_dcon.h
-index 2c06e19..62bed46 100644
+index 62bed46..0264c94 100644
 --- a/drivers/staging/olpc_dcon/olpc_dcon.h
 +++ b/drivers/staging/olpc_dcon/olpc_dcon.h
-@@ -64,6 +64,11 @@ struct dcon_priv {
- 	/* Desired source */
- 	int pending_src;
+@@ -50,6 +50,7 @@
+ struct dcon_priv {
+ 	struct i2c_client *client;
+ 	struct fb_info *fbinfo;
++	struct backlight_device *bl_dev;
  
-+	/* Variables used during switches */
-+	bool switched;
-+	struct timespec irq_time;
-+	struct timespec load_time;
+ 	struct work_struct switch_source;
+ 	struct notifier_block reboot_nb;
+@@ -58,6 +59,9 @@ struct dcon_priv {
+ 	/* Shadow register for the DCON_REG_MODE register */
+ 	u8 disp_mode;
+ 
++	/* The current backlight value - this saves us some smbus traffic */
++	u8 bl_val;
 +
- 	/* Current output type; true == mono, false == color */
- 	bool mono;
- 	bool asleep;
+ 	/* Current source, initialized at probe time */
+ 	int curr_src;
+ 
 -- 
 1.7.2.3
 
