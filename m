@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab1BKJZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:25:21 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:45113 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917Ab1BKJZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:25:18 -0500
-Date: Fri, 11 Feb 2011 10:25:15 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v2] flex_array: Change behaviour on zero size
- allocations
-Message-ID: <20110211092515.GA29583@secunet.com>
-References: <20110207122903.GO3070@secunet.com>
- <1297184561.6737.12074.camel@nimitz>
+	id S1755386Ab1BKJ1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:27:34 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:20347 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754191Ab1BKJ1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 04:27:31 -0500
+Date: Fri, 11 Feb 2011 10:26:22 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Milan Broz <mbroz@redhat.com>
+cc: linux-kernel@vger.kernel.org, Alexander Kjeldaas <astor@fast.no>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: NULL deref in drivers/md/dm-crypt.c:crypt_convert()
+In-Reply-To: <4D54E753.9090906@redhat.com>
+Message-ID: <alpine.LNX.2.00.1102111020260.13370@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102062320230.13593@swampdragon.chaosbits.net> <4D4F25A3.1090401@redhat.com> <alpine.LNX.2.00.1102102004140.26035@swampdragon.chaosbits.net> <4D54E753.9090906@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297184561.6737.12074.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 Feb 2011 09:25:16.0514 (UTC) FILETIME=[97F5D420:01CBC9CD]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 09:02:41AM -0800, Dave Hansen wrote:
+On Fri, 11 Feb 2011, Milan Broz wrote:
+
+> On 02/10/2011 08:14 PM, Jesper Juhl wrote:
+> > On Sun, 6 Feb 2011, Milan Broz wrote:
+> > 
+> > If you have a coverity scan account it is CID 40766. But since you ask I 
+> > assume you do not have an account, so I've also pasted the output from 
+> > their web interface here :
 > 
-> The rest of this patch looks good.  When you resend, you need to break
-> this up in to at least two patches: one to change 'end' to
-> 'nr_elements' (or something else) and the one to handle zero-sized
-> elements and arrays.
-
-Ok.
-
+> Thanks.
 > 
-> I also think we need to remove the ability to do zero-sized elements.
-> Unless there's some new code that I'm missing, I don't see any of the
-> existing security policy code which would be able to do that.
+> I would say that the checker has problem to follow per cpu pointers...
+> 
+> In this case
+> static struct crypt_cpu *this_crypt_config(struct crypt_config *cc)
+> {
+>         return this_cpu_ptr(cc->cpu);
+> 
+> Otherwise it must see that the struct is allocated in
+> crypt_alloc_req(cc, ctx);
+> 
+> And mempool allocation should never return NULL here.
 > 
 
-Well, from the selinux policy point of view we don't need the ability
-to handle zero-sized elements. But why you want to remove it? I don't
-see a reason why zero-sized elements should be handled different form
-zero number of elements. This could again produce a pitfall for potential
-new flex_array users.
+But, is that really where it says the problem is? That's not how I read 
+it.
 
-Anyway, for the moment I'm just interested to load my selinux policy.
-So we could return -EINVAL is somebody tries to allocate with element
-size zero if you think it should be like that.
+The problem is the second time through the while loop, not the first :
+...
+776             while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
+777                   ctx->idx_out < ctx->bio_out->bi_vcnt) {
+778
+779                     crypt_alloc_req(cc, ctx);
+780
+781                     atomic_inc(&ctx->pending);
+782
+783                     r = crypt_convert_block(cc, ctx, this_cc->req);
 
-Steffen
+first time through the loop this is fine, but if we then subsequently hit 
+the -EINPROGRESS case in the switch below we'll explictly assign NULL to 
+this_cc->req and the the 'continue' ensures that we do one more trip 
+around the loop and on that second pass we pass a NULL this_cc->req to 
+crypt_convert_block()
+
+784
+785                     switch (r) {
+786                     /* async */
+787                     case -EBUSY:
+788                             wait_for_completion(&ctx->restart);
+789                             INIT_COMPLETION(ctx->restart);
+790                             /* fall through*/
+791                     case -EINPROGRESS:
+792                             this_cc->req = NULL;
+793                             ctx->sector++;
+794                             continue;
+...
+
+
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
