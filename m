@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab1BKOsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 09:48:14 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23766 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab1BKOsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 09:48:12 -0500
-Date: Fri, 11 Feb 2011 15:47:03 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>
-cc: Pavel Machek <pavel@ucw.cz>, "Struk, Tadeusz" <tadeusz.struk@intel.com>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+	id S1756869Ab1BKOwj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 09:52:39 -0500
+Received: from cantor.suse.de ([195.135.220.2]:56329 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754068Ab1BKOwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 09:52:38 -0500
+Date: Fri, 11 Feb 2011 06:53:16 -0800
+From: Greg KH <gregkh@suse.de>
+To: "Weil, Oren jer" <oren.jer.weil@intel.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
-        "Hoban, Adrian" <adrian.hoban@intel.com>
-Subject: RE: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
- rfc4106_set_hash_subkey().
-In-Reply-To: <DF7BB929B28FCF479E888E3D9F8D9E88F3E2E668@irsmsx502.ger.corp.intel.com>
-Message-ID: <alpine.LNX.2.00.1102111546310.13370@swampdragon.chaosbits.net>
-References: <4d502ccb.p+rKcuFjWCnBlXY9%tadeusz.struk@intel.com> <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net> <20110211142647.GA3920@ucw.cz> <DF7BB929B28FCF479E888E3D9F8D9E88F3E2E668@irsmsx502.ger.corp.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+        "david@woodhou.se" <david@woodhou.se>,
+        "Woodhouse, David" <david.woodhouse@intel.com>
+Subject: Re: [RFC PATCH 01/13] Intel(R) MEI Driver
+Message-ID: <20110211145316.GA13146@suse.de>
+References: <b9dded$htd8nk@orsmga002.jf.intel.com>
+ <20110210180044.GD13795@suse.de>
+ <F28B59AD52D84B479DCA46982447533506505D9ACE@hasmsx503.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F28B59AD52D84B479DCA46982447533506505D9ACE@hasmsx503.ger.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Feb 2011, Paoloni, Gabriele wrote:
-
-> Well anyway I think that the return value of "ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL)" has to be changed from -EINVAL to -ENOMEM in case of failure. That is why would stay on the patch that Tadeusz proposed. Otherwise Juhl should send another one....
+On Fri, Feb 11, 2011 at 10:57:31AM +0200, Weil, Oren jer wrote:
+> Hi
 > 
-I'll take a look again later this evening when I get home from work.
+> 1) For the review purpose we wanted to split the patches into files, so the
+> only way we found to do it is using "git diff", this is they there is not
+> signed-off-by line
+> Maybe I should have adding a description for every file, I can send another
+> mail with the descriptions, sorry for the mess.
 
+Again, please read the documentation on how to properly send patches.
+We write it for a reason, not to just be ignored.
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Actually, if you do ignore it, it's easy for us to ignore you, and
+somehow I doubt you want that.
 
+> 2) "Intel(R) Management Engine Interface (Intel(R) MEI)" - is our official
+> name.
+
+That's nice, but it's not anything that kernel developers want to see
+all the time.  Drop the (R) please, it's pointless within the kernel
+sources.
+
+> 3) we ran checkpatch.pl on every file, this file my by skipped by mistake.
+
+It wasn't the only file you skipped, I saw lots of coding style
+violations in the other files, so I really don't believe you.
+
+good luck,
+
+greg k-h
