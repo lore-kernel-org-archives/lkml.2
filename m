@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab1BKOij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 09:38:39 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50098 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286Ab1BKOih (ORCPT
+	id S1756985Ab1BKOjF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 09:39:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:6684 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756927Ab1BKOi5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 09:38:37 -0500
-From: Subhasish Ghosh <subhasish@mistralsolutions.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
-        sachi@mistralsolutions.com,
-        Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        Kevin Hilman <khilman@deeprootsystems.com> (supporter:TI DAVINCI
-	MACHIN...),
-        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2 08/13] da850: pruss CAN board specific changes for gpios.
-Date: Fri, 11 Feb 2011 20:21:27 +0530
-Message-Id: <1297435892-28278-9-git-send-email-subhasish@mistralsolutions.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
+	Fri, 11 Feb 2011 09:38:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,455,1291622400"; 
+   d="scan'208";a="706648226"
+From: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>
+To: Pavel Machek <pavel@ucw.cz>, Jesper Juhl <jj@chaosbits.net>
+CC: "Struk, Tadeusz" <tadeusz.struk@intel.com>,
+        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
+        "Hoban, Adrian" <adrian.hoban@intel.com>
+Date: Fri, 11 Feb 2011 14:38:49 +0000
+Subject: RE: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+ rfc4106_set_hash_subkey().
+Thread-Topic: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+ rfc4106_set_hash_subkey().
+Thread-Index: AcvJ98jZkLVTlg8GRGWnUCBwfiRgFwAAS45Q
+Message-ID: <DF7BB929B28FCF479E888E3D9F8D9E88F3E2E668@irsmsx502.ger.corp.intel.com>
+References: <4d502ccb.p+rKcuFjWCnBlXY9%tadeusz.struk@intel.com>
+ <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net>
+ <20110211142647.GA3920@ucw.cz>
+In-Reply-To: <20110211142647.GA3920@ucw.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the GPIO modifications required for the pruss CAN.
+Well anyway I think that the return value of "ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL)" has to be changed from -EINVAL to -ENOMEM in case of failure. That is why would stay on the patch that Tadeusz proposed. Otherwise Juhl should send another one....
 
-Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
----
- arch/arm/mach-davinci/board-da850-evm.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+> -----Original Message-----
+> From: Pavel Machek [mailto:pavel@ucw.cz]
+> Sent: Friday, February 11, 2011 2:27 PM
+> To: Jesper Juhl
+> Cc: Struk, Tadeusz; herbert@gondor.hengli.com.au; linux-
+> kernel@vger.kernel.org; linux-crypto@vger.kernel.org; O Mahony, Aidan;
+> Paoloni, Gabriele; Hoban, Adrian
+> Subject: Re: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+> rfc4106_set_hash_subkey().
+> 
+> On Mon 2011-02-07 19:24:43, Jesper Juhl wrote:
+> > On Mon, 7 Feb 2011, tadeusz.struk@intel.com wrote:
+> >
+> > > From:
+> > > Date: Sun, 16 Jan 2011 16:41:11 +0000
+> > > Subject: RE: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+> rfc4106_set_hash_subkey().
+> > >
+> > > Hi Jesper,
+> > > Thanks, but I think there is still a problem here. You don't want
+> to kfree req_data
+> > > when the kmalloc failed. I think it should look as follows.
+> > > Are you ok with this?
+> > >
+> > Fine by me.
+> >
+> > I was aware of the kfree(NULL) thing, but desided to leave it as is
+> for
+> > two reasons - 1) kfree(NULL) is harmless and this is an error path,
+> so the
+> > extra function call doesn't matter much. 2) I wanted to preserve
+> > deallocations in the reverse order of the allocations. But sure,
+> moving
+> > that kfree is a tiny optimization of the error path, so I'm fine with
+> it.
+> 
+> I don't think such optimalization is worth doing... original code is
+> as good but shorter and less complex...
+> 
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures)
+> http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
 
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 2ce5536..f9c38f8 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -45,6 +45,7 @@
- 
- #define DA850_MMCSD_CD_PIN		GPIO_TO_PIN(4, 0)
- #define DA850_MMCSD_WP_PIN		GPIO_TO_PIN(4, 1)
-+#define DA850_PRUSS_CAN_TRX_PIN	GPIO_TO_PIN(2, 0)
- 
- #define DA850_MII_MDIO_CLKEN_PIN	GPIO_TO_PIN(2, 6)
- 
-@@ -1055,7 +1056,7 @@ static __init int da850_evm_init_cpufreq(void) { return 0; }
- 
- const short da850_evm_pruss_can_pins[] = {
- 	DA850_PRUSS_PRU0_R31_0, DA850_PRUSS_PRU1_R30_15,
--	DA850_PRUSS_PRU1_R31_18,
-+	DA850_PRUSS_PRU1_R31_18, DA850_GPIO2_0,
- 	-1
- };
- 
-@@ -1073,6 +1074,14 @@ static int __init da850_evm_setup_pruss_can(void)
- 	val |= BIT(3);
- 	__raw_writel(val, cfg_chip3_reg);
- 
-+	/* value = 0 to enable the CAN transceiver */
-+	ret = gpio_request_one(DA850_PRUSS_CAN_TRX_PIN,
-+					GPIOF_OUT_INIT_LOW, "pruss_can_en");
-+	if (ret) {
-+		pr_warning("Cannot setup GPIO %d\n", DA850_PRUSS_CAN_TRX_PIN);
-+		gpio_free(DA850_PRUSS_CAN_TRX_PIN);
-+	}
-+
- 	return ret;
- }
- 
--- 
-1.7.2.3
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
+
 
