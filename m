@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab1BKJw5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:52:57 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:52600 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755335Ab1BKJwz convert rfc822-to-8bit (ORCPT
+	id S1755747Ab1BKJyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:54:32 -0500
+Received: from t111.niisi.ras.ru ([193.232.173.111]:36958 "EHLO
+	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab1BKJya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:52:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=l3hB0R405NiK4g2jc2hcGheNIGXT5RfjtJ9Hs3h4pEinhOgBFdr+7lCdU1qlx5kzpJ
-         59GXqTVXB+A+8Wu9bw+Km3aGfC81C0G8lXIGG9ZBw9N/y5WmPbCVKQibENDfvX0AXbFS
-         c/1C54etcwT7XJPOxgtXN0odRnc+1nej1Iako=
-MIME-Version: 1.0
-In-Reply-To: <1297350456.4933.25.camel@mulgrave.site>
-References: <201102091515.16202.bzolnier@gmail.com>
-	<1297274408.3016.29.camel@mulgrave.site>
-	<AANLkTimE1H=hos+YMW3Ge9vkETC9f1k1Dt6AMi5iLHGW@mail.gmail.com>
-	<1297350456.4933.25.camel@mulgrave.site>
-Date: Fri, 11 Feb 2011 10:52:54 +0100
-Message-ID: <AANLkTinbsTuvRWQXt8ViTKaD+VbH9YG9X-RqzvsdEV_h@mail.gmail.com>
-Subject: Re: [PATCH] scsi: make scsi_devinfo infrastructure optional
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 Feb 2011 04:54:30 -0500
+Date: Fri, 11 Feb 2011 13:00:21 +0300
+From: "Antony N. Pavlov" <antony@niisi.msk.ru>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: cfi_cmdset_0002: fix sector erase command for
+ AM29LV040B
+Message-Id: <20110211130021.a05a37ec.antony@niisi.msk.ru>
+In-Reply-To: <20110210214131.GA6561@pengutronix.de>
+References: <1297371877-32123-1-git-send-email-antony@niisi.msk.ru>
+	<20110210214131.GA6561@pengutronix.de>
+Organization: NIISI
+X-Mailer: Sylpheed 2.5.0 (GTK+ 2.18.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
+X-Antivirus-Code: 100000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 4:07 PM, James Bottomley
-<James.Bottomley@suse.de> wrote:
-> On Thu, 2011-02-10 at 10:18 +0100, Bartlomiej Zolnierkiewicz wrote:
->> On Wed, Feb 9, 2011 at 7:00 PM, James Bottomley <James.Bottomley@suse.de> wrote:
->> > On Wed, 2011-02-09 at 15:15 +0100, Bartlomiej Zolnierkiewicz wrote:
->> >> Add SCSI_QUIRKS config option (default y and dependent on EMBEDDED
->> >> config option) to allow disabling of scsi_devinfo infrastructure.
->> >>
->> >> The output code size savings are ~14k for CONFIG_SCSI_QUIRKS=n
->> >> (as measured on x86-32):
->> >
->> > I don't understand the point of this patch ... without the quirks SCSI
->> > will do the wrong thing on a whole bunch of stuff.  The savings look to
->> > be tiny ... since the SCSI module is habitually a lot larger than your
->> > figures suggest.
->>
->> The patch was originally done for embedded ATA-only setups.
->
-> Well, if it's for ATA only then the better course would be extracting
-> libata from scsi.  It's also a bit misleading to do sizings on x86,
-> because that doesn't imply embedded to me.  Aren't there still ATAPI
-> devices that require the quirks?
+On Thu, 10 Feb 2011 22:41:31 +0100
+Wolfram Sang <w.sang@pengutronix.de> wrote:
 
-According to my knowledge all ATAPI quirks are handled locally in libata & sr.
+Thank you for your quick response.
 
-> Most embedded setups include some form of USB ... again, the pluggable
-> CD/DVD use the quirks table.
+> On Fri, Feb 11, 2011 at 12:04:37AM +0300, Antony Pavlov wrote:
+> > The AM29LV040B chips use 0x50 as sector erase command instead of 0x30 [1].
+> > 
+> > [1] http://www.datasheetcatalog.com/datasheets_pdf/A/M/2/9/AM29LV040B.shtml
+> 
+> I am confused. The datasheet says on page 15 it uses 0x30 while your
+> description above says it uses 0x50...
 
-This was done long time ago specifically for embedded 486-like
-embedded system w/o USB support and only using flash storage but
-indeed this is not a common case.
+It is my mistake! Of course it uses 0x30.
 
-> Given the potential for disaster even on embedded systems, I don't
-> really think something like this is a good idea.
+> > Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
+> > ---
+> >  drivers/mtd/chips/cfi_cmdset_0002.c |    9 +++++++++
+> >  1 files changed, 9 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
+> > index f072fcf..a401dbe 100644
+> > --- a/drivers/mtd/chips/cfi_cmdset_0002.c
+> > +++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+> > @@ -332,6 +332,14 @@ static void fixup_s29gl032n_sectors(struct mtd_info *mtd)
+> >  	}
+> >  }
+> >  
+> > +static void fixup_use_sector_erase_cmd_30(struct mtd_info *mtd)
+> > +{
+> > +	struct map_info *map = mtd->priv;
+> > +	struct cfi_private *cfi = map->fldrv_priv;
+> > +
+> > +	cfi->sector_erase_cmd = CMD(0x30);
+> cfi_chip_setup
+> ... but here you change it to 0x30 (which is the default) instead of 0x50?
+> 
 
-Well, I don't insist on applying it upstream as it is, it is more to
-show the direction where the possible room for improvements is in case
-of older/embedded systems and reducing memory/code size usage.  [
-There were some concerns about it during recent proposal to use more
-generalized code for support of some rare Intel-like PATA chipsets
-(which seem to cost ~20k as measured on x86-64 in terms of additional
-memory/code requirements, though most such systems are x86-32 only so
-the incurred cost is probably smaller) .]
+In the commit 08968041bef437ec363623cd3218c2b083537ada
+ (mtd: cfi_cmdset_0002: make sector erase command variable)
+introdused field sector_erase_cmd. In this commit initialisation
+of cfi->sector_erase_cmd made in cfi_chip_setup()
+(file drivers/mtd/chips/cfi_probe.c), so the CFI chip has no problem:
 
-BTW with some effort we can do on-demand quirk table loading if it
-ever grows too big in the future.
+...
+        cfi->cfi_mode = CFI_MODE_CFI;
+        cfi->sector_erase_cmd = CMD(0x30);
+...
 
-Thanks,
-Bartlomiej
+But for the JEDEC chips this initialisation is not carried out.
+In my case (AM29LV040B) I have sector_erase_cmd == 0.
+
+I shall send the patch in a few seconds.
+
+-- 
+Best regards,
+  Antony Pavlov
