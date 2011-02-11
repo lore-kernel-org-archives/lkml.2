@@ -1,85 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab1BKLF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 06:05:58 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21308 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568Ab1BKLF5 (ORCPT
+	id S1756159Ab1BKLiB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 06:38:01 -0500
+Received: from mailout10.t-online.de ([194.25.134.21]:55158 "EHLO
+	mailout10.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755759Ab1BKLiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 06:05:57 -0500
-Date: Fri, 11 Feb 2011 12:04:48 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Milan Broz <mbroz@redhat.com>
-cc: linux-kernel@vger.kernel.org, Alexander Kjeldaas <astor@fast.no>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: NULL deref in drivers/md/dm-crypt.c:crypt_convert()
-In-Reply-To: <4D550913.5060508@redhat.com>
-Message-ID: <alpine.LNX.2.00.1102111203140.13370@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102062320230.13593@swampdragon.chaosbits.net> <4D4F25A3.1090401@redhat.com> <alpine.LNX.2.00.1102102004140.26035@swampdragon.chaosbits.net> <4D54E753.9090906@redhat.com> <alpine.LNX.2.00.1102111020260.13370@swampdragon.chaosbits.net>
- <4D550913.5060508@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 11 Feb 2011 06:38:00 -0500
+Message-ID: <4D551F76.1070303@t-online.de>
+Date: Fri, 11 Feb 2011 12:37:26 +0100
+From: =?ISO-8859-1?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101230 Lanikai/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg KH <greg@kroah.com>
+CC: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+References: <20110209224006.GA11202@kroah.com>
+In-Reply-To: <20110209224006.GA11202@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-ID: TvQ9heZS8hlzGmKh2jW8mKoZhybtNFotewvIzgNkeINGLas-q9Ery0RNvzrpPtvgHr
+X-TOI-MSGID: 4dc4b23e-9dcc-4c0e-8d98-8547f3c31ce6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Feb 2011, Milan Broz wrote:
+ > +static struct dmi_system_id __initdata samsung_dmi_table[] = {
+ > +	{
+ > +		.ident = "N128",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "N128"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "N128"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{
+ > +		.ident = "N130",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "N130"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "N130"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{
+ > +		.ident = "X125",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "X125"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "X125"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{
+ > +		.ident = "NC10",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "NC10"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "NC10"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +		{
+ > +		.ident = "NP-Q45",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "SQ45S70S"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "SQ45S70S"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +		},
+ > +	{
+ > +		.ident = "X360",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "X360"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "X360"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{
+ > +		.ident = "R518",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "R518"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "R518"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{
+ > +		.ident = "N150/N210/N220",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR,
+ > +					"SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{
+ > +		.ident = "R530/R730",
+ > +		.matches = {
+ > +		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+ > +		      DMI_MATCH(DMI_PRODUCT_NAME, "R530/R730"),
+ > +		      DMI_MATCH(DMI_BOARD_NAME, "R530/R730"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{
+ > +		.ident = "NF110/NF210/NF310",
+ > +		.matches = {
+ > +			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+ > +			DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
+ > +			DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
+ > +		},
+ > +		.callback = dmi_check_cb,
+ > +	},
+ > +	{ },
+ > +};
+ > +MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
 
-> On 02/11/2011 10:26 AM, Jesper Juhl wrote:
-> > On Fri, 11 Feb 2011, Milan Broz wrote:
-> > But, is that really where it says the problem is? That's not how I read 
-> > it.
-> >
-> > The problem is the second time through the while loop, not the first :
-> > ...
-> > 776             while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
-> > 777                   ctx->idx_out < ctx->bio_out->bi_vcnt) {
-> > 778
-> > 779                     crypt_alloc_req(cc, ctx);
-> > 780
-> > 781                     atomic_inc(&ctx->pending);
-> > 782
-> > 783                     r = crypt_convert_block(cc, ctx, this_cc->req);
-> >
-> > first time through the loop this is fine, but if we then subsequently hit 
-> > the -EINPROGRESS case in the switch below we'll explictly assign NULL to 
-> > this_cc->req and the the 'continue' ensures that we do one more trip 
-> > around the loop and on that second pass we pass a NULL this_cc->req to 
-> > crypt_convert_block()
-> >
-> Sigh. Did you read my first email? It is false positive.
-> 
-Read it. Obviously misunderstood it. :-(
+Could you add
 
+.ident = "N145P/N250P/N260P",
+.matches = {
+	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+	DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
+	DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
+},
+.callback = dmi_check_cb,
 
-> this_cc->req is allocated in crypt_alloc_req(cc, ctx);
-> 
-> this_cc is simple per cpu struct, common in both functions.
-> 
-> The code here tries to simply support both sync and async cryptAPI operation.
-> 
-> In sync, we can reuse this_cc->req immediately (this is common case).
-> 
-> In async mode (returns EBUSY, EINPROGRESS) we must not use it again (because it is
-> still processing) so we explicitly set it here to NULL and in the NEXT iteration
-> crypt_alloc_req(cc, ctx) allocates new this_cc->req from pool.
-> 
-> crypt_alloc_req can probably take this_cc as argument directly and not calculate
-> it again, but compiler will inline and optimise the code anyway.
-> 
-> You can easily test async path, just apply in crypt_ctr and use some crypt mapping
-> -                      "%s(%s)", chainmode, cipher);                                                                                       
-> +                      "cryptd(%s(%s-generic))", chainmode, cipher);                                                                       
-> 
-> To make coverity happy, see patch below.
-
-Thank you for patient explanation.
+there, please? I've tested the driver successfully on my N145P.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Regards,
+Richard Schütz
