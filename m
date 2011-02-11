@@ -1,90 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769Ab1BKRz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 12:55:58 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:31144 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757429Ab1BKRz4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 12:55:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=aaG0z4X6afh8zXSVrDDwmAITVUbVx2B+zphRRPsXD4DoLUJdd1oHOwxnUvIpRZI6Um
-         //MA7Ar/nFFWmao8wINw==
-MIME-Version: 1.0
-In-Reply-To: <20110211100439.GA1938@polaris.bitmath.org>
-References: <1297381370-16388-1-git-send-email-tlambert@chromium.org>
-	<20110211100439.GA1938@polaris.bitmath.org>
-Date: Fri, 11 Feb 2011 09:55:53 -0800
-X-Google-Sender-Auth: O-pjaKn8L2aRVhY9g_WgfeJ8KYM
-Message-ID: <AANLkTikM3G5+KYXGe4hBL7LHg1-W0-dgN7jOGA2fbLvZ@mail.gmail.com>
-Subject: Re: [PATCH] Input: fixed EVIOCGRAB iterative grab/release.
-From: Terry Lambert <tlambert@chromium.org>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1757792Ab1BKR5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 12:57:47 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:54678
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757429Ab1BKR5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 12:57:46 -0500
+X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Feb 2011 12:57:46 EST
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 1/3]: Staging: hv: Use native page allocation/free functions
+Date: Fri, 11 Feb 2011 09:59:00 -0800
+Message-Id: <1297447140-21777-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+In preperation for getting rid of the osd.[ch] files; 
+change all page allocation/free functions to use native interfaces.
 
-I'm in the middle of cutting down my failure case right now, so I
-should be able to provide a stand-alone test case shortly.  This is my
-top priority at work right now.
 
-And you are correct about the race.  This is about back-to-back
-operations of a tool in a script, on a relatively slow machine with
-obstinate hardware, and a grabby Xorg driver (it's the closed source
-one, so I can't make it non-grabby).  So technically a stress test.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
-You noted the evdev->mutex; the idempotence of the call for the two
-pointer clears will be preserved by the mutex, so no one is going to
-get in under it while it's grabbed in the evdev_* layer, and not
-grabbed in the input_*_device layer, and get unhappy.
+---
+ drivers/staging/hv/channel.c    |   12 +++++++-----
+ drivers/staging/hv/connection.c |   13 ++++++++-----
+ drivers/staging/hv/hv.c         |   15 ++++++++++-----
+ drivers/staging/hv/netvsc.c     |   14 ++++++++------
+ 4 files changed, 33 insertions(+), 21 deletions(-)
 
-So at worst it's a no-op change that scratches my particularly weird itch here.
+diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
+index ba9afda..6c292e6 100644
+--- a/drivers/staging/hv/channel.c
++++ b/drivers/staging/hv/channel.c
+@@ -180,8 +180,9 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+ 	newchannel->channel_callback_context = context;
+ 
+ 	/* Allocate the ring buffer */
+-	out = osd_page_alloc((send_ringbuffer_size + recv_ringbuffer_size)
+-			     >> PAGE_SHIFT);
++	out = (void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
++		get_order(send_ringbuffer_size + recv_ringbuffer_size));
++
+ 	if (!out)
+ 		return -ENOMEM;
+ 
+@@ -300,8 +301,8 @@ Cleanup:
+ errorout:
+ 	ringbuffer_cleanup(&newchannel->outbound);
+ 	ringbuffer_cleanup(&newchannel->inbound);
+-	osd_page_free(out, (send_ringbuffer_size + recv_ringbuffer_size)
+-		     >> PAGE_SHIFT);
++	free_pages((unsigned long)out,
++		get_order(send_ringbuffer_size + recv_ringbuffer_size));
+ 	kfree(openInfo);
+ 	return err;
+ }
+@@ -686,7 +687,8 @@ void vmbus_close(struct vmbus_channel *channel)
+ 	ringbuffer_cleanup(&channel->outbound);
+ 	ringbuffer_cleanup(&channel->inbound);
+ 
+-	osd_page_free(channel->ringbuffer_pages, channel->ringbuffer_pagecount);
++	free_pages((unsigned long)channel->ringbuffer_pages,
++		get_order(channel->ringbuffer_pagecount * PAGE_SIZE));
+ 
+ 	kfree(info);
+ 
+diff --git a/drivers/staging/hv/connection.c b/drivers/staging/hv/connection.c
+index b3ac66e..ed0976a 100644
+--- a/drivers/staging/hv/connection.c
++++ b/drivers/staging/hv/connection.c
+@@ -66,7 +66,8 @@ int vmbus_connect(void)
+ 	 * Setup the vmbus event connection for channel interrupt
+ 	 * abstraction stuff
+ 	 */
+-	vmbus_connection.int_page = osd_page_alloc(1);
++	vmbus_connection.int_page =
++	(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, 0);
+ 	if (vmbus_connection.int_page == NULL) {
+ 		ret = -1;
+ 		goto Cleanup;
+@@ -81,7 +82,8 @@ int vmbus_connect(void)
+ 	 * Setup the monitor notification facility. The 1st page for
+ 	 * parent->child and the 2nd page for child->parent
+ 	 */
+-	vmbus_connection.monitor_pages = osd_page_alloc(2);
++	vmbus_connection.monitor_pages =
++	(void *)__get_free_pages((GFP_KERNEL|__GFP_ZERO), 1);
+ 	if (vmbus_connection.monitor_pages == NULL) {
+ 		ret = -1;
+ 		goto Cleanup;
+@@ -162,12 +164,12 @@ Cleanup:
+ 		destroy_workqueue(vmbus_connection.work_queue);
+ 
+ 	if (vmbus_connection.int_page) {
+-		osd_page_free(vmbus_connection.int_page, 1);
++		free_pages((unsigned long)vmbus_connection.int_page, 0);
+ 		vmbus_connection.int_page = NULL;
+ 	}
+ 
+ 	if (vmbus_connection.monitor_pages) {
+-		osd_page_free(vmbus_connection.monitor_pages, 2);
++		free_pages((unsigned long)vmbus_connection.monitor_pages, 1);
+ 		vmbus_connection.monitor_pages = NULL;
+ 	}
+ 
+@@ -203,7 +205,8 @@ int vmbus_disconnect(void)
+ 	if (ret != 0)
+ 		goto Cleanup;
+ 
+-	osd_page_free(vmbus_connection.int_page, 1);
++	free_pages((unsigned long)vmbus_connection.int_page, 0);
++	free_pages((unsigned long)vmbus_connection.monitor_pages, 1);
+ 
+ 	/* TODO: iterate thru the msg list and free up */
+ 	destroy_workqueue(vmbus_connection.work_queue);
+diff --git a/drivers/staging/hv/hv.c b/drivers/staging/hv/hv.c
+index 021acba..419b4d6 100644
+--- a/drivers/staging/hv/hv.c
++++ b/drivers/staging/hv/hv.c
+@@ -230,7 +230,12 @@ int hv_init(void)
+ 	* Allocate the hypercall page memory
+ 	* virtaddr = osd_page_alloc(1);
+ 	*/
+-	virtaddr = osd_virtual_alloc_exec(PAGE_SIZE);
++#ifdef __x86_64__
++	virtaddr = __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_EXEC);
++#else
++	virtaddr =  __vmalloc(PAGE_SIZE, GFP_KERNEL,
++			__pgprot(__PAGE_KERNEL & (~_PAGE_NX)));
++#endif
+ 
+ 	if (!virtaddr) {
+ 		DPRINT_ERR(VMBUS,
+@@ -462,10 +467,10 @@ void hv_synic_init(void *irqarg)
+ 
+ Cleanup:
+ 	if (hv_context.synic_event_page[cpu])
+-		osd_page_free(hv_context.synic_event_page[cpu], 1);
++		free_page((unsigned long)hv_context.synic_event_page[cpu]);
+ 
+ 	if (hv_context.synic_message_page[cpu])
+-		osd_page_free(hv_context.synic_message_page[cpu], 1);
++		free_page((unsigned long)hv_context.synic_message_page[cpu]);
+ 	return;
+ }
+ 
+@@ -502,6 +507,6 @@ void hv_synic_cleanup(void *arg)
+ 
+ 	wrmsrl(HV_X64_MSR_SIEFP, siefp.as_uint64);
+ 
+-	osd_page_free(hv_context.synic_message_page[cpu], 1);
+-	osd_page_free(hv_context.synic_event_page[cpu], 1);
++	free_page((unsigned long)hv_context.synic_message_page[cpu]);
++	free_page((unsigned long)hv_context.synic_event_page[cpu]);
+ }
+diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+index 4319363..a271aa7 100644
+--- a/drivers/staging/hv/netvsc.c
++++ b/drivers/staging/hv/netvsc.c
+@@ -223,7 +223,8 @@ static int netvsc_init_recv_buf(struct hv_device *device)
+ 	/* ASSERT((netDevice->ReceiveBufferSize & (PAGE_SIZE - 1)) == 0); */
+ 
+ 	net_device->recv_buf =
+-		osd_page_alloc(net_device->recv_buf_size >> PAGE_SHIFT);
++		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
++				get_order(net_device->recv_buf_size));
+ 	if (!net_device->recv_buf) {
+ 		DPRINT_ERR(NETVSC,
+ 			   "unable to allocate receive buffer of size %d",
+@@ -360,7 +361,8 @@ static int netvsc_init_send_buf(struct hv_device *device)
+ 	/* ASSERT((netDevice->SendBufferSize & (PAGE_SIZE - 1)) == 0); */
+ 
+ 	net_device->send_buf =
+-		osd_page_alloc(net_device->send_buf_size >> PAGE_SHIFT);
++		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
++				get_order(net_device->send_buf_size));
+ 	if (!net_device->send_buf) {
+ 		DPRINT_ERR(NETVSC, "unable to allocate send buffer of size %d",
+ 			   net_device->send_buf_size);
+@@ -498,8 +500,8 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
+ 		DPRINT_INFO(NETVSC, "Freeing up receive buffer...");
+ 
+ 		/* Free up the receive buffer */
+-		osd_page_free(net_device->recv_buf,
+-			     net_device->recv_buf_size >> PAGE_SHIFT);
++		free_pages((unsigned long)net_device->recv_buf,
++			get_order(net_device->recv_buf_size));
+ 		net_device->recv_buf = NULL;
+ 	}
+ 
+@@ -574,8 +576,8 @@ static int netvsc_destroy_send_buf(struct netvsc_device *net_device)
+ 		DPRINT_INFO(NETVSC, "Freeing up send buffer...");
+ 
+ 		/* Free up the receive buffer */
+-		osd_page_free(net_device->send_buf,
+-			     net_device->send_buf_size >> PAGE_SHIFT);
++		free_pages((unsigned long)net_device->send_buf,
++				get_order(net_device->send_buf_size));
+ 		net_device->send_buf = NULL;
+ 	}
+ 
+-- 
+1.5.5.6
 
-PS: I supposed this use of the mutex is worthy of a comment in the
-code?  Any guidance?
-
--- Terry
-
-On Fri, Feb 11, 2011 at 2:04 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Terry,
->
->> Fixed order of calls in evdev_ungrab to allow iterative use of
->> code which grabs and releases input event devices.
->>
->> Signed-off-by: Terry Lambert <tlambert@chromium.org>
->> ---
->>  drivers/input/evdev.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
->> index c8471a2..0bac8da 100644
->> --- a/drivers/input/evdev.c
->> +++ b/drivers/input/evdev.c
->> @@ -160,9 +160,9 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
->>       if (evdev->grab != client)
->>               return  -EINVAL;
->>
->> +     input_release_device(&evdev->handle);
->>       rcu_assign_pointer(evdev->grab, NULL);
->>       synchronize_rcu();
->> -     input_release_device(&evdev->handle);
->
-> I imagine the current code could lead to a race situation if there
-> were no other locks involved. However, evdev_ungrab() is always called
-> under evdev->mutex. As Dmitry hinted, grabbing "usually works", so
-> perhaps you could device a tiny program which reproduces the problem?
->
-> Thanks,
-> Henrik
->
