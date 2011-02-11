@@ -1,303 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719Ab1BKQFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 11:05:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49457 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab1BKQFr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 11:05:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <1297439772-16209-1-git-send-email-biessmann@corscience.de>
-References: <1297439772-16209-1-git-send-email-biessmann@corscience.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 11 Feb 2011 09:05:19 -0700
-X-Google-Sender-Auth: 4w3fjehpnoxlIxcFfa8W4SFkspE
-Message-ID: <AANLkTim51W5YmTJai1aZQK7MN4tCXGrVJc+DjR_BnbAP@mail.gmail.com>
-Subject: Re: [PATCH] at73c213: add support for at73c240 devices
-To: =?ISO-8859-1?Q?Andreas_Bie=DFmann?= <biessmann@corscience.de>
-Cc: kernel@avr32linux.org, "open list:SOUND" <alsa-devel@alsa-project.org>,
-        Takashi Iwai <tiwai@suse.de>, open list <linux-kernel@vger.kernel.org>,
-        "open list:SPI SUBSYSTEM" <spi-devel-general@lists.sourceforge.net>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757737Ab1BKQGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 11:06:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60566 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757588Ab1BKQGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 11:06:12 -0500
+Subject: Re: [PATCH] scsi: make scsi_devinfo infrastructure optional
+From: James Bottomley <James.Bottomley@suse.de>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinbsTuvRWQXt8ViTKaD+VbH9YG9X-RqzvsdEV_h@mail.gmail.com>
+References: <201102091515.16202.bzolnier@gmail.com>
+	 <1297274408.3016.29.camel@mulgrave.site>
+	 <AANLkTimE1H=hos+YMW3Ge9vkETC9f1k1Dt6AMi5iLHGW@mail.gmail.com>
+	 <1297350456.4933.25.camel@mulgrave.site>
+	 <AANLkTinbsTuvRWQXt8ViTKaD+VbH9YG9X-RqzvsdEV_h@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Feb 2011 10:06:06 -0600
+Message-ID: <1297440366.4967.83.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 8:56 AM, Andreas Bieﬂmann
-<biessmann@corscience.de> wrote:
-> at73c240 is a successor of mature at73c213 and nearly register compatible.
->
-> See http://www.atmel.com/dyn/resources/prod_documents/doc6484.pdf for
-> comparison of these two devices.
->
-> Signed-off-by: Andreas Bieﬂmann <biessmann@corscience.de>
+On Fri, 2011-02-11 at 10:52 +0100, Bartlomiej Zolnierkiewicz wrote:
+> On Thu, Feb 10, 2011 at 4:07 PM, James Bottomley
+> <James.Bottomley@suse.de> wrote:
+> > On Thu, 2011-02-10 at 10:18 +0100, Bartlomiej Zolnierkiewicz wrote:
+> >> On Wed, Feb 9, 2011 at 7:00 PM, James Bottomley <James.Bottomley@suse.de> wrote:
+> >> > On Wed, 2011-02-09 at 15:15 +0100, Bartlomiej Zolnierkiewicz wrote:
+> >> >> Add SCSI_QUIRKS config option (default y and dependent on EMBEDDED
+> >> >> config option) to allow disabling of scsi_devinfo infrastructure.
+> >> >>
+> >> >> The output code size savings are ~14k for CONFIG_SCSI_QUIRKS=n
+> >> >> (as measured on x86-32):
+> >> >
+> >> > I don't understand the point of this patch ... without the quirks SCSI
+> >> > will do the wrong thing on a whole bunch of stuff.  The savings look to
+> >> > be tiny ... since the SCSI module is habitually a lot larger than your
+> >> > figures suggest.
+> >>
+> >> The patch was originally done for embedded ATA-only setups.
+> >
+> > Well, if it's for ATA only then the better course would be extracting
+> > libata from scsi.  It's also a bit misleading to do sizings on x86,
+> > because that doesn't imply embedded to me.  Aren't there still ATAPI
+> > devices that require the quirks?
+> 
+> According to my knowledge all ATAPI quirks are handled locally in libata & sr.
 
-Looks okay to me.
+Then look again: libata handles the transport quirks and sr handles the
+capability quirks.  SCSI handles the protocol quirks.
 
-Briefly-glanced-at-by: Grant Likely <grant.likely@secretlab.ca>
+> > Most embedded setups include some form of USB ... again, the pluggable
+> > CD/DVD use the quirks table.
+> 
+> This was done long time ago specifically for embedded 486-like
+> embedded system w/o USB support and only using flash storage but
+> indeed this is not a common case.
+> 
+> > Given the potential for disaster even on embedded systems, I don't
+> > really think something like this is a good idea.
+> 
+> Well, I don't insist on applying it upstream as it is, it is more to
+> show the direction where the possible room for improvements is in case
+> of older/embedded systems and reducing memory/code size usage.  [
+> There were some concerns about it during recent proposal to use more
+> generalized code for support of some rare Intel-like PATA chipsets
+> (which seem to cost ~20k as measured on x86-64 in terms of additional
+> memory/code requirements, though most such systems are x86-32 only so
+> the incurred cost is probably smaller) .]
+> 
+> BTW with some effort we can do on-demand quirk table loading if it
+> ever grows too big in the future.
 
-> ---
-> †include/linux/spi/at73c213.h | † †1 +
-> †sound/spi/at73c213.c † † † † | †122 +++++++++++++++++++++++++++++++++---------
-> †sound/spi/at73c213.h † † † † | † †3 +
-> †3 files changed, 101 insertions(+), 25 deletions(-)
->
-> diff --git a/include/linux/spi/at73c213.h b/include/linux/spi/at73c213.h
-> index 0f20a70e..26d1f38 100644
-> --- a/include/linux/spi/at73c213.h
-> +++ b/include/linux/spi/at73c213.h
-> @@ -19,6 +19,7 @@
-> †struct at73c213_board_info {
-> † † † †int † † † † † † ssc_id;
-> † † † †struct clk † † †*dac_clk;
-> + † † † bool † † † † † †is_at73c240;
-> † † † †char † † † † † †shortname[32];
-> †};
->
-> diff --git a/sound/spi/at73c213.c b/sound/spi/at73c213.c
-> index 503ffb0..711aae4 100644
-> --- a/sound/spi/at73c213.c
-> +++ b/sound/spi/at73c213.c
-> @@ -709,10 +709,44 @@ AT73C213_MONO_SWITCH("Aux Capture Switch", 0, DAC_CTRL, DAC_CTRL_ONAUXIN,
-> †AT73C213_MONO_SWITCH("Line Capture Switch", 0, DAC_CTRL, 0, 0x03, 0),
-> †};
->
-> +static struct snd_kcontrol_new snd_at73c240_controls[] __devinitdata = {
-> +AT73C213_STEREO("Master Playback Volume", 0, DAC_LMPG, DAC_RMPG, 0, 0, 0x1f, 1),
-> +AT73C213_STEREO("Master Playback Switch", 0, DAC_LMPG, DAC_RMPG, 5, 5, 1, 1),
-> +AT73C213_STEREO("PCM Playback Volume", 0, DAC_LLOG, DAC_RLOG, 0, 0, 0x1f, 1),
-> +AT73C213_STEREO("PCM Playback Switch", 0, DAC_LLOG, DAC_RLOG, 5, 5, 1, 1),
-> +AT73C213_MONO_SWITCH("Mono PA Playback Switch", 0, DAC_CTRL,
-> + † † † † † † † † † †(DAC_CTRL_ONPADRV-1), 0x01, 0),
-> +{
-> + † † † .iface †= SNDRV_CTL_ELEM_IFACE_MIXER,
-> + † † † .name † = "PA Playback Volume",
-> + † † † .index †= 0,
-> + † † † .info † = snd_at73c213_pa_volume_info,
-> + † † † .get † †= snd_at73c213_mono_get,
-> + † † † .put † †= snd_at73c213_mono_put,
-> + † † † .private_value †= PA_CTRL | (PA_CTRL_APAGAIN << 8) | \
-> + † † † † † † † (0x0f << 16) | (1 << 24),
-> +},
-> +AT73C213_MONO_SWITCH("PA Playback Switch", 0, PA_CTRL, (PA_CTRL_APAON-1),
-> + † † † † † † † † † †0x01, 0),
-> +{
-> + † † † .iface †= SNDRV_CTL_ELEM_IFACE_MIXER,
-> + † † † .name † = "Line Capture Volume",
-> + † † † .index †= 0,
-> + † † † .info † = snd_at73c213_line_capture_volume_info,
-> + † † † .get † †= snd_at73c213_stereo_get,
-> + † † † .put † †= snd_at73c213_stereo_put,
-> + † † † .private_value †= DAC_LLIG | (DAC_RLIG << 8) | (0 << 16) | (0 << 19)
-> + † † † † † † † | (0x1f << 24) | (1 << 22),
-> +},
-> +AT73C213_MONO_SWITCH("Line Capture Switch", 0, DAC_CTRL, 0, 0x03, 0),
-> +};
-> +
-> †static int __devinit snd_at73c213_mixer(struct snd_at73c213 *chip)
-> †{
-> † † † †struct snd_card *card;
-> † † † †int errval, idx;
-> + † † † struct snd_kcontrol_new *controls;
-> + † † † int controls_size = 0;
->
-> † † † †if (chip == NULL || chip->pcm == NULL)
-> † † † † † † † †return -EINVAL;
-> @@ -721,9 +755,17 @@ static int __devinit snd_at73c213_mixer(struct snd_at73c213 *chip)
->
-> † † † †strcpy(card->mixername, chip->pcm->name);
->
-> - † † † for (idx = 0; idx < ARRAY_SIZE(snd_at73c213_controls); idx++) {
-> + † † † if (chip->board->is_at73c240) {
-> + † † † † † † † controls_size = ARRAY_SIZE(snd_at73c240_controls);
-> + † † † † † † † controls = snd_at73c240_controls;
-> + † † † } else {
-> + † † † † † † † controls_size = ARRAY_SIZE(snd_at73c213_controls);
-> + † † † † † † † controls = snd_at73c213_controls;
-> + † † † }
-> +
-> + † † † for (idx = 0; idx < controls_size; idx++) {
-> † † † † † † † †errval = snd_ctl_add(card,
-> - † † † † † † † † † † † † † † † snd_ctl_new1(&snd_at73c213_controls[idx],
-> + † † † † † † † † † † † † † † † snd_ctl_new1(&controls[idx],
-> † † † † † † † † † † † † † † † † † † † †chip));
-> † † † † † † † †if (errval < 0)
-> † † † † † † † † † † † †goto cleanup;
-> @@ -732,7 +774,7 @@ static int __devinit snd_at73c213_mixer(struct snd_at73c213 *chip)
-> † † † †return 0;
->
-> †cleanup:
-> - † † † for (idx = 1; idx < ARRAY_SIZE(snd_at73c213_controls) + 1; idx++) {
-> + † † † for (idx = 1; idx < controls_size + 1; idx++) {
-> † † † † † † † †struct snd_kcontrol *kctl;
-> † † † † † † † †kctl = snd_ctl_find_numid(card, idx);
-> † † † † † † † †if (kctl)
-> @@ -777,7 +819,7 @@ static int __devinit snd_at73c213_ssc_init(struct snd_at73c213 *chip)
-> †static int __devinit snd_at73c213_chip_init(struct snd_at73c213 *chip)
-> †{
-> † † † †int retval;
-> - † † † unsigned char dac_ctrl = 0;
-> + † † † unsigned char tmp_reg;
->
-> † † † †retval = snd_at73c213_set_bitrate(chip);
-> † † † †if (retval)
-> @@ -799,7 +841,11 @@ static int __devinit snd_at73c213_chip_init(struct snd_at73c213 *chip)
-> † † † †retval = snd_at73c213_write_reg(chip, DAC_PRECH, 0xff);
-> † † † †if (retval)
-> † † † † † † † †goto out_clk;
-> - † † † retval = snd_at73c213_write_reg(chip, PA_CTRL, (1<<PA_CTRL_APAPRECH));
-> + † † † if (chip->board->is_at73c240)
-> + † † † † † † † tmp_reg = (1<<(PA_CTRL_APAPRECH-1));
-> + † † † else
-> + † † † † † † † tmp_reg = (1<<PA_CTRL_APAPRECH);
-> + † † † retval = snd_at73c213_write_reg(chip, PA_CTRL, tmp_reg);
-> † † † †if (retval)
-> † † † † † † † †goto out_clk;
-> † † † †retval = snd_at73c213_write_reg(chip, DAC_CTRL,
-> @@ -809,11 +855,13 @@ static int __devinit snd_at73c213_chip_init(struct snd_at73c213 *chip)
->
-> † † † †msleep(50);
->
-> - † † † /* Stop precharging PA. */
-> - † † † retval = snd_at73c213_write_reg(chip, PA_CTRL,
-> - † † † † † † † † † † † (1<<PA_CTRL_APALP) | 0x0f);
-> - † † † if (retval)
-> - † † † † † † † goto out_clk;
-> + † † † if (!chip->board->is_at73c240) {
-> + † † † † † † † /* Stop precharging PA. */
-> + † † † † † † † retval = snd_at73c213_write_reg(chip, PA_CTRL,
-> + † † † † † † † † † † † † † † † (1<<PA_CTRL_APALP) | 0x0f);
-> + † † † † † † † if (retval)
-> + † † † † † † † † † † † goto out_clk;
-> + † † † }
->
-> † † † †msleep(450);
->
-> @@ -825,12 +873,18 @@ static int __devinit snd_at73c213_chip_init(struct snd_at73c213 *chip)
-> † † † †msleep(1);
->
-> † † † †/* Turn on DAC. */
-> - † † † dac_ctrl = (1<<DAC_CTRL_ONDACL) | (1<<DAC_CTRL_ONDACR)
-> - † † † † † † † | (1<<DAC_CTRL_ONLNOL) | (1<<DAC_CTRL_ONLNOR)
-> - † † † † † † † /* enable MONO PA */
-> - † † † † † † † | (1<<DAC_CTRL_ONPADRV);
-> + † † † if (chip->board->is_at73c240)
-> + † † † † † † † tmp_reg = (1<<DAC_CTRL_ONDACL) | (1<<DAC_CTRL_ONDACR)
-> + † † † † † † † † † † † | (1<<DAC_CTRL_ONLNOL) | (1<<DAC_CTRL_ONLNOR)
-> + † † † † † † † † † † † /* enable MONO PA */
-> + † † † † † † † † † † † | (1<<(DAC_CTRL_ONPADRV-1));
-> + † † † else
-> + † † † † † † † tmp_reg = (1<<DAC_CTRL_ONDACL) | (1<<DAC_CTRL_ONDACR)
-> + † † † † † † † † † † † | (1<<DAC_CTRL_ONLNOL) | (1<<DAC_CTRL_ONLNOR)
-> + † † † † † † † † † † † /* enable MONO PA */
-> + † † † † † † † † † † † | (1<<DAC_CTRL_ONPADRV);
->
-> - † † † retval = snd_at73c213_write_reg(chip, DAC_CTRL, dac_ctrl);
-> + † † † retval = snd_at73c213_write_reg(chip, DAC_CTRL, tmp_reg);
-> † † † †if (retval)
-> † † † † † † † †goto out_clk;
->
-> @@ -859,9 +913,19 @@ static int __devinit snd_at73c213_chip_init(struct snd_at73c213 *chip)
-> † † † †retval = snd_at73c213_write_reg(chip, DAC_RLIG, 0x11);
-> † † † †if (retval)
-> † † † † † † † †goto out_clk;
-> - † † † retval = snd_at73c213_write_reg(chip, DAC_AUXG, 0x11);
-> - † † † if (retval)
-> - † † † † † † † goto out_clk;
-> + † † † if (!chip->board->is_at73c240) {
-> + † † † † † † † retval = snd_at73c213_write_reg(chip, DAC_AUXG, 0x11);
-> + † † † † † † † if (retval)
-> + † † † † † † † † † † † goto out_clk;
-> + † † † }
-> +
-> + † † † /* enable I2S clock */
-> + † † † if (chip->board->is_at73c240) {
-> + † † † † † † † retval = snd_at73c213_write_reg(chip, DAC_IS_CTRL,
-> + † † † † † † † † † † † † † † † (1<<DAC_IS_CTRL_IS_CTRL));
-> + † † † † † † † if (retval)
-> + † † † † † † † † † † † goto out_clk;
-> + † † † }
->
-> † † † †/* Enable I2S device, i.e. clock output. */
-> † † † †ssc_writel(chip->ssc->regs, CR, SSC_BIT(CR_TXEN));
-> @@ -915,6 +979,10 @@ static int __devinit snd_at73c213_dev_init(struct snd_card *card,
-> † † † †memcpy(&chip->reg_image, &snd_at73c213_original_image,
-> † † † † † † † † † † † †sizeof(snd_at73c213_original_image));
->
-> + † † † /* at73c240 has another reset value here */
-> + † † † if (chip->board->is_at73c240)
-> + † † † † † † † chip->reg_image[PA_CTRL] = 0x0f;
-> +
-> † † † †retval = snd_at73c213_ssc_init(chip);
-> † † † †if (retval)
-> † † † † † † † †goto out_irq;
-> @@ -1043,9 +1111,11 @@ static int __devexit snd_at73c213_remove(struct spi_device *spi)
-> † † † †retval = snd_at73c213_write_reg(chip, DAC_RLIG, 0x11);
-> † † † †if (retval)
-> † † † † † † † †goto out;
-> - † † † retval = snd_at73c213_write_reg(chip, DAC_AUXG, 0x11);
-> - † † † if (retval)
-> - † † † † † † † goto out;
-> + † † † if (!chip->board->is_at73c240) {
-> + † † † † † † † retval = snd_at73c213_write_reg(chip, DAC_AUXG, 0x11);
-> + † † † † † † † if (retval)
-> + † † † † † † † † † † † goto out;
-> + † † † }
->
-> † † † †/* Turn off PA. */
-> † † † †retval = snd_at73c213_write_reg(chip, PA_CTRL,
-> @@ -1053,10 +1123,12 @@ static int __devexit snd_at73c213_remove(struct spi_device *spi)
-> † † † †if (retval)
-> † † † † † † † †goto out;
-> † † † †msleep(10);
-> - † † † retval = snd_at73c213_write_reg(chip, PA_CTRL,
-> - † † † † † † † † † † † † † † † † † † † (1 << PA_CTRL_APALP) | 0x0f);
-> - † † † if (retval)
-> - † † † † † † † goto out;
-> + † † † if (!chip->board->is_at73c240) {
-> + † † † † † † † retval = snd_at73c213_write_reg(chip, PA_CTRL,
-> + † † † † † † † † † † † † † † † † † † † † † † † (1 << PA_CTRL_APALP) | 0x0f);
-> + † † † † † † † if (retval)
-> + † † † † † † † † † † † goto out;
-> + † † † }
->
-> † † † †/* Turn off external DAC. */
-> † † † †retval = snd_at73c213_write_reg(chip, DAC_CTRL, 0x0c);
-> diff --git a/sound/spi/at73c213.h b/sound/spi/at73c213.h
-> index fd8b372..3712d6e 100644
-> --- a/sound/spi/at73c213.h
-> +++ b/sound/spi/at73c213.h
-> @@ -88,6 +88,9 @@
-> †#define DAC_MISC_DEEMPEN † † † 2
-> †#define DAC_MISC_NBITS † † † † 0
->
-> +#define DAC_IS_CTRL † † † † † †0x0B
-> +#define DAC_IS_CTRL_IS_CTRL † †2
-> +
-> †/* DAC Precharge Control Register */
-> †#define DAC_PRECH † † † † † † †0x0C
-> †#define DAC_PRECH_PRCHGPDRV † †7
-> --
-> 1.7.2.3
->
->
-> ------------------------------------------------------------------------------
-> The ultimate all-in-one performance toolkit: Intel(R) Parallel Studio XE:
-> Pinpoint memory and threading errors before they happen.
-> Find and fix more than 250 security defects in the development cycle.
-> Locate bottlenecks in serial and parallel code that limit performance.
-> http://p.sf.net/sfu/intel-dev2devfeb
-> _______________________________________________
-> spi-devel-general mailing list
-> spi-devel-general@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
->
+But we already have that, if you look.  Part of what you're removing is
+the proc interface that allows on demand loading.  If you just want the
+ability to compile out the built in table and load everything from boot,
+that's about a two line patch.
+
+James
 
 
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
