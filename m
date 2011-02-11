@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757486Ab1BKAHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 19:07:44 -0500
-Received: from mail160.messagelabs.com ([216.82.253.99]:31444 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1BKAHn convert rfc822-to-8bit (ORCPT
+	id S932120Ab1BKAWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 19:22:19 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:6348 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756425Ab1BKAWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 19:07:43 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-13.tower-160.messagelabs.com!1297382862!12328969!1
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.31]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Date: Thu, 10 Feb 2011 18:07:40 -0600
-Subject: RE: [patch 34/75] arm: ep93xx: Kill another instance of broken
- irq_desc	fiddling
-Thread-Topic: [patch 34/75] arm: ep93xx: Kill another instance of broken
- irq_desc	fiddling
-Thread-Index: AcvJe5FZeriZo9JPQz69YdLjdALeBwAAyLNA
-Message-ID: <0D753D10438DA54287A00B027084269764CF3F0132@AUSP01VMBX24.collaborationhost.net>
-References: <20110210222908.661199947@linutronix.de>
- <20110210223257.597367298@linutronix.de>
-In-Reply-To: <20110210223257.597367298@linutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 10 Feb 2011 19:22:18 -0500
+Message-ID: <4D548146.5090507@bluewatersys.com>
+Date: Fri, 11 Feb 2011 13:22:30 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hartley Sweeten <hsweeten@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [patch 34/75] arm: ep93xx: Kill another instance of broken irq_desc
+ fiddling
+References: <20110210222908.661199947@linutronix.de> <20110210223257.597367298@linutronix.de>
+In-Reply-To: <20110210223257.597367298@linutronix.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 10, 2011 4:37 PM, Thomas Gleixner wrote:
->
+On 02/11/2011 12:37 PM, Thomas Gleixner wrote:
 > 1. This is a copy of the borked code in gpiolib
 > 2. If you need information about irq state which is not exposed, then talk
 >    to the maintainer of that code instead of adding totaly horrible open
 >    coded access.
->
+
+This code got added simply because it is sometimes helpful to be able to
+see how various gpio/irq pins are configured. I'm happy to drop the
+functionality (see below), but is there a better way to get this
+information? Is it already available somewhere else (proc, sys)?
+
 > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > Cc: Hartley Sweeten <hsweeten@visionengravers.com>
 > Cc: Russell King <linux@arm.linux.org.uk>
-
-As stated, this was following what was provided in gpiolib.
-
-The information was only provided by debugfs to help development.  It's
-not necessarily needed.
-
-Minor note below.  But otherwise,
-
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
 > ---
 >  arch/arm/mach-ep93xx/gpio.c |   38 --------------------------------------
 >  1 file changed, 38 deletions(-)
@@ -75,45 +59,28 @@ Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 > -			struct irq_desc *desc = irq_desc + irq;
 > -
 > -			if (irq >= 0 && desc->action) {
-> -				char *trigger;
-> -
-> -				switch (desc->status & IRQ_TYPE_SENSE_MASK) {
-> -				case IRQ_TYPE_NONE:
-> -					trigger = "(default)";
-> -					break;
-> -				case IRQ_TYPE_EDGE_FALLING:
-> -					trigger = "edge-falling";
-> -					break;
-> -				case IRQ_TYPE_EDGE_RISING:
-> -					trigger = "edge-rising";
-> -					break;
-> -				case IRQ_TYPE_EDGE_BOTH:
-> -					trigger = "edge-both";
-> -					break;
-> -				case IRQ_TYPE_LEVEL_HIGH:
-> -					trigger = "level-high";
-> -					break;
-> -				case IRQ_TYPE_LEVEL_LOW:
-> -					trigger = "level-low";
-> -					break;
-> -				default:
-> -					trigger = "?trigger?";
-> -					break;
-> -				}
-> -
-> -				seq_printf(s, " irq-%d %s%s",
-> -						irq, trigger,
-> -						(desc->status & IRQ_WAKEUP)
-> -							? " wakeup" : "");
-> -			}
-> -		}
-> -
->  		seq_printf(s, "\n");
 
-This could just be merged into the previous seq_printf().
+Would be nice to at least keep the fact that the gpio is configured as
+an interrupt. Something like:
 
-For that matter, the is_out variable could be removed and just code the test
-into the seq_printf().
+	if (!is_out) {
+		int irq;
 
->  	}
->  }
+		irq = gpio_to_irq(gpio);
+		if (irq >= 0)
+			seq_printf(s, " (irq %d)", irq);
+	}
+
+I'm okay with this patch as-is though. We can add a corrected patch
+later if we decided that it is still useful to have this information.
+
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
