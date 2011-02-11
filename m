@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab1BKGiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 01:38:20 -0500
-Received: from tundra.namei.org ([65.99.196.166]:56503 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab1BKGiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 01:38:19 -0500
-Date: Fri, 11 Feb 2011 17:38:13 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, Stefan Berger <stefanb@us.ibm.com>,
-        Guillaume Chazarain <guichaz@gmail.com>
-Subject: Re: [GIT PULL] TPM timeout fix
-In-Reply-To: <4D54B688.4010307@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.00.1102111737460.28805@tundra.namei.org>
-References: <4D54B688.4010307@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752643Ab1BKG6M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 01:58:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45911 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1BKG6K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 01:58:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=yAWMVftKnavw4eF84CGn4AzbpEqrPdnwyNdDkTIzDLhwivh/eDA/OvE+G9nR/oBDHr
+         q2NVi6bpwxY/DXjaSXuScBvR0JamC6QYkt9NYi818aKTXyXq+Q/xbryK3M6XllTKp9jR
+         QKrmmyjfkQnXHWSCSx+ivT1wXepecHjCUC2A8=
+Date: Fri, 11 Feb 2011 07:58:05 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: netfilter is not a filesystem
+Message-ID: <20110211065805.GB2914@riccoc20.at.omicron.at>
+References: <bug-28862-10286@https.bugzilla.kernel.org/>
+ <20110210141119.56d789fc.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110210141119.56d789fc.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Feb 2011, Rajiv Andrade wrote:
-
-> Hi James,
+On Thu, Feb 10, 2011 at 02:11:19PM -0800, Andrew Morton wrote:
+> On Thu, 10 Feb 2011 21:55:26 GMT
+> bugzilla-daemon@bugzilla.kernel.org wrote:
 > 
-> Please pull from:
->     git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+> > https://bugzilla.kernel.org/show_bug.cgi?id=28862
+> > 
+> >            Summary: /proc/net/ip_conntrack: no space left on device
+> >                     systematically
 > 
-> The following change corrects the logic used to extract the timeouts returned
-> from a TPM.
-> These values are used subsequently in the TPM device driver, and if relying on
-> the default values,
-> some commands may not have its proper timeout considered. This is a bugfix for
-> the current linus tree.
-> 
-> Stefan Berger (1):
->       tpm_tis: Use timeouts returned from TPM
+> This is why I'm forever nagging people to not just grab some errno
+> because its name happens to sound similar to the error you just detected.
 
-Thanks, applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#for-linus
+Today my brain has thrown an -EMIXEDMESSAGES:
 
+   https://lkml.org/lkml/2011/2/10/172
 
--- 
-James Morris
-<jmorris@namei.org>
+Sorry, couldn't resist,
+
+Richard
