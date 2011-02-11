@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab1BKOwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 09:52:39 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56329 "EHLO mx1.suse.de"
+	id S1756891Ab1BKPGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:06:11 -0500
+Received: from gate.eia.be ([194.78.71.18]:26594 "EHLO mail.eia.be"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754068Ab1BKOwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 09:52:38 -0500
-Date: Fri, 11 Feb 2011 06:53:16 -0800
-From: Greg KH <gregkh@suse.de>
-To: "Weil, Oren jer" <oren.jer.weil@intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "david@woodhou.se" <david@woodhou.se>,
-        "Woodhouse, David" <david.woodhouse@intel.com>
-Subject: Re: [RFC PATCH 01/13] Intel(R) MEI Driver
-Message-ID: <20110211145316.GA13146@suse.de>
-References: <b9dded$htd8nk@orsmga002.jf.intel.com>
- <20110210180044.GD13795@suse.de>
- <F28B59AD52D84B479DCA46982447533506505D9ACE@hasmsx503.ger.corp.intel.com>
+	id S1752260Ab1BKPGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 10:06:10 -0500
+Date: Fri, 11 Feb 2011 16:06:02 +0100
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
+        sachi@mistralsolutions.com, Wolfgang Grandegger <wg@grandegger.com>,
+        "open list:CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
+        "open list:CAN NETWORK DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
+Message-ID: <20110211150602.GB373@e-circ.dyndns.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
+ <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <F28B59AD52D84B479DCA46982447533506505D9ACE@hasmsx503.ger.corp.intel.com>
+In-Reply-To: <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 Feb 2011 15:06:06.0440 (UTC) FILETIME=[3510E680:01CBC9FD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:57:31AM +0200, Weil, Oren jer wrote:
-> Hi
-> 
-> 1) For the review purpose we wanted to split the patches into files, so the
-> only way we found to do it is using "git diff", this is they there is not
-> signed-off-by line
-> Maybe I should have adding a description for every file, I can send another
-> mail with the descriptions, sorry for the mess.
+On Fri, Feb 11, 2011 at 08:21:28PM +0530, Subhasish Ghosh wrote:
+> +config DA8XX_PRU_CANID_MBX0
+> +	hex "CANID for mailbox 0"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	---help---
+> +	Enter the CANID for mailbox 0
+> +	Default value is set to 0x123, change this as required.
+> +
+> +config DA8XX_PRU_CANID_MBX1
+> +	hex "CANID for mailbox 1"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	 ---help---
+> +	Enter the CANID for mailbox 1
+> +	Default value is set to 0x123, change this as required.
+> +
+> +config DA8XX_PRU_CANID_MBX2
+> +	hex "CANID for mailbox 2"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	---help---
+> +	Enter the CANID for mailbox 2
+> +	Default value is set to 0x123, change this as required.
+> +
+> +config DA8XX_PRU_CANID_MBX3
+> +	hex "CANID for mailbox 3"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	---help---
+> +	Enter the CANID for mailbox 3
+> +	Default value is set to 0x123, change this as required.
+> +
+> +config DA8XX_PRU_CANID_MBX4
+> +	hex "CANID for mailbox 4"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	---help---
+> +	Enter the CANID for mailbox 4
+> +	Default value is set to 0x123, change this as required.
+> +
+> +config DA8XX_PRU_CANID_MBX5
+> +	hex "CANID for mailbox 5"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	---help---
+> +	Enter the CANID for mailbox 5
+> +	Default value is set to 0x123, change this as required.
+> +
+> +config DA8XX_PRU_CANID_MBX6
+> +	hex "CANID for mailbox 6"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	---help---
+> +	Enter the CANID for mailbox 6
+> +	Default value is set to 0x123, change this as required.
+> +
+> +config DA8XX_PRU_CANID_MBX7
+> +	hex "CANID for mailbox 7"
+> +	depends on CAN_TI_DA8XX_PRU
+> +	default "0x123"
+> +	---help---
+> +	Enter the CANID for mailbox 7
+> +	Default value is set to 0x123, change this as required.
+Why is filling the mailboxes the job of kernel config?
 
-Again, please read the documentation on how to properly send patches.
-We write it for a reason, not to just be ignored.
-
-Actually, if you do ignore it, it's easy for us to ignore you, and
-somehow I doubt you want that.
-
-> 2) "Intel(R) Management Engine Interface (Intel(R) MEI)" - is our official
-> name.
-
-That's nice, but it's not anything that kernel developers want to see
-all the time.  Drop the (R) please, it's pointless within the kernel
-sources.
-
-> 3) we ran checkpatch.pl on every file, this file my by skipped by mistake.
-
-It wasn't the only file you skipped, I saw lots of coding style
-violations in the other files, so I really don't believe you.
-
-good luck,
-
-greg k-h
+Regards,
+Kurt
