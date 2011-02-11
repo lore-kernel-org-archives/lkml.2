@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab1BKRRZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 12:17:25 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39791 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757513Ab1BKRRY (ORCPT
+	id S1757846Ab1BKRTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 12:19:49 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:7669 "EHLO
+	VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757793Ab1BKRTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 12:17:24 -0500
-Date: Fri, 11 Feb 2011 18:17:54 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: x86 <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: Fix mwait_usable section mismatch
-Message-ID: <20110211171754.GA21047@aftab>
+	Fri, 11 Feb 2011 12:19:48 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zzzz1202hzz8275bh15d4Rz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LGGQSN-01-5Y4-02
+X-M-MSG: 
+Date: Fri, 11 Feb 2011 18:20:13 +0100
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kvm: Fix section mismatch
+Message-ID: <20110211172013.GA21088@aftab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use it in non __cpuinit code now too so drop marker.
+Mark kvm_guest_cpu_online() as __cpuinit since its both users -
+kvm_guest_cpu_init() and kvm_cpu_notify() - are __cpuinit too.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/include/asm/cpu.h |    2 +-
- arch/x86/kernel/process.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/kvm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index 6e6e755..4564c8e 100644
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -32,6 +32,6 @@ extern void arch_unregister_cpu(int);
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 8dc4466..33c07b0 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -493,7 +493,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
+ 	native_smp_prepare_boot_cpu();
+ }
  
- DECLARE_PER_CPU(int, cpu_state);
- 
--int __cpuinit mwait_usable(const struct cpuinfo_x86 *);
-+int mwait_usable(const struct cpuinfo_x86 *);
- 
- #endif /* _ASM_X86_CPU_H */
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e764fc0..3c189e9 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -506,7 +506,7 @@ static void poll_idle(void)
- #define MWAIT_ECX_EXTENDED_INFO		0x01
- #define MWAIT_EDX_C1			0xf0
- 
--int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
-+int mwait_usable(const struct cpuinfo_x86 *c)
+-static void kvm_guest_cpu_online(void *dummy)
++static void __cpuinit kvm_guest_cpu_online(void *dummy)
  {
- 	u32 eax, ebx, ecx, edx;
- 
+ 	kvm_guest_cpu_init();
+ }
 -- 
 1.7.4.rc2
 
@@ -67,3 +62,4 @@ Einsteinring 24, 85609 Dornach
 General Managers: Alberto Bozzo, Andrew Bowd
 Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
 Registergericht Muenchen, HRB Nr. 43632
+
