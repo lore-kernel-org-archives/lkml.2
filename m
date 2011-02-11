@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab1BKQ1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 11:27:45 -0500
-Received: from mailout05.t-online.de ([194.25.134.82]:35386 "EHLO
-	mailout05.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757337Ab1BKQ1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 11:27:43 -0500
-Message-ID: <4D556367.5000202@t-online.de>
-Date: Fri, 11 Feb 2011 17:27:19 +0100
-From: =?ISO-8859-1?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101230 Lanikai/3.1.7
+	id S1757646Ab1BKQ36 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 11:29:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757234Ab1BKQ34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 11:29:56 -0500
+From: Tom Tromey <tromey@redhat.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Michael Snyder <msnyder@vmware.com>,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        "gdb\@sourceware.org" <gdb@sourceware.org>
+Subject: Re: [PATCH] Linux Kernel GDB tracepoint module 2011-02-05
+References: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
+	<m3hbcfzu9u.fsf@fleche.redhat.com>
+	<AANLkTinMx8mJYiDps3TuuaA1B4NLHi-PuCKm2=sTqyR0@mail.gmail.com>
+	<m3y65qv7m8.fsf@fleche.redhat.com>
+	<AANLkTi=UrBZUttP9Q=2DrNXs8MAw4FXWhv6f_Pz8ad8o@mail.gmail.com>
+X-Attribution: Tom
+Date: Fri, 11 Feb 2011 09:29:24 -0700
+In-Reply-To: <AANLkTi=UrBZUttP9Q=2DrNXs8MAw4FXWhv6f_Pz8ad8o@mail.gmail.com>
+	(Hui Zhu's message of "Wed, 9 Feb 2011 21:25:50 +0800")
+Message-ID: <m3mxm2mt5n.fsf@fleche.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-References: <20110209224006.GA11202@kroah.com> <4D551F76.1070303@t-online.de> <20110211152231.GB13487@kroah.com>
-In-Reply-To: <20110211152231.GB13487@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-ID: SgiIGQZOZhitU56EIytSwH3sy7hN69DFK5QMygnX68EuHp0l03AbFdAjPVZ6p2FwWp
-X-TOI-MSGID: 2356c0dc-a133-4961-bc56-aaa65a5f2906
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DMI data for Samsung N145P/N250P/N260P
+>>>>> ">" == Hui Zhu <teawater@gmail.com> writes:
 
-Signed-off-by: Richard Schütz <r.schtz@t-online.de>
----
+>> Handle the var is enough for KGTP.  Could you send me a introduce
+>> link for VTA?  I will post the the VTA to the HOWTO of the kgtp.
 
-> Yes I can, but do you want to send it to me in a format that I can apply
-> so you can get the proper authorship credit?
+Here's the original plan:
+http://gcc.gnu.org/wiki/Var_Tracking_Assignments
 
-Of course, here it is.
+Alexandre also wrote a paper about it for the GCC Summit.  You can
+probably dig that up without much effort.  There's also a follow-up
+effort, the paper there is called "Consistent Views at Recommended
+Breakpoints".  This one hasn't been implemented yet, though.
 
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -592,6 +592,15 @@ static struct dmi_system_id __initdata s
-  		},
-  		.callback = dmi_check_cb,
-  	},
-+	{
-+		.ident = "N145P/N250P/N260P",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-+			DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-+		},
-+		.callback = dmi_check_cb,
-+	},
-  	{ },
-  };
-  MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
-
--- 
-Regards,
-Richard Schütz
+Tom
