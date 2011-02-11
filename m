@@ -1,89 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab1BKPUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:20:32 -0500
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:45869 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757234Ab1BKPUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:20:30 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: R93imZ4VM1kL_igoVFkMYw_AoUFvs42mPYyYjjLANt1h2WE
- QFrx9iP2a3tmwSlhE7IT9WkXn1QfUxWyWPXE_YJE_ErXWuobzf07jhZ0wGDg
- dHoBQsFRh0GmQlXYrLralhT33S2fkJRuY1AV1wMQKsrU541XabPH70IPL5GM
- P2SvPMzowA28l8MOcY6ggKims82BrhNK13BwJai69zCXaLbS5LdB_wiNr9Ek
- HhdaTtatcp1hVNFg2VRS2BxfswACNVsuh.7oAZeCEeej29TpHCLmhN2FVP01
- GMMDUYrFJqGUtyykhPIz0CTwCWe6waAXlz2BJIc6cR_mFM_4-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 11 Feb 2011 09:20:27 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Russell King <rmk@arm.linux.org.uk>
-cc: Pekka Enberg <penberg@kernel.org>, Shiyong Li <shi-yong.li@motorola.com>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
-In-Reply-To: <20110211091413.GA32687@flint.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1102110920060.12360@router.home>
-References: <20110207180606.GB2966@flint.arm.linux.org.uk> <AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com> <20110208125546.GA4286@flint.arm.linux.org.uk> <alpine.DEB.2.00.1102080856020.12521@router.home> <AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com>
- <20110211091413.GA32687@flint.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757346Ab1BKPUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:20:37 -0500
+Received: from gate.eia.be ([194.78.71.18]:26640 "EHLO mail.eia.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757242Ab1BKPUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 10:20:33 -0500
+Date: Fri, 11 Feb 2011 16:20:26 +0100
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
+        sachi@mistralsolutions.com, Wolfgang Grandegger <wg@grandegger.com>,
+        "open list:CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
+        "open list:CAN NETWORK DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
+Message-ID: <20110211152026.GC373@e-circ.dyndns.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
+ <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-40732457-1297437628=:12360"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 Feb 2011 15:20:30.0163 (UTC) FILETIME=[37E29230:01CBC9FF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
----1463811839-40732457-1297437628=:12360
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+I looked a bit at the TX path:
 
-On Fri, 11 Feb 2011, Russell King wrote:
+On Fri, Feb 11, 2011 at 08:21:28PM +0530, Subhasish Ghosh wrote:
+> +static int omapl_pru_can_set_bittiming(struct net_device *ndev)
+> +{
+> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+> +	struct can_bittiming *bt = &priv->can.bittiming;
+> +	long bit_error = 0;
+> +
+> +	if (priv->can.ctrlmode & CAN_CTRLMODE_3_SAMPLES) {
+> +		dev_warn(priv->dev, "WARN: Triple"
+> +			 "sampling not set due to h/w limitations");
+You should not have enabled CAN_CTRLMODE_3_SAMPLES in the first place?
+> +	}
+> +	if (pru_can_calc_timing(priv->dev, priv->can.clock.freq,
+> +				bt->bitrate) != 0)
+> +		return -EINVAL;
+> +	bit_error =
+> +	    (((priv->timer_freq / (priv->timer_freq / bt->bitrate)) -
+> +	      bt->bitrate) * 1000) / bt->bitrate;
+> +	if (bit_error) {
+> +		bit_error =
+> +		    (((priv->timer_freq / (priv->timer_freq / bt->bitrate)) -
+> +		      bt->bitrate) * 1000000) / bt->bitrate;
+> +		printk(KERN_INFO "\nBitrate error %ld.%ld%%\n",
+> +			bit_error / 10000, bit_error % 1000);
+> +	} else
+> +		printk(KERN_INFO "\nBitrate error 0.0%%\n");
+> +
+> +	return 0;
+> +}
+I wonder how much of this code is duplicated from drivers/net/can/dev.c ?
 
-> On Fri, Feb 11, 2011 at 09:02:45AM +0200, Pekka Enberg wrote:
-> > On Tue, Feb 8, 2011 at 5:02 PM, Christoph Lameter <cl@linux.com> wrote:
-> > > Uhh.. That first hunk in commit 5c5e3b33b7cb959a401f823707bee006caadd=
-76e
-> > > looks wrong to me. ralign is usually a power of two and greater than
-> > > alignof(unsigned long long). The & operation will result in 0 and nev=
-er
-> > > exempt any caches.
-> > >
-> > > diff --git a/mm/slab.c b/mm/slab.c
-> > > index bac0f4f..525c664 100644
-> > > --- a/mm/slab.c
-> > > +++ b/mm/slab.c
-> > > @@ -2220,8 +2220,8 @@ kmem_cache_create (const char *name, size_t siz=
-e,
-> > > size_t align,
-> > > =A0 =A0 =A0 =A0if (ralign < align) {
-> > > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0ralign =3D align;
-> > > =A0 =A0 =A0 =A0}
-> > > - =A0 =A0 =A0 /* disable debug if necessary */
-> > > - =A0 =A0 =A0 if (ralign > __alignof__(unsigned long long))
-> > > + =A0 =A0 =A0 /* disable debug if not aligning with REDZONE_ALIGN */
-> > > + =A0 =A0 =A0 if (ralign & (__alignof__(unsigned long long) - 1))
-> > > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0flags &=3D ~(SLAB_RED_ZONE | SLAB_STOR=
-E_USER);
-> > > =A0 =A0 =A0 =A0/*
-> > > =A0 =A0 =A0 =A0 * 4) Store it.
-> > >
-> > >
-> > > Did you mean
-> > >
-> > > =A0 =A0 =A0 =A0if (ralign > REDZONE_ALIGN) ...
-> > >
-> > > ?
-> >
-> > Ping. Any arm-capable tester out there that can verify this fix? OTOH,
-> > since Shiyong Li hasn't showed up, I'm inclined to just revert the
-> > commit...
->
-> What fix?  The above is a quote of the patch in 5c5e3b33.
+> +static netdev_tx_t omapl_pru_can_start_xmit(struct sk_buff *skb,
+> +					    struct net_device *ndev)
+> +{
+> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+> +	struct can_frame *cf = (struct can_frame *)skb->data;
+> +	int count;
+> +	u8 *data = cf->data;
+> +	u8 dlc = cf->can_dlc;
+> +	u8 *ptr8data = NULL;
+> +
+most drivers start with:
+	if (can_dropped_invalid_skb(dev, skb))
+		return NETDEV_TX_OK;
 
-He was referring to the change of the if statement.
+> +	netif_stop_queue(ndev);
+why would you stop when you just resumed the queue?
+> +	if (cf->can_id & CAN_EFF_FLAG)	/* Extended frame format */
+> +		*((u32 *) &priv->can_tx_hndl.strcanmailbox) =
+> +		    (cf->can_id & CAN_EFF_MASK) | PRU_CANMID_IDE;
+> +	else			/* Standard frame format */
+> +		*((u32 *) &priv->can_tx_hndl.strcanmailbox) =
+> +		    (cf->can_id & CAN_SFF_MASK) << 18;
+> +
+> +	if (cf->can_id & CAN_RTR_FLAG)	/* Remote transmission request */
+> +		*((u32 *) &priv->can_tx_hndl.strcanmailbox) |= CAN_RTR_FLAG;
+> +
+> +	ptr8data = &priv->can_tx_hndl.strcanmailbox.u8data7 + (dlc - 1);
+> +	for (count = 0; count < (u8) dlc; count++) {
+> +		*ptr8data-- = *data++;
+> +	}
+> +	*((u32 *) &priv->can_tx_hndl.strcanmailbox.u16datalength) = (u32) dlc;
+> +/*
+> + * search for the next available mbx
+> + * if the next mbx is busy, then try the next + 1
+> + * do this until the head is reached.
+> + * if still unable to tx, stop accepting any packets
+> + * if able to tx and the head is reached, then reset next to tail, i.e mbx0
+> + * if head is not reached, then just point to the next mbx
+> + */
+> +	for (; priv->tx_next <= priv->tx_head; priv->tx_next++) {
+> +		priv->can_tx_hndl.ecanmailboxnumber =
+> +		    (can_mailbox_number) priv->tx_next;
+> +		if (-1 == pru_can_write_data_to_mailbox(priv->dev,
+> +					&priv->can_tx_hndl)) {
+> +			if (priv->tx_next == priv->tx_head) {
+> +				priv->tx_next = priv->tx_tail;
+> +				if (!netif_queue_stopped(ndev))
+If you get here, the queue is not stopped. This test is therefore useless.
+> +					netif_stop_queue(ndev);	/* IF stalled */
+> +				dev_err(priv->dev,
+> +					"%s: no tx mbx available", __func__);
+> +				return NETDEV_TX_BUSY;
+> +			} else
+> +				continue;
+> +		} else {
+> +			/* set transmit request */
+> +			pru_can_tx(priv->dev, priv->tx_next, CAN_TX_PRU_1);
+> +			pru_can_tx_mode_set(priv->dev, false, ecanreceive);
+> +			pru_can_tx_mode_set(priv->dev, true, ecantransmit);
+> +			pru_can_start_abort_tx(priv->dev, PRU_CAN_START);
+> +			priv->tx_next++;
+> +			can_put_echo_skb(skb, ndev, 0);
+> +			break;
+> +		}
+> +	}
+> +	if (priv->tx_next > priv->tx_head) {
+> +		priv->tx_next = priv->tx_tail;
+> +	}
+> +	return NETDEV_TX_OK;
+> +}
+> +
+> +
 
----1463811839-40732457-1297437628=:12360--
+> +irqreturn_t omapl_tx_can_intr(int irq, void *dev_id)
+> +{
+> +	struct net_device *ndev = dev_id;
+> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+> +	struct net_device_stats *stats = &ndev->stats;
+> +	u32 bit_set, mbxno;
+> +
+> +	pru_can_get_intr_status(priv->dev, &priv->can_tx_hndl);
+> +	if ((PRU_CAN_ISR_BIT_CCI & priv->can_tx_hndl.u32interruptstatus)
+> +	    || (PRU_CAN_ISR_BIT_SRDI & priv->can_tx_hndl.u32interruptstatus)) {
+> +		__can_debug("tx_int_status = 0x%X\n",
+> +			    priv->can_tx_hndl.u32interruptstatus);
+> +		can_free_echo_skb(ndev, 0);
+> +	} else {
+> +		for (bit_set = 0; ((priv->can_tx_hndl.u32interruptstatus & 0xFF)
+> +						>> bit_set != 0); bit_set++)
+> +		;
+> +		if (0 == bit_set) {
+> +			__can_err("%s: invalid mailbox number\n", __func__);
+> +			can_free_echo_skb(ndev, 0);
+> +		} else {
+> +			mbxno = bit_set - 1;	/* mail box numbering starts from 0 */
+> +			if (PRU_CAN_ISR_BIT_ESI & priv->can_tx_hndl.
+> +			    u32interruptstatus) {
+> +				/* read gsr and ack pru */
+> +				pru_can_get_global_status(priv->dev, &priv->can_tx_hndl);
+> +				omapl_pru_can_err(ndev,
+> +						  priv->can_tx_hndl.
+> +						  u32interruptstatus,
+> +						  priv->can_tx_hndl.
+> +						  u32globalstatus);
+> +			} else {
+> +				stats->tx_packets++;
+> +				/* stats->tx_bytes += dlc; */
+> +				/*can_get_echo_skb(ndev, 0);*/
+> +			}
+> +		}
+> +	}
+> +	if (netif_queue_stopped(ndev))
+you can call netif_wake_queue(ndev) multiple times, so there is no need
+for netif_queue_stopped()
+> +		netif_wake_queue(ndev);
+> +
+> +	can_get_echo_skb(ndev, 0);
+> +	pru_can_tx_mode_set(priv->dev, true, ecanreceive);
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int omapl_pru_can_open(struct net_device *ndev)
+> +{
+> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+> +	int err;
+> +
+> +	/* register interrupt handler */
+> +	err = request_irq(priv->trx_irq, &omapl_rx_can_intr, IRQF_SHARED,
+> +			  "pru_can_irq", ndev);
+you're doing a lot of work _in_ the irq handler. Maybe threaded irq?
+
+> +static int omapl_pru_can_close(struct net_device *ndev)
+> +{
+> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+> +
+> +	if (!netif_queue_stopped(ndev))
+check is not needed.
+> +		netif_stop_queue(ndev);
+> +
+> +	close_candev(ndev);
+> +
+> +	free_irq(priv->trx_irq, ndev);
+> +	return 0;
+> +}
+> +
+
+Regards,
+Kurt
