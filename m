@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab1BKAga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 19:36:30 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:9789 "EHLO
+	id S1757474Ab1BKAl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 19:41:56 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:12617 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab1BKAg2 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751546Ab1BKAly convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 19:36:28 -0500
+	Thu, 10 Feb 2011 19:41:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=l2xAdJBjbeB1ZJGYjt55jnbaxkq6Zs6mAY56uUGPUp3twfi5FQsJFCw8r+pgqC201a
-         bZdA2wn/EvPPX7od4BPA==
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=eFQInVjWWnnscaJkKLhYTjJVlO2o0JugYI164TXvw+z+g7Gq0bpZ+zvrYOigBvu6Q6
+         lgACI32Vu6g4rKz0Asnw==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=J8x3cEhQ_tJJ0=YM6+y_ZNLtK_34PweQfNJL8@mail.gmail.com>
-References: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
-	<20110210020946.GA27040@redhat.com>
-	<AANLkTi=dZDK6VosLX8JH4gJyRQ0KXGKMA5vhJ-7D93s7@mail.gmail.com>
-	<20110210035738.GC27040@redhat.com>
-	<AANLkTi=J8x3cEhQ_tJJ0=YM6+y_ZNLtK_34PweQfNJL8@mail.gmail.com>
-Date: Thu, 10 Feb 2011 16:36:25 -0800
-Message-ID: <AANLkTimdOO2qvafZ9f6csjqhh1e5w1iOEybN+1-3G3ep@mail.gmail.com>
-Subject: Re: [PATCH] Avoid preferential treatment of groups that aren't backlogged
-From: Chad Talbott <ctalbott@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
-        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20110210235447.GA12313@core.coreip.homeip.net>
+References: <1297381370-16388-1-git-send-email-tlambert@chromium.org>
+	<20110210235447.GA12313@core.coreip.homeip.net>
+Date: Thu, 10 Feb 2011 16:41:52 -0800
+X-Google-Sender-Auth: O4qGdyeeG3at5navp3R4BNo9CIQ
+Message-ID: <AANLkTinjPG-KY-ee3ya7bca8F5QechRhE88+uO6odgjE@mail.gmail.com>
+Subject: Re: [PATCH] Input: fixed EVIOCGRAB iterative grab/release.
+From: Terry Lambert <tlambert@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
@@ -34,46 +32,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 10:57 AM, Chad Talbott <ctalbott@google.com> wrote:
-> On Wed, Feb 9, 2011 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> If you ran different random readers in different groups of differnet
->> weight with group_isolation=1, then there is a case of having service
->> differentiation. In that case we will idle for 8ms on each group before
->> we expire the group. So in these test cases are low weight groups not
->> submitting IO with-in 8ms? Putting a random reader in separate group
->> with think time > 8, I think is going to hurt a lot because for every
->> single IO dispatched group is going to weight for 8ms before it is
->> expired.
+Sure.  First patch to linux in 16 years and all, I didn't want to be
+too noisy...
+
+Problem:
+
+If you use EVIOCGRAB, such as when you are using a Cr-48 with the
+Synaptics trackpad driver, the grab on the input device has to be
+dropped before you zero out the grab on the evdev, or you can't grab
+it again without rebooting.  The X Server does this; it's usually not
+an issue for Chromium OS because it tends to just reboot, but everyone
+else gets a locked up pointer.
+
+I found this when copying the evdev_grab/input_device_grab() &
+input_release_device()/evdev_ungrab() design pattern into some new
+code to use for automated testing (record & playback of arbitrary
+event streams) and for training software for gesture recognition.
+When doing this sort of thing, you tend to repeat operations to obtain
+large training sets, or string together a series of test gestures with
+scripts, and the problem became obvious.
+
+This is pretty easy to reproduce with a modified evtest program that
+does an EVIOCGRAB, if you don't have a Synaptics touchpad to use for
+testing (but you won't get whatever you grab back unless you use the
+same fd or reboot).
+
+I have some patches to a number of bugs in the Synaptics driver, and
+some additional code cleanup vs. checkpatch.pl for
+drivers/input/evdev.c too, but I thought I'd start small.
+
+-- Terry
+
+On Thu, Feb 10, 2011 at 3:54 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
 >
-> You're right about the behavior of group_idle.  We have more
-> experience with earlier kernels (before group_idle).  With this patch
-> we are able to achieve isolation without group_idle even with these
-> large ratios.  (Without group_idle the random reader workloads will
-> get marked seeky, and idling is disabled.  Without group_idle, we have
-> to remember the vdisktime to get isolation.)
+> On Thu, Feb 10, 2011 at 03:42:50PM -0800, tlambert@chromium.org wrote:
+> > From: Terry Lambert <tlambert@chromium.org>
+> >
+> > Fixed order of calls in evdev_ungrab to allow iterative use of
+> > code which grabs and releases input event devices.
+> >
 >
->> Can you run blktrace and verify what's happenig?
+> Sorry, could you  please be more verbose?
 >
-> I can run a blktrace, and I think it will show what you expect.
-
-So, I ran the following two tests and took a blktrace.
-
-950 rdrand, 50 rdrand.delay10
-weight 950 random reader with low think time vs weight 50 random
-reader with 10ms think time
-
-950 rdrand, 50 rdrand.delay50 # 50ms think time
-weight 950 random reader with low think time vs weight 50 random
-reader with 50ms think time
-
-I find that we are still idling for these random readers, even the one
-with 50ms think time.  group_idle is 0 according to blktrace.
-
-With this patch, both of these cases have correct isolation.  Without
-this patch, the small weight reader is able to get more than its
-share.
-
-I think that idling for a random reader with a 50ms think time is
-likely a bug, but a separate issue.
-
-Chad
+> > Signed-off-by: Terry Lambert <tlambert@chromium.org>
+> > ---
+> >  drivers/input/evdev.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> > index c8471a2..0bac8da 100644
+> > --- a/drivers/input/evdev.c
+> > +++ b/drivers/input/evdev.c
+> > @@ -160,9 +160,9 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
+> >       if (evdev->grab != client)
+> >               return  -EINVAL;
+> >
+> > +     input_release_device(&evdev->handle);
+> >       rcu_assign_pointer(evdev->grab, NULL);
+> >       synchronize_rcu();
+> > -     input_release_device(&evdev->handle);
+> >
+> >       return 0;
+> >  }
+> > --
+> > 1.7.3.1
+> >
+>
+> --
+> Dmitry
