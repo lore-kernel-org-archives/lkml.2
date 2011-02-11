@@ -1,46 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675Ab1BKG3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 01:29:18 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62966 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751048Ab1BKG3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 01:29:17 -0500
-Message-ID: <4D54D754.4090503@cn.fujitsu.com>
-Date: Fri, 11 Feb 2011 14:29:40 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1751817Ab1BKGeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 01:34:24 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:12436 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab1BKGeX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 01:34:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=jLje0mDguSzFt7IJEi+c7MR6bPDqTAubiqp+ytevjqN/8vfdcr3NXEvOo2how8f/Wm
+         IBYQr5y3wgnzNS6ajpmQ==
+Date: Thu, 10 Feb 2011 22:34:11 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Chris Wilson <chris@chris-wilson.co.uk>
+cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH] drm/i915/tv: Use polling rather than interrupt-based
+ hotplug
+In-Reply-To: <1297332966-17647-1-git-send-email-chris@chris-wilson.co.uk>
+Message-ID: <alpine.LSU.2.00.1102102220580.2017@sister.anvils>
+References: <alpine.LSU.2.00.1102081132160.1591@sister.anvils> <1297332966-17647-1-git-send-email-chris@chris-wilson.co.uk>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: [PATCH] kvm: add the __noclone attribute
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-11 14:28:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-11 14:28:23,
-	Serialize complete at 2011-02-11 14:28:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The changelog of 104f226 said "adds the __noclone attribute",
-but it was missing in its patch. I think it is still needed.
+On Thu, 10 Feb 2011, Chris Wilson wrote:
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index bf89ec2..de99a4d 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3962,7 +3962,7 @@ static void vmx_cancel_injection(struct kvm_vcpu *vcpu)
- #define Q "l"
- #endif
- 
--static void vmx_vcpu_run(struct kvm_vcpu *vcpu)
-+static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- {
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
- 
+> The documentation recommends that we should use a polling method for TV
+> detection as this is more power efficient than the interrupt based
+> mechanism (as the encoder can be completely switched off). A secondary
+> effect is that leaving the hotplug enabled seems to be causing pipe
+> underruns as reported by Hugh Dickins on his Crestline.
+> 
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: stable@kernel.org
+> ---
+> 
+> Hugh, does this prevent the persistent PIPE UNDERRUN issue?
+
+Brilliant, Chris, yes it does, thank you.  I checked both 2.6.38-rc4
+and 2.6.37 (changing "irq_lock" back to "user_irq_lock") and verified
+that both i386 and x86_64 "pipe a underrun"s have been fixed.  I also
+just tried hooking up laptop to TV by VGA cable, and it appears to
+drive the TV correctly too.
+
+(It doesn't fix my text flush problem, but we'd given up expecting that.)
+
+Thanks,
+Hugh
+
+> 
+> ---
+>  drivers/gpu/drm/i915/intel_tv.c |   43 +++++++++++++++++++++++++++-----------
+>  1 files changed, 30 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+> index 93206e4..fe4a53a 100644
+> --- a/drivers/gpu/drm/i915/intel_tv.c
+> +++ b/drivers/gpu/drm/i915/intel_tv.c
+> @@ -1234,7 +1234,8 @@ static const struct drm_display_mode reported_modes[] = {
+>   * \return false if TV is disconnected.
+>   */
+>  static int
+> -intel_tv_detect_type (struct intel_tv *intel_tv)
+> +intel_tv_detect_type (struct intel_tv *intel_tv,
+> +		      struct drm_connector *connector)
+>  {
+>  	struct drm_encoder *encoder = &intel_tv->base.base;
+>  	struct drm_device *dev = encoder->dev;
+> @@ -1245,11 +1246,13 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
+>  	int type;
+>  
+>  	/* Disable TV interrupts around load detect or we'll recurse */
+> -	spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+> -	i915_disable_pipestat(dev_priv, 0,
+> -			      PIPE_HOTPLUG_INTERRUPT_ENABLE |
+> -			      PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
+> -	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+> +	if (connector->polled & DRM_CONNECTOR_POLL_HPD) {
+> +		spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+> +		i915_disable_pipestat(dev_priv, 0,
+> +				      PIPE_HOTPLUG_INTERRUPT_ENABLE |
+> +				      PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
+> +		spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+> +	}
+>  
+>  	save_tv_dac = tv_dac = I915_READ(TV_DAC);
+>  	save_tv_ctl = tv_ctl = I915_READ(TV_CTL);
+> @@ -1302,11 +1305,13 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
+>  	I915_WRITE(TV_CTL, save_tv_ctl);
+>  
+>  	/* Restore interrupt config */
+> -	spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+> -	i915_enable_pipestat(dev_priv, 0,
+> -			     PIPE_HOTPLUG_INTERRUPT_ENABLE |
+> -			     PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
+> -	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+> +	if (connector->polled & DRM_CONNECTOR_POLL_HPD) {
+> +		spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+> +		i915_enable_pipestat(dev_priv, 0,
+> +				     PIPE_HOTPLUG_INTERRUPT_ENABLE |
+> +				     PIPE_HOTPLUG_TV_INTERRUPT_ENABLE);
+> +		spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+> +	}
+>  
+>  	return type;
+>  }
+> @@ -1356,7 +1361,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+>  	drm_mode_set_crtcinfo(&mode, CRTC_INTERLACE_HALVE_V);
+>  
+>  	if (intel_tv->base.base.crtc && intel_tv->base.base.crtc->enabled) {
+> -		type = intel_tv_detect_type(intel_tv);
+> +		type = intel_tv_detect_type(intel_tv, connector);
+>  	} else if (force) {
+>  		struct drm_crtc *crtc;
+>  		int dpms_mode;
+> @@ -1364,7 +1369,7 @@ intel_tv_detect(struct drm_connector *connector, bool force)
+>  		crtc = intel_get_load_detect_pipe(&intel_tv->base, connector,
+>  						  &mode, &dpms_mode);
+>  		if (crtc) {
+> -			type = intel_tv_detect_type(intel_tv);
+> +			type = intel_tv_detect_type(intel_tv, connector);
+>  			intel_release_load_detect_pipe(&intel_tv->base, connector,
+>  						       dpms_mode);
+>  		} else
+> @@ -1658,6 +1663,18 @@ intel_tv_init(struct drm_device *dev)
+>  	intel_encoder = &intel_tv->base;
+>  	connector = &intel_connector->base;
+>  
+> +	/* The documentation, for the older chipsets at least, recommend
+> +	 * using a polling method rather than hotplug detection for TVs.
+> +	 * This is because in order to perform the hotplug detection, the PLLs
+> +	 * for the TV must be kept alive increasing power drain and starving
+> +	 * bandwidth from other encoders. Notably for instance, it causes
+> +	 * pipe underruns on Crestline when this encoder is supposedly idle.
+> +	 *
+> +	 * More recent chipsets favour HDMI rather than integrated S-Video.
+> +	 */
+> +	connector->polled =
+> +		DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR_POLL_DISCONNECT;
+> +
+>  	drm_connector_init(dev, connector, &intel_tv_connector_funcs,
+>  			   DRM_MODE_CONNECTOR_SVIDEO);
+>  
+> -- 
+> 1.7.2.3
