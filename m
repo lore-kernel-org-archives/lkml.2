@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab1BKUDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 15:03:32 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56021 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756989Ab1BKUDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 15:03:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,457,1291622400"; 
-   d="scan'208";a="706781875"
-Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
- before entering idle
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
-        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-In-Reply-To: <1297452814.4967.110.camel@mulgrave.site>
-References: <1297300864.2645.128.camel@schen9-DESK>
-	 <201102110017.16066.rjw@sisk.pl> <1297385416.2645.262.camel@schen9-DESK>
-	 <201102112022.25637.rjw@sisk.pl>  <1297452478.2645.265.camel@schen9-DESK>
-	 <1297452814.4967.110.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 12:03:50 -0800
-Message-ID: <1297454630.2645.277.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1758064Ab1BKUQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 15:16:56 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:6206 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756989Ab1BKUQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 15:16:55 -0500
+Message-ID: <4D559927.9080309@bluewatersys.com>
+Date: Sat, 12 Feb 2011 09:16:39 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hartley Sweeten <hsweeten@visionengravers.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [patch 34/75] arm: ep93xx: Kill another instance of broken irq_desc
+ fiddling
+References: <20110210222908.661199947@linutronix.de> <20110210223257.597367298@linutronix.de> <4D548146.5090507@bluewatersys.com> <alpine.LFD.2.00.1102111240190.31804@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1102111240190.31804@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 13:33 -0600, James Bottomley wrote:
-> On Fri, 2011-02-11 at 11:27 -0800, Tim Chen wrote:
-> > On Fri, 2011-02-11 at 20:22 +0100, Rafael J. Wysocki wrote:
-> > 
-> > > 
-> > > Thanks, but I'd put that comment before the structure definition with the
-> > > "NOTE:" prefix and I think you should explain the reason why that field
-> > > shouldn't be changed to 64-bits.
-> > > 
-> > 
-> > Either you or James want to suggest a comment on why the field shouldn't
-> > be changed to 64-bits to be placed there?
-> 
-> /*
->  * Note: The lockless read read path depends on the CPU accessing 
->  * target_value atomically.  Atomic access is only guaranteed on all CPU
->  * types linux supports for 32 bit quantites
->  */
-> 
-> James
-> 
-> 
+On 12/02/11 00:42, Thomas Gleixner wrote:
+> On Fri, 11 Feb 2011, Ryan Mallon wrote:
+>
+>> On 02/11/2011 12:37 PM, Thomas Gleixner wrote:
+>>> 1. This is a copy of the borked code in gpiolib
+>>> 2. If you need information about irq state which is not exposed, then talk
+>>>     to the maintainer of that code instead of adding totaly horrible open
+>>>     coded access.
+>> This code got added simply because it is sometimes helpful to be able to
+>> see how various gpio/irq pins are configured. I'm happy to drop the
+>> functionality (see below), but is there a better way to get this
+>> information? Is it already available somewhere else (proc, sys)?
+> No, but we can add that if it's required in a sane form.
+>
+> I don't have objections to expose debug informations in general, but
+> I have objections that random code does this especially, when it's
+> duplicated random code :)
+>
 
-Thanks.  I will incorporate your suggested comment in an updated patch.
+Ok. Does it make sense to expose the interrupt configuration for all 
+interrupts via proc, sys, debug, etc? Is this information useful to 
+enough people to warrant it? I would rather have a global debug rather 
+than individual platforms and drivers implementing it.
 
-Tim
+For the time being can we fix up the ep93xx gpio code with the amended 
+patch below. It keeps the information that the pin is also configured as 
+an interrupt and cleans the code up a bit.
+
+Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
+---
+
+diff --git a/arch/arm/mach-ep93xx/gpio.c b/arch/arm/mach-ep93xx/gpio.c
+index bec34b8..d0bcce4 100644
+--- a/arch/arm/mach-ep93xx/gpio.c
++++ b/arch/arm/mach-ep93xx/gpio.c
+@@ -347,52 +347,14 @@ static void ep93xx_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+  	gpio = ep93xx_chip->chip.base;
+  	for (i = 0; i<  chip->ngpio; i++, gpio++) {
+  		int is_out = data_dir_reg&  (1<<  i);
++		int irq = gpio_to_irq(gpio);
+
+-		seq_printf(s, " %s%d gpio-%-3d (%-12s) %s %s",
++		seq_printf(s, " %s%d gpio-%-3d (%-12s) %s %s %s\n",
+  				chip->label, i, gpio,
+  				gpiochip_is_requested(chip, i) ? : "",
+  				is_out ? "out" : "in ",
+-				(data_reg&  (1<<  i)) ? "hi" : "lo");
+-
+-		if (!is_out) {
+-			int irq = gpio_to_irq(gpio);
+-			struct irq_desc *desc = irq_desc + irq;
+-
+-			if (irq>= 0&&  desc->action) {
+-				char *trigger;
+-
+-				switch (desc->status&  IRQ_TYPE_SENSE_MASK) {
+-				case IRQ_TYPE_NONE:
+-					trigger = "(default)";
+-					break;
+-				case IRQ_TYPE_EDGE_FALLING:
+-					trigger = "edge-falling";
+-					break;
+-				case IRQ_TYPE_EDGE_RISING:
+-					trigger = "edge-rising";
+-					break;
+-				case IRQ_TYPE_EDGE_BOTH:
+-					trigger = "edge-both";
+-					break;
+-				case IRQ_TYPE_LEVEL_HIGH:
+-					trigger = "level-high";
+-					break;
+-				case IRQ_TYPE_LEVEL_LOW:
+-					trigger = "level-low";
+-					break;
+-				default:
+-					trigger = "?trigger?";
+-					break;
+-				}
+-
+-				seq_printf(s, " irq-%d %s%s",
+-						irq, trigger,
+-						(desc->status&  IRQ_WAKEUP)
+-							? " wakeup" : "");
+-			}
+-		}
+-
+-		seq_printf(s, "\n");
++				(data_reg&  (1<<  i)) ? "hi" : "lo",
++				(!is_out&&  irq>= 0) ? "(interrupt)" : "");
+  	}
+  }
 
 
