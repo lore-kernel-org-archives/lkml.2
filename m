@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1BKS4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 13:56:40 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52720 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377Ab1BKS4j (ORCPT
+	id S1757978Ab1BKS5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 13:57:18 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55045 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757698Ab1BKS5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 13:56:39 -0500
-Message-ID: <4D55860E.3090908@mvista.com>
-Date: Fri, 11 Feb 2011 21:55:10 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Fri, 11 Feb 2011 13:57:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eI82re65qRriCBacHZdf4n0iFZuh8Kkt4nZyOz0lrb/VSStQZviug+h8kbpxwUpy1S
+         4xZl8gsyhFjs3Xs29gVpvBdV/cifvN+gLEKhXbfTyyqHZVlep5oPZTpftsB5xjbH9n/s
+         nz5wZBc/ceK2O+rOndoO4qdpMC1HHjF+H5d1Y=
+Date: Fri, 11 Feb 2011 10:57:10 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: ycwang <yenchengwang@gmail.com>, dbrownell@users.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: f_mass_storage: fixed a macro coding style
+ issue
+Message-ID: <20110211185710.GB31385@core.coreip.homeip.net>
+References: <1297438592-8566-1-git-send-email-yenchengwang@gmail.com>
+ <20110211173918.GA9176@suse.de>
 MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: davinci-linux-open-source@linux.davincidsp.com, sachi@mistralsolutions.com,
-        Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 12/13] da850: pruss SUART platform specific additions.
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-13-git-send-email-subhasish@mistralsolutions.com>
-In-Reply-To: <1297435892-28278-13-git-send-email-subhasish@mistralsolutions.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110211173918.GA9176@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subhasish Ghosh wrote:
+On Fri, Feb 11, 2011 at 09:39:18AM -0800, Greg KH wrote:
+> On Fri, Feb 11, 2011 at 11:36:32PM +0800, ycwang wrote:
+> > Fixed a macro coding style issue.
+> 
+> What macro coding style issue did you fix?  Please be more specific and
+> resend the patch with a more complete changelog entry.
+> 
 
-> This patch adds the McASP clock alias.
-> The alias is used by the pruss suart driver
-> for enabling the McASP PSC.
+It is simply incorrect as it adds do {} while (0) to the module
+parameter constructors which are used outside of functions.
 
-> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
-[...]
+The change was never compiled.
 
-> diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-> index e15de72..f1cf605 100644
-> --- a/arch/arm/mach-davinci/devices-da8xx.c
-> +++ b/arch/arm/mach-davinci/devices-da8xx.c
-> @@ -560,7 +560,18 @@ struct platform_device da8xx_pruss_dev = {
->  
->  int __init da8xx_register_pruss(struct da8xx_pruss_devices *pruss_device)
->  {
-> +#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
-
-    #ifdef's in the function body are generally fromned upon.
-
-> +	int ret;
-> +#endif
-> +
-
-    This line should have been inside #ifdef...
-
->  	da8xx_pruss_dev.dev.platform_data = pruss_device;
-> +
-> +#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
-
-    Why not do it before assigning the platform data and avoid extra #ifdef?
-
-> +	ret = clk_add_alias(NULL, "da8xx_pruss_uart.1",
-> +	NULL, &da850_mcasp_device.dev);
-
-    This line should be indented more to the right.
-
-> +	if (ret < 0)
-> +		return ret;
-> +#endif
-
-WBR, Sergei
+-- 
+Dmitry
