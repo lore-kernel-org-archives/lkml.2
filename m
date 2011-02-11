@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab1BKU4i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 15:56:38 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:39503 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758096Ab1BKU4h (ORCPT
+	id S1758128Ab1BKU6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 15:58:21 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:4858 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758085Ab1BKU6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 15:56:37 -0500
-Date: Fri, 11 Feb 2011 20:56:32 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ayan George <ayan.george@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dell-laptop: add Dell Vostro 1520 to blacklist.
-Message-ID: <20110211205632.GA12887@srcf.ucam.org>
-References: <4D55A07A.7050608@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D55A07A.7050608@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 11 Feb 2011 15:58:20 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6254"; a="74108440"
+Subject: Re: [PATCH 2/3] msm: iommu: Generalize platform data for multiple
+ targets
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Steve Muckle <smuckle@codeaurora.org>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, davidb@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4D55A16A.7030300@codeaurora.org>
+References: <1297456098-3241-1-git-send-email-stepanm@codeaurora.org>
+	 <1297456098-3241-2-git-send-email-stepanm@codeaurora.org>
+	 <1297456934.4852.11.camel@m0nster>  <4D55A16A.7030300@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Feb 2011 12:58:19 -0800
+Message-ID: <1297457899.4852.14.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 03:47:54PM -0500, Ayan George wrote:
-> The dell-laptop module erroneously hard-blocks the wireless interface on
-> the Dell Vostro 1520.
+On Fri, 2011-02-11 at 12:51 -0800, Steve Muckle wrote:
+> On 02/11/11 12:42, Daniel Walker wrote:
+> >>  static struct resource msm_iommu_jpegd_resources[] = {
+> >>  	{
+> >> -		.start = MSM_IOMMU_JPEGD_PHYS,
+> >> -		.end   = MSM_IOMMU_JPEGD_PHYS + MSM_IOMMU_JPEGD_SIZE - 1,
+> >> +		.start = 0x07300000,
+> >> +		.end   = 0x07300000 + SZ_1M - 1,
+> > 
+> > Looks worse .. Just put the macros into a static header file for both.
 > 
-> All functionality (backlight, volume, physical wireless switch, &c)
-> is there without the dell-laptop module so this blacklists the
-> Dell Vostro 1520.
-> 
-> BugLink: http://bugs.launchpad.net/bugs/701259
-> Signed-off-by: Ayan George <ayan.george@canonical.com>
-> Cc: <stable@kernel.org>
+> Why bother defining macros for these if they only appear here? I don't
+> think that adds any value or readability - these addresses are clearly
+> the physical area for the msm_iommu_jpegd. It just makes it more
+> annoying to have to look up the values in a separate file if you are
+> wondering what they are.
 
-I'd like to try to work out what's actually going on here first. Do we 
-have any feedback from Dell on whether this is expected to work?
+So your saying if you look at the number 0x07300000 you instantly know
+that this JPEGD? What if I pick a random other kernel developer do you
+think they would instantly know that? I have no idea what 0x07300000 is.
+
+Also if it's in a header you could ifdef them with out touching the C
+file, which is just forward looking.
+
+Daniel
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
+
