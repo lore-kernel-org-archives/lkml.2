@@ -1,189 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758136Ab1BKUrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 15:47:00 -0500
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:19992 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756813Ab1BKUq7 (ORCPT
+	id S1758146Ab1BKUsD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 15:48:03 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:34179 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758103Ab1BKUsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 15:46:59 -0500
-From: Daniel Drake <dsd@laptop.org>
-To: cbou@mail.ru
-To: dwmw2@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org
-Cc: tglx@linutronix.de
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: dilinger@queued.net
-Subject: [PATCH] olpc_battery: convert to platform device
-Message-Id: <20110211204653.9A32D9D401D@zog.reactivated.net>
-Date: Fri, 11 Feb 2011 20:46:53 +0000 (GMT)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=am4SJff_dVAA:10 a=Op-mwl0xAAAA:8 a=n_1kXKBb8GsEM_GdpjgA:9 a=be8ZKTYAML4vlnC78wMA:7 a=D5LCNYvBywwQQ8SYeLjn2SBAt3oA:4 a=d4CUUju0HPYA:10 a=-BSgVoH9Ny4Tj_rs:21 a=84AilM4vJw53C3Zx:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Fri, 11 Feb 2011 15:48:00 -0500
+Message-ID: <4D55A07A.7050608@canonical.com>
+Date: Fri, 11 Feb 2011 15:47:54 -0500
+From: Ayan George <ayan.george@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] dell-laptop: add Dell Vostro 1520 to blacklist.
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed so that suspend/resume (wakeup) support can be added.
+The dell-laptop module erroneously hard-blocks the wireless interface on
+the Dell Vostro 1520.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
+All functionality (backlight, volume, physical wireless switch, &c)
+is there without the dell-laptop module so this blacklists the
+Dell Vostro 1520.
+
+BugLink: http://bugs.launchpad.net/bugs/701259
+Signed-off-by: Ayan George <ayan.george@canonical.com>
+Cc: <stable@kernel.org>
 ---
- arch/x86/platform/olpc/olpc.c |   15 +++++++++++
- drivers/power/olpc_battery.c  |   52 ++++++++++++++++++++++------------------
- 2 files changed, 44 insertions(+), 23 deletions(-)
+ drivers/platform/x86/dell-laptop.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Wakeup support (requiring .suspend handler, enabled by this patch) will
-be submitted in a future patch, after the relevant mfd and x86 groundwork has
-been merged.
-
-diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
-index edaf3fe..a5fb933 100644
---- a/arch/x86/platform/olpc/olpc.c
-+++ b/arch/x86/platform/olpc/olpc.c
-@@ -239,6 +239,17 @@ static int __init add_xo1_platform_devices(void)
- 	return 0;
- }
- 
-+static int __init add_common_platform_devices(void)
-+{
-+	struct platform_device *pdev;
-+
-+	pdev = platform_device_register_simple("olpc-battery", -1, NULL, 0);
-+	if (IS_ERR(pdev))
-+		return PTR_ERR(pdev);
-+
-+	return 0;
-+}
-+
- static int __init olpc_init(void)
- {
- 	int r = 0;
-@@ -269,6 +280,10 @@ static int __init olpc_init(void)
- 			olpc_platform_info.boardrev >> 4,
- 			olpc_platform_info.ecver);
- 
-+	r = add_common_platform_devices();
-+	if (r)
-+		return r;
-+
- 	if (olpc_platform_info.boardrev < olpc_board_pre(0xd0)) { /* XO-1 */
- 		r = add_xo1_platform_devices();
- 		if (r)
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index 0b0ff3a..e378726 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -519,8 +519,6 @@ static struct device_attribute olpc_bat_error = {
-  *		Initialisation
-  *********************************************************************/
- 
--static struct platform_device *bat_pdev;
--
- static struct power_supply olpc_bat = {
- 	.get_property = olpc_bat_get_property,
- 	.use_for_apm = 1,
-@@ -534,14 +532,11 @@ void olpc_battery_trigger_uevent(unsigned long cause)
- 		kobject_uevent(&olpc_bat.dev->kobj, KOBJ_CHANGE);
- }
- 
--static int __init olpc_bat_init(void)
-+static int __devinit olpc_battery_probe(struct platform_device *pdev)
- {
--	int ret = 0;
-+	int ret;
- 	uint8_t status;
- 
--	if (!olpc_platform_info.ecver)
--		return -ENXIO;
--
- 	/*
- 	 * We've seen a number of EC protocol changes; this driver requires
- 	 * the latest EC protocol, supported by 0x44 and above.
-@@ -552,21 +547,16 @@ static int __init olpc_bat_init(void)
- 		return -ENXIO;
- 	}
- 
-+	/* Ignore the status. It doesn't actually matter */
- 	ret = olpc_ec_cmd(EC_BAT_STATUS, NULL, 0, &status, 1);
- 	if (ret)
- 		return ret;
- 
--	/* Ignore the status. It doesn't actually matter */
--
--	bat_pdev = platform_device_register_simple("olpc-battery", 0, NULL, 0);
--	if (IS_ERR(bat_pdev))
--		return PTR_ERR(bat_pdev);
--
--	ret = power_supply_register(&bat_pdev->dev, &olpc_ac);
-+	ret = power_supply_register(&pdev->dev, &olpc_ac);
- 	if (ret)
--		goto ac_failed;
-+		return ret;
- 
--	olpc_bat.name = bat_pdev->name;
-+	olpc_bat.name = pdev->name;
- 	if (olpc_board_at_least(olpc_board_pre(0xd0))) { /* XO-1.5 */
- 		olpc_bat.properties = olpc_xo15_bat_props;
- 		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo15_bat_props);
-@@ -575,7 +565,7 @@ static int __init olpc_bat_init(void)
- 		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo1_bat_props);
- 	}
- 
--	ret = power_supply_register(&bat_pdev->dev, &olpc_bat);
-+	ret = power_supply_register(&pdev->dev, &olpc_bat);
- 	if (ret)
- 		goto battery_failed;
- 
-@@ -587,7 +577,7 @@ static int __init olpc_bat_init(void)
- 	if (ret)
- 		goto error_failed;
- 
--	goto success;
-+	return 0;
- 
- error_failed:
- 	device_remove_bin_file(olpc_bat.dev, &olpc_bat_eeprom);
-@@ -595,19 +585,35 @@ eeprom_failed:
- 	power_supply_unregister(&olpc_bat);
- battery_failed:
- 	power_supply_unregister(&olpc_ac);
--ac_failed:
--	platform_device_unregister(bat_pdev);
--success:
- 	return ret;
- }
- 
--static void __exit olpc_bat_exit(void)
-+static int __exit olpc_battery_remove(struct platform_device *pdev)
- {
- 	device_remove_file(olpc_bat.dev, &olpc_bat_error);
- 	device_remove_bin_file(olpc_bat.dev, &olpc_bat_eeprom);
- 	power_supply_unregister(&olpc_bat);
- 	power_supply_unregister(&olpc_ac);
--	platform_device_unregister(bat_pdev);
-+	return 0;
-+}
-+
-+static struct platform_driver olpc_battery_drv = {
-+	.driver = {
-+		.name = "olpc-battery",
-+		.owner = THIS_MODULE,
+diff --git a/drivers/platform/x86/dell-laptop.c
+b/drivers/platform/x86/dell-lapt
+op.c
+index 34657f9..ed889a2 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -144,6 +144,13 @@ static struct dmi_system_id __devinitdata
+dell_blacklist[]
+= {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1210"),
+ 		},
+ 	},
++	{
++		.ident = "Dell Vostro 1520",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Vostro 1520"),
++		},
 +	},
-+	.probe = olpc_battery_probe,
-+	.remove = __devexit_p(olpc_battery_remove),
-+};
-+
-+static int __init olpc_bat_init(void)
-+{
-+	return platform_driver_register(&olpc_battery_drv);
-+}
-+
-+static void __exit olpc_bat_exit(void)
-+{
-+	platform_driver_unregister(&olpc_battery_drv);
- }
- 
- module_init(olpc_bat_init);
+ 	{}
+ };
+
 -- 
-1.7.4
+1.7.1
 
