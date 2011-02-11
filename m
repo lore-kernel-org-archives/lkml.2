@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab1BKAl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 19:41:56 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:12617 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab1BKAly convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 19:41:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=eFQInVjWWnnscaJkKLhYTjJVlO2o0JugYI164TXvw+z+g7Gq0bpZ+zvrYOigBvu6Q6
-         lgACI32Vu6g4rKz0Asnw==
+	id S1757494Ab1BKAmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 19:42:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31016 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab1BKAmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 19:42:44 -0500
+Date: Thu, 10 Feb 2011 22:42:32 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Arun Sharma <arun@sharma-home.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-perf-users@vger.kernel.org
+Subject: Re: 2.6.37 kernel warning in perf_events code
+Message-ID: <20110211004232.GA22440@ghostprotocols.net>
+References: <AANLkTi=4_p73eHhQbj5DDDEzTWaLou+u2igiY+yNiPQ9@mail.gmail.com> <20110210190843.GE20676@ghostprotocols.net> <AANLkTi=WRrBnyiDqOeR7PnqVhh8wLFx5W0tgjNaPvkLg@mail.gmail.com> <20110210202023.GG20676@ghostprotocols.net> <AANLkTi=H9+rKjgkmfbS2jzfPjryah0cc9sajSgN8WOaQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110210235447.GA12313@core.coreip.homeip.net>
-References: <1297381370-16388-1-git-send-email-tlambert@chromium.org>
-	<20110210235447.GA12313@core.coreip.homeip.net>
-Date: Thu, 10 Feb 2011 16:41:52 -0800
-X-Google-Sender-Auth: O4qGdyeeG3at5navp3R4BNo9CIQ
-Message-ID: <AANLkTinjPG-KY-ee3ya7bca8F5QechRhE88+uO6odgjE@mail.gmail.com>
-Subject: Re: [PATCH] Input: fixed EVIOCGRAB iterative grab/release.
-From: Terry Lambert <tlambert@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=H9+rKjgkmfbS2jzfPjryah0cc9sajSgN8WOaQ@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sure.  First patch to linux in 16 years and all, I didn't want to be
-too noisy...
+Em Thu, Feb 10, 2011 at 12:46:07PM -0800, Arun Sharma escreveu:
+> On Thu, Feb 10, 2011 at 12:20 PM, Arnaldo Carvalho de Melo wrote:
+> >> >> perf record -g -p <pid> cs -o csw.data -- sleep 3
 
-Problem:
+> > Arun, are you shure the above line is right? I guess it should read:
 
-If you use EVIOCGRAB, such as when you are using a Cr-48 with the
-Synaptics trackpad driver, the grab on the input device has to be
-dropped before you zero out the grab on the evdev, or you can't grab
-it again without rebooting.  The X Server does this; it's usually not
-an issue for Chromium OS because it tends to just reboot, but everyone
-else gets a locked up pointer.
+> > perf record -g -p <pid> -e cs -o csw.data -- sleep 3
 
-I found this when copying the evdev_grab/input_device_grab() &
-input_release_device()/evdev_ungrab() design pattern into some new
-code to use for automated testing (record & playback of arbitrary
-event streams) and for training software for gesture recognition.
-When doing this sort of thing, you tend to repeat operations to obtain
-large training sets, or string together a series of test gestures with
-scripts, and the problem became obvious.
+> > To specify the context switches soft event, right?
+> 
+> You caught a cut and paste error. I'm pretty sure I had the -e in
+> there when the warning triggered. I tried this command a few times,
+> just to verify and here's what I found:
 
-This is pretty easy to reproduce with a modified evtest program that
-does an EVIOCGRAB, if you don't have a Synaptics touchpad to use for
-testing (but you won't get whatever you grab back unless you use the
-same fd or reboot).
+> * Under low loads, everything works fine.
+> * Under a heavy work load - I'm not able to reproduce the warning, but
+> hitting very similar symptoms:
 
-I have some patches to a number of bugs in the Synaptics driver, and
-some additional code cleanup vs. checkpatch.pl for
-drivers/input/evdev.c too, but I thought I'd start small.
+> [ perf record: Captured and wrote 2.282 MB /tmp/junk.data (~99721 samples) ]
+> [ perf record: Captured and wrote 1.734 MB /tmp/junk.data (~75740 samples) ]
+> [ perf record: Captured and wrote 0.091 MB /tmp/junk.data (~3975
+> samples) ]  <--- bad run
 
--- Terry
+> The bad run made my shell unresponsive and took around 30-40 seconds
+> to complete (whereas the good runs completed in less than 5 secs).
+> Could this be some kind of a feedback loop where what the measurement
+> machinery is perturbing what's being measured?
 
-On Thu, Feb 10, 2011 at 3:54 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
->
-> On Thu, Feb 10, 2011 at 03:42:50PM -0800, tlambert@chromium.org wrote:
-> > From: Terry Lambert <tlambert@chromium.org>
-> >
-> > Fixed order of calls in evdev_ungrab to allow iterative use of
-> > code which grabs and releases input event devices.
-> >
->
-> Sorry, could you  please be more verbose?
->
-> > Signed-off-by: Terry Lambert <tlambert@chromium.org>
-> > ---
-> >  drivers/input/evdev.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> > index c8471a2..0bac8da 100644
-> > --- a/drivers/input/evdev.c
-> > +++ b/drivers/input/evdev.c
-> > @@ -160,9 +160,9 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
-> >       if (evdev->grab != client)
-> >               return  -EINVAL;
-> >
-> > +     input_release_device(&evdev->handle);
-> >       rcu_assign_pointer(evdev->grab, NULL);
-> >       synchronize_rcu();
-> > -     input_release_device(&evdev->handle);
-> >
-> >       return 0;
-> >  }
-> > --
-> > 1.7.3.1
-> >
->
-> --
-> Dmitry
+Is it possible for you to test this with 2.6.38-rc4? At least the user
+level tools, just do:
+
+[acme@felicio linux]$ make help | grep perf
+  perf-tar-src-pkg    - Build perf-2.6.38-rc3.tar source tarball
+  perf-targz-src-pkg  - Build perf-2.6.38-rc3.tar.gz source tarball
+  perf-tarbz2-src-pkg - Build perf-2.6.38-rc3.tar.bz2 source tarball
+[acme@felicio linux]$
+
+Pick one of these targets on the source tree for 2.6.38-rc4, move the
+tarball to the machine where you need to run the older kernel (.37,
+right?) and try building and running it there.
+
+Either or just build the new tools and run it on the older kernel.
+
+There were several changes to better inform about lost events due to
+heavy load that may be at play in your case.
+
+- Arnaldo
