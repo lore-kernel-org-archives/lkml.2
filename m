@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab1BKS4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 13:56:43 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:63379 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110Ab1BKS4l (ORCPT
+	id S932084Ab1BKS4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 13:56:40 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52720 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757377Ab1BKS4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 13:56:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=M8cMICqG3oOjigzjMxnLaMlwPxWGhk6DfwPfp2ztbX3natk1kraOeOV4dmwR0sCrkM
-         lU0dIjK0gwvzj0C/kj5A==
+	Fri, 11 Feb 2011 13:56:39 -0500
+Message-ID: <4D55860E.3090908@mvista.com>
+Date: Fri, 11 Feb 2011 21:55:10 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-In-Reply-To: <20110211183245.GA10891@kroah.com>
-References: <4D547236.6080702@google.com> <20110211012552.GA28995@kroah.com>
- <AANLkTi=tbYj_bonu2i+NHpNY3KUMpsTVT8YDsLhDz_Nm@mail.gmail.com>
- <20110211032049.GB884@kroah.com> <AANLkTin3tu-NiotpzWaQ_ubV0jumb_WsjEK5QGi5w56o@mail.gmail.com>
- <AANLkTi=Umq5gPr4xT4iChm+B+C+TOF1SB8gC4_ygqztR@mail.gmail.com> <20110211183245.GA10891@kroah.com>
-From: Mike Waychison <mikew@google.com>
-Date: Fri, 11 Feb 2011 10:56:16 -0800
-Message-ID: <AANLkTimrm5zFxA++0ZgXL7csJSU17TgDx5Qb_3RdtzBU@mail.gmail.com>
-Subject: Re: SMBIOS / DMI Event Logs in Linux?
-To: Greg KH <greg@kroah.com>
-Cc: Tim Hockin <thockin@google.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+CC: davinci-linux-open-source@linux.davincidsp.com, sachi@mistralsolutions.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 12/13] da850: pruss SUART platform specific additions.
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-13-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <1297435892-28278-13-git-send-email-subhasish@mistralsolutions.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:32 AM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Feb 11, 2011 at 10:00:37AM -0800, Mike Waychison wrote:
->> resend as plain text, sorry :(
->>
->>
->> On Thu, Feb 10, 2011 at 7:20 PM, Greg KH <greg@kroah.com> wrote:
->> > Wait, if this is just a simple "pass through to the hardware", then just
->> > export the thing, with the proper permissions, in a single binary sysfs
->> > file, and do the parsing in userspace.
->> >
->>
->> If you mean s/hardware/firmware/, then yes.
->
-> Yes, sorry, that is what I ment.
->
->> > That would be the simplest thing to do, and fit the rules for valid
->> > sysfs files, and keep people from having to dig through /dev/mem, right?
->>
->> Yup, exposing the log via a bin_attribute and allowing for blobs to be
->> appended (with the firmware either accepting or rejecting the format
->> will do).
->
-> Great, that should be a simple thing to do then, right?
+Subhasish Ghosh wrote:
 
-Ya.  Here's what I'm working on now:
+> This patch adds the McASP clock alias.
+> The alias is used by the pruss suart driver
+> for enabling the McASP PSC.
 
-/sys/firmware/gsmi/eventlog
-  - read: reads out binary bytes of the log as exported by firmware.
-  - write: takes the user buffer and passes it on to the firmware via
-a SET_EVENT_LOG command and returns a mapped errno to the user.
+> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+[...]
 
-/sys/firmware/gsmi/clear_eventlog
-  - write-only: takes a value between 0 and 100 and passes it to the
-firmware to clear out a percentage of the log.
+> diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+> index e15de72..f1cf605 100644
+> --- a/arch/arm/mach-davinci/devices-da8xx.c
+> +++ b/arch/arm/mach-davinci/devices-da8xx.c
+> @@ -560,7 +560,18 @@ struct platform_device da8xx_pruss_dev = {
+>  
+>  int __init da8xx_register_pruss(struct da8xx_pruss_devices *pruss_device)
+>  {
+> +#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
 
-/sys/firmware/gsmi/clear_config
-  - write-only: takes arbitrary data and tells the firmware to wipe it's config.
+    #ifdef's in the function body are generally fromned upon.
 
-/sys/firmware/gsmi/vars (directory)
-  - same code as /sys/firmware/efi/vars except firmware calls vector
-through gsmi instead of the EFI runtime services page  (I've
-abstracted it out for re-use)
+> +	int ret;
+> +#endif
+> +
 
-This covers the gsmi driver and removes the ioctls completely from it.
+    This line should have been inside #ifdef...
 
+>  	da8xx_pruss_dev.dev.platform_data = pruss_device;
+> +
+> +#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
 
-I've already changed the "memconsole" driver I sent out a while ago to
-export itself as an untouched binary file /sys/firmware/log .
+    Why not do it before assigning the platform data and avoid extra #ifdef?
 
-The only bit that remains that needs cleaning is the 'bootlog' driver.
-  I'm going to work with Robert offline (or online if he wants to
-follow up here) with what "proper" kernel interfaces should look like
-for his purposes.
+> +	ret = clk_add_alias(NULL, "da8xx_pruss_uart.1",
+> +	NULL, &da850_mcasp_device.dev);
+
+    This line should be indented more to the right.
+
+> +	if (ret < 0)
+> +		return ret;
+> +#endif
+
+WBR, Sergei
