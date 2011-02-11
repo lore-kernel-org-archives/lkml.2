@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab1BKM7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 07:59:46 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52938 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab1BKM7o (ORCPT
+	id S1755973Ab1BKNEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 08:04:20 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42471 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab1BKNER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 07:59:44 -0500
+	Fri, 11 Feb 2011 08:04:17 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=uaAAhJmIbSQm0iEVbobaE7j3aGTCT/N6C/73eLxEGuq097yZVheVjWZPUn7iJoupdb
-         0NaSTcn2peMMqeVJKUbzoZGR6SSMCLX3fbZxbrnZ5lJNhKaKJrovKkzkyuz3Z8XK6V78
-         uB1eRKIj2kS0iFxYdWPRFzCfLbwwYz7COiXXc=
-Date: Fri, 11 Feb 2011 14:59:41 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: revert: loop: queue_lock NULL pointer derefence in blk_throtl_exit V1
-Message-ID: <20110211125941.GA4271@swordfish.minsk.epam.com>
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qzXa+LqVBPrK3sboC2aUkCMdIGQGSGW1j0pHp+EEnfReecmEA4T0TadUnafBsIKt27
+         aDqmnbp4tbcF2ZxvJknDzVF6SwOPE/QrTtssLU0O7RYtxStmBgLK7NhMzO3FmrsG7Ihd
+         m521ihA47fdQE3lVhSXXLm7WVWX83ByJBfLiU=
+Date: Fri, 11 Feb 2011 14:04:12 +0100
+From: Felix Blanke <felixblanke@gmail.com>
+To: Chris Samuel <chris@csamuel.org>, Felix Blanke <felixblanke@gmail.com>,
+        kreijack@inwind.it, Hugo Mills <hugo-lkml@carfax.org.uk>,
+        linux-btrfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: LOOP_GET_STATUS(64) truncates pathnames to 64 chars (was Re: Bug
+ in mkfs.btrfs?!)
+Message-ID: <20110211130412.GA2591@scooter>
+References: <20110122144513.GA2539@scooter>
+ <20110122145222.GB2539@scooter>
+ <20110122151124.GC29985@carfax.org.uk>
+ <20110122155612.GA3664@scooter>
+ <20110123181827.GF29985@carfax.org.uk>
+ <4D3CA568.7050506@libero.it>
+ <20110124130104.GA7354@scooter>
+ <4D3E160F.4050006@csamuel.org>
+ <20110210122927.GB20488@foxbat.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110210122927.GB20488@foxbat.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---fdj2RfSjLxBAspz7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+are you sure that patch is in the kernel?
 
-Hello Jens, Andrew
+I'm using 2.6.37 and don't have those attribues in my /sys.
 
-We have accidentally commit "loop: queue_lock NULL pointer=20
-derefence in blk_throtl_exit V1" applied: ee71a968672a9951aee6014c555110075=
-96425bc
 
-It's not a huge problem, but I think, it's better to have V3 applied=20
-https://lkml.org/lkml/2011/1/21/158
 
-since V3 targets all the throttle users, not only loop (by moving=20
-`fall-back' from loop_free to blk_release_queue).
+Felix
 
-V3 is in Andrew's mmotm as for now=20
-loop-queue_lock-null-pointer-derefence-in-blk_throtl_exit-v3.patch
+On 10. February 2011 - 13:29, Petr Uzel wrote:
+> Date: Thu, 10 Feb 2011 13:29:27 +0100
+> From: Petr Uzel <petr.uzel@suse.cz>
+> To: Chris Samuel <chris@csamuel.org>
+> Cc: Felix Blanke <felixblanke@gmail.com>, kreijack@inwind.it, Hugo Mills
+>  <hugo-lkml@carfax.org.uk>, linux-btrfs@vger.kernel.org, Linux Kernel
+>  <linux-kernel@vger.kernel.org>
+> Subject: Re: LOOP_GET_STATUS(64) truncates pathnames to 64 chars (was Re:
+>  Bug in mkfs.btrfs?!)
+> Mail-Followup-To: Chris Samuel <chris@csamuel.org>, Felix Blanke
+>  <felixblanke@gmail.com>, kreijack@inwind.it, Hugo Mills
+>  <hugo-lkml@carfax.org.uk>, linux-btrfs@vger.kernel.org, Linux Kernel
+>  <linux-kernel@vger.kernel.org>
+> 
+> On Tue, Jan 25, 2011 at 11:15:11AM +1100, Chris Samuel wrote:
+> > /*
+> >  * CC'd to linux-kernel in case they have any feedback on this.
+> >  *
+> >  * Long thread, trying to work out why mkfs.btrfs failed to
+> >  * make a filesystem on an encrypted loopback mount called
+> >  * /dev/loop2. Cause turned out to be mkfs.btrfs calling
+> >  * LOOP_GET_STATUS to find out if the block device was mounted
+> >  * and getting a truncated device name back and so it later
+> >  * fails when lstat() is called on the truncated device path.
+> >  *
+> >  * The long device name for the encrypted loopback mount was
+> >  * because /dev/disk/by-id/$ID was used when Felix created it
+> >  * to cope with devices moving around.
+> >  */
+> > 
+> > On 25/01/11 00:01, Felix Blanke wrote:
+> > 
+> > > you were talking about the LOOP_GET_STATUS function. I'm not
+> > > quite sure where does it came from. Is it part of the kernel?
+> > > Or does it come from the util-linux package?
+> > 
+> > It's in the kernel, and there is both LOOP_GET_STATUS (old
+> > implementation) and LOOP_GET_STATUS64 (new implementation).
+> > 
+> > They return structures called loop_info and loop_info64
+> > respectively and both are defined in include/linux/loop.h .
+> > 
+> > Sadly in both cases the lengths of paths are defined to be
+> > LO_NAME_SIZE which is currently 64 and hence either
+> > implementation will cause the problematic:
+> > 
+> > lstat("/dev/disk/by-id/ata-INTEL_SSDSA2M160G2GC_CVPO939201JX160AGN-par",
+> > 0x7fffa30b3cf0) = -1 ENOENT (No such file or directory)
+> > 
+> > I've CC'd this to the LKML in case they have any feedback on
+> > this apparent problem with the API.
+>  
+> Since 2.6.37, you can get full path to the backing file from sys:
+> cat /sys/block/loopX/loop/backing_file
+> 
+> See
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-07/msg10996.html
+> 
+> 
+> HTH,
+> 
+> Petr
+> 
+> --
+> Petr Uzel
+> IRC: ptr_uzl @ freenode
 
-Could we please revert ee71a968672a9951aee6014c55511007596425bc when=20
-loop-queue_lock-null-pointer-derefence-in-blk_throtl_exit-v3 will land=20
-in the kernel?
 
-Sorry.
-
-Thanks in advance,
-
-        Sergey
-
---fdj2RfSjLxBAspz7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAk1VMr0ACgkQfKHnntdSXjTUsgP/SrMQ9Jsaz1gnWjWR9Anz/Sni
-PsDdVl8PAFXx7st43B4GweTsYS25iIMvuXdUeHIN+Dm7g59sT7L3btPxYIlqkqAA
-c8T6KkbrIkpw/NIfVKNu2ybUm4KjWIq11S/Typ3smGo8dNsdBLjcnTTIPaI9Webs
-627/ICBuTs+oNItQDQQ=
-=3xdd
------END PGP SIGNATURE-----
-
---fdj2RfSjLxBAspz7--
+---end quoted text---
