@@ -1,111 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab1BKVPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 16:15:54 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11121 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756829Ab1BKVPx (ORCPT
+	id S1757039Ab1BKVUP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 16:20:15 -0500
+Received: from blu0-omc1-s15.blu0.hotmail.com ([65.55.116.26]:42590 "EHLO
+	blu0-omc1-s15.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755595Ab1BKVUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 16:15:53 -0500
-Date: Fri, 11 Feb 2011 22:14:44 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, tadeusz.struk@intel.com
-cc: Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
-        "Hoban, Adrian" <adrian.hoban@intel.com>
-Subject: RE: [PATCH](updated) rfc4106, Intel, AES-NI: Don't leak memory in
- rfc4106_set_hash_subkey()..
-In-Reply-To: <alpine.LNX.2.00.1102112204020.16994@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1102112211230.16994@swampdragon.chaosbits.net>
-References: <4d502ccb.p+rKcuFjWCnBlXY9%tadeusz.struk@intel.com> <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net> <20110211142647.GA3920@ucw.cz> <DF7BB929B28FCF479E888E3D9F8D9E88F3E2E668@irsmsx502.ger.corp.intel.com>
- <alpine.LNX.2.00.1102111546310.13370@swampdragon.chaosbits.net> <alpine.LNX.2.00.1102112204020.16994@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 11 Feb 2011 16:20:13 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Feb 2011 16:20:13 EST
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP334BCE5197D30089989ECB96EF0@phx.gbl>
+Date: Fri, 11 Feb 2011 16:13:56 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <cover.1294239591.git.jbaron@redhat.com> <1297452328.5226.89.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1297452328.5226.89.camel@laptop>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 15:50:59 up 310 days,  6:40,  4 users,  load average: 0.16, 0.12,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 11 Feb 2011 21:14:01.0612 (UTC) FILETIME=[9AE4D4C0:01CBCA30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Feb 2011, Jesper Juhl wrote:
-
-> On Fri, 11 Feb 2011, Jesper Juhl wrote:
-> 
-> > On Fri, 11 Feb 2011, Paoloni, Gabriele wrote:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Wed, 2011-01-05 at 10:43 -0500, Jason Baron wrote:
+> > Hi,
 > > 
-> > > Well anyway I think that the return value of "ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL)" has to be changed from -EINVAL to -ENOMEM in case of failure. That is why would stay on the patch that Tadeusz proposed. Otherwise Juhl should send another one....
-> > > 
-> > I'll take a look again later this evening when I get home from work.
+> > The first patch uses the storage space of the jump label key address
+> > as a pointer into the update table. In this way, we can find all
+> > the addresses that need to be updated without hashing.
 > > 
-> Hopefully this takes care of all complaints and can actually get merged so 
-> we can get the leak fixed (patch is against current cryptodev-2.6 tree).
+> > The second patch introduces:
+> > 
+> > static __always_inline bool static_branch(struct jump_label_key *key);
+> > 
+> > instead of the old JUMP_LABEL(key, label) macro.
+> > 
+> > In this way, jump labels become really easy to use:
+> > 
+> > Define:
+> > 
+> >         struct jump_label_key jump_key;
+> > 
+> > Can be used as:
+> > 
+> >         if (static_branch(&jump_key))
+> >                 do unlikely code
+> > 
+> > enable/disale via:
+> > 
+> >         jump_label_enable(&jump_key);
+> >         jump_label_disable(&jump_key);
+> > 
+> > that's it!
+> > 
+> > For perf, which also uses jump labels, I've left the reference counting
+> > out of the jump label layer, thus removing the 'jump_label_inc()' and
+> > 'jump_label_dec()' interface. Hopefully, this is a more palatable solution.
 > 
-> 
-> Fix up previous patch that failed to properly fix mem leak in 
-> rfc4106_set_hash_subkey(). This add-on patch; fixes the leak. moves 
-> kfree() out of the error path, returns -ENOMEM rather than -EINVAL when 
-> ablkcipher_request_alloc() fails.
-> 
+> Right, lets go with this. Maybe we'll manage to come up with something
+> saner than _else_atomic_read(), but for now its an improvement over what
+> we have.
 
-And of course I just had to screw up and send the wrong diff. The one I 
-sent does not compile and was a temporary file I imported into the mail by 
-accident :-(
-Below is the real patch - changelog above still applies - sorry about 
-that.
+I agree that keeping jump_label.h with the minimal clean API is a good
+goal, and this patchset is almost there (maybe except for the
+_else_atomic_read() part).
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- aesni-intel_glue.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+Hrm, given that the atomic inc/dec return and test for 1/0 is moved into
+the Perf code, I wonder if it would make sense to move the
+"_else_atomic_read()" oddness into the perf code too ? Perf could
+declare, in its own header, a wrapper over __static_branch, e.g. put in
+perf_event.h:
 
-diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
-index e013552..e0e6340 100644
---- a/arch/x86/crypto/aesni-intel_glue.c
-+++ b/arch/x86/crypto/aesni-intel_glue.c
-@@ -874,19 +874,17 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
- 
- 	ret = crypto_ablkcipher_setkey(ctr_tfm, key, key_len);
- 	if (ret)
--		goto out;
-+		goto out_free_ablkcipher;
- 
-+	ret = -ENOMEM;
- 	req = ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL);
--	if (!req) {
--		ret = -EINVAL;
-+	if (!req)
- 		goto out_free_ablkcipher;
--	}
- 
- 	req_data = kmalloc(sizeof(*req_data), GFP_KERNEL);
--	if (!req_data) {
--		ret = -ENOMEM;
-+	if (!req_data)
- 		goto out_free_request;
--	}
-+
- 	memset(req_data->iv, 0, sizeof(req_data->iv));
- 
- 	/* Clear the data in the hash sub key container to zero.*/
-@@ -911,12 +909,11 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
- 		if (!ret)
- 			ret = req_data->result.err;
- 	}
-+	kfree(req_data);
- out_free_request:
- 	ablkcipher_request_free(req);
--	kfree(req_data);
- out_free_ablkcipher:
- 	crypto_free_ablkcipher(ctr_tfm);
--out:
- 	return ret;
- }
- 
- 
+#ifdef HAVE_JUMP_LABEL
+static __always_inline
+bool perf_sw_event_static_branch_refcount(struct jump_label_key *key,
+                                          atomic_t *ref)
+{
+	return __static_branch(key);
+}
+#else
+static __always_inline
+bool perf_sw_event_static_branch_refcount(struct jump_label_key *key,
+                                          atomic_t *ref)
+{
+	if (unlikely(atomic_read(ref)))
+		return true;
+	return false;
+}
+#endif
+
+Otherwise, jump_label_ref.h looks like an half-baked interface that only
+provides the "test" API but not the ref/unref. If we have only a single
+user interested in refcounting, it might make more sense to put the code
+in perf_event.h. If we have many users using an atomic refcount like
+this, then we should extend jump_label_ref.h to also provide the
+ref/unref API too. I don't care much about where it ends up, as long as
+it's a consistent choice.
+
+Thoughts ?
+
+Mathieu
+
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
