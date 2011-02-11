@@ -1,42 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab1BKHoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 02:44:04 -0500
-Received: from mswedge2.sunplus.com ([124.219.29.227]:44330 "EHLO
-	mswedge2.sunplus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504Ab1BKHoD (ORCPT
+	id S1753261Ab1BKH4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 02:56:03 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55734 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab1BKH4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 02:44:03 -0500
-In-Reply-To: <alpine.LFD.2.00.1102102355570.31804@localhost6.localdomain6>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
+	Fri, 11 Feb 2011 02:56:00 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4D54EB6A.3010405@jp.fujitsu.com>
+Date: Fri, 11 Feb 2011 16:55:22 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Subject: Re: [patch 2/2] score: Select GENERIC_HARDIRQS_NO_DEPRECATED
-X-KeepSent: 3931CE40:F69946EC-48257834:002A617C;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 7.0.3 September 26, 2007
-Message-ID: <OF3931CE40.F69946EC-ON48257834.002A617C-48257834.002A7E10@sunplusct.com>
-From: liqin.chen@sunplusct.com
-Date: Fri, 11 Feb 2011 15:43:50 +0800
-X-MIMETrack: Serialize by Router on ctmail01/SunplusCT(Release 8.5.1|September 28, 2009) at 2011/02/11 ?? 03:43:50,
-	Serialize complete at 2011/02/11 ?? 03:43:50
-Content-Type: text/plain; charset="GB2312"
+To: TAKADA Yoshihito <takada@mbf.nifty.com>
+CC: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, matthew@wil.cx, macro@linux-mips.org,
+        kamezawa.hiroyu@jp.fujitsu.com, eike-kernel@sf-tec.de, jeremy@goop.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [BUG][PATCH 0/2 (v.3)] x86: ioremap() problem in X86_32 PAE
+References: <4C1AE64C.6040609@jp.fujitsu.com> <AANLkTinhN1+bM6qABR28fR41T0+X_xSN8C4R2Ev1g-Gt@mail.gmail.com>
+In-Reply-To: <AANLkTinhN1+bM6qABR28fR41T0+X_xSN8C4R2Ev1g-Gt@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1B7iDSJ031702
 
-Thomas Gleixner <tglx@linutronix.de> Ğ´ÓÚ 2011-02-11 06:56:41:
+Hi,
 
-> On Thu, 10 Feb 2011, liqin.chen@sunplusct.com wrote:
-> 
-> Can you take that through your tree for .39 ?
-> 
+I don't know what version of kernel you're using. But I guess you
+might also need 4302e0fb7fa5b071e30f3cfb68e85155b3d69d9b (PCI: fix
+wrong memory address handling in MSI-X).
 
-OK, I will check in.
+Regards,
+Kenji Kaneshige
 
-Thanks
---liqin
+(2011/02/10 23:11), TAKADA Yoshihito wrote:
+> Hi.
+> I faced same probrem, too. I use x86_64 kernel.
+> Your patch fix it. it's very effective.
+> Thanks!
+>
+> 2010å¹´6æœˆ18æ—¥12:21 Kenji Kaneshige<kaneshige.kenji@jp.fujitsu.com>:
+>> Hi,
+>>
+>> Here is a updated version (v.3) of patchset to fix ioremap() related
+>> problem found in x86 32-bit mode. The problem is that ioremap() maps
+>> wrong address for the device to which phisical addres higer than
+>> 32-bit is assigned (ioat device in my case).
+>>
+>> The v.3 patches are:
+>>
+>> - [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+>> - [PATCH 2/2] x86: ioremap: fix normal ram range check
+>>
+>> Changelog
+>> ---------
+>> v.2=>v.3:
+>> - Matthew Wilcox suggested changing PAGE_MASK definition. But I think
+>>   it is a little risky. Instead of changing PAGE_MASK, v.3 patch uses
+>>   PHYSICAL_PAGE_MASK(*) to mask physical address again, as v.1 patch
+>>   did. The PHYSICAL_PAGE_MASK doesn't work for higher than 2^44
+>>   physical address because __PHYSICAL_MASK_SHIFT is 44 in x86_32
+>>   PAE(*). But this time, I focus on making 2^44 work correctly.
+>>
+>> (*) Current X86_32 PAE kernel would not work with physical address
+>>     higher than 2^44, because PFNs are handled using 32-bit variable
+>>     (unsigned long) probably in many places. This seems the reason why
+>>     __PHYSICAL_MASK_SHIFT is limited to 44 (=32+12 is the limit we can
+>>     fit into an unsigned long pfn). When x86 PAE linux becomes above
+>>     2^44 physical address capable in someday, __PHYSICAL_MASK_SHIFT
+>>     should become greater value than 44.
+>>
+>>
+>> v.1=>v.2:
+>> The v.1 patchset was based on my misunderstanding about architectural
+>> limit and linux memory management limit of physical address. So some
+>> patches in v.1 were totally wrong fixes and they are removed. Thanks
+>> to the feedbacks for v.1 patchset, it turned out that phsical address
+>> is handled improperly (higher 32-bits are cleared unexpectedly) also
+>> in the other places than where v.1 patchset fixed. Here are summary of
+>> changes.
+>>
+>> - Stop using PHYSICAL_PAGE_MASK to align physical address because
+>>   PHYSICAL_PAGE_MASK would not work if physical address is higher than
+>>   44-bit.
+>> - Fix remaining bugs of physical address handling in ioremap() code
+>>   path according to the feedbacks.
+>> - Fix s_show() in vmalloc.c to show high physical address properly.
+>> - Removed changes against phys_addr_valid() ([PATCH 2/4] in v.1).
+>> - Removed changes against warning message in ioremap() ([PATCH 3/4] in
+>>   v.1).
+>>
+>> Thanks,
+>> Kenji Kaneshige
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
