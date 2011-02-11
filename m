@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab1BKO0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 09:26:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39787 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756394Ab1BKO0j convert rfc822-to-8bit (ORCPT
+	id S1756737Ab1BKO1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 09:27:11 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:44781 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756439Ab1BKO1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 09:26:39 -0500
-Date: Fri, 11 Feb 2011 15:26:38 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] MAINTAINERS: add second list for IRDA
-Message-ID: <20110211142638.GE2264@pengutronix.de>
-References: <1296508906-14644-1-git-send-email-w.sang@pengutronix.de>
+	Fri, 11 Feb 2011 09:27:09 -0500
+Date: Fri, 11 Feb 2011 15:26:47 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: tadeusz.struk@intel.com, herbert@gondor.hengli.com.au,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        aidan.o.mahony@intel.com, gabriele.paoloni@intel.com,
+        adrian.hoban@intel.com
+Subject: Re: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+ rfc4106_set_hash_subkey().
+Message-ID: <20110211142647.GA3920@ucw.cz>
+References: <4d502ccb.p+rKcuFjWCnBlXY9%tadeusz.struk@intel.com>
+ <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1296508906-14644-1-git-send-email-w.sang@pengutronix.de>
+In-Reply-To: <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 10:21:46PM +0100, Wolfram Sang wrote:
-> The irda-users-list is currently almost dead and subscribers-only. Adding
-> netdev increases the audience which might help to not overlook a bugreport
-> again.
+On Mon 2011-02-07 19:24:43, Jesper Juhl wrote:
+> On Mon, 7 Feb 2011, tadeusz.struk@intel.com wrote:
 > 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Acked-by: Samuel Ortiz <samuel@sortiz.org>
-> ---
+> > From: 
+> > Date: Sun, 16 Jan 2011 16:41:11 +0000
+> > Subject: RE: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in rfc4106_set_hash_subkey().
+> > 
+> > Hi Jesper,
+> > Thanks, but I think there is still a problem here. You don't want to kfree req_data
+> > when the kmalloc failed. I think it should look as follows.  
+> > Are you ok with this?
+> > 
+> Fine by me.
 > 
-> It would be easier for Samuel if it went via trivial.
+> I was aware of the kfree(NULL) thing, but desided to leave it as is for 
+> two reasons - 1) kfree(NULL) is harmless and this is an error path, so the 
+> extra function call doesn't matter much. 2) I wanted to preserve 
+> deallocations in the reverse order of the allocations. But sure, moving 
+> that kfree is a tiny optimization of the error path, so I'm fine with it.
 
-Ping. Or is trivial not apropriate?
-
-> 
->  MAINTAINERS |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 9d12977..4ff8659 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3420,6 +3420,7 @@ F:	net/ipx/
->  IRDA SUBSYSTEM
->  M:	Samuel Ortiz <samuel@sortiz.org>
->  L:	irda-users@lists.sourceforge.net (subscribers-only)
-> +L:	netdev@vger.kernel.org
->  W:	http://irda.sourceforge.net/
->  S:	Maintained
->  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/sameo/irda-2.6.git
-> -- 
-> 1.7.2.3
-> 
+I don't think such optimalization is worth doing... original code is
+as good but shorter and less complex...
 
 -- 
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
