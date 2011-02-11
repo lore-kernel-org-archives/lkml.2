@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab1BKTY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 14:24:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43394 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377Ab1BKTY0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 14:24:26 -0500
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: mathieu.desnoyers@polymtl.ca, hpa@zytor.com, rostedt@goodmis.org,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <cover.1294239591.git.jbaron@redhat.com>
-References: <cover.1294239591.git.jbaron@redhat.com>
+	id S1758042Ab1BKT1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 14:27:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:24101 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757377Ab1BKT1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 14:27:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,457,1291622400"; 
+   d="scan'208";a="706768779"
+Subject: Re: [Patch] idle governor: Avoid lock acquisition to read pm_qos
+ before entering idle
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: mark gross <markgross@thegnar.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
+        Len <len.brown@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <201102112022.25637.rjw@sisk.pl>
+References: <1297300864.2645.128.camel@schen9-DESK>
+	 <201102110017.16066.rjw@sisk.pl> <1297385416.2645.262.camel@schen9-DESK>
+	 <201102112022.25637.rjw@sisk.pl>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 20:25:28 +0100
-Message-ID: <1297452328.5226.89.camel@laptop>
+Date: Fri, 11 Feb 2011 11:27:58 -0800
+Message-ID: <1297452478.2645.265.camel@schen9-DESK>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-05 at 10:43 -0500, Jason Baron wrote:
-> Hi,
-> 
-> The first patch uses the storage space of the jump label key address
-> as a pointer into the update table. In this way, we can find all
-> the addresses that need to be updated without hashing.
-> 
-> The second patch introduces:
-> 
-> static __always_inline bool static_branch(struct jump_label_key *key);
-> 
-> instead of the old JUMP_LABEL(key, label) macro.
-> 
-> In this way, jump labels become really easy to use:
-> 
-> Define:
-> 
->         struct jump_label_key jump_key;
-> 
-> Can be used as:
-> 
->         if (static_branch(&jump_key))
->                 do unlikely code
-> 
-> enable/disale via:
-> 
->         jump_label_enable(&jump_key);
->         jump_label_disable(&jump_key);
-> 
-> that's it!
-> 
-> For perf, which also uses jump labels, I've left the reference counting
-> out of the jump label layer, thus removing the 'jump_label_inc()' and
-> 'jump_label_dec()' interface. Hopefully, this is a more palatable solution.
+On Fri, 2011-02-11 at 20:22 +0100, Rafael J. Wysocki wrote:
 
-Right, lets go with this. Maybe we'll manage to come up with something
-saner than _else_atomic_read(), but for now its an improvement over what
-we have.
+> 
+> Thanks, but I'd put that comment before the structure definition with the
+> "NOTE:" prefix and I think you should explain the reason why that field
+> shouldn't be changed to 64-bits.
+> 
+
+Either you or James want to suggest a comment on why the field shouldn't
+be changed to 64-bits to be placed there?
+
+Tim
 
