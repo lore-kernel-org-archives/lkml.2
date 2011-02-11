@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab1BKJ4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:56:34 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:43384 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241Ab1BKJ4c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:56:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YoVb9S46U2E2WTWNDniIBfVEBtup7TyESdG1C6yvUN0UpGA2GDhAW+W3cbmLygjuWO
-         +/gUgdVDydlVLJIjogZg==
+	id S1755709Ab1BKJ64 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:58:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56236 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893Ab1BKJ6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 04:58:54 -0500
+Message-ID: <4D550859.80908@cn.fujitsu.com>
+Date: Fri, 11 Feb 2011 17:58:49 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <4D548904.9000003@cn.fujitsu.com>
-References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
-	<1297095037.13327.47.camel@laptop>
-	<AANLkTi=abaUN6m9ZWQuri_Y-487YZzjnTujQMP61QdmW@mail.gmail.com>
-	<1297244844.13327.155.camel@laptop>
-	<AANLkTingFKyux-u6Aw8jg=cKca7QV7bQEHjDzC-4Dg04@mail.gmail.com>
-	<4D548904.9000003@cn.fujitsu.com>
-Date: Fri, 11 Feb 2011 10:56:28 +0100
-Message-ID: <AANLkTimPGpg13BbwHQCFF0yqSH01d+UUcutnNo9WCYp9@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
-From: Stephane Eranian <eranian@google.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com, acme@redhat.com,
-        Paul Menage <menage@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 0/6 v4] cfq-iosched: Introduce CFQ group hierarchical
+ scheduling and "use_hierarchy" interface
+References: <4D5397A9.6040404@cn.fujitsu.com> <20110210183053.GD2524@redhat.com>
+In-Reply-To: <20110210183053.GD2524@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-11 17:57:58,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-11 17:57:59,
+	Serialize complete at 2011-02-11 17:57:59
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li,
+Vivek Goyal wrote:
+> On Thu, Feb 10, 2011 at 03:45:45PM +0800, Gui Jianfeng wrote:
+>> Hi
+>>
+>> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
+>> in the way that it puts all CFQ queues in a hidden group and schedules with other 
+>> CFQ group under their parent. The patchset is available here,
+>> http://lkml.org/lkml/2010/8/30/30
+>>
+>> Vivek think this approach isn't so instinct that we should treat CFQ queues
+>> and groups at the same level. Here is the new approach for hierarchical 
+>> scheduling based on Vivek's suggestion. The most big change of CFQ is that
+>> it gets rid of cfq_slice_offset logic, and makes use of vdisktime for CFQ
+>> queue scheduling just like CFQ group does. But I still give cfqq some jump 
+>> in vdisktime based on ioprio, thanks for Vivek to point out this. Now CFQ 
+>> queue and CFQ group use the same scheduling algorithm. 
+>>
+>> "use_hierarchy" interface is now added to switch between hierarchical mode
+>> and flat mode. It works as memcg.
+>>
+>> --
+>> V3 -> V4 Changes:
+>> - Take io class into account when calculating the boost value.
+>> - Refine the vtime boosting logic as Vivek's Suggestion.
+> 
+> Hi Gui,
+> 
+> What testing did you do to make sure that this vtime boosting logic is working
+> and is good replacement for slice_offset() logic for cfqq?
 
-On Fri, Feb 11, 2011 at 1:55 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
->>>> while there is already cgroup monitoring active. In that case and if we do not
->>>> want to wait until there is at least one ctxsw on all CPUs, then we have to
->>>> check if the other threads are not already running on the other CPUs.If so,
->>>> we need to do a cgroup switch on those CPUs. Otherwise, we have nothing to
->>>> do. Am I getting this right?
->>>
->>> Right, so if any of those tasks is currently running, that cpu will be
->>> monitoring their old cgroup, hence we send an IPI to flip cgroups.
->>>
->> I have built a test case where this would trigger. I launched a multi-threaded
->> app, and then I move the pid into a cgroup via: echo PID >/cgroup/tests/tasks.
->> I don't see any perf_cgroup move beyond the PID passed.
->>
->> I looked at kernel/cgroup.c and I could not find a invocation of
->> ss->attach() that
->> would pass threadgroup = true. So I am confused here.
->>
->> I wonder how the cgroupfs 'echo PID >tasks' interface would make the distinction
->> between PID and TID. It seems possible to move one thread of a multi-threaded
->> process into a cgroup but not the others.
->>
->
-> You can do this:
->
->        # echo PID > cgroup.procs
->
-> When the patchset that implements the above feature is accepted. See:
->
->        https://lkml.org/lkml/2011/2/7/418
->
-> The below commit that confused you is actually a part of the above patchset,
-> but it sneaked into the kernel accidentally:
->
-> commit be367d09927023d081f9199665c8500f69f14d22
-> Author: Ben Blum <bblum@google.com>
-> Date:   Wed Sep 23 15:56:31 2009 -0700
->
->    cgroups: let ss->can_attach and ss->attach do whole threadgroups at a time
->
-Ok, that makes more sense now. I wil try with the above patchset applied to
-verify this work as expected.
+Hi Vivek,
+
+I did fio test by runing 8 threads with different ioprio. It seems patched kernel
+and vanilla kernel act the same behaviour. That is it doesn't play well. As I metioned
+in previous mail, when I disable idling, all threads become SYNC_NOIDLE, and then
+preempt each other, even if I start 8 threads. And reposition at the top of service
+tree. This's why we can't see service differetiation.
+
+> 
+> Secondly, did you get a chance to look at chad's patch of keeping track
+> of previous assigned vdisktime and keeping track of genrations. I think
+> his patch is going to coflict with yours, so one of you will have to
+> make adjustments. I think both the boost logic and keeping track of generation
+> logic can be combined.
+> 
+> 	if (entity->gneration_number > cfqd->active_generation)
+> 		Use_boost_logic;
+> 	else
+> 		Use_previously_assigned_vdisktime;
+> 
+> 
+> That way if we generation has changed then we really don't have a valid
+> vdisktime and we can use boost logic to come up with differential
+> vdisktime and if generation has not changed then we can continue to make
+> use of previous vdisktime.
+
+Ok, I'd like to take a look chad's patch.
+
+Thanks
+Gui
+> 
+> Thanks
+> Vivek
+> 
