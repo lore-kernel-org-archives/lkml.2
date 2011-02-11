@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab1BKTOM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 14:14:12 -0500
-Received: from cantor.suse.de ([195.135.220.2]:37153 "EHLO mx1.suse.de"
+	id S1757162Ab1BKTOV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 14:14:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757162Ab1BKTOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 14:14:10 -0500
-Date: Fri, 11 Feb 2011 11:13:40 -0800
-From: Greg KH <gregkh@suse.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: ycwang <yenchengwang@gmail.com>, dbrownell@users.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: f_mass_storage: fixed a macro coding
- style issue
-Message-ID: <20110211191340.GA11733@suse.de>
-References: <1297438592-8566-1-git-send-email-yenchengwang@gmail.com>
- <20110211173918.GA9176@suse.de>
- <20110211185710.GB31385@core.coreip.homeip.net>
+	id S1757878Ab1BKTOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 14:14:11 -0500
+Date: Fri, 11 Feb 2011 20:13:59 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86_64: disable identity mappings statically
+Message-ID: <20110211191359.GC2010@jolsa.brq.redhat.com>
+References: <1297432830-3912-1-git-send-email-jolsa@redhat.com>
+ <m14o8a34em.fsf@fess.ebiederm.org>
+ <20110211170722.GA2010@jolsa.brq.redhat.com>
+ <AANLkTikCAbe5ATHjqgQDOFuCjcuG1=8e_5+ADaCQ3M6R@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110211185710.GB31385@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikCAbe5ATHjqgQDOFuCjcuG1=8e_5+ADaCQ3M6R@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:57:10AM -0800, Dmitry Torokhov wrote:
-> On Fri, Feb 11, 2011 at 09:39:18AM -0800, Greg KH wrote:
-> > On Fri, Feb 11, 2011 at 11:36:32PM +0800, ycwang wrote:
-> > > Fixed a macro coding style issue.
-> > 
-> > What macro coding style issue did you fix?  Please be more specific and
-> > resend the patch with a more complete changelog entry.
-> > 
+On Fri, Feb 11, 2011 at 12:59:47PM -0500, Brian Gerst wrote:
+> On Fri, Feb 11, 2011 at 12:07 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Fri, Feb 11, 2011 at 08:46:41AM -0800, Eric W. Biederman wrote:
+> >> Jiri Olsa <jolsa@redhat.com> writes:
+> >>
+> >> > hi,
+> >> >
+> >> > while browsing the page table setup code, I noticed the x86_64 head
+> >> > code might not need the identity mappings at all.
+> >> > It seems it's ok to switch it off completely from the begining,
+> >> > unless I'm missing something.
+> >>
+> >> Have you tested it?
+> >
+> > yes, I booted it with no problem
 > 
-> It is simply incorrect as it adds do {} while (0) to the module
-> parameter constructors which are used outside of functions.
-> 
-> The change was never compiled.
+> The only reason this doesn't crash is because the identity mappings
+> provided by the boot code are marked as global, and therefore might
+> not be flushed by simply loading cr3.  The cpu can evict TLB entries
+> at any time though, so it's a bad idea to run without the identity
+> mappings even for the brief moment before jumping to the virtual
+> address.
 
-Well, I was going to wait until the next iteration of the patch to let
-the submitter know that, you just spoiled my fun of watching someone
-send a obviously broken patch twice :)
+I added code for flushing whole TLB (including global pages) and it
+still boots (attached).
 
-It's the little things in life we live for...
+I'm sorry if I'm missing something obvious (probably the TLB flushing
+code is wrong), but I'd like to understand this part.
 
-thanks,
+What instruction/action would require the identity mapping,
+after the page table is set?
 
-greg k-h
+thanks (and again sry for noise :) )
+jirka
+
+
+---
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index c55e6fa..073f489 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -165,6 +165,13 @@ ENTRY(secondary_startup_64)
+ 	movl	$(X86_CR4_PAE | X86_CR4_PGE), %eax
+ 	movq	%rax, %cr4
+ 
++	/* invalidate whole TLB */
++	movq %cr4, %rax
++	movq %rax, %rdx
++	andq $~X86_CR4_PGE, %rax
++	movq %rax, %cr4
++	movq %rdx, %cr4
++
+ 	/* Setup early boot stage 4 level pagetables. */
+ 	movq	$(init_level4_pgt - __START_KERNEL_map), %rax
+ 	addq	phys_base(%rip), %rax
