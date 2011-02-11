@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab1BKKDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 05:03:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755568Ab1BKKDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 05:03:16 -0500
-Message-ID: <4D550913.5060508@redhat.com>
-Date: Fri, 11 Feb 2011 11:01:55 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1755984Ab1BKKFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 05:05:16 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:50173 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752251Ab1BKKFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 05:05:14 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 11 Feb 2011 11:04:39 +0100
+To: tlambert@chromium.org
+Cc: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: fixed EVIOCGRAB iterative grab/release.
+Message-ID: <20110211100439.GA1938@polaris.bitmath.org>
+References: <1297381370-16388-1-git-send-email-tlambert@chromium.org>
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-kernel@vger.kernel.org, Alexander Kjeldaas <astor@fast.no>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: NULL deref in drivers/md/dm-crypt.c:crypt_convert()
-References: <alpine.LNX.2.00.1102062320230.13593@swampdragon.chaosbits.net> <4D4F25A3.1090401@redhat.com> <alpine.LNX.2.00.1102102004140.26035@swampdragon.chaosbits.net> <4D54E753.9090906@redhat.com> <alpine.LNX.2.00.1102111020260.13370@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1102111020260.13370@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297381370-16388-1-git-send-email-tlambert@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.248.192.164
+X-Scan-Result: No virus found in message 1Pnpr4-0003QR-5M.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1Pnpr4-0003QR-5M 26c301503a29333890a0cd3cb236633b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 10:26 AM, Jesper Juhl wrote:
-> On Fri, 11 Feb 2011, Milan Broz wrote:
-> But, is that really where it says the problem is? That's not how I read 
-> it.
->
-> The problem is the second time through the while loop, not the first :
-> ...
-> 776             while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
-> 777                   ctx->idx_out < ctx->bio_out->bi_vcnt) {
-> 778
-> 779                     crypt_alloc_req(cc, ctx);
-> 780
-> 781                     atomic_inc(&ctx->pending);
-> 782
-> 783                     r = crypt_convert_block(cc, ctx, this_cc->req);
->
-> first time through the loop this is fine, but if we then subsequently hit 
-> the -EINPROGRESS case in the switch below we'll explictly assign NULL to 
-> this_cc->req and the the 'continue' ensures that we do one more trip 
-> around the loop and on that second pass we pass a NULL this_cc->req to 
-> crypt_convert_block()
->
-Sigh. Did you read my first email? It is false positive.
+Hi Terry,
 
-this_cc->req is allocated in crypt_alloc_req(cc, ctx);
+> Fixed order of calls in evdev_ungrab to allow iterative use of
+> code which grabs and releases input event devices.
+> 
+> Signed-off-by: Terry Lambert <tlambert@chromium.org>
+> ---
+>  drivers/input/evdev.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index c8471a2..0bac8da 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -160,9 +160,9 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
+>  	if (evdev->grab != client)
+>  		return  -EINVAL;
+>  
+> +	input_release_device(&evdev->handle);
+>  	rcu_assign_pointer(evdev->grab, NULL);
+>  	synchronize_rcu();
+> -	input_release_device(&evdev->handle);
 
-this_cc is simple per cpu struct, common in both functions.
+I imagine the current code could lead to a race situation if there
+were no other locks involved. However, evdev_ungrab() is always called
+under evdev->mutex. As Dmitry hinted, grabbing "usually works", so
+perhaps you could device a tiny program which reproduces the problem?
 
-The code here tries to simply support both sync and async cryptAPI operation.
-
-In sync, we can reuse this_cc->req immediately (this is common case).
-
-In async mode (returns EBUSY, EINPROGRESS) we must not use it again (because it is
-still processing) so we explicitly set it here to NULL and in the NEXT iteration
-crypt_alloc_req(cc, ctx) allocates new this_cc->req from pool.
-
-crypt_alloc_req can probably take this_cc as argument directly and not calculate
-it again, but compiler will inline and optimise the code anyway.
-
-You can easily test async path, just apply in crypt_ctr and use some crypt mapping
--                      "%s(%s)", chainmode, cipher);                                                                                       
-+                      "cryptd(%s(%s-generic))", chainmode, cipher);                                                                       
-
-To make coverity happy, see patch below.
--
-Tidy code to reuse per cpu pointer
-
-Signed-off-by: Milan Broz <mbroz@redhat.com>
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index ad2a6df..a2312e3 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -748,9 +748,9 @@ static void kcryptd_async_done(struct crypto_async_request *async_req,
- 			       int error);
- 
- static void crypt_alloc_req(struct crypt_config *cc,
--			    struct convert_context *ctx)
-+			    struct convert_context *ctx,
-+			    struct crypt_cpu *this_cc)
- {
--	struct crypt_cpu *this_cc = this_crypt_config(cc);
- 	unsigned key_index = ctx->sector & (cc->tfms_count - 1);
- 
- 	if (!this_cc->req)
-@@ -776,7 +776,7 @@ static int crypt_convert(struct crypt_config *cc,
- 	while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
- 	      ctx->idx_out < ctx->bio_out->bi_vcnt) {
- 
--		crypt_alloc_req(cc, ctx);
-+		crypt_alloc_req(cc, ctx, this_cc);
- 
- 		atomic_inc(&ctx->pending);
- 
-
-Milan
-
-
+Thanks,
+Henrik
