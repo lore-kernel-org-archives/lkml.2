@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab1BKPpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:45:08 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35030 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab1BKPpG (ORCPT
+	id S1757638Ab1BKPpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:45:20 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:42295 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757555Ab1BKPpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:45:06 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Andrew Lutomirski <andy@luto.us>
-Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.37: Multi-second I/O latency while untarring
-In-reply-to: <AANLkTin4628kHMRogoAarDWyGGb8-6-BiixihJmy_AUj@mail.gmail.com>
-References: <AANLkTin4628kHMRogoAarDWyGGb8-6-BiixihJmy_AUj@mail.gmail.com>
-Date: Fri, 11 Feb 2011 10:44:38 -0500
-Message-Id: <1297438671-sup-21@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	Fri, 11 Feb 2011 10:45:15 -0500
+Date: Fri, 11 Feb 2011 15:45:08 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Greg KH <greg@kroah.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110211154508.GA5435@srcf.ucam.org>
+References: <20110209224006.GA11202@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110209224006.GA11202@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Andrew Lutomirski's message of 2011-02-11 10:08:52 -0500:
-> As I type this, I have an ssh process running that's dumping data into
-> a fifo at high speed (maybe 500Mbps) and a tar process that's
-> untarring from the same fifo onto btrfs.  The btrfs fs is mounted -o
-> space_cache,compress.  This machine has 8GB ram, 8 logical cores, and
-> a fast (i7-2600) CPU, so it's not an issue with the machine struggling
-> under load.
-> 
-> Every few tens of seconds, my system stalls for several seconds.
-> These stalls cause keyboard input to be lost, firefox to hang, etc.
-> 
-> Setting tar's ionice priority to best effort / 7 or to idle makes no difference.
-> 
-> ionice idle and queue_depth = 1 on the disk (a slow 2TB WD) also makes
-> no difference.
-> 
-> max_sectors_kb = 64 in addition to the above doesn't help either.
-> 
-> latencytop shows regular instances of 2-7 *second* latency, variously
-> in sync_page, start_transaction, btrfs_start_ordered_extent, and
-> do_get_write_access (from jbd2 on my ext4 root partition).
-> 
-> echo 3 >drop_caches gave me 7 GB free RAM.  I still had stalls when
-> 4-5 GB were still free (so it shouldn't be a problem with important
-> pages being evicted).
-> 
-> In case it matters, all of my partitions are on LVM on dm-crypt, but
-> this machine has AES-NI so the overhead from that should be minimal.
-> In fact, overall CPU usage is only about 10%.
-> 
-> What gives?  I thought this stuff was supposed to be better on modern kernels.
+On Wed, Feb 09, 2011 at 02:40:06PM -0800, Greg KH wrote:
 
-We can tell more if you post the full traces from latencytop.  I have a
-patch here for latencytop that adds a -c mode, which dumps the traces
-out to a text files.
+> +/* Structure to get data back to the calling function */
+> +struct sabi_retval {
+> +	u8 retval[20];
+> +};
 
-http://oss.oracle.com/~mason/latencytop.patch
+20 bytes, but only 4 of them end up being used?
 
-Based on what you have here, I think it's probably a latency problem
-between btrfs and the dm-crypt stuff.  How easily can setup a test
-partition without dm-crypt?
+> +	if (readb(sabi_iface + SABI_IFACE_COMPLETE) == 0xaa &&
+> +	    readb(sabi_iface + SABI_IFACE_DATA) != 0xff) {
+> +		/*
+> +		 * It did!
+> +		 * Save off the data into a structure so the caller use it.
+> +		 * Right now we only care about the first 4 bytes,
+> +		 * I suppose there are commands that need more, but I don't
+> +		 * know about them.
+> +		 */
+> +		sretval->retval[0] = readb(sabi_iface + SABI_IFACE_DATA);
+> +		sretval->retval[1] = readb(sabi_iface + SABI_IFACE_DATA + 1);
+> +		sretval->retval[2] = readb(sabi_iface + SABI_IFACE_DATA + 2);
+> +		sretval->retval[3] = readb(sabi_iface + SABI_IFACE_DATA + 3);
+> +		goto exit;
+> +	}
 
--chris
+goto on success, continue failure? That's a pretty atypical pattern, and 
+the goto's not even really needed in this case.
+
+> +	/* Something bad happened, so report it and error out */
+> +	printk(KERN_WARNING "SABI command 0x%02x failed with completion flag 0x%02x and output 0x%02x\n",
+> +		command, readb(sabi_iface + SABI_IFACE_COMPLETE),
+> +		readb(sabi_iface + SABI_IFACE_DATA));
+
+Is it guaranteed that further reads will still return the failure state?
+
+> +	/* see if the command actually succeeded */
+> +	if (readb(sabi_iface + SABI_IFACE_COMPLETE) == 0xaa &&
+> +	    readb(sabi_iface + SABI_IFACE_DATA) != 0xff) {
+> +		/* it did! */
+> +		goto exit;
+> +	}
+
+Ditto for this block.
+
+> +static struct dmi_system_id __initdata samsung_dmi_table[] = {
+
+This is kind of ugly. Are there any Samsung laptops where reading the 
+bios area is going to cause problems?
+
+> +	/* Get a pointer to the SABI Interface */
+> +	ifaceP = (readw(sabi + sabi_config->header_offsets.data_segment) & 0x0ffff) << 4;
+> +	ifaceP += readw(sabi + sabi_config->header_offsets.data_offset) & 0x0ffff;
+> +	sabi_iface = ioremap(ifaceP, 16);
+> +	if (!sabi_iface) {
+> +		printk(KERN_ERR "Can't remap %x\n", ifaceP);
+
+dev_err()? It'd be nice to have a prefix on the failure cases.
+
+> +	retval = init_wireless(sdev);
+
+No way to identify whether or not the hardware has wifi before 
+registering rfkill?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
