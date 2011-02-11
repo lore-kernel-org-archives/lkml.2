@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab1BKKkq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 05:40:46 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:35489 "HELO
+	id S1756243Ab1BKKkw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 05:40:52 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:34669 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755973Ab1BKKkn (ORCPT
+	with SMTP id S1756083Ab1BKKkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 05:40:43 -0500
+	Fri, 11 Feb 2011 05:40:45 -0500
 X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX1+Ff3JX3BqFK8oz8/fMP3BDb+dMpH24pdM6L08F0G
-	1XDZWmnpLVYPnj
+X-Provags-ID: V01U2FsdGVkX1+AkEcQRpSALPSyNqBkCncC9rtbvAyXJFoRX3u3ov
+	x+lPD98BRl7IXW
 From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 To: eparis@redhat.com
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: [PATCH 4/7] fsnotify: replace most calls of fsnotify_destroy_mark() with fsnotify_remove_mark()
-Date: Fri, 11 Feb 2011 11:36:40 +0100
-Message-Id: <1297420603-11715-5-git-send-email-LinoSanfilippo@gmx.de>
+Subject: [PATCH 5/7] fsnotify: use a mutex instead of a spinlock to protect a groups mark list
+Date: Fri, 11 Feb 2011 11:36:41 +0100
+Message-Id: <1297420603-11715-6-git-send-email-LinoSanfilippo@gmx.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297420603-11715-1-git-send-email-LinoSanfilippo@gmx.de>
 References: <1297420603-11715-1-git-send-email-LinoSanfilippo@gmx.de>
@@ -25,161 +25,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces all calls of fsnotify_destroy_mark with calls to
-fsnotify_remove_mark(). The exception is for fsnotify_clear_marks_by[inode|mount]()
-where we dont have a group argumente in the caller available.
+Replaces the groups mark_lock spinlock with a mutex. Using a mutex instead
+of a spinlock results in more flexibility (i.e it allows to sleep while the
+lock is held).
 
 Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 ---
- fs/notify/dnotify/dnotify.c          |    4 ++--
- fs/notify/fanotify/fanotify_user.c   |    4 ++--
- fs/notify/inotify/inotify_fsnotify.c |    2 +-
- fs/notify/inotify/inotify_user.c     |    2 +-
- kernel/audit_tree.c                  |   10 +++++-----
- kernel/audit_watch.c                 |    4 ++--
- 6 files changed, 13 insertions(+), 13 deletions(-)
+ fs/notify/group.c                |    2 +-
+ fs/notify/inode_mark.c           |    2 --
+ fs/notify/mark.c                 |   20 ++++++++++----------
+ fs/notify/vfsmount_mark.c        |    2 --
+ include/linux/fsnotify_backend.h |    2 +-
+ 5 files changed, 12 insertions(+), 16 deletions(-)
 
-diff --git a/fs/notify/dnotify/dnotify.c b/fs/notify/dnotify/dnotify.c
-index 89ec7e0..5dfd35a 100644
---- a/fs/notify/dnotify/dnotify.c
-+++ b/fs/notify/dnotify/dnotify.c
-@@ -200,7 +200,7 @@ void dnotify_flush(struct file *filp, fl_owner_t id)
+diff --git a/fs/notify/group.c b/fs/notify/group.c
+index cc341d3..a45bbfb 100644
+--- a/fs/notify/group.c
++++ b/fs/notify/group.c
+@@ -96,7 +96,7 @@ struct fsnotify_group *fsnotify_alloc_group(const struct fsnotify_ops *ops)
+ 	init_waitqueue_head(&group->notification_waitq);
+ 	group->max_events = UINT_MAX;
  
- 	/* nothing else could have found us thanks to the dnotify_group mutex */
- 	if (dn_mark->dn == NULL)
--		fsnotify_destroy_mark(fsn_mark);
-+		fsnotify_remove_mark(fsn_mark, dnotify_group);
+-	spin_lock_init(&group->mark_lock);
++	mutex_init(&group->mark_mutex);
+ 	INIT_LIST_HEAD(&group->marks_list);
  
- 	mutex_unlock(&dnotify_group->mutex);
+ 	group->ops = ops;
+diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+index 4c29fcf..d438f11 100644
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -63,7 +63,6 @@ void fsnotify_destroy_inode_mark(struct fsnotify_mark *mark)
+ 	struct inode *inode = mark->i.inode;
  
-@@ -384,7 +384,7 @@ out:
- 	spin_unlock(&fsn_mark->lock);
+ 	assert_spin_locked(&mark->lock);
+-	assert_spin_locked(&mark->group->mark_lock);
  
- 	if (destroy)
--		fsnotify_destroy_mark(fsn_mark);
-+		fsnotify_remove_mark(fsn_mark, dnotify_group);
+ 	spin_lock(&inode->i_lock);
  
- 	mutex_unlock(&dnotify_group->mutex);
- 	fsnotify_put_mark(fsn_mark);
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 848648f..c441b91 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -556,7 +556,7 @@ static int fanotify_remove_vfsmount_mark(struct fsnotify_group *group,
- 	removed = fanotify_mark_remove_from_mask(fsn_mark, mask, flags,
- 						 &destroy_mark);
- 	if (destroy_mark)
--		fsnotify_destroy_mark(fsn_mark);
-+		fsnotify_remove_mark(fsn_mark, group);
+@@ -191,7 +190,6 @@ int fsnotify_add_inode_mark(struct fsnotify_mark *mark,
+ 	mark->flags |= FSNOTIFY_MARK_FLAG_INODE;
  
- 	fsnotify_put_mark(fsn_mark);
- 	if (removed & mnt->mnt_fsnotify_mask)
-@@ -586,7 +586,7 @@ static int fanotify_remove_inode_mark(struct fsnotify_group *group,
- 	removed = fanotify_mark_remove_from_mask(fsn_mark, mask, flags,
- 						 &destroy_mark);
- 	if (destroy_mark)
--		fsnotify_destroy_mark(fsn_mark);
-+		fsnotify_remove_mark(fsn_mark, group);
+ 	assert_spin_locked(&mark->lock);
+-	assert_spin_locked(&group->mark_lock);
  
- 	/* matches the fsnotify_find_inode_mark() */
- 	fsnotify_put_mark(fsn_mark);
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index a91b69a..c999fd3 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -131,7 +131,7 @@ static int inotify_handle_event(struct fsnotify_group *group,
+ 	spin_lock(&inode->i_lock);
+ 
+diff --git a/fs/notify/mark.c b/fs/notify/mark.c
+index 3b00203..30b72b2 100644
+--- a/fs/notify/mark.c
++++ b/fs/notify/mark.c
+@@ -123,7 +123,7 @@ void fsnotify_destroy_mark(struct fsnotify_mark *mark)
+ 	group = mark->group;
+ 	spin_unlock(&mark->lock);
+ 
+-	spin_lock(&group->mark_lock);
++	mutex_lock(&group->mark_mutex);
+ 	spin_lock(&mark->lock);
+ 
+ 	/* 1 from caller and 1 for being on i_list/g_list */
+@@ -140,7 +140,7 @@ void fsnotify_destroy_mark(struct fsnotify_mark *mark)
+ 
+ 	list_del_init(&mark->g_list);
+ 
+-	spin_unlock(&group->mark_lock);
++	mutex_unlock(&group->mark_mutex);
+ 
+ 	spin_lock(&destroy_lock);
+ 	list_add(&mark->destroy_list, &destroy_list);
+@@ -216,7 +216,7 @@ int fsnotify_add_mark(struct fsnotify_mark *mark,
+ 	 * group->mark_lock
+ 	 * inode->i_lock
+ 	 */
+-	spin_lock(&group->mark_lock);
++	mutex_lock(&group->mark_mutex);
+ 	spin_lock(&mark->lock);
+ 
+ 	mark->flags |= FSNOTIFY_MARK_FLAG_ALIVE;
+@@ -238,7 +238,7 @@ int fsnotify_add_mark(struct fsnotify_mark *mark,
+ 	fsnotify_set_mark_mask_locked(mark, mark->mask);
+ 
+ 	spin_unlock(&mark->lock);
+-	spin_unlock(&group->mark_lock);
++	mutex_unlock(&group->mark_mutex);
+ 
+ 	if (inode)
+ 		__fsnotify_update_child_dentry_flags(inode);
+@@ -251,7 +251,7 @@ err:
+ 	atomic_dec(&group->num_marks);
+ 
+ 	spin_unlock(&mark->lock);
+-	spin_unlock(&group->mark_lock);
++	mutex_unlock(&group->mark_mutex);
+ 
+ 	spin_lock(&destroy_lock);
+ 	list_add(&mark->destroy_list, &destroy_list);
+@@ -270,13 +270,13 @@ void fsnotify_remove_mark(struct fsnotify_mark *mark,
+ {
+ 	struct inode *inode = NULL;
+ 
+-	spin_lock(&group->mark_lock);
++	mutex_lock(&group->mark_mutex);
+ 	spin_lock(&mark->lock);
+ 
+ 	/* something else already called this function on this mark */
+ 	if (!(mark->flags & FSNOTIFY_MARK_FLAG_ALIVE)) {
+ 		spin_unlock(&mark->lock);
+-		spin_unlock(&group->mark_lock);
++		mutex_unlock(&group->mark_mutex);
+ 		return;
  	}
  
- 	if (inode_mark->mask & IN_ONESHOT)
--		fsnotify_destroy_mark(inode_mark);
-+		fsnotify_remove_mark(inode_mark, group);
+@@ -296,7 +296,7 @@ void fsnotify_remove_mark(struct fsnotify_mark *mark,
+ 	spin_unlock(&mark->lock);
  
- 	return ret;
- }
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 4cd5d5d..1637820 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -830,7 +830,7 @@ SYSCALL_DEFINE2(inotify_rm_watch, int, fd, __s32, wd)
+ 	list_del_init(&mark->g_list);
+-	spin_unlock(&group->mark_lock);
++	mutex_unlock(&group->mark_mutex);
  
- 	ret = 0;
+ 	spin_lock(&destroy_lock);
+ 	list_add(&mark->destroy_list, &destroy_list);
+@@ -344,7 +344,7 @@ void fsnotify_clear_marks_by_group_flags(struct fsnotify_group *group,
+ 	struct fsnotify_mark *lmark, *mark;
+ 	LIST_HEAD(free_list);
  
--	fsnotify_destroy_mark(&i_mark->fsn_mark);
-+	fsnotify_remove_mark(&i_mark->fsn_mark, group);
- 
- 	/* match ref taken by inotify_idr_find */
- 	fsnotify_put_mark(&i_mark->fsn_mark);
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index 37b2bea..07078ba 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -255,7 +255,7 @@ static void untag_chunk(struct node *p)
- 		list_del_rcu(&chunk->hash);
- 		spin_unlock(&hash_lock);
- 		spin_unlock(&entry->lock);
--		fsnotify_destroy_mark(entry);
-+		fsnotify_remove_mark(entry, audit_tree_group);
- 		fsnotify_put_mark(entry);
- 		goto out;
- 	}
-@@ -298,7 +298,7 @@ static void untag_chunk(struct node *p)
- 		owner->root = new;
- 	spin_unlock(&hash_lock);
- 	spin_unlock(&entry->lock);
--	fsnotify_destroy_mark(entry);
-+	fsnotify_remove_mark(entry, audit_tree_group);
- 	fsnotify_put_mark(entry);
- 	goto out;
- 
-@@ -338,7 +338,7 @@ static int create_chunk(struct inode *inode, struct audit_tree *tree)
- 		spin_unlock(&hash_lock);
- 		chunk->dead = 1;
- 		spin_unlock(&entry->lock);
--		fsnotify_destroy_mark(entry);
-+		fsnotify_remove_mark(entry, audit_tree_group);
- 		fsnotify_put_mark(entry);
- 		return 0;
- 	}
-@@ -418,7 +418,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
- 		spin_unlock(&chunk_entry->lock);
- 		spin_unlock(&old_entry->lock);
- 
--		fsnotify_destroy_mark(chunk_entry);
-+		fsnotify_remove_mark(chunk_entry, audit_tree_group);
- 
- 		fsnotify_put_mark(chunk_entry);
- 		fsnotify_put_mark(old_entry);
-@@ -449,7 +449,7 @@ static int tag_chunk(struct inode *inode, struct audit_tree *tree)
- 	spin_unlock(&hash_lock);
- 	spin_unlock(&chunk_entry->lock);
- 	spin_unlock(&old_entry->lock);
--	fsnotify_destroy_mark(old_entry);
-+	fsnotify_remove_mark(old_entry, audit_tree_group);
- 	fsnotify_put_mark(old_entry); /* pair to fsnotify_find mark_entry */
- 	fsnotify_put_mark(old_entry); /* and kill it */
- 	return 0;
-diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-index d2e3c78..b50c857 100644
---- a/kernel/audit_watch.c
-+++ b/kernel/audit_watch.c
-@@ -349,7 +349,7 @@ static void audit_remove_parent_watches(struct audit_parent *parent)
- 	}
- 	mutex_unlock(&audit_filter_mutex);
- 
--	fsnotify_destroy_mark(&parent->mark);
-+	fsnotify_remove_mark(&parent->mark, audit_watch_group);
- }
- 
- /* Get path information necessary for adding watches. */
-@@ -496,7 +496,7 @@ void audit_remove_watch_rule(struct audit_krule *krule)
- 
- 		if (list_empty(&parent->watches)) {
- 			audit_get_parent(parent);
--			fsnotify_destroy_mark(&parent->mark);
-+			fsnotify_remove_mark(&parent->mark, audit_watch_group);
- 			audit_put_parent(parent);
+-	spin_lock(&group->mark_lock);
++	mutex_lock(&group->mark_mutex);
+ 	list_for_each_entry_safe(mark, lmark, &group->marks_list, g_list) {
+ 		if (mark->flags & flags) {
+ 			list_add(&mark->free_g_list, &free_list);
+@@ -352,7 +352,7 @@ void fsnotify_clear_marks_by_group_flags(struct fsnotify_group *group,
+ 			fsnotify_get_mark(mark);
  		}
  	}
+-	spin_unlock(&group->mark_lock);
++	mutex_unlock(&group->mark_mutex);
+ 
+ 	list_for_each_entry_safe(mark, lmark, &free_list, free_g_list) {
+ 		fsnotify_destroy_mark(mark);
+diff --git a/fs/notify/vfsmount_mark.c b/fs/notify/vfsmount_mark.c
+index 85eebff..04f5929 100644
+--- a/fs/notify/vfsmount_mark.c
++++ b/fs/notify/vfsmount_mark.c
+@@ -87,7 +87,6 @@ void fsnotify_destroy_vfsmount_mark(struct fsnotify_mark *mark)
+ 	struct vfsmount *mnt = mark->m.mnt;
+ 
+ 	assert_spin_locked(&mark->lock);
+-	assert_spin_locked(&mark->group->mark_lock);
+ 
+ 	spin_lock(&mnt->mnt_root->d_lock);
+ 
+@@ -148,7 +147,6 @@ int fsnotify_add_vfsmount_mark(struct fsnotify_mark *mark,
+ 	mark->flags |= FSNOTIFY_MARK_FLAG_VFSMOUNT;
+ 
+ 	assert_spin_locked(&mark->lock);
+-	assert_spin_locked(&group->mark_lock);
+ 
+ 	spin_lock(&mnt->mnt_root->d_lock);
+ 
+diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
+index c7bfee6..29ed5f8 100644
+--- a/include/linux/fsnotify_backend.h
++++ b/include/linux/fsnotify_backend.h
+@@ -142,7 +142,7 @@ struct fsnotify_group {
+ 	unsigned int priority;
+ 
+ 	/* stores all fastpath marks assoc with this group so they can be cleaned on unregister */
+-	spinlock_t mark_lock;		/* protect marks_list */
++	struct mutex mark_mutex;	/* protect marks_list */
+ 	atomic_t num_marks;		/* 1 for each mark and 1 for not being
+ 					 * past the point of no return when freeing
+ 					 * a group */
 -- 
 1.5.6.5
 
