@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab1BKJ64 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:58:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56236 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab1BKJ6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:58:54 -0500
-Message-ID: <4D550859.80908@cn.fujitsu.com>
-Date: Fri, 11 Feb 2011 17:58:49 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755827Ab1BKKDJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 05:03:09 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53872 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab1BKKDH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 05:03:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=tRMcY2hrnVaXr3VVa+cH/HgaonvvpJeUX9Q+tp+Ssh9DeV/RPp5+0jDFqfolfnlfSq
+         v7/Y4SI/PFoFOzS06X3J1ipa/vELG0C0+QCLu1j0ZUUxk8DPEzBlPk09DoIL0/qxm/cc
+         ulVHZOQ2uuT3VaoZNfjDZ8alMJxo//VVvk6Oo=
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 0/6 v4] cfq-iosched: Introduce CFQ group hierarchical
- scheduling and "use_hierarchy" interface
-References: <4D5397A9.6040404@cn.fujitsu.com> <20110210183053.GD2524@redhat.com>
-In-Reply-To: <20110210183053.GD2524@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-11 17:57:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-11 17:57:59,
-	Serialize complete at 2011-02-11 17:57:59
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru>
+References: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru>
+From: Guillaume LECERF <glecerf@gmail.com>
+Date: Fri, 11 Feb 2011 11:02:46 +0100
+X-Google-Sender-Auth: Wu4Nf4duJF_cj8L7mf-AcWyzH8o
+Message-ID: <AANLkTik_KdzX-3CTyE1CxyOauHgd5p75VApuTX7DGZn1@mail.gmail.com>
+Subject: Re: [PATCH] mtd: jedec_probe: initialise make sector erase command variable
+To: Antony Pavlov <antony@niisi.msk.ru>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Feb 10, 2011 at 03:45:45PM +0800, Gui Jianfeng wrote:
->> Hi
->>
->> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
->> in the way that it puts all CFQ queues in a hidden group and schedules with other 
->> CFQ group under their parent. The patchset is available here,
->> http://lkml.org/lkml/2010/8/30/30
->>
->> Vivek think this approach isn't so instinct that we should treat CFQ queues
->> and groups at the same level. Here is the new approach for hierarchical 
->> scheduling based on Vivek's suggestion. The most big change of CFQ is that
->> it gets rid of cfq_slice_offset logic, and makes use of vdisktime for CFQ
->> queue scheduling just like CFQ group does. But I still give cfqq some jump 
->> in vdisktime based on ioprio, thanks for Vivek to point out this. Now CFQ 
->> queue and CFQ group use the same scheduling algorithm. 
->>
->> "use_hierarchy" interface is now added to switch between hierarchical mode
->> and flat mode. It works as memcg.
->>
->> --
->> V3 -> V4 Changes:
->> - Take io class into account when calculating the boost value.
->> - Refine the vtime boosting logic as Vivek's Suggestion.
-> 
-> Hi Gui,
-> 
-> What testing did you do to make sure that this vtime boosting logic is working
-> and is good replacement for slice_offset() logic for cfqq?
+Hello.
 
-Hi Vivek,
+2011/2/11 Antony Pavlov <antony@niisi.msk.ru>:
+> In the commit 08968041bef437ec363623cd3218c2b083537ada
+>  (mtd: cfi_cmdset_0002: make sector erase command variable)
+> introdused a field sector_erase_cmd. In the same commit initialisation
+> of cfi->sector_erase_cmd made in cfi_chip_setup()
+> (file drivers/mtd/chips/cfi_probe.c), so the CFI chip has no problem:
+>
+> ...
+>        cfi->cfi_mode = CFI_MODE_CFI;
+>        cfi->sector_erase_cmd = CMD(0x30);
+> ...
+>
+> But for the JEDEC chips this initialisation is not carried out,
+> so the JEDEC chips have sector_erase_cmd == 0.
+>
+> It's not possible symply add the line
+>        p_cfi->sector_erase_cmd = CMD(0x30);
+> to the cfi_jedec_setup() function be cause CMD() macros needs
+> map and cfi variables. So this patch makes necessary changes.
+>
+> Signed-off-by: Antony Pavlov <antony@niisi.msk.ru>
 
-I did fio test by runing 8 threads with different ioprio. It seems patched kernel
-and vanilla kernel act the same behaviour. That is it doesn't play well. As I metioned
-in previous mail, when I disable idling, all threads become SYNC_NOIDLE, and then
-preempt each other, even if I start 8 threads. And reposition at the top of service
-tree. This's why we can't see service differetiation.
+Acked-by: Guillaume LECERF <glecerf@gmail.com>
 
-> 
-> Secondly, did you get a chance to look at chad's patch of keeping track
-> of previous assigned vdisktime and keeping track of genrations. I think
-> his patch is going to coflict with yours, so one of you will have to
-> make adjustments. I think both the boost logic and keeping track of generation
-> logic can be combined.
-> 
-> 	if (entity->gneration_number > cfqd->active_generation)
-> 		Use_boost_logic;
-> 	else
-> 		Use_previously_assigned_vdisktime;
-> 
-> 
-> That way if we generation has changed then we really don't have a valid
-> vdisktime and we can use boost logic to come up with differential
-> vdisktime and if generation has not changed then we can continue to make
-> use of previous vdisktime.
-
-Ok, I'd like to take a look chad's patch.
-
-Thanks
-Gui
-> 
-> Thanks
-> Vivek
-> 
+-- 
+Guillaume LECERF
+GeeXboX developer - www.geexbox.org
