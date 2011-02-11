@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab1BKNyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 08:54:44 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36538 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756424Ab1BKNym (ORCPT
+	id S1756535Ab1BKNzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 08:55:25 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53601 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756279Ab1BKNzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 08:54:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=Z503O9isHGdrgApuRVRjfp/an5y/bYQDXnc9r10d0lW3lgpqsb55BGv624v2eZZreb
-         fuzhbabN1gLdelEBT4akj25jUoLnJ5ElcFv/9jtHuk7JOSB62ssfYypf9D/lBYwYo6lY
-         GbNM4SryVeWgNF2Voa3++OAcCFQJlkx0zGdkM=
-From: Wang Lei <f3d27b@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>
-Subject: Re: [SOUND] SBx00 sound card using snd_hda_codec_analog auto mutes
-References: <s5h39nwdk4u.wl%tiwai@suse.de>
-	<4d552a5a.03368e0a.5890.2b59@mx.google.com>
-	<s5hlj1mburb.wl%tiwai@suse.de>
-	<4d5532aa.0ae9640a.3773.316b@mx.google.com>
-	<s5hipwqbt5c.wl%tiwai@suse.de>
-Date: Fri, 11 Feb 2011 21:54:11 +0800
-In-Reply-To: <s5hipwqbt5c.wl%tiwai@suse.de> (Takashi Iwai's message of "Fri,
-	11 Feb 2011 14:25:03 +0100")
-Message-ID: <4d553fa1.23968e0a.09ce.3034@mx.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Fri, 11 Feb 2011 08:55:24 -0500
+Date: Fri, 11 Feb 2011 08:55:20 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Dave Martin <dave.martin@linaro.org>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sachin Verma <imschnvrm@gmail.com>, Rabin Vincent <rabin@rab.in>,
+        Alexander Holler <holler@ahsoftware.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        catalin.marinas@arm.com
+Subject: Re: ARM: relocation out of range (when loading a module)
+In-Reply-To: <AANLkTikBJw4tS6cGjUMSPjCGCkURBUdZCfwvmMtsDcG4@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1102110852230.14920@xanadu.home>
+References: <4D2D1942.4050905@ahsoftware.de> <AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com> <alpine.LFD.2.00.1101121314470.25498@xanadu.home> <20110112184258.GH11039@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1101121350350.25498@xanadu.home>
+ <AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com> <alpine.LFD.2.00.1101270030220.8580@xanadu.home> <20110210154322.GE1742@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1102101405010.14920@xanadu.home> <AANLkTi=KtFf5BU-iH-sUUL=Q30S90bk608JR4zFz2CKf@mail.gmail.com>
+ <20110211093853.GA23404@n2100.arm.linux.org.uk> <AANLkTikBJw4tS6cGjUMSPjCGCkURBUdZCfwvmMtsDcG4@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-856371771-1297432522=:14920"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai <tiwai@suse.de> writes:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->
-> It's not about the mixer operation.  Check whether the interrupts of
-> the audio driver (in your case irq 16) increase during PCM playback.
->
->
-> Takashi
+--8323328-856371771-1297432522=:14920
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Oh, yes.
+On Fri, 11 Feb 2011, Dave Martin wrote:
 
---------------------
- 16:        776     277135   IO-APIC-fasteoi   ahci, hda_intel
---------------------
+> On Fri, Feb 11, 2011 at 9:38 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Fri, Feb 11, 2011 at 09:31:04AM +0000, Dave Martin wrote:
+> >> You could probably cook up a good upper bound based on the size of the
+> >> kernel and the number of symbols in the module: i.e., assume that
+> >> every undefined symbol in the module needs to be fixed up to point at
+> >> the most distant symbol in the kernel.
+> >>
+> >> For people with normal-sized kernels, this bound will probably work
+> >> out as zero most of the time (i.e., the current situation).  For
+> >> people with big kernels, or when many modules are already loaded, it
+> >> may work out at 100% -- but that's the price to pay for guaranteed
+> >> preallocation of the space required for the veneers.  And anyway, you
+> >> may really need a substantial chunk of those veneers in such cases.
+> >
+> > I think it's going to be easier just to re-order the kernel image link
+> > order to solve that problem.  That just leaves uclinux...
+> >
+> 
+> But if the kernel is big, or there are many modules, changing the
+> order can't solve the problem surely?  Or is the problem purely caused
+> by having the initramfs in the way, and we think the amount of actual
+> code will never be big enough to cause a problem?
 
-When I play a music, the interrupts increase(the upper line). Even when
-the sound is mute.
+Right now the biggest problem comes from the size of the initramfs.  The 
+solution for that is simply to move it elsewhere towards the end of the 
+kernel image instead of at the beginning.  And I think we're good for a 
+couple years before the actual kernel code size becomes an issue.
+
+
+Nicolas
+--8323328-856371771-1297432522=:14920--
