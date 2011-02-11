@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab1BKSmu (ORCPT <rfc822;w@1wt.eu>);
+	id S1757982Ab1BKSmy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 13:42:54 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57965 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757966Ab1BKSmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Feb 2011 13:42:50 -0500
-Received: from kroah.org ([198.145.64.141]:35615 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab1BKSmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 13:42:47 -0500
-Date: Fri, 11 Feb 2011 10:32:45 -0800
-From: Greg KH <greg@kroah.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Tim Hockin <thockin@google.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: SMBIOS / DMI Event Logs in Linux?
-Message-ID: <20110211183245.GA10891@kroah.com>
-References: <4D547236.6080702@google.com>
- <20110211012552.GA28995@kroah.com>
- <AANLkTi=tbYj_bonu2i+NHpNY3KUMpsTVT8YDsLhDz_Nm@mail.gmail.com>
- <20110211032049.GB884@kroah.com>
- <AANLkTin3tu-NiotpzWaQ_ubV0jumb_WsjEK5QGi5w56o@mail.gmail.com>
- <AANLkTi=Umq5gPr4xT4iChm+B+C+TOF1SB8gC4_ygqztR@mail.gmail.com>
+Message-ID: <4D5582D1.9040005@mvista.com>
+Date: Fri, 11 Feb 2011 21:41:21 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=Umq5gPr4xT4iChm+B+C+TOF1SB8gC4_ygqztR@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+CC: davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
+        sachi@mistralsolutions.com,
+        "Kevin Hilman (supporter:TI DAVINCI MACHIN...,commit_signer:16/18=89%)" 
+	<khilman@deeprootsystems.com>,
+        "Russell King (maintainer:ARM PORT)" <linux@arm.linux.org.uk>,
+        "Michael Williamson (commit_signer:5/18=28%)" 
+	<michael.williamson@criticallink.com>,
+        "Cyril Chemparathy (commit_signer:3/18=17%)" <cyril@ti.com>,
+        "Sergei Shtylyov (commit_signer:3/18=17%)" <sshtylyov@ru.mvista.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 02/13] da850: pruss platform specific additions.
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-3-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <1297435892-28278-3-git-send-email-subhasish@mistralsolutions.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:00:37AM -0800, Mike Waychison wrote:
-> resend as plain text, sorry :(
-> 
-> 
-> On Thu, Feb 10, 2011 at 7:20 PM, Greg KH <greg@kroah.com> wrote:
-> > Wait, if this is just a simple "pass through to the hardware", then just
-> > export the thing, with the proper permissions, in a single binary sysfs
-> > file, and do the parsing in userspace.
-> >
-> 
-> If you mean s/hardware/firmware/, then yes.
+Hello.
 
-Yes, sorry, that is what I ment.
+Subhasish Ghosh wrote:
 
-> > That would be the simplest thing to do, and fit the rules for valid
-> > sysfs files, and keep people from having to dig through /dev/mem, right?
-> 
-> Yup, exposing the log via a bin_attribute and allowing for blobs to be
-> appended (with the firmware either accepting or rejecting the format
-> will do).
+> This patch adds the platform device and assignes the platform resources
+> for the PRUSS mfd driver.
 
-Great, that should be a simple thing to do then, right?
+    You also add the PRUSS clock (and I would have done that as a separate patch).
 
-greg k-h
+> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+
+    You should have noted the patch dependency here -- this patch depends on the 
+one nenaming DA8XX_LPSC0_DMAX.
+
+WBR, Sergei
