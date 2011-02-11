@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab1BKPIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:08:07 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:60670 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756937Ab1BKPIF (ORCPT
+	id S1757129Ab1BKPJC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:09:02 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37207 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756812Ab1BKPJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:08:05 -0500
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX1+85ZJppMe88Th101th4HyeAKrO43F48sp+iQE0Q1
-	IvaMRvF3cfb9AR
-Date: Fri, 11 Feb 2011 16:04:20 +0100
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] inotify: fix race when adding a new watch
-Message-ID: <20110211150420.GB14459@lsanfilippo.unix.rd.tt.avira.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Y-GMX-Trusted: 0
+	Fri, 11 Feb 2011 10:09:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=v5D7z0CQADiohENIdgG6Qw3pfcDCg+m67VWS9pfK3eV0LCC+nJ46PqBKELGgajM6/t
+         HSc1wLVDN2ArBG1X1ffFmvFRZY7h6Lg4Mylk3UcmrAgkUMHrtrdMk9YgN5I2c4/IT5zy
+         4NsiWnnBMAOtqOzbMT4hOkpTwoQb7jm2cTqJo=
+Subject: Re: [PATCH 4/6] Platform support MSP onchip USB controller.
+From: Anoop P A <anoop.pa@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110211140600.GA23348@linux-mips.org>
+References: <1295943725-20308-1-git-send-email-anoop.pa@gmail.com>
+	 <20110211140600.GA23348@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Feb 2011 20:59:27 +0530
+Message-ID: <1297438167.29250.72.camel@paanoop1-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-02-11 at 15:06 +0100, Ralf Baechle wrote:
+> On Tue, Jan 25, 2011 at 01:52:05PM +0530, Anoop P.A wrote:
+> 
+> > +#ifdef CONFIG_MSP_HAS_DUAL_USB
+> > +#define NUM_USB_DEVS   2
+> > +#else
+> > +#define NUM_USB_DEVS   1
+> > +#endif
+> 
+> I thought you meant to replace CONFIG_MSP_HAS_DUAL_USB with a runtime
+> check?
 
-In inotify_new_watch() the number of watches for a group is compared against
-the max number of allowed watches and increased afterwards.
-The check and incrementation is not done atomically, so it is possible for
-multiple concurrent threads to pass the check and increment the number of
-marks above the allowed max.
-This patch uses a groups mark_lock to ensure that both check and incrementation
-are done atomic.
-With this lock held it is also not longer necessary to check for an already existing 
-mark after inotify_new_watch() has returned, since mark lookup and addition are also
-synchronized now.
+No. I added that as an configuration option will be used in future.
+> 
+>   Ralf
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilppo@gmx.de>
----
-This patch depends on the the patch series
-"fsnotify: use a groups mark_mutex to synchronize access to its mark list" sent 
-earlier this day.
-
- fs/notify/inotify/inotify_user.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
-
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 1637820..8e8b236 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -656,7 +656,8 @@ static int inotify_new_watch(struct fsnotify_group *group,
- 		goto out_err;
- 
- 	/* we are on the idr, now get on the inode */
--	ret = fsnotify_add_mark(&tmp_i_mark->fsn_mark, group, inode, NULL, 0);
-+	ret = fsnotify_add_mark_locked(&tmp_i_mark->fsn_mark, group, inode,
-+				       NULL, 0);
- 	if (ret) {
- 		/* we failed to get on the inode, get off the idr */
- 		inotify_remove_from_idr(group, tmp_i_mark);
-@@ -680,19 +681,13 @@ static int inotify_update_watch(struct fsnotify_group *group, struct inode *inod
- {
- 	int ret = 0;
- 
--retry:
-+	mutex_lock(&group->mark_mutex);
- 	/* try to update and existing watch with the new arg */
- 	ret = inotify_update_existing_watch(group, inode, arg);
- 	/* no mark present, try to add a new one */
- 	if (ret == -ENOENT)
- 		ret = inotify_new_watch(group, inode, arg);
--	/*
--	 * inotify_new_watch could race with another thread which did an
--	 * inotify_new_watch between the update_existing and the add watch
--	 * here, go back and try to update an existing mark again.
--	 */
--	if (ret == -EEXIST)
--		goto retry;
-+	mutex_unlock(&group->mark_mutex);
- 
- 	return ret;
- }
--- 
-1.5.6.5
 
