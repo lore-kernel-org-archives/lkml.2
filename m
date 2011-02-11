@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658Ab1BKB4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 20:56:47 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:56697 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757648Ab1BKB4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 20:56:46 -0500
-Date: Thu, 10 Feb 2011 17:56:38 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, jon.nettleton@gmail.com,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 10/10] olpc_dcon: drop CONFIG_BROKEN dependency
-Message-ID: <20110210175638.0dd6f912@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932341Ab1BKB5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 20:57:43 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:28385 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932231Ab1BKB5m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Feb 2011 20:57:42 -0500
+Date: Fri, 11 Feb 2011 10:56:57 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: [GIT PULL] Samsung fixes for 2.6.38-rc5
+To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
+Message-id: <01b701cbc98e$fa196b60$ee4c4220$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcvJjvbVr0LK6uNST2GtFnZ1k10fQQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-DCON builds properly now; we can drop the config dep on
-CONFIG_BROKEN.
+Please pull Samsung fixes from:
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/staging/olpc_dcon/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
 
-diff --git a/drivers/staging/olpc_dcon/Kconfig b/drivers/staging/olpc_dcon/Kconfig
-index 982273c..acb0a79 100644
---- a/drivers/staging/olpc_dcon/Kconfig
-+++ b/drivers/staging/olpc_dcon/Kconfig
-@@ -1,6 +1,6 @@
- config FB_OLPC_DCON
- 	tristate "One Laptop Per Child Display CONtroller support"
--	depends on OLPC && BROKEN
-+	depends on OLPC
- 	select I2C
- 	---help---
- 	  Add support for the OLPC XO DCON controller.  This controller is
--- 
-1.7.2.3
+These things are for small fix on 2.6.38-rc5.
+If any problems, please let me know.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+The following changes since commit 100b33c8bd8a3235fd0b7948338d6cbb3db3c63d:
+
+  Linux 2.6.38-rc4 (2011-02-07 16:03:17 -0800)
+
+are available in the git repository at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
+
+Kukjin Kim (1):
+      ARM: S5PV310: Cleanup System MMU
+
+Mark Brown (1):
+      ARM: SAMSUNG: Ensure struct sys_device is declared in plat/pm.h
+
+Thomas Abraham (1):
+      ARM: S5PV310: Add support System MMU on SMDKV310
+
+ arch/arm/mach-s5pv310/Kconfig               |    1 +
+ arch/arm/mach-s5pv310/include/mach/map.h    |    2 --
+ arch/arm/mach-s5pv310/include/mach/sysmmu.h |    5 ++++-
+ arch/arm/plat-s5p/Kconfig                   |   24 ++++++++----------------
+ arch/arm/plat-s5p/Makefile                  |    2 +-
+ arch/arm/plat-s5p/include/plat/sysmmu.h     |   23 -----------------------
+ arch/arm/plat-s5p/sysmmu.c                  |    4 +---
+ arch/arm/plat-samsung/include/plat/pm.h     |    2 ++
+ 8 files changed, 17 insertions(+), 46 deletions(-)
 
