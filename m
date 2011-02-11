@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab1BKVhP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 16:37:15 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:48365 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab1BKVhN (ORCPT
+	id S932447Ab1BKVh2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 16:37:28 -0500
+Received: from mail2.microsoft.com ([131.107.115.215]:29190 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab1BKVhY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 16:37:13 -0500
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
-References: <cover.1294239591.git.jbaron@redhat.com>
-	 <1297452328.5226.89.camel@laptop>
-	 <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 22:38:17 +0100
-Message-ID: <1297460297.5226.99.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Feb 2011 16:37:24 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: RE: [PATCH 1/3]: Staging: hv: Use native page allocation/free
+ functions
+Thread-Topic: [PATCH 1/3]: Staging: hv: Use native page allocation/free
+ functions
+Thread-Index: AQHLyhREQLJs9mA8vUSybVGIJ0ascZP9JUiA//+KTxCAAKZSAP//fTtw
+Date: Fri, 11 Feb 2011 21:37:23 +0000
+Message-ID: <FB42D5CCD7B5934EB1827DB5ED9B850E0B268B@tk5ex14mbxc106.redmond.corp.microsoft.com>
+References: <1297447140-21777-1-git-send-email-kys@microsoft.com>
+ <20110211182949.GA10751@suse.de>
+ <FB42D5CCD7B5934EB1827DB5ED9B850E0B2653@tk5ex14mbxc106.redmond.corp.microsoft.com>
+ <20110211212352.GA10845@suse.de>
+In-Reply-To: <20110211212352.GA10845@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 16:13 -0500, Mathieu Desnoyers wrote:
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, February 11, 2011 4:24 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; Hank Janssen
+> Subject: Re: [PATCH 1/3]: Staging: hv: Use native page allocation/free functions
 > 
-> Thoughts ? 
+> On Fri, Feb 11, 2011 at 08:55:56PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@suse.de]
+> > > Sent: Friday, February 11, 2011 1:30 PM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org; Hank Janssen
+> > > Subject: Re: [PATCH 1/3]: Staging: hv: Use native page allocation/free
+> functions
+> > >
+> > > On Fri, Feb 11, 2011 at 09:59:00AM -0800, K. Y. Srinivasan wrote:
+> > > > --- a/drivers/staging/hv/hv.c
+> > > > +++ b/drivers/staging/hv/hv.c
+> > > > @@ -230,7 +230,12 @@ int hv_init(void)
+> > > >  	* Allocate the hypercall page memory
+> > > >  	* virtaddr = osd_page_alloc(1);
+> > > >  	*/
+> > > > -	virtaddr = osd_virtual_alloc_exec(PAGE_SIZE);
+> > > > +#ifdef __x86_64__
+> > > > +	virtaddr = __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_EXEC);
+> > > #else
+> > > > +	virtaddr =  __vmalloc(PAGE_SIZE, GFP_KERNEL,
+> > > > +			__pgprot(__PAGE_KERNEL & (~_PAGE_NX))); #endif
+> > >
+> > > I'm not saying this patch is wrong at all, but I still don't understand why this is
+> > > different depending on the architecture of the machine.  Why is this
+> necessary, it
+> > > should be ok to do the same type of allocation no matter what the processor
+> is,
+> > > right?
+> >
+> > You are right Greg; I don't think there is a need to specify different page
+> > protection bits based on the architecture - PAGE_KERNEL_EXEC should be
+> enough.
+> 
+> I thought so, but for some reason Hank said there this was needed.
+> Hank, is it still true?
+> 
+> > However, this is the code that is currently in the tree - refer to osd.c.
+> 
+> Oh, I remember, it's not a critique of this patch, it just reminded me
+> of this question I always had for this code.
+> 
+> > If it is ok with you, I could submit an additional patch to clean this up.
+> 
+> If Hank says it is ok, and you all test it to verify nothing breaks,
+> please send it on.
+Will do; the new patch will be on top of the 3 patch sequence I sent earlier today.
 
- #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
-+
-+struct jump_label_key {
-+       void *ptr;
-+};
+Regards,
 
- struct jump_label_entry {
-        struct hlist_node hlist;
-        struct jump_entry *table;
--       int nr_entries;
-        /* hang modules off here */
-        struct hlist_head modules;
-        unsigned long key;
-+       u32 nr_entries;
-+       int refcount;
- };
-
-#else
-
-+struct jump_label_key {
-+       int state;
-+};
-
-#endif
-
-
-
-So why can't we make that jump_label_entry::refcount and
-jump_label_key::state an atomic_t and be done with it?
-
-Then the enabled case uses if (atomic_inc_return(&key->ptr->refcount) ==
-1), and the disabled atomic_inc(&key->state).
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
 
