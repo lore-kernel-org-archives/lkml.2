@@ -1,94 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab1BKPpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:45:20 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:42295 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757555Ab1BKPpP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:45:15 -0500
-Date: Fri, 11 Feb 2011 15:45:08 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Greg KH <greg@kroah.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110211154508.GA5435@srcf.ucam.org>
-References: <20110209224006.GA11202@kroah.com>
+	id S1757464Ab1BKPpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:45:07 -0500
+Received: from kroah.org ([198.145.64.141]:36235 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756729Ab1BKPpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 10:45:05 -0500
+Date: Fri, 11 Feb 2011 07:40:14 -0800
+From: Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        davem@davemloft.net, rdunlap@xenotime.net, trivial@kernel.org
+Subject: Re: MAINTAINERS: a question about it
+Message-ID: <20110211154014.GA13716@kroah.com>
+References: <20110211122924.GA2088@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110209224006.GA11202@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110211122924.GA2088@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 02:40:06PM -0800, Greg KH wrote:
+On Fri, Feb 11, 2011 at 08:29:28PM +0800, Harry Wei wrote:
+> Hi us,
+>      I saw MAINTAINERS these days. I find we should program a script(shell) for checking if a maintainer added himself in correct position. 
+>      Because the MAINTAINERS is in alphabetical order and it has lots of maintainers now.
+>      I just want to ask if anyone is doing this work. If it has  been began i will do other things about kernel. If not, i will program this script(shell) for us.
 
-> +/* Structure to get data back to the calling function */
-> +struct sabi_retval {
-> +	u8 retval[20];
-> +};
+Why not just modify the 'scripts/get_maintainers.pl' tool to do this?
 
-20 bytes, but only 4 of them end up being used?
+thanks,
 
-> +	if (readb(sabi_iface + SABI_IFACE_COMPLETE) == 0xaa &&
-> +	    readb(sabi_iface + SABI_IFACE_DATA) != 0xff) {
-> +		/*
-> +		 * It did!
-> +		 * Save off the data into a structure so the caller use it.
-> +		 * Right now we only care about the first 4 bytes,
-> +		 * I suppose there are commands that need more, but I don't
-> +		 * know about them.
-> +		 */
-> +		sretval->retval[0] = readb(sabi_iface + SABI_IFACE_DATA);
-> +		sretval->retval[1] = readb(sabi_iface + SABI_IFACE_DATA + 1);
-> +		sretval->retval[2] = readb(sabi_iface + SABI_IFACE_DATA + 2);
-> +		sretval->retval[3] = readb(sabi_iface + SABI_IFACE_DATA + 3);
-> +		goto exit;
-> +	}
-
-goto on success, continue failure? That's a pretty atypical pattern, and 
-the goto's not even really needed in this case.
-
-> +	/* Something bad happened, so report it and error out */
-> +	printk(KERN_WARNING "SABI command 0x%02x failed with completion flag 0x%02x and output 0x%02x\n",
-> +		command, readb(sabi_iface + SABI_IFACE_COMPLETE),
-> +		readb(sabi_iface + SABI_IFACE_DATA));
-
-Is it guaranteed that further reads will still return the failure state?
-
-> +	/* see if the command actually succeeded */
-> +	if (readb(sabi_iface + SABI_IFACE_COMPLETE) == 0xaa &&
-> +	    readb(sabi_iface + SABI_IFACE_DATA) != 0xff) {
-> +		/* it did! */
-> +		goto exit;
-> +	}
-
-Ditto for this block.
-
-> +static struct dmi_system_id __initdata samsung_dmi_table[] = {
-
-This is kind of ugly. Are there any Samsung laptops where reading the 
-bios area is going to cause problems?
-
-> +	/* Get a pointer to the SABI Interface */
-> +	ifaceP = (readw(sabi + sabi_config->header_offsets.data_segment) & 0x0ffff) << 4;
-> +	ifaceP += readw(sabi + sabi_config->header_offsets.data_offset) & 0x0ffff;
-> +	sabi_iface = ioremap(ifaceP, 16);
-> +	if (!sabi_iface) {
-> +		printk(KERN_ERR "Can't remap %x\n", ifaceP);
-
-dev_err()? It'd be nice to have a prefix on the failure cases.
-
-> +	retval = init_wireless(sdev);
-
-No way to identify whether or not the hardware has wifi before 
-registering rfkill?
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+greg k-h
