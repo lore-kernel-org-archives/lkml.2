@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab1BKPTy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:19:54 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:51041 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab1BKPTw convert rfc822-to-8bit (ORCPT
+	id S1757260Ab1BKPUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:20:32 -0500
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:45869 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757234Ab1BKPUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:19:52 -0500
-From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>
-To: kernel@avr32linux.org
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>,
-        linux-fbdev@vger.kernel.org (open list:ATMEL LCDFB DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 1/2] atmel_lcdfb: implement inverted contrast pwm
-Date: Fri, 11 Feb 2011 16:19:43 +0100
-Message-Id: <1297437584-14048-1-git-send-email-biessmann@corscience.de>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 11 Feb 2011 10:20:30 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: R93imZ4VM1kL_igoVFkMYw_AoUFvs42mPYyYjjLANt1h2WE
+ QFrx9iP2a3tmwSlhE7IT9WkXn1QfUxWyWPXE_YJE_ErXWuobzf07jhZ0wGDg
+ dHoBQsFRh0GmQlXYrLralhT33S2fkJRuY1AV1wMQKsrU541XabPH70IPL5GM
+ P2SvPMzowA28l8MOcY6ggKims82BrhNK13BwJai69zCXaLbS5LdB_wiNr9Ek
+ HhdaTtatcp1hVNFg2VRS2BxfswACNVsuh.7oAZeCEeej29TpHCLmhN2FVP01
+ GMMDUYrFJqGUtyykhPIz0CTwCWe6waAXlz2BJIc6cR_mFM_4-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 11 Feb 2011 09:20:27 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Russell King <rmk@arm.linux.org.uk>
+cc: Pekka Enberg <penberg@kernel.org>, Shiyong Li <shi-yong.li@motorola.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
+In-Reply-To: <20110211091413.GA32687@flint.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1102110920060.12360@router.home>
+References: <20110207180606.GB2966@flint.arm.linux.org.uk> <AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com> <20110208125546.GA4286@flint.arm.linux.org.uk> <alpine.DEB.2.00.1102080856020.12521@router.home> <AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com>
+ <20110211091413.GA32687@flint.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:puJARSqB17480wyzWoW+QAhCSmIiYLsph7SN6wA2Ori
- McBgNCuWyAqpHmzQLxpQmriOt76c0beTrI3AQg8nDDGkSttpDd
- fZ/mZALdnQkJ+T22ZupYLUQeqhjV0X7o2UzKSDfMwzKP0Bm5aO
- 1zTivGe04ksvLV98kSOf+jIYFxKAuc2ADZHs4azID6RNIGsUfL
- dc+h1vUWXMy+h4EjoEQ5g==
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-40732457-1297437628=:12360"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- This patch introduces lcdc->lcdcon_pol_negative which set CONTRAST_CTR
- register to inverted polarity.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Andreas Bießmann <biessmann@corscience.de>
----
-These are some older patches which are used in some of our systems. Heavy
-merging pointed out these functionality was missed to push upstream.
+---1463811839-40732457-1297437628=:12360
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
- drivers/video/atmel_lcdfb.c |    7 ++++++-
- include/video/atmel_lcdc.h  |    1 +
- 2 files changed, 7 insertions(+), 1 deletions(-)
+On Fri, 11 Feb 2011, Russell King wrote:
 
-diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
-index bac16345..16da8af 100644
---- a/drivers/video/atmel_lcdfb.c
-+++ b/drivers/video/atmel_lcdfb.c
-@@ -68,7 +68,7 @@ static void atmel_lcdfb_update_dma2d(struct atmel_lcdfb_info *sinfo,
- }
- #endif
- 
--static const u32 contrast_ctr = ATMEL_LCDC_PS_DIV8
-+static u32 contrast_ctr = ATMEL_LCDC_PS_DIV8
- 		| ATMEL_LCDC_POL_POSITIVE
- 		| ATMEL_LCDC_ENA_PWMENABLE;
- 
-@@ -163,6 +163,10 @@ static void exit_backlight(struct atmel_lcdfb_info *sinfo)
- 
- static void init_contrast(struct atmel_lcdfb_info *sinfo)
- {
-+	/* contrast pwm can be 'inverted' */
-+	if (sinfo->lcdcon_pol_negative)
-+			contrast_ctr &= ~(ATMEL_LCDC_POL_POSITIVE);
-+
- 	/* have some default contrast/backlight settings */
- 	lcdc_writel(sinfo, ATMEL_LCDC_CONTRAST_CTR, contrast_ctr);
- 	lcdc_writel(sinfo, ATMEL_LCDC_CONTRAST_VAL, ATMEL_LCDC_CVAL_DEFAULT);
-@@ -816,6 +820,7 @@ static int __init atmel_lcdfb_probe(struct platform_device *pdev)
- 		sinfo->guard_time = pdata_sinfo->guard_time;
- 		sinfo->smem_len = pdata_sinfo->smem_len;
- 		sinfo->lcdcon_is_backlight = pdata_sinfo->lcdcon_is_backlight;
-+		sinfo->lcdcon_pol_negative = pdata_sinfo->lcdcon_pol_negative;
- 		sinfo->lcd_wiring_mode = pdata_sinfo->lcd_wiring_mode;
- 	} else {
- 		dev_err(dev, "cannot get default configuration\n");
-diff --git a/include/video/atmel_lcdc.h b/include/video/atmel_lcdc.h
-index 0c864db..28447f1 100644
---- a/include/video/atmel_lcdc.h
-+++ b/include/video/atmel_lcdc.h
-@@ -52,6 +52,7 @@ struct atmel_lcdfb_info {
- 	u8			bl_power;
- #endif
- 	bool			lcdcon_is_backlight;
-+	bool			lcdcon_pol_negative;
- 	u8			saved_lcdcon;
- 
- 	u8			default_bpp;
--- 
-1.7.2.3
+> On Fri, Feb 11, 2011 at 09:02:45AM +0200, Pekka Enberg wrote:
+> > On Tue, Feb 8, 2011 at 5:02 PM, Christoph Lameter <cl@linux.com> wrote:
+> > > Uhh.. That first hunk in commit 5c5e3b33b7cb959a401f823707bee006caadd=
+76e
+> > > looks wrong to me. ralign is usually a power of two and greater than
+> > > alignof(unsigned long long). The & operation will result in 0 and nev=
+er
+> > > exempt any caches.
+> > >
+> > > diff --git a/mm/slab.c b/mm/slab.c
+> > > index bac0f4f..525c664 100644
+> > > --- a/mm/slab.c
+> > > +++ b/mm/slab.c
+> > > @@ -2220,8 +2220,8 @@ kmem_cache_create (const char *name, size_t siz=
+e,
+> > > size_t align,
+> > > =A0 =A0 =A0 =A0if (ralign < align) {
+> > > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0ralign =3D align;
+> > > =A0 =A0 =A0 =A0}
+> > > - =A0 =A0 =A0 /* disable debug if necessary */
+> > > - =A0 =A0 =A0 if (ralign > __alignof__(unsigned long long))
+> > > + =A0 =A0 =A0 /* disable debug if not aligning with REDZONE_ALIGN */
+> > > + =A0 =A0 =A0 if (ralign & (__alignof__(unsigned long long) - 1))
+> > > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0flags &=3D ~(SLAB_RED_ZONE | SLAB_STOR=
+E_USER);
+> > > =A0 =A0 =A0 =A0/*
+> > > =A0 =A0 =A0 =A0 * 4) Store it.
+> > >
+> > >
+> > > Did you mean
+> > >
+> > > =A0 =A0 =A0 =A0if (ralign > REDZONE_ALIGN) ...
+> > >
+> > > ?
+> >
+> > Ping. Any arm-capable tester out there that can verify this fix? OTOH,
+> > since Shiyong Li hasn't showed up, I'm inclined to just revert the
+> > commit...
+>
+> What fix?  The above is a quote of the patch in 5c5e3b33.
 
+He was referring to the change of the if statement.
+
+---1463811839-40732457-1297437628=:12360--
