@@ -1,153 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab1BKPVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:21:46 -0500
-Received: from kroah.org ([198.145.64.141]:52778 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756813Ab1BKPVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:21:44 -0500
-Date: Fri, 11 Feb 2011 07:22:31 -0800
-From: Greg KH <greg@kroah.com>
-To: Richard =?iso-8859-1?Q?Sch=FCtz?= <r.schtz@t-online.de>
-Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
-Message-ID: <20110211152231.GB13487@kroah.com>
-References: <20110209224006.GA11202@kroah.com>
- <4D551F76.1070303@t-online.de>
+	id S1757276Ab1BKP0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:26:38 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:48956 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756711Ab1BKP0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 10:26:37 -0500
+Message-ID: <4D555523.7040507@criticallink.com>
+Date: Fri, 11 Feb 2011 10:26:27 -0500
+From: Michael Williamson <michael.williamson@criticallink.com>
+Organization: Critical Link, LLC
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D551F76.1070303@t-online.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Subhasish Ghosh <subhasish@mistralsolutions.com>
+CC: davinci-linux-open-source@linux.davincidsp.com, sachi@mistralsolutions.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 11/13] da850: pruss SUART board specific additions.
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-12-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <1297435892-28278-12-git-send-email-subhasish@mistralsolutions.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 12:37:26PM +0100, Richard Schütz wrote:
-> > +static struct dmi_system_id __initdata samsung_dmi_table[] = {
-> > +	{
-> > +		.ident = "N128",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "N128"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "N128"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{
-> > +		.ident = "N130",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "N130"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "N130"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{
-> > +		.ident = "X125",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "X125"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "X125"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{
-> > +		.ident = "NC10",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "NC10"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "NC10"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +		{
-> > +		.ident = "NP-Q45",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "SQ45S70S"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "SQ45S70S"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +		},
-> > +	{
-> > +		.ident = "X360",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "X360"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "X360"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{
-> > +		.ident = "R518",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "R518"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "R518"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{
-> > +		.ident = "N150/N210/N220",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR,
-> > +					"SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{
-> > +		.ident = "R530/R730",
-> > +		.matches = {
-> > +		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> > +		      DMI_MATCH(DMI_PRODUCT_NAME, "R530/R730"),
-> > +		      DMI_MATCH(DMI_BOARD_NAME, "R530/R730"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{
-> > +		.ident = "NF110/NF210/NF310",
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
-> > +			DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
-> > +		},
-> > +		.callback = dmi_check_cb,
-> > +	},
-> > +	{ },
-> > +};
-> > +MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
+Hi Subhasish,
+
+On 2/11/2011 9:51 AM, Subhasish Ghosh wrote:
+
+> This patch adds the pruss SUART pin mux and registers the device
+> with the pruss mfd driver.
 > 
-> Could you add
+> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+> ---
+>  arch/arm/mach-davinci/board-da850-evm.c |   36 +++++++++++++++++++++++++++++++
+>  1 files changed, 36 insertions(+), 0 deletions(-)
 > 
-> .ident = "N145P/N250P/N260P",
-> .matches = {
-> 	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> 	DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-> 	DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-> },
-> .callback = dmi_check_cb,
-> 
-> there, please? I've tested the driver successfully on my N145P.
+> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+> index f9c38f8..3858516 100644
+> --- a/arch/arm/mach-davinci/board-da850-evm.c
+> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> @@ -1060,6 +1060,25 @@ const short da850_evm_pruss_can_pins[] = {
+>  	-1
+>  };
+>  
+> +const short da850_evm_pruss_suart_pins[] = {
+> +	DA850_AHCLKX, DA850_ACLKX, DA850_AFSX,
+> +	DA850_AHCLKR, DA850_ACLKR, DA850_AFSR,
+> +	DA850_AXR_13, DA850_AXR_9, DA850_AXR_7,
+> +	DA850_AXR_14, DA850_AXR_10, DA850_AXR_8,
+> +	-1
+> +};
+> +
 
-Yes I can, but do you want to send it to me in a format that I can apply
-so you can get the proper authorship credit?  Take a look at
-Documentation/SubmittingPatches for the details.
 
-If not, I'll be glad to do it myself, but wanted to give you the chance
-first.
+Shouldn't this pins select PRU[0,1]_XXX type functions and not McASP functions?
+E.G.: PRU0_R31[17] instead of AHCLKX, PRU0_R31[18] instead of AHCLKR, etc.
 
-thanks,
+> +static int __init da850_evm_setup_pruss_suart(void)
+> +{
+> +	int ret;
+> +
+> +	ret = davinci_cfg_reg_list(da850_evm_pruss_suart_pins);
+> +	if (ret)
+> +		pr_warning("%s: da850_evm_pruss_suart_pins "
+> +			"mux setup failed: %d\n", __func__, ret);
+> +	return ret;
+> +}
+> +
+>  static int __init da850_evm_setup_pruss_can(void)
+>  {
+>  	int ret, val = 0;
+> @@ -1085,6 +1104,17 @@ static int __init da850_evm_setup_pruss_can(void)
+>  	return ret;
+>  }
+>  
+> +static struct da850_evm_pruss_suart_data suart_data = {
+> +	.version	= 1,
+> +	.resource	= {
+> +			.name	= "da8xx_mcasp0_iomem",
+> +			.start	= DAVINCI_DA8XX_MCASP0_REG_BASE,
+> +			.end	= DAVINCI_DA8XX_MCASP0_REG_BASE +
+> +					(SZ_1K * 12) - 1,
+> +			.flags	= IORESOURCE_MEM,
+> +		},
+> +};
+> +
+>  static struct da8xx_pruss_can_data can_data = {
+>  	.version	= 1,
+>  };
+> @@ -1094,6 +1124,12 @@ static struct da8xx_pruss_devices pruss_devices[] = {
+>  		.dev_name	= "da8xx_pruss_can",
+>  		.pdata		= &can_data,
+>  		.pdata_size	= sizeof(can_data),
+> +		.setup		= da850_evm_setup_pruss_suart,
 
-greg k-h
+
+Should this be da850_evm_setup_pruss_can instead?
+
+> +	},
+> +	{
+> +		.dev_name	= "da8xx_pruss_uart",
+> +		.pdata		= &suart_data,
+> +		.pdata_size	= sizeof(suart_data),
+>  		.setup		= da850_evm_setup_pruss_can,
+
+
+Should this be da850_evm_setup_pruss_suart instead?
+
+>  	},
+>  	{
+
+
+-Mike
+
