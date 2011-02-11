@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab1BKJTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:19:15 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:42497 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab1BKJTN (ORCPT
+	id S1755227Ab1BKJUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:20:51 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:45004 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab1BKJUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:19:13 -0500
-Subject: RE: [RFC PATCH 01/13] Intel(R) MEI Driver
-From: David Woodhouse <dwmw2@infradead.org>
-To: "Weil, Oren jer" <oren.jer.weil@intel.com>
-Cc: Greg KH <gregkh@suse.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <F28B59AD52D84B479DCA46982447533506505D9ACE@hasmsx503.ger.corp.intel.com>
-References: <b9dded$htd8nk@orsmga002.jf.intel.com>
-	 <20110210180044.GD13795@suse.de>
-	 <F28B59AD52D84B479DCA46982447533506505D9ACE@hasmsx503.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Feb 2011 10:19:02 +0100
-Message-ID: <1297415942.16513.40.camel@macbook.infradead.org>
+	Fri, 11 Feb 2011 04:20:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=p5ewqfW43QyqJaKxP8Pn1xwbx4QRGnGCA2fKitpV+TaJ5as0+0z3dLKw4D5TH0FHWq
+         mOY/yTY5VhfFjw/8yN5x85bS97nqHvc91VRS1/AC7WMs3pJmMKDwDkWttC3e1P1i2Zuf
+         vYZDBS8zNOTxKIQQ42kZN/JwyyAtBHUO9YWZY=
+Subject: [PATCH] rtc: rtc-s3c: fix prototype for s3c_rtc_setaie()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: ben@simtec.co.uk, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+Content-Type: text/plain
+Date: Fri, 11 Feb 2011 17:22:52 +0800
+Message-Id: <1297416172.14816.2.camel@mola>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-11 at 10:57 +0200, Weil, Oren jer wrote:
-> 
-> 1) For the review purpose we wanted to split the patches into files, so the
-> only way we found to do it is using "git diff", this is they there is not
-> signed-off-by line
+Fix s3c_rtc_setaie() prototype to eliminate below compile warning.
+drivers/rtc/rtc-s3c.c:383: warning: initialization from incompatible pointer type
 
-So you type it manually, when you're setting an appropriate subject and
-typing your coherent explanation of what's in each patch, and how it
-fits together.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/rtc/rtc-s3c.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
+index cf953ec..b80fa28 100644
+--- a/drivers/rtc/rtc-s3c.c
++++ b/drivers/rtc/rtc-s3c.c
+@@ -77,18 +77,20 @@ static irqreturn_t s3c_rtc_tickirq(int irq, void *id)
+ }
+ 
+ /* Update control registers */
+-static void s3c_rtc_setaie(int to)
++static int s3c_rtc_setaie(struct device *dev, unsigned int enabled)
+ {
+ 	unsigned int tmp;
+ 
+-	pr_debug("%s: aie=%d\n", __func__, to);
++	pr_debug("%s: aie=%d\n", __func__, enabled);
+ 
+ 	tmp = readb(s3c_rtc_base + S3C2410_RTCALM) & ~S3C2410_RTCALM_ALMEN;
+ 
+-	if (to)
++	if (enabled)
+ 		tmp |= S3C2410_RTCALM_ALMEN;
+ 
+ 	writeb(tmp, s3c_rtc_base + S3C2410_RTCALM);
++
++	return 0;
+ }
+ 
+ static int s3c_rtc_setpie(struct device *dev, int enabled)
+@@ -308,7 +310,7 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 
+ 	writeb(alrm_en, base + S3C2410_RTCALM);
+ 
+-	s3c_rtc_setaie(alrm->enabled);
++	s3c_rtc_setaie(dev, alrm->enabled);
+ 
+ 	return 0;
+ }
+@@ -440,7 +442,7 @@ static int __devexit s3c_rtc_remove(struct platform_device *dev)
+ 	rtc_device_unregister(rtc);
+ 
+ 	s3c_rtc_setpie(&dev->dev, 0);
+-	s3c_rtc_setaie(0);
++	s3c_rtc_setaie(&dev->dev, 0);
+ 
+ 	clk_disable(rtc_clk);
+ 	clk_put(rtc_clk);
 -- 
-dwmw2
+1.7.2
+
+
 
