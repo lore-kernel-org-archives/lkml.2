@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab1BKJME (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:12:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079Ab1BKJMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:12:02 -0500
-From: Andreas Schwab <schwab@redhat.com>
-To: Andries Brouwer <aebr@win.tue.nl>
-Cc: Roland McGrath <roland@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        linasvepstas@gmail.com, Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
-	<201101251529.24779.arnd@arndb.de>
-	<20110125174515.C1DC2183C19@magilla.sf.frob.com>
-	<20110210181221.GA19413@win.tue.nl>
-X-Yow: You mean now I can SHOOT YOU in the back and further BLUR
- th' distinction between FANTASY and REALITY?
-Date: Fri, 11 Feb 2011 10:11:39 +0100
-In-Reply-To: <20110210181221.GA19413@win.tue.nl> (Andries Brouwer's message of
-	"Thu, 10 Feb 2011 19:12:21 +0100")
-Message-ID: <m34o8bq6k4.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755082Ab1BKJOs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:14:48 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35545 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750Ab1BKJOp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 04:14:45 -0500
+Date: Fri, 11 Feb 2011 09:14:13 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux.com>, Shiyong Li <shi-yong.li@motorola.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
+Message-ID: <20110211091413.GA32687@flint.arm.linux.org.uk>
+References: <20110207180606.GB2966@flint.arm.linux.org.uk> <AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com> <20110208125546.GA4286@flint.arm.linux.org.uk> <alpine.DEB.2.00.1102080856020.12521@router.home> <AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andries Brouwer <aebr@win.tue.nl> writes:
+On Fri, Feb 11, 2011 at 09:02:45AM +0200, Pekka Enberg wrote:
+> On Tue, Feb 8, 2011 at 5:02 PM, Christoph Lameter <cl@linux.com> wrote:
+> > Uhh.. That first hunk in commit 5c5e3b33b7cb959a401f823707bee006caadd76e
+> > looks wrong to me. ralign is usually a power of two and greater than
+> > alignof(unsigned long long). The & operation will result in 0 and never
+> > exempt any caches.
+> >
+> > diff --git a/mm/slab.c b/mm/slab.c
+> > index bac0f4f..525c664 100644
+> > --- a/mm/slab.c
+> > +++ b/mm/slab.c
+> > @@ -2220,8 +2220,8 @@ kmem_cache_create (const char *name, size_t size,
+> > size_t align,
+> >        if (ralign < align) {
+> >                ralign = align;
+> >        }
+> > -       /* disable debug if necessary */
+> > -       if (ralign > __alignof__(unsigned long long))
+> > +       /* disable debug if not aligning with REDZONE_ALIGN */
+> > +       if (ralign & (__alignof__(unsigned long long) - 1))
+> >                flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+> >        /*
+> >         * 4) Store it.
+> >
+> >
+> > Did you mean
+> >
+> >        if (ralign > REDZONE_ALIGN) ...
+> >
+> > ?
+> 
+> Ping. Any arm-capable tester out there that can verify this fix? OTOH,
+> since Shiyong Li hasn't showed up, I'm inclined to just revert the
+> commit...
 
-> and 'ls /tmp/""' the same as 'ls /tmp/.'.
-
-/tmp/"" is not an empty file name, and it is indistinguishable from /tmp/ .
-
-Andreas.
+What fix?  The above is a quote of the patch in 5c5e3b33.
 
 -- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
