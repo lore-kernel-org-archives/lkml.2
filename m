@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab1BKRTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 12:19:49 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:7669 "EHLO
-	VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793Ab1BKRTs (ORCPT
+	id S1757229Ab1BKRf0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 12:35:26 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60387 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756595Ab1BKRfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 12:19:48 -0500
-X-SpamScore: -9
-X-BigFish: VPS-9(zzzz1202hzz8275bh15d4Rz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGGQSN-01-5Y4-02
-X-M-MSG: 
-Date: Fri, 11 Feb 2011 18:20:13 +0100
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kvm: Fix section mismatch
-Message-ID: <20110211172013.GA21088@aftab>
+	Fri, 11 Feb 2011 12:35:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=IOiKpi8kRKFIxMOjzRqvfmwOwpxj3r8ORybwYchPE/XFiHg3btmn0/O9VOgyZU/9Sm
+         vVsB99OQnVkWVV/cpGYeDltYqlEpY+l5UKzFyXPxfc7W5VCfIHB0jVvq+GHBrG+Y4Uz5
+         ynhfrqZ8jVQzAGGXpiX2b5h1Kif3lanLG0PTc=
+Message-ID: <4D557356.1050709@gmail.com>
+Date: Fri, 11 Feb 2011 20:35:18 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+To: Jiri Olsa <jolsa@redhat.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86_64: disable identity mappings statically
+References: <1297432830-3912-1-git-send-email-jolsa@redhat.com> <m14o8a34em.fsf@fess.ebiederm.org> <20110211170722.GA2010@jolsa.brq.redhat.com>
+In-Reply-To: <20110211170722.GA2010@jolsa.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark kvm_guest_cpu_online() as __cpuinit since its both users -
-kvm_guest_cpu_init() and kvm_cpu_notify() - are __cpuinit too.
+On 02/11/2011 08:07 PM, Jiri Olsa wrote:
+> On Fri, Feb 11, 2011 at 08:46:41AM -0800, Eric W. Biederman wrote:
+>> Jiri Olsa <jolsa@redhat.com> writes:
+>>
+>>> hi,
+>>>
+>>> while browsing the page table setup code, I noticed the x86_64 head
+>>> code might not need the identity mappings at all.
+>>> It seems it's ok to switch it off completely from the begining,
+>>> unless I'm missing something.
+>>
+>> Have you tested it?
+> 
+> yes, I booted it with no problem
+> 
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/kvm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 8dc4466..33c07b0 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -493,7 +493,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
- 	native_smp_prepare_boot_cpu();
- }
- 
--static void kvm_guest_cpu_online(void *dummy)
-+static void __cpuinit kvm_guest_cpu_online(void *dummy)
- {
- 	kvm_guest_cpu_init();
- }
--- 
-1.7.4.rc2
-
+Hi Jiri, just wonder -- hibernation still works after that?
+Also Xen might/might-not need it as well, and walk_pgd_level
+seems to use it as well, no?
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
-
+    Cyrill
