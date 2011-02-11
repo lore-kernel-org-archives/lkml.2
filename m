@@ -1,122 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab1BKUQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 15:16:56 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:6206 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756989Ab1BKUQz (ORCPT
+	id S1758073Ab1BKUTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 15:19:13 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33460 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756989Ab1BKUTM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 15:16:55 -0500
-Message-ID: <4D559927.9080309@bluewatersys.com>
-Date: Sat, 12 Feb 2011 09:16:39 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 11 Feb 2011 15:19:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dxF3PHSEXSHe5yV3Y8ZKnr6wtp/diUOMkFfXSDM0a7VG2eE70MFqQgRWOuaxO8Q/Vw
+         D75K2wa6HZNplxpdu+HOmGZb9kybwG3zuM94x3LRHqTBunYzAKYEjfbrTQgxQWBnJ5hK
+         PovKQG0/FcpGJNxxIU570BvKfdzQfwlEPzQws=
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [patch 34/75] arm: ep93xx: Kill another instance of broken irq_desc
- fiddling
-References: <20110210222908.661199947@linutronix.de> <20110210223257.597367298@linutronix.de> <4D548146.5090507@bluewatersys.com> <alpine.LFD.2.00.1102111240190.31804@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102111240190.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110211191359.GC2010@jolsa.brq.redhat.com>
+References: <1297432830-3912-1-git-send-email-jolsa@redhat.com>
+	<m14o8a34em.fsf@fess.ebiederm.org>
+	<20110211170722.GA2010@jolsa.brq.redhat.com>
+	<AANLkTikCAbe5ATHjqgQDOFuCjcuG1=8e_5+ADaCQ3M6R@mail.gmail.com>
+	<20110211191359.GC2010@jolsa.brq.redhat.com>
+Date: Fri, 11 Feb 2011 15:19:11 -0500
+Message-ID: <AANLkTikJ-MjMsa8ULwKbSO8YhjdO6NuK4L02fu8FXzE=@mail.gmail.com>
+Subject: Re: [PATCH] x86_64: disable identity mappings statically
+From: Brian Gerst <brgerst@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/11 00:42, Thomas Gleixner wrote:
-> On Fri, 11 Feb 2011, Ryan Mallon wrote:
+On Fri, Feb 11, 2011 at 2:13 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Fri, Feb 11, 2011 at 12:59:47PM -0500, Brian Gerst wrote:
+>> On Fri, Feb 11, 2011 at 12:07 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> > On Fri, Feb 11, 2011 at 08:46:41AM -0800, Eric W. Biederman wrote:
+>> >> Jiri Olsa <jolsa@redhat.com> writes:
+>> >>
+>> >> > hi,
+>> >> >
+>> >> > while browsing the page table setup code, I noticed the x86_64 head
+>> >> > code might not need the identity mappings at all.
+>> >> > It seems it's ok to switch it off completely from the begining,
+>> >> > unless I'm missing something.
+>> >>
+>> >> Have you tested it?
+>> >
+>> > yes, I booted it with no problem
+>>
+>> The only reason this doesn't crash is because the identity mappings
+>> provided by the boot code are marked as global, and therefore might
+>> not be flushed by simply loading cr3.  The cpu can evict TLB entries
+>> at any time though, so it's a bad idea to run without the identity
+>> mappings even for the brief moment before jumping to the virtual
+>> address.
 >
->> On 02/11/2011 12:37 PM, Thomas Gleixner wrote:
->>> 1. This is a copy of the borked code in gpiolib
->>> 2. If you need information about irq state which is not exposed, then talk
->>>     to the maintainer of that code instead of adding totaly horrible open
->>>     coded access.
->> This code got added simply because it is sometimes helpful to be able to
->> see how various gpio/irq pins are configured. I'm happy to drop the
->> functionality (see below), but is there a better way to get this
->> information? Is it already available somewhere else (proc, sys)?
-> No, but we can add that if it's required in a sane form.
+> I added code for flushing whole TLB (including global pages) and it
+> still boots (attached).
 >
-> I don't have objections to expose debug informations in general, but
-> I have objections that random code does this especially, when it's
-> duplicated random code :)
+> I'm sorry if I'm missing something obvious (probably the TLB flushing
+> code is wrong), but I'd like to understand this part.
+>
+> What instruction/action would require the identity mapping,
+> after the page table is set?
+>
+> thanks (and again sry for noise :) )
+> jirka
+>
+>
+> ---
+> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+> index c55e6fa..073f489 100644
+> --- a/arch/x86/kernel/head_64.S
+> +++ b/arch/x86/kernel/head_64.S
+> @@ -165,6 +165,13 @@ ENTRY(secondary_startup_64)
+>        movl    $(X86_CR4_PAE | X86_CR4_PGE), %eax
+>        movq    %rax, %cr4
+>
+> +       /* invalidate whole TLB */
+> +       movq %cr4, %rax
+> +       movq %rax, %rdx
+> +       andq $~X86_CR4_PGE, %rax
+> +       movq %rax, %cr4
+> +       movq %rdx, %cr4
+> +
+>        /* Setup early boot stage 4 level pagetables. */
+>        movq    $(init_level4_pgt - __START_KERNEL_map), %rax
+>        addq    phys_base(%rip), %rax
 >
 
-Ok. Does it make sense to expose the interrupt configuration for all 
-interrupts via proc, sys, debug, etc? Is this information useful to 
-enough people to warrant it? I would rather have a global debug rather 
-than individual platforms and drivers implementing it.
+The way you have it, it will immediately reload the global identity
+entry into the TLB when it executes the next instruction, because cr3
+is still pointing to the old pagetables.  Disable PGE during or
+immediately after the load of cr3 to make sure the global identity
+entries are flushed.
 
-For the time being can we fix up the ep93xx gpio code with the amended 
-patch below. It keeps the information that the pin is also configured as 
-an interrupt and cleans the code up a bit.
-
-Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
----
-
-diff --git a/arch/arm/mach-ep93xx/gpio.c b/arch/arm/mach-ep93xx/gpio.c
-index bec34b8..d0bcce4 100644
---- a/arch/arm/mach-ep93xx/gpio.c
-+++ b/arch/arm/mach-ep93xx/gpio.c
-@@ -347,52 +347,14 @@ static void ep93xx_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
-  	gpio = ep93xx_chip->chip.base;
-  	for (i = 0; i<  chip->ngpio; i++, gpio++) {
-  		int is_out = data_dir_reg&  (1<<  i);
-+		int irq = gpio_to_irq(gpio);
-
--		seq_printf(s, " %s%d gpio-%-3d (%-12s) %s %s",
-+		seq_printf(s, " %s%d gpio-%-3d (%-12s) %s %s %s\n",
-  				chip->label, i, gpio,
-  				gpiochip_is_requested(chip, i) ? : "",
-  				is_out ? "out" : "in ",
--				(data_reg&  (1<<  i)) ? "hi" : "lo");
--
--		if (!is_out) {
--			int irq = gpio_to_irq(gpio);
--			struct irq_desc *desc = irq_desc + irq;
--
--			if (irq>= 0&&  desc->action) {
--				char *trigger;
--
--				switch (desc->status&  IRQ_TYPE_SENSE_MASK) {
--				case IRQ_TYPE_NONE:
--					trigger = "(default)";
--					break;
--				case IRQ_TYPE_EDGE_FALLING:
--					trigger = "edge-falling";
--					break;
--				case IRQ_TYPE_EDGE_RISING:
--					trigger = "edge-rising";
--					break;
--				case IRQ_TYPE_EDGE_BOTH:
--					trigger = "edge-both";
--					break;
--				case IRQ_TYPE_LEVEL_HIGH:
--					trigger = "level-high";
--					break;
--				case IRQ_TYPE_LEVEL_LOW:
--					trigger = "level-low";
--					break;
--				default:
--					trigger = "?trigger?";
--					break;
--				}
--
--				seq_printf(s, " irq-%d %s%s",
--						irq, trigger,
--						(desc->status&  IRQ_WAKEUP)
--							? " wakeup" : "");
--			}
--		}
--
--		seq_printf(s, "\n");
-+				(data_reg&  (1<<  i)) ? "hi" : "lo",
-+				(!is_out&&  irq>= 0) ? "(interrupt)" : "");
-  	}
-  }
-
-
+--
+Brian Gerst
