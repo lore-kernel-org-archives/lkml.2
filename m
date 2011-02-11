@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab1BKKco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 05:32:44 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63956 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854Ab1BKKcl (ORCPT
+	id S1755698Ab1BKKkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 05:40:37 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:34768 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751127Ab1BKKkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 05:32:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=dh/9cLN6GvyzPf4qI/u/oeENw5GoA1YNwsjQ0GMa/hATgELyLvPL5zOHi8O355emp7
-         ediSeKp8E8tHaNSHNN4NonObmKHIgC9LLCxNTP94ctMb5P3Mxh4IBcyoCT9rtEDlUaX4
-         lS6RyALzvRvp4V3UXPYmiVwZWc7uUwQkpgSz8=
-Message-ID: <4D551042.10003@gmail.com>
-Date: Fri, 11 Feb 2011 11:32:34 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 1/1] PCI: tune up ICH4 quirk for broken BIOSes
-References: <1294327066-23518-1-git-send-email-jslaby@suse.cz>	<AANLkTinN40GMRL3bJ7LKDmhCYK1AYZfQ+mVYwxDP1ZQe@mail.gmail.com>	<4D3025F4.6020001@gmail.com>	<201101140910.07154.bjorn.helgaas@hp.com>	<4D5112F5.8030700@gmail.com> <20110208132055.1c55ff93@jbarnes-desktop>
-In-Reply-To: <20110208132055.1c55ff93@jbarnes-desktop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Feb 2011 05:40:36 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX1+XK050NDWXJ25m345Z7hSgmdc/O90Mqk3Q3akqKV
+	YxGeHJNyOQc7Yz
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 0/7] fsnotify: use a groups mark_mutex to synchronize access to its mark list
+Date: Fri, 11 Feb 2011 11:36:36 +0100
+Message-Id: <1297420603-11715-1-git-send-email-LinoSanfilippo@gmx.de>
+X-Mailer: git-send-email 1.7.1
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2011 10:20 PM, Jesse Barnes wrote:
-> On Tue, 08 Feb 2011 10:55:01 +0100
-> Jiri Slaby <jirislaby@gmail.com> wrote:
-> 
->> On 01/14/2011 05:10 PM, Bjorn Helgaas wrote:
->>> On Friday, January 14, 2011 03:31:16 am Jiri Slaby wrote:
->>>> On 01/14/2011 01:15 AM, Linus Torvalds wrote:
->>>>> On Thu, Jan 13, 2011 at 3:19 PM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
->>>>>>
->>>>>> I think we're back to the question of why we have the ICH4 quirk in
->>>>>> the first place, and I don't know the answer to that.
->>>>>
->>>>> Iirc, there were several laptops that didn't have the ACPI region
->>>>> mentioned in any of the regular places, and we'd allocate the PCMCIA
->>>>> IO region on top of them. The machine would boot, but if anybody ever
->>>>> inserted a PCCard into the machine, the first access to the IO region
->>>>> would generally just halt it (because it was trying to read the
->>>>> PCCard, but the APCI region decodes first, and then the read from that
->>>>> usually put the CPU in a sleep state that it would never wake up from
->>>>> for obvious reasons).
->>>>>
->>>>> So we do want the ICH4 quirk.
->>>>
->>>> Yes, this is an "official" way how ICH4 (and later) advertises the region.
->>>
->>> The quirk is a bug workaround, *not* the "official, planned" way to
->>> deal with these regions.  The official way is to use ACPI, because
->>> that's a generic way that doesn't require changes for new versions
->>> of ICH.
->>
->> Ok, I understand that. For non-ACPI setups this is probably the only
->> place to look at.
->>
->> Anyway, has anybody had a chance to look at the patches? Any comments,
->> nacks/acks?
->>
->> https://lkml.org/lkml/2011/1/14/115
->> https://lkml.org/lkml/2011/1/14/113
->> https://lkml.org/lkml/2011/1/14/114
-> 
-> I don't have a problem making the quirk quirkier, but it would be nice
-> to get rid of the need for it entirely (though we can leave that to
-> Bjorn :). Can you re-submit these three against my linux-next branch?
+This patch series eliminates the need for the fsnotify group mutex which is
+currently needed to ensure race free addition and removal to groups mark lists.
+For this reason the locking order required to add or remove marks is turned from
 
-Ok, I can. But do you want solution 113 or 114 -- they solve the same,
-but in a different manner?
+1. mark lock
+2. group mark_lock
+3. inode/vfsmount lock
 
-thanks,
--- 
-js
+to
+
+1. group mark_lock
+2. mark lock
+3. inode/vfsmount lock
+
+Furthermore the group mark lock is turned from a spin lock to a mutex.
+The patches apply against commit ef9bf3b7144bee6ce1da5616015cabc8771206af of
+branch 'origin/for-next' from git.infradead.org/users/eparis/notify.git
+
+
+[PATCH 1/7] fsnotify: take groups mark_lock before mark lock
+Change locking order (see above).
+
+[PATCH 2/7] fanotify: add an extra flag to mark_remove_from_mask that indicates wheather a mark could be destroyed
+Add an extra flag to mark_remove_from_mask that indicates whether a mark could
+be destroyed. This is in preparation for the next patches.
+
+[PATCH 3/7] fsnotify: introduce fsnotify_remove_mark()
+Introduce a new function fsnotify_remove_mark() which is a counterpart to
+fsnotify_add_mark().
+
+[PATCH 4/7] fsnotify: replace most calls of fsnotify_destroy_mark() with fsnotify_remove_mark()
+Replace calls to fsnotify_destroy_mark() with calls to fsnotify_remove_mark().
+This concerns all calls to destroy_mark() with exception of the ones called from
+a disappearing fsobject.
+  
+[PATCH 5/7] fsnotify: use a mutex instead of a spinlock to protect a groups mark list
+Turn the mark_list spinlock into a mutex.
+
+[PATCH 6/7] fsnotify: introduce locked versions of fsnotify_add_mark() and fsnotify_remove_mark()
+Introduced _locked versions of fsnotify_[add|remove]_mark that assume that the
+mark list mutex is already held. This enables the caller to do custom tasks
+while the mark list is protected.
+
+[PATCH 7/7] fsnotify: replace the groups mutex with the groups mark list mutex
+Replace the group mutex with the mark_list mutex and call the _locked() version of
+fsnotify_[add|remove]_mark() while the mutex is held.
+
+
