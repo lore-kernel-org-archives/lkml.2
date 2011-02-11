@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795Ab1BKO1V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 09:27:21 -0500
-Received: from www.tglx.de ([62.245.132.106]:35840 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756674Ab1BKO1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 09:27:19 -0500
-Date: Fri, 11 Feb 2011 15:26:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [patch 00/75] genirq: Overhaul for 2.6.39
-In-Reply-To: <20110211135906.GA16358@elte.hu>
-Message-ID: <alpine.LFD.2.00.1102111516020.31804@localhost6.localdomain6>
-References: <20110210222908.661199947@linutronix.de> <AANLkTi=waRQcvdxyKUgcLZ1r-hwUcAVZeVDcBa-apyK2@mail.gmail.com> <alpine.LFD.2.00.1102110058450.31804@localhost6.localdomain6> <AANLkTin3o9eFjpe6TMmKb5LSRUT+0Y2EpD4OU4LzN8Kd@mail.gmail.com>
- <alpine.LFD.2.00.1102110135320.31804@localhost6.localdomain6> <alpine.LFD.2.00.1102111359580.31804@localhost6.localdomain6> <20110211135906.GA16358@elte.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756801Ab1BKO1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 09:27:45 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:46255 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756232Ab1BKO1o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 09:27:44 -0500
+Date: Fri, 11 Feb 2011 15:27:33 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable <stable@kernel.org>
+Subject: Re: [PATCH 3/5] serial: unbreak billionton CF card
+Message-ID: <20110211142732.GB3920@ucw.cz>
+References: <20110131162852.GA22875@kroah.com>
+ <1296491470-23096-3-git-send-email-gregkh@suse.de>
+ <20110131214854.3bb53bd4@pyx>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1375176427-1297434372=:31804"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110131214854.3bb53bd4@pyx>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi!
 
----1463795968-1375176427-1297434372=:31804
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 11 Feb 2011, Ingo Molnar wrote:
-> * Thomas Gleixner <tglx@linutronix.de> wrote:
-> >  129 files changed, 4353 insertions(+), 5400 deletions(-)
+> > From: Pavel Machek <pavel@ucw.cz>
+> > 
+> > Unbreak Billionton CF bluetooth card. This actually fixes a regression
+> > on zaurus.
 > 
-> Did I get the file count right - roughtly how many files are affected throughout all 
-> architectures? The changes are massively intrusive and widely spread out so we 
-> cannot do them in one go, right?
+> It also unbreaks a pile of other chips.
+> 
+> Properly this should be a revert of  commit
+> 7a56aa45982bb87bfca98a2832b5ae782c03364a as far as I can see.
 
-Alone the stuff which fiddles in irq_desc->status for whatever reasons
-is >100 files in arch/. And that has do be done manually case by case.
+Well, IIRC (sorry, offline) that commit added two flags and only one
+was harmful for me... so I only removed one.
 
-The namespace cleanup affects about 300 files in arch, but that can be
-done in one go right after -rc1 if I manage to get the regex straight :)
+Also I guess comment explaining what is going on there would is good.
 
-Thanks,
-
-	tglx
----1463795968-1375176427-1297434372=:31804--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
