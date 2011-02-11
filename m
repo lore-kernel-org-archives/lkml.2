@@ -1,40 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab1BKCTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Feb 2011 21:19:55 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:12723 "EHLO
+	id S932352Ab1BKCVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Feb 2011 21:21:16 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:5913 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756009Ab1BKCTx (ORCPT
+	with ESMTP id S1757070Ab1BKCVP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Feb 2011 21:19:53 -0500
+	Thu, 10 Feb 2011 21:21:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:newsgroups:to:cc
-         :subject:references:in-reply-to:content-type
-         :content-transfer-encoding;
-        b=bY/JztEB0Nf4b0k4CLt5ITRHnjMGryKISggtKKR6YG1Ol031+FcacztMJFIy8pQ5/4
-         OLRm3/9ObTcGuK1mzYOg==
-Message-ID: <4D549CC3.4050902@google.com>
-Date: Thu, 10 Feb 2011 18:19:47 -0800
-From: Mike Waychison <mikew@google.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ly909FY5yyCMN2QCODctYVT4WMaR7p1DCVsyDefhrdzyZA4IxCiTn6RBEKQ6S8V5W3
+         jsKeiJANmOvoeTDFFkVw==
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
+In-Reply-To: <20110211012552.GA28995@kroah.com>
+References: <4D547236.6080702@google.com> <20110211012552.GA28995@kroah.com>
+From: Tim Hockin <thockin@google.com>
+Date: Thu, 10 Feb 2011 18:20:52 -0800
+Message-ID: <AANLkTi=tbYj_bonu2i+NHpNY3KUMpsTVT8YDsLhDz_Nm@mail.gmail.com>
+Subject: Re: SMBIOS / DMI Event Logs in Linux?
 To: Greg KH <greg@kroah.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Tim Hockin <thockin@google.com>,
+Cc: Mike Waychison <mikew@google.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Robert Lippert <rlippert@google.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: SMBIOS / DMI Event Logs in Linux?
-References: <4D547236.6080702@google.com> <20110211012552.GA28995@kroah.com>
-In-Reply-To: <20110211012552.GA28995@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/11 17:25, Greg KH wrote:
+Caveat: I kind of loathe the proliferation of single use filesystems
+for things that just aren't well mapped to the model.
+
+That said, maybe smbiosfs is not so horrible of a mapping.  I'm
+reticent to dredge up my spec, but I think it fits well enough, and
+you can can leave most OEM-specific processing in userspace.
+
+So for the type 15, something like:
+
+/smbios/              # mountpoint
+    15/                  # record type (decimal)
+        0/                # instance number (decimal)
+            change_token # change token from the type 15 struct
+            header    # binary dump of the header section (if present)
+            0/            # one dir for each record (decimal)
+                id        # event ID (decimal)
+                id_str  # event ID (stringified, if possible)
+                size    # event size (decimal, bytes)
+                timestamp   # year, month, day, hour, minute, second
+                data   # binary dump of the payload
+                raw    # binary dump of the whole event
+
+This does not handle type descriptors, but I know *we* don't use them..
+
+This does not address operations such as clearing the log or writing a
+new event or locking/unlocking the log.  If there's an OEM-specific
+driver loaded it could augment the above.
+
+            clear_log       # write a number to this to clear some
+percent of the log
+            write_events # write a binary dump of an event, including timestamp?
+
+I don't hate it.  IT would be cool to have all of SMBIOS available this way.
+
+I'm not sure its worth the work, though.  Most Type 15 logs are in
+memory-mapped ROM or in RAM, so tools can access it via /dev/mem (if
+you have privs to do so).  I thought the SMI ioctl() interface worked
+just fine for logging and clearing.  And hell, we could do that from
+userspace if we had to, it's just IO ports, I think.  Maybe you need a
+userspace V-to-P translation, too.
+
+Tim
+
+
+On Thu, Feb 10, 2011 at 5:25 PM, Greg KH <greg@kroah.com> wrote:
 > On Thu, Feb 10, 2011 at 03:18:14PM -0800, Mike Waychison wrote:
 >> Hey guys,
 >>
@@ -55,43 +96,38 @@ On 02/10/11 17:25, Greg KH wrote:
 >> doesn't help.
 >>
 >> Do most folks that need access to this data rely on /dev/mem and
->> dmidecode?  I'd like to avoid going that route if possible.
+>> dmidecode?  I'd like to avoid going that route if possible.
 >>
 >> Lacking any better ideas though, I was thinking of something along
 >> the lines of the following:
 >>
 >>
 >> $ cat /sys/firmware/gsmi/eventlog
->> <offset>  <boot number>  <recorded time>  <quoted reason>  <optional data>
+>> <offset> <boot number> <recorded time> <quoted reason> <optional data>
 >> ...
 >>
 >> with a single event log entry per line.
->>    <offset>  would be the record number,
->>    <boot number>  is the recorded boot number
->>    <recorded time>  comes from each record,
->>    <quoted reason>  is the English translation of Event Log Types from
+>>   <offset> would be the record number,
+>>   <boot number> is the recorded boot number
+>>   <recorded time> comes from each record,
+>>   <quoted reason> is the English translation of Event Log Types from
 >> the DMTF standard + vendor extended types we use.
->>    <optional data>  is space separated values associated with<quoted reason>
+>>   <optional data> is space separated values associated with <quoted reason>
 >
-> Ick, no, remember, sysfs is "one value per file".  doing even a single
+> Ick, no, remember, sysfs is "one value per file".  doing even a single
 > line like you describe here isn't ok, not to mention a huge buffer of
 > these lines.
 >
 > And no, a "binary" sysfs file is not ok either.
-
-Works fine for the /sys/firmware/efi stuff.  Works well enough for 
-/sys/firmware/acpi too.
-
 >
 > Now your idea for such a log file is fine, I'm not saying that's not ok,
-> or acceptable, just don't put it in sysfs, sorry.  Try using the ring
+> or acceptable, just don't put it in sysfs, sorry.  Try using the ring
 > buffer framework from the tracing code perhaps?
 >
-> Or use debugfs?  Or make a 'firmwarefs'?  I can easily knock that
+> Or use debugfs?  Or make a 'firmwarefs'?  I can easily knock that
 > together if you need it.
-
-Are you seriously asking for another filesystem?
-
-I don't get why you're holding me to these standards that that are 
-totally missed by these same subsystems that you maintain.
-
+>
+> thanks,
+>
+> greg k-h
+>
