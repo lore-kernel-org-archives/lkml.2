@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab1BKNGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 08:06:34 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:36487 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab1BKNGc (ORCPT
+	id S1756061Ab1BKNMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 08:12:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:41731 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab1BKNMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 08:06:32 -0500
-Message-ID: <4D553455.6000409@panasas.com>
-Date: Fri, 11 Feb 2011 15:06:29 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        NeilBrown <neilb@suse.de>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: Regression with calibrate_xor_blocks, probably UML related
-References: <4D52E4E1.7070705@panasas.com>	<4D540969.9090507@panasas.com> <AANLkTine1w2h29OPES1RHTs-otB_ohhMDMbbRoXFK+BB@mail.gmail.com>
-In-Reply-To: <AANLkTine1w2h29OPES1RHTs-otB_ohhMDMbbRoXFK+BB@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Feb 2011 08:12:48 -0500
+Subject: Re: [RFC][PATCH] cgroup: Fix cgroup_subsys::exit callback
+From: Peter Zijlstra <peterz@infradead.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Paul Menage <menage@google.com>, balbir@linux.vnet.ibm.com,
+        eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        acme@redhat.com
+In-Reply-To: <4D5347C9.2030909@cn.fujitsu.com>
+References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
+	 <1295534345.28776.175.camel@laptop> <1296646160.26581.315.camel@laptop>
+	 <20110202115012.GA16409@balbir.in.ibm.com>
+	 <1296650792.26581.319.camel@laptop>
+	 <20110202190251.GB16409@balbir.in.ibm.com>
+	 <1297095033.13327.46.camel@laptop>
+	 <AANLkTimF+8XAZxF4psrXSKx1CHFxin6AW=tu5OLGUgNi@mail.gmail.com>
+	 <1297108959.13327.54.camel@laptop>
+	 <AANLkTikWS86TPjp+J=iiwCQJ56pqYTQo8Z9_V20GEcEz@mail.gmail.com>
+	 <1297160655.13327.92.camel@laptop>  <4D5347C9.2030909@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Feb 2011 13:13:39 +0100
+Message-ID: <1297426419.5226.39.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Feb 2011 13:06:31.0520 (UTC) FILETIME=[807AFE00:01CBC9EC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 02:38 PM, richard -rw- weinberger wrote:
-> On Thu, Feb 10, 2011 at 4:51 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
->> On 02/09/2011 09:02 PM, Boaz Harrosh wrote:
->>> I have a new module that uses the async_tx.h lib.
->>>
->>> On an exact same module code based on 3.6.37 I see the:
->>>       xor: measuring software checksum speed
->>>          8regs     : 11312.000 MB/sec
->>>          8regs_prefetch:  9792.800 MB/sec
->>>          32regs    : 11220.400 MB/sec
->>>          32regs_prefetch:  9750.800 MB/sec
->>>       xor: using function: 8regs (11312.000 MB/sec)
->>>
->>> And all is well. But on code based on 2.6.38-rc4 I get hard stuck
->>> right after:
->>>       xor: measuring software checksum speed
->>>
->>
->> OK this is not dependent on Kernel version it is the same for both
->> .38-rc4 and .37. I was just lucky with .37 more.
->>
+On Thu, 2011-02-10 at 10:04 +0800, Li Zefan wrote:
+> Since both sched and perf won't use the 2 args @cgrp and @old_cgrp,
+> don't bother to change the ->exit interface? 
 
-Thanks richard.
+symmetry with ->attach, both sched and perf use a common method to
+implement attach and exit, if one needs it the other would too.
 
-I'm afraid it is not a regression. Just that I got lucky more
-with 2.6.37. But it happens with 2.6.37 just the same.
 
->> And the same things happen with raid456 module. I do
->> []$ modprobe raid456; modprobe --remove raid456
->> A few times it loads, printing the above checks, Then At one
->> time it freezes. Sometimes at first attempt sometimes at 4-7
->> attempts. I never went 10 times strait.
->>
->> When it freezes (hard) I can see in my host that the UML is
->> at 100% CPU.
->>
->> BTW: when I manage to pass the tests I get the above numbers
->> But when I load directly on the host I get:
->>
-<>
->> Any way I'm trying to debug that xor.ko loading problem see what
->> comes up. Any help is welcome
-> 
-> Hmmm, can you bisect it?
-> Can you post you config then I can also try my best...
-> 
 
-You mean that you can setup a UML and try it out for yourself?
-All I did was:
-[]$ make ARCH=um defconfig
-Then turn on raid456 in "make ARCH=um xconfig"
-
-when you load into the UML just, "modprobe raid456
-
-Thanks
-Boaz
-
->> Thanks
->> Boaz
->>
->>> the UML is completely frozen. When I kill the uml from the host
->>> I can sometimes get this trace.
