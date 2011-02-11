@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1BKHGW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 02:06:22 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41703 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab1BKHGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 02:06:21 -0500
-Date: Fri, 11 Feb 2011 08:05:47 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/1] perf/urgent fix for record and top
-Message-ID: <20110211070547.GA28968@elte.hu>
-References: <1297363899-21466-1-git-send-email-acme@infradead.org>
+	id S1753696Ab1BKHHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 02:07:39 -0500
+Received: from [65.115.85.73] ([65.115.85.73]:40160 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752146Ab1BKHHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 02:07:38 -0500
+Date: Thu, 10 Feb 2011 23:06:42 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: boot problen with next-20110211
+Message-ID: <20110211070642.GA9512@dtor-ws.eng.vmware.com>
+References: <20110211172254.8aa4d816.sfr@canb.auug.org.au>
+ <20110211065731.GA8861@dtor-ws.eng.vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297363899-21466-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110211065731.GA8861@dtor-ws.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 10, 2011 at 10:57:31PM -0800, Dmitry Torokhov wrote:
+> Hi Stephen,
+> 
+> On Thu, Feb 10, 2011 at 10:22:54PM -0800, Stephen Rothwell wrote:
+> > 
+> > Maybe the module parameter alignment patches?  That is a very strange
+> > parameter name (it is the same in the other messages).
+> 
+> Yes, I think it is... I wonder why I did not see it locally.  Let me try
+> to fix that...
+> 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Gah, it is better Rusty drops the module param alignment patch so I can
+redo it properly. The module case is completely broken as it still
+operates with assumption that __param section contains full structures
+and not pointers.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (1):
->   perf tools: Fix thread_map event synthesizing in top and record
-> 
->  tools/perf/builtin-record.c |    4 ++--
->  tools/perf/builtin-top.c    |    2 +-
->  tools/perf/util/event.c     |   18 +++++++++++++-----
->  tools/perf/util/event.h     |    6 ++++--
->  4 files changed, 20 insertions(+), 10 deletions(-)
+-- 
+Dmitry
 
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
