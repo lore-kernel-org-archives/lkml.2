@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab1BKVAf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 16:00:35 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:51526 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758085Ab1BKVAe (ORCPT
+	id S1758161Ab1BKVBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 16:01:10 -0500
+Received: from mailb.microsoft.com ([131.107.115.215]:6340 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758096Ab1BKVBI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 16:00:34 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6254"; a="74108724"
-Message-ID: <4D55A372.9090705@codeaurora.org>
-Date: Fri, 11 Feb 2011 13:00:34 -0800
-From: Steve Muckle <smuckle@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110119 Lightning/1.0b3pre Thunderbird/3.1.7
+	Fri, 11 Feb 2011 16:01:08 -0500
+X-Greylist: delayed 311 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Feb 2011 16:01:08 EST
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: RE: [PATCH 1/3]: Staging: hv: Use native page allocation/free
+ functions
+Thread-Topic: [PATCH 1/3]: Staging: hv: Use native page allocation/free
+ functions
+Thread-Index: AQHLyhREQLJs9mA8vUSybVGIJ0ascZP9JUiA//+KTxA=
+Date: Fri, 11 Feb 2011 20:55:56 +0000
+Message-ID: <FB42D5CCD7B5934EB1827DB5ED9B850E0B2653@tk5ex14mbxc106.redmond.corp.microsoft.com>
+References: <1297447140-21777-1-git-send-email-kys@microsoft.com>
+ <20110211182949.GA10751@suse.de>
+In-Reply-To: <20110211182949.GA10751@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Daniel Walker <dwalker@codeaurora.org>
-CC: Stepan Moskovchenko <stepanm@codeaurora.org>, davidb@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] msm: iommu: Generalize platform data for multiple
- targets
-References: <1297456098-3241-1-git-send-email-stepanm@codeaurora.org>	 <1297456098-3241-2-git-send-email-stepanm@codeaurora.org>	 <1297456934.4852.11.camel@m0nster>  <4D55A16A.7030300@codeaurora.org> <1297457899.4852.14.camel@m0nster>
-In-Reply-To: <1297457899.4852.14.camel@m0nster>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/11 12:58, Daniel Walker wrote:
-> On Fri, 2011-02-11 at 12:51 -0800, Steve Muckle wrote:
->> On 02/11/11 12:42, Daniel Walker wrote:
->>>>  static struct resource msm_iommu_jpegd_resources[] = {
->>>>  	{
->>>> -		.start = MSM_IOMMU_JPEGD_PHYS,
->>>> -		.end   = MSM_IOMMU_JPEGD_PHYS + MSM_IOMMU_JPEGD_SIZE - 1,
->>>> +		.start = 0x07300000,
->>>> +		.end   = 0x07300000 + SZ_1M - 1,
->>>
->>> Looks worse .. Just put the macros into a static header file for both.
->>
->> Why bother defining macros for these if they only appear here? I don't
->> think that adds any value or readability - these addresses are clearly
->> the physical area for the msm_iommu_jpegd. It just makes it more
->> annoying to have to look up the values in a separate file if you are
->> wondering what they are.
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, February 11, 2011 1:30 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; Hank Janssen
+> Subject: Re: [PATCH 1/3]: Staging: hv: Use native page allocation/free functions
 > 
-> So your saying if you look at the number 0x07300000 you instantly know
-> that this JPEGD?
+> On Fri, Feb 11, 2011 at 09:59:00AM -0800, K. Y. Srinivasan wrote:
+> > --- a/drivers/staging/hv/hv.c
+> > +++ b/drivers/staging/hv/hv.c
+> > @@ -230,7 +230,12 @@ int hv_init(void)
+> >  	* Allocate the hypercall page memory
+> >  	* virtaddr = osd_page_alloc(1);
+> >  	*/
+> > -	virtaddr = osd_virtual_alloc_exec(PAGE_SIZE);
+> > +#ifdef __x86_64__
+> > +	virtaddr = __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_EXEC);
+> #else
+> > +	virtaddr =  __vmalloc(PAGE_SIZE, GFP_KERNEL,
+> > +			__pgprot(__PAGE_KERNEL & (~_PAGE_NX))); #endif
+> 
+> I'm not saying this patch is wrong at all, but I still don't understand why this is
+> different depending on the architecture of the machine.  Why is this necessary, it
+> should be ok to do the same type of allocation no matter what the processor is,
+> right?
 
-Yes, because it's the start address for the msm_iommu_jpegd resource.
+You are right Greg; I don't think there is a need to specify different page
+protection bits based on the architecture - PAGE_KERNEL_EXEC should be enough.
+However, this is the code that is currently in the tree - refer to osd.c.
+If it is ok with you, I could submit an additional patch to clean this up.  
 
-thanks,
-Steve
+Regards,
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+K. Y 
+> 
+> thanks,
+> 
+> greg k-h
+
