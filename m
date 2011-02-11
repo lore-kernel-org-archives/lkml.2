@@ -1,181 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab1BKVKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 16:10:04 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:25264 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758133Ab1BKVKD (ORCPT
+	id S1758187Ab1BKVKc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 16:10:32 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11031 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758133Ab1BKVKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 16:10:03 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=brclRJRPFmYX17LWKwUwsjLjk5v6v9W8Wg4odB16a9liH6RtYcLSCf244qIWP1Emr
-	Jmdi7KsOkL8OvDAxOxIqA==
-From: Justin TerAvest <teravest@google.com>
-To: jaxboe@fusionio.com, vgoyal@redhat.com
-Cc: ctalbott@google.com, mrubin@google.com, jmoyer@redhat.com,
-        guijianfeng@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        Justin TerAvest <teravest@google.com>
-Subject: [PATCH v2 1/1] Don't update group weights when on service tree.
-Date: Fri, 11 Feb 2011 13:09:03 -0800
-Message-Id: <1297458543-14779-1-git-send-email-teravest@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Fri, 11 Feb 2011 16:10:30 -0500
+Date: Fri, 11 Feb 2011 22:09:22 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, tadeusz.struk@intel.com
+cc: Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
+        "Hoban, Adrian" <adrian.hoban@intel.com>
+Subject: RE: [PATCH](updated) rfc4106, Intel, AES-NI: Don't leak memory in
+ rfc4106_set_hash_subkey()..
+In-Reply-To: <alpine.LNX.2.00.1102111546310.13370@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1102112204020.16994@swampdragon.chaosbits.net>
+References: <4d502ccb.p+rKcuFjWCnBlXY9%tadeusz.struk@intel.com> <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net> <20110211142647.GA3920@ucw.cz> <DF7BB929B28FCF479E888E3D9F8D9E88F3E2E668@irsmsx502.ger.corp.intel.com>
+ <alpine.LNX.2.00.1102111546310.13370@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For version 2, I took Vivek's advice and made sure we update the group
-weight from cfq_group_service_tree_add().
+On Fri, 11 Feb 2011, Jesper Juhl wrote:
 
-If a weight was updated while a group is on the service tree, the
-calculation for the total weight of the service tree can be adjusted
-improperly, which either leads to bad service tree weights, or
-potentially crashes (if total_weight becomes 0).
+> On Fri, 11 Feb 2011, Paoloni, Gabriele wrote:
+> 
+> > Well anyway I think that the return value of "ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL)" has to be changed from -EINVAL to -ENOMEM in case of failure. That is why would stay on the patch that Tadeusz proposed. Otherwise Juhl should send another one....
+> > 
+> I'll take a look again later this evening when I get home from work.
+> 
+Hopefully this takes care of all complaints and can actually get merged so 
+we can get the leak fixed (patch is against current cryptodev-2.6 tree).
 
-This patch defers updates to the weight until a group is off the service
-tree.
 
-Signed-off-by: Justin TerAvest <teravest@google.com>
+Fix up previous patch that failed to properly fix mem leak in 
+rfc4106_set_hash_subkey(). This add-on patch; fixes the leak. moves 
+kfree() out of the error path, returns -ENOMEM rather than -EINVAL when 
+ablkcipher_request_alloc() fails.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- block/cfq-iosched.c |   57 ++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 43 insertions(+), 14 deletions(-)
+ aesni-intel_glue.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 501ffdf..868f9cf 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -179,6 +179,8 @@ struct cfq_group {
- 	/* group service_tree key */
- 	u64 vdisktime;
- 	unsigned int weight;
-+	unsigned int new_weight;
-+	bool needs_update;
+diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
+index e013552..502b76d 100644
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -876,17 +876,15 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
+ 	if (ret)
+ 		goto out;
  
- 	/* number of cfqq currently on this group */
- 	int nr_cfqq;
-@@ -863,7 +865,27 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
- }
++	ret = -ENOMEM;
+ 	req = ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL);
+-	if (!req) {
+-		ret = -EINVAL;
++	if (!req)
+ 		goto out_free_ablkcipher;
+-	}
  
- static void
--cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
-+cfq_update_group_weight(struct cfq_group *cfqg)
-+{
-+	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
-+	if (cfqg->needs_update) {
-+		cfqg->weight = cfqg->new_weight;
-+		cfqg->needs_update = false;
-+	}
-+}
+ 	req_data = kmalloc(sizeof(*req_data), GFP_KERNEL);
+-	if (!req_data) {
+-		ret = -ENOMEM;
++	if (!req_data)
+ 		goto out_free_request;
+-	}
 +
-+static void
-+cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
-+{
-+	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
-+
-+	cfq_update_group_weight(cfqg);
-+	__cfq_group_service_tree_add(st, cfqg);
-+	st->total_weight += cfqg->weight;
-+}
-+
-+static void
-+cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
- 	struct cfq_group *__cfqg;
-@@ -884,13 +906,19 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
- 	} else
- 		cfqg->vdisktime = st->min_vdisktime;
-+	cfq_group_service_tree_add(st, cfqg);
-+}
+ 	memset(req_data->iv, 0, sizeof(req_data->iv));
  
--	__cfq_group_service_tree_add(st, cfqg);
--	st->total_weight += cfqg->weight;
-+static void
-+cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
-+{
-+	st->total_weight -= cfqg->weight;
-+	if (!RB_EMPTY_NODE(&cfqg->rb_node))
-+		cfq_rb_erase(&cfqg->rb_node, st);
- }
- 
- static void
--cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
-+cfq_group_notify_queue_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
- 
-@@ -902,9 +930,7 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 		return;
- 
- 	cfq_log_cfqg(cfqd, cfqg, "del_from_rr group");
--	st->total_weight -= cfqg->weight;
--	if (!RB_EMPTY_NODE(&cfqg->rb_node))
--		cfq_rb_erase(&cfqg->rb_node, st);
-+	cfq_group_service_tree_del(st, cfqg);
- 	cfqg->saved_workload_slice = 0;
- 	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
- }
-@@ -952,9 +978,10 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 		charge = cfqq->allocated_slice;
- 
- 	/* Can't update vdisktime while group is on service tree */
--	cfq_rb_erase(&cfqg->rb_node, st);
-+	cfq_group_service_tree_del(st, cfqg);
- 	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
--	__cfq_group_service_tree_add(st, cfqg);
-+	/* If a new weight was requested, update now, off tree */
-+	cfq_group_service_tree_add(st, cfqg);
- 
- 	/* This group is being expired. Save the context */
- 	if (time_after(cfqd->workload_expires, jiffies)) {
-@@ -985,7 +1012,9 @@ static inline struct cfq_group *cfqg_of_blkg(struct blkio_group *blkg)
- void cfq_update_blkio_group_weight(void *key, struct blkio_group *blkg,
- 					unsigned int weight)
- {
--	cfqg_of_blkg(blkg)->weight = weight;
-+	struct cfq_group *cfqg = cfqg_of_blkg(blkg);
-+	cfqg->new_weight = weight;
-+	cfqg->needs_update = true;
- }
- 
- static struct cfq_group *
-@@ -1194,7 +1223,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 		/* Move this cfq to root group */
- 		cfq_log_cfqq(cfqd, cfqq, "moving to root group");
- 		if (!RB_EMPTY_NODE(&cfqq->rb_node))
--			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
-+			cfq_group_notify_queue_del(cfqd, cfqq->cfqg);
- 		cfqq->orig_cfqg = cfqq->cfqg;
- 		cfqq->cfqg = &cfqd->root_group;
- 		cfqd->root_group.ref++;
-@@ -1204,7 +1233,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 		/* cfqq is sequential now needs to go to its original group */
- 		BUG_ON(cfqq->cfqg != &cfqd->root_group);
- 		if (!RB_EMPTY_NODE(&cfqq->rb_node))
--			cfq_group_service_tree_del(cfqd, cfqq->cfqg);
-+			cfq_group_notify_queue_del(cfqd, cfqq->cfqg);
- 		cfq_put_cfqg(cfqq->cfqg);
- 		cfqq->cfqg = cfqq->orig_cfqg;
- 		cfqq->orig_cfqg = NULL;
-@@ -1284,7 +1313,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	service_tree->count++;
- 	if ((add_front || !new_cfqq) && !group_changed)
- 		return;
--	cfq_group_service_tree_add(cfqd, cfqq->cfqg);
-+	cfq_group_notify_queue_add(cfqd, cfqq->cfqg);
- }
- 
- static struct cfq_queue *
-@@ -1395,7 +1424,7 @@ static void cfq_del_cfqq_rr(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- 		cfqq->p_root = NULL;
+ 	/* Clear the data in the hash sub key container to zero.*/
+@@ -911,12 +909,11 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
+ 		if (!ret)
+ 			ret = req_data->result.err;
  	}
- 
--	cfq_group_service_tree_del(cfqd, cfqq->cfqg);
-+	cfq_group_notify_queue_del(cfqd, cfqq->cfqg);
- 	BUG_ON(!cfqd->busy_queues);
- 	cfqd->busy_queues--;
++	kfree(req_data);
+ out_free_request:
+ 	ablkcipher_request_free(req);
+-	kfree(req_data);
+ out_free_ablkcipher:
+ 	crypto_free_ablkcipher(ctr_tfm);
+-out:
+ 	return ret;
  }
+ 
+
+
 -- 
-1.7.3.1
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
 
