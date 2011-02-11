@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab1BKGfG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 01:35:06 -0500
-Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:59267 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751260Ab1BKGfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 01:35:04 -0500
-Message-ID: <59893.220.101.190.178.1297404861.squirrel@220.101.190.178>
-Date: Fri, 11 Feb 2011 06:14:21 -0000 (GMT)
-Subject: Mutual Aid  (Stash of Fortune)
-From: "George" <george@yahoo.com>
-Reply-To: mrglenn-bradley@w.cn
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S1752219Ab1BKGiU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 01:38:20 -0500
+Received: from tundra.namei.org ([65.99.196.166]:56503 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab1BKGiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 01:38:19 -0500
+Date: Fri, 11 Feb 2011 17:38:13 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, Stefan Berger <stefanb@us.ibm.com>,
+        Guillaume Chazarain <guichaz@gmail.com>
+Subject: Re: [GIT PULL] TPM timeout fix
+In-Reply-To: <4D54B688.4010307@linux.vnet.ibm.com>
+Message-ID: <alpine.LRH.2.00.1102111737460.28805@tundra.namei.org>
+References: <4D54B688.4010307@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mutual Aid  (Stash of Fortune)
+On Fri, 11 Feb 2011, Rajiv Andrade wrote:
 
-Hi
-I would hold back certain information for security reasons for now until
-you have found time to visit the BBC website stated below to enable you
-have an insight into what I intend sharing with you.
+> Hi James,
+> 
+> Please pull from:
+>     git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd/ for-james
+> 
+> The following change corrects the logic used to extract the timeouts returned
+> from a TPM.
+> These values are used subsequently in the TPM device driver, and if relying on
+> the default values,
+> some commands may not have its proper timeout considered. This is a bugfix for
+> the current linus tree.
+> 
+> Stefan Berger (1):
+>       tpm_tis: Use timeouts returned from TPM
 
-http://news.bbc.co.uk/2/hi/middle_east/2988455.stm
+Thanks, applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#for-linus
 
-Get back to me having visited the above website with this email:
-mrglenbradley@w.cn
 
-Best Regards
-A former member of the  3rd Infantry Division
-
+-- 
+James Morris
+<jmorris@namei.org>
