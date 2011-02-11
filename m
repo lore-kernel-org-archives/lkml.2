@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab1BKRf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 12:35:26 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60387 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595Ab1BKRfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 12:35:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=IOiKpi8kRKFIxMOjzRqvfmwOwpxj3r8ORybwYchPE/XFiHg3btmn0/O9VOgyZU/9Sm
-         vVsB99OQnVkWVV/cpGYeDltYqlEpY+l5UKzFyXPxfc7W5VCfIHB0jVvq+GHBrG+Y4Uz5
-         ynhfrqZ8jVQzAGGXpiX2b5h1Kif3lanLG0PTc=
-Message-ID: <4D557356.1050709@gmail.com>
-Date: Fri, 11 Feb 2011 20:35:18 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1757517Ab1BKRnQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 12:43:16 -0500
+Received: from fieldses.org ([174.143.236.118]:49447 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756595Ab1BKRnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 12:43:15 -0500
+Date: Fri, 11 Feb 2011 12:43:12 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Tino Keitel <tino.keitel@tikei.de>, Neil Brown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38-rc3: kernel BUG at fs/nfsd/nfs4state.c:3132!
+Message-ID: <20110211174312.GH3005@fieldses.org>
+References: <s5hsjvuoqqt.wl%tiwai@suse.de>
+ <20110211152112.GA3005@fieldses.org>
+ <s5h62sqbnd7.wl%tiwai@suse.de>
+ <20110211153702.GC3005@fieldses.org>
+ <s5hwrl6a7ch.wl%tiwai@suse.de>
+ <20110211160532.GD3005@fieldses.org>
+ <s5hsjvua6tq.wl%tiwai@suse.de>
+ <s5hhbcamrv2.wl%tiwai@suse.de>
+ <s5hd3mymrr3.wl%tiwai@suse.de>
+ <20110211170036.GF3005@fieldses.org>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86_64: disable identity mappings statically
-References: <1297432830-3912-1-git-send-email-jolsa@redhat.com> <m14o8a34em.fsf@fess.ebiederm.org> <20110211170722.GA2010@jolsa.brq.redhat.com>
-In-Reply-To: <20110211170722.GA2010@jolsa.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110211170036.GF3005@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 08:07 PM, Jiri Olsa wrote:
-> On Fri, Feb 11, 2011 at 08:46:41AM -0800, Eric W. Biederman wrote:
->> Jiri Olsa <jolsa@redhat.com> writes:
->>
->>> hi,
->>>
->>> while browsing the page table setup code, I noticed the x86_64 head
->>> code might not need the identity mappings at all.
->>> It seems it's ok to switch it off completely from the begining,
->>> unless I'm missing something.
->>
->> Have you tested it?
+On Fri, Feb 11, 2011 at 12:00:36PM -0500, J. Bruce Fields wrote:
+> On Fri, Feb 11, 2011 at 05:59:44PM +0100, Takashi Iwai wrote:
+> > At Fri, 11 Feb 2011 17:57:21 +0100,
+> > Takashi Iwai wrote:
+> > > 
+> > > At Fri, 11 Feb 2011 17:12:33 +0100,
+> > > Takashi Iwai wrote:
+> > > > 
+> > > > At Fri, 11 Feb 2011 11:05:32 -0500,
+> > > > J. Bruce Fields wrote:
+> > > > > 
+> > > > > On Fri, Feb 11, 2011 at 05:01:18PM +0100, Takashi Iwai wrote:
+> > > > > > At Fri, 11 Feb 2011 10:37:02 -0500,
+> > > > > > J. Bruce Fields wrote:
+> > > > > > > 
+> > > > > > > On Fri, Feb 11, 2011 at 04:29:56PM +0100, Takashi Iwai wrote:
+> > > > > > > > At Fri, 11 Feb 2011 10:21:12 -0500,
+> > > > > > > > J. Bruce Fields wrote:
+> > > > > > > > > Again, 2.6.38-rc4 does not have a BUG() on line 3132.  Could you post
+> > > > > > > > > the full oops message from your machine?
+> > > > > > > > 
+> > > > > > > > Well, on vanilla 2.6.38-rc4, it's in nfs4_preprocess_stateid_op():
+> > > > > > > >                if (filpp) {
+> > > > > > > >                         *filpp = find_readable_file(dp->dl_file);
+> > > > > > > > ==>                     BUG_ON(!*filpp);
+> > > > > > > >                 }
+> > > > > > > 
+> > > > > > > Oh good grief, my apologies--I mistyped "38" as "28"!
+> > > > > > > 
+> > > > > > > This looks like it could be a known delegation bug....  Would it be
+> > > > > > > possible for you to check whether this is reproduceable on
+> > > > > > > 
+> > > > > > > 	git://linux-nfs.org/~bfields/topics.git for-2.6.38-incoming
+> > > > > > 
+> > > > > > Hm, I couldn't pull it.
+> > > > > > 
+> > > > > >   % git pull 'git://linux-nfs.org/~bfields/topics.git' for-2.6.38-incoming
+> > > > > >   fatal: The remote end hung up unexpectedly
+> > > > > 
+> > > > > Should be linux-topics, apologies again:
+> > > > > 
+> > > > > 	git://linux-nfs.org/~bfields/linux-topics.git for-2.6.38-incoming
+> > > > 
+> > > > Thanks.  I'm going to give it a try now.
+> > > 
+> > > Looks good so far.  I'll let you know if it's triggered again.
+> > 
+> > Argh, too early to say.  Now I got the same one.
+> > 
+> > It seems that it's triggered when I start Firefox on NFS client
+> > machine.
 > 
-> yes, I booted it with no problem
-> 
+> OK, thanks, I'll take a look.
 
-Hi Jiri, just wonder -- hibernation still works after that?
-Also Xen might/might-not need it as well, and walk_pgd_level
-seems to use it as well, no?
+I think I see the problem....  Could you try fetching that branch again?
 
--- 
-    Cyrill
+	git://linux-nfs.org/~bfields/linux-topics.git for-2.6.38-incoming
+
+(But I've only tested that it compiles so far.)
+
+--b.
