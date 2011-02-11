@@ -1,129 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab1BKKmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 05:42:09 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:60911 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751453Ab1BKKkh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 05:40:37 -0500
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX18UsLgQ6fEUqDBQ9kZjAMMw2CC13jFRVY1/E3M8N4
-	3igE/TmIW+e4Fw
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: [PATCH 1/7] fsnotify: take groups mark_lock before mark lock
-Date: Fri, 11 Feb 2011 11:36:37 +0100
-Message-Id: <1297420603-11715-2-git-send-email-LinoSanfilippo@gmx.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1297420603-11715-1-git-send-email-LinoSanfilippo@gmx.de>
-References: <1297420603-11715-1-git-send-email-LinoSanfilippo@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1755860Ab1BKKtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 05:49:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069Ab1BKKtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 05:49:19 -0500
+Date: Fri, 11 Feb 2011 11:49:06 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [mmotm] BUG: Bad page state in process khugepaged ?
+Message-ID: <20110211104906.GE3347@random.random>
+References: <20110209151036.f24a36a6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110209155001.0e369475.nishimura@mxp.nes.nec.co.jp>
+ <20110209155246.69a7f3a1.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110209200728.GQ3347@random.random>
+ <alpine.LSU.2.00.1102102243160.2331@sister.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1102102243160.2331@sister.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Race-free addition and removal of a mark to a groups mark list would be easier
-if we could lock the mark list of group before we lock the specific mark.
-This patch changes the order used to add/remove marks to/from mark lists from
+On Thu, Feb 10, 2011 at 11:02:50PM -0800, Hugh Dickins wrote:
+> There is a separate little issue here, Andrea.
+> 
+> Although we went to some trouble for bad_page() to take the page out
+> of circulation yet let the system continue, your VM_BUG_ON(!PageBuddy)
+> inside __ClearPageBuddy(page), from two callsites in bad_page(), is
+> turning it into a fatal error when CONFIG_DEBUG_VM.
 
-1. mark->lock
-2. group->mark_lock
-3. inode->i_lock
+I see what you mean. Of course it is only a problem after bad_page
+already triggered.... but then it trigger an BUG_ON instead of only a
+bad_page.
 
-to
+> You could that only MM developers switch CONFIG_DEBUG_VM=y, and they
+> would like bad_page() to be fatal; maybe, but if so we should do that
+> as an intentional patch, rather than as an unexpected side-effect ;)
 
-1. group->mark_lock
-2. mark->lock
-3. inode->i_lock
+Fedora kernels are built with CONFIG_DEBUG_VM, all my kernels runs
+with CONFIG_DEBUG_VM too, so we want it to be as "production" as
+possible, and we don't want DEBUG_VM to decrease any reliability (only
+to increase it of course).
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> I noticed this a few days ago, but hadn't quite decided whether just to
+> remove the VM_BUG_ON, or move it to __ClearPageBuddy's third callsite,
+> or... doesn't matter much.
+>
+> I do also wonder if PageBuddy would better be _mapcount -something else:
+> if we've got a miscounted page (itself unlikely of course), there's a
+> chance that its _mapcount will be further decremented after it has been
+> freed: whereupon it will go from -1 to -2, PageBuddy at present.  The
+> special avoidance of PageBuddy being that it can pull a whole block of
+> pages into misuse if its mistaken.
+
+Agreed. What about the below?
+
+=====
+Subject: mm: PageBuddy cleanups
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+bad_page could VM_BUG_ON(!PageBuddy(page)) inside __ClearPageBuddy(). I prefer
+to keep the VM_BUG_ON for safety and to add a if to solve it.
+
+Change the _mapcount value indicating PageBuddy from -2 to -1024 for more
+robusteness against page_mapcount() undeflows.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Reported-by: Hugh Dickins <hughd@google.com>
 ---
- fs/notify/mark.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
 
-diff --git a/fs/notify/mark.c b/fs/notify/mark.c
-index 28b64eb..1ac0447 100644
---- a/fs/notify/mark.c
-+++ b/fs/notify/mark.c
-@@ -114,22 +114,21 @@ void fsnotify_destroy_mark(struct fsnotify_mark *mark)
- 	struct inode *inode = NULL;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f6385fc..fa16ba0 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -402,16 +402,22 @@ static inline void init_page_count(struct page *page)
+ /*
+  * PageBuddy() indicate that the page is free and in the buddy system
+  * (see mm/page_alloc.c).
++ *
++ * PAGE_BUDDY_MAPCOUNT_VALUE must be <= -2 but better not too close to
++ * -2 so that an underflow of the page_mapcount() won't be mistaken
++ * for a genuine PAGE_BUDDY_MAPCOUNT_VALUE.
+  */
++#define PAGE_BUDDY_MAPCOUNT_VALUE (-1024*1024)
++
+ static inline int PageBuddy(struct page *page)
+ {
+-	return atomic_read(&page->_mapcount) == -2;
++	return atomic_read(&page->_mapcount) == PAGE_BUDDY_MAPCOUNT_VALUE;
+ }
  
- 	spin_lock(&mark->lock);
--
--	group = mark->group;
--
- 	/* something else already called this function on this mark */
- 	if (!(mark->flags & FSNOTIFY_MARK_FLAG_ALIVE)) {
- 		spin_unlock(&mark->lock);
+ static inline void __SetPageBuddy(struct page *page)
+ {
+ 	VM_BUG_ON(atomic_read(&page->_mapcount) != -1);
+-	atomic_set(&page->_mapcount, -2);
++	atomic_set(&page->_mapcount, PAGE_BUDDY_MAPCOUNT_VALUE);
+ }
+ 
+ static inline void __ClearPageBuddy(struct page *page)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a873e61..8aac134 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -286,7 +286,9 @@ static void bad_page(struct page *page)
+ 
+ 	/* Don't complain about poisoned pages */
+ 	if (PageHWPoison(page)) {
+-		__ClearPageBuddy(page);
++		/* __ClearPageBuddy VM_BUG_ON(!PageBuddy(page)) */
++		if (PageBuddy(page))
++			__ClearPageBuddy(page);
  		return;
  	}
--
- 	mark->flags &= ~FSNOTIFY_MARK_FLAG_ALIVE;
-+	group = mark->group;
-+	spin_unlock(&mark->lock);
-+
-+	spin_lock(&group->mark_lock);
-+	spin_lock(&mark->lock);
  
- 	/* 1 from caller and 1 for being on i_list/g_list */
- 	BUG_ON(atomic_read(&mark->refcnt) < 2);
+@@ -317,7 +319,8 @@ static void bad_page(struct page *page)
+ 	dump_stack();
+ out:
+ 	/* Leave bad fields for debug, except PageBuddy could make trouble */
+-	__ClearPageBuddy(page);
++	if (PageBuddy(page)) /* __ClearPageBuddy VM_BUG_ON(!PageBuddy(page)) */
++		__ClearPageBuddy(page);
+ 	add_taint(TAINT_BAD_PAGE);
+ }
  
--	spin_lock(&group->mark_lock);
--
- 	if (mark->flags & FSNOTIFY_MARK_FLAG_INODE) {
- 		inode = mark->i.inode;
- 		fsnotify_destroy_inode_mark(mark);
-@@ -137,11 +136,11 @@ void fsnotify_destroy_mark(struct fsnotify_mark *mark)
- 		fsnotify_destroy_vfsmount_mark(mark);
- 	else
- 		BUG();
-+	spin_unlock(&mark->lock);
- 
- 	list_del_init(&mark->g_list);
- 
- 	spin_unlock(&group->mark_lock);
--	spin_unlock(&mark->lock);
- 
- 	spin_lock(&destroy_lock);
- 	list_add(&mark->destroy_list, &destroy_list);
-@@ -217,8 +216,8 @@ int fsnotify_add_mark(struct fsnotify_mark *mark,
- 	 * group->mark_lock
- 	 * inode->i_lock
- 	 */
--	spin_lock(&mark->lock);
- 	spin_lock(&group->mark_lock);
-+	spin_lock(&mark->lock);
- 
- 	mark->flags |= FSNOTIFY_MARK_FLAG_ALIVE;
- 	mark->group = group;
-@@ -235,13 +234,11 @@ int fsnotify_add_mark(struct fsnotify_mark *mark,
- 		BUG();
- 	if (ret)
- 		goto err;
--
--	spin_unlock(&group->mark_lock);
--
- 	/* this will pin the object if appropriate */
- 	fsnotify_set_mark_mask_locked(mark, mark->mask);
- 
- 	spin_unlock(&mark->lock);
-+	spin_unlock(&group->mark_lock);
- 
- 	if (inode)
- 		__fsnotify_update_child_dentry_flags(inode);
-@@ -253,8 +250,8 @@ err:
- 	mark->group = NULL;
- 	atomic_dec(&group->num_marks);
- 
--	spin_unlock(&group->mark_lock);
- 	spin_unlock(&mark->lock);
-+	spin_unlock(&group->mark_lock);
- 
- 	spin_lock(&destroy_lock);
- 	list_add(&mark->destroy_list, &destroy_list);
--- 
-1.5.6.5
-
