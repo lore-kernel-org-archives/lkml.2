@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab1BKJw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 04:52:26 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37969 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab1BKJwY (ORCPT
+	id S1755767Ab1BKJw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 04:52:57 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52600 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab1BKJwz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 04:52:24 -0500
+	Fri, 11 Feb 2011 04:52:55 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Dd0xpMYgFxYUiqUHjBd0G7yJz5XMfLwr5w4aKOWaweN+BncvfM5gZOmMSi4pCqPFSl
-         /hE1ZNJ/AX2LksBHcs9OI8EQmKJCrN5m4CsiVPSdOgaTQRNENk+q4fftB4RUixcBzjGW
-         GZ9STb8+pimzkwuTr71errMuYYtkaIZrg/lVc=
-Date: Fri, 11 Feb 2011 10:52:18 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@novell.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the percpu tree with the tip tree
-Message-ID: <20110211095218.GQ3770@htj.dyndns.org>
-References: <20110211145810.bdea73a3.sfr@canb.auug.org.au>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=l3hB0R405NiK4g2jc2hcGheNIGXT5RfjtJ9Hs3h4pEinhOgBFdr+7lCdU1qlx5kzpJ
+         59GXqTVXB+A+8Wu9bw+Km3aGfC81C0G8lXIGG9ZBw9N/y5WmPbCVKQibENDfvX0AXbFS
+         c/1C54etcwT7XJPOxgtXN0odRnc+1nej1Iako=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110211145810.bdea73a3.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1297350456.4933.25.camel@mulgrave.site>
+References: <201102091515.16202.bzolnier@gmail.com>
+	<1297274408.3016.29.camel@mulgrave.site>
+	<AANLkTimE1H=hos+YMW3Ge9vkETC9f1k1Dt6AMi5iLHGW@mail.gmail.com>
+	<1297350456.4933.25.camel@mulgrave.site>
+Date: Fri, 11 Feb 2011 10:52:54 +0100
+Message-ID: <AANLkTinbsTuvRWQXt8ViTKaD+VbH9YG9X-RqzvsdEV_h@mail.gmail.com>
+Subject: Re: [PATCH] scsi: make scsi_devinfo infrastructure optional
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 02:58:10PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the percpu tree got a conflict in
-> arch/x86/kernel/vmlinux.lds.S between commit
-> 94d1ac8b55799be10487fff9766cce6d6628462a ("x86: Reduce back the alignment
-> of the per-CPU data section") from the tip tree and commit
-> 19df0c2fef010e94e90df514aaf4e73f6b80145c ("percpu: align percpu
-> readmostly subsection to cacheline") from the percpu tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+On Thu, Feb 10, 2011 at 4:07 PM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+> On Thu, 2011-02-10 at 10:18 +0100, Bartlomiej Zolnierkiewicz wrote:
+>> On Wed, Feb 9, 2011 at 7:00 PM, James Bottomley <James.Bottomley@suse.de> wrote:
+>> > On Wed, 2011-02-09 at 15:15 +0100, Bartlomiej Zolnierkiewicz wrote:
+>> >> Add SCSI_QUIRKS config option (default y and dependent on EMBEDDED
+>> >> config option) to allow disabling of scsi_devinfo infrastructure.
+>> >>
+>> >> The output code size savings are ~14k for CONFIG_SCSI_QUIRKS=n
+>> >> (as measured on x86-32):
+>> >
+>> > I don't understand the point of this patch ... without the quirks SCSI
+>> > will do the wrong thing on a whole bunch of stuff.  The savings look to
+>> > be tiny ... since the SCSI module is habitually a lot larger than your
+>> > figures suggest.
+>>
+>> The patch was originally done for embedded ATA-only setups.
+>
+> Well, if it's for ATA only then the better course would be extracting
+> libata from scsi.  It's also a bit misleading to do sizings on x86,
+> because that doesn't imply embedded to me.  Aren't there still ATAPI
+> devices that require the quirks?
 
-Thanks.  Looks good to me.
+According to my knowledge all ATAPI quirks are handled locally in libata & sr.
 
--- 
-tejun
+> Most embedded setups include some form of USB ... again, the pluggable
+> CD/DVD use the quirks table.
+
+This was done long time ago specifically for embedded 486-like
+embedded system w/o USB support and only using flash storage but
+indeed this is not a common case.
+
+> Given the potential for disaster even on embedded systems, I don't
+> really think something like this is a good idea.
+
+Well, I don't insist on applying it upstream as it is, it is more to
+show the direction where the possible room for improvements is in case
+of older/embedded systems and reducing memory/code size usage.  [
+There were some concerns about it during recent proposal to use more
+generalized code for support of some rare Intel-like PATA chipsets
+(which seem to cost ~20k as measured on x86-64 in terms of additional
+memory/code requirements, though most such systems are x86-32 only so
+the incurred cost is probably smaller) .]
+
+BTW with some effort we can do on-demand quirk table loading if it
+ever grows too big in the future.
+
+Thanks,
+Bartlomiej
