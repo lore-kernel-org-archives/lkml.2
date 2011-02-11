@@ -1,110 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab1BKPaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:30:11 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55519 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757367Ab1BKPaI (ORCPT
+	id S1757258Ab1BKPfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:35:55 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57154 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab1BKPfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:30:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MeFhDb0tLouxLwD9JWAoV1FcDsJBxROVsmhfsJXT9oi7oQUCzFtnlGFWqDuvx7COVu
-         g3eFlgL18+e7Vp9Wlcff5QH9sIIWBf5BUzhq7EAUEmzkKEXagKVUXVpUAHFPP8mEOacN
-         +Fhd50X2KU9Xb6fUYQn1IrHehxkmthNXOPmrc=
-Date: Fri, 11 Feb 2011 17:30:05 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] block: fix queue_lock NULL pointer derefence in
- blk_throtl_exit (v4)
-Message-ID: <20110211153005.GA4398@swordfish.minsk.epam.com>
-References: <20110211125941.GA4271@swordfish.minsk.epam.com>
- <4D55525C.3080705@fusionio.com>
+	Fri, 11 Feb 2011 10:35:53 -0500
+Date: Fri, 11 Feb 2011 15:35:24 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Shiyong Li <shi-yong.li@motorola.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
+Message-ID: <20110211153524.GB26188@flint.arm.linux.org.uk>
+References: <20110207180606.GB2966@flint.arm.linux.org.uk> <AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com> <20110208125546.GA4286@flint.arm.linux.org.uk> <alpine.DEB.2.00.1102080856020.12521@router.home> <AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com> <20110211091413.GA32687@flint.arm.linux.org.uk> <alpine.DEB.2.00.1102110920060.12360@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4D55525C.3080705@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.00.1102110920060.12360@router.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-block: fix queue_lock NULL pointer derefence in blk_throtl_exit
+On Fri, Feb 11, 2011 at 09:20:27AM -0600, Christoph Lameter wrote:
+> On Fri, 11 Feb 2011, Russell King wrote:
+> 
+> > On Fri, Feb 11, 2011 at 09:02:45AM +0200, Pekka Enberg wrote:
+> > > On Tue, Feb 8, 2011 at 5:02 PM, Christoph Lameter <cl@linux.com> wrote:
+> > > > Uhh.. That first hunk in commit 5c5e3b33b7cb959a401f823707bee006caadd76e
+> > > > looks wrong to me. ralign is usually a power of two and greater than
+> > > > alignof(unsigned long long). The & operation will result in 0 and never
+> > > > exempt any caches.
+> > > >
+> > > > diff --git a/mm/slab.c b/mm/slab.c
+> > > > index bac0f4f..525c664 100644
+> > > > --- a/mm/slab.c
+> > > > +++ b/mm/slab.c
+> > > > @@ -2220,8 +2220,8 @@ kmem_cache_create (const char *name, size_t size,
+> > > > size_t align,
+> > > >        if (ralign < align) {
+> > > >                ralign = align;
+> > > >        }
+> > > > -       /* disable debug if necessary */
+> > > > -       if (ralign > __alignof__(unsigned long long))
+> > > > +       /* disable debug if not aligning with REDZONE_ALIGN */
+> > > > +       if (ralign & (__alignof__(unsigned long long) - 1))
+> > > >                flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+> > > >        /*
+> > > >         * 4) Store it.
+> > > >
+> > > >
+> > > > Did you mean
+> > > >
+> > > >        if (ralign > REDZONE_ALIGN) ...
+> > > >
+> > > > ?
+> > >
+> > > Ping. Any arm-capable tester out there that can verify this fix? OTOH,
+> > > since Shiyong Li hasn't showed up, I'm inclined to just revert the
+> > > commit...
+> >
+> > What fix?  The above is a quote of the patch in 5c5e3b33.
+> 
+> He was referring to the change of the if statement.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
- IP: [<ffffffff812479d4>] do_raw_spin_lock+0x14/0x122
- Process modprobe (pid: 6189, threadinfo ffff88009a898000, task
- ffff880154a88000)                                                        
- Call Trace:                                         
-  [<ffffffff81486788>] _raw_spin_lock_irq+0x4a/0x51                         
-  [<ffffffff8123404b>] ? blk_throtl_exit+0x3b/0xa0
-  [<ffffffff8105b120>] ? cancel_delayed_work_sync+0xd/0xf
-  [<ffffffff8123404b>] blk_throtl_exit+0x3b/0xa0   
-  [<ffffffff81229bc8>] blk_release_queue+0x21/0x65
-  [<ffffffff8123bb06>] kobject_release+0x51/0x66         
-  [<ffffffff8123bab5>] ? kobject_release+0x0/0x66
-  [<ffffffff8123ce1e>] kref_put+0x43/0x4d         
-  [<ffffffff8123ba27>] kobject_put+0x47/0x4b    
-  [<ffffffff8122717c>] blk_cleanup_queue+0x56/0x5b
-  [<ffffffffa01c3824>] loop_exit+0x68/0x844 [loop]
-  [<ffffffff8107cccc>] sys_delete_module+0x1e8/0x25b
-  [<ffffffff814864c9>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81002112>] system_call_fastpath+0x16/0x1b
+Replacing what with what?
 
-because of an attempt to acquire NULL queue_lock.   
-Added the same lines as in blk_queue_make_request: 
-'fall back to embedded per-queue lock' - when call blk_release_queue on
-allocated but never initialized queue.
+	if (ralign & (__alignof__(unsigned long long) - 1))
+with
+	if (ralign > __alignof__(unsigned long long))
+or
+	if (ralign > REDZONE_ALIGN)
 
-v4:
-Incremental patch to move fall back to embedded per-queue lock from loop_free
-to blk_release_queue, because v1 patch was accidentally applied.
-
-v3: According to comment by Vivek Goyal, queue_lock NULL check and fix moved
-out from loop driver code to blk_release_queue.
+?  A patch is a wonderful way to describe the change to be tested.
 
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
----
-
- block/blk-sysfs.c    |    6 ++++++
- drivers/block/loop.c |    3 ---
- 2 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 41fb691..2b426ac 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -471,6 +471,12 @@ static void blk_release_queue(struct kobject *kobj)
- 
- 	blk_sync_queue(q);
- 
-+	/* It's possible that blk_release_queue will be called on allocated
-+	 * but never initialized queue. Fall back to our embedded per-queue 
-+	 * locks in this case. */
-+	if (!q->queue_lock)
-+		q->queue_lock = &q->__queue_lock;
-+
- 	blk_throtl_exit(q);
- 
- 	if (rl->rq_pool)
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 49e6a54..44e18c0 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1641,9 +1641,6 @@ out:
- 
- static void loop_free(struct loop_device *lo)
- {
--	if (!lo->lo_queue->queue_lock)
--		lo->lo_queue->queue_lock = &lo->lo_queue->__queue_lock;
--
- 	blk_cleanup_queue(lo->lo_queue);
- 	put_disk(lo->lo_disk);
- 	list_del(&lo->lo_list);
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
