@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab1BKM3z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 07:29:55 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:34091 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab1BKM3x (ORCPT
+	id S1754780Ab1BKMaD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 07:30:03 -0500
+Received: from ni.piap.pl ([195.187.100.4]:39784 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754389Ab1BKMaA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 07:29:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=izmnqJBDjNIyM5157v3ebcrg76g1l8TWmi+k72MoQj2mrESX2X56T8rxMyHNQArIIJ
-         7CC4w3O9W8F81F6JDrfMI5XJBqEr5Na7TJUTHEh1gKC+GRaNMR+h9BFAyo4JBhaNZgHP
-         gHesgSnGqVim05tmmh88vEAcZ4Lerg7anoUxM=
-Date: Fri, 11 Feb 2011 20:29:28 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org, greg@kroah.com, akpm@linux-foundation.org,
-        davem@davemloft.net, rdunlap@xenotime.net
-Cc: trivial@kernel.org
-Subject: MAINTAINERS: a question about it
-Message-ID: <20110211122924.GA2088@gmail.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org, greg@kroah.com,
-	akpm@linux-foundation.org, davem@davemloft.net,
-	rdunlap@xenotime.net, trivial@kernel.org
+	Fri, 11 Feb 2011 07:30:00 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ben Collins <bcollins@bluecherry.net>, linux-kernel@vger.kernel.org
+References: <m3sjvurd2f.fsf@t19.piap.pl>
+Date: Fri, 11 Feb 2011 13:29:59 +0100
+In-Reply-To: <m3sjvurd2f.fsf@t19.piap.pl> ("Krzysztof =?utf-8?Q?Ha=C5=82as?=
+ =?utf-8?Q?a=22's?= message of
+	"Fri, 11 Feb 2011 13:05:44 +0100")
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <m3d3myrby0.fsf@t19.piap.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH 3/7] Solo6x10: Align MPEG video on 8-byte boundary instead of 32-byte.
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20101209 #4187514, check: 20110211 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi us,
-     I saw MAINTAINERS these days. I find we should program a script(shell) for checking if a maintainer added himself in correct position. 
-     Because the MAINTAINERS is in alphabetical order and it has lots of maintainers now.
-     I just want to ask if anyone is doing this work. If it has  been began i will do other things about kernel. If not, i will program this script(shell) for us.
+Solo-6110 only supports 8-byte alignment anyway.
 
-     Thanks.
-     Best Regards.
-     Harry Wei.
+Signed-off-by: Krzysztof Hałasa <khalasa@piap.pl>
+
+diff --git a/drivers/staging/solo6x10/solo6010-enc.c b/drivers/staging/solo6x10/solo6010-enc.c
+index 481a492..7e28f7d 100644
+--- a/drivers/staging/solo6x10/solo6010-enc.c
++++ b/drivers/staging/solo6x10/solo6010-enc.c
+@@ -176,7 +176,6 @@ static void solo_mp4e_config(struct solo6010_dev *solo_dev)
+ 		       SOLO_VE_BLOCK_BASE(SOLO_MP4E_EXT_ADDR(solo_dev) >> 16));
+ 
+ 	solo_reg_write(solo_dev, SOLO_VE_CFG1,
+-		       SOLO_VE_BYTE_ALIGN(2) |
+ 		       SOLO_VE_INSERT_INDEX | SOLO_VE_MOTION_MODE(0));
+ 
+ 	solo_reg_write(solo_dev, SOLO_VE_WMRK_POLY, 0);
+diff --git a/drivers/staging/solo6x10/solo6010-v4l2-enc.c b/drivers/staging/solo6x10/solo6010-v4l2-enc.c
+index 47f6e04..ccee5b8 100644
+--- a/drivers/staging/solo6x10/solo6010-v4l2-enc.c
++++ b/drivers/staging/solo6x10/solo6010-v4l2-enc.c
+@@ -754,7 +754,7 @@ void solo_enc_v4l2_isr(struct solo6010_dev *solo_dev)
+ 
+ 	cur_q = ((solo_reg_read(solo_dev, SOLO_VE_STATE(11)) & 0xF) + 1) % MP4_QS;
+ 
+-	reg_mpeg_size = ((solo_reg_read(solo_dev, SOLO_VE_STATE(0)) & 0xFFFFF) + 64 + 32) & ~31;
++	reg_mpeg_size = ((solo_reg_read(solo_dev, SOLO_VE_STATE(0)) & 0xFFFFF) + 64 + 8) & ~7;
+ 
+ 	while (solo_dev->enc_idx != cur_q) {
+ 		mpeg_current = solo_reg_read(solo_dev,
+
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
