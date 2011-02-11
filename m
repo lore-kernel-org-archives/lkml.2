@@ -1,108 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab1BKVh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 16:37:28 -0500
-Received: from mail2.microsoft.com ([131.107.115.215]:29190 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab1BKVhY convert rfc822-to-8bit (ORCPT
+	id S932468Ab1BKVhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 16:37:48 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64484 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab1BKVhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 16:37:24 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: RE: [PATCH 1/3]: Staging: hv: Use native page allocation/free
- functions
-Thread-Topic: [PATCH 1/3]: Staging: hv: Use native page allocation/free
- functions
-Thread-Index: AQHLyhREQLJs9mA8vUSybVGIJ0ascZP9JUiA//+KTxCAAKZSAP//fTtw
-Date: Fri, 11 Feb 2011 21:37:23 +0000
-Message-ID: <FB42D5CCD7B5934EB1827DB5ED9B850E0B268B@tk5ex14mbxc106.redmond.corp.microsoft.com>
-References: <1297447140-21777-1-git-send-email-kys@microsoft.com>
- <20110211182949.GA10751@suse.de>
- <FB42D5CCD7B5934EB1827DB5ED9B850E0B2653@tk5ex14mbxc106.redmond.corp.microsoft.com>
- <20110211212352.GA10845@suse.de>
-In-Reply-To: <20110211212352.GA10845@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 11 Feb 2011 16:37:46 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=s-F33xfzt_IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=wMNdZWldAAAA:8 a=meVymXHHAAAA:8 a=oTaEVyrL644SoAK_NKMA:9 a=V6qgW5ioZuTd8Iwgp60A:7 a=psuJi4i2udCOkiu-5EoUB0aTWHgA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][GIT PULL][v2.6.38] ftrace: Fix memory leak with function
+ graph and cpu hotplug
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stable Tree <stable@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 11 Feb 2011 16:37:42 -0500
+Message-ID: <1297460262.23343.47.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Ingo,
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Friday, February 11, 2011 4:24 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; Hank Janssen
-> Subject: Re: [PATCH 1/3]: Staging: hv: Use native page allocation/free functions
-> 
-> On Fri, Feb 11, 2011 at 08:55:56PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@suse.de]
-> > > Sent: Friday, February 11, 2011 1:30 PM
-> > > To: KY Srinivasan
-> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org; Hank Janssen
-> > > Subject: Re: [PATCH 1/3]: Staging: hv: Use native page allocation/free
-> functions
-> > >
-> > > On Fri, Feb 11, 2011 at 09:59:00AM -0800, K. Y. Srinivasan wrote:
-> > > > --- a/drivers/staging/hv/hv.c
-> > > > +++ b/drivers/staging/hv/hv.c
-> > > > @@ -230,7 +230,12 @@ int hv_init(void)
-> > > >  	* Allocate the hypercall page memory
-> > > >  	* virtaddr = osd_page_alloc(1);
-> > > >  	*/
-> > > > -	virtaddr = osd_virtual_alloc_exec(PAGE_SIZE);
-> > > > +#ifdef __x86_64__
-> > > > +	virtaddr = __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_EXEC);
-> > > #else
-> > > > +	virtaddr =  __vmalloc(PAGE_SIZE, GFP_KERNEL,
-> > > > +			__pgprot(__PAGE_KERNEL & (~_PAGE_NX))); #endif
-> > >
-> > > I'm not saying this patch is wrong at all, but I still don't understand why this is
-> > > different depending on the architecture of the machine.  Why is this
-> necessary, it
-> > > should be ok to do the same type of allocation no matter what the processor
-> is,
-> > > right?
-> >
-> > You are right Greg; I don't think there is a need to specify different page
-> > protection bits based on the architecture - PAGE_KERNEL_EXEC should be
-> enough.
-> 
-> I thought so, but for some reason Hank said there this was needed.
-> Hank, is it still true?
-> 
-> > However, this is the code that is currently in the tree - refer to osd.c.
-> 
-> Oh, I remember, it's not a critique of this patch, it just reminded me
-> of this question I always had for this code.
-> 
-> > If it is ok with you, I could submit an additional patch to clean this up.
-> 
-> If Hank says it is ok, and you all test it to verify nothing breaks,
-> please send it on.
-Will do; the new patch will be on top of the 3 patch sequence I sent earlier today.
+Please pull the latest tip/perf/urgent tree, which can be found at:
 
-Regards,
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent
 
-K. Y
-> 
-> thanks,
-> 
-> greg k-h
+
+Steven Rostedt (1):
+      ftrace: Fix memory leak with function graph and cpu hotplug
+
+----
+ include/linux/ftrace.h |    2 +
+ kernel/sched.c         |    2 +-
+ kernel/trace/ftrace.c  |   52 +++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 48 insertions(+), 8 deletions(-)
+---------------------------
+commit 868baf07b1a259f5f3803c1dc2777b6c358f83cf
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Thu Feb 10 21:26:13 2011 -0500
+
+    ftrace: Fix memory leak with function graph and cpu hotplug
+    
+    When the fuction graph tracer starts, it needs to make a special
+    stack for each task to save the real return values of the tasks.
+    All running tasks have this stack created, as well as any new
+    tasks.
+    
+    On CPU hot plug, the new idle task will allocate a stack as well
+    when init_idle() is called. The problem is that cpu hotplug does
+    not create a new idle_task. Instead it uses the idle task that
+    existed when the cpu went down.
+    
+    ftrace_graph_init_task() will add a new ret_stack to the task
+    that is given to it. Because a clone will make the task
+    have a stack of its parent it does not check if the task's
+    ret_stack is already NULL or not. When the CPU hotplug code
+    starts a CPU up again, it will allocate a new stack even
+    though one already existed for it.
+    
+    The solution is to treat the idle_task specially. In fact, the
+    function_graph code already does, just not at init_idle().
+    Instead of using the ftrace_graph_init_task() for the idle task,
+    which that function expects the task to be a clone, have a
+    separate ftrace_graph_init_idle_task(). Also, we will create a
+    per_cpu ret_stack that is used by the idle task. When we call
+    ftrace_graph_init_idle_task() it will check if the idle task's
+    ret_stack is NULL, if it is, then it will assign it the per_cpu
+    ret_stack.
+    
+    Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+    Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Cc: Stable Tree <stable@kernel.org>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index dcd6a7c..ca29e03 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -428,6 +428,7 @@ extern void unregister_ftrace_graph(void);
+ 
+ extern void ftrace_graph_init_task(struct task_struct *t);
+ extern void ftrace_graph_exit_task(struct task_struct *t);
++extern void ftrace_graph_init_idle_task(struct task_struct *t, int cpu);
+ 
+ static inline int task_curr_ret_stack(struct task_struct *t)
+ {
+@@ -451,6 +452,7 @@ static inline void unpause_graph_tracing(void)
+ 
+ static inline void ftrace_graph_init_task(struct task_struct *t) { }
+ static inline void ftrace_graph_exit_task(struct task_struct *t) { }
++static inline void ftrace_graph_init_idle_task(struct task_struct *t, int cpu) { }
+ 
+ static inline int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 			  trace_func_graph_ent_t entryfunc)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 18d38e4..fbe86cb 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5571,7 +5571,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+ 	 * The idle tasks have their own, simple scheduling class:
+ 	 */
+ 	idle->sched_class = &idle_sched_class;
+-	ftrace_graph_init_task(idle);
++	ftrace_graph_init_idle_task(idle, cpu);
+ }
+ 
+ /*
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index f3dadae..888b611 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3328,7 +3328,7 @@ static int start_graph_tracing(void)
+ 	/* The cpu_boot init_task->ret_stack will never be freed */
+ 	for_each_online_cpu(cpu) {
+ 		if (!idle_task(cpu)->ret_stack)
+-			ftrace_graph_init_task(idle_task(cpu));
++			ftrace_graph_init_idle_task(idle_task(cpu), cpu);
+ 	}
+ 
+ 	do {
+@@ -3418,6 +3418,49 @@ void unregister_ftrace_graph(void)
+ 	mutex_unlock(&ftrace_lock);
+ }
+ 
++static DEFINE_PER_CPU(struct ftrace_ret_stack *, idle_ret_stack);
++
++static void
++graph_init_task(struct task_struct *t, struct ftrace_ret_stack *ret_stack)
++{
++	atomic_set(&t->tracing_graph_pause, 0);
++	atomic_set(&t->trace_overrun, 0);
++	t->ftrace_timestamp = 0;
++	/* make curr_ret_stack visable before we add the ret_stack */
++	smp_wmb();
++	t->ret_stack = ret_stack;
++}
++
++/*
++ * Allocate a return stack for the idle task. May be the first
++ * time through, or it may be done by CPU hotplug online.
++ */
++void ftrace_graph_init_idle_task(struct task_struct *t, int cpu)
++{
++	t->curr_ret_stack = -1;
++	/*
++	 * The idle task has no parent, it either has its own
++	 * stack or no stack at all.
++	 */
++	if (t->ret_stack)
++		WARN_ON(t->ret_stack != per_cpu(idle_ret_stack, cpu));
++
++	if (ftrace_graph_active) {
++		struct ftrace_ret_stack *ret_stack;
++
++		ret_stack = per_cpu(idle_ret_stack, cpu);
++		if (!ret_stack) {
++			ret_stack = kmalloc(FTRACE_RETFUNC_DEPTH
++					    * sizeof(struct ftrace_ret_stack),
++					    GFP_KERNEL);
++			if (!ret_stack)
++				return;
++			per_cpu(idle_ret_stack, cpu) = ret_stack;
++		}
++		graph_init_task(t, ret_stack);
++	}
++}
++
+ /* Allocate a return stack for newly created task */
+ void ftrace_graph_init_task(struct task_struct *t)
+ {
+@@ -3433,12 +3476,7 @@ void ftrace_graph_init_task(struct task_struct *t)
+ 				GFP_KERNEL);
+ 		if (!ret_stack)
+ 			return;
+-		atomic_set(&t->tracing_graph_pause, 0);
+-		atomic_set(&t->trace_overrun, 0);
+-		t->ftrace_timestamp = 0;
+-		/* make curr_ret_stack visable before we add the ret_stack */
+-		smp_wmb();
+-		t->ret_stack = ret_stack;
++		graph_init_task(t, ret_stack);
+ 	}
+ }
+ 
+
 
