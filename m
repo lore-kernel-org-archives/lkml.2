@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab1BKQqu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 11:46:50 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:45828 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346Ab1BKQqt (ORCPT
+	id S1757773Ab1BKQ4B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 11:56:01 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64033 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757753Ab1BKQ4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 11:46:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1297432830-3912-1-git-send-email-jolsa@redhat.com>
-Date: Fri, 11 Feb 2011 08:46:41 -0800
-In-Reply-To: <1297432830-3912-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Fri, 11 Feb 2011 15:00:30 +0100")
-Message-ID: <m14o8a34em.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Fri, 11 Feb 2011 11:56:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=iwr5lvO2jnmy7FqeS2RxkmzJX6r0FQtJYCjDMPg4AQpy62A5USWDEq7LQhwJ2dD0Uq
+         TG0surcBPN1SkcVLduE/5GXu9wAVAol8Ni7CM+9O0RAFhDFxqUei30Dau0qZVWpCEX9Q
+         QBD0w23QogwYjaf4FNVvneo7TU5HWtBLpQZdY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+8kVNrCN/FAPL+HvO9Azqk41rfjcyXAO0=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Jiri Olsa <jolsa@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] x86_64: disable identity mappings statically
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <AANLkTinJ-jvHLbXZWfQLusvFcsXw39-brz4gFF9pjQuP@mail.gmail.com>
+References: <AANLkTin20CuVOpK25TTCD=195Fqktre2zWCbwC+2SPHX@mail.gmail.com> <AANLkTinJ-jvHLbXZWfQLusvFcsXw39-brz4gFF9pjQuP@mail.gmail.com>
+From: Amirali Shambayati <amirali.shambayati@gmail.com>
+Date: Fri, 11 Feb 2011 20:25:38 +0330
+Message-ID: <AANLkTinBD_06pgFhjJaKUUBdaUgLVPYBjttkVkUptCaf@mail.gmail.com>
+Subject: Re: ubuntu boot problem after compiling new kernel
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa <jolsa@redhat.com> writes:
+Thanks Chris and Anca,
 
-> hi,
+I tried to compile latest kernel(2.6.37). but I receive an assembly
+error: /include/trace/events/kmem.h:45: undefined reference to
+'.L1747'. I didn't have any error at linux-2.6.18.1 compilation. I
+read somewhere that kernel should be compiled by gcc-3.4 .  Thus I
+used gcc-3.4 to compile. Do you think it's a compiler issue? Should I
+use another gcc version?
+Sorry for asking stupid questions from you experts. I'm a newbie at
+working with kernel.
+
+Thanks in advance
+
+On Thu, Feb 10, 2011 at 11:41 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> On Thu, Feb 10, 2011 at 12:00 AM, Amirali Shambayati
+> <amirali.shambayati@gmail.com> wrote:
+>> Hello all,
+>> I compiled a new kernel according to
+>> http://www.howtoforge.com/kernel_compilation_ubuntu instructions. The
+>> kernel version is 2.6.18.1 and I did it in ubuntu 10.04 installed on
+> [snip]
+>> Your help is appreciated. It's more than a week that I'm looking for a
+>> solution. :-s
 >
-> while browsing the page table setup code, I noticed the x86_64 head
-> code might not need the identity mappings at all.
-> It seems it's ok to switch it off completely from the begining,
-> unless I'm missing something.
+> Use this tutorial: https://wiki.ubuntu.com/KernelTeam/GitKernelBuild
+>
 
-Have you tested it?
 
-I expect you will find that we need the identity mapping because
-before we load this page table we are running with virt==phys
-and we need the identity mapping retained  in the new page table
-so we can get to the instruction after movq %rax, %cr0.
 
-Eric
+-- 
+Amirali Shambayati
+Bachelor Student
+Computer Engineering Department
+Sharif University of Technology
+Tehran, Iran
