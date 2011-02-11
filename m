@@ -1,214 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346Ab1BKPUh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:20:37 -0500
-Received: from gate.eia.be ([194.78.71.18]:26640 "EHLO mail.eia.be"
+	id S1757226Ab1BKPVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:21:17 -0500
+Received: from fieldses.org ([174.143.236.118]:49032 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757242Ab1BKPUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:20:33 -0500
-Date: Fri, 11 Feb 2011 16:20:26 +0100
-From: Kurt Van Dijck <kurt.van.dijck@eia.be>
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
-        sachi@mistralsolutions.com, Wolfgang Grandegger <wg@grandegger.com>,
-        "open list:CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
-        "open list:CAN NETWORK DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
-Message-ID: <20110211152026.GC373@e-circ.dyndns.org>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
- <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
+	id S1756711Ab1BKPVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 10:21:16 -0500
+Date: Fri, 11 Feb 2011 10:21:12 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Tino Keitel <tino.keitel@tikei.de>, Neil Brown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38-rc3: kernel BUG at fs/nfsd/nfs4state.c:3132!
+Message-ID: <20110211152112.GA3005@fieldses.org>
+References: <20110208221235.GA16984@mac.home>
+ <s5hsjvuoqqt.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <s5hsjvuoqqt.wl%tiwai@suse.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 Feb 2011 15:20:30.0163 (UTC) FILETIME=[37E29230:01CBC9FF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Feb 11, 2011 at 10:38:34AM +0100, Takashi Iwai wrote:
+> At Tue, 8 Feb 2011 23:12:35 +0100,
+> Tino Keitel wrote:
+> > 
+> > Hi,
+> > 
+> > I get the following error with kernel 2.6.38-rc3 during normal file access via
+> > NFS v4.
+> > 
+> > At least one other user seems to have the same problem:
+> > http://pastebin.com/QRq1TMkj
+> > 
+> > <0>------------[ cut here ]------------
+> > kernel BUG at fs/nfsd/nfs4state.c:3132!
+> > <0>invalid opcode: 0000 [#1] SMP 
+> > <0>last sysfs file: /sys/devices/virtual/block/dm-8/uevent
+> > CPU 0 
+> > Modules linked in: ipv6 usblp btusb bluetooth loop arc4 ecb
+> > snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_pcm_oss ath5k
+> > dvb_usb_vp7045 ath dvb_usb snd_pcm snd_timer mac80211
+> >  snd_page_alloc evdev dvb_core sky2 rc_core ata_piix cfg80211
+> > 
+> > Pid: 2280, comm: nfsd Not tainted 2.6.38-rc3-00062-gb64606b #6
+> > Mac-F4208EAA/Macmini2,1
+> > RIP: 0010:[<ffffffff8119f973>]  [<ffffffff8119f973>]
+> > nfs4_preprocess_stateid_op+0x3a3/0x490
+> > RSP: 0018:ffff8800b399bd50  EFLAGS: 00010246
+> > RAX: 0000000000000000 RBX: ffff8800b60a9000 RCX: ffffffff8175a010
+> > RDX: ffff8800ab784e48 RSI: ffffffff8175a020 RDI: ffffffff8175a000
+> > RBP: ffff8800a4ce5678 R08: 0000000000000000 R09: 0000000000000000
+> > R10: ffff8800b3910180 R11: c600000000000000 R12: ffff8800b390f1c0
+> > R13: ffff8800b390f1a0 R14: 0000000000000000 R15: ffff8800aba079a0
+> > FS:  0000000000000000(0000) GS:ffff8800bde00000(0000)
+> > knlGS:0000000000000000
+> > CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > CR2: 00007f2b8805d000 CR3: 00000000b6fe8000 CR4: 00000000000006b0
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > Process nfsd (pid: 2280, threadinfo ffff8800b399a000, task
+> > ffff8800b63a62d0)
+> > <0>Stack:
+> >  000000004d507f0d ffff8800b390f1a0 ffff8800b3910040 ffff8800b391c000
+> >  0000000016000000 0000000000000000 ffff8800b3910040 ffffffff8118f549
+> >  ffff8800b390f000 ffff8800b3910000 ffff8800b390f000 ffff8800b391c000
+> > <0>Call Trace:
+> >  [<ffffffff8118f549>] ? nfsd4_read+0x79/0xc0
+> >  [<ffffffff81190096>] ? nfsd4_proc_compound+0x416/0x4d0
+> >  [<ffffffff8117f5ad>] ? nfsd_dispatch+0xfd/0x240
+> >  [<ffffffff8146f1f9>] ? svc_process_common+0x339/0x680
+> >  [<ffffffff81035b70>] ? default_wake_function+0x0/0x20
+> >  [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
+> >  [<ffffffff8146f80a>] ? svc_process+0x10a/0x160
+> >  [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
+> >  [<ffffffff8117ed72>] ? nfsd+0xb2/0x150
+> >  [<ffffffff81055ff6>] ? kthread+0x96/0xa0
+> >  [<ffffffff810039b4>] ? kernel_thread_helper+0x4/0x10
+> >  [<ffffffff81055f60>] ? kthread+0x0/0xa0
+> >  [<ffffffff810039b0>] ? kernel_thread_helper+0x0/0x10
+> > <0>Code: 27 29 41 3b 47 50 0f 87 9a fd ff ff 0f 83 e9 fe ff ff e9 76 ff
+> > ff ff 48 8b 42 48 45 31 f6 49 89 04 24 48 85 c0 0f 85 7b fd ff ff <0f>
+> > 0b 49 8b 57 48 48 8b 42 40 48 85 c
+> > 0 0f 85 2a ff ff ff 48 8b 
+> > RIP  [<ffffffff8119f973>] nfs4_preprocess_stateid_op+0x3a3/0x490
+> >  RSP <ffff8800b399bd50>
+> > ---[ end trace 7ef2fa5b1b62014a ]---
+> 
+> [Added relevant guys to Cc]
+> 
+> This occurred on my machine with 2.6.38-rc4.
 
-I looked a bit at the TX path:
+Again, 2.6.38-rc4 does not have a BUG() on line 3132.  Could you post
+the full oops message from your machine?
 
-On Fri, Feb 11, 2011 at 08:21:28PM +0530, Subhasish Ghosh wrote:
-> +static int omapl_pru_can_set_bittiming(struct net_device *ndev)
-> +{
-> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
-> +	struct can_bittiming *bt = &priv->can.bittiming;
-> +	long bit_error = 0;
-> +
-> +	if (priv->can.ctrlmode & CAN_CTRLMODE_3_SAMPLES) {
-> +		dev_warn(priv->dev, "WARN: Triple"
-> +			 "sampling not set due to h/w limitations");
-You should not have enabled CAN_CTRLMODE_3_SAMPLES in the first place?
-> +	}
-> +	if (pru_can_calc_timing(priv->dev, priv->can.clock.freq,
-> +				bt->bitrate) != 0)
-> +		return -EINVAL;
-> +	bit_error =
-> +	    (((priv->timer_freq / (priv->timer_freq / bt->bitrate)) -
-> +	      bt->bitrate) * 1000) / bt->bitrate;
-> +	if (bit_error) {
-> +		bit_error =
-> +		    (((priv->timer_freq / (priv->timer_freq / bt->bitrate)) -
-> +		      bt->bitrate) * 1000000) / bt->bitrate;
-> +		printk(KERN_INFO "\nBitrate error %ld.%ld%%\n",
-> +			bit_error / 10000, bit_error % 1000);
-> +	} else
-> +		printk(KERN_INFO "\nBitrate error 0.0%%\n");
-> +
-> +	return 0;
-> +}
-I wonder how much of this code is duplicated from drivers/net/can/dev.c ?
+--b.
 
-> +static netdev_tx_t omapl_pru_can_start_xmit(struct sk_buff *skb,
-> +					    struct net_device *ndev)
-> +{
-> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
-> +	struct can_frame *cf = (struct can_frame *)skb->data;
-> +	int count;
-> +	u8 *data = cf->data;
-> +	u8 dlc = cf->can_dlc;
-> +	u8 *ptr8data = NULL;
-> +
-most drivers start with:
-	if (can_dropped_invalid_skb(dev, skb))
-		return NETDEV_TX_OK;
-
-> +	netif_stop_queue(ndev);
-why would you stop when you just resumed the queue?
-> +	if (cf->can_id & CAN_EFF_FLAG)	/* Extended frame format */
-> +		*((u32 *) &priv->can_tx_hndl.strcanmailbox) =
-> +		    (cf->can_id & CAN_EFF_MASK) | PRU_CANMID_IDE;
-> +	else			/* Standard frame format */
-> +		*((u32 *) &priv->can_tx_hndl.strcanmailbox) =
-> +		    (cf->can_id & CAN_SFF_MASK) << 18;
-> +
-> +	if (cf->can_id & CAN_RTR_FLAG)	/* Remote transmission request */
-> +		*((u32 *) &priv->can_tx_hndl.strcanmailbox) |= CAN_RTR_FLAG;
-> +
-> +	ptr8data = &priv->can_tx_hndl.strcanmailbox.u8data7 + (dlc - 1);
-> +	for (count = 0; count < (u8) dlc; count++) {
-> +		*ptr8data-- = *data++;
-> +	}
-> +	*((u32 *) &priv->can_tx_hndl.strcanmailbox.u16datalength) = (u32) dlc;
-> +/*
-> + * search for the next available mbx
-> + * if the next mbx is busy, then try the next + 1
-> + * do this until the head is reached.
-> + * if still unable to tx, stop accepting any packets
-> + * if able to tx and the head is reached, then reset next to tail, i.e mbx0
-> + * if head is not reached, then just point to the next mbx
-> + */
-> +	for (; priv->tx_next <= priv->tx_head; priv->tx_next++) {
-> +		priv->can_tx_hndl.ecanmailboxnumber =
-> +		    (can_mailbox_number) priv->tx_next;
-> +		if (-1 == pru_can_write_data_to_mailbox(priv->dev,
-> +					&priv->can_tx_hndl)) {
-> +			if (priv->tx_next == priv->tx_head) {
-> +				priv->tx_next = priv->tx_tail;
-> +				if (!netif_queue_stopped(ndev))
-If you get here, the queue is not stopped. This test is therefore useless.
-> +					netif_stop_queue(ndev);	/* IF stalled */
-> +				dev_err(priv->dev,
-> +					"%s: no tx mbx available", __func__);
-> +				return NETDEV_TX_BUSY;
-> +			} else
-> +				continue;
-> +		} else {
-> +			/* set transmit request */
-> +			pru_can_tx(priv->dev, priv->tx_next, CAN_TX_PRU_1);
-> +			pru_can_tx_mode_set(priv->dev, false, ecanreceive);
-> +			pru_can_tx_mode_set(priv->dev, true, ecantransmit);
-> +			pru_can_start_abort_tx(priv->dev, PRU_CAN_START);
-> +			priv->tx_next++;
-> +			can_put_echo_skb(skb, ndev, 0);
-> +			break;
-> +		}
-> +	}
-> +	if (priv->tx_next > priv->tx_head) {
-> +		priv->tx_next = priv->tx_tail;
-> +	}
-> +	return NETDEV_TX_OK;
-> +}
-> +
-> +
-
-> +irqreturn_t omapl_tx_can_intr(int irq, void *dev_id)
-> +{
-> +	struct net_device *ndev = dev_id;
-> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
-> +	struct net_device_stats *stats = &ndev->stats;
-> +	u32 bit_set, mbxno;
-> +
-> +	pru_can_get_intr_status(priv->dev, &priv->can_tx_hndl);
-> +	if ((PRU_CAN_ISR_BIT_CCI & priv->can_tx_hndl.u32interruptstatus)
-> +	    || (PRU_CAN_ISR_BIT_SRDI & priv->can_tx_hndl.u32interruptstatus)) {
-> +		__can_debug("tx_int_status = 0x%X\n",
-> +			    priv->can_tx_hndl.u32interruptstatus);
-> +		can_free_echo_skb(ndev, 0);
-> +	} else {
-> +		for (bit_set = 0; ((priv->can_tx_hndl.u32interruptstatus & 0xFF)
-> +						>> bit_set != 0); bit_set++)
-> +		;
-> +		if (0 == bit_set) {
-> +			__can_err("%s: invalid mailbox number\n", __func__);
-> +			can_free_echo_skb(ndev, 0);
-> +		} else {
-> +			mbxno = bit_set - 1;	/* mail box numbering starts from 0 */
-> +			if (PRU_CAN_ISR_BIT_ESI & priv->can_tx_hndl.
-> +			    u32interruptstatus) {
-> +				/* read gsr and ack pru */
-> +				pru_can_get_global_status(priv->dev, &priv->can_tx_hndl);
-> +				omapl_pru_can_err(ndev,
-> +						  priv->can_tx_hndl.
-> +						  u32interruptstatus,
-> +						  priv->can_tx_hndl.
-> +						  u32globalstatus);
-> +			} else {
-> +				stats->tx_packets++;
-> +				/* stats->tx_bytes += dlc; */
-> +				/*can_get_echo_skb(ndev, 0);*/
-> +			}
-> +		}
-> +	}
-> +	if (netif_queue_stopped(ndev))
-you can call netif_wake_queue(ndev) multiple times, so there is no need
-for netif_queue_stopped()
-> +		netif_wake_queue(ndev);
-> +
-> +	can_get_echo_skb(ndev, 0);
-> +	pru_can_tx_mode_set(priv->dev, true, ecanreceive);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int omapl_pru_can_open(struct net_device *ndev)
-> +{
-> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
-> +	int err;
-> +
-> +	/* register interrupt handler */
-> +	err = request_irq(priv->trx_irq, &omapl_rx_can_intr, IRQF_SHARED,
-> +			  "pru_can_irq", ndev);
-you're doing a lot of work _in_ the irq handler. Maybe threaded irq?
-
-> +static int omapl_pru_can_close(struct net_device *ndev)
-> +{
-> +	struct omapl_pru_can_priv *priv = netdev_priv(ndev);
-> +
-> +	if (!netif_queue_stopped(ndev))
-check is not needed.
-> +		netif_stop_queue(ndev);
-> +
-> +	close_candev(ndev);
-> +
-> +	free_irq(priv->trx_irq, ndev);
-> +	return 0;
-> +}
-> +
-
-Regards,
-Kurt
+> I didn't see it in 2.6.37.
