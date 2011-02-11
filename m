@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab1BKHbM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 02:31:12 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55969 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753251Ab1BKHbL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 02:31:11 -0500
-Date: Thu, 10 Feb 2011 23:31:00 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: pratyush <pratyush.anand@st.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@suse.de>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH V3 1/1] ST SPEAr: PCIE gadget suppport
-Message-Id: <20110210233100.e12e8f6a.akpm@linux-foundation.org>
-In-Reply-To: <4D54E39C.6070306@st.com>
-References: <1296742149-18102-1-git-send-email-pratyush.anand@st.com>
-	<20110209152926.0126ac97.akpm@linux-foundation.org>
-	<4D53B4C1.5080804@st.com>
-	<20110210125256.609a1143.akpm@linux-foundation.org>
-	<4D54E39C.6070306@st.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752443Ab1BKHiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 02:38:10 -0500
+Received: from tundra.namei.org ([65.99.196.166]:40069 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab1BKHiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 02:38:08 -0500
+Date: Fri, 11 Feb 2011 18:37:36 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [GIT] Security subsystem fixes for 2.6.38
+Message-ID: <alpine.LRH.2.00.1102111831240.29250@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Feb 2011 12:52:04 +0530 pratyush <pratyush.anand@st.com> wrote:
+Please pull the following fixes:
 
-> >>> This interface implies that there will only ever be one device in the
-> >>> machine, yes?  Seems a bit short-sighted?
-> >>>
-> >>
-> >> This device supports only one BAR in EP mode.
-> > 
-> > I don't understand that.
-> > 
-> > What happens if someone builds a computer with three of these devices
-> > in it?
-> > 
-> 
-> I understood it. I will modify the code to work with multiple instances of
-> pcie device.
+The TPM patch fixes a regression introduced in 2.6.38-rc3.  The 
+security_capable() patches fix a bug introduced in de139a3, and ensures 
+that access to PCI configuration space happens via LSM and audit.
 
-I don't think you need to go that far, unless you see a significant
-likelihood think that such a computer might be created one day.  This
-depends on how hard and risky such a change is, of course.
 
-But the current driver's userspace interface should at least
-anticipate the possibility, so you aren't trapped into a weird or
-non-back-compatible interface in the future.
+The following changes since commit d2478521afc20227658a10a8c5c2bf1a2aa615b3:
+  Corey Minyard (1):
+        char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
 
-So for now you might choose to do something as simple as renaming
-/config/pcie-gadget to /config/pcie-gadget0 and leave it at that.
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 for-linus
+
+Chris Wright (2):
+      security: add cred argument to security_capable()
+      pci: use security_capable() when checking capablities during config space read
+
+James Morris (1):
+      Merge branch 'for-james' of git://tpmdd.git.sourceforge.net/gitroot/tpmdd/tpmdd into for-linus
+
+Stefan Berger (1):
+      tpm_tis: Use timeouts returned from TPM
+
+ drivers/char/tpm/tpm.c     |   18 ++++++++++++++++--
+ drivers/char/tpm/tpm.h     |    2 ++
+ drivers/char/tpm/tpm_tis.c |    4 +++-
+ drivers/pci/pci-sysfs.c    |    3 ++-
+ include/linux/security.h   |    6 +++---
+ kernel/capability.c        |    2 +-
+ security/security.c        |    5 ++---
+ 7 files changed, 29 insertions(+), 11 deletions(-)
+
+-- 
+James Morris
+<jmorris@namei.org>
