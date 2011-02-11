@@ -1,103 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab1BKPVR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 10:21:17 -0500
-Received: from fieldses.org ([174.143.236.118]:49032 "EHLO fieldses.org"
+	id S1757320Ab1BKPVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 10:21:46 -0500
+Received: from kroah.org ([198.145.64.141]:52778 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756711Ab1BKPVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 10:21:16 -0500
-Date: Fri, 11 Feb 2011 10:21:12 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Tino Keitel <tino.keitel@tikei.de>, Neil Brown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.38-rc3: kernel BUG at fs/nfsd/nfs4state.c:3132!
-Message-ID: <20110211152112.GA3005@fieldses.org>
-References: <20110208221235.GA16984@mac.home>
- <s5hsjvuoqqt.wl%tiwai@suse.de>
+	id S1756813Ab1BKPVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 10:21:44 -0500
+Date: Fri, 11 Feb 2011 07:22:31 -0800
+From: Greg KH <greg@kroah.com>
+To: Richard =?iso-8859-1?Q?Sch=FCtz?= <r.schtz@t-online.de>
+Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] Platform: add Samsung Laptop platform driver
+Message-ID: <20110211152231.GB13487@kroah.com>
+References: <20110209224006.GA11202@kroah.com>
+ <4D551F76.1070303@t-online.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <s5hsjvuoqqt.wl%tiwai@suse.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4D551F76.1070303@t-online.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:38:34AM +0100, Takashi Iwai wrote:
-> At Tue, 8 Feb 2011 23:12:35 +0100,
-> Tino Keitel wrote:
-> > 
-> > Hi,
-> > 
-> > I get the following error with kernel 2.6.38-rc3 during normal file access via
-> > NFS v4.
-> > 
-> > At least one other user seems to have the same problem:
-> > http://pastebin.com/QRq1TMkj
-> > 
-> > <0>------------[ cut here ]------------
-> > kernel BUG at fs/nfsd/nfs4state.c:3132!
-> > <0>invalid opcode: 0000 [#1] SMP 
-> > <0>last sysfs file: /sys/devices/virtual/block/dm-8/uevent
-> > CPU 0 
-> > Modules linked in: ipv6 usblp btusb bluetooth loop arc4 ecb
-> > snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_pcm_oss ath5k
-> > dvb_usb_vp7045 ath dvb_usb snd_pcm snd_timer mac80211
-> >  snd_page_alloc evdev dvb_core sky2 rc_core ata_piix cfg80211
-> > 
-> > Pid: 2280, comm: nfsd Not tainted 2.6.38-rc3-00062-gb64606b #6
-> > Mac-F4208EAA/Macmini2,1
-> > RIP: 0010:[<ffffffff8119f973>]  [<ffffffff8119f973>]
-> > nfs4_preprocess_stateid_op+0x3a3/0x490
-> > RSP: 0018:ffff8800b399bd50  EFLAGS: 00010246
-> > RAX: 0000000000000000 RBX: ffff8800b60a9000 RCX: ffffffff8175a010
-> > RDX: ffff8800ab784e48 RSI: ffffffff8175a020 RDI: ffffffff8175a000
-> > RBP: ffff8800a4ce5678 R08: 0000000000000000 R09: 0000000000000000
-> > R10: ffff8800b3910180 R11: c600000000000000 R12: ffff8800b390f1c0
-> > R13: ffff8800b390f1a0 R14: 0000000000000000 R15: ffff8800aba079a0
-> > FS:  0000000000000000(0000) GS:ffff8800bde00000(0000)
-> > knlGS:0000000000000000
-> > CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > CR2: 00007f2b8805d000 CR3: 00000000b6fe8000 CR4: 00000000000006b0
-> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > Process nfsd (pid: 2280, threadinfo ffff8800b399a000, task
-> > ffff8800b63a62d0)
-> > <0>Stack:
-> >  000000004d507f0d ffff8800b390f1a0 ffff8800b3910040 ffff8800b391c000
-> >  0000000016000000 0000000000000000 ffff8800b3910040 ffffffff8118f549
-> >  ffff8800b390f000 ffff8800b3910000 ffff8800b390f000 ffff8800b391c000
-> > <0>Call Trace:
-> >  [<ffffffff8118f549>] ? nfsd4_read+0x79/0xc0
-> >  [<ffffffff81190096>] ? nfsd4_proc_compound+0x416/0x4d0
-> >  [<ffffffff8117f5ad>] ? nfsd_dispatch+0xfd/0x240
-> >  [<ffffffff8146f1f9>] ? svc_process_common+0x339/0x680
-> >  [<ffffffff81035b70>] ? default_wake_function+0x0/0x20
-> >  [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
-> >  [<ffffffff8146f80a>] ? svc_process+0x10a/0x160
-> >  [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
-> >  [<ffffffff8117ed72>] ? nfsd+0xb2/0x150
-> >  [<ffffffff81055ff6>] ? kthread+0x96/0xa0
-> >  [<ffffffff810039b4>] ? kernel_thread_helper+0x4/0x10
-> >  [<ffffffff81055f60>] ? kthread+0x0/0xa0
-> >  [<ffffffff810039b0>] ? kernel_thread_helper+0x0/0x10
-> > <0>Code: 27 29 41 3b 47 50 0f 87 9a fd ff ff 0f 83 e9 fe ff ff e9 76 ff
-> > ff ff 48 8b 42 48 45 31 f6 49 89 04 24 48 85 c0 0f 85 7b fd ff ff <0f>
-> > 0b 49 8b 57 48 48 8b 42 40 48 85 c
-> > 0 0f 85 2a ff ff ff 48 8b 
-> > RIP  [<ffffffff8119f973>] nfs4_preprocess_stateid_op+0x3a3/0x490
-> >  RSP <ffff8800b399bd50>
-> > ---[ end trace 7ef2fa5b1b62014a ]---
+On Fri, Feb 11, 2011 at 12:37:26PM +0100, Richard Schütz wrote:
+> > +static struct dmi_system_id __initdata samsung_dmi_table[] = {
+> > +	{
+> > +		.ident = "N128",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "N128"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "N128"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{
+> > +		.ident = "N130",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "N130"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "N130"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{
+> > +		.ident = "X125",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "X125"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "X125"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{
+> > +		.ident = "NC10",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "NC10"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "NC10"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +		{
+> > +		.ident = "NP-Q45",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "SQ45S70S"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "SQ45S70S"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +		},
+> > +	{
+> > +		.ident = "X360",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "X360"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "X360"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{
+> > +		.ident = "R518",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "R518"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "R518"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{
+> > +		.ident = "N150/N210/N220",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR,
+> > +					"SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{
+> > +		.ident = "R530/R730",
+> > +		.matches = {
+> > +		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> > +		      DMI_MATCH(DMI_PRODUCT_NAME, "R530/R730"),
+> > +		      DMI_MATCH(DMI_BOARD_NAME, "R530/R730"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{
+> > +		.ident = "NF110/NF210/NF310",
+> > +		.matches = {
+> > +			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> > +			DMI_MATCH(DMI_PRODUCT_NAME, "NF110/NF210/NF310"),
+> > +			DMI_MATCH(DMI_BOARD_NAME, "NF110/NF210/NF310"),
+> > +		},
+> > +		.callback = dmi_check_cb,
+> > +	},
+> > +	{ },
+> > +};
+> > +MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
 > 
-> [Added relevant guys to Cc]
+> Could you add
 > 
-> This occurred on my machine with 2.6.38-rc4.
+> .ident = "N145P/N250P/N260P",
+> .matches = {
+> 	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> 	DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
+> 	DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
+> },
+> .callback = dmi_check_cb,
+> 
+> there, please? I've tested the driver successfully on my N145P.
 
-Again, 2.6.38-rc4 does not have a BUG() on line 3132.  Could you post
-the full oops message from your machine?
+Yes I can, but do you want to send it to me in a format that I can apply
+so you can get the proper authorship credit?  Take a look at
+Documentation/SubmittingPatches for the details.
 
---b.
+If not, I'll be glad to do it myself, but wanted to give you the chance
+first.
 
-> I didn't see it in 2.6.37.
+thanks,
+
+greg k-h
