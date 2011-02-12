@@ -1,177 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384Ab1BLCVu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 21:21:50 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:55170 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756120Ab1BLCVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 21:21:50 -0500
-Message-ID: <4D55EEBB.8060304@cn.fujitsu.com>
-Date: Sat, 12 Feb 2011 10:21:47 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1758244Ab1BLCtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 21:49:13 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50565 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756846Ab1BLCtM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 21:49:12 -0500
+Message-ID: <4D55F4B6.8040801@oracle.com>
+Date: Fri, 11 Feb 2011 18:47:18 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
- and use_hierarchy interface
-References: <4D51ED26.8050809@cn.fujitsu.com> <4D539821.1090703@cn.fujitsu.com> <20110210205722.GB2600@redhat.com>
-In-Reply-To: <20110210205722.GB2600@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-12 10:20:56,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-12 10:20:56,
-	Serialize complete at 2011-02-12 10:20:56
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: mmotm 2011-02-10-16-26 uploaded (zcache')
+References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org 53491.1297461155@localhost> <b4feb995-1e73-4c12-8c58-ad0c2252233c@default>
+In-Reply-To: <b4feb995-1e73-4c12-8c58-ad0c2252233c@default>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D55F51E.0085:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Feb 10, 2011 at 03:47:45PM +0800, Gui Jianfeng wrote:
->> CFQ group hierarchical scheduling and use_hierarchy interface.
+On 2/11/2011 2:09 PM, Dan Magenheimer wrote:
+>> From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
+>> Sent: Friday, February 11, 2011 2:53 PM
+>> To: akpm@linux-foundation.org; Dan Magenheimer
+>> Cc: mm-commits@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
+>> mm@kvack.org; linux-fsdevel@vger.kernel.org
+>> Subject: Re: mmotm 2011-02-10-16-26 uploaded
 >>
-> 
-> Hi Gui,
-> 
-> I have done a quick high level review. Some minor comments inline.
-> 
-> [..]
->>  struct cfq_data {
->>  	struct request_queue *queue;
->> -	/* Root service tree for cfq_groups */
->> -	struct cfq_rb_root grp_service_tree;
->>  	struct cfq_group root_group;
->>  
->> +	/* cfq group schedule in flat or hierarchy manner. */
->> +	bool use_hierarchy;
->> +
-> 
-> This seems to be redundant now? Nobody is using it?
+>> On Thu, 10 Feb 2011 16:26:36 PST, akpm@linux-foundation.org said:
+>>> The mm-of-the-moment snapshot 2011-02-10-16-26 has been uploaded to
+>>>
+>>>     http://userweb.kernel.org/~akpm/mmotm/
+>>
+>> CONFIG_ZCACHE=m dies a horrid death:
+>
+> Thanks Valdis.  A fix for this has already been posted by
+> Nitin Gupta and Randy Dunlap here:
+>
+> https://lkml.org/lkml/2011/2/10/383
+>
+> Another patch for a zcache memory leak has been posted here:
+>
+> https://lkml.org/lkml/2011/2/10/306
+>
+> I'm sorry that multiple people have run into this in
+> multiple trees.
+> I have to admit I am a bit baffled as to what the proper
+> tree flow is for bug fixes like this, but would be happy
+> to "follow the process" if I am told what it is or if
+> someone can point me to a document describing it.
+>
+> (Clearly making sure there are no bugs at all in a
+> submission is the best way to go, but I'm afraid
+> I can't claim to be perfect :-)
 
-Ahh, I think so.
+When CONFIG_SYSFS is not enabled:
 
-> 
->>  	/*
->>  	 * The priority currently being served
->>  	 */
->> @@ -246,6 +251,9 @@ struct cfq_data {
->>  	unsigned long workload_expires;
->>  	struct cfq_group *serving_group;
->>  
->> +	/* Service tree for cfq group flat scheduling mode. */
->> +	struct cfq_rb_root grp_service_tree;
-> 
-> Above comment is misleading. This service tree is now used both for
-> flat as well as hierarhical mode.
+mmotm-2011-0210-1626/drivers/staging/zcache/zcache.c:1608: error: 'ret' 
+undeclared (first use in this function)
 
-Will modify.
-
-> 
-> [..]
->>  static void
->>  cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
->>  {
->> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
->>  	struct cfq_entity *cfqe = &cfqg->cfqe;
->> -	struct cfq_entity *__cfqe;
->>  	struct rb_node *n;
->> +	struct cfq_entity *entity;
->> +	struct cfq_rb_root *st;
->> +	struct cfq_group *__cfqg;
->>  
->>  	cfqg->nr_cfqq++;
->> +
->>  	if (!RB_EMPTY_NODE(&cfqe->rb_node))
->>  		return;
->>  
->>  	/*
->> -	 * Currently put the group at the end. Later implement something
->> -	 * so that groups get lesser vtime based on their weights, so that
->> -	 * if group does not loose all if it was not continously backlogged.
->> +	 * Enqueue this group and its ancestors onto their service tree.
->>  	 */
->> -	n = rb_last(&st->rb);
->> -	if (n) {
->> -		__cfqe = rb_entry_entity(n);
->> -		cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
->> -	} else
->> -		cfqe->vdisktime = st->min_vdisktime;
->> +	while (cfqe) {
->> +		if (!RB_EMPTY_NODE(&cfqe->rb_node))
->> +			return;
->>  
->> -	cfq_entity_service_tree_add(st, cfqe);
->> +		/*
->> +		 * Currently put the group at the end. Later implement
->> +		 * something so that groups get lesser vtime based on
->> +		 * their weights, so that if group does not loose all
->> +		 * if it was not continously backlogged.
->> +		 */
-> 
-> Can we use vdisktime boost logic for groups also? I think it can be a separate
-> patch in the series (the last one). Keeping it as a separate patch will
-> also help you to coordinate with chad's patch.
-
-Make a separete patch make more sense, will do it as soon as this series gets merged.
-
-> 
->> +		st = cfqe->service_tree;
-> 
-> Group entity set their service tree when they get allocated and retain
-> this pointer even when they get deleted from serivce tree. Queue entities
-> seem to have it NULL when they get deleted from service tree and it
-> gets set again when queue is getting inserted. It would be nice if we
-> can fix this discrepancy and keep it consistent. I think clearing up
-> cfqe->service_tree is a better idea and then calculate it again for
-> group also.
-
-Ok, will consider to change.
-
-> 
-> [..]
->>  
->> -static struct cfq_group *
->> -cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->> +static void init_cfqe(struct blkio_cgroup *blkcg,
->> +				    struct cfq_group *cfqg)
-> 
-> As you are using this function for initializing group entity, possibly
-> rename it to init_group_entity() or init_group_cfqe() etc.
-
-Sure.
-
-> 
-> [..]
->> +static struct cfq_group *
->> +cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->> +{
->> +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
->> +	struct cfq_group *cfqg = NULL;
->> +	void *key = cfqd;
->> +	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
->> +	unsigned int major, minor;
->> +
->> +	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
->> +	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
->> +		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
->> +		cfqg->blkg.dev = MKDEV(major, minor);
->> +		goto done;
->> +	}
-> 
-> Should we make this updation of this info hierarhical?
-
-IMHO, it's fine to defer the updation when we really get the cfqg.
-
-Will post an updated version.
-
-Thanks,
-Gui
-
-> 
-> Thanks
-> Vivek
-> 
