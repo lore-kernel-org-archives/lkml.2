@@ -1,26 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758345Ab1BLCT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 21:19:27 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:56559 "EHLO lunge.queued.net"
+	id S1758370Ab1BLCUa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 21:20:30 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:56565 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758112Ab1BLCTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 21:19:25 -0500
-Date: Fri, 11 Feb 2011 18:19:21 -0800
+	id S1756047Ab1BLCU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 21:20:29 -0500
+Date: Fri, 11 Feb 2011 18:20:26 -0800
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        "Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 16/17] mc13xxx: mfd_cell is now implicitly available to
- drivers
-Message-ID: <20110211181921.3d561568@queued.net>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 17/17] mfd-core: drop data_size from mfd_cell struct
+Message-ID: <20110211182026.2ed43463@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,255 +22,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The cell's platform_data is now accessed with a helper function;
-change clients to use that, and remove the now-unused data_size.
-
-Note that mfd-core no longer makes a copy of platform_data, but the
-mc13xxx-core driver creates the pdata structures on the stack.  In
-order to get around that, the various ARM mach types that set the
-pdata have been changed to hold the variable in static (global) memory.
-Also note that __initdata references in aforementioned pdata structs
-have been dropped.
+Now that there are no more users of this, drop it.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- arch/arm/mach-imx/mach-mx27_3ds.c     |    6 +++++-
- arch/arm/mach-imx/mach-pcm038.c       |    6 +++++-
- arch/arm/mach-mx3/mach-mx31_3ds.c     |    6 +++++-
- arch/arm/mach-mx3/mach-mx31moboard.c  |    6 +++++-
- drivers/leds/leds-mc13783.c           |    6 +++---
- drivers/mfd/mc13xxx-core.c            |   18 +++++-------------
- drivers/regulator/mc13783-regulator.c |    6 ++----
- drivers/regulator/mc13892-regulator.c |    6 ++----
- include/linux/mfd/mc13xxx.h           |    3 +--
- 9 files changed, 33 insertions(+), 30 deletions(-)
+ include/linux/mfd/core.h |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-imx/mach-mx27_3ds.c b/arch/arm/mach-imx/mach-mx27_3ds.c
-index 1643315..f223371 100644
---- a/arch/arm/mach-imx/mach-mx27_3ds.c
-+++ b/arch/arm/mach-imx/mach-mx27_3ds.c
-@@ -227,9 +227,13 @@ static struct mc13783_regulator_init_data mx27_3ds_regulators[] = {
- };
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index aefc378..923ec25 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -36,9 +36,6 @@ struct mfd_cell {
+ 	/* platform_data can be used to pass data to "generic" drivers */
+ 	void			*platform_data;
  
- /* MC13783 */
--static struct mc13783_platform_data mc13783_pdata __initdata = {
-+static struct mc13783_regulator_platform_data mx27_3ds_regs = {
- 	.regulators = mx27_3ds_regulators,
- 	.num_regulators = ARRAY_SIZE(mx27_3ds_regulators),
-+};
-+
-+static struct mc13783_platform_data mc13783_pdata = {
-+	.regulators = &mx27_3ds_regs,
- 	.flags  = MC13783_USE_REGULATOR,
- };
- 
-diff --git a/arch/arm/mach-imx/mach-pcm038.c b/arch/arm/mach-imx/mach-pcm038.c
-index 5056148..4b37494 100644
---- a/arch/arm/mach-imx/mach-pcm038.c
-+++ b/arch/arm/mach-imx/mach-pcm038.c
-@@ -262,9 +262,13 @@ static struct mc13783_regulator_init_data pcm038_regulators[] = {
- 	},
- };
- 
--static struct mc13783_platform_data pcm038_pmic = {
-+static struct mc13783_regulator_platform_data pcm038_pmic_regs = {
- 	.regulators = pcm038_regulators,
- 	.num_regulators = ARRAY_SIZE(pcm038_regulators),
-+};
-+
-+static struct mc13783_platform_data pcm038_pmic = {
-+	.regulators = &pcm038_pmic_regs,
- 	.flags = MC13783_USE_ADC | MC13783_USE_REGULATOR |
- 		 MC13783_USE_TOUCHSCREEN,
- };
-diff --git a/arch/arm/mach-mx3/mach-mx31_3ds.c b/arch/arm/mach-mx3/mach-mx31_3ds.c
-index 0d65db8..8005788 100644
---- a/arch/arm/mach-mx3/mach-mx31_3ds.c
-+++ b/arch/arm/mach-mx3/mach-mx31_3ds.c
-@@ -156,9 +156,13 @@ static struct mc13783_regulator_init_data mx31_3ds_regulators[] = {
- };
- 
- /* MC13783 */
--static struct mc13783_platform_data mc13783_pdata __initdata = {
-+static struct mc13783_regulator_platform_data mx31_3ds_regs = {
- 	.regulators = mx31_3ds_regulators,
- 	.num_regulators = ARRAY_SIZE(mx31_3ds_regulators),
-+};
-+
-+static struct mc13783_platform_data mc13783_pdata = {
-+	.regulators = &mx31_3ds_regs,
- 	.flags  = MC13783_USE_REGULATOR | MC13783_USE_TOUCHSCREEN,
- };
- 
-diff --git a/arch/arm/mach-mx3/mach-mx31moboard.c b/arch/arm/mach-mx3/mach-mx31moboard.c
-index 1aa8d65..e824d2e 100644
---- a/arch/arm/mach-mx3/mach-mx31moboard.c
-+++ b/arch/arm/mach-mx3/mach-mx31moboard.c
-@@ -267,9 +267,13 @@ static struct mc13783_leds_platform_data moboard_leds = {
- 	.tc2_period = MC13783_LED_PERIOD_10MS,
- };
- 
--static struct mc13783_platform_data moboard_pmic = {
-+static struct mc13783_regulator_platform_data moboard_pmic_regs = {
- 	.regulators = moboard_regulators,
- 	.num_regulators = ARRAY_SIZE(moboard_regulators),
-+};
-+
-+static struct mc13783_platform_data moboard_pmic = {
-+	.regulators = &moboard_pmic_regs,
- 	.leds = &moboard_leds,
- 	.flags = MC13783_USE_REGULATOR | MC13783_USE_RTC |
- 		MC13783_USE_ADC | MC13783_USE_LED,
-diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
-index f05bb08..0d87477 100644
---- a/drivers/leds/leds-mc13783.c
-+++ b/drivers/leds/leds-mc13783.c
-@@ -183,7 +183,7 @@ static int __devinit mc13783_led_setup(struct mc13783_led *led, int max_current)
- 
- static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
- {
--	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
-+	struct mc13783_leds_platform_data *pdata = mfd_get_data(pdev);
- 	struct mc13783 *dev = dev_get_drvdata(pdev->dev.parent);
- 	int ret = 0;
- 	int reg = 0;
-@@ -264,7 +264,7 @@ out:
- 
- static int __devinit mc13783_led_probe(struct platform_device *pdev)
- {
--	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
-+	struct mc13783_leds_platform_data *pdata = mfd_get_data(pdev);
- 	struct mc13783_led_platform_data *led_cur;
- 	struct mc13783_led *led, *led_dat;
- 	int ret, i;
-@@ -351,7 +351,7 @@ err_free:
- 
- static int __devexit mc13783_led_remove(struct platform_device *pdev)
- {
--	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
-+	struct mc13783_leds_platform_data *pdata = mfd_get_data(pdev);
- 	struct mc13783_led *led = platform_get_drvdata(pdev);
- 	struct mc13783 *dev = dev_get_drvdata(pdev->dev.parent);
- 	int i;
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index b9fcaf0..00c5490 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -683,14 +683,13 @@ out:
- EXPORT_SYMBOL_GPL(mc13783_adc_do_conversion);
- 
- static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
--		const char *format, void *pdata, size_t pdata_size)
-+		const char *format, void *pdata)
- {
- 	char buf[30];
- 	const char *name = mc13xxx_get_chipname(mc13xxx);
- 
- 	struct mfd_cell cell = {
- 		.platform_data = pdata,
--		.data_size = pdata_size,
- 	};
- 
- 	/* there is no asnprintf in the kernel :-( */
-@@ -706,7 +705,7 @@ static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
- 
- static int mc13xxx_add_subdevice(struct mc13xxx *mc13xxx, const char *format)
- {
--	return mc13xxx_add_subdevice_pdata(mc13xxx, format, NULL, 0);
-+	return mc13xxx_add_subdevice_pdata(mc13xxx, format, NULL);
- }
- 
- static int mc13xxx_probe(struct spi_device *spi)
-@@ -764,13 +763,8 @@ err_revision:
- 		mc13xxx_add_subdevice(mc13xxx, "%s-codec");
- 
- 	if (pdata->flags & MC13XXX_USE_REGULATOR) {
--		struct mc13xxx_regulator_platform_data regulator_pdata = {
--			.num_regulators = pdata->num_regulators,
--			.regulators = pdata->regulators,
--		};
+-	/* unused */
+-	size_t			data_size;
 -
- 		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-regulator",
--				&regulator_pdata, sizeof(regulator_pdata));
-+				pdata->regulators);
- 	}
- 
- 	if (pdata->flags & MC13XXX_USE_RTC)
-@@ -779,10 +773,8 @@ err_revision:
- 	if (pdata->flags & MC13XXX_USE_TOUCHSCREEN)
- 		mc13xxx_add_subdevice(mc13xxx, "%s-ts");
- 
--	if (pdata->flags & MC13XXX_USE_LED) {
--		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-led",
--					pdata->leds, sizeof(*pdata->leds));
--	}
-+	if (pdata->flags & MC13XXX_USE_LED)
-+		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-led", pdata->leds);
- 
- 	return 0;
- }
-diff --git a/drivers/regulator/mc13783-regulator.c b/drivers/regulator/mc13783-regulator.c
-index 3e5d0c3..1b7cc16 100644
---- a/drivers/regulator/mc13783-regulator.c
-+++ b/drivers/regulator/mc13783-regulator.c
-@@ -336,8 +336,7 @@ static int __devinit mc13783_regulator_probe(struct platform_device *pdev)
- {
- 	struct mc13xxx_regulator_priv *priv;
- 	struct mc13xxx *mc13783 = dev_get_drvdata(pdev->dev.parent);
--	struct mc13783_regulator_platform_data *pdata =
--		dev_get_platdata(&pdev->dev);
-+	struct mc13783_regulator_platform_data *pdata = mfd_get_data(pdev);
- 	struct mc13783_regulator_init_data *init_data;
- 	int i, ret;
- 
-@@ -381,8 +380,7 @@ err:
- static int __devexit mc13783_regulator_remove(struct platform_device *pdev)
- {
- 	struct mc13xxx_regulator_priv *priv = platform_get_drvdata(pdev);
--	struct mc13783_regulator_platform_data *pdata =
--		dev_get_platdata(&pdev->dev);
-+	struct mc13783_regulator_platform_data *pdata = mfd_get_data(pdev);
- 	int i;
- 
- 	platform_set_drvdata(pdev, NULL);
-diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
-index 1b8f739..e23578a 100644
---- a/drivers/regulator/mc13892-regulator.c
-+++ b/drivers/regulator/mc13892-regulator.c
-@@ -520,8 +520,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
- {
- 	struct mc13xxx_regulator_priv *priv;
- 	struct mc13xxx *mc13892 = dev_get_drvdata(pdev->dev.parent);
--	struct mc13xxx_regulator_platform_data *pdata =
--		dev_get_platdata(&pdev->dev);
-+	struct mc13xxx_regulator_platform_data *pdata = mfd_get_data(pdev);
- 	struct mc13xxx_regulator_init_data *init_data;
- 	int i, ret;
- 	u32 val;
-@@ -595,8 +594,7 @@ err_free:
- static int __devexit mc13892_regulator_remove(struct platform_device *pdev)
- {
- 	struct mc13xxx_regulator_priv *priv = platform_get_drvdata(pdev);
--	struct mc13xxx_regulator_platform_data *pdata =
--		dev_get_platdata(&pdev->dev);
-+	struct mc13xxx_regulator_platform_data *pdata = mfd_get_data(pdev);
- 	int i;
- 
- 	platform_set_drvdata(pdev, NULL);
-diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-index a1d391b..052b133 100644
---- a/include/linux/mfd/mc13xxx.h
-+++ b/include/linux/mfd/mc13xxx.h
-@@ -146,8 +146,7 @@ struct mc13xxx_platform_data {
- #define MC13XXX_USE_LED		(1 << 5)
- 	unsigned int flags;
- 
--	int num_regulators;
--	struct mc13xxx_regulator_init_data *regulators;
-+	struct mc13xxx_regulator_platform_data *regulators;
- 	struct mc13xxx_leds_platform_data *leds;
- };
- 
+ 	/*
+ 	 * These resources can be specified relative to the parent device.
+ 	 * For accessing hardware you should use resources from the platform dev
 -- 
 1.7.2.3
 
