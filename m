@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab1BLXBg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 18:01:36 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39465 "EHLO ogre.sisk.pl"
+	id S1753250Ab1BLXEY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 18:04:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49341 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070Ab1BLXB2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 18:01:28 -0500
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Santosh Shilimkar" <santosh.shilimkar@ti.com>
-References: <NMZS1i37KEE.A.1eG.6_wVNB@chimera>
-In-Reply-To: <NMZS1i37KEE.A.1eG.6_wVNB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1752857Ab1BLXEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 18:04:20 -0500
+Message-ID: <4D5711E0.7020306@zytor.com>
+Date: Sat, 12 Feb 2011 15:04:00 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <8H3lez1sawF.A.nG.lBxVNB@chimera>
-Subject: [Bug #27022] [REPORT] BUG: spinlock recursion on CPU#0, init/1
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 12 Feb 2011 23:57:40 +0100 (CET)
+To: x32-abi@googlegroups.com
+CC: Florian Weimer <fw@deneb.enyo.de>, "H.J. Lu" <hjl.tools@gmail.com>,
+        GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: X32 psABI status
+References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com> <87aai1gdr7.fsf@mid.deneb.enyo.de>
+In-Reply-To: <87aai1gdr7.fsf@mid.deneb.enyo.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On 02/12/2011 01:10 PM, Florian Weimer wrote:
+> Why is the ia32 compatiblity kernel interface used?
 
-The following bug entry is on the current list of known regressions
-from 2.6.37.  Please verify if it still should be listed and let the tracking team
-know (either way).
+Because there is no way in hell we're designing in a second
+compatibility ABI in the kernel (and it has to be a compatibility ABI,
+because of the pointer size difference.)
 
+	-hpa
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27022
-Subject		: [REPORT] BUG: spinlock recursion on CPU#0, init/1
-Submitter	: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Date		: 2011-01-10 15:33 (34 days old)
-Message-ID	: <a7a9bdaa5936630925fb7ffd1a1795b1@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=129467294808655&w=2
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
