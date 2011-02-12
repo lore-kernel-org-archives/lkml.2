@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab1BLGd0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 01:33:26 -0500
-Received: from smtp111.sbc.mail.mud.yahoo.com ([68.142.198.207]:46421 "HELO
-	smtp111.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751233Ab1BLGdV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 01:33:21 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Feb 2011 01:33:21 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Reply-To:Date:Subject:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-ID;
-  b=5qCeAxF6ur3o0X/JSBWbxwF6K4u4sfQ+D4R5Lti9SS/5mbyZrL8i6D9eSdtEq5TlxyXbpS9Eup9e0Fffla8uh11aPC6Q0aeYK5J7pU0NJwAdkkfxbw0ciL31h3QH+eP+1Y81jZz/mYNc/DbQQ9tmZsG4ADqJhNsD5EG1r+p41SQ=  ;
-X-Yahoo-SMTP: oK5AOHuswBAz6Z6Pqqe1IE84AJpip1XsIhMJSpf2UkDu1N0-
-X-YMail-OSG: gcxu6r0VM1kS3HR2NNS24DPOoAaIHxUB5EAz.CtV14Cf7ft
- 46kRnbyDw_lcIIQvPfjknWx9HMVNjfdKUDt6XLOl6P_54E6NwiAtwDbVa5_1
- CTWOw8qIXWo6CfdjRyv8WoRcyCTpbQaHBh6TEKfcTTCE.RcBSUPimY4P1324
- ELjqJPe2Q4AtE7vGJ1R20M0_5XKgFp2frUad3evEw.nh0MVmJbFO7gSOBsqI
- 4GzRFxy17rBxAUkaBMv7jhrhsNkY8yFQtdkAH8g--
-X-Yahoo-Newman-Property: ymail-3
-From: "Mohamed Allabar" <kitten19@sbcglobal.net>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: mohamedallabarinvestment@kkwl.ac.th
-Date: Sat, 12 Feb 2011 12:04:35 -0800
-Subject: POSSIBLE INVESTMENT
-MIME-Version: 1.0
+	id S1751946Ab1BLGfa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 01:35:30 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33705 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab1BLGfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 01:35:25 -0500
+Date: Fri, 11 Feb 2011 22:33:12 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Kurt Van Dijck <kurt.van.dijck@eia.be>
+Subject: [PATCH -next/mmotm] net/can: fix softing build errors
+Message-Id: <20110211223312.be571303.randy.dunlap@oracle.com>
+In-Reply-To: <201102110100.p1B10sDx029244@imap1.linux-foundation.org>
+References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-ID: <WIN7TKPC1f78cc18ad7c4c029fadf6a355475579@Win7TKPC>
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4D562A24.003B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assalam sir I wish to propose to you my interest to partner with you on any investment opportunity for a joint venture investment that is capable of generating at least 10%ROI per annum.
-Please kindly furnish me with any business details and a proposal for a Joint venture partnership with you. Looking forward to going into good business relationship with you. May the peace of Almighty Allah be with you.
-Regards,
-Mohamed Allabar.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
+Fix can/softing build errors due to kconfig error.
+
+kconfig tells us about a problem...
+
+warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
+
+and then this is what happens due to that kconfig problem:
+
+ERROR: "register_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "alloc_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "can_bus_off" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "close_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "free_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "unregister_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "alloc_can_skb" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "open_candev" [drivers/net/can/softing/softing.ko] undefined!
+
+with this partial config:
+
+CONFIG_CAN=m
+# CONFIG_CAN_RAW is not set
+# CONFIG_CAN_BCM is not set
+# CAN Device Drivers
+# CONFIG_CAN_VCAN is not set
+CONFIG_CAN_SLCAN=m
+# CONFIG_CAN_DEV is not set
+CONFIG_CAN_SOFTING=m
+CONFIG_CAN_SOFTING_CS=m
+# CONFIG_CAN_DEBUG_DEVICES is not set
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>
+---
+ drivers/net/can/softing/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- mmotm-2011-0210-1626.orig/drivers/net/can/softing/Kconfig
++++ mmotm-2011-0210-1626/drivers/net/can/softing/Kconfig
+@@ -18,6 +18,7 @@ config CAN_SOFTING
+ config CAN_SOFTING_CS
+ 	tristate "Softing Gmbh CAN pcmcia cards"
+ 	depends on PCMCIA
++	depends on CAN_DEV && HAS_IOMEM
+ 	select CAN_SOFTING
+ 	---help---
+ 	  Support for PCMCIA cards from Softing Gmbh & some cards
