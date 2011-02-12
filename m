@@ -1,131 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab1BLI5e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 03:57:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13405 "EHLO mx1.redhat.com"
+	id S1753118Ab1BLJIG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 04:08:06 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38217 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751676Ab1BLI5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 03:57:30 -0500
-Date: Sat, 12 Feb 2011 09:57:26 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Brian Gerst <brgerst@gmail.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86_64: disable identity mappings statically
-Message-ID: <20110212085726.GA6344@jolsa.Belkin>
-References: <1297432830-3912-1-git-send-email-jolsa@redhat.com>
- <m14o8a34em.fsf@fess.ebiederm.org>
- <20110211170722.GA2010@jolsa.brq.redhat.com>
- <AANLkTikCAbe5ATHjqgQDOFuCjcuG1=8e_5+ADaCQ3M6R@mail.gmail.com>
- <20110211191359.GC2010@jolsa.brq.redhat.com>
- <AANLkTikJ-MjMsa8ULwKbSO8YhjdO6NuK4L02fu8FXzE=@mail.gmail.com>
- <20110211204030.GD2010@jolsa.brq.redhat.com>
- <AANLkTi=0QTKuWjwQG7vkejcF1+4WxQ4oJ5DbsVte9kE2@mail.gmail.com>
+	id S1752707Ab1BLJHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 04:07:42 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Subject: Re: [Patch v2] idle governor: Avoid lock acquisition to read pm_qos before entering idle
+Date: Sat, 12 Feb 2011 10:07:23 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        mark gross <markgross@thegnar.org>,
+        David Alan Gilbert <linux@treblig.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Len Brown <lenb@kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+References: <1297457344.2645.323.camel@schen9-DESK>
+In-Reply-To: <1297457344.2645.323.camel@schen9-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=0QTKuWjwQG7vkejcF1+4WxQ4oJ5DbsVte9kE2@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102121007.23384.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 04:59:31PM -0500, Brian Gerst wrote:
-> On Fri, Feb 11, 2011 at 3:40 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > On Fri, Feb 11, 2011 at 03:19:11PM -0500, Brian Gerst wrote:
-> >> On Fri, Feb 11, 2011 at 2:13 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> >> > On Fri, Feb 11, 2011 at 12:59:47PM -0500, Brian Gerst wrote:
-> >> >> On Fri, Feb 11, 2011 at 12:07 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> >> >> > On Fri, Feb 11, 2011 at 08:46:41AM -0800, Eric W. Biederman wrote:
-> >> >> >> Jiri Olsa <jolsa@redhat.com> writes:
-> >> >> >>
-> >> >> >> > hi,
-> >> >> >> >
-> >> >> >> > while browsing the page table setup code, I noticed the x86_64 head
-> >> >> >> > code might not need the identity mappings at all.
-> >> >> >> > It seems it's ok to switch it off completely from the begining,
-> >> >> >> > unless I'm missing something.
-> >> >> >>
-> >> >> >> Have you tested it?
-> >> >> >
-> >> >> > yes, I booted it with no problem
-> >> >>
-> >> >> The only reason this doesn't crash is because the identity mappings
-> >> >> provided by the boot code are marked as global, and therefore might
-> >> >> not be flushed by simply loading cr3.  The cpu can evict TLB entries
-> >> >> at any time though, so it's a bad idea to run without the identity
-> >> >> mappings even for the brief moment before jumping to the virtual
-> >> >> address.
-> >> >
-> >> > I added code for flushing whole TLB (including global pages) and it
-> >> > still boots (attached).
-> >> >
-> >> > I'm sorry if I'm missing something obvious (probably the TLB flushing
-> >> > code is wrong), but I'd like to understand this part.
-> >> >
-> >> > What instruction/action would require the identity mapping,
-> >> > after the page table is set?
-> >> >
-> >> > thanks (and again sry for noise :) )
-> >> > jirka
-> >> >
-> >> >
-> >> > ---
-> >> > diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-> >> > index c55e6fa..073f489 100644
-> >> > --- a/arch/x86/kernel/head_64.S
-> >> > +++ b/arch/x86/kernel/head_64.S
-> >> > @@ -165,6 +165,13 @@ ENTRY(secondary_startup_64)
-> >> >        movl    $(X86_CR4_PAE | X86_CR4_PGE), %eax
-> >> >        movq    %rax, %cr4
-> >> >
-> >> > +       /* invalidate whole TLB */
-> >> > +       movq %cr4, %rax
-> >> > +       movq %rax, %rdx
-> >> > +       andq $~X86_CR4_PGE, %rax
-> >> > +       movq %rax, %cr4
-> >> > +       movq %rdx, %cr4
-> >> > +
-> >> >        /* Setup early boot stage 4 level pagetables. */
-> >> >        movq    $(init_level4_pgt - __START_KERNEL_map), %rax
-> >> >        addq    phys_base(%rip), %rax
-> >> >
-> >>
-> >> The way you have it, it will immediately reload the global identity
-> >> entry into the TLB when it executes the next instruction, because cr3
-> >> is still pointing to the old pagetables.  Disable PGE during or
-> >> immediately after the load of cr3 to make sure the global identity
-> >> entries are flushed.
-> >
-> > you're right, when I put it after setting cr3 it crashed
-> > but I still don't understand what instruction took it down..?
+On Friday, February 11, 2011, Tim Chen wrote:
+> Thanks to the reviews and comments by Rafael, James, Mark and Andi.
+> Here's version 2 of the patch incorporating your comments and also some
+> update to my previous patch comments.
 > 
-> The instruction immediately following the flush (doesn't matter what
-> it is).  You flushed the entry for the page you were executing from,
-> so the cpu has to reload the entry for that page so that it can fetch
-> the next instruction.  Since that page doesn't exist in the new page
-> table, it crashes.
+> I noticed that before entering idle state, the menu idle governor will
+> look up the current pm_qos target value according to the list of qos
+> requests received.  This look up currently needs the acquisition of a
+> lock to access the list of qos requests to find the qos target value,
+> slowing down the entrance into idle state due to contention by multiple
+> cpus to access this list.  The contention is severe when there are a lot
+> of cpus waking and going into idle.  For example, for a simple workload
+> that has 32 pair of processes ping ponging messages to each other, where
+> 64 cpu cores are active in test system, I see the following profile with
+> 37.82% of cpu cycles spent in contention of pm_qos_lock:
+> 
+> -     37.82%          swapper  [kernel.kallsyms]          [k]
+> _raw_spin_lock_irqsave
+>    - _raw_spin_lock_irqsave
+>       - 95.65% pm_qos_request             
+>            menu_select                                             
+>            cpuidle_idle_call                      
+>          - cpu_idle                                                     
+>               99.98% start_secondary
+> 
+> A better approach will be to cache the updated pm_qos target value so
+> reading it does not require lock acquisition as in the patch below.  
+> With this patch the contention for pm_qos_lock is removed and I saw a
+> 2.2X increase in throughput for my message passing workload. 
 
-ops, rip is the one I missed... cool :)
+Thanks, the patch is going to be merged through the Len Brown's idle tree.
 
-thanks for explanation,
-jirka
+Rafael
 
-> 
-> Getting back to the original patch.  Here is the relevant text from
-> the Intel System Programming Guide:
-> ------------------------------
-> 4.10.4.1 Operations that Invalidate TLBs and Paging-Structure Caches
-> ...
-> The processor is always free to invalidate additional entries in the
-> TLBs and paging-structure
-> caches. The following are some examples:
-> ...
-> MOV to CR3 may invalidate TLB entries for global pages.
-> ------------------------------
-> 
-> So even if it just so happens to work on your particular cpu, it is
-> not guaranteed to always work.
-> 
-> --
-> Brian Gerst
+
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
+> index 77cbddb..a7d87f9 100644
+> --- a/include/linux/pm_qos_params.h
+> +++ b/include/linux/pm_qos_params.h
+> @@ -16,6 +16,10 @@
+>  #define PM_QOS_NUM_CLASSES 4
+>  #define PM_QOS_DEFAULT_VALUE -1
+>  
+> +#define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+> +#define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+> +#define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
+> +
+>  struct pm_qos_request_list {
+>  	struct plist_node list;
+>  	int pm_qos_class;
+> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> index aeaa7f8..6a8fad8 100644
+> --- a/kernel/pm_qos_params.c
+> +++ b/kernel/pm_qos_params.c
+> @@ -53,11 +53,17 @@ enum pm_qos_type {
+>  	PM_QOS_MIN		/* return the smallest value */
+>  };
+>  
+> +/*
+> + * Note: The lockless read path depends on the CPU accessing
+> + * target_value atomically.  Atomic access is only guaranteed on all CPU
+> + * types linux supports for 32 bit quantites
+> + */
+>  struct pm_qos_object {
+>  	struct plist_head requests;
+>  	struct blocking_notifier_head *notifiers;
+>  	struct miscdevice pm_qos_power_miscdev;
+>  	char *name;
+> +	s32 target_value;	/* Do not change to 64 bit */
+>  	s32 default_value;
+>  	enum pm_qos_type type;
+>  };
+> @@ -70,7 +76,8 @@ static struct pm_qos_object cpu_dma_pm_qos = {
+>  	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
+>  	.notifiers = &cpu_dma_lat_notifier,
+>  	.name = "cpu_dma_latency",
+> -	.default_value = 2000 * USEC_PER_SEC,
+> +	.target_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE,
+>  	.type = PM_QOS_MIN,
+>  };
+>  
+> @@ -79,7 +86,8 @@ static struct pm_qos_object network_lat_pm_qos = {
+>  	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
+>  	.notifiers = &network_lat_notifier,
+>  	.name = "network_latency",
+> -	.default_value = 2000 * USEC_PER_SEC,
+> +	.target_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_NETWORK_LAT_DEFAULT_VALUE,
+>  	.type = PM_QOS_MIN
+>  };
+>  
+> @@ -89,7 +97,8 @@ static struct pm_qos_object network_throughput_pm_qos = {
+>  	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
+>  	.notifiers = &network_throughput_notifier,
+>  	.name = "network_throughput",
+> -	.default_value = 0,
+> +	.target_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE,
+>  	.type = PM_QOS_MAX,
+>  };
+>  
+> @@ -132,6 +141,16 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
+>  	}
+>  }
+>  
+> +static inline s32 pm_qos_read_value(struct pm_qos_object *o)
+> +{
+> +	return o->target_value;
+> +}
+> +
+> +static inline void pm_qos_set_value(struct pm_qos_object *o, s32 value)
+> +{
+> +	o->target_value = value;
+> +}
+> +
+>  static void update_target(struct pm_qos_object *o, struct plist_node *node,
+>  			  int del, int value)
+>  {
+> @@ -156,6 +175,7 @@ static void update_target(struct pm_qos_object *o, struct plist_node *node,
+>  		plist_add(node, &o->requests);
+>  	}
+>  	curr_value = pm_qos_get_value(o);
+> +	pm_qos_set_value(o, curr_value);
+>  	spin_unlock_irqrestore(&pm_qos_lock, flags);
+>  
+>  	if (prev_value != curr_value)
+> @@ -190,18 +210,11 @@ static int find_pm_qos_object_by_minor(int minor)
+>   * pm_qos_request - returns current system wide qos expectation
+>   * @pm_qos_class: identification of which qos value is requested
+>   *
+> - * This function returns the current target value in an atomic manner.
+> + * This function returns the current target value.
+>   */
+>  int pm_qos_request(int pm_qos_class)
+>  {
+> -	unsigned long flags;
+> -	int value;
+> -
+> -	spin_lock_irqsave(&pm_qos_lock, flags);
+> -	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
+> -	spin_unlock_irqrestore(&pm_qos_lock, flags);
+> -
+> -	return value;
+> +	return pm_qos_read_value(pm_qos_array[pm_qos_class]);
+>  }
+>  EXPORT_SYMBOL_GPL(pm_qos_request);
