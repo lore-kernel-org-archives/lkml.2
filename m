@@ -1,143 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab1BLS0F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 13:26:05 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49328 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab1BLSZ7 convert rfc822-to-8bit (ORCPT
+	id S1752490Ab1BLSla (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 13:41:30 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52407 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab1BLSlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 13:25:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UCO9QM0JDjaRe/pX2zsUUc0OTQbYDL/tNQ4oZK+qmjE1uyGJrZKY4gDl7gXYYsfgyZ
-         O81N3eq5XSBlC7pcR+haxQMcVIuWV+wgjFNleIHJ1FAUlnf+hflWTMi6UDnLay+FVczP
-         f00TW+azIlzjOnoaSrfBMvXvx62AoO6lCtA3g=
+	Sat, 12 Feb 2011 13:41:23 -0500
+Message-ID: <4D56D3C7.8050803@kernel.org>
+Date: Sat, 12 Feb 2011 10:39:03 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1297502512.29573.26.camel@debian>
-References: <1295402148.4773.143.camel@debian>
-	<1295402606.1949.871.camel@sli10-conroe>
-	<20110120151656.GC18875@redhat.com>
-	<20110126081529.GA28909@sli10-conroe.sh.intel.com>
-	<1297502512.29573.26.camel@debian>
-Date: Sat, 12 Feb 2011 19:25:58 +0100
-Message-ID: <AANLkTi=B6kabp+NvRJC_g-AqQO0ZOvnEDYpVFmScttR6@mail.gmail.com>
-Subject: Re: [performance bug] kernel building regression on 64 LCPUs machine
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: "Li, Shaohua" <shaohua.li@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "jack@suse.cz" <jack@suse.cz>, "tytso@mit.edu" <tytso@mit.edu>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
+        mingo@elte.hu, hpa@linux.intel.com
+Subject: Re: [PATCH 04/26] x86-64, NUMA: Unify {acpi|amd}_{numa_init|scan_nodes}()
+ arguments and return values
+References: <1297530663-26234-1-git-send-email-tj@kernel.org> <1297530663-26234-5-git-send-email-tj@kernel.org>
+In-Reply-To: <1297530663-26234-5-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D56D43F.00D9,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 12, 2011 at 10:21 AM, Alex,Shi <alex.shi@intel.com> wrote:
-> On Wed, 2011-01-26 at 16:15 +0800, Li, Shaohua wrote:
->> On Thu, Jan 20, 2011 at 11:16:56PM +0800, Vivek Goyal wrote:
->> > On Wed, Jan 19, 2011 at 10:03:26AM +0800, Shaohua Li wrote:
->> > > add Jan and Theodore to the loop.
->> > >
->> > > On Wed, 2011-01-19 at 09:55 +0800, Shi, Alex wrote:
->> > > > Shaohua and I tested kernel building performance on latest kernel. and
->> > > > found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
->> > > > system. We find this performance dropping is due to commit
->> > > > 749ef9f8423054e326f. If we revert this patch or just change the
->> > > > WRITE_SYNC back to WRITE in jbd2/commit.c file. the performance can be
->> > > > recovered.
->> > > >
->> > > > iostat report show with the commit, read request merge number increased
->> > > > and write request merge dropped. The total request size increased and
->> > > > queue length dropped. So we tested another patch: only change WRITE_SYNC
->> > > > to WRITE_SYNC_PLUG in jbd2/commit.c, but nothing effected.
->> > > since WRITE_SYNC_PLUG doesn't work, this isn't a simple no-write-merge issue.
->> > >
->> >
->> > Yep, it does sound like reduce write merging. But moving journal commits
->> > back to WRITE, then fsync performance will drop as there will be idling
->> > introduced between fsync thread and journalling thread. So that does
->> > not sound like a good idea either.
->> >
->> > Secondly, in presence of mixed workload (some other sync read happening)
->> > WRITES can get less bandwidth and sync workload much more. So by
->> > marking journal commits as WRITES you might increase the delay there
->> > in completion in presence of other sync workload.
->> >
->> > So Jan Kara's approach makes sense that if somebody is waiting on
->> > commit then make it WRITE_SYNC otherwise make it WRITE. Not sure why
->> > did it not work for you. Is it possible to run some traces and do
->> > more debugging that figure out what's happening.
->> Sorry for the long delay.
->>
->> Looks fedora enables ccache by default. While our kbuild test is on ext4 disk
->> but rootfs is on ext3 where ccache cache files live. Jan's patch only covers
->> ext4, maybe this is the reason.
->> I changed jbd to use WRITE for journal_commit_transaction. With the change and
->> Jan's patch, the test seems fine.
-> Let me clarify the bug situation again.
-> With the following scenarios, the regression is clear.
-> 1, ccache_dir setup at rootfs that format is ext3 on /dev/sda1; 2,
-> kbuild on /dev/sdb1 with ext4.
-> but if we disable the ccache, only do kbuild on sdb1 with ext4. There is
-> no regressions whenever with or without Jan's patch.
-> So, problem focus on the ccache scenario, (from fedora 11, ccache is
-> default setting).
->
-> If we compare the vmstat output with or without ccache, there is too
-> many write when ccache enabled. According the result, it should to do
-> some tunning on ext3 fs.
-Is ext3 configured with data ordered or writeback?
-I think ccache might be performing fsyncs, and this is a bad workload
-for ext3, especially in ordered mode.
-It might be that my patch introduced a regression in ext3 fsync
-performance, but I don't understand how reverting only the change in
-jbd2 (that is the ext4 specific journaling daemon) could restore it.
-The two partitions are on different disks, so each one should be
-isolated from the I/O perspective (do they share a single
-controller?). The only interaction I see happens at the VM level,
-since changing performance of any of the two changes the rate at which
-pages can be cleaned.
+On 02/12/2011 09:10 AM, Tejun Heo wrote:
+> The functions used during NUMA initialization - *_numa_init() and
+> *_scan_nodes() - have different arguments and return values.  Unify
+> them such that they all take no argument and return 0 on success and
+> -errno on failure.  This is in preparation for further NUMA init
+> cleanups.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Brian Gerst <brgerst@gmail.com>
+> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+> Cc: Shaohui Zheng <shaohui.zheng@intel.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  arch/x86/include/asm/acpi.h   |    2 +-
+>  arch/x86/include/asm/amd_nb.h |    2 +-
+>  arch/x86/kernel/setup.c       |    4 ++--
+>  arch/x86/mm/amdtopology_64.c  |   18 +++++++++---------
+>  arch/x86/mm/numa_64.c         |    2 +-
+>  arch/x86/mm/srat_64.c         |    4 ++--
+>  drivers/acpi/numa.c           |    9 ++++++---
+>  7 files changed, 22 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+> index 211ca3f..4e5dff9 100644
+> --- a/arch/x86/include/asm/acpi.h
+> +++ b/arch/x86/include/asm/acpi.h
+> @@ -187,7 +187,7 @@ struct bootnode;
+>  extern int acpi_numa;
+>  extern void acpi_get_nodes(struct bootnode *physnodes, unsigned long start,
+>  				unsigned long end);
+> -extern int acpi_scan_nodes(unsigned long start, unsigned long end);
+> +extern int acpi_scan_nodes(void);
+>  #define NR_NODE_MEMBLKS (MAX_NUMNODES*2)
+>  
+>  #ifdef CONFIG_NUMA_EMU
+> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+> index 64dc82e..72abf65 100644
+> --- a/arch/x86/include/asm/amd_nb.h
+> +++ b/arch/x86/include/asm/amd_nb.h
+> @@ -16,7 +16,7 @@ struct bootnode;
+>  extern int early_is_amd_nb(u32 value);
+>  extern int amd_cache_northbridges(void);
+>  extern void amd_flush_garts(void);
+> -extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
+> +extern int amd_numa_init(void);
+>  extern int amd_scan_nodes(void);
+>  
+>  #ifdef CONFIG_NUMA_EMU
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index c50ba3d..1870a59 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -988,12 +988,12 @@ void __init setup_arch(char **cmdline_p)
+>  	/*
+>  	 * Parse SRAT to discover nodes.
+>  	 */
+> -	acpi = acpi_numa_init();
+> +	acpi = !acpi_numa_init();
+>  #endif
+>  
+>  #ifdef CONFIG_AMD_NUMA
+>  	if (!acpi)
+> -		amd = !amd_numa_init(0, max_pfn);
+> +		amd = !amd_numa_init();
+>  #endif
+>  
+>  	initmem_init(acpi, amd);
+> diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+> index c7fae38..ee70257 100644
+> --- a/arch/x86/mm/amdtopology_64.c
+> +++ b/arch/x86/mm/amdtopology_64.c
+> @@ -51,7 +51,7 @@ static __init int find_northbridge(void)
+>  		return num;
+>  	}
+>  
+> -	return -1;
+> +	return -ENOENT;
+>  }
+>  
+>  static __init void early_get_boot_cpu_id(void)
+> @@ -69,17 +69,17 @@ static __init void early_get_boot_cpu_id(void)
+>  #endif
+>  }
+>  
+> -int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+> +int __init amd_numa_init(void)
+>  {
+> -	unsigned long start = PFN_PHYS(start_pfn);
+> -	unsigned long end = PFN_PHYS(end_pfn);
+> +	unsigned long start = PFN_PHYS(0);
+> +	unsigned long end = PFN_PHYS(max_pfn);
+>  	unsigned numnodes;
+>  	unsigned long prevbase;
+>  	int i, nb, found = 0;
+>  	u32 nodeid, reg;
+>  
+>  	if (!early_pci_allowed())
+> -		return -1;
+> +		return -EINVAL;
+>  
+>  	nb = find_northbridge();
+>  	if (nb < 0)
+> @@ -90,7 +90,7 @@ int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+>  	reg = read_pci_config(0, nb, 0, 0x60);
+>  	numnodes = ((reg >> 4) & 0xF) + 1;
+>  	if (numnodes <= 1)
+> -		return -1;
+> +		return -ENOENT;
+>  
+>  	pr_info("Number of physical nodes %d\n", numnodes);
+>  
+> @@ -121,7 +121,7 @@ int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+>  		if ((base >> 8) & 3 || (limit >> 8) & 3) {
+>  			pr_err("Node %d using interleaving mode %lx/%lx\n",
+>  			       nodeid, (base >> 8) & 3, (limit >> 8) & 3);
+> -			return -1;
+> +			return -EINVAL;
+>  		}
+>  		if (node_isset(nodeid, nodes_parsed)) {
+>  			pr_info("Node %d already present, skipping\n",
+> @@ -160,7 +160,7 @@ int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+>  		if (prevbase > base) {
+>  			pr_err("Node map not sorted %lx,%lx\n",
+>  			       prevbase, base);
+> -			return -1;
+> +			return -EINVAL;
+>  		}
+>  
+>  		pr_info("Node %d MemBase %016lx Limit %016lx\n",
+> @@ -177,7 +177,7 @@ int __init amd_numa_init(unsigned long start_pfn, unsigned long end_pfn)
+>  	}
+>  
+>  	if (!found)
+> -		return -1;
+> +		return -ENOENT;
+>  	return 0;
+>  }
+>  
+> diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+> index f534feb..85561d1 100644
+> --- a/arch/x86/mm/numa_64.c
+> +++ b/arch/x86/mm/numa_64.c
+> @@ -595,7 +595,7 @@ void __init initmem_init(int acpi, int amd)
+>  #endif
+>  
+>  #ifdef CONFIG_ACPI_NUMA
+> -	if (!numa_off && acpi && !acpi_scan_nodes(0, max_pfn << PAGE_SHIFT))
+> +	if (!numa_off && acpi && !acpi_scan_nodes())
+>  		return;
+>  	nodes_clear(node_possible_map);
+>  	nodes_clear(node_online_map);
+> diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+> index e3e0dd3..19652dd 100644
+> --- a/arch/x86/mm/srat_64.c
+> +++ b/arch/x86/mm/srat_64.c
+> @@ -359,7 +359,7 @@ void __init acpi_get_nodes(struct bootnode *physnodes, unsigned long start,
+>  #endif /* CONFIG_NUMA_EMU */
+>  
+>  /* Use the information discovered above to actually set up the nodes. */
+> -int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+> +int __init acpi_scan_nodes(void)
+>  {
+>  	int i;
+>  
+> @@ -368,7 +368,7 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+>  
+>  	/* First clean up the node list */
+>  	for (i = 0; i < MAX_NUMNODES; i++)
+> -		cutoff_node(i, start, end);
+> +		cutoff_node(i, 0, max_pfn << PAGE_SHIFT);
+>  
+>  	/*
+>  	 * Join together blocks on the same node, holes between
+> diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+> index 5eb25eb..3b5c318 100644
+> --- a/drivers/acpi/numa.c
+> +++ b/drivers/acpi/numa.c
+> @@ -274,7 +274,7 @@ acpi_table_parse_srat(enum acpi_srat_type id,
+>  
+>  int __init acpi_numa_init(void)
+>  {
+> -	int ret = 0;
+> +	int cnt = 0;
+>  
+>  	/*
+>  	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
+> @@ -288,7 +288,7 @@ int __init acpi_numa_init(void)
+>  				     acpi_parse_x2apic_affinity, 0);
+>  		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
+>  				     acpi_parse_processor_affinity, 0);
+> -		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+> +		cnt = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+>  					    acpi_parse_memory_affinity,
+>  					    NR_NODE_MEMBLKS);
+>  	}
+> @@ -297,7 +297,10 @@ int __init acpi_numa_init(void)
+>  	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
+>  
+>  	acpi_numa_arch_fixup();
+> -	return ret;
+> +
+> +	if (cnt <= 0)
+> +		return cnt ?: -ENOENT;
+> +	return 0;
+>  }
+>  
+>  int acpi_get_pxm(acpi_handle h)
 
-Corrado
->
->
-> vmstat average output per 10 seconds, without ccache
-> procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
->  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> 26.8 0.5 0.0 63930192.3 9677.0 96544.9 0.0 0.0 2486.9 337.9 17729.9 4496.4 17.5 2.5 79.8 0.2 0.0
->
-> vmstat average output per 10 seconds, with ccache
-> procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
->  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-> 2.4 40.7 0.0 64316231.0 17260.6 119533.8 0.0 0.0 2477.6 1493.1 8606.4 3565.2 2.5 1.1 83.0 13.5 0.0
->
->
->>
->> Jan,
->> can you send a patch with similar change for ext3? So we can do more tests.
->>
->> Thanks,
->> Shaohua
->
->
->
->
 
+it will break AMD system that does not have SRAT.
 
+your change will treat NO_SRAT as SRAT is there.
 
--- 
-__________________________________________________________________________
-
-dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-PhD - Department of Computer Science - University of Pisa, Italy
---------------------------------------------------------------------------
-The self-confidence of a warrior is not the self-confidence of the average
-man. The average man seeks certainty in the eyes of the onlooker and calls
-that self-confidence. The warrior seeks impeccability in his own eyes and
-calls that humbleness.
-                               Tales of Power - C. Castaneda
+Yinghai
