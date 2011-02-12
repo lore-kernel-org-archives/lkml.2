@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab1BLJNU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 04:13:20 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:46051 "EHLO
-	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab1BLJNQ (ORCPT
+	id S1753241Ab1BLJTY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 04:19:24 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47407 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab1BLJTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 04:13:16 -0500
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Feb 2011 04:13:16 EST
-Message-ID: <4D564D6F.3090900@nachtwindheim.de>
-Date: Sat, 12 Feb 2011 10:05:51 +0100
-From: Henrik Kretzschmar <henrik@nachtwindheim.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	Sat, 12 Feb 2011 04:19:18 -0500
+Date: Sat, 12 Feb 2011 02:19:13 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Russ Gorby <russ.gorby@intel.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        "open list:SPI SUBSYSTEM" <spi-devel-general@lists.sourceforge.net>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/1] Adding intel_mid_ssp_spi driver : 01/27/2011
+Message-ID: <20110212091913.GD17755@angua.secretlab.ca>
+References: <1296680512-2758-1-git-send-email-russ.gorby@intel.com>
 MIME-Version: 1.0
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: fused  X86_UP_APIC and  X86_UP_IOAPIC ?
-References: <4D53BF67.50601@nachtwindheim.de>
-In-Reply-To: <4D53BF67.50601@nachtwindheim.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296680512-2758-1-git-send-email-russ.gorby@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.02.2011 11:35, schrieb Henrik Kretzschmar:
->> In commit 7cd92366a593246650cc7d6198e2c7d3af8c1d8a (x86/Voyager: remove APIC/IO-APIC Kbuild quirk / just before 2.6.29-rc4)
->> Ingo replaced the X86_UP_IOAPIC with X86_UP_APIC.
->> 
->> Was this intended ord by accident?
+On Wed, Feb 02, 2011 at 01:01:51PM -0800, Russ Gorby wrote:
+> Hello SPI maintainers,
+> I am sending a patch for the (new) intel_mid_ssp_spi driver for
+> consideration for inclusion in the Linux Kernel. This is a SPI master
+> controller driver that is being used for the intel MID platform (Medfield).
+> It uses the on-board Bulverde SSP controller configured for SPI (spibus #3)
+> running at 25Mhz.
 
-* Ingo Molnar <mingo@redhat.com> wrote:
-> Mind sending a patch against the latest x86 tree.
+Hi Russ,
 
-Yes, I do, but just changing the config makes the compilation break,
-so some prior steps are needed, since X86_APIC and X86_IO_APIC 
-have fused a bit too much.
+Just for future reference, when you're only sending one patch, please
+put your notes into the patch description itself, or immediately after
+the --- line.  No need for a cover letter like this one.
 
-But I'm confident.
+Thanks,
+g.
 
-Greets,
-Henrik 
