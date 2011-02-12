@@ -1,461 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1BLX3T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 18:29:19 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33749 "EHLO e9.ny.us.ibm.com"
+	id S1753634Ab1BLXiP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 18:38:15 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39691 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752857Ab1BLX3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 18:29:15 -0500
-Date: Sat, 12 Feb 2011 15:29:07 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: jacob.jun.pan@linux.intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        akpm@linux-foundation.org, rdunlap@xenotime.net,
-        Cedric Le Goater <clg@vnet.ibm.com>
-Subject: Re: [PATCH 1/1, v7] cgroup/freezer: add per freezer duty ratio
- control
-Message-ID: <20110212232907.GN16432@count0.beaverton.ibm.com>
-References: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1753042Ab1BLXiI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 18:38:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.38-rc4-git5: Reported regressions 2.6.36 -> 2.6.37
+Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <9Pzlq5PlEtH.A.DU.efxVNB@chimera>
+Date: Sun, 13 Feb 2011 00:34:02 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 11:10:44AM -0800, jacob.jun.pan@linux.intel.com wrote:
-> From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> 
-> Freezer subsystem is used to manage batch jobs which can start
-> stop at the same time. However, sometime it is desirable to let
-> the kernel manage the freezer state automatically with a given
-> duty ratio.
-> For example, if we want to reduce the time that backgroup apps
-> are allowed to run we can put them into a freezer subsystem and
-> set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> 
-> This patch introduces two file nodes under cgroup
-> freezer.duty_ratio_pct and freezer.period_sec
+This message contains a list of some post-2.6.36 regressions introduced before
+2.6.37, for which there are no fixes in the mainline known to the tracking team.
+If any of them have been fixed already, please let us know.
 
-Again: I don't think this is the right approach in the long term.
-It would be better not to add this interface and instead enable the
-cpu cgroup subsystem for non-rt tasks using a similar duty ratio
-concept..
+If you know of any other unresolved post-2.6.36 regressions, please let us know
+either and we'll add them to the list.  Also, please let us know if any
+of the entries below are invalid.
 
-Nevertheless, I've added some feedback on the code for you here :).
+Each entry from the list will be sent additionally in an automatic reply to
+this message with CCs to the people involved in reporting and handling the
+issue.
 
-> 
-> Usage example: set period to be 5 seconds and frozen duty ratio 90%
-> [root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
-> [root@localhost aoa]# echo 5000 > freezer.period_ms
-> 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> ---
->  Documentation/cgroups/freezer-subsystem.txt |   23 ++++
->  kernel/cgroup_freezer.c                     |  153 ++++++++++++++++++++++++++-
->  2 files changed, 174 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/freezer-subsystem.txt b/Documentation/cgroups/freezer-subsystem.txt
-> index 41f37fe..2022b32 100644
-> --- a/Documentation/cgroups/freezer-subsystem.txt
-> +++ b/Documentation/cgroups/freezer-subsystem.txt
-> @@ -100,3 +100,26 @@ things happens:
->  		and returns EINVAL)
->  	3) The tasks that blocked the cgroup from entering the "FROZEN"
->  		state disappear from the cgroup's set of tasks.
-> +
-> +In embedded systems, it is desirable to manage group of applications
-> +for power saving. E.g. tasks that are not in the foreground may be
-> +frozen and unfrozen periodically to save power without affecting user
-> +experience. In this case, user/management software can attach tasks
-> +into freezer cgroup then specify duty ratio and period that the
-> +managed tasks are allowed to run.
-> +
-> +Usage example:
-> +Assuming freezer cgroup is already mounted, application being managed
-> +are included the "tasks" file node of the given freezer cgroup.
-> +To make the tasks frozen at 90% of the time every 5 seconds, do:
-> +
-> +[root@localhost ]# echo 90 > freezer.duty_ratio_pct
-> +[root@localhost ]# echo 5000 > freezer.period_ms
-> +
-> +After that, the application in this freezer cgroup will only be
-> +allowed to run at the following pattern.
-> +     __                    __                    __
-> +    |  |<-- 90% frozen -->|  |                  |  |
-> +____|  |__________________|  |__________________|  |_____
-> +
-> +    |<---- 5 seconds ---->|
 
-So most of the time I've been reviewing this I managed to invert it!
-I imagined "duty" meant the tasks were "on duty" ie runnable ie thawed.
-But according this this documentation it's the opposite...
+Listed regressions statistics:
 
-I've reviewed my review and now my comments are consistent with the
-above. :) However it makes me wonder if there are better names which
-would avoid this confusion.
+  Date          Total  Pending  Unresolved
+  ----------------------------------------
+  2011-02-13      126       36          30
+  2011-02-03      118       36          31
+  2010-12-30       85       32          26
+  2010-12-19       73       28          24
+  2010-12-03       55       25          19
+  2010-11-19       39       29          25
 
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index e7bebb7..aaa91ca 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -21,6 +21,7 @@
->  #include <linux/uaccess.h>
->  #include <linux/freezer.h>
->  #include <linux/seq_file.h>
-> +#include <linux/kthread.h>
-> 
->  enum freezer_state {
->  	CGROUP_THAWED = 0,
-> @@ -28,12 +29,35 @@ enum freezer_state {
->  	CGROUP_FROZEN,
->  };
-> 
-> +enum duty_ratio_params {
-> +	FREEZER_DUTY_RATIO = 0,
-> +	FREEZER_PERIOD,
-> +};
-> +
-> +struct freezer_toggle {
-> +	unsigned int enabled:1;
-> +	unsigned int freeze_thaw:1; /* 1: freeze 0: thaw */
-> +} __packed;
-> +
-> +struct freezer_duty {
-> +	u32 ratio; /* percentage of time frozen */
-> +	u32 period_pct_ms; /* one percent of the period in miliseconds */
-> +};
 
-I'd rather see you merge these two structures -- I don't see the value
-of keeping them separate nor of packing the struct. You could also merge
-the work item in there:
+Unresolved regressions
+----------------------
 
-struct freezer_duty {
-	struct delayed_work freezer_work; /* work to duty-cycle a cgroup */
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28812
+Subject		: DVI attached monitor is turned off while booting linux 2.6.37 and higher
+Submitter	: Markus Heinz <markus.heinz@uni-dortmund.de>
+Date		: 2011-02-10 19:33 (3 days old)
 
-	u32 ratio; /* percentage of time frozen */
-	u32 period_pct_ms; /* one percent of the period in miliseconds */
-	unsigned int enabled:1;
-	unsigned int freeze_thaw:1; /* 1: freeze 0: thaw */
-};
 
-(I'm going to make the rest of my comments without assuming you've done
-this because it'll make them easier to follow given the context)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28772
+Subject		: oops in nfs_revalidate_mapping
+Submitter	: Daniel Poelzleithner <bugzilla.kernel.org@poelzi.org>
+Date		: 2011-02-10 13:59 (3 days old)
 
-> +
->  struct freezer {
->  	struct cgroup_subsys_state css;
->  	enum freezer_state state;
-> +	struct freezer_duty duty;
-> +	struct delayed_work freezer_work; /* work to duty-cycle a cgroup */
-> +	struct freezer_toggle toggle;
->  	spinlock_t lock; /* protects _writes_ to state */
->  };
-> 
-> +static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
-> +static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
-> +static int freezer_change_state(struct cgroup *cgroup,
-> +				enum freezer_state goal_state);
-> +
->  static inline struct freezer *cgroup_freezer(
->  		struct cgroup *cgroup)
->  {
-> @@ -63,6 +87,41 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
->  	return result;
->  }
-> 
-> +static DECLARE_WAIT_QUEUE_HEAD(freezer_wait);
-> +
-> +static void freezer_work_fn(struct work_struct *work)
-> +{
-> +	struct freezer *freezer;
-> +	unsigned long delay_jiffies = 0;
-> +	enum freezer_state goal_state;
-> +
 
-Looking better. There are alot of field accesses here which can race
-with writes to the cgroup's duty ratio and period files. They should be
-protected. Perhaps we can reuse the freezer spin lock. That also
-has the benefit that we can eliminate the toggle.freeze_thaw bit I
-think:
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28662
+Subject		: i915 in kernel 2.6.38-rc4, high number of wakeups
+Submitter	: Kan-Ru Chen <kanru@kanru.info>
+Date		: 2011-02-09 07:06 (4 days old)
 
-> +
-> +	freezer = container_of(work, struct freezer, freezer_work.work);
-> +	/* toggle between THAWED and FROZEN state.
-> +	 * thaw if freezer->toggle.freeze_thaw = 0; freeze otherwise
-> +	 * skip the first round if already in the target states.
-> +	 */
 
-spin_lock(&freezer->lock);
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28622
+Subject		: radeon video lockup
+Submitter	: Daniel Poelzleithner <bugzilla.kernel.org@poelzi.org>
+Date		: 2011-02-08 17:48 (5 days old)
 
-> +	if ((freezer->toggle.freeze_thaw && freezer->state == CGROUP_FROZEN) ||
-> +		(!freezer->toggle.freeze_thaw &&
-> +			freezer->state == CGROUP_THAWED)) {
-> +		delay_jiffies = 0;
 
-This looks wrong. We should never schedule freezer work delayed by 0
-jiffies -- even if the delayed work API allows it. With 0-length delays
-I'd worry that we could peg the CPU in an obscure infinite loop.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28612
+Subject		: regular soft lockup
+Submitter	: Alexandre Demers <alexandre.f.demers@gmail.com>
+Date		: 2011-02-08 16:39 (5 days old)
 
-I think you can safely eliminate this block and the "exit_toggle" label.
 
-> +		goto exit_toggle;
-> +	} else if (freezer->toggle.freeze_thaw) {
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28582
+Subject		: whole system hang when start X
+Submitter	: Gu Rui <chaos.proton@gmail.com>
+Date		: 2011-02-08 08:33 (5 days old)
+First-Bad-Commit: http://git.kernel.org/linus/d5bb081b027b520f9e59b4fb8faea83a136ec15e
 
-	if (freezer->state == CGROUP_THAWED) {
 
-> +		goal_state = CGROUP_FROZEN;
-> +		delay_jiffies = msecs_to_jiffies(freezer->duty.ratio *
-> +						freezer->duty.period_pct_ms);
-> +	} else  {
-> +		goal_state = CGROUP_THAWED;
-> +		delay_jiffies = msecs_to_jiffies((100 - freezer->duty.ratio) *
-> +						freezer->duty.period_pct_ms);
-> +	}
-> +	freezer_change_state(freezer->css.cgroup, goal_state);
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28332
+Subject		: [RV620] Can not re-enable LVDS after using HDMI only
+Submitter	: Rafał Miłecki <zajec5@gmail.com>
+Date		: 2011-02-05 22:42 (8 days old)
 
-__freezer_change_state(freezer->css.cgroup, goal_state);
-spin_unlock(&freezer->lock);
 
-(where the __freezer_change_state() function expects to already have the
-freezer lock -- you can make that your first patch and this your second)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27892
+Subject		: SNB: GPU hang with Slip xscreensaver
+Submitter	: Takashi Iwai <tiwai@suse.de>
+Date		: 2011-01-31 12:06 (13 days old)
 
-But you ought to double check the lock ordering, may-sleep, and whether
-the _irq variants are correct.
 
-> +
-> +exit_toggle:
-> +	schedule_delayed_work(&freezer->freezer_work, delay_jiffies);
-> +	freezer->toggle.freeze_thaw ^= 1;
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27842
+Subject		: [regression?] hang with 2.6.37 on a BTRFS test machine
+Submitter	: Martin Steigerwald <Martin@lichtvoll.de>
+Date		: 2011-01-23 12:06 (21 days old)
+Message-ID	: <<201101231306.23069.Martin@lichtvoll.de>>
+References	: http://marc.info/?l=linux-kernel&m=129578445613283&w=2
 
-This looks wrong. It looks like there could be a race between the next
-scheduled work and the toggling of the freeze_thaw value. This race
-would cause the cgroup to miss one or more duty cycles. You'd have
-to re-order these two lines and probably need an smp barrier of one
-sort or another between them.
 
-Of course if you use locking and eliminate the toggle.freeze_thaw field
-as I've suggested then you can ignore this.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27642
+Subject		: 2.6.37 says WARNING: at arch/x86/kernel/apic/apic.c:1287 setup_local_APIC+0x18f/0x263()
+Submitter	: Rob Landley <rlandley@parallels.com>
+Date		: 2011-01-18 13:11 (26 days old)
+Message-ID	: <4D359188.3040408@parallels.com>
+References	: http://marc.info/?l=linux-kernel&m=129535632319892&w=2
 
-> +}
-> +
->  /*
->   * cgroups_write_string() limits the size of freezer state strings to
->   * CGROUP_LOCAL_BUFFER_SIZE
-> @@ -150,7 +209,12 @@ static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
->  static void freezer_destroy(struct cgroup_subsys *ss,
->  			    struct cgroup *cgroup)
->  {
-> -	kfree(cgroup_freezer(cgroup));
-> +	struct freezer *freezer;
-> +
-> +	freezer = cgroup_freezer(cgroup);
-> +	if (freezer->toggle.enabled)
-> +		cancel_delayed_work_sync(&freezer->freezer_work);
-> +	kfree(freezer);
->  }
-> 
->  /*
-> @@ -282,6 +346,16 @@ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
->  	return 0;
->  }
-> 
-> +static u64 freezer_read_duty_ratio(struct cgroup *cgroup, struct cftype *cft)
-> +{
-> +	return cgroup_freezer(cgroup)->duty.ratio;
-> +}
-> +
-> +static u64 freezer_read_period(struct cgroup *cgroup, struct cftype *cft)
-> +{
-> +	return cgroup_freezer(cgroup)->duty.period_pct_ms * 100;
-> +}
-> +
->  static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
->  {
->  	struct cgroup_iter it;
-> @@ -353,6 +427,7 @@ static int freezer_write(struct cgroup *cgroup,
->  {
->  	int retval;
->  	enum freezer_state goal_state;
-> +	struct freezer *freezer;
-> 
->  	if (strcmp(buffer, freezer_state_strs[CGROUP_THAWED]) == 0)
->  		goal_state = CGROUP_THAWED;
-> @@ -360,7 +435,18 @@ static int freezer_write(struct cgroup *cgroup,
->  		goal_state = CGROUP_FROZEN;
->  	else
->  		return -EINVAL;
-> -
-> +	/* we should stop duty ratio toggling if user wants to
-> +	 * force change to a valid state.
-> +	 */
-> +	freezer = cgroup_freezer(cgroup);
-> +	if (freezer->duty.period_pct_ms && freezer->duty.ratio < 100) {
 
-If duty.ratio is 100 then the delayed work should be cancelled too.
-In fact it doesn't matter what the duty.ratio or period_pct_ms are --
-writes to this file should always disable the duty cycle. Thus
-you can omit the above if () and do this:
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27532
+Subject		: ath9k prevents CPU from entering lower C-states
+Submitter	: Thomas Bächler <thomas@archlinux.org>
+Date		: 2011-01-24 22:43 (20 days old)
 
-> +		if (freezer->toggle.enabled)
 
-						{
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27402
+Subject		: Atheros adapter no longer loads firmware
+Submitter	: Michal Vaner <vorner@ucw.cz>
+Date		: 2011-01-23 15:29 (21 days old)
+First-Bad-Commit: http://git.kernel.org/linus/be93112accb42c5586a459683d71975cc70673ca
 
-> +			cancel_delayed_work_sync(&freezer->freezer_work);
-> +		freezer->duty.ratio = 0;
 
-Actually, shouldn't this be 0 if the cgroup is going to be thawed and
-100 if it's going to be frozen?
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27152
+Subject		: VGA output broken at cold boot
+Submitter	: Takashi Iwai <tiwai@suse.de>
+Date		: 2011-01-20 13:26 (24 days old)
 
-> +		freezer->duty.period_pct_ms = 0;
 
-I think this should always be a non-zero value -- even when duty
-cycling is disabled. Perhaps:
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27132
+Subject		: flush-btrfs gets into an infinite loop
+Submitter	: Artem Anisimov <aanisimov@inbox.ru>
+Date		: 2011-01-20 11:51 (24 days old)
 
-		freezer->duty.period_pct_ms = 1000/100;
 
-So it's clear the default period is 1000ms and one percent of it is 10ms.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26802
+Subject		: b43: Suspend failed
+Submitter	: Patrick Matthäi <patrick@linux-dev.org>
+Date		: 2011-01-15 18:56 (29 days old)
 
-(NOTE: To make it always non-zero you also need to add one line to the
-cgroup initialization code in freezer_create()).
 
-> +		freezer->toggle.enabled = 0;
-> +		pr_info("freezer state changed by user, stop duty ratio\n");
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26612
+Subject		: BUG in fs/inode.c:429
+Submitter	: Florian Kriener <florian@kriener.org>
+Date		: 2011-01-06 16:35 (38 days old)
+Message-ID	: <201101061735.40060.florian@kriener.org>
+References	: http://marc.info/?l=linux-kernel&m=129433235223735&w=2
 
-nit: I don't think this pr_info() is terribly useful.
 
-> +	}
->  	if (!cgroup_lock_live_group(cgroup))
->  		return -ENODEV;
->  	retval = freezer_change_state(cgroup, goal_state);
-> @@ -368,12 +454,75 @@ static int freezer_write(struct cgroup *cgroup,
->  	return retval;
->  }
-> 
-> +#define FREEZER_KH_PREFIX  "freezer_"
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26582
+Subject		: NULL pointer dereference on pipe creation
+Submitter	: Ferenc Wágner <wferi@niif.hu>
+Date		: 2011-01-12 13:30 (32 days old)
 
-This #define is unused.
 
-> +static int freezer_write_param(struct cgroup *cgroup, struct cftype *cft,
-> +		u64 val)
-> +{
-> +	struct freezer *freezer;
-> +	int ret = 0;
-> +
-> +	freezer = cgroup_freezer(cgroup);
-> +
-> +	if (!cgroup_lock_live_group(cgroup))
-> +		return -ENODEV;
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26112
+Subject		: [LogFS] [2.6.37-rc8+] Kernel BUG at logfs/readwrite.c:297!
+Submitter	: Prasad Joshi <prasadjoshi124@gmail.com>
+Date		: 2011-01-02 21:22 (42 days old)
+Message-ID	: <AANLkTinpoM8FuG8UkF88xs_V37dz_wgE8t-s0JPzaS-w@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=129400335910652&w=2
 
-Because the delayed work function does not lock the cgroup this whole
-function can race with the delayed work. So we need to be careful about how
-we set/test all of these new fields -- we probably want to reuse the
-freezer state lock for this so I've sprinkled some lock/unlock bits with
-my comments below.
 
-> +
-> +	switch (cft->private) {
-> +	case FREEZER_DUTY_RATIO:
-> +		if (val >= 100) {
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26102
+Subject		: [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
+Submitter	: Pawel Sikora <pluto@agmk.net>
+Date		: 2010-12-30 15:08 (45 days old)
+Message-ID	: <201012301608.40859.pluto@agmk.net>
+References	: http://marc.info/?l=linux-kernel&m=129372388925679&w=2
 
-ratio == 100 ought to be allowed too.
 
-> +			ret = -EINVAL;
-> +			goto exit;
-> +		}
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25922
+Subject		: IdeaPad Y530 brightness keys not functioning
+Submitter	: Tomasz <tm.temp@gmx.com>
+Date		: 2010-12-30 12:48 (45 days old)
 
-Add:
 
-		spin_lock_irq(&freezer->lock);
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25832
+Subject		: kernel crashes upon resume if usb devices are removed when suspended
+Submitter	: rocko <rockorequin@hotmail.com>
+Date		: 2010-12-29 11:47 (46 days old)
 
-> +		freezer->duty.ratio = val;
 
-Because this can race with the delayed work.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25732
+Subject		: i915 turns picture green when display switched off-on
+Submitter	: Tõnu Raitviir <jussuf@linux.ee>
+Date		: 2010-12-27 22:14 (48 days old)
+First-Bad-Commit: http://git.kernel.org/linus/3c17fe4b8f40a112a85758a9ab2aebf772bdd647
+Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
 
-> +		break;
-> +	case FREEZER_PERIOD:
-> +		do_div(val, 100);
-> +		freezer->duty.period_pct_ms = val;
 
-This can race with the delayed work. Also I think that a 0ms period_pct_ms
-should be disallowed. Otherwise all the work delays go to zero and we'll
-probably peg the CPU so that it's just spinning the freezer state between
-FROZEN and THAWED and doing nothing else.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25072
+Subject		: backlight level is not maintened during LID close/open
+Submitter	: Lukas Hejtmanek <xhejtman@fi.muni.cz>
+Date		: 2010-12-17 11:56 (58 days old)
 
-Finally, I wonder if a 64-bit value is really necessary -- is a period
-longer than roughly 50 days really necessary?
 
-In summary, couldn't you just do something like:
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24882
+Subject		: PM/Hibernate: Memory corruption patch introduces regression (2.6.36.2)
+Submitter	:  <akwatts@ymail.com>
+Date		: 2010-12-14 04:00 (61 days old)
 
-		if ((val < 100) || (val > UINT_MAX)) {
-			/* Too much time or may have rounded down to 0 */
-			ret = -EINVAL;
-			goto exit;
-		}
-		val = (unsigned int)val / 100;
-		spin_lock_irq(&freezer->lock);
-		freezer->duty.period_pct_ms = val;
 
-> +		break;
-> +	default:
-> +		BUG();
-> +	}
-> +
-> +	/* only use delayed work when valid params are given. */
-> +	if (freezer->duty.ratio && freezer->duty.period_pct_ms &&
-> +		!freezer->toggle.enabled) {
-> +		pr_debug("starting duty ratio mode\n");
-> +		INIT_DELAYED_WORK(&freezer->freezer_work, freezer_work_fn);
-> +		freezer->toggle.enabled = 1;
-> +		schedule_delayed_work(&freezer->freezer_work, 0);
-> +	} else if ((!freezer->duty.ratio || !freezer->duty.period_pct_ms) &&
-> +		freezer->toggle.enabled) {
-> +		pr_debug("invalid param, stop duty ratio mode %p\n",
-> +			freezer->freezer_work.work.func);
-> +		cancel_delayed_work_sync(&freezer->freezer_work);
-> +		freezer->toggle.enabled = 0;
-> +		/* thaw the cgroup if we are not toggling */
-> +		freezer_change_state(freezer->css.cgroup, CGROUP_THAWED);
-> +
-> +	}
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24822
+Subject		: Embedded DisplayPort is detected wrongly on HP ProBook 5320m
+Submitter	: Takashi Iwai <tiwai@suse.de>
+Date		: 2010-12-13 11:09 (62 days old)
+Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
 
-I don't think this is as readable as (assuming the change above to disallow
-setting period_pct_ms to 0):
 
-	if (freezer->duty.ratio == 100) {
-		freezer_disable_duty_cycling(freezer); /* see helper below */
-		__freezer_change_state(freezer->css.cgroup, CGROUP_FROZEN);
-	} else if (freezer->duty.ratio == 0) {
-		freezer_disable_duty_cycling(freezer);
-		__freezer_change_state(freezer->css.cgroup, CGROUP_THAWED);
-	} else {
-		if (freezer->toggle.enabled)
-			goto exit; /* Already enabled */
-		INIT_DELAYED_WORK(&freezer->freezer_work, freezer_work_fn);
-		freezer->toggle.enabled = 1;
-		schedule_delayed_work(&freezer->freezer_work, 0);
-	}
-	spin_unlock_irq(&freezer->lock);
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24762
+Subject		: BUG at perf_ctx_adjust_freq (kernel/perf_event.c:1582)
+Submitter	: Chris Wilson <chris@chris-wilson.co.uk>
+Date		: 2010-12-10 12:00 (65 days old)
+Message-ID	: <c6d829$pqibha@fmsmga001.fm.intel.com>
+References	: http://marc.info/?l=linux-kernel&m=129198247531612&w=2
 
-Where the helper is:
 
-static void freezer_disable_duty_cycling(struct freezer *freezer)
-{
-	if (freezer->toggle.enabled) {
-		cancel_delayed_work_sync(&freezer->freezer_work);
-		freezer->toggle.enabled = 0;
-	}
-}
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24582
+Subject		: Kernel Oops at tty_buffer_request_room when using pppd program (2.6.37-rc4)
+Submitter	: baoyb <baoyb@avit.org.cn>
+Date		: 2010-12-08 13:55 (67 days old)
+Message-ID	: <EF6DDE218DB34702B1FA84D6CD7EA771@baoyb>
+References	: http://marc.info/?l=linux-kernel&m=129181763525738&w=2
 
-which could also be called from freezer_write() I think.
 
-Cheers,
-	-Matt Helsley
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22942
+Subject		: [2.6.37-rc1, OOM] virtblk: OOM in do_virtblk_request()
+Submitter	: Dave Chinner <david@fromorbit.com>
+Date		: 2010-11-05 1:30 (100 days old)
+Message-ID	: <20101105013003.GE13830@dastard>
+References	: http://marc.info/?l=linux-kernel&m=128892062917641&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22642
+Subject		: 2.6.37-rc1: Disk takes 10 seconds to resume - MacBook2,1
+Submitter	: Tobias <devnull@plzk.org>
+Date		: 2010-11-10 19:33 (95 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22542
+Subject		: [2.6.37-rc1] drm:i195 errors
+Submitter	: Paul Rolland <rol@witbe.net>
+Date		: 2010-11-02 14:58 (103 days old)
+Message-ID	: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
+References	: http://marc.info/?l=linux-kernel&m=128870991628970&w=2
+
+
+Regressions with patches
+------------------------
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28592
+Subject		: Multichannels LPCM through HDMI audio does not work anymore on NVidia cards
+Submitter	: dura <newsgrp@duradsl.dyndns.org>
+Date		: 2011-02-08 13:39 (5 days old)
+Handled-By	: Takashi Iwai <tiwai@suse.de>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=46852
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27202
+Subject		: Remote control of saa7134-based tv card "ASUSTeK P7131 Hybrid" stopped working in 2.6.37
+Submitter	:  <acaizzo@gmail.com>
+Date		: 2011-01-20 17:23 (24 days old)
+First-Bad-Commit: http://git.kernel.org/linus/4651918a4afdd49bdea21d2f919b189ef17a6399
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=44532
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25822
+Subject		: [BUG] kernel BUG at mm/truncate.c:479! on 2.6.37-rc8
+Submitter	: Gurudas Pai <gurudas.pai@oracle.com>
+Date		: 2010-12-29 6:58 (46 days old)
+Message-ID	: <4D1AD935.1020504@oracle.com>
+References	: http://marc.info/?l=linux-kernel&m=129360511222037&w=2
+Patch		: https://lkml.org/lkml/2010/12/29/131
+		  https://lkml.org/lkml/2011/1/20/163
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25402
+Subject		: kernel (2.6.37-8-generic_amd64) panic on boot (with message "map_single: bounce buffer is not DMA'ble) - possible regression !!!
+Submitter	: carlos <carlos.palma@ono.com>
+Date		: 2010-12-21 19:58 (54 days old)
+Patch		: https://patchwork.kernel.org/patch/522971/
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23472
+Subject		: 2.6.37-rc2 vs. 2.6.36 laptop backlight changes?
+Submitter	: Patrick Schaaf <netdev@bof.de>
+Date		: 2010-11-17 13:41 (88 days old)
+Message-ID	: <1290001262.5727.2.camel@lat1>
+References	: http://marc.info/?l=linux-kernel&m=129000127920912&w=2
+Handled-By	: Indan Zupancic <indan@nul.nu>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=47302
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22882
+Subject		: (2.6.37-rc1) amd64-agp module crashed on second load
+Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
+Date		: 2010-11-05 0:13 (100 days old)
+Message-ID	: <20101104171333.fea1f498.randy.dunlap@oracle.com>
+References	: http://marc.info/?l=linux-kernel&m=128891605213447&w=2
+Handled-By	: Florian Mickler <florian@mickler.org>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=46682
+
+
+For details, please visit the bug entries and follow the links given in
+references.
+
+As you can see, there is a Bugzilla entry for each of the listed regressions.
+There also is a Bugzilla entry used for tracking the regressions introduced
+between 2.6.36 and 2.6.37, unresolved as well as resolved, at:
+
+http://bugzilla.kernel.org/show_bug.cgi?id=21782
+
+Please let the tracking team know if there are any Bugzilla entries that
+should be added to the list in there.
+
+Thanks!
+
