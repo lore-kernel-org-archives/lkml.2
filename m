@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758415Ab1BLDNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 22:13:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59098 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758252Ab1BLDNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 22:13:08 -0500
-Message-ID: <4D55FAC1.9070208@cn.fujitsu.com>
-Date: Sat, 12 Feb 2011 11:13:05 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1758421Ab1BLDTv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 22:19:51 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:52803 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758200Ab1BLDTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 22:19:50 -0500
+Date: Fri, 11 Feb 2011 19:19:35 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Eugene Teo <eugeneteo@kernel.org>
+Message-ID: <20110212031935.GA23210@outflux.net>
 MIME-Version: 1.0
-To: Justin TerAvest <teravest@google.com>
-CC: jaxboe@fusionio.com, vgoyal@redhat.com, ctalbott@google.com,
-        mrubin@google.com, jmoyer@redhat.com, guijanfeng@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] Don't update group weights when on service tree.
-References: <1297372086-16138-1-git-send-email-teravest@google.com>
-In-Reply-To: <1297372086-16138-1-git-send-email-teravest@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-12 11:12:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-12 11:12:14,
-	Serialize complete at 2011-02-12 11:12:14
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin TerAvest wrote:
-> With some instrumentation, we can observe that the total_weight for a 
-> service tree can be badly adjusted; particularly when the weight for a 
-> group is adjusted without taking it off of the tree. This can be 
-> reproduced on the HEAD of the linux-2.6-block tree.
-> 
-> We have seen this problem in workloads when total_weight becomes 0 and 
-> we divide by 0 in cfq_group_slice(), crashing the kernel, but it's
-> easier to illustrate by adding a BUG_ON and making it signed, like this:
+Bcc: 
+Subject: [PATCH] hide kernel addresses via %pK in /proc/timer_list
+Reply-To: 
+Organization: Canonical
 
-Justin,
+In the continuing effort to avoid kernel addresses leaking to unprivileged
+users, this patch switches to %pK for /proc/timer_list reporting.
 
-I have also catch this BUG by browsing code a few days ago. ;)
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+ kernel/time/timer_list.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-The problem is we don't update st->total_weight when we setting a new weight
-for a group.
+diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+index 32a19f9..3258455 100644
+--- a/kernel/time/timer_list.c
++++ b/kernel/time/timer_list.c
+@@ -41,7 +41,7 @@ static void print_name_offset(struct seq_file *m, void *sym)
+ 	char symname[KSYM_NAME_LEN];
+ 
+ 	if (lookup_symbol_name((unsigned long)sym, symname) < 0)
+-		SEQ_printf(m, "<%p>", sym);
++		SEQ_printf(m, "<%pK>", sym);
+ 	else
+ 		SEQ_printf(m, "%s", symname);
+ }
+@@ -112,7 +112,7 @@ next_one:
+ static void
+ print_base(struct seq_file *m, struct hrtimer_clock_base *base, u64 now)
+ {
+-	SEQ_printf(m, "  .base:       %p\n", base);
++	SEQ_printf(m, "  .base:       %pK\n", base);
+ 	SEQ_printf(m, "  .index:      %d\n",
+ 			base->index);
+ 	SEQ_printf(m, "  .resolution: %Lu nsecs\n",
+-- 
+1.7.2.3
 
-Thanks,
-Gui
-
+-- 
+Kees Cook
+Ubuntu Security Team
