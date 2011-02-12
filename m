@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758476Ab1BLDw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 22:52:29 -0500
-Received: from imr3.ericy.com ([198.24.6.13]:51581 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758200Ab1BLDw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 22:52:28 -0500
-Date: Fri, 11 Feb 2011 19:51:38 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Andres Salomon <dilinger@queued.net>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 03/17] jz4740: mfd_cell is now implicitly available to
- drivers
-Message-ID: <20110212035138.GA6859@ericsson.com>
-References: <20110211180250.483936cc@queued.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110211180250.483936cc@queued.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758483Ab1BLEOK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 23:14:10 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:39095 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758054Ab1BLEOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 23:14:08 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] zcache: Fix build error when sysfs is not defined
+Date: Fri, 11 Feb 2011 23:14:39 -0500
+Message-Id: <1297484079-12562-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 09:02:50PM -0500, Andres Salomon wrote:
-> 
-> No need to explicitly set the cell's platform_data/data_size.
-> 
-> Modify clients to use mfd_get_cell helper function instead of
-> accessing platform_data directly.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+---
+ drivers/staging/zcache/zcache.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I don't see anything different to the previous version of this patch
-(which was Acked by Jean already), and there is no changelog available
-for the complete series either.
+diff --git a/drivers/staging/zcache/zcache.c b/drivers/staging/zcache/zcache.c
+index 61be849..8cd3fd8 100644
+--- a/drivers/staging/zcache/zcache.c
++++ b/drivers/staging/zcache/zcache.c
+@@ -1590,9 +1590,9 @@ __setup("nofrontswap", no_frontswap);
+ 
+ static int __init zcache_init(void)
+ {
+-#ifdef CONFIG_SYSFS
+ 	int ret = 0;
+ 
++#ifdef CONFIG_SYSFS
+ 	ret = sysfs_create_group(mm_kobj, &zcache_attr_group);
+ 	if (ret) {
+ 		pr_err("zcache: can't create sysfs\n");
+-- 
+1.7.3.5
 
-A changelog would be really helpful.
-
-Guenter
