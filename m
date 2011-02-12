@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab1BLXoM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 18:44:12 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39803 "EHLO ogre.sisk.pl"
+	id S1754194Ab1BLXoR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 18:44:17 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39799 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab1BLXn0 convert rfc822-to-8bit (ORCPT
+	id S1754018Ab1BLXnY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 18:43:26 -0500
+	Sat, 12 Feb 2011 18:43:24 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "Michal Vaner" <vorner@ucw.cz>
+        Florian Mickler <florian@mickler.org>, "Pawel Sikora" <pluto@agmk.net>
 References: <9Pzlq5PlEtH.A.DU.efxVNB@chimera>
 In-Reply-To: <9Pzlq5PlEtH.A.DU.efxVNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <1z1FRILH7uF.A.RBB.NgxVNB@chimera>
-Subject: [Bug #27402] Atheros adapter no longer loads firmware
+Message-ID: <1z1FRILH7uF.A.QnB.ChxVNB@chimera>
+Subject: [Bug #26102] [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 13 Feb 2011 00:38:28 +0100 (CET)
+Date: Sun, 13 Feb 2011 00:38:25 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,10 +33,11 @@ introduced between 2.6.36 and 2.6.37.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27402
-Subject		: Atheros adapter no longer loads firmware
-Submitter	: Michal Vaner <vorner@ucw.cz>
-Date		: 2011-01-23 15:29 (21 days old)
-First-Bad-Commit: http://git.kernel.org/linus/be93112accb42c5586a459683d71975cc70673ca
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26102
+Subject		: [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
+Submitter	: Pawel Sikora <pluto@agmk.net>
+Date		: 2010-12-30 15:08 (45 days old)
+Message-ID	: <201012301608.40859.pluto@agmk.net>
+References	: http://marc.info/?l=linux-kernel&m=129372388925679&w=2
 
 
