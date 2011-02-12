@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758379Ab1BLDVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 22:21:54 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:49358 "EHLO smtp.outflux.net"
+	id S1758446Ab1BLDaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 22:30:00 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:51201 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab1BLDVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 22:21:53 -0500
-Date: Fri, 11 Feb 2011 19:21:25 -0800
+	id S1752468Ab1BLD37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 22:29:59 -0500
+Date: Fri, 11 Feb 2011 19:29:44 -0800
 From: Kees Cook <kees.cook@canonical.com>
 To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Dan Rosenberg <drosenberg@vsecurity.com>,
         Eugene Teo <eugeneteo@kernel.org>
-Subject: [PATCH] hide kernel addresses via %pK in /proc/timer_list
-Message-ID: <20110212032125.GA23571@outflux.net>
+Subject: [PATCH] drm: do not leak kernel addresses via /proc/dri/*/vma
+Message-ID: <20110212032944.GA24080@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,38 +24,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 In the continuing effort to avoid kernel addresses leaking to unprivileged
-users, this patch switches to %pK for /proc/timer_list reporting.
+users, this patch switches to %pK for /proc/dri/*/vma.
 
 Signed-off-by: Kees Cook <kees.cook@canonical.com>
 ---
-Please ignore Message-ID: <20110212031935.GA23210@outflux.net> which broke
-the headers. I hate my MUA.
+ drivers/gpu/drm/drm_info.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
- kernel/time/timer_list.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-index 32a19f9..3258455 100644
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -41,7 +41,7 @@ static void print_name_offset(struct seq_file *m, void *sym)
- 	char symname[KSYM_NAME_LEN];
+diff --git a/drivers/gpu/drm/drm_info.c b/drivers/gpu/drm/drm_info.c
+index 3cdbaf3..be9a9c0 100644
+--- a/drivers/gpu/drm/drm_info.c
++++ b/drivers/gpu/drm/drm_info.c
+@@ -283,17 +283,18 @@ int drm_vma_info(struct seq_file *m, void *data)
+ #endif
  
- 	if (lookup_symbol_name((unsigned long)sym, symname) < 0)
--		SEQ_printf(m, "<%p>", sym);
-+		SEQ_printf(m, "<%pK>", sym);
- 	else
- 		SEQ_printf(m, "%s", symname);
- }
-@@ -112,7 +112,7 @@ next_one:
- static void
- print_base(struct seq_file *m, struct hrtimer_clock_base *base, u64 now)
- {
--	SEQ_printf(m, "  .base:       %p\n", base);
-+	SEQ_printf(m, "  .base:       %pK\n", base);
- 	SEQ_printf(m, "  .index:      %d\n",
- 			base->index);
- 	SEQ_printf(m, "  .resolution: %Lu nsecs\n",
+ 	mutex_lock(&dev->struct_mutex);
+-	seq_printf(m, "vma use count: %d, high_memory = %p, 0x%08llx\n",
++	seq_printf(m, "vma use count: %d, high_memory = %pK, 0x%pK\n",
+ 		   atomic_read(&dev->vma_count),
+-		   high_memory, (u64)virt_to_phys(high_memory));
++		   high_memory, (void *)virt_to_phys(high_memory));
+ 
+ 	list_for_each_entry(pt, &dev->vmalist, head) {
+ 		vma = pt->vma;
+ 		if (!vma)
+ 			continue;
+ 		seq_printf(m,
+-			   "\n%5d 0x%08lx-0x%08lx %c%c%c%c%c%c 0x%08lx000",
+-			   pt->pid, vma->vm_start, vma->vm_end,
++			   "\n%5d 0x%pK-0x%pK %c%c%c%c%c%c 0x%08lx000",
++			   pt->pid,
++			   (void *)vma->vm_start, (void *)vma->vm_end,
+ 			   vma->vm_flags & VM_READ ? 'r' : '-',
+ 			   vma->vm_flags & VM_WRITE ? 'w' : '-',
+ 			   vma->vm_flags & VM_EXEC ? 'x' : '-',
 -- 
 1.7.2.3
 
