@@ -1,111 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab1BLJWV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 04:22:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:20532 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab1BLJWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 04:22:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,461,1291622400"; 
-   d="scan'208";a="886847894"
-Subject: Re: [performance bug] kernel building regression on 64 LCPUs
- machine
-From: "Alex,Shi" <alex.shi@intel.com>
-To: "Li, Shaohua" <shaohua.li@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, "jack@suse.cz" <jack@suse.cz>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "czoccolo@gmail.com" <czoccolo@gmail.com>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <20110126081529.GA28909@sli10-conroe.sh.intel.com>
-References: <1295402148.4773.143.camel@debian>
-	 <1295402606.1949.871.camel@sli10-conroe>
-	 <20110120151656.GC18875@redhat.com>
-	 <20110126081529.GA28909@sli10-conroe.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 12 Feb 2011 17:21:52 +0800
-Message-ID: <1297502512.29573.26.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1752687Ab1BLJ0L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 04:26:11 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42885 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab1BLJ0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 04:26:06 -0500
+Date: Sat, 12 Feb 2011 02:26:00 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw, linux-input@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Walter Goossens <waltergoossens@home.nl>
+Subject: Re: [PATCH v3] altera_ps2: Add devicetree support
+Message-ID: <20110212092600.GE17755@angua.secretlab.ca>
+References: <AANLkTikxSrwOfU=m_h+6G5hQMk6drOpqOPSfbBdzg53g@mail.gmail.com>
+ <1296702304-30471-1-git-send-email-thomas@wytron.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296702304-30471-1-git-send-email-thomas@wytron.com.tw>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 16:15 +0800, Li, Shaohua wrote:
-> On Thu, Jan 20, 2011 at 11:16:56PM +0800, Vivek Goyal wrote:
-> > On Wed, Jan 19, 2011 at 10:03:26AM +0800, Shaohua Li wrote:
-> > > add Jan and Theodore to the loop.
-> > >
-> > > On Wed, 2011-01-19 at 09:55 +0800, Shi, Alex wrote:
-> > > > Shaohua and I tested kernel building performance on latest kernel. and
-> > > > found it is drop about 15% on our 64 LCPUs NHM-EX machine on ext4 file
-> > > > system. We find this performance dropping is due to commit
-> > > > 749ef9f8423054e326f. If we revert this patch or just change the
-> > > > WRITE_SYNC back to WRITE in jbd2/commit.c file. the performance can be
-> > > > recovered.
-> > > >
-> > > > iostat report show with the commit, read request merge number increased
-> > > > and write request merge dropped. The total request size increased and
-> > > > queue length dropped. So we tested another patch: only change WRITE_SYNC
-> > > > to WRITE_SYNC_PLUG in jbd2/commit.c, but nothing effected.
-> > > since WRITE_SYNC_PLUG doesn't work, this isn't a simple no-write-merge issue.
-> > >
-> > 
-> > Yep, it does sound like reduce write merging. But moving journal commits
-> > back to WRITE, then fsync performance will drop as there will be idling
-> > introduced between fsync thread and journalling thread. So that does
-> > not sound like a good idea either.
-> > 
-> > Secondly, in presence of mixed workload (some other sync read happening)
-> > WRITES can get less bandwidth and sync workload much more. So by
-> > marking journal commits as WRITES you might increase the delay there
-> > in completion in presence of other sync workload.
-> > 
-> > So Jan Kara's approach makes sense that if somebody is waiting on
-> > commit then make it WRITE_SYNC otherwise make it WRITE. Not sure why
-> > did it not work for you. Is it possible to run some traces and do
-> > more debugging that figure out what's happening.
-> Sorry for the long delay.
+On Thu, Feb 03, 2011 at 11:05:04AM +0800, Thomas Chou wrote:
+> Signed-off-by: Walter Goossens <waltergoossens@home.nl>
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> ---
+> v2 use const and add compat version.
+> v3 change compatible vendor to ALTR.
+>    add dts binding doc.
 > 
-> Looks fedora enables ccache by default. While our kbuild test is on ext4 disk
-> but rootfs is on ext3 where ccache cache files live. Jan's patch only covers
-> ext4, maybe this is the reason.
-> I changed jbd to use WRITE for journal_commit_transaction. With the change and
-> Jan's patch, the test seems fine.
-Let me clarify the bug situation again. 
-With the following scenarios, the regression is clear.
-1, ccache_dir setup at rootfs that format is ext3 on /dev/sda1; 2,
-kbuild on /dev/sdb1 with ext4. 
-but if we disable the ccache, only do kbuild on sdb1 with ext4. There is
-no regressions whenever with or without Jan's patch. 
-So, problem focus on the ccache scenario, (from fedora 11, ccache is
-default setting). 
-
-If we compare the vmstat output with or without ccache, there is too
-many write when ccache enabled. According the result, it should to do
-some tunning on ext3 fs. 
-
-
-vmstat average output per 10 seconds, without ccache
-procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-26.8 0.5 0.0 63930192.3 9677.0 96544.9 0.0 0.0 2486.9 337.9 17729.9 4496.4 17.5 2.5 79.8 0.2 0.0 
-
-vmstat average output per 10 seconds, with ccache
-procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-2.4 40.7 0.0 64316231.0 17260.6 119533.8 0.0 0.0 2477.6 1493.1 8606.4 3565.2 2.5 1.1 83.0 13.5 0.0
-
-
+>  .../devicetree/bindings/serio/altera_ps2.txt       |    4 ++++
+>  drivers/input/serio/altera_ps2.c                   |   11 +++++++++--
+>  2 files changed, 13 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/serio/altera_ps2.txt
 > 
-> Jan,
-> can you send a patch with similar change for ext3? So we can do more tests.
+> diff --git a/Documentation/devicetree/bindings/serio/altera_ps2.txt b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+> new file mode 100644
+> index 0000000..4d9eecc
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+> @@ -0,0 +1,4 @@
+> +Altera UP PS/2 controller
+> +
+> +Required properties:
+> +- compatible : should be "ALTR,ps2-1.0".
+> diff --git a/drivers/input/serio/altera_ps2.c b/drivers/input/serio/altera_ps2.c
+> index 7998560..d94b4a3 100644
+> --- a/drivers/input/serio/altera_ps2.c
+> +++ b/drivers/input/serio/altera_ps2.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+> +#include <linux/of.h>
+>  
+>  #define DRV_NAME "altera_ps2"
+>  
+> @@ -173,6 +174,12 @@ static int __devexit altera_ps2_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +static const struct of_device_id altera_ps2_match[] = {
+> +	{ .compatible = "ALTR,ps2-1.0", },
+> +	{},
+> +}
+> +MODULE_DEVICE_TABLE(of, altera_ps2_match);
+> +
+
+Should be:
+
+#ifdef CONFIG_OF
+static const struct of_device_id altera_ps2_match[] = {
+	{ .compatible = "ALTR,ps2-1.0", },
+	{},
+}
+MODULE_DEVICE_TABLE(of, altera_ps2_match);
+#else /* CONFIG_OF */
+#define altera_ps2_match NULL
+#endif /* CONFIG_OF */
+
+Otherwise the driver will be advertising that it provides device tree
+support when CONFIG_OF is disabled.
+
+Otherwise, looks good to me.  Feel free to add my acked-by line.
+
+g.
+
+>  /*
+>   * Our device driver structure
+>   */
+> @@ -182,6 +189,7 @@ static struct platform_driver altera_ps2_driver = {
+>  	.driver	= {
+>  		.name	= DRV_NAME,
+>  		.owner	= THIS_MODULE,
+> +		.of_match_table = altera_ps2_match,
+>  	},
+>  };
+>  
+> @@ -189,13 +197,12 @@ static int __init altera_ps2_init(void)
+>  {
+>  	return platform_driver_register(&altera_ps2_driver);
+>  }
+> +module_init(altera_ps2_init);
+>  
+>  static void __exit altera_ps2_exit(void)
+>  {
+>  	platform_driver_unregister(&altera_ps2_driver);
+>  }
+> -
+> -module_init(altera_ps2_init);
+>  module_exit(altera_ps2_exit);
+>  
+>  MODULE_DESCRIPTION("Altera University Program PS2 controller driver");
+> -- 
+> 1.7.3.5
 > 
-> Thanks,
-> Shaohua
-
-
-
