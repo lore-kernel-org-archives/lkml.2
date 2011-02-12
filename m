@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab1BLWKG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 17:10:06 -0500
-Received: from mux2.uit.no ([129.242.5.252]:49618 "EHLO mux2.uit.no"
+	id S1753290Ab1BLWPI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 17:15:08 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39355 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058Ab1BLWKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 17:10:04 -0500
-X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Feb 2011 17:10:03 EST
-X-DKIM: Sendmail DKIM Filter v2.8.3 mux2.uit.no p1CLvf8B025408
-Message-ID: <15dc432a3613131574c11c64fb07f8e8.squirrel@ws.student.uit.no>
-Date: Sat, 12 Feb 2011 22:57:36 +0100
-Subject: 
-From: ede000@post.uit.no
-Reply-To: robertson-s@gncn.net
-User-Agent: SquirrelMail/1.4.21
+	id S1753159Ab1BLWPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 17:15:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: [RFC][PATCH 0/2] PM: Core power management modifications
+Date: Sat, 12 Feb 2011 23:12:26 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Kevin Hilman <khilman@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Len Brown <lenb@kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <201101300107.19389.rjw@sisk.pl> <87sjw7wvjl.fsf@ti.com> <201102011939.49793.rjw@sisk.pl>
+In-Reply-To: <201102011939.49793.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102122312.26545.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day,
+Hi,
 
-My name is Mr. Robertson Silverberg I work in the Euro Million Lottery. I
-am soliciting your assistance for a swift transfer of 1,500,000.00
-GBP,should you be willing to assist me in this project, and you will be
-giving me just 50% of your winnings from the 1,500,000.00 GBP.
+The two patches in this series modify the core power management code in the
+following way:
 
-Just a brief on how it works, you requested to register free online in
-euro million online website. with my position in the company I can make it
-happen that you will be among winner for next week Euro Million Lottery
-winner for the above stated amount.
-Naturally, every body would like to play a lottery if they are assured of
-winning. I am assuring you today to be a winner, please do not take this
-for granted because this once in a life time opportunity as we both stand
-to collectively gain from this at the success of the transaction.
+[1/2] - Adds support for device power domains.
+[2/2] - Reworks the core PM routines so that subsystems are treated in the
+        same way by the system-wide transitions code and the runtime PM code.
 
-Warmest Regards,
-Mr. Robertson Silverberg
-E-mail: robertson-s@gncn.net
+Comments welcome!
+
+Thanks,
+Rafael
 
