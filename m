@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751093Ab1BLPvJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 10:51:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58272 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab1BLPvF (ORCPT
+	id S1751192Ab1BLQEI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 11:04:08 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34572 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab1BLQED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 10:51:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Yw0Jl7WVjzAvJ31GStZ3SYmJGY5Mld+1BYHrXsuQVQx3AKzWG6Ekb6IfthFVX8BJVT
-         CnALdpFi9eTjJMChCQijeKDfD3TPnYyUO/7pP+uBU5ymdWsmX9SKHJcaJG7bUSo3XBEe
-         iIvd7o2bzA04qaxH8xTI/VunOCsLLskgjXbW0=
-Date: Sat, 12 Feb 2011 16:51:00 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: David Teigland <teigland@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] dlm fix for 2.6.38
-Message-ID: <20110212155100.GR3770@htj.dyndns.org>
-References: <20110211233844.GC30276@redhat.com>
- <1297525475.2584.1.camel@dolmen>
+	Sat, 12 Feb 2011 11:04:03 -0500
+Message-ID: <4D56AF22.4070803@oracle.com>
+Date: Sat, 12 Feb 2011 08:02:42 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297525475.2584.1.camel@dolmen>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Kurt Van Dijck <kurt.van.dijck@eia.be>
+CC: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
+References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org> <20110211223312.be571303.randy.dunlap@oracle.com> <20110212111344.GA328@e-circ.dyndns.org>
+In-Reply-To: <20110212111344.GA328@e-circ.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4D56AF69.0065:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 02/12/11 03:15, Kurt Van Dijck wrote:
+> On Fri, Feb 11, 2011 at 10:33:12PM -0800, Randy Dunlap wrote:
+>>
+>> warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
+>>
+>> with this partial config:
+>>
+>> CONFIG_CAN=m
+>> # CONFIG_CAN_RAW is not set
+>> # CONFIG_CAN_BCM is not set
+>> # CAN Device Drivers
+>> # CONFIG_CAN_VCAN is not set
+>> CONFIG_CAN_SLCAN=m
+>> # CONFIG_CAN_DEV is not set
+>> CONFIG_CAN_SOFTING=m
+>> CONFIG_CAN_SOFTING_CS=m
+>> # CONFIG_CAN_DEBUG_DEVICES is not set
+> I understand the output, but I don't understand the cause well enough.
+> CAN_SOFTING=m has a 'depends on CAN_DEV'
+> Is it then possible to have CAN_SOFTING=m _and not_ CAN_DEV ?
 
-On Sat, Feb 12, 2011 at 03:44:35PM +0000, Steven Whitehouse wrote:
-> > diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-> > index 9c64ae9..2d8c87b 100644
-> > --- a/fs/dlm/lowcomms.c
-> > +++ b/fs/dlm/lowcomms.c
-> > @@ -1468,15 +1468,13 @@ static void work_stop(void)
-> >  
-> >  static int work_start(void)
-> >  {
-> > -	recv_workqueue = alloc_workqueue("dlm_recv", WQ_MEM_RECLAIM |
-> > -					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
-> > +	recv_workqueue = create_singlethread_workqueue("dlm_recv");
+Yes.  From Documentation/kbuild/kconfig-language.txt:
 
-recv_workqueue was multithread one even before the conversion.  It
-probably is best to leave this part alone.
+  Note:
+	select should be used with care. select will force
+	a symbol to a value without visiting the dependencies.
+	By abusing select you are able to select a symbol FOO even
+	if FOO depends on BAR that is not set.
+	In general use select only for non-visible symbols
+	(no prompts anywhere) and for symbols with no dependencies.
+	That will limit the usefulness but on the other hand avoid
+	the illegal configurations all over.
 
-> > -	send_workqueue = alloc_workqueue("dlm_send", WQ_MEM_RECLAIM |
-> > -					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
-> > +	send_workqueue = create_singlethread_workqueue("dlm_send");
 
-send_workqueue was converted from ST to MT but the correct way at this
-point would be,
+CAN_SOFTING_CS does not depend on CAN_DEV. but it selects CAN_SOFTING,
+which does depend on CAN_DEV, ... but CAN_DEV is not enabled.
 
-	alloc_ordered_workqueue("dlm_send",
-				WQ_MEM_RECLAIM | WQ_HIGHPRI | WQ_FREEZEABLE);
-
-> >  	if (!send_workqueue) {
-> >  		log_print("can't start dlm_send");
-> >  		destroy_workqueue(recv_workqueue);
-> > 
-> > 
-> 
-> What is the issue here? If there is a problem with the workqueues then
-> we should ask Tejun about it,
-
-Yeah, what kind of problem was it?  There's only one work per
-connection so reordering is not a problem.  All the workqueue
-operations use proper locking, so the conversion seemed safe to me.
-What am I missing?
-
-Thanks.
 
 -- 
-tejun
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
