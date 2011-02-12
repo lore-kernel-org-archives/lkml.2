@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab1BLVT0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 16:19:26 -0500
-Received: from nm20-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.45]:27991 "HELO
-	nm20-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752637Ab1BLVTV (ORCPT
+	id S1752931Ab1BLV3M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 16:29:12 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34047 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab1BLV3B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 16:19:21 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 863483.61040.bm@omp1037.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=LGNgUgVqr/+GzrX7i7lP1vY6tKXMFwJGn8hUMdNRFw0q+Nf/htne8YPv21O/iLNWKixEVVcMNEsRVdBafzIcezs0eiOV9my80eENcUbr/n1zEO1PDl44G5R7XEcru2LJOpedeEBFkyDwFZ78VGtE0heT9yS+TADeO3l5Mx+l/O8=;
-Message-ID: <683796.34031.qm@web121807.mail.ne1.yahoo.com>
-X-YMail-OSG: OT71oigVM1kQbQ3q9muc8bJKit9qYbvSHzeJKtGj4CNpbf2
- Vk.eyLIXtH5ycaF7cmvOb83HTe5SsehCpNEOJwoqCB21NH5gFsaxlXk.i.8f
- N6BbpNkBqykIequVhsl8yf1R4y8wrMu5lrNvftdCSlonYFUV4_jliFQIP7_a
- CxuVNRyaeQkuA0ly.TmhVuMm4y0lmNT1Wdx9fpJh6zsyCnnfCRUwCvXzTjPa
- PJAjdDruPHjONQyUb3Iq.IBRGR9f2btiDSMMJSqe0SbiPWKt5TWU17pXZ2JY
- -
-X-Mailer: YahooMailWebService/0.8.108.291010
-Date: Sat, 12 Feb 2011 13:19:20 -0800 (PST)
-From: GAURAV YADAV <gaurav_christmas@yahoo.com>
-To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
-        ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
-        preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com
+	Sat, 12 Feb 2011 16:29:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fxLci/lV1kgzE5iubzvG5YRWBiEHvLX5eeX4YFN39Uc+gG0ncsVB3SPyWqQHYZ+hPu
+         12M/pYSaoN4Orp8sxtdxLAzZRwF/is0ozQSYNTZ/0gtnzUUtEBnCYqvwfIgJo18PCG8J
+         ry08vhP1wmk4toJwNmDLsW61lsmQ6IBu2NXfQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <87aai1gdr7.fsf@mid.deneb.enyo.de>
+References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
+	<87aai1gdr7.fsf@mid.deneb.enyo.de>
+Date: Sat, 12 Feb 2011 13:29:00 -0800
+Message-ID: <AANLkTimu_VtGnNO-ySeCCE9A0fuof6GkMPUYJ65T2sCR@mail.gmail.com>
+Subject: Re: X32 psABI status
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Florian Weimer <fw@deneb.enyo.de>
+Cc: GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://portalibi.com/present.php
+On Sat, Feb 12, 2011 at 1:10 PM, Florian Weimer <fw@deneb.enyo.de> wrote:
+> * H. J. Lu:
+>
+>> We made lots of progresses on x32 pABI:
+>>
+>> https://sites.google.com/site/x32abi/
+>>
+>> 1. Kernel interface with syscall is close to be finalized.
+>> 2. GCC x32 branch is stabilizing.
+>> 3. The Bionic C library works with the syscall kernel interface.
+>>
+>> The next major milestone will be x32 glibc port.
+>
+> It is a bit difficult to extract useful information from these
+> resources.
 
+That is true. Contributions are more than welcome.
 
- 
-____________________________________________________________________________________
-Never miss an email again!
-Yahoo! Toolbar alerts you the instant new Mail arrives.
-http://tools.search.yahoo.com/toolbar/features/mail/
+> Is off_t 32 bits?  Why is the ia32 compatiblity kernel interface used?
+
+Yes.
+
+> I'm sure a lot of people want to get rid of that in cases where they
+> control the whole software stack.
+
+That is debatable. The current thought is the x32 user space API
+is the same as is ia32.  time_t is also an issue.
+
+> Is stack alignment to 16 bytes beneficial for X32?
+>
+
+Even ia32 uses 16byte stack alignment and we will make it
+official soon via an amendment to the i386 psABI.
+
+-- 
+H.J.
