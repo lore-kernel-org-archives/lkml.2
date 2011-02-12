@@ -1,120 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab1BLAxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 19:53:33 -0500
-Received: from a-pb-sasl-sd.pobox.com ([64.74.157.62]:36133 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab1BLAxb convert rfc822-to-8bit (ORCPT
+	id S1758081Ab1BLBPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 20:15:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40456 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239Ab1BLBPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 19:53:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=XNfas63X5WeBgcZMiC+
-	XnZZphW5Pm+g+hieFYNSRZplOmmenurYe9lvmoESTYNw97204nIgAZ7FfwZ3sCTS
-	0GMWB/OxjqbaUF8s1Iw6QKzemVOeL91rXLwBpMUdmN5jBTNbVJ/iyT3kF4lcbW6o
-	J7Hx2+zOW2T72kgUXLKtaNrY=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.4.1
-From: Junio C Hamano <gitster@pobox.com>
-Date: Fri, 11 Feb 2011 16:53:20 -0800
-Message-ID: <7vei7eysxr.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Fri, 11 Feb 2011 20:15:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QCUOLTlYzDdzJwIJoazucIkVpaS3WtccAfT599PTASyWbLyFUuiDXs1/zK+0EShKpS
+         lue59tGRab/nEYFFiVxqCslGxWlnFjv8LGpBoYHSk+1hVg+Dc9P9BKBuAE5f7C59z3zP
+         hEMeUGvca4L4sruzqotVuGpXxOVvGQb4IoFqI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: A4A986A8-3642-11E0-97E3-AF401E47CF6F-77302942!a-pb-sasl-sd.pobox.com
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <C0E6BA6B-174B-4930-A5C5-7DB87FDFAD1F@gmail.com>
+References: <4D51AD03.7030401@gmail.com>
+	<AANLkTimXbbCJHs7WEfkbbQLpKqMM1G_qZ-cN1hcQ+3KJ@mail.gmail.com>
+	<AANLkTimBwM=iacwPosrYXU_jN=DXnEkWL3jvFcarDN23@mail.gmail.com>
+	<B44733BE-E28B-441E-9E6B-AE9B0C8D7E45@gmail.com>
+	<AANLkTimdE6G=qf+wLLSogma-BbH9J0_DYRv7aJkP9P64@mail.gmail.com>
+	<AANLkTi=Ppzicpz5a6AO5rrGkv=j3HPmiB7Er4VGj4OVU@mail.gmail.com>
+	<C0E6BA6B-174B-4930-A5C5-7DB87FDFAD1F@gmail.com>
+Date: Fri, 11 Feb 2011 20:15:42 -0500
+Message-ID: <AANLkTinca2027s9-g0tLabBMj4fr2+e=xgUSymBqvv1o@mail.gmail.com>
+Subject: Re: [BISECTED] commit 619efb1059 makes the MacBookPro2,2 screen
+ flicker like its broken or half plugged in
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Justin Mattock <justinmattock@gmail.com>
+Cc: dri-devel@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        airlied@redhat.com
+Content-Type: multipart/mixed; boundary=20cf3054a585aa9cb9049c0b8d90
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first maintenance release Git 1.7.4.1 is available at the usual
-places:
+--20cf3054a585aa9cb9049c0b8d90
+Content-Type: text/plain; charset=ISO-8859-1
 
-  http://www.kernel.org/pub/software/scm/git/
+On Fri, Feb 11, 2011 at 10:57 AM, Justin Mattock
+<justinmattock@gmail.com> wrote:
+>
+>>
+>> Better yet, can you try the attached patch on top of 2.6.38-rc4 or newer?
+>>
+>> Alex
+>>
+>
+> o.k. applied that patch... unfortunately Im seeing the flickering screen and
+> the crud shows up..
+> initially during boot everything looked fine, its when I suspended the
+> machine, upon wake-up
+> the flickering occurred.
+> kernel version is the current: 2.6.38-rc4-00107-gaa502b4
 
-  git-1.7.4.1.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.4.1.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.4.1.tar.{gz,bz2}		(preformatted docs)
+Can you try this patch?  Try uncommenting the following lines to see
+if either of those flags work any better.  Try them individually and
+together if possible and report back which, if any, helps.
 
-The RPM binary packages for a few architectures are found in:
+/*pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;*/
 
-  RPMS/$arch/git-*-1.7.4.1-1.fc13.$arch.rpm	(RPM)
+/*if (ASIC_IS_AVIVO(rdev))
+        pll->flags |= RADEON_PLL_USE_FRAC_FB_DIV;*/
 
+Thanks!
 
-Git v1.7.4.1 Release Notes
-==========================
+Alex
 
-Fixes since v1.7.4
-------------------
+>
+> Justin P. Mattock
+>
 
- * On Windows platform, the codepath to spawn a new child process forgot
-   to first flush the output buffer.
+--20cf3054a585aa9cb9049c0b8d90
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-radeon-kms-hopefully-fix-pll-issues-for-real-v2.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-radeon-kms-hopefully-fix-pll-issues-for-real-v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gk1u4a0y0
 
- * "git bundle" did not use OFS_DELTA encoding, making its output a few
-   per-cent larger than necessarily.
-
- * The option to tell "git clone" to recurse into the submodules was
-   misspelled with an underscore "--recurse_submodules".
-
- * "git diff --cached HEAD" before the first commit does what an end user
-   would expect (namely, show what would be committed without further "git
-   add").
-
- * "git fast-import" didn't accept the command to ask for "notes" feature
-   to be present in its input stream, even though it was capable of the
-   feature.
-
- * "git fsck" gave up scanning loose object files in directories with
-   garbage files.
-
-And other minor fixes and documentation updates.
-
-----------------------------------------------------------------
-
-Changes since v1.7.4 are as follows:
-
-Chris Packham (1):
-      clone: fixup recurse_submodules option
-
-Jakub Narebski (1):
-      gitweb: Mention optional Perl modules in INSTALL
-
-Jens Lehmann (2):
-      t5526: Fix wrong argument order in "git config"
-      pull: Document the "--[no-]recurse-submodules" options
-
-Johannes Sixt (2):
-      start_command: flush buffers in the WIN32 code path as well
-      t4120-apply-popt: help systems with core.filemode=false
-
-Jonathan Nieder (5):
-      quote.h: simplify the inclusion
-      fast-import: clarify documentation of "feature" command
-      fast-import: introduce "feature notes" command
-      compat: helper for detecting unsigned overflow
-      svn-fe: warn about experimental status
-
-Junio C Hamano (3):
-      fsck: drop unused parameter from traverse_one_object()
-      fsck: do not give up too early in fsck_dir()
-      Git 1.7.4.1
-
-Nguyễn Thái Ngọc Duy (4):
-      diff: support --cached on unborn branches
-      Add const to parse_{commit,tag}_buffer()
-      sha1_file.c: move find_cached_object up so sha1_object_info can use it
-      sha1_object_info: examine cached_object store too
-
-Pat Thoyts (2):
-      t3509: use unconstrained initial test to setup repository.
-      t7407: fix line endings for mingw build
-
-Shawn O. Pearce (1):
-      bundle: Use OFS_DELTA in bundle files
-
-Sitaram Chamarty (1):
-      post-receive-email: suppress error if description file missing
-
-Uwe Kleine-König (1):
-      Documentation/merge subtree How-To: fix typo
-
+RnJvbSBiOTJiZjY0YTRmYzE4MWM2YTc4M2NjMGQ1MWE2ODgxZmM4YTM1M2E3IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhkZXVjaGVyQGdtYWlsLmNvbT4K
+RGF0ZTogRnJpLCAxMSBGZWIgMjAxMSAyMDoxMDoxMSAtMDUwMApTdWJqZWN0OiBbUEFUQ0hdIGRy
+bS9yYWRlb24va21zOiBob3BlZnVsbHkgZml4IHBsbCBpc3N1ZXMgZm9yIHJlYWwgKHYyKQoKVGhl
+IHByb2JsZW1hdGljIGJvYXJkcyBoYXZlIGEgcmVjb21tZW5kZWQgcmVmZXJlbmNlIGRpdmlkZXIK
+dG8gYmUgdXNlZCB3aGVuIHNwcmVhZCBzcGVjdHJ1bSBpcyBlbmFibGVkIG9uIHRoZSBsYXB0b3Ag
+cGFuZWwuCkVuYWJsZSB0aGUgdXNlIG9mIHRoZSByZWNvbW1lbmRlZCByZWZlcmVuY2UgZGl2aWRl
+ciBhbG9uZyB3aXRoCnRoZSBuZXcgcGxsIGFsZ28uICBUaGlzIHNob3VsZCBob3BlZnVsbHkgZml4
+IHRoZSBpc3N1ZXMgYWNyb3NzCnRoZSBib2FyZC4KCnYyOiBhZGQgc29tZSBvcHRpb25zIHRvIHVu
+Y29tbWVudCBhbmQgdHJ5CgpTaWduZWQtb2ZmLWJ5OiBBbGV4IERldWNoZXIgPGFsZXhkZXVjaGVy
+QGdtYWlsLmNvbT4KQ2M6IHN0YWJsZUBrZXJuZWwub3JnCi0tLQogZHJpdmVycy9ncHUvZHJtL3Jh
+ZGVvbi9hdG9tYmlvc19jcnRjLmMgfCAgIDIxICsrKysrKysrLS0tLS0tLS0tLS0tLQogMSBmaWxl
+cyBjaGFuZ2VkLCA4IGluc2VydGlvbnMoKyksIDEzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBh
+L2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vYXRvbWJpb3NfY3J0Yy5jIGIvZHJpdmVycy9ncHUvZHJt
+L3JhZGVvbi9hdG9tYmlvc19jcnRjLmMKaW5kZXggMWJmNjEyMi4uYWZhNGMzNCAxMDA2NDQKLS0t
+IGEvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9hdG9tYmlvc19jcnRjLmMKKysrIGIvZHJpdmVycy9n
+cHUvZHJtL3JhZGVvbi9hdG9tYmlvc19jcnRjLmMKQEAgLTUzMSw2ICs1MzEsNyBAQCBzdGF0aWMg
+dTMyIGF0b21iaW9zX2FkanVzdF9wbGwoc3RydWN0IGRybV9jcnRjICpjcnRjLAogCQkJcGxsLT5m
+bGFncyB8PSBSQURFT05fUExMX1BSRUZFUl9ISUdIX0ZCX0RJVjsKIAkJZWxzZQogCQkJcGxsLT5m
+bGFncyB8PSBSQURFT05fUExMX1BSRUZFUl9MT1dfUkVGX0RJVjsKKwkJLypwbGwtPmZsYWdzIHw9
+IFJBREVPTl9QTExfUFJFRkVSX01JTk1fT1ZFUl9NQVhQOyovCiAJfSBlbHNlIHsKIAkJcGxsLT5m
+bGFncyB8PSBSQURFT05fUExMX0xFR0FDWTsKIApAQCAtNTU1LDI5ICs1NTYsMjcgQEAgc3RhdGlj
+IHUzMiBhdG9tYmlvc19hZGp1c3RfcGxsKHN0cnVjdCBkcm1fY3J0YyAqY3J0YywKIAkJCQkJZHBf
+Y2xvY2sgPSBkaWdfY29ubmVjdG9yLT5kcF9jbG9jazsKIAkJCQl9CiAJCQl9Ci0vKiB0aGlzIG1p
+Z2h0IHdvcmsgcHJvcGVybHkgd2l0aCB0aGUgbmV3IHBsbCBhbGdvICovCi0jaWYgMCAvKiBkb2Vz
+bid0IHdvcmsgcHJvcGVybHkgb24gc29tZSBsYXB0b3BzICovCisKIAkJCS8qIHVzZSByZWNvbW1l
+bmRlZCByZWZfZGl2IGZvciBzcyAqLwogCQkJaWYgKHJhZGVvbl9lbmNvZGVyLT5kZXZpY2VzICYg
+KEFUT01fREVWSUNFX0xDRF9TVVBQT1JUKSkgewogCQkJCWlmIChzc19lbmFibGVkKSB7CiAJCQkJ
+CWlmIChzcy0+cmVmZGl2KSB7CiAJCQkJCQlwbGwtPmZsYWdzIHw9IFJBREVPTl9QTExfVVNFX1JF
+Rl9ESVY7CiAJCQkJCQlwbGwtPnJlZmVyZW5jZV9kaXYgPSBzcy0+cmVmZGl2OworCQkJCQkJLypp
+ZiAoQVNJQ19JU19BVklWTyhyZGV2KSkKKwkJCQkJCQlwbGwtPmZsYWdzIHw9IFJBREVPTl9QTExf
+VVNFX0ZSQUNfRkJfRElWOyovCiAJCQkJCX0KIAkJCQl9CiAJCQl9Ci0jZW5kaWYKKwogCQkJaWYg
+KEFTSUNfSVNfQVZJVk8ocmRldikpIHsKIAkJCQkvKiBEVk8gd2FudHMgMnggcGl4ZWwgY2xvY2sg
+aWYgdGhlIERWTyBjaGlwIGlzIGluIDEyIGJpdCBtb2RlICovCiAJCQkJaWYgKHJhZGVvbl9lbmNv
+ZGVyLT5lbmNvZGVyX2lkID09IEVOQ09ERVJfT0JKRUNUX0lEX0lOVEVSTkFMX0tMRFNDUF9EVk8x
+KQogCQkJCQlhZGp1c3RlZF9jbG9jayA9IG1vZGUtPmNsb2NrICogMjsKIAkJCQlpZiAocmFkZW9u
+X2VuY29kZXItPmFjdGl2ZV9kZXZpY2UgJiAoQVRPTV9ERVZJQ0VfVFZfU1VQUE9SVCkpCiAJCQkJ
+CXBsbC0+ZmxhZ3MgfD0gUkFERU9OX1BMTF9QUkVGRVJfQ0xPU0VTVF9MT1dFUjsKLQkJCQkvKiBy
+djUxNSBuZWVkcyBtb3JlIHRlc3Rpbmcgd2l0aCB0aGlzIG9wdGlvbiAqLwotCQkJCWlmIChyZGV2
+LT5mYW1pbHkgIT0gQ0hJUF9SVjUxNSkgewotCQkJCQlpZiAocmFkZW9uX2VuY29kZXItPmRldmlj
+ZXMgJiAoQVRPTV9ERVZJQ0VfTENEX1NVUFBPUlQpKQotCQkJCQkJcGxsLT5mbGFncyB8PSBSQURF
+T05fUExMX0lTX0xDRDsKLQkJCQl9CisJCQkJaWYgKHJhZGVvbl9lbmNvZGVyLT5kZXZpY2VzICYg
+KEFUT01fREVWSUNFX0xDRF9TVVBQT1JUKSkKKwkJCQkJcGxsLT5mbGFncyB8PSBSQURFT05fUExM
+X0lTX0xDRDsKIAkJCX0gZWxzZSB7CiAJCQkJaWYgKGVuY29kZXItPmVuY29kZXJfdHlwZSAhPSBE
+Uk1fTU9ERV9FTkNPREVSX0RBQykKIAkJCQkJcGxsLT5mbGFncyB8PSBSQURFT05fUExMX05PX09E
+RF9QT1NUX0RJVjsKQEAgLTk1NywxMSArOTU2LDcgQEAgc3RhdGljIHZvaWQgYXRvbWJpb3NfY3J0
+Y19zZXRfcGxsKHN0cnVjdCBkcm1fY3J0YyAqY3J0Yywgc3RydWN0IGRybV9kaXNwbGF5X21vZGUK
+IAkvKiBhZGp1c3QgcGl4ZWwgY2xvY2sgYXMgbmVlZGVkICovCiAJYWRqdXN0ZWRfY2xvY2sgPSBh
+dG9tYmlvc19hZGp1c3RfcGxsKGNydGMsIG1vZGUsIHBsbCwgc3NfZW5hYmxlZCwgJnNzKTsKIAot
+CS8qIHJ2NTE1IHNlZW1zIGhhcHBpZXIgd2l0aCB0aGUgb2xkIGFsZ28gKi8KLQlpZiAocmRldi0+
+ZmFtaWx5ID09IENISVBfUlY1MTUpCi0JCXJhZGVvbl9jb21wdXRlX3BsbF9sZWdhY3kocGxsLCBh
+ZGp1c3RlZF9jbG9jaywgJnBsbF9jbG9jaywgJmZiX2RpdiwgJmZyYWNfZmJfZGl2LAotCQkJCQkg
+ICZyZWZfZGl2LCAmcG9zdF9kaXYpOwotCWVsc2UgaWYgKEFTSUNfSVNfQVZJVk8ocmRldikpCisJ
+aWYgKEFTSUNfSVNfQVZJVk8ocmRldikpCiAJCXJhZGVvbl9jb21wdXRlX3BsbF9hdml2byhwbGws
+IGFkanVzdGVkX2Nsb2NrLCAmcGxsX2Nsb2NrLCAmZmJfZGl2LCAmZnJhY19mYl9kaXYsCiAJCQkJ
+CSAmcmVmX2RpdiwgJnBvc3RfZGl2KTsKIAllbHNlCi0tIAoxLjcuMS4xCgo=
+--20cf3054a585aa9cb9049c0b8d90--
