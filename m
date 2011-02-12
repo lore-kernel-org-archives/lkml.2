@@ -1,262 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1BLO2e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 09:28:34 -0500
-Received: from fallback6.mail.ru ([94.100.176.134]:38962 "EHLO
-	fallback3.mail.ru" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752870Ab1BLO22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 09:28:28 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Feb 2011 09:28:28 EST
-From: =?utf-8?b?0JDRgNGC0LXQvCDQkNC90LjRgdC40LzQvtCy?= 
-	<aanisimov@inbox.ru>
-To: linux-kernel@vger.kernel.org
-Subject: On interaction between user time accounting and tracing with ptrace()
-Date: Sat, 12 Feb 2011 17:31:28 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.37lockdep; KDE/4.5.95; i686; ; )
+	id S1753363Ab1BLOi4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 09:38:56 -0500
+Received: from mail001.aei.ca ([206.123.6.130]:60055 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752796Ab1BLOiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 09:38:51 -0500
+From: Ed Tomlinson <edt@aei.ca>
+To: Anand Gadiyar <gadiyar@ti.com>
+Subject: Re: [BUG] usb problems in .38-rc3+
+Date: Sat, 12 Feb 2011 09:38:45 -0500
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc4-crc+; KDE/4.6.0; x86_64; ; )
+Cc: Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-usb@vger.kernel.org
+References: <201102051417.58953.edt@aei.ca> <201102082331.27644.edt@aei.ca> <c037b856cfa01b5c7014873850cd07a9@mail.gmail.com>
+In-Reply-To: <c037b856cfa01b5c7014873850cd07a9@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102121731.28851.aanisimov@inbox.ru>
-X-Mras: Ok
-X-MR-Warn: 1
+Message-Id: <201102120938.45728.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wednesday 09 February 2011 01:17:40 Anand Gadiyar wrote:
+> Ed Tomlinson wrote:
+> > On Tuesday 08 February 2011 01:46:16 Gadiyar, Anand wrote:
+> > > On Tue, Feb 8, 2011 at 7:45 AM, Ed Tomlinson <edt@aei.ca> wrote:
+> > > > I tried bisecting without much luck.  It started with about 4000
+> commits to check.  It was still bad
+> > > > when it reached the first 1000 commits post .37.  Then all boots
+> started crashing.  I think its possible
+> > > > to restrict a bisect to a directory - if so, what dir should I try?
+> > > >
+> > >
+> > > Maybe drivers/ or drivers/usb would be enough for a first attempt?
+> > > I usually start there.
+> > >
+> > > You could just do:
+> > >
+> > > git bisect start -- [path]
+> > >
+> > > to restrict bisection to commits that touch [path].
+> >
+> > This is as far as I can get:
+> >
+> > # bad: [100b33c8bd8a3235fd0b7948338d6cbb3db3c63d] Linux 2.6.38-rc4
+> > # good: [3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5] Linux 2.6.37
+> > # good: [387c31c7e5c9805b0aef8833d1731a5fe7bdea14] Linux 2.6.37-rc8
+> > # good: [90a8a73c06cc32b609a880d48449d7083327e11a] Linux 2.6.37-rc7
+> > # good: [c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4] Linux 2.6.37-rc1
+> > git bisect start 'v2.6.38-rc4' 'v2.6.37' 'v2.6.37-rc8' 'v2.6.37-rc7'
+> 'v2.6.37-rc1' '--' 'drivers/usb' 'drivers/bluetooth'
+> > # good: [5cdc5bd8b2b1190cb54548c03194b154b4892e2a] Merge branch
+> 'musb-hw' of git://gitorious.org/usb/usb into musb
+> > git bisect good 5cdc5bd8b2b1190cb54548c03194b154b4892e2a
+> > # bad: [f2c565e223af39ed38be5c84b1a37b591b22db83] xHCI: replace
+> dev_dbg() with xhci_dbg()
+> > git bisect bad f2c565e223af39ed38be5c84b1a37b591b22db83
+> > # good: [2af10844eb6ed104f9505bf3a7ba3ceb02264f31] USB: Merge 2.6.37-rc5
+> into usb-next
+> > git bisect good 2af10844eb6ed104f9505bf3a7ba3ceb02264f31
+> > # bad: [3e5b08cbbf78bedd316904ab0cf3b27119433ee5] Merge branch
+> 'usb-next' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6
+> > git bisect bad 3e5b08cbbf78bedd316904ab0cf3b27119433ee5
+> > # good: [1051b9f0f9eab8091fe3bf98320741adf36b4cfa] Merge branch
+> 'for-rmk' of git://git.pengutronix.de/git/imx/linux-2.6 into devel-stable
+> > git bisect good 1051b9f0f9eab8091fe3bf98320741adf36b4cfa
+> >
+> > After this the kernel does not build.
+> >
+> > Any clues?
+> 
+> Is it easier to just fix the build break locally and proceed?
+> 
+> I'm afraid I don't know how to skip a step during bisection.
+> I try narrowing things down manually.
+> 
+> Given that 2.6.37 is fine, can you check if v2.6.38-rc1 works?
+> If it doesn't work, then this break was caused by something that
+> went in during the merge window (which I believe is most likely).
+> 
+> You may be able to get somewhere by using snapshots of
+> linux-next as of particular days. They are available at [1]
+> as a single patch against a tag from Linus' tree.
+> 
+> Warning: This could be tedious, maybe not much more than a
+> git-bisect. Maybe easier to try and work it out from the
+> code.
 
-  I've tried to measure utime of a program when it is not ptrace()d and when 
-it is. User times reported in these two cases differ significantly and I do 
-not know the reason for this difference. I'd like to ask you whether it is a 
-bug in time accounting in kernel or a bug in my test program.
+I am not having much luck bisecting or using daily snapshots.  They either
+do not build or opps during boot....
 
-  Let us start with description of the test setup. The source code can be 
-found at the end of this email.
+The latest round of usb fixes (67d019528e5c2693145217cf18a507689980d2a4) from 
+Greg did not help 
 
-  A program being traced essentially makes a considerable number of syscalls 
-and makes N_ARITH_OPS simple arithmetic operations and memory accesses between 
-two consequent syscalls; changing N_ARITH_OPS will later be used to obtain 
-some interesting results.
+How else can we track this down?
 
-  Now let us pass to the main program, which runs the child and measures its 
-utime in two different ways. First, it simply invokes the child, waits for its 
-completion and collects resource usage stats. Then, the child is started with 
-ptrace enabled and it is stopped at every invocation of a syscall; after 
-running the child in this ptrace()d mode its resource usage stats are 
-collected.
-
-  During the tests cpu frequency governor was set to 'performance' so that cpu 
-frequency scaling does not get in the way.
-
-  Here are some numbers that I get when running my test on single-core i386 
-CPU (Pentium M Dothan @ 2.0GHz).
-
-N_ARITH_OPS=0*256                |  N_ARITH_OPS=2*256
-                                 |
-utime (untraced): 31001 musecs   |  utime (untraced): 461528 musecs
-utime (traced): 60503 musecs     |  utime (traced): 557034 musecs
-
-  As one can see, utime is consistently higher when the child is ptraced().
-
-  Here are some numbers that I get when running my test on dual-core x86_64 
-CPU (Intel E5500 @ 2.8GHz).
-
-N_ARITH_OPS=0*256                |  N_ARITH_OPS=2*256
-                                 |
-utime (untraced): 9873 musecs    |  utime (untraced): 298579 musecs
-utime (traced): 1249 musecs      |  utime (traced): 659274 musecs
-
-  The case of N_ARITH_OPS=0*256 seems very strange here because in all other 
-cases utime of traced process in higher than utime of untraced process (traced 
-process' utime is also higher with N_ARITH_OPS=4*256, which is not listed 
-here).
-
-  Both test machines were running linux 2.6.37.
-
-  Could you please explain why utime of a traced process is almost always 
-higher than utime of standalone process? The process being traced does not 
-change between two invocations so the increase of utime is certainly a bug. 
-Also I'd like to know if there is a way to measure utime reliably.
-
-  Please CC me when replying to this message because I am not subscribed to 
-linux-kernel.
-
------ child.c -----
-#define _GNU_SOURCE
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-
-#define N_ITERATIONS (256*1024)
-#define N_ARITH_OPS (2*256)
-
-static void __attribute__((noreturn)) die(const char *msg)
-{
-        printf("%s, errno=%d\n",msg,errno);
-        exit(1);
-}
-
-/* don't let GCC optimize away a loop that does some work in user space */
-volatile int x;
-
-int main()
-{
-int fd;
-char buf[128];
-
-        fd=open("/proc/self/exe",O_RDONLY);
-        if(fd<0)
-                die("failed to open file");
-        
-        for(int i=0;i<N_ITERATIONS;++i)
-        {
-                pread(fd,buf,128,0);
-                for(int j=0;j<N_ARITH_OPS;++j)
-                        ++x;
-        }
-        close(fd);
-        
-        return 0;
-}
------ child.c -----
-
------ time-when-traced.c -----
-#define _GNU_SOURCE
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/ptrace.h>
-#include <time.h>
-#include <errno.h>
-
-#define N_RUNS (8)
-
-static void __attribute__((noreturn)) die(const char *msg)
-{
-        printf("%s, errno=%d\n",msg,errno);
-        exit(1);
-}
-
-static void child_untraced()
-{
-char path[1024];
-char *c;
-char *args[]={NULL,NULL};
-char *env[]={NULL};
-
-        if(0>readlink("/proc/self/exe",path,1024))
-                die("failed to read link to myself");
-        
-        c=strrchr(path,'/');
-        strcpy(c+1,"child");
-        
-        args[0]=path;
-        execve(path,args,env);
-        die("failed to start the child");
-}
-
-static void child_traced()
-{
-        if(0>ptrace(PTRACE_TRACEME,0,NULL,0))
-                die("failed to trace myself");
-        child_untraced();
-}
-
-static inline int timeval_to_musec(const struct timeval *t)
-{
-        return (t->tv_sec*1000*1000 + t->tv_usec);
-}
-
-static int measure_time_untraced()
-{
-pid_t p;
-int status;
-struct rusage rusage;
-
-        p=fork();
-        if(p<0)
-                die("failed to fork");
-        if(!p)
-                child_untraced();
-        
-        if(p!=wait4(p,&status,0,&rusage))
-                die("failed to wait for child termination");
-        
-        if(!WIFEXITED(status) || 0!=WEXITSTATUS(status))
-                die("child failed");
-        
-        return timeval_to_musec(&rusage.ru_utime);
-}
-
-static int measure_time_traced()
-{
-pid_t p;
-int status;
-struct rusage rusage;
-
-        p=fork();
-        if(p<0)
-                die("failed to fork");
-        if(!p)
-                child_traced();
-        
-        for(;;)
-        {
-                if(p!=wait4(p,&status,0,&rusage))
-                        die("failed to wait for child");
-                if(WIFSTOPPED(status))
-                {
-                        if(WSTOPSIG(status)!=SIGTRAP)
-                                die("stopped by signal other than SIGTRAP");
-                }
-                else if(WIFSIGNALED(status))
-                        die("child was signaled");
-                else if(WIFEXITED(status))
-                        break;
-                else
-                        die("neither stopped, nor signaled, nor killed?\n");
-                
-                if(0>ptrace(PTRACE_SYSCALL,p,NULL,0))
-                        die("failed to resume the child");
-        }
-        
-        return timeval_to_musec(&rusage.ru_utime);
-}
-
-int main()
-{
-int time_untraced;
-int time_traced;
-
-        time_untraced=time_traced=0;
-        
-        {
-                /* warm up */
-                measure_time_untraced();
-                measure_time_traced();
-        }
-        
-        for(int i=0;i<N_RUNS;++i)
-        {
-                time_untraced+=measure_time_untraced();
-                time_traced+=measure_time_traced();
-        }
-        
-        printf("utime (untraced): %d musecs\n",time_untraced/N_RUNS);
-        printf("utime (traced): %d musecs\n",time_traced/N_RUNS);
-        
-        return 0;
-}
------ time-when-traced.c -----
+Ed
