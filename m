@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab1BLTlH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 14:41:07 -0500
-Received: from smtp-out-246.synserver.de ([212.40.185.246]:1103 "HELO
+	id S1753283Ab1BLTlP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 14:41:15 -0500
+Received: from smtp-out-246.synserver.de ([212.40.185.246]:1102 "HELO
 	smtp-out-246.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752690Ab1BLTjm (ORCPT
+	with SMTP id S1752694Ab1BLTjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 Feb 2011 14:39:42 -0500
 X-SynServer-TrustedSrc: 1
@@ -15,9 +15,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>
 Cc: Rodolfo Giometti <giometti@linux.it>,
         Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 14/14] Ignore -ENODATA errors when generating a uevent
-Date: Sat, 12 Feb 2011 20:39:14 +0100
-Message-Id: <1297539554-13957-16-git-send-email-lars@metafoo.de>
+Subject: [PATCH 13/14] bq27x00: Cleanup bq27x00_i2c_read
+Date: Sat, 12 Feb 2011 20:39:13 +0100
+Message-Id: <1297539554-13957-15-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297539554-13957-1-git-send-email-lars@metafoo.de>
 References: <1297539554-13957-1-git-send-email-lars@metafoo.de>
@@ -25,34 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes a driver can not report a meaningful value for a certain property
-and returns -ENODATA.
-
-Currently when generating a uevent and a property return -ENODATA it is
-treated as an error an no uevent is generated at all. This is not an
-desirable behavior.
-
-This patch adds a special case for -ENODATA and ignores properties which
-return this error code when generating the uevent.
+Some minor stylistic cleanups.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- drivers/power/power_supply_sysfs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/power/bq27x00_battery.c |   45 ++++++++++++++++++++------------------
+ 1 files changed, 24 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index cd1f907..605514a 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -270,7 +270,7 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
- 		attr = &power_supply_attrs[psy->properties[j]];
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index a64cc21..2dee851 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -565,36 +565,39 @@ static DEFINE_MUTEX(battery_mutex);
+ static int bq27x00_read_i2c(struct bq27x00_device_info *di, u8 reg, bool single)
+ {
+ 	struct i2c_client *client = to_i2c_client(di->dev);
+-	struct i2c_msg msg[1];
++	struct i2c_msg msg;
+ 	unsigned char data[2];
+ 	int ret;
  
- 		ret = power_supply_show_property(dev, attr, prop_buf);
--		if (ret == -ENODEV) {
-+		if (ret == -ENODEV || ret == -ENODATA) {
- 			/* When a battery is absent, we expect -ENODEV. Don't abort;
- 			   send the uevent with at least the the PRESENT=0 property */
- 			ret = 0;
+ 	if (!client->adapter)
+ 		return -ENODEV;
+ 
+-	msg->addr = client->addr;
+-	msg->flags = 0;
+-	msg->len = 1;
+-	msg->buf = data;
++	msg.addr = client->addr;
++	msg.flags = 0;
++	msg.len = 1;
++	msg.buf = data;
+ 
+ 	data[0] = reg;
+-	ret = i2c_transfer(client->adapter, msg, 1);
++	ret = i2c_transfer(client->adapter, &msg, 1);
++
++	if (ret < 0)
++		return ret;
++
++	if (single)
++		msg.len = 1;
++	else
++		msg.len = 2;
++
++	msg.flags = I2C_M_RD;
++	ret = i2c_transfer(client->adapter, &msg, 1);
++	if (ret < 0)
++		return ret;
++
++	if (!single)
++		ret = get_unaligned_le16(data);
++	else
++		ret = data[0];
+ 
+-	if (ret >= 0) {
+-		if (!single)
+-			msg->len = 2;
+-		else
+-			msg->len = 1;
+-
+-		msg->flags = I2C_M_RD;
+-		ret = i2c_transfer(client->adapter, msg, 1);
+-		if (ret >= 0) {
+-			if (!single)
+-				ret = get_unaligned_le16(data);
+-			else
+-				ret = data[0];
+-		}
+-	}
+ 	return ret;
+ }
+ 
 -- 
 1.7.2.3
 
