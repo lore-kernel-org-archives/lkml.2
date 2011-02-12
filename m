@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab1BLRMY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 12:12:24 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44248 "EHLO
+	id S1752111Ab1BLRMb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 12:12:31 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65372 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab1BLRLW (ORCPT
+	with ESMTP id S1751441Ab1BLRLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 12:11:22 -0500
+	Sat, 12 Feb 2011 12:11:24 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=W0Mt9ym8DFKaBaz3TCyQY6m1+G6mRpM98Q4kSxcY4a9mHw5p0kL/4Ln1iuOUnyXX7H
-         mWyPDoodX0GP2L9v5ZZD6sJGUse9W/mGjL2NFO+s18OBrR48pKJfwZC1mlwM0QUMKeBs
-         hsi7HaW47KCWnr91xqCiqSiB+IVn2sdRFMqQw=
+        b=S1wIXWQW+xB/e8phpMpsWXAXPDEzounz93OaeeS7ks9HKMDiKG3e5uVHOFpJSHAGry
+         ygpCq5c23Jb+L7LbYd0I9VWfefJEDLKOqw4cNShc5FArpRU1Xrp2aC8//NH5pyEk5Tqq
+         bJquyj1LlF8QCEdEqjPCiCtkDjxX0y0Ocf5IQ=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/26] x86-64, NUMA: Restructure initmem_init()
-Date: Sat, 12 Feb 2011 18:10:44 +0100
-Message-Id: <1297530663-26234-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/26] x86-64, NUMA: Use common {cpu|mem}_nodes_parsed
+Date: Sat, 12 Feb 2011 18:10:45 +0100
+Message-Id: <1297530663-26234-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297530663-26234-1-git-send-email-tj@kernel.org>
 References: <1297530663-26234-1-git-send-email-tj@kernel.org>
@@ -29,21 +29,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorganize initmem_init() such that,
+ACPI and amd are using separate nodes_parsed masks.  Add
+{cpu|mem}_nodes_parsed and use them in all NUMA init methods.
+Initialization of the masks and building node_possible_map are now
+handled commonly by initmem_init().
 
-* Different NUMA init methods are iterated in a consistent way.
-
-* Each iteration re-initializes all the parameters and different
-  method can be tried after a failure.
-
-* Dummy init is handled the same as other methods.
-
-Apart from how retry after failure, this patch doesn't change the
-behavior.  The call sequences are kept equivalent across the
-conversion.
-
-After the change, bad_srat() doesn't need to clear apic to node
-mapping or worry about numa_off.  Simplified accordingly.
+dummy_numa_init() is updated to set node 0 on both masks.  While at
+it, move the info messages from scan to init.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -54,152 +46,213 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/numa_64.c |   94 ++++++++++++++++++++++++++----------------------
- arch/x86/mm/srat_64.c |    4 +--
- 2 files changed, 52 insertions(+), 46 deletions(-)
+ arch/x86/include/asm/numa_64.h |    3 +++
+ arch/x86/mm/amdtopology_64.c   |   10 ++++------
+ arch/x86/mm/numa_64.c          |   25 ++++++++++++++++++-------
+ arch/x86/mm/srat_64.c          |   17 ++++++-----------
+ 4 files changed, 31 insertions(+), 24 deletions(-)
 
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+index 2819afa..de45936 100644
+--- a/arch/x86/include/asm/numa_64.h
++++ b/arch/x86/include/asm/numa_64.h
+@@ -27,6 +27,9 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
+  */
+ #define NODE_MIN_SIZE (4*1024*1024)
+ 
++extern nodemask_t cpu_nodes_parsed __initdata;
++extern nodemask_t mem_nodes_parsed __initdata;
++
+ extern int __cpuinit numa_cpu_node(int cpu);
+ 
+ #ifdef CONFIG_NUMA_EMU
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index ee70257..3180d96 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -28,7 +28,6 @@
+ 
+ static struct bootnode __initdata nodes[8];
+ static unsigned char __initdata nodeids[8];
+-static nodemask_t __initdata nodes_parsed = NODE_MASK_NONE;
+ 
+ static __init int find_northbridge(void)
+ {
+@@ -123,7 +122,7 @@ int __init amd_numa_init(void)
+ 			       nodeid, (base >> 8) & 3, (limit >> 8) & 3);
+ 			return -EINVAL;
+ 		}
+-		if (node_isset(nodeid, nodes_parsed)) {
++		if (node_isset(nodeid, mem_nodes_parsed)) {
+ 			pr_info("Node %d already present, skipping\n",
+ 				nodeid);
+ 			continue;
+@@ -173,7 +172,8 @@ int __init amd_numa_init(void)
+ 
+ 		prevbase = base;
+ 
+-		node_set(nodeid, nodes_parsed);
++		node_set(nodeid, mem_nodes_parsed);
++		node_set(nodeid, cpu_nodes_parsed);
+ 	}
+ 
+ 	if (!found)
+@@ -190,7 +190,7 @@ void __init amd_get_nodes(struct bootnode *physnodes)
+ {
+ 	int i;
+ 
+-	for_each_node_mask(i, nodes_parsed) {
++	for_each_node_mask(i, mem_nodes_parsed) {
+ 		physnodes[i].start = nodes[i].start;
+ 		physnodes[i].end = nodes[i].end;
+ 	}
+@@ -258,8 +258,6 @@ int __init amd_scan_nodes(void)
+ 	unsigned int apicid_base;
+ 	int i;
+ 
+-	BUG_ON(nodes_empty(nodes_parsed));
+-	node_possible_map = nodes_parsed;
+ 	memnode_shift = compute_hash_shift(nodes, 8, NULL);
+ 	if (memnode_shift < 0) {
+ 		pr_err("No NUMA node hash function found. Contact maintainer\n");
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 4105728..ba7e5b6 100644
+index ba7e5b6..86be8e3 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -579,64 +579,72 @@ static int __init numa_emulation(unsigned long start_pfn,
- }
- #endif /* CONFIG_NUMA_EMU */
+@@ -25,6 +25,9 @@
+ struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
+ EXPORT_SYMBOL(node_data);
  
--void __init initmem_init(void)
-+static int dummy_numa_init(void)
++nodemask_t cpu_nodes_parsed __initdata;
++nodemask_t mem_nodes_parsed __initdata;
++
+ struct memnode memnode;
+ 
+ static unsigned long __initdata nodemap_addr;
+@@ -581,22 +584,23 @@ static int __init numa_emulation(unsigned long start_pfn,
+ 
+ static int dummy_numa_init(void)
  {
--	int acpi = 0, amd = 0;
--	int i;
+-	return 0;
+-}
 -
--#ifdef CONFIG_ACPI_NUMA
--	/*
--	 * Parse SRAT to discover nodes.
--	 */
--	acpi = !x86_acpi_numa_init();
--#endif
--
--#ifdef CONFIG_AMD_NUMA
--	if (!acpi)
--		amd = !amd_numa_init();
--#endif
--
--	nodes_clear(node_possible_map);
--	nodes_clear(node_online_map);
--
--#ifdef CONFIG_NUMA_EMU
--	setup_physnodes(0, max_pfn << PAGE_SHIFT, acpi, amd);
--	if (cmdline && !numa_emulation(0, max_pfn, acpi, amd))
--		return;
--	setup_physnodes(0, max_pfn << PAGE_SHIFT, acpi, amd);
--	nodes_clear(node_possible_map);
--	nodes_clear(node_online_map);
--#endif
--
--#ifdef CONFIG_ACPI_NUMA
--	if (!numa_off && acpi && !acpi_scan_nodes())
--		return;
--	nodes_clear(node_possible_map);
--	nodes_clear(node_online_map);
--#endif
-+	return 0;
-+}
- 
--#ifdef CONFIG_AMD_NUMA
--	if (!numa_off && amd && !amd_scan_nodes())
--		return;
--	nodes_clear(node_possible_map);
--	nodes_clear(node_online_map);
--#endif
-+static int dummy_scan_nodes(void)
-+{
+-static int dummy_scan_nodes(void)
+-{
  	printk(KERN_INFO "%s\n",
  	       numa_off ? "NUMA turned off" : "No NUMA configuration found");
--
  	printk(KERN_INFO "Faking a node at %016lx-%016lx\n",
  	       0LU, max_pfn << PAGE_SHIFT);
+ 
++	node_set(0, cpu_nodes_parsed);
++	node_set(0, mem_nodes_parsed);
 +
++	return 0;
++}
++
++static int dummy_scan_nodes(void)
++{
  	/* setup dummy node covering all memory */
  	memnode_shift = 63;
  	memnodemap = memnode.embedded_map;
  	memnodemap[0] = 0;
- 	node_set_online(0);
- 	node_set(0, node_possible_map);
--	for (i = 0; i < MAX_LOCAL_APIC; i++)
--		set_apicid_to_node(i, NUMA_NO_NODE);
+-	node_set_online(0);
+-	node_set(0, node_possible_map);
  	memblock_x86_register_active_regions(0, 0, max_pfn);
  	setup_node_bootmem(0, 0, max_pfn << PAGE_SHIFT);
  	numa_init_array();
-+
-+	return 0;
-+}
-+
-+void __init initmem_init(void)
-+{
-+	int (*numa_init[])(void) = { [2] = dummy_numa_init };
-+	int (*scan_nodes[])(void) = { [2] = dummy_scan_nodes };
-+	int i, j;
-+
-+	if (!numa_off) {
-+#ifdef CONFIG_ACPI_NUMA
-+		numa_init[0] = x86_acpi_numa_init;
-+		scan_nodes[0] = acpi_scan_nodes;
-+#endif
-+#ifdef CONFIG_AMD_NUMA
-+		numa_init[1] = amd_numa_init;
-+		scan_nodes[1] = amd_scan_nodes;
-+#endif
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(numa_init); i++) {
-+		if (!numa_init[i])
-+			continue;
-+
-+		for (j = 0; j < MAX_LOCAL_APIC; j++)
-+			set_apicid_to_node(j, NUMA_NO_NODE);
-+
-+		nodes_clear(node_possible_map);
-+		nodes_clear(node_online_map);
-+
-+		if (numa_init[i]() < 0)
-+			continue;
-+#ifdef CONFIG_NUMA_EMU
-+		setup_physnodes(0, max_pfn << PAGE_SHIFT, i == 0, i == 1);
-+		if (cmdline && !numa_emulation(0, max_pfn, i == 0, i == 1))
-+			return;
-+		setup_physnodes(0, max_pfn << PAGE_SHIFT, i == 0, i == 1);
-+		nodes_clear(node_possible_map);
-+		nodes_clear(node_online_map);
-+#endif
-+		if (!scan_nodes[i]())
-+			return;
-+	}
-+	BUG();
- }
+@@ -628,6 +632,8 @@ void __init initmem_init(void)
+ 		for (j = 0; j < MAX_LOCAL_APIC; j++)
+ 			set_apicid_to_node(j, NUMA_NO_NODE);
  
- unsigned long __init numa_free_all_bootmem(void)
++		nodes_clear(cpu_nodes_parsed);
++		nodes_clear(mem_nodes_parsed);
+ 		nodes_clear(node_possible_map);
+ 		nodes_clear(node_online_map);
+ 
+@@ -641,6 +647,11 @@ void __init initmem_init(void)
+ 		nodes_clear(node_possible_map);
+ 		nodes_clear(node_online_map);
+ #endif
++		/* Account for nodes with cpus and no memory */
++		nodes_or(node_possible_map, mem_nodes_parsed, cpu_nodes_parsed);
++		if (WARN_ON(nodes_empty(node_possible_map)))
++			continue;
++
+ 		if (!scan_nodes[i]())
+ 			return;
+ 	}
 diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 8d145ae..2da8b65 100644
+index 2da8b65..822bd68 100644
 --- a/arch/x86/mm/srat_64.c
 +++ b/arch/x86/mm/srat_64.c
-@@ -78,8 +78,6 @@ static __init void bad_srat(void)
- 	int i;
- 	printk(KERN_ERR "SRAT: SRAT not used.\n");
- 	acpi_numa = -1;
--	for (i = 0; i < MAX_LOCAL_APIC; i++)
--		set_apicid_to_node(i, NUMA_NO_NODE);
- 	for (i = 0; i < MAX_NUMNODES; i++) {
- 		nodes[i].start = nodes[i].end = 0;
- 		nodes_add[i].start = nodes_add[i].end = 0;
-@@ -89,7 +87,7 @@ static __init void bad_srat(void)
+@@ -28,8 +28,6 @@ int acpi_numa __initdata;
  
- static __init inline int srat_disabled(void)
+ static struct acpi_table_slit *acpi_slit;
+ 
+-static nodemask_t nodes_parsed __initdata;
+-static nodemask_t cpu_nodes_parsed __initdata;
+ static struct bootnode nodes[MAX_NUMNODES] __initdata;
+ static struct bootnode nodes_add[MAX_NUMNODES];
+ 
+@@ -293,7 +291,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 
+ 	if (!(ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)) {
+ 		nd = &nodes[node];
+-		if (!node_test_and_set(node, nodes_parsed)) {
++		if (!node_test_and_set(node, mem_nodes_parsed)) {
+ 			nd->start = start;
+ 			nd->end = end;
+ 		} else {
+@@ -319,7 +317,7 @@ static int __init nodes_cover_memory(const struct bootnode *nodes)
+ 	unsigned long pxmram, e820ram;
+ 
+ 	pxmram = 0;
+-	for_each_node_mask(i, nodes_parsed) {
++	for_each_node_mask(i, mem_nodes_parsed) {
+ 		unsigned long s = nodes[i].start >> PAGE_SHIFT;
+ 		unsigned long e = nodes[i].end >> PAGE_SHIFT;
+ 		pxmram += e - s;
+@@ -348,7 +346,7 @@ void __init acpi_get_nodes(struct bootnode *physnodes, unsigned long start,
  {
--	return numa_off || acpi_numa < 0;
-+	return acpi_numa < 0;
+ 	int i;
+ 
+-	for_each_node_mask(i, nodes_parsed) {
++	for_each_node_mask(i, mem_nodes_parsed) {
+ 		cutoff_node(i, start, end);
+ 		physnodes[i].start = nodes[i].start;
+ 		physnodes[i].end = nodes[i].end;
+@@ -447,9 +445,6 @@ int __init acpi_scan_nodes(void)
+ 		return -1;
+ 	}
+ 
+-	/* Account for nodes with cpus and no memory */
+-	nodes_or(node_possible_map, nodes_parsed, cpu_nodes_parsed);
+-
+ 	/* Finally register nodes */
+ 	for_each_node_mask(i, node_possible_map)
+ 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
+@@ -483,7 +478,7 @@ static int __init find_node_by_addr(unsigned long addr)
+ 	int ret = NUMA_NO_NODE;
+ 	int i;
+ 
+-	for_each_node_mask(i, nodes_parsed) {
++	for_each_node_mask(i, mem_nodes_parsed) {
+ 		/*
+ 		 * Find the real node that this emulated node appears on.  For
+ 		 * the sake of simplicity, we only use a real node's starting
+@@ -543,10 +538,10 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
+ 	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ 
+-	nodes_clear(nodes_parsed);
++	nodes_clear(mem_nodes_parsed);
+ 	for (i = 0; i < num_nodes; i++)
+ 		if (fake_nodes[i].start != fake_nodes[i].end)
+-			node_set(i, nodes_parsed);
++			node_set(i, mem_nodes_parsed);
  }
  
- /* Callback for SLIT parsing */
+ static int null_slit_node_compare(int a, int b)
 -- 
 1.7.1
 
