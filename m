@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab1BLLP3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 06:15:29 -0500
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:18877 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751051Ab1BLLPZ (ORCPT
+	id S1753414Ab1BLLei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 06:34:38 -0500
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:39098 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab1BLLee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 06:15:25 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAAj7VU1tgner/2dsb2JhbACEHqFgdKogkDSBJ4NBdgSPSw
-Date: Sat, 12 Feb 2011 12:15:04 +0100
-From: Kurt Van Dijck <kurt.van.dijck@eia.be>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
-Message-ID: <20110212111344.GA328@e-circ.dyndns.org>
-References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org>
- <20110211223312.be571303.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110211223312.be571303.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 12 Feb 2011 06:34:34 -0500
+Subject: [PATCH] [TRIVIAL] devicetree-discuss is moderated for
+ non-subscribers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Date: Sat, 12 Feb 2011 12:33:59 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 2.91.5 (2.91.5-4.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1297510473.2071.3.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:33:12PM -0800, Randy Dunlap wrote:
-> 
-> warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
-> 
-> with this partial config:
-> 
-> CONFIG_CAN=m
-> # CONFIG_CAN_RAW is not set
-> # CONFIG_CAN_BCM is not set
-> # CAN Device Drivers
-> # CONFIG_CAN_VCAN is not set
-> CONFIG_CAN_SLCAN=m
-> # CONFIG_CAN_DEV is not set
-> CONFIG_CAN_SOFTING=m
-> CONFIG_CAN_SOFTING_CS=m
-> # CONFIG_CAN_DEBUG_DEVICES is not set
-I understand the output, but I don't understand the cause well enough.
-CAN_SOFTING=m has a 'depends on CAN_DEV'
-Is it then possible to have CAN_SOFTING=m _and not_ CAN_DEV ?
-> 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-regards,
-Kurt
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ec023bc..8c9818c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4559,7 +4559,7 @@ F:	drivers/i2c/busses/i2c-ocores.c
+ 
+ OPEN FIRMWARE AND FLATTENED DEVICE TREE
+ M:	Grant Likely <grant.likely@secretlab.ca>
+-L:	devicetree-discuss@lists.ozlabs.org
++L:	devicetree-discuss@lists.ozlabs.org (moderated for non-subscribers)
+ W:	http://fdt.secretlab.ca
+ T:	git git://git.secretlab.ca/git/linux-2.6.git
+ S:	Maintained
+-- 
+1.7.4
+
+
+
