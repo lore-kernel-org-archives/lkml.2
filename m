@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111Ab1BLCAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 21:00:12 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:44819 "EHLO lunge.queued.net"
+	id S1757864Ab1BLCCz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 21:02:55 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:44001 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab1BLCAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 21:00:11 -0500
-Date: Fri, 11 Feb 2011 18:00:08 -0800
+	id S1751100Ab1BLCCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 21:02:54 -0500
+Date: Fri, 11 Feb 2011 18:02:50 -0800
 From: Andres Salomon <dilinger@queued.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
 Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 02/17] mfd-core: unconditionally add mfd_cell to every
- platform_device
-Message-ID: <20110211180008.5f613a89@queued.net>
+Subject: [PATCH 03/17] jz4740: mfd_cell is now implicitly available to
+ drivers
+Message-ID: <20110211180250.483936cc@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,90 +26,66 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Previously, one would set the mfd_cell's platform_data/data_size to point
-to the current mfd_cell in order to pass that information along to drivers.
+No need to explicitly set the cell's platform_data/data_size.
 
-This causes the current mfd_cell to always be available to drivers.  It
-also adds a wrapper function for fetching the mfd cell from a platform
-device, similar to what originally existed for mfd devices.
-
-Drivers who previously used platform_data for other purposes can still
-use it; the difference is that mfd_get_data() must be used to
-access it (and the pdata structure is no longer allocated in
-mfd_add_devices).
-
-Note that mfd_get_data is intentionally vague (in name) about where
-the data is stored; variable name changes can come later without having
-to touch brazillions of drivers.
+Modify clients to use mfd_get_cell helper function instead of
+accessing platform_data directly.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/mfd/mfd-core.c   |    9 +++------
- include/linux/mfd/core.h |   23 +++++++++++++++++++++--
- 2 files changed, 24 insertions(+), 8 deletions(-)
+ drivers/hwmon/jz4740-hwmon.c   |    2 +-
+ drivers/mfd/jz4740-adc.c       |    4 ----
+ drivers/power/jz4740-battery.c |    2 +-
+ 3 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index d83ad0f..21a39dc 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -39,12 +39,9 @@ static int mfd_add_device(struct device *parent, int id,
- 	pdev->dev.parent = parent;
- 	platform_set_drvdata(pdev, cell->driver_data);
+diff --git a/drivers/hwmon/jz4740-hwmon.c b/drivers/hwmon/jz4740-hwmon.c
+index 1c8b3d9..40f106d 100644
+--- a/drivers/hwmon/jz4740-hwmon.c
++++ b/drivers/hwmon/jz4740-hwmon.c
+@@ -112,7 +112,7 @@ static int __devinit jz4740_hwmon_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
  
--	if (cell->data_size) {
--		ret = platform_device_add_data(pdev,
--					cell->platform_data, cell->data_size);
--		if (ret)
--			goto fail_res;
--	}
-+	ret = platform_device_add_data(pdev, cell, sizeof(*cell));
-+	if (ret)
-+		goto fail_res;
+-	hwmon->cell = pdev->dev.platform_data;
++	hwmon->cell = mfd_get_cell(pdev);
  
- 	for (r = 0; r < cell->num_resources; r++) {
- 		res[r].name = cell->resources[r].name;
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index 1fd7c44..aefc378 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -33,9 +33,10 @@ struct mfd_cell {
- 	/* driver-specific data for MFD-aware "cell" drivers */
- 	void			*driver_data;
+ 	hwmon->irq = platform_get_irq(pdev, 0);
+ 	if (hwmon->irq < 0) {
+diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
+index 0cc5979..aa518b9 100644
+--- a/drivers/mfd/jz4740-adc.c
++++ b/drivers/mfd/jz4740-adc.c
+@@ -232,8 +232,6 @@ const struct mfd_cell jz4740_adc_cells[] = {
+ 		.name = "jz4740-hwmon",
+ 		.num_resources = ARRAY_SIZE(jz4740_hwmon_resources),
+ 		.resources = jz4740_hwmon_resources,
+-		.platform_data = (void *)&jz4740_adc_cells[0],
+-		.data_size = sizeof(struct mfd_cell),
  
--	/* platform_data can be used to either pass data to "generic"
--	   driver or as a hook to mfd_cell for the "cell" drivers */
-+	/* platform_data can be used to pass data to "generic" drivers */
- 	void			*platform_data;
-+
-+	/* unused */
- 	size_t			data_size;
+ 		.enable = jz4740_adc_cell_enable,
+ 		.disable = jz4740_adc_cell_disable,
+@@ -243,8 +241,6 @@ const struct mfd_cell jz4740_adc_cells[] = {
+ 		.name = "jz4740-battery",
+ 		.num_resources = ARRAY_SIZE(jz4740_battery_resources),
+ 		.resources = jz4740_battery_resources,
+-		.platform_data = (void *)&jz4740_adc_cells[1],
+-		.data_size = sizeof(struct mfd_cell),
  
- 	/*
-@@ -55,6 +56,24 @@ struct mfd_cell {
- 	bool			pm_runtime_no_callbacks;
- };
+ 		.enable = jz4740_adc_cell_enable,
+ 		.disable = jz4740_adc_cell_disable,
+diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+index 02414db..0938650 100644
+--- a/drivers/power/jz4740-battery.c
++++ b/drivers/power/jz4740-battery.c
+@@ -258,7 +258,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
  
-+/*
-+ * Given a platform device that's been created by mfd_add_devices(), fetch
-+ * the mfd_cell that created it.
-+ */
-+static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
-+{
-+	return pdev->dev.platform_data;
-+}
-+
-+/*
-+ * Given a platform device that's been created by mfd_add_devices(), fetch
-+ * the .platform_data entry from the mfd_cell that created it.
-+ */
-+static inline void *mfd_get_data(struct platform_device *pdev)
-+{
-+	return mfd_get_cell(pdev)->platform_data;
-+}
-+
- extern int mfd_add_devices(struct device *parent, int id,
- 			   const struct mfd_cell *cells, int n_devs,
- 			   struct resource *mem_base,
+-	jz_battery->cell = pdev->dev.platform_data;
++	jz_battery->cell = mfd_get_cell(pdev);
+ 
+ 	jz_battery->irq = platform_get_irq(pdev, 0);
+ 	if (jz_battery->irq < 0) {
 -- 
 1.7.2.3
 
