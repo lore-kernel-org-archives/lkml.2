@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab1BLK0y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 05:26:54 -0500
-Received: from nm2-vm1.bullet.mail.kr3.yahoo.com ([111.67.240.245]:46919 "HELO
-	nm2-vm1.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750739Ab1BLK0t convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 05:26:49 -0500
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 509480.26225.bm@omp1001.mail.kr3.yahoo.com
-Message-ID: <366487.11856.qm@web70808.mail.kr3.yahoo.com>
-X-YMail-OSG: R51Oti4VM1nfO.1MCxmrPyOYI0_pG1SZIa41uTU2OBbsKy5
- 4WAercqLxEVsfRnYBkpx.IJYIloQHBe8DyArLM8DPMvLwYxC3BZkUN54pVaY
- BGLHWnKY7WkUXAgIPZJ7E8qJeeVkQ8yxuB1eIZ1kIpXsJWiz2t0YfW4yI08O
- JQ3bB4v51dyVbnEnnP2zCK5geJwVYCPyWdXt0pIpSTHFi6vy6wLyYnRnS0P9
- .IXkJM9.o4RRzeEhXs0P9mjpEOtWAyKnZ7cqWVO.ZQkBRTZA03cj7k0t71HE
- ZXBbbxPyHRLv2eRmg4Rmomti.hGhJlojL8UM2opIwZI8DuybHdzuULSSepO5
- 2cttM_DDPP5xNA9d8oJEErxk6dG_DtB2UmyMyQyasYvEuPJCv0GvFJl1ZVyt
- dv_f79ZqGOfvQvQBNFQsVhO71fremzej2nhEW82hip1H3_AbtFDmoffMe9a0
- FhNrpgxsU.i29QObb4P_z8vwu84iFo8PRIOyrFo3KYYGQoHUPFwY8I009weG
- vpazg4e4wMBnz_3YVtS8cwVnvjzYzmI4751Uzw.0SYaUVXKLPpV6G74Hn2tI
- ipnfbZK7FOitwAerL_4_822gHVSTLycP7ChDOdjscadduzf3z63Agj08wgPc
- q03PDOBd6feZoswIqi2NHkfttKUwWDqlykrenTVfrCp3iFdROEzDU1MIWXnN
- 9iz3.81fX2hmbBp0qssVOWMZcXr93d8wbOfV1kLDFRrom7aGYC___TgP.qTL
- Y8mc1noApM7hT_nH333kqCQMwWKbkwT9G4a5vwasTb0tY4jHlMD7QD32v1y1
- FM_VpqESinnJ67oLnQwMSROcc6MrvYLGndZiYIJPKvaOfc6dnCIn.g_aSZuO
- eL45dnslHE2TiPTjxDT0PACATIbQZYFzBcPCEzd5YMI9wnNLwZZRBqO.m8Yn
- ORIZjOlh6MgcBuDbp4RgZJyaf23iQAymNYPFADkdTBCADufobxwdDRZyiYe8
- 8xjPbthQRKd8JL8gr6TD6ZwAvS4UM4QFrb2n5AQiIhc.YVgQuHY2owOL7xls
- xU_w68013VjFk8SQwBwumq7eLYslo
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
-Date: Sat, 12 Feb 2011 19:26:39 +0900 (KST)
-From: Paul Compaore <paulcompaore12@gmail.com>
-Reply-To: paulcompaore14@gmail.com
-Subject: Dear Friend,
-To: undisclosed recipients:;
+	id S1752783Ab1BLK2e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 05:28:34 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34823 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab1BLK23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 05:28:29 -0500
+Date: Sat, 12 Feb 2011 10:28:03 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v4 15/19] ARM: LPAE: use phys_addr_t instead of
+	unsigned long for physical addresses
+Message-ID: <20110212102803.GC15616@n2100.arm.linux.org.uk>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-16-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295891761-18366-16-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 24, 2011 at 05:55:57PM +0000, Catalin Marinas wrote:
+>  arch/arm/include/asm/memory.h     |   17 +++++++++--------
+>  arch/arm/include/asm/outercache.h |   14 ++++++++------
+>  arch/arm/include/asm/pgtable.h    |    2 +-
+>  arch/arm/include/asm/setup.h      |    2 +-
+>  arch/arm/kernel/setup.c           |    5 +++--
+>  arch/arm/mm/init.c                |    6 +++---
+>  arch/arm/mm/mmu.c                 |    7 ++++---
+>  7 files changed, 29 insertions(+), 24 deletions(-)
 
-Dear Friend,
+If this is split up into four separate patches, we can probably sort out
+merging this for the upcoming window.
 
-I am Mr.Paul Compaore; I am in charge of auditing section in Banque Internationale Du Burkina (BIB). I need your urgent assistance to transfer the sum of ($11.3 million to your account. I will send you full details on how the business will be executed and also note that you will receive 50% of the above mentioned amount if you agree to assist me execute this business transaction. If you are interested and capable to handle this business transaction, come up with the information's shown below:- 
+asm/memory.h will conflict non-trivially with p2v patch set, but I think
+we can merge the changes to everything but __virt_to_phys/__phys_to_virt.
 
-1). Your full name: 
-2). Your contact cell phone number: 
-3). Your age: 
-4). Your sex: 
-5). Your occupations: 
-6). Your country and city:
+asm/outercache.h changes are stand-alone.
 
-As soon as possible all these information's is submitted to me immediately i will send you full details of this business transaction on the receipt of your response.Reply to my private email: paulcompaore14@gmail.com
+asm/pgtable.h looks like it could use __pfn_to_phys(pfn) rather than
+adding the cast, and can be combined with mm/init.c and mm/mmu.c.
 
-Thanks.
-Mr Paul Compaore
-
-
-
-      
+asm/setup.h and arch/arm/kernel/setup.c form another logical group.
