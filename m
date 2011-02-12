@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1BLTk7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 14:40:59 -0500
-Received: from smtp-out-246.synserver.de ([212.40.185.246]:1038 "HELO
+	id S1752712Ab1BLTlH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 14:41:07 -0500
+Received: from smtp-out-246.synserver.de ([212.40.185.246]:1103 "HELO
 	smtp-out-246.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752696Ab1BLTjn (ORCPT
+	with SMTP id S1752690Ab1BLTjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 14:39:43 -0500
+	Sat, 12 Feb 2011 14:39:42 -0500
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 24377
@@ -14,45 +14,45 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Anton Vorontsov <cbouatmailru@gmail.com>
 Cc: Rodolfo Giometti <giometti@linux.it>,
         Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 10/14] bq27x00: Add MODULE_DEVICE_TABLE
-Date: Sat, 12 Feb 2011 20:39:10 +0100
-Message-Id: <1297539554-13957-12-git-send-email-lars@metafoo.de>
+Subject: [PATCH 14/14] Ignore -ENODATA errors when generating a uevent
+Date: Sat, 12 Feb 2011 20:39:14 +0100
+Message-Id: <1297539554-13957-16-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297539554-13957-1-git-send-email-lars@metafoo.de>
 References: <1297539554-13957-1-git-send-email-lars@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pali Rohár <pali.rohar@gmail.com>
+Sometimes a driver can not report a meaningful value for a certain property
+and returns -ENODATA.
 
-This patch adds MODULE_DEVICE_TABLE for module bq27x00_battery.
+Currently when generating a uevent and a property return -ENODATA it is
+treated as an error an no uevent is generated at all. This is not an
+desirable behavior.
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
+This patch adds a special case for -ENODATA and ignores properties which
+return this error code when generating the uevent.
+
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Rodolfo Giometti <giometti@linux.it>
 ---
- drivers/power/bq27x00_battery.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/power/power_supply_sysfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index b7a8310..d2e6423 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -672,6 +672,7 @@ static const struct i2c_device_id bq27x00_id[] = {
- 	{ "bq27500", BQ27500 },
- 	{},
- };
-+MODULE_DEVICE_TABLE(i2c, bq27x00_id);
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index cd1f907..605514a 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -270,7 +270,7 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 		attr = &power_supply_attrs[psy->properties[j]];
  
- static struct i2c_driver bq27x00_battery_driver = {
- 	.driver = {
+ 		ret = power_supply_show_property(dev, attr, prop_buf);
+-		if (ret == -ENODEV) {
++		if (ret == -ENODEV || ret == -ENODATA) {
+ 			/* When a battery is absent, we expect -ENODEV. Don't abort;
+ 			   send the uevent with at least the the PRESENT=0 property */
+ 			ret = 0;
 -- 
 1.7.2.3
 
