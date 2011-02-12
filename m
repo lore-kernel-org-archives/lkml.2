@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192Ab1BLQEI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 11:04:08 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34572 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab1BLQED (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 11:04:03 -0500
-Message-ID: <4D56AF22.4070803@oracle.com>
-Date: Sat, 12 Feb 2011 08:02:42 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1751285Ab1BLQEY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 11:04:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37218 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab1BLQEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 11:04:10 -0500
+Date: Sat, 12 Feb 2011 08:04:04 -0800
+From: Greg KH <gregkh@suse.de>
+To: yenchengwang <yenchengwang@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        dbrownell@users.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: f_mass_storage: fixed a macro coding
+ style issue
+Message-ID: <20110212160404.GD26211@suse.de>
+References: <1297438592-8566-1-git-send-email-yenchengwang@gmail.com>
+ <20110211173918.GA9176@suse.de>
+ <20110211185710.GB31385@core.coreip.homeip.net>
+ <20110211191340.GA11733@suse.de>
+ <AANLkTim_ZiR_GuD3e6KixxtX+r9z0+y2D66VJBRpp1ab@mail.gmail.com>
 MIME-Version: 1.0
-To: Kurt Van Dijck <kurt.van.dijck@eia.be>
-CC: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
-References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org> <20110211223312.be571303.randy.dunlap@oracle.com> <20110212111344.GA328@e-circ.dyndns.org>
-In-Reply-To: <20110212111344.GA328@e-circ.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4D56AF69.0065:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim_ZiR_GuD3e6KixxtX+r9z0+y2D66VJBRpp1ab@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/11 03:15, Kurt Van Dijck wrote:
-> On Fri, Feb 11, 2011 at 10:33:12PM -0800, Randy Dunlap wrote:
->>
->> warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
->>
->> with this partial config:
->>
->> CONFIG_CAN=m
->> # CONFIG_CAN_RAW is not set
->> # CONFIG_CAN_BCM is not set
->> # CAN Device Drivers
->> # CONFIG_CAN_VCAN is not set
->> CONFIG_CAN_SLCAN=m
->> # CONFIG_CAN_DEV is not set
->> CONFIG_CAN_SOFTING=m
->> CONFIG_CAN_SOFTING_CS=m
->> # CONFIG_CAN_DEBUG_DEVICES is not set
-> I understand the output, but I don't understand the cause well enough.
-> CAN_SOFTING=m has a 'depends on CAN_DEV'
-> Is it then possible to have CAN_SOFTING=m _and not_ CAN_DEV ?
+On Sat, Feb 12, 2011 at 04:15:21PM +0800, yenchengwang wrote:
+> ah, I think I made a mistake...
+> I watched this video
+> http://archive.fosdem.org/2010/schedule/events/linuxkernelpatch,
+> then tried the ./scripts/checkpatch.pl and see two ERROR:...
+> so ... sent this patch, I apologize for my mistake, :(
 
-Yes.  From Documentation/kbuild/kconfig-language.txt:
+That's great to do that, but you forgot the part of that talk that
+showed you had to build your patch to verify that you did not break
+anything.  Please do that in the future.
 
-  Note:
-	select should be used with care. select will force
-	a symbol to a value without visiting the dependencies.
-	By abusing select you are able to select a symbol FOO even
-	if FOO depends on BAR that is not set.
-	In general use select only for non-visible symbols
-	(no prompts anywhere) and for symbols with no dependencies.
-	That will limit the usefulness but on the other hand avoid
-	the illegal configurations all over.
+thanks,
 
-
-CAN_SOFTING_CS does not depend on CAN_DEV. but it selects CAN_SOFTING,
-which does depend on CAN_DEV, ... but CAN_DEV is not enabled.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+greg k-h
