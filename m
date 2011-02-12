@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1BLRNk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 12:13:40 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51602 "EHLO
+	id S1752490Ab1BLRNR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 12:13:17 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44248 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab1BLRLn (ORCPT
+	with ESMTP id S1751575Ab1BLRLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 12:11:43 -0500
+	Sat, 12 Feb 2011 12:11:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=I4KtYlOUUChClJmqa+pa8Swo+U9gGRmplD8G/9M8ZZkwx+ri9WaGjG/uQgEIl8pa6c
-         ahr1W9BkUw0IRtLbPTmnncc6LMWsdEC5lpQkTA8Ofs49fx0Uq69c6qoezPDVPPN2vN2T
-         vsHFhs9jRxRCtgqxeACgg5UWIPTQzpabZ0Yo8=
+        b=aqYffX6KivK8MKOudUC9QmyMXS5VvkkVdJAiAe0pv96S8UZSmcUlkdqHLft6R+V31w
+         6OfqEemEo+AJiLPKekevfmBlmCW4PCl/4cN9Lf/fc9vjysJjnk8wL2TtB1A4Zlh6o8SO
+         CCzH8FRJtY3z9MIrYGgJhkNfuTaNxPNRvFfW4=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 21/26] x86-64, NUMA: consolidate and improve memblk sanity checks
-Date: Sat, 12 Feb 2011 18:10:58 +0100
-Message-Id: <1297530663-26234-22-git-send-email-tj@kernel.org>
+Subject: [PATCH 16/26] x86-64, NUMA: Kill {acpi|amd|dummy}_scan_nodes()
+Date: Sat, 12 Feb 2011 18:10:53 +0100
+Message-Id: <1297530663-26234-17-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297530663-26234-1-git-send-email-tj@kernel.org>
 References: <1297530663-26234-1-git-send-email-tj@kernel.org>
@@ -29,21 +29,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memblk sanity check was scattered around and incomplete.  Consolidate
-and improve.
-
-* Confliction detection and cutoff_node() logic are moved to
-  numa_cleanup_meminfo().
-
-* numa_cleanup_meminfo() clears the unused memblks before returning.
-
-* Check and warn about invalid input parameters in numa_add_memblk().
-
-* Check the maximum number of memblk isn't exceeded in
-  numa_add_memblk().
-
-* numa_cleanup_meminfo() is now called before numa_emulation() so that
-  the emulation code also uses the cleaned up version.
+They are empty now.  Kill them.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -54,176 +40,109 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/numa_64.c |   99 ++++++++++++++++++++++++-------------------------
- 1 files changed, 49 insertions(+), 50 deletions(-)
+ arch/x86/include/asm/acpi.h   |    1 -
+ arch/x86/include/asm/amd_nb.h |    1 -
+ arch/x86/mm/amdtopology_64.c  |    5 -----
+ arch/x86/mm/numa_64.c         |   11 -----------
+ arch/x86/mm/srat_64.c         |    8 --------
+ 5 files changed, 0 insertions(+), 26 deletions(-)
 
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 12bd1fd..cfa3d5c 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -186,7 +186,6 @@ struct bootnode;
+ #ifdef CONFIG_ACPI_NUMA
+ extern int acpi_numa;
+ extern int x86_acpi_numa_init(void);
+-extern int acpi_scan_nodes(void);
+ 
+ #ifdef CONFIG_NUMA_EMU
+ extern void acpi_fake_nodes(const struct bootnode *fake_nodes,
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index 765966f..627aff3 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -17,7 +17,6 @@ extern int early_is_amd_nb(u32 value);
+ extern int amd_cache_northbridges(void);
+ extern void amd_flush_garts(void);
+ extern int amd_numa_init(void);
+-extern int amd_scan_nodes(void);
+ 
+ #ifdef CONFIG_NUMA_EMU
+ extern void amd_fake_nodes(const struct bootnode *nodes, int nr_nodes);
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index 9c9f46a..90cf297 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -259,8 +259,3 @@ void __init amd_fake_nodes(const struct bootnode *nodes, int nr_nodes)
+ 	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ }
+ #endif /* CONFIG_NUMA_EMU */
+-
+-int __init amd_scan_nodes(void)
+-{
+-	return 0;
+-}
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 62ba1fd..1996ee7 100644
+index 062649d..be173c4 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -189,37 +189,23 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
- 	return NULL;
- }
- 
--static __init int conflicting_memblks(unsigned long start, unsigned long end)
-+int __init numa_add_memblk(int nid, u64 start, u64 end)
- {
- 	struct numa_meminfo *mi = &numa_meminfo;
--	int i;
- 
--	for (i = 0; i < mi->nr_blks; i++) {
--		struct numa_memblk *blk = &mi->blk[i];
-+	/* ignore zero length blks */
-+	if (start == end)
-+		return 0;
- 
--		if (blk->start == blk->end)
--			continue;
--		if (blk->end > start && blk->start < end)
--			return blk->nid;
--		if (blk->end == end && blk->start == start)
--			return blk->nid;
-+	/* whine about and ignore invalid blks */
-+	if (start > end || nid < 0 || nid >= MAX_NUMNODES) {
-+		pr_warning("NUMA: Warning: invalid memblk node %d (%Lx-%Lx)\n",
-+			   nid, start, end);
-+		return 0;
- 	}
--	return -1;
--}
--
--int __init numa_add_memblk(int nid, u64 start, u64 end)
--{
--	struct numa_meminfo *mi = &numa_meminfo;
--	int i;
- 
--	i = conflicting_memblks(start, end);
--	if (i == nid) {
--		printk(KERN_WARNING "NUMA: Warning: node %d (%Lx-%Lx) overlaps with itself (%Lx-%Lx)\n",
--		       nid, start, end, numa_nodes[i].start, numa_nodes[i].end);
--	} else if (i >= 0) {
--		printk(KERN_ERR "NUMA: node %d (%Lx-%Lx) overlaps with node %d (%Lx-%Lx)\n",
--		       nid, start, end, i,
--		       numa_nodes[i].start, numa_nodes[i].end);
-+	if (mi->nr_blks >= NR_NODE_MEMBLKS) {
-+		pr_err("NUMA: too many memblk ranges\n");
- 		return -EINVAL;
- 	}
- 
-@@ -237,22 +223,6 @@ static void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
- 		(mi->nr_blks - idx) * sizeof(mi->blk[0]));
- }
- 
--static __init void cutoff_node(int i, unsigned long start, unsigned long end)
--{
--	struct bootnode *nd = &numa_nodes[i];
--
--	if (nd->start < start) {
--		nd->start = start;
--		if (nd->end < nd->start)
--			nd->start = nd->end;
--	}
--	if (nd->end > end) {
--		nd->end = end;
--		if (nd->start > nd->end)
--			nd->start = nd->end;
--	}
--}
--
- /* Initialize bootmem allocator for a node */
- void __init
- setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
-@@ -301,24 +271,53 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
- 
- static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
- {
-+	const u64 low = 0;
-+	const u64 high = (u64)max_pfn << PAGE_SHIFT;
- 	int i, j, k;
- 
- 	for (i = 0; i < mi->nr_blks; i++) {
- 		struct numa_memblk *bi = &mi->blk[i];
- 
-+		/* make sure all blocks are inside the limits */
-+		bi->start = max(bi->start, low);
-+		bi->end = min(bi->end, high);
-+
-+		/* and there's no empty block */
-+		if (bi->start == bi->end) {
-+			numa_remove_memblk_from(i--, mi);
-+			continue;
-+		}
-+
- 		for (j = i + 1; j < mi->nr_blks; j++) {
- 			struct numa_memblk *bj = &mi->blk[j];
- 			unsigned long start, end;
- 
- 			/*
-+			 * See whether there are overlapping blocks.  Whine
-+			 * about but allow overlaps of the same nid.  They
-+			 * will be merged below.
-+			 */
-+			if (bi->end > bj->start && bi->start < bj->end) {
-+				if (bi->nid != bj->nid) {
-+					pr_err("NUMA: node %d (%Lx-%Lx) overlaps with node %d (%Lx-%Lx)\n",
-+					       bi->nid, bi->start, bi->end,
-+					       bj->nid, bj->start, bj->end);
-+					return -EINVAL;
-+				}
-+				pr_warning("NUMA: Warning: node %d (%Lx-%Lx) overlaps with itself (%Lx-%Lx)\n",
-+					   bi->nid, bi->start, bi->end,
-+					   bj->start, bj->end);
-+			}
-+
-+			/*
- 			 * Join together blocks on the same node, holes
- 			 * between which don't overlap with memory on other
- 			 * nodes.
- 			 */
- 			if (bi->nid != bj->nid)
- 				continue;
--			start = min(bi->start, bj->start);
--			end = max(bi->end, bj->end);
-+			start = max(min(bi->start, bj->start), low);
-+			end = min(max(bi->end, bj->end), high);
- 			for (k = 0; k < mi->nr_blks; k++) {
- 				struct numa_memblk *bk = &mi->blk[k];
- 
-@@ -338,6 +337,11 @@ static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
- 		}
- 	}
- 
-+	for (i = mi->nr_blks; i < ARRAY_SIZE(mi->blk); i++) {
-+		mi->blk[i].start = mi->blk[i].end = 0;
-+		mi->blk[i].nid = NUMA_NO_NODE;
-+	}
-+
+@@ -769,25 +769,17 @@ static int dummy_numa_init(void)
  	return 0;
  }
  
-@@ -821,10 +825,8 @@ void __init initmem_init(void)
- 		if (numa_init[i]() < 0)
+-static int dummy_scan_nodes(void)
+-{
+-	return 0;
+-}
+-
+ void __init initmem_init(void)
+ {
+ 	int (*numa_init[])(void) = { [2] = dummy_numa_init };
+-	int (*scan_nodes[])(void) = { [2] = dummy_scan_nodes };
+ 	int i, j;
+ 
+ 	if (!numa_off) {
+ #ifdef CONFIG_ACPI_NUMA
+ 		numa_init[0] = x86_acpi_numa_init;
+-		scan_nodes[0] = acpi_scan_nodes;
+ #endif
+ #ifdef CONFIG_AMD_NUMA
+ 		numa_init[1] = amd_numa_init;
+-		scan_nodes[1] = amd_scan_nodes;
+ #endif
+ 	}
+ 
+@@ -831,9 +823,6 @@ void __init initmem_init(void)
+ 		if (numa_register_memblks() < 0)
  			continue;
  
--		/* clean up the node list */
--		for (j = 0; j < MAX_NUMNODES; j++)
--			cutoff_node(j, 0, max_pfn << PAGE_SHIFT);
--
-+		if (numa_cleanup_meminfo(&numa_meminfo) < 0)
-+			continue;
- #ifdef CONFIG_NUMA_EMU
- 		setup_physnodes(0, max_pfn << PAGE_SHIFT);
- 		if (cmdline && !numa_emulation(0, max_pfn, i == 0, i == 1))
-@@ -833,9 +835,6 @@ void __init initmem_init(void)
- 		nodes_clear(node_possible_map);
- 		nodes_clear(node_online_map);
- #endif
--		if (numa_cleanup_meminfo(&numa_meminfo) < 0)
+-		if (scan_nodes[i]() < 0)
 -			continue;
 -
- 		if (numa_register_memblks(&numa_meminfo) < 0)
- 			continue;
+ 		for (j = 0; j < nr_cpu_ids; j++) {
+ 			int nid = early_cpu_to_node(j);
  
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index 4a2c33b..d56eff8 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -270,14 +270,6 @@ int __init x86_acpi_numa_init(void)
+ 	return srat_disabled() ? -EINVAL : 0;
+ }
+ 
+-/* Use the information discovered above to actually set up the nodes. */
+-int __init acpi_scan_nodes(void)
+-{
+-	if (acpi_numa <= 0)
+-		return -1;
+-	return 0;
+-}
+-
+ #ifdef CONFIG_NUMA_EMU
+ static int fake_node_to_pxm_map[MAX_NUMNODES] __initdata = {
+ 	[0 ... MAX_NUMNODES-1] = PXM_INVAL
 -- 
 1.7.1
 
