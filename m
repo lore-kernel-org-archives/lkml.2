@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab1BLKAA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 05:00:00 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55242 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab1BLJ74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 04:59:56 -0500
-Date: Sat, 12 Feb 2011 09:59:43 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v4 03/19] ARM: LPAE: use long long format when printing
-	physical addresses and ptes
-Message-ID: <20110212095943.GB15616@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-4-git-send-email-catalin.marinas@arm.com>
+	id S1752591Ab1BLK0y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 05:26:54 -0500
+Received: from nm2-vm1.bullet.mail.kr3.yahoo.com ([111.67.240.245]:46919 "HELO
+	nm2-vm1.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750739Ab1BLK0t convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 05:26:49 -0500
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 509480.26225.bm@omp1001.mail.kr3.yahoo.com
+Message-ID: <366487.11856.qm@web70808.mail.kr3.yahoo.com>
+X-YMail-OSG: R51Oti4VM1nfO.1MCxmrPyOYI0_pG1SZIa41uTU2OBbsKy5
+ 4WAercqLxEVsfRnYBkpx.IJYIloQHBe8DyArLM8DPMvLwYxC3BZkUN54pVaY
+ BGLHWnKY7WkUXAgIPZJ7E8qJeeVkQ8yxuB1eIZ1kIpXsJWiz2t0YfW4yI08O
+ JQ3bB4v51dyVbnEnnP2zCK5geJwVYCPyWdXt0pIpSTHFi6vy6wLyYnRnS0P9
+ .IXkJM9.o4RRzeEhXs0P9mjpEOtWAyKnZ7cqWVO.ZQkBRTZA03cj7k0t71HE
+ ZXBbbxPyHRLv2eRmg4Rmomti.hGhJlojL8UM2opIwZI8DuybHdzuULSSepO5
+ 2cttM_DDPP5xNA9d8oJEErxk6dG_DtB2UmyMyQyasYvEuPJCv0GvFJl1ZVyt
+ dv_f79ZqGOfvQvQBNFQsVhO71fremzej2nhEW82hip1H3_AbtFDmoffMe9a0
+ FhNrpgxsU.i29QObb4P_z8vwu84iFo8PRIOyrFo3KYYGQoHUPFwY8I009weG
+ vpazg4e4wMBnz_3YVtS8cwVnvjzYzmI4751Uzw.0SYaUVXKLPpV6G74Hn2tI
+ ipnfbZK7FOitwAerL_4_822gHVSTLycP7ChDOdjscadduzf3z63Agj08wgPc
+ q03PDOBd6feZoswIqi2NHkfttKUwWDqlykrenTVfrCp3iFdROEzDU1MIWXnN
+ 9iz3.81fX2hmbBp0qssVOWMZcXr93d8wbOfV1kLDFRrom7aGYC___TgP.qTL
+ Y8mc1noApM7hT_nH333kqCQMwWKbkwT9G4a5vwasTb0tY4jHlMD7QD32v1y1
+ FM_VpqESinnJ67oLnQwMSROcc6MrvYLGndZiYIJPKvaOfc6dnCIn.g_aSZuO
+ eL45dnslHE2TiPTjxDT0PACATIbQZYFzBcPCEzd5YMI9wnNLwZZRBqO.m8Yn
+ ORIZjOlh6MgcBuDbp4RgZJyaf23iQAymNYPFADkdTBCADufobxwdDRZyiYe8
+ 8xjPbthQRKd8JL8gr6TD6ZwAvS4UM4QFrb2n5AQiIhc.YVgQuHY2owOL7xls
+ xU_w68013VjFk8SQwBwumq7eLYslo
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
+Date: Sat, 12 Feb 2011 19:26:39 +0900 (KST)
+From: Paul Compaore <paulcompaore12@gmail.com>
+Reply-To: paulcompaore14@gmail.com
+Subject: Dear Friend,
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295891761-18366-4-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 05:55:45PM +0000, Catalin Marinas wrote:
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index 5ea4fb7..3d23f0f 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -449,7 +449,7 @@ static int __init arm_add_memory(unsigned long start, unsigned long size)
->  
->  	if (meminfo.nr_banks >= NR_BANKS) {
->  		printk(KERN_CRIT "NR_BANKS too low, "
-> -			"ignoring memory at %#lx\n", start);
-> +			"ignoring memory at %#08llx\n", (long long)start);
 
-This is not equivalent.  %#lx produces '0x0'.  %#08llx produces '0x000000'
-not '0x00000000' - the '0x' is included in the field width.  So you want
-'%#010llx' or '0x%08llx' - there's no real advantage to either.  Or just
-convert '%#lx' to '%#llx'.
+Dear Friend,
+
+I am Mr.Paul Compaore; I am in charge of auditing section in Banque Internationale Du Burkina (BIB). I need your urgent assistance to transfer the sum of ($11.3 million to your account. I will send you full details on how the business will be executed and also note that you will receive 50% of the above mentioned amount if you agree to assist me execute this business transaction. If you are interested and capable to handle this business transaction, come up with the information's shown below:- 
+
+1). Your full name: 
+2). Your contact cell phone number: 
+3). Your age: 
+4). Your sex: 
+5). Your occupations: 
+6). Your country and city:
+
+As soon as possible all these information's is submitted to me immediately i will send you full details of this business transaction on the receipt of your response.Reply to my private email: paulcompaore14@gmail.com
+
+Thanks.
+Mr Paul Compaore
+
+
+
+      
