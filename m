@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab1BLCLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 21:11:07 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:46742 "EHLO lunge.queued.net"
+	id S1758223Ab1BLCMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 21:12:33 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:58281 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755364Ab1BLCLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 21:11:05 -0500
-Date: Fri, 11 Feb 2011 18:11:01 -0800
+	id S1755364Ab1BLCMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 21:12:32 -0500
+Date: Fri, 11 Feb 2011 18:12:28 -0800
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 09/17] t7166xb: mfd_cell is now implicitly available to
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>,
+        linux-media@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: [PATCH 10/17] wl1273: mfd_cell is now implicitly available to
  drivers
-Message-ID: <20110211181101.3a4325e4@queued.net>
+Message-ID: <20110211181228.74a8cf5a@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,86 +28,63 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-No need to explicitly set the cell's platform_data/data_size.
-
-Modify clients to use mfd_get_cell helper function instead of
-accessing platform_data directly.
+The cell's platform_data is now accessed with a helper function;
+change clients to use that, and remove the now-unused data_size.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/mfd/t7l66xb.c        |    9 ---------
- drivers/mtd/nand/tmio_nand.c |   10 +++++-----
- 2 files changed, 5 insertions(+), 14 deletions(-)
+ drivers/media/radio/radio-wl1273.c |    2 +-
+ drivers/mfd/wl1273-core.c          |    2 --
+ sound/soc/codecs/wl1273.c          |    3 ++-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/t7l66xb.c b/drivers/mfd/t7l66xb.c
-index 9caeb4a..b9c1e4c 100644
---- a/drivers/mfd/t7l66xb.c
-+++ b/drivers/mfd/t7l66xb.c
-@@ -384,15 +384,6 @@ static int t7l66xb_probe(struct platform_device *dev)
- 	t7l66xb_attach_irq(dev);
+diff --git a/drivers/media/radio/radio-wl1273.c b/drivers/media/radio/radio-wl1273.c
+index 7ecc8e6..4698eb0 100644
+--- a/drivers/media/radio/radio-wl1273.c
++++ b/drivers/media/radio/radio-wl1273.c
+@@ -2138,7 +2138,7 @@ static int wl1273_fm_radio_remove(struct platform_device *pdev)
  
- 	t7l66xb_cells[T7L66XB_CELL_NAND].driver_data = pdata->nand_data;
--	t7l66xb_cells[T7L66XB_CELL_NAND].platform_data =
--		&t7l66xb_cells[T7L66XB_CELL_NAND];
--	t7l66xb_cells[T7L66XB_CELL_NAND].data_size =
--		sizeof(t7l66xb_cells[T7L66XB_CELL_NAND]);
--
--	t7l66xb_cells[T7L66XB_CELL_MMC].platform_data =
--		&t7l66xb_cells[T7L66XB_CELL_MMC];
--	t7l66xb_cells[T7L66XB_CELL_MMC].data_size =
--		sizeof(t7l66xb_cells[T7L66XB_CELL_MMC]);
- 
- 	ret = mfd_add_devices(&dev->dev, dev->id,
- 			      t7l66xb_cells, ARRAY_SIZE(t7l66xb_cells),
-diff --git a/drivers/mtd/nand/tmio_nand.c b/drivers/mtd/nand/tmio_nand.c
-index 3041d1f..5bf63e3 100644
---- a/drivers/mtd/nand/tmio_nand.c
-+++ b/drivers/mtd/nand/tmio_nand.c
-@@ -319,7 +319,7 @@ static int tmio_nand_correct_data(struct mtd_info *mtd, unsigned char *buf,
- 
- static int tmio_hw_init(struct platform_device *dev, struct tmio_nand *tmio)
+ static int __devinit wl1273_fm_radio_probe(struct platform_device *pdev)
  {
--	struct mfd_cell *cell = dev_get_platdata(&dev->dev);
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	int ret;
+-	struct wl1273_core **core = pdev->dev.platform_data;
++	struct wl1273_core **core = mfd_get_data(pdev);
+ 	struct wl1273_device *radio;
+ 	struct v4l2_ctrl *ctrl;
+ 	int r = 0;
+diff --git a/drivers/mfd/wl1273-core.c b/drivers/mfd/wl1273-core.c
+index d2ecc24..703085e 100644
+--- a/drivers/mfd/wl1273-core.c
++++ b/drivers/mfd/wl1273-core.c
+@@ -80,7 +80,6 @@ static int __devinit wl1273_core_probe(struct i2c_client *client,
+ 	cell = &core->cells[children];
+ 	cell->name = "wl1273_fm_radio";
+ 	cell->platform_data = &core;
+-	cell->data_size = sizeof(core);
+ 	children++;
  
- 	if (cell->enable) {
-@@ -363,7 +363,7 @@ static int tmio_hw_init(struct platform_device *dev, struct tmio_nand *tmio)
+ 	if (pdata->children & WL1273_CODEC_CHILD) {
+@@ -89,7 +88,6 @@ static int __devinit wl1273_core_probe(struct i2c_client *client,
+ 		dev_dbg(&client->dev, "%s: Have codec.\n", __func__);
+ 		cell->name = "wl1273-codec";
+ 		cell->platform_data = &core;
+-		cell->data_size = sizeof(core);
+ 		children++;
+ 	}
  
- static void tmio_hw_stop(struct platform_device *dev, struct tmio_nand *tmio)
+diff --git a/sound/soc/codecs/wl1273.c b/sound/soc/codecs/wl1273.c
+index 861b28f..1ad0d5a 100644
+--- a/sound/soc/codecs/wl1273.c
++++ b/sound/soc/codecs/wl1273.c
+@@ -436,7 +436,8 @@ EXPORT_SYMBOL_GPL(wl1273_get_format);
+ 
+ static int wl1273_probe(struct snd_soc_codec *codec)
  {
--	struct mfd_cell *cell = dev_get_platdata(&dev->dev);
-+	struct mfd_cell *cell = mfd_get_cell(dev);
+-	struct wl1273_core **core = codec->dev->platform_data;
++	struct wl1273_core **core =
++			mfd_get_data(to_platform_device(codec->dev));
+ 	struct wl1273_priv *wl1273;
+ 	int r;
  
- 	tmio_iowrite8(FCR_MODE_POWER_OFF, tmio->fcr + FCR_MODE);
- 	if (cell->disable)
-@@ -372,7 +372,7 @@ static void tmio_hw_stop(struct platform_device *dev, struct tmio_nand *tmio)
- 
- static int tmio_probe(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev_get_platdata(&dev->dev);
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct tmio_nand_data *data = cell->driver_data;
- 	struct resource *fcr = platform_get_resource(dev,
- 			IORESOURCE_MEM, 0);
-@@ -516,7 +516,7 @@ static int tmio_remove(struct platform_device *dev)
- #ifdef CONFIG_PM
- static int tmio_suspend(struct platform_device *dev, pm_message_t state)
- {
--	struct mfd_cell *cell = dev_get_platdata(&dev->dev);
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 
- 	if (cell->suspend)
- 		cell->suspend(dev);
-@@ -527,7 +527,7 @@ static int tmio_suspend(struct platform_device *dev, pm_message_t state)
- 
- static int tmio_resume(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev_get_platdata(&dev->dev);
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 
- 	/* FIXME - is this required or merely another attack of the broken
- 	 * SHARP platform? Looks suspicious.
 -- 
 1.7.2.3
 
