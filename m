@@ -1,77 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab1BLBmH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 20:42:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56531 "EHLO mx1.redhat.com"
+	id S1757814Ab1BLBw0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 20:52:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23252 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755436Ab1BLBmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 20:42:05 -0500
-Message-ID: <4D55E555.9050409@redhat.com>
-Date: Fri, 11 Feb 2011 19:41:41 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL]
-References: <20110211134058.GA4309@thunk.org> <AANLkTineDxntR0ZTXdgXrc6qx6pATTORgOwFR5+w5MLN@mail.gmail.com>
-In-Reply-To: <AANLkTineDxntR0ZTXdgXrc6qx6pATTORgOwFR5+w5MLN@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1752567Ab1BLBwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 20:52:25 -0500
+Subject: Re: [BUG?] tracing/function_graph: set_graph_function was broken
+ from 2.6.36-rc2
+From: Steven Rostedt <srostedt@redhat.com>
+To: wu zhangjin <wuzhangjin@gmail.com>
+Cc: zhiping zhong <xzhong86@163.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        fweisbec <fweisbec@gmail.com>
+In-Reply-To: <AANLkTikA2r5VroeXKfXspmh+ZdPL3T=c3m3rwggqdCVP@mail.gmail.com>
+References: <AANLkTinxxOsXNatAiP0t8Vv0xFZcdSpoWWrG49g6JjqF@mail.gmail.com>
+	 <1295544654.19789.19.camel@fedora>
+	 <AANLkTin6g8SGnuG6j6JVCdBvOeiBj8Quwr2T9K+3jUwq@mail.gmail.com>
+	 <1295635231.26768.2.camel@fedora>
+	 <AANLkTikA2r5VroeXKfXspmh+ZdPL3T=c3m3rwggqdCVP@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 11 Feb 2011 20:52:19 -0500
+Message-ID: <1297475539.26768.2313.camel@fedora>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/11/11 6:33 PM, Linus Torvalds wrote:
-> On Fri, Feb 11, 2011 at 5:40 AM, Ted Ts'o <tytso@mit.edu> wrote:
->>
->> Please pull from:
->>
->>  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
->>
->> to get regression and bug fixes for 2.6.38.
->>
->> Eric Sandeen (3):
->>      ext4: serialize unaligned asynchronous DIO
+On Mon, 2011-01-24 at 11:30 +0800, wu zhangjin wrote:
+> On Sat, Jan 22, 2011 at 2:40 AM, Steven Rostedt <srostedt@redhat.com> wrote:
+> > On Fri, 2011-01-21 at 17:27 +0800, wu zhangjin wrote:
+> >> On Fri, Jan 21, 2011 at 1:30 AM, Steven Rostedt <srostedt@redhat.com> wrote:
+> >
+> >> >> trace_graph_entry():
+> >> >>
+> >> >>         [snip]
+> >> >>         /* trace it when it is-nested-in or is a function enabled. */
+> >> >>         if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
+> >> >>               ftrace_graph_ignore_irqs())
+> >> >>                 return 0;
+> >> >>         [snip]
+> >> >>
+> >>
+> >> By default, ftrace_graph_ignore_irqs() is false, then, if we don't put
+> >> 0 to /debug/tracing/options/funcgraph-irqs, it will not return even if
+> >> we have specified some entries through the tracing/set_graph_function
+> >> interface, as a result, every function will be traced and it doesn't
+> >> work as we expected, the expected result is only the specified
+> >> functions are reserved in the tracing result.
+> >>
+> >
+> > ???
+> >
+> > It's an or, if the first case is true:
+> >
+> >  !(trace->depth || ftrace_graph_addr(trace->func))
+> >
+> > then we return and do not trace. Regardless of what
+> > ftrace_graph_ignore_irqs() is set to.
 > 
-> This is a completely disgusting patch, and it causes warnings like this:
+> Sorry, I was falling into a stupid trap, OR from left to right ;-)
 
->  fs/ext4/file.c: In function ‘ext4_aiodio_wait’:
->  fs/ext4/file.c:60:44: warning: cast from pointer to integer of different size
-> 
-> because that disgusting patch does things like
-> 
->   #define ext4_aio_mutex(v)  (&ext4__aio_mutex[((unsigned)v) % EXT4_WQ_HASH_SZ])
+I found the reason for the traced interrupts. It looks like its been
+there for a while. Here's the patch I'll be sending to mainline:
 
-Well crap, the patch I sent Ted did not cause warnings.
-OTOH, I eyeballed his changes to my patch and said OK.  Didn't test-build it though.
-Sorry about that.
+-- Steve
 
-Will see what's going on here...
+commit 2271425ed6ce77b271749544cd6117ceccb6369c
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Fri Feb 11 20:36:02 2011 -0500
 
--Eric
+    ftrace/graph: Trace function entry before updating index
+    
+    Currently the index to the ret_stack is updated and the real return address
+    is saved in the ret_stack. Then we call the trace function. The trace
+    function could decide that it doesn't want to trace this function
+    (ex. set_graph_function does not match) and it will return 0 which means
+    not to trace this call.
+    
+    The normal function graph tracer has this code:
+    
+    	if (!(trace->depth || ftrace_graph_addr(trace->func)) ||
+    	      ftrace_graph_ignore_irqs())
+    		return 0;
+    
+    What this states is, if the trace depth (which is curr_ret_stack)
+    is zero (top of nested functions) then test if we want to trace this
+    function. If this function is not to be traced, then return  0 and
+    the rest of the function graph tracer logic will not trace this function.
+    
+    The problem arises when an interrupt comes in after we updated the
+    curr_ret_stack. The next function that gets called will have a trace->depth
+    of 1. Which fools this trace code into thinking that we are in a nested
+    function, and that we should trace. This causes interrupts to be traced
+    when they should not be.
+    
+    The solution is to trace the function first and then update the ret_stack.
+    
+    Reported-by: zhiping zhong <xzhong86@163.com>
+    Reported-by: wu zhangjin <wuzhangjin@gmail.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-> which is just terminally broken.
-> 
-> It's terminally broken for multiple reasons, too. It's not just "oh, a
-> warning". It's a case of "oh, THAT CODE IS UTTER CRAP". The warning
-> was just the lucky reason I noticed the totally unacceptable code.
-> 
-> Dammit, don't send sh*t to me this late in the release cycle. This
-> clearly went through _zero_ quality control.
-> 
->                    Linus
-> 
-> PS. If people don't understand why that code is utter crap, let me
-> give you a hint: macro argument expansion vs operator precedence.
-> 
-> PPS. And btw, the warning is unacceptable too. Cast the thing to
-> "unsigned long" (or uintptr_t, but quite frankly, in the kernel I'd
-> suggest "unsigned long" rather than the more obscure standard types)
-> after you've fixed the macro argument problem.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index 382eb29..a93742a 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -437,18 +437,19 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
+ 		return;
+ 	}
+ 
+-	if (ftrace_push_return_trace(old, self_addr, &trace.depth,
+-		    frame_pointer) == -EBUSY) {
+-		*parent = old;
+-		return;
+-	}
+-
+ 	trace.func = self_addr;
++	trace.depth = current->curr_ret_stack + 1;
+ 
+ 	/* Only trace if the calling function expects to */
+ 	if (!ftrace_graph_entry(&trace)) {
+-		current->curr_ret_stack--;
+ 		*parent = old;
++		return;
++	}
++
++	if (ftrace_push_return_trace(old, self_addr, &trace.depth,
++		    frame_pointer) == -EBUSY) {
++		*parent = old;
++		return;
+ 	}
+ }
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+
 
