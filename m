@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758446Ab1BLDaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Feb 2011 22:30:00 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:51201 "EHLO smtp.outflux.net"
+	id S1758476Ab1BLDw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Feb 2011 22:52:29 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:51581 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab1BLD37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Feb 2011 22:29:59 -0500
-Date: Fri, 11 Feb 2011 19:29:44 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Eugene Teo <eugeneteo@kernel.org>
-Subject: [PATCH] drm: do not leak kernel addresses via /proc/dri/*/vma
-Message-ID: <20110212032944.GA24080@outflux.net>
+	id S1758200Ab1BLDw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Feb 2011 22:52:28 -0500
+Date: Fri, 11 Feb 2011 19:51:38 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Andres Salomon <dilinger@queued.net>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 03/17] jz4740: mfd_cell is now implicitly available to
+ drivers
+Message-ID: <20110212035138.GA6859@ericsson.com>
+References: <20110211180250.483936cc@queued.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <20110211180250.483936cc@queued.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the continuing effort to avoid kernel addresses leaking to unprivileged
-users, this patch switches to %pK for /proc/dri/*/vma.
+On Fri, Feb 11, 2011 at 09:02:50PM -0500, Andres Salomon wrote:
+> 
+> No need to explicitly set the cell's platform_data/data_size.
+> 
+> Modify clients to use mfd_get_cell helper function instead of
+> accessing platform_data directly.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- drivers/gpu/drm/drm_info.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+I don't see anything different to the previous version of this patch
+(which was Acked by Jean already), and there is no changelog available
+for the complete series either.
 
-diff --git a/drivers/gpu/drm/drm_info.c b/drivers/gpu/drm/drm_info.c
-index 3cdbaf3..be9a9c0 100644
---- a/drivers/gpu/drm/drm_info.c
-+++ b/drivers/gpu/drm/drm_info.c
-@@ -283,17 +283,18 @@ int drm_vma_info(struct seq_file *m, void *data)
- #endif
- 
- 	mutex_lock(&dev->struct_mutex);
--	seq_printf(m, "vma use count: %d, high_memory = %p, 0x%08llx\n",
-+	seq_printf(m, "vma use count: %d, high_memory = %pK, 0x%pK\n",
- 		   atomic_read(&dev->vma_count),
--		   high_memory, (u64)virt_to_phys(high_memory));
-+		   high_memory, (void *)virt_to_phys(high_memory));
- 
- 	list_for_each_entry(pt, &dev->vmalist, head) {
- 		vma = pt->vma;
- 		if (!vma)
- 			continue;
- 		seq_printf(m,
--			   "\n%5d 0x%08lx-0x%08lx %c%c%c%c%c%c 0x%08lx000",
--			   pt->pid, vma->vm_start, vma->vm_end,
-+			   "\n%5d 0x%pK-0x%pK %c%c%c%c%c%c 0x%08lx000",
-+			   pt->pid,
-+			   (void *)vma->vm_start, (void *)vma->vm_end,
- 			   vma->vm_flags & VM_READ ? 'r' : '-',
- 			   vma->vm_flags & VM_WRITE ? 'w' : '-',
- 			   vma->vm_flags & VM_EXEC ? 'x' : '-',
--- 
-1.7.2.3
+A changelog would be really helpful.
 
--- 
-Kees Cook
-Ubuntu Security Team
+Guenter
