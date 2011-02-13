@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab1BMF3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 00:29:12 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37499 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab1BMF3E (ORCPT
+	id S1751583Ab1BMGEW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 01:04:22 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:53335 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751039Ab1BMGES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 00:29:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=cc:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:mime-version:subject:date:references
-         :x-mailer;
-        b=oHP1fmGIJgTHC4b624W/g7ZKNJKL8Wf7cLw+T9RkBpsGDeU7iY7XFGGb0PVwzKGVQZ
-         ZwwjoSKoizNkKRs1IxX/VNIBn1KgzHU5Y+y8dvEjdOQh5scRCMHxJF8h+/Xkx1wLvAxq
-         qnueFGMeSAkELXjQAq0bVbL3xmIxAtGyzdOI0=
-Cc: dri-devel@lists.freedesktop.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        airlied@redhat.com
-Message-Id: <1838D776-BF70-4ABE-98CB-EFDCF828F6CF@gmail.com>
-From: Justin Mattock <justinmattock@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-In-Reply-To: <AANLkTinca2027s9-g0tLabBMj4fr2+e=xgUSymBqvv1o@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+	Sun, 13 Feb 2011 01:04:18 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+yZbtCCjOy4SQMKFrylG0JhHYnrt5dKbHY5xUyOv
+	QUSJaXGluaMMwJ
+Subject: Re: Linux 2.6.27.58
+From: Mike Galbraith <efault@gmx.de>
+To: "Jayson R. King" <dev@jaysonking.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>
+In-Reply-To: <4D572F9E.3070900@jaysonking.com>
+References: <4D543738.3080206@jaysonking.com>
+	 <1297399762.7865.17.camel@marge.simson.net>
+	 <4D572F9E.3070900@jaysonking.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Feb 2011 07:04:12 +0100
+Message-ID: <1297577052.7863.2.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: [BISECTED] commit 619efb1059 makes the MacBookPro2,2 screen flicker like its broken or half plugged in
-Date: Sat, 12 Feb 2011 21:28:58 -0800
-References: <4D51AD03.7030401@gmail.com> <AANLkTimXbbCJHs7WEfkbbQLpKqMM1G_qZ-cN1hcQ+3KJ@mail.gmail.com> <AANLkTimBwM=iacwPosrYXU_jN=DXnEkWL3jvFcarDN23@mail.gmail.com> <B44733BE-E28B-441E-9E6B-AE9B0C8D7E45@gmail.com> <AANLkTimdE6G=qf+wLLSogma-BbH9J0_DYRv7aJkP9P64@mail.gmail.com> <AANLkTi=Ppzicpz5a6AO5rrGkv=j3HPmiB7Er4VGj4OVU@mail.gmail.com> <C0E6BA6B-174B-4930-A5C5-7DB87FDFAD1F@gmail.com> <AANLkTinca2027s9-g0tLabBMj4fr2+e=xgUSymBqvv1o@mail.gmail.com>
-X-Mailer: Apple Mail (2.936)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2011-02-12 at 19:10 -0600, Jayson R. King wrote:
+> On 02/10/2011 10:49 PM, Mike Galbraith wrote:
+> > Yeah, anybody wanting the rest will want those as well.
+> 
+> Hello Mike,
+> Thanks for including those.. this patch set looks good.
 
-On Feb 11, 2011, at 5:15 PM, Alex Deucher wrote:
+Thanks for reminding me.
 
-> On Fri, Feb 11, 2011 at 10:57 AM, Justin Mattock
-> <justinmattock@gmail.com> wrote:
->>
->>>
->>> Better yet, can you try the attached patch on top of 2.6.38-rc4 or  
->>> newer?
->>>
->>> Alex
->>>
->>
->> o.k. applied that patch... unfortunately Im seeing the flickering  
->> screen and
->> the crud shows up..
->> initially during boot everything looked fine, its when I suspended  
->> the
->> machine, upon wake-up
->> the flickering occurred.
->> kernel version is the current: 2.6.38-rc4-00107-gaa502b4
->
-> Can you try this patch?  Try uncommenting the following lines to see
-> if either of those flags work any better.  Try them individually and
-> together if possible and report back which, if any, helps.
->
-> /*pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;*/
->
-> /*if (ASIC_IS_AVIVO(rdev))
->        pll->flags |= RADEON_PLL_USE_FRAC_FB_DIV;*/
->
-> Thanks!
->
-> Alex
->
->>
->> Justin P. Mattock
->>
-> <0001-drm-radeon-kms-hopefully-fix-pll-issues-for-real-v2.patch>
+	-Mike
 
 
-alright.. again out of my office trying to make a living!!
-Anyways I applied the two earlier patches, and added the previous  
-post's patch as well
-(everything runs o.k. s2r etc...)
-I can try for the above and see if I can pinpoint the piece of code  
-that is causing this(hopefully)
-
-Justin P. Mattock
