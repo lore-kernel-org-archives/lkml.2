@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab1BMGjg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 01:39:36 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:56118 "EHLO mprc.pku.edu.cn"
+	id S1753311Ab1BMGl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 01:41:29 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:60794 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751718Ab1BMGj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 01:39:29 -0500
+	id S1751718Ab1BMGlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 01:41:23 -0500
 From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
 Cc: "Arnd Bergmann" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>
-Subject: [PATCHv2 09/11] unicore32 core architecture: timer and time handling
-Date: Sun, 13 Feb 2011 14:39:20 +0800
-Message-ID: <02f301cbcb48$bebea4c0$3c3bee40$@mprc.pku.edu.cn>
+Subject: [PATCHv2 10/11] unicore32 core architecture: interrupts ang gpio handling
+Date: Sun, 13 Feb 2011 14:41:12 +0800
+Message-ID: <02f501cbcb49$015b8fa0$0412aee0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcvLSLmocEtq8LBZSMapRTyHqpGHag==
+Thread-Index: AcvLSPs9k4ZQ1320QpisT5z+wiAfZQ==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements timer and time.
-RTC and PWM device drivers are also here.
+This patch implements interrupts and gpio handling.
+UniCore32 has 9 gpio interrupt sources.
+And gpio device operations are also here.
 
 Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- arch/unicore32/include/asm/timex.h |   34 ++++
- arch/unicore32/kernel/pwm.c        |  263 +++++++++++++++++++++++++
- arch/unicore32/kernel/rtc.c        |  380 ++++++++++++++++++++++++++++++++++++
- arch/unicore32/kernel/time.c       |  148 ++++++++++++++
- 4 files changed, 825 insertions(+), 0 deletions(-)
- create mode 100644 arch/unicore32/include/asm/timex.h
- create mode 100644 arch/unicore32/kernel/pwm.c
- create mode 100644 arch/unicore32/kernel/rtc.c
- create mode 100644 arch/unicore32/kernel/time.c
+ arch/unicore32/include/asm/gpio.h     |  103 ++++++++
+ arch/unicore32/include/asm/irq.h      |  107 ++++++++
+ arch/unicore32/include/asm/irqflags.h |   53 ++++
+ arch/unicore32/kernel/gpio.c          |  122 ++++++++++
+ arch/unicore32/kernel/irq.c           |  426 +++++++++++++++++++++++++++++++++
+ 5 files changed, 811 insertions(+), 0 deletions(-)
+ create mode 100644 arch/unicore32/include/asm/gpio.h
+ create mode 100644 arch/unicore32/include/asm/irq.h
+ create mode 100644 arch/unicore32/include/asm/irqflags.h
+ create mode 100644 arch/unicore32/kernel/gpio.c
+ create mode 100644 arch/unicore32/kernel/irq.c
 
-diff --git a/arch/unicore32/include/asm/timex.h b/arch/unicore32/include/asm/timex.h
+diff --git a/arch/unicore32/include/asm/gpio.h b/arch/unicore32/include/asm/gpio.h
 new file mode 100644
-index 0000000..faf16ba
+index 0000000..3aaa41e
 --- /dev/null
-+++ b/arch/unicore32/include/asm/timex.h
-@@ -0,0 +1,34 @@
++++ b/arch/unicore32/include/asm/gpio.h
+@@ -0,0 +1,103 @@
 +/*
-+ * linux/arch/unicore32/include/asm/timex.h
++ * linux/arch/unicore32/include/asm/gpio.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -56,691 +59,277 @@ index 0000000..faf16ba
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef __UNICORE_TIMEX_H__
-+#define __UNICORE_TIMEX_H__
-+
-+#ifdef	CONFIG_ARCH_FPGA
-+
-+/* in FPGA, APB clock is 33M, and OST clock is 32K, */
-+/* so, 1M is selected for timer interrupt correctly */
-+#define	CLOCK_TICK_RATE		(32*1024)
-+
-+#endif
-+
-+#if defined(CONFIG_PUV3_DB0913)		\
-+	|| defined(CONFIG_PUV3_NB0916)	\
-+	|| defined(CONFIG_PUV3_SMW0919)
-+
-+#define  CLOCK_TICK_RATE         (14318000)
-+
-+#endif
-+
-+#include <asm-generic/timex.h>
-+
-+#endif
-diff --git a/arch/unicore32/kernel/pwm.c b/arch/unicore32/kernel/pwm.c
-new file mode 100644
-index 0000000..4615d51
---- /dev/null
-+++ b/arch/unicore32/kernel/pwm.c
-@@ -0,0 +1,263 @@
-+/*
-+ * linux/arch/unicore32/kernel/pwm.c
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
-+ *	Copyright (C) 2001-2010 Guan Xuetao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/pwm.h>
-+
-+#include <asm/div64.h>
-+#include <mach/hardware.h>
-+
-+struct pwm_device {
-+	struct list_head	node;
-+	struct platform_device *pdev;
-+
-+	const char	*label;
-+	struct clk	*clk;
-+	int		clk_enabled;
-+
-+	unsigned int	use_count;
-+	unsigned int	pwm_id;
-+};
-+
-+/*
-+ * period_ns = 10^9 * (PRESCALE + 1) * (PV + 1) / PWM_CLK_RATE
-+ * duty_ns   = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
-+ */
-+int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	unsigned long long c;
-+	unsigned long period_cycles, prescale, pv, dc;
-+
-+	if (pwm == NULL || period_ns == 0 || duty_ns > period_ns)
-+		return -EINVAL;
-+
-+	c = clk_get_rate(pwm->clk);
-+	c = c * period_ns;
-+	do_div(c, 1000000000);
-+	period_cycles = c;
-+
-+	if (period_cycles < 1)
-+		period_cycles = 1;
-+	prescale = (period_cycles - 1) / 1024;
-+	pv = period_cycles / (prescale + 1) - 1;
-+
-+	if (prescale > 63)
-+		return -EINVAL;
-+
-+	if (duty_ns == period_ns)
-+		dc = OST_PWMDCCR_FDCYCLE;
-+	else
-+		dc = (pv + 1) * duty_ns / period_ns;
-+
-+	/* NOTE: the clock to PWM has to be enabled first
-+	 * before writing to the registers
-+	 */
-+	clk_enable(pwm->clk);
-+	OST_PWMPWCR = prescale;
-+	OST_PWMDCCR = pv - dc;
-+	OST_PWMPCR  = pv;
-+	clk_disable(pwm->clk);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(pwm_config);
-+
-+int pwm_enable(struct pwm_device *pwm)
-+{
-+	int rc = 0;
-+
-+	if (!pwm->clk_enabled) {
-+		rc = clk_enable(pwm->clk);
-+		if (!rc)
-+			pwm->clk_enabled = 1;
-+	}
-+	return rc;
-+}
-+EXPORT_SYMBOL(pwm_enable);
-+
-+void pwm_disable(struct pwm_device *pwm)
-+{
-+	if (pwm->clk_enabled) {
-+		clk_disable(pwm->clk);
-+		pwm->clk_enabled = 0;
-+	}
-+}
-+EXPORT_SYMBOL(pwm_disable);
-+
-+static DEFINE_MUTEX(pwm_lock);
-+static LIST_HEAD(pwm_list);
-+
-+struct pwm_device *pwm_request(int pwm_id, const char *label)
-+{
-+	struct pwm_device *pwm;
-+	int found = 0;
-+
-+	mutex_lock(&pwm_lock);
-+
-+	list_for_each_entry(pwm, &pwm_list, node) {
-+		if (pwm->pwm_id == pwm_id) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+
-+	if (found) {
-+		if (pwm->use_count == 0) {
-+			pwm->use_count++;
-+			pwm->label = label;
-+		} else
-+			pwm = ERR_PTR(-EBUSY);
-+	} else
-+		pwm = ERR_PTR(-ENOENT);
-+
-+	mutex_unlock(&pwm_lock);
-+	return pwm;
-+}
-+EXPORT_SYMBOL(pwm_request);
-+
-+void pwm_free(struct pwm_device *pwm)
-+{
-+	mutex_lock(&pwm_lock);
-+
-+	if (pwm->use_count) {
-+		pwm->use_count--;
-+		pwm->label = NULL;
-+	} else
-+		pr_warning("PWM device already freed\n");
-+
-+	mutex_unlock(&pwm_lock);
-+}
-+EXPORT_SYMBOL(pwm_free);
-+
-+static inline void __add_pwm(struct pwm_device *pwm)
-+{
-+	mutex_lock(&pwm_lock);
-+	list_add_tail(&pwm->node, &pwm_list);
-+	mutex_unlock(&pwm_lock);
-+}
-+
-+static struct pwm_device *pwm_probe(struct platform_device *pdev,
-+		unsigned int pwm_id, struct pwm_device *parent_pwm)
-+{
-+	struct pwm_device *pwm;
-+	struct resource *r;
-+	int ret = 0;
-+
-+	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-+	if (pwm == NULL) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	pwm->clk = clk_get(NULL, "OST_CLK");
-+	if (IS_ERR(pwm->clk)) {
-+		ret = PTR_ERR(pwm->clk);
-+		goto err_free;
-+	}
-+	pwm->clk_enabled = 0;
-+
-+	pwm->use_count = 0;
-+	pwm->pwm_id = pwm_id;
-+	pwm->pdev = pdev;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (r == NULL) {
-+		dev_err(&pdev->dev, "no memory resource defined\n");
-+		ret = -ENODEV;
-+		goto err_free_clk;
-+	}
-+
-+	r = request_mem_region(r->start, resource_size(r), pdev->name);
-+	if (r == NULL) {
-+		dev_err(&pdev->dev, "failed to request memory resource\n");
-+		ret = -EBUSY;
-+		goto err_free_clk;
-+	}
-+
-+	__add_pwm(pwm);
-+	platform_set_drvdata(pdev, pwm);
-+	return pwm;
-+
-+err_free_clk:
-+	clk_put(pwm->clk);
-+err_free:
-+	kfree(pwm);
-+	return ERR_PTR(ret);
-+}
-+
-+static int __devinit puv3_pwm_probe(struct platform_device *pdev)
-+{
-+	struct pwm_device *pwm = pwm_probe(pdev, pdev->id, NULL);
-+
-+	if (IS_ERR(pwm))
-+		return PTR_ERR(pwm);
-+
-+	return 0;
-+}
-+
-+static int __devexit pwm_remove(struct platform_device *pdev)
-+{
-+	struct pwm_device *pwm;
-+	struct resource *r;
-+
-+	pwm = platform_get_drvdata(pdev);
-+	if (pwm == NULL)
-+		return -ENODEV;
-+
-+	mutex_lock(&pwm_lock);
-+	list_del(&pwm->node);
-+	mutex_unlock(&pwm_lock);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	release_mem_region(r->start, resource_size(r));
-+
-+	clk_put(pwm->clk);
-+	kfree(pwm);
-+	return 0;
-+}
-+
-+static struct platform_driver puv3_pwm_driver = {
-+	.driver		= {
-+		.name	= "PKUnity-v3-PWM",
-+	},
-+	.probe		= puv3_pwm_probe,
-+	.remove		= __devexit_p(pwm_remove),
-+};
-+
-+static int __init pwm_init(void)
-+{
-+	int ret = 0;
-+
-+	ret = platform_driver_register(&puv3_pwm_driver);
-+	if (ret) {
-+		printk(KERN_ERR "failed to register puv3_pwm_driver\n");
-+		return ret;
-+	}
-+
-+	return ret;
-+}
-+arch_initcall(pwm_init);
-+
-+static void __exit pwm_exit(void)
-+{
-+	platform_driver_unregister(&puv3_pwm_driver);
-+}
-+module_exit(pwm_exit);
-+
-+MODULE_LICENSE("GPL v2");
-diff --git a/arch/unicore32/kernel/rtc.c b/arch/unicore32/kernel/rtc.c
-new file mode 100644
-index 0000000..5e4db41
---- /dev/null
-+++ b/arch/unicore32/kernel/rtc.c
-@@ -0,0 +1,380 @@
-+/*
-+ * linux/arch/unicore32/kernel/rtc.c
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
-+ *	Copyright (C) 2001-2010 Guan Xuetao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/fs.h>
-+#include <linux/string.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/rtc.h>
-+#include <linux/bcd.h>
-+#include <linux/clk.h>
-+#include <linux/log2.h>
-+#include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include <linux/io.h>
++#ifndef __UNICORE_GPIO_H__
++#define __UNICORE_GPIO_H__
 +
 +#include <asm/irq.h>
 +#include <mach/hardware.h>
++#include <asm-generic/gpio.h>
 +
-+static struct resource *puv3_rtc_mem;
++#define GPI_OTP_INT             0
++#define GPI_PCI_INTA            1
++#define GPI_PCI_INTB            2
++#define GPI_PCI_INTC            3
++#define GPI_PCI_INTD            4
++#define GPI_BAT_DET             5
++#define GPI_SD_CD               6
++#define GPI_SOFF_REQ            7
++#define GPI_SD_WP               8
++#define GPI_LCD_CASE_OFF        9
++#define GPO_WIFI_EN             10
++#define GPO_HDD_LED             11
++#define GPO_VGA_EN              12
++#define GPO_LCD_EN              13
++#define GPO_LED_DATA            14
++#define GPO_LED_CLK             15
++#define GPO_CAM_PWR_EN          16
++#define GPO_LCD_VCC_EN          17
++#define GPO_SOFT_OFF            18
++#define GPO_BT_EN               19
++#define GPO_FAN_ON              20
++#define GPO_SPKR                21
++#define GPO_SET_V1              23
++#define GPO_SET_V2              24
++#define GPO_CPU_HEALTH          25
++#define GPO_LAN_SEL             26
 +
-+static int puv3_rtc_alarmno = IRQ_RTCAlarm;
-+static int puv3_rtc_tickno  = IRQ_RTC;
++#ifdef CONFIG_PUV3_NB0916
++#define GPI_BTN_TOUCH		14
++#define GPIO_IN			0x000043ff /* 1 for input */
++#define GPIO_OUT		0x0fffbc00 /* 1 for output */
++#endif	/* CONFIG_PUV3_NB0916 */
 +
-+static DEFINE_SPINLOCK(puv3_rtc_pie_lock);
++#ifdef CONFIG_PUV3_SMW0919
++#define GPIO_IN			0x000003ff /* 1 for input */
++#define GPIO_OUT		0x0ffffc00 /* 1 for output */
++#endif  /* CONFIG_PUV3_SMW0919 */
 +
-+/* IRQ Handlers */
++#ifdef CONFIG_PUV3_DB0913
++#define GPIO_IN			0x000001df /* 1 for input */
++#define GPIO_OUT		0x03fee800 /* 1 for output */
++#endif  /* CONFIG_PUV3_DB0913 */
 +
-+static irqreturn_t puv3_rtc_alarmirq(int irq, void *id)
++#define GPIO_DIR                (~((GPIO_IN) | 0xf0000000))
++				/* 0 input, 1 output */
++
++static inline int gpio_get_value(unsigned gpio)
 +{
-+	struct rtc_device *rdev = id;
-+
-+	RTC_RTSR |= RTC_RTSR_AL;
-+	rtc_update_irq(rdev, 1, RTC_AF | RTC_IRQF);
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t puv3_rtc_tickirq(int irq, void *id)
-+{
-+	struct rtc_device *rdev = id;
-+
-+	RTC_RTSR |= RTC_RTSR_HZ;
-+	rtc_update_irq(rdev, 1, RTC_PF | RTC_IRQF);
-+	return IRQ_HANDLED;
-+}
-+
-+/* Update control registers */
-+static void puv3_rtc_setaie(int to)
-+{
-+	unsigned int tmp;
-+
-+	pr_debug("%s: aie=%d\n", __func__, to);
-+
-+	tmp = RTC_RTSR & ~RTC_RTSR_ALE;
-+
-+	if (to)
-+		tmp |= RTC_RTSR_ALE;
-+
-+	RTC_RTSR = tmp;
-+}
-+
-+static int puv3_rtc_setpie(struct device *dev, int enabled)
-+{
-+	unsigned int tmp;
-+
-+	pr_debug("%s: pie=%d\n", __func__, enabled);
-+
-+	spin_lock_irq(&puv3_rtc_pie_lock);
-+	tmp = RTC_RTSR & ~RTC_RTSR_HZE;
-+
-+	if (enabled)
-+		tmp |= RTC_RTSR_HZE;
-+
-+	RTC_RTSR = tmp;
-+	spin_unlock_irq(&puv3_rtc_pie_lock);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_setfreq(struct device *dev, int freq)
-+{
-+	return 0;
-+}
-+
-+/* Time read/write */
-+
-+static int puv3_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
-+{
-+	rtc_time_to_tm(RTC_RCNR, rtc_tm);
-+
-+	pr_debug("read time %02x.%02x.%02x %02x/%02x/%02x\n",
-+		 rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
-+		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_settime(struct device *dev, struct rtc_time *tm)
-+{
-+	unsigned long rtc_count = 0;
-+
-+	pr_debug("set time %02d.%02d.%02d %02d/%02d/%02d\n",
-+		 tm->tm_year, tm->tm_mon, tm->tm_mday,
-+		 tm->tm_hour, tm->tm_min, tm->tm_sec);
-+
-+	rtc_tm_to_time(tm, &rtc_count);
-+	RTC_RCNR = rtc_count;
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct rtc_time *alm_tm = &alrm->time;
-+
-+	rtc_time_to_tm(RTC_RTAR, alm_tm);
-+
-+	alrm->enabled = RTC_RTSR & RTC_RTSR_ALE;
-+
-+	pr_debug("read alarm %02x %02x.%02x.%02x %02x/%02x/%02x\n",
-+		 alrm->enabled,
-+		 alm_tm->tm_year, alm_tm->tm_mon, alm_tm->tm_mday,
-+		 alm_tm->tm_hour, alm_tm->tm_min, alm_tm->tm_sec);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct rtc_time *tm = &alrm->time;
-+	unsigned long rtcalarm_count = 0;
-+
-+	pr_debug("puv3_rtc_setalarm: %d, %02x/%02x/%02x %02x.%02x.%02x\n",
-+		 alrm->enabled,
-+		 tm->tm_mday & 0xff, tm->tm_mon & 0xff, tm->tm_year & 0xff,
-+		 tm->tm_hour & 0xff, tm->tm_min & 0xff, tm->tm_sec);
-+
-+	rtc_tm_to_time(tm, &rtcalarm_count);
-+	RTC_RTAR = rtcalarm_count;
-+
-+	puv3_rtc_setaie(alrm->enabled);
-+
-+	if (alrm->enabled)
-+		enable_irq_wake(puv3_rtc_alarmno);
++	if (__builtin_constant_p(gpio) && (gpio <= GPIO_MAX))
++		return GPIO_GPLR & GPIO_GPIO(gpio);
 +	else
-+		disable_irq_wake(puv3_rtc_alarmno);
-+
-+	return 0;
++		return __gpio_get_value(gpio);
 +}
 +
-+static int puv3_rtc_proc(struct device *dev, struct seq_file *seq)
++static inline void gpio_set_value(unsigned gpio, int value)
 +{
-+	seq_printf(seq, "periodic_IRQ\t: %s\n",
-+		     (RTC_RTSR & RTC_RTSR_HZE) ? "yes" : "no");
-+	return 0;
++	if (__builtin_constant_p(gpio) && (gpio <= GPIO_MAX))
++		if (value)
++			GPIO_GPSR = GPIO_GPIO(gpio);
++		else
++			GPIO_GPCR = GPIO_GPIO(gpio);
++	else
++		__gpio_set_value(gpio, value);
 +}
 +
-+static int puv3_rtc_open(struct device *dev)
++#define gpio_cansleep	__gpio_cansleep
++
++static inline unsigned gpio_to_irq(unsigned gpio)
 +{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
-+	int ret;
-+
-+	ret = request_irq(puv3_rtc_alarmno, puv3_rtc_alarmirq,
-+			  IRQF_DISABLED,  "pkunity-rtc alarm", rtc_dev);
-+
-+	if (ret) {
-+		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_alarmno, ret);
-+		return ret;
-+	}
-+
-+	ret = request_irq(puv3_rtc_tickno, puv3_rtc_tickirq,
-+			  IRQF_DISABLED,  "pkunity-rtc tick", rtc_dev);
-+
-+	if (ret) {
-+		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_tickno, ret);
-+		goto tick_err;
-+	}
-+
-+	return ret;
-+
-+ tick_err:
-+	free_irq(puv3_rtc_alarmno, rtc_dev);
-+	return ret;
++	if ((gpio < IRQ_GPIOHIGH) && (FIELD(1, 1, gpio) & GPIO_GPIR))
++		return IRQ_GPIOLOW0 + gpio;
++	else
++		return IRQ_GPIO0 + gpio;
 +}
 +
-+static void puv3_rtc_release(struct device *dev)
++static inline unsigned irq_to_gpio(unsigned irq)
 +{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
-+
-+	/* do not clear AIE here, it may be needed for wake */
-+
-+	puv3_rtc_setpie(dev, 0);
-+	free_irq(puv3_rtc_alarmno, rtc_dev);
-+	free_irq(puv3_rtc_tickno, rtc_dev);
++	if (irq < IRQ_GPIOHIGH)
++		return irq - IRQ_GPIOLOW0;
++	else
++		return irq - IRQ_GPIO0;
 +}
 +
-+static const struct rtc_class_ops puv3_rtcops = {
-+	.open		= puv3_rtc_open,
-+	.release	= puv3_rtc_release,
-+	.read_time	= puv3_rtc_gettime,
-+	.set_time	= puv3_rtc_settime,
-+	.read_alarm	= puv3_rtc_getalarm,
-+	.set_alarm	= puv3_rtc_setalarm,
-+	.irq_set_freq	= puv3_rtc_setfreq,
-+	.irq_set_state	= puv3_rtc_setpie,
-+	.proc	        = puv3_rtc_proc,
-+};
++#endif /* __UNICORE_GPIO_H__ */
+diff --git a/arch/unicore32/include/asm/irq.h b/arch/unicore32/include/asm/irq.h
+new file mode 100644
+index 0000000..ade8bb8
+--- /dev/null
++++ b/arch/unicore32/include/asm/irq.h
+@@ -0,0 +1,107 @@
++/*
++ * linux/arch/unicore32/include/asm/irq.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __UNICORE_IRQ_H__
++#define __UNICORE_IRQ_H__
 +
-+static void puv3_rtc_enable(struct platform_device *pdev, int en)
-+{
-+	if (!en) {
-+		RTC_RTSR &= ~RTC_RTSR_HZE;
-+	} else {
-+		/* re-enable the device, and check it is ok */
++#include <asm-generic/irq.h>
 +
-+		if ((RTC_RTSR & RTC_RTSR_HZE) == 0) {
-+			dev_info(&pdev->dev, "rtc disabled, re-enabling\n");
-+			RTC_RTSR |= RTC_RTSR_HZE;
-+		}
-+	}
-+}
++#define	IRQ_GPIOLOW0		0x00
++#define	IRQ_GPIOLOW1		0x01
++#define	IRQ_GPIOLOW2		0x02
++#define	IRQ_GPIOLOW3		0x03
++#define	IRQ_GPIOLOW4		0x04
++#define	IRQ_GPIOLOW5		0x05
++#define	IRQ_GPIOLOW6		0x06
++#define	IRQ_GPIOLOW7		0x07
++#define IRQ_GPIOHIGH		0x08
++#define IRQ_USB			0x09
++#define IRQ_SDC			0x0a
++#define IRQ_AC97		0x0b
++#define IRQ_SATA		0x0c
++#define IRQ_MME			0x0d
++#define IRQ_PCI_BRIDGE		0x0e
++#define	IRQ_DDR			0x0f
++#define	IRQ_SPI			0x10
++#define	IRQ_UNIGFX		0x11
++#define	IRQ_I2C			0x11
++#define	IRQ_UART1		0x12
++#define	IRQ_UART0		0x13
++#define IRQ_UMAL		0x14
++#define IRQ_NAND		0x15
++#define IRQ_PS2_KBD		0x16
++#define IRQ_PS2_AUX		0x17
++#define IRQ_DMA			0x18
++#define IRQ_DMAERR		0x19
++#define	IRQ_TIMER0		0x1a
++#define	IRQ_TIMER1		0x1b
++#define	IRQ_TIMER2		0x1c
++#define	IRQ_TIMER3		0x1d
++#define	IRQ_RTC			0x1e
++#define	IRQ_RTCAlarm		0x1f
 +
-+static int puv3_rtc_remove(struct platform_device *dev)
-+{
-+	struct rtc_device *rtc = platform_get_drvdata(dev);
++#define	IRQ_GPIO0		0x20
++#define	IRQ_GPIO1		0x21
++#define	IRQ_GPIO2		0x22
++#define	IRQ_GPIO3		0x23
++#define	IRQ_GPIO4		0x24
++#define	IRQ_GPIO5		0x25
++#define	IRQ_GPIO6		0x26
++#define	IRQ_GPIO7		0x27
++#define IRQ_GPIO8		0x28
++#define IRQ_GPIO9		0x29
++#define IRQ_GPIO10		0x2a
++#define IRQ_GPIO11		0x2b
++#define IRQ_GPIO12		0x2c
++#define IRQ_GPIO13		0x2d
++#define IRQ_GPIO14		0x2e
++#define IRQ_GPIO15		0x2f
++#define IRQ_GPIO16		0x30
++#define IRQ_GPIO17		0x31
++#define IRQ_GPIO18		0x32
++#define IRQ_GPIO19		0x33
++#define IRQ_GPIO20		0x34
++#define IRQ_GPIO21		0x35
++#define IRQ_GPIO22		0x36
++#define IRQ_GPIO23		0x37
++#define IRQ_GPIO24		0x38
++#define IRQ_GPIO25		0x39
++#define IRQ_GPIO26		0x3a
++#define IRQ_GPIO27		0x3b
 +
-+	platform_set_drvdata(dev, NULL);
-+	rtc_device_unregister(rtc);
-+
-+	puv3_rtc_setpie(&dev->dev, 0);
-+	puv3_rtc_setaie(0);
-+
-+	release_resource(puv3_rtc_mem);
-+	kfree(puv3_rtc_mem);
-+
-+	return 0;
-+}
-+
-+static int puv3_rtc_probe(struct platform_device *pdev)
-+{
-+	struct rtc_device *rtc;
-+	struct resource *res;
-+	int ret;
-+
-+	pr_debug("%s: probe=%p\n", __func__, pdev);
-+
-+	/* find the IRQs */
-+
-+	puv3_rtc_tickno = platform_get_irq(pdev, 1);
-+	if (puv3_rtc_tickno < 0) {
-+		dev_err(&pdev->dev, "no irq for rtc tick\n");
-+		return -ENOENT;
-+	}
-+
-+	puv3_rtc_alarmno = platform_get_irq(pdev, 0);
-+	if (puv3_rtc_alarmno < 0) {
-+		dev_err(&pdev->dev, "no irq for alarm\n");
-+		return -ENOENT;
-+	}
-+
-+	pr_debug("PKUnity_rtc: tick irq %d, alarm irq %d\n",
-+		 puv3_rtc_tickno, puv3_rtc_alarmno);
-+
-+	/* get the memory region */
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res == NULL) {
-+		dev_err(&pdev->dev, "failed to get memory region resource\n");
-+		return -ENOENT;
-+	}
-+
-+	puv3_rtc_mem = request_mem_region(res->start,
-+					 res->end-res->start+1,
-+					 pdev->name);
-+
-+	if (puv3_rtc_mem == NULL) {
-+		dev_err(&pdev->dev, "failed to reserve memory region\n");
-+		ret = -ENOENT;
-+		goto err_nores;
-+	}
-+
-+	puv3_rtc_enable(pdev, 1);
-+
-+	puv3_rtc_setfreq(&pdev->dev, 1);
-+
-+	/* register RTC and exit */
-+
-+	rtc = rtc_device_register("pkunity", &pdev->dev, &puv3_rtcops,
-+				  THIS_MODULE);
-+
-+	if (IS_ERR(rtc)) {
-+		dev_err(&pdev->dev, "cannot attach rtc\n");
-+		ret = PTR_ERR(rtc);
-+		goto err_nortc;
-+	}
-+
-+	/* platform setup code should have handled this; sigh */
-+	if (!device_can_wakeup(&pdev->dev))
-+		device_init_wakeup(&pdev->dev, 1);
-+
-+	platform_set_drvdata(pdev, rtc);
-+	return 0;
-+
-+ err_nortc:
-+	puv3_rtc_enable(pdev, 0);
-+	release_resource(puv3_rtc_mem);
-+
-+ err_nores:
-+	return ret;
-+}
-+
-+#ifdef CONFIG_PM
-+
-+/* RTC Power management control */
-+
-+static int ticnt_save;
-+
-+static int puv3_rtc_suspend(struct platform_device *pdev, pm_message_t state)
-+{
-+	/* save RTAR for anyone using periodic interrupts */
-+	ticnt_save = RTC_RTAR;
-+	puv3_rtc_enable(pdev, 0);
-+	return 0;
-+}
-+
-+static int puv3_rtc_resume(struct platform_device *pdev)
-+{
-+	puv3_rtc_enable(pdev, 1);
-+	RTC_RTAR = ticnt_save;
-+	return 0;
-+}
-+#else
-+#define puv3_rtc_suspend NULL
-+#define puv3_rtc_resume  NULL
++#ifdef CONFIG_ARCH_FPGA
++#define IRQ_PCIINTA             IRQ_GPIOLOW2
++#define IRQ_PCIINTB             IRQ_GPIOLOW1
++#define IRQ_PCIINTC             IRQ_GPIOLOW0
++#define IRQ_PCIINTD             IRQ_GPIOLOW6
 +#endif
 +
-+static struct platform_driver puv3_rtcdrv = {
-+	.probe		= puv3_rtc_probe,
-+	.remove		= __devexit_p(puv3_rtc_remove),
-+	.suspend	= puv3_rtc_suspend,
-+	.resume		= puv3_rtc_resume,
-+	.driver		= {
-+		.name	= "PKUnity-v3-RTC",
-+		.owner	= THIS_MODULE,
-+	}
-+};
++#if defined(CONFIG_PUV3_DB0913) || defined(CONFIG_PUV3_NB0916)	\
++	|| defined(CONFIG_PUV3_SMW0919)
++#define IRQ_PCIINTA             IRQ_GPIOLOW1
++#define IRQ_PCIINTB             IRQ_GPIOLOW2
++#define IRQ_PCIINTC             IRQ_GPIOLOW3
++#define IRQ_PCIINTD             IRQ_GPIOLOW4
++#endif
 +
-+static char __initdata banner[] = "PKUnity-v3 RTC, (c) 2009 PKUnity Co.\n";
++#define IRQ_SD_CD               IRQ_GPIO6 /* falling or rising trigger */
 +
-+static int __init puv3_rtc_init(void)
-+{
-+	printk(banner);
-+	return platform_driver_register(&puv3_rtcdrv);
-+}
++#ifndef __ASSEMBLY__
++struct irqaction;
++struct pt_regs;
++extern void migrate_irqs(void);
 +
-+static void __exit puv3_rtc_exit(void)
-+{
-+	platform_driver_unregister(&puv3_rtcdrv);
-+}
++extern void asm_do_IRQ(unsigned int, struct pt_regs *);
 +
-+module_init(puv3_rtc_init);
-+module_exit(puv3_rtc_exit);
++#endif
 +
-+MODULE_DESCRIPTION("RTC Driver for the PKUnity v3 chip");
-+MODULE_AUTHOR("Hu Dongliang");
-+MODULE_LICENSE("GPL v2");
++#endif
 +
-diff --git a/arch/unicore32/kernel/time.c b/arch/unicore32/kernel/time.c
+diff --git a/arch/unicore32/include/asm/irqflags.h b/arch/unicore32/include/asm/irqflags.h
 new file mode 100644
-index 0000000..8090d76
+index 0000000..6d8a28d
 --- /dev/null
-+++ b/arch/unicore32/kernel/time.c
-@@ -0,0 +1,148 @@
++++ b/arch/unicore32/include/asm/irqflags.h
+@@ -0,0 +1,53 @@
 +/*
-+ * linux/arch/unicore32/kernel/time.c
++ * linux/arch/unicore32/include/asm/irqflags.h
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __UNICORE_IRQFLAGS_H__
++#define __UNICORE_IRQFLAGS_H__
++
++#ifdef __KERNEL__
++
++#include <asm/ptrace.h>
++
++#define ARCH_IRQ_DISABLED	(PRIV_MODE | PSR_I_BIT)
++#define ARCH_IRQ_ENABLED	(PRIV_MODE)
++
++/*
++ * Save the current interrupt enable state.
++ */
++static inline unsigned long arch_local_save_flags(void)
++{
++	unsigned long temp;
++
++	asm volatile("mov %0, asr" : "=r" (temp) : : "memory", "cc");
++
++	return temp & PSR_c;
++}
++
++/*
++ * restore saved IRQ state
++ */
++static inline void arch_local_irq_restore(unsigned long flags)
++{
++	unsigned long temp;
++
++	asm volatile(
++		"mov	%0, asr\n"
++		"mov.a	asr, %1\n"
++		"mov.f	asr, %0"
++		: "=&r" (temp)
++		: "r" (flags)
++		: "memory", "cc");
++}
++
++#include <asm-generic/irqflags.h>
++
++#endif
++#endif
+diff --git a/arch/unicore32/kernel/gpio.c b/arch/unicore32/kernel/gpio.c
+new file mode 100644
+index 0000000..4cb2830
+--- /dev/null
++++ b/arch/unicore32/kernel/gpio.c
+@@ -0,0 +1,122 @@
++/*
++ * linux/arch/unicore32/kernel/gpio.c
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -751,141 +340,547 @@ index 0000000..8090d76
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/timex.h>
-+#include <linux/clockchips.h>
++/* in FPGA, no GPIO support */
 +
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/gpio.h>
 +#include <mach/hardware.h>
 +
-+#define MIN_OSCR_DELTA 2
++#ifdef CONFIG_LEDS
++#include <linux/leds.h>
++#include <linux/platform_device.h>
 +
-+static irqreturn_t puv3_ost0_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *c = dev_id;
++static const struct gpio_led puv3_gpio_leds[] = {
++	{ .name = "cpuhealth", .gpio = GPO_CPU_HEALTH, .active_low = 0,
++		.default_trigger = "heartbeat",	},
++	{ .name = "hdd_led", .gpio = GPO_HDD_LED, .active_low = 1,
++		.default_trigger = "ide-disk", },
++};
 +
-+	/* Disarm the compare/match, signal the event. */
-+	OST_OIER &= ~OST_OIER_E0;
-+	OST_OSSR &= ~OST_OSSR_M0;
-+	c->event_handler(c);
++static const struct gpio_led_platform_data puv3_gpio_led_data = {
++	.num_leds =	ARRAY_SIZE(puv3_gpio_leds),
++	.leds =		(void *) puv3_gpio_leds,
++};
 +
-+	return IRQ_HANDLED;
-+}
-+
-+static int
-+puv3_osmr0_set_next_event(unsigned long delta, struct clock_event_device *c)
-+{
-+	unsigned long next, oscr;
-+
-+	OST_OIER |= OST_OIER_E0;
-+	next = OST_OSCR + delta;
-+	OST_OSMR0 = next;
-+	oscr = OST_OSCR;
-+
-+	return (signed)(next - oscr) <= MIN_OSCR_DELTA ? -ETIME : 0;
-+}
-+
-+static void
-+puv3_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *c)
-+{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_ONESHOT:
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		OST_OIER &= ~OST_OIER_E0;
-+		OST_OSSR &= ~OST_OSSR_M0;
-+		break;
-+
-+	case CLOCK_EVT_MODE_RESUME:
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		break;
++static struct platform_device puv3_gpio_gpio_leds = {
++	.name =		"leds-gpio",
++	.id =		-1,
++	.dev = {
++		.platform_data = (void *) &puv3_gpio_led_data,
 +	}
++};
++
++static int __init puv3_gpio_leds_init(void)
++{
++	platform_device_register(&puv3_gpio_gpio_leds);
++	return 0;
 +}
 +
-+static struct clock_event_device ckevt_puv3_osmr0 = {
-+	.name		= "osmr0",
-+	.features	= CLOCK_EVT_FEAT_ONESHOT,
-+#ifdef CONFIG_ARCH_FPGA
-+	.shift		= 18, /* correct shift val: 16, but warn_on_slowpath */
-+#else
-+	.shift          = 30,
++device_initcall(puv3_gpio_leds_init);
 +#endif
-+	.rating		= 200,
-+	.set_next_event	= puv3_osmr0_set_next_event,
-+	.set_mode	= puv3_osmr0_set_mode,
-+};
 +
-+static cycle_t puv3_read_oscr(struct clocksource *cs)
++static int puv3_gpio_get(struct gpio_chip *chip, unsigned offset)
 +{
-+	return OST_OSCR;
++	return GPIO_GPLR & GPIO_GPIO(offset);
 +}
 +
-+static struct clocksource cksrc_puv3_oscr = {
-+	.name		= "oscr",
-+	.rating		= 200,
-+	.read		= puv3_read_oscr,
-+	.mask		= CLOCKSOURCE_MASK(32),
-+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
-+};
-+
-+static struct irqaction puv3_timer_irq = {
-+	.name		= "ost0",
-+	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.handler	= puv3_ost0_interrupt,
-+	.dev_id		= &ckevt_puv3_osmr0,
-+};
-+
-+void __init time_init(void)
++static void puv3_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 +{
-+	OST_OIER = 0;		/* disable any timer interrupts */
-+	OST_OSSR = 0;		/* clear status on all timers */
-+
-+	ckevt_puv3_osmr0.mult =
-+		div_sc(CLOCK_TICK_RATE, NSEC_PER_SEC, ckevt_puv3_osmr0.shift);
-+	ckevt_puv3_osmr0.max_delta_ns =
-+		clockevent_delta2ns(0x7fffffff, &ckevt_puv3_osmr0);
-+	ckevt_puv3_osmr0.min_delta_ns =
-+		clockevent_delta2ns(MIN_OSCR_DELTA * 2, &ckevt_puv3_osmr0) + 1;
-+	ckevt_puv3_osmr0.cpumask = cpumask_of(0);
-+
-+	setup_irq(IRQ_TIMER0, &puv3_timer_irq);
-+
-+	clocksource_register_hz(&cksrc_puv3_oscr, CLOCK_TICK_RATE);
-+	clockevents_register_device(&ckevt_puv3_osmr0);
++	if (value)
++		GPIO_GPSR = GPIO_GPIO(offset);
++	else
++		GPIO_GPCR = GPIO_GPIO(offset);
 +}
 +
-+#ifdef CONFIG_PM
-+unsigned long osmr[4], oier;
-+
-+void puv3_timer_suspend(void)
++static int puv3_direction_input(struct gpio_chip *chip, unsigned offset)
 +{
-+	osmr[0] = OST_OSMR0;
-+	osmr[1] = OST_OSMR1;
-+	osmr[2] = OST_OSMR2;
-+	osmr[3] = OST_OSMR3;
-+	oier = OST_OIER;
++	unsigned long flags;
++
++	local_irq_save(flags);
++	GPIO_GPDR &= ~GPIO_GPIO(offset);
++	local_irq_restore(flags);
++	return 0;
 +}
 +
-+void puv3_timer_resume(void)
++static int puv3_direction_output(struct gpio_chip *chip, unsigned offset,
++		int value)
 +{
-+	OST_OSSR = 0;
-+	OST_OSMR0 = osmr[0];
-+	OST_OSMR1 = osmr[1];
-+	OST_OSMR2 = osmr[2];
-+	OST_OSMR3 = osmr[3];
-+	OST_OIER = oier;
++	unsigned long flags;
++
++	local_irq_save(flags);
++	puv3_gpio_set(chip, offset, value);
++	GPIO_GPDR |= GPIO_GPIO(offset);
++	local_irq_restore(flags);
++	return 0;
++}
++
++static struct gpio_chip puv3_gpio_chip = {
++	.label			= "gpio",
++	.direction_input	= puv3_direction_input,
++	.direction_output	= puv3_direction_output,
++	.set			= puv3_gpio_set,
++	.get			= puv3_gpio_get,
++	.base			= 0,
++	.ngpio			= GPIO_MAX + 1,
++};
++
++void __init puv3_init_gpio(void)
++{
++	GPIO_GPDR = GPIO_DIR;
++#if	defined(CONFIG_PUV3_NB0916) || defined(CONFIG_PUV3_SMW0919)	\
++	|| defined(CONFIG_PUV3_DB0913)
++	gpio_set_value(GPO_WIFI_EN, 1);
++	gpio_set_value(GPO_HDD_LED, 1);
++	gpio_set_value(GPO_VGA_EN, 1);
++	gpio_set_value(GPO_LCD_EN, 1);
++	gpio_set_value(GPO_CAM_PWR_EN, 0);
++	gpio_set_value(GPO_LCD_VCC_EN, 1);
++	gpio_set_value(GPO_SOFT_OFF, 1);
++	gpio_set_value(GPO_BT_EN, 1);
++	gpio_set_value(GPO_FAN_ON, 0);
++	gpio_set_value(GPO_SPKR, 0);
++	gpio_set_value(GPO_CPU_HEALTH, 1);
++	gpio_set_value(GPO_LAN_SEL, 1);
++/*
++ * DO NOT modify the GPO_SET_V1 and GPO_SET_V2 in kernel
++ *	gpio_set_value(GPO_SET_V1, 1);
++ *	gpio_set_value(GPO_SET_V2, 1);
++ */
++#endif
++	gpiochip_add(&puv3_gpio_chip);
++}
+diff --git a/arch/unicore32/kernel/irq.c b/arch/unicore32/kernel/irq.c
+new file mode 100644
+index 0000000..7c211f5
+--- /dev/null
++++ b/arch/unicore32/kernel/irq.c
+@@ -0,0 +1,426 @@
++/*
++ * linux/arch/unicore32/kernel/irq.c
++ *
++ * Code specific to PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/kernel_stat.h>
++#include <linux/module.h>
++#include <linux/signal.h>
++#include <linux/ioport.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/random.h>
++#include <linux/smp.h>
++#include <linux/init.h>
++#include <linux/seq_file.h>
++#include <linux/errno.h>
++#include <linux/list.h>
++#include <linux/kallsyms.h>
++#include <linux/proc_fs.h>
++#include <linux/sysdev.h>
++#include <linux/gpio.h>
++
++#include <asm/system.h>
++#include <mach/hardware.h>
++
++#include "setup.h"
++
++/*
++ * PKUnity GPIO edge detection for IRQs:
++ * IRQs are generated on Falling-Edge, Rising-Edge, or both.
++ * Use this instead of directly setting GRER/GFER.
++ */
++static int GPIO_IRQ_rising_edge;
++static int GPIO_IRQ_falling_edge;
++static int GPIO_IRQ_mask = 0;
++
++#define GPIO_MASK(irq)		(1 << (irq - IRQ_GPIO0))
++
++static int puv3_gpio_type(unsigned int irq, unsigned int type)
++{
++	unsigned int mask;
++
++	if (irq < IRQ_GPIOHIGH)
++		mask = 1 << irq;
++	else
++		mask = GPIO_MASK(irq);
++
++	if (type == IRQ_TYPE_PROBE) {
++		if ((GPIO_IRQ_rising_edge | GPIO_IRQ_falling_edge) & mask)
++			return 0;
++		type = IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING;
++	}
++
++	if (type & IRQ_TYPE_EDGE_RISING)
++		GPIO_IRQ_rising_edge |= mask;
++	else
++		GPIO_IRQ_rising_edge &= ~mask;
++	if (type & IRQ_TYPE_EDGE_FALLING)
++		GPIO_IRQ_falling_edge |= mask;
++	else
++		GPIO_IRQ_falling_edge &= ~mask;
++
++	GPIO_GRER = GPIO_IRQ_rising_edge & GPIO_IRQ_mask;
++	GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
++
++	return 0;
++}
++
++/*
++ * GPIO IRQs must be acknowledged.  This is for IRQs from 0 to 7.
++ */
++static void puv3_low_gpio_ack(unsigned int irq)
++{
++	GPIO_GEDR = (1 << irq);
++}
++
++static void puv3_low_gpio_mask(unsigned int irq)
++{
++	INTC_ICMR &= ~(1 << irq);
++}
++
++static void puv3_low_gpio_unmask(unsigned int irq)
++{
++	INTC_ICMR |= 1 << irq;
++}
++
++static int puv3_low_gpio_wake(unsigned int irq, unsigned int on)
++{
++	if (on)
++		PM_PWER |= 1 << irq;
++	else
++		PM_PWER &= ~(1 << irq);
++	return 0;
++}
++
++static struct irq_chip puv3_low_gpio_chip = {
++	.name		= "GPIO-low",
++	.ack		= puv3_low_gpio_ack,
++	.mask		= puv3_low_gpio_mask,
++	.unmask		= puv3_low_gpio_unmask,
++	.set_type	= puv3_gpio_type,
++	.set_wake	= puv3_low_gpio_wake,
++};
++
++/*
++ * IRQ8 (GPIO0 through 27) handler.  We enter here with the
++ * irq_controller_lock held, and IRQs disabled.  Decode the IRQ
++ * and call the handler.
++ */
++static void
++puv3_gpio_handler(unsigned int irq, struct irq_desc *desc)
++{
++	unsigned int mask;
++
++	mask = GPIO_GEDR;
++	do {
++		/*
++		 * clear down all currently active IRQ sources.
++		 * We will be processing them all.
++		 */
++		GPIO_GEDR = mask;
++
++		irq = IRQ_GPIO0;
++		do {
++			if (mask & 1)
++				generic_handle_irq(irq);
++			mask >>= 1;
++			irq++;
++		} while (mask);
++		mask = GPIO_GEDR;
++	} while (mask);
++}
++
++/*
++ * GPIO0-27 edge IRQs need to be handled specially.
++ * In addition, the IRQs are all collected up into one bit in the
++ * interrupt controller registers.
++ */
++static void puv3_high_gpio_ack(unsigned int irq)
++{
++	unsigned int mask = GPIO_MASK(irq);
++
++	GPIO_GEDR = mask;
++}
++
++static void puv3_high_gpio_mask(unsigned int irq)
++{
++	unsigned int mask = GPIO_MASK(irq);
++
++	GPIO_IRQ_mask &= ~mask;
++
++	GPIO_GRER &= ~mask;
++	GPIO_GFER &= ~mask;
++}
++
++static void puv3_high_gpio_unmask(unsigned int irq)
++{
++	unsigned int mask = GPIO_MASK(irq);
++
++	GPIO_IRQ_mask |= mask;
++
++	GPIO_GRER = GPIO_IRQ_rising_edge & GPIO_IRQ_mask;
++	GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
++}
++
++static int puv3_high_gpio_wake(unsigned int irq, unsigned int on)
++{
++	if (on)
++		PM_PWER |= PM_PWER_GPIOHIGH;
++	else
++		PM_PWER &= ~PM_PWER_GPIOHIGH;
++	return 0;
++}
++
++static struct irq_chip puv3_high_gpio_chip = {
++	.name		= "GPIO-high",
++	.ack		= puv3_high_gpio_ack,
++	.mask		= puv3_high_gpio_mask,
++	.unmask		= puv3_high_gpio_unmask,
++	.set_type	= puv3_gpio_type,
++	.set_wake	= puv3_high_gpio_wake,
++};
++
++/*
++ * We don't need to ACK IRQs on the PKUnity unless they're GPIOs
++ * this is for internal IRQs i.e. from 8 to 31.
++ */
++static void puv3_mask_irq(unsigned int irq)
++{
++	INTC_ICMR &= ~(1 << irq);
++}
++
++static void puv3_unmask_irq(unsigned int irq)
++{
++	INTC_ICMR |= (1 << irq);
++}
++
++/*
++ * Apart form GPIOs, only the RTC alarm can be a wakeup event.
++ */
++static int puv3_set_wake(unsigned int irq, unsigned int on)
++{
++	if (irq == IRQ_RTCAlarm) {
++		if (on)
++			PM_PWER |= PM_PWER_RTC;
++		else
++			PM_PWER &= ~PM_PWER_RTC;
++		return 0;
++	}
++	return -EINVAL;
++}
++
++static struct irq_chip puv3_normal_chip = {
++	.name		= "PKUnity-v3",
++	.ack		= puv3_mask_irq,
++	.mask		= puv3_mask_irq,
++	.unmask		= puv3_unmask_irq,
++	.set_wake	= puv3_set_wake,
++};
++
++static struct resource irq_resource = {
++	.name	= "irqs",
++	.start	= PKUNITY_INTC_BASE,
++	.end	= PKUNITY_INTC_BASE + 0xFFFFF,
++};
++
++static struct puv3_irq_state {
++	unsigned int	saved;
++	unsigned int	icmr;
++	unsigned int	iclr;
++	unsigned int	iccr;
++} puv3_irq_state;
++
++static int puv3_irq_suspend(struct sys_device *dev, pm_message_t state)
++{
++	struct puv3_irq_state *st = &puv3_irq_state;
++
++	st->saved = 1;
++	st->icmr = INTC_ICMR;
++	st->iclr = INTC_ICLR;
++	st->iccr = INTC_ICCR;
 +
 +	/*
-+	 * OSMR0 is the system timer: make sure OSCR is sufficiently behind
++	 * Disable all GPIO-based interrupts.
 +	 */
-+	OST_OSCR = OST_OSMR0 - LATCH;
++	INTC_ICMR &= ~(0x1ff);
++
++	/*
++	 * Set the appropriate edges for wakeup.
++	 */
++	GPIO_GRER = PM_PWER & GPIO_IRQ_rising_edge;
++	GPIO_GFER = PM_PWER & GPIO_IRQ_falling_edge;
++
++	/*
++	 * Clear any pending GPIO interrupts.
++	 */
++	GPIO_GEDR = GPIO_GEDR;
++
++	return 0;
 +}
-+#else
-+void puv3_timer_suspend(void) { };
-+void puv3_timer_resume(void) { };
++
++static int puv3_irq_resume(struct sys_device *dev)
++{
++	struct puv3_irq_state *st = &puv3_irq_state;
++
++	if (st->saved) {
++		INTC_ICCR = st->iccr;
++		INTC_ICLR = st->iclr;
++
++		GPIO_GRER = GPIO_IRQ_rising_edge & GPIO_IRQ_mask;
++		GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
++
++		INTC_ICMR = st->icmr;
++	}
++	return 0;
++}
++
++static struct sysdev_class puv3_irq_sysclass = {
++	.name		= "pkunity-irq",
++	.suspend	= puv3_irq_suspend,
++	.resume		= puv3_irq_resume,
++};
++
++static struct sys_device puv3_irq_device = {
++	.id		= 0,
++	.cls		= &puv3_irq_sysclass,
++};
++
++static int __init puv3_irq_init_devicefs(void)
++{
++	sysdev_class_register(&puv3_irq_sysclass);
++	return sysdev_register(&puv3_irq_device);
++}
++
++device_initcall(puv3_irq_init_devicefs);
++
++void __init init_IRQ(void)
++{
++	unsigned int irq;
++
++	request_resource(&iomem_resource, &irq_resource);
++
++	/* disable all IRQs */
++	INTC_ICMR = 0;
++
++	/* all IRQs are IRQ, not REAL */
++	INTC_ICLR = 0;
++
++	/* clear all GPIO edge detects */
++	GPIO_GPIR = FMASK(8, 0) & ~FIELD(1, 1, GPI_SOFF_REQ);
++	GPIO_GFER = 0;
++	GPIO_GRER = 0;
++	GPIO_GEDR = 0x0FFFFFFF;
++
++	INTC_ICCR = 1;
++
++	for (irq = 0; irq < IRQ_GPIOHIGH; irq++) {
++		set_irq_chip(irq, &puv3_low_gpio_chip);
++		set_irq_handler(irq, handle_edge_irq);
++		irq_modify_status(irq,
++			IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN,
++			0);
++	}
++
++	for (irq = IRQ_GPIOHIGH + 1; irq < IRQ_GPIO0; irq++) {
++		set_irq_chip(irq, &puv3_normal_chip);
++		set_irq_handler(irq, handle_level_irq);
++		irq_modify_status(irq,
++			IRQ_NOREQUEST | IRQ_NOAUTOEN,
++			IRQ_NOPROBE);
++	}
++
++	for (irq = IRQ_GPIO0; irq <= IRQ_GPIO27; irq++) {
++		set_irq_chip(irq, &puv3_high_gpio_chip);
++		set_irq_handler(irq, handle_edge_irq);
++		irq_modify_status(irq,
++			IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN,
++			0);
++	}
++
++	/*
++	 * Install handler for GPIO 0-27 edge detect interrupts
++	 */
++	set_irq_chip(IRQ_GPIOHIGH, &puv3_normal_chip);
++	set_irq_chained_handler(IRQ_GPIOHIGH, puv3_gpio_handler);
++
++#ifdef CONFIG_PUV3_GPIO
++	puv3_init_gpio();
 +#endif
++}
++
++int show_interrupts(struct seq_file *p, void *v)
++{
++	int i = *(loff_t *) v, cpu;
++	struct irq_desc *desc;
++	struct irqaction *action;
++	unsigned long flags;
++
++	if (i == 0) {
++		char cpuname[12];
++
++		seq_printf(p, "    ");
++		for_each_present_cpu(cpu) {
++			sprintf(cpuname, "CPU%d", cpu);
++			seq_printf(p, " %10s", cpuname);
++		}
++		seq_putc(p, '\n');
++	}
++
++	if (i < nr_irqs) {
++		desc = irq_to_desc(i);
++		raw_spin_lock_irqsave(&desc->lock, flags);
++		action = desc->action;
++		if (!action)
++			goto unlock;
++
++		seq_printf(p, "%3d: ", i);
++		for_each_present_cpu(cpu)
++			seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
++		seq_printf(p, " %10s", desc->chip->name ? : "-");
++		seq_printf(p, "  %s", action->name);
++		for (action = action->next; action; action = action->next)
++			seq_printf(p, ", %s", action->name);
++
++		seq_putc(p, '\n');
++unlock:
++		raw_spin_unlock_irqrestore(&desc->lock, flags);
++	} else if (i == nr_irqs) {
++		seq_printf(p, "Error in interrupt!\n");
++	}
++	return 0;
++}
++
++/*
++ * do_IRQ handles all hardware IRQ's.  Decoded IRQs should not
++ * come via this function.  Instead, they should provide their
++ * own 'handler'
++ */
++asmlinkage void asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
++
++	irq_enter();
++
++	/*
++	 * Some hardware gives randomly wrong interrupts.  Rather
++	 * than crashing, do something sensible.
++	 */
++	if (unlikely(irq >= nr_irqs)) {
++		if (printk_ratelimit())
++			printk(KERN_WARNING "Bad IRQ%u\n", irq);
++		ack_bad_irq(irq);
++	} else {
++		generic_handle_irq(irq);
++	}
++
++	irq_exit();
++	set_irq_regs(old_regs);
++}
 +
 -- 
 1.7.0.4
