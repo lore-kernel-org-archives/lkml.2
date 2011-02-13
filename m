@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab1BMK71 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 05:59:27 -0500
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:59524 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752640Ab1BMK7W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 05:59:22 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References:X-Identified-User;
-	b=Jy8s6G8gAzFTnfng1bioXCWSvSwX1vZPWgEEna65KHUsySv0t7HdcuO3p/fszd9Y4o7RJ6jhTEmInTE/OYyNofHcwcXlCaCFK8+3C19BzyG+3va1RA7dG5LoVYHxXSBv;
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH] loop: clear read-only flag in loop_clr_fd.
-Date: Sun, 13 Feb 2011 18:58:55 +0800
-Message-Id: <1297594735-5593-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <4D573BBB.6090200@redhat.com>
-References: <4D573BBB.6090200@redhat.com>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.4.246 authed with tm@tao.ma}
+	id S1754158Ab1BMLCi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 06:02:38 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:40390 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752640Ab1BMLCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 06:02:32 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: sedat.dilek@gmail.com
+Subject: Re: 2.6.38-rc4-git5: Reported regressions from 2.6.37
+Date: Sun, 13 Feb 2011 12:02:06 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>
+References: <NMZS1i37KEE.A.1eG.6_wVNB@chimera> <AANLkTi=RnAgp47OTTk_JaNG79ZTb9nQJwLgJfAH4ip+J@mail.gmail.com>
+In-Reply-To: <AANLkTi=RnAgp47OTTk_JaNG79ZTb9nQJwLgJfAH4ip+J@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102131202.06789.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Sunday, February 13, 2011, Sedat Dilek wrote:
+> On Sat, Feb 12, 2011 at 11:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > This message contains a list of some regressions from 2.6.37,
+> > for which there are no fixes in the mainline known to the tracking team.
+> > If any of them have been fixed already, please let us know.
+> >
+> > If you know of any other unresolved regressions from 2.6.37, please let us
+> > know either and we'll add them to the list.  Also, please let us know
+> > if any of the entries below are invalid.
+> >
+> > Each entry from the list will be sent additionally in an automatic reply
+> > to this message with CCs to the people involved in reporting and handling
+> > the issue.
+> >
+> >
+> > Listed regressions statistics:
+> >
+> >  Date          Total  Pending  Unresolved
+> >  ----------------------------------------
+> >  2011-02-12       39       20          18
+> >  2011-02-03       19       11           7
+> >
+> >
+> > Unresolved regressions
+> > ----------------------
+> 
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=28442
+> > Subject         : 2.6.38-rc3: FUSE (sshfs) hangs under load
+> > Submitter       : Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > Date            : 2011-02-01 17:54 (12 days old)
+> > First-Bad-Commit: http://git.kernel.org/linus/4cd06a344db752f513437138953af191cbe9a691
+> > Message-ID      : <20110201175452.GB518@core.coreip.homeip.net>
+> > References      : http://marc.info/?l=linux-kernel&m=129658291703679&w=2
+> >
+> 
+> The fix by Felix [1] was accepted already in Linus tree:
+> 
+> commit fc7c976dc7a565213393ce700d4a6105f037bf20
+> "mac80211: fix the skb cloned check in the tx path"
+> 
+> Please, remove the entry from the list, Thanks.
 
-In 75f1dc0, we check bdev_read_only() from blkdev_get().
-But the loop_clr_fd doesn't clear the read only flag.
-What cause a error if we changing a loop device from
-read only to writable.
+Thanks, closing.
 
-A simple test to reproduce the error reported by Milan[1]:
-touch /x1.img
-losetup -r /dev/loop0 /x1.img
-losetup -d /dev/loop0
-losetup /dev/loop0 /x1.img
-/dev/loop0: Permission denied
-
-1: http://marc.info/?l=linux-kernel&m=129756258222642&w=2
-
-Reported-by: Milan Broz <mbroz@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- drivers/block/loop.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 44e18c0..0d24579 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1036,8 +1036,10 @@ static int loop_clr_fd(struct loop_device *lo, struct block_device *bdev)
- 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
- 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
- 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
--	if (bdev)
-+	if (bdev) {
-+		set_device_ro(bdev, 0);
- 		invalidate_bdev(bdev);
-+	}
- 	set_capacity(lo->lo_disk, 0);
- 	loop_sysfs_exit(lo);
- 	if (bdev) {
--- 
-1.6.3.GIT
-
+Rafael
