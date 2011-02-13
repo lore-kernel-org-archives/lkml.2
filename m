@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab1BMWiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 17:38:13 -0500
-Received: from fep32.mx.upcmail.net ([62.179.121.50]:40617 "EHLO
-	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab1BMWiE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 17:38:04 -0500
-X-SourceIP: 27.97.190.212
-Reply-To: <carl_robmsn@hotmail.com>
-From: "ONLINE DRAW" <carl_robmsn@hotmail.com>
-Subject: e_mail winner
-Date: Mon, 14 Feb 2011 04:07:26 +0530
+	id S1755242Ab1BMWrY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 17:47:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42309 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755041Ab1BMWrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 17:47:17 -0500
+Message-ID: <4D585F5F.6030708@zytor.com>
+Date: Sun, 13 Feb 2011 14:46:55 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: x32-abi@googlegroups.com, "H.J. Lu" <hjl.tools@gmail.com>,
+        GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: X32 psABI status
+References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com> <AANLkTimZA1Npf0nJ8PF-2=8Oe2LXr_ShyBJNkf8Dn5S5@mail.gmail.com> <4D584A49.80306@zytor.com> <201102132328.15360.arnd@arndb.de>
+In-Reply-To: <201102132328.15360.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110213-1, 02/13/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110213223728.FPMH9043.viefep16-int.chello.at@edge02.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=zlRBWuFCZaNL9+WHNm1pWLowY5Lx061w2zJBJiDkNAU= c=1 sm=0 a=Dyoqhi_TatcA:10 a=G2dih5pevJoA:10 a=WHsXhg87phMA:10 a=8EU9Q7FnrCoA:10 a=wgVbEZyoXgwA:10 a=Cfj4BQAnxiAA:10 a=69EAbJreAAAA:8 a=Qy6kL3YQhM9Wk_2B7yQA:9 a=wv_KFJj12n7hWw7SsQyyY_4RDdUA:4 a=Ft8UYL4EG9YA:10 a=xtrUWz3Rx7sA:10 a=dOk6MBy4D4EA:10 a=EfJqPEOeqlMA:10 a=qcFjUftA2astJYpy:21 a=8QvO8vZF-fNqGaP2:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/13/2011 02:28 PM, Arnd Bergmann wrote:
+> On Sunday 13 February 2011, H. Peter Anvin wrote:
+>> The actual idea is to use the i386 compat ABI for memory layout, but
+>> with a 64-bit register convention.  That means that system calls that
+>> don't make references to memory structures can simply use the 64-bit
+>> system calls, otherwise we're planning to reuse the i386 compat system
+>> calls, but invoke them via the syscall instruction (which requires a new
+>> system call table) and to pass 64-bit arguments in single registers.
+> 
+> As far as I know, any task can already call both the 32 and 64 bit syscall
+> entry points on x86. Is there anything you can't do just as well by
+> using a combination of the two methods, without introducing a third one?
 
-Dear e_mail winner
+We prototyped using the int $0x80 system call entry point.  However,
+there are two disadvantages:
 
-Your email id was selected among the four(4)lucky  email ids that was randomly selcted in the last online draw held.
-We therefore request you to send us the following requriements for claims processing.
+a. the int $0x80 instruction is much slower than syscall.  An actual
+   i386 process can use the syscall instruction which is disambiguated
+   by the CPU based on mode, but an x32 process is in the same CPU mode
+   as a normal 64-bit process.
+b. 64-bit arguments have to be split between two registers for the
+   i386 entry points, requiring user-space stubs.
 
-Name-
-occupation-
-age-
-sex-
-address-
-mobile-
+All in all, the cost of an extra system call table is quite modest.  The
+cost of an entire different ABI layer (supporting a new memory layout)
+would be enormous, a.k.a. "not worth it", which is why the memory layout
+of kernel objects needs to be compatible with i386.
 
-Kindly send this informations to the following corespondent
+	-hpa
 
-Name- carl robbison
-email- carl_robmsn@hotmail.com
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
