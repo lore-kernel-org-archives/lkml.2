@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab1BMJoZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 04:44:25 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:58566 "EHLO
+	id S1754498Ab1BMJof (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 04:44:35 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:58559 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035Ab1BMJnD (ORCPT
+	with ESMTP id S1754033Ab1BMJnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 04:43:03 -0500
+	Sun, 13 Feb 2011 04:43:02 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, konkers@android.com, olof@lixom.net,
         Colin Cross <ccross@android.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 08/21] ARM: tegra: clock: Rearrange static clock tables
-Date: Sun, 13 Feb 2011 01:40:20 -0800
-Message-Id: <1297590033-15035-9-git-send-email-ccross@android.com>
+Subject: [PATCH 03/21] ARM: tegra: clock: Drop debugging
+Date: Sun, 13 Feb 2011 01:40:15 -0800
+Message-Id: <1297590033-15035-4-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1297590033-15035-1-git-send-email-ccross@android.com>
 References: <1297590033-15035-1-git-send-email-ccross@android.com>
@@ -23,149 +23,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the static clocks look more like the array of clocks
-so they can all be initalized with the same helper function.
-
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/tegra2_clocks.c |  106 +++++++++++++++++------------------
- 1 files changed, 51 insertions(+), 55 deletions(-)
+ arch/arm/mach-tegra/clock.c |   19 ++-----------------
+ 1 files changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
-index e1e0d81f..62ec3fb 100644
---- a/arch/arm/mach-tegra/tegra2_clocks.c
-+++ b/arch/arm/mach-tegra/tegra2_clocks.c
-@@ -1770,7 +1770,7 @@ static struct clk_mux_sel mux_clk_32k[] = {
- 		.max_rate  = _max,			\
- 	}
+diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
+index 77948e0..f55bb83 100644
+--- a/arch/arm/mach-tegra/clock.c
++++ b/arch/arm/mach-tegra/clock.c
+@@ -138,7 +138,6 @@ static void clk_recalculate_rate(struct clk *c)
  
--struct clk tegra_periph_clks[] = {
-+struct clk tegra_list_clks[] = {
- 	PERIPH_CLK("rtc",	"rtc-tegra",		NULL,	4,	0,	32768,     mux_clk_32k,			PERIPH_NO_RESET),
- 	PERIPH_CLK("timer",	"timer",		NULL,	5,	0,	26000000,  mux_clk_m,			0),
- 	PERIPH_CLK("i2s1",	"i2s.0",		NULL,	11,	0x100,	26000000,  mux_pllaout0_audio2x_pllp_clkm,	MUX | DIV_U71),
-@@ -1879,71 +1879,67 @@ struct clk_duplicate tegra_clk_duplicates[] = {
- 		.clk = ck,	\
- 	}
- 
--struct clk_lookup tegra_clk_lookups[] = {
--	/* external root sources */
--	CLK(NULL,	"32k_clk",	&tegra_clk_32k),
--	CLK(NULL,	"pll_s",	&tegra_pll_s),
--	CLK(NULL,	"clk_m",	&tegra_clk_m),
--	CLK(NULL,	"pll_m",	&tegra_pll_m),
--	CLK(NULL,	"pll_m_out1",	&tegra_pll_m_out1),
--	CLK(NULL,	"pll_c",	&tegra_pll_c),
--	CLK(NULL,	"pll_c_out1",	&tegra_pll_c_out1),
--	CLK(NULL,	"pll_p",	&tegra_pll_p),
--	CLK(NULL,	"pll_p_out1",	&tegra_pll_p_out1),
--	CLK(NULL,	"pll_p_out2",	&tegra_pll_p_out2),
--	CLK(NULL,	"pll_p_out3",	&tegra_pll_p_out3),
--	CLK(NULL,	"pll_p_out4",	&tegra_pll_p_out4),
--	CLK(NULL,	"pll_a",	&tegra_pll_a),
--	CLK(NULL,	"pll_a_out0",	&tegra_pll_a_out0),
--	CLK(NULL,	"pll_d",	&tegra_pll_d),
--	CLK(NULL,	"pll_d_out0",	&tegra_pll_d_out0),
--	CLK(NULL,	"pll_u",	&tegra_pll_u),
--	CLK(NULL,	"pll_x",	&tegra_pll_x),
--	CLK(NULL,	"pll_e",	&tegra_pll_e),
--	CLK(NULL,	"cclk",		&tegra_clk_cclk),
--	CLK(NULL,	"sclk",		&tegra_clk_sclk),
--	CLK(NULL,	"hclk",		&tegra_clk_hclk),
--	CLK(NULL,	"pclk",		&tegra_clk_pclk),
--	CLK(NULL,	"clk_d",	&tegra_clk_d),
--	CLK(NULL,	"clk_dev1",	&tegra_dev1_clk),
--	CLK(NULL,	"clk_dev2",	&tegra_dev2_clk),
--	CLK(NULL,	"cpu",		&tegra_clk_virtual_cpu),
--	CLK(NULL,	"blink",	&tegra_clk_blink),
--};
-+struct clk *tegra_ptr_clks[] = {
-+	&tegra_clk_32k,
-+	&tegra_pll_s,
-+	&tegra_clk_m,
-+	&tegra_pll_m,
-+	&tegra_pll_m_out1,
-+	&tegra_pll_c,
-+	&tegra_pll_c_out1,
-+	&tegra_pll_p,
-+	&tegra_pll_p_out1,
-+	&tegra_pll_p_out2,
-+	&tegra_pll_p_out3,
-+	&tegra_pll_p_out4,
-+	&tegra_pll_a,
-+	&tegra_pll_a_out0,
-+	&tegra_pll_d,
-+	&tegra_pll_d_out0,
-+	&tegra_pll_u,
-+	&tegra_pll_x,
-+	&tegra_pll_e,
-+	&tegra_clk_cclk,
-+	&tegra_clk_sclk,
-+	&tegra_clk_hclk,
-+	&tegra_clk_pclk,
-+	&tegra_clk_d,
-+	&tegra_dev1_clk,
-+	&tegra_dev2_clk,
-+	&tegra_clk_virtual_cpu,
-+	&tegra_clk_blink,
-+};
-+
-+static void tegra2_init_one_clock(struct clk *c)
-+{
-+	clk_init(c);
-+	if (!c->lookup.dev_id && !c->lookup.con_id)
-+		c->lookup.con_id = c->name;
-+	c->lookup.clk = c;
-+	clkdev_add(&c->lookup);
-+}
- 
- void __init tegra2_init_clocks(void)
+ int clk_reparent(struct clk *c, struct clk *parent)
  {
- 	int i;
--	struct clk_lookup *cl;
- 	struct clk *c;
--	struct clk_duplicate *cd;
--
--	for (i = 0; i < ARRAY_SIZE(tegra_clk_lookups); i++) {
--		cl = &tegra_clk_lookups[i];
--		clk_init(cl->clk);
--		clkdev_add(cl);
--	}
- 
--	for (i = 0; i < ARRAY_SIZE(tegra_periph_clks); i++) {
--		c = &tegra_periph_clks[i];
--		cl = &c->lookup;
--		cl->clk = c;
-+	for (i = 0; i < ARRAY_SIZE(tegra_ptr_clks); i++)
-+		tegra2_init_one_clock(tegra_ptr_clks[i]);
- 
--		clk_init(cl->clk);
--		clkdev_add(cl);
--	}
-+	for (i = 0; i < ARRAY_SIZE(tegra_list_clks); i++)
-+		tegra2_init_one_clock(&tegra_list_clks[i]);
- 
- 	for (i = 0; i < ARRAY_SIZE(tegra_clk_duplicates); i++) {
--		cd = &tegra_clk_duplicates[i];
--		c = tegra_get_clock_by_name(cd->name);
--		if (c) {
--			cl = &cd->lookup;
--			cl->clk = c;
--			clkdev_add(cl);
--		} else {
-+		c = tegra_get_clock_by_name(tegra_clk_duplicates[i].name);
-+		if (!c) {
- 			pr_err("%s: Unknown duplicate clock %s\n", __func__,
--				cd->name);
-+				tegra_clk_duplicates[i].name);
-+			continue;
- 		}
+-	pr_debug("%s: %s\n", __func__, c->name);
+ 	c->parent = parent;
+ 	list_del(&c->sibling);
+ 	list_add_tail(&c->sibling, &parent->children);
+@@ -148,9 +147,8 @@ int clk_reparent(struct clk *c, struct clk *parent)
+ static void propagate_rate(struct clk *c)
+ {
+ 	struct clk *clkp;
+-	pr_debug("%s: %s\n", __func__, c->name);
 +
-+		tegra_clk_duplicates[i].lookup.clk = c;
-+		clkdev_add(&tegra_clk_duplicates[i].lookup);
+ 	list_for_each_entry(clkp, &c->children, sibling) {
+-		pr_debug("   %s\n", clkp->name);
+ 		clk_recalculate_rate(clkp);
+ 		propagate_rate(clkp);
  	}
+@@ -160,8 +158,6 @@ void clk_init(struct clk *c)
+ {
+ 	unsigned long flags;
  
- 	init_audio_sync_clock_mux();
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	spin_lock_irqsave(&clock_lock, flags);
+ 
+ 	INIT_LIST_HEAD(&c->children);
+@@ -183,7 +179,7 @@ void clk_init(struct clk *c)
+ int clk_enable_locked(struct clk *c)
+ {
+ 	int ret;
+-	pr_debug("%s: %s\n", __func__, c->name);
++
+ 	if (c->refcnt == 0) {
+ 		if (c->parent) {
+ 			ret = clk_enable_locked(c->parent);
+@@ -247,7 +243,6 @@ EXPORT_SYMBOL(clk_enable);
+ 
+ void clk_disable_locked(struct clk *c)
+ {
+-	pr_debug("%s: %s\n", __func__, c->name);
+ 	if (c->refcnt == 0) {
+ 		WARN(1, "Attempting to disable clock %s with refcnt 0", c->name);
+ 		return;
+@@ -298,8 +293,6 @@ int clk_set_parent_locked(struct clk *c, struct clk *parent)
+ {
+ 	int ret;
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	if (!c->ops || !c->ops->set_parent)
+ 		return -ENOSYS;
+ 
+@@ -359,8 +352,6 @@ int clk_set_rate_cansleep(struct clk *c, unsigned long rate)
+ 	int ret = 0;
+ 	unsigned long flags;
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	mutex_lock(&dvfs_lock);
+ 
+ 	if (rate > c->rate)
+@@ -388,8 +379,6 @@ int clk_set_rate(struct clk *c, unsigned long rate)
+ 	int ret = 0;
+ 	unsigned long flags;
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	if (clk_is_dvfs(c))
+ 		BUG();
+ 
+@@ -408,8 +397,6 @@ unsigned long clk_get_rate(struct clk *c)
+ 
+ 	spin_lock_irqsave(&clock_lock, flags);
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	ret = c->rate;
+ 
+ 	spin_unlock_irqrestore(&clock_lock, flags);
+@@ -419,8 +406,6 @@ EXPORT_SYMBOL(clk_get_rate);
+ 
+ long clk_round_rate(struct clk *c, unsigned long rate)
+ {
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	if (!c->ops || !c->ops->round_rate)
+ 		return -ENOSYS;
+ 
 -- 
 1.7.3.1
 
