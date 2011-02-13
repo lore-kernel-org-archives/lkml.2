@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab1BMLvI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 06:51:08 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:58486 "EHLO mgw2.diku.dk"
+	id S1754543Ab1BMLv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 06:51:29 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:58507 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754256Ab1BMLui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 06:50:38 -0500
+	id S1754432Ab1BMLum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 06:50:42 -0500
 From: Julia Lawall <julia@diku.dk>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: kernel-janitors@vger.kernel.org, David Sterba <dsterba@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] drivers/char/pcmcia/ipwireless/main.c: Convert release_resource to release_region/release_mem_region
-Date: Sun, 13 Feb 2011 13:12:10 +0100
-Message-Id: <1297599132-7226-4-git-send-email-julia@diku.dk>
+To: ben-linux@fluff.org
+Cc: kernel-janitors@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
+        Baruch Siach <baruch@tkos.co.il>, Dave Airlie <airlied@linux.ie>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5] drivers/i2c/busses/i2c-nuc900.c: Convert release_resource to release_region/release_mem_region
+Date: Sun, 13 Feb 2011 13:12:12 +0100
+Message-Id: <1297599132-7226-6-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297599132-7226-1-git-send-email-julia@diku.dk>
 References: <1297599132-7226-1-git-send-email-julia@diku.dk>
@@ -22,29 +23,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Request_region should be used with release_region, not release_resource.
 
-This patch contains a number of changes, related to calls to request_region,
-request_mem_region, and the associated error handling code.
-
-1. For the call to request_region, the variable io_resource storing the
-result is dropped.  The call to release_resource at the end of the function
-is changed to a call to release_region with the first two arguments of
-request_region as its arguments.  The same call to release_region is also
-added to release_ipwireless.
-
-2. The first call to request_mem_region is now tested and ret is set to
--EBUSY if the the call has failed.  This call was associated with the
-initialization of ipw->attr_memory.  But the error handling code was
-testing ipw->common_memory.  The definition of release_ipwireless also
-suggests that this call should be associated with ipw->common_memory, not
-ipw->attr_memory.
-
-3. The second call to request_mem_region is now tested and ret is
-set to -EBUSY if the the call has failed.
-
-4. The various gotos to the error handling code is adjusted so that there
-is no need for ifs.
-
-5. Return the value stored in the ret variable rather than -1.
+The result of request_mem_region is no longer stored.  Instead the field
+ioarea is used to store a pointer to the resource structure that contains
+the start address.  This is the information that is needed later in
+nuc900_i2c_remove to release the region.  The field ioarea is also printed
+in some debugging code.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -66,119 +49,59 @@ expression x,E;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-Compiled, not tested.
-In release_ipwireless, should the added call to release_region be protected
-by some if?
+Not compiled due to incompatible architecture.
 
- drivers/char/pcmcia/ipwireless/main.c |   52 ++++++++++++++++++++--------------
- 1 file changed, 32 insertions(+), 20 deletions(-)
+ drivers/i2c/busses/i2c-nuc900.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/char/pcmcia/ipwireless/main.c b/drivers/char/pcmcia/ipwireless/main.c
-index 94b8eb4..444155a 100644
---- a/drivers/char/pcmcia/ipwireless/main.c
-+++ b/drivers/char/pcmcia/ipwireless/main.c
-@@ -78,7 +78,6 @@ static void signalled_reboot_callback(void *callback_data)
- static int ipwireless_probe(struct pcmcia_device *p_dev, void *priv_data)
+diff --git a/drivers/i2c/busses/i2c-nuc900.c b/drivers/i2c/busses/i2c-nuc900.c
+index 7243426..97b16b7 100644
+--- a/drivers/i2c/busses/i2c-nuc900.c
++++ b/drivers/i2c/busses/i2c-nuc900.c
+@@ -568,15 +568,13 @@ static int __devinit nuc900_i2c_probe(struct platform_device *pdev)
+ 		goto err_clk;
+ 	}
+ 
+-	i2c->ioarea = request_mem_region(res->start, resource_size(res),
+-					 pdev->name);
+-
+-	if (i2c->ioarea == NULL) {
++	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+ 		dev_err(&pdev->dev, "cannot request IO\n");
+ 		ret = -ENXIO;
+ 		goto err_clk;
+ 	}
+ 
++	i2c->ioarea = res;
+ 	i2c->regs = ioremap(res->start, resource_size(res));
+ 
+ 	if (i2c->regs == NULL) {
+@@ -645,8 +643,7 @@ static int __devinit nuc900_i2c_probe(struct platform_device *pdev)
+ 	iounmap(i2c->regs);
+ 
+  err_ioarea:
+-	release_resource(i2c->ioarea);
+-	kfree(i2c->ioarea);
++	release_mem_region(res->start, resource_size(res));
+ 
+  err_clk:
+ 	clk_disable(i2c->clk);
+@@ -665,6 +662,7 @@ static int __devinit nuc900_i2c_probe(struct platform_device *pdev)
+ static int __devexit nuc900_i2c_remove(struct platform_device *pdev)
  {
- 	struct ipw_dev *ipw = priv_data;
--	struct resource *io_resource;
- 	int ret;
+ 	struct nuc900_i2c *i2c = platform_get_drvdata(pdev);
++	struct resource *res = i2c->ioarea;
  
- 	p_dev->resource[0]->flags &= ~IO_DATA_PATH_WIDTH;
-@@ -92,9 +91,12 @@ static int ipwireless_probe(struct pcmcia_device *p_dev, void *priv_data)
- 	if (ret)
- 		return ret;
+ 	i2c_del_adapter(&i2c->adap);
+ 	free_irq(i2c->irq, i2c);
+@@ -674,8 +672,7 @@ static int __devexit nuc900_i2c_remove(struct platform_device *pdev)
  
--	io_resource = request_region(p_dev->resource[0]->start,
--				resource_size(p_dev->resource[0]),
--				IPWIRELESS_PCCARD_NAME);
-+	if (!request_region(p_dev->resource[0]->start,
-+			    resource_size(p_dev->resource[0]),
-+			    IPWIRELESS_PCCARD_NAME)) {
-+		ret = -EBUSY;
-+		goto exit;
-+	}
+ 	iounmap(i2c->regs);
  
- 	p_dev->resource[2]->flags |=
- 		WIN_DATA_WIDTH_16 | WIN_MEMORY_TYPE_CM | WIN_ENABLE;
-@@ -105,22 +107,25 @@ static int ipwireless_probe(struct pcmcia_device *p_dev, void *priv_data)
- 
- 	ret = pcmcia_map_mem_page(p_dev, p_dev->resource[2], p_dev->card_addr);
- 	if (ret != 0)
--		goto exit2;
-+		goto exit1;
- 
- 	ipw->is_v2_card = resource_size(p_dev->resource[2]) == 0x100;
- 
--	ipw->attr_memory = ioremap(p_dev->resource[2]->start,
-+	ipw->common_memory = ioremap(p_dev->resource[2]->start,
- 				resource_size(p_dev->resource[2]));
--	request_mem_region(p_dev->resource[2]->start,
--			resource_size(p_dev->resource[2]),
--			IPWIRELESS_PCCARD_NAME);
-+	if (!request_mem_region(p_dev->resource[2]->start,
-+				resource_size(p_dev->resource[2]),
-+				IPWIRELESS_PCCARD_NAME)) {
-+		ret = -EBUSY;
-+		goto exit2;
-+	}
- 
- 	p_dev->resource[3]->flags |= WIN_DATA_WIDTH_16 | WIN_MEMORY_TYPE_AM |
- 					WIN_ENABLE;
- 	p_dev->resource[3]->end = 0; /* this used to be 0x1000 */
- 	ret = pcmcia_request_window(p_dev, p_dev->resource[3], 0);
- 	if (ret != 0)
--		goto exit2;
-+		goto exit3;
- 
- 	ret = pcmcia_map_mem_page(p_dev, p_dev->resource[3], 0);
- 	if (ret != 0)
-@@ -128,23 +133,28 @@ static int ipwireless_probe(struct pcmcia_device *p_dev, void *priv_data)
- 
- 	ipw->attr_memory = ioremap(p_dev->resource[3]->start,
- 				resource_size(p_dev->resource[3]));
--	request_mem_region(p_dev->resource[3]->start,
--			resource_size(p_dev->resource[3]),
--			IPWIRELESS_PCCARD_NAME);
-+	if (!request_mem_region(p_dev->resource[3]->start,
-+				resource_size(p_dev->resource[3]),
-+				IPWIRELESS_PCCARD_NAME)) {
-+		ret = -EBUSY;
-+		goto exit4;
-+	}
+-	release_resource(i2c->ioarea);
+-	kfree(i2c->ioarea);
++	release_mem_region(res->start, resource_size(res));
+ 	kfree(i2c);
  
  	return 0;
- 
-+exit4:
-+	iounmap(ipw->attr_memory);
- exit3:
-+	release_mem_region(p_dev->resource[2]->start,
-+			resource_size(p_dev->resource[2]));
- exit2:
--	if (ipw->common_memory) {
--		release_mem_region(p_dev->resource[2]->start,
--				resource_size(p_dev->resource[2]));
--		iounmap(ipw->common_memory);
--	}
-+	iounmap(ipw->common_memory);
- exit1:
--	release_resource(io_resource);
-+	release_region(p_dev->resource[0]->start,
-+		       resource_size(p_dev->resource[0]));
-+exit:
- 	pcmcia_disable_device(p_dev);
--	return -1;
-+	return ret;
- }
- 
- static int config_ipwireless(struct ipw_dev *ipw)
-@@ -219,6 +229,8 @@ exit:
- 
- static void release_ipwireless(struct ipw_dev *ipw)
- {
-+	release_region(ipw->link->resource[0]->start,
-+		       resource_size(ipw->link->resource[0]));
- 	if (ipw->common_memory) {
- 		release_mem_region(ipw->link->resource[2]->start,
- 				resource_size(ipw->link->resource[2]));
 
