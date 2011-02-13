@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab1BMRh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 12:37:59 -0500
-Received: from mail.codesourcery.com ([38.113.113.100]:39746 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab1BMRhx (ORCPT
+	id S1754758Ab1BMRkG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 12:40:06 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37540 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751155Ab1BMRkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 12:37:53 -0500
-Date: Sun, 13 Feb 2011 17:37:50 +0000 (UTC)
-From: "Joseph S. Myers" <joseph@codesourcery.com>
-X-X-Sender: jsm28@digraph.polyomino.org.uk
-To: Petr Baudis <pasky@suse.cz>
-cc: "H.J. Lu" <hjl.tools@gmail.com>, Florian Weimer <fw@deneb.enyo.de>,
-        x32-abi@googlegroups.com, GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: X32 psABI status
-In-Reply-To: <20110213163556.GH13985@machine.or.cz>
-Message-ID: <Pine.LNX.4.64.1102131729120.16193@digraph.polyomino.org.uk>
-References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
- <87aai1gdr7.fsf@mid.deneb.enyo.de> <4D5711E0.7020306@zytor.com>
- <87r5bcnwvw.fsf@mid.deneb.enyo.de> <AANLkTi=Ybzkp_NHom==M-kL+URWmmZ1LoWVP-EYMkN-j@mail.gmail.com>
- <87tyg8j7le.fsf@mid.deneb.enyo.de> <AANLkTin1cTCVNTiLS792ZkG9_Y5OvXCtDXHRFfY7hbSF@mail.gmail.com>
- <20110213163556.GH13985@machine.or.cz>
+	Sun, 13 Feb 2011 12:40:02 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+ <m1hbce46fw.fsf@fess.ebiederm.org> <AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
+ <m1bp2ly41q.fsf@fess.ebiederm.org> <AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
+ <AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 13 Feb 2011 09:39:39 -0800
+Message-ID: <AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
+Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
+To: Alex Riesen <raa.lkml@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Feb 2011, Petr Baudis wrote:
+On Wed, Feb 9, 2011 at 8:02 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Well, the thing is, Eric said he was using ext4.
+>
+> And there are absolutely no changes I can see after -rc3 that would
+> affect anything like this.
 
-> I think it would be great if you could add some text like this plus some
-> rationale (AIUI, this is geared mainly at new Atoms and other x86_64
-> embedded platforms) to the document.
-> 
-> (BTW, it is not really convincing to me that such a niche is worth all
-> the trouble this is going to bring.)
+Hmm. Eric - mind testing current -git?
 
-It seems to me there's a much more general utility for this.  After all, 
-the normal practice on 64-bit Power Architecture GNU/Linux systems, say, 
-is for most programs to be 32-bit and only a few that have a use for a 
-large address space to be 64-bit.  For most programs, large pointers and 
-size_t are just a waste of memory (and so of cache) - but the extra 
-registers are significantly beneficial (as are such things as being able 
-to assume SSE to be supported).  (Large files, 64-bit time_t, etc., 
-however, are of wider use than large address space, but as I noted in 
-<http://gcc.gnu.org/ml/gcc/2010-12/msg00509.html> it would be a fairly 
-substantial project to address all such issues of inappropriate arbitrary 
-limits in C APIs.)
+J. R. Okajima found a possible problem with the new RCU filename
+lookup, which could corrupt the filp_cache. I'd expect the normal
+result to be an oops, but maybe there could be memory corruption. And
+the easiest way to trigger it would probably be to have lots of
+concurrent fs activity with renames.
 
--- 
-Joseph S. Myers
-joseph@codesourcery.com
+Now, it's not new to -rc4: the whole rcu lookup thing was merged into
+-rc1. But since I still don't see anything that looks likely to be
+introduced after -rc3, it might not hurt to think that maybe it's just
+rare enough that you just thought -rc3 was ok, and then you were
+unlucky with -rc4.
+
+                                Linus
