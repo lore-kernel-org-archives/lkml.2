@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab1BMUuk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 15:50:40 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10581 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780Ab1BMUuh (ORCPT
+	id S1754987Ab1BMUxo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 15:53:44 -0500
+Received: from mail-in-03.arcor-online.net ([151.189.21.43]:40081 "EHLO
+	mail-in-03.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754751Ab1BMUxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 15:50:37 -0500
-Date: Sun, 13 Feb 2011 21:49:32 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Chas Williams <chas@cmf.nrl.navy.mil>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        Nathan Williams <nathan@traverse.com.au>,
-        David Woodhouse <dwmw2@infradead.org>, Treker Chen <treker@xrio.com>
-Subject: [PATCH] ATM, Solos PCI ADSL2+: Don't deref NULL pointer if
- net_ratelimit() and alloc_skb() interact badly.
-Message-ID: <alpine.LNX.2.00.1102132142460.18930@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 13 Feb 2011 15:53:38 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-14.arcor-online.net 2BFF99C0A3
+Message-Id: <E1Poiwb-0002rc-Lm@be1.7eggert.dyndns.org>
+From: Bodo Eggert 
+	<arcoristkaputtundbrauchtdiesentext.7eggert@nurfuerspam.de>
+Subject: Re: [PATCH] md: Remove risk of overflow via sprintf) by using snprintf()  in md_check_recovery()
+To: Michael Tokarev <mjt@tls.msk.ru>, "Daniel K." <dk@uw.no>,
+        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        Neil Brown <neilb@cse.unsw.edu.au>
+Reply-To: 7eggert@nurfuerspam.de
+Date: Sun, 13 Feb 2011 21:53:21 +0100
+References: <gl8SB-1hb-11@gated-at.bofh.it> <glk7o-3l2-17@gated-at.bofh.it> <glo1k-1AX-17@gated-at.bofh.it>
+User-Agent: KNode/0.10.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If alloc_skb() fails to allocate memory and returns NULL then we want to 
-return -ENOMEM from drivers/atm/solos-pci.c::popen() regardless of the 
-value of net_ratelimit(). The way the code is today, we may not return if 
-net_ratelimit() returns 0, then we'll proceed to pass a NULL pointer to 
-skb_put() which will blow up in our face.
-This patch ensures that we always return -ENOMEM on alloc_skb() failure 
-and only let the dev_warn() be controlled by the value of net_ratelimit().
+Michael Tokarev <mjt@tls.msk.ru> wrote:
+> 12.02.2011 12:34, Daniel K. wrote:
+>> Jesper Juhl wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- solos-pci.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+>>> sprintf() is dangerous - given the wrong source string it will
+>>> overflow the destination. snprintf() is safer in that at least we'll
+>>> never overflow the destination. Even if overflow will never happen
+>>> today, code changes over time and snprintf() is just safer in the long
+>>> run.
+>>
+>>> -                        sprintf(nm,"rd%d", rdev->raid_disk);
+>>> +                        snprintf(nm, sizeof(nm), "rd%d",
+>>> rdev->raid_disk);
+>>>                          sysfs_remove_link(&mddev->kobj, nm);
 
-diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-index 73fb1c4..25ef1a4 100644
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -866,8 +866,9 @@ static int popen(struct atm_vcc *vcc)
- 	}
- 
- 	skb = alloc_skb(sizeof(*header), GFP_ATOMIC);
--	if (!skb && net_ratelimit()) {
--		dev_warn(&card->dev->dev, "Failed to allocate sk_buff in popen()\n");
-+	if (!skb) {
-+		if (net_ratelimit())
-+			dev_warn(&card->dev->dev, "Failed to allocate sk_buff in popen()\n");
- 		return -ENOMEM;
- 	}
- 	header = (void *)skb_put(skb, sizeof(*header));
+> C'mon guys, this is pointless.  20 bytes allocated for the device
+> name, and this is for raid disk number.  It is impossible to have
+> more than 10^17 (20 bytes total, 2 for "rd" and on for the zero
+> terminator) drives in a single array.
 
-
+If you argue that you might get a buffer overflow, you'll have to check
+for snprintf errors, too.
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Logic: The art of being wrong with confidence... 
+
+Friß, Spammer: tR@c.7eggert.dyndns.org S5xk@h.7eggert.dyndns.org
+ loqnjg@GFhzy.7eggert.dyndns.org 6hs4Axaqf@ndlJ.7eggert.dyndns.org
 
