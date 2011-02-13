@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1BMV3P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 16:29:15 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40754 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754942Ab1BMV3G (ORCPT
+	id S1755080Ab1BMV4k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 16:56:40 -0500
+Received: from paneer.cc.columbia.edu ([128.59.29.4]:41771 "EHLO
+	paneer.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab1BMV4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 16:29:06 -0500
-Date: Sun, 13 Feb 2011 21:33:25 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x32-abi@googlegroups.com, "H.J. Lu" <hjl.tools@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: X32 psABI status
-Message-ID: <20110213213325.7bcc1a59@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D584A49.80306@zytor.com>
-References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
-	<201102132110.29630.arnd@arndb.de>
-	<AANLkTimZA1Npf0nJ8PF-2=8Oe2LXr_ShyBJNkf8Dn5S5@mail.gmail.com>
-	<4D584A49.80306@zytor.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Feb 2011 16:56:34 -0500
+Message-ID: <4D58537C.3020409@rath.org>
+Date: Sun, 13 Feb 2011 16:56:12 -0500
+From: Nikolaus Rath <Nikolaus@rath.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Brice Goglin <Brice.Goglin@ens-lyon.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: virt_to_page for userspace pointers
+References: <87k4hgn8qa.fsf@inspiron.ap.columbia.edu> <878vxuxkfr.fsf@inspiron.ap.columbia.edu> <4D4DC2D6.8030905@ens-lyon.org> <4D583E17.80606@rath.org> <4D5840F6.8030401@ens-lyon.org>
+In-Reply-To: <4D5840F6.8030401@ens-lyon.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The actual idea is to use the i386 compat ABI for memory layout, but
-> with a 64-bit register convention.  That means that system calls that
-> don't make references to memory structures can simply use the 64-bit
-> system calls, otherwise we're planning to reuse the i386 compat system
-> calls, but invoke them via the syscall instruction (which requires a new
-> system call table) and to pass 64-bit arguments in single registers.
+On 02/13/2011 03:37 PM, Brice Goglin wrote:
+> Le 13/02/2011 21:24, Nikolaus Rath a écrit :
+>> On 02/05/2011 04:36 PM, Brice Goglin wrote:
+>>   
+>>>> Is there an equivalent function to virt_to_page (and virt_to_phys) that
+>>>> works with userspace pointers? Or do I have to manually walk through the
+>>>> page tables? In the later case, are there any examples of this kind of
+>>>> search that I could use as a basis?
+>>>>   
+>>>>       
+>>> You probably want get_user_pages() (or get_user_pages_fast()).
+>>>     
+>> Thanks for the pointer, that already helped a lot!
+>>
+>> I would, however, prefer a more primitive function that just gives me
+>> the struct page without locking it. And if the page is swapped out, I'd
+>> rather get a NULL pointer than having a page frame allocated.  Is there
+>> anything like that?
+>>   
+> 
+> If you don't lock the page, you have no guarantee that it won't get
+> swapped out or migrated while you look at the physical page.
 
-Who actually needs this new extra API - whats the justification for
-everyone having more crud dumping their kernels, more syscall paths
-(which are one of the most security critical areas) and the like.
+That's fine, I know that if the page is there at all then it has been
+locked by a (different) kernel driver. Is there any way to find out what
+I want?
 
-What are the benchmark numbers to justify this versus just using the
-existing kernel interfaces ?
 
-Alan
+Thanks,
+
+   -Nikolaus
+
+-- 
+ »Time flies like an arrow, fruit flies like a Banana.«
+
+  PGP fingerprint: 5B93 61F8 4EA2 E279 ABF6  02CF A9AD B7F8 AE4E 425C
