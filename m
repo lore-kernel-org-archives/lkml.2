@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1BMQbv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 11:31:51 -0500
-Received: from frost.carfax.org.uk ([212.13.194.111]:3683 "EHLO
-	frost.carfax.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1BMQbo (ORCPT
+	id S1754684Ab1BMQoo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 11:44:44 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44319 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab1BMQoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 11:31:44 -0500
-Date: Sun, 13 Feb 2011 16:31:42 +0000
-From: Hugo Mills <hugo-lkml@carfax.org.uk>
-To: Marti Raudsepp <marti@juffo.org>
-Cc: btrfs hackers <linux-btrfs@vger.kernel.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs: compression breaks cp and cross-FS mv, FS_IOC_FIEMAP
- bug?
-Message-ID: <20110213163142.GA5484@carfax.org.uk>
-Mail-Followup-To: Hugo Mills <hugo-lkml@carfax.org.uk>,
-	Marti Raudsepp <marti@juffo.org>,
-	btrfs hackers <linux-btrfs@vger.kernel.org>,
-	Kernel hackers <linux-kernel@vger.kernel.org>
-References: <AANLkTinZNk1j94rEMVdvRtjr2Sa-C7VpQOGHrvrY8Hph@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
-Content-Disposition: inline
-In-Reply-To: <AANLkTinZNk1j94rEMVdvRtjr2Sa-C7VpQOGHrvrY8Hph@mail.gmail.com>
-X-GPG-Fingerprint: 8C59 86C7 81F3 93FE BB02  DDB1 20AC B3BE 515C 238D
-X-GPG-Key: 515C238D
-X-Parrot: It is no more. It has joined the choir invisible.
-X-IRC-Nicks: darksatanic darkersatanic darkling darkthing
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-frost.carfax.org.uk-Spam-Score: -0.0 (/)
-X-frost.carfax.org.uk-Spam-Report: Spam detection software, running on the system "spamd2.lon.bitfolk.com", has
-	identified this incoming email as possible spam.  The original message
-	has been attached to this so you can view it (if it isn't spam) or label
-	similar future email.  If you have any questions, see
-	the administrator of that system for details.
-	Content preview:  On Sun, Feb 13, 2011 at 05:49:42PM +0200, Marti Raudsepp wrote:
-	> Hi list! > > It seems I have found a serious regression in compressed btrfs
-	in > kernel 2.6.37. When creating a small file (less than the block size)
-	> and then cp/mv it to *another* file system, an appropriate number of >
-	zeroes gets written to the destination file. Case in point: [...] 
-	Content analysis details:   (-0.0 points, 5.0 required)
-	pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	-0.0 T_RP_MATCHES_RCVD      Envelope sender domain matches handover relay
-	domain
+	Sun, 13 Feb 2011 11:44:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=mRu/10I0Am1zZIosbmIqfvq32N9AP3V0NAWl2eOd2+mnfi6o/YrstHhEMHBrvJ0mmO
+         Up4mJAlSEk7DdgiN5bni2INTwEqTI3PjoCFsiDMm2tw6FwrV3UD19uAllHnCWDjTC3U+
+         zaQWK52RAuBs10oKfA0J/QhUgTIpr07vJryhc=
+From: Imran Haider <imran1008@gmail.com>
+To: rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, Imran Haider <imran1008@gmail.com>
+Subject: [PATCH] module: Fix bug: read __param section as pointers to object
+Date: Sun, 13 Feb 2011 11:29:14 -0500
+Message-Id: <1297614554-24373-1-git-send-email-imran1008@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Recent changes in commit 3834583b causes module parameters to be stored
+in the __param section as pointer to struct instead of the struct itself.
+module.c was still reading the section as an array of struct which caused
+modules to not load when any module parameter is specified.
+---
+ include/linux/module.h |    2 +-
+ kernel/module.c        |   10 +++++-----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sun, Feb 13, 2011 at 05:49:42PM +0200, Marti Raudsepp wrote:
-> Hi list!
-> 
-> It seems I have found a serious regression in compressed btrfs in
-> kernel 2.6.37. When creating a small file (less than the block size)
-> and then cp/mv it to *another* file system, an appropriate number of
-> zeroes gets written to the destination file. Case in point:
-
-[snip]
-
-> I'm currently running on 2.6.37, x86_64 using Arch Linux -testing with
-> coreutils 8.10. Filesystem is mounted from LVM2 to /usr/src with -o
-> noatime,compress
-> 
-> This only seems to occur with compressed file systems (either zlib or
-> LZO). A person on IRC also reproduced the same problem in 2.6.28-rc.
-> I'm pretty sure this used to work correctly around 2.6.35 or 2.6.36.
-
-   This would seem to be the same effect that we've had reported on
-IRC by at least two Gentoo users, of files full of zeroes in their
-build system. We'll follow up with them over there and see if it's the
-same bug.
-
-   Hugo.
-
+diff --git a/include/linux/module.h b/include/linux/module.h
+index cb41837..5f843dc 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -292,7 +292,7 @@ struct module
+ 	unsigned int num_syms;
+ 
+ 	/* Kernel parameters. */
+-	struct kernel_param *kp;
++	struct kernel_param **kpp;
+ 	unsigned int num_kp;
+ 
+ 	/* GPL-only exported symbols. */
+diff --git a/kernel/module.c b/kernel/module.c
+index efa290e..314b39d 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1693,7 +1693,7 @@ static void free_module(struct module *mod)
+ 	module_unload_free(mod);
+ 
+ 	/* Free any allocated parameters. */
+-	destroy_params(mod->kp, mod->num_kp);
++	destroy_params(*mod->kpp, mod->num_kp);
+ 
+ 	/* This may be NULL, but that's OK */
+ 	unset_section_ro_nx(mod, mod->module_init);
+@@ -2429,8 +2429,8 @@ static int check_modinfo(struct module *mod, struct load_info *info)
+ 
+ static void find_module_sections(struct module *mod, struct load_info *info)
+ {
+-	mod->kp = section_objs(info, "__param",
+-			       sizeof(*mod->kp), &mod->num_kp);
++	mod->kpp = section_objs(info, "__param",
++			       sizeof(void *), &mod->num_kp);
+ 	mod->syms = section_objs(info, "__ksymtab",
+ 				 sizeof(*mod->syms), &mod->num_syms);
+ 	mod->crcs = section_addr(info, "__kcrctab");
+@@ -2803,12 +2803,12 @@ static struct module *load_module(void __user *umod,
+ 	mutex_unlock(&module_mutex);
+ 
+ 	/* Module is ready to execute: parsing args may do that. */
+-	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
++	err = parse_args(mod->name, mod->args, *(mod->kpp), mod->num_kp, NULL);
+ 	if (err < 0)
+ 		goto unlink;
+ 
+ 	/* Link in to syfs. */
+-	err = mod_sysfs_setup(mod, &info, mod->kp, mod->num_kp);
++	err = mod_sysfs_setup(mod, &info, *(mod->kpp), mod->num_kp);
+ 	if (err < 0)
+ 		goto unlink;
+ 
 -- 
-=== Hugo Mills: hugo@... carfax.org.uk | darksatanic.net | lug.org.uk ===
-  PGP key: 515C238D from wwwkeys.eu.pgp.net or http://www.carfax.org.uk
-           --- I must be musical:  I've got *loads* of CDs ---           
+1.7.3.4
 
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iD8DBQFNWAdtIKyzvlFcI40RAh4EAKCFpHiqBlqrI9ypiD+H4c3PqN3HcwCgyKeV
-vvKGo7n+pm2T6RIZcmzf17A=
-=24mt
------END PGP SIGNATURE-----
-
---W/nzBZO5zC0uMSeA--
