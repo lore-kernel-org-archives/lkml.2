@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab1BMXDv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 18:03:51 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50484 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab1BMXDs (ORCPT
+	id S1755238Ab1BMXOA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 18:14:00 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:10204 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669Ab1BMXN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 18:03:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=oVFOgTKW033Pz9ghGH4NQOabLXoBV9bOSgB+xzYmak5JVGjDoGNxgaCqN/BAyKXRW3
-         LW2sy/Lf6hxDOM2kRz5s2kYk2Z2HstrtEM2Ss20ZtDZEJE3A5gnejRLh1+On5vhGVpOb
-         xnTSZv86apU0cIPRxARunzYSkr90LVUQ6cCRg=
-MIME-Version: 1.0
-In-Reply-To: <201102132357.29725.arnd@arndb.de>
-References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
-	<201102132328.15360.arnd@arndb.de>
-	<4D585F5F.6030708@zytor.com>
-	<201102132357.29725.arnd@arndb.de>
-Date: Sun, 13 Feb 2011 15:03:47 -0800
-Message-ID: <AANLkTimH6gYhcDit3E0TMY=i=DT2s1_difMuvr3vkVzk@mail.gmail.com>
-Subject: Re: X32 psABI status
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, x32-abi@googlegroups.com,
-        GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 13 Feb 2011 18:13:57 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Colin Cross <ccross@android.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: vfp: Always save VFP state in vfp_pm_suspend
+Date: Sun, 13 Feb 2011 15:13:33 -0800
+Message-Id: <1297638813-1315-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 13, 2011 at 2:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->
->> The cost of an entire different ABI layer (supporting a new memory layout)
->> would be enormous, a.k.a. "not worth it", which is why the memory layout
->> of kernel objects needs to be compatible with i386.
->
-> Right, this makes sense, you certainly can't redefine all the data
-> structures.
->
-> What would probably be a good idea is to compare the set of syscalls
-> in X32 and asm-generic, and to either eliminate or document the
-> differences. You can probably even take the asm-generic syscall numbers,
-> even if you keep the i386 data structures.
->
+vfp_pm_suspend should save the VFP state any time there is
+a last_VFP_context.  If it only saves when the VFP is enabled,
+the state can get lost when, on a UP system:
+   Thread 1 uses the VFP
+   Context switch occurs to thread 2, VFP is disabled but the
+      VFP context is not saved to allow lazy save and restore
+   Thread 2 initiates suspend
+   vfp_pm_suspend is called with the VFP disabled, but the
+      context has not been saved.
 
-x32 system call number is BASE + 64bit system call number.  It is
-easy to keep 64bit and x32 in sync.
+Modify vfp_pm_suspend to save the VFP context whenever
+last_VFP_context is set.
 
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm/vfp/vfpmodule.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+index 66bf8d1..7aea616 100644
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -415,13 +415,12 @@ static int vfp_pm_suspend(struct sys_device *dev, pm_message_t state)
+ 	struct thread_info *ti = current_thread_info();
+ 	u32 fpexc = fmrx(FPEXC);
+ 
+-	/* if vfp is on, then save state for resumption */
+-	if (fpexc & FPEXC_EN) {
++	/* save state for resume */
++	if (last_VFP_context[ti->cpu]) {
+ 		printk(KERN_DEBUG "%s: saving vfp state\n", __func__);
+-		vfp_save_state(&ti->vfpstate, fpexc);
+-
+-		/* disable, just in case */
+-		fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
++		fmxr(FPEXC, fpexc | FPEXC_EN);
++		vfp_save_state(last_VFP_context[ti->cpu], fpexc);
++		fmxr(FPEXC, fpexc & ~FPEXC_EN);
+ 	}
+ 
+ 	/* clear any information we had about last context state */
 -- 
-H.J.
+1.7.3.1
+
