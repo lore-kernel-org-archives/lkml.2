@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1BMP5l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 10:57:41 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37852 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab1BMP5h convert rfc822-to-8bit (ORCPT
+	id S1754663Ab1BMQCa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 11:02:30 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38421 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217Ab1BMQCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 10:57:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YmeqUqzaeyrDJrxHskzAzM5qYFgkOI7ncP1ZHBqVQMrc27xZR7RNGnYQU0d+bBMn8A
-         O5IlzPGRHPlDBcWN/hpqYWRr973N2PeFP1dsir7AxqRGvrQ773ioAWuHCv0Th7d7j6W/
-         0QZtq4cdXDvxb81u4aVULT2zC7qMC2znd4Mzc=
+	Sun, 13 Feb 2011 11:02:24 -0500
+Message-ID: <4D58004A.3060407@oracle.com>
+Date: Sun, 13 Feb 2011 08:01:14 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1102131514250.31425@eddie.linux-mips.org>
-References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
-	<87aai1gdr7.fsf@mid.deneb.enyo.de>
-	<4D5711E0.7020306@zytor.com>
-	<87r5bcnwvw.fsf@mid.deneb.enyo.de>
-	<AANLkTi=Ybzkp_NHom==M-kL+URWmmZ1LoWVP-EYMkN-j@mail.gmail.com>
-	<87tyg8j7le.fsf@mid.deneb.enyo.de>
-	<alpine.LFD.2.00.1102131514250.31425@eddie.linux-mips.org>
-Date: Sun, 13 Feb 2011 07:57:36 -0800
-Message-ID: <AANLkTimkm2ntT304aJXLPoBBg4Yvk0HmQNCV_bzTnocv@mail.gmail.com>
-Subject: Re: X32 psABI status
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-Cc: Florian Weimer <fw@deneb.enyo.de>, x32-abi@googlegroups.com,
-        GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Kurt Van Dijck <kurt.van.dijck@eia.be>
+CC: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
+References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org> <20110211223312.be571303.randy.dunlap@oracle.com> <20110212111344.GA328@e-circ.dyndns.org> <4D56AF22.4070803@oracle.com> <20110213133717.GA508@e-circ.dyndns.org>
+In-Reply-To: <20110213133717.GA508@e-circ.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D580069.0032:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 13, 2011 at 7:43 AM, Maciej W. Rozycki <macro@linux-mips.org> wrote:
-> On Sun, 13 Feb 2011, Florian Weimer wrote:
->
->> >> Actually, I'm wondering if you can do the translation in user space.
->> >> There already are 32-on-64 implementations in existence, without
->> >> kernel changes (recent Hotspot, LuaJIT, and probably some more).
->> >
->> > Please check out the x32 kernel source and provide feedback.
+On 02/13/11 05:37, Kurt Van Dijck wrote:
+> On Sat, Feb 12, 2011 at 08:02:42AM -0800, Randy Dunlap wrote:
+>> On 02/12/11 03:15, Kurt Van Dijck wrote:
+>>> On Fri, Feb 11, 2011 at 10:33:12PM -0800, Randy Dunlap wrote:
+>>>>
+>>>> warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
+>>>>
+>>>> with this partial config:
+>>>>
+>>>> CONFIG_CAN=m
+>>>> # CONFIG_CAN_RAW is not set
+>>>> # CONFIG_CAN_BCM is not set
+>>>> # CAN Device Drivers
+>>>> # CONFIG_CAN_VCAN is not set
+>>>> CONFIG_CAN_SLCAN=m
+>>>> # CONFIG_CAN_DEV is not set
+>>>> CONFIG_CAN_SOFTING=m
+>>>> CONFIG_CAN_SOFTING_CS=m
+>>>> # CONFIG_CAN_DEBUG_DEVICES is not set
+>>> I understand the output, but I don't understand the cause well enough.
+>>> CAN_SOFTING=m has a 'depends on CAN_DEV'
+>>> Is it then possible to have CAN_SOFTING=m _and not_ CAN_DEV ?
 >>
->> I still don't understand why you need a separate syscall table.  You
->> should really be able to run on an unmodified amd64 kernel, in 64 bit
->> mode.  This would imply that tools like strace don't need any porting
->> at all (you could just use the amd64 version), and even GDB would
->> mostly worked unchanged.
->
->  For the record -- I suggested a similar approach for n32 MIPS too (back
-> when it was on the table), but people rejected it deciding it was easier
-> for them to add a separate syscall table (for a change).  It was perhaps
-> even more surprising as any MIPS 32-bit user pointer is a valid 64-bit one
-> too (I suspect this is also the case with x86-64) and any simple type,
-> including pointers and the "long long" type (such as used with lseek64(2),
-> etc.) goes into a single 64-bit register or stack slot with both ABIs, so
-> any conversion layer (boundary checks or whatever; structures can be
-> sorted out with padding) in libc would be pretty thin.
+>> Yes.  From Documentation/kbuild/kconfig-language.txt:
+>>
+> I see.
+> The 'select CAN_SOFTING' was introduced because it makes no sense to
+> have CAN_SOFTING_CS alone 'for a normal user', although there is no
+> real dependency.
+> Is a 'select' then still a good option, since it feels like repeating
+> all dependencies from CAN_SOFTING in CAN_SOFTING_CS?
+> What about this?
+> 
+> diff --git a/drivers/net/can/softing/Kconfig b/drivers/net/can/softing/Kconfig
+> index 92bd6bd..55dd3e4 100644
+> --- a/drivers/net/can/softing/Kconfig
+> +++ b/drivers/net/can/softing/Kconfig
+> @@ -18,7 +18,7 @@ config CAN_SOFTING
+>  config CAN_SOFTING_CS
+>  	tristate "Softing Gmbh CAN pcmcia cards"
+>  	depends on PCMCIA
+> -	select CAN_SOFTING
+> +	depends on CAN_SOFTING
+>  	---help---
+>  	  Support for PCMCIA cards from Softing Gmbh & some cards
+>  	  from Vector Gmbh.
+> ---
+> It will present the Softing stuff in Kconfig as if CAN_SOFTING_CS really
+> depends on CAN_SOFTING, which is acceptible from a users perspective.
 
-x32 is the same 64bit kernel interface for system calls which takes 64bit
-arguments.  You can pass either 32bit or 64bit value to them.
+That's fine.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
+thanks.
 -- 
-H.J.
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
