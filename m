@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab1BMOL0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 09:11:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51914 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967Ab1BMOLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 09:11:20 -0500
-Message-ID: <4D57E67E.1030707@redhat.com>
-Date: Sun, 13 Feb 2011 15:11:10 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Tao Ma <tm@tao.ma>
-CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] loop: clear read-only flag in loop_clr_fd.
-References: <4D573BBB.6090200@redhat.com> <1297594735-5593-1-git-send-email-tm@tao.ma>
-In-Reply-To: <1297594735-5593-1-git-send-email-tm@tao.ma>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754538Ab1BMOgK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 09:36:10 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:54943 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab1BMOgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 09:36:01 -0500
+X-Greylist: delayed 2186 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Feb 2011 09:36:00 EST
+Date: Sun, 13 Feb 2011 14:56:00 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Seblu <seblu@seblu.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Ivan Vecera <ivecera@redhat.com>
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+Message-ID: <20110213135600.GA11382@electric-eye.fr.zoreil.com>
+References: <AANLkTin7GBSTcfZgr_9sNZ8CPMkW7Vstni+fs2v1-ink@mail.gmail.com> <1297581470.2510.18.camel@edumazet-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297581470.2510.18.camel@edumazet-laptop>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2011 11:58 AM, Tao Ma wrote:
-> From: Tao Ma <boyu.mt@taobao.com>
+Eric Dumazet <eric.dumazet@gmail.com> :
+> Le dimanche 13 f??vrier 2011 ?? 02:35 +0100, Seblu a ??crit :
+[...]
+> Some attempts were done to avoid a reset on some chipsets.
 > 
-> In 75f1dc0, we check bdev_read_only() from blkdev_get().
-> But the loop_clr_fd doesn't clear the read only flag.
-> What cause a error if we changing a loop device from
-> read only to writable.
+> You could try latest linux-2.6 tree. This includes commits 
+> 
+> f60ac8e7ab7cbb413a0131d5665b053f9f386526 (r8169: prevent RxFIFO induced
+> loops in the irq handler.)
+> 
+> 1519e57fe81c14bb8fa4855579f19264d1ef63b4 (r8169: RxFIFO overflow
+> oddities with 8168 chipsets.)
+> 
+> b5ba6d12bdac21bc0620a5089e0f24e362645efd (r8169: use RxFIFO overflow
+> workaround for 8168c chipset.)
 
-No, sorry, this is not proper/complete fix. It fixes it for loop
-(and even not completely - you are missing some error
-paths and ignoring autoclear mode where you have bdev NULL.)
-(And yes, I tried the same as workaround.)
+If it still does not perform better, please include the XID line of
+the r8169 driver from dmesg.
 
-And it will not help for DM case (and possibly others).
-
-Milan
+-- 
+Ueimor
