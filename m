@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab1BMKrI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 05:47:08 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:33730 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab1BMKrD convert rfc822-to-8bit (ORCPT
+	id S1754094Ab1BMKvG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 05:51:06 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47682 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab1BMKu5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 05:47:03 -0500
+	Sun, 13 Feb 2011 05:50:57 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Jg6yZYDEdSoSng1FVEADUinQZTeZX3R6e6MMvrxpDuMs8wARtemh/y2TjAGYAVA1eF
-         3QDXdTbWOqNwKQECUyjMKzmoXomuiLwQmHTHWgjYf/LKjVQ4+Al1uGkCAI3IbVsUce/7
-         lnLip4xtbb6AqKQeDI64pxAcaQXLD4Jh5rnqE=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=fDaiIadavDjX7FXe22oKsxg6L83K3xEwyuTd50WYGFreBwNrC0IMHOo5qQKvAmt+Cf
+         HZSv1uwCkdilGhJ3riY7GrGA3+FR4b4VDO/W/E6xSTUegZeNvkBJAPTfJS8rq/bGuvUP
+         ZcmV2hWvtxcztbSsqSn+92rTSOGmYgilL33RU=
 MIME-Version: 1.0
-In-Reply-To: <20110204154800.GB30909@random.random>
-References: <AANLkTi=uOpN0PwWdGh6iri-vJwuMS+WMPxmaZjv0-TrV@mail.gmail.com>
-	<20110201154947.GX16981@random.random>
-	<20110203132407.GF11958@csn.ul.ie>
-	<20110203190612.GL5843@random.random>
-	<AANLkTimRE-=vB=oTFmc64fqJKHUTUT=3X_Gzx78PZ7Xu@mail.gmail.com>
-	<20110204154800.GB30909@random.random>
-Date: Sun, 13 Feb 2011 11:47:01 +0100
-Message-ID: <AANLkTi=C2ybbsfcRiZS2UjePBToVWQT_pnkiGTfuXv7s@mail.gmail.com>
-Subject: Re: khugepaged: gets stuck when writing to USB flash, 2.6.38-rc2
-From: =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <NMZS1i37KEE.A.1eG.6_wVNB@chimera>
+References: <NMZS1i37KEE.A.1eG.6_wVNB@chimera>
+Date: Sun, 13 Feb 2011 11:50:56 +0100
+Message-ID: <AANLkTi=RnAgp47OTTk_JaNG79ZTb9nQJwLgJfAH4ip+J@mail.gmail.com>
+Subject: Re: 2.6.38-rc4-git5: Reported regressions from 2.6.37
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        wireless <linux-wireless@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/2/4 Andrea Arcangeli <aarcange@redhat.com>:
-> On Thu, Feb 03, 2011 at 10:16:17PM +0100, Jindřich Makovička wrote:
->> I also tried echo never >  /sys/kernel/mm/transparent_hugepage/defrag
->> , and it seems preventing the system freeze, but still the copying
->> itself sometimes comes to almost complete stop (GkrellM shows short
->> spikes of tens of kB/s on the USB /dev/sdX). In this case, khugepaged
->> is also in DN. I still didn't observe this problem when disabling THP
->> completely by echo never > enabled .
+On Sat, Feb 12, 2011 at 11:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message contains a list of some regressions from 2.6.37,
+> for which there are no fixes in the mainline known to the tracking team.
+> If any of them have been fixed already, please let us know.
 >
-> Ok then you may need this too:
+> If you know of any other unresolved regressions from 2.6.37, please let us
+> know either and we'll add them to the list.  Also, please let us know
+> if any of the entries below are invalid.
 >
->  echo never > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag
+> Each entry from the list will be sent additionally in an automatic reply
+> to this message with CCs to the people involved in reporting and handling
+> the issue.
 >
-> Compaction is likely too heavy so we need to look into that.
+>
+> Listed regressions statistics:
+>
+>  Date          Total  Pending  Unresolved
+>  ----------------------------------------
+>  2011-02-12       39       20          18
+>  2011-02-03       19       11           7
+>
+>
+> Unresolved regressions
+> ----------------------
 
-Sorry for the delay.
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=28442
+> Subject         : 2.6.38-rc3: FUSE (sshfs) hangs under load
+> Submitter       : Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Date            : 2011-02-01 17:54 (12 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/4cd06a344db752f513437138953af191cbe9a691
+> Message-ID      : <20110201175452.GB518@core.coreip.homeip.net>
+> References      : http://marc.info/?l=linux-kernel&m=129658291703679&w=2
+>
 
-Yes, disabling both defrag settings also solves the problem:
+The fix by Felix [1] was accepted already in Linus tree:
 
-echo never >/sys/kernel/mm/transparent_hugepage/defrag
-echo no > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag
+commit fc7c976dc7a565213393ce700d4a6105f037bf20
+"mac80211: fix the skb cloned check in the tx path"
 
--- 
-Jindrich Makovicka
+Please, remove the entry from the list, Thanks.
+
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=fc7c976dc7a565213393ce700d4a6105f037bf20
