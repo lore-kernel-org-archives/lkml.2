@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab1BMECW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 23:02:22 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33016 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab1BMECQ (ORCPT
+	id S1751403Ab1BMF3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 00:29:12 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37499 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab1BMF3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 23:02:16 -0500
+	Sun, 13 Feb 2011 00:29:04 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=t6XkigPoZQInp2AEauZqrfZNLGJDmi0NGUS1jJYZnHAyn1z2FRApTJOWcc0w7kfURw
-         phkTHcCnGU+sJzKPdx26HjGwNnrYBTGpd64SjpnAGBKUF0T2ZgwnyoGgjuyJEIxxlkhH
-         JoXiQnXg+orHnVf9rg8E2MYBo1rdWHn6JCo/8=
-Subject: [PATCH] video: metronomefb: add __devexit_p around reference to
- metronomefb_remove
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jaya Kumar <jayakumar.lkml@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-fbdev@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Feb 2011 12:02:10 +0800
-Message-ID: <1297569730.3608.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        h=cc:message-id:from:to:in-reply-to:content-type
+         :content-transfer-encoding:mime-version:subject:date:references
+         :x-mailer;
+        b=oHP1fmGIJgTHC4b624W/g7ZKNJKL8Wf7cLw+T9RkBpsGDeU7iY7XFGGb0PVwzKGVQZ
+         ZwwjoSKoizNkKRs1IxX/VNIBn1KgzHU5Y+y8dvEjdOQh5scRCMHxJF8h+/Xkx1wLvAxq
+         qnueFGMeSAkELXjQAq0bVbL3xmIxAtGyzdOI0=
+Cc: dri-devel@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        airlied@redhat.com
+Message-Id: <1838D776-BF70-4ABE-98CB-EFDCF828F6CF@gmail.com>
+From: Justin Mattock <justinmattock@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+In-Reply-To: <AANLkTinca2027s9-g0tLabBMj4fr2+e=xgUSymBqvv1o@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [BISECTED] commit 619efb1059 makes the MacBookPro2,2 screen flicker like its broken or half plugged in
+Date: Sat, 12 Feb 2011 21:28:58 -0800
+References: <4D51AD03.7030401@gmail.com> <AANLkTimXbbCJHs7WEfkbbQLpKqMM1G_qZ-cN1hcQ+3KJ@mail.gmail.com> <AANLkTimBwM=iacwPosrYXU_jN=DXnEkWL3jvFcarDN23@mail.gmail.com> <B44733BE-E28B-441E-9E6B-AE9B0C8D7E45@gmail.com> <AANLkTimdE6G=qf+wLLSogma-BbH9J0_DYRv7aJkP9P64@mail.gmail.com> <AANLkTi=Ppzicpz5a6AO5rrGkv=j3HPmiB7Er4VGj4OVU@mail.gmail.com> <C0E6BA6B-174B-4930-A5C5-7DB87FDFAD1F@gmail.com> <AANLkTinca2027s9-g0tLabBMj4fr2+e=xgUSymBqvv1o@mail.gmail.com>
+X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-metronomefb_remove is marked __devexit,
-thus add __devexit_p around reference to metronomefb_remove.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/metronomefb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Feb 11, 2011, at 5:15 PM, Alex Deucher wrote:
 
-diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
-index 63ed3b7..ed64edf 100644
---- a/drivers/video/metronomefb.c
-+++ b/drivers/video/metronomefb.c
-@@ -765,7 +765,7 @@ static int __devexit metronomefb_remove(struct platform_device *dev)
- 
- static struct platform_driver metronomefb_driver = {
- 	.probe	= metronomefb_probe,
--	.remove = metronomefb_remove,
-+	.remove = __devexit_p(metronomefb_remove),
- 	.driver	= {
- 		.owner	= THIS_MODULE,
- 		.name	= "metronomefb",
--- 
-1.7.1
+> On Fri, Feb 11, 2011 at 10:57 AM, Justin Mattock
+> <justinmattock@gmail.com> wrote:
+>>
+>>>
+>>> Better yet, can you try the attached patch on top of 2.6.38-rc4 or  
+>>> newer?
+>>>
+>>> Alex
+>>>
+>>
+>> o.k. applied that patch... unfortunately Im seeing the flickering  
+>> screen and
+>> the crud shows up..
+>> initially during boot everything looked fine, its when I suspended  
+>> the
+>> machine, upon wake-up
+>> the flickering occurred.
+>> kernel version is the current: 2.6.38-rc4-00107-gaa502b4
+>
+> Can you try this patch?  Try uncommenting the following lines to see
+> if either of those flags work any better.  Try them individually and
+> together if possible and report back which, if any, helps.
+>
+> /*pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;*/
+>
+> /*if (ASIC_IS_AVIVO(rdev))
+>        pll->flags |= RADEON_PLL_USE_FRAC_FB_DIV;*/
+>
+> Thanks!
+>
+> Alex
+>
+>>
+>> Justin P. Mattock
+>>
+> <0001-drm-radeon-kms-hopefully-fix-pll-issues-for-real-v2.patch>
 
 
+alright.. again out of my office trying to make a living!!
+Anyways I applied the two earlier patches, and added the previous  
+post's patch as well
+(everything runs o.k. s2r etc...)
+I can try for the above and see if I can pinpoint the piece of code  
+that is causing this(hopefully)
 
+Justin P. Mattock
