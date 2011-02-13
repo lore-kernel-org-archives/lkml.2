@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab1BMLv3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 06:51:29 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:58507 "EHLO mgw2.diku.dk"
+	id S1754568Ab1BMLvf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 06:51:35 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:58501 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab1BMLum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 06:50:42 -0500
+	id S1754394Ab1BMLul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 06:50:41 -0500
 From: Julia Lawall <julia@diku.dk>
-To: ben-linux@fluff.org
-Cc: kernel-janitors@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
-        Baruch Siach <baruch@tkos.co.il>, Dave Airlie <airlied@linux.ie>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] drivers/i2c/busses/i2c-nuc900.c: Convert release_resource to release_region/release_mem_region
-Date: Sun, 13 Feb 2011 13:12:12 +0100
-Message-Id: <1297599132-7226-6-git-send-email-julia@diku.dk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: kernel-janitors@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/5] arch/x86/pci/direct.c: Convert release_resource to release_region/release_mem_region
+Date: Sun, 13 Feb 2011 13:12:11 +0100
+Message-Id: <1297599132-7226-5-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297599132-7226-1-git-send-email-julia@diku.dk>
 References: <1297599132-7226-1-git-send-email-julia@diku.dk>
@@ -23,11 +23,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Request_region should be used with release_region, not release_resource.
 
-The result of request_mem_region is no longer stored.  Instead the field
-ioarea is used to store a pointer to the resource structure that contains
-the start address.  This is the information that is needed later in
-nuc900_i2c_remove to release the region.  The field ioarea is also printed
-in some debugging code.
+The local variables region and region2 are dropped and the calls to
+release_resource are replaced with calls to release_region, using the first
+two arguments of the corresponding calls to request_region.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -49,59 +47,58 @@ expression x,E;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-Not compiled due to incompatible architecture.
+Compiled, not tested.
 
- drivers/i2c/busses/i2c-nuc900.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ arch/x86/pci/direct.c |   17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-nuc900.c b/drivers/i2c/busses/i2c-nuc900.c
-index 7243426..97b16b7 100644
---- a/drivers/i2c/busses/i2c-nuc900.c
-+++ b/drivers/i2c/busses/i2c-nuc900.c
-@@ -568,15 +568,13 @@ static int __devinit nuc900_i2c_probe(struct platform_device *pdev)
- 		goto err_clk;
- 	}
+diff --git a/arch/x86/pci/direct.c b/arch/x86/pci/direct.c
+index bd33620..e6fd847 100644
+--- a/arch/x86/pci/direct.c
++++ b/arch/x86/pci/direct.c
+@@ -280,12 +280,9 @@ void __init pci_direct_init(int type)
  
--	i2c->ioarea = request_mem_region(res->start, resource_size(res),
--					 pdev->name);
--
--	if (i2c->ioarea == NULL) {
-+	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
- 		dev_err(&pdev->dev, "cannot request IO\n");
- 		ret = -ENXIO;
- 		goto err_clk;
- 	}
- 
-+	i2c->ioarea = res;
- 	i2c->regs = ioremap(res->start, resource_size(res));
- 
- 	if (i2c->regs == NULL) {
-@@ -645,8 +643,7 @@ static int __devinit nuc900_i2c_probe(struct platform_device *pdev)
- 	iounmap(i2c->regs);
- 
-  err_ioarea:
--	release_resource(i2c->ioarea);
--	kfree(i2c->ioarea);
-+	release_mem_region(res->start, resource_size(res));
- 
-  err_clk:
- 	clk_disable(i2c->clk);
-@@ -665,6 +662,7 @@ static int __devinit nuc900_i2c_probe(struct platform_device *pdev)
- static int __devexit nuc900_i2c_remove(struct platform_device *pdev)
+ int __init pci_direct_probe(void)
  {
- 	struct nuc900_i2c *i2c = platform_get_drvdata(pdev);
-+	struct resource *res = i2c->ioarea;
+-	struct resource *region, *region2;
+-
+ 	if ((pci_probe & PCI_PROBE_CONF1) == 0)
+ 		goto type2;
+-	region = request_region(0xCF8, 8, "PCI conf1");
+-	if (!region)
++	if (!request_region(0xCF8, 8, "PCI conf1"))
+ 		goto type2;
  
- 	i2c_del_adapter(&i2c->adap);
- 	free_irq(i2c->irq, i2c);
-@@ -674,8 +672,7 @@ static int __devexit nuc900_i2c_remove(struct platform_device *pdev)
+ 	if (pci_check_type1()) {
+@@ -293,16 +290,14 @@ int __init pci_direct_probe(void)
+ 		port_cf9_safe = true;
+ 		return 1;
+ 	}
+-	release_resource(region);
++	release_region(0xCF8, 8);
  
- 	iounmap(i2c->regs);
+  type2:
+ 	if ((pci_probe & PCI_PROBE_CONF2) == 0)
+ 		return 0;
+-	region = request_region(0xCF8, 4, "PCI conf2");
+-	if (!region)
++	if (!request_region(0xCF8, 4, "PCI conf2"))
+ 		return 0;
+-	region2 = request_region(0xC000, 0x1000, "PCI conf2");
+-	if (!region2)
++	if (!request_region(0xC000, 0x1000, "PCI conf2"))
+ 		goto fail2;
  
--	release_resource(i2c->ioarea);
--	kfree(i2c->ioarea);
-+	release_mem_region(res->start, resource_size(res));
- 	kfree(i2c);
+ 	if (pci_check_type2()) {
+@@ -311,8 +306,8 @@ int __init pci_direct_probe(void)
+ 		return 2;
+ 	}
  
+-	release_resource(region2);
++	release_region(0xC000, 0x1000);
+  fail2:
+-	release_resource(region);
++	release_region(0xCF8, 4);
  	return 0;
+ }
 
