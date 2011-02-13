@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab1BMKmF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 05:42:05 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60986 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab1BMKmD convert rfc822-to-8bit (ORCPT
+	id S1754059Ab1BMKrI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 05:47:08 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33730 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab1BMKrD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 05:42:03 -0500
+	Sun, 13 Feb 2011 05:47:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=XpeeAhQ4uyts3UsMihZXxhQm2raPd8nzg50y7KPE/PK+HBzQamPlnUnlpE0YRfZzjZ
-         jgbyOY3qZmgVe2WcquNXzVAemcTuxEpjdjeKDlnWEsa3aTTBdMTkfEb9nNzrm1b5DSUe
-         ABOXC/CryKqBuzVtMmQpxFBF05Oq1Sw/IGf7A=
+        b=Jg6yZYDEdSoSng1FVEADUinQZTeZX3R6e6MMvrxpDuMs8wARtemh/y2TjAGYAVA1eF
+         3QDXdTbWOqNwKQECUyjMKzmoXomuiLwQmHTHWgjYf/LKjVQ4+Al1uGkCAI3IbVsUce/7
+         lnLip4xtbb6AqKQeDI64pxAcaQXLD4Jh5rnqE=
 MIME-Version: 1.0
-In-Reply-To: <20110210043718.GA7585@void.printf.net>
-References: <cover.1297014479.git.pierre.tardy@intel.com>
-	<6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
-	<20110210043718.GA7585@void.printf.net>
-Date: Sun, 13 Feb 2011 11:42:01 +0100
-Message-ID: <AANLkTi=iZ3dzAoRuRdpvQ=uBp4u8O8LtMuu2XdSWeZwr@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
-From: Pierre Tardy <tardyp@gmail.com>
-To: Chris Ball <cjb@laptop.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Pierre Tardy <pierre.tardy@intel.com>, linux-pm@lists.linux-foundation.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yunpeng Gao <yunpeng.gao@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110204154800.GB30909@random.random>
+References: <AANLkTi=uOpN0PwWdGh6iri-vJwuMS+WMPxmaZjv0-TrV@mail.gmail.com>
+	<20110201154947.GX16981@random.random>
+	<20110203132407.GF11958@csn.ul.ie>
+	<20110203190612.GL5843@random.random>
+	<AANLkTimRE-=vB=oTFmc64fqJKHUTUT=3X_Gzx78PZ7Xu@mail.gmail.com>
+	<20110204154800.GB30909@random.random>
+Date: Sun, 13 Feb 2011 11:47:01 +0100
+Message-ID: <AANLkTi=C2ybbsfcRiZS2UjePBToVWQT_pnkiGTfuXv7s@mail.gmail.com>
+Subject: Re: khugepaged: gets stuck when writing to USB flash, 2.6.38-rc2
+From: =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sun, Feb 06, 2011 at 07:02:49PM +0100, Pierre Tardy wrote:
->> From: Yunpeng Gao <yunpeng.gao@intel.com>
->>
->> Follow the kernel runtime PM framework, enable runtime PM support of the
->> sdhci host controller with pci interface.
->>
->> Note that this patch implements runtime_pm but now actually detects
->> activity.
->> It relies on higher level (childrens) to do actual waking up
->> Activity detection is put in following patch
+2011/2/4 Andrea Arcangeli <aarcange@redhat.com>:
+> On Thu, Feb 03, 2011 at 10:16:17PM +0100, JindÅ™ich MakoviÄka wrote:
+>> I also tried echo never > Â /sys/kernel/mm/transparent_hugepage/defrag
+>> , and it seems preventing the system freeze, but still the copying
+>> itself sometimes comes to almost complete stop (GkrellM shows short
+>> spikes of tens of kB/s on the USB /dev/sdX). In this case, khugepaged
+>> is also in DN. I still didn't observe this problem when disabling THP
+>> completely by echo never > enabled .
 >
-> Testing this patchset in linux-next-20100208 gives:
+> Ok then you may need this too:
 >
-> [   10.829223] sdhci: Secure Digital Host Controller Interface driver
-> [   10.829548] sdhci: Copyright(c) Pierre Ossman
-> [   10.883906] sdhci-pci 0000:0d:00.0: SDHCI controller found [1180:e822] (rev 1)
-> [   10.884533] sdhci-pci 0000:0d:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-> [   10.885189] sdhci-pci 0000:0d:00.0: Will use DMA mode even though HW doesn't fully claim to support it.
-> [   10.886176] sdhci-pci 0000:0d:00.0: setting latency timer to 64
-> [   10.886819] Registered led device: mmc0::
-> [   10.887281] mmc0: SDHCI controller on PCI [0000:0d:00.0] using DMA
-> [   10.887724] sdhci-pci 0000:0d:00.0: Unbalanced pm_runtime_enable!
-> [   10.888498] sdhci-pci 0000:17:00.0: SDHCI controller found [1180:e822] (rev 1)
-> [   10.889179] sdhci-pci 0000:17:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
-> [   10.889876] sdhci-pci 0000:17:00.0: Will use DMA mode even though HW doesn't fully claim to support it.
-> [   10.890924] sdhci-pci 0000:17:00.0: setting latency timer to 64
-> [   10.891387] Registered led device: mmc1::
-> [   10.891900] mmc1: SDHCI controller on PCI [0000:17:00.0] using DMA
-> [   10.892280] sdhci-pci 0000:17:00.0: Unbalanced pm_runtime_enable!
+> Â echo never > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag
 >
-> (Note the last line above.)
+> Compaction is likely too heavy so we need to look into that.
 
-I never have seen this before. I'm not testing those patches on
-mmc-next, as our platform is not totally upstream yet, and do not boot
-on 2.6.37+ based kernel.
-However, we backported the pm_runtime patches from 2.6.37. Is there
-some differences in very latest patches on default enablement of
-runtime_pm?
+Sorry for the delay.
 
->
-> I then removed the card and reinserted it, but there's no dmesg output
-> related to the reinsert, only to the card removal:
->
-> [   65.381047] mmc0: card d555 removed
->
-> So, card insertion is broken.  I then did rmmod sdhci-pci && modprobe
-> sdhci-pci, and it picked up the card again.
+Yes, disabling both defrag settings also solves the problem:
 
-So what you have here is non working card-detection when device is in PCI_D3.
-This sounds like a HW limitation in you platform.
+echo never >/sys/kernel/mm/transparent_hugepage/defrag
+echo no > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag
 
-D3 is originally meant for suspend to ram, so it sounds logic that
-some HW wont support wake on card detect.
-it sounds like we need a SDHCI_RUNTIME_PM_CAP, so that we can properly
-describe which HW can be safely put D3 at runtime.
-Also, maybe on some HW, D1 will support wake on card detect. I dont
-know how can the driver hint pci subsystem that it should go D1 rather
-than D3 in the runtime_pm flow.
-Maybe Rafael can advice on this.
-
-Regards,
-Pierre
+-- 
+Jindrich Makovicka
