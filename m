@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab1BMQpK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 11:45:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60110 "EHLO mx1.redhat.com"
+	id S1754710Ab1BMQq0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 11:46:26 -0500
+Received: from w241.dkm.cz ([62.24.88.241]:41265 "EHLO machine.or.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754604Ab1BMQpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 11:45:06 -0500
-Message-ID: <4D580A8B.5050508@redhat.com>
-Date: Sun, 13 Feb 2011 17:44:59 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1754604Ab1BMQqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 11:46:21 -0500
+X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Feb 2011 11:46:21 EST
+Date: Sun, 13 Feb 2011 17:35:56 +0100
+From: Petr Baudis <pasky@suse.cz>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: Florian Weimer <fw@deneb.enyo.de>, x32-abi@googlegroups.com,
+        GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: X32 psABI status
+Message-ID: <20110213163556.GH13985@machine.or.cz>
+References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
+ <87aai1gdr7.fsf@mid.deneb.enyo.de>
+ <4D5711E0.7020306@zytor.com>
+ <87r5bcnwvw.fsf@mid.deneb.enyo.de>
+ <AANLkTi=Ybzkp_NHom==M-kL+URWmmZ1LoWVP-EYMkN-j@mail.gmail.com>
+ <87tyg8j7le.fsf@mid.deneb.enyo.de>
+ <AANLkTin1cTCVNTiLS792ZkG9_Y5OvXCtDXHRFfY7hbSF@mail.gmail.com>
 MIME-Version: 1.0
-To: Tao Ma <tm@tao.ma>
-CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] loop: clear read-only flag in loop_clr_fd.
-References: <4D573BBB.6090200@redhat.com> <1297594735-5593-1-git-send-email-tm@tao.ma> <4D57E67E.1030707@redhat.com> <4D57F357.6060708@tao.ma>
-In-Reply-To: <4D57F357.6060708@tao.ma>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin1cTCVNTiLS792ZkG9_Y5OvXCtDXHRFfY7hbSF@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2011 04:05 PM, Tao Ma wrote:
-> On 02/13/2011 10:11 PM, Milan Broz wrote:
->> On 02/13/2011 11:58 AM, Tao Ma wrote:
->>    
->>> From: Tao Ma<boyu.mt@taobao.com>
->>>
->>> In 75f1dc0, we check bdev_read_only() from blkdev_get().
->>> But the loop_clr_fd doesn't clear the read only flag.
->>> What cause a error if we changing a loop device from
->>> read only to writable.
->>>      
->> No, sorry, this is not proper/complete fix. It fixes it for loop
->> (and even not completely - you are missing some error
->> paths and ignoring autoclear mode where you have bdev NULL.)
->> (And yes, I tried the same as workaround.)
->>    
-> aha, sorry, I don't know you are more familiar with loop than me. ;)
-> I just did a quick test and sent the patch. So could you please tell me
-> a little more about how we use autoclear mode?
+On Sun, Feb 13, 2011 at 07:13:57AM -0800, H.J. Lu wrote:
+> On Sun, Feb 13, 2011 at 7:07 AM, Florian Weimer <fw@deneb.enyo.de> wrote:
+> > * H. J. Lu:
+> >
+> >>> Actually, I'm wondering if you can do the translation in user space.
+> >>> There already are 32-on-64 implementations in existence, without
+> >>> kernel changes (recent Hotspot, LuaJIT, and probably some more).
+> >>
+> >> Please check out the x32 kernel source and provide feedback.
+> >
+> > I still don't understand why you need a separate syscall table.  You
+> > should really be able to run on an unmodified amd64 kernel, in 64 bit
+> 
+> That is done on purpose. x32 is designed for environments where the
+> current ia32 API is sufficient. You can think it as ia32 with register
+> extended to 64bit plus 8 more registers. Everything else is still 32bit.
 
-When the autoclear flag is set, the loop device is deallocated with
-the last close. So you can mount device over loop and after umount
-the loop is automatically cleared (no need for losetup -d).
-(I think this flag was not exported to losetup yet, so you need to use
-ioctl flag yourself.)
+I think it would be great if you could add some text like this plus some
+rationale (AIUI, this is geared mainly at new Atoms and other x86_64
+embedded platforms) to the document.
 
-> I will try to update my patch with a V2 when I get familiar with the whole stuff.
+(BTW, it is not really convincing to me that such a niche is worth all
+the trouble this is going to bring.)
 
-I would like Tejun tell us what the intention was here.
-There are some paths which are not so clear (this one in loop device is easy),
-so that code need to be audited.
-
-> Actually I don't think it is Tejun's patch that causes the bug.
-
-It is quite possible. But it worked before and this patch did not
-fix these problems, so it is regression.
-
-> Say loop, it sets ro when it get read  only flags, but doesn't clear it when it is detached.
-
-You can very easily create another bug here if you set device read-write
-too early (while udev is still processing change/remove events).
-
-Milan
+-- 
+				Petr "Pasky" Baudis
+Computer science education cannot make an expert programmer any more
+than studying brushes and pigment can make an expert painter. --esr
