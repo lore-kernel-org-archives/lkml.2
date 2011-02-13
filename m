@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab1BMV2a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 16:28:30 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:65201 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754855Ab1BMV20 convert rfc822-to-8bit (ORCPT
+	id S1755136Ab1BMV3P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 16:29:15 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40754 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754942Ab1BMV3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 16:28:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rqvJ81NgjUHLSk3yV4W2QsLH1KFpqZvKBCUKwGQVKOdxZZbfy76S2ouBXicuUwNjIg
-         XtYleDTnGRp0lq9hM2L4xgBxgmi2hww66CvWe3xYbGylcMEd0baDUkDPe/uLvzuGISlb
-         q/Gnq656mohLqGeCfZpfbzJglmpHAr6IIUgek=
-MIME-Version: 1.0
+	Sun, 13 Feb 2011 16:29:06 -0500
+Date: Sun, 13 Feb 2011 21:33:25 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x32-abi@googlegroups.com, "H.J. Lu" <hjl.tools@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: X32 psABI status
+Message-ID: <20110213213325.7bcc1a59@lxorguk.ukuu.org.uk>
 In-Reply-To: <4D584A49.80306@zytor.com>
 References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
 	<201102132110.29630.arnd@arndb.de>
 	<AANLkTimZA1Npf0nJ8PF-2=8Oe2LXr_ShyBJNkf8Dn5S5@mail.gmail.com>
 	<4D584A49.80306@zytor.com>
-Date: Sun, 13 Feb 2011 13:28:25 -0800
-Message-ID: <AANLkTikbFM5BjcD1=KsO-tHpHn-01Sxnqp40_GtbifYY@mail.gmail.com>
-Subject: Re: X32 psABI status
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x32-abi@googlegroups.com, Arnd Bergmann <arnd@arndb.de>,
-        GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 13, 2011 at 1:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/13/2011 01:10 PM, H.J. Lu wrote:
->>> The basic concept looks entirely reasonable to me, but I'm
->>> curious what drove the decision to start out with the x86_64
->>> system calls instead of the generic ones.
->>>
->>> Since tile was merged, we now have support for compat syscalls
->>> in the generic syscall ABI. I would have assumed that it
->>> was possible to just use those if you decide to do a new
->>> ABI in the first place.
->>>
->>> The other option that would have appeared natural to me is
->>> to just use the existing 32 bit compat ABI with the few
->>> necessary changes done based on the personality.
->
 > The actual idea is to use the i386 compat ABI for memory layout, but
-> with a 64-bit register convention.  That means that system calls that
+> with a 64-bit register convention.  That means that system calls that
 > don't make references to memory structures can simply use the 64-bit
 > system calls, otherwise we're planning to reuse the i386 compat system
 > calls, but invoke them via the syscall instruction (which requires a new
 > system call table) and to pass 64-bit arguments in single registers.
->
 
-That is is currently implemented on hjl/x32 branch.
+Who actually needs this new extra API - whats the justification for
+everyone having more crud dumping their kernels, more syscall paths
+(which are one of the most security critical areas) and the like.
 
-I also added
+What are the benchmark numbers to justify this versus just using the
+existing kernel interfaces ?
 
-__NR_sigaction
-__NR_sigpending
-__NR_sigprocmask
-__NR_sigsuspend
-
-to help the Bionic C library.
-
-
--- 
-H.J.
+Alan
