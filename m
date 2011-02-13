@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab1BMNh3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 08:37:29 -0500
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:14373 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754522Ab1BMNhV (ORCPT
+	id S1754583Ab1BMNp1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 08:45:27 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:34583 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485Ab1BMNpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 08:37:21 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAONrV01tgner/2dsb2JhbACEHqFidKkfjzuBJ4NBdgSPSw
-Date: Sun, 13 Feb 2011 14:37:18 +0100
-From: Kurt Van Dijck <kurt.van.dijck@eia.be>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
-Message-ID: <20110213133717.GA508@e-circ.dyndns.org>
-References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org>
- <20110211223312.be571303.randy.dunlap@oracle.com>
- <20110212111344.GA328@e-circ.dyndns.org>
- <4D56AF22.4070803@oracle.com>
+	Sun, 13 Feb 2011 08:45:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=OjbbuWCTdXTAighKRPzBV6qLSlfYiex1zn7pJ4pVqU6Kqb2ZfkN9FGbyzMwOPSQRE4
+         IPA6NABrEzS46yP7jKRe1LBi7mpPZ9T2xm4cn69hFurysfBI0QskFTHQcajYy0vGb7Hk
+         tb0zxigL3NZoW9LxyU5SxHe5pwnsRNzMuucJE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4D56AF22.4070803@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87r5bcnwvw.fsf@mid.deneb.enyo.de>
+References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
+	<87aai1gdr7.fsf@mid.deneb.enyo.de>
+	<4D5711E0.7020306@zytor.com>
+	<87r5bcnwvw.fsf@mid.deneb.enyo.de>
+Date: Sun, 13 Feb 2011 05:45:21 -0800
+Message-ID: <AANLkTi=Ybzkp_NHom==M-kL+URWmmZ1LoWVP-EYMkN-j@mail.gmail.com>
+Subject: Re: X32 psABI status
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Florian Weimer <fw@deneb.enyo.de>
+Cc: x32-abi@googlegroups.com, GCC Development <gcc@gcc.gnu.org>,
+        GNU C Library <libc-alpha@sourceware.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 12, 2011 at 08:02:42AM -0800, Randy Dunlap wrote:
-> On 02/12/11 03:15, Kurt Van Dijck wrote:
-> > On Fri, Feb 11, 2011 at 10:33:12PM -0800, Randy Dunlap wrote:
-> >>
-> >> warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
-> >>
-> >> with this partial config:
-> >>
-> >> CONFIG_CAN=m
-> >> # CONFIG_CAN_RAW is not set
-> >> # CONFIG_CAN_BCM is not set
-> >> # CAN Device Drivers
-> >> # CONFIG_CAN_VCAN is not set
-> >> CONFIG_CAN_SLCAN=m
-> >> # CONFIG_CAN_DEV is not set
-> >> CONFIG_CAN_SOFTING=m
-> >> CONFIG_CAN_SOFTING_CS=m
-> >> # CONFIG_CAN_DEBUG_DEVICES is not set
-> > I understand the output, but I don't understand the cause well enough.
-> > CAN_SOFTING=m has a 'depends on CAN_DEV'
-> > Is it then possible to have CAN_SOFTING=m _and not_ CAN_DEV ?
-> 
-> Yes.  From Documentation/kbuild/kconfig-language.txt:
-> 
-I see.
-The 'select CAN_SOFTING' was introduced because it makes no sense to
-have CAN_SOFTING_CS alone 'for a normal user', although there is no
-real dependency.
-Is a 'select' then still a good option, since it feels like repeating
-all dependencies from CAN_SOFTING in CAN_SOFTING_CS?
-What about this?
+On Sun, Feb 13, 2011 at 12:48 AM, Florian Weimer <fw@deneb.enyo.de> wrote:
+> * H. Peter Anvin:
+>
+>> On 02/12/2011 01:10 PM, Florian Weimer wrote:
+>>> Why is the ia32 compatiblity kernel interface used?
+>>
+>> Because there is no way in hell we're designing in a second
+>> compatibility ABI in the kernel (and it has to be a compatibility ABI,
+>> because of the pointer size difference.)
+>
+> Actually, I'm wondering if you can do the translation in user space.
+> There already are 32-on-64 implementations in existence, without
+> kernel changes (recent Hotspot, LuaJIT, and probably some more).
 
-diff --git a/drivers/net/can/softing/Kconfig b/drivers/net/can/softing/Kconfig
-index 92bd6bd..55dd3e4 100644
---- a/drivers/net/can/softing/Kconfig
-+++ b/drivers/net/can/softing/Kconfig
-@@ -18,7 +18,7 @@ config CAN_SOFTING
- config CAN_SOFTING_CS
- 	tristate "Softing Gmbh CAN pcmcia cards"
- 	depends on PCMCIA
--	select CAN_SOFTING
-+	depends on CAN_SOFTING
- 	---help---
- 	  Support for PCMCIA cards from Softing Gmbh & some cards
- 	  from Vector Gmbh.
----
-It will present the Softing stuff in Kconfig as if CAN_SOFTING_CS really
-depends on CAN_SOFTING, which is acceptible from a users perspective.
+Please check out the x32 kernel source and provide feedback.
 
-Kurt
+-- 
+H.J.
