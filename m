@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1BMHfc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 02:35:32 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49624 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab1BMHf0 (ORCPT
+	id S1753471Ab1BMHxu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 02:53:50 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44861 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752973Ab1BMHxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 02:35:26 -0500
+	Sun, 13 Feb 2011 02:53:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=nSOp6tBfdf4LR0GAu8EDNEczCv+THtu2Ug4dnXZF+rym3qoKoX2Dl9WwsEKNSj8X/P
-         yi8ZOZB3d21xI8RBMT27NWWH+GMSiksQEw5oGIEk8vumiY6RdQQKAfSU6rU3OwtoUUET
-         XJJxYpoqwk7maj5QYwg22W8Q+YtuDSmtf0whI=
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=qTdxLOLs9ybY/8lOr56criGc6P1QJriVOSw3JOESCD3xPeOqkkhX3SOicVhPXSE9pL
+         uvZ2vvduXPbEB6bkm/4CDEeKXzF2PeTamDcFrbH6WnajzF68othr7q8knnNo28i21BhV
+         W0poSOHnyTVpAd4gLLqIkrocdSYt/vWHnLfB0=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 13 Feb 2011 08:35:23 +0100
-Message-ID: <AANLkTinfTjPKc=MU6-qKmCYZDtCNjV9O_1v=gf7X2qaF@mail.gmail.com>
-Subject: Re: [GIT PULL] ext4.git#for_linus
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110213062213.GA2525@darkstar.dhcp.inet.fi>
+References: <20110213062213.GA2525@darkstar.dhcp.inet.fi>
+Date: Sun, 13 Feb 2011 17:53:44 +1000
+Message-ID: <AANLkTimDuYgL2cSR8gE7Wrm9_w7cvG_wuUUsa=8TKs87@mail.gmail.com>
+Subject: Re: Regression - Xorg start failed
+From: Dave Airlie <airlied@gmail.com>
+To: Dave Young <hidave.darkstar@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, Chris Wright <chrisw@sous-sol.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Feb 13, 2011 at 4:22 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> Hi
+>
+> With kernel built from current linus's tree, I can not start xorg,
+> it failed with:
 
-I pulled 24hrs ago ext4.git#for_linus into my local linux-next tree.
-What happened to Dan's patch?
+Me too!,
 
-Dan Carpenter (1):
-      ext4: off by one check in ext4_groupinfo_create_slab()
+Thanks for bisceting this, I just tried -rc4 on my Fedora 13 laptop
+and wasn't looking forward to bisecting it.
 
-This patch was in the first pull-request [1],  but did not find its
-way to Linus-tree.
-Intention or forgotten?
+If this isn't hitting later distros its probably an updated
+libpciaccess that fixed something.
 
-Regards,
-- Sedat -
+libpciaccess-0.10.9-2.20091209.fc13.i686 is what is on this box.
 
-[1] http://marc.info/?l=linux-ext4&m=129743167006873&w=2
+Probably should revert first, then work out what is crapping out libpciaccess.
+
+Dave.
