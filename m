@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab1BMUhU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 15:37:20 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:11544 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754744Ab1BMUhQ (ORCPT
+	id S1755019Ab1BMUh5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 15:37:57 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:55408 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab1BMUhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 15:37:16 -0500
-X-IronPort-AV: E=Sophos;i="4.60,465,1291590000"; 
-   d="scan'208";a="91224882"
-Message-ID: <4D5840F6.8030401@ens-lyon.org>
-Date: Sun, 13 Feb 2011 21:37:10 +0100
-From: Brice Goglin <Brice.Goglin@ens-lyon.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: Nikolaus Rath <Nikolaus@rath.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: virt_to_page for userspace pointers
-References: <87k4hgn8qa.fsf@inspiron.ap.columbia.edu> <878vxuxkfr.fsf@inspiron.ap.columbia.edu> <4D4DC2D6.8030905@ens-lyon.org> <4D583E17.80606@rath.org>
-In-Reply-To: <4D583E17.80606@rath.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 13 Feb 2011 15:37:50 -0500
+Date: Sun, 13 Feb 2011 21:34:17 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Seblu <seblu@seblu.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Ivan Vecera <ivecera@redhat.com>
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+Message-ID: <20110213203417.GA11442@electric-eye.fr.zoreil.com>
+References: <AANLkTin7GBSTcfZgr_9sNZ8CPMkW7Vstni+fs2v1-ink@mail.gmail.com> <1297581470.2510.18.camel@edumazet-laptop> <20110213135600.GA11382@electric-eye.fr.zoreil.com> <AANLkTikTw71-mv9WsPT8PxC1a1nwEJ=x0UNDhVQGP1A6@mail.gmail.com> <AANLkTikLOJ-XcwfdbWS19DKzh2s91tn5pQjJe0+CeAN-@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikLOJ-XcwfdbWS19DKzh2s91tn5pQjJe0+CeAN-@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 13/02/2011 21:24, Nikolaus Rath a écrit :
-> On 02/05/2011 04:36 PM, Brice Goglin wrote:
->   
->>> Is there an equivalent function to virt_to_page (and virt_to_phys) that
->>> works with userspace pointers? Or do I have to manually walk through the
->>> page tables? In the later case, are there any examples of this kind of
->>> search that I could use as a basis?
->>>   
->>>       
->> You probably want get_user_pages() (or get_user_pages_fast()).
->>     
-> Thanks for the pointer, that already helped a lot!
->
-> I would, however, prefer a more primitive function that just gives me
-> the struct page without locking it. And if the page is swapped out, I'd
-> rather get a NULL pointer than having a page frame allocated.  Is there
-> anything like that?
->   
+Seblu <seblu@seblu.net> :
+[...]
+> > NIC seems to be reset frequently but host stop rebooting. \o//
+> ok after about 1 hour of iperf, host reboot.
 
-If you don't lock the page, you have no guarantee that it won't get
-swapped out or migrated while you look at the physical page.
+Can you apply the patch below on top of 2.6.38-rc4 ?
 
-Brice
-
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 59ccf0c..5d64b80 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -4645,6 +4645,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 			switch (tp->mac_version) {
+ 			/* Work around for rx fifo overflow */
+ 			case RTL_GIGA_MAC_VER_11:
++			case RTL_GIGA_MAC_VER_20:
+ 			case RTL_GIGA_MAC_VER_22:
+ 			case RTL_GIGA_MAC_VER_26:
+ 				netif_stop_queue(dev);
+@@ -4653,7 +4654,6 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 			/* Testers needed. */
+ 			case RTL_GIGA_MAC_VER_17:
+ 			case RTL_GIGA_MAC_VER_19:
+-			case RTL_GIGA_MAC_VER_20:
+ 			case RTL_GIGA_MAC_VER_21:
+ 			case RTL_GIGA_MAC_VER_23:
+ 			case RTL_GIGA_MAC_VER_24:
