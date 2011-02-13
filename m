@@ -1,410 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab1BMGix (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 01:38:53 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:56115 "EHLO mprc.pku.edu.cn"
+	id S1753226Ab1BMGjg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 01:39:36 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:56118 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab1BMGiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 01:38:46 -0500
+	id S1751718Ab1BMGj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 01:39:29 -0500
 From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
 To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
 Cc: "Arnd Bergmann" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>
-Subject: [PATCHv2 08/11] unicore32 core architecture: mm related: consistent device DMA handling
-Date: Sun, 13 Feb 2011 14:38:36 +0800
-Message-ID: <02f101cbcb48$a46271b0$ed275510$@mprc.pku.edu.cn>
+Subject: [PATCHv2 09/11] unicore32 core architecture: timer and time handling
+Date: Sun, 13 Feb 2011 14:39:20 +0800
+Message-ID: <02f301cbcb48$bebea4c0$3c3bee40$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcvLSJigkn/Y7zrATFKCjlTXmaV1+Q==
+Thread-Index: AcvLSLmocEtq8LBZSMapRTyHqpGHag==
 Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements consistent device DMA handling of memory management.
-DMA device operations are also here.
+This patch implements timer and time.
+RTC and PWM device drivers are also here.
 
 Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- arch/unicore32/include/asm/cacheflush.h  |  211 +++++++++++++++++++++++++++++
- arch/unicore32/include/asm/dma-mapping.h |  124 +++++++++++++++++
- arch/unicore32/include/asm/dma.h         |   23 ++++
- arch/unicore32/include/asm/tlbflush.h    |  195 +++++++++++++++++++++++++++
- arch/unicore32/include/mach/dma.h        |   41 ++++++
- arch/unicore32/kernel/dma.c              |  180 +++++++++++++++++++++++++
- arch/unicore32/mm/cache-ucv2.S           |  212 ++++++++++++++++++++++++++++++
- arch/unicore32/mm/dma-swiotlb.c          |   34 +++++
- arch/unicore32/mm/flush.c                |   98 ++++++++++++++
- arch/unicore32/mm/tlb-ucv2.S             |   89 +++++++++++++
- 10 files changed, 1207 insertions(+), 0 deletions(-)
- create mode 100644 arch/unicore32/include/asm/cacheflush.h
- create mode 100644 arch/unicore32/include/asm/dma-mapping.h
- create mode 100644 arch/unicore32/include/asm/dma.h
- create mode 100644 arch/unicore32/include/asm/tlbflush.h
- create mode 100644 arch/unicore32/include/mach/dma.h
- create mode 100644 arch/unicore32/kernel/dma.c
- create mode 100644 arch/unicore32/mm/cache-ucv2.S
- create mode 100644 arch/unicore32/mm/dma-swiotlb.c
- create mode 100644 arch/unicore32/mm/flush.c
- create mode 100644 arch/unicore32/mm/tlb-ucv2.S
+ arch/unicore32/include/asm/timex.h |   34 ++++
+ arch/unicore32/kernel/pwm.c        |  263 +++++++++++++++++++++++++
+ arch/unicore32/kernel/rtc.c        |  380 ++++++++++++++++++++++++++++++++++++
+ arch/unicore32/kernel/time.c       |  148 ++++++++++++++
+ 4 files changed, 825 insertions(+), 0 deletions(-)
+ create mode 100644 arch/unicore32/include/asm/timex.h
+ create mode 100644 arch/unicore32/kernel/pwm.c
+ create mode 100644 arch/unicore32/kernel/rtc.c
+ create mode 100644 arch/unicore32/kernel/time.c
 
-diff --git a/arch/unicore32/include/asm/cacheflush.h b/arch/unicore32/include/asm/cacheflush.h
+diff --git a/arch/unicore32/include/asm/timex.h b/arch/unicore32/include/asm/timex.h
 new file mode 100644
-index 0000000..c0301e6
+index 0000000..faf16ba
 --- /dev/null
-+++ b/arch/unicore32/include/asm/cacheflush.h
-@@ -0,0 +1,211 @@
++++ b/arch/unicore32/include/asm/timex.h
+@@ -0,0 +1,34 @@
 +/*
-+ * linux/arch/unicore32/include/asm/cacheflush.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __UNICORE_CACHEFLUSH_H__
-+#define __UNICORE_CACHEFLUSH_H__
-+
-+#include <linux/mm.h>
-+
-+#include <asm/shmparam.h>
-+
-+#define CACHE_COLOUR(vaddr)	((vaddr & (SHMLBA - 1)) >> PAGE_SHIFT)
-+
-+/*
-+ * This flag is used to indicate that the page pointed to by a pte is clean
-+ * and does not require cleaning before returning it to the user.
-+ */
-+#define PG_dcache_clean PG_arch_1
-+
-+/*
-+ *	MM Cache Management
-+ *	===================
-+ *
-+ *	The arch/unicore32/mm/cache.S files implement these methods.
-+ *
-+ *	Start addresses are inclusive and end addresses are exclusive;
-+ *	start addresses should be rounded down, end addresses up.
-+ *
-+ *	See Documentation/cachetlb.txt for more information.
-+ *	Please note that the implementation of these, and the required
-+ *	effects are cache-type (VIVT/VIPT/PIPT) specific.
-+ *
-+ *	flush_icache_all()
-+ *
-+ *		Unconditionally clean and invalidate the entire icache.
-+ *		Currently only needed for cache-v6.S and cache-v7.S, see
-+ *		__flush_icache_all for the generic implementation.
-+ *
-+ *	flush_kern_all()
-+ *
-+ *		Unconditionally clean and invalidate the entire cache.
-+ *
-+ *	flush_user_all()
-+ *
-+ *		Clean and invalidate all user space cache entries
-+ *		before a change of page tables.
-+ *
-+ *	flush_user_range(start, end, flags)
-+ *
-+ *		Clean and invalidate a range of cache entries in the
-+ *		specified address space before a change of page tables.
-+ *		- start - user start address (inclusive, page aligned)
-+ *		- end   - user end address   (exclusive, page aligned)
-+ *		- flags - vma->vm_flags field
-+ *
-+ *	coherent_kern_range(start, end)
-+ *
-+ *		Ensure coherency between the Icache and the Dcache in the
-+ *		region described by start, end.  If you have non-snooping
-+ *		Harvard caches, you need to implement this function.
-+ *		- start  - virtual start address
-+ *		- end    - virtual end address
-+ *
-+ *	coherent_user_range(start, end)
-+ *
-+ *		Ensure coherency between the Icache and the Dcache in the
-+ *		region described by start, end.  If you have non-snooping
-+ *		Harvard caches, you need to implement this function.
-+ *		- start  - virtual start address
-+ *		- end    - virtual end address
-+ *
-+ *	flush_kern_dcache_area(kaddr, size)
-+ *
-+ *		Ensure that the data held in page is written back.
-+ *		- kaddr  - page address
-+ *		- size   - region size
-+ *
-+ *	DMA Cache Coherency
-+ *	===================
-+ *
-+ *	dma_flush_range(start, end)
-+ *
-+ *		Clean and invalidate the specified virtual address range.
-+ *		- start  - virtual start address
-+ *		- end    - virtual end address
-+ */
-+
-+extern void __cpuc_flush_icache_all(void);
-+extern void __cpuc_flush_kern_all(void);
-+extern void __cpuc_flush_user_all(void);
-+extern void __cpuc_flush_user_range(unsigned long, unsigned long, unsigned int);
-+extern void __cpuc_coherent_kern_range(unsigned long, unsigned long);
-+extern void __cpuc_coherent_user_range(unsigned long, unsigned long);
-+extern void __cpuc_flush_dcache_area(void *, size_t);
-+extern void __cpuc_flush_kern_dcache_area(void *addr, size_t size);
-+
-+/*
-+ * These are private to the dma-mapping API.  Do not use directly.
-+ * Their sole purpose is to ensure that data held in the cache
-+ * is visible to DMA, or data written by DMA to system memory is
-+ * visible to the CPU.
-+ */
-+extern void __cpuc_dma_clean_range(unsigned long, unsigned long);
-+extern void __cpuc_dma_flush_range(unsigned long, unsigned long);
-+
-+/*
-+ * Copy user data from/to a page which is mapped into a different
-+ * processes address space.  Really, we want to allow our "user
-+ * space" model to handle this.
-+ */
-+extern void copy_to_user_page(struct vm_area_struct *, struct page *,
-+	unsigned long, void *, const void *, unsigned long);
-+#define copy_from_user_page(vma, page, vaddr, dst, src, len)	\
-+	do {							\
-+		memcpy(dst, src, len);				\
-+	} while (0)
-+
-+/*
-+ * Convert calls to our calling convention.
-+ */
-+/* Invalidate I-cache */
-+static inline void __flush_icache_all(void)
-+{
-+	asm("movc	p0.c5, %0, #20;\n"
-+	    "nop; nop; nop; nop; nop; nop; nop; nop\n"
-+	    :
-+	    : "r" (0));
-+}
-+
-+#define flush_cache_all()		__cpuc_flush_kern_all()
-+
-+extern void flush_cache_mm(struct mm_struct *mm);
-+extern void flush_cache_range(struct vm_area_struct *vma,
-+		unsigned long start, unsigned long end);
-+extern void flush_cache_page(struct vm_area_struct *vma,
-+		unsigned long user_addr, unsigned long pfn);
-+
-+#define flush_cache_dup_mm(mm) flush_cache_mm(mm)
-+
-+/*
-+ * flush_cache_user_range is used when we want to ensure that the
-+ * Harvard caches are synchronised for the user space address range.
-+ * This is used for the UniCore private sys_cacheflush system call.
-+ */
-+#define flush_cache_user_range(vma, start, end) \
-+	__cpuc_coherent_user_range((start) & PAGE_MASK, PAGE_ALIGN(end))
-+
-+/*
-+ * Perform necessary cache operations to ensure that data previously
-+ * stored within this range of addresses can be executed by the CPU.
-+ */
-+#define flush_icache_range(s, e)	__cpuc_coherent_kern_range(s, e)
-+
-+/*
-+ * Perform necessary cache operations to ensure that the TLB will
-+ * see data written in the specified area.
-+ */
-+#define clean_dcache_area(start, size)	cpu_dcache_clean_area(start, size)
-+
-+/*
-+ * flush_dcache_page is used when the kernel has written to the page
-+ * cache page at virtual address page->virtual.
-+ *
-+ * If this page isn't mapped (ie, page_mapping == NULL), or it might
-+ * have userspace mappings, then we _must_ always clean + invalidate
-+ * the dcache entries associated with the kernel mapping.
-+ *
-+ * Otherwise we can defer the operation, and clean the cache when we are
-+ * about to change to user space.  This is the same method as used on SPARC64.
-+ * See update_mmu_cache for the user space part.
-+ */
-+#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 1
-+extern void flush_dcache_page(struct page *);
-+
-+#define flush_dcache_mmap_lock(mapping)			\
-+	spin_lock_irq(&(mapping)->tree_lock)
-+#define flush_dcache_mmap_unlock(mapping)		\
-+	spin_unlock_irq(&(mapping)->tree_lock)
-+
-+#define flush_icache_user_range(vma, page, addr, len)	\
-+	flush_dcache_page(page)
-+
-+/*
-+ * We don't appear to need to do anything here.  In fact, if we did, we'd
-+ * duplicate cache flushing elsewhere performed by flush_dcache_page().
-+ */
-+#define flush_icache_page(vma, page)	do { } while (0)
-+
-+/*
-+ * flush_cache_vmap() is used when creating mappings (eg, via vmap,
-+ * vmalloc, ioremap etc) in kernel space for pages.  On non-VIPT
-+ * caches, since the direct-mappings of these pages may contain cached
-+ * data, we need to do a full cache flush to ensure that writebacks
-+ * don't corrupt data placed into these pages via the new mappings.
-+ */
-+static inline void flush_cache_vmap(unsigned long start, unsigned long end)
-+{
-+}
-+
-+static inline void flush_cache_vunmap(unsigned long start, unsigned long end)
-+{
-+}
-+
-+#endif
-diff --git a/arch/unicore32/include/asm/dma-mapping.h b/arch/unicore32/include/asm/dma-mapping.h
-new file mode 100644
-index 0000000..9258e59
---- /dev/null
-+++ b/arch/unicore32/include/asm/dma-mapping.h
-@@ -0,0 +1,124 @@
-+/*
-+ * linux/arch/unicore32/include/asm/dma-mapping.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __UNICORE_DMA_MAPPING_H__
-+#define __UNICORE_DMA_MAPPING_H__
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/mm_types.h>
-+#include <linux/scatterlist.h>
-+#include <linux/swiotlb.h>
-+
-+#include <asm-generic/dma-coherent.h>
-+
-+#include <asm/memory.h>
-+#include <asm/cacheflush.h>
-+
-+extern struct dma_map_ops swiotlb_dma_map_ops;
-+
-+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return &swiotlb_dma_map_ops;
-+}
-+
-+static inline int dma_supported(struct device *dev, u64 mask)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	if (unlikely(dma_ops == NULL))
-+		return 0;
-+
-+	return dma_ops->dma_supported(dev, mask);
-+}
-+
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	if (dma_ops->mapping_error)
-+		return dma_ops->mapping_error(dev, dma_addr);
-+
-+	return 0;
-+}
-+
-+#include <asm-generic/dma-mapping-common.h>
-+
-+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-+{
-+	if (dev && dev->dma_mask)
-+		return addr + size - 1 <= *dev->dma_mask;
-+
-+	return 1;
-+}
-+
-+static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-+{
-+	return paddr;
-+}
-+
-+static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
-+{
-+	return daddr;
-+}
-+
-+static inline void dma_mark_clean(void *addr, size_t size) {}
-+
-+static inline int dma_set_mask(struct device *dev, u64 dma_mask)
-+{
-+	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
-+		return -EIO;
-+
-+	*dev->dma_mask = dma_mask;
-+
-+	return 0;
-+}
-+
-+static inline void *dma_alloc_coherent(struct device *dev, size_t size,
-+				       dma_addr_t *dma_handle, gfp_t flag)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	return dma_ops->alloc_coherent(dev, size, dma_handle, flag);
-+}
-+
-+static inline void dma_free_coherent(struct device *dev, size_t size,
-+				     void *cpu_addr, dma_addr_t dma_handle)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	dma_ops->free_coherent(dev, size, cpu_addr, dma_handle);
-+}
-+
-+#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
-+#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
-+
-+static inline void dma_cache_sync(struct device *dev, void *vaddr,
-+		size_t size, enum dma_data_direction direction)
-+{
-+	unsigned long start = (unsigned long)vaddr;
-+	unsigned long end   = start + size;
-+
-+	switch (direction) {
-+	case DMA_NONE:
-+		BUG();
-+	case DMA_FROM_DEVICE:
-+	case DMA_BIDIRECTIONAL:	/* writeback and invalidate */
-+		__cpuc_dma_flush_range(start, end);
-+		break;
-+	case DMA_TO_DEVICE:		/* writeback only */
-+		__cpuc_dma_clean_range(start, end);
-+		break;
-+	}
-+}
-+
-+#endif /* __KERNEL__ */
-+#endif
-diff --git a/arch/unicore32/include/asm/dma.h b/arch/unicore32/include/asm/dma.h
-new file mode 100644
-index 0000000..38dfff9
---- /dev/null
-+++ b/arch/unicore32/include/asm/dma.h
-@@ -0,0 +1,23 @@
-+/*
-+ * linux/arch/unicore32/include/asm/dma.h
++ * linux/arch/unicore32/include/asm/timex.h
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -415,273 +56,36 @@ index 0000000..38dfff9
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef __UNICORE_DMA_H__
-+#define __UNICORE_DMA_H__
++#ifndef __UNICORE_TIMEX_H__
++#define __UNICORE_TIMEX_H__
 +
-+#include <asm/memory.h>
-+#include <asm-generic/dma.h>
++#ifdef	CONFIG_ARCH_FPGA
 +
-+#ifdef CONFIG_PCI
-+extern int isa_dma_bridge_buggy;
++/* in FPGA, APB clock is 33M, and OST clock is 32K, */
++/* so, 1M is selected for timer interrupt correctly */
++#define	CLOCK_TICK_RATE		(32*1024)
++
 +#endif
 +
-+#endif /* __UNICORE_DMA_H__ */
-diff --git a/arch/unicore32/include/asm/tlbflush.h b/arch/unicore32/include/asm/tlbflush.h
++#if defined(CONFIG_PUV3_DB0913)		\
++	|| defined(CONFIG_PUV3_NB0916)	\
++	|| defined(CONFIG_PUV3_SMW0919)
++
++#define  CLOCK_TICK_RATE         (14318000)
++
++#endif
++
++#include <asm-generic/timex.h>
++
++#endif
+diff --git a/arch/unicore32/kernel/pwm.c b/arch/unicore32/kernel/pwm.c
 new file mode 100644
-index 0000000..e446ac8
+index 0000000..4615d51
 --- /dev/null
-+++ b/arch/unicore32/include/asm/tlbflush.h
-@@ -0,0 +1,195 @@
++++ b/arch/unicore32/kernel/pwm.c
+@@ -0,0 +1,263 @@
 +/*
-+ * linux/arch/unicore32/include/asm/tlbflush.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __UNICORE_TLBFLUSH_H__
-+#define __UNICORE_TLBFLUSH_H__
-+
-+#ifndef __ASSEMBLY__
-+
-+#include <linux/sched.h>
-+
-+extern void __cpu_flush_user_tlb_range(unsigned long, unsigned long,
-+					struct vm_area_struct *);
-+extern void __cpu_flush_kern_tlb_range(unsigned long, unsigned long);
-+
-+/*
-+ *	TLB Management
-+ *	==============
-+ *
-+ *	The arch/unicore/mm/tlb-*.S files implement these methods.
-+ *
-+ *	The TLB specific code is expected to perform whatever tests it
-+ *	needs to determine if it should invalidate the TLB for each
-+ *	call.  Start addresses are inclusive and end addresses are
-+ *	exclusive; it is safe to round these addresses down.
-+ *
-+ *	flush_tlb_all()
-+ *
-+ *		Invalidate the entire TLB.
-+ *
-+ *	flush_tlb_mm(mm)
-+ *
-+ *		Invalidate all TLB entries in a particular address
-+ *		space.
-+ *		- mm	- mm_struct describing address space
-+ *
-+ *	flush_tlb_range(mm,start,end)
-+ *
-+ *		Invalidate a range of TLB entries in the specified
-+ *		address space.
-+ *		- mm	- mm_struct describing address space
-+ *		- start - start address (may not be aligned)
-+ *		- end	- end address (exclusive, may not be aligned)
-+ *
-+ *	flush_tlb_page(vaddr,vma)
-+ *
-+ *		Invalidate the specified page in the specified address range.
-+ *		- vaddr - virtual address (may not be aligned)
-+ *		- vma	- vma_struct describing address range
-+ *
-+ *	flush_kern_tlb_page(kaddr)
-+ *
-+ *		Invalidate the TLB entry for the specified page.  The address
-+ *		will be in the kernels virtual memory space.  Current uses
-+ *		only require the D-TLB to be invalidated.
-+ *		- kaddr - Kernel virtual memory address
-+ */
-+
-+static inline void local_flush_tlb_all(void)
-+{
-+	const int zero = 0;
-+
-+	/* TLB invalidate all */
-+	asm("movc p0.c6, %0, #6; nop; nop; nop; nop; nop; nop; nop; nop"
-+		: : "r" (zero) : "cc");
-+}
-+
-+static inline void local_flush_tlb_mm(struct mm_struct *mm)
-+{
-+	const int zero = 0;
-+
-+	if (cpumask_test_cpu(get_cpu(), mm_cpumask(mm))) {
-+		/* TLB invalidate all */
-+		asm("movc p0.c6, %0, #6; nop; nop; nop; nop; nop; nop; nop; nop"
-+			: : "r" (zero) : "cc");
-+	}
-+	put_cpu();
-+}
-+
-+static inline void
-+local_flush_tlb_page(struct vm_area_struct *vma, unsigned long uaddr)
-+{
-+	if (cpumask_test_cpu(smp_processor_id(), mm_cpumask(vma->vm_mm))) {
-+#ifndef CONFIG_CPU_TLB_SINGLE_ENTRY_DISABLE
-+		/* iTLB invalidate page */
-+		asm("movc p0.c6, %0, #5; nop; nop; nop; nop; nop; nop; nop; nop"
-+			: : "r" (uaddr & PAGE_MASK) : "cc");
-+		/* dTLB invalidate page */
-+		asm("movc p0.c6, %0, #3; nop; nop; nop; nop; nop; nop; nop; nop"
-+			: : "r" (uaddr & PAGE_MASK) : "cc");
-+#else
-+		/* TLB invalidate all */
-+		asm("movc p0.c6, %0, #6; nop; nop; nop; nop; nop; nop; nop; nop"
-+			: : "r" (uaddr & PAGE_MASK) : "cc");
-+#endif
-+	}
-+}
-+
-+static inline void local_flush_tlb_kernel_page(unsigned long kaddr)
-+{
-+#ifndef CONFIG_CPU_TLB_SINGLE_ENTRY_DISABLE
-+	/* iTLB invalidate page */
-+	asm("movc p0.c6, %0, #5; nop; nop; nop; nop; nop; nop; nop; nop"
-+		: : "r" (kaddr & PAGE_MASK) : "cc");
-+	/* dTLB invalidate page */
-+	asm("movc p0.c6, %0, #3; nop; nop; nop; nop; nop; nop; nop; nop"
-+		: : "r" (kaddr & PAGE_MASK) : "cc");
-+#else
-+	/* TLB invalidate all */
-+	asm("movc p0.c6, %0, #6; nop; nop; nop; nop; nop; nop; nop; nop"
-+		: : "r" (kaddr & PAGE_MASK) : "cc");
-+#endif
-+}
-+
-+/*
-+ *	flush_pmd_entry
-+ *
-+ *	Flush a PMD entry (word aligned, or double-word aligned) to
-+ *	RAM if the TLB for the CPU we are running on requires this.
-+ *	This is typically used when we are creating PMD entries.
-+ *
-+ *	clean_pmd_entry
-+ *
-+ *	Clean (but don't drain the write buffer) if the CPU requires
-+ *	these operations.  This is typically used when we are removing
-+ *	PMD entries.
-+ */
-+static inline void flush_pmd_entry(pmd_t *pmd)
-+{
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	/* flush dcache line, see dcacheline_flush in proc-macros.S */
-+	asm("mov	r1, %0 << #20\n"
-+		"ldw	r2, =_stext\n"
-+		"add	r2, r2, r1 >> #20\n"
-+		"ldw	r1, [r2+], #0x0000\n"
-+		"ldw	r1, [r2+], #0x1000\n"
-+		"ldw	r1, [r2+], #0x2000\n"
-+		"ldw	r1, [r2+], #0x3000\n"
-+		: : "r" (pmd) : "r1", "r2");
-+#else
-+	/* flush dcache all */
-+	asm("movc p0.c5, %0, #14; nop; nop; nop; nop; nop; nop; nop; nop"
-+		: : "r" (pmd) : "cc");
-+#endif
-+}
-+
-+static inline void clean_pmd_entry(pmd_t *pmd)
-+{
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	/* clean dcache line */
-+	asm("movc p0.c5, %0, #11; nop; nop; nop; nop; nop; nop; nop; nop"
-+		: : "r" (__pa(pmd) & ~(L1_CACHE_BYTES - 1)) : "cc");
-+#else
-+	/* clean dcache all */
-+	asm("movc p0.c5, %0, #10; nop; nop; nop; nop; nop; nop; nop; nop"
-+		: : "r" (pmd) : "cc");
-+#endif
-+}
-+
-+/*
-+ * Convert calls to our calling convention.
-+ */
-+#define local_flush_tlb_range(vma, start, end)	\
-+	__cpu_flush_user_tlb_range(start, end, vma)
-+#define local_flush_tlb_kernel_range(s, e)	\
-+	__cpu_flush_kern_tlb_range(s, e)
-+
-+#define flush_tlb_all		local_flush_tlb_all
-+#define flush_tlb_mm		local_flush_tlb_mm
-+#define flush_tlb_page		local_flush_tlb_page
-+#define flush_tlb_kernel_page	local_flush_tlb_kernel_page
-+#define flush_tlb_range		local_flush_tlb_range
-+#define flush_tlb_kernel_range	local_flush_tlb_kernel_range
-+
-+/*
-+ * if PG_dcache_clean is not set for the page, we need to ensure that any
-+ * cache entries for the kernels virtual memory range are written
-+ * back to the page.
-+ */
-+extern void update_mmu_cache(struct vm_area_struct *vma,
-+		unsigned long addr, pte_t *ptep);
-+
-+extern void do_bad_area(unsigned long addr, unsigned int fsr,
-+		struct pt_regs *regs);
-+
-+#endif
-+
-+#endif
-diff --git a/arch/unicore32/include/mach/dma.h b/arch/unicore32/include/mach/dma.h
-new file mode 100644
-index 0000000..3e3224a
---- /dev/null
-+++ b/arch/unicore32/include/mach/dma.h
-@@ -0,0 +1,41 @@
-+/*
-+ * linux/arch/unicore32/include/mach/dma.h
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __MACH_PUV3_DMA_H__
-+#define __MACH_PUV3_DMA_H__
-+
-+/*
-+ * The PKUnity has six internal DMA channels.
-+ */
-+#define MAX_DMA_CHANNELS	6
-+
-+typedef enum {
-+	DMA_PRIO_HIGH = 0,
-+	DMA_PRIO_MEDIUM = 1,
-+	DMA_PRIO_LOW = 2
-+} puv3_dma_prio;
-+
-+/*
-+ * DMA registration
-+ */
-+
-+extern int puv3_request_dma(char *name,
-+			 puv3_dma_prio prio,
-+			 void (*irq_handler)(int, void *),
-+			 void (*err_handler)(int, void *),
-+			 void *data);
-+
-+extern void puv3_free_dma(int dma_ch);
-+
-+#define puv3_stop_dma(ch)		(DMAC_CONFIG(ch) &= ~DMAC_CONFIG_EN)
-+#define puv3_resume_dma(ch)             (DMAC_CONFIG(ch) |= DMAC_CONFIG_EN)
-+
-+#endif /* __MACH_PUV3_DMA_H__ */
-diff --git a/arch/unicore32/kernel/dma.c b/arch/unicore32/kernel/dma.c
-new file mode 100644
-index 0000000..b8dcc25
---- /dev/null
-+++ b/arch/unicore32/kernel/dma.c
-@@ -0,0 +1,180 @@
-+/*
-+ * linux/arch/unicore32/kernel/dma.c
++ * linux/arch/unicore32/kernel/pwm.c
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
@@ -694,628 +98,794 @@ index 0000000..b8dcc25
 + */
 +
 +#include <linux/module.h>
-+#include <linux/init.h>
 +#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/errno.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/pwm.h>
 +
-+#include <asm/system.h>
-+#include <asm/irq.h>
++#include <asm/div64.h>
 +#include <mach/hardware.h>
-+#include <mach/dma.h>
 +
-+struct dma_channel {
-+	char *name;
-+	puv3_dma_prio prio;
-+	void (*irq_handler)(int, void *);
-+	void (*err_handler)(int, void *);
-+	void *data;
++struct pwm_device {
++	struct list_head	node;
++	struct platform_device *pdev;
++
++	const char	*label;
++	struct clk	*clk;
++	int		clk_enabled;
++
++	unsigned int	use_count;
++	unsigned int	pwm_id;
 +};
 +
-+static struct dma_channel dma_channels[MAX_DMA_CHANNELS];
-+
-+int puv3_request_dma(char *name, puv3_dma_prio prio,
-+			 void (*irq_handler)(int, void *),
-+			 void (*err_handler)(int, void *),
-+			 void *data)
++/*
++ * period_ns = 10^9 * (PRESCALE + 1) * (PV + 1) / PWM_CLK_RATE
++ * duty_ns   = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
++ */
++int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 +{
-+	unsigned long flags;
-+	int i, found = 0;
++	unsigned long long c;
++	unsigned long period_cycles, prescale, pv, dc;
 +
-+	/* basic sanity checks */
-+	if (!name)
++	if (pwm == NULL || period_ns == 0 || duty_ns > period_ns)
 +		return -EINVAL;
 +
-+	local_irq_save(flags);
++	c = clk_get_rate(pwm->clk);
++	c = c * period_ns;
++	do_div(c, 1000000000);
++	period_cycles = c;
 +
-+	do {
-+		/* try grabbing a DMA channel with the requested priority */
-+		for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-+			if ((dma_channels[i].prio == prio) &&
-+			    !dma_channels[i].name) {
-+				found = 1;
-+				break;
-+			}
++	if (period_cycles < 1)
++		period_cycles = 1;
++	prescale = (period_cycles - 1) / 1024;
++	pv = period_cycles / (prescale + 1) - 1;
++
++	if (prescale > 63)
++		return -EINVAL;
++
++	if (duty_ns == period_ns)
++		dc = OST_PWMDCCR_FDCYCLE;
++	else
++		dc = (pv + 1) * duty_ns / period_ns;
++
++	/* NOTE: the clock to PWM has to be enabled first
++	 * before writing to the registers
++	 */
++	clk_enable(pwm->clk);
++	OST_PWMPWCR = prescale;
++	OST_PWMDCCR = pv - dc;
++	OST_PWMPCR  = pv;
++	clk_disable(pwm->clk);
++
++	return 0;
++}
++EXPORT_SYMBOL(pwm_config);
++
++int pwm_enable(struct pwm_device *pwm)
++{
++	int rc = 0;
++
++	if (!pwm->clk_enabled) {
++		rc = clk_enable(pwm->clk);
++		if (!rc)
++			pwm->clk_enabled = 1;
++	}
++	return rc;
++}
++EXPORT_SYMBOL(pwm_enable);
++
++void pwm_disable(struct pwm_device *pwm)
++{
++	if (pwm->clk_enabled) {
++		clk_disable(pwm->clk);
++		pwm->clk_enabled = 0;
++	}
++}
++EXPORT_SYMBOL(pwm_disable);
++
++static DEFINE_MUTEX(pwm_lock);
++static LIST_HEAD(pwm_list);
++
++struct pwm_device *pwm_request(int pwm_id, const char *label)
++{
++	struct pwm_device *pwm;
++	int found = 0;
++
++	mutex_lock(&pwm_lock);
++
++	list_for_each_entry(pwm, &pwm_list, node) {
++		if (pwm->pwm_id == pwm_id) {
++			found = 1;
++			break;
 +		}
-+		/* if requested prio group is full, try a hier priority */
-+	} while (!found && prio--);
++	}
 +
 +	if (found) {
-+		dma_channels[i].name = name;
-+		dma_channels[i].irq_handler = irq_handler;
-+		dma_channels[i].err_handler = err_handler;
-+		dma_channels[i].data = data;
-+	} else {
-+		printk(KERN_WARNING "No more available DMA channels for %s\n",
-+				name);
-+		i = -ENODEV;
-+	}
++		if (pwm->use_count == 0) {
++			pwm->use_count++;
++			pwm->label = label;
++		} else
++			pwm = ERR_PTR(-EBUSY);
++	} else
++		pwm = ERR_PTR(-ENOENT);
 +
-+	local_irq_restore(flags);
-+	return i;
++	mutex_unlock(&pwm_lock);
++	return pwm;
 +}
-+EXPORT_SYMBOL(puv3_request_dma);
++EXPORT_SYMBOL(pwm_request);
 +
-+void puv3_free_dma(int dma_ch)
++void pwm_free(struct pwm_device *pwm)
 +{
-+	unsigned long flags;
++	mutex_lock(&pwm_lock);
 +
-+	if (!dma_channels[dma_ch].name) {
-+		printk(KERN_CRIT
-+			"%s: trying to free channel %d which is already freed\n",
-+			__func__, dma_ch);
-+		return;
-+	}
++	if (pwm->use_count) {
++		pwm->use_count--;
++		pwm->label = NULL;
++	} else
++		pr_warning("PWM device already freed\n");
 +
-+	local_irq_save(flags);
-+	dma_channels[dma_ch].name = NULL;
-+	dma_channels[dma_ch].err_handler = NULL;
-+	local_irq_restore(flags);
++	mutex_unlock(&pwm_lock);
 +}
-+EXPORT_SYMBOL(puv3_free_dma);
++EXPORT_SYMBOL(pwm_free);
 +
-+static irqreturn_t dma_irq_handler(int irq, void *dev_id)
++static inline void __add_pwm(struct pwm_device *pwm)
 +{
-+	int i, dint = DMAC_ITCSR;
-+
-+	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-+		if (dint & DMAC_CHANNEL(i)) {
-+			struct dma_channel *channel = &dma_channels[i];
-+
-+			/* Clear TC interrupt of channel i */
-+			DMAC_ITCCR = DMAC_CHANNEL(i);
-+			DMAC_ITCCR = 0;
-+
-+			if (channel->name && channel->irq_handler) {
-+				channel->irq_handler(i, channel->data);
-+			} else {
-+				/*
-+				 * IRQ for an unregistered DMA channel:
-+				 * let's clear the interrupts and disable it.
-+				 */
-+				printk(KERN_WARNING "spurious IRQ for"
-+						" DMA channel %d\n", i);
-+			}
-+		}
-+	}
-+	return IRQ_HANDLED;
++	mutex_lock(&pwm_lock);
++	list_add_tail(&pwm->node, &pwm_list);
++	mutex_unlock(&pwm_lock);
 +}
 +
-+static irqreturn_t dma_err_handler(int irq, void *dev_id)
++static struct pwm_device *pwm_probe(struct platform_device *pdev,
++		unsigned int pwm_id, struct pwm_device *parent_pwm)
 +{
-+	int i, dint = DMAC_IESR;
++	struct pwm_device *pwm;
++	struct resource *r;
++	int ret = 0;
 +
-+	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-+		if (dint & DMAC_CHANNEL(i)) {
-+			struct dma_channel *channel = &dma_channels[i];
-+
-+			/* Clear Err interrupt of channel i */
-+			DMAC_IECR = DMAC_CHANNEL(i);
-+			DMAC_IECR = 0;
-+
-+			if (channel->name && channel->err_handler) {
-+				channel->err_handler(i, channel->data);
-+			} else {
-+				/*
-+				 * IRQ for an unregistered DMA channel:
-+				 * let's clear the interrupts and disable it.
-+				 */
-+				printk(KERN_WARNING "spurious IRQ for"
-+						" DMA channel %d\n", i);
-+			}
-+		}
++	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
++	if (pwm == NULL) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return ERR_PTR(-ENOMEM);
 +	}
-+	return IRQ_HANDLED;
++
++	pwm->clk = clk_get(NULL, "OST_CLK");
++	if (IS_ERR(pwm->clk)) {
++		ret = PTR_ERR(pwm->clk);
++		goto err_free;
++	}
++	pwm->clk_enabled = 0;
++
++	pwm->use_count = 0;
++	pwm->pwm_id = pwm_id;
++	pwm->pdev = pdev;
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		dev_err(&pdev->dev, "no memory resource defined\n");
++		ret = -ENODEV;
++		goto err_free_clk;
++	}
++
++	r = request_mem_region(r->start, resource_size(r), pdev->name);
++	if (r == NULL) {
++		dev_err(&pdev->dev, "failed to request memory resource\n");
++		ret = -EBUSY;
++		goto err_free_clk;
++	}
++
++	__add_pwm(pwm);
++	platform_set_drvdata(pdev, pwm);
++	return pwm;
++
++err_free_clk:
++	clk_put(pwm->clk);
++err_free:
++	kfree(pwm);
++	return ERR_PTR(ret);
 +}
 +
-+int __init puv3_init_dma(void)
++static int __devinit puv3_pwm_probe(struct platform_device *pdev)
 +{
-+	int i, ret;
++	struct pwm_device *pwm = pwm_probe(pdev, pdev->id, NULL);
 +
-+	/* dma channel priorities on v8 processors:
-+	 * ch 0 - 1  <--> (0) DMA_PRIO_HIGH
-+	 * ch 2 - 3  <--> (1) DMA_PRIO_MEDIUM
-+	 * ch 4 - 5  <--> (2) DMA_PRIO_LOW
-+	 */
-+	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
-+		puv3_stop_dma(i);
-+		dma_channels[i].name = NULL;
-+		dma_channels[i].prio = min((i & 0x7) >> 1, DMA_PRIO_LOW);
-+	}
-+
-+	ret = request_irq(IRQ_DMA, dma_irq_handler, 0, "DMA", NULL);
-+	if (ret) {
-+		printk(KERN_CRIT "Can't register IRQ for DMA\n");
-+		return ret;
-+	}
-+
-+	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
-+	if (ret) {
-+		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
-+		free_irq(IRQ_DMA, "DMA");
-+		return ret;
-+	}
++	if (IS_ERR(pwm))
++		return PTR_ERR(pwm);
 +
 +	return 0;
 +}
 +
-+postcore_initcall(puv3_init_dma);
-diff --git a/arch/unicore32/mm/cache-ucv2.S b/arch/unicore32/mm/cache-ucv2.S
-new file mode 100644
-index 0000000..ecaa172
---- /dev/null
-+++ b/arch/unicore32/mm/cache-ucv2.S
-@@ -0,0 +1,212 @@
-+/*
-+ * linux/arch/unicore32/mm/cache-ucv2.S
-+ *
-+ * Code specific to PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  This is the "shell" of the UniCore-v2 processor support.
-+ */
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+#include <asm/assembler.h>
-+#include <asm/page.h>
++static int __devexit pwm_remove(struct platform_device *pdev)
++{
++	struct pwm_device *pwm;
++	struct resource *r;
 +
-+#include "proc-macros.S"
++	pwm = platform_get_drvdata(pdev);
++	if (pwm == NULL)
++		return -ENODEV;
 +
-+/*
-+ *	__cpuc_flush_icache_all()
-+ *	__cpuc_flush_kern_all()
-+ *	__cpuc_flush_user_all()
-+ *
-+ *	Flush the entire cache.
-+ */
-+ENTRY(__cpuc_flush_icache_all)
-+	/*FALLTHROUGH*/
-+ENTRY(__cpuc_flush_kern_all)
-+	/*FALLTHROUGH*/
-+ENTRY(__cpuc_flush_user_all)
-+	mov	r0, #0
-+	movc	p0.c5, r0, #14			@ Dcache flush all
-+	nop8
++	mutex_lock(&pwm_lock);
++	list_del(&pwm->node);
++	mutex_unlock(&pwm_lock);
 +
-+	mov	r0, #0
-+	movc	p0.c5, r0, #20			@ Icache invalidate all
-+	nop8
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	release_mem_region(r->start, resource_size(r));
 +
-+	mov	pc, lr
++	clk_put(pwm->clk);
++	kfree(pwm);
++	return 0;
++}
 +
-+/*
-+ *	__cpuc_flush_user_range(start, end, flags)
-+ *
-+ *	Flush a range of TLB entries in the specified address space.
-+ *
-+ *	- start - start address (may not be aligned)
-+ *	- end   - end address (exclusive, may not be aligned)
-+ *	- flags	- vm_area_struct flags describing address space
-+ */
-+ENTRY(__cpuc_flush_user_range)
-+	cxor.a	r2, #0
-+	beq	__cpuc_dma_flush_range
-+
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	andn	r0, r0, #CACHE_LINESIZE - 1	@ Safety check
-+	sub	r1, r1, r0
-+	csub.a	r1, #MAX_AREA_SIZE
-+	bsg	2f
-+
-+	andn	r1, r1, #CACHE_LINESIZE - 1
-+	add	r1, r1, #CACHE_LINESIZE
-+
-+101:	dcacheline_flush	r0, r11, r12
-+
-+	add	r0, r0, #CACHE_LINESIZE
-+	sub.a	r1, r1, #CACHE_LINESIZE
-+	bns	101b
-+	b	3f
-+#endif
-+2:	mov	ip, #0
-+	movc	p0.c5, ip, #14			@ Dcache flush all
-+	nop8
-+
-+3:	mov	ip, #0
-+	movc	p0.c5, ip, #20			@ Icache invalidate all
-+	nop8
-+
-+	mov	pc, lr
-+
-+/*
-+ *	__cpuc_coherent_kern_range(start,end)
-+ *	__cpuc_coherent_user_range(start,end)
-+ *
-+ *	Ensure that the I and D caches are coherent within specified
-+ *	region.  This is typically used when code has been written to
-+ *	a memory region, and will be executed.
-+ *
-+ *	- start   - virtual start address of region
-+ *	- end     - virtual end address of region
-+ */
-+ENTRY(__cpuc_coherent_kern_range)
-+	/* FALLTHROUGH */
-+ENTRY(__cpuc_coherent_user_range)
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	andn	r0, r0, #CACHE_LINESIZE - 1	@ Safety check
-+	sub	r1, r1, r0
-+	csub.a	r1, #MAX_AREA_SIZE
-+	bsg	2f
-+
-+	andn	r1, r1, #CACHE_LINESIZE - 1
-+	add	r1, r1, #CACHE_LINESIZE
-+
-+	@ r0 va2pa r10
-+	mov	r9, #PAGE_SZ
-+	sub	r9, r9, #1			@ PAGE_MASK
-+101:	va2pa	r0, r10, r11, r12, r13, 2f	@ r10 is PA
-+	b	103f
-+102:	cand.a	r0, r9
-+	beq	101b
-+
-+103:	movc	p0.c5, r10, #11			@ Dcache clean line of R10
-+	nop8
-+
-+	add	r0, r0, #CACHE_LINESIZE
-+	add	r10, r10, #CACHE_LINESIZE
-+	sub.a	r1, r1, #CACHE_LINESIZE
-+	bns	102b
-+	b	3f
-+#endif
-+2:	mov	ip, #0
-+	movc	p0.c5, ip, #10			@ Dcache clean all
-+	nop8
-+
-+3:	mov	ip, #0
-+	movc	p0.c5, ip, #20			@ Icache invalidate all
-+	nop8
-+
-+	mov	pc, lr
-+
-+/*
-+ *	__cpuc_flush_kern_dcache_area(void *addr, size_t size)
-+ *
-+ *	- addr	- kernel address
-+ *	- size	- region size
-+ */
-+ENTRY(__cpuc_flush_kern_dcache_area)
-+	mov	ip, #0
-+	movc	p0.c5, ip, #14			@ Dcache flush all
-+	nop8
-+	mov	pc, lr
-+
-+/*
-+ *	__cpuc_dma_clean_range(start,end)
-+ *	- start   - virtual start address of region
-+ *	- end     - virtual end address of region
-+ */
-+ENTRY(__cpuc_dma_clean_range)
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	andn	r0, r0, #CACHE_LINESIZE - 1
-+	sub	r1, r1, r0
-+	andn	r1, r1, #CACHE_LINESIZE - 1
-+	add	r1, r1, #CACHE_LINESIZE
-+
-+	csub.a	r1, #MAX_AREA_SIZE
-+	bsg	2f
-+
-+	@ r0 va2pa r10
-+	mov	r9, #PAGE_SZ
-+	sub	r9, r9, #1			@ PAGE_MASK
-+101:	va2pa	r0, r10, r11, r12, r13, 2f	@ r10 is PA
-+	b	1f
-+102:	cand.a	r0, r9
-+	beq	101b
-+
-+1:	movc	p0.c5, r10, #11			@ Dcache clean line of R10
-+	nop8
-+	add	r0, r0, #CACHE_LINESIZE
-+	add	r10, r10, #CACHE_LINESIZE
-+	sub.a	r1, r1, #CACHE_LINESIZE
-+	bns	102b
-+	mov	pc, lr
-+#endif
-+2:	mov	ip, #0
-+	movc	p0.c5, ip, #10			@ Dcache clean all
-+	nop8
-+
-+	mov	pc, lr
-+
-+/*
-+ *	__cpuc_dma_inv_range(start,end)
-+ *	__cpuc_dma_flush_range(start,end)
-+ *	- start   - virtual start address of region
-+ *	- end     - virtual end address of region
-+ */
-+__cpuc_dma_inv_range:
-+	/* FALLTHROUGH */
-+ENTRY(__cpuc_dma_flush_range)
-+#ifndef CONFIG_CPU_DCACHE_LINE_DISABLE
-+	andn	r0, r0, #CACHE_LINESIZE - 1
-+	sub	r1, r1, r0
-+	andn	r1, r1, #CACHE_LINESIZE - 1
-+	add	r1, r1, #CACHE_LINESIZE
-+
-+	csub.a	r1, #MAX_AREA_SIZE
-+	bsg	2f
-+
-+	@ r0 va2pa r10
-+101:	dcacheline_flush	r0, r11, r12
-+
-+	add	r0, r0, #CACHE_LINESIZE
-+	sub.a	r1, r1, #CACHE_LINESIZE
-+	bns	101b
-+	mov	pc, lr
-+#endif
-+2:	mov	ip, #0
-+	movc	p0.c5, ip, #14			@ Dcache flush all
-+	nop8
-+
-+	mov	pc, lr
-+
-diff --git a/arch/unicore32/mm/dma-swiotlb.c b/arch/unicore32/mm/dma-swiotlb.c
-new file mode 100644
-index 0000000..bfa9fbb
---- /dev/null
-+++ b/arch/unicore32/mm/dma-swiotlb.c
-@@ -0,0 +1,34 @@
-+/*
-+ * Contains routines needed to support swiotlb for UniCore32.
-+ *
-+ * Copyright (C) 2010 Guan Xuetao
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+#include <linux/pci.h>
-+#include <linux/cache.h>
-+#include <linux/module.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/swiotlb.h>
-+#include <linux/bootmem.h>
-+
-+#include <asm/dma.h>
-+
-+struct dma_map_ops swiotlb_dma_map_ops = {
-+	.alloc_coherent = swiotlb_alloc_coherent,
-+	.free_coherent = swiotlb_free_coherent,
-+	.map_sg = swiotlb_map_sg_attrs,
-+	.unmap_sg = swiotlb_unmap_sg_attrs,
-+	.dma_supported = swiotlb_dma_supported,
-+	.map_page = swiotlb_map_page,
-+	.unmap_page = swiotlb_unmap_page,
-+	.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
-+	.sync_single_for_device = swiotlb_sync_single_for_device,
-+	.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
-+	.sync_sg_for_device = swiotlb_sync_sg_for_device,
-+	.mapping_error = swiotlb_dma_mapping_error,
++static struct platform_driver puv3_pwm_driver = {
++	.driver		= {
++		.name	= "PKUnity-v3-PWM",
++	},
++	.probe		= puv3_pwm_probe,
++	.remove		= __devexit_p(pwm_remove),
 +};
-+EXPORT_SYMBOL(swiotlb_dma_map_ops);
-diff --git a/arch/unicore32/mm/flush.c b/arch/unicore32/mm/flush.c
++
++static int __init pwm_init(void)
++{
++	int ret = 0;
++
++	ret = platform_driver_register(&puv3_pwm_driver);
++	if (ret) {
++		printk(KERN_ERR "failed to register puv3_pwm_driver\n");
++		return ret;
++	}
++
++	return ret;
++}
++arch_initcall(pwm_init);
++
++static void __exit pwm_exit(void)
++{
++	platform_driver_unregister(&puv3_pwm_driver);
++}
++module_exit(pwm_exit);
++
++MODULE_LICENSE("GPL v2");
+diff --git a/arch/unicore32/kernel/rtc.c b/arch/unicore32/kernel/rtc.c
 new file mode 100644
-index 0000000..93478cc
+index 0000000..5e4db41
 --- /dev/null
-+++ b/arch/unicore32/mm/flush.c
-@@ -0,0 +1,98 @@
++++ b/arch/unicore32/kernel/rtc.c
+@@ -0,0 +1,380 @@
 +/*
-+ * linux/arch/unicore32/mm/flush.c
++ * linux/arch/unicore32/kernel/rtc.c
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
++ *	Copyright (C) 2001-2010 Guan Xuetao
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
++
 +#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/pagemap.h>
++#include <linux/fs.h>
++#include <linux/string.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/rtc.h>
++#include <linux/bcd.h>
++#include <linux/clk.h>
++#include <linux/log2.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
 +
-+#include <asm/cacheflush.h>
-+#include <asm/system.h>
-+#include <asm/tlbflush.h>
++#include <asm/irq.h>
++#include <mach/hardware.h>
 +
-+void flush_cache_mm(struct mm_struct *mm)
++static struct resource *puv3_rtc_mem;
++
++static int puv3_rtc_alarmno = IRQ_RTCAlarm;
++static int puv3_rtc_tickno  = IRQ_RTC;
++
++static DEFINE_SPINLOCK(puv3_rtc_pie_lock);
++
++/* IRQ Handlers */
++
++static irqreturn_t puv3_rtc_alarmirq(int irq, void *id)
 +{
++	struct rtc_device *rdev = id;
++
++	RTC_RTSR |= RTC_RTSR_AL;
++	rtc_update_irq(rdev, 1, RTC_AF | RTC_IRQF);
++	return IRQ_HANDLED;
 +}
 +
-+void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
-+		unsigned long end)
++static irqreturn_t puv3_rtc_tickirq(int irq, void *id)
 +{
-+	if (vma->vm_flags & VM_EXEC)
-+		__flush_icache_all();
++	struct rtc_device *rdev = id;
++
++	RTC_RTSR |= RTC_RTSR_HZ;
++	rtc_update_irq(rdev, 1, RTC_PF | RTC_IRQF);
++	return IRQ_HANDLED;
 +}
 +
-+void flush_cache_page(struct vm_area_struct *vma, unsigned long user_addr,
-+		unsigned long pfn)
++/* Update control registers */
++static void puv3_rtc_setaie(int to)
 +{
++	unsigned int tmp;
++
++	pr_debug("%s: aie=%d\n", __func__, to);
++
++	tmp = RTC_RTSR & ~RTC_RTSR_ALE;
++
++	if (to)
++		tmp |= RTC_RTSR_ALE;
++
++	RTC_RTSR = tmp;
 +}
 +
-+static void flush_ptrace_access(struct vm_area_struct *vma, struct page *page,
-+			 unsigned long uaddr, void *kaddr, unsigned long len)
++static int puv3_rtc_setpie(struct device *dev, int enabled)
 +{
-+	/* VIPT non-aliasing D-cache */
-+	if (vma->vm_flags & VM_EXEC) {
-+		unsigned long addr = (unsigned long)kaddr;
++	unsigned int tmp;
 +
-+		__cpuc_coherent_kern_range(addr, addr + len);
++	pr_debug("%s: pie=%d\n", __func__, enabled);
++
++	spin_lock_irq(&puv3_rtc_pie_lock);
++	tmp = RTC_RTSR & ~RTC_RTSR_HZE;
++
++	if (enabled)
++		tmp |= RTC_RTSR_HZE;
++
++	RTC_RTSR = tmp;
++	spin_unlock_irq(&puv3_rtc_pie_lock);
++
++	return 0;
++}
++
++static int puv3_rtc_setfreq(struct device *dev, int freq)
++{
++	return 0;
++}
++
++/* Time read/write */
++
++static int puv3_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
++{
++	rtc_time_to_tm(RTC_RCNR, rtc_tm);
++
++	pr_debug("read time %02x.%02x.%02x %02x/%02x/%02x\n",
++		 rtc_tm->tm_year, rtc_tm->tm_mon, rtc_tm->tm_mday,
++		 rtc_tm->tm_hour, rtc_tm->tm_min, rtc_tm->tm_sec);
++
++	return 0;
++}
++
++static int puv3_rtc_settime(struct device *dev, struct rtc_time *tm)
++{
++	unsigned long rtc_count = 0;
++
++	pr_debug("set time %02d.%02d.%02d %02d/%02d/%02d\n",
++		 tm->tm_year, tm->tm_mon, tm->tm_mday,
++		 tm->tm_hour, tm->tm_min, tm->tm_sec);
++
++	rtc_tm_to_time(tm, &rtc_count);
++	RTC_RCNR = rtc_count;
++
++	return 0;
++}
++
++static int puv3_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct rtc_time *alm_tm = &alrm->time;
++
++	rtc_time_to_tm(RTC_RTAR, alm_tm);
++
++	alrm->enabled = RTC_RTSR & RTC_RTSR_ALE;
++
++	pr_debug("read alarm %02x %02x.%02x.%02x %02x/%02x/%02x\n",
++		 alrm->enabled,
++		 alm_tm->tm_year, alm_tm->tm_mon, alm_tm->tm_mday,
++		 alm_tm->tm_hour, alm_tm->tm_min, alm_tm->tm_sec);
++
++	return 0;
++}
++
++static int puv3_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct rtc_time *tm = &alrm->time;
++	unsigned long rtcalarm_count = 0;
++
++	pr_debug("puv3_rtc_setalarm: %d, %02x/%02x/%02x %02x.%02x.%02x\n",
++		 alrm->enabled,
++		 tm->tm_mday & 0xff, tm->tm_mon & 0xff, tm->tm_year & 0xff,
++		 tm->tm_hour & 0xff, tm->tm_min & 0xff, tm->tm_sec);
++
++	rtc_tm_to_time(tm, &rtcalarm_count);
++	RTC_RTAR = rtcalarm_count;
++
++	puv3_rtc_setaie(alrm->enabled);
++
++	if (alrm->enabled)
++		enable_irq_wake(puv3_rtc_alarmno);
++	else
++		disable_irq_wake(puv3_rtc_alarmno);
++
++	return 0;
++}
++
++static int puv3_rtc_proc(struct device *dev, struct seq_file *seq)
++{
++	seq_printf(seq, "periodic_IRQ\t: %s\n",
++		     (RTC_RTSR & RTC_RTSR_HZE) ? "yes" : "no");
++	return 0;
++}
++
++static int puv3_rtc_open(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = request_irq(puv3_rtc_alarmno, puv3_rtc_alarmirq,
++			  IRQF_DISABLED,  "pkunity-rtc alarm", rtc_dev);
++
++	if (ret) {
++		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_alarmno, ret);
++		return ret;
++	}
++
++	ret = request_irq(puv3_rtc_tickno, puv3_rtc_tickirq,
++			  IRQF_DISABLED,  "pkunity-rtc tick", rtc_dev);
++
++	if (ret) {
++		dev_err(dev, "IRQ%d error %d\n", puv3_rtc_tickno, ret);
++		goto tick_err;
++	}
++
++	return ret;
++
++ tick_err:
++	free_irq(puv3_rtc_alarmno, rtc_dev);
++	return ret;
++}
++
++static void puv3_rtc_release(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
++
++	/* do not clear AIE here, it may be needed for wake */
++
++	puv3_rtc_setpie(dev, 0);
++	free_irq(puv3_rtc_alarmno, rtc_dev);
++	free_irq(puv3_rtc_tickno, rtc_dev);
++}
++
++static const struct rtc_class_ops puv3_rtcops = {
++	.open		= puv3_rtc_open,
++	.release	= puv3_rtc_release,
++	.read_time	= puv3_rtc_gettime,
++	.set_time	= puv3_rtc_settime,
++	.read_alarm	= puv3_rtc_getalarm,
++	.set_alarm	= puv3_rtc_setalarm,
++	.irq_set_freq	= puv3_rtc_setfreq,
++	.irq_set_state	= puv3_rtc_setpie,
++	.proc	        = puv3_rtc_proc,
++};
++
++static void puv3_rtc_enable(struct platform_device *pdev, int en)
++{
++	if (!en) {
++		RTC_RTSR &= ~RTC_RTSR_HZE;
++	} else {
++		/* re-enable the device, and check it is ok */
++
++		if ((RTC_RTSR & RTC_RTSR_HZE) == 0) {
++			dev_info(&pdev->dev, "rtc disabled, re-enabling\n");
++			RTC_RTSR |= RTC_RTSR_HZE;
++		}
 +	}
 +}
 +
-+/*
-+ * Copy user data from/to a page which is mapped into a different
-+ * processes address space.  Really, we want to allow our "user
-+ * space" model to handle this.
-+ *
-+ * Note that this code needs to run on the current CPU.
-+ */
-+void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
-+		       unsigned long uaddr, void *dst, const void *src,
-+		       unsigned long len)
++static int puv3_rtc_remove(struct platform_device *dev)
 +{
-+	memcpy(dst, src, len);
-+	flush_ptrace_access(vma, page, uaddr, dst, len);
++	struct rtc_device *rtc = platform_get_drvdata(dev);
++
++	platform_set_drvdata(dev, NULL);
++	rtc_device_unregister(rtc);
++
++	puv3_rtc_setpie(&dev->dev, 0);
++	puv3_rtc_setaie(0);
++
++	release_resource(puv3_rtc_mem);
++	kfree(puv3_rtc_mem);
++
++	return 0;
 +}
 +
-+void __flush_dcache_page(struct address_space *mapping, struct page *page)
++static int puv3_rtc_probe(struct platform_device *pdev)
 +{
-+	/*
-+	 * Writeback any data associated with the kernel mapping of this
-+	 * page.  This ensures that data in the physical page is mutually
-+	 * coherent with the kernels mapping.
-+	 */
-+	__cpuc_flush_kern_dcache_area(page_address(page), PAGE_SIZE);
-+}
++	struct rtc_device *rtc;
++	struct resource *res;
++	int ret;
 +
-+/*
-+ * Ensure cache coherency between kernel mapping and userspace mapping
-+ * of this page.
-+ */
-+void flush_dcache_page(struct page *page)
-+{
-+	struct address_space *mapping;
++	pr_debug("%s: probe=%p\n", __func__, pdev);
 +
-+	/*
-+	 * The zero page is never written to, so never has any dirty
-+	 * cache lines, and therefore never needs to be flushed.
-+	 */
-+	if (page == ZERO_PAGE(0))
-+		return;
++	/* find the IRQs */
 +
-+	mapping = page_mapping(page);
-+
-+	if (mapping && !mapping_mapped(mapping))
-+		clear_bit(PG_dcache_clean, &page->flags);
-+	else {
-+		__flush_dcache_page(mapping, page);
-+		if (mapping)
-+			__flush_icache_all();
-+		set_bit(PG_dcache_clean, &page->flags);
++	puv3_rtc_tickno = platform_get_irq(pdev, 1);
++	if (puv3_rtc_tickno < 0) {
++		dev_err(&pdev->dev, "no irq for rtc tick\n");
++		return -ENOENT;
 +	}
++
++	puv3_rtc_alarmno = platform_get_irq(pdev, 0);
++	if (puv3_rtc_alarmno < 0) {
++		dev_err(&pdev->dev, "no irq for alarm\n");
++		return -ENOENT;
++	}
++
++	pr_debug("PKUnity_rtc: tick irq %d, alarm irq %d\n",
++		 puv3_rtc_tickno, puv3_rtc_alarmno);
++
++	/* get the memory region */
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res == NULL) {
++		dev_err(&pdev->dev, "failed to get memory region resource\n");
++		return -ENOENT;
++	}
++
++	puv3_rtc_mem = request_mem_region(res->start,
++					 res->end-res->start+1,
++					 pdev->name);
++
++	if (puv3_rtc_mem == NULL) {
++		dev_err(&pdev->dev, "failed to reserve memory region\n");
++		ret = -ENOENT;
++		goto err_nores;
++	}
++
++	puv3_rtc_enable(pdev, 1);
++
++	puv3_rtc_setfreq(&pdev->dev, 1);
++
++	/* register RTC and exit */
++
++	rtc = rtc_device_register("pkunity", &pdev->dev, &puv3_rtcops,
++				  THIS_MODULE);
++
++	if (IS_ERR(rtc)) {
++		dev_err(&pdev->dev, "cannot attach rtc\n");
++		ret = PTR_ERR(rtc);
++		goto err_nortc;
++	}
++
++	/* platform setup code should have handled this; sigh */
++	if (!device_can_wakeup(&pdev->dev))
++		device_init_wakeup(&pdev->dev, 1);
++
++	platform_set_drvdata(pdev, rtc);
++	return 0;
++
++ err_nortc:
++	puv3_rtc_enable(pdev, 0);
++	release_resource(puv3_rtc_mem);
++
++ err_nores:
++	return ret;
 +}
-+EXPORT_SYMBOL(flush_dcache_page);
-diff --git a/arch/unicore32/mm/tlb-ucv2.S b/arch/unicore32/mm/tlb-ucv2.S
++
++#ifdef CONFIG_PM
++
++/* RTC Power management control */
++
++static int ticnt_save;
++
++static int puv3_rtc_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	/* save RTAR for anyone using periodic interrupts */
++	ticnt_save = RTC_RTAR;
++	puv3_rtc_enable(pdev, 0);
++	return 0;
++}
++
++static int puv3_rtc_resume(struct platform_device *pdev)
++{
++	puv3_rtc_enable(pdev, 1);
++	RTC_RTAR = ticnt_save;
++	return 0;
++}
++#else
++#define puv3_rtc_suspend NULL
++#define puv3_rtc_resume  NULL
++#endif
++
++static struct platform_driver puv3_rtcdrv = {
++	.probe		= puv3_rtc_probe,
++	.remove		= __devexit_p(puv3_rtc_remove),
++	.suspend	= puv3_rtc_suspend,
++	.resume		= puv3_rtc_resume,
++	.driver		= {
++		.name	= "PKUnity-v3-RTC",
++		.owner	= THIS_MODULE,
++	}
++};
++
++static char __initdata banner[] = "PKUnity-v3 RTC, (c) 2009 PKUnity Co.\n";
++
++static int __init puv3_rtc_init(void)
++{
++	printk(banner);
++	return platform_driver_register(&puv3_rtcdrv);
++}
++
++static void __exit puv3_rtc_exit(void)
++{
++	platform_driver_unregister(&puv3_rtcdrv);
++}
++
++module_init(puv3_rtc_init);
++module_exit(puv3_rtc_exit);
++
++MODULE_DESCRIPTION("RTC Driver for the PKUnity v3 chip");
++MODULE_AUTHOR("Hu Dongliang");
++MODULE_LICENSE("GPL v2");
++
+diff --git a/arch/unicore32/kernel/time.c b/arch/unicore32/kernel/time.c
 new file mode 100644
-index 0000000..061d455
+index 0000000..8090d76
 --- /dev/null
-+++ b/arch/unicore32/mm/tlb-ucv2.S
-@@ -0,0 +1,89 @@
++++ b/arch/unicore32/kernel/time.c
+@@ -0,0 +1,148 @@
 +/*
-+ * linux/arch/unicore32/mm/tlb-ucv2.S
++ * linux/arch/unicore32/kernel/time.c
 + *
 + * Code specific to PKUnity SoC and UniCore ISA
 + *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
++ *	Copyright (C) 2001-2010 Guan Xuetao
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +#include <linux/init.h>
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+#include <asm/page.h>
-+#include <asm/tlbflush.h>
-+#include "proc-macros.S"
++#include <linux/errno.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/timex.h>
++#include <linux/clockchips.h>
 +
-+/*
-+ *	__cpu_flush_user_tlb_range(start, end, vma)
-+ *
-+ *	Invalidate a range of TLB entries in the specified address space.
-+ *
-+ *	- start - start address (may not be aligned)
-+ *	- end   - end address (exclusive, may not be aligned)
-+ *	- vma   - vma_struct describing address range
-+ */
-+ENTRY(__cpu_flush_user_tlb_range)
-+#ifndef	CONFIG_CPU_TLB_SINGLE_ENTRY_DISABLE
-+	mov	r0, r0 >> #PAGE_SHIFT		@ align address
-+	mov	r0, r0 << #PAGE_SHIFT
-+	vma_vm_flags r2, r2			@ get vma->vm_flags
-+1:
-+	movc	p0.c6, r0, #3
-+	nop8
++#include <mach/hardware.h>
 +
-+	cand.a	r2, #VM_EXEC			@ Executable area ?
-+	beq	2f
++#define MIN_OSCR_DELTA 2
 +
-+	movc	p0.c6, r0, #5
-+	nop8
-+2:
-+	add	r0, r0, #PAGE_SZ
-+	csub.a	r0, r1
-+	beb	1b
++static irqreturn_t puv3_ost0_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *c = dev_id;
++
++	/* Disarm the compare/match, signal the event. */
++	OST_OIER &= ~OST_OIER_E0;
++	OST_OSSR &= ~OST_OSSR_M0;
++	c->event_handler(c);
++
++	return IRQ_HANDLED;
++}
++
++static int
++puv3_osmr0_set_next_event(unsigned long delta, struct clock_event_device *c)
++{
++	unsigned long next, oscr;
++
++	OST_OIER |= OST_OIER_E0;
++	next = OST_OSCR + delta;
++	OST_OSMR0 = next;
++	oscr = OST_OSCR;
++
++	return (signed)(next - oscr) <= MIN_OSCR_DELTA ? -ETIME : 0;
++}
++
++static void
++puv3_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *c)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_ONESHOT:
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		OST_OIER &= ~OST_OIER_E0;
++		OST_OSSR &= ~OST_OSSR_M0;
++		break;
++
++	case CLOCK_EVT_MODE_RESUME:
++	case CLOCK_EVT_MODE_PERIODIC:
++		break;
++	}
++}
++
++static struct clock_event_device ckevt_puv3_osmr0 = {
++	.name		= "osmr0",
++	.features	= CLOCK_EVT_FEAT_ONESHOT,
++#ifdef CONFIG_ARCH_FPGA
++	.shift		= 18, /* correct shift val: 16, but warn_on_slowpath */
 +#else
-+	movc	p0.c6, r0, #2
-+	nop8
-+
-+	cand.a	r2, #VM_EXEC			@ Executable area ?
-+	beq	2f
-+
-+	movc	p0.c6, r0, #4
-+	nop8
-+2:
++	.shift          = 30,
 +#endif
-+	mov	pc, lr
++	.rating		= 200,
++	.set_next_event	= puv3_osmr0_set_next_event,
++	.set_mode	= puv3_osmr0_set_mode,
++};
 +
-+/*
-+ *	__cpu_flush_kern_tlb_range(start,end)
-+ *
-+ *	Invalidate a range of kernel TLB entries
-+ *
-+ *	- start - start address (may not be aligned)
-+ *	- end   - end address (exclusive, may not be aligned)
-+ */
-+ENTRY(__cpu_flush_kern_tlb_range)
-+#ifndef	CONFIG_CPU_TLB_SINGLE_ENTRY_DISABLE
-+	mov	r0, r0 >> #PAGE_SHIFT		@ align address
-+	mov	r0, r0 << #PAGE_SHIFT
-+1:
-+	movc	p0.c6, r0, #3
-+	nop8
++static cycle_t puv3_read_oscr(struct clocksource *cs)
++{
++	return OST_OSCR;
++}
 +
-+	movc	p0.c6, r0, #5
-+	nop8
++static struct clocksource cksrc_puv3_oscr = {
++	.name		= "oscr",
++	.rating		= 200,
++	.read		= puv3_read_oscr,
++	.mask		= CLOCKSOURCE_MASK(32),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
 +
-+	add	r0, r0, #PAGE_SZ
-+	csub.a	r0, r1
-+	beb	1b
++static struct irqaction puv3_timer_irq = {
++	.name		= "ost0",
++	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.handler	= puv3_ost0_interrupt,
++	.dev_id		= &ckevt_puv3_osmr0,
++};
++
++void __init time_init(void)
++{
++	OST_OIER = 0;		/* disable any timer interrupts */
++	OST_OSSR = 0;		/* clear status on all timers */
++
++	ckevt_puv3_osmr0.mult =
++		div_sc(CLOCK_TICK_RATE, NSEC_PER_SEC, ckevt_puv3_osmr0.shift);
++	ckevt_puv3_osmr0.max_delta_ns =
++		clockevent_delta2ns(0x7fffffff, &ckevt_puv3_osmr0);
++	ckevt_puv3_osmr0.min_delta_ns =
++		clockevent_delta2ns(MIN_OSCR_DELTA * 2, &ckevt_puv3_osmr0) + 1;
++	ckevt_puv3_osmr0.cpumask = cpumask_of(0);
++
++	setup_irq(IRQ_TIMER0, &puv3_timer_irq);
++
++	clocksource_register_hz(&cksrc_puv3_oscr, CLOCK_TICK_RATE);
++	clockevents_register_device(&ckevt_puv3_osmr0);
++}
++
++#ifdef CONFIG_PM
++unsigned long osmr[4], oier;
++
++void puv3_timer_suspend(void)
++{
++	osmr[0] = OST_OSMR0;
++	osmr[1] = OST_OSMR1;
++	osmr[2] = OST_OSMR2;
++	osmr[3] = OST_OSMR3;
++	oier = OST_OIER;
++}
++
++void puv3_timer_resume(void)
++{
++	OST_OSSR = 0;
++	OST_OSMR0 = osmr[0];
++	OST_OSMR1 = osmr[1];
++	OST_OSMR2 = osmr[2];
++	OST_OSMR3 = osmr[3];
++	OST_OIER = oier;
++
++	/*
++	 * OSMR0 is the system timer: make sure OSCR is sufficiently behind
++	 */
++	OST_OSCR = OST_OSMR0 - LATCH;
++}
 +#else
-+	movc	p0.c6, r0, #2
-+	nop8
-+
-+	movc	p0.c6, r0, #4
-+	nop8
++void puv3_timer_suspend(void) { };
++void puv3_timer_resume(void) { };
 +#endif
-+	mov	pc, lr
 +
 -- 
 1.7.0.4
