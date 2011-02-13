@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab1BMPUd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 10:20:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57992 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab1BMPUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 10:20:25 -0500
-Message-ID: <4D57F677.3090004@redhat.com>
-Date: Sun, 13 Feb 2011 17:19:19 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754426Ab1BMPVt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 10:21:49 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:34755 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab1BMPVm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 10:21:42 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #27842] [regression?] hang with 2.6.37 on a BTRFS test machine
+Date: Sun, 13 Feb 2011 16:21:25 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <9Pzlq5PlEtH.A.DU.efxVNB@chimera> <1z1FRILH7uF.A.N2.-fxVNB@chimera> (sfid-20110213_161838_638798_F8FAD00E)
+In-Reply-To: <1z1FRILH7uF.A.N2.-fxVNB@chimera>
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 0/6] KVM support for TSC scaling
-References: <1297272584-22689-1-git-send-email-joerg.roedel@amd.com>
-In-Reply-To: <1297272584-22689-1-git-send-email-joerg.roedel@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: multipart/signed;
+  boundary="nextPart3280872.JHrJ3yes0b";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102131621.39691.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2011 07:29 PM, Joerg Roedel wrote:
-> Hi Avi, Marcelo,
->
-> here is the patch-set to implement the TSC-scaling feature of upcoming
-> AMD CPUs. When this feature is supported the CPU provides a new MSR
-> which holds a multiplier for the hardware TSC which is applied on the
-> value rdtsc[p] and reads of MSR 0x10. This feature can be used to
-> emulate a given tsc frequency for the guest.
-> Patch 1 is not directly related to this patch-set because it only fixes
-> a bug which prevented me from testing these patches. In fact it fixes
-> the same bug Andre sent a patch for. But after the discussion about his
-> patch he told me to just post my patch and thus here it is.
->
+--nextPart3280872.JHrJ3yes0b
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Questions:
-- the tsc multiplier really is a multiplier, right?  Not an addend that 
-is added every cycle.
+Am Sunday 13 February 2011 schrieb Rafael J. Wysocki:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.36 and 2.6.37.
+>=20
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>=20
+>=20
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D27842
+> Subject		: [regression?] hang with 2.6.37 on a BTRFS test machine
+> Submitter	: Martin Steigerwald <Martin@lichtvoll.de>
+> Date		: 2011-01-23 12:06 (21 days old)
+> Message-ID	: <<201101231306.23069.Martin@lichtvoll.de>>
+> References	: http://marc.info/?l=3Dlinux-kernel&m=3D129578445613283&w=3D2
 
-So
+Please still list it.
 
-     wrmsr(TSC, 1e9)
-     wrmsr(TSC_MULT, 2.0000)
-     t = rdtsc()
+I intend to test this against 2.6.38-rc5 once it is out. It didn't happen=20
+with 2.6.36 which I used for several weeks now, so its pretty safe to say=20
+that its a regression of 2.6.37.
 
-will return about 2e9, not 1e9 + 2*(time to execute the code snippet) ?
+Thanks,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
 
-- what's the cost of wrmsr(TSC_MULT)?
+--nextPart3280872.JHrJ3yes0b
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-There are really two ways to implement this feature.  One is fully 
-generic, like you did.  The other is to implement it at the host level - 
-have a sysfs file and/or kernel parameter for the desired tsc frequency, 
-write it once, and forget about it.  Trust management to set the host 
-tsc frequency to the same value on all hosts in a migration cluster.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-The advantages of the the simpler implementation are, well, that it's 
-simpler, and second that it avoids two wrmsrs per exit.  We could 
-combine both implementations, and have
+iEYEABECAAYFAk1X9vUACgkQmRvqrKWZhMdBPgCfTeyL4hm972cX4XsJ3/a0DjIN
+Mp0Amwf47h/xC5jVVkCvzHs7MQjVeToF
+=795I
+-----END PGP SIGNATURE-----
 
-   if (guest_mult != host_mult)
-       wrmsr(TSC_MULT, guest_mult)
-
-etc.  But I'd like to understand if there are additional motivations for 
-per-guest tsc frequency.
-
--- 
-error compiling committee.c: too many arguments to function
-
+--nextPart3280872.JHrJ3yes0b--
