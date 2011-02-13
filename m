@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab1BMRkG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 12:40:06 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37540 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751155Ab1BMRkC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 12:40:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
- <m1hbce46fw.fsf@fess.ebiederm.org> <AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
- <m1bp2ly41q.fsf@fess.ebiederm.org> <AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
- <AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 13 Feb 2011 09:39:39 -0800
-Message-ID: <AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
-Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
-To: Alex Riesen <raa.lkml@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754772Ab1BMRpk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 12:45:40 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:59407 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752371Ab1BMRpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 12:45:36 -0500
+Date: Sun, 13 Feb 2011 09:45:26 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Timo von Holtz <tvh@informatik.uni-kiel.de>
+Cc: gregkh@suse.de, akpm@linux-foundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, cjb@laptop.org, jon.nettleton@gmail.com
+Subject: Re: [PATCH] Staging: olpc_dcon: fixed some coding style issues
+Message-ID: <20110213094526.4677efe3@queued.net>
+In-Reply-To: <1297617298-25238-1-git-send-email-tvh@informatik.uni-kiel.de>
+References: <1297617298-25238-1-git-send-email-tvh@informatik.uni-kiel.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 9, 2011 at 8:02 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Well, the thing is, Eric said he was using ext4.
->
-> And there are absolutely no changes I can see after -rc3 that would
-> affect anything like this.
+Sorry, Nack.  This conflicts with patches that have been sent to Greg
+already.  Please send against those, once they've been merged.
 
-Hmm. Eric - mind testing current -git?
+http://article.gmane.org/gmane.linux.drivers.driver-project.devel/12152/
 
-J. R. Okajima found a possible problem with the new RCU filename
-lookup, which could corrupt the filp_cache. I'd expect the normal
-result to be an oops, but maybe there could be memory corruption. And
-the easiest way to trigger it would probably be to have lots of
-concurrent fs activity with renames.
 
-Now, it's not new to -rc4: the whole rcu lookup thing was merged into
--rc1. But since I still don't see anything that looks likely to be
-introduced after -rc3, it might not hurt to think that maybe it's just
-rare enough that you just thought -rc3 was ok, and then you were
-unlucky with -rc4.
+On Sun, 13 Feb 2011 18:14:58 +0100
+Timo von Holtz <tvh@informatik.uni-kiel.de> wrote:
 
-                                Linus
+> Fixed all coding style issues in the files
+> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+> drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+> 
+> Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
+> ---
