@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab1BMUh5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 15:37:57 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:55408 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab1BMUhu (ORCPT
+	id S1754942Ab1BMUmR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 15:42:17 -0500
+Received: from mail-in-18.arcor-online.net ([151.189.21.58]:43325 "EHLO
+	mail-in-18.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754855Ab1BMUmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 15:37:50 -0500
-Date: Sun, 13 Feb 2011 21:34:17 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Seblu <seblu@seblu.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Ivan Vecera <ivecera@redhat.com>
-Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
-Message-ID: <20110213203417.GA11442@electric-eye.fr.zoreil.com>
-References: <AANLkTin7GBSTcfZgr_9sNZ8CPMkW7Vstni+fs2v1-ink@mail.gmail.com> <1297581470.2510.18.camel@edumazet-laptop> <20110213135600.GA11382@electric-eye.fr.zoreil.com> <AANLkTikTw71-mv9WsPT8PxC1a1nwEJ=x0UNDhVQGP1A6@mail.gmail.com> <AANLkTikLOJ-XcwfdbWS19DKzh2s91tn5pQjJe0+CeAN-@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikLOJ-XcwfdbWS19DKzh2s91tn5pQjJe0+CeAN-@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Sun, 13 Feb 2011 15:42:13 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-14.arcor-online.net 889D29BEF2
+Message-Id: <E1PoilV-0002pC-6Z@be1.7eggert.dyndns.org>
+From: Bodo Eggert 
+	<arcoristkaputtundbrauchtdiesentext.7eggert@nurfuerspam.de>
+Subject: Re: [PATCH] loop: clear read-only flag in loop_clr_fd.
+To: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+Reply-To: 7eggert@nurfuerspam.de
+Date: Sun, 13 Feb 2011 21:41:51 +0100
+References: <glzzr-4Jt-1@gated-at.bofh.it> <glHQm-1vQ-25@gated-at.bofh.it>
+User-Agent: KNode/0.10.9
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seblu <seblu@seblu.net> :
-[...]
-> > NIC seems to be reset frequently but host stop rebooting. \o//
-> ok after about 1 hour of iperf, host reboot.
+Tao Ma <tm@tao.ma> wrote:
 
-Can you apply the patch below on top of 2.6.38-rc4 ?
+> --- a/drivers/block/loop.c
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 59ccf0c..5d64b80 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -4645,6 +4645,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
- 			switch (tp->mac_version) {
- 			/* Work around for rx fifo overflow */
- 			case RTL_GIGA_MAC_VER_11:
-+			case RTL_GIGA_MAC_VER_20:
- 			case RTL_GIGA_MAC_VER_22:
- 			case RTL_GIGA_MAC_VER_26:
- 				netif_stop_queue(dev);
-@@ -4653,7 +4654,6 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
- 			/* Testers needed. */
- 			case RTL_GIGA_MAC_VER_17:
- 			case RTL_GIGA_MAC_VER_19:
--			case RTL_GIGA_MAC_VER_20:
- 			case RTL_GIGA_MAC_VER_21:
- 			case RTL_GIGA_MAC_VER_23:
- 			case RTL_GIGA_MAC_VER_24:
+> -     if (bdev)
+> +     if (bdev) {
+> +             set_device_ro(bdev, 0);
+>  invalidate_bdev(bdev);
+> +     }
+>  set_capacity(lo->lo_disk, 0);
+>  loop_sysfs_exit(lo);
+>  if (bdev) {
+
+This looks like set_device_ro() should imply invalidate_bdev().
+-- 
+E.G.G.E.R.T.: Electronic Guardian Generated for 
+              Efficient Repair and Troubleshooting
+        -- http://www.brunching.com/toys/toy-cyborger.html (down)
+Friß, Spammer: PanIhbEe3@y.7eggert.dyndns.org iNEC@zy1oe.7eggert.dyndns.org
+
