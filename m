@@ -1,26 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab1BMLul (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 06:50:41 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:58477 "EHLO mgw2.diku.dk"
+	id S1754521Ab1BMLu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 06:50:57 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:58481 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754107Ab1BMLud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 06:50:33 -0500
+	id S1754131Ab1BMLue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 06:50:34 -0500
 From: Julia Lawall <julia@diku.dk>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 0/5] Convert release_resource to release_region/release_mem_region
-Date: Sun, 13 Feb 2011 13:12:07 +0100
-Message-Id: <1297599132-7226-1-git-send-email-julia@diku.dk>
+To: ben-linux@fluff.org
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] drivers/i2c/busses/i2c-au1550.c: Convert release_resource to release_region/release_mem_region
+Date: Sun, 13 Feb 2011 13:12:08 +0100
+Message-Id: <1297599132-7226-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1297599132-7226-1-git-send-email-julia@diku.dk>
+References: <1297599132-7226-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Request_region should be used with release_region, not release_resource.
 
-The changes are somewhat complicated, so I have only done a few cases to
-start with.
+The result of request_mem_region is no longer stored.  Instead the field
+ioarea is used to store a pointer to the resource structure that contains
+the start address.  This is the information that is needed later in
+i2c_au1550_remove to release the region.  The field ioarea is not used for
+anything else.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -39,45 +45,57 @@ expression x,E;
 * release_resource(x);
 // </smpl>
 
-The complete set of files in which this semantic match finds problesm is as
-follows:
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-arch/unicore32/kernel/rtc.c
-arch/x86/pci/direct.c
-drivers/char/hw_random/omap-rng.c
-drivers/char/pcmcia/ipwireless/main.c
-drivers/i2c/busses/i2c-au1550.c
-drivers/i2c/busses/i2c-nuc900.c
-drivers/i2c/busses/i2c-s3c2410.c
-drivers/i2c/busses/i2c-sh7760.c
-drivers/i2c/busses/i2c-simtec.c
-drivers/media/video/s5p-fimc/fimc-core.c
-drivers/mfd/sm501.c
-drivers/misc/atmel_tclib.c
-drivers/mmc/host/au1xmmc.c
-drivers/mmc/host/davinci_mmc.c
-drivers/mmc/host/mvsdio.c
-drivers/mmc/host/pxamci.c
-drivers/mmc/host/sdhci-s3c.c
-drivers/mtd/maps/ceiva.c
-drivers/net/a2065.c
-drivers/net/ariadne.c
-drivers/net/arm/ixp4xx_eth.c
-drivers/net/ax88796.c
-drivers/parport/parport_ax88796.c
-drivers/parport/parport_pc.c
-drivers/rtc/rtc-s3c.c
-drivers/spi/au1550_spi.c
-drivers/spi/spi_s3c24xx.c
-drivers/tty/serial/sh-sci.c
-drivers/tty/serial/vr41xx_siu.c
-drivers/usb/gadget/s3c-hsotg.c
-drivers/video/s3c-fb.c
-drivers/video/s3c2410fb.c
-drivers/video/sh7760fb.c
-drivers/video/sm501fb.c
-drivers/watchdog/davinci_wdt.c
-drivers/watchdog/max63xx_wdt.c
-drivers/watchdog/pnx4008_wdt.c
-drivers/watchdog/s3c2410_wdt.c
+---
+Not compiled due to incompatible architecture.
+
+ drivers/i2c/busses/i2c-au1550.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-au1550.c b/drivers/i2c/busses/i2c-au1550.c
+index 532828b..2ec78d7 100644
+--- a/drivers/i2c/busses/i2c-au1550.c
++++ b/drivers/i2c/busses/i2c-au1550.c
+@@ -389,13 +389,12 @@ i2c_au1550_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
+-	priv->ioarea = request_mem_region(r->start, resource_size(r),
+-					  pdev->name);
+-	if (!priv->ioarea) {
++	if (!request_mem_region(r->start, resource_size(r), pdev->name)) {
+ 		ret = -EBUSY;
+ 		goto out_mem;
+ 	}
+ 
++	priv->ioarea = r;
+ 	priv->psc_base = CKSEG1ADDR(r->start);
+ 	priv->xfer_timeout = 200;
+ 	priv->ack_timeout = 200;
+@@ -418,8 +417,7 @@ i2c_au1550_probe(struct platform_device *pdev)
+ 
+ 	i2c_au1550_disable(priv);
+ 
+-	release_resource(priv->ioarea);
+-	kfree(priv->ioarea);
++	release_mem_region(r->start, resource_size(r));
+ out_mem:
+ 	kfree(priv);
+ out:
+@@ -430,12 +428,12 @@ static int __devexit
+ i2c_au1550_remove(struct platform_device *pdev)
+ {
+ 	struct i2c_au1550_data *priv = platform_get_drvdata(pdev);
++	struct resource *r = priv->ioarea;
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 	i2c_del_adapter(&priv->adap);
+ 	i2c_au1550_disable(priv);
+-	release_resource(priv->ioarea);
+-	kfree(priv->ioarea);
++	release_mem_region(r->start, resource_size(r));
+ 	kfree(priv);
+ 	return 0;
+ }
 
