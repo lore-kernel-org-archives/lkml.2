@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab1BMQoo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 11:44:44 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44319 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab1BMQoi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 11:44:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mRu/10I0Am1zZIosbmIqfvq32N9AP3V0NAWl2eOd2+mnfi6o/YrstHhEMHBrvJ0mmO
-         Up4mJAlSEk7DdgiN5bni2INTwEqTI3PjoCFsiDMm2tw6FwrV3UD19uAllHnCWDjTC3U+
-         zaQWK52RAuBs10oKfA0J/QhUgTIpr07vJryhc=
-From: Imran Haider <imran1008@gmail.com>
-To: rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, Imran Haider <imran1008@gmail.com>
-Subject: [PATCH] module: Fix bug: read __param section as pointers to object
-Date: Sun, 13 Feb 2011 11:29:14 -0500
-Message-Id: <1297614554-24373-1-git-send-email-imran1008@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754699Ab1BMQpK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 11:45:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754604Ab1BMQpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 11:45:06 -0500
+Message-ID: <4D580A8B.5050508@redhat.com>
+Date: Sun, 13 Feb 2011 17:44:59 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Tao Ma <tm@tao.ma>
+CC: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] loop: clear read-only flag in loop_clr_fd.
+References: <4D573BBB.6090200@redhat.com> <1297594735-5593-1-git-send-email-tm@tao.ma> <4D57E67E.1030707@redhat.com> <4D57F357.6060708@tao.ma>
+In-Reply-To: <4D57F357.6060708@tao.ma>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent changes in commit 3834583b causes module parameters to be stored
-in the __param section as pointer to struct instead of the struct itself.
-module.c was still reading the section as an array of struct which caused
-modules to not load when any module parameter is specified.
----
- include/linux/module.h |    2 +-
- kernel/module.c        |   10 +++++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+On 02/13/2011 04:05 PM, Tao Ma wrote:
+> On 02/13/2011 10:11 PM, Milan Broz wrote:
+>> On 02/13/2011 11:58 AM, Tao Ma wrote:
+>>    
+>>> From: Tao Ma<boyu.mt@taobao.com>
+>>>
+>>> In 75f1dc0, we check bdev_read_only() from blkdev_get().
+>>> But the loop_clr_fd doesn't clear the read only flag.
+>>> What cause a error if we changing a loop device from
+>>> read only to writable.
+>>>      
+>> No, sorry, this is not proper/complete fix. It fixes it for loop
+>> (and even not completely - you are missing some error
+>> paths and ignoring autoclear mode where you have bdev NULL.)
+>> (And yes, I tried the same as workaround.)
+>>    
+> aha, sorry, I don't know you are more familiar with loop than me. ;)
+> I just did a quick test and sent the patch. So could you please tell me
+> a little more about how we use autoclear mode?
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index cb41837..5f843dc 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -292,7 +292,7 @@ struct module
- 	unsigned int num_syms;
- 
- 	/* Kernel parameters. */
--	struct kernel_param *kp;
-+	struct kernel_param **kpp;
- 	unsigned int num_kp;
- 
- 	/* GPL-only exported symbols. */
-diff --git a/kernel/module.c b/kernel/module.c
-index efa290e..314b39d 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1693,7 +1693,7 @@ static void free_module(struct module *mod)
- 	module_unload_free(mod);
- 
- 	/* Free any allocated parameters. */
--	destroy_params(mod->kp, mod->num_kp);
-+	destroy_params(*mod->kpp, mod->num_kp);
- 
- 	/* This may be NULL, but that's OK */
- 	unset_section_ro_nx(mod, mod->module_init);
-@@ -2429,8 +2429,8 @@ static int check_modinfo(struct module *mod, struct load_info *info)
- 
- static void find_module_sections(struct module *mod, struct load_info *info)
- {
--	mod->kp = section_objs(info, "__param",
--			       sizeof(*mod->kp), &mod->num_kp);
-+	mod->kpp = section_objs(info, "__param",
-+			       sizeof(void *), &mod->num_kp);
- 	mod->syms = section_objs(info, "__ksymtab",
- 				 sizeof(*mod->syms), &mod->num_syms);
- 	mod->crcs = section_addr(info, "__kcrctab");
-@@ -2803,12 +2803,12 @@ static struct module *load_module(void __user *umod,
- 	mutex_unlock(&module_mutex);
- 
- 	/* Module is ready to execute: parsing args may do that. */
--	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
-+	err = parse_args(mod->name, mod->args, *(mod->kpp), mod->num_kp, NULL);
- 	if (err < 0)
- 		goto unlink;
- 
- 	/* Link in to syfs. */
--	err = mod_sysfs_setup(mod, &info, mod->kp, mod->num_kp);
-+	err = mod_sysfs_setup(mod, &info, *(mod->kpp), mod->num_kp);
- 	if (err < 0)
- 		goto unlink;
- 
--- 
-1.7.3.4
+When the autoclear flag is set, the loop device is deallocated with
+the last close. So you can mount device over loop and after umount
+the loop is automatically cleared (no need for losetup -d).
+(I think this flag was not exported to losetup yet, so you need to use
+ioctl flag yourself.)
 
+> I will try to update my patch with a V2 when I get familiar with the whole stuff.
+
+I would like Tejun tell us what the intention was here.
+There are some paths which are not so clear (this one in loop device is easy),
+so that code need to be audited.
+
+> Actually I don't think it is Tejun's patch that causes the bug.
+
+It is quite possible. But it worked before and this patch did not
+fix these problems, so it is regression.
+
+> Say loop, it sets ro when it get read  only flags, but doesn't clear it when it is detached.
+
+You can very easily create another bug here if you set device read-write
+too early (while udev is still processing change/remove events).
+
+Milan
