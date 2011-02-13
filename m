@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1BMLvf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 06:51:35 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:58501 "EHLO mgw2.diku.dk"
+	id S1754561Ab1BMLvS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 06:51:18 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:58491 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754394Ab1BMLul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 06:50:41 -0500
+	id S1754270Ab1BMLui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 06:50:38 -0500
 From: Julia Lawall <julia@diku.dk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: kernel-janitors@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] arch/x86/pci/direct.c: Convert release_resource to release_region/release_mem_region
-Date: Sun, 13 Feb 2011 13:12:11 +0100
-Message-Id: <1297599132-7226-5-git-send-email-julia@diku.dk>
+To: Deepak Saxena <dsaxena@plexity.net>
+Cc: kernel-janitors@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drivers/char/hw_random/omap-rng.c: Convert release_resource to release_region/release_mem_region
+Date: Sun, 13 Feb 2011 13:12:09 +0100
+Message-Id: <1297599132-7226-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297599132-7226-1-git-send-email-julia@diku.dk>
 References: <1297599132-7226-1-git-send-email-julia@diku.dk>
@@ -23,9 +23,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Request_region should be used with release_region, not release_resource.
 
-The local variables region and region2 are dropped and the calls to
-release_resource are replaced with calls to release_region, using the first
-two arguments of the corresponding calls to request_region.
+The local variable mem, storing the result of request_mem_region, is
+dropped and instead the pointer res is stored in the drvdata field of the
+platform device.  This information is retrieved in omap_rng_remove to
+release the region.  The drvdata field is not used elsewhere.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -47,58 +48,66 @@ expression x,E;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-Compiled, not tested.
+Not compiled.
 
- arch/x86/pci/direct.c |   17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/char/hw_random/omap-rng.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/pci/direct.c b/arch/x86/pci/direct.c
-index bd33620..e6fd847 100644
---- a/arch/x86/pci/direct.c
-+++ b/arch/x86/pci/direct.c
-@@ -280,12 +280,9 @@ void __init pci_direct_init(int type)
+diff --git a/drivers/char/hw_random/omap-rng.c b/drivers/char/hw_random/omap-rng.c
+index 06aad08..2cc755a 100644
+--- a/drivers/char/hw_random/omap-rng.c
++++ b/drivers/char/hw_random/omap-rng.c
+@@ -91,7 +91,7 @@ static struct hwrng omap_rng_ops = {
  
- int __init pci_direct_probe(void)
+ static int __devinit omap_rng_probe(struct platform_device *pdev)
  {
--	struct resource *region, *region2;
--
- 	if ((pci_probe & PCI_PROBE_CONF1) == 0)
- 		goto type2;
--	region = request_region(0xCF8, 8, "PCI conf1");
--	if (!region)
-+	if (!request_region(0xCF8, 8, "PCI conf1"))
- 		goto type2;
+-	struct resource *res, *mem;
++	struct resource *res;
+ 	int ret;
  
- 	if (pci_check_type1()) {
-@@ -293,16 +290,14 @@ int __init pci_direct_probe(void)
- 		port_cf9_safe = true;
- 		return 1;
- 	}
--	release_resource(region);
-+	release_region(0xCF8, 8);
+ 	/*
+@@ -116,14 +116,12 @@ static int __devinit omap_rng_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -ENOENT;
  
-  type2:
- 	if ((pci_probe & PCI_PROBE_CONF2) == 0)
- 		return 0;
--	region = request_region(0xCF8, 4, "PCI conf2");
--	if (!region)
-+	if (!request_region(0xCF8, 4, "PCI conf2"))
- 		return 0;
--	region2 = request_region(0xC000, 0x1000, "PCI conf2");
--	if (!region2)
-+	if (!request_region(0xC000, 0x1000, "PCI conf2"))
- 		goto fail2;
- 
- 	if (pci_check_type2()) {
-@@ -311,8 +306,8 @@ int __init pci_direct_probe(void)
- 		return 2;
+-	mem = request_mem_region(res->start, resource_size(res),
+-				 pdev->name);
+-	if (mem == NULL) {
++	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+ 		ret = -EBUSY;
+ 		goto err_region;
  	}
  
--	release_resource(region2);
-+	release_region(0xC000, 0x1000);
-  fail2:
--	release_resource(region);
-+	release_region(0xCF8, 4);
+-	dev_set_drvdata(&pdev->dev, mem);
++	dev_set_drvdata(&pdev->dev, res);
+ 	rng_base = ioremap(res->start, resource_size(res));
+ 	if (!rng_base) {
+ 		ret = -ENOMEM;
+@@ -146,7 +144,7 @@ err_register:
+ 	iounmap(rng_base);
+ 	rng_base = NULL;
+ err_ioremap:
+-	release_resource(mem);
++	release_mem_region(res->start, resource_size(res));
+ err_region:
+ 	if (cpu_is_omap24xx()) {
+ 		clk_disable(rng_ick);
+@@ -157,7 +155,7 @@ err_region:
+ 
+ static int __exit omap_rng_remove(struct platform_device *pdev)
+ {
+-	struct resource *mem = dev_get_drvdata(&pdev->dev);
++	struct resource *res = dev_get_drvdata(&pdev->dev);
+ 
+ 	hwrng_unregister(&omap_rng_ops);
+ 
+@@ -170,7 +168,7 @@ static int __exit omap_rng_remove(struct platform_device *pdev)
+ 		clk_put(rng_ick);
+ 	}
+ 
+-	release_resource(mem);
++	release_mem_region(res->start, resource_size(res));
+ 	rng_base = NULL;
+ 
  	return 0;
- }
 
