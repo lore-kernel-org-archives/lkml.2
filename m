@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab1BMTVM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 14:21:12 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59183
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754606Ab1BMTVD (ORCPT
+	id S1754875Ab1BMUFx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 15:05:53 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55798 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754836Ab1BMUFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 14:21:03 -0500
-Date: Sun, 13 Feb 2011 11:21:39 -0800 (PST)
-Message-Id: <20110213.112139.91321217.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, adobriyan@gmail.com,
-        error27@gmail.com, shmulikr@broadcom.com, john.r.fastabend@intel.com,
-        lucy.liu@intel.com
-Subject: Re: [PATCH] Don't potentially dereference NULL in
- net/dcb/dcbnl.c:dcbnl_getapp()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1102102253230.8012@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102102253230.8012@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Feb 2011 15:05:47 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Remove bitrotted genirq comment from wm831x IRQ code
+Date: Sun, 13 Feb 2011 20:06:06 +0000
+Message-Id: <1297627566-16844-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Thu, 10 Feb 2011 22:57:16 +0100 (CET)
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-irq.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
-> nla_nest_start() may return NULL. If it does then we'll blow up in 
-> nla_nest_end() when we dereference the pointer.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index 03eb61d..2e45f60 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -26,15 +26,6 @@
+ 
+ #include <linux/delay.h>
+ 
+-/*
+- * Since generic IRQs don't currently support interrupt controllers on
+- * interrupt driven buses we don't use genirq but instead provide an
+- * interface that looks very much like the standard ones.  This leads
+- * to some bodges, including storing interrupt handler information in
+- * the static irq_data table we use to look up the data for individual
+- * interrupts, but hopefully won't last too long.
+- */
+-
+ struct wm831x_irq_data {
+ 	int primary;
+ 	int reg;
+-- 
+1.7.2.3
 
-Applied.
