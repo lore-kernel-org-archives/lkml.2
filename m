@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab1BMQCa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 11:02:30 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38421 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab1BMQCY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754686Ab1BMQCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 11:02:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752245Ab1BMQCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 13 Feb 2011 11:02:24 -0500
-Message-ID: <4D58004A.3060407@oracle.com>
-Date: Sun, 13 Feb 2011 08:01:14 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+Date: Sun, 13 Feb 2011 10:57:30 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Marti Raudsepp <marti@juffo.org>
+Cc: btrfs hackers <linux-btrfs@vger.kernel.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs: compression breaks cp and cross-FS mv, FS_IOC_FIEMAP
+	bug?
+Message-ID: <20110213155730.GK19533@dhcp231-156.rdu.redhat.com>
+References: <AANLkTinZNk1j94rEMVdvRtjr2Sa-C7VpQOGHrvrY8Hph@mail.gmail.com>
 MIME-Version: 1.0
-To: Kurt Van Dijck <kurt.van.dijck@eia.be>
-CC: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
-References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org> <20110211223312.be571303.randy.dunlap@oracle.com> <20110212111344.GA328@e-circ.dyndns.org> <4D56AF22.4070803@oracle.com> <20110213133717.GA508@e-circ.dyndns.org>
-In-Reply-To: <20110213133717.GA508@e-circ.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D580069.0032:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinZNk1j94rEMVdvRtjr2Sa-C7VpQOGHrvrY8Hph@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/11 05:37, Kurt Van Dijck wrote:
-> On Sat, Feb 12, 2011 at 08:02:42AM -0800, Randy Dunlap wrote:
->> On 02/12/11 03:15, Kurt Van Dijck wrote:
->>> On Fri, Feb 11, 2011 at 10:33:12PM -0800, Randy Dunlap wrote:
->>>>
->>>> warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
->>>>
->>>> with this partial config:
->>>>
->>>> CONFIG_CAN=m
->>>> # CONFIG_CAN_RAW is not set
->>>> # CONFIG_CAN_BCM is not set
->>>> # CAN Device Drivers
->>>> # CONFIG_CAN_VCAN is not set
->>>> CONFIG_CAN_SLCAN=m
->>>> # CONFIG_CAN_DEV is not set
->>>> CONFIG_CAN_SOFTING=m
->>>> CONFIG_CAN_SOFTING_CS=m
->>>> # CONFIG_CAN_DEBUG_DEVICES is not set
->>> I understand the output, but I don't understand the cause well enough.
->>> CAN_SOFTING=m has a 'depends on CAN_DEV'
->>> Is it then possible to have CAN_SOFTING=m _and not_ CAN_DEV ?
->>
->> Yes.  From Documentation/kbuild/kconfig-language.txt:
->>
-> I see.
-> The 'select CAN_SOFTING' was introduced because it makes no sense to
-> have CAN_SOFTING_CS alone 'for a normal user', although there is no
-> real dependency.
-> Is a 'select' then still a good option, since it feels like repeating
-> all dependencies from CAN_SOFTING in CAN_SOFTING_CS?
-> What about this?
+On Sun, Feb 13, 2011 at 05:49:42PM +0200, Marti Raudsepp wrote:
+> Hi list!
 > 
-> diff --git a/drivers/net/can/softing/Kconfig b/drivers/net/can/softing/Kconfig
-> index 92bd6bd..55dd3e4 100644
-> --- a/drivers/net/can/softing/Kconfig
-> +++ b/drivers/net/can/softing/Kconfig
-> @@ -18,7 +18,7 @@ config CAN_SOFTING
->  config CAN_SOFTING_CS
->  	tristate "Softing Gmbh CAN pcmcia cards"
->  	depends on PCMCIA
-> -	select CAN_SOFTING
-> +	depends on CAN_SOFTING
->  	---help---
->  	  Support for PCMCIA cards from Softing Gmbh & some cards
->  	  from Vector Gmbh.
-> ---
-> It will present the Softing stuff in Kconfig as if CAN_SOFTING_CS really
-> depends on CAN_SOFTING, which is acceptible from a users perspective.
+> It seems I have found a serious regression in compressed btrfs in
+> kernel 2.6.37. When creating a small file (less than the block size)
+> and then cp/mv it to *another* file system, an appropriate number of
+> zeroes gets written to the destination file. Case in point:
+> 
+> % echo foobar > foobar
+> % hexdump -C foobar
+> 00000000  66 6f 6f 62 61 72 0a                              |foobar.|
+> 00000007
+> % mv foobar /tmp
+> % hexdump -C /tmp/foobar
+> 00000000  00 00 00 00 00 00 00                              |.......|
+> 00000007
+> % cp foobar foobar2
+> % hexdump -C foobar2
+> 00000000  00 00 00 00 00 00 00                              |.......|
+> 00000007
+> 
+> Via strace I found that mv doesn't even attempt to read anything:
+> 
+> open("foobar", O_RDONLY|O_NOFOLLOW)     = 3
+> fstat(3, {st_mode=S_IFREG|0664, st_size=7, ...}) = 0
+> open("/tmp/foobar", O_WRONLY|O_CREAT|O_EXCL, 0600) = 4
+> fstat(4, {st_mode=S_IFREG|0600, st_size=0, ...}) = 0
+> ioctl(3, FS_IOC_FIEMAP, 0x7fff62f6bfa0) = 0
+> write(4, "\0\0\0\0\0\0\0", 7)           = 7
+> 
+> What's that, is FS_IOC_FIEMAP telling it that it's a sparse file?
+> Compare with ext4:
+> 
+> ioctl(3, FS_IOC_FIEMAP, 0x7fff2c576a90) = 0
+> lseek(3, 0, SEEK_SET)                   = 0
+> read(3, "foobar\n", 4096)               = 7
+> write(4, "foobar\n", 7)                 = 7
+> 
+> I'm currently running on 2.6.37, x86_64 using Arch Linux -testing with
+> coreutils 8.10. Filesystem is mounted from LVM2 to /usr/src with -o
+> noatime,compress
+> 
+> This only seems to occur with compressed file systems (either zlib or
+> LZO). A person on IRC also reproduced the same problem in 2.6.28-rc.
+> I'm pretty sure this used to work correctly around 2.6.35 or 2.6.36.
+> 
+> This is 100% reproducible here. If anyone has trouble reproducing
+> this, I can dig further and provide information as needed.
+>
 
-That's fine.
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Does the same problem happen when you use cp --sparse=never?  Thanks,
 
-thanks.
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Josef 
