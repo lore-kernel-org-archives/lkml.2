@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab1BMK6n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 05:58:43 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40371 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753843Ab1BMK6h convert rfc822-to-8bit (ORCPT
+	id S1754088Ab1BMK71 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 05:59:27 -0500
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:59524 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752640Ab1BMK7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 05:58:37 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: =?utf-8?q?Old=C5=99ich_Jedli=C4=8Dka?= <oldium.pro@seznam.cz>
-Subject: Re: [Bug #28852] [KMS] radeon artifacts when switched to graphics during boot
-Date: Sun, 13 Feb 2011 11:58:30 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Alex Deucher <alexdeucher@gmail.com>
-References: <NMZS1i37KEE.A.1eG.6_wVNB@chimera> <8H3lez1sawF.A.4jG.FAxVNB@chimera> <201102130958.22668.oldium.pro@seznam.cz>
-In-Reply-To: <201102130958.22668.oldium.pro@seznam.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201102131158.30364.rjw@sisk.pl>
+	Sun, 13 Feb 2011 05:59:22 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References:X-Identified-User;
+	b=Jy8s6G8gAzFTnfng1bioXCWSvSwX1vZPWgEEna65KHUsySv0t7HdcuO3p/fszd9Y4o7RJ6jhTEmInTE/OYyNofHcwcXlCaCFK8+3C19BzyG+3va1RA7dG5LoVYHxXSBv;
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH] loop: clear read-only flag in loop_clr_fd.
+Date: Sun, 13 Feb 2011 18:58:55 +0800
+Message-Id: <1297594735-5593-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <4D573BBB.6090200@redhat.com>
+References: <4D573BBB.6090200@redhat.com>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 111.193.4.246 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, February 13, 2011, Oldřich Jedlička wrote:
-> On Sunday 13 February 2011 00:05:22 Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.37.  Please verify if it still should be listed and let the
-> > tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28852
-> > Subject		: [KMS] radeon artifacts when switched to graphics during boot
-> > Submitter	: Oldřich Jedlička <oldium.pro@seznam.cz>
-> > Date		: 2011-02-10 21:11 (3 days old)
-> > Handled-By	: Alex Deucher <alexdeucher@gmail.com>
-> 
-> Status update - some patches that fix the issue exist already, Alex is 
-> investigating the best fix.
+From: Tao Ma <boyu.mt@taobao.com>
 
-Thanks for the info.
+In 75f1dc0, we check bdev_read_only() from blkdev_get().
+But the loop_clr_fd doesn't clear the read only flag.
+What cause a error if we changing a loop device from
+read only to writable.
 
-Rafael
+A simple test to reproduce the error reported by Milan[1]:
+touch /x1.img
+losetup -r /dev/loop0 /x1.img
+losetup -d /dev/loop0
+losetup /dev/loop0 /x1.img
+/dev/loop0: Permission denied
+
+1: http://marc.info/?l=linux-kernel&m=129756258222642&w=2
+
+Reported-by: Milan Broz <mbroz@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ drivers/block/loop.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 44e18c0..0d24579 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1036,8 +1036,10 @@ static int loop_clr_fd(struct loop_device *lo, struct block_device *bdev)
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
++	if (bdev) {
++		set_device_ro(bdev, 0);
+ 		invalidate_bdev(bdev);
++	}
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+ 	if (bdev) {
+-- 
+1.6.3.GIT
+
