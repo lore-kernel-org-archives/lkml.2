@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1BMBwP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Feb 2011 20:52:15 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:46210 "EHLO mprc.pku.edu.cn"
+	id S1753728Ab1BMCC4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 21:02:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46565 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451Ab1BMBwI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Feb 2011 20:52:08 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, "'Arnd Bergmann'" <arnd@arndb.de>
-References: <026101cbca54$b95489e0$2bfd9da0$@mprc.pku.edu.cn> <AANLkTim99mRGrMa+n+2AiOXPuf6-xM-dcELUGX0ssMpP@mail.gmail.com>
-In-Reply-To: <AANLkTim99mRGrMa+n+2AiOXPuf6-xM-dcELUGX0ssMpP@mail.gmail.com>
-Subject: RE: [GIT PULL] UniCore32 ISA support for linux-2.6
-Date: Sun, 13 Feb 2011 09:51:22 +0800
-Message-ID: <02c301cbcb20$853bec80$8fb3c580$@mprc.pku.edu.cn>
+	id S1752717Ab1BMCCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 21:02:49 -0500
+Message-ID: <4D573BBB.6090200@redhat.com>
+Date: Sun, 13 Feb 2011 03:02:35 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGgLvOjZ+Vm94LPUyLIF2scFfK7yAGFHWyClEm240A=
-Content-Language: zh-cn
+To: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: block device read-only handling regression in 2.6.38-rc4 (bisected)
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tejun,
+
+Seems this commit cause regressions:
+
+commit 75f1dc0d076d1c1168f2115f1941ea627d38bd5a
+Author: Tejun Heo <tj@kernel.org>
+Date:   Sat Nov 13 11:55:17 2010 +0100
+
+    block: check bdev_read_only() from blkdev_get()
+    
+    bdev read-only status can be queried using bdev_read_only() and may
+    change while the device is being opened.  Enforce it by checking it
+    from blkdev_get() after open succeeds.
 
 
-> -----Original Message-----
-> From: Linus Torvalds [mailto:torvalds@linux-foundation.org]
-> Sent: Sunday, February 13, 2011 1:52 AM
-> To: Guan Xuetao
-> Cc: linux-kernel@vger.kernel.org; Arnd Bergmann
-> Subject: Re: [GIT PULL] UniCore32 ISA support for linux-2.6
-> 
-> On Fri, Feb 11, 2011 at 5:32 PM, Guan Xuetao <gxt@mprc.pku.edu.cn> wrote:
-> > Hi Linus,
-> >  Could you please pull from:
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git for_linus
-> >  to add unicore32 support for linux-2.6.
-> 
-> I'm not going to do it during the 38 cycle, but if this has has gotten
-> ack's from people like Arnd, and all the commentary from other people
-> (like the "the ptrace.c file looks like it was copied from arm, wants
-> attribution" etc), I can pull it in the 39 cycle.
-I will repost the patches, and hope them to be fetched in the 39 cycle.
-And ptrace.c file has been modified, sorry and thanks to Russell King.
- 
-> 
-> Arnd - who else was involved in the reviews? Is there somebody who
-> _should_ have been involved and wasn't?
-Arnd gave me great help.
-Many people helped me refine the codes.
-Thanks everybody.
+1) loop device once set read-only is not able to be used read-write afterward
 
-> 
->                         Linus
+touch /x1.img
+losetup -r /dev/loop0 /x1.img
+losetup -d /dev/loop0
+losetup /dev/loop0 /x1.img
+/dev/loop0: Permission denied
 
-Thanks & Regards.
 
-Guan Xuetao
+2) it breaks read-only dm-snapshots
+(Fedora LiveCD operations is broken by this as well.)
 
+(x.img is backing device, xs.img is prepared COW, you can simply run it
+once in read-write to create dm-snap header and then re-run this commands)
+
+losetup -r /dev/loop0 /x.img
+losetup -r /dev/loop1 /xs.img
+dmsetup create x --readonly --table '0 131072 snapshot /dev/loop0 /dev/loop1 p 8'
+device-mapper: reload ioctl failed: Permission denied
+
+Milan
