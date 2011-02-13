@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1BMSiP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 13:38:15 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48771
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754733Ab1BMSiJ (ORCPT
+	id S1754762Ab1BMSm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 13:42:26 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:58712 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab1BMSmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 13:38:09 -0500
-Date: Sun, 13 Feb 2011 10:38:45 -0800 (PST)
-Message-Id: <20110213.103845.02286551.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: kurt.van.dijck@eia.be, akpm@linux-foundation.org, netdev@vger.kernel.org,
+	Sun, 13 Feb 2011 13:42:20 -0500
+Date: Sun, 13 Feb 2011 13:42:19 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D58004A.3060407@oracle.com>
-References: <4D56AF22.4070803@oracle.com>
-	<20110213133717.GA508@e-circ.dyndns.org>
-	<4D58004A.3060407@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Subject: XFS status update for January 2011
+Message-ID: <20110213184219.GA22792@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Sun, 13 Feb 2011 08:01:14 -0800
+On the 4th of January we saw the release of Linux 2.6.37, which contains a
+large XFS update:
 
-> On 02/13/11 05:37, Kurt Van Dijck wrote:
->> The 'select CAN_SOFTING' was introduced because it makes no sense to
->> have CAN_SOFTING_CS alone 'for a normal user', although there is no
->> real dependency.
->> Is a 'select' then still a good option, since it feels like repeating
->> all dependencies from CAN_SOFTING in CAN_SOFTING_CS?
->> What about this?
->> 
->> diff --git a/drivers/net/can/softing/Kconfig b/drivers/net/can/softing/Kconfig
->> index 92bd6bd..55dd3e4 100644
->> --- a/drivers/net/can/softing/Kconfig
->> +++ b/drivers/net/can/softing/Kconfig
->> @@ -18,7 +18,7 @@ config CAN_SOFTING
->>  config CAN_SOFTING_CS
->>  	tristate "Softing Gmbh CAN pcmcia cards"
->>  	depends on PCMCIA
->> -	select CAN_SOFTING
->> +	depends on CAN_SOFTING
->>  	---help---
->>  	  Support for PCMCIA cards from Softing Gmbh & some cards
->>  	  from Vector Gmbh.
->> ---
->> It will present the Softing stuff in Kconfig as if CAN_SOFTING_CS really
->> depends on CAN_SOFTING, which is acceptible from a users perspective.
-> 
-> That's fine.
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+    67 files changed, 1424 insertions(+), 1524 deletions(-)
 
-Kurt, please formally re-submit this with a proper commit message,
-a signoff for you, and Randy's ACK.
+User visible changes are the new XFS_IOC_ZERO_RANGE ioctl which allows
+to convert already allocated space into unwritten extents that return
+zeros on a read, and support for 32-bit wide project IDs.  The other large
+item are various changes to improve metadata scalability even further,
+by changes to the the buffer cache, inode lookup and other parts of the
+filesystem driver.
 
-Thanks.
+After that the XFS development tree for 2.6.38 was merged into mainline,
+with an even larger set of changes.  Notable items include support for the
+FITRIM ioctl to discard unused space on SSDs and thinly provisioned storage
+systems, a buffer LRU scheme to improve hit rates for metadata, an
+overhaul of the log subsystem locking, dramatically improving scalability
+in that area, and much smarter handling of preallocations, especially
+for files closed and reopened frequently, e.g. by the NFS server.
+
+User space development has been very quite, with just a few fixes committed
+to the xfstests repository, although various additional patches for xfsprogs
+and xfstests that haven't been committed yet were discussed on the mailing list.
