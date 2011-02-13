@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab1BMU1B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 15:27:01 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38869 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815Ab1BMU05 (ORCPT
+	id S1754952Ab1BMUa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 15:30:29 -0500
+Received: from brinza.cc.columbia.edu ([128.59.29.8]:51558 "EHLO
+	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754899Ab1BMUaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 15:26:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=SFBzz/6NJO/M5oMmZH/ct8VjKJsJ21GTyzC7CsMC7PfZFenpAWHR/JO+IKRZmhG0bt
-         WODsQ/orxFFzXikbaxFxKyvNnhvmbU91l4sBnMMPzNdofdemUfGPcVIlPfQ9dNrBXwwr
-         vp+E++JIGp1wPEhQn+gXRahQhdEmRbEm/xUNI=
+	Sun, 13 Feb 2011 15:30:25 -0500
+X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Feb 2011 15:30:25 EST
+Message-ID: <4D583E17.80606@rath.org>
+Date: Sun, 13 Feb 2011 15:24:55 -0500
+From: Nikolaus Rath <Nikolaus@rath.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 13 Feb 2011 21:26:56 +0100
-Message-ID: <AANLkTikQ0Ys-VS2hXcE+rGmGtc7Qxwm7jpL6q+bbC7nt@mail.gmail.com>
-Subject: Re: Regression - Xorg start failed
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: hidave.darkstar@gmail.com
-Cc: Dave Airlie <airlied@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Brice Goglin <Brice.Goglin@ens-lyon.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: virt_to_page for userspace pointers
+References: <87k4hgn8qa.fsf@inspiron.ap.columbia.edu> <878vxuxkfr.fsf@inspiron.ap.columbia.edu> <4D4DC2D6.8030905@ens-lyon.org>
+In-Reply-To: <4D4DC2D6.8030905@ens-lyon.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Damn, that issue made me really sick yesterday, as I thought the
-problem arrived from my updated mesa/ddx built-from-git (I also played
-with mesa's new --enable-shared-dricore configure option).
+On 02/05/2011 04:36 PM, Brice Goglin wrote:
+>> Is there an equivalent function to virt_to_page (and virt_to_phys) that
+>> works with userspace pointers? Or do I have to manually walk through the
+>> page tables? In the later case, are there any examples of this kind of
+>> search that I could use as a basis?
+>>   
+> 
+> You probably want get_user_pages() (or get_user_pages_fast()).
 
-Also, I suspected x11-common package in Debian/unstable [1],
-especially BR #612979 [2].
+Thanks for the pointer, that already helped a lot!
 
-I applied the revert of commit
-47970b1b2aa64464bc0a9543e86361a622ae7c03 ("pci: use security_capable()
-when checking capablities during config space read") as bisected by
-Dave Young. Thanks!
+I would, however, prefer a more primitive function that just gives me
+the struct page without locking it. And if the page is swapped out, I'd
+rather get a NULL pointer than having a page frame allocated.  Is there
+anything like that?
 
-The only way I found was to delete several X releated dot-dirs in
-/tmp. In addition the dirs created/required for a KDE-session.
-Best is to kill complete /tmp/* /tmp/.* in runlevel-3 and then startx,
-that made X work here.
+Thanks,
 
-- Sedat -
+   -Nikolaus
 
-[1] http://packages.debian.org/changelogs/pool/main/x/xorg/xorg_7.6+3/changelog
-[2] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=612979
+-- 
+ »Time flies like an arrow, fruit flies like a Banana.«
+
+  PGP fingerprint: 5B93 61F8 4EA2 E279 ABF6  02CF A9AD B7F8 AE4E 425C
