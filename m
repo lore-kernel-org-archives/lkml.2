@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab1BMSDF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 13:03:05 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45024 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab1BMSDB convert rfc822-to-8bit (ORCPT
+	id S1754721Ab1BMSUz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 13:20:55 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57957
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754302Ab1BMSUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 13:03:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=lpg0fSzqvu25N3yF4B2xgW8LMYAU7RRsmOH0RN/GWRFO7XYW67ktUq/W/s+wgxHbfc
-         UjwGY7zJmnrLNnfaD2oYe28lu2gA10D7AuyhGtIrN9qgJbd11H8EudOpEE2rU57dGjdq
-         wpPeHAT9VAmCQPuEBqlqKdhJf8ZdtUQbbLpEQ=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikTw71-mv9WsPT8PxC1a1nwEJ=x0UNDhVQGP1A6@mail.gmail.com>
-References: <AANLkTin7GBSTcfZgr_9sNZ8CPMkW7Vstni+fs2v1-ink@mail.gmail.com>
- <1297581470.2510.18.camel@edumazet-laptop> <20110213135600.GA11382@electric-eye.fr.zoreil.com>
- <AANLkTikTw71-mv9WsPT8PxC1a1nwEJ=x0UNDhVQGP1A6@mail.gmail.com>
-From: Seblu <seblu@seblu.net>
-Date: Sun, 13 Feb 2011 19:02:38 +0100
-X-Google-Sender-Auth: 6e2q-QQkOUVwn42SsA90hBYqeI8
-Message-ID: <AANLkTikLOJ-XcwfdbWS19DKzh2s91tn5pQjJe0+CeAN-@mail.gmail.com>
-Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Ivan Vecera <ivecera@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 13 Feb 2011 13:20:48 -0500
+Date: Sun, 13 Feb 2011 10:21:24 -0800 (PST)
+Message-Id: <20110213.102124.258125070.davem@davemloft.net>
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
+        maciej.rutecki@gmail.com, florian@mickler.org,
+        Knut_Petersen@t-online.de
+Subject: Re: [Bug #28052] [BUG] 2.6.38-rc2: Circular Locking Dependency
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <8H3lez1sawF.A.OqH.3AxVNB@chimera>
+References: <NMZS1i37KEE.A.1eG.6_wVNB@chimera>
+	<8H3lez1sawF.A.OqH.3AxVNB@chimera>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 13, 2011 at 6:27 PM, Seblu <seblu@seblu.net> wrote:
-> On Sun, Feb 13, 2011 at 2:56 PM, Francois Romieu <romieu@fr.zoreil.com> wrote:
->> Eric Dumazet <eric.dumazet@gmail.com> :
->> If it still does not perform better, please include the XID line of
->> the r8169 driver from dmesg.
->>
-> I've tryed on archlinux i686 distro with 2.6.37 and host reboot like
-> under debian.
->
-> After this, i tryed  wiith a 2.6.38-rc4 (amd64), which include your
-> recent patchs.
->
-> # dmesg|grep -i xid
-> r8169 0000:04:00.0: eth0: RTL8168b/8111b at 0xffffc90005260000,
-> 1c:6f:65:56:d9:17, XID 0c200000 IRQ 47
->
-> NIC seems to be reset frequently but host stop rebooting. \o//
-ok after about 1 hour of iperf, host reboot.
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Sun, 13 Feb 2011 00:05:18 +0100 (CET)
 
--- 
-Sébastien Luttringer
-www.seblu.net
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28052
+> Subject		: [BUG] 2.6.38-rc2: Circular Locking Dependency
+> Submitter	: Knut Petersen <Knut_Petersen@t-online.de>
+> Date		: 2011-01-24 9:25 (20 days old)
+> Message-ID	: <4D3D45A3.7040809@t-online.de>
+> References	: http://marc.info/?l=linux-kernel&m=129586118515443&w=2
+
+Fixed by:
+
+commit 8d3bdbd55a7e2a3f2c148a4830aa26dd682b21c4
+Author: David S. Miller <davem@davemloft.net>
+Date:   Tue Feb 8 15:02:50 2011 -0800
+
+    net: Fix lockdep regression caused by initializing netdev queues too early.
+    
+    In commit aa9421041128abb4d269ee1dc502ff65fb3b7d69 ("net: init ingress
+    queue") we moved the allocation and lock initialization of the queues
+    into alloc_netdev_mq() since register_netdevice() is way too late.
+    
+    The problem is that dev->type is not setup until the setup()
+    callback is invoked by alloc_netdev_mq(), and the dev->type is
+    what determines the lockdep class to use for the locks in the
+    queues.
+    
+    Fix this by doing the queue allocation after the setup() callback
+    runs.
+    
+    This is safe because the setup() callback is not allowed to make any
+    state changes that need to be undone on error (memory allocations,
+    etc.).  It may, however, make state changes that are undone by
+    free_netdev() (such as netif_napi_add(), which is done by the
+    ipoib driver's setup routine).
+    
+    The previous code also leaked a reference to the &init_net namespace
+    object on RX/TX queue allocation failures.
+    
+    Signed-off-by: David S. Miller <davem@davemloft.net>
