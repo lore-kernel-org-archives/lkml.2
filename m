@@ -1,71 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab1BMPuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 10:50:16 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51205 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab1BMPuO (ORCPT
+	id S1754630Ab1BMPvY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 10:51:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46518 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750932Ab1BMPvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 10:50:14 -0500
+	Sun, 13 Feb 2011 10:51:18 -0500
 MIME-Version: 1.0
-From: Marti Raudsepp <marti@juffo.org>
-Date: Sun, 13 Feb 2011 17:49:42 +0200
-Message-ID: <AANLkTinZNk1j94rEMVdvRtjr2Sa-C7VpQOGHrvrY8Hph@mail.gmail.com>
-Subject: btrfs: compression breaks cp and cross-FS mv, FS_IOC_FIEMAP bug?
-To: btrfs hackers <linux-btrfs@vger.kernel.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTimDuYgL2cSR8gE7Wrm9_w7cvG_wuUUsa=8TKs87@mail.gmail.com>
+References: <20110213062213.GA2525@darkstar.dhcp.inet.fi> <AANLkTimDuYgL2cSR8gE7Wrm9_w7cvG_wuUUsa=8TKs87@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 13 Feb 2011 07:50:26 -0800
+Message-ID: <AANLkTimxCMgdfht7rrg8QiCppb=D7fvR92eeiewdqCpH@mail.gmail.com>
+Subject: Re: Regression - Xorg start failed
+To: Dave Airlie <airlied@gmail.com>
+Cc: Dave Young <hidave.darkstar@gmail.com>, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Chris Wright <chrisw@sous-sol.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list!
+On Sat, Feb 12, 2011 at 11:53 PM, Dave Airlie <airlied@gmail.com> wrote:
+>
+> Probably should revert first, then work out what is crapping out libpciaccess.
 
-It seems I have found a serious regression in compressed btrfs in
-kernel 2.6.37. When creating a small file (less than the block size)
-and then cp/mv it to *another* file system, an appropriate number of
-zeroes gets written to the destination file. Case in point:
+Yeah, I'll revert. The patch is one of those "obviously a good idea,
+but in practice it's not something we can change now".
 
-% echo foobar > foobar
-% hexdump -C foobar
-00000000  66 6f 6f 62 61 72 0a                              |foobar.|
-00000007
-% mv foobar /tmp
-% hexdump -C /tmp/foobar
-00000000  00 00 00 00 00 00 00                              |.......|
-00000007
-% cp foobar foobar2
-% hexdump -C foobar2
-00000000  00 00 00 00 00 00 00                              |.......|
-00000007
-
-Via strace I found that mv doesn't even attempt to read anything:
-
-open("foobar", O_RDONLY|O_NOFOLLOW)     = 3
-fstat(3, {st_mode=S_IFREG|0664, st_size=7, ...}) = 0
-open("/tmp/foobar", O_WRONLY|O_CREAT|O_EXCL, 0600) = 4
-fstat(4, {st_mode=S_IFREG|0600, st_size=0, ...}) = 0
-ioctl(3, FS_IOC_FIEMAP, 0x7fff62f6bfa0) = 0
-write(4, "\0\0\0\0\0\0\0", 7)           = 7
-
-What's that, is FS_IOC_FIEMAP telling it that it's a sparse file?
-Compare with ext4:
-
-ioctl(3, FS_IOC_FIEMAP, 0x7fff2c576a90) = 0
-lseek(3, 0, SEEK_SET)                   = 0
-read(3, "foobar\n", 4096)               = 7
-write(4, "foobar\n", 7)                 = 7
-
-I'm currently running on 2.6.37, x86_64 using Arch Linux -testing with
-coreutils 8.10. Filesystem is mounted from LVM2 to /usr/src with -o
-noatime,compress
-
-This only seems to occur with compressed file systems (either zlib or
-LZO). A person on IRC also reproduced the same problem in 2.6.28-rc.
-I'm pretty sure this used to work correctly around 2.6.35 or 2.6.36.
-
-This is 100% reproducible here. If anyone has trouble reproducing
-this, I can dig further and provide information as needed.
-
-Regards,
-Marti
+                      Linus
