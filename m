@@ -1,26 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab1BMNfH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 08:35:07 -0500
-Received: from mail.ideay.net.ni ([186.1.31.6]:42374 "EHLO mail.ideay.net.ni"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754485Ab1BMNfD convert rfc822-to-8bit (ORCPT
+	id S1754579Ab1BMNh3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 08:37:29 -0500
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:14373 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754522Ab1BMNhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 08:35:03 -0500
-X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Feb 2011 08:35:03 EST
-Date: Sun, 13 Feb 2011 07:26:16 -0600 (CST)
-From: "@Motorola" <raquezada@ideay.net.ni>
-Reply-To: "@Motorola" <yorkshirebank.online@accountant.com>
-Message-ID: <2046746477.193642.1297603576175.JavaMail.root@mailbox.ideay.net.ni>
-Subject: "Winner"
+	Sun, 13 Feb 2011 08:37:21 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAONrV01tgner/2dsb2JhbACEHqFidKkfjzuBJ4NBdgSPSw
+Date: Sun, 13 Feb 2011 14:37:18 +0100
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: akpm@linux-foundation.org, netdev <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH -next/mmotm] net/can: fix softing build errors
+Message-ID: <20110213133717.GA508@e-circ.dyndns.org>
+References: <201102110100.p1B10sDx029244@imap1.linux-foundation.org>
+ <20110211223312.be571303.randy.dunlap@oracle.com>
+ <20110212111344.GA328@e-circ.dyndns.org>
+ <4D56AF22.4070803@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.203.64.252]
-X-Mailer: Zimbra 6.0.9_GA_2686 (zclient/6.0.9_GA_2686)
-To: undisclosed-recipients:;
+Content-Disposition: inline
+In-Reply-To: <4D56AF22.4070803@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You Won £400,000.00GBP  from Motorola Promotion 2011. Contact Yorkshire Bank (yorkshirebank.online@accountant.com) with your Name,Address,Country,Phone Number,
+On Sat, Feb 12, 2011 at 08:02:42AM -0800, Randy Dunlap wrote:
+> On 02/12/11 03:15, Kurt Van Dijck wrote:
+> > On Fri, Feb 11, 2011 at 10:33:12PM -0800, Randy Dunlap wrote:
+> >>
+> >> warning: (CAN_SOFTING_CS) selects CAN_SOFTING which has unmet direct dependencies (NET && CAN && CAN_DEV && HAS_IOMEM)
+> >>
+> >> with this partial config:
+> >>
+> >> CONFIG_CAN=m
+> >> # CONFIG_CAN_RAW is not set
+> >> # CONFIG_CAN_BCM is not set
+> >> # CAN Device Drivers
+> >> # CONFIG_CAN_VCAN is not set
+> >> CONFIG_CAN_SLCAN=m
+> >> # CONFIG_CAN_DEV is not set
+> >> CONFIG_CAN_SOFTING=m
+> >> CONFIG_CAN_SOFTING_CS=m
+> >> # CONFIG_CAN_DEBUG_DEVICES is not set
+> > I understand the output, but I don't understand the cause well enough.
+> > CAN_SOFTING=m has a 'depends on CAN_DEV'
+> > Is it then possible to have CAN_SOFTING=m _and not_ CAN_DEV ?
+> 
+> Yes.  From Documentation/kbuild/kconfig-language.txt:
+> 
+I see.
+The 'select CAN_SOFTING' was introduced because it makes no sense to
+have CAN_SOFTING_CS alone 'for a normal user', although there is no
+real dependency.
+Is a 'select' then still a good option, since it feels like repeating
+all dependencies from CAN_SOFTING in CAN_SOFTING_CS?
+What about this?
+
+diff --git a/drivers/net/can/softing/Kconfig b/drivers/net/can/softing/Kconfig
+index 92bd6bd..55dd3e4 100644
+--- a/drivers/net/can/softing/Kconfig
++++ b/drivers/net/can/softing/Kconfig
+@@ -18,7 +18,7 @@ config CAN_SOFTING
+ config CAN_SOFTING_CS
+ 	tristate "Softing Gmbh CAN pcmcia cards"
+ 	depends on PCMCIA
+-	select CAN_SOFTING
++	depends on CAN_SOFTING
+ 	---help---
+ 	  Support for PCMCIA cards from Softing Gmbh & some cards
+ 	  from Vector Gmbh.
+---
+It will present the Softing stuff in Kconfig as if CAN_SOFTING_CS really
+depends on CAN_SOFTING, which is acceptible from a users perspective.
+
+Kurt
