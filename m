@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab1BMMvD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 07:51:03 -0500
-Received: from pfepb.post.tele.dk ([195.41.46.236]:53233 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab1BMMu4 (ORCPT
+	id S1754512Ab1BMMwY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 07:52:24 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:40495 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab1BMMwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 07:50:56 -0500
-Date: Sun, 13 Feb 2011 13:50:53 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [patch 00/75] genirq: Overhaul for 2.6.39
-Message-ID: <20110213125053.GA28968@merkur.ravnborg.org>
-References: <20110210222908.661199947@linutronix.de> <AANLkTi=waRQcvdxyKUgcLZ1r-hwUcAVZeVDcBa-apyK2@mail.gmail.com> <alpine.LFD.2.00.1102110058450.31804@localhost6.localdomain6> <AANLkTin3o9eFjpe6TMmKb5LSRUT+0Y2EpD4OU4LzN8Kd@mail.gmail.com> <alpine.LFD.2.00.1102110135320.31804@localhost6.localdomain6> <alpine.LFD.2.00.1102111359580.31804@localhost6.localdomain6> <20110211135906.GA16358@elte.hu> <alpine.LFD.2.00.1102111516020.31804@localhost6.localdomain6>
+	Sun, 13 Feb 2011 07:52:21 -0500
+Date: Sun, 13 Feb 2011 18:22:15 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        acme@redhat.com, lizf@cn.fujitsu.com, Paul Menage <menage@google.com>
+Subject: Re: [RFC][PATCH] cgroup: Fix cgroup_subsys::exit callback
+Message-ID: <20110213125215.GB23919@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
+ <1295534345.28776.175.camel@laptop>
+ <1296646160.26581.315.camel@laptop>
+ <20110202115012.GA16409@balbir.in.ibm.com>
+ <1296650792.26581.319.camel@laptop>
+ <20110202190251.GB16409@balbir.in.ibm.com>
+ <1297095033.13327.46.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1102111516020.31804@localhost6.localdomain6>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1297095033.13327.46.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 03:26:11PM +0100, Thomas Gleixner wrote:
-> On Fri, 11 Feb 2011, Ingo Molnar wrote:
-> > * Thomas Gleixner <tglx@linutronix.de> wrote:
-> > >  129 files changed, 4353 insertions(+), 5400 deletions(-)
-> > 
-> > Did I get the file count right - roughtly how many files are affected throughout all 
-> > architectures? The changes are massively intrusive and widely spread out so we 
-> > cannot do them in one go, right?
+* Peter Zijlstra <peterz@infradead.org> [2011-02-07 17:10:33]:
+
+> On Thu, 2011-02-03 at 00:32 +0530, Balbir Singh wrote:
+> > > No, just fixed. The callback as it exists isn't useful and leads to
+> > > hacks like the above.
 > 
-> Alone the stuff which fiddles in irq_desc->status for whatever reasons
-> is >100 files in arch/. And that has do be done manually case by case.
+> ---
+> Subject: cgroup: Fix cgroup_subsys::exit callback
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Mon Feb 07 17:02:20 CET 2011
+> 
+> Make the ::exit method act like ::attach, it is after all very nearly
+> the same thing.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> LKML-Reference: <new-submission>
+> ---
+> Index: linux-2.6/include/linux/cgroup.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/cgroup.h
+> +++ linux-2.6/include/linux/cgroup.h
+> @@ -474,7 +474,8 @@ struct cgroup_subsys {
+>  			struct cgroup *old_cgrp, struct task_struct *tsk,
+>  			bool threadgroup);
+>  	void (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
+> -	void (*exit)(struct cgroup_subsys *ss, struct task_struct *task);
+> +	void (*exit)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> +			struct cgroup *old_cgrp, struct task_struct *task);
 
-Some kind of arch TODO list wold be nice. Just to let the arch maintainers
-know what you expect from them (on top of the deprecated warnings).
+The effective change I see
 
-	Sam
+1. mutex_lock() being held
+2. Old cgroup being passed as a part of the notification
+
+Is 1 required? I don't see anything in the changelog. For (2), I don't
+see it being used, is the use in the scheduler cgroup path/patch?
+
+-- 
+	Three Cheers,
+	Balbir
