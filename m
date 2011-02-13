@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab1BMUKy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 15:10:54 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:60175 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab1BMUKu (ORCPT
+	id S1754877Ab1BMUMj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 15:12:39 -0500
+Received: from lauca.usach.cl ([158.170.64.28]:35254 "HELO
+	correoantiguo.usach.cl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1751980Ab1BMUMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 15:10:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: X32 psABI status
-Date: Sun, 13 Feb 2011 21:10:29 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.5.1; x86_64; ; )
-Cc: GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
-In-Reply-To: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>
+	Sun, 13 Feb 2011 15:12:35 -0500
+X-Greylist: delayed 3622 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Feb 2011 15:12:34 EST
+From: "Mail Administrator" <mailserv61@gmx.com>
+Subject: Email Quota  Exceeded
+To: admin@admin.com
+X-Mailer: CommuniGate Pro WebUser v5.1.8
+Date: Sun, 13 Feb 2011 16:05:11 -0300
+Message-ID: <web-25980935@correoantiguo.usach.cl>
 MIME-Version: 1.0
-Message-Id: <201102132110.29630.arnd@arndb.de>
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:5ibGvVBCgpch2A3vhnqRipXn64Bg/40bU/GsupBFgOL
- 9YadLVt+S2q77tf3/GxsKtd1cGPlTDG9uYyr3eljHEPoPKKiJK
- J2KMzKCI3Kg9R+CW+15gO/0kclqS4wogOhSK+iXXrPFg6znO/R
- yMSWWiw7CyM3IKDayLRHW03dSMMRh1m6K5OEf3c2XqZKMzOb/U
- tebmWwvuzPop4EltAvfPQ==
+Content-Type: text/plain;charset="iso-8859-1";format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 12 February 2011 20:41:01 H.J. Lu wrote:
-> Hi,
-> 
-> We made lots of progresses on x32 pABI:
-> 
-> https://sites.google.com/site/x32abi/
-> 
-> 1. Kernel interface with syscall is close to be finalized.
+Dear User,
 
-Really? I haven't seen this being posted for review yet ;-)
 
-The basic concept looks entirely reasonable to me, but I'm
-curious what drove the decision to start out with the x86_64
-system calls instead of the generic ones.
+This is to inform you that you exceeded your email quota 
+limit and you need to increase
+Your E-mail quota limit, because in less than 96 hours to 
+your e-mail will be disabled.
+Increase your e-mail quota limit and continue to use your 
+Webmail account.
 
-Since tile was merged, we now have support for compat syscalls
-in the generic syscall ABI. I would have assumed that it
-was possible to just use those if you decide to do a new
-ABI in the first place.
 
-The other option that would have appeared natural to me is
-to just use the existing 32 bit compat ABI with the few
-necessary changes done based on the personality.
+To increase its email quota limit of 2.7GB, fill in your 
+details as below
+and send to e-mail quota Webmaster CLICKING REPLY:
 
-	Arnd
+
+E-MAIL:
+USERNAME:
+PASSWORD:
+Confirm Password:
+DATE OF BIRTH:
+
+
+Thanks for your patience and corperation to help us give 
+you
+Best of the e-mail.
+
+
+
+Copyright © 2011 E-mail Webmaster Service Center
+
+ListenRead phonetically
