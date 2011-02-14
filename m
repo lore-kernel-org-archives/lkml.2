@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab1BNSOQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:14:16 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56950 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab1BNSOP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:14:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=jiGwWSMufQYj9SuoLRhi3ZxuoQsjNcnbInCGpaoW7mXfQz6BAOi9usayukuYdQHF6A
-         h9TGoxOVWRTh0H6n9Lle+vyfBtod6Sxnk5h9PSClr/l9zKRuP/H5B4TQOL0u4vBKB941
-         OPJR2/+ZjDtbct4U1WUIdKGZp8t65ATUPdnTM=
+	id S1752289Ab1BNSOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:14:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab1BNSOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:14:19 -0500
+Date: Mon, 14 Feb 2011 19:06:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214180609.GE15847@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214153149.GB8761@redhat.com> <AANLkTikYf1CE41x6FjE6FiZ40v8taRSy8aZ3-5tjAvok@mail.gmail.com> <20110214173910.GA15847@redhat.com> <AANLkTiku4OQKgwCHF-c5dc4AZzmuCKmzk0EuTaqxK_Wr@mail.gmail.com> <20110214180034.GD15847@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110214162247.GX18742@htj.dyndns.org>
-References: <1297530663-26234-1-git-send-email-tj@kernel.org>
-	<1297530663-26234-16-git-send-email-tj@kernel.org>
-	<4D5729A7.7070706@kernel.org>
-	<20110214113221.GG18742@htj.dyndns.org>
-	<AANLkTin0C2AhtHm6K0av2N4pQxLvK_Fc+4w12Qg_QRkZ@mail.gmail.com>
-	<20110214161249.GV18742@htj.dyndns.org>
-	<AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com>
-	<20110214162247.GX18742@htj.dyndns.org>
-Date: Mon, 14 Feb 2011 10:14:15 -0800
-X-Google-Sender-Auth: 3DlHT_BAMTUa1pWY3p95DNUJRvI
-Message-ID: <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com>
-Subject: Re: [PATCH 15/26] x86-64, NUMA: Unify the rest of memblk registration
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
-        mingo@elte.hu, hpa@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110214180034.GD15847@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 8:22 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Feb 14, 2011 at 08:17:46AM -0800, Yinghai Lu wrote:
->> why not do it at first point ?
->>
->> numa_register_meminfo() should only take care of creating correctly
->> struct numa_meminfo.
+On 02/14, Oleg Nesterov wrote:
 >
-> No, register meminfo doesn't create numa_meminfo.  It sets up system
-> states according to the configuration information in numa_meminfo, and
-> I really have no idea what you're arguing for or against.  What's your
-> point?
+> On 02/14, Denys Vlasenko wrote:
+> >
+> > On Mon, Feb 14, 2011 at 6:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > > On 02/14, Denys Vlasenko wrote:
+> > >>
+> > >> On Mon, Feb 14, 2011 at 4:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > >> > On 02/13, Denys Vlasenko wrote:
+> > >> >>
+> > >> >> $ strace -tt sleep 30
+> > >> >> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
+> > >> >> ...
+> > >> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
+> > >> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> > >> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> > >> >>     (I forgot again why we see it twice. Another quirk I guess...)
+> > >> >
+> > >> >      (this is correct, the tracee reports the signal=SIGSTOP, then
+> > >> >       it reports it actually stopps with exit_code=SIGSTOP)
+> > >>
+> > >> Ah, I see. Is there any way debugger can distinguish between these two
+> > >> different stops?
+> > >
+> > > IIRC, the (only?) way to distinguish is to check last_siginfo != NULL
+> > > via ptrace(PTRACE_GETSIGINFO).
+> >
+> > What do you think strace needs to do when it sees second SIGSTOP
+> > (meaning "in theory", not "on current kernel which may be buggy")?
+> >
+> > ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)?
+>
+> proably this, or even ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP).
+> I think.
+>
+> (assuming that ptrace_resume() respects TASK_STOPPED)
 
-I just want seperate setup_bootmem  ( and maybe init_memory_mapping_high...)
-out  that __register__ function.
+Oh, but I forgot to mention... there is another problem, _any_
+ptrace request when the tracee is stopped turns it into TASK_TRACED.
 
-that __register__ function do some sth like memblock_register to
-early_node_map[]
-looks reasonable.
+Oleg.
 
-Yinghai
