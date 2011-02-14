@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab1BNRcl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:32:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab1BNRci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:32:38 -0500
-Date: Mon, 14 Feb 2011 18:23:58 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214172358.GB14528@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <20110214161515.GA11605@redhat.com> <20110214163346.GZ18742@htj.dyndns.org>
+	id S1755755Ab1BNReQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:34:16 -0500
+Received: from stinky.trash.net ([213.144.137.162]:57140 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1BNReM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 12:34:12 -0500
+Message-ID: <4D596792.40204@trash.net>
+Date: Mon, 14 Feb 2011 18:34:10 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110214163346.GZ18742@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: netfilter is not a filesystem
+References: <bug-28862-10286@https.bugzilla.kernel.org/> <20110210141119.56d789fc.akpm@linux-foundation.org>
+In-Reply-To: <20110210141119.56d789fc.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Tejun Heo wrote:
->
-> On Mon, Feb 14, 2011 at 05:15:15PM +0100, Oleg Nesterov wrote:
-> > > > PTRACE_CONT in this situation would do the same.
-> > >
-> > > This can be fixed by updating strace, right?  strace can look at the
-> > > wait(2) exit code and if the tracee stopped for group stop, wait for
-> > > the tracee to be continued instead of issuing PTRACE_SYSCALL.
-> >
-> > Yes, in this particular case strace could be more clever.
-> >
-> > But. The tracee should react to SIGCONT after that, this means we
-> > shouldn't "delay" this stop or force the TASK_TRACED state.
->
-> Yeap, which is achievable by treating group stop differently from
-> ptrace traps and make it proceed to TASK_TRACED only if ptrace wants
-> to issue commands.
+Am 10.02.2011 23:11, schrieb Andrew Morton:
+> On Thu, 10 Feb 2011 21:55:26 GMT
+> bugzilla-daemon@bugzilla.kernel.org wrote:
+> 
+>> https://bugzilla.kernel.org/show_bug.cgi?id=28862
+>>
+>>            Summary: /proc/net/ip_conntrack: no space left on device
+>>                     systematically
+> 
+> This is why I'm forever nagging people to not just grab some errno
+> because its name happens to sound similar to the error you just detected.
+> 
+> Yes, it superficially seems nice and logical for netfilter to use
+> ENOSPC when it runs out of space.  But when that error code propagates
+> up to the user, they see "no space left on device" and will then run
+> "df" and wonder what the hell happened to their computer.
+> 
 
-Yes, agreed. And this is exactly what we currently do. Except, as you
-pointed out, the simple s/STOPPED/TRACED/ change is buggy. But the fix
-you suggested should be almost invisible to the userland.
+In this case this seems to be a simple bug, the seq_file callbacks
+want to indicate that the current buffer is full, using an incorrect
+code. I'm not sure why ENOSPC is used, this probably has never worked
+(and strangely nobody seems to have noticed).
 
-> (reiterating just to make sure there's no
-> misunderstanding)
-
-The same from my side ;)
-
-Oleg.
-
+This bug is probably present in more parts of netfilter, I'll do an
+audit and fix up all similar problems.
