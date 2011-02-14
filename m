@@ -1,154 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab1BNMtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 07:49:23 -0500
-Received: from ams-iport-1.cisco.com ([144.254.224.140]:9992 "EHLO
-	ams-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab1BNMtW (ORCPT
+	id S1754185Ab1BNMyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 07:54:09 -0500
+Received: from spamap1.ncut.edu.tw ([140.128.71.196]:50457 "EHLO
+	spamap1.ncut.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab1BNMyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 07:49:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgQBAAK0WE2Q/khLgWdsb2JhbACXKo5cFQEBFiIknlCaaIVeBIt/gzg
-X-IronPort-AV: E=Sophos;i="4.60,469,1291593600"; 
-   d="scan'208";a="76211737"
-From: Hans Verkuil <hansverk@cisco.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH v9 00/12] Media controller (core and V4L2)
-Date: Mon, 14 Feb 2011 13:49:45 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.32-23-generic; KDE/4.4.5; x86_64; ; )
-Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com
-References: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
-In-Reply-To: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102141349.45127.hansverk@cisco.com>
-X-OriginalArrivalTime: 14 Feb 2011 12:49:17.0390 (UTC) FILETIME=[975486E0:01CBCC45]
+	Mon, 14 Feb 2011 07:54:07 -0500
+X-Greylist: delayed 528 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Feb 2011 07:54:06 EST
+Message-Id: <201102141134.p1EBYVNI030480@ccmail.ncut.edu.tw>
+from: robertjet.fellow@gmail.com
+Reply-To: robertjet.fellow@gmail.com
+Date: Mon, 14 Feb 2011 19:34:30 +0800
+X-Originating-Ip: [190.41.154.192]
+X-Mailer: Hgiga v0.9
+Senderaccount: <hsuehyun@ncut.edu.tw>
+hmid: 10186666
+hhid: ncut.edu.tw
+huid: 1053950
+Content-Type: text/plain;
+	charset="big5"
+X-Received-IP: 140.128.71.225
+X-Envelope-From: <robertjet.fellow@gmail.com>
+X-Sherlock-Send: MailFilter (spamap1.ncut.edu.tw)
+X-SpamCheck: Hit=2.5, SARE_RECV_IP_140117:0.5,HGIGA_sender_951219_02:2.5,HGIGA_noSubject02:3.0,RM_tl_ToNone:4.0,NO_REAL_NAME:2.0,HGIGA_EMPTY_HTML:0.5,MIME_BASE64_TEXT:0.5,HGIGA_SPAM_Bsize_25:4.0,HGIGA_EMPTY_TEXT:0.5,HGRSA_NEW_SPAM_Mail22:1.0,HGRSA_WhiteHeader_Mailer_ALL:-30,BODY_EMPTY:3.0,MSGID_FROM_MTA_HEADER:1.0,HGRSA_NEW_SPAM_Mail64:2.0,HGRSA_NEW_SPAM_Mail290:3.0,HGRSA_NEW_SPAM_Mail291:5.0
+Subject: 
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1ECsCcn014358
 
-Here is my
+My name is Mr. R. Jet Fellows. Am a citizen of the united states presently in Hong Kong where i have been diagnosed with Esophageal cancer and it has defied all forms of medical treatment, and right now I have only about a few months to live according to the medical experts.
 
-Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
+Though am very rich, i never thought of raising my own family, I only focused on my businesses as that was the only thing I cared for. But now I regret all this as I now know that there is more to life than just wanting to have or make all the money in the world. The treatment of this disease has so far squashed a handsome amount of my money in savings.
+Now that my health has deteriorated so badly and it has been confirmed to me by the doctors that my ailment will defy all forms of medical treatment, i have decided not to spend more money on this ailment anymore.
 
-for this patch series.
+The last of my money which no one knows of is the huge cash deposit of $2.6m United States Dollars that I have with a Finance Vaulting Unit in the Europe . I will want you to help me collect this deposit from the company and help me distribute it to charity in your region. You will have 25% of this total sum for your time and effort. I cannot talk with you on the phone due to my health situation, and I am using my Laptop Computer to communicate with you, since this is my only means of communication. One passionate appeal i will make to you is to keep this transaction confidential until this money gets to you. If you are interested in carrying out this assignment on my behalf fill this form below when when writing me back.
 
-Regards,
+Email: robertjet.fellow@gmail.com
 
-	Hans
 
-On Monday, February 14, 2011 13:20:55 Laurent Pinchart wrote:
-> Hi everybody,
-> 
-> Here is the ninth version of the media controller core and V4L2 patches.
-> 
-> Quick reminder for those who missed the previous version. let me quote the
-> documentation (Documentation/DocBook/v4l/media-controller.xml).
-> 
-> "Discovering a [media] device internal topology, and configuring it at 
-runtime,
-> is one of the goals of the media controller API. To achieve this, hardware
-> devices are modelled as an oriented graph of building blocks called entities
-> connected through pads."
-> 
-> The code has been extensively reviewed by the V4L community, and this 
-version
-> is the first one to incorporate comments from the ALSA community (big thanks
-> to Mark Brown and Clemens Ladisch). Two issues are not fully addressed yet,
-> namely power management (I need to discuss this some more with the ALSA
-> developers to really understand their requirements) and entities type names.
-> I'm still posting this for review, as other developers have showed interest 
-in
-> commenting on the code.
-> 
-> I want to emphasize once again that the media controller API does not 
-replace
-> the V4L, DVB or ALSA APIs. It complements them.
-> 
-> The first user of the media controller API is the OMAP3 ISP driver. You can
-> find it (as well as these patches and other V4L-specific patches) in a git 
-tree
-> at http://git.linuxtv.org/pinchartl/media.git (media-0005-omap3isp branch). 
-The
-> OMAP3 ISP driver patches are regularly posted for review on the linux-media
-> list.
-> 
-> Laurent Pinchart (11):
->   media: Media device node support
->   media: Media device
->   media: Entities, pads and links
->   media: Entity use count
->   media: Media device information query
->   media: Entities, pads and links enumeration
->   media: Links setup
->   media: Pipelines and media streams
->   v4l: Add a media_device pointer to the v4l2_device structure
->   v4l: Make video_device inherit from media_entity
->   v4l: Make v4l2_subdev inherit from media_entity
-> 
-> Sakari Ailus (1):
->   media: Entity graph traversal
-> 
->  Documentation/ABI/testing/sysfs-bus-media          |    6 +
->  Documentation/DocBook/media-entities.tmpl          |   24 +
->  Documentation/DocBook/media.tmpl                   |    3 +
->  Documentation/DocBook/v4l/media-controller.xml     |   89 ++++
->  Documentation/DocBook/v4l/media-func-close.xml     |   59 +++
->  Documentation/DocBook/v4l/media-func-ioctl.xml     |  116 +++++
->  Documentation/DocBook/v4l/media-func-open.xml      |   94 ++++
->  .../DocBook/v4l/media-ioc-device-info.xml          |  133 +++++
->  .../DocBook/v4l/media-ioc-enum-entities.xml        |  308 +++++++++++
->  Documentation/DocBook/v4l/media-ioc-enum-links.xml |  207 ++++++++
->  Documentation/DocBook/v4l/media-ioc-setup-link.xml |   93 ++++
->  Documentation/media-framework.txt                  |  353 +++++++++++++
->  Documentation/video4linux/v4l2-framework.txt       |   72 +++-
->  drivers/media/Kconfig                              |   13 +
->  drivers/media/Makefile                             |    6 +
->  drivers/media/media-device.c                       |  382 ++++++++++++++
->  drivers/media/media-devnode.c                      |  321 ++++++++++++
->  drivers/media/media-entity.c                       |  536 
-++++++++++++++++++++
->  drivers/media/video/v4l2-dev.c                     |   49 ++-
->  drivers/media/video/v4l2-device.c                  |   49 ++-
->  drivers/media/video/v4l2-subdev.c                  |   28 +-
->  include/linux/Kbuild                               |    1 +
->  include/linux/media.h                              |  132 +++++
->  include/media/media-device.h                       |   95 ++++
->  include/media/media-devnode.h                      |   97 ++++
->  include/media/media-entity.h                       |  151 ++++++
->  include/media/v4l2-dev.h                           |    7 +
->  include/media/v4l2-device.h                        |    4 +
->  include/media/v4l2-subdev.h                        |    6 +
->  29 files changed, 3413 insertions(+), 21 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-bus-media
->  create mode 100644 Documentation/DocBook/v4l/media-controller.xml
->  create mode 100644 Documentation/DocBook/v4l/media-func-close.xml
->  create mode 100644 Documentation/DocBook/v4l/media-func-ioctl.xml
->  create mode 100644 Documentation/DocBook/v4l/media-func-open.xml
->  create mode 100644 Documentation/DocBook/v4l/media-ioc-device-info.xml
->  create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-entities.xml
->  create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-links.xml
->  create mode 100644 Documentation/DocBook/v4l/media-ioc-setup-link.xml
->  create mode 100644 Documentation/media-framework.txt
->  create mode 100644 drivers/media/media-device.c
->  create mode 100644 drivers/media/media-devnode.c
->  create mode 100644 drivers/media/media-entity.c
->  create mode 100644 include/linux/media.h
->  create mode 100644 include/media/media-device.h
->  create mode 100644 include/media/media-devnode.h
->  create mode 100644 include/media/media-entity.h
-> 
-> -- 
-> Regards,
-> 
-> Laurent Pinchart
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+Your names .......
+Your resident address. ......
+Your country name..........
+Your present location........
+Your occupation...............
+Your tel/cell number.........
+Your age/sex..................
+Your company name if any.......
+
+I will be waiting to hear from you as soon as you can.
+
+Sincerely yours,
+R. Jet Fellows.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
