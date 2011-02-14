@@ -1,551 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab1BNTlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:41:46 -0500
-Received: from mga03.intel.com ([143.182.124.21]:45466 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170Ab1BNTlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:41:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,469,1291622400"; 
-   d="scan'208";a="388636157"
-Date: Mon, 14 Feb 2011 11:41:42 -0800
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        akpm@linux-foundation.org, rdunlap@xenotime.net,
-        Cedric Le Goater <clg@vnet.ibm.com>
-Subject: Re: [PATCH 1/1, v7] cgroup/freezer: add per freezer duty ratio
- control
-Message-ID: <20110214114142.2ee04f69@jacob-laptop>
-In-Reply-To: <20110212232907.GN16432@count0.beaverton.ibm.com>
-References: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20110212232907.GN16432@count0.beaverton.ibm.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752163Ab1BNTmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:42:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36614 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab1BNTmD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 14:42:03 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=ed7x048ao0IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=PwWI8tTrfVudTQlDyy0A:9 a=q8AFnj3E-uHfLlQQZkMA:7 a=utmd51wzwKR2heo9iyHVm4FLQ00A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 09/10] tracing: Remove obsolete sched_switch tracer
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>
+In-Reply-To: <20110208221721.132033349@goodmis.org>
+References: <20110208221612.084294240@goodmis.org>
+	 <20110208221721.132033349@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 14 Feb 2011 14:42:00 -0500
+Message-ID: <1297712520.23343.73.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Feb 2011 15:29:07 -0800
-Matt Helsley <matthltc@us.ibm.com> wrote:
+On Tue, 2011-02-08 at 17:16 -0500, Steven Rostedt wrote:
+> plain text document attachment
+> (0009-tracing-Remove-obsolete-sched_switch-tracer.patch)
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> The trace events sched_switch and sched_wakeup do the same thing
+> as the stand alone sched_switch tracer does. It is no longer needed.
 
-> On Fri, Feb 11, 2011 at 11:10:44AM -0800,
-> jacob.jun.pan@linux.intel.com wrote:
-> > From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > 
-> > Freezer subsystem is used to manage batch jobs which can start
-> > stop at the same time. However, sometime it is desirable to let
-> > the kernel manage the freezer state automatically with a given
-> > duty ratio.
-> > For example, if we want to reduce the time that backgroup apps
-> > are allowed to run we can put them into a freezer subsystem and
-> > set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> > 
-> > This patch introduces two file nodes under cgroup
-> > freezer.duty_ratio_pct and freezer.period_sec
-> 
-> Again: I don't think this is the right approach in the long term.
-> It would be better not to add this interface and instead enable the
-> cpu cgroup subsystem for non-rt tasks using a similar duty ratio
-> concept..
-> 
-> Nevertheless, I've added some feedback on the code for you here :).
-> 
-Thanks for the thorough review, really appreciated.
-> > 
-> > Usage example: set period to be 5 seconds and frozen duty ratio 90%
-> > [root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
-> > [root@localhost aoa]# echo 5000 > freezer.period_ms
-> > 
-> > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > ---
-> >  Documentation/cgroups/freezer-subsystem.txt |   23 ++++
-> >  kernel/cgroup_freezer.c                     |  153
-> > ++++++++++++++++++++++++++- 2 files changed, 174 insertions(+), 2
-> > deletions(-)
-> > 
-> > diff --git a/Documentation/cgroups/freezer-subsystem.txt
-> > b/Documentation/cgroups/freezer-subsystem.txt index
-> > 41f37fe..2022b32 100644 ---
-> > a/Documentation/cgroups/freezer-subsystem.txt +++
-> > b/Documentation/cgroups/freezer-subsystem.txt @@ -100,3 +100,26 @@
-> > things happens: and returns EINVAL)
-> >  	3) The tasks that blocked the cgroup from entering the
-> > "FROZEN" state disappear from the cgroup's set of tasks.
-> > +
-> > +In embedded systems, it is desirable to manage group of
-> > applications +for power saving. E.g. tasks that are not in the
-> > foreground may be +frozen and unfrozen periodically to save power
-> > without affecting user +experience. In this case, user/management
-> > software can attach tasks +into freezer cgroup then specify duty
-> > ratio and period that the +managed tasks are allowed to run.
-> > +
-> > +Usage example:
-> > +Assuming freezer cgroup is already mounted, application being
-> > managed +are included the "tasks" file node of the given freezer
-> > cgroup. +To make the tasks frozen at 90% of the time every 5
-> > seconds, do: +
-> > +[root@localhost ]# echo 90 > freezer.duty_ratio_pct
-> > +[root@localhost ]# echo 5000 > freezer.period_ms
-> > +
-> > +After that, the application in this freezer cgroup will only be
-> > +allowed to run at the following pattern.
-> > +     __                    __                    __
-> > +    |  |<-- 90% frozen -->|  |                  |  |
-> > +____|  |__________________|  |__________________|  |_____
-> > +
-> > +    |<---- 5 seconds ---->|
-> 
-> So most of the time I've been reviewing this I managed to invert it!
-> I imagined "duty" meant the tasks were "on duty" ie runnable ie
-> thawed. But according this this documentation it's the opposite...
-> 
-My logic is that since this is a freezer, so positive logic should be
-frozen instead of thaw.
-> I've reviewed my review and now my comments are consistent with the
-> above. :) However it makes me wonder if there are better names which
-> would avoid this confusion.
-> 
-How about frozen_time_pct?
+Hmm, is this the right thing to do, or should we do the "WARN_ONCE()"
+when it is used, and give it a year to remove it?
 
-> > diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> > index e7bebb7..aaa91ca 100644
-> > --- a/kernel/cgroup_freezer.c
-> > +++ b/kernel/cgroup_freezer.c
-> > @@ -21,6 +21,7 @@
-> >  #include <linux/uaccess.h>
-> >  #include <linux/freezer.h>
-> >  #include <linux/seq_file.h>
-> > +#include <linux/kthread.h>
-> > 
-> >  enum freezer_state {
-> >  	CGROUP_THAWED = 0,
-> > @@ -28,12 +29,35 @@ enum freezer_state {
-> >  	CGROUP_FROZEN,
-> >  };
-> > 
-> > +enum duty_ratio_params {
-> > +	FREEZER_DUTY_RATIO = 0,
-> > +	FREEZER_PERIOD,
-> > +};
-> > +
-> > +struct freezer_toggle {
-> > +	unsigned int enabled:1;
-> > +	unsigned int freeze_thaw:1; /* 1: freeze 0: thaw */
-> > +} __packed;
-> > +
-> > +struct freezer_duty {
-> > +	u32 ratio; /* percentage of time frozen */
-> > +	u32 period_pct_ms; /* one percent of the period in
-> > miliseconds */ +};
-> 
-> I'd rather see you merge these two structures -- I don't see the value
-> of keeping them separate nor of packing the struct. You could also
-> merge the work item in there:
-> 
-> struct freezer_duty {
-> 	struct delayed_work freezer_work; /* work to duty-cycle a
-> cgroup */
-> 
-> 	u32 ratio; /* percentage of time frozen */
-> 	u32 period_pct_ms; /* one percent of the period in
-> miliseconds */ unsigned int enabled:1;
-> 	unsigned int freeze_thaw:1; /* 1: freeze 0: thaw */
-> };
-> 
-> (I'm going to make the rest of my comments without assuming you've
-> done this because it'll make them easier to follow given the context)
-> 
-I don't have strong preference, but it seems more logical to merge all
-toggling related structures. I will change that.
-> > +
-> >  struct freezer {
-> >  	struct cgroup_subsys_state css;
-> >  	enum freezer_state state;
-> > +	struct freezer_duty duty;
-> > +	struct delayed_work freezer_work; /* work to duty-cycle a
-> > cgroup */
-> > +	struct freezer_toggle toggle;
-> >  	spinlock_t lock; /* protects _writes_ to state */
-> >  };
-> > 
-> > +static int try_to_freeze_cgroup(struct cgroup *cgroup, struct
-> > freezer *freezer); +static void unfreeze_cgroup(struct cgroup
-> > *cgroup, struct freezer *freezer); +static int
-> > freezer_change_state(struct cgroup *cgroup,
-> > +				enum freezer_state goal_state);
-> > +
-> >  static inline struct freezer *cgroup_freezer(
-> >  		struct cgroup *cgroup)
-> >  {
-> > @@ -63,6 +87,41 @@ int cgroup_freezing_or_frozen(struct task_struct
-> > *task) return result;
-> >  }
-> > 
-> > +static DECLARE_WAIT_QUEUE_HEAD(freezer_wait);
-> > +
-> > +static void freezer_work_fn(struct work_struct *work)
-> > +{
-> > +	struct freezer *freezer;
-> > +	unsigned long delay_jiffies = 0;
-> > +	enum freezer_state goal_state;
-> > +
-> 
-> Looking better. There are alot of field accesses here which can race
-> with writes to the cgroup's duty ratio and period files. They should
-> be protected. Perhaps we can reuse the freezer spin lock. That also
-> has the benefit that we can eliminate the toggle.freeze_thaw bit I
-> think:
-> 
-I did think about the race, it does exist. but in practice. My thought
-was that since freezer_change_state() holds the spin_lock of the
-freezer, the race with writes to params are harmless, it just means the
-new period or ratio will take effect in the next period.
-In terms of using freezer spin lock to eliminate toggle flag, I am not
-sure if i know how to do that. Are you suggesting based on whether the
-spin lock is taken or not, we can decide the toggle? but the freeze
-spin lock is used by other functions as well not just the delay work
-here. I guess I have missed something.
-
-> > +
-> > +	freezer = container_of(work, struct freezer,
-> > freezer_work.work);
-> > +	/* toggle between THAWED and FROZEN state.
-> > +	 * thaw if freezer->toggle.freeze_thaw = 0; freeze
-> > otherwise
-> > +	 * skip the first round if already in the target states.
-> > +	 */
-> 
-> spin_lock(&freezer->lock);
-> 
-> > +	if ((freezer->toggle.freeze_thaw && freezer->state ==
-> > CGROUP_FROZEN) ||
-> > +		(!freezer->toggle.freeze_thaw &&
-> > +			freezer->state == CGROUP_THAWED)) {
-> > +		delay_jiffies = 0;
-> 
-> This looks wrong. We should never schedule freezer work delayed by 0
-> jiffies -- even if the delayed work API allows it. With 0-length
-> delays I'd worry that we could peg the CPU in an obscure infinite
-> loop.
-> 
-> I think you can safely eliminate this block and the "exit_toggle"
-> label.
-> 
-Good point. My initial thought was that since the period for targeted
-usage is quite long, e.g. 30 sec., we want to start the duty ratio
-right away. But that shouldn't matter since we already schedule work
-based on the new ratio/period.
-> > +		goto exit_toggle;
-> > +	} else if (freezer->toggle.freeze_thaw) {
-> 
-> 	if (freezer->state == CGROUP_THAWED) {
-> 
-> > +		goal_state = CGROUP_FROZEN;
-> > +		delay_jiffies =
-> > msecs_to_jiffies(freezer->duty.ratio *
-> > +
-> > freezer->duty.period_pct_ms);
-> > +	} else  {
-> > +		goal_state = CGROUP_THAWED;
-> > +		delay_jiffies = msecs_to_jiffies((100 -
-> > freezer->duty.ratio) *
-> > +
-> > freezer->duty.period_pct_ms);
-> > +	}
-> > +	freezer_change_state(freezer->css.cgroup, goal_state);
-> 
-> __freezer_change_state(freezer->css.cgroup, goal_state);
-> spin_unlock(&freezer->lock);
-> 
-> (where the __freezer_change_state() function expects to already have
-> the freezer lock -- you can make that your first patch and this your
-> second)
-> 
-> But you ought to double check the lock ordering, may-sleep, and
-> whether the _irq variants are correct.
-> 
-I agree with the change to deal with race but again, I don't see the
-harm of the race other than delaying one period. If the user has to
-change period and duty ratio separately, there will always be a window
-of unwanted params unless user disable it first.
-Can you please explain the problem might be caused by the race.
-> > +
-> > +exit_toggle:
-> > +	schedule_delayed_work(&freezer->freezer_work,
-> > delay_jiffies);
-> > +	freezer->toggle.freeze_thaw ^= 1;
-> 
-> This looks wrong. It looks like there could be a race between the next
-> scheduled work and the toggling of the freeze_thaw value. This race
-> would cause the cgroup to miss one or more duty cycles. You'd have
-> to re-order these two lines and probably need an smp barrier of one
-> sort or another between them.
-> 
-I will fix that. good point.
-
-
-> Of course if you use locking and eliminate the toggle.freeze_thaw
-> field as I've suggested then you can ignore this.
-> 
-same as before, not sure how to reuse the freezer spin lock for this.
-can you please explain.
-> > +}
-> > +
-> >  /*
-> >   * cgroups_write_string() limits the size of freezer state strings
-> > to
-> >   * CGROUP_LOCAL_BUFFER_SIZE
-> > @@ -150,7 +209,12 @@ static struct cgroup_subsys_state
-> > *freezer_create(struct cgroup_subsys *ss, static void
-> > freezer_destroy(struct cgroup_subsys *ss, struct cgroup *cgroup)
-> >  {
-> > -	kfree(cgroup_freezer(cgroup));
-> > +	struct freezer *freezer;
-> > +
-> > +	freezer = cgroup_freezer(cgroup);
-> > +	if (freezer->toggle.enabled)
-> > +		cancel_delayed_work_sync(&freezer->freezer_work);
-> > +	kfree(freezer);
-> >  }
-> > 
-> >  /*
-> > @@ -282,6 +346,16 @@ static int freezer_read(struct cgroup *cgroup,
-> > struct cftype *cft, return 0;
-> >  }
-> > 
-> > +static u64 freezer_read_duty_ratio(struct cgroup *cgroup, struct
-> > cftype *cft) +{
-> > +	return cgroup_freezer(cgroup)->duty.ratio;
-> > +}
-> > +
-> > +static u64 freezer_read_period(struct cgroup *cgroup, struct
-> > cftype *cft) +{
-> > +	return cgroup_freezer(cgroup)->duty.period_pct_ms * 100;
-> > +}
-> > +
-> >  static int try_to_freeze_cgroup(struct cgroup *cgroup, struct
-> > freezer *freezer) {
-> >  	struct cgroup_iter it;
-> > @@ -353,6 +427,7 @@ static int freezer_write(struct cgroup *cgroup,
-> >  {
-> >  	int retval;
-> >  	enum freezer_state goal_state;
-> > +	struct freezer *freezer;
-> > 
-> >  	if (strcmp(buffer, freezer_state_strs[CGROUP_THAWED]) == 0)
-> >  		goal_state = CGROUP_THAWED;
-> > @@ -360,7 +435,18 @@ static int freezer_write(struct cgroup *cgroup,
-> >  		goal_state = CGROUP_FROZEN;
-> >  	else
-> >  		return -EINVAL;
-> > -
-> > +	/* we should stop duty ratio toggling if user wants to
-> > +	 * force change to a valid state.
-> > +	 */
-> > +	freezer = cgroup_freezer(cgroup);
-> > +	if (freezer->duty.period_pct_ms && freezer->duty.ratio <
-> > 100) {
-> 
-> If duty.ratio is 100 then the delayed work should be cancelled too.
-> In fact it doesn't matter what the duty.ratio or period_pct_ms are --
-> writes to this file should always disable the duty cycle. Thus
-> you can omit the above if () and do this:
-> 
-> > +		if (freezer->toggle.enabled)
-> 
-agreed, i will fix it.
-> 						{
-> 
-> > +
-> > cancel_delayed_work_sync(&freezer->freezer_work);
-> > +		freezer->duty.ratio = 0;
-> 
-> Actually, shouldn't this be 0 if the cgroup is going to be thawed and
-> 100 if it's going to be frozen?
-> 
-I am using 0 as an invalid value when toggle is not enabled. perhaps i
-should introduce -1 such that when user override occurs we just do
-	freezer->toggle.enabled = 0;
-	freezer->duty.ratio = -1;
-	freezer->duty.period_pct_ms = -1;
-then we can allow and or 100% where both will turn off toggle as well.
-
-> > +		freezer->duty.period_pct_ms = 0;
-> 
-> I think this should always be a non-zero value -- even when duty
-> cycling is disabled. Perhaps:
-> 
-> 		freezer->duty.period_pct_ms = 1000/100;
-> 
-> So it's clear the default period is 1000ms and one percent of it is
-> 10ms.
-> 
-> (NOTE: To make it always non-zero you also need to add one line to the
-> cgroup initialization code in freezer_create()).
-how about -1 as suggested above.
+-- Steve
 
 > 
-> > +		freezer->toggle.enabled = 0;
-> > +		pr_info("freezer state changed by user, stop duty
-> > ratio\n");
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  Documentation/trace/ftrace.txt    |  110 -------------------------------------
+>  kernel/trace/trace_sched_switch.c |   48 ----------------
+>  2 files changed, 0 insertions(+), 158 deletions(-)
 > 
-> nit: I don't think this pr_info() is terribly useful.
-> 
-I will make it pr_debug instead.
-> > +	}
-> >  	if (!cgroup_lock_live_group(cgroup))
-> >  		return -ENODEV;
-> >  	retval = freezer_change_state(cgroup, goal_state);
-> > @@ -368,12 +454,75 @@ static int freezer_write(struct cgroup
-> > *cgroup, return retval;
-> >  }
-> > 
-> > +#define FREEZER_KH_PREFIX  "freezer_"
-> 
-> This #define is unused.
-fixed in v8
-> 
-> > +static int freezer_write_param(struct cgroup *cgroup, struct
-> > cftype *cft,
-> > +		u64 val)
-> > +{
-> > +	struct freezer *freezer;
-> > +	int ret = 0;
-> > +
-> > +	freezer = cgroup_freezer(cgroup);
-> > +
-> > +	if (!cgroup_lock_live_group(cgroup))
-> > +		return -ENODEV;
-> 
-> Because the delayed work function does not lock the cgroup this whole
-> function can race with the delayed work. So we need to be careful
-> about how we set/test all of these new fields -- we probably want to
-> reuse the freezer state lock for this so I've sprinkled some
-> lock/unlock bits with my comments below.
-> 
-same as before, I don't see the harm of the race.
-> > +
-> > +	switch (cft->private) {
-> > +	case FREEZER_DUTY_RATIO:
-> > +		if (val >= 100) {
-> 
-> ratio == 100 ought to be allowed too.
-Ok, 100% frozen would be equivalent to echo FROZEN > freezer.state. I
-will document these corner cases. I think as long as these behaviors
-are documented well so that user can get the anticipated results, the
-interface does matter that much.
+> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+> index 557c1ed..65eddb7 100644
+> --- a/Documentation/trace/ftrace.txt
+> +++ b/Documentation/trace/ftrace.txt
+> @@ -202,10 +202,6 @@ Here is the list of current tracers that may be configured.
+>  	to draw a graph of function calls similar to C code
+>  	source.
+>  
+> -  "sched_switch"
+> -
+> -	Traces the context switches and wakeups between tasks.
+> -
+>    "irqsoff"
+>  
+>  	Traces the areas that disable interrupts and saves
+> @@ -273,39 +269,6 @@ format, the function name that was traced "path_put" and the
+>  parent function that called this function "path_walk". The
+>  timestamp is the time at which the function was entered.
+>  
+> -The sched_switch tracer also includes tracing of task wakeups
+> -and context switches.
+> -
+> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:R   +  2916:115:S
+> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:R   +    10:115:S
+> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:R ==>    10:115:R
+> -        events/1-10    [01]  1453.070013:     10:115:S ==>  2916:115:R
+> -     kondemand/1-2916  [01]  1453.070013:   2916:115:S ==>     7:115:R
+> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:S ==>     0:140:R
+> -
+> -Wake ups are represented by a "+" and the context switches are
+> -shown as "==>".  The format is:
+> -
+> - Context switches:
+> -
+> -       Previous task              Next Task
+> -
+> -  <pid>:<prio>:<state>  ==>  <pid>:<prio>:<state>
+> -
+> - Wake ups:
+> -
+> -       Current task               Task waking up
+> -
+> -  <pid>:<prio>:<state>    +  <pid>:<prio>:<state>
+> -
+> -The prio is the internal kernel priority, which is the inverse
+> -of the priority that is usually displayed by user-space tools.
+> -Zero represents the highest priority (99). Prio 100 starts the
+> -"nice" priorities with 100 being equal to nice -20 and 139 being
+> -nice 19. The prio "140" is reserved for the idle task which is
+> -the lowest priority thread (pid 0).
+> -
+> -
+>  Latency trace format
+>  --------------------
+>  
+> @@ -491,79 +454,6 @@ x494] <- /root/a.out[+0x4a8] <- /lib/libc-2.7.so[+0x1e1a6]
+>                     latencies, as described in "Latency
+>                     trace format".
+>  
+> -sched_switch
+> -------------
+> -
+> -This tracer simply records schedule switches. Here is an example
+> -of how to use it.
+> -
+> - # echo sched_switch > current_tracer
+> - # echo 1 > tracing_enabled
+> - # sleep 1
+> - # echo 0 > tracing_enabled
+> - # cat trace
+> -
+> -# tracer: sched_switch
+> -#
+> -#           TASK-PID   CPU#    TIMESTAMP  FUNCTION
+> -#              | |      |          |         |
+> -            bash-3997  [01]   240.132281:   3997:120:R   +  4055:120:R
+> -            bash-3997  [01]   240.132284:   3997:120:R ==>  4055:120:R
+> -           sleep-4055  [01]   240.132371:   4055:120:S ==>  3997:120:R
+> -            bash-3997  [01]   240.132454:   3997:120:R   +  4055:120:S
+> -            bash-3997  [01]   240.132457:   3997:120:R ==>  4055:120:R
+> -           sleep-4055  [01]   240.132460:   4055:120:D ==>  3997:120:R
+> -            bash-3997  [01]   240.132463:   3997:120:R   +  4055:120:D
+> -            bash-3997  [01]   240.132465:   3997:120:R ==>  4055:120:R
+> -          <idle>-0     [00]   240.132589:      0:140:R   +     4:115:S
+> -          <idle>-0     [00]   240.132591:      0:140:R ==>     4:115:R
+> -     ksoftirqd/0-4     [00]   240.132595:      4:115:S ==>     0:140:R
+> -          <idle>-0     [00]   240.132598:      0:140:R   +     4:115:S
+> -          <idle>-0     [00]   240.132599:      0:140:R ==>     4:115:R
+> -     ksoftirqd/0-4     [00]   240.132603:      4:115:S ==>     0:140:R
+> -           sleep-4055  [01]   240.133058:   4055:120:S ==>  3997:120:R
+> - [...]
+> -
+> -
+> -As we have discussed previously about this format, the header
+> -shows the name of the trace and points to the options. The
+> -"FUNCTION" is a misnomer since here it represents the wake ups
+> -and context switches.
+> -
+> -The sched_switch file only lists the wake ups (represented with
+> -'+') and context switches ('==>') with the previous task or
+> -current task first followed by the next task or task waking up.
+> -The format for both of these is PID:KERNEL-PRIO:TASK-STATE.
+> -Remember that the KERNEL-PRIO is the inverse of the actual
+> -priority with zero (0) being the highest priority and the nice
+> -values starting at 100 (nice -20). Below is a quick chart to map
+> -the kernel priority to user land priorities.
+> -
+> -   Kernel Space                     User Space
+> - ===============================================================
+> -   0(high) to  98(low)     user RT priority 99(high) to 1(low)
+> -                           with SCHED_RR or SCHED_FIFO
+> - ---------------------------------------------------------------
+> -  99                       sched_priority is not used in scheduling
+> -                           decisions(it must be specified as 0)
+> - ---------------------------------------------------------------
+> - 100(high) to 139(low)     user nice -20(high) to 19(low)
+> - ---------------------------------------------------------------
+> - 140                       idle task priority
+> - ---------------------------------------------------------------
+> -
+> -The task states are:
+> -
+> - R - running : wants to run, may not actually be running
+> - S - sleep   : process is waiting to be woken up (handles signals)
+> - D - disk sleep (uninterruptible sleep) : process must be woken up
+> -					(ignores signals)
+> - T - stopped : process suspended
+> - t - traced  : process is being traced (with something like gdb)
+> - Z - zombie  : process waiting to be cleaned up
+> - X - unknown
+> -
+> -
+>  ftrace_enabled
+>  --------------
+>  
+> diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
+> index 8f758d0..7e62c0a 100644
+> --- a/kernel/trace/trace_sched_switch.c
+> +++ b/kernel/trace/trace_sched_switch.c
+> @@ -247,51 +247,3 @@ void tracing_sched_switch_assign_trace(struct trace_array *tr)
+>  	ctx_trace = tr;
+>  }
+>  
+> -static void stop_sched_trace(struct trace_array *tr)
+> -{
+> -	tracing_stop_sched_switch_record();
+> -}
+> -
+> -static int sched_switch_trace_init(struct trace_array *tr)
+> -{
+> -	ctx_trace = tr;
+> -	tracing_reset_online_cpus(tr);
+> -	tracing_start_sched_switch_record();
+> -	return 0;
+> -}
+> -
+> -static void sched_switch_trace_reset(struct trace_array *tr)
+> -{
+> -	if (sched_ref)
+> -		stop_sched_trace(tr);
+> -}
+> -
+> -static void sched_switch_trace_start(struct trace_array *tr)
+> -{
+> -	sched_stopped = 0;
+> -}
+> -
+> -static void sched_switch_trace_stop(struct trace_array *tr)
+> -{
+> -	sched_stopped = 1;
+> -}
+> -
+> -static struct tracer sched_switch_trace __read_mostly =
+> -{
+> -	.name		= "sched_switch",
+> -	.init		= sched_switch_trace_init,
+> -	.reset		= sched_switch_trace_reset,
+> -	.start		= sched_switch_trace_start,
+> -	.stop		= sched_switch_trace_stop,
+> -	.wait_pipe	= poll_wait_pipe,
+> -#ifdef CONFIG_FTRACE_SELFTEST
+> -	.selftest    = trace_selftest_startup_sched_switch,
+> -#endif
+> -};
+> -
+> -__init static int init_sched_switch_trace(void)
+> -{
+> -	return register_tracer(&sched_switch_trace);
+> -}
+> -device_initcall(init_sched_switch_trace);
+> -
 
-> 
-> > +			ret = -EINVAL;
-> > +			goto exit;
-> > +		}
-> 
-> Add:
-> 
-> 		spin_lock_irq(&freezer->lock);
-> 
-> > +		freezer->duty.ratio = val;
-> 
-> Because this can race with the delayed work.
-> 
-> > +		break;
-> > +	case FREEZER_PERIOD:
-> > +		do_div(val, 100);
-> > +		freezer->duty.period_pct_ms = val;
-> 
-> This can race with the delayed work. Also I think that a 0ms
-> period_pct_ms should be disallowed. Otherwise all the work delays go
-> to zero and we'll probably peg the CPU so that it's just spinning the
-> freezer state between FROZEN and THAWED and doing nothing else.
-> 
-0 or low number of period is dangerous for reason as you mentioned,
-I think I should move back to one second resolution. Especially, we are
-using common workqueue now.
 
-> Finally, I wonder if a 64-bit value is really necessary -- is a period
-> longer than roughly 50 days really necessary?
-> 
-> In summary, couldn't you just do something like:
-> 
-> 		if ((val < 100) || (val > UINT_MAX)) {
-> 			/* Too much time or may have rounded down to
-> 0 */ ret = -EINVAL;
-> 			goto exit;
-> 		}
-> 		val = (unsigned int)val / 100;
-> 		spin_lock_irq(&freezer->lock);
-> 		freezer->duty.period_pct_ms = val;
-> 
-u64 is not needed. I will fix that.
-
-> > +		break;
-> > +	default:
-> > +		BUG();
-> > +	}
-> > +
-> > +	/* only use delayed work when valid params are given. */
-> > +	if (freezer->duty.ratio && freezer->duty.period_pct_ms &&
-> > +		!freezer->toggle.enabled) {
-> > +		pr_debug("starting duty ratio mode\n");
-> > +		INIT_DELAYED_WORK(&freezer->freezer_work,
-> > freezer_work_fn);
-> > +		freezer->toggle.enabled = 1;
-> > +		schedule_delayed_work(&freezer->freezer_work, 0);
-> > +	} else if ((!freezer->duty.ratio
-> > || !freezer->duty.period_pct_ms) &&
-> > +		freezer->toggle.enabled) {
-> > +		pr_debug("invalid param, stop duty ratio mode
-> > %p\n",
-> > +			freezer->freezer_work.work.func);
-> > +		cancel_delayed_work_sync(&freezer->freezer_work);
-> > +		freezer->toggle.enabled = 0;
-> > +		/* thaw the cgroup if we are not toggling */
-> > +		freezer_change_state(freezer->css.cgroup,
-> > CGROUP_THAWED); +
-> > +	}
-> 
-> I don't think this is as readable as (assuming the change above to
-> disallow setting period_pct_ms to 0):
-> 
-> 	if (freezer->duty.ratio == 100) {
-> 		freezer_disable_duty_cycling(freezer); /* see helper
-> below */ __freezer_change_state(freezer->css.cgroup, CGROUP_FROZEN);
-> 	} else if (freezer->duty.ratio == 0) {
-> 		freezer_disable_duty_cycling(freezer);
-> 		__freezer_change_state(freezer->css.cgroup,
-> CGROUP_THAWED); } else {
-> 		if (freezer->toggle.enabled)
-> 			goto exit; /* Already enabled */
-> 		INIT_DELAYED_WORK(&freezer->freezer_work,
-> freezer_work_fn); freezer->toggle.enabled = 1;
-> 		schedule_delayed_work(&freezer->freezer_work, 0);
-> 	}
-> 	spin_unlock_irq(&freezer->lock);
-> 
-> Where the helper is:
-> 
-> static void freezer_disable_duty_cycling(struct freezer *freezer)
-> {
-> 	if (freezer->toggle.enabled) {
-> 		cancel_delayed_work_sync(&freezer->freezer_work);
-> 		freezer->toggle.enabled = 0;
-> 	}
-> }
-> 
-> which could also be called from freezer_write() I think.
->
-Other than my doubt on spin lock i.e. __freezer_change_state(), i think
-the helper function does make it cleaner.
-
-Thanks again,
-
-Jacob
