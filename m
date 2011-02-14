@@ -1,126 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab1BNM3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 07:29:14 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56263 "EHLO
+	id S1754097Ab1BNMc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 07:32:57 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49341 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab1BNM3L convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753999Ab1BNMcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 07:29:11 -0500
+	Mon, 14 Feb 2011 07:32:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=uudJ11r21LtURUrfhtRHDCz4dJ023sv8LSwfVUPxb5ylq+vEVlzX3iURETjZbgMK8o
-         7u1zG4kqIh/LnJnC4o0y3apnVq0oAOCEzjHU/hhy0z8HSJkyFsIK82FZVi7zZwqk4edT
-         nJ5o1532YAJ6iKbXZKjM8HJwumIuOnCtYohCs=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DJy5sxDI9ayb5TrRU9mw6cFSuVxx2x2PerSR+9j0/bLwO3rE/uKZwelLRYcuxHHequ
+         3KSuvyj1BCeM5sDr/DseRkQ4+aFWzg/7rOK/CwewX8J1Hosx+QHuR5U56/7B3nPXaP4i
+         R59ow0MGsSQgacJFegoqPKq0yvt7vnDLN9fqo=
+Date: Mon, 14 Feb 2011 14:32:44 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH] x86: fix section mismatch in reference from
+ native_play_dead
+Message-ID: <20110214123244.GA4586@swordfish.minsk.epam.com>
+References: <20110203131333.GA4161@swordfish.minsk.epam.com>
+ <20110214122550.GA15860@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTingOYyEs4ZZrcaV0NOhiuGzSpvkATPRFjhFMCmE@mail.gmail.com>
-References: <AANLkTinAYrGV1k357Bn8trtxafZDoYozG7LDcm3KNBSt@mail.gmail.com> <AANLkTingOYyEs4ZZrcaV0NOhiuGzSpvkATPRFjhFMCmE@mail.gmail.com>
-From: halli manjunatha <manjunatha_halli@ti.com>
-Date: Mon, 14 Feb 2011 17:58:48 +0530
-X-Google-Sender-Auth: QjOVltDsnCPUEw-OtKgTGoTAEik
-Message-ID: <AANLkTinQxwK_nVtJ2OOoQx8pTL_58cqoW4ZEE-utxbic@mail.gmail.com>
-Subject: Re: [GIT PULL] TI WL 128x FM V4L2 driver
-To: linux-media <linux-media@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+Content-Disposition: inline
+In-Reply-To: <20110214122550.GA15860@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
 
-V4L2 FM driver depend upon an underlying TI_ST driver which is the
-core transport driver.
-Updates to TI-ST driver happen on linux-next tree on kernel.org and
-are planned to be released in 2.6.39.
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Since your tree @
-[http://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git]
-lags behind the linux-next tree, the recent updates to TI-ST driver
-are missing on your tree.
+Hello,
 
-Unfortunately these would cause a build failure for the V4L2 driver,
-since the APIs have changed on the TI-ST driver.
-So, Please suggest on how to proceed to submit V4L2 driver ?
+On (02/14/11 13:25), Ingo Molnar wrote:
+> * Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+>=20
+> > Fix=20
+> >=20
+> > WARNING: arch/x86/kernel/built-in.o(.text+0x19cde): Section mismatch in=
+ reference from=20
+> > the function native_play_dead() to the function .cpuinit.text:mwait_usa=
+ble()
+> > The function native_play_dead() references the function __cpuinit mwait=
+_usable().
+> >=20
+> >=20
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> >=20
+> > ---
+> >=20
+> >  arch/x86/kernel/smpboot.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >=20
+> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> > index 0cbe8c0..0b8c6c9 100644
+> > --- a/arch/x86/kernel/smpboot.c
+> > +++ b/arch/x86/kernel/smpboot.c
+> > @@ -1467,7 +1467,7 @@ static inline void hlt_play_dead(void)
+> >  	}
+> >  }
+> > =20
+> > -void native_play_dead(void)
+> > +void __cpuinit native_play_dead(void)
+> >  {
+> >  	play_dead_common();
+> >  	tboot_shutdown(TB_SHUTDOWN_WFS);
+>=20
+> I think the right fix is Boris's fix below. Agreed?
+>=20
+[..]
+> diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+> index 6e6e755..4564c8e 100644
+> --- a/arch/x86/include/asm/cpu.h
+> +++ b/arch/x86/include/asm/cpu.h
+> @@ -32,6 +32,6 @@ extern void arch_unregister_cpu(int);
+> =20
+>  DECLARE_PER_CPU(int, cpu_state);
+> =20
+> -int __cpuinit mwait_usable(const struct cpuinfo_x86 *);
+> +int mwait_usable(const struct cpuinfo_x86 *);
+> =20
+>  #endif /* _ASM_X86_CPU_H */
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index e764fc0..3c189e9 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -506,7 +506,7 @@ static void poll_idle(void)
+>  #define MWAIT_ECX_EXTENDED_INFO		0x01
+>  #define MWAIT_EDX_C1			0xf0
+> =20
+> -int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
+> +int mwait_usable(const struct cpuinfo_x86 *c)
+>  {
+>  	u32 eax, ebx, ecx, edx;
+> =20
+>=20
 
-Do I pull in the changes which have gone into linux-next on my clone
-of your tree ? So that during a GIT pull changes on linux-next for
-TI-ST driver also gets into your tree?
+`int mwait_usable(..)' is called from `void __cpuinit select_idle_routine(.=
+=2E.)'
 
-Regards
-Manjunatha Halli
+I think we still have section mismatch in this case. Is it correct?
 
-> On Tue, Jan 25, 2011 at 11:18 AM, halli manjunatha <manjunatha_halli@ti.com> wrote:
->>
->> Hi Mauro,
->>
->> Please pull the WL128x FM V4L2 driver from
->> http://dev.omapzoom.org/pub/scm/manju/L24x-btfm.git fm_v4l2_upstream
->>
->> This is TI WL128x FM V4L2 driver and it introduces ‘wl128x’ folder
->> under the ‘drivers/media/radio’. This driver enables support for FM RX
->> and TX for Texas Instrument's WL128x (also compatible with WL127x)
->> WiLink chip sets. The V4L2 FM driver can work in either Rx or Tx mode,
->> and V4L2 interfaces are provided for both.
->>
->> Texas Instrument's WL128x chip set packs BT, FM, GPS and WLAN in a
->> single die with BT, FM and GPS being interfaced over a single UART.
->> This driver works on top of the shared transport line discipline
->> driver. This driver can also be made use for the WL127x version of the
->> chip which packs BT, FM and WLAN only.
->>
->> This driver has been reviewed by various folks within TI and also in
->> Linux media community. The driver has been tested extensively on TI
->> platforms and we believe that it is ready for merge into mainline.
->>
->> The following changes since commit db309d3d54c2f721dd1176ce86c63b0381c0a258:
->>  Mauro Carvalho Chehab (1):
->>        [media] add support for Encore FM3
->>
->> are available in the git repository at:
->>
->>  http://dev.omapzoom.org/pub/scm/manju/L24x-btfm.git fm_v4l2_upstream
->>
->> Manjunatha Halli (7):
->>      drivers:media:radio: wl128x: FM Driver common header file
->>      drivers:media:radio: wl128x: FM Driver V4L2 sources
->>      drivers:media:radio: wl128x: FM Driver Common sources
->>      drivers:media:radio: wl128x: FM driver RX sources
->>      drivers:media:radio: wl128x: FM driver TX sources
->>      drivers:media:radio: wl128x: Kconfig & Makefile for wl128x driver
->>      drivers:media:radio: Update Kconfig and Makefile for wl128x FM driver
->>
->>  drivers/media/radio/Kconfig               |    3 +
->>  drivers/media/radio/Makefile              |    1 +
->>  drivers/media/radio/wl128x/Kconfig        |   17 +
->>  drivers/media/radio/wl128x/Makefile       |    6 +
->>  drivers/media/radio/wl128x/fmdrv.h        |  244 +++++
->>  drivers/media/radio/wl128x/fmdrv_common.c | 1677 +++++++++++++++++++++++++++++
->>  drivers/media/radio/wl128x/fmdrv_common.h |  402 +++++++
->>  drivers/media/radio/wl128x/fmdrv_rx.c     |  847 +++++++++++++++
->>  drivers/media/radio/wl128x/fmdrv_rx.h     |   59 +
->>  drivers/media/radio/wl128x/fmdrv_tx.c     |  425 ++++++++
->>  drivers/media/radio/wl128x/fmdrv_tx.h     |   37 +
->>  drivers/media/radio/wl128x/fmdrv_v4l2.c   |  580 ++++++++++
->>  drivers/media/radio/wl128x/fmdrv_v4l2.h   |   33 +
->>  13 files changed, 4331 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/media/radio/wl128x/Kconfig
->>  create mode 100644 drivers/media/radio/wl128x/Makefile
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv.h
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_common.c
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_common.h
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.c
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.h
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.c
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.h
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
->>  create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
->>
->> --
->> Best Regards
->> Manjunatha Halli
->
+
+	Sergey
+
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk1ZIOwACgkQfKHnntdSXjTPywP/UCVIH77UiAdSBLogBZoLCJwJ
++u6mplcyiC/CpLt2MEr8xowv1fq5M5LMe+Wi//GUklbNZzaqDSnsP2oGlCf0oa+7
+sAq79ZLSSxg7utJK5u9IK9JRCxcVGBBxKdBoJhlbxipficLfeM1REeb8n8WtQUZY
+KWJkAribHnxGs6N+zUg=
+=4WpY
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
