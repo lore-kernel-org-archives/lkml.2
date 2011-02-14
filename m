@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751028Ab1BNRuI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:50:08 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60967 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1BNRuF (ORCPT
+	id S1751309Ab1BNRuY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:50:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34731 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751208Ab1BNRuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:50:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Rh/mJgXoiJI2zUi5AMWkB8+cHccxvGoXQQ64kNgmPFh2xv0Ex/+BNcsRjn5t5ljABY
-         hbPll9ZvsZWJlY6xB247mHKgbT1BEzLtO4qix9u5G8sBlfYMu6meW7tOUPSJ65QwSk8p
-         dMhxAqf3ZQrahuMd/gbsHrp7CIIJPTcbL8kMA=
+	Mon, 14 Feb 2011 12:50:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <1297705428.5226.142.camel@laptop>
-References: <cover.1294239591.git.jbaron@redhat.com>
-	<1297452328.5226.89.camel@laptop>
-	<BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
-	<1297460297.5226.99.camel@laptop>
-	<1297536465.5226.108.camel@laptop>
-	<20110214155113.GA2840@redhat.com>
-	<1297699024.2401.12.camel@twins>
-	<20110214160437.GB2840@redhat.com>
-	<BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl>
-	<1297700754.5226.110.camel@laptop>
-	<20110214162947.GA3449@redhat.com>
-	<1297701438.5226.113.camel@laptop>
-	<1297702013.23343.51.camel@gandalf.stny.rr.com>
-	<1297703892.23343.71.camel@gandalf.stny.rr.com>
-	<1297704447.5226.127.camel@laptop>
-	<AANLkTi=pXqya2vaUv2XNwRr6T==MW8ZtQ_yg6V9sipcy@mail.gmail.com>
-	<1297705428.5226.142.camel@laptop>
-Date: Mon, 14 Feb 2011 17:50:04 +0000
-Message-ID: <AANLkTi=jz+mGru--+YA62EeER17Tuq2DocrkKNaU2k+1@mail.gmail.com>
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Will Newton <will.newton@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, dhowells <dhowells@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "heiko.carstens" <heiko.carstens@de.ibm.com>,
-        benh <benh@kernel.crashing.org>
+In-Reply-To: <AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+ <m1hbce46fw.fsf@fess.ebiederm.org> <AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
+ <m1bp2ly41q.fsf@fess.ebiederm.org> <AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
+ <AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
+ <AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
+ <m14o87wev8.fsf@fess.ebiederm.org> <AANLkTimO3h80Wk44OhpfkjzxpzdDKnf6emj2fNObn_jD@mail.gmail.com>
+ <m1r5bbthan.fsf@fess.ebiederm.org> <m1fwrrtc0m.fsf@fess.ebiederm.org>
+ <m139nqsk3q.fsf@fess.ebiederm.org> <AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 14 Feb 2011 09:49:33 -0800
+Message-ID: <AANLkTimwbkQQkwcX19NVcmSfv5O1dP9oeEBegbQLSh60@mail.gmail.com>
+Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alex Riesen <raa.lkml@gmail.com>, David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 5:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-02-14 at 17:38 +0000, Will Newton wrote:
->> On Mon, Feb 14, 2011 at 5:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>
->> >> So all but a few have basically (as you said on IRC)
->> >> #define atomic_read(v) ACCESS_ONCE(v)
->> >
->> > ACCESS_ONCE(v->counter), but yeah :-)
->>
->> I maintain an out-of-tree architecture where that isn't the case
->> unfortunately [1]. Not expecting any special favours for being
->> out-of-tree of course, but just thought I would add that data point.
->>
->> [1] Our atomic operations go around the cache rather than through it,
->> so the value of an atomic cannot be read with a normal load
->> instruction.
+On Mon, Feb 14, 2011 at 8:37 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Cannot how? It would observe a stale value? That is acceptable for
-> atomic_read().
+> In other words: I can pretty much guarantee that this is a "struct
+> list" that is in a 8kB allocation at offset 0x1748. And that gets
+> re-initialized after it got freed.
 
-It would observe a stale value, but that value would only be updated
-when the cache line was reloaded from main memory which would have to
-be triggered by either eviction or cache flushing. So it could get
-pretty stale. Whilst that's probably within the spec. of atomic_read I
-suspect it would lead to problems in practice. I could be wrong
-though.
+Btw, can you just make that 'vmlinux' image (not the compressed one,
+the actual final object file that I could do "objdump" on) available
+somewhere, or just send me the .config file to try to reproduce it
+closely enough to see what the 0x1748 offset might be.
+
+As mentioned, those offsets change (often wildly) depending on config
+options, and I don't think I've seen the .config file you have (or if
+I've seen it, I've misplaced it).
+
+                             Linus
