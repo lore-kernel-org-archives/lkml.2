@@ -1,196 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab1BNPMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:12:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753867Ab1BNPMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:12:37 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: masami.hiramatsu.pt@hitachi.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [RFC,PATCH] kprobes - optimized kprobes might crash before setting kernel stack
-Date: Mon, 14 Feb 2011 16:12:34 +0100
-Message-Id: <1297696354-6990-1-git-send-email-jolsa@redhat.com>
+	id S1755569Ab1BNPNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 10:13:48 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60973 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab1BNPNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 10:13:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=f0px3aQpCTu8x/3VZ32q+d8onHtgGUbDl1admqvG+dQ4L/RafHidap8JxVx5IIGwNe
+         E+ZNDdHz2IQdE/A9CxWWVIG8BbPrBgI0u/5AYRjEQyDoeCfVCwlQmT0mSGO1LLVSi323
+         LJEWidvVNCJaoxymQKLMfKBt8o75lbOZtlLbM=
+Date: Mon, 14 Feb 2011 16:13:40 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110214151340.GP18742@htj.dyndns.org>
+References: <20110204105343.GA12133@htj.dyndns.org>
+ <20110207174821.GA1237@redhat.com>
+ <20110209141803.GH3770@htj.dyndns.org>
+ <201102132325.55353.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102132325.55353.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+Hello, Denys.
 
-you can crash the kernel using kprobe tracer via:
+On Sun, Feb 13, 2011 at 11:25:55PM +0100, Denys Vlasenko wrote:
+> But this "diddling behind group stop's back" is exactly the current
+> problem with stop signals.
 
-echo "p system_call_after_swapgs" > ./kprobe_events
-echo 1 > ./events/kprobes/enable
+Maybe.  I don't necessarily agree but can see your point too but I
+think more important part is that that's a behavior which is quite
+noticeable from userland.
 
-The reason is that at the system_call_after_swapgs label,
-the kernel stack is not set up. If optimized kprobes are
-enabled, the user space stack is being used in this case
-(see optimized kprobe template) and this might result in a crash.
+> Here I try to stop a ptraced process:
+> 
+> $ strace -tt sleep 30
+> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
+> ...
+> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
+> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+>     (I forgot again why we see it twice. Another quirk I guess...)
+> 23:02:23.781310 restart_syscall(<... resuming interrupted call ...>) = 0
+> 23:02:45.622433 close(1)                = 0
+> 23:02:45.622743 close(2)                = 0
+> 23:02:45.622885 exit_group(0)           = ?
+> 
+> Why sleep didn't stop?
+> 
+> Because PTRACE_SYSCALL brought the task out of group stop at once,
+> even though strace did try hard to not do so:
+> 
+>     ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP) <-- note SIGSTOP!
+> 
+> PTRACE_CONT in this situation would do the same.
 
-Looks like there are several places like this over the entry_$(BIT)
-code. First I thought it'd be ok to localize those places, but
-I haven't found any reasonable/maintainable way to disable only those
-places.
+This can be fixed by updating strace, right?  strace can look at the
+wait(2) exit code and if the tracee stopped for group stop, wait for
+the tracee to be continued instead of issuing PTRACE_SYSCALL.
 
-So I switched off the whole entry code from optimizing, but this
-also switch many safe places (attached patch - tested on x86_64).
+> You are saying that it is useful that gdb restarts group-stopped task
+> with mere PTRACE_CONT. Above is a counter-example where it is anti-useful:
+> I would muchly prefer strace to see task sit stopped until it gets SIGCONT
+> (or some fatal signal).
 
-Also not sure this crash falls in to the area of that once such
-probe is used, user should know consequences..
+This is more of an issue which can be improved in strace.  Sure,
+changing the kernel to enforce group stop over ptrace would make this
+case behave better but at the cost of breaking gdb.
 
-any ideas?
+> Why gdb can't use SIGCONT instead of PTRACE_CONT, just like every
+> other tool which needs to resume stopped tasks?
 
-wbr,
-jirka
+Because that's how PTRACE_CONT behaved the whole time.  It can but
+just hasn't needed to.
 
+Thanks.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/ia32/ia32entry.S         |    2 ++
- arch/x86/kernel/entry_32.S        |    6 ++++--
- arch/x86/kernel/entry_64.S        |    6 ++++--
- arch/x86/kernel/kprobes.c         |    8 ++++++++
- arch/x86/kernel/vmlinux.lds.S     |    1 +
- include/asm-generic/sections.h    |    1 +
- include/asm-generic/vmlinux.lds.h |    6 ++++++
- 7 files changed, 26 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 0ed7896..50f1630 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -25,6 +25,8 @@
- #define sysretl_audit ia32_ret_from_sys_call
- #endif
- 
-+	.section .entry.text, "ax"
-+
- #define IA32_NR_syscalls ((ia32_syscall_end - ia32_sys_call_table)/8)
- 
- 	.macro IA32_ARG_FIXUP noebp=0
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..051b4e2 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -65,6 +65,8 @@
- #define sysexit_audit	syscall_exit_work
- #endif
- 
-+	.section .entry.text, "ax"
-+
- /*
-  * We use macros for low-level operations which need to be overridden
-  * for paravirtualization.  The following will never clobber any registers:
-@@ -788,7 +790,7 @@ ENDPROC(ptregs_clone)
-  */
- .section .init.rodata,"a"
- ENTRY(interrupt)
--.text
-+.entry.text
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -807,7 +809,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.long 1b
--      .text
-+      .entry.text
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index aed1ffb..0a0ed79 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -61,6 +61,8 @@
- #define __AUDIT_ARCH_LE	   0x40000000
- 
- 	.code64
-+	.section .entry.text, "ax"
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- ENTRY(mcount)
-@@ -744,7 +746,7 @@ END(stub_rt_sigreturn)
-  */
- 	.section .init.rodata,"a"
- ENTRY(interrupt)
--	.text
-+	.section .entry.text
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -763,7 +765,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.quad 1b
--      .text
-+      .section .entry.text
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index d91c477..d03bc1e 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1276,6 +1276,14 @@ static int __kprobes can_optimize(unsigned long paddr)
- 	if (!kallsyms_lookup_size_offset(paddr, &size, &offset))
- 		return 0;
- 
-+	/*
-+	 * Do not optimize in the entry code due to the unstable
-+	 * stack handling.
-+	 */
-+	if ((paddr >= (unsigned long ) __entry_text_start) &&
-+	    (paddr <  (unsigned long ) __entry_text_end))
-+		return 0;
-+
- 	/* Check there is enough space for a relative jump. */
- 	if (size - offset < RELATIVEJUMP_SIZE)
- 		return 0;
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index e9f7a3c..0381e1f 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -105,6 +105,7 @@ SECTIONS
- 		SCHED_TEXT
- 		LOCK_TEXT
- 		KPROBES_TEXT
-+		ENTRY_TEXT
- 		IRQENTRY_TEXT
- 		*(.fixup)
- 		*(.gnu.warning)
-diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
-index b3bfabc..c1a1216 100644
---- a/include/asm-generic/sections.h
-+++ b/include/asm-generic/sections.h
-@@ -11,6 +11,7 @@ extern char _sinittext[], _einittext[];
- extern char _end[];
- extern char __per_cpu_load[], __per_cpu_start[], __per_cpu_end[];
- extern char __kprobes_text_start[], __kprobes_text_end[];
-+extern char __entry_text_start[], __entry_text_end[];
- extern char __initdata_begin[], __initdata_end[];
- extern char __start_rodata[], __end_rodata[];
- 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index fe77e33..906c3ce 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -424,6 +424,12 @@
- 		*(.kprobes.text)					\
- 		VMLINUX_SYMBOL(__kprobes_text_end) = .;
- 
-+#define ENTRY_TEXT							\
-+		ALIGN_FUNCTION();					\
-+		VMLINUX_SYMBOL(__entry_text_start) = .;			\
-+		*(.entry.text)						\
-+		VMLINUX_SYMBOL(__entry_text_end) = .;
-+
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- #define IRQENTRY_TEXT							\
- 		ALIGN_FUNCTION();					\
 -- 
-1.7.1
-
+tejun
