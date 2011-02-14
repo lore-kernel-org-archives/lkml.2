@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1BNXIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 18:08:22 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42663 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751882Ab1BNXIR (ORCPT
+	id S1753419Ab1BNXDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 18:03:13 -0500
+Received: from blu0-omc1-s6.blu0.hotmail.com ([65.55.116.17]:31488 "EHLO
+	blu0-omc1-s6.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751312Ab1BNXDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 18:08:17 -0500
-Date: Mon, 14 Feb 2011 15:07:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Matt Helsley <matthltc@us.ibm.com>, jacob.jun.pan@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        rdunlap@xenotime.net, Cedric Le Goater <clg@vnet.ibm.com>
-Subject: Re: [PATCH 1/1, v7] cgroup/freezer: add per freezer duty ratio
- control
-Message-Id: <20110214150730.058319a5.akpm@linux-foundation.org>
-In-Reply-To: <4D58A01E.9000203@linux.intel.com>
-References: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20110212232907.GN16432@count0.beaverton.ibm.com>
-	<20110214094402.4eefe70d.kamezawa.hiroyu@jp.fujitsu.com>
-	<4D58A01E.9000203@linux.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 14 Feb 2011 18:03:09 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP35EF654A11660330F0AFA196D00@phx.gbl>
+Date: Mon, 14 Feb 2011 18:03:01 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Matt Fleming <matt@console-pimps.org>
+CC: David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        peterz@infradead.org, will.newton@gmail.com, jbaron@redhat.com,
+        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <1297707868.5226.189.camel@laptop> <1297718964.23343.75.camel@gandalf.stny.rr.com> <1297719576.23343.80.camel@gandalf.stny.rr.com> <20110214.134600.179933733.davem@davemloft.net> <20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 17:55:46 up 313 days,  8:45,  7 users,  load average: 1.16, 1.41,
+	1.42
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 14 Feb 2011 23:03:07.0821 (UTC) FILETIME=[57FA4DD0:01CBCC9B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Feb 2011 19:23:10 -0800
-Arjan van de Ven <arjan@linux.intel.com> wrote:
-
-> On 2/13/2011 4:44 PM, KAMEZAWA Hiroyuki wrote:
-> > On Sat, 12 Feb 2011 15:29:07 -0800
-> > Matt Helsley<matthltc@us.ibm.com>  wrote:
-> >
-> >> On Fri, Feb 11, 2011 at 11:10:44AM -0800, jacob.jun.pan@linux.intel.com wrote:
-> >>> From: Jacob Pan<jacob.jun.pan@linux.intel.com>
-> >>>
-> >>> Freezer subsystem is used to manage batch jobs which can start
-> >>> stop at the same time. However, sometime it is desirable to let
-> >>> the kernel manage the freezer state automatically with a given
-> >>> duty ratio.
-> >>> For example, if we want to reduce the time that backgroup apps
-> >>> are allowed to run we can put them into a freezer subsystem and
-> >>> set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> >>>
-> >>> This patch introduces two file nodes under cgroup
-> >>> freezer.duty_ratio_pct and freezer.period_sec
-> >> Again: I don't think this is the right approach in the long term.
-> >> It would be better not to add this interface and instead enable the
-> >> cpu cgroup subsystem for non-rt tasks using a similar duty ratio
-> >> concept..
-> >>
-> >> Nevertheless, I've added some feedback on the code for you here :).
-> >>
-> > AFAIK, there was a work for bandwidth control in CFS.
-> >
-> > http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-10/msg04335.html
-> >
-> > I tested this and worked fine. This schduler approach seems better for
-> > my purpose to limit bandwidth of apprications rather than freezer.
+* Matt Fleming (matt@console-pimps.org) wrote:
+> On Mon, 14 Feb 2011 13:46:00 -0800 (PST)
+> David Miller <davem@davemloft.net> wrote:
 > 
-> for our purpose, it's not about bandwidth.
-> it's about making sure the class of apps don't run for a long period 
-> (30-second range) of time.
+> > From: Steven Rostedt <rostedt@goodmis.org>
+> > Date: Mon, 14 Feb 2011 16:39:36 -0500
+> > 
+> > > Thus it is not about global, as global is updated by normal means
+> > > and will update the caches. atomic_t is updated via the ll/sc that
+> > > ignores the cache and causes all this to break down. IOW... broken
+> > > hardware ;)
+> > 
+> > I don't see how cache coherency can possibly work if the hardware
+> > behaves this way.
 > 
+> Cache coherency is still maintained provided writes/reads both go
+> through the cache ;-)
+> 
+> The problem is that for read-modify-write operations the arbitration
+> logic that decides who "wins" and is allowed to actually perform the
+> write, assuming two or more CPUs are competing for a single memory
+> address, is not implemented in the cache controller, I think. I'm not a
+> hardware engineer and I never understood how the arbitration logic
+> worked but I'm guessing that's the reason that the ll/sc instructions
+> bypass the cache.
+> 
+> Which is why the atomic_t functions worked out really well for that
+> arch, such that any accesses to an atomic_t * had to go through the
+> wrapper functions.
 
-The discussion about this patchset seems to have been upside-down: lots
-of talk about a particular implementation, with people walking back
-from the implemetnation trying to work out what the requirements were,
-then seeing if other implementations might suit those requirements. 
-Whatever they were.
+If this is true, then we have bugs in lots of xchg/cmpxchg users (which
+do not reside in atomic.h), e.g.:
 
-I think it would be helpful to start again, ignoring (for now) any
-implementation.
+fs/fs_struct.c:
+int current_umask(void)
+{
+        return current->fs->umask;
+}
+EXPORT_SYMBOL(current_umask);
 
+kernel/sys.c:
+SYSCALL_DEFINE1(umask, int, mask)
+{
+        mask = xchg(&current->fs->umask, mask & S_IRWXUGO);
+        return mask;
+}
 
-What are the requirements here, guys?  What effects are we actually
-trying to achieve?  Once that is understood and agreed to, we can
-think about implementations.
+The solution to this would be to force all xchg/cmpxchg users to swap to
+atomic.h variables, which would force the ll semantic on read. But I'd
+really like to see where this is documented first -- or which PowerPC
+engineer we should talk to.
 
+Thanks,
 
-And maybe you people _are_ clear about the requirements.  But I'm not and
-I'm sure many others aren't too.  A clear statement of them would help
-things along and would doubtless lead to better code.  This is pretty
-basic stuff!
+Mathieu
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
