@@ -1,65 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab1BNMYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 07:24:21 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37289 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab1BNMYS convert rfc822-to-8bit (ORCPT
+	id S1754877Ab1BNMYu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 07:24:50 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58169 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab1BNMVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 07:24:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=PnMQROuN3tRT81lxOMa1Ky6ZCQuhJsnWreTm5rvR23QtGk4YeDiKC5V24Oc+SuN73G
-         P39dwQdOp+wkDw7Xewhp6VjYSMc5gLR1ktxIQ3u13gLz9QK3x5yB4I0VI5kAKiJCPlI5
-         gYHBE+WBkqdGOTSqoBt8lFIIeGUlkf20c28Cs=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTimM1Tmws46DUyoNGsn+P8WN1XPsRu=L8yPzd=xU@mail.gmail.com>
-References: <AANLkTimM1Tmws46DUyoNGsn+P8WN1XPsRu=L8yPzd=xU@mail.gmail.com>
-Date: Mon, 14 Feb 2011 13:24:16 +0100
-Message-ID: <AANLkTikO=5zBCvPbd2MXqgzE_mvnabTtH_e2C5_5bpQv@mail.gmail.com>
-Subject: Re: [next-20110214] Kernel-modules with unknown parameter
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, DRI <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Feb 2011 07:21:13 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Cc: sakari.ailus@maxwell.research.nokia.com
+Subject: [PATCH v9 04/12] media: Entity graph traversal
+Date: Mon, 14 Feb 2011 13:20:59 +0100
+Message-Id: <1297686067-9666-5-git-send-email-laurent.pinchart@ideasonboard.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
+References: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 1:13 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> Hi,
->
-> I have pulled Dave's drm-fixes-staging into today's linux-next and did
-> not see a KMS-modesetted resolution change in VT (runlevel-3).
-> After a quick check of my dmesg, I see also my kernel-module for sound
-> has "unknown parameter".
-> ( Thus, personally I don't think it is a bug from any drm-2.6 tree. )
->
-> # dmesg | egrep -i 'unknown|param'
-> [   12.431216] radeon: Unknown parameter `modeset'
-> [   12.665911] snd_intel8x0m: Unknown parameter `index'
-> [   37.311333] radeon: Unknown parameter `modeset'
->
-> Any idea what's going on? Stephen, Randy noticed the same like me?
->
-> Regards,
-> - Sedat -
->
-> P.S.: Attached are dmesg and kernel dot-config.
->
+From: Sakari Ailus <sakari.ailus@iki.fi>
 
-[ CC Dmitry Torokhov ]
+Add media entity graph traversal. The traversal follows enabled links by
+depth first. Traversing graph backwards is prevented by comparing the next
+possible entity in the graph with the previous one. Multiply connected
+graphs are thus not supported.
 
-Could that be a possible fix for me [1]?
+Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Vimarsh Zutshi <vimarsh.zutshi@gmail.com>
+---
+ Documentation/media-framework.txt |   42 +++++++++++++
+ drivers/media/media-entity.c      |  115 +++++++++++++++++++++++++++++++++++++
+ include/media/media-entity.h      |   15 +++++
+ 3 files changed, 172 insertions(+), 0 deletions(-)
 
-- Sedat -
+diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
+index 0257bad..ab17f33 100644
+--- a/Documentation/media-framework.txt
++++ b/Documentation/media-framework.txt
+@@ -216,3 +216,45 @@ Links have flags that describe the link capabilities and state.
+ 	modified at runtime. If MEDIA_LNK_FL_IMMUTABLE is set, then
+ 	MEDIA_LNK_FL_ENABLED must also be set since an immutable link is always
+ 	enabled.
++
++
++Graph traversal
++---------------
++
++The media framework provides APIs to iterate over entities in a graph.
++
++To iterate over all entities belonging to a media device, drivers can use the
++media_device_for_each_entity macro, defined in include/media/media-device.h.
++
++	struct media_entity *entity;
++
++	media_device_for_each_entity(entity, mdev) {
++		/* entity will point to each entity in turn */
++		...
++	}
++
++Drivers might also need to iterate over all entities in a graph that can be
++reached only through enabled links starting at a given entity. The media
++framework provides a depth-first graph traversal API for that purpose.
++
++Note that graphs with cycles (whether directed or undirected) are *NOT*
++supported by the graph traversal API. To prevent infinite loops, the graph
++traversal code limits the maximum depth to MEDIA_ENTITY_ENUM_MAX_DEPTH,
++currently defined as 16.
++
++Drivers initiate a graph traversal by calling
++
++	media_entity_graph_walk_start(struct media_entity_graph *graph,
++				      struct media_entity *entity);
++
++The graph structure, provided by the caller, is initialized to start graph
++traversal at the given entity.
++
++Drivers can then retrieve the next entity by calling
++
++	media_entity_graph_walk_next(struct media_entity_graph *graph);
++
++When the graph traversal is complete the function will return NULL.
++
++Graph traversal can be interrupted at any moment. No cleanup function call is
++required and the graph structure can be freed normally.
+diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
+index 5c31df9..166f2b5 100644
+--- a/drivers/media/media-entity.c
++++ b/drivers/media/media-entity.c
+@@ -84,6 +84,121 @@ media_entity_cleanup(struct media_entity *entity)
+ }
+ EXPORT_SYMBOL_GPL(media_entity_cleanup);
+ 
++/* -----------------------------------------------------------------------------
++ * Graph traversal
++ */
++
++static struct media_entity *
++media_entity_other(struct media_entity *entity, struct media_link *link)
++{
++	if (link->source->entity == entity)
++		return link->sink->entity;
++	else
++		return link->source->entity;
++}
++
++/* push an entity to traversal stack */
++static void stack_push(struct media_entity_graph *graph,
++		       struct media_entity *entity)
++{
++	if (graph->top == MEDIA_ENTITY_ENUM_MAX_DEPTH - 1) {
++		WARN_ON(1);
++		return;
++	}
++	graph->top++;
++	graph->stack[graph->top].link = 0;
++	graph->stack[graph->top].entity = entity;
++}
++
++static struct media_entity *stack_pop(struct media_entity_graph *graph)
++{
++	struct media_entity *entity;
++
++	entity = graph->stack[graph->top].entity;
++	graph->top--;
++
++	return entity;
++}
++
++#define stack_peek(en)	((en)->stack[(en)->top - 1].entity)
++#define link_top(en)	((en)->stack[(en)->top].link)
++#define stack_top(en)	((en)->stack[(en)->top].entity)
++
++/**
++ * media_entity_graph_walk_start - Start walking the media graph at a given entity
++ * @graph: Media graph structure that will be used to walk the graph
++ * @entity: Starting entity
++ *
++ * This function initializes the graph traversal structure to walk the entities
++ * graph starting at the given entity. The traversal structure must not be
++ * modified by the caller during graph traversal. When done the structure can
++ * safely be freed.
++ */
++void media_entity_graph_walk_start(struct media_entity_graph *graph,
++				   struct media_entity *entity)
++{
++	graph->top = 0;
++	graph->stack[graph->top].entity = NULL;
++	stack_push(graph, entity);
++}
++EXPORT_SYMBOL_GPL(media_entity_graph_walk_start);
++
++/**
++ * media_entity_graph_walk_next - Get the next entity in the graph
++ * @graph: Media graph structure
++ *
++ * Perform a depth-first traversal of the given media entities graph.
++ *
++ * The graph structure must have been previously initialized with a call to
++ * media_entity_graph_walk_start().
++ *
++ * Return the next entity in the graph or NULL if the whole graph have been
++ * traversed.
++ */
++struct media_entity *
++media_entity_graph_walk_next(struct media_entity_graph *graph)
++{
++	if (stack_top(graph) == NULL)
++		return NULL;
++
++	/*
++	 * Depth first search. Push entity to stack and continue from
++	 * top of the stack until no more entities on the level can be
++	 * found.
++	 */
++	while (link_top(graph) < stack_top(graph)->num_links) {
++		struct media_entity *entity = stack_top(graph);
++		struct media_link *link = &entity->links[link_top(graph)];
++		struct media_entity *next;
++
++		/* The link is not enabled so we do not follow. */
++		if (!(link->flags & MEDIA_LNK_FL_ENABLED)) {
++			link_top(graph)++;
++			continue;
++		}
++
++		/* Get the entity in the other end of the link . */
++		next = media_entity_other(entity, link);
++
++		/* Was it the entity we came here from? */
++		if (next == stack_peek(graph)) {
++			link_top(graph)++;
++			continue;
++		}
++
++		/* Push the new entity to stack and start over. */
++		link_top(graph)++;
++		stack_push(graph, next);
++	}
++
++	return stack_pop(graph);
++}
++EXPORT_SYMBOL_GPL(media_entity_graph_walk_next);
++
++/* -----------------------------------------------------------------------------
++ * Links management
++ */
++
+ static struct media_link *media_entity_add_link(struct media_entity *entity)
+ {
+ 	if (entity->num_links >= entity->max_links) {
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index f6c856c..28f61f6 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -113,10 +113,25 @@ static inline u32 media_entity_subtype(struct media_entity *entity)
+ 	return entity->type & MEDIA_ENT_SUBTYPE_MASK;
+ }
+ 
++#define MEDIA_ENTITY_ENUM_MAX_DEPTH	16
++
++struct media_entity_graph {
++	struct {
++		struct media_entity *entity;
++		int link;
++	} stack[MEDIA_ENTITY_ENUM_MAX_DEPTH];
++	int top;
++};
++
+ int media_entity_init(struct media_entity *entity, u16 num_pads,
+ 		struct media_pad *pads, u16 extra_links);
+ void media_entity_cleanup(struct media_entity *entity);
+ int media_entity_create_link(struct media_entity *source, u16 source_pad,
+ 		struct media_entity *sink, u16 sink_pad, u32 flags);
+ 
++void media_entity_graph_walk_start(struct media_entity_graph *graph,
++		struct media_entity *entity);
++struct media_entity *
++media_entity_graph_walk_next(struct media_entity_graph *graph);
++
+ #endif
+-- 
+1.7.3.4
 
-[1] https://patchwork.kernel.org/patch/548891/
