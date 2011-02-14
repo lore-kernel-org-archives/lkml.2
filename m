@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab1BNUB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 15:01:57 -0500
-Received: from xes-mad.com ([216.165.139.218]:19850 "EHLO xes-mad.com"
+	id S1753275Ab1BNUCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 15:02:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55454 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab1BNUBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 15:01:55 -0500
-Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
-From: Peter Tyser <ptyser@xes-inc.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>
-In-Reply-To: <20110214191420.GB30647@angua.secretlab.ca>
-References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
-	 <1297698493.965.5475.camel@petert>
-	 <AANLkTins1TanjbbwVJixmLcO9Gs-z7jryN8Hs0o_EWNK@mail.gmail.com>
-	 <20110214191420.GB30647@angua.secretlab.ca>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Feb 2011 14:01:28 -0600
-Message-ID: <1297713688.965.6088.camel@petert>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751680Ab1BNUCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 15:02:31 -0500
+Message-ID: <4D598A3A.9080802@zytor.com>
+Date: Mon, 14 Feb 2011 12:02:02 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>, Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
+ mappings
+References: <4D50343E.1020906@kernel.org>	<alpine.DEB.2.00.1102071839060.7277@kaball-desktop>	<4D504161.2060900@kernel.org>	<4D506A85.9030802@goop.org>	<4D50B4B5.4050505@kernel.org>	<4D519AAA.8070309@zytor.com>	<4D547962.8040403@goop.org>	<4D547B74.1030302@kernel.org>	<4D54844B.4010007@zytor.com>	<4D5488D5.2020607@kernel.org>	<20110214162602.GB11290@dumpdata.com> <AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
+In-Reply-To: <AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 12:14 -0700, Grant Likely wrote:
-> On Mon, Feb 14, 2011 at 09:02:02AM -0700, Grant Likely wrote:
-> > On Mon, Feb 14, 2011 at 8:48 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
-> > > On Thu, 2011-01-06 at 13:54 -0600, Peter Tyser wrote:
-> > >> Add a new get_direction() function to the gpio_chip structure.  This is
-> > >> useful so that the direction of a pin can be determined when its
-> > >> exported.  Previously, the direction defaulted to 'in' regardless of the
-> > >> actual configuration of the GPIO pin which resulted in the 'direction'
-> > >> sysfs file often being incorrect.
-> > >>
-> > >> If a GPIO driver implements get_direction(), it is called in
-> > >> gpio_request() to set the initial direction of the pin accurately.
-> > >
-> > > I see Grant was just added as a GPIO maintainer, so added him on CC.
-> > >
-> > > Anything gating getting these 3 patches being picked up?
-> > 
-> > I'll take a look at them later today.
+On 02/14/2011 09:55 AM, Yinghai Lu wrote:
 > 
-> What are the other two patches?  I only see this one.  Can you repost?
+> Assume, we can update vmlinux.lds.S to make _end to be 2M aligned as
+> Stefano suggested?
+> 
 
-I just resent the 3 patches to you off-list.  They can also be found at:
-https://patchwork.kernel.org/patch/460411/
-https://patchwork.kernel.org/patch/460321/
-https://patchwork.kernel.org/patch/460331/
+I am concerned about this.  This feels like papering over a bug.
 
-Peter
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
