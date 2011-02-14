@@ -1,138 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab1BNUpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 15:45:34 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:43805 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab1BNUpb (ORCPT
+	id S1753357Ab1BNUpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 15:45:50 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49700 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab1BNUps convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 15:45:31 -0500
-Date: Mon, 14 Feb 2011 15:44:06 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2011-02-14
-Message-ID: <20110214204406.GG2722@tuxdriver.com>
+	Mon, 14 Feb 2011 15:45:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1297133758.2323.5.camel@localhost.localdomain>
+References: <1294266337.3237.45.camel@localhost.localdomain>
+	<201101270942.07689.sgrubb@redhat.com>
+	<20110128184901.GA5134@localhost>
+	<201101281410.29794.sgrubb@redhat.com>
+	<20110128193809.GB8854@localhost>
+	<1296584221.3145.12.camel@localhost.localdomain>
+	<20110201212605.GB5294@localhost>
+	<AANLkTin6Msom+b8wHULvzEjA+VL5ofQ9wx-ZN5SiK6-p@mail.gmail.com>
+	<1297133758.2323.5.camel@localhost.localdomain>
+Date: Mon, 14 Feb 2011 15:45:46 -0500
+Message-ID: <AANLkTin701rA70UzDYK21nSmUAYz62Xg=-Rtxg8nebWw@mail.gmail.com>
+Subject: Re: [PATCH] System Wide Capability Bounding Set
+From: Eric Paris <eparis@parisplace.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Steve Grubb <sgrubb@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+On Mon, Feb 7, 2011 at 9:55 PM, Eric Paris <eparis@redhat.com> wrote:
+>
+> Below is what I'm working on.  I've asked dhowells to review the creds
+> code, since commit_creds() does not take const.  Maybe that's just an
+> oversight.  Basically I've exposed two new sysctls.
+>
+> /proc/sys/kernel/usermodehelper/bset
+> /proc/sys/kernel/usermodehelper/inheritable
+>
+> You must have CAP_SYS_MODULE to change these (changes are &= ONLY).
+> When the kernel launches a usermodehelper it will do so with these as
+> the bset and pI.  I haven't attempted securebits and uid (since I didn't
+> really need them I don't think)  But will if anyone can think of a use
+> case.
+>
+> Is this what you were thinking?
 
-A handful of fixes intended for 2.6.38...
 
-This includes a couple of bluetooth device IDs, a bluetooth one-liner
-to avoid multiple connection responses, a locking fix to avoid some
-log spam, and a patch to turn off PCLP health checking for iwl3945
-(because the checking has not proven helpful and it kills performance).
+Anything?  Problems with this patch/approach?
 
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
----
-
-The following changes since commit ddfdb508866b3c07b295f6c85c271981d88afe4c:
-
-  net/can/softing: make CAN_SOFTING_CS depend on CAN_SOFTING (2011-02-14 11:44:01 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Bao Liang (1):
-      Bluetooth: Set conn state to BT_DISCONN to avoid multiple responses
-
-Cho, Yu-Chen (1):
-      Bluetooth: add Atheros BT AR9285 fw supported
-
-Eliad Peller (1):
-      mac80211: add missing locking in ieee80211_reconfig
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth-2.6
-
-Stanislaw Gruszka (1):
-      iwl3945: remove plcp check
-
- drivers/bluetooth/ath3k.c               |    2 ++
- drivers/bluetooth/btusb.c               |    3 +++
- drivers/net/wireless/iwlwifi/iwl-3945.c |    1 -
- net/bluetooth/l2cap.c                   |    1 +
- net/mac80211/util.c                     |    2 ++
- 5 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index a126e61..333c212 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -39,6 +39,8 @@ static struct usb_device_id ath3k_table[] = {
- 	/* Atheros AR3011 with sflash firmware*/
- 	{ USB_DEVICE(0x0CF3, 0x3002) },
- 
-+	/* Atheros AR9285 Malbec with sflash firmware */
-+	{ USB_DEVICE(0x03F0, 0x311D) },
- 	{ }	/* Terminating entry */
- };
- 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 1da773f..4cefa91 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -102,6 +102,9 @@ static struct usb_device_id blacklist_table[] = {
- 	/* Atheros 3011 with sflash firmware */
- 	{ USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
- 
-+	/* Atheros AR9285 Malbec with sflash firmware */
-+	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
-+
- 	/* Broadcom BCM2035 */
- 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
- 	{ USB_DEVICE(0x0a5c, 0x200a), .driver_info = BTUSB_WRONG_SCO_MTU },
-diff --git a/drivers/net/wireless/iwlwifi/iwl-3945.c b/drivers/net/wireless/iwlwifi/iwl-3945.c
-index a9b852b..3eb14fd 100644
---- a/drivers/net/wireless/iwlwifi/iwl-3945.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
-@@ -2734,7 +2734,6 @@ static struct iwl_lib_ops iwl3945_lib = {
- 	.isr_ops = {
- 		.isr = iwl_isr_legacy,
- 	},
--	.check_plcp_health = iwl3945_good_plcp_health,
- 
- 	.debugfs_ops = {
- 		.rx_stats_read = iwl3945_ucode_rx_stats_read,
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index 7550abb..675614e 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -859,6 +859,7 @@ static void __l2cap_sock_close(struct sock *sk, int reason)
- 				result = L2CAP_CR_SEC_BLOCK;
- 			else
- 				result = L2CAP_CR_BAD_PSM;
-+			sk->sk_state = BT_DISCONN;
- 
- 			rsp.scid   = cpu_to_le16(l2cap_pi(sk)->dcid);
- 			rsp.dcid   = cpu_to_le16(l2cap_pi(sk)->scid);
-diff --git a/net/mac80211/util.c b/net/mac80211/util.c
-index cf68700..d036597 100644
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@ -1210,7 +1210,9 @@ int ieee80211_reconfig(struct ieee80211_local *local)
- 		switch (sdata->vif.type) {
- 		case NL80211_IFTYPE_STATION:
- 			changed |= BSS_CHANGED_ASSOC;
-+			mutex_lock(&sdata->u.mgd.mtx);
- 			ieee80211_bss_info_change_notify(sdata, changed);
-+			mutex_unlock(&sdata->u.mgd.mtx);
- 			break;
- 		case NL80211_IFTYPE_ADHOC:
- 			changed |= BSS_CHANGED_IBSS;
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+-Eric
