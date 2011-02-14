@@ -1,48 +1,597 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab1BNKkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 05:40:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43922 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab1BNKkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 05:40:14 -0500
-From: Michal Simek <monstr@monstr.eu>
-To: glikely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>,
-        John Williams <john.williams@petalogix.com>
-Subject: [PATCH] of: Add missing of_address.h to xilinx ehci driver
-Date: Mon, 14 Feb 2011 11:40:09 +0100
-Message-Id: <1297680009-4054-1-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
+	id S1753419Ab1BNKlE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 05:41:04 -0500
+Received: from [222.66.143.30] ([222.66.143.30]:13698 "EHLO lab-desktop"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752757Ab1BNKlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 05:41:02 -0500
+X-Greylist: delayed 1797 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Feb 2011 05:41:01 EST
+From: test <test@ten.analog.com>
+To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: drivers@analog.com, jic23@cam.ac.uk,
+        device-drivers-devel@blackfin.uclinux.org,
+        Cliff Cai <cliff.cai@analog.com>
+Subject: [PATCH] IIO driver for Analog Devices Digital Output Gyroscope ADXRS450
+Date: Mon, 14 Feb 2011 17:47:29 +0800
+Message-Id: <1297676849-28704-1-git-send-email-test@ten.analog.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build log:
-In file included from drivers/usb/host/ehci-hcd.c:1208:
-drivers/usb/host/ehci-xilinx-of.c: In function 'ehci_hcd_xilinx_of_probe':
-drivers/usb/host/ehci-xilinx-of.c:168: error: implicit declaration of function 'of_address_to_resource'
+From: Cliff Cai <cliff.cai@analog.com>
 
-Signed-off-by: John Williams <john.williams@petalogix.com>
-Signed-off-by: Michal Simek <monstr@monstr.eu>
+Signed-off-by: Cliff Cai <cliff.cai@analog.com>
 ---
- drivers/usb/host/ehci-xilinx-of.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/staging/iio/gyro/Kconfig         |   10 +
+ drivers/staging/iio/gyro/Makefile        |    3 +
+ drivers/staging/iio/gyro/adxrs450.h      |   48 +++
+ drivers/staging/iio/gyro/adxrs450_core.c |  471 ++++++++++++++++++++++++++++++
+ 4 files changed, 532 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/iio/gyro/adxrs450.h
+ create mode 100644 drivers/staging/iio/gyro/adxrs450_core.c
 
-diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
-index e8f4f36..a6f21b8 100644
---- a/drivers/usb/host/ehci-xilinx-of.c
-+++ b/drivers/usb/host/ehci-xilinx-of.c
-@@ -29,6 +29,7 @@
+diff --git a/drivers/staging/iio/gyro/Kconfig b/drivers/staging/iio/gyro/Kconfig
+index 236f15f..3432967 100644
+--- a/drivers/staging/iio/gyro/Kconfig
++++ b/drivers/staging/iio/gyro/Kconfig
+@@ -45,3 +45,13 @@ config ADIS16251
  
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/of_address.h>
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called adis16251.
++
++config ADXRS450
++	tristate "Analog Devices ADXRS450 Digital Output Gyroscope SPI driver"
++	depends on SPI
++	help
++	  Say yes here to build support for Analog Devices ADXRS450 programmable
++	  digital output gyroscope.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called adxrs450.
+diff --git a/drivers/staging/iio/gyro/Makefile b/drivers/staging/iio/gyro/Makefile
+index 2764c15..2212240 100644
+--- a/drivers/staging/iio/gyro/Makefile
++++ b/drivers/staging/iio/gyro/Makefile
+@@ -17,3 +17,6 @@ obj-$(CONFIG_ADIS16260) += adis16260.o
  
- /**
-  * ehci_xilinx_of_setup - Initialize the device for ehci_reset()
+ adis16251-y             := adis16251_core.o
+ obj-$(CONFIG_ADIS16251) += adis16251.o
++
++adxrs450-y             := adxrs450_core.o
++obj-$(CONFIG_ADXRS450) += adxrs450.o
+diff --git a/drivers/staging/iio/gyro/adxrs450.h b/drivers/staging/iio/gyro/adxrs450.h
+new file mode 100644
+index 0000000..5d8566a
+--- /dev/null
++++ b/drivers/staging/iio/gyro/adxrs450.h
+@@ -0,0 +1,48 @@
++#ifndef SPI_ADXRS450_H_
++#define SPI_ADXRS450_H_
++
++#define ADXRS450_STARTUP_DELAY	50 /* ms */
++
++/* The MSB for the spi commands */
++#define ADXRS450_SENSOR_DATA    (0x2 << 27 | 0x1)
++#define ADXRS450_READ_REG(a)    ((0x20 << 26) | (a << 17) | 0x1)
++#define ADXRS450_WRITE_REG(a, value) \
++		((0x10 << 26) | (a << 17) | (value << 1) | 0x1)
++
++#define ADXRS450_RATE1	0x00	/* Rate Registers */
++#define ADXRS450_TEMP1	0x02	/* Temperature Registers */
++#define ADXRS450_LOCST1	0x04	/* Low CST Memory Registers */
++#define ADXRS450_HICST1	0x06	/* High CST Memory Registers */
++#define ADXRS450_QUAD1	0x08	/* Quad Memory Registers */
++#define ADXRS450_FAULT1	0x0A	/* Fault Registers */
++#define ADXRS450_PID1	0x0C	/* Part ID Registers */
++#define ADXRS450_SNH	0x0E	/* Serial Number Registers, 4 bytes */
++#define ADXRS450_SNL	0x10
++#define ADXRS450_DNC1	0x12	/* Dynamic Null Correction Registers */
++
++#define ADXRS450_WRERR_MASK	(0x7 << 29)
++
++#define ADXRS450_MAX_RX 1
++#define ADXRS450_MAX_TX 1
++
++#define ADXRS450_SPI_SLOW	(u32)(300 * 1000)
++#define ADXRS450_SPI_FAST	(u32)(2000 * 1000)
++#define ADXRS450_GET_ST(a)	((a >> 26) & 0x3)
++
++/**
++ * struct adxrs450_state - device instance specific data
++ * @us:			actual spi_device
++ * @indio_dev:		industrial I/O device structure
++ * @tx:			transmit buffer
++ * @rx:			recieve buffer
++ * @buf_lock:		mutex to protect tx and rx
++ **/
++struct adxrs450_state {
++	struct spi_device		*us;
++	struct iio_dev			*indio_dev;
++	u32				*tx;
++	u32				*rx;
++	struct mutex			buf_lock;
++};
++
++#endif /* SPI_ADXRS450_H_ */
+diff --git a/drivers/staging/iio/gyro/adxrs450_core.c b/drivers/staging/iio/gyro/adxrs450_core.c
+new file mode 100644
+index 0000000..4feb653
+--- /dev/null
++++ b/drivers/staging/iio/gyro/adxrs450_core.c
+@@ -0,0 +1,471 @@
++/*
++ * ADXRS450 Digital Output Gyroscope Driver
++ *
++ * Copyright 2010 Analog Devices Inc.
++ *
++ * Licensed under the GPL-2 or later.
++ */
++
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/spi/spi.h>
++#include <linux/slab.h>
++#include <linux/sysfs.h>
++#include <linux/list.h>
++
++#include "../iio.h"
++#include "../sysfs.h"
++#include "gyro.h"
++#include "../adc/adc.h"
++
++#include "adxrs450.h"
++
++#define DRIVER_NAME		"adxrs450"
++
++/* ADXRS450 only support 32-bit spi transfer, all the registers are read only */
++
++
++/**
++ * adxrs450_spi_read_reg_16() - read 2 bytes from a register pair
++ * @dev: device associated with child of actual device (iio_dev or iio_trig)
++ * @reg_address: the address of the lower of the two registers,which should be an even address,
++ * Second register's address is reg_address + 1.
++ * @val: somewhere to pass back the value read
++ **/
++static int adxrs450_spi_read_reg_16(struct device *dev,
++		u8 reg_address,
++		u16 *val)
++{
++	struct spi_message msg;
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
++	int ret;
++	struct spi_transfer xfers[] = {
++		{
++			.tx_buf = st->tx,
++			.bits_per_word = 32,
++			.len = 4,
++			.cs_change = 1,
++		}, {
++			.rx_buf = st->rx,
++			.bits_per_word = 32,
++			.len = 4,
++			.cs_change = 1,
++		},
++	};
++
++	mutex_lock(&st->buf_lock);
++	st->tx[0] = ADXRS450_READ_REG(reg_address);
++	spi_message_init(&msg);
++	spi_message_add_tail(&xfers[0], &msg);
++	spi_message_add_tail(&xfers[1], &msg);
++	ret = spi_sync(st->us, &msg);
++	if (ret) {
++		dev_err(&st->us->dev, "problem while reading 16 bit register 0x%02x\n",
++				reg_address);
++		goto error_ret;
++	}
++	*val = (st->rx[0] >> 5);
++
++error_ret:
++	mutex_unlock(&st->buf_lock);
++	return ret;
++}
++
++/**
++ * adxrs450_spi_sensor_data() - read 2 bytes sensor data
++ * @dev: device associated with child of actual device (iio_dev or iio_trig)
++ * @val: somewhere to pass back the value read
++ **/
++static int adxrs450_spi_sensor_data(struct device *dev,
++		u32 *val, char chk)
++{
++	struct spi_message msg;
++	struct iio_dev *indio_dev = dev_get_drvdata(dev);
++	struct adxrs450_state *st = iio_dev_get_devdata(indio_dev);
++	int ret;
++	struct spi_transfer xfers[] = {
++		{
++			.tx_buf = st->tx,
++			.bits_per_word = 32,
++			.len = 4,
++			.cs_change = 1,
++		}, {
++			.rx_buf = st->rx,
++			.bits_per_word = 32,
++			.len = 4,
++			.cs_change = 1,
++		},
++	};
++
++	mutex_lock(&st->buf_lock);
++	st->tx[0] = ADXRS450_SENSOR_DATA;
++	if (chk)
++		st->tx[0] |= 0x2;
++	spi_message_init(&msg);
++	spi_message_add_tail(&xfers[0], &msg);
++	spi_message_add_tail(&xfers[1], &msg);
++	ret = spi_sync(st->us, &msg);
++	if (ret) {
++		dev_err(&st->us->dev, "problem while reading sensor data\n");
++		goto error_ret;
++	}
++
++	*val = st->rx[0];
++
++error_ret:
++	mutex_unlock(&st->buf_lock);
++	return ret;
++}
++
++static ssize_t adxrs450_read_rate(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_RATE1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_temp(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_TEMP1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_locst(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_LOCST1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_hicst(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_HICST1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_quad(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_QUAD1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_fault(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_FAULT1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_pid(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_PID1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_sn(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t0, t1;
++	u32 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_SNH,
++			&t0);
++	if (ret)
++		return ret;
++
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_SNL,
++			&t1);
++	if (ret)
++		return ret;
++	t = (t0 << 16) | t1;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_dnc(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u16 t;
++	ret = adxrs450_spi_read_reg_16(dev,
++			ADXRS450_DNC1,
++			&t);
++	if (ret)
++		return ret;
++	len = sprintf(buf, "%d\n", t);
++	return len;
++}
++
++static ssize_t adxrs450_read_sensor_data(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	int ret, len = 0;
++	u32 t;
++	u16 data;
++	ret = adxrs450_spi_sensor_data(dev, &t, 0);
++	if (ret)
++		return ret;
++	data = (u16)(t >> 10);
++	len = sprintf(buf, "%d\n", data);
++	return len;
++}
++
++/* Recommeded Startup Sequence by spec */
++static int adxrs450_initial_setup(struct adxrs450_state *st)
++{
++	u32 t;
++	int ret;
++	struct device *dev = &st->indio_dev->dev;
++	/* use low spi speed for init */
++	st->us->max_speed_hz = ADXRS450_SPI_SLOW;
++	st->us->chip_select = 4;
++	st->us->mode = SPI_MODE_0;
++	spi_setup(st->us);
++
++	msleep(ADXRS450_STARTUP_DELAY*2);
++
++	ret = adxrs450_spi_sensor_data(dev, &t, 1);
++	if (ret)
++		return ret;
++	if (t != 0x00000001)
++		return -ENODEV;
++
++	msleep(ADXRS450_STARTUP_DELAY);
++	ret = adxrs450_spi_sensor_data(dev, &t, 0);
++	if (ret)
++		return ret;
++	msleep(ADXRS450_STARTUP_DELAY);
++	ret = adxrs450_spi_sensor_data(dev, &t, 0);
++	if (ret)
++		return ret;
++	if (((t & 0xff) != 0xff) && (ADXRS450_GET_ST(t) != 2))
++		return -EIO;
++	ret = adxrs450_spi_sensor_data(dev, &t, 0);
++	if (ret)
++		return ret;
++	if (((t & 0xff) != 0xff) && (ADXRS450_GET_ST(t) != 2))
++		return -EIO;
++
++	printk(KERN_INFO DRIVER_NAME ": at CS%d\n",
++			st->us->chip_select);
++
++	return 0;
++}
++
++static IIO_DEVICE_ATTR(sensor_data, S_IRUGO,
++		adxrs450_read_sensor_data, NULL, 0);
++static IIO_DEVICE_ATTR(rate, S_IRUGO,
++		adxrs450_read_rate, NULL, 0);
++static IIO_DEVICE_ATTR(temperature, S_IRUGO,
++		adxrs450_read_temp, NULL, 0);
++static IIO_DEVICE_ATTR(low_cst, S_IRUGO,
++		adxrs450_read_locst, NULL, 0);
++static IIO_DEVICE_ATTR(high_cst, S_IRUGO,
++		adxrs450_read_hicst, NULL, 0);
++static IIO_DEVICE_ATTR(quad, S_IRUGO,
++		adxrs450_read_quad, NULL, 0);
++static IIO_DEVICE_ATTR(fault, S_IRUGO,
++		adxrs450_read_fault, NULL, 0);
++static IIO_DEVICE_ATTR(part_id, S_IRUGO,
++		adxrs450_read_pid, NULL, 0);
++static IIO_DEVICE_ATTR(serial_number, S_IRUGO,
++		adxrs450_read_sn, NULL, 0);
++static IIO_DEVICE_ATTR(dynamic_null_correction, S_IRUGO,
++		adxrs450_read_dnc, NULL, 0);
++
++
++static IIO_CONST_ATTR(name, "adxrs450");
++
++static struct attribute *adxrs450_attributes[] = {
++
++	&iio_dev_attr_sensor_data.dev_attr.attr,
++	&iio_dev_attr_rate.dev_attr.attr,
++	&iio_dev_attr_temperature.dev_attr.attr,
++	&iio_dev_attr_low_cst.dev_attr.attr,
++	&iio_dev_attr_high_cst.dev_attr.attr,
++	&iio_dev_attr_quad.dev_attr.attr,
++	&iio_dev_attr_fault.dev_attr.attr,
++	&iio_dev_attr_part_id.dev_attr.attr,
++	&iio_dev_attr_serial_number.dev_attr.attr,
++	&iio_dev_attr_dynamic_null_correction.dev_attr.attr,
++	&iio_const_attr_name.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group adxrs450_attribute_group = {
++	.attrs = adxrs450_attributes,
++};
++
++static int __devinit adxrs450_probe(struct spi_device *spi)
++{
++	int ret, regdone = 0;
++	struct adxrs450_state *st = kzalloc(sizeof *st, GFP_KERNEL);
++	if (!st) {
++		ret =  -ENOMEM;
++		goto error_ret;
++	}
++	/* this is only used for removal purposes */
++	spi_set_drvdata(spi, st);
++
++	/* Allocate the comms buffers */
++	st->rx = kzalloc(sizeof(*st->rx)*ADXRS450_MAX_RX, GFP_KERNEL);
++	if (st->rx == NULL) {
++		ret = -ENOMEM;
++		goto error_free_st;
++	}
++	st->tx = kzalloc(sizeof(*st->tx)*ADXRS450_MAX_TX, GFP_KERNEL);
++	if (st->tx == NULL) {
++		ret = -ENOMEM;
++		goto error_free_rx;
++	}
++	st->us = spi;
++	mutex_init(&st->buf_lock);
++	/* setup the industrialio driver allocated elements */
++	st->indio_dev = iio_allocate_device();
++	if (st->indio_dev == NULL) {
++		ret = -ENOMEM;
++		goto error_free_tx;
++	}
++
++	st->indio_dev->dev.parent = &spi->dev;
++	st->indio_dev->attrs = &adxrs450_attribute_group;
++	st->indio_dev->dev_data = (void *)(st);
++	st->indio_dev->driver_module = THIS_MODULE;
++	st->indio_dev->modes = INDIO_DIRECT_MODE;
++
++	ret = iio_device_register(st->indio_dev);
++	if (ret)
++		goto error_free_dev;
++	regdone = 1;
++
++	/* Get the device into a sane initial state */
++	ret = adxrs450_initial_setup(st);
++	if (ret)
++		goto error_initial;
++	return 0;
++
++error_initial:
++error_free_dev:
++	if (regdone)
++		iio_device_unregister(st->indio_dev);
++	else
++		iio_free_device(st->indio_dev);
++error_free_tx:
++	kfree(st->tx);
++error_free_rx:
++	kfree(st->rx);
++error_free_st:
++	kfree(st);
++error_ret:
++	return ret;
++}
++
++/* fixme, confirm ordering in this function */
++static int adxrs450_remove(struct spi_device *spi)
++{
++	struct adxrs450_state *st = spi_get_drvdata(spi);
++	struct iio_dev *indio_dev = st->indio_dev;
++
++	iio_device_unregister(indio_dev);
++	kfree(st->tx);
++	kfree(st->rx);
++	kfree(st);
++
++	return 0;
++}
++
++static struct spi_driver adxrs450_driver = {
++	.driver = {
++		.name = "adxrs450",
++		.owner = THIS_MODULE,
++	},
++	.probe = adxrs450_probe,
++	.remove = __devexit_p(adxrs450_remove),
++};
++
++static __init int adxrs450_init(void)
++{
++	return spi_register_driver(&adxrs450_driver);
++}
++module_init(adxrs450_init);
++
++static __exit void adxrs450_exit(void)
++{
++	spi_unregister_driver(&adxrs450_driver);
++}
++module_exit(adxrs450_exit);
++
++MODULE_AUTHOR("Cliff Cai <cliff.cai@analog.com>");
++MODULE_DESCRIPTION("Analog Devices ADXRS450 Gyroscope SPI driver");
++MODULE_LICENSE("GPL v2");
 -- 
-1.5.5.6
+1.7.1
 
