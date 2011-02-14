@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab1BNRpa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:45:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35362 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab1BNRp1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:45:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=nAKsAq7eQus6xMJ0x5G/nF33+73BQJ3CN31iOZziftWorfs5+d/fUjD2m2PQio625h
-         N6TwB6bP+Uhi/0GXSPff+q1IWkOM/yGxwS6qkuyYncus3DPk95tAEWru/Cv2I4HoUBkm
-         RyCF8Xg4GxPEPrfyJOxxL848T3LEVxdJHZXyQ=
-MIME-Version: 1.0
-In-Reply-To: <1297705095.5226.136.camel@laptop>
-References: <cover.1294239591.git.jbaron@redhat.com> <1297452328.5226.89.camel@laptop>
- <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl> <1297460297.5226.99.camel@laptop>
- <1297536465.5226.108.camel@laptop> <20110214155113.GA2840@redhat.com>
- <1297699024.2401.12.camel@twins> <20110214160437.GB2840@redhat.com>
- <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl> <1297700754.5226.110.camel@laptop>
- <20110214162947.GA3449@redhat.com> <1297701438.5226.113.camel@laptop>
- <1297702013.23343.51.camel@gandalf.stny.rr.com> <1297703892.23343.71.camel@gandalf.stny.rr.com>
- <1297704447.5226.127.camel@laptop> <AANLkTikB74q7z84g5bmYxZu4kaEdf1kF3z1vpqO=9A45@mail.gmail.com>
- <1297705095.5226.136.camel@laptop>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 14 Feb 2011 12:45:06 -0500
-X-Google-Sender-Auth: 76Op97PUNLdRpv-_KAAaiBXK_YM
-Message-ID: <AANLkTinftiAqB0j-0UQ0mRWinGjacyN4Jvk2Rgv0-g-T@mail.gmail.com>
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        dhowells <dhowells@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "heiko.carstens" <heiko.carstens@de.ibm.com>,
-        benh <benh@kernel.crashing.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751435Ab1BNRqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:46:00 -0500
+Received: from xes-mad.com ([216.165.139.218]:33067 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab1BNRp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 12:45:56 -0500
+Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>
+In-Reply-To: <AANLkTimyD=U-+=HpXWmF2B9KjrDf8HMCZenAgW3SQgDK@mail.gmail.com>
+References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
+	 <1297698493.965.5475.camel@petert>
+	 <20110214170812.6f54a4bb@lxorguk.ukuu.org.uk>
+	 <AANLkTimyD=U-+=HpXWmF2B9KjrDf8HMCZenAgW3SQgDK@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Feb 2011 11:45:20 -0600
+Message-ID: <1297705520.965.5657.camel@petert>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 12:38, Peter Zijlstra wrote:
-> On Mon, 2011-02-14 at 12:29 -0500, Mike Frysinger wrote:
->> On Mon, Feb 14, 2011 at 12:27, Peter Zijlstra wrote:
->> > On Mon, 2011-02-14 at 12:18 -0500, Steven Rostedt wrote:
->> >> blackfin, seems to be doing quite a lot. Not sure if it is required, but
->> >> that may need a bit of investigating to understand why it does the
->> >> raw_uncached thing.
->> >
->> > From what I can tell its flushing its write cache, invalidating its
->> > d-cache and then issue the read, something which is _way_ overboard.
->>
->> not when the cores in a SMP system lack cache coherency
->
-> But atomic_read() is completely unordered, so even on a non-coherent
-> system a regular read should suffice, any old value is correct.
+> > We need four states for a gpio pin direction though. A pin can be
+> >
+> > - input
+> > - output
+> 
+> There are actually multiple output modes that a specific gpio
+> controller could implement, but the gpio api only has a boolean
+> understanding of output.  I don't know if it is really worthwhile to
+> try and encode all the possible configurations in this API.
+> 
+> > - unknown (hardware lacks get functionality and it has not been set by
+> >  software yet)
 
-the words you use seem to form a line of reasoning that makes sense to
-me.  we'll have to play first though to double check.
+I'm not sure how we could handle unknown directions in a better way.  We
+really should know the direction by this point for most (all?) GPIO
+chips.  I'd think the proper fix would be to make sure we can detect a
+direction for all chips - either by reading hardware bits or by having
+the platform code let us know (eg pdata->n_latch in pcf857x.c).  If you
+have a suggestion about how unknown pins should be used, I can look into
+it and submit a follow up patch.
 
-> The only problem would be when you could get cache aliasing and read
-> something totally unrelated.
+> > - alt_func (pin is in use for some other purpose)
+> 
+> What is the use-case for alt_func?  From the point of view of a GPIO
+> driver, I don't think it cares if the pin has been dedicated to
+> something else.  It can twiddle all it wants, but if the pin is routed
+> to something else then it won't have any external effects (pin mux is
+> often a separate logic block from the gpio controller).  Also with
+> GPIOs, the engineers fiddling with them *really* needs to know what
+> the gpios are routed to.  It is highly unlikely to have any kind of
+> automatic configuration of gpios; ie. if it isn't wired as a gpio,
+> then don't go twiddling it.
 
-being a nommu arch, there shouldnt be any cache aliasing issues.
-we're just trying to make sure that what another core has pushed out
-isnt stale in another core's cache when the other core does the read.
--mike
+Additionally, for this case I thought the low level GPIO driver should
+implement a request() function to prevent a non-GPIO pin from being used
+in the first place.  Eg like chip_gpio_request() in cs5535-gpio.c, or
+ichx_gpio_request() in patch 3 of this series.
+
+> > (and being able to set them alt_func was proposed a while ago and I think
+> > wants revisiting judging by the number of platforms which use gpio, and
+> > in their own arch code are privately handling alt_func stuff)
+> 
+> Fair enough; convince me on alt_func.  What is the use case that I'm missing?
+
+Peter
+
