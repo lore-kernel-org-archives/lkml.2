@@ -1,258 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab1BNNCL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:02:11 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:44849 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab1BNNCI (ORCPT
+	id S1754531Ab1BNND4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:03:56 -0500
+Received: from spamap2.ncut.edu.tw ([140.128.71.221]:19027 "EHLO
+	spamap2.ncut.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab1BNNDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:02:08 -0500
-From: Colin King <colin.king@canonical.com>
-To: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Enable Dell All-In-One volume up/down keys
-Date: Mon, 14 Feb 2011 13:02:04 +0000
-Message-Id: <1297688524-26123-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 14 Feb 2011 08:03:54 -0500
+Message-Id: <201102141145.p1EBj6Om000746@ccmail.ncut.edu.tw>
+from: robertjet.fellow@gmail.com
+Reply-To: robertjet.fellow@gmail.com
+Date: Mon, 14 Feb 2011 19:45:06 +0800
+X-Originating-Ip: [190.41.154.192]
+X-Mailer: Hgiga v0.9
+Senderaccount: <hsuehyun@ncut.edu.tw>
+hmid: 10187266
+hhid: ncut.edu.tw
+huid: 1053950
+Content-Type: text/plain;
+	charset="big5"
+X-Received-IP: 140.128.71.225
+X-Envelope-From: <robertjet.fellow@gmail.com>
+X-Sherlock-Send: MailFilter (spamap2.ncut.edu.tw)
+X-SpamCheck: Hit=2.5, SARE_RECV_IP_140117:0.5,HGIGA_sender_951219_02:2.5,HGIGA_noSubject02:3.0,RM_tl_ToNone:4.0,NO_REAL_NAME:2.0,HGIGA_EMPTY_HTML:0.5,MIME_BASE64_TEXT:0.5,HGIGA_SPAM_Bsize_25:4.0,HGIGA_EMPTY_TEXT:0.5,HGRSA_NEW_SPAM_Mail22:1.0,HGRSA_WhiteHeader_Mailer_ALL:-30,BODY_EMPTY:3.0,MSGID_FROM_MTA_HEADER:1.0,HGRSA_NEW_SPAM_Mail64:2.0,HGRSA_NEW_SPAM_Mail290:3.0,HGRSA_NEW_SPAM_Mail291:5.0
+Subject: 
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1ED42Zw014442
 
-From: Colin Ian King <colin.king@canonical.com>
+My name is Mr. R. Jet Fellows. Am a citizen of the united states presently in Hong Kong where i have been diagnosed with Esophageal cancer and it has defied all forms of medical treatment, and right now I have only about a few months to live according to the medical experts.
 
-Enable volume up and down hotkeys on WMI events
-GUID 284A0E6B-380E-472A-921F-E52786257FB and
-GUID 02314822-307C-4F66-bf0E-48AEAEB26CC8.
+Though am very rich, i never thought of raising my own family, I only focused on my businesses as that was the only thing I cared for. But now I regret all this as I now know that there is more to life than just wanting to have or make all the money in the world. The treatment of this disease has so far squashed a handsome amount of my money in savings.
+Now that my health has deteriorated so badly and it has been confirmed to me by the doctors that my ailment will defy all forms of medical treatment, i have decided not to spend more money on this ailment anymore.
 
-Also works around a firmware bug where the _WED method
-should return an integer containing the key code and in fact
-the method returns the key code in element zero of a buffer.
+The last of my money which no one knows of is the huge cash deposit of $2.6m United States Dollars that I have with a Finance Vaulting Unit in the Europe . I will want you to help me collect this deposit from the company and help me distribute it to charity in your region. You will have 25% of this total sum for your time and effort. I cannot talk with you on the phone due to my health situation, and I am using my Laptop Computer to communicate with you, since this is my only means of communication. One passionate appeal i will make to you is to keep this transaction confidential until this money gets to you. If you are interested in carrying out this assignment on my behalf fill this form below when when writing me back.
 
-BugLink: http://bugs.launchpad.net/bugs/701530
-BugLink: http://bugs.launchpad.net/bugs/676997
+Email: robertjet.fellow@gmail.com
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/platform/x86/Kconfig        |   12 +++
- drivers/platform/x86/Makefile       |    1 +
- drivers/platform/x86/dell-wmi-aio.c |  173 +++++++++++++++++++++++++++++++++++
- 3 files changed, 186 insertions(+), 0 deletions(-)
- create mode 100644 drivers/platform/x86/dell-wmi-aio.c
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index d163bc2..b6fbb0c 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -101,6 +101,18 @@ config DELL_WMI
- 	  To compile this driver as a module, choose M here: the module will
- 	  be called dell-wmi.
- 
-+config DELL_WMI_AIO
-+	tristate "WMI Hotkeys for Dell All-In-One series"
-+	depends on ACPI_WMI
-+	depends on INPUT
-+	---help---
-+	  Say Y here if you want to support WMI-based hotkeys on Dell
-+	  All-In-One machines.
-+
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called dell-wmi.
-+
-+
- config FUJITSU_LAPTOP
- 	tristate "Fujitsu Laptop Extras"
- 	depends on ACPI
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 4ec4ff8..26c6a57 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_ACPI_CMPC)		+= classmate-laptop.o
- obj-$(CONFIG_COMPAL_LAPTOP)	+= compal-laptop.o
- obj-$(CONFIG_DELL_LAPTOP)	+= dell-laptop.o
- obj-$(CONFIG_DELL_WMI)		+= dell-wmi.o
-+obj-$(CONFIG_DELL_WMI_AIO)	+= dell-wmi-aio.o
- obj-$(CONFIG_ACER_WMI)		+= acer-wmi.o
- obj-$(CONFIG_ACERHDF)		+= acerhdf.o
- obj-$(CONFIG_HP_WMI)		+= hp-wmi.o
-diff --git a/drivers/platform/x86/dell-wmi-aio.c b/drivers/platform/x86/dell-wmi-aio.c
-new file mode 100644
-index 0000000..3dccbaa
---- /dev/null
-+++ b/drivers/platform/x86/dell-wmi-aio.c
-@@ -0,0 +1,173 @@
-+/*
-+ *  WMI hotkeys support for Dell All-In-One series
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/input.h>
-+#include <linux/input/sparse-keymap.h>
-+#include <acpi/acpi_drivers.h>
-+#include <linux/acpi.h>
-+#include <linux/string.h>
-+
-+#define AIO_PREFIX	"dell-wmi-aio: "
-+
-+MODULE_DESCRIPTION("WMI hotkeys driver for Dell All-In-One series");
-+MODULE_LICENSE("GPL");
-+
-+#define EVENT_GUID1 "284A0E6B-380E-472A-921F-E52786257FB4"
-+#define EVENT_GUID2 "02314822-307C-4F66-BF0E-48AEAEB26CC8"
-+
-+static char *dell_wmi_aio_guids[] = {
-+	EVENT_GUID1,
-+	EVENT_GUID2,
-+	NULL
-+};
-+
-+MODULE_ALIAS("wmi:"EVENT_GUID1);
-+MODULE_ALIAS("wmi:"EVENT_GUID2);
-+
-+static struct key_entry dell_wmi_aio_keymap[] = {
-+	{ KE_KEY, 0xc0, { KEY_VOLUMEUP } },
-+	{ KE_KEY, 0xc1, { KEY_VOLUMEDOWN } },
-+	{ KE_END, 0 }
-+};
-+
-+static struct input_dev *dell_wmi_aio_input_dev;
-+
-+static void dell_wmi_aio_notify(u32 value, void *context)
-+{
-+	struct acpi_buffer response = { ACPI_ALLOCATE_BUFFER, NULL };
-+	union acpi_object *obj;
-+	acpi_status status;
-+
-+	status = wmi_get_event_data(value, &response);
-+	if (status != AE_OK) {
-+		pr_info(AIO_PREFIX "bad event status 0x%x\n", status);
-+		return;
-+	}
-+
-+	obj = (union acpi_object *)response.pointer;
-+	if (obj) {
-+		unsigned int scancode;
-+
-+		switch (obj->type) {
-+		case ACPI_TYPE_INTEGER:
-+			/* Most All-In-One correctly return integer scancode */
-+			scancode = obj->integer.value;
-+			sparse_keymap_report_event(dell_wmi_aio_input_dev,
-+				scancode, 1, true);
-+			break;
-+		case ACPI_TYPE_BUFFER:
-+			/* Broken machines return the scancode in a buffer */
-+			if (obj->buffer.pointer && obj->buffer.length > 0) {
-+				scancode = obj->buffer.pointer[0];
-+				sparse_keymap_report_event(
-+					dell_wmi_aio_input_dev,
-+					scancode, 1, true);
-+			}
-+			break;
-+		}
-+	}
-+	kfree(obj);
-+}
-+
-+static int __init dell_wmi_aio_input_setup(void)
-+{
-+	int err;
-+
-+	dell_wmi_aio_input_dev = input_allocate_device();
-+
-+	if (!dell_wmi_aio_input_dev)
-+		return -ENOMEM;
-+
-+	dell_wmi_aio_input_dev->name = "Dell AIO WMI hotkeys";
-+	dell_wmi_aio_input_dev->phys = "wmi/input0";
-+	dell_wmi_aio_input_dev->id.bustype = BUS_HOST;
-+
-+	err = sparse_keymap_setup(dell_wmi_aio_input_dev,
-+			dell_wmi_aio_keymap, NULL);
-+	if (err) {
-+		pr_err("Unable to setup input device keymap\n");
-+		goto err_free_dev;
-+	}
-+	err = input_register_device(dell_wmi_aio_input_dev);
-+	if (err) {
-+		pr_info("Unable to register input device\n");
-+		goto err_free_keymap;
-+	}
-+	return 0;
-+
-+err_free_keymap:
-+	sparse_keymap_free(dell_wmi_aio_input_dev);
-+err_free_dev:
-+	input_free_device(dell_wmi_aio_input_dev);
-+	return err;
-+}
-+
-+static char *dell_wmi_aio_find(void)
-+{
-+	int i;
-+
-+	for (i = 0; dell_wmi_aio_guids[i] != NULL; i++)
-+		if (wmi_has_guid(dell_wmi_aio_guids[i]))
-+			return dell_wmi_aio_guids[i];
-+
-+	return NULL;
-+}
-+
-+static int __init dell_wmi_aio_init(void)
-+{
-+	int err;
-+	char *guid;
-+
-+	guid = dell_wmi_aio_find();
-+	if (guid) {
-+		err = dell_wmi_aio_input_setup();
-+
-+		if (err)
-+			return err;
-+
-+		err = wmi_install_notify_handler(guid,
-+			dell_wmi_aio_notify, NULL);
-+		if (err) {
-+			input_unregister_device(dell_wmi_aio_input_dev);
-+			pr_err(AIO_PREFIX "Unable to register"
-+			       " notify handler - %d\n", err);
-+			return err;
-+		}
-+	} else
-+		pr_warning(AIO_PREFIX "No known WMI GUID found\n");
-+
-+	return 0;
-+}
-+
-+static void __exit dell_wmi_aio_exit(void)
-+{
-+	char *guid;
-+
-+	guid = dell_wmi_aio_find();
-+	if (guid) {
-+		wmi_remove_notify_handler(guid);
-+		input_unregister_device(dell_wmi_aio_input_dev);
-+	}
-+}
-+
-+module_init(dell_wmi_aio_init);
-+module_exit(dell_wmi_aio_exit);
--- 
-1.7.2.3
+Your names .......
+Your resident address. ......
+Your country name..........
+Your present location........
+Your occupation...............
+Your tel/cell number.........
+Your age/sex..................
+Your company name if any.......
 
+I will be waiting to hear from you as soon as you can.
+
+Sincerely yours,
+R. Jet Fellows.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
