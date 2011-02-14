@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab1BNSJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:09:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711Ab1BNSJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:09:13 -0500
-Date: Mon, 14 Feb 2011 19:00:34 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214180034.GD15847@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214153149.GB8761@redhat.com> <AANLkTikYf1CE41x6FjE6FiZ40v8taRSy8aZ3-5tjAvok@mail.gmail.com> <20110214173910.GA15847@redhat.com> <AANLkTiku4OQKgwCHF-c5dc4AZzmuCKmzk0EuTaqxK_Wr@mail.gmail.com>
+	id S1753095Ab1BNSJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:09:47 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35504 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab1BNSJo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:09:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=Ah59YeGzZ9nfdU6IdirX72YAeXiMRt8QMHRXeIRBiHvCfAGLX5ovjs3ho6CUH4iaGR
+         cnT33EmxOEMjhRehEPp3NJoR3qjVlOrIj6HpoPP3miBgzrfYMrpigZRdJ1x4NyR5Vey5
+         FSJ5TLdjC5rZPUOxH8evFgp71xr7Gj6S2X+fQ=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: chris2553@googlemail.com, LKML <linux-kernel@vger.kernel.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: System lockup with 2.6.38-rc4+
+In-Reply-To: <201102141731.29331.chris2553@googlemail.com>
+References: <201102141731.29331.chris2553@googlemail.com>
+User-Agent: Notmuch/0.5-64-gdd23272 (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Mon, 14 Feb 2011 13:09:03 -0500
+Message-ID: <87fwrqxzcw.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTiku4OQKgwCHF-c5dc4AZzmuCKmzk0EuTaqxK_Wr@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Denys Vlasenko wrote:
+On Mon, 14 Feb 2011 17:31:29 +0000, Chris Clayton <chris2553@googlemail.com> wrote:
+> Hi,
+> 
+> I'm not subscribed, so please cc me on any reply.
+> 
+> I've just had a complete system lock up with a kernel that I pulled, built and 
+> installed yesterday morning. IT was locked hard and I had to power off and on 
+> to get it back.
 >
-> On Mon, Feb 14, 2011 at 6:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 02/14, Denys Vlasenko wrote:
-> >>
-> >> On Mon, Feb 14, 2011 at 4:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> > On 02/13, Denys Vlasenko wrote:
-> >> >>
-> >> >> $ strace -tt sleep 30
-> >> >> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
-> >> >> ...
-> >> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
-> >> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> >> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> >> >>     (I forgot again why we see it twice. Another quirk I guess...)
-> >> >
-> >> >      (this is correct, the tracee reports the signal=SIGSTOP, then
-> >> >       it reports it actually stopps with exit_code=SIGSTOP)
-> >>
-> >> Ah, I see. Is there any way debugger can distinguish between these two
-> >> different stops?
-> >
-> > IIRC, the (only?) way to distinguish is to check last_siginfo != NULL
-> > via ptrace(PTRACE_GETSIGINFO).
->
-> What do you think strace needs to do when it sees second SIGSTOP
-> (meaning "in theory", not "on current kernel which may be buggy")?
->
-> ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)?
+It looks like the GPU barfed. If you SSH'd in to the machine you'd find
+that everything but the display and resources held by the hung X server
+would be fine. Were you doing anything particular in your X session when
+this happened? There's a good chance this isn't actually a kernel bug
+but instead is a DRI client doing something dumb.
 
-proably this, or even ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP).
-I think.
+Cheers, 
 
-(assuming that ptrace_resume() respects TASK_STOPPED)
+- Ben
 
-Oleg.
-
+P.S. The bzipped kernel image generally won't help in diagnosing the
+problem. The most important thing to include in a bug report is the
+kernel version and the dmesg output from the failure if available. Folks
+will ask later if more is necessary.
