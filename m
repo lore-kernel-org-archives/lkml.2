@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab1BNPnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:43:25 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33221 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab1BNPnW convert rfc822-to-8bit (ORCPT
+	id S1755771Ab1BNPoj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 10:44:39 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43018 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab1BNPof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:43:22 -0500
+	Mon, 14 Feb 2011 10:44:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=b7XM7YqdjVYkNbO6HYMTEqlCAfDExoO0oJ5+ZVO7pwhB2HYHQJrX0UM967c0p8EOOn
-         sYWZhdB40fBGq7cs5HUFWNnKj9IRhPmva9qdHWLqJ0PmzYsa+YXEern/4XA2F4fRXYql
-         3Zfnb6mdfARnL4xgEc8/5sBfRueku7Vuk2aas=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lfFiNUxdx/oFOGOuCb2k9XIFCCDffEWx8GstlVGX/yCeV4iE7FPMdmPGn1kqkxv6dw
+         d91cym8a+g5K3IxnUyN/I2OU4TeIQp8HNVYmq2gUC+pnfim67F6pgaLgtEbJyMsQdRkJ
+         fuzSBbPogh/9XQX7IDmz+NoIr+3oXfMH0lobw=
+Date: Mon, 14 Feb 2011 16:44:30 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        device-mapper development <dm-devel@redhat.com>,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH][RFC] dm: Do not open log and cow device read-write for
+ read-only mappings
+Message-ID: <20110214154430.GR18742@htj.dyndns.org>
+References: <4D573BBB.6090200@redhat.com>
+ <1297594735-5593-1-git-send-email-tm@tao.ma>
+ <4D57E67E.1030707@redhat.com>
+ <4D57F357.6060708@tao.ma>
+ <4D580A8B.5050508@redhat.com>
+ <20110214103026.GA18742@htj.dyndns.org>
+ <4D591664.6090203@redhat.com>
+ <4D592AD1.6020500@redhat.com>
+ <20110214140940.GM18742@htj.dyndns.org>
+ <4D593AD8.7070901@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110214154011.GA1595@flint.arm.linux.org.uk>
-References: <20110207180606.GB2966@flint.arm.linux.org.uk>
-	<AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com>
-	<20110208125546.GA4286@flint.arm.linux.org.uk>
-	<alpine.DEB.2.00.1102080856020.12521@router.home>
-	<AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com>
-	<20110211091413.GA32687@flint.arm.linux.org.uk>
-	<alpine.DEB.2.00.1102110920060.12360@router.home>
-	<20110211153524.GB26188@flint.arm.linux.org.uk>
-	<AANLkTimDUf52xdHn22=f1J=Xn88sqPEg9P6+ceas1h1k@mail.gmail.com>
-	<20110214154011.GA1595@flint.arm.linux.org.uk>
-Date: Mon, 14 Feb 2011 17:43:21 +0200
-X-Google-Sender-Auth: Zo-JuQHjX-nujTA6lKweyt6Wf3M
-Message-ID: <AANLkTin-i3+Pw8gW8c9AM2+6H1SsUgtqjvAYEv3Mi3HQ@mail.gmail.com>
-Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
-From: Pekka Enberg <penberg@kernel.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: ShiYong LI <a22381@motorola.com>, Christoph Lameter <cl@linux.com>,
-        Shiyong Li <shi-yong.li@motorola.com>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D593AD8.7070901@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 5:40 PM, Russell King <rmk@arm.linux.org.uk> wrote:
-> Mainline only supports 32 byte and 64 byte cache lines on ARM.  It does
-> not support 128 byte cache lines, so maybe your attempts are the wrong
-> approach.  Can you please post your 128 byte cache line support patches
-> to the ARM kernel mailing list for review.
->
-> In the mean time, because your patch causes an oopsing regression, I
-> strongly suggest that it is reverted until we start supporting 128 byte
-> cache lines on ARM in mainline.
+Hello,
 
-Agreed. I'll queue a revert. Thanks, Russell!
+On Mon, Feb 14, 2011 at 03:23:20PM +0100, Milan Broz wrote:
+> >> I am not sure if this is complete fix... note that:
+> >> - what happens during mirror resync and read-only log?
+> >> - for COW, it there situation we need to update header in read-oly mode? (invalidated snap?)
+> > 
+> > But if the underlying device is marked ro, dm shouldn't update it at
+> > all.  The device should be opened ro and ro policy should be enforced.
+> 
+> Sure. So we need to check these situations I described.
+
+Yeap, it seems dm folks are gonna take care of dm part.
+
+> Btw the same pattern is in MD code in lock_rdev() ...
+
+Indeed, cc'ing Neil.  Hi, the whole thread can be read from the
+following URL.
+
+  http://thread.gmane.org/gmane.linux.kernel/1099399/focus=1099735
+
+blkdev_get() now rejects rw open of devices which are marked
+read-only.  I think the right thing to do would be opening the member
+devices ro if the array is assembled for ro access (similar to Milan's
+patch for dm).  How does that sound?
+
+Thanks.
+
+-- 
+tejun
