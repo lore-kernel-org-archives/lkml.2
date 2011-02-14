@@ -1,47 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab1BNWXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:23:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51346 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751888Ab1BNWXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:23:16 -0500
-Message-ID: <4D59AAFC.7010503@zytor.com>
-Date: Mon, 14 Feb 2011 14:21:48 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
+	id S1752326Ab1BNWXi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:23:38 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:45305 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751571Ab1BNWXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 17:23:35 -0500
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Feb 2011 17:23:35 EST
+Date: Mon, 14 Feb 2011 22:15:50 +0000
+From: Matt Fleming <matt@console-pimps.org>
 To: Steven Rostedt <rostedt@goodmis.org>
-CC: David Miller <davem@davemloft.net>, peterz@infradead.org,
-        will.newton@gmail.com, jbaron@redhat.com, mathieu.desnoyers@polymtl.ca,
+Cc: Peter Zijlstra <peterz@infradead.org>, Will Newton <will.newton@gmail.com>,
+        Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
         mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
         roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
-        ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
-        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        benh@kernel.crashing.org
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, dhowells <dhowells@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "heiko.carstens" <heiko.carstens@de.ibm.com>,
+        benh <benh@kernel.crashing.org>
 Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-References: <1297707868.5226.189.camel@laptop>	 <1297718964.23343.75.camel@gandalf.stny.rr.com>	 <1297719576.23343.80.camel@gandalf.stny.rr.com>	 <20110214.134600.179933733.davem@davemloft.net> <1297722030.23343.86.camel@gandalf.stny.rr.com>
-In-Reply-To: <1297722030.23343.86.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <20110214221550.03ea6626@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1297719576.23343.80.camel@gandalf.stny.rr.com>
+References: <cover.1294239591.git.jbaron@redhat.com>
+	<1297452328.5226.89.camel@laptop>
+	<BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
+	<1297460297.5226.99.camel@laptop>
+	<1297536465.5226.108.camel@laptop>
+	<20110214155113.GA2840@redhat.com>
+	<1297699024.2401.12.camel@twins>
+	<20110214160437.GB2840@redhat.com>
+	<BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl>
+	<1297700754.5226.110.camel@laptop>
+	<20110214162947.GA3449@redhat.com>
+	<1297701438.5226.113.camel@laptop>
+	<1297702013.23343.51.camel@gandalf.stny.rr.com>
+	<1297703892.23343.71.camel@gandalf.stny.rr.com>
+	<1297704447.5226.127.camel@laptop>
+	<AANLkTi=pXqya2vaUv2XNwRr6T==MW8ZtQ_yg6V9sipcy@mail.gmail.com>
+	<1297705428.5226.142.camel@laptop>
+	<AANLkTi=jz+mGru--+YA62EeER17Tuq2DocrkKNaU2k+1@mail.gmail.com>
+	<1297707868.5226.189.camel@laptop>
+	<1297718964.23343.75.camel@gandalf.stny.rr.com>
+	<1297719576.23343.80.camel@gandalf.stny.rr.com>
+X-Mailer: Claws Mail 3.7.8cvs52 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2011 02:20 PM, Steven Rostedt wrote:
+On Mon, 14 Feb 2011 16:39:36 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Mon, 2011-02-14 at 16:29 -0500, Steven Rostedt wrote:
 > 
-> Ideally, we would like a single atomic_read() but due to these wacky
-> archs, it may not be possible.
+> > > while (atomic_read(&foo) != n)
+> > >   cpu_relax();
+> > > 
+> > > and the problem is that cpu_relax() doesn't know which particular
+> > > cacheline to flush in order to make things go faster, hm?
+> > 
+> > But what about any global variable? Can't we also just have:
+> > 
+> > 	while (global != n)
+> > 		cpu_relax();
+> > 
+> > ?
 > 
+> Matt Fleming answered this for me on IRC, and I'll share the answer
+> here (for those that are dying to know ;)
+> 
+> Seems that the atomic_inc() uses ll/sc operations that do not affect
+> the cache. Thus the problem is only with atomic_read() as
+> 
+> 	while(atomic_read(&foo) != n)
+> 		cpu_relax();
+> 
+> Will just check the cache version of foo. But because ll/sc skips the
+> cache, the foo will never update. That is, atomic_inc() and friends do
+> not touch the cache, and the CPU spinning in this loop will is only
+> checking the cache, and will spin forever.
 
-#ifdef ARCH_ATOMIC_READ_SUCKS_EGGS?
+Right. When I wrote the atomic_read() implementation that Will is
+talking about I used the ll-equivalent instruction to bypass the cache,
+e.g. I wrote it assembly because the compiler didn't emit that
+instruction.
 
-	-hpa
+And that is what it boils down to really, the ll/sc instructions are
+different from any other instructions in the ISA as they bypass the
+cache and are not emitted by the compiler. So, in order to maintain
+coherence with other cpus doing atomic updates on memory addresses, or
+rather to avoid reading stale values, it's necessary to use the ll
+instruction - and this isn't possible from C.
 
+> Thus it is not about global, as global is updated by normal means and
+> will update the caches. atomic_t is updated via the ll/sc that ignores
+> the cache and causes all this to break down. IOW... broken hardware ;)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Well, to be precise it's about read-modify-write operations - the
+architecture does maintain cache coherence in that writes from one CPU
+are immediately visible to other CPUs.
 
+FYI spinlocks are also implemented with ll/sc instructions.
