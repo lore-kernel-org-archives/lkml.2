@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab1BNSxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:53:53 -0500
-Received: from www.tglx.de ([62.245.132.106]:53879 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab1BNSxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:53:51 -0500
-Date: Mon, 14 Feb 2011 19:53:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: lockdep: possible reason: unannotated irqs-off. (was: Re: Linux
- 2.6.38-rc4)
-In-Reply-To: <20110214145125.GA2937@zhy>
-Message-ID: <alpine.LFD.2.00.1102141950180.26192@localhost6.localdomain6>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com> <20110208101730.GB7020@liondog.tnic> <1297161712.13327.100.camel@laptop> <20110208121108.GA4824@zhy> <20110208133457.GA5813@zhy> <1297172906.13327.104.camel@laptop>
- <1297174680.13327.107.camel@laptop> <20110214145125.GA2937@zhy>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751920Ab1BNSyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:54:01 -0500
+Received: from blu0-omc1-s37.blu0.hotmail.com ([65.55.116.48]:44484 "EHLO
+	blu0-omc1-s37.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751655Ab1BNSx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:53:56 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP7304A1572FCB87F54CCCFA96D00@phx.gbl>
+Date: Mon, 14 Feb 2011 13:53:49 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Will Newton <will.newton@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Jason Baron <jbaron@redhat.com>, hpa@zytor.com, mingo@elte.hu,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, davem@davemloft.net, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, dhowells <dhowells@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "heiko.carstens" <heiko.carstens@de.ibm.com>,
+        benh <benh@kernel.crashing.org>
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <1297700754.5226.110.camel@laptop> <20110214162947.GA3449@redhat.com> <1297701438.5226.113.camel@laptop> <1297702013.23343.51.camel@gandalf.stny.rr.com> <1297703892.23343.71.camel@gandalf.stny.rr.com> <1297704447.5226.127.camel@laptop> <AANLkTi=pXqya2vaUv2XNwRr6T==MW8ZtQ_yg6V9sipcy@mail.gmail.com> <1297705428.5226.142.camel@laptop> <AANLkTi=jz+mGru--+YA62EeER17Tuq2DocrkKNaU2k+1@mail.gmail.com> <1297707868.5226.189.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1297707868.5226.189.camel@laptop>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 13:48:08 up 313 days,  4:37,  7 users,  load average: 2.08, 1.94,
+	1.83
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 14 Feb 2011 18:53:54.0957 (UTC) FILETIME=[876053D0:01CBCC78]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011, Yong Zhang wrote:
-
-> On Tue, Feb 08, 2011 at 03:18:00PM +0100, Peter Zijlstra wrote:
-> > Subject: lockdep, timer: Revert the del_timer_sync() annotation
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Mon, 2011-02-14 at 17:50 +0000, Will Newton wrote:
 > > 
-> > Both attempts at trying to allow softirq usage failed, revert for this
-> > release and try again later.
-> > 
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > ---
-> >  kernel/timer.c |    8 +++-----
-> >  1 files changed, 3 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/kernel/timer.c b/kernel/timer.c
-> > index 343ff27..c848cd8 100644
-> > --- a/kernel/timer.c
-> > +++ b/kernel/timer.c
-> > @@ -959,7 +959,7 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
-> >   *
-> >   * Synchronization rules: Callers must prevent restarting of the timer,
-> >   * otherwise this function is meaningless. It must not be called from
-> > - * hardirq contexts. The caller must not hold locks which would prevent
-> > + * interrupt contexts. The caller must not hold locks which would prevent
+> > It would observe a stale value, but that value would only be updated
+> > when the cache line was reloaded from main memory which would have to
+> > be triggered by either eviction or cache flushing. So it could get
+> > pretty stale. Whilst that's probably within the spec. of atomic_read I
+> > suspect it would lead to problems in practice. I could be wrong
+> > though. 
 > 
-> I think we don't need to revert this comment.
-
-That does not matter. It breaks stuff left and right and we need to go
-back to the old (maybe less broken) state in that phase of -rc. It's
-that simple.
- 
-> >   * completion of the timer's handler. The timer's handler must not call
-> >   * add_timer_on(). Upon exit the timer is not queued and the handler is
-> >   * not running on any CPU.
-> > @@ -971,12 +971,10 @@ int del_timer_sync(struct timer_list *timer)
-> >  #ifdef CONFIG_LOCKDEP
-> >  	unsigned long flags;
-> >  
-> > -	raw_local_irq_save(flags);
-> > -	local_bh_disable();
-> > +	local_irq_save(flags);
+> Right, so the typical scenario that could cause pain is something like:
 > 
-> Going back to local_irq_save()/local_irq_restore() doesn't prevent
-> it from using in softirq context.
+> while (atomic_read(&foo) != n)
+>   cpu_relax();
+> 
+> and the problem is that cpu_relax() doesn't know which particular
+> cacheline to flush in order to make things go faster, hm?
 
-That does not matter. It goes back to status quo and does not
-introduce new problems. As the changelog says:
+As an information point, this is why I mapped "uatomic_read()" to
+"CMM_LOAD_SHARED" in my userspace RCU library rather than just doing a
+volatile access. On cache-coherent architectures, the arch-specific code
+turns CMM_LOAD_SHARED into a simple volatile access, but for
+non-cache-coherent architectures, it can call the required
+architecture-level primitives to fetch the stale data.
 
-> > Both attempts at trying to allow softirq usage failed, revert for this
-> > release and try again later.
+FWIW, I also have "CMM_STORE_SHARED" which does pretty much the same
+thing. I use these for rcu_assign_pointer() and rcu_dereference() (thus
+replacing "ACCESS_ONCE()").
 
-So it's not forgotten. It's just not fixable right now.
+The more detailed comment and macros are found at
+http://git.lttng.org/?p=userspace-rcu.git;a=blob;f=urcu/system.h
 
-Thanks,
+I hope this helps,
 
-	tglx
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
