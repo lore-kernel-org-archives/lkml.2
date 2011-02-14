@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab1BNQbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:31:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42451 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755917Ab1BNQbl (ORCPT
+	id S1755987Ab1BNQdw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:33:52 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39985 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202Ab1BNQdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:31:41 -0500
-Date: Mon, 14 Feb 2011 16:31:39 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/17] mfd sharing support (v2, part 1)
-Message-ID: <20110214163139.GE8226@opensource.wolfsonmicro.com>
-References: <20110211175735.0d4258dc@queued.net>
+	Mon, 14 Feb 2011 11:33:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MunyjeYi4jNasGQ1lt33e4ne3TapmeYRTFSyVoAkwz4RYa2cz2KTxgMsfoBbnLoLtB
+         qy41wViXImxzbv9OdwGmnOOHAlag/h3fPBMkZuxQ5kPqrkYbYg7jvqypYrI60kZmBm6o
+         8KB413Ad29HVwUMbU9vTUwvDnRg3c93Ns8qNA=
+Date: Mon, 14 Feb 2011 17:33:46 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110214163346.GZ18742@htj.dyndns.org>
+References: <20110204105343.GA12133@htj.dyndns.org>
+ <20110207174821.GA1237@redhat.com>
+ <20110209141803.GH3770@htj.dyndns.org>
+ <201102132325.55353.vda.linux@googlemail.com>
+ <20110214151340.GP18742@htj.dyndns.org>
+ <20110214161515.GA11605@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110211175735.0d4258dc@queued.net>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <20110214161515.GA11605@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 05:57:35PM -0800, Andres Salomon wrote:
+Hello,
 
-> Here's my second attempt[0] of the MFD sharing.  Rather than go
-> through with the whole thing, this is just the part which makes
-> mfd_cells always available to MFD clients.  I'm planning to later 
-> remove driver_data, and just use a (renamed) platform_data as a
-> general cleanup, but for now..  Here's the first part.
+On Mon, Feb 14, 2011 at 05:15:15PM +0100, Oleg Nesterov wrote:
+> > > PTRACE_CONT in this situation would do the same.
+> >
+> > This can be fixed by updating strace, right?  strace can look at the
+> > wait(2) exit code and if the tracee stopped for group stop, wait for
+> > the tracee to be continued instead of issuing PTRACE_SYSCALL.
+> 
+> Yes, in this particular case strace could be more clever.
+> 
+> But. The tracee should react to SIGCONT after that, this means we
+> shouldn't "delay" this stop or force the TASK_TRACED state.
 
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Yeap, which is achievable by treating group stop differently from
+ptrace traps and make it proceed to TASK_TRACED only if ptrace wants
+to issue commands.  (reiterating just to make sure there's no
+misunderstanding)
 
-though I didn't go and check for existing platform data users in the
-affected drivers.
+> And note that in this case real_parent == debugger. Another case
+> is more interesting, and this means we shouldn't delay or hide the
+> notifications.
+> 
+> (I just tried to summarize the previous discussion for Denys)
+
+Agreed.  We should be notifying both the real parent and ptracer.
+
+Thanks.
+
+-- 
+tejun
