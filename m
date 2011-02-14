@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786Ab1BNTgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:36:11 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45248
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751026Ab1BNTgJ (ORCPT
+	id S1752312Ab1BNTgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:36:18 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20307 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab1BNTgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:36:09 -0500
-Date: Mon, 14 Feb 2011 11:36:45 -0800 (PST)
-Message-Id: <20110214.113645.189699477.davem@davemloft.net>
-To: therbert@google.com
-Cc: segoon@openwall.com, adobriyan@gmail.com, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, xiaosuo@gmail.com, jesse@nicira.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2] core: dev: don't call BUG() on bad input
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTimK5bW6HCjpttP0dkNnMLAU4msSd_VijAxAUcqO@mail.gmail.com>
-References: <20110214152310.GA24429@albatros>
-	<20110214.112521.104056910.davem@davemloft.net>
-	<AANLkTimK5bW6HCjpttP0dkNnMLAU4msSd_VijAxAUcqO@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 14 Feb 2011 14:36:13 -0500
+Message-ID: <4D5983EA.4020103@kernel.org>
+Date: Mon, 14 Feb 2011 11:35:06 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
+        mingo@elte.hu, hpa@linux.intel.com
+Subject: Re: [PATCH 15/26] x86-64, NUMA: Unify the rest of memblk registration
+References: <1297530663-26234-16-git-send-email-tj@kernel.org> <4D5729A7.7070706@kernel.org> <20110214113221.GG18742@htj.dyndns.org> <AANLkTin0C2AhtHm6K0av2N4pQxLvK_Fc+4w12Qg_QRkZ@mail.gmail.com> <20110214161249.GV18742@htj.dyndns.org> <AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com> <20110214162247.GX18742@htj.dyndns.org> <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com> <20110214182718.GB18742@htj.dyndns.org> <4D597D56.5060408@kernel.org> <20110214193050.GC18742@htj.dyndns.org>
+In-Reply-To: <20110214193050.GC18742@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D59841A.0181,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Herbert <therbert@google.com>
-Date: Mon, 14 Feb 2011 11:33:29 -0800
-
-> On Mon, Feb 14, 2011 at 11:25 AM, David Miller <davem@davemloft.net> wrote:
->> From: Vasiliy Kulikov <segoon@openwall.com>
->> Date: Mon, 14 Feb 2011 18:23:10 +0300
->>
->>> On Mon, Feb 14, 2011 at 17:16 +0200, Alexey Dobriyan wrote:
->>>> Netdevice name isn't some random junk you get from userspace, so BUG is fine.
->>>
->>> It IS for bluetooth, see net/bluetooth/bnep/core.c: bnep_add_connection() and
->>> net/bluetooth/bnep/sock.c: bnep_sock_ioctl().
->>
->> If bluetooth wants to allow something so foolish, then it's bluetooth's
->> responsibility to sanity check the arguments before blinding passing
->> them into kernel APIs which expect sane inputs.
->>
->> I'm not applying this.
->>
+On 02/14/2011 11:30 AM, Tejun Heo wrote:
+> On Mon, Feb 14, 2011 at 11:07:02AM -0800, Yinghai Lu wrote:
+>> Never mind. will send out patch after your patches get merged into tip.
 > 
-> Changing to BUG_ON(txqs < 1) and BUG_ON(rxqs < 1) does make sense I think.
+> Alright, fair enough.
+> 
+>> BTW, you may need to rebase your on top of tip/master.
+> 
+> Yeah, I saw a new patch going into the numa branch, but shouldn't this
+> and the next series based on x86/numa?  That was how it was done with
+> the previous series.
 
-Sure.
+there is patch about init_memory_mapping_high() in tip/x86/bootmem.
+it will put pgtable on local nodes.
+
+Yinghai
+
