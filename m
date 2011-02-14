@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab1BNSJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:09:03 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45613 "EHLO hera.kernel.org"
+	id S1752997Ab1BNSJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:09:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9073 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521Ab1BNSHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:07:23 -0500
-Date: Mon, 14 Feb 2011 13:51:55 GMT
-From: tip-bot for Borislav Petkov <bp@amd64.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, bp@amd64.org, mingo@elte.hu,
-        borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@amd64.org, borislav.petkov@amd.com,
-        mingo@elte.hu
-In-Reply-To: <20110211171754.GA21047@aftab>
-References: <20110211171754.GA21047@aftab>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix mwait_usable section mismatch
-Message-ID: <tip-1c9d16e35911090dee3f9313e6af13af623d66ee@git.kernel.org>
-Git-Commit-ID: 1c9d16e35911090dee3f9313e6af13af623d66ee
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752711Ab1BNSJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:09:13 -0500
+Date: Mon, 14 Feb 2011 19:00:34 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214180034.GD15847@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214153149.GB8761@redhat.com> <AANLkTikYf1CE41x6FjE6FiZ40v8taRSy8aZ3-5tjAvok@mail.gmail.com> <20110214173910.GA15847@redhat.com> <AANLkTiku4OQKgwCHF-c5dc4AZzmuCKmzk0EuTaqxK_Wr@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Feb 2011 18:06:56 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTiku4OQKgwCHF-c5dc4AZzmuCKmzk0EuTaqxK_Wr@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1c9d16e35911090dee3f9313e6af13af623d66ee
-Gitweb:     http://git.kernel.org/tip/1c9d16e35911090dee3f9313e6af13af623d66ee
-Author:     Borislav Petkov <bp@amd64.org>
-AuthorDate: Fri, 11 Feb 2011 18:17:54 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 14 Feb 2011 12:08:28 +0100
+On 02/14, Denys Vlasenko wrote:
+>
+> On Mon, Feb 14, 2011 at 6:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 02/14, Denys Vlasenko wrote:
+> >>
+> >> On Mon, Feb 14, 2011 at 4:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> > On 02/13, Denys Vlasenko wrote:
+> >> >>
+> >> >> $ strace -tt sleep 30
+> >> >> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
+> >> >> ...
+> >> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
+> >> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> >> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> >> >>     (I forgot again why we see it twice. Another quirk I guess...)
+> >> >
+> >> >      (this is correct, the tracee reports the signal=SIGSTOP, then
+> >> >       it reports it actually stopps with exit_code=SIGSTOP)
+> >>
+> >> Ah, I see. Is there any way debugger can distinguish between these two
+> >> different stops?
+> >
+> > IIRC, the (only?) way to distinguish is to check last_siginfo != NULL
+> > via ptrace(PTRACE_GETSIGINFO).
+>
+> What do you think strace needs to do when it sees second SIGSTOP
+> (meaning "in theory", not "on current kernel which may be buggy")?
+>
+> ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)?
 
-x86: Fix mwait_usable section mismatch
+proably this, or even ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP).
+I think.
 
-We use it in non __cpuinit code now too so drop marker.
+(assuming that ptrace_resume() respects TASK_STOPPED)
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20110211171754.GA21047@aftab>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/cpu.h |    2 +-
- arch/x86/kernel/process.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Oleg.
 
-diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index 6e6e755..4564c8e 100644
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -32,6 +32,6 @@ extern void arch_unregister_cpu(int);
- 
- DECLARE_PER_CPU(int, cpu_state);
- 
--int __cpuinit mwait_usable(const struct cpuinfo_x86 *);
-+int mwait_usable(const struct cpuinfo_x86 *);
- 
- #endif /* _ASM_X86_CPU_H */
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e764fc0..3c189e9 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -506,7 +506,7 @@ static void poll_idle(void)
- #define MWAIT_ECX_EXTENDED_INFO		0x01
- #define MWAIT_EDX_C1			0xf0
- 
--int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
-+int mwait_usable(const struct cpuinfo_x86 *c)
- {
- 	u32 eax, ebx, ecx, edx;
- 
