@@ -1,72 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab1BNAul (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 19:50:41 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41835 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328Ab1BNAuf (ORCPT
+	id S1755358Ab1BNAwk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 19:52:40 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42111
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755316Ab1BNAwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 19:50:35 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 14 Feb 2011 09:44:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: jacob.jun.pan@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        akpm@linux-foundation.org, rdunlap@xenotime.net,
-        Cedric Le Goater <clg@vnet.ibm.com>
-Subject: Re: [PATCH 1/1, v7] cgroup/freezer: add per freezer duty ratio
- control
-Message-Id: <20110214094402.4eefe70d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110212232907.GN16432@count0.beaverton.ibm.com>
-References: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20110212232907.GN16432@count0.beaverton.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Sun, 13 Feb 2011 19:52:33 -0500
+Date: Sun, 13 Feb 2011 16:53:09 -0800 (PST)
+Message-Id: <20110213.165309.123985803.davem@davemloft.net>
+To: jj@chaosbits.net
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tj@kernel.org,
+        isdn@linux-pingi.de
+Subject: Re: potential null pointer dereference in
+ drivers/isdn/hisax/isdnl2.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1102032121180.15101@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102032121180.15101@swampdragon.chaosbits.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Feb 2011 15:29:07 -0800
-Matt Helsley <matthltc@us.ibm.com> wrote:
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Thu, 3 Feb 2011 21:27:56 +0100 (CET)
 
-> On Fri, Feb 11, 2011 at 11:10:44AM -0800, jacob.jun.pan@linux.intel.com wrote:
-> > From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > 
-> > Freezer subsystem is used to manage batch jobs which can start
-> > stop at the same time. However, sometime it is desirable to let
-> > the kernel manage the freezer state automatically with a given
-> > duty ratio.
-> > For example, if we want to reduce the time that backgroup apps
-> > are allowed to run we can put them into a freezer subsystem and
-> > set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> > 
-> > This patch introduces two file nodes under cgroup
-> > freezer.duty_ratio_pct and freezer.period_sec
+> In drivers/isdn/hisax/isdnl2.c:l2_pull_iqueue() we have this:
 > 
-> Again: I don't think this is the right approach in the long term.
-> It would be better not to add this interface and instead enable the
-> cpu cgroup subsystem for non-rt tasks using a similar duty ratio
-> concept..
+> 	...
+> 		skb = alloc_skb(oskb->len + i, GFP_ATOMIC);
+> 		memcpy(skb_put(skb, i), header, i);
+> 	...
 > 
-> Nevertheless, I've added some feedback on the code for you here :).
+> If alloc_skb() fails and returns NULL then the second line will cause a 
+> NULL pointer dereference - skb_put() gives the pointer to 
+> skb_tail_pointer() which dereferences it.
 > 
+> I'm not quite sure how this should be dealt with, so I'll just report it 
+> rather than submit a patch. Happy bug fixing :-)
 
-AFAIK, there was a work for bandwidth control in CFS.
+Thanks Jesper, I'll fix this like so:
 
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-10/msg04335.html
+--------------------
+hisax: Fix unchecked alloc_skb() return.
 
-I tested this and worked fine. This schduler approach seems better for
-my purpose to limit bandwidth of apprications rather than freezer.
+Jesper Juhl noticed that l2_pull_iqueue() does not
+check to see if alloc_skb() fails.
 
-BTW, isn't period_sec too large ? 
+Fix this by first trying to reallocate the headroom
+if necessary, rather than later after we've made hard
+to undo state changes.
 
-Thanks,
--Kame
+Reported-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/isdn/hisax/isdnl2.c |   35 ++++++++++++++++++++---------------
+ 1 files changed, 20 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/isdn/hisax/isdnl2.c b/drivers/isdn/hisax/isdnl2.c
+index 0858791..98ac835 100644
+--- a/drivers/isdn/hisax/isdnl2.c
++++ b/drivers/isdn/hisax/isdnl2.c
+@@ -1243,14 +1243,21 @@ l2_st7_tout_203(struct FsmInst *fi, int event, void *arg)
+ 	st->l2.rc = 0;
+ }
+ 
++static int l2_hdr_space_needed(struct Layer2 *l2)
++{
++	int len = test_bit(FLG_LAPD, &l2->flag) ? 2 : 1;
++
++	return len + (test_bit(FLG_LAPD, &l2->flag) ? 2 : 1);
++}
++
+ static void
+ l2_pull_iqueue(struct FsmInst *fi, int event, void *arg)
+ {
+ 	struct PStack *st = fi->userdata;
+-	struct sk_buff *skb, *oskb;
++	struct sk_buff *skb;
+ 	struct Layer2 *l2 = &st->l2;
+ 	u_char header[MAX_HEADER_LEN];
+-	int i;
++	int i, hdr_space_needed;
+ 	int unsigned p1;
+ 	u_long flags;
+ 
+@@ -1261,6 +1268,16 @@ l2_pull_iqueue(struct FsmInst *fi, int event, void *arg)
+ 	if (!skb)
+ 		return;
+ 
++	hdr_space_needed = l2_hdr_space_needed(l2);
++	if (hdr_space_needed > skb_headroom(skb)) {
++		struct sk_buff *orig_skb = skb;
++
++		skb = skb_realloc_headroom(skb, hdr_space_needed);
++		if (!skb) {
++			dev_kfree_skb(orig_skb);
++			return;
++		}
++	}
+ 	spin_lock_irqsave(&l2->lock, flags);
+ 	if(test_bit(FLG_MOD128, &l2->flag))
+ 		p1 = (l2->vs - l2->va) % 128;
+@@ -1285,19 +1302,7 @@ l2_pull_iqueue(struct FsmInst *fi, int event, void *arg)
+ 		l2->vs = (l2->vs + 1) % 8;
+ 	}
+ 	spin_unlock_irqrestore(&l2->lock, flags);
+-	p1 = skb->data - skb->head;
+-	if (p1 >= i)
+-		memcpy(skb_push(skb, i), header, i);
+-	else {
+-		printk(KERN_WARNING
+-		"isdl2 pull_iqueue skb header(%d/%d) too short\n", i, p1);
+-		oskb = skb;
+-		skb = alloc_skb(oskb->len + i, GFP_ATOMIC);
+-		memcpy(skb_put(skb, i), header, i);
+-		skb_copy_from_linear_data(oskb,
+-					  skb_put(skb, oskb->len), oskb->len);
+-		dev_kfree_skb(oskb);
+-	}
++	memcpy(skb_push(skb, i), header, i);
+ 	st->l2.l2l1(st, PH_PULL | INDICATION, skb);
+ 	test_and_clear_bit(FLG_ACK_PEND, &st->l2.flag);
+ 	if (!test_and_set_bit(FLG_T200_RUN, &st->l2.flag)) {
+-- 
+1.7.4.1
 
