@@ -1,134 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1BNKEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 05:04:32 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:44848 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751953Ab1BNKE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 05:04:29 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Al Viro'" <viro@ZenIV.linux.org.uk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>
-References: <02f701cbcb49$1defd860$59cf8920$@mprc.pku.edu.cn> <20110213160921.GA3239@ZenIV.linux.org.uk>
-In-Reply-To: <20110213160921.GA3239@ZenIV.linux.org.uk>
-Subject: RE: [PATCHv2 11/11] unicore32 core architecture: signals handling
-Date: Mon, 14 Feb 2011 18:04:09 +0800
-Message-ID: <005c01cbcc2e$868e3660$93aaa320$@mprc.pku.edu.cn>
+	id S1752908Ab1BNKHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 05:07:48 -0500
+Received: from nm2-vm1.bullet.mail.kr3.yahoo.com ([111.67.240.245]:34307 "HELO
+	nm2-vm1.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752832Ab1BNKHq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 05:07:46 -0500
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 124363.63844.bm@omp1001.mail.kr3.yahoo.com
+Message-ID: <973829.78086.qm@web70802.mail.kr3.yahoo.com>
+X-YMail-OSG: 9nAGrBcVM1k9KuTUzRx5LqHyP2apv3cfLh.Ts5.sW.GFbvi
+ 2pT1WlWYs.nc.mIq9ryPq.E8tsiwTOI2kUChOz9gKq.4U38qY9vov027_l2d
+ IFCpWeOalHOOrcjezlPTxVtbNEx9RpRNqHnHsJ6IEQO_MStZqbQEUawXOvwA
+ YRVkisPuaHpsr7HMFlWfn1XxGZrNG_v8qWPAOrYfY74eMRWfbsBPk7VI8NhM
+ MM0WTxqSXHj25J4fDtIxhlJwzjm3ZZvjyvzOjHqPhA9IEp1NYs5LQoniHEMB
+ 5Dv16X5mM0a53ReHp6lVQUkdg9e.4H458wyiUwrN7o6zzwnR4OUkRediGQgF
+ ce.QX3dBXvh6SJWQAUshf0SGRgKKFbAJO6Ry9jMYHTk_qFhm0jCJFPpT3Ek9
+ P.JIaO9m4D4_yQG9PHz4w1QT8emE4ecMqBLqykyF5lZOHmUugS7oSAhNl7iK
+ Xsh.bwClEvITUwuQfxaejHU8pB_PjDPEimnbnj8DTryabgCxq8bjniuXpAWD
+ rfIRSF67kLqIujF24v3wd1luiYHXBe5zbe1uAJxX6TeCr5XgIotMvN4U9au3
+ KFK0Hv4SSELBRqMXZF9s5UyHu3FPxdFKEgvq_KgakXo8MrE4M0NBiMoRKQnQ
+ 41_ve8slbCASxxz16Q6oYq6PVVwbGPCPugrPnPYjKYQYYfN60EhubvxYdVUz
+ d4dvKusq66fBAKPGfAhjUX0TQfja3clnvhVkAd4bFTUk60veejd4WuZgrQx5
+ RdhblV2dsAH5pNMgGriZn7tDIeIw2iNp_kO1JYlYoB36qGlUZnZiLw2kphO2
+ 3SAKDgUes9XlWpLdKzAWDONoEfyj6YxrtYo_JCC7WcuCQj.DgHCVyxwW9gpa
+ xF8GCkNYd4NW1cTLH.1plcuW5OEnMth39wXirI.rxpZiMBfq_bCnSAbrRZZE
+ L3r0m4PAFDdABsYRlPbe5.GM5mps8hMiyA4IzZfTHeSOA7z6Yt3Iy67.lYRx
+ aqO7Fm8j8vjRQFShVqKrQ2.ivYMJHfLZb67RAWrdYUC_Y7C5TesbTBPahi9w
+ 02UkJWmPkjdaV9vX4n06JX5uBaNgZahpcZKEBhC5azU1nS_G6VCDqdFH.v7S
+ YnwxGxXbk9RC37DvV64JhA5eyphDTBAFHKhpQ.YuxfpUA
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
+Date: Mon, 14 Feb 2011 19:07:39 +0900 (KST)
+From: Paul Compaore <paulcompaore12@gmail.com>
+Reply-To: paulcompaore14@gmail.com
+Subject: My Dear Good Friend.
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQI6kUZq/d4qbb3+lJ3N0RSRMowAFwKARl46kw8y5HA=
-Content-Language: zh-cn
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+My Dear Good Friend.
 
-> -----Original Message-----
-> From: Al Viro [mailto:viro@ftp.linux.org.uk] On Behalf Of Al Viro
-> Sent: Monday, February 14, 2011 12:09 AM
-> To: Guan Xuetao
-> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; Arnd Bergmann; 'Greg KH'
-> Subject: Re: [PATCHv2 11/11] unicore32 core architecture: signals handling
-> 
-> On Sun, Feb 13, 2011 at 02:42:00PM +0800, Guan Xuetao wrote:
-> > This patch implements signals.
-> 
-> > +static int restore_sigframe(struct pt_regs *regs, struct sigframe __user *sf)
-> > +{
-> > +	sigset_t set;
-> > +	int err;
-> > +
-> > +	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
-> > +	if (err == 0) {
-> > +		sigdelsetmask(&set, ~_BLOCKABLE);
-> > +		spin_lock_irq(&current->sighand->siglock);
-> > +		current->blocked = set;
-> > +		recalc_sigpending();
-> > +		spin_unlock_irq(&current->sighand->siglock);
-> > +	}
-> > +
-> > +	err |= __get_user(regs->UCreg_00, &sf->uc.uc_mcontext.regs.UCreg_00);
-> > +	err |= __get_user(regs->UCreg_01, &sf->uc.uc_mcontext.regs.UCreg_01);
-> > +	err |= __get_user(regs->UCreg_02, &sf->uc.uc_mcontext.regs.UCreg_02);
-> > +	err |= __get_user(regs->UCreg_03, &sf->uc.uc_mcontext.regs.UCreg_03);
-> > +	err |= __get_user(regs->UCreg_04, &sf->uc.uc_mcontext.regs.UCreg_04);
-> > +	err |= __get_user(regs->UCreg_05, &sf->uc.uc_mcontext.regs.UCreg_05);
-> > +	err |= __get_user(regs->UCreg_06, &sf->uc.uc_mcontext.regs.UCreg_06);
-> > +	err |= __get_user(regs->UCreg_07, &sf->uc.uc_mcontext.regs.UCreg_07);
-> > +	err |= __get_user(regs->UCreg_08, &sf->uc.uc_mcontext.regs.UCreg_08);
-> > +	err |= __get_user(regs->UCreg_09, &sf->uc.uc_mcontext.regs.UCreg_09);
-> > +	err |= __get_user(regs->UCreg_10, &sf->uc.uc_mcontext.regs.UCreg_10);
-> > +	err |= __get_user(regs->UCreg_11, &sf->uc.uc_mcontext.regs.UCreg_11);
-> > +	err |= __get_user(regs->UCreg_12, &sf->uc.uc_mcontext.regs.UCreg_12);
-> > +	err |= __get_user(regs->UCreg_13, &sf->uc.uc_mcontext.regs.UCreg_13);
-> > +	err |= __get_user(regs->UCreg_14, &sf->uc.uc_mcontext.regs.UCreg_14);
-> > +	err |= __get_user(regs->UCreg_15, &sf->uc.uc_mcontext.regs.UCreg_15);
-> > +	err |= __get_user(regs->UCreg_16, &sf->uc.uc_mcontext.regs.UCreg_16);
-> > +	err |= __get_user(regs->UCreg_17, &sf->uc.uc_mcontext.regs.UCreg_17);
-> > +	err |= __get_user(regs->UCreg_18, &sf->uc.uc_mcontext.regs.UCreg_18);
-> > +	err |= __get_user(regs->UCreg_19, &sf->uc.uc_mcontext.regs.UCreg_19);
-> > +	err |= __get_user(regs->UCreg_20, &sf->uc.uc_mcontext.regs.UCreg_20);
-> > +	err |= __get_user(regs->UCreg_21, &sf->uc.uc_mcontext.regs.UCreg_21);
-> > +	err |= __get_user(regs->UCreg_22, &sf->uc.uc_mcontext.regs.UCreg_22);
-> > +	err |= __get_user(regs->UCreg_23, &sf->uc.uc_mcontext.regs.UCreg_23);
-> > +	err |= __get_user(regs->UCreg_24, &sf->uc.uc_mcontext.regs.UCreg_24);
-> > +	err |= __get_user(regs->UCreg_25, &sf->uc.uc_mcontext.regs.UCreg_25);
-> > +	err |= __get_user(regs->UCreg_26, &sf->uc.uc_mcontext.regs.UCreg_26);
-> > +	err |= __get_user(regs->UCreg_fp, &sf->uc.uc_mcontext.regs.UCreg_fp);
-> > +	err |= __get_user(regs->UCreg_ip, &sf->uc.uc_mcontext.regs.UCreg_ip);
-> > +	err |= __get_user(regs->UCreg_sp, &sf->uc.uc_mcontext.regs.UCreg_sp);
-> > +	err |= __get_user(regs->UCreg_lr, &sf->uc.uc_mcontext.regs.UCreg_lr);
-> > +	err |= __get_user(regs->UCreg_pc, &sf->uc.uc_mcontext.regs.UCreg_pc);
-> > +	err |= __get_user(regs->UCreg_asr, &sf->uc.uc_mcontext.regs.UCreg_asr);
-> > +
-> > +	err |= !valid_user_regs(regs);
-> 
-> a) where is valid_user_regs() defined?
-This function is defined in arch/unicore32/include/asm/ptrace.h
-as following:
-/* Are the current registers suitable for user mode?
- * (used to maintain security in signal handlers)
- */
-static inline int valid_user_regs(struct pt_regs *regs)
-{
-	unsigned long mode = regs->UCreg_asr & MODE_MASK;
+Compliment of the season, how are you and your family? Hope All is well. I am Mr.Paul Compaore, the accountant general in the accounts unit of Bib Bank Burkina (BIB-BF) Ouagadougou Burkina Faso. I got your contact from the Burkina Faso chambers of commerce have some fund to claim in my bank Which will be of benefit to both of us.
 
-	/*
-	 * Always clear the R (REAL) bits
-	 */
-	regs->UCreg_asr &= ~(PSR_R_BIT);
+I want you to be an inheritor of the fund, the fund is in a Doormat account and with your bank information and my Documentation certifies you as the inheritor/beneficiary Since I am an insider and working in the same bank, the Transfer will be processed legally and successfully and I will Be coming down to your country for disbursement.
 
-	if ((regs->UCreg_asr & PSR_I_BIT) == 0) {
-		if (mode == USER_MODE)
-			return 1;
-	}
+The amount of money involved is ($11.3m) which I want you to Claim for further transfer out of the country to your bank Account, all to our financial benefit. This is very great opportunity as it will take a maximum of 7 banking Working days to be concluded.
 
-	/*
-	 * Force ASR to something logical...
-	 */
-	regs->UCreg_asr &= PSR_f | USER_MODE;
+I as an insider will do my duties perfectly well concerning this transaction for security reasons. This is confidential for successful conclusion and hitch-free transaction. Contact me immediately for further details and mutual Relationship and we will decide together on how to disburse The funds and percentage as well, my private email Address:( paulcompaore14@gmail.com )
 
-	return 0;
-}
-The function only assures that processor mode is in user mode and interrupt enabled
-when syscall rt_sigreturn being executed.
-Perhaps the function is no used in here!?
+If you are interested and capable to handle this business transaction, come up with the information's shown below:- 
 
-> 
-> b) assuming it's not always returning true (and it'd better, or you'll be able
-> to do interesting things with asr here), can it fail on frame setup path?
-> And what do you do if it *does* fail there and resulting SIGSEGV is caught and
-> handled?
-In sys_rt_sigreturn, the return value of restore_sigframe() is tested,  and if failed,
-SIGSEGV is forced to be pending to 'current' process using force_sig().
-Is it ok or enough?
+1). Your full name: 
+2). Your contact cell phone number: 
+3). Your age: 
+4). Your sex: 
+5). Your occupations: 
+6). Your country and city:
 
-Thanks Al Viro.
+As soon as possible all these information's is submitted to me immediately i will send you full details of this business transaction on the receipt of your response.Reply to my private email: paulcompaore12@gmail.com
 
-Guan Xuetao
+Yours truly.
+Mr.Paul Compaore
+Banque Internationale Du Burkina (BIB)
+Burkina (BIB-BF)
 
+
+      
