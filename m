@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab1BNPk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:40:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab1BNPkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:40:25 -0500
-Date: Mon, 14 Feb 2011 16:31:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214153149.GB8761@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com>
+	id S1755862Ab1BNPk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 10:40:56 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36939 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047Ab1BNPky (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 10:40:54 -0500
+Date: Mon, 14 Feb 2011 15:40:12 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: ShiYong LI <a22381@motorola.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Shiyong Li <shi-yong.li@motorola.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
+Message-ID: <20110214154011.GA1595@flint.arm.linux.org.uk>
+References: <20110207180606.GB2966@flint.arm.linux.org.uk> <AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com> <20110208125546.GA4286@flint.arm.linux.org.uk> <alpine.DEB.2.00.1102080856020.12521@router.home> <AANLkTimFDZFcO=J6PEOOo5RBdr0m7fjCKzWh1M_NaiLx@mail.gmail.com> <20110211091413.GA32687@flint.arm.linux.org.uk> <alpine.DEB.2.00.1102110920060.12360@router.home> <20110211153524.GB26188@flint.arm.linux.org.uk> <AANLkTimDUf52xdHn22=f1J=Xn88sqPEg9P6+ceas1h1k@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201102132325.55353.vda.linux@googlemail.com>
+In-Reply-To: <AANLkTimDUf52xdHn22=f1J=Xn88sqPEg9P6+ceas1h1k@mail.gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13, Denys Vlasenko wrote:
->
-> On Wednesday 09 February 2011 15:18, Tejun Heo wrote:
-> >
-> > > > and I'm not really sure whether that's something worth achieving
-> > > > at the cost of debugging capabilities especially when we don't _have_
-> > > > to lose them.
-> > >
-> > > But we do not? I mean, at least this is not worse than the current
-> > > behaviour.
-> >
-> > I think it's worse.  With your changes, debuggers can't diddle the
-> > tasks behind group stop's back which the current users already expect.
->
-> But this "diddling behind group stop's back" is exactly the current
-> problem with stop signals.
->
-> Here I try to stop a ptraced process:
->
-> $ strace -tt sleep 30
-> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
-> ...
-> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
-> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
->     (I forgot again why we see it twice. Another quirk I guess...)
+On Mon, Feb 14, 2011 at 11:10:45AM +0800, ShiYong LI wrote:
+> Hi all,
+> 
+> Sorry for my late reply.
+> 
+> My commit is created to enable ARM with 128 byte cache line support last
+> information dump while slab corruption occurs. I've verified it works fine
+> on ARMv7.
 
-      (this is correct, the tracee reports the signal=SIGSTOP, then
-       it reports it actually stopps with exit_code=SIGSTOP)
+Mainline only supports 32 byte and 64 byte cache lines on ARM.  It does
+not support 128 byte cache lines, so maybe your attempts are the wrong
+approach.  Can you please post your 128 byte cache line support patches
+to the ARM kernel mailing list for review.
 
-> 23:02:23.781310 restart_syscall(<... resuming interrupted call ...>) = 0
-> 23:02:45.622433 close(1)                = 0
-> 23:02:45.622743 close(2)                = 0
-> 23:02:45.622885 exit_group(0)           = ?
->
-> Why sleep didn't stop?
+In the mean time, because your patch causes an oopsing regression, I
+strongly suggest that it is reverted until we start supporting 128 byte
+cache lines on ARM in mainline.
 
-Yes. And I think this all should be fixed.
+> Russell,
+> 
+> Can you provide more information for the problem? What kind of ARM are you
+> using ?
 
-Although, depending on how we change the kernel, strace may need the
-fixes too.
+ARM926, which has a cache line size of 32.
 
-> Because PTRACE_SYSCALL brought the task out of group stop at once,
-> even though strace did try hard to not do so:
->
->     ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP) <-- note SIGSTOP!
-
-Yes.
-
-(just to clarify, data=SIGSTOP has no effect when the tracee reports
- from do_signal_stop. iow, when it reports i-am-stopped)
-
-But otherwise I agree, and that was my point too.
-
-Oleg.
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
