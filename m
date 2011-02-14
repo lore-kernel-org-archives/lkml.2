@@ -1,33 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab1BNXPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 18:15:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42789 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab1BNXPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 18:15:19 -0500
-Date: Tue, 15 Feb 2011 10:15:06 +1100
-From: NeilBrown <neilb@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Milan Broz <mbroz@redhat.com>, Tao Ma <tm@tao.ma>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        device-mapper development <dm-devel@redhat.com>
-Subject: Re: [PATCH][RFC] dm: Do not open log and cow device read-write for
- read-only mappings
-Message-ID: <20110215101506.43d41ca8@notabene.brown>
-In-Reply-To: <20110214154430.GR18742@htj.dyndns.org>
-References: <4D573BBB.6090200@redhat.com>
-	<1297594735-5593-1-git-send-email-tm@tao.ma>
-	<4D57E67E.1030707@redhat.com>
-	<4D57F357.6060708@tao.ma>
-	<4D580A8B.5050508@redhat.com>
-	<20110214103026.GA18742@htj.dyndns.org>
-	<4D591664.6090203@redhat.com>
-	<4D592AD1.6020500@redhat.com>
-	<20110214140940.GM18742@htj.dyndns.org>
-	<4D593AD8.7070901@redhat.com>
-	<20110214154430.GR18742@htj.dyndns.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1753483Ab1BNXIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 18:08:22 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42663 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751882Ab1BNXIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 18:08:17 -0500
+Date: Mon, 14 Feb 2011 15:07:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Matt Helsley <matthltc@us.ibm.com>, jacob.jun.pan@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        rdunlap@xenotime.net, Cedric Le Goater <clg@vnet.ibm.com>
+Subject: Re: [PATCH 1/1, v7] cgroup/freezer: add per freezer duty ratio
+ control
+Message-Id: <20110214150730.058319a5.akpm@linux-foundation.org>
+In-Reply-To: <4D58A01E.9000203@linux.intel.com>
+References: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<20110212232907.GN16432@count0.beaverton.ibm.com>
+	<20110214094402.4eefe70d.kamezawa.hiroyu@jp.fujitsu.com>
+	<4D58A01E.9000203@linux.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -35,51 +33,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 16:44:30 +0100 Tejun Heo <tj@kernel.org> wrote:
+On Sun, 13 Feb 2011 19:23:10 -0800
+Arjan van de Ven <arjan@linux.intel.com> wrote:
 
-> Hello,
+> On 2/13/2011 4:44 PM, KAMEZAWA Hiroyuki wrote:
+> > On Sat, 12 Feb 2011 15:29:07 -0800
+> > Matt Helsley<matthltc@us.ibm.com>  wrote:
+> >
+> >> On Fri, Feb 11, 2011 at 11:10:44AM -0800, jacob.jun.pan@linux.intel.com wrote:
+> >>> From: Jacob Pan<jacob.jun.pan@linux.intel.com>
+> >>>
+> >>> Freezer subsystem is used to manage batch jobs which can start
+> >>> stop at the same time. However, sometime it is desirable to let
+> >>> the kernel manage the freezer state automatically with a given
+> >>> duty ratio.
+> >>> For example, if we want to reduce the time that backgroup apps
+> >>> are allowed to run we can put them into a freezer subsystem and
+> >>> set the kernel to turn them THAWED/FROZEN at given duty ratio.
+> >>>
+> >>> This patch introduces two file nodes under cgroup
+> >>> freezer.duty_ratio_pct and freezer.period_sec
+> >> Again: I don't think this is the right approach in the long term.
+> >> It would be better not to add this interface and instead enable the
+> >> cpu cgroup subsystem for non-rt tasks using a similar duty ratio
+> >> concept..
+> >>
+> >> Nevertheless, I've added some feedback on the code for you here :).
+> >>
+> > AFAIK, there was a work for bandwidth control in CFS.
+> >
+> > http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-10/msg04335.html
+> >
+> > I tested this and worked fine. This schduler approach seems better for
+> > my purpose to limit bandwidth of apprications rather than freezer.
 > 
-> On Mon, Feb 14, 2011 at 03:23:20PM +0100, Milan Broz wrote:
-> > >> I am not sure if this is complete fix... note that:
-> > >> - what happens during mirror resync and read-only log?
-> > >> - for COW, it there situation we need to update header in read-oly mode? (invalidated snap?)
-> > > 
-> > > But if the underlying device is marked ro, dm shouldn't update it at
-> > > all.  The device should be opened ro and ro policy should be enforced.
-> > 
-> > Sure. So we need to check these situations I described.
-> 
-> Yeap, it seems dm folks are gonna take care of dm part.
-> 
-> > Btw the same pattern is in MD code in lock_rdev() ...
-> 
-> Indeed, cc'ing Neil.  Hi, the whole thread can be read from the
-> following URL.
-> 
->   http://thread.gmane.org/gmane.linux.kernel/1099399/focus=1099735
-> 
-> blkdev_get() now rejects rw open of devices which are marked
-> read-only.  I think the right thing to do would be opening the member
-> devices ro if the array is assembled for ro access (similar to Milan's
-> patch for dm).  How does that sound?
-> 
-> Thanks.
+> for our purpose, it's not about bandwidth.
+> it's about making sure the class of apps don't run for a long period 
+> (30-second range) of time.
 > 
 
-Sounds sensible ... though it is not all that easy to assemble an
-array as 'read-only'....  it is possible though.
+The discussion about this patchset seems to have been upside-down: lots
+of talk about a particular implementation, with people walking back
+from the implemetnation trying to work out what the requirements were,
+then seeing if other implementations might suit those requirements. 
+Whatever they were.
 
-When the array is switched to read-write, do I have to call blkdev_get again
-asking for rw access, then close the old blkdev, or can I 'upgrade'?
+I think it would be helpful to start again, ignoring (for now) any
+implementation.
 
-If a device has multiple opens: some read-only and some read-write, can I
-find out when the last read-write close is gone?  That would be really useful,
-especially if a filesystem down-graded its open to read-only when it is
-remounted read-only..
 
-[[And if filesystems could be convinced to open the device read-only when the
-  fs is mounted read-only (and just do journal replay to internal data
-  structures) that would be really awesome!!]]
+What are the requirements here, guys?  What effects are we actually
+trying to achieve?  Once that is understood and agreed to, we can
+think about implementations.
 
-NeilBrown
+
+And maybe you people _are_ clear about the requirements.  But I'm not and
+I'm sure many others aren't too.  A clear statement of them would help
+things along and would doubtless lead to better code.  This is pretty
+basic stuff!
 
