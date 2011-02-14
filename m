@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab1BNNPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:15:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447Ab1BNNPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:15:09 -0500
-Message-ID: <4D592AD1.6020500@redhat.com>
-Date: Mon, 14 Feb 2011 14:14:57 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1755127Ab1BNNQH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:16:07 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56223 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab1BNNQE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 08:16:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=okGvjoL+f3mCmUn/HmnM0ibzXefH4LKz/oi4IYNETLh4vdOMB/q0/9J6DiZo+33x4q
+         LaKOjUM0m1jtvtiysEpaSI4uS6Acqnhi4G/fL/7kP5K1bktGXfiuYc6FXxqBqpdUkEBY
+         +z+snULIaQCG3/QUdZPQMIwUQhX/s7NXbwCWg=
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        device-mapper development <dm-devel@redhat.com>
-Subject: [PATCH][RFC] dm: Do not open log and cow device read-write for read-only
- mappings
-References: <4D573BBB.6090200@redhat.com> <1297594735-5593-1-git-send-email-tm@tao.ma> <4D57E67E.1030707@redhat.com> <4D57F357.6060708@tao.ma> <4D580A8B.5050508@redhat.com> <20110214103026.GA18742@htj.dyndns.org> <4D591664.6090203@redhat.com>
-In-Reply-To: <4D591664.6090203@redhat.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTikO=5zBCvPbd2MXqgzE_mvnabTtH_e2C5_5bpQv@mail.gmail.com>
+References: <AANLkTimM1Tmws46DUyoNGsn+P8WN1XPsRu=L8yPzd=xU@mail.gmail.com>
+	<AANLkTikO=5zBCvPbd2MXqgzE_mvnabTtH_e2C5_5bpQv@mail.gmail.com>
+Date: Mon, 14 Feb 2011 14:15:59 +0100
+Message-ID: <AANLkTinFOPc+BM8cnPE3SLt7Dc2TFOw1v+bntFu01hpO@mail.gmail.com>
+Subject: Re: [next-20110214] Kernel-modules with unknown parameter
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But it doesn't fix the read-only snapshot issue and I guess there will be
-> the same problem with read-only MD code too.
-> (so the 2) issue here https://lkml.org/lkml/2011/2/12/209).
-I am not sure if this is complete fix... note that:
-- what happens during mirror resync and read-only log?
-- for COW, it there situation we need to update header in read-oly mode? (invalidated snap?)
-Milan
---
+On Mon, Feb 14, 2011 at 1:24 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Mon, Feb 14, 2011 at 1:13 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>> Hi,
+>>
+>> I have pulled Dave's drm-fixes-staging into today's linux-next and did
+>> not see a KMS-modesetted resolution change in VT (runlevel-3).
+>> After a quick check of my dmesg, I see also my kernel-module for sound
+>> has "unknown parameter".
+>> ( Thus, personally I don't think it is a bug from any drm-2.6 tree. )
+>>
+>> # dmesg | egrep -i 'unknown|param'
+>> [   12.431216] radeon: Unknown parameter `modeset'
+>> [   12.665911] snd_intel8x0m: Unknown parameter `index'
+>> [   37.311333] radeon: Unknown parameter `modeset'
+>>
+>> Any idea what's going on? Stephen, Randy noticed the same like me?
+>>
+>> Regards,
+>> - Sedat -
+>>
+>> P.S.: Attached are dmesg and kernel dot-config.
+>>
+>
+> [ CC Dmitry Torokhov ]
+>
+> Could that be a possible fix for me [1]?
+>
+> - Sedat -
+>
+> [1] https://patchwork.kernel.org/patch/548891/
+>
 
-[RFC] Do not open log and cow device read-write for read-only mappings
+[ CC Rusty Russell + Removed drm-2.6/dri-devel folks ]
 
-Signed-off-by: Milan Broz <mbroz@redhat.com> 
+While digging into the problem, I had a closer look into
+linux-next/Trees file [1], which list the included GIT/QUILT
+trees/patch-queues, line #121 says:
 
-diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
-index 6951536..8e8a868 100644
---- a/drivers/md/dm-log.c
-+++ b/drivers/md/dm-log.c
-@@ -543,7 +543,7 @@ static int disk_ctr(struct dm_dirty_log *log, struct dm_target *ti,
- 		return -EINVAL;
- 	}
- 
--	r = dm_get_device(ti, argv[0], FMODE_READ | FMODE_WRITE, &dev);
-+	r = dm_get_device(ti, argv[0], dm_table_get_mode(ti->table), &dev);
- 	if (r)
- 		return r;
- 
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index fdde53c..a2d3309 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -1080,7 +1080,7 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	argv++;
- 	argc--;
- 
--	r = dm_get_device(ti, cow_path, FMODE_READ | FMODE_WRITE, &s->cow);
-+	r = dm_get_device(ti, cow_path, dm_table_get_mode(ti->table), &s->cow);
- 	if (r) {
- 		ti->error = "Cannot get COW device";
- 		goto bad_cow;
+rr              quilt   http://ozlabs.org/~rusty/kernel/rr-latest/
 
+( Personally, I thought all stuff are pulled from GIT trees, but you
+learn more by CSI-ing. )
 
+As a clever guy, I was silently assuming the problem could occur from
+any module-related tree (so I checked linux-next GIT repo via "git log
+-3 kernel/params.c" which gave me a hint to Dmitry's commit in
+quilt/rr, Bingo?).
+
+With this "evidence material" I "tig-ged" into the commits in my local
+linux-next GIT repo, which revealed more:
+
+2011-02-14 14:17 Stephen Rothwell   Merge branch 'quilt/rr'
+2011-02-11 10:37 Rusty Russell      module: deal with alignment issues
+in built-in module parameters FIX
+2011-02-07 16:02 Dmitry Torokhov    module: deal with alignment issues
+in built-in module parameters
+2011-02-01 21:43 Christoph Hellwig  virtio_blk: allow re-reading
+config space at runtime
+2011-02-07 16:02 Dmitry Torokhov    module: do not hide
+__modver_version_show declaration behind ifdef
+2011-02-07 16:02 Dmitry Torokhov    module: deal with alignment issues
+in built-in module versions
+
+My damn brain can't understand - looking at the series file in [2] -
+why the hell the "possible" patch [3] is not included in linux-next?
+I did not compare but [3] looks similiar to [4].
+I have applied [3] on top my own patch-series and will report later,
+if this worked or not.
+
+BUT please, what are the factors for choosing the relevant patches
+from quilt/rr?
+( For example, the cpumask stuff is awaited by systemd folks. Is this
+stuff included? I saw by a very quick look @ git.k.o there is a GIT
+repo for that. )
+
+And yeah, slow-ass UserModeSetting suckz here!
+
+/me confused,
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees
+[2] http://ozlabs.org/~rusty/kernel/rr-latest/series
+[3] http://ozlabs.org/~rusty/kernel/rr-latest/module:deal_with_alignment_issues_in_built_in_parameters.patch
+[4] https://patchwork.kernel.org/patch/548891/
