@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1BNT2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:28:49 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65225 "EHLO
+	id S1753547Ab1BNT3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:29:13 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38317 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab1BNT2n (ORCPT
+	with ESMTP id S1753273Ab1BNT2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:28:43 -0500
+	Mon, 14 Feb 2011 14:28:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=lh5O8CeDt3cQyidfcHPfrIe042MpbN1aNWiSLyOg/F8cU5K6qoaFiugAXeMlyIi8eU
-         nY4GiyTMBCp8FQtrXD4iutN6iDgisy5VQQ4wRUDfR1PXk4cF7JV7z3O7O5cMQeiiqDdx
-         xZNcaWisX+ymN1ewwkRNTgxK1iJdovX8RaRs0=
+        b=hqzMKVuA5c1gzHCMB9GVU17sSK1dDHC3cbNWPnCZ8VP+WpJt9wQSiU8F+fd0dx7xDM
+         zo7kQnvLSUb7+VCrFP2eWKbFUaqLRKPuywYyU/tdzn7IRaGCbDBW2QRtIeauf3MS3zfP
+         HAg9usejw6olcwaEn38/P4Gjf3UvWI2KWUj/o=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/7] x86-64, NUMA: Build and use direct emulated nid -> phys nid mapping
-Date: Mon, 14 Feb 2011 20:28:30 +0100
-Message-Id: <1297711715-3086-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 6/7] x86-64, NUMA: Unify emulated apicid -> node mapping transformation
+Date: Mon, 14 Feb 2011 20:28:34 +0100
+Message-Id: <1297711715-3086-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297711715-3086-1-git-send-email-tj@kernel.org>
 References: <1297711715-3086-1-git-send-email-tj@kernel.org>
@@ -30,13 +30,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA emulation copied physical NUMA configuration into physnodes[] and
-used it to reverse-map emulated nodes to physical nodes, which is
-unnecessarily convoluted.  Build emu_nid_to_phys[] array to map
-emulated nids directly to the matching physical nids and use it in
-numa_add_cpu().
+NUMA emulation changes node mappings and thus apicid -> node mapping
+needs to be updated accordingly.  srat_64 and amdtopology_64 did this
+separately; however, all the necessary information is the mapping from
+emulated nodes to physical nodes which is available in
+emu_nid_to_phys[].
 
-physnodes[] will be removed with further patches.
+Implement common __apicid_to_node[] transformation in numa_emulation()
+and drop duplicate implementations.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -47,170 +48,134 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/numa_64.c |   64 +++++++++++++++++++++++++++---------------------
- 1 files changed, 36 insertions(+), 28 deletions(-)
+ arch/x86/mm/amdtopology_64.c |    9 ---------
+ arch/x86/mm/numa_64.c        |   16 +++++++++++++++-
+ arch/x86/mm/srat_64.c        |   24 +-----------------------
+ 3 files changed, 16 insertions(+), 33 deletions(-)
 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 10544c2..253a5c3 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -540,7 +540,9 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- #ifdef CONFIG_NUMA_EMU
- /* Numa emulation */
- static struct bootnode nodes[MAX_NUMNODES] __initdata;
--static struct bootnode physnodes[MAX_NUMNODES] __cpuinitdata;
-+static struct bootnode physnodes[MAX_NUMNODES] __initdata;
-+
-+static int emu_nid_to_phys[MAX_NUMNODES] __cpuinitdata;
- static char *emu_cmdline __initdata;
- 
- void __init numa_emu_cmdline(char *str)
-@@ -647,7 +649,8 @@ static void __init fake_physnodes(int acpi, int amd, int nr_nodes)
-  * allocation past addr and -1 otherwise.  addr is adjusted to be at
-  * the end of the node.
-  */
--static int __init setup_node_range(int nid, u64 *addr, u64 size, u64 max_addr)
-+static int __init setup_node_range(int nid, int physnid,
-+				   u64 *addr, u64 size, u64 max_addr)
- {
- 	int ret = 0;
- 	nodes[nid].start = *addr;
-@@ -658,6 +661,10 @@ static int __init setup_node_range(int nid, u64 *addr, u64 size, u64 max_addr)
- 	}
- 	nodes[nid].end = *addr;
- 	node_set(nid, node_possible_map);
-+
-+	if (emu_nid_to_phys[nid] == NUMA_NO_NODE)
-+		emu_nid_to_phys[nid] = physnid;
-+
- 	printk(KERN_INFO "Faking node %d at %016Lx-%016Lx (%LuMB)\n", nid,
- 	       nodes[nid].start, nodes[nid].end,
- 	       (nodes[nid].end - nodes[nid].start) >> 20);
-@@ -754,7 +761,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr, int nr_nodes)
- 			if (nodes_weight(physnode_mask) + ret >= nr_nodes)
- 				end = physnodes[i].end;
- 
--			if (setup_node_range(ret++, &physnodes[i].start,
-+			if (setup_node_range(ret++, i, &physnodes[i].start,
- 						end - physnodes[i].start,
- 						physnodes[i].end) < 0)
- 				node_clear(i, physnode_mask);
-@@ -850,7 +857,7 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
- 			 * later.  If setup_node_range() returns non-zero, there
- 			 * is no more memory available on this physical node.
- 			 */
--			if (setup_node_range(ret++, &physnodes[i].start,
-+			if (setup_node_range(ret++, i, &physnodes[i].start,
- 						end - physnodes[i].start,
- 						physnodes[i].end) < 0)
- 				node_clear(i, physnode_mask);
-@@ -870,6 +877,9 @@ static int __init numa_emulation(int acpi, int amd)
- 	int num_nodes;
- 	int i;
- 
-+	for (i = 0; i < MAX_NUMNODES; i++)
-+		emu_nid_to_phys[i] = NUMA_NO_NODE;
-+
- 	/*
- 	 * If the numa=fake command-line contains a 'M' or 'G', it represents
- 	 * the fixed node size.  Otherwise, if it is just a single number N,
-@@ -890,6 +900,11 @@ static int __init numa_emulation(int acpi, int amd)
- 	if (num_nodes < 0)
- 		return num_nodes;
- 
-+	/* make sure all emulated nodes are mapped to a physical node */
-+	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
-+		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
-+			emu_nid_to_phys[i] = 0;
-+
- 	ei.nr_blks = num_nodes;
- 	for (i = 0; i < ei.nr_blks; i++) {
- 		ei.blk[i].start = nodes[i].start;
-@@ -915,7 +930,6 @@ static int __init numa_emulation(int acpi, int amd)
- 						nodes[i].end >> PAGE_SHIFT);
- 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
- 	}
--	setup_physnodes(0, max_addr);
- 	fake_physnodes(acpi, amd, num_nodes);
- 	numa_init_array();
- 	numa_emu_dist = true;
-@@ -973,7 +987,11 @@ void __init initmem_init(void)
- 		setup_physnodes(0, max_pfn << PAGE_SHIFT);
- 		if (emu_cmdline && !numa_emulation(i == 0, i == 1))
- 			return;
--		setup_physnodes(0, max_pfn << PAGE_SHIFT);
-+
-+		/* not emulating, build identity mapping for numa_add_cpu() */
-+		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
-+			emu_nid_to_phys[j] = j;
-+
- 		nodes_clear(node_possible_map);
- 		nodes_clear(node_online_map);
- #endif
-@@ -1030,7 +1048,6 @@ int __cpuinit numa_cpu_node(int cpu)
- # ifndef CONFIG_DEBUG_PER_CPU_MAPS
- void __cpuinit numa_add_cpu(int cpu)
- {
--	unsigned long addr;
- 	int physnid, nid;
- 
- 	nid = numa_cpu_node(cpu);
-@@ -1038,26 +1055,15 @@ void __cpuinit numa_add_cpu(int cpu)
- 		nid = early_cpu_to_node(cpu);
- 	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
- 
--	/*
--	 * Use the starting address of the emulated node to find which physical
--	 * node it is allocated on.
--	 */
--	addr = node_start_pfn(nid) << PAGE_SHIFT;
--	for (physnid = 0; physnid < MAX_NUMNODES; physnid++)
--		if (addr >= physnodes[physnid].start &&
--		    addr < physnodes[physnid].end)
--			break;
-+	physnid = emu_nid_to_phys[nid];
- 
- 	/*
- 	 * Map the cpu to each emulated node that is allocated on the physical
- 	 * node of the cpu's apic id.
- 	 */
--	for_each_online_node(nid) {
--		addr = node_start_pfn(nid) << PAGE_SHIFT;
--		if (addr >= physnodes[physnid].start &&
--		    addr < physnodes[physnid].end)
-+	for_each_online_node(nid)
-+		if (emu_nid_to_phys[nid] == physnid)
- 			cpumask_set_cpu(cpu, node_to_cpumask_map[nid]);
--	}
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index fd7b609..f37ea2f 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -196,10 +196,6 @@ int __init amd_numa_init(void)
  }
  
- void __cpuinit numa_remove_cpu(int cpu)
-@@ -1070,16 +1076,18 @@ void __cpuinit numa_remove_cpu(int cpu)
- # else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
- static void __cpuinit numa_set_cpumask(int cpu, int enable)
- {
--	int node = early_cpu_to_node(cpu);
- 	struct cpumask *mask;
--	int i;
-+	int nid, i;
+ #ifdef CONFIG_NUMA_EMU
+-static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+-	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+-};
+-
+ /*
+  * For NUMA emulation, fake proximity domain (_PXM) to node id mappings must be
+  * setup to represent the physical topology but reflect the emulated
+@@ -224,20 +220,15 @@ void __init amd_fake_nodes(const struct bootnode *nodes, int nr_nodes)
+ 	for (i = 0; i < nr_nodes; i++) {
+ 		int index;
+ 		int nid;
+-		int j;
  
--	for_each_online_node(i) {
--		unsigned long addr;
-+	nid = numa_cpu_node(cpu);
-+	if (nid == NUMA_NO_NODE)
-+		nid = early_cpu_to_node(cpu);
-+	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
- 
--		addr = node_start_pfn(i) << PAGE_SHIFT;
--		if (addr < physnodes[node].start ||
--					addr >= physnodes[node].end)
-+	physnid = emu_nid_to_phys[nid];
-+
-+	for_each_online_node(i) {
-+		if (emu_nid_to_phys[nid] != physnid)
+ 		nid = find_node_by_addr(nodes[i].start);
+ 		if (nid == NUMA_NO_NODE)
  			continue;
- 		mask = debug_cpumask_set_cpu(cpu, enable);
- 		if (!mask)
+ 
+ 		index = nodeids[nid] << bits;
+-		if (fake_apicid_to_node[index + apicid_base] == NUMA_NO_NODE)
+-			for (j = apicid_base; j < cores + apicid_base; j++)
+-				fake_apicid_to_node[index + j] = i;
+ #ifdef CONFIG_ACPI_NUMA
+ 		__acpi_map_pxm_to_node(nid, i);
+ #endif
+ 	}
+-	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ }
+ #endif /* CONFIG_NUMA_EMU */
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 5d10ec0..bbf5565 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -856,7 +856,7 @@ static bool __init numa_emulation(int acpi, int amd)
+ 	static struct numa_meminfo ei __initdata;
+ 	static struct numa_meminfo pi __initdata;
+ 	const u64 max_addr = max_pfn << PAGE_SHIFT;
+-	int i, ret;
++	int i, j, ret;
+ 
+ 	memset(&ei, 0, sizeof(ei));
+ 	pi = numa_meminfo;
+@@ -892,6 +892,20 @@ static bool __init numa_emulation(int acpi, int amd)
+ 	/* commit */
+ 	numa_meminfo = ei;
+ 
++	/*
++	 * Transform __apicid_to_node table to use emulated nids by
++	 * reverse-mapping phys_nid.  The maps should always exist but fall
++	 * back to zero just in case.
++	 */
++	for (i = 0; i < ARRAY_SIZE(__apicid_to_node); i++) {
++		if (__apicid_to_node[i] == NUMA_NO_NODE)
++			continue;
++		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
++			if (__apicid_to_node[i] == emu_nid_to_phys[j])
++				break;
++		__apicid_to_node[i] = j < ARRAY_SIZE(emu_nid_to_phys) ? j : 0;
++	}
++
+ 	/* make sure all emulated nodes are mapped to a physical node */
+ 	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
+ 		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index d2f53f3..d4fbfea 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -265,9 +265,6 @@ int __init x86_acpi_numa_init(void)
+ static int fake_node_to_pxm_map[MAX_NUMNODES] __initdata = {
+ 	[0 ... MAX_NUMNODES-1] = PXM_INVAL
+ };
+-static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+-	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+-};
+ 
+ /*
+  * In NUMA emulation, we need to setup proximity domain (_PXM) to node ID
+@@ -279,7 +276,7 @@ static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+  */
+ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ {
+-	int i, j;
++	int i;
+ 
+ 	for (i = 0; i < num_nodes; i++) {
+ 		int nid, pxm;
+@@ -291,29 +288,10 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ 		if (pxm == PXM_INVAL)
+ 			continue;
+ 		fake_node_to_pxm_map[i] = pxm;
+-		/*
+-		 * For each apicid_to_node mapping that exists for this real
+-		 * node, it must now point to the fake node ID.
+-		 */
+-		for (j = 0; j < MAX_LOCAL_APIC; j++)
+-			if (__apicid_to_node[j] == nid &&
+-			    fake_apicid_to_node[j] == NUMA_NO_NODE)
+-				fake_apicid_to_node[j] = i;
+ 	}
+ 
+-	/*
+-	 * If there are apicid-to-node mappings for physical nodes that do not
+-	 * have a corresponding emulated node, it should default to a guaranteed
+-	 * value.
+-	 */
+-	for (i = 0; i < MAX_LOCAL_APIC; i++)
+-		if (__apicid_to_node[i] != NUMA_NO_NODE &&
+-		    fake_apicid_to_node[i] == NUMA_NO_NODE)
+-			fake_apicid_to_node[i] = 0;
+-
+ 	for (i = 0; i < num_nodes; i++)
+ 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
+-	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ 
+ 	for (i = 0; i < num_nodes; i++)
+ 		if (fake_nodes[i].start != fake_nodes[i].end)
 -- 
 1.7.1
 
