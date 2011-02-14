@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab1BNNQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:16:07 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56223 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab1BNNQE convert rfc822-to-8bit (ORCPT
+	id S1755234Ab1BNNTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:19:40 -0500
+Received: from spamap2.ncut.edu.tw ([140.128.71.221]:58963 "EHLO
+	spamap2.ncut.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab1BNNTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:16:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=okGvjoL+f3mCmUn/HmnM0ibzXefH4LKz/oi4IYNETLh4vdOMB/q0/9J6DiZo+33x4q
-         LaKOjUM0m1jtvtiysEpaSI4uS6Acqnhi4G/fL/7kP5K1bktGXfiuYc6FXxqBqpdUkEBY
-         +z+snULIaQCG3/QUdZPQMIwUQhX/s7NXbwCWg=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTikO=5zBCvPbd2MXqgzE_mvnabTtH_e2C5_5bpQv@mail.gmail.com>
-References: <AANLkTimM1Tmws46DUyoNGsn+P8WN1XPsRu=L8yPzd=xU@mail.gmail.com>
-	<AANLkTikO=5zBCvPbd2MXqgzE_mvnabTtH_e2C5_5bpQv@mail.gmail.com>
-Date: Mon, 14 Feb 2011 14:15:59 +0100
-Message-ID: <AANLkTinFOPc+BM8cnPE3SLt7Dc2TFOw1v+bntFu01hpO@mail.gmail.com>
-Subject: Re: [next-20110214] Kernel-modules with unknown parameter
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Feb 2011 08:19:37 -0500
+Message-Id: <201102141153.p1EBre46003035@ccmail.ncut.edu.tw>
+from: robertjet.fellow@gmail.com
+Reply-To: robertjet.fellow@gmail.com
+Date: Mon, 14 Feb 2011 19:53:40 +0800
+X-Originating-Ip: [190.41.154.192]
+X-Mailer: Hgiga v0.9
+Senderaccount: <hsuehyun@ncut.edu.tw>
+hmid: 10187897
+hhid: ncut.edu.tw
+huid: 1053950
+Content-Type: text/plain;
+	charset="big5"
+X-Received-IP: 140.128.71.225
+X-Envelope-From: <robertjet.fellow@gmail.com>
+X-Sherlock-Send: MailFilter (spamap2.ncut.edu.tw)
+X-SpamCheck: Hit=2.5, SARE_RECV_IP_140117:0.5,HGIGA_sender_951219_02:2.5,HGIGA_noSubject02:3.0,RM_tl_ToNone:4.0,NO_REAL_NAME:2.0,HGIGA_EMPTY_HTML:0.5,MIME_BASE64_TEXT:0.5,HGIGA_SPAM_Bsize_25:4.0,HGIGA_EMPTY_TEXT:0.5,HGRSA_NEW_SPAM_Mail22:1.0,HGRSA_WhiteHeader_Mailer_ALL:-30,BODY_EMPTY:3.0,MSGID_FROM_MTA_HEADER:1.0,HGRSA_NEW_SPAM_Mail64:2.0,HGRSA_NEW_SPAM_Mail290:3.0,HGRSA_NEW_SPAM_Mail291:5.0
+Subject: 
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1EDJmEH014529
 
-On Mon, Feb 14, 2011 at 1:24 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> On Mon, Feb 14, 2011 at 1:13 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
->> Hi,
->>
->> I have pulled Dave's drm-fixes-staging into today's linux-next and did
->> not see a KMS-modesetted resolution change in VT (runlevel-3).
->> After a quick check of my dmesg, I see also my kernel-module for sound
->> has "unknown parameter".
->> ( Thus, personally I don't think it is a bug from any drm-2.6 tree. )
->>
->> # dmesg | egrep -i 'unknown|param'
->> [ ¬† 12.431216] radeon: Unknown parameter `modeset'
->> [ ¬† 12.665911] snd_intel8x0m: Unknown parameter `index'
->> [ ¬† 37.311333] radeon: Unknown parameter `modeset'
->>
->> Any idea what's going on? Stephen, Randy noticed the same like me?
->>
->> Regards,
->> - Sedat -
->>
->> P.S.: Attached are dmesg and kernel dot-config.
->>
->
-> [ CC Dmitry Torokhov ]
->
-> Could that be a possible fix for me [1]?
->
-> - Sedat -
->
-> [1] https://patchwork.kernel.org/patch/548891/
->
+My name is Mr. R. Jet Fellows. Am a citizen of the united states presently in Hong Kong where i have been diagnosed with Esophageal cancer and it has defied all forms of medical treatment, and right now I have only about a few months to live according to the medical experts.
 
-[ CC Rusty Russell + Removed drm-2.6/dri-devel folks ]
+Though am very rich, i never thought of raising my own family, I only focused on my businesses as that was the only thing I cared for. But now I regret all this as I now know that there is more to life than just wanting to have or make all the money in the world. The treatment of this disease has so far squashed a handsome amount of my money in savings.
+Now that my health has deteriorated so badly and it has been confirmed to me by the doctors that my ailment will defy all forms of medical treatment, i have decided not to spend more money on this ailment anymore.
 
-While digging into the problem, I had a closer look into
-linux-next/Trees file [1], which list the included GIT/QUILT
-trees/patch-queues, line #121 says:
+The last of my money which no one knows of is the huge cash deposit of $2.6m United States Dollars that I have with a Finance Vaulting Unit in the Europe . I will want you to help me collect this deposit from the company and help me distribute it to charity in your region. You will have 25% of this total sum for your time and effort. I cannot talk with you on the phone due to my health situation, and I am using my Laptop Computer to communicate with you, since this is my only means of communication. One passionate appeal i will make to you is to keep this transaction confidential until this money gets to you. If you are interested in carrying out this assignment on my behalf fill this form below when when writing me back.
 
-rr              quilt   http://ozlabs.org/~rusty/kernel/rr-latest/
+Email: robertjet.fellow@gmail.com
 
-( Personally, I thought all stuff are pulled from GIT trees, but you
-learn more by CSI-ing. )
 
-As a clever guy, I was silently assuming the problem could occur from
-any module-related tree (so I checked linux-next GIT repo via "git log
--3 kernel/params.c" which gave me a hint to Dmitry's commit in
-quilt/rr, Bingo?).
+Your names .......
+Your resident address. ......
+Your country name..........
+Your present location........
+Your occupation...............
+Your tel/cell number.........
+Your age/sex..................
+Your company name if any.......
 
-With this "evidence material" I "tig-ged" into the commits in my local
-linux-next GIT repo, which revealed more:
+I will be waiting to hear from you as soon as you can.
 
-2011-02-14 14:17 Stephen Rothwell   Merge branch 'quilt/rr'
-2011-02-11 10:37 Rusty Russell      module: deal with alignment issues
-in built-in module parameters FIX
-2011-02-07 16:02 Dmitry Torokhov    module: deal with alignment issues
-in built-in module parameters
-2011-02-01 21:43 Christoph Hellwig  virtio_blk: allow re-reading
-config space at runtime
-2011-02-07 16:02 Dmitry Torokhov    module: do not hide
-__modver_version_show declaration behind ifdef
-2011-02-07 16:02 Dmitry Torokhov    module: deal with alignment issues
-in built-in module versions
-
-My damn brain can't understand - looking at the series file in [2] -
-why the hell the "possible" patch [3] is not included in linux-next?
-I did not compare but [3] looks similiar to [4].
-I have applied [3] on top my own patch-series and will report later,
-if this worked or not.
-
-BUT please, what are the factors for choosing the relevant patches
-from quilt/rr?
-( For example, the cpumask stuff is awaited by systemd folks. Is this
-stuff included? I saw by a very quick look @ git.k.o there is a GIT
-repo for that. )
-
-And yeah, slow-ass UserModeSetting suckz here!
-
-/me confused,
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees
-[2] http://ozlabs.org/~rusty/kernel/rr-latest/series
-[3] http://ozlabs.org/~rusty/kernel/rr-latest/module:deal_with_alignment_issues_in_built_in_parameters.patch
-[4] https://patchwork.kernel.org/patch/548891/
+Sincerely yours,
+R. Jet Fellows.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
