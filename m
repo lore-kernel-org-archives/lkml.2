@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367Ab1BNS35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:29:57 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47525 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab1BNS3x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:29:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type:content-transfer-encoding;
-        b=wMT4zMUZ9TQef6ESNm4bbzsZ8RDEtxK9ePZsVVBgctNAiE88bpk7GcU4yIGukFN7s4
-         2I/Kqd8EyE7UTnPW18griz1m0b3FcoG505CpgwvaJ8wkHLTSDUNCrMQFH+2sRdUx9/sG
-         eVmwBHLX+QQSOpyZJpHzvcunEROyHiBUXM+2Q=
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: dbrownell@users.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mcp23s08: support mcp23s17 variant
-References: <1297699964-20527-1-git-send-email-jacmet@sunsite.dk>
-	<AANLkTi=pWV+tfD6YGpKbzTkvLVoLXtGA41QRaaF=VFeq@mail.gmail.com>
-Date: Mon, 14 Feb 2011 19:29:50 +0100
-In-Reply-To: <AANLkTi=pWV+tfD6YGpKbzTkvLVoLXtGA41QRaaF=VFeq@mail.gmail.com>
-	(Grant Likely's message of "Mon, 14 Feb 2011 10:13:01 -0700")
-Message-ID: <87r5bacvvl.fsf@macbook.be.48ers.dk>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	id S1751367Ab1BNSdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:33:54 -0500
+Received: from cantor.suse.de ([195.135.220.2]:35013 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab1BNSdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:33:51 -0500
+Date: Mon, 14 Feb 2011 10:33:22 -0800
+From: Greg KH <gregkh@suse.de>
+To: Hank Janssen <hjanssen@microsoft.com>
+Cc: haiyangz@microsoft.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        "K.Y. Srinivasan" <kys@microsoft.com>
+Subject: Re: [PATCH] Staging: hv: Use list_entry for msg_info and remove
+ associated comment
+Message-ID: <20110214183322.GA27858@suse.de>
+References: <1297708537-15981-1-git-send-email-hjanssen@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297708537-15981-1-git-send-email-hjanssen@microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
+On Mon, Feb 14, 2011 at 10:35:37AM -0800, Hank Janssen wrote:
+> Change code to use list_entry api. And removed comment
+> suggesting that change.
+> 
+> Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> Signed-off-by: K.Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> 
+> ---
+>  drivers/staging/hv/channel_mgmt.c |   17 +++++++++--------
+>  1 files changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
+> index a9c9d49..6c497e9 100644
+> --- a/drivers/staging/hv/channel_mgmt.c
+> +++ b/drivers/staging/hv/channel_mgmt.c
+> @@ -580,8 +580,9 @@ static void vmbus_onopen_result(struct vmbus_channel_message_header *hdr)
+>  	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+>  
+>  	list_for_each(curr, &vmbus_connection.chn_msg_list) {
+> -/* FIXME: this should probably use list_entry() instead */
+> -		msginfo = (struct vmbus_channel_msginfo *)curr;
+> +		msginfo = list_entry(curr, struct vmbus_channel_msginfo,
+> +				msglistentry);
 
-Hi,
+How about using list_for_each_entry() instead?  That's the "preferred"
+way to do things these days, and it saves you an extra line of code :)
 
- >> -       return (status < 0) ? status : rx[0];
- >> +
- >> +       if (mcp->type == MCP_TYPE_S17) {
- >> +               tx[1] <<= 1;
- >> +
- >> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 2);
- >> +               return (status < 0) ? status : (rx[0] | (rx[1] << 8));
- >> +       } else {
- >> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 1);
- >> +               return (status < 0) ? status : rx[0];
- >> +       }
+thanks,
 
- Grant> Rather than checking ->type for every transaction, would a set of
- Grant> callbacks for each type be better?  It would probably have lower
- Grant> overhead and be simpler to maintain.
-
-We could. I didn't do it because the 8bit and 16bit cases are very
-similar, and checking a simple integer is presumably a lot faster than
-the spi access - But I can rework the patch if you insists.
-
- >> +++ b/include/linux/spi/mcp23s08.h
- >> @@ -2,21 +2,24 @@
- >>  /* FIXME driver should be able to handle IRQs...  */
- >> 
- >>  struct mcp23s08_chip_info {
- >> -       bool    is_present;             /* true iff populated */
- >> -       u8      pullups;                /* BIT(x) means enable pullup x */
- >> +       bool            is_present;     /* true if populated */
- >> +       unsigned        pullups;        /* BIT(x) means enable pullup x */
- >>  };
-
- Grant> Unrelated whitespace changes.
-
-I wouldn't call it unrelated. It's to ensure it still lines up after the
-s/u8/unsigned/.
-
--- 
-Bye, Peter Korsgaard
+greg k-h
