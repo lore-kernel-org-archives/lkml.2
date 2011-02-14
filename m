@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309Ab1BNRuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:50:24 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34731 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751208Ab1BNRuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:50:21 -0500
+	id S1751022Ab1BNRxd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:53:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5216 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab1BNRxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 12:53:31 -0500
+Date: Mon, 14 Feb 2011 18:45:03 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214174503.GB15847@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110214173012.GA18742@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
- <m1hbce46fw.fsf@fess.ebiederm.org> <AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
- <m1bp2ly41q.fsf@fess.ebiederm.org> <AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
- <AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
- <AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
- <m14o87wev8.fsf@fess.ebiederm.org> <AANLkTimO3h80Wk44OhpfkjzxpzdDKnf6emj2fNObn_jD@mail.gmail.com>
- <m1r5bbthan.fsf@fess.ebiederm.org> <m1fwrrtc0m.fsf@fess.ebiederm.org>
- <m139nqsk3q.fsf@fess.ebiederm.org> <AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 14 Feb 2011 09:49:33 -0800
-Message-ID: <AANLkTimwbkQQkwcX19NVcmSfv5O1dP9oeEBegbQLSh60@mail.gmail.com>
-Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alex Riesen <raa.lkml@gmail.com>, David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110214173012.GA18742@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 8:37 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 02/14, Tejun Heo wrote:
 >
-> In other words: I can pretty much guarantee that this is a "struct
-> list" that is in a 8kB allocation at offset 0x1748. And that gets
-> re-initialized after it got freed.
+> On Mon, Feb 14, 2011 at 06:20:52PM +0100, Denys Vlasenko wrote:
+> > >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
+> > >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> > >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> > >>     (I forgot again why we see it twice. Another quirk I guess...)
+> > >> 23:02:23.781310 restart_syscall(<... resuming interrupted call ...>) = 0
+> > >> 23:02:45.622433 close(1)                = 0
+> > >> 23:02:45.622743 close(2)                = 0
+> > >> 23:02:45.622885 exit_group(0)           = ?
+> ...
+> > > This can be fixed by updating strace, right?  strace can look at the
+> > > wait(2) exit code and if the tracee stopped for group stop, wait for
+> > > the tracee to be continued instead of issuing PTRACE_SYSCALL.
+> >
+> > But tracee didn't stop _yet_. Signal is not delivered _yet_, debugger
+> > can decide at this point whether to deliver it:
+> > ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP)
+> > or ignore:
+> > ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)
+> >
+> > strace has to deliver SIGSTOP if it wants to make program run exactly
+> > as it would run without strace. So it tries to do so.
+> > Currently, ptrace machinery doesn't react as strace, its user, expects it to.
+>
+> Okay, maybe I'm missing something but so once SIGSTOP is determined to
+> be delivered, then the tracee enters group stop and that's the second
+> SIGSTOP notification you get.
 
-Btw, can you just make that 'vmlinux' image (not the compressed one,
-the actual final object file that I could do "objdump" on) available
-somewhere, or just send me the .config file to try to reproduce it
-closely enough to see what the 0x1748 offset might be.
+Yes, this is correct.
 
-As mentioned, those offsets change (often wildly) depending on config
-options, and I don't think I've seen the .config file you have (or if
-I've seen it, I've misplaced it).
+But my head spins ;) I have already lost the picture.
 
-                             Linus
+> At that point, strace should wait for
+> the tracee to be continued by SIGCONT.  That should work, right?
+
+Again, given that strace is the real parent, in this particular
+case I think strace can work as you suggest.
+
+Oleg.
+
