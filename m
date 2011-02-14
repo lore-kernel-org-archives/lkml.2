@@ -1,69 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab1BNSJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:09:57 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:65513 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab1BNSJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:09:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Zdc6/eo9KkNMGsuLB2wH6cefudYrQ8U8PKwActcOglJmzu2/3QOnoQdbCX3lSGv3X/
-         yERklDNX2hgO5yIomAGO4mOxj/lxYSsCTb79ySQg3919LNT8ARKTWnneJKcAd41R42nm
-         oOKMHYGSPIPwBFlFR7awlAIgTd4PdZL4melMU=
+	id S1752459Ab1BNSKf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:10:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20657 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363Ab1BNSKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:10:33 -0500
+Date: Mon, 14 Feb 2011 13:10:27 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
+ and use_hierarchy interface
+Message-ID: <20110214181027.GI13097@redhat.com>
+References: <4D51ED26.8050809@cn.fujitsu.com>
+ <4D539821.1090703@cn.fujitsu.com>
+ <20110210205722.GB2600@redhat.com>
+ <4D589F81.2050408@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1102141756550.2826@kaball-desktop>
-References: <4D50343E.1020906@kernel.org>
-	<alpine.DEB.2.00.1102071839060.7277@kaball-desktop>
-	<4D504161.2060900@kernel.org>
-	<4D506A85.9030802@goop.org>
-	<4D50B4B5.4050505@kernel.org>
-	<4D519AAA.8070309@zytor.com>
-	<4D547962.8040403@goop.org>
-	<4D547B74.1030302@kernel.org>
-	<4D54844B.4010007@zytor.com>
-	<4D5488D5.2020607@kernel.org>
-	<20110214162602.GB11290@dumpdata.com>
-	<AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
-	<alpine.DEB.2.00.1102141756550.2826@kaball-desktop>
-Date: Mon, 14 Feb 2011 10:09:54 -0800
-X-Google-Sender-Auth: FKBa-vHtXN9TF1UbDE7DJeNHzWQ
-Message-ID: <AANLkTinXY1vV4Wgdkahc5_vr_X00jDfAA3PKWADCsaEZ@mail.gmail.com>
-Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
- destroying mappings
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>, Jan Beulich <JBeulich@novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D589F81.2050408@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 9:58 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
-> On Mon, 14 Feb 2011, Yinghai Lu wrote:
->> On Mon, Feb 14, 2011 at 8:26 AM, Konrad Rzeszutek Wilk
->> <konrad.wilk@oracle.com> wrote:
->> >> BTW: Do we really need to cleanup initial mapping between _brk_end to _end?
->> >
->> > Did you try to revert the patch and run it under your setup?
->>
->> No.
->>
->> but it should be ok.
->>
->> Assume, we can update vmlinux.lds.S to make _end to be 2M aligned as
->> Stefano suggested?
->
-> That would solve the problem as long as cleanup_highmap() is not moved
-> to setup_arch.
+On Mon, Feb 14, 2011 at 11:20:33AM +0800, Gui Jianfeng wrote:
+> Vivek Goyal wrote:
+> > On Thu, Feb 10, 2011 at 03:47:45PM +0800, Gui Jianfeng wrote:
+> >> CFQ group hierarchical scheduling and use_hierarchy interface.
+> >>
+> > 
+> > Hi Gui,
+> > 
+> > I have done a quick high level review. Some minor comments inline.
+> > 
+> > [..]
+> >>  struct cfq_data {
+> >>  	struct request_queue *queue;
+> >> -	/* Root service tree for cfq_groups */
+> >> -	struct cfq_rb_root grp_service_tree;
+> >>  	struct cfq_group root_group;
+> >>  
+> >> +	/* cfq group schedule in flat or hierarchy manner. */
+> >> +	bool use_hierarchy;
+> >> +
+> > 
+> > This seems to be redundant now? Nobody is using it?
+> > 
+> >>  	/*
+> >>  	 * The priority currently being served
+> >>  	 */
+> >> @@ -246,6 +251,9 @@ struct cfq_data {
+> >>  	unsigned long workload_expires;
+> >>  	struct cfq_group *serving_group;
+> >>  
+> >> +	/* Service tree for cfq group flat scheduling mode. */
+> >> +	struct cfq_rb_root grp_service_tree;
+> > 
+> > Above comment is misleading. This service tree is now used both for
+> > flat as well as hierarhical mode.
+> > 
+> > [..]
+> >>  static void
+> >>  cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+> >>  {
+> >> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+> >>  	struct cfq_entity *cfqe = &cfqg->cfqe;
+> >> -	struct cfq_entity *__cfqe;
+> >>  	struct rb_node *n;
+> >> +	struct cfq_entity *entity;
+> >> +	struct cfq_rb_root *st;
+> >> +	struct cfq_group *__cfqg;
+> >>  
+> >>  	cfqg->nr_cfqq++;
+> >> +
+> >>  	if (!RB_EMPTY_NODE(&cfqe->rb_node))
+> >>  		return;
+> >>  
+> >>  	/*
+> >> -	 * Currently put the group at the end. Later implement something
+> >> -	 * so that groups get lesser vtime based on their weights, so that
+> >> -	 * if group does not loose all if it was not continously backlogged.
+> >> +	 * Enqueue this group and its ancestors onto their service tree.
+> >>  	 */
+> >> -	n = rb_last(&st->rb);
+> >> -	if (n) {
+> >> -		__cfqe = rb_entry_entity(n);
+> >> -		cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
+> >> -	} else
+> >> -		cfqe->vdisktime = st->min_vdisktime;
+> >> +	while (cfqe) {
+> >> +		if (!RB_EMPTY_NODE(&cfqe->rb_node))
+> >> +			return;
+> >>  
+> >> -	cfq_entity_service_tree_add(st, cfqe);
+> >> +		/*
+> >> +		 * Currently put the group at the end. Later implement
+> >> +		 * something so that groups get lesser vtime based on
+> >> +		 * their weights, so that if group does not loose all
+> >> +		 * if it was not continously backlogged.
+> >> +		 */
+> > 
+> > Can we use vdisktime boost logic for groups also? I think it can be a separate
+> > patch in the series (the last one). Keeping it as a separate patch will
+> > also help you to coordinate with chad's patch.
+> > 
+> >> +		st = cfqe->service_tree;
+> > 
+> > Group entity set their service tree when they get allocated and retain
+> > this pointer even when they get deleted from serivce tree. Queue entities
+> > seem to have it NULL when they get deleted from service tree and it
+> > gets set again when queue is getting inserted. It would be nice if we
+> > can fix this discrepancy and keep it consistent. I think clearing up
+> > cfqe->service_tree is a better idea and then calculate it again for
+> > group also.
+> 
+> Vivek,
+> 
+> Currently, cfq queue might change workload type and io class, so we need to recalculate
+> its service_tree. But for cfq groups, IMHO we don't need to add this complexity for the
+> time being.
+> I think we can add this change as soon as different io classes or workload types are
+> introduced. How do you think?
 
-yes.
+Ok, that's fine.
+
+Thanks
+Vivek
