@@ -1,111 +1,504 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab1BNW7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:59:32 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46624 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab1BNW7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:59:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=prnQhXhcNv+7I1tC+VV6avjEi+XiAzAdJjFYMlY1S0ksoRny/rxs1tZ8eOCS06+gmS
-         /544tQg/WiTn0HDPw91sfT1GbTK2hPLH7HepoK9/36pg9TZSGYaeJ8vgActGTM3ZQ+vn
-         8dWas6m+toZf89oR4KYIIOYwkVqAMzpbYSRV4=
-Message-ID: <4D59B3CE.7010408@gmail.com>
-Date: Tue, 15 Feb 2011 01:59:26 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1753357Ab1BNW7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:59:45 -0500
+Received: from shutemov.name ([188.40.19.243]:38502 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753156Ab1BNW7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 17:59:41 -0500
+Date: Tue, 15 Feb 2011 00:59:40 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
+Subject: Re: [PATCH, v6 3/3] cgroups: introduce timer slack controller
+Message-ID: <20110214225940.GB6230@shutemov.name>
+References: <1297688787-3592-1-git-send-email-kirill@shutemov.name>
+ <1297688787-3592-4-git-send-email-kirill@shutemov.name>
+ <20110214135926.GO16432@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
-        brgerst@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
-        mingo@elte.hu, hpa@linux.intel.com
-Subject: Re: [PATCH 10/26] x86-64, NUMA: Move apicid to numa mapping initialization
- from amd_scan_nodes() to amd_numa_init()
-References: <1297530663-26234-1-git-send-email-tj@kernel.org> <1297530663-26234-11-git-send-email-tj@kernel.org>
-In-Reply-To: <1297530663-26234-11-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110214135926.GO16432@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2011 08:10 PM, Tejun Heo wrote:
-> This brings amd initialization behavior closer to that of acpi.
->
-> Signed-off-by: Tejun Heo<tj@kernel.org>
-> Cc: Yinghai Lu<yinghai@kernel.org>
-> Cc: Brian Gerst<brgerst@gmail.com>
-> Cc: Cyrill Gorcunov<gorcunov@gmail.com>
-> Cc: Shaohui Zheng<shaohui.zheng@intel.com>
-> Cc: David Rientjes<rientjes@google.com>
-> Cc: Ingo Molnar<mingo@elte.hu>
-> Cc: H. Peter Anvin<hpa@linux.intel.com>
-> ---
->   arch/x86/mm/amdtopology_64.c |   40 ++++++++++++++++++++++------------------
->   1 files changed, 22 insertions(+), 18 deletions(-)
->
-> diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
-> index c5eddfa..4056333 100644
-> --- a/arch/x86/mm/amdtopology_64.c
-> +++ b/arch/x86/mm/amdtopology_64.c
-> @@ -74,8 +74,9 @@ int __init amd_numa_init(void)
->   	unsigned long end = PFN_PHYS(max_pfn);
->   	unsigned numnodes;
->   	unsigned long prevbase;
-> -	int i, nb;
-> +	int i, j, nb;
->   	u32 nodeid, reg;
-> +	unsigned int bits, cores, apicid_base;
->
->   	if (!early_pci_allowed())
->   		return -EINVAL;
-> @@ -176,6 +177,26 @@ int __init amd_numa_init(void)
->
->   	if (!nodes_weight(mem_nodes_parsed))
->   		return -ENOENT;
-> +
-> +	/*
-> +	 * We seem to have valid NUMA configuration.  Map apicids to nodes
-> +	 * using the coreid bits from early_identify_cpu.
-> +	 */
-> +	bits = boot_cpu_data.x86_coreid_bits;
-> +	cores = 1<<  bits;
-> +	apicid_base = 0;
-> +
-> +	/* get the APIC ID of the BSP early for systems with apicid lifting */
-> +	early_get_boot_cpu_id();
-> +	if (boot_cpu_physical_apicid>  0) {
-> +		pr_info("BSP APIC ID: %02x\n", boot_cpu_physical_apicid);
-> +		apicid_base = boot_cpu_physical_apicid;
-		^^^
-> +	}
-> +
-> +	for_each_node_mask(i, cpu_nodes_parsed)
-> +		for (j = apicid_base; j<  cores + apicid_base; j++)
-> +			set_apicid_to_node((i<<  bits) + j, i);
-> +
->   	return 0;
->   }
->
+On Mon, Feb 14, 2011 at 05:59:26AM -0800, Matt Helsley wrote:
+> On Mon, Feb 14, 2011 at 03:06:27PM +0200, Kirill A. Shutsemov wrote:
+> > From: Kirill A. Shutemov <kirill@shutemov.name>
+> > 
+> > Every task_struct has timer_slack_ns value. This value uses to round up
+> > poll() and select() timeout values. This feature can be useful in
+> > mobile environment where combined wakeups are desired.
+> > 
+> > cgroup subsys "timer_slack" implement timer slack controller. It
+> > provides a way to group tasks by timer slack value and manage the
+> > value of group's tasks.
+> > 
+> > Idea-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> > ---
+> >  Documentation/cgroups/timer_slack.txt |   93 +++++++++++
+> >  include/linux/cgroup_subsys.h         |    6 +
+> >  init/Kconfig                          |   10 ++
+> >  kernel/Makefile                       |    1 +
+> >  kernel/cgroup_timer_slack.c           |  285 +++++++++++++++++++++++++++++++++
+> >  5 files changed, 395 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/cgroups/timer_slack.txt
+> >  create mode 100644 kernel/cgroup_timer_slack.c
+> > 
+> > diff --git a/Documentation/cgroups/timer_slack.txt b/Documentation/cgroups/timer_slack.txt
+> > new file mode 100644
+> > index 0000000..e7ec2f3
+> > --- /dev/null
+> > +++ b/Documentation/cgroups/timer_slack.txt
+> > @@ -0,0 +1,93 @@
+> > +Timer Slack Controller
+> > +=====================
+> > +
+> > +Overview
+> > +--------
+> > +
+> > +Every task_struct has timer_slack_ns value. This value uses to round up
+> > +poll() and select() timeout values. This feature can be useful in
+> > +mobile environment where combined wakeups are desired.
+> > +
+> > +cgroup subsys "timer_slack" implement timer slack controller. It
+> > +provides a way to group tasks by timer slack value and manage the
+> > +value of group's tasks.
+> > +
+> > +
+> > +User interface
+> > +--------------
+> > +
+> > +To get timer slack controller functionality you need to enable it in
+> > +kernel configuration:
+> > +
+> > +CONFIG_CGROUP_TIMER_SLACK=y
+> > +
+> > +or if you want to compile it as module:
+> > +
+> > +CONFIG_CGROUP_TIMER_SLACK=m
+> > +
+> > +The controller provides three files in cgroup directory:
+> > +
+> > +# mount -t cgroup -o timer_slack none /sys/fs/cgroup
+> > +# ls /sys/fs/cgroup/timer_slack.*
+> > +/sys/fs/cgroup/timer_slack.max_slack_ns
+> > +/sys/fs/cgroup/timer_slack.min_slack_ns
+> > +/sys/fs/cgroup/timer_slack.set_slack_ns
+> > +
+> > +timer_slack.min_slack_ns and timer_slack.set_slack_ns specify allowed
+> > +range of timer slack for tasks in cgroup. By default it unlimited:
+> > +
+> > +# cat /sys/fs/cgroup/timer_slack.min_slack_ns
+> > +0
+> > +# cat /sys/fs/cgroup/timer_slack.max_slack_ns
+> > +4294967295
+> > +
+> > +You can specify limits you want:
+> > +
+> > +# echo 50000 > /sys/fs/cgroup/timer_slack.min_slack_ns
+> > +# echo 1000000 > /sys/fs/cgroup/timer_slack.max_slack_ns
+> > +# cat /sys/fs/cgroup/timer_slack.{min,max}_slack_ns
+> > +50000
+> > +1000000
+> > +
+> > +Timer slack value of all tasks of the cgroup will be adjusted to fit
+> > +min-max range.
+> > +
+> > +If a task will try to call prctl() to change timer slack value out of
+> > +the range it get -EPERM.
+> > +
+> > +You can change timer slack value of all tasks of the cgroup at once:
+> > +
+> > +# echo 70000 > /sys/fs/cgroup/timer_slack.set_slack_ns
+> > +
+> > +Timer slack controller supports hierarchical groups. The only rule:
+> > +parent's limit range should be wider or equal to child's. Sibling
+> > +cgroups can have overlapping min-max range.
+> > +
+> > +		(root: 50000 - 1000000)
+> > +		 /		     \
+> > +	(a: 50000 - 50000)	(b: 500000 - 1000000)
+> > +				 /		   \
+> > +			(c: 500000 - 900000) (d: 700000 - 800000)
+> > +
+> > +# mkdir /sys/fs/cgroup/a
+> > +# echo 50000 > /sys/fs/cgroup/a/timer_slack.max_slack_ns
+> > +# cat /sys/fs/cgroup/a/timer_slack.{min,max}_slack_ns
+> > +50000
+> > +50000
+> > +# mkdir /sys/fs/cgroup/b
+> > +# echo 500000 > /sys/fs/cgroup/b/timer_slack.min_slack_ns
+> > +# cat /sys/fs/cgroup/b/timer_slack.{min,max}_slack_ns
+> > +500000
+> > +1000000
+> > +# mkdir /sys/fs/cgroup/b/c
+> > +# echo 900000 > /sys/fs/cgroup/b/c/timer_slack.max_slack_ns
+> > +# cat /sys/fs/cgroup/b/c/timer_slack.{min,max}_slack_ns
+> > +500000
+> > +900000
+> > +# mkdir /sys/fs/cgroup/b/d
+> > +# echo 700000 > /sys/fs/cgroup/b/d/timer_slack.min_slack_ns
+> > +# echo 800000 > /sys/fs/cgroup/b/d/timer_slack.max_slack_ns
+> > +# cat /sys/fs/cgroup/b/d/timer_slack.{min,max}_slack_ns
+> > +700000
+> > +800000
+> > +
+> > diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+> > index ccefff0..e399228 100644
+> > --- a/include/linux/cgroup_subsys.h
+> > +++ b/include/linux/cgroup_subsys.h
+> > @@ -66,3 +66,9 @@ SUBSYS(blkio)
+> >  #endif
+> > 
+> >  /* */
+> > +
+> > +#ifdef CONFIG_CGROUP_TIMER_SLACK
+> > +SUBSYS(timer_slack)
+> > +#endif
+> > +
+> > +/* */
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index be788c0..bb54ae9 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -596,6 +596,16 @@ config CGROUP_FREEZER
+> >  	  Provides a way to freeze and unfreeze all tasks in a
+> >  	  cgroup.
+> > 
+> > +config CGROUP_TIMER_SLACK
+> > +	tristate "Timer slack cgroup controller"
+> > +	help
+> > +	  Provides a way of tasks grouping by timer slack value.
+> > +	  Every timer slack cgroup has min and max slack value. Task's
+> > +	  timer slack value will be adjusted to fit min-max range once
+> > +	  the task attached to the cgroup.
+> > +	  It's useful in mobile devices where certain background apps
+> > +	  are attached to a cgroup and combined wakeups are desired.
+> > +
+> >  config CGROUP_DEVICE
+> >  	bool "Device controller for cgroups"
+> >  	help
+> > diff --git a/kernel/Makefile b/kernel/Makefile
+> > index aa43e63..0e660c5 100644
+> > --- a/kernel/Makefile
+> > +++ b/kernel/Makefile
+> > @@ -61,6 +61,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
+> >  obj-$(CONFIG_COMPAT) += compat.o
+> >  obj-$(CONFIG_CGROUPS) += cgroup.o
+> >  obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
+> > +obj-$(CONFIG_CGROUP_TIMER_SLACK) += cgroup_timer_slack.o
+> >  obj-$(CONFIG_CPUSETS) += cpuset.o
+> >  obj-$(CONFIG_CGROUP_NS) += ns_cgroup.o
+> >  obj-$(CONFIG_UTS_NS) += utsname.o
+> > diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
+> > new file mode 100644
+> > index 0000000..ec63700
+> > --- /dev/null
+> > +++ b/kernel/cgroup_timer_slack.c
+> > @@ -0,0 +1,285 @@
+> > +/*
+> > + * cgroup_timer_slack.c - control group timer slack subsystem
+> > + *
+> > + * Copyright Nokia Corparation, 2011
+> > + * Author: Kirill A. Shutemov
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +#include <linux/cgroup.h>
+> > +#include <linux/init_task.h>
+> > +#include <linux/module.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/rcupdate.h>
+> > +
+> > +struct cgroup_subsys timer_slack_subsys;
+> > +struct timer_slack_cgroup {
+> > +	struct cgroup_subsys_state css;
+> > +	unsigned long min_slack_ns;
+> > +	unsigned long max_slack_ns;
+> > +};
+> > +
+> > +enum {
+> > +	TIMER_SLACK_MIN,
+> > +	TIMER_SLACK_MAX,
+> > +};
+> > +
+> > +static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
+> > +{
+> > +	struct cgroup_subsys_state *css;
+> > +
+> > +	css = cgroup_subsys_state(cgroup, timer_slack_subsys.subsys_id);
+> > +	return container_of(css, struct timer_slack_cgroup, css);
+> > +}
+> > +
+> > +static int is_timer_slack_allowed(struct timer_slack_cgroup *tslack_cgroup,
+> > +		unsigned long slack_ns)
+> > +{
+> > +	if (slack_ns < tslack_cgroup->min_slack_ns ||
+> > +			slack_ns > tslack_cgroup->max_slack_ns)
+> > +		return false;
+> > +	return true;
+> > +}
+> > +
+> > +static int cgroup_timer_slack_check(struct notifier_block *nb,
+> > +		unsigned long slack_ns, void *data)
+> > +{
+> > +	struct cgroup_subsys_state *css;
+> > +	struct timer_slack_cgroup *tslack_cgroup;
+> > +
+> > +	/* XXX: lockdep false positive? */
+> > +	rcu_read_lock();
+> > +	css = task_subsys_state(current, timer_slack_subsys.subsys_id);
+> > +	tslack_cgroup = container_of(css, struct timer_slack_cgroup, css);
+> > +	rcu_read_unlock();
+> > +
+> > +	if (!is_timer_slack_allowed(tslack_cgroup, slack_ns))
+> 
+> I think this test -- or at least accesses to the cgroup's min/max values
+> -- needs to be in the rcu_read_lock() else there is a race between the
+> notifier call from the context of the task calling prctl() and the context
+> of the task writing to the cgroup's (min|max)_slack_ns files.
 
-   Hi Tejun, while you at it, it seems apicid_base conditional assignment is
-redundant here (boot_cpu_physical_apicid is unsigned int) so we might have
-something like
+I'll rework this code.
 
-	apicid_start	= boot_cpu_physical_apicid;
-	apicid_end	= apicid_start + cores;
+> > +		return notifier_from_errno(-EPERM);
+> > +	return NOTIFY_OK;
+> > +}
+> > +
+> > +static struct notifier_block cgroup_timer_slack_nb = {
+> > +	.notifier_call = cgroup_timer_slack_check,
+> > +};
+> > +
+> > +static struct cgroup_subsys_state *
+> > +tslack_cgroup_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+> > +{
+> > +	struct timer_slack_cgroup *tslack_cgroup;
+> > +
+> > +	tslack_cgroup = kmalloc(sizeof(*tslack_cgroup), GFP_KERNEL);
+> > +	if (!tslack_cgroup)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	if (cgroup->parent) {
+> > +		struct timer_slack_cgroup *parent;
+> > +		parent = cgroup_to_tslack_cgroup(cgroup->parent);
+> > +		tslack_cgroup->min_slack_ns = parent->min_slack_ns;
+> > +		tslack_cgroup->max_slack_ns = parent->max_slack_ns;
+> > +	} else {
+> > +		tslack_cgroup->min_slack_ns = 0UL;
+> > +		tslack_cgroup->max_slack_ns = ULONG_MAX;
+> > +	}
+> > +
+> > +	return &tslack_cgroup->css;
+> > +}
+> > +
+> > +static void tslack_cgroup_destroy(struct cgroup_subsys *subsys,
+> > +		struct cgroup *cgroup)
+> > +{
+> > +	kfree(cgroup_to_tslack_cgroup(cgroup));
+> > +}
+> > +
+> > +/*
+> > + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
+> > + * limits of the cgroup.
+> > + */
+> > +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
+> > +		struct task_struct *tsk)
+> > +{
+> > +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
+> > +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
+> > +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
+> > +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
+> 
+> It occured to me there's a macro for this in include/linux/kernel.h:
+> 
+> tsk->timer_slack_ns = clamp(tsk->timer_slack_ns,
+> 				tslack_cgroup->min_slack_ns,
+> 				tslack_cgroup->max_slack_ns);
 
-	for_each_node_mask(i, cpu_nodes_parsed) {
-		for (j = apicid_start; j <  apicid_end; j++)
-			set_apicid_to_node((i <<  bits) + j, i);
-	}
+Nice. Thank you.
 
-  But of course it should be considered as followup update just to not
-mess the things. (probably need to check if we ever may reach this point
-with boot_cpu_physical_apicid = -1U). Just a thought.
+> > +
+> > +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
+> > +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
+> > +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
+> > +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
+> 
+> tsk->default_timer_slack_ns = clamp(tsk->default_timer_slack_ns,
+> 					tslack_cgroup->min_slack_ns,
+> 					tslack_cgroup->max_slack_ns);
+> 
+> > +}
+> > +
+> > +static void tslack_cgroup_attach(struct cgroup_subsys *subsys,
+> > +		struct cgroup *cgroup, struct cgroup *prev,
+> > +		struct task_struct *tsk, bool threadgroup)
+> > +{
+> > +	tslack_adjust_task(cgroup_to_tslack_cgroup(cgroup), tsk);
+> > +}
+> > +
+> > +static int tslack_write_set_slack_ns(struct cgroup *cgroup, struct cftype *cft,
+> > +		u64 val)
+> > +{
+> > +	struct timer_slack_cgroup *tslack_cgroup;
+> > +	struct cgroup_iter it;
+> > +	struct task_struct *task;
+> > +
+> > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> > +	if (!is_timer_slack_allowed(cgroup_to_tslack_cgroup(cgroup), val))
+> > +		return -EPERM;
+> > +
+> > +	/* Change timer slack value for all tasks in the cgroup */
+> > +	cgroup_iter_start(cgroup, &it);
+> > +	while ((task = cgroup_iter_next(cgroup, &it)))
+> > +		task->timer_slack_ns = val;
+> > +	cgroup_iter_end(cgroup, &it);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static u64 tslack_read_range(struct cgroup *cgroup, struct cftype *cft)
+> > +{
+> > +	struct timer_slack_cgroup *tslack_cgroup;
+> > +
+> > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> > +	switch (cft->private) {
+> > +	case TIMER_SLACK_MIN:
+> > +		return tslack_cgroup->min_slack_ns;
+> > +	case TIMER_SLACK_MAX:
+> > +		return tslack_cgroup->max_slack_ns;
+> > +	default:
+> > +		BUG();
+> > +	}
+> > +}
+> > +
+> > +static int validate_change(struct cgroup *cgroup, u64 val, int type)
+> > +{
+> > +	struct timer_slack_cgroup *tslack_cgroup, *child;
+> > +	struct cgroup *cur;
+> > +
+> > +	BUG_ON(type != TIMER_SLACK_MIN && type != TIMER_SLACK_MAX);
+> > +
+> > +	if (val > ULONG_MAX)
+> > +		return -EINVAL;
+> > +
+> > +	if (cgroup->parent) {
+> > +		struct timer_slack_cgroup *parent;
+> > +		parent = cgroup_to_tslack_cgroup(cgroup->parent);
+> > +		if (!is_timer_slack_allowed(parent, val))
+> > +			return -EPERM;
+> > +	}
+> > +
+> > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> > +	if (type == TIMER_SLACK_MIN && val > tslack_cgroup->max_slack_ns)
+> > +		return -EINVAL;
+> > +	if (type == TIMER_SLACK_MAX && val < tslack_cgroup->min_slack_ns)
+> > +		return -EINVAL;
+> > +
+> > +	list_for_each_entry(cur, &cgroup->children, sibling) {
+> > +		child = cgroup_to_tslack_cgroup(cur);
+> > +		if (type == TIMER_SLACK_MIN && val > child->min_slack_ns)
+> > +			return -EBUSY;
+> > +		if (type == TIMER_SLACK_MAX && val < child->max_slack_ns)
+> > +			return -EBUSY;
+> > +	}
+> 
+> This doesn't look right. Child cgroups should not constrain their
+> parents. Instead you should allow the change and propagate the
+> constraint to the children.
+
+See discussion with Thomas.
+ 
+> One thing that might make reviewing such changes to these patches easier
+> would be to split out the arbitrary-depth hierarchy support into a
+> follow-on patch. You can do it like blkio does in the _create() function:
+> 
+>         /* Currently we do not support hierarchy deeper than two level */
+>         if (parent != cgroup->top_cgroup)
+>                 return ERR_PTR(-EPERM);
+> 
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int tslack_write_range(struct cgroup *cgroup, struct cftype *cft,
+> > +		u64 val)
+> > +{
+> > +	struct timer_slack_cgroup *tslack_cgroup;
+> > +	struct cgroup_iter it;
+> > +	struct task_struct *task;
+> > +	int err;
+> > +
+> > +	err = validate_change(cgroup, val, cft->private);
+> > +	if (err)
+> > +		return err;
+> > +
+> > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> > +	if (cft->private == TIMER_SLACK_MIN)
+> > +		tslack_cgroup->min_slack_ns = val;
+> > +	else
+> > +		tslack_cgroup->max_slack_ns = val;
+> > +
+> > +	/*
+> > +	 * Adjust timer slack value for all tasks in the cgroup to fit
+> > +	 * min-max range.
+> > +	 */
+> > +	cgroup_iter_start(cgroup, &it);
+> > +	while ((task = cgroup_iter_next(cgroup, &it)))
+> > +		tslack_adjust_task(tslack_cgroup, task);
+> > +	cgroup_iter_end(cgroup, &it);
+> 
+> So, you should "adjust" child cgroups too rather than return -EBUSY from
+> validate_change().
+
+Ditto.
+
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct cftype files[] = {
+> > +	{
+> > +		.name = "set_slack_ns",
+> > +		.write_u64 = tslack_write_set_slack_ns,
+> > +	},
+> > +	{
+> > +		.name = "min_slack_ns",
+> > +		.private = TIMER_SLACK_MIN,
+> > +		.read_u64 = tslack_read_range,
+> > +		.write_u64 = tslack_write_range,
+> > +	},
+> > +	{
+> > +		.name = "max_slack_ns",
+> > +		.private = TIMER_SLACK_MAX,
+> > +		.read_u64 = tslack_read_range,
+> > +		.write_u64 = tslack_write_range,
+> > +	},
+> 
+> I didn't get a reply on how a max_slack_ns is useful. It seems
+> prudent to add as little interface as possible and only when
+> we clearly see the utility of it.
+
+For example, you can create two groups (excluding root cgroup):
+
+default - timer slack range 50000-50000
+relaxed - timer slack range 500000-unlimited.
+
+Now you can drag tasks between these group without need to reset value on
+relaxed -> default transition.
+
 -- 
-     Cyrill
+ Kirill A. Shutemov
