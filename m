@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab1BNIwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 03:52:47 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:47622 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752298Ab1BNIwp (ORCPT
+	id S1752620Ab1BNJE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 04:04:29 -0500
+Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:37078 "EHLO
+	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752276Ab1BNJE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 03:52:45 -0500
-Message-ID: <4D58ED2A.9050706@dsn.okisemi.com>
-Date: Mon, 14 Feb 2011 17:51:54 +0900
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Mon, 14 Feb 2011 04:04:27 -0500
+Date: Mon, 14 Feb 2011 10:03:56 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110214090356.GA21979@host1.dyn.jankratochvil.net>
+References: <20110204130455.GA3671@redhat.com>
+ <20110209141803.GH3770@htj.dyndns.org>
+ <20110209212526.GA9999@redhat.com>
+ <201102140001.47218.vda.linux@googlemail.com>
 MIME-Version: 1.0
-To: ML netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Subject: [PATCH] pch_gbe: Fix the MAC Address load issue.
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102140001.47218.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the specification of hardware,
-the processing at the time of driver starting was modified.
+On Mon, 14 Feb 2011 00:01:47 +0100, Denys Vlasenko wrote:
+> * sleep runs in nanosleep
+> * SIGSTOP arrives, strace sees it
+> * strace logs it and allows it via ptrace(PTRACE_SYSCALL, ..., SIGSTOP)
+> * sleep process enters group-stop
 
-This device write automatically the MAC address read from serial ROM
-into a MAC Adress1A/1B register at the time of power on reset.
-However, when stable clock is not supplied,
-the writing of MAC Adress1A/1B register may not be completed.
-In this case, it is necessary to load MAC address to MAC Address1A/1B register
-by the MAC Address1 load register.
+The last point breaks the documented behavior of ptrace:
+	If data is nonzero and not SIGSTOP, it is interpreted as a signal to
+	be delivered to the child; otherwise, no signal is delivered.
 
-This patch always does the above processing,
-in order not to be dependent on system environment.
+I do not see it would affect gdb.  strace will change its behavior when
+SIGSTOP is sent to its tracee although the new behavior may be OK.
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/net/pch_gbe/pch_gbe.h      |    2 +-
- drivers/net/pch_gbe/pch_gbe_main.c |    7 +++++++
- 2 files changed, 8 insertions(+), 1 deletions(-)
+It is more a subject of apps compatibility testing with such a kernel change.
 
-diff --git a/drivers/net/pch_gbe/pch_gbe.h b/drivers/net/pch_gbe/pch_gbe.h
-index a0c26a9..e1e33c8 100644
---- a/drivers/net/pch_gbe/pch_gbe.h
-+++ b/drivers/net/pch_gbe/pch_gbe.h
-@@ -73,7 +73,7 @@ struct pch_gbe_regs {
- 	struct pch_gbe_regs_mac_adr mac_adr[16];
- 	u32 ADDR_MASK;
- 	u32 MIIM;
--	u32 reserve2;
-+	u32 MAC_ADDR_LOAD;
- 	u32 RGMII_ST;
- 	u32 RGMII_CTRL;
- 	u32 reserve3[3];
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index 8ec48ad..8bba091 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -89,6 +89,12 @@ static unsigned int copybreak __read_mostly = PCH_GBE_COPYBREAK_DEFAULT;
- static int pch_gbe_mdio_read(struct net_device *netdev, int addr, int reg);
- static void pch_gbe_mdio_write(struct net_device *netdev, int addr, int reg,
- 			       int data);
-+
-+inline void pch_gbe_mac_load_mac_addr(struct pch_gbe_hw *hw)
-+{
-+	iowrite32(0x01, &hw->reg->MAC_ADDR_LOAD);
-+}
-+
- /**
-  * pch_gbe_mac_read_mac_addr - Read MAC address
-  * @hw:	            Pointer to the HW structure
-@@ -2333,6 +2339,7 @@ static int pch_gbe_probe(struct pci_dev *pdev,
- 	netdev->features = NETIF_F_HW_CSUM | NETIF_F_GRO;
- 	pch_gbe_set_ethtool_ops(netdev);
- 
-+	pch_gbe_mac_load_mac_addr(&adapter->hw);
- 	pch_gbe_mac_reset_hw(&adapter->hw);
- 
- 	/* setup the private structure */
--- 
-1.6.2.5
+
+> * nothing happens until some other signal arrives
+> * say, SIGCONT arrives
+
+What if other signal arrives?  The tracer probably should not be notified as
+the tracee is in a group-stop.
+
+
+> * strace logs it and allows it via ptrace(PTRACE_SYSCALL, ..., SIGCONT)
+
+
+Thanks,
+Jan
