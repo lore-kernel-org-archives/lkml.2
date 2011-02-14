@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751067Ab1BNSNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:13:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab1BNSN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:13:29 -0500
-Date: Mon, 14 Feb 2011 13:13:22 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
- for CFQ queue
-Message-ID: <20110214181322.GJ13097@redhat.com>
-References: <4D51ED26.8050809@cn.fujitsu.com>
- <4D539804.9090308@cn.fujitsu.com>
+	id S1751788Ab1BNSOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:14:16 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56950 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab1BNSOP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:14:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=jiGwWSMufQYj9SuoLRhi3ZxuoQsjNcnbInCGpaoW7mXfQz6BAOi9usayukuYdQHF6A
+         h9TGoxOVWRTh0H6n9Lle+vyfBtod6Sxnk5h9PSClr/l9zKRuP/H5B4TQOL0u4vBKB941
+         OPJR2/+ZjDtbct4U1WUIdKGZp8t65ATUPdnTM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D539804.9090308@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110214162247.GX18742@htj.dyndns.org>
+References: <1297530663-26234-1-git-send-email-tj@kernel.org>
+	<1297530663-26234-16-git-send-email-tj@kernel.org>
+	<4D5729A7.7070706@kernel.org>
+	<20110214113221.GG18742@htj.dyndns.org>
+	<AANLkTin0C2AhtHm6K0av2N4pQxLvK_Fc+4w12Qg_QRkZ@mail.gmail.com>
+	<20110214161249.GV18742@htj.dyndns.org>
+	<AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com>
+	<20110214162247.GX18742@htj.dyndns.org>
+Date: Mon, 14 Feb 2011 10:14:15 -0800
+X-Google-Sender-Auth: 3DlHT_BAMTUa1pWY3p95DNUJRvI
+Message-ID: <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com>
+Subject: Re: [PATCH 15/26] x86-64, NUMA: Unify the rest of memblk registration
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
+        mingo@elte.hu, hpa@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
+On Mon, Feb 14, 2011 at 8:22 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Mon, Feb 14, 2011 at 08:17:46AM -0800, Yinghai Lu wrote:
+>> why not do it at first point ?
+>>
+>> numa_register_meminfo() should only take care of creating correctly
+>> struct numa_meminfo.
+>
+> No, register meminfo doesn't create numa_meminfo.  It sets up system
+> states according to the configuration information in numa_meminfo, and
+> I really have no idea what you're arguing for or against.  What's your
+> point?
 
-[..]
-> +/*
-> + * The time when a CFQ queue is put onto a service tree is recoreded in
-> + * cfqq->reposition_time. Currently, we check the first priority CFQ queues
-> + * on each service tree, and select the workload type that contains the lowest
-> + * reposition_time CFQ queue among them.
-> + */
->  static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
->  				struct cfq_group *cfqg, enum wl_prio_t prio)
->  {
->  	struct cfq_entity *cfqe;
-> +	struct cfq_queue *cfqq;
-> +	unsigned long lowest_start_time;
->  	int i;
-> -	bool key_valid = false;
-> -	unsigned long lowest_key = 0;
-> +	bool time_valid = false;
->  	enum wl_type_t cur_best = SYNC_NOIDLE_WORKLOAD;
->  
-> +	/*
-> +	 * TODO: We may take io priority and io class into account when
-> +	 * choosing a workload type. But for the time being just make use of
-> +	 * reposition_time only.
-> +	 */
->  	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
-> -		/* select the one with lowest rb_key */
->  		cfqe = cfq_rb_first(service_tree_for(cfqg, prio, i));
-> -		if (cfqe &&
-> -		    (!key_valid || time_before(cfqe->rb_key, lowest_key))) {
-> -			lowest_key = cfqe->rb_key;
-> +		cfqq = cfqq_of_entity(cfqe);
-> +		if (cfqe && (!time_valid ||
-> +			     time_before(cfqq->reposition_time,
-> +					 lowest_start_time))) {
-> +			lowest_start_time = cfqq->reposition_time;
+I just want seperate setup_bootmem  ( and maybe init_memory_mapping_high...)
+out  that __register__ function.
 
-Gui,
+that __register__ function do some sth like memblock_register to
+early_node_map[]
+looks reasonable.
 
-Have you had a chance to run some mixed workloads in a group (some sync,
-some async and some sync-idle queues), and see how latency and throughput
-of sync-idle workload changes due to this "resposition_time" logic. I 
-just want to make sure that latency of sync-noidle workload does not
-go up as that's the workload that people care and gets noticed first.
-
-Thanks
-Vivek
+Yinghai
