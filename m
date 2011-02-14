@@ -1,146 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab1BNRCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:02:34 -0500
-Received: from www.tglx.de ([62.245.132.106]:57401 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab1BNRCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:02:31 -0500
-Date: Mon, 14 Feb 2011 18:01:06 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v6 3/3] cgroups: introduce timer slack controller
-In-Reply-To: <20110214151914.GA4210@shutemov.name>
-Message-ID: <alpine.LFD.2.00.1102141753240.26192@localhost6.localdomain6>
-References: <1297688787-3592-1-git-send-email-kirill@shutemov.name> <1297688787-3592-4-git-send-email-kirill@shutemov.name> <alpine.LFD.2.00.1102141432440.26192@localhost6.localdomain6> <20110214151914.GA4210@shutemov.name>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755359Ab1BNRDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:03:38 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41914 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751312Ab1BNRDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 12:03:36 -0500
+Date: Mon, 14 Feb 2011 17:08:12 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>,
+        "grant.likely" <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
+Message-ID: <20110214170812.6f54a4bb@lxorguk.ukuu.org.uk>
+In-Reply-To: <1297698493.965.5475.camel@petert>
+References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
+	<1297698493.965.5475.camel@petert>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2401;0cOn Mon, 14 Feb 2011, Kirill A. Shutemov wrote:
-
-> On Mon, Feb 14, 2011 at 03:00:03PM +0100, Thomas Gleixner wrote:
-> > On Mon, 14 Feb 2011, Kirill A. Shutsemov wrote:
-> > > From: Kirill A. Shutemov <kirill@shutemov.name>
-> > > 
-> > > Every task_struct has timer_slack_ns value. This value uses to round up
-> > > poll() and select() timeout values. This feature can be useful in
-> > > mobile environment where combined wakeups are desired.
-> > > 
-> > > cgroup subsys "timer_slack" implement timer slack controller. It
-> > > provides a way to group tasks by timer slack value and manage the
-> > > value of group's tasks.
-> > 
-> > I have no objections against the whole thing in general, but why do we
-> > need a module for this? Why can't we add this to the cgroups muck and
-> > compile it in?
+> > If a GPIO driver implements get_direction(), it is called in
+> > gpio_request() to set the initial direction of the pin accurately.
 > 
-> It was easier to test and debug with module.
-> What is wrong with module? Do you worry about number of exports?
-
-Not only about the number. We don't want exports when they are not
-techically necessary, i.e. for driver stuff.
-
-> > > +static int cgroup_timer_slack_check(struct notifier_block *nb,
-> > > +		unsigned long slack_ns, void *data)
-> > > +{
-> > > +	struct cgroup_subsys_state *css;
-> > > +	struct timer_slack_cgroup *tslack_cgroup;
-> > > +
-> > > +	/* XXX: lockdep false positive? */
-> > 
-> >   What? Either this has a reason or not. If it's a false positive then
-> >   it needs to be fixed in lockdep. If not, ....
+> I see Grant was just added as a GPIO maintainer, so added him on CC.
 > 
-> I was not sure about it. There is similar workaround in freezer_fork().
+> Anything gating getting these 3 patches being picked up?
 
-I don't care about workarounds in freezer_work() at all. The above
-question remains and this is new code and therefor it either needs to
-hold rcu_read_lock() or it does not.
+We need four states for a gpio pin direction though. A pin can be
 
-> > > +	rcu_read_lock();
-> > > +	css = task_subsys_state(current, timer_slack_subsys.subsys_id);
-> > > +	tslack_cgroup = container_of(css, struct timer_slack_cgroup, css);
-> > > +	rcu_read_unlock();
-> > > +
-> > > +	if (!is_timer_slack_allowed(tslack_cgroup, slack_ns))
-> > > +		return notifier_from_errno(-EPERM);
-> > 
-> >   If the above needs rcu read lock, why is the acess safe ?
-> > 
-> > > +	return NOTIFY_OK;
-> > 
-> > > +/*
-> > > + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
-> > > + * limits of the cgroup.
-> > > + */
-> > > +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
-> > > +		struct task_struct *tsk)
-> > > +{
-> > > +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
-> > > +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
-> > > +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
-> > > +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
-> > > +
-> > > +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
-> > > +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
-> > > +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
-> > > +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
-> > 
-> > 
-> >   Why is there not a default slack value for the whole group ?
-> 
-> I think it breaks prctl() semantic. default slack value is a value on
-> fork().
+- input
+- output
+- unknown (hardware lacks get functionality and it has not been set by
+  software yet)
+- alt_func (pin is in use for some other purpose)
 
-cgroups break a lot of semantics.
- 
-> > > +static u64 tslack_read_range(struct cgroup *cgroup, struct cftype *cft)
-> > > +{
-> > > +	struct timer_slack_cgroup *tslack_cgroup;
-> > > +
-> > > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> > > +	switch (cft->private) {
-> > > +	case TIMER_SLACK_MIN:
-> > > +		return tslack_cgroup->min_slack_ns;
-> > > +	case TIMER_SLACK_MAX:
-> > > +		return tslack_cgroup->max_slack_ns;
-> > > +	default:
-> > > +		BUG();
-> > 
-> >   BUG() for soemthing which can be dealt with sensible ?
-> 
-> tslack_read_range() and tslack_write_range() have written to handle
-> defined cftypes. If it used for other cftype it's a bug().
+(and being able to set them alt_func was proposed a while ago and I think
+wants revisiting judging by the number of platforms which use gpio, and
+in their own arch code are privately handling alt_func stuff)
 
-The only caller is initiated from here, right? So we really don't need
-another bug just because you might fatfinger your own code.
- 
-> > > +	list_for_each_entry(cur, &cgroup->children, sibling) {
-> > > +		child = cgroup_to_tslack_cgroup(cur);
-> > > +		if (type == TIMER_SLACK_MIN && val > child->min_slack_ns)
-> > > +			return -EBUSY;
-> > 
-> >   I thought the whole point is to propagate values through the group.
-> 
-> I think silent change here is wrong. cpuset returns -EBUSY in similar
-> case.
-
-And how is cpuset relevant for this ? Not at all. This is about
-timer_slack and we better have a well defined scheme for all of this
-and not some cobbled together thing with tons of exceptions and corner
-cases. Of course undocumented as far the code goes.
-
-Thanks,
-
-	tglx
-
- 
+Alan
