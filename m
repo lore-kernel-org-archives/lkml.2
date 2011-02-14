@@ -1,141 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab1BNIsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 03:48:02 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37643 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207Ab1BNIr7 (ORCPT
+	id S1752620Ab1BNIwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 03:52:47 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:47622 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752298Ab1BNIwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 03:47:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=ZNJyF0mBnEp4W0Zp/wYnJYJLkt3aK2j1q5pZYVF0GzqE1uqpoYP3CHKhNDRnHAiqYS
-         L9iIvjG4a5fg0nLCjqjr1fsVCLN2GQD/aczNwQ335sIysf4MBj97dHwLFxdTcqPwDLpm
-         y2W1tA4CgzSz9tqnGDbgjbslWeietDqiH4fIg=
-Subject: [PATCH] platform-drivers: x86: set acpi_driver.owner
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>,
-        Sujith Thomas <sujith.thomas@intel.com>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Paul Fox <pgf@laptop.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Mon, 14 Feb 2011 16:50:07 +0800
-Message-Id: <1297673407.11412.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Mon, 14 Feb 2011 03:52:45 -0500
+Message-ID: <4D58ED2A.9050706@dsn.okisemi.com>
+Date: Mon, 14 Feb 2011 17:51:54 +0900
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: ML netdev <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+Subject: [PATCH] pch_gbe: Fix the MAC Address load issue.
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The owner field provides the link between drivers and modules in sysfs.
+With the specification of hardware,
+the processing at the time of driver starting was modified.
 
-After setting the owner field, we can see which module provides which
-driver and vice versa by looking at /sys/bus/acpi/drivers/*/module and
-/sys/module/*/drivers/acpi:*.
+This device write automatically the MAC address read from serial ROM
+into a MAC Adress1A/1B register at the time of power on reset.
+However, when stable clock is not supplied,
+the writing of MAC Adress1A/1B register may not be completed.
+In this case, it is necessary to load MAC address to MAC Address1A/1B register
+by the MAC Address1 load register.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-Cc: Sujith Thomas <sujith.thomas@intel.com>
-Cc: Harald Welte <laforge@gnumonks.org>
-Cc: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Cc: Paul Fox <pgf@laptop.org>
+This patch always does the above processing,
+in order not to be dependent on system environment.
+
+Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
 ---
- drivers/platform/x86/fujitsu-laptop.c   |    2 ++
- drivers/platform/x86/intel_menlow.c     |    1 +
- drivers/platform/x86/panasonic-laptop.c |    1 +
- drivers/platform/x86/topstar-laptop.c   |    1 +
- drivers/platform/x86/wmi.c              |    1 +
- drivers/platform/x86/xo15-ebook.c       |    1 +
- 6 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/net/pch_gbe/pch_gbe.h      |    2 +-
+ drivers/net/pch_gbe/pch_gbe_main.c |    7 +++++++
+ 2 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-index 95e3b09..cf2e5e1 100644
---- a/drivers/platform/x86/fujitsu-laptop.c
-+++ b/drivers/platform/x86/fujitsu-laptop.c
-@@ -1063,6 +1063,7 @@ static struct acpi_driver acpi_fujitsu_driver = {
- 		.remove = acpi_fujitsu_remove,
- 		.notify = acpi_fujitsu_notify,
- 		},
-+	.owner = THIS_MODULE,
- };
+diff --git a/drivers/net/pch_gbe/pch_gbe.h b/drivers/net/pch_gbe/pch_gbe.h
+index a0c26a9..e1e33c8 100644
+--- a/drivers/net/pch_gbe/pch_gbe.h
++++ b/drivers/net/pch_gbe/pch_gbe.h
+@@ -73,7 +73,7 @@ struct pch_gbe_regs {
+ 	struct pch_gbe_regs_mac_adr mac_adr[16];
+ 	u32 ADDR_MASK;
+ 	u32 MIIM;
+-	u32 reserve2;
++	u32 MAC_ADDR_LOAD;
+ 	u32 RGMII_ST;
+ 	u32 RGMII_CTRL;
+ 	u32 reserve3[3];
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index 8ec48ad..8bba091 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -89,6 +89,12 @@ static unsigned int copybreak __read_mostly = PCH_GBE_COPYBREAK_DEFAULT;
+ static int pch_gbe_mdio_read(struct net_device *netdev, int addr, int reg);
+ static void pch_gbe_mdio_write(struct net_device *netdev, int addr, int reg,
+ 			       int data);
++
++inline void pch_gbe_mac_load_mac_addr(struct pch_gbe_hw *hw)
++{
++	iowrite32(0x01, &hw->reg->MAC_ADDR_LOAD);
++}
++
+ /**
+  * pch_gbe_mac_read_mac_addr - Read MAC address
+  * @hw:	            Pointer to the HW structure
+@@ -2333,6 +2339,7 @@ static int pch_gbe_probe(struct pci_dev *pdev,
+ 	netdev->features = NETIF_F_HW_CSUM | NETIF_F_GRO;
+ 	pch_gbe_set_ethtool_ops(netdev);
  
- static const struct acpi_device_id fujitsu_hotkey_device_ids[] = {
-@@ -1079,6 +1080,7 @@ static struct acpi_driver acpi_fujitsu_hotkey_driver = {
- 		.remove = acpi_fujitsu_hotkey_remove,
- 		.notify = acpi_fujitsu_hotkey_notify,
- 		},
-+	.owner = THIS_MODULE,
- };
++	pch_gbe_mac_load_mac_addr(&adapter->hw);
+ 	pch_gbe_mac_reset_hw(&adapter->hw);
  
- static int __init fujitsu_init(void)
-diff --git a/drivers/platform/x86/intel_menlow.c b/drivers/platform/x86/intel_menlow.c
-index eacd5da..567ab4e 100644
---- a/drivers/platform/x86/intel_menlow.c
-+++ b/drivers/platform/x86/intel_menlow.c
-@@ -225,6 +225,7 @@ static struct acpi_driver intel_menlow_memory_driver = {
- 		.add = intel_menlow_memory_add,
- 		.remove = intel_menlow_memory_remove,
- 		},
-+	.owner = THIS_MODULE,
- };
- 
- /*
-diff --git a/drivers/platform/x86/panasonic-laptop.c b/drivers/platform/x86/panasonic-laptop.c
-index cc1e0ba..92fec38 100644
---- a/drivers/platform/x86/panasonic-laptop.c
-+++ b/drivers/platform/x86/panasonic-laptop.c
-@@ -199,6 +199,7 @@ static struct acpi_driver acpi_pcc_driver = {
- 				.resume =       acpi_pcc_hotkey_resume,
- 				.notify =	acpi_pcc_hotkey_notify,
- 			},
-+	.owner =	THIS_MODULE,
- };
- 
- static const struct key_entry panasonic_keymap[] = {
-diff --git a/drivers/platform/x86/topstar-laptop.c b/drivers/platform/x86/topstar-laptop.c
-index 1d07d6d..3b12bc6 100644
---- a/drivers/platform/x86/topstar-laptop.c
-+++ b/drivers/platform/x86/topstar-laptop.c
-@@ -184,6 +184,7 @@ static struct acpi_driver acpi_topstar_driver = {
- 		.remove = acpi_topstar_remove,
- 		.notify = acpi_topstar_notify,
- 	},
-+	.owner = THIS_MODULE,
- };
- 
- static int __init topstar_laptop_init(void)
-diff --git a/drivers/platform/x86/wmi.c b/drivers/platform/x86/wmi.c
-index 05cc796..754117d 100644
---- a/drivers/platform/x86/wmi.c
-+++ b/drivers/platform/x86/wmi.c
-@@ -111,6 +111,7 @@ static struct acpi_driver acpi_wmi_driver = {
- 		.remove = acpi_wmi_remove,
- 		.notify = acpi_wmi_notify,
- 	},
-+	.owner = THIS_MODULE,
- };
- 
- /*
-diff --git a/drivers/platform/x86/xo15-ebook.c b/drivers/platform/x86/xo15-ebook.c
-index c1372ed..5639837 100644
---- a/drivers/platform/x86/xo15-ebook.c
-+++ b/drivers/platform/x86/xo15-ebook.c
-@@ -164,6 +164,7 @@ static struct acpi_driver xo15_ebook_driver = {
- 		.remove = ebook_switch_remove,
- 		.notify = ebook_switch_notify,
- 	},
-+	.owner = THIS_MODULE,
- };
- 
- static int __init xo15_ebook_init(void)
+ 	/* setup the private structure */
 -- 
-1.7.2
-
-
-
+1.6.2.5
