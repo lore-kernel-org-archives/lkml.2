@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab1BNS10 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:27:26 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51615 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab1BNS1X (ORCPT
+	id S1751367Ab1BNS35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:29:57 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47525 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab1BNS3x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:27:23 -0500
+	Mon, 14 Feb 2011 13:29:53 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=II/AZRSboKQ7DzD5uVC0KNPXPb7l3QZUvFXbuuMdhOVjQZCghBZAYn1irFtt4HUSxw
-         SHhlMkGkChaf8SF9kyv4r+mhLmuSZHPeGrwtyHOCN6XrgGh8NQUgSw+zPxxIrDplXAX/
-         j5Isa0fPQ2JZpA7tQi6X16ctvqxeSpTCCedPo=
-Date: Mon, 14 Feb 2011 19:27:18 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
-        mingo@elte.hu, hpa@linux.intel.com
-Subject: Re: [PATCH 15/26] x86-64, NUMA: Unify the rest of memblk
- registration
-Message-ID: <20110214182718.GB18742@htj.dyndns.org>
-References: <1297530663-26234-1-git-send-email-tj@kernel.org>
- <1297530663-26234-16-git-send-email-tj@kernel.org>
- <4D5729A7.7070706@kernel.org>
- <20110214113221.GG18742@htj.dyndns.org>
- <AANLkTin0C2AhtHm6K0av2N4pQxLvK_Fc+4w12Qg_QRkZ@mail.gmail.com>
- <20110214161249.GV18742@htj.dyndns.org>
- <AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com>
- <20110214162247.GX18742@htj.dyndns.org>
- <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com>
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type:content-transfer-encoding;
+        b=wMT4zMUZ9TQef6ESNm4bbzsZ8RDEtxK9ePZsVVBgctNAiE88bpk7GcU4yIGukFN7s4
+         2I/Kqd8EyE7UTnPW18griz1m0b3FcoG505CpgwvaJ8wkHLTSDUNCrMQFH+2sRdUx9/sG
+         eVmwBHLX+QQSOpyZJpHzvcunEROyHiBUXM+2Q=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: dbrownell@users.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mcp23s08: support mcp23s17 variant
+References: <1297699964-20527-1-git-send-email-jacmet@sunsite.dk>
+	<AANLkTi=pWV+tfD6YGpKbzTkvLVoLXtGA41QRaaF=VFeq@mail.gmail.com>
+Date: Mon, 14 Feb 2011 19:29:50 +0100
+In-Reply-To: <AANLkTi=pWV+tfD6YGpKbzTkvLVoLXtGA41QRaaF=VFeq@mail.gmail.com>
+	(Grant Likely's message of "Mon, 14 Feb 2011 10:13:01 -0700")
+Message-ID: <87r5bacvvl.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+>>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
 
-On Mon, Feb 14, 2011 at 10:14:15AM -0800, Yinghai Lu wrote:
-> I just want seperate setup_bootmem  ( and maybe init_memory_mapping_high...)
-> out  that __register__ function.
-> 
-> that __register__ function do some sth like memblock_register to
-> early_node_map[] looks reasonable.
+Hi,
 
-Can you please provide some rationales _why_ you think setup_bootmem()
-should be moved elsewhere?  Because it is not apparent to me and I
-cannot read your mind.  I'm not against it given good enough reasons.
-After all, _technically_ it doesn't make one iota of difference, but I
-don't want to change it just because you don't like it and I don't
-think you want that either, so _please_ give me some explanations
-about what you want and _why_.  It's not like we're involved in a
-romantic relationship and even when I'm in one I suck at that implied
-communication thing.
+ >> -       return (status < 0) ? status : rx[0];
+ >> +
+ >> +       if (mcp->type == MCP_TYPE_S17) {
+ >> +               tx[1] <<= 1;
+ >> +
+ >> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 2);
+ >> +               return (status < 0) ? status : (rx[0] | (rx[1] << 8));
+ >> +       } else {
+ >> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 1);
+ >> +               return (status < 0) ? status : rx[0];
+ >> +       }
 
-Thanks.
+ Grant> Rather than checking ->type for every transaction, would a set of
+ Grant> callbacks for each type be better?  It would probably have lower
+ Grant> overhead and be simpler to maintain.
+
+We could. I didn't do it because the 8bit and 16bit cases are very
+similar, and checking a simple integer is presumably a lot faster than
+the spi access - But I can rework the patch if you insists.
+
+ >> +++ b/include/linux/spi/mcp23s08.h
+ >> @@ -2,21 +2,24 @@
+ >>  /* FIXME driver should be able to handle IRQs...  */
+ >> 
+ >>  struct mcp23s08_chip_info {
+ >> -       bool    is_present;             /* true iff populated */
+ >> -       u8      pullups;                /* BIT(x) means enable pullup x */
+ >> +       bool            is_present;     /* true if populated */
+ >> +       unsigned        pullups;        /* BIT(x) means enable pullup x */
+ >>  };
+
+ Grant> Unrelated whitespace changes.
+
+I wouldn't call it unrelated. It's to ensure it still lines up after the
+s/u8/unsigned/.
 
 -- 
-tejun
+Bye, Peter Korsgaard
