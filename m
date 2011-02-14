@@ -1,93 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab1BNSHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:07:34 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45628 "EHLO hera.kernel.org"
+	id S1752592Ab1BNSHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:07:23 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45603 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406Ab1BNSH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:07:29 -0500
-Date: Mon, 14 Feb 2011 13:55:30 GMT
-From: tip-bot for David Rientjes <rientjes@google.com>
+	id S1752406Ab1BNSHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:07:18 -0500
+Date: Mon, 14 Feb 2011 13:55:08 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        jj@chaosbits.net, tj@kernel.org, tglx@linutronix.de,
-        rientjes@google.com, mingo@elte.hu
+        yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jj@chaosbits.net, tj@kernel.org, tglx@linutronix.de,
-        rientjes@google.com, mingo@elte.hu
-In-Reply-To: <alpine.DEB.2.00.1102071407250.7812@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1102071407250.7812@chino.kir.corp.google.com>
+        yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4D5240A9.4080703@kernel.org>
+References: <4D5240A9.4080703@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/numa] x86, numa: Add error handling for bad cpu-to-node mappings
-Message-ID: <tip-14392fd329eca9b59d51c0aa5d0acfb4965424d1@git.kernel.org>
-Git-Commit-ID: 14392fd329eca9b59d51c0aa5d0acfb4965424d1
+Subject: [tip:x86/cpu] x86: Fix and clean up generic_processor_info()
+Message-ID: <tip-e5fea868e6c04343e501176a373d568c1c0094aa@git.kernel.org>
+Git-Commit-ID: e5fea868e6c04343e501176a373d568c1c0094aa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Feb 2011 18:06:58 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Feb 2011 18:06:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  14392fd329eca9b59d51c0aa5d0acfb4965424d1
-Gitweb:     http://git.kernel.org/tip/14392fd329eca9b59d51c0aa5d0acfb4965424d1
-Author:     David Rientjes <rientjes@google.com>
-AuthorDate: Mon, 7 Feb 2011 14:08:53 -0800
+Commit-ID:  e5fea868e6c04343e501176a373d568c1c0094aa
+Gitweb:     http://git.kernel.org/tip/e5fea868e6c04343e501176a373d568c1c0094aa
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Tue, 8 Feb 2011 23:22:17 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 14 Feb 2011 13:29:27 +0100
+CommitDate: Mon, 14 Feb 2011 13:23:51 +0100
 
-x86, numa: Add error handling for bad cpu-to-node mappings
+x86: Fix and clean up generic_processor_info()
 
-CONFIG_DEBUG_PER_CPU_MAPS may return NUMA_NO_NODE when an
-early_cpu_to_node() mapping hasn't been initialized.  In such a
-case, it emits a warning and continues without an issue but
-callers may try to use the return value to index into an array.
+One of the error printouts in generic_processor_info() prints out
+the APIC version instead of the cpu index the warning text describes.
 
-We can catch those errors and fail silently since a warning has
-already been emitted.  No current user of numa_add_cpu()
-requires this error checking to avoid a crash, but it's better
-to be proactive in case a future user happens to have a bug and
-a user tries to diagnose it with CONFIG_DEBUG_PER_CPU_MAPS.
+Move version validation down, after we get the right cpu index.
 
-Reported-by: Jesper Juhl <jj@chaosbits.net>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Cc: Tejun Heo <tj@kernel.org>
-LKML-Reference: <alpine.DEB.2.00.1102071407250.7812@chino.kir.corp.google.com>
+-v2: add comments about reason why we can have cpu=0 there.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <4D5240A9.4080703@kernel.org>
+[ Cleaned up and made the BIOS bug printouts more consistent ]
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/numa.c    |    4 ++++
- arch/x86/mm/numa_64.c |    4 ++++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+ arch/x86/kernel/apic/apic.c |   39 ++++++++++++++++++++-------------------
+ 1 files changed, 20 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index bf60715..9559d36 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -219,6 +219,10 @@ struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
- 	struct cpumask *mask;
- 	char buf[64];
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 06c196d..628dcdb 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1925,17 +1925,6 @@ void __cpuinit generic_processor_info(int apicid, int version)
+ {
+ 	int cpu;
  
-+	if (node == NUMA_NO_NODE) {
-+		/* early_cpu_to_node() already emits a warning and trace */
-+		return NULL;
-+	}
- 	mask = node_to_cpumask_map[node];
- 	if (!mask) {
- 		pr_err("node_to_cpumask_map[%i] NULL\n", node);
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index f548fbf..3f9411e 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -709,6 +709,10 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
- 	struct cpumask *mask;
- 	int i;
+-	/*
+-	 * Validate version
+-	 */
+-	if (version == 0x0) {
+-		pr_warning("BIOS bug, APIC version is 0 for CPU#%d! "
+-			   "fixing up to 0x10. (tell your hw vendor)\n",
+-				version);
+-		version = 0x10;
+-	}
+-	apic_version[apicid] = version;
+-
+ 	if (num_processors >= nr_cpu_ids) {
+ 		int max = nr_cpu_ids;
+ 		int thiscpu = max + disabled_cpus;
+@@ -1949,22 +1938,34 @@ void __cpuinit generic_processor_info(int apicid, int version)
+ 	}
  
-+	if (node == NUMA_NO_NODE) {
-+		/* early_cpu_to_node() already emits a warning and trace */
-+		return;
+ 	num_processors++;
+-	cpu = cpumask_next_zero(-1, cpu_present_mask);
+-
+-	if (version != apic_version[boot_cpu_physical_apicid])
+-		WARN_ONCE(1,
+-			"ACPI: apic version mismatch, bootcpu: %x cpu %d: %x\n",
+-			apic_version[boot_cpu_physical_apicid], cpu, version);
+-
+-	physid_set(apicid, phys_cpu_present_map);
+ 	if (apicid == boot_cpu_physical_apicid) {
+ 		/*
+ 		 * x86_bios_cpu_apicid is required to have processors listed
+ 		 * in same order as logical cpu numbers. Hence the first
+ 		 * entry is BSP, and so on.
++		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
++		 * for BSP.
+ 		 */
+ 		cpu = 0;
++	} else
++		cpu = cpumask_next_zero(-1, cpu_present_mask);
++
++	/*
++	 * Validate version
++	 */
++	if (version == 0x0) {
++		pr_warning("BIOS bug: APIC version is 0 for CPU %d/0x%x, fixing up to 0x10\n",
++			   cpu, apicid);
++		version = 0x10;
+ 	}
++	apic_version[apicid] = version;
++
++	if (version != apic_version[boot_cpu_physical_apicid]) {
++		pr_warning("BIOS bug: APIC version mismatch, boot CPU: %x, CPU %d: version %x\n",
++			apic_version[boot_cpu_physical_apicid], cpu, version);
 +	}
- 	for_each_online_node(i) {
- 		unsigned long addr;
++
++	physid_set(apicid, phys_cpu_present_map);
+ 	if (apicid > max_physical_apicid)
+ 		max_physical_apicid = apicid;
  
