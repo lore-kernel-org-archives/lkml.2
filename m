@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1BNWGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:06:45 -0500
-Received: from tundra.namei.org ([65.99.196.166]:52644 "EHLO tundra.namei.org"
+	id S1752535Ab1BNWKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:10:07 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:7444 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079Ab1BNWGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:06:43 -0500
-Date: Tue, 15 Feb 2011 09:06:25 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-cc: Eric Paris <eparis@redhat.com>, Stephen Smalley <sds@tycho.nsa.gov>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 2/2] security: remove unused security_sysctl hook
-In-Reply-To: <AANLkTi=WGBDyGpuCjUjuYj=E6HRc80+iunJ_PdXeJq5G@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1102150906050.20521@tundra.namei.org>
-References: <1296578542-5902-1-git-send-email-lucian.grijincu@gmail.com> <1296578696-5989-1-git-send-email-lucian.grijincu@gmail.com> <1296587121.12605.30.camel@moss-pluto> <658335B0-9138-4293-9E25-B557AE0DEF7A@redhat.com> <AANLkTimGVCCTVjdw3ODPDGHF9bdJMPUz4JR=1oG86EtF@mail.gmail.com>
- <1297713227.2783.30.camel@unknown001a4b0c2895> <AANLkTi=WGBDyGpuCjUjuYj=E6HRc80+iunJ_PdXeJq5G@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1750893Ab1BNWKE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 17:10:04 -0500
+X-IronPort-AV: E=Sophos;i="4.60,470,1291622400"; 
+   d="scan'208";a="518414451"
+Subject: Re: [PATCH] NFS: Zap entire 'struct inode' in
+ nfs_zap_caches_locked().
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1102142252540.4530@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102142252540.4530@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Mon, 14 Feb 2011 17:09:45 -0500
+Message-ID: <1297721385.23841.14.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 14 Feb 2011 22:09:48.0960 (UTC) FILETIME=[E54EDA00:01CBCC93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011, Lucian Adrian Grijincu wrote:
-
+On Mon, 2011-02-14 at 22:56 +0100, Jesper Juhl wrote: 
+> nfs_zap_caches_locked() attempts to zero all of the 'struct inode' that's 
+> passed in via the pointer variable 'inode'. Unfortunately it only manages 
+> to zero the size of a 'pointer to struct inode'. Fix that.
 > 
-> MAINTAINERS says:
-> SELINUX SECURITY MODULE
-> T:      git git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6.git
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  inode.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Should It be changed to point to your tree? Or should a new entry be
-> added to point to your tree?
+>  compile tested only
+> 
+> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+> index 1cc600e..6c4236e 100644
+> --- a/fs/nfs/inode.c
+> +++ b/fs/nfs/inode.c
+> @@ -145,7 +145,7 @@ static void nfs_zap_caches_locked(struct inode *inode)
+>  	nfsi->attrtimeo = NFS_MINATTRTIMEO(inode);
+>  	nfsi->attrtimeo_timestamp = jiffies;
+>  
+> -	memset(NFS_COOKIEVERF(inode), 0, sizeof(NFS_COOKIEVERF(inode)));
+> +	memset(NFS_COOKIEVERF(inode), 0, sizeof(*NFS_COOKIEVERF(inode)));
+>  	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode))
+>  		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
+>  	else
 
-That should probably be changed to Eric's tree.
+That's incorrect.
+
+NFS_COOKIEVERF(inode) expands to NFS_I(inode)->cookieverf, and since
+cookieverf is declared inside the struct nfs_inode as 
+
+	u32	cookieverf[2];
+
+the sizeof(NFS_I(inode)->cookieverf) should expand to the size of the
+cookieverf array (i.e. 8 bytes).
+
+Cheers
+  Trond
 
 -- 
-James Morris
-<jmorris@namei.org>
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
