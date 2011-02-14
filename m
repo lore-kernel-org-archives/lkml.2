@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab1BNWrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:47:43 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12047 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab1BNWrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:47:20 -0500
-Date: Mon, 14 Feb 2011 23:46:17 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: trivial@kernel.org, Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: {PATCH][trivial] serial, pch uart: Remove duplicate inclusion of
- linux/pci.h header
-Message-ID: <alpine.LNX.2.00.1102142343550.4530@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752926Ab1BNWuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:50:22 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:44563 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751362Ab1BNWuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 17:50:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
+Date: Mon, 14 Feb 2011 23:50:03 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: castet.matthieu@free.fr, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+References: <4D473FD5.1090903@free.fr> <1297108754.4d504f1281802@imp.free.fr> <4D599C6F.60600@zytor.com>
+In-Reply-To: <4D599C6F.60600@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102142350.04053.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only include linux/pci.h once in drivers/tty/serial/pch_uart.c
+On Monday, February 14, 2011, H. Peter Anvin wrote:
+> On 02/07/2011 11:59 AM, castet.matthieu@free.fr wrote:
+> >
+> > For .39 I hope we could remove most of the RWX rights after init (This means
+> > make low memory trampoline NX or !RW).
+> 
+> By the way, I think this is the wrong goal.  I think we should have
+> things enabled at their lowest permission level *as early as possible*.
+>  The current model of tightening down permissions late in the boot is
+> really the wrong model.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- pch_uart.c |    1 -
- 1 file changed, 1 deletion(-)
+FWIW, I agree.
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 3b2fb93..14a27c3 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -15,7 +15,6 @@
-  *Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
-  */
- #include <linux/serial_reg.h>
--#include <linux/pci.h>
- #include <linux/module.h>
- #include <linux/pci.h>
- #include <linux/serial_core.h>
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Rafael
