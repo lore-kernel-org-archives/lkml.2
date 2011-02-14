@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332Ab1BNWOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:14:35 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63359 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750864Ab1BNWOd (ORCPT
+	id S1751696Ab1BNWUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:20:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59619 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab1BNWUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:14:33 -0500
-Message-ID: <4D59A93A.7090800@metafoo.de>
-Date: Mon, 14 Feb 2011 23:14:18 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: Grazvydas Ignotas <notasas@gmail.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Pali Rohar <pali.rohar@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/14 v3] bq27x00: Cache battery registers
-References: <1297539554-13957-8-git-send-email-lars@metafoo.de>	<1297652493-7207-1-git-send-email-lars@metafoo.de> <AANLkTimn2JYtUSUrJBQKzXrw+URD5n0Y2h7QMaFzKFdY@mail.gmail.com>
-In-Reply-To: <AANLkTimn2JYtUSUrJBQKzXrw+URD5n0Y2h7QMaFzKFdY@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Feb 2011 17:20:32 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=4UV-9Kl2S54A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=8JJjOkvMJUzyatM_TIUA:9 a=CbWFksSHX_lBOVFqkEVSqMVPQK0A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: peterz@infradead.org, will.newton@gmail.com, jbaron@redhat.com,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, mingo@elte.hu,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        vapier@gentoo.org, cmetcalf@tilera.com, dhowells@redhat.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org
+In-Reply-To: <20110214.134600.179933733.davem@davemloft.net>
+References: <1297707868.5226.189.camel@laptop>
+	 <1297718964.23343.75.camel@gandalf.stny.rr.com>
+	 <1297719576.23343.80.camel@gandalf.stny.rr.com>
+	 <20110214.134600.179933733.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 14 Feb 2011 17:20:30 -0500
+Message-ID: <1297722030.23343.86.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2011 10:58 PM, Grazvydas Ignotas wrote:
-> On Mon, Feb 14, 2011 at 5:01 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> This patch adds a register cache to the bq27x00 battery driver.
->> Usually multiple, if not all, power_supply properties are queried at once,
->> for example when an uevent is generated. Since some registers are used by
->> multiple properties caching the registers should reduce the number of
->> reads.
->>
->> The cache is valid for 5 seconds this roughly matches the internal update
->> interval of the current register for the bq27000/bq27200.
->>
->> Fast changing properties(*_NOW) which can be obtained by reading a single
->> register are not cached.
->>
->> It will also be used in the follow up patch to check if the battery status
->> has been changed since the last update to emit power_supply_changed events.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> ---
->>  drivers/power/bq27x00_battery.c |  271 +++++++++++++++++++++-----------------
->>  1 files changed, 150 insertions(+), 121 deletions(-)
->>
->> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
->> index 44bc76b..dbe3fcb 100644
->> --- a/drivers/power/bq27x00_battery.c
->> +++ b/drivers/power/bq27x00_battery.c
+On Mon, 2011-02-14 at 13:46 -0800, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Mon, 14 Feb 2011 16:39:36 -0500
 > 
-> <snip>
+> > Thus it is not about global, as global is updated by normal means and
+> > will update the caches. atomic_t is updated via the ll/sc that ignores
+> > the cache and causes all this to break down. IOW... broken hardware ;)
 > 
->> -static int bq27x00_battery_current(struct bq27x00_device_info *di)
->> +static int bq27x00_battery_current(struct bq27x00_device_info *di,
->> +       union power_supply_propval *val)
->>  {
->> -       int ret;
->> -       int curr = 0;
->> -       int flags = 0;
->> +       int curr;
->>
->> -       ret = bq27x00_read(di, BQ27x00_REG_AI, &curr, false);
->> -       if (ret) {
->> -               dev_err(di->dev, "error reading current\n");
->> -               return 0;
->> -       }
->> +       if (di->chip == BQ27500)
->> +           curr = bq27x00_read(di, BQ27x00_REG_AI, false);
->> +       else
->> +           curr = di->cache.current_now;
->> +
->> +       if (curr < 0)
->> +               return curr;
+> I don't see how cache coherency can possibly work if the hardware
+> behaves this way.
 > 
-> This is wrong, as read function returns negative values for bq27500
-> when discharging. That's why read function used to pass value through
-> argument before your series (return value was for error code).
+> In cache aliasing situations, yes I can understand a L1 cache visibility
+> issue being present, but with kernel only stuff that should never happen
+> otherwise we have a bug in the arch cache flushing support.
 
-I don't think so. The register is 16bit wide and it is read as a unsigned. So
-in the non error case bq27x00_read will always return >= 0.
-The value is later reinterpreted as a signed 16bit.(See the other lines you
-quoted underneath).
+I guess the issue is, if you use ll/sc on memory, you must always use
+ll/sc on that memory, otherwise any normal read won't read the proper
+cache.
 
-Did you experience any actual problem with current being wrong?
+The atomic_read() in this arch uses ll to read the memory directly and
+skip the cache. If we make atomic_read() like the other archs:
 
-> 
-> Sorry for not noticing this earlier, I only found this now during testing.
-> 
->>
->>        if (di->chip == BQ27500) {
->>                /* bq27500 returns signed value */
->> -               curr = (int)((s16)curr) * 1000;
->> +               val->intval = (int)((s16)curr) * 1000;
+#define atomic_read(v)	(*(volatile int *)&(v)->counter)
 
-- Lars
+This pulls the counter into cache, and it will not be updated by a
+atomic_inc() from another CPU.
+
+Ideally, we would like a single atomic_read() but due to these wacky
+archs, it may not be possible.
+
+-- Steve
+
+
