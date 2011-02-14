@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab1BNPU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:20:27 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:47826 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754097Ab1BNPUZ (ORCPT
+	id S1755569Ab1BNPXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 10:23:19 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47367 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab1BNPXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:20:25 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Message-ID:In-Reply-To:References:Date:Subject:From:To:Cc:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:Importance:X-Identified-User;
-	b=My+P3ZiLxy/ZDJzKE20+OjTJKOJ/krzp9m/PXCaZl8/9zHL0BEz17Rs+U5kFntSSi+M00ygBzId39xqoZ3L14TKlZf3eG19astsMYITO4cTh9UUXtkZs+Q0rBHPCw60n;
-Message-ID: <04650f485d5814ddfe6893a3a7c8429b.squirrel@box585.bluehost.com>
-In-Reply-To: <20110214120237.GB13052@dastard>
-References: <20110213184219.GA22792@infradead.org> <4D5890B6.2090105@tao.ma>
-    <20110214120237.GB13052@dastard>
-Date: Mon, 14 Feb 2011 08:20:18 -0700
-Subject: Re: XFS status update for January 2011
-From: tm@tao.ma
-To: "Dave Chinner" <david@fromorbit.com>
-Cc: "Tao Ma" <tm@tao.ma>, "Christoph Hellwig" <hch@infradead.org>,
-        xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
+	Mon, 14 Feb 2011 10:23:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=HEFuktgSaIdkJZKRGMJfCReiJOOY/a0nPeD73G+KtVC+uZZNXkhEfjyJ8VoxOvE/IG
+         gD9tFiW+cGuBatVutJDC4JZ+6Z+LtZ3PceHkIUuM9A6LASfrAoE2l36mqzD3ioCHYBsM
+         jPbDozKYbN+9KfqVMK4icXh///WDTVA4+F+iI=
+Date: Mon, 14 Feb 2011 18:23:10 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>, Changli Gao <xiaosuo@gmail.com>,
+        Jesse Gross <jesse@nicira.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH v2] core: dev: don't call BUG() on bad input
+Message-ID: <20110214152310.GA24429@albatros>
+References: <1297694579-23611-1-git-send-email-segoon@openwall.com>
+ <AANLkTimidxVJxw-XKTWwCZh8k_vKHDeqxAwVbY6+aJ6x@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Identified-User: {1390:box585.bluehost.com:colyli:coly.li} {sentby:program running on server}
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimidxVJxw-XKTWwCZh8k_vKHDeqxAwVbY6+aJ6x@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-> On Mon, Feb 14, 2011 at 10:17:26AM +0800, Tao Ma wrote:
->> Hi Christoph,
->> On 02/14/2011 02:42 AM, Christoph Hellwig wrote:
->> >On the 4th of January we saw the release of Linux 2.6.37, which
->> contains a
->> >large XFS update:
->> >
->> >     67 files changed, 1424 insertions(+), 1524 deletions(-)
->> >
->> >User visible changes are the new XFS_IOC_ZERO_RANGE ioctl which allows
->> >to convert already allocated space into unwritten extents that return
->> >zeros on a read,
->> would you mind describing some scenario that this ioctl can be used. I
->> am
->> just wondering whether ocfs2 can implement it as well.
->
-> Zeroing a file without doing IO or having to punch out the blocks
-> already allocated to the file.
->
-> In this case, we had a couple of different people in cloud storage
-> land asking for such functionality to optimise record deletion
-> be avoiding disruption of their preallocated file layouts as a
-> punch-then-preallocate operation does.
-Thanks for the info. yeah, ocfs2 is also used to host images in some cloud
-computing environment. So It looks helpful for us too.
->
-> If you you have some kind of use for it in ocfs2, then implementing
-> the XFS ioctl is not the correct thing to do - using the fallocate
-> patch I've had sitting around (since about 15min after creating the
-> XFS ioctl) is most likely the right way to proceed....
-yeah, Josef has added the punching hole in fallocate, so I guess another
-parameter for keeping the blocks during hole punching should be enough for
-us. :)
+Alexey,
 
-Regards,
-Tao
+On Mon, Feb 14, 2011 at 17:16 +0200, Alexey Dobriyan wrote:
+> On Mon, Feb 14, 2011 at 4:42 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> > alloc_netdev() may be called with too long name (more that IFNAMSIZ bytes).
+> > Currently this leads to BUG().  Other insane inputs (bad txqs, rxqs) and
+> > even OOM don't lead to BUG().  Made alloc_netdev() return NULL, like on
+> > other errors.
+> 
+> > --- a/net/core/dev.c
+> > +++ b/net/core/dev.c
+> > @@ -5761,7 +5761,10 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
+> >        size_t alloc_size;
+> >        struct net_device *p;
+> >
+> > -       BUG_ON(strlen(name) >= sizeof(dev->name));
+> > +       if (strnlen(name, sizeof(dev->name)) >= sizeof(dev->name)) {
+> > +               pr_err("alloc_netdev: Too long device name\n");
+> > +               return NULL;
+> > +       }
+> 
+> Netdevice name isn't some random junk you get from userspace, so BUG is fine.
 
+It IS for bluetooth, see net/bluetooth/bnep/core.c: bnep_add_connection() and
+net/bluetooth/bnep/sock.c: bnep_sock_ioctl(). 
+
+And txqs, txqs?  Then why do not BUG() on bad txqs too?  Why so
+insonsistent?  BUG() should be called in some critical situation, net
+device creation is probably not such a thing.
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
