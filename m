@@ -1,92 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab1BNSAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:00:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9775 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719Ab1BNSAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:00:21 -0500
-Date: Mon, 14 Feb 2011 18:51:44 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214175144.GC15847@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+	id S1751799Ab1BNSBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:01:36 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:4539 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab1BNSBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:01:34 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=THSLa/W10XD+SC6uITX+AeLPws5dCWcrgInwP7dmQIagY8AKn5X0gfm7+In0YGJ3+
+	8Vy+ryQNUN/ajJpHNOAFg==
+Subject: [PATCH v3] Avoid preferential treatment of groups that aren't
+	backlogged
+To: jaxboe@fusionio.com, vgoyal@redhat.com
+From: Chad Talbott <ctalbott@google.com>
+Cc: guijianfeng@cn.fujitsu.com, mrubin@google.com, teravest@google.com,
+        jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Date: Mon, 14 Feb 2011 10:01:11 -0800
+Message-ID: <20110214180111.18776.57533.stgit@neat.mtv.corp.google.com>
+In-Reply-To: <20110214164139.GC13097@redhat.com>
+References: <20110214164139.GC13097@redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Denys Vlasenko wrote:
->
-> >> $ strace -tt sleep 30
-> >> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
-> >> ...
-> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
-> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> >>     (I forgot again why we see it twice. Another quirk I guess...)
-> >> 23:02:23.781310 restart_syscall(<... resuming interrupted call ...>) = 0
-> >> 23:02:45.622433 close(1)                = 0
-> >> 23:02:45.622743 close(2)                = 0
-> >> 23:02:45.622885 exit_group(0)           = ?
-> >>
-> >> Why sleep didn't stop?
-> >>
-> >> Because PTRACE_SYSCALL brought the task out of group stop at once,
-> >> even though strace did try hard to not do so:
-> >>
-> >>     ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP) <-- note SIGSTOP!
-> >>
-> >> PTRACE_CONT in this situation would do the same.
-> >
-> > This can be fixed by updating strace, right?  strace can look at the
-> > wait(2) exit code and if the tracee stopped for group stop, wait for
-> > the tracee to be continued instead of issuing PTRACE_SYSCALL.
+Problem: If a group isn't backlogged, we remove it from the service
+tree. When it becomes active again, it gets either the minimum vtime
+of the tree or gets put at the "back of the line." That is true even
+when the group was idle for a very small time, and it consumed some IO
+time right before it became idle.  If group has very small weight, it
+can end up using more disk time than its fair share. Conversely, if it
+has a very large weight, being put at the back of the vtime line is a
+large penalty which prevents it consuming its share.
 
-Ah, I seem to understand the confusion, let me repeat...
+Solution: We solve the problem by assigning the group its old vtime if
+it has not been idle long enough. Otherise we assign it the service
+tree's min vtime.
 
-> But tracee didn't stop _yet_.
+Complications: When an entire service tree becomes completely idle, we
+lose the vtime state. All the old vtime values are not relevant any
+more. For example, consider the case when the service tree is idle and
+a brand new group sends IO. That group would have an old vtime value
+of zero, but the service tree's vtime would become closer to zero. In
+such a case, it would be unfair for the older groups to get a much
+higher old vtime stored in them.
 
-This depends on "_yet_". strace does ptrace(SYSCALL, SIGSTOP) twice.
-The first time it does this after the tracee reports the signal, and
-the tracee stopps.
+We solve that issue by keeping a generation number that counts the
+number of instances when the service tree becomes completely
+empty. The generation number is stored in each group too. If a group
+becomes backlogged after a service tree has been empty, we compare its
+stored generation number with the current service tree generation
+number, and discard the old vtime if the group generation number is
+stale.
 
-> Signal is not delivered _yet_, debugger
-> can decide at this point whether to deliver it:
-> ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP)
-> or ignore:
-> ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)
->
-> strace has to deliver SIGSTOP if it wants to make program run exactly
-> as it would run without strace. So it tries to do so.
-> Currently, ptrace machinery doesn't react as strace, its user, expects it to.
+The preemption specific code is taken care of automatically because we
+allow preemption checks after inserting a group back into the service
+tree and assigning it an appropriate vtime.
 
-It does, see above. But then the tracee actually stopps, and report
-this to the tracer. However, strace handles this case as if this was
-another signal=SIGSTOP, so it does ptrace(SYSCALL, SIGSTOP) again.
+Signed-off-by: Chad Talbott <ctalbott@google.com>
+---
+ block/cfq-iosched.c |   25 ++++++++++++++-----------
+ 1 files changed, 14 insertions(+), 11 deletions(-)
 
-SIGSTOP has no effect, but PTRACE_SYSCALL wakeups the tracee.
-
-> >> Why gdb can't use SIGCONT instead of PTRACE_CONT, just like every
-> >> other tool which needs to resume stopped tasks?
-> >
-> > Because that's how PTRACE_CONT behaved the whole time.  It can but
-> > just hasn't needed to.
->
-> Jan, please put on your gdb maintainer's hat, we need your opinion here.
-> Is it a problem from gdb's POV?
-
-Yes, please ;)
-
-Oleg.
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 501ffdf..216d87b 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -178,6 +178,7 @@ struct cfq_group {
+ 
+ 	/* group service_tree key */
+ 	u64 vdisktime;
++	u64 generation_num;
+ 	unsigned int weight;
+ 
+ 	/* number of cfqq currently on this group */
+@@ -300,6 +301,9 @@ struct cfq_data {
+ 	/* List of cfq groups being managed on this device*/
+ 	struct hlist_head cfqg_list;
+ 	struct rcu_head rcu;
++
++	/* Generation number, counts service tree empty events */
++	u64 active_generation;
+ };
+ 
+ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+@@ -873,18 +877,14 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+ 		return;
+ 
+-	/*
+-	 * Currently put the group at the end. Later implement something
+-	 * so that groups get lesser vtime based on their weights, so that
+-	 * if group does not loose all if it was not continously backlogged.
+-	 */
+-	n = rb_last(&st->rb);
+-	if (n) {
+-		__cfqg = rb_entry_cfqg(n);
+-		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+-	} else
++	if (cfqd->active_generation > cfqg->generation_num)
+ 		cfqg->vdisktime = st->min_vdisktime;
+-
++	else
++		/* We assume that vdisktime was not modified when the task
++		   was off the service tree.
++		 */
++		cfqg->vdisktime = max_vdisktime(st->min_vdisktime,
++						cfqg->vdisktime);
+ 	__cfq_group_service_tree_add(st, cfqg);
+ 	st->total_weight += cfqg->weight;
+ }
+@@ -906,6 +906,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+ 		cfq_rb_erase(&cfqg->rb_node, st);
+ 	cfqg->saved_workload_slice = 0;
++	cfqg->generation_num = cfqd->active_generation;
++	if (RB_EMPTY_ROOT(&st->rb))
++		cfqd->active_generation++;
+ 	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+ }
+ 
 
