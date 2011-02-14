@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab1BNNpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:45:35 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:51547 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab1BNNpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:45:34 -0500
-Subject: [PATCH v2] xfs: prevent leaking uninitialized stack memory in
- FSGEOMETRY_V1
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Dave Chinner <david@fromorbit.com>, aelder@sgi.com,
-        xfs-masters@oss.sgi.com, xfs@oss.sgi.com
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, security@kernel.org
-In-Reply-To: <20110214114629.GA13052@dastard>
-References: <1297347904.13370.9.camel@dan>  <20110214114629.GA13052@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Feb 2011 08:45:28 -0500
-Message-ID: <1297691128.1857.4.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754531Ab1BNNrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:47:32 -0500
+Received: from ni.piap.pl ([195.187.100.4]:40913 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753454Ab1BNNra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 08:47:30 -0500
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Ben Collins <bcollins@bluecherry.net>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Feb 2011 14:47:27 +0100
+MIME-Version: 1.0
+Message-ID: <m3hbc6pw28.fsf@t19.piap.pl>
+Content-Type: text/plain; charset=us-ascii
+Subject: SOLO6x10 readl() and writel() usage
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20101209 #4187514, check: 20110214 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FSGEOMETRY_V1 ioctl (and its compat equivalent) calls out to
-xfs_fs_geometry() with a version number of 3.  This code path does not
-fill in the logsunit member of the passed xfs_fsop_geom_t, leading to
-the leaking of four bytes of uninitialized stack data to potentially
-unprivileged callers.
+Hi,
 
-v2 switches to memset() to avoid future issues if structure members
-change, on suggestion of Dave Chinner.
+BTW why are you using this instead of simple register readl/writel()?
+Does the hardware needs something like this?
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
----
- fs/xfs/xfs_fsops.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+static inline u32 solo_reg_read(struct solo_dev *solo_dev, int reg)
+{
+	unsigned long flags;
+	u32 ret;
+	u16 val;
 
-diff --git a/fs/xfs/xfs_fsops.c b/fs/xfs/xfs_fsops.c
-index cec89dd..85668ef 100644
---- a/fs/xfs/xfs_fsops.c
-+++ b/fs/xfs/xfs_fsops.c
-@@ -53,6 +53,9 @@ xfs_fs_geometry(
- 	xfs_fsop_geom_t		*geo,
- 	int			new_version)
- {
-+
-+	memset(geo, 0, sizeof(*geo));
-+
- 	geo->blocksize = mp->m_sb.sb_blocksize;
- 	geo->rtextsize = mp->m_sb.sb_rextsize;
- 	geo->agblocks = mp->m_sb.sb_agblocks;
+	spin_lock_irqsave(&solo_dev->reg_io_lock, flags);
 
+	ret = readl(solo_dev->reg_base + reg);
+	rmb();
+	pci_read_config_word(solo_dev->pdev, PCI_STATUS, &val);
+	rmb();
 
+	spin_unlock_irqrestore(&solo_dev->reg_io_lock, flags);
+
+	return ret;
+}
+
+static inline void solo_reg_write(struct solo_dev *solo_dev, int reg, u32 data)
+{
+	unsigned long flags;
+	u16 val;
+
+	spin_lock_irqsave(&solo_dev->reg_io_lock, flags);
+
+	writel(data, solo_dev->reg_base + reg);
+	wmb();
+	pci_read_config_word(solo_dev->pdev, PCI_STATUS, &val);
+	rmb();
+
+	spin_unlock_irqrestore(&solo_dev->reg_io_lock, flags);
+}
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
