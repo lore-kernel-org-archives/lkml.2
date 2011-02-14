@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab1BNUi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 15:38:58 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42868
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750893Ab1BNUi4 (ORCPT
+	id S1753044Ab1BNUlL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 15:41:11 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33046 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752243Ab1BNUlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 15:38:56 -0500
-Date: Mon, 14 Feb 2011 12:39:32 -0800 (PST)
-Message-Id: <20110214.123932.39170183.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org, sakari.ailus@iki.fi
-Subject: Re: [PATCH -next] PCI: fix tlan build when CONFIG_PCI is not
- enabled
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110214122750.e1e03bc8.randy.dunlap@oracle.com>
-References: <20110214181137.ee8d4c08.sfr@canb.auug.org.au>
-	<20110214122750.e1e03bc8.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 14 Feb 2011 15:41:09 -0500
+Date: Mon, 14 Feb 2011 12:13:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alex Riesen <raa.lkml@gmail.com>, David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
+Message-Id: <20110214121308.b5be78a5.akpm@linux-foundation.org>
+In-Reply-To: <m1wrl2pfio.fsf@fess.ebiederm.org>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+	<m1hbce46fw.fsf@fess.ebiederm.org>
+	<AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
+	<m1bp2ly41q.fsf@fess.ebiederm.org>
+	<AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
+	<AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
+	<AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
+	<m14o87wev8.fsf@fess.ebiederm.org>
+	<AANLkTimO3h80Wk44OhpfkjzxpzdDKnf6emj2fNObn_jD@mail.gmail.com>
+	<m1r5bbthan.fsf@fess.ebiederm.org>
+	<m1fwrrtc0m.fsf@fess.ebiederm.org>
+	<m139nqsk3q.fsf@fess.ebiederm.org>
+	<AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
+	<AANLkTimwbkQQkwcX19NVcmSfv5O1dP9oeEBegbQLSh60@mail.gmail.com>
+	<AANLkTi=CZ8v99yojSb0Ci=5N9dVFr-vDeZM1_Amx_scj@mail.gmail.com>
+	<m1wrl2pfio.fsf@fess.ebiederm.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Mon, 14 Feb 2011 12:27:50 -0800
+On Mon, 14 Feb 2011 11:44:47 -0800
+ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+> My three boot attempts with CONFIG_DEBUG_PAGEALLOC are below.
 > 
-> When CONFIG_PCI is not enabled, tlan.c has a build error:
-> drivers/net/tlan.c:503: error: implicit declaration of function 'pci_wake_from_d3'
 > 
-> so add an inline function stub for this function to pci.h when
-> PCI is not enabled, similar to other stubbed PCI functions.
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> ERROR: kmemcheck: Fatal error
 
-Acked-by: David S. Miller <davem@davemloft.net>
+It might be that kmemcheck and DEBUG_PAGE_ALLOC don't get along well -
+try disabling kmemcheck?
+
+It's worth persisting with DEBUG_PAGE_ALLOC, please - if we can get it
+working then it should be able to find a stray write into a freed 8k page
+with precision.
+
