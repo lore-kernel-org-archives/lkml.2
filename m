@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab1BNAft (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 19:35:49 -0500
-Received: from sous-sol.org ([216.99.217.87]:44408 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755225Ab1BNAfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 19:35:45 -0500
-Date: Sun, 13 Feb 2011 16:35:31 -0800
-From: Chris Wright <chrisw@sous-sol.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@gmail.com>, Dave Young <hidave.darkstar@gmail.com>,
-        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, Chris Wright <chrisw@sous-sol.org>,
-        James Morris <jmorris@namei.org>
-Subject: Re: Regression - Xorg start failed
-Message-ID: <20110214003531.GH9869@sequoia.sous-sol.org>
-References: <20110213062213.GA2525@darkstar.dhcp.inet.fi>
- <AANLkTimDuYgL2cSR8gE7Wrm9_w7cvG_wuUUsa=8TKs87@mail.gmail.com>
- <AANLkTimxCMgdfht7rrg8QiCppb=D7fvR92eeiewdqCpH@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimxCMgdfht7rrg8QiCppb=D7fvR92eeiewdqCpH@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1755325Ab1BNAgg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 19:36:36 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45933
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755225Ab1BNAgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 19:36:31 -0500
+Date: Sun, 13 Feb 2011 16:37:07 -0800 (PST)
+Message-Id: <20110213.163707.71559850.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: jesper.nilsson@axis.com, linux-kernel@vger.kernel.org
+Subject: klist: Fix object alignment on 64-bit.
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Sat, Feb 12, 2011 at 11:53 PM, Dave Airlie <airlied@gmail.com> wrote:
-> > Probably should revert first, then work out what is crapping out libpciaccess.
-> 
-> Yeah, I'll revert. The patch is one of those "obviously a good idea,
-> but in practice it's not something we can change now".
 
-Turns out I'm just a bona fide idiot.
+Commit c0e69a5bbc6fc74184aa043aadb9a53bc58f953b ("klist.c: bit 0 in
+pointer can't be used as flag") intended to make sure that all klist
+objects were at least pointer size aligned, but used the constant "4"
+which only works on 32-bit.
 
-I was not testing the right kernel _and_ didn't get the logic right.
+Use "sizeof(void *)" which is correct in all cases.
 
-sorry for the screw up,
--chris
----
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-Subject: [PATCH] pci: use security_capable correctly during config space read
-
-Commit 47970b1 ("pci: use security_capable() when checking capablities
-during config space read") is just plain broken.  The normal capable()
-interface returns true on success, but the LSM interface returns 0 on
-success.
-
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
----
-
-I've tested this quickly (lspci behaviour is as expected).
-
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index f7771f3..ea25e5b 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -369,7 +369,7 @@ pci_read_config(struct file *filp, struct kobject *kobj,
- 	u8 *data = (u8*) buf;
+diff --git a/include/linux/klist.h b/include/linux/klist.h
+index e91a4e5..a370ce5 100644
+--- a/include/linux/klist.h
++++ b/include/linux/klist.h
+@@ -22,7 +22,7 @@ struct klist {
+ 	struct list_head	k_list;
+ 	void			(*get)(struct klist_node *);
+ 	void			(*put)(struct klist_node *);
+-} __attribute__ ((aligned (4)));
++} __attribute__ ((aligned (sizeof(void *))));
  
- 	/* Several chips lock up trying to read undefined config space */
--	if (security_capable(filp->f_cred, CAP_SYS_ADMIN)) {
-+	if (security_capable(filp->f_cred, CAP_SYS_ADMIN) == 0) {
- 		size = dev->cfg_size;
- 	} else if (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
- 		size = 128;
-
-
+ #define KLIST_INIT(_name, _get, _put)					\
+ 	{ .k_lock	= __SPIN_LOCK_UNLOCKED(_name.k_lock),		\
+--
+To unsubscribe from this list: send the line "unsubscribe sparclinux" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
