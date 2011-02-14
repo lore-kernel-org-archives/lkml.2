@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab1BNK5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 05:57:08 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37064 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab1BNK5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 05:57:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=F5VJrzXxwB3vVAEjc+ufSLH+asX2Rp1azxc9LBghWkxK6/aOFOKvieHBdUhKmPsmhj
-         gKaAjt47QFxThWkZ2+2D4RO1YJP+QHCRTcLG0mtBbtq2PBceNxxxOI3tymgzTs1eFXR0
-         711x6PrIsiGdaQJmMev8l/KjvGs0cY8CC1mek=
-Date: Mon, 14 Feb 2011 11:56:59 +0100
-From: Tejun Heo <tj@kernel.org>
-To: mszeredi@suse.cz, viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, kovariadam@gmail.com
-Subject: FUSE triggering BUG through blkdev_put()
-Message-ID: <20110214105659.GB18742@htj.dyndns.org>
+	id S1752953Ab1BNLA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 06:00:57 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38470 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752556Ab1BNLAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 06:00:55 -0500
+Date: Mon, 14 Feb 2011 12:00:39 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: mingo@readhat.com, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        tj@kernel.org, yinghai@kernel.org, ak@linux.intel.com,
+        robert.richter@amd.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] x86: ifdef ioapic related function out
+Message-ID: <20110214110039.GA7140@elte.hu>
+References: <1297677612-12405-1-git-send-email-henne@nachtwindheim.de>
+ <1297677612-12405-5-git-send-email-henne@nachtwindheim.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1297677612-12405-5-git-send-email-henne@nachtwindheim.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please take a look at the following bug.
 
- https://bugzilla.kernel.org/show_bug.cgi?id=28642
+* Henrik Kretzschmar <henne@nachtwindheim.de> wrote:
 
-The bug title and description are completely misleading but the
-problem seems to have been caused by the recent eviction related
-changes.  FUSE ends up blkdev_put'ting while I_CLEAR is still set on
-the blkdev's inode triggering BUG_ON() in iput().
+> arch_disable_smp_config() is an IO-APIC related function on x86,
+> and should only be needed if SMP is enabled.
+> But the IO-APIC code calls it when the parameter "noapic" is given to
+> the kernel, which doesn't mean SMP is enabled.
+> 
+> Anyway this fixes compilation on x86_32 UP systems with APIC and no IO-APIC.
+> 
+> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+> ---
+>  arch/x86/kernel/apic/apic.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index 999c531..4998f0a 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -1218,7 +1218,9 @@ void __cpuinit setup_local_APIC(void)
+>  		rdtscll(tsc);
+>  
+>  	if (disable_apic) {
+> +#ifdef CONFIG_X86_IO_APIC
+>  		arch_disable_smp_support();
+> +#endif
 
-Thanks.
+Why not make the arch_disable_smp_support() call generic in the 
+arch/x86/include/asm/smp.h file (via an inline helper) and thus
+avoid an ugly #ifdef in the .c file?
 
--- 
-tejun
+Thanks,
+
+	Ingo
