@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab1BNPPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:15:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393Ab1BNPPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:15:37 -0500
-Date: Mon, 14 Feb 2011 16:06:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214150656.GA8761@redhat.com>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org> <20110204130455.GA3671@redhat.com> <20110204144858.GI12133@htj.dyndns.org> <201102132224.25197.vda.linux@googlemail.com>
+	id S1755661Ab1BNPQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 10:16:04 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43865 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755093Ab1BNPQC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 10:16:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=v0srkvlzJ8N+7g2lxyVa/n+OrpwDj86hbeOkDjmnF+yaRSngX1zdYZIW4nIKcZh2t9
+         w1SOy4PewZdvfD7bWgPOYRXz+/IKsF/6GROxUxSonBUGv5iUA6ZchvQvewv1sZgtyp4F
+         y45BEAjG8mw8BSiQ/X8AwPtvzoI2MH9CFxl6g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102132224.25197.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1297694579-23611-1-git-send-email-segoon@openwall.com>
+References: <1297694579-23611-1-git-send-email-segoon@openwall.com>
+Date: Mon, 14 Feb 2011 17:16:00 +0200
+Message-ID: <AANLkTimidxVJxw-XKTWwCZh8k_vKHDeqxAwVbY6+aJ6x@mail.gmail.com>
+Subject: Re: [PATCH v2] core: dev: don't call BUG() on bad input
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>, Changli Gao <xiaosuo@gmail.com>,
+        Jesse Gross <jesse@nicira.com>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13, Denys Vlasenko wrote:
+On Mon, Feb 14, 2011 at 4:42 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> alloc_netdev() may be called with too long name (more that IFNAMSIZ bytes).
+> Currently this leads to BUG().  Other insane inputs (bad txqs, rxqs) and
+> even OOM don't lead to BUG().  Made alloc_netdev() return NULL, like on
+> other errors.
+
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -5761,7 +5761,10 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
+>        size_t alloc_size;
+>        struct net_device *p;
 >
-> For example, PTRACE_DETACH requires tracee to be stopped to succeed.
-> If debugger tries to detach while the tracee is running, it will get
-> an error. This forces debugger to do stupid things like sending SIGSTOP,
-> then waiting for tracee to stop, then doing PTRACE_DETACH, then
-> sending SIGCONT. Of course, while this dance is performed,
-> any SIGSTOPs/SIGCONTs which may be  sent to the tracee by other processes
-> are totally disrupted by this.
+> -       BUG_ON(strlen(name) >= sizeof(dev->name));
+> +       if (strnlen(name, sizeof(dev->name)) >= sizeof(dev->name)) {
+> +               pr_err("alloc_netdev: Too long device name\n");
+> +               return NULL;
+> +       }
 
-Yes.
-
-> The natural (for me) fix is to make PTRACE_DETACH work even on running
-> tracee. It simply makes a lot of sense. Why on earth do we need tracee
-> to be stopped? There is no reason.
-
-Agreed, but
-
-> But this is a change in ptrace behavior, and therefore is not acceptable
-> for Roland.
-
-I agree with Roland. Not only this is too visible change, it is not clear
-what detach-with-signal can do if the tracee is not stopped.
-
-This was (very briefly) discussed recently. Probably we can implement
-PTRACE_DETACH_RUNNING (the name is random) which doesn't require the
-stopped tracee but ignores the "data" argument.
-
-Oleg.
-
+Netdevice name isn't some random junk you get from userspace, so BUG is fine.
