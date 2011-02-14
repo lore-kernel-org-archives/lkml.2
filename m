@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208Ab1BNSXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:23:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47392 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab1BNSXT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:23:19 -0500
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Newton <will.newton@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, dhowells <dhowells@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "heiko.carstens" <heiko.carstens@de.ibm.com>,
-        benh <benh@kernel.crashing.org>
-In-Reply-To: <AANLkTi=jz+mGru--+YA62EeER17Tuq2DocrkKNaU2k+1@mail.gmail.com>
-References: <cover.1294239591.git.jbaron@redhat.com>
-	 <1297452328.5226.89.camel@laptop>
-	 <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
-	 <1297460297.5226.99.camel@laptop> <1297536465.5226.108.camel@laptop>
-	 <20110214155113.GA2840@redhat.com> <1297699024.2401.12.camel@twins>
-	 <20110214160437.GB2840@redhat.com>
-	 <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl>
-	 <1297700754.5226.110.camel@laptop> <20110214162947.GA3449@redhat.com>
-	 <1297701438.5226.113.camel@laptop>
-	 <1297702013.23343.51.camel@gandalf.stny.rr.com>
-	 <1297703892.23343.71.camel@gandalf.stny.rr.com>
-	 <1297704447.5226.127.camel@laptop>
-	 <AANLkTi=pXqya2vaUv2XNwRr6T==MW8ZtQ_yg6V9sipcy@mail.gmail.com>
-	 <1297705428.5226.142.camel@laptop>
-	 <AANLkTi=jz+mGru--+YA62EeER17Tuq2DocrkKNaU2k+1@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Feb 2011 19:24:28 +0100
-Message-ID: <1297707868.5226.189.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751313Ab1BNSYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:24:36 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32093 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab1BNSYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:24:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,469,1291622400"; 
+   d="scan'208";a="657567241"
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alex Riesen <raa.lkml@gmail.com>, David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+	<m1hbce46fw.fsf@fess.ebiederm.org>
+	<AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
+	<m1bp2ly41q.fsf@fess.ebiederm.org>
+	<AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
+	<AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
+	<AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
+	<m14o87wev8.fsf@fess.ebiederm.org>
+	<AANLkTimO3h80Wk44OhpfkjzxpzdDKnf6emj2fNObn_jD@mail.gmail.com>
+	<m1r5bbthan.fsf@fess.ebiederm.org> <m1fwrrtc0m.fsf@fess.ebiederm.org>
+	<m139nqsk3q.fsf@fess.ebiederm.org>
+	<AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
+Date: Mon, 14 Feb 2011 10:25:14 -0800
+In-Reply-To: <AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 14 Feb 2011 08:37:21 -0800")
+Message-ID: <m262smcw39.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 17:50 +0000, Will Newton wrote:
-> 
-> It would observe a stale value, but that value would only be updated
-> when the cache line was reloaded from main memory which would have to
-> be triggered by either eviction or cache flushing. So it could get
-> pretty stale. Whilst that's probably within the spec. of atomic_read I
-> suspect it would lead to problems in practice. I could be wrong
-> though. 
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-Right, so the typical scenario that could cause pain is something like:
+>
+> In other words: I can pretty much guarantee that this is a "struct
+> list" that is in a 8kB allocation at offset 0x1748. And that gets
+> re-initialized after it got freed.
 
-while (atomic_read(&foo) != n)
-  cpu_relax();
+If it's that the DEBUG_PAGEALLOC should have a good chance of catching
+it.
 
-and the problem is that cpu_relax() doesn't know which particular
-cacheline to flush in order to make things go faster, hm?
+-Andi
 
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
