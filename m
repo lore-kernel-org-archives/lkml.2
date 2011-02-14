@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1BNUCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 15:02:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55454 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab1BNUCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 15:02:31 -0500
-Message-ID: <4D598A3A.9080802@zytor.com>
-Date: Mon, 14 Feb 2011 12:02:02 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752330Ab1BNUGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 15:06:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58994 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab1BNUGm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 15:06:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=OhxNEyv/rDgY6b7uluWHKDujbOPSnbawwX7AUIuNaSGjVraBM9IUn9To5OxXhB3iGk
+         mwbUewWiKBFRhkdLenaAEGZOyuPMgfmN9QaJ11kNkl3Dz5BY0/9nZsaTgGpT258bq9Js
+         KK5Ew4nH+ylc6RNAaOGzzfiD9FVXbmDOClsKc=
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+In-Reply-To: <1297713227.2783.30.camel@unknown001a4b0c2895>
+References: <1296578542-5902-1-git-send-email-lucian.grijincu@gmail.com>
+ <1296578696-5989-1-git-send-email-lucian.grijincu@gmail.com>
+ <1296587121.12605.30.camel@moss-pluto> <658335B0-9138-4293-9E25-B557AE0DEF7A@redhat.com>
+ <AANLkTimGVCCTVjdw3ODPDGHF9bdJMPUz4JR=1oG86EtF@mail.gmail.com> <1297713227.2783.30.camel@unknown001a4b0c2895>
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Mon, 14 Feb 2011 22:06:20 +0200
+Message-ID: <AANLkTi=WGBDyGpuCjUjuYj=E6HRc80+iunJ_PdXeJq5G@mail.gmail.com>
+Subject: Re: [PATCH 2/2] security: remove unused security_sysctl hook
+To: Eric Paris <eparis@redhat.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>, Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
- mappings
-References: <4D50343E.1020906@kernel.org>	<alpine.DEB.2.00.1102071839060.7277@kaball-desktop>	<4D504161.2060900@kernel.org>	<4D506A85.9030802@goop.org>	<4D50B4B5.4050505@kernel.org>	<4D519AAA.8070309@zytor.com>	<4D547962.8040403@goop.org>	<4D547B74.1030302@kernel.org>	<4D54844B.4010007@zytor.com>	<4D5488D5.2020607@kernel.org>	<20110214162602.GB11290@dumpdata.com> <AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
-In-Reply-To: <AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2011 09:55 AM, Yinghai Lu wrote:
-> 
-> Assume, we can update vmlinux.lds.S to make _end to be 2M aligned as
-> Stefano suggested?
-> 
+On Mon, Feb 14, 2011 at 9:53 PM, Eric Paris <eparis@redhat.com> wrote:
+>> >> Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
 
-I am concerned about this.  This feels like papering over a bug.
 
-	-hpa
+FWIW you forgot Stephen's Acked-by.
+
+
+>> I've checked both these trees (on all published branches):
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6.git
+>>   git://git.infradead.org/users/eparis/selinux.git
+>>
+>> and there's no trace of these patches.
+>>
+>>
+>> Am I not looking in the right places for these patches?
+>
+> The second one is the right tree, I just forgot to push!  Pushed now!
+
+
+MAINTAINERS says:
+SELINUX SECURITY MODULE
+T:      git git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6.git
+
+Should It be changed to point to your tree? Or should a new entry be
+added to point to your tree?
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+ .
+..: Lucian
