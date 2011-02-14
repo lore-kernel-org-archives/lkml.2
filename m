@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1BNTK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:10:59 -0500
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:40097
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752596Ab1BNTK6 (ORCPT
+	id S1752595Ab1BNTO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:14:28 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65511 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab1BNTOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:10:58 -0500
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Feb 2011 14:10:57 EST
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGMF8Y-02-3HI-02
-X-M-MSG: 
-Date: Mon, 14 Feb 2011 19:55:48 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
-Subject: Re: [patch v2 3/3] This patch introduces a new oprofile sample add
- function (oprofile_add_ext_hw_sample)
-Message-ID: <20110214185548.GQ5874@erda.amd.com>
-References: <20110121100651.821690659@linux.vnet.ibm.com>
- <20110121100842.200732938@linux.vnet.ibm.com>
+	Mon, 14 Feb 2011 14:14:25 -0500
+Date: Mon, 14 Feb 2011 12:14:20 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
+Message-ID: <20110214191420.GB30647@angua.secretlab.ca>
+References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
+ <1297698493.965.5475.camel@petert>
+ <AANLkTins1TanjbbwVJixmLcO9Gs-z7jryN8Hs0o_EWNK@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110121100842.200732938@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTins1TanjbbwVJixmLcO9Gs-z7jryN8Hs0o_EWNK@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.01.11 05:06:54, Heinz Graalfs wrote:
-> From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+On Mon, Feb 14, 2011 at 09:02:02AM -0700, Grant Likely wrote:
+> On Mon, Feb 14, 2011 at 8:48 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
+> > On Thu, 2011-01-06 at 13:54 -0600, Peter Tyser wrote:
+> >> Add a new get_direction() function to the gpio_chip structure.  This is
+> >> useful so that the direction of a pin can be determined when its
+> >> exported.  Previously, the direction defaulted to 'in' regardless of the
+> >> actual configuration of the GPIO pin which resulted in the 'direction'
+> >> sysfs file often being incorrect.
+> >>
+> >> If a GPIO driver implements get_direction(), it is called in
+> >> gpio_request() to set the initial direction of the pin accurately.
+> >
+> > I see Grant was just added as a GPIO maintainer, so added him on CC.
+> >
+> > Anything gating getting these 3 patches being picked up?
 > 
-> This patch introduces a new oprofile sample add function (oprofile_add_ext_hw_sample)
-> that can also take task_struct as an argument, which is used by the hwsampler kernel module 
-> when copying hardware samples to OProfile buffers.
-> 
-> Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-> Signed-off-by: Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
-> Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-> ---
->  drivers/oprofile/cpu_buffer.c |   27 ++++++++++++++++++++-------
->  1 file changed, 20 insertions(+), 7 deletions(-)
+> I'll take a look at them later today.
 
-Applied with following changes:
-    * removed #include <linux/module.h>
-    * whitespace changes
-    * removed conditional compilation (CONFIG_HAVE_HWSAMPLER)
-    * modified order of functions
-    * fix missing function definition in header file
+What are the other two patches?  I only see this one.  Can you repost?
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+g.
