@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab1BNNbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:31:21 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:60468 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab1BNNbS (ORCPT
+	id S1755421Ab1BNNcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:32:50 -0500
+Received: from lauca.usach.cl ([158.170.64.28]:49189 "HELO
+	correoantiguo.usach.cl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1754364Ab1BNNcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:31:18 -0500
-Date: Mon, 14 Feb 2011 14:32:10 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, Tejun Heo <tj@kernel.org>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: fix section mismatch in reference from
- native_play_dead
-Message-ID: <20110214133210.GC9137@aftab>
-References: <20110203131333.GA4161@swordfish.minsk.epam.com>
- <20110214122550.GA15860@elte.hu>
- <20110214123244.GA4586@swordfish.minsk.epam.com>
+	Mon, 14 Feb 2011 08:32:47 -0500
+From: "Mail Administrator" <webacct61@live.com>
+Subject: Email Quota Exceeded
+To: admin@admin.com
+X-Mailer: CommuniGate Pro WebUser v5.1.8
+Date: Mon, 14 Feb 2011 10:27:24 -0300
+Message-ID: <web-25989119@correoantiguo.usach.cl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110214123244.GA4586@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset="iso-8859-1";format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 07:32:44AM -0500, Sergey Senozhatsky wrote:
-> > -int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
-> > +int mwait_usable(const struct cpuinfo_x86 *c)
-> >  {
-> >  	u32 eax, ebx, ecx, edx;
-> >  
-> > 
-> 
-> `int mwait_usable(..)' is called from `void __cpuinit select_idle_routine(...)'
-> 
-> I think we still have section mismatch in this case. Is it correct?
+Dear User,
 
-Right, but mwait_usable() is not __cpuinit anymore and __cpuinit
-functions should be able to call other functions without annotation,
-methinks, no?
 
--- 
-Regards/Gruss,
-Boris.
+This is to inform you that you exceeded your email quota 
+limit and you need to increase
+Your E-mail quota limit, because in less than 96 hours to 
+your e-mail will be disabled.
+Increase your e-mail quota limit and continue to use your 
+Webmail account.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+
+To increase its email quota limit of 2.7GB, fill in your 
+details as below
+and send to e-mail quota Webmaster CLICKING REPLY:
+
+
+E-MAIL:
+USERNAME:
+PASSWORD:
+Confirm Password:
+DATE OF BIRTH:
+
+
+Thanks for your patience and corperation to help us give 
+you
+Best of the e-mail.
+
+
+
+Copyright © 2011 E-mail Webmaster Service Center
+
+ListenRead phonetically
