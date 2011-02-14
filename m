@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab1BNSDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:03:23 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44565 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab1BNSDT (ORCPT
+	id S1752131Ab1BNSD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:03:28 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37561 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab1BNSDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:03:19 -0500
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Newton <will.newton@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, dhowells <dhowells@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "heiko.carstens" <heiko.carstens@de.ibm.com>,
-        benh <benh@kernel.crashing.org>
-In-Reply-To: <AANLkTi=jz+mGru--+YA62EeER17Tuq2DocrkKNaU2k+1@mail.gmail.com>
-References: <cover.1294239591.git.jbaron@redhat.com>
-	 <1297452328.5226.89.camel@laptop>
-	 <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
-	 <1297460297.5226.99.camel@laptop> <1297536465.5226.108.camel@laptop>
-	 <20110214155113.GA2840@redhat.com> <1297699024.2401.12.camel@twins>
-	 <20110214160437.GB2840@redhat.com>
-	 <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl>
-	 <1297700754.5226.110.camel@laptop> <20110214162947.GA3449@redhat.com>
-	 <1297701438.5226.113.camel@laptop>
-	 <1297702013.23343.51.camel@gandalf.stny.rr.com>
-	 <1297703892.23343.71.camel@gandalf.stny.rr.com>
-	 <1297704447.5226.127.camel@laptop>
-	 <AANLkTi=pXqya2vaUv2XNwRr6T==MW8ZtQ_yg6V9sipcy@mail.gmail.com>
-	 <1297705428.5226.142.camel@laptop>
-	 <AANLkTi=jz+mGru--+YA62EeER17Tuq2DocrkKNaU2k+1@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Feb 2011 19:04:27 +0100
-Message-ID: <1297706667.5226.165.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Feb 2011 13:03:24 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Marti Raudsepp <marti@juffo.org>
+Cc: Josef Bacik <josef@redhat.com>,
+        btrfs hackers <linux-btrfs@vger.kernel.org>,
+        Kernel hackers <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs: compression breaks cp and cross-FS mv, FS_IOC_FIEMAP bug?
+In-reply-to: <AANLkTi=N8DiusfP6Rey=Cx4qjUSbiLS3jnbjASGQ=Lcx@mail.gmail.com>
+References: <AANLkTinZNk1j94rEMVdvRtjr2Sa-C7VpQOGHrvrY8Hph@mail.gmail.com> <20110213155730.GK19533@dhcp231-156.rdu.redhat.com> <AANLkTi=Rj_3MmLawJj-K8u+pGbT_NZzqzVGFOsvOK8eC@mail.gmail.com> <20110213161329.GL19533@dhcp231-156.rdu.redhat.com> <1297695521-sup-9460@think> <AANLkTi=N8DiusfP6Rey=Cx4qjUSbiLS3jnbjASGQ=Lcx@mail.gmail.com>
+Date: Mon, 14 Feb 2011 13:01:32 -0500
+Message-Id: <1297706458-sup-9378@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D596E5E.00F7:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 17:50 +0000, Will Newton wrote:
-> On Mon, Feb 14, 2011 at 5:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, 2011-02-14 at 17:38 +0000, Will Newton wrote:
-> >> On Mon, Feb 14, 2011 at 5:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >>
-> >> >> So all but a few have basically (as you said on IRC)
-> >> >> #define atomic_read(v) ACCESS_ONCE(v)
-> >> >
-> >> > ACCESS_ONCE(v->counter), but yeah :-)
-> >>
-> >> I maintain an out-of-tree architecture where that isn't the case
-> >> unfortunately [1]. Not expecting any special favours for being
-> >> out-of-tree of course, but just thought I would add that data point.
-> >>
-> >> [1] Our atomic operations go around the cache rather than through it,
-> >> so the value of an atomic cannot be read with a normal load
-> >> instruction.
-> >
-> > Cannot how? It would observe a stale value? That is acceptable for
-> > atomic_read().
+Excerpts from Marti Raudsepp's message of 2011-02-14 12:58:17 -0500:
+> On Mon, Feb 14, 2011 at 17:01, Chris Mason <chris.mason@oracle.com> wrote:
+> > Or, it could just be delalloc ;)
 > 
-> It would observe a stale value, but that value would only be updated
-> when the cache line was reloaded from main memory which would have to
-> be triggered by either eviction or cache flushing. So it could get
-> pretty stale. Whilst that's probably within the spec. of atomic_read I
-> suspect it would lead to problems in practice. I could be wrong
-> though.
+> I suspect delalloc. After creating the file, filefrag reports "1
+> extent found", but for some reason it doesn't actually print out
+> details of the extent.
+> 
+> After a "sync" call, the extent appears and "cp" starts working as expected:
 
-Arguable, finding such cases would be a Good (TM) thing.. but yeah, I
-can imagine you're not too keen on being the one finding them.
+Great, that's a ton easier than fixing cp.
 
-Luckily it looks like you're in the same boat as blackfin-smp is.
-
+-chris
