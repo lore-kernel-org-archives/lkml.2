@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab1BNTQr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:16:47 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:53758 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab1BNTQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:16:42 -0500
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-To: akpm@linux-foundation.org
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        oleg@redhat.com, ebiederm@xmission.com
-Subject: [PATCH 3/3] procfs: kill the global proc_mnt variable
-Date: Mon, 14 Feb 2011 20:16:03 +0100
-Message-Id: <1297710963-19843-4-git-send-email-daniel.lezcano@free.fr>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1297710963-19843-1-git-send-email-daniel.lezcano@free.fr>
-References: <1297710963-19843-1-git-send-email-daniel.lezcano@free.fr>
+	id S1752809Ab1BNTTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:19:07 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:50974 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab1BNTTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 14:19:03 -0500
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
+        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <20110214185400.GB3449@redhat.com>
+References: <1297460297.5226.99.camel@laptop>
+	 <1297536465.5226.108.camel@laptop> <20110214155113.GA2840@redhat.com>
+	 <1297699024.2401.12.camel@twins> <20110214160437.GB2840@redhat.com>
+	 <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl>
+	 <1297700754.5226.110.camel@laptop> <20110214162947.GA3449@redhat.com>
+	 <1297701438.5226.113.camel@laptop>
+	 <BLU0-SMTP64371A838030ED92A7CCB696D00@phx.gbl>
+	 <20110214185400.GB3449@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Feb 2011 20:20:09 +0100
+Message-ID: <1297711209.5226.248.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+On Mon, 2011-02-14 at 13:54 -0500, Jason Baron wrote:
 
-After the previous cleanup in proc_get_sb() the global proc_mnt has
-no reasons to exists, kill it.
+> I don't need an atomic_read() in the disabled case for dynamic debug,
+> and I would be ok, #ifdef CONFIG_JUMP_LABEL, in dynamic_debug.h. Its not
+> the prettiest solution. But I can certainly live with it for now, so
+> that we can sort out the atomic_read() issue independently.
+> 
+> Peter, Mathieu, are you guys ok with this?
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
----
- fs/proc/inode.c    |    2 --
- fs/proc/internal.h |    1 -
- fs/proc/root.c     |    7 ++++---
- 3 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 176ce4c..ee0f802 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -42,8 +42,6 @@ static void proc_evict_inode(struct inode *inode)
- 		sysctl_head_put(PROC_I(inode)->sysctl);
- }
- 
--struct vfsmount *proc_mnt;
--
- static struct kmem_cache * proc_inode_cachep;
- 
- static struct inode *proc_alloc_inode(struct super_block *sb)
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 9ad561d..c03e8d3 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -107,7 +107,6 @@ static inline struct proc_dir_entry *pde_get(struct proc_dir_entry *pde)
- }
- void pde_put(struct proc_dir_entry *pde);
- 
--extern struct vfsmount *proc_mnt;
- int proc_fill_super(struct super_block *);
- struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
- 
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index e5e2bfa..a9000e9 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -90,19 +90,20 @@ static struct file_system_type proc_fs_type = {
- 
- void __init proc_root_init(void)
- {
-+	struct vfsmount *mnt;
- 	int err;
- 
- 	proc_init_inodecache();
- 	err = register_filesystem(&proc_fs_type);
- 	if (err)
- 		return;
--	proc_mnt = kern_mount_data(&proc_fs_type, &init_pid_ns);
--	if (IS_ERR(proc_mnt)) {
-+	mnt = kern_mount_data(&proc_fs_type, &init_pid_ns);
-+	if (IS_ERR(mnt)) {
- 		unregister_filesystem(&proc_fs_type);
- 		return;
- 	}
- 
--	init_pid_ns.proc_mnt = proc_mnt;
-+	init_pid_ns.proc_mnt = mnt;
- 	proc_symlink("mounts", NULL, "self/mounts");
- 
- 	proc_net_init();
--- 
-1.7.1
+Yeah, lets see where that gets us.
 
