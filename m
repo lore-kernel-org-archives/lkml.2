@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab1BNLCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 06:02:43 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38974 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab1BNLCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 06:02:41 -0500
-Date: Mon, 14 Feb 2011 12:02:31 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-Cc: mingo@readhat.com, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        tj@kernel.org, yinghai@kernel.org, ak@linux.intel.com,
-        robert.richter@amd.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] x86: ifdef INTR_REMAP code out
-Message-ID: <20110214110231.GB7140@elte.hu>
-References: <1297677612-12405-1-git-send-email-henne@nachtwindheim.de>
- <1297677612-12405-3-git-send-email-henne@nachtwindheim.de>
+	id S1753291Ab1BNLDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 06:03:47 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61192 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab1BNLDp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 06:03:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FSZ/gafD51hbqYr9I3x0jit7nMdUWU059SvE4g4BSNRjGo5qJ6i57vbpMKA+SaqkCK
+         nwhmqLu3tZ3aWq29oz6dd4QcjDUj0mEk5Q9uWAg5EpOJtUEljOiBQugMYTz01/CdHzXg
+         kGHresaZAfUafp3W49++iZ21AIwnoEWcuexko=
+Date: Mon, 14 Feb 2011 12:03:39 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Andy Walls <awalls@md.metrocast.net>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, stoth@kernellabs.com
+Subject: Re: cx23885-input.c does in fact use a workqueue....
+Message-ID: <20110214110339.GC18742@htj.dyndns.org>
+References: <1297647322.19186.61.camel@localhost>
+ <20110214043355.GA28090@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297677612-12405-3-git-send-email-henne@nachtwindheim.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110214043355.GA28090@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Henrik Kretzschmar <henne@nachtwindheim.de> wrote:
+On Sun, Feb 13, 2011 at 08:33:55PM -0800, Dmitry Torokhov wrote:
+> > The cx23885 driver does in fact schedule work for IR input handling:
+> > 
+> > Here's where it is scheduled for CX23888 chips:
+> > 
+> > http://git.linuxtv.org/media_tree.git?a=blob;f=drivers/media/video/cx23885/cx23885-ir.c;h=7125247dd25558678c823ee3262675570c9aa630;hb=HEAD#l76
+> > 
+> > Here's where it is scheduled for CX23885 chips:
+> > 
+> > http://git.linuxtv.org/media_tree.git?a=blob;f=drivers/media/video/cx23885/cx23885-core.c;h=359882419b7f588b7c698dbcfb6a39ddb1603301;hb=HEAD#l1861
 
-> +#ifdef CONFIG_INTR_REMAP
-> +	struct IO_APIC_route_entry **ioapic_entries = NULL;
-> +
->  	if (intr_remapping_enabled) {
->  		ioapic_entries = alloc_ioapic_entries();
->  		if (!ioapic_entries) {
-> @@ -2133,6 +2136,7 @@ static int lapic_resume(struct sys_device *dev)
->  		mask_IO_APIC_setup(ioapic_entries);
->  		legacy_pic->mask_all();
->  	}
-> +#endif
->  
->  	if (x2apic_mode)
->  		enable_x2apic();
-> @@ -2173,6 +2177,7 @@ static int lapic_resume(struct sys_device *dev)
->  	apic_write(APIC_ESR, 0);
->  	apic_read(APIC_ESR);
->  
-> +#ifdef CONFIG_INTR_REMAP
->  	if (intr_remapping_enabled) {
->  		reenable_intr_remapping(x2apic_mode);
->  		legacy_pic->restore_mask();
-> @@ -2180,6 +2185,7 @@ static int lapic_resume(struct sys_device *dev)
->  		free_ioapic_entries(ioapic_entries);
->  	}
->  restore:
-> +#endif
+Ah, sorry about missing those.
 
-Hm, these bits should be factored out in a cleaner fashion - by adding helper 
-functions, etc. The x2apic code's integration into the lapic code was done in a 
-pretty ugly fashion so it's not your fault - but if we want to reintroduce UP-IOAPIC 
-we need to do it cleanly.
+> > The two different chips are handled slightly differently because
+> > 
+> > a. the CX23888 IR unit is accessable via a PCI register block.  The IR
+> > IRQ can be acknowledged with direct PCI register accesses in an
+> > interrupt context, and the IR pulse FIFO serviced later in a workqueue
+> > context.
+> > 
+> > b. the CX23885 IR unit is accessed over an I2C bus.  The CX23885 A/V IRQ
+> > has to be masked in an interrupt context (with PCI registers accesses).
+> > Then the CX23885 A/V unit's IR IRQ is ack'ed over I2C in a workqueue
+> > context and the IR pulse FIFO is also serviced over I2C in a workqueue
+> > context.
+> > 
+> > 
+> > So what should be done about the flush_scheduled_work()?  I think it
+> > belongs there.
+> > 
+> 
+> Convert to using threaded irq?
 
-Do you still want to do it? :-)
+Or
 
-Thanks,
+1. Just flush the work items explicitly using flush_work_sync().
 
-	Ingo
+2. Create a dedicated workqueue to serve as flushing domain.
+
+The first would look like the following.  Does this look correct?
+
+Thanks.
+
+diff --git a/drivers/media/video/cx23885/cx23885-input.c b/drivers/media/video/cx23885/cx23885-input.c
+index 199b996..e27cedb 100644
+--- a/drivers/media/video/cx23885/cx23885-input.c
++++ b/drivers/media/video/cx23885/cx23885-input.c
+@@ -229,6 +229,9 @@ static void cx23885_input_ir_stop(struct cx23885_dev *dev)
+ 		v4l2_subdev_call(dev->sd_ir, ir, rx_s_parameters, &params);
+ 		v4l2_subdev_call(dev->sd_ir, ir, rx_g_parameters, &params);
+ 	}
++	flush_work_sync(&dev->cx25840_work);
++	flush_work_sync(&dev->ir_rx_work);
++	flush_work_sync(&dev->ir_tx_work);
+ }
+ 
+ static void cx23885_input_ir_close(struct rc_dev *rc)
+
+-- 
+tejun
