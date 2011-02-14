@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab1BNWNQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:13:16 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:11541 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1BNWNN (ORCPT
+	id S1751332Ab1BNWOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:14:35 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63359 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750864Ab1BNWOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:13:13 -0500
-Date: Mon, 14 Feb 2011 23:12:08 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Zap entire 'struct inode' in
- nfs_zap_caches_locked().
-In-Reply-To: <1297721385.23841.14.camel@heimdal.trondhjem.org>
-Message-ID: <alpine.LNX.2.00.1102142311330.4530@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102142252540.4530@swampdragon.chaosbits.net> <1297721385.23841.14.camel@heimdal.trondhjem.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 14 Feb 2011 17:14:33 -0500
+Message-ID: <4D59A93A.7090800@metafoo.de>
+Date: Mon, 14 Feb 2011 23:14:18 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Grazvydas Ignotas <notasas@gmail.com>
+CC: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Pali Rohar <pali.rohar@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/14 v3] bq27x00: Cache battery registers
+References: <1297539554-13957-8-git-send-email-lars@metafoo.de>	<1297652493-7207-1-git-send-email-lars@metafoo.de> <AANLkTimn2JYtUSUrJBQKzXrw+URD5n0Y2h7QMaFzKFdY@mail.gmail.com>
+In-Reply-To: <AANLkTimn2JYtUSUrJBQKzXrw+URD5n0Y2h7QMaFzKFdY@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011, Trond Myklebust wrote:
+On 02/14/2011 10:58 PM, Grazvydas Ignotas wrote:
+> On Mon, Feb 14, 2011 at 5:01 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> This patch adds a register cache to the bq27x00 battery driver.
+>> Usually multiple, if not all, power_supply properties are queried at once,
+>> for example when an uevent is generated. Since some registers are used by
+>> multiple properties caching the registers should reduce the number of
+>> reads.
+>>
+>> The cache is valid for 5 seconds this roughly matches the internal update
+>> interval of the current register for the bq27000/bq27200.
+>>
+>> Fast changing properties(*_NOW) which can be obtained by reading a single
+>> register are not cached.
+>>
+>> It will also be used in the follow up patch to check if the battery status
+>> has been changed since the last update to emit power_supply_changed events.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>> ---
+>>  drivers/power/bq27x00_battery.c |  271 +++++++++++++++++++++-----------------
+>>  1 files changed, 150 insertions(+), 121 deletions(-)
+>>
+>> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+>> index 44bc76b..dbe3fcb 100644
+>> --- a/drivers/power/bq27x00_battery.c
+>> +++ b/drivers/power/bq27x00_battery.c
+> 
+> <snip>
+> 
+>> -static int bq27x00_battery_current(struct bq27x00_device_info *di)
+>> +static int bq27x00_battery_current(struct bq27x00_device_info *di,
+>> +       union power_supply_propval *val)
+>>  {
+>> -       int ret;
+>> -       int curr = 0;
+>> -       int flags = 0;
+>> +       int curr;
+>>
+>> -       ret = bq27x00_read(di, BQ27x00_REG_AI, &curr, false);
+>> -       if (ret) {
+>> -               dev_err(di->dev, "error reading current\n");
+>> -               return 0;
+>> -       }
+>> +       if (di->chip == BQ27500)
+>> +           curr = bq27x00_read(di, BQ27x00_REG_AI, false);
+>> +       else
+>> +           curr = di->cache.current_now;
+>> +
+>> +       if (curr < 0)
+>> +               return curr;
+> 
+> This is wrong, as read function returns negative values for bq27500
+> when discharging. That's why read function used to pass value through
+> argument before your series (return value was for error code).
 
-> On Mon, 2011-02-14 at 22:56 +0100, Jesper Juhl wrote: 
-> > nfs_zap_caches_locked() attempts to zero all of the 'struct inode' that's 
-> > passed in via the pointer variable 'inode'. Unfortunately it only manages 
-> > to zero the size of a 'pointer to struct inode'. Fix that.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  inode.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> >  compile tested only
-> > 
-> > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> > index 1cc600e..6c4236e 100644
-> > --- a/fs/nfs/inode.c
-> > +++ b/fs/nfs/inode.c
-> > @@ -145,7 +145,7 @@ static void nfs_zap_caches_locked(struct inode *inode)
-> >  	nfsi->attrtimeo = NFS_MINATTRTIMEO(inode);
-> >  	nfsi->attrtimeo_timestamp = jiffies;
-> >  
-> > -	memset(NFS_COOKIEVERF(inode), 0, sizeof(NFS_COOKIEVERF(inode)));
-> > +	memset(NFS_COOKIEVERF(inode), 0, sizeof(*NFS_COOKIEVERF(inode)));
-> >  	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode))
-> >  		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
-> >  	else
-> 
-> That's incorrect.
-> 
-> NFS_COOKIEVERF(inode) expands to NFS_I(inode)->cookieverf, and since
-> cookieverf is declared inside the struct nfs_inode as 
-> 
-> 	u32	cookieverf[2];
-> 
-> the sizeof(NFS_I(inode)->cookieverf) should expand to the size of the
-> cookieverf array (i.e. 8 bytes).
-> 
-Ouch, I completely misread/misunderstood that. Thanks for the 
-clarification and please ignore the patch...
+I don't think so. The register is 16bit wide and it is read as a unsigned. So
+in the non error case bq27x00_read will always return >= 0.
+The value is later reinterpreted as a signed 16bit.(See the other lines you
+quoted underneath).
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Did you experience any actual problem with current being wrong?
 
+> 
+> Sorry for not noticing this earlier, I only found this now during testing.
+> 
+>>
+>>        if (di->chip == BQ27500) {
+>>                /* bq27500 returns signed value */
+>> -               curr = (int)((s16)curr) * 1000;
+>> +               val->intval = (int)((s16)curr) * 1000;
+
+- Lars
