@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab1BNSOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:14:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab1BNSOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:14:19 -0500
-Date: Mon, 14 Feb 2011 19:06:09 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214180609.GE15847@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214153149.GB8761@redhat.com> <AANLkTikYf1CE41x6FjE6FiZ40v8taRSy8aZ3-5tjAvok@mail.gmail.com> <20110214173910.GA15847@redhat.com> <AANLkTiku4OQKgwCHF-c5dc4AZzmuCKmzk0EuTaqxK_Wr@mail.gmail.com> <20110214180034.GD15847@redhat.com>
+	id S1752571Ab1BNSOl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:14:41 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57785 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750948Ab1BNSOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:14:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110214180034.GD15847@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimwbkQQkwcX19NVcmSfv5O1dP9oeEBegbQLSh60@mail.gmail.com>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+ <m1hbce46fw.fsf@fess.ebiederm.org> <AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
+ <m1bp2ly41q.fsf@fess.ebiederm.org> <AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
+ <AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
+ <AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
+ <m14o87wev8.fsf@fess.ebiederm.org> <AANLkTimO3h80Wk44OhpfkjzxpzdDKnf6emj2fNObn_jD@mail.gmail.com>
+ <m1r5bbthan.fsf@fess.ebiederm.org> <m1fwrrtc0m.fsf@fess.ebiederm.org>
+ <m139nqsk3q.fsf@fess.ebiederm.org> <AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
+ <AANLkTimwbkQQkwcX19NVcmSfv5O1dP9oeEBegbQLSh60@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 14 Feb 2011 10:08:41 -0800
+Message-ID: <AANLkTi=CZ8v99yojSb0Ci=5N9dVFr-vDeZM1_Amx_scj@mail.gmail.com>
+Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alex Riesen <raa.lkml@gmail.com>, David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Oleg Nesterov wrote:
+On Mon, Feb 14, 2011 at 9:49 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> On 02/14, Denys Vlasenko wrote:
-> >
-> > On Mon, Feb 14, 2011 at 6:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > > On 02/14, Denys Vlasenko wrote:
-> > >>
-> > >> On Mon, Feb 14, 2011 at 4:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > >> > On 02/13, Denys Vlasenko wrote:
-> > >> >>
-> > >> >> $ strace -tt sleep 30
-> > >> >> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
-> > >> >> ...
-> > >> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
-> > >> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> > >> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> > >> >>     (I forgot again why we see it twice. Another quirk I guess...)
-> > >> >
-> > >> >      (this is correct, the tracee reports the signal=SIGSTOP, then
-> > >> >       it reports it actually stopps with exit_code=SIGSTOP)
-> > >>
-> > >> Ah, I see. Is there any way debugger can distinguish between these two
-> > >> different stops?
-> > >
-> > > IIRC, the (only?) way to distinguish is to check last_siginfo != NULL
-> > > via ptrace(PTRACE_GETSIGINFO).
-> >
-> > What do you think strace needs to do when it sees second SIGSTOP
-> > (meaning "in theory", not "on current kernel which may be buggy")?
-> >
-> > ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)?
->
-> proably this, or even ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP).
-> I think.
->
-> (assuming that ptrace_resume() respects TASK_STOPPED)
+> Btw, can you just make that 'vmlinux' image [..]
 
-Oh, but I forgot to mention... there is another problem, _any_
-ptrace request when the tracee is stopped turns it into TASK_TRACED.
+.. actually, since you have lots of modules, the .config file is a
+much better option. If it's in some module, the vmlinux file won't
+contain it.
 
-Oleg.
+(Although best guess would be for it to be some core data structure,
+so who knows?)
 
+                                 Linus
