@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab1BNNKB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:10:01 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59215 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753393Ab1BNNJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:09:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BTdqEHPHd2VrKCBebUIOPmkEGTcYqpbLId6GCChAtujvlQZR7+qnn5yoYrgVqbkGxn
-         Iy6gpZxrd39xRF+UuCjkpe2qeb0rMSkqpwvNMRkSv5tYXUu+pIiL5k6mA9AElUcycz08
-         hw37AVLi/IZThjH/mEDmmpOOTKkoSCUkU7X4w=
-Date: Mon, 14 Feb 2011 14:09:54 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ray Jui <rjui@broadcom.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH wq#fixes-2.6.38] workqueue: wake up a worker when a rescuer
- is leaving a gcwq
-Message-ID: <20110214130954.GI18742@htj.dyndns.org>
-References: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C2EAC@SJEXCHCCR02.corp.ad.broadcom.com>
- <20110209102847.GE3770@htj.dyndns.org>
- <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C3163@SJEXCHCCR02.corp.ad.broadcom.com>
- <20110214130300.GH18742@htj.dyndns.org>
+	id S1754994Ab1BNNKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:10:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754251Ab1BNNKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 08:10:31 -0500
+Date: Mon, 14 Feb 2011 15:09:57 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V2 0/5] macvtap TX zero copy between guest and host
+ kernel
+Message-ID: <20110214130957.GA3128@redhat.com>
+References: <1291974691.2167.24.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110214130300.GH18742@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1291974691.2167.24.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After executing the matching works, a rescuer leaves the gcwq whether
-there are more pending works or not.  This may decrease the
-concurrency level to zero and stall execution until a new work item is
-queued on the gcwq.
+On Fri, Dec 10, 2010 at 01:51:31AM -0800, Shirley Ma wrote:
+> This patchset add supports for TX zero-copy between guest and host
+> kernel through vhost. It significantly reduces CPU utilization on the
+> local host on which the guest is located (It reduced 30-50% CPU usage
+> for vhost thread for single stream test). The patchset is based on
+> previous submission and comments from the community regarding when/how
+> to handle guest kernel buffers to be released. This is the simplest
+> approach I can think of after comparing with several other solutions.
+> 
+> This patchset includes:
+> 
+> 1. Induce a new sock zero-copy flag, SOCK_ZEROCOPY;
+> 
+> 2. Induce a new device flag, NETIF_F_ZEROCOPY for device can support
+> zero-copy;
+> 
+> 3. Add a new struct skb_ubuf_info in skb_share_info for userspace
+> buffers release callback when device DMA has done for that skb;
+> 
+> 4. Add vhost zero-copy callback in vhost when skb last refcnt is gone;
+>    add vhost_zerocopy_add_used_and_signal to notify guest to release TX
+> skb buffers.
+> 
+> 5. Add macvtap zero-copy in lower device when sending packet is greater
+> than 128 bytes.
+> 
+> The patchset has passed netperf/netserver test on Chelsio, and
+> continuing test on other 10GbE NICs, like Intel ixgbe, Mellanox mlx4...
+> I will provide guest to host, host to guest performance data next week.
+> 
+> However when running stress test, vhost & virtio_net seems out of sync,
+> and virito_net interrupt was disabled somehow, and it stopped to send
+> any packet. This problem has bothered me for a long long time, I will
+> continue to look at this.
+> 
+> Please review this.
+> 
+> Thanks
+> Shirley
 
-Make rescuer wake up a regular worker when it leaves a gcwq if there
-are more works to execute, so that execution isn't stalled.
+What's the status here?  Since there are core net changes, we'll need to
+see the final version soon if it's to appear in 2.6.39.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Ray Jui <rjui@broadcom.com>
-Cc: stable@kernel.org
----
- kernel/workqueue.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Could the problem be related to the patch
+	virtio_net: Add schedule check to napi_enable call
+?
+Also, I expect there should be driver patches for some
+devices? Where are they?
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 11869fa..90a17ca 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2047,6 +2047,15 @@ repeat:
- 				move_linked_works(work, scheduled, &n);
- 
- 		process_scheduled_works(rescuer);
-+
-+		/*
-+		 * Leave this gcwq.  If keep_working() is %true, notify a
-+		 * regular worker; otherwise, we end up with 0 concurrency
-+		 * and stalling the execution.
-+		 */
-+		if (keep_working(gcwq))
-+			wake_up_worker(gcwq);
-+
- 		spin_unlock_irq(&gcwq->lock);
- 	}
- 
+Thanks,
+
 -- 
-1.7.1
-
+MST
