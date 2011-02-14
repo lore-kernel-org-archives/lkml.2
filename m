@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab1BNK4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 05:56:14 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60909 "EHLO
+	id S1753350Ab1BNK5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 05:57:08 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37064 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1BNK4M (ORCPT
+	with ESMTP id S1752607Ab1BNK5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 05:56:12 -0500
+	Mon, 14 Feb 2011 05:57:06 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=G0AqVbcip2oFA2IqAQa6TWwQydu/mJFzt98tGkR1fVNl3m+HaKY433gNCR+Dqdv0gA
-         SGL/R3HRiBBBku/GM4x3gQ8SoAFZiREw6PDtkU55l/mk+yS+v+8YTq7/InPxHoHeTWsv
-         pX0mWUI2HtTXKALBiM+nLsnBWtcC8yInYtyeQ=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Tom Herbert <therbert@google.com>, Changli Gao <xiaosuo@gmail.com>,
-        Jesse Gross <jesse@nicira.com>, netdev@vger.kernel.org
-Subject: [PATCH] core: dev: don't call BUG() on bad input
-Date: Mon, 14 Feb 2011 13:56:06 +0300
-Message-Id: <1297680967-11893-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=F5VJrzXxwB3vVAEjc+ufSLH+asX2Rp1azxc9LBghWkxK6/aOFOKvieHBdUhKmPsmhj
+         gKaAjt47QFxThWkZ2+2D4RO1YJP+QHCRTcLG0mtBbtq2PBceNxxxOI3tymgzTs1eFXR0
+         711x6PrIsiGdaQJmMev8l/KjvGs0cY8CC1mek=
+Date: Mon, 14 Feb 2011 11:56:59 +0100
+From: Tejun Heo <tj@kernel.org>
+To: mszeredi@suse.cz, viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, kovariadam@gmail.com
+Subject: FUSE triggering BUG through blkdev_put()
+Message-ID: <20110214105659.GB18742@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_netdev() may be called with too long name (more that IFNAMSIZ bytes).
-Currently this leads to BUG().  Other insane inputs (bad txqs, rxqs) and
-even OOM don't lead to BUG().  Made alloc_netdev() return NULL, like on
-other errors.
+Please take a look at the following bug.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Compile tested.
+ https://bugzilla.kernel.org/show_bug.cgi?id=28642
 
- net/core/dev.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+The bug title and description are completely misleading but the
+problem seems to have been caused by the recent eviction related
+changes.  FUSE ends up blkdev_put'ting while I_CLEAR is still set on
+the blkdev's inode triggering BUG_ON() in iput().
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 6392ea0..12ef4b0 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5761,7 +5761,10 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
- 	size_t alloc_size;
- 	struct net_device *p;
- 
--	BUG_ON(strlen(name) >= sizeof(dev->name));
-+	if (strnlen(name, sizeof(dev->name)) >= sizeof(dev->name)) {
-+		pr_err("alloc_netdev: Too long device name \n");
-+		return NULL;
-+	}
- 
- 	if (txqs < 1) {
- 		pr_err("alloc_netdev: Unable to allocate device "
+Thanks.
+
 -- 
-1.7.0.4
-
+tejun
