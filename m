@@ -1,145 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1BNRNY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:13:24 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48530 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab1BNRNW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:13:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <1297699964-20527-1-git-send-email-jacmet@sunsite.dk>
-References: <1297699964-20527-1-git-send-email-jacmet@sunsite.dk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 14 Feb 2011 10:13:01 -0700
-X-Google-Sender-Auth: r_GwvzoIs4Nx-bRBUUm__HrLIuQ
-Message-ID: <AANLkTi=pWV+tfD6YGpKbzTkvLVoLXtGA41QRaaF=VFeq@mail.gmail.com>
-Subject: Re: [PATCH] mcp23s08: support mcp23s17 variant
-To: Peter Korsgaard <jacmet@sunsite.dk>
-Cc: dbrownell@users.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755678Ab1BNROV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:14:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65408 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753662Ab1BNROT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 12:14:19 -0500
+Subject: Re: [PATCH 2/2 v2] pci: use security_capable() when checking
+ capablities during config space read
+From: Eric Paris <eparis@redhat.com>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Don Dutile <ddutile@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-pci@vger.kernel.org
+In-Reply-To: <20110210235856.GD9869@sequoia.sous-sol.org>
+References: <1297318312-14309-1-git-send-email-chrisw@sous-sol.org>
+	 <1297318312-14309-3-git-send-email-chrisw@sous-sol.org>
+	 <alpine.LRH.2.00.1102101915000.20298@tundra.namei.org>
+	 <20110210235856.GD9869@sequoia.sous-sol.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Feb 2011 12:14:01 -0500
+Message-ID: <1297703641.2783.4.camel@unknown001a4b0c2895>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 9:12 AM, Peter Korsgaard <jacmet@sunsite.dk> wrote:
-> mpc23s17 is very similar to the mcp23s08, except that registers are 16bit
-> wide, so extend the interface to work with both variants.
->
-> The s17 variant also has an additional address pin, so adjust platform
-> data structure to support up to 8 devices per SPI chipselect.
->
-> Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-> ---
->  drivers/gpio/Kconfig         |    6 +-
->  drivers/gpio/mcp23s08.c      |  147 +++++++++++++++++++++++++++++-------------
->  include/linux/spi/mcp23s08.h |   15 +++--
->  3 files changed, 113 insertions(+), 55 deletions(-)
->
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 664660e..9573b33 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -368,11 +368,11 @@ config GPIO_MAX7301
->          GPIO driver for Maxim MAX7301 SPI-based GPIO expander.
->
->  config GPIO_MCP23S08
-> -       tristate "Microchip MCP23S08 I/O expander"
-> +       tristate "Microchip MCP23Sxx I/O expander"
->        depends on SPI_MASTER
->        help
-> -         SPI driver for Microchip MCP23S08 I/O expander.  This provides
-> -         a GPIO interface supporting inputs and outputs.
-> +         SPI driver for Microchip MCP23S08/MPC23S17 I/O expanders.
-> +         This provides a GPIO interface supporting inputs and outputs.
->
->  config GPIO_MC33880
->        tristate "Freescale MC33880 high-side/low-side switch"
-> diff --git a/drivers/gpio/mcp23s08.c b/drivers/gpio/mcp23s08.c
-> index 69f6f19..497e527 100644
-> --- a/drivers/gpio/mcp23s08.c
-> +++ b/drivers/gpio/mcp23s08.c
-> @@ -10,7 +10,13 @@
->  #include <linux/spi/spi.h>
->  #include <linux/spi/mcp23s08.h>
->  #include <linux/slab.h>
-> +#include <asm/byteorder.h>
->
-> +/**
-> + * MCP types supported by driver
-> + */
-> +#define MCP_TYPE_S08   0
-> +#define MCP_TYPE_S17   1
->
->  /* Registers are all 8 bits wide.
->  *
-> @@ -38,8 +44,9 @@
->  struct mcp23s08 {
->        struct spi_device       *spi;
->        u8                      addr;
-> +       u8                      type;
->
-> -       u8                      cache[11];
-> +       u16                     cache[11];
->        /* lock protects the cached values */
->        struct mutex            lock;
->
-> @@ -48,48 +55,83 @@ struct mcp23s08 {
->        struct work_struct      work;
->  };
->
-> -/* A given spi_device can represent up to four mcp23s08 chips
-> +/* A given spi_device can represent up to eight mcp23sxx chips
->  * sharing the same chipselect but using different addresses
->  * (e.g. chips #0 and #3 might be populated, but not #1 or $2).
->  * Driver data holds all the per-chip data.
->  */
->  struct mcp23s08_driver_data {
->        unsigned                ngpio;
-> -       struct mcp23s08         *mcp[4];
-> +       struct mcp23s08         *mcp[8];
->        struct mcp23s08         chip[];
->  };
->
->  static int mcp23s08_read(struct mcp23s08 *mcp, unsigned reg)
->  {
-> -       u8      tx[2], rx[1];
-> +       u8      tx[2], rx[2];
->        int     status;
->
->        tx[0] = mcp->addr | 0x01;
->        tx[1] = reg;
-> -       status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, sizeof rx);
-> -       return (status < 0) ? status : rx[0];
-> +
-> +       if (mcp->type == MCP_TYPE_S17) {
-> +               tx[1] <<= 1;
-> +
-> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 2);
-> +               return (status < 0) ? status : (rx[0] | (rx[1] << 8));
-> +       } else {
-> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 1);
-> +               return (status < 0) ? status : rx[0];
-> +       }
+On Thu, 2011-02-10 at 15:58 -0800, Chris Wright wrote:
+> * James Morris (jmorris@namei.org) wrote:
+> > What about these other users of cap_raised?
+> > 
+> > drivers/block/drbd/drbd_nl.c:   if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN)) {
+> > drivers/md/dm-log-userspace-transfer.c: if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN))
+> > drivers/staging/pohmelfs/config.c:      if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN))
+> > drivers/video/uvesafb.c:        if (!cap_raised(nsp->eff_cap, CAP_SYS_ADMIN))
+> 
+> Those are a security_netlink_recv() variant.  They should be converted
+> although makes sense as a different patchset.
+> 
+> > Also, should this have a reported-by for Eric ?
+> 
+> Yes it should, thanks.  Below is patch with Reported-by added (seemed
+> overkill to respin the series; holler if that's perferred).
 
-Rather than checking ->type for every transaction, would a set of
-callbacks for each type be better?  It would probably have lower
-overhead and be simpler to maintain.
+ACKed-by: Eric Paris <eparis@redhat.com>
 
-[...]
-> diff --git a/include/linux/spi/mcp23s08.h b/include/linux/spi/mcp23s08.h
-> index 22ef107..c42cff8 100644
-> --- a/include/linux/spi/mcp23s08.h
-> +++ b/include/linux/spi/mcp23s08.h
-> @@ -2,21 +2,24 @@
->  /* FIXME driver should be able to handle IRQs...  */
->
->  struct mcp23s08_chip_info {
-> -       bool    is_present;             /* true iff populated */
-> -       u8      pullups;                /* BIT(x) means enable pullup x */
-> +       bool            is_present;     /* true if populated */
-> +       unsigned        pullups;        /* BIT(x) means enable pullup x */
->  };
+on both of them.
 
-Unrelated whitespace changes.
+-eric
+
