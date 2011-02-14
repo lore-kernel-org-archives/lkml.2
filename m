@@ -1,254 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab1BNXqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 18:46:06 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43433 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753820Ab1BNXqE (ORCPT
+	id S1753923Ab1BNXw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 18:52:57 -0500
+Received: from blu0-omc1-s31.blu0.hotmail.com ([65.55.116.42]:41636 "EHLO
+	blu0-omc1-s31.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751456Ab1BNXw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 18:46:04 -0500
-Date: Mon, 14 Feb 2011 14:47:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: Nelson Elhage <nelhage@ksplice.com>, linux-fsdevel@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        security@kernel.org, stable@kernel.org
-Subject: Re: [PATCH] epoll: Prevent creating circular epoll structures.
-Message-Id: <20110214144704.fb624199.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1102141353250.9755@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1102101700430.19682@localhost6.localdomain6>
-	<1297537415-29535-1-git-send-email-nelhage@ksplice.com>
-	<alpine.DEB.2.00.1102141353250.9755@localhost6.localdomain6>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 14 Feb 2011 18:52:56 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP40692195814CA4739BB0FB96D00@phx.gbl>
+Date: Mon, 14 Feb 2011 18:52:49 -0500
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: David Miller <davem@davemloft.net>
+CC: matt@console-pimps.org, rostedt@goodmis.org, peterz@infradead.org,
+        will.newton@gmail.com, jbaron@redhat.com, hpa@zytor.com, mingo@elte.hu,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        vapier@gentoo.org, cmetcalf@tilera.com, dhowells@redhat.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <20110214.134600.179933733.davem@davemloft.net> <20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com> <BLU0-SMTP637B2E9372CFBF3A0B5B0996D00@phx.gbl> <20110214.152500.104069812.davem@davemloft.net> <20110214233405.GC17432@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20110214233405.GC17432@Krystal>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 18:50:36 up 313 days,  9:40,  4 users,  load average: 2.71, 2.18,
+	1.73
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 14 Feb 2011 23:52:55.0036 (UTC) FILETIME=[4C7F23C0:01CBCCA2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 13:56:01 -0800 (PST)
-Davide Libenzi <davidel@xmailserver.org> wrote:
-
-> On Sat, 12 Feb 2011, Nelson Elhage wrote:
-> 
-> > From: Davide Libenzi <davidel@xmailserver.org>
+* Mathieu Desnoyers (mathieu.desnoyers@polymtl.ca) wrote:
+> * David Miller (davem@davemloft.net) wrote:
+[...]
+> > We can't wholesale to atomic_t because we do this on variables of
+> > all sizes, not just 32-bit ones.
 > > 
-> > On insert, check whether the inserted file is itself a struct epoll, and if so,
-> > do a recursive walk to detect whether inserting this file would create a loop of
-> > epoll structures, which could lead to deadlock.
+> > We do them on pointers in the networking for example.
 > 
-> Can't say I love it, but IMO it's the minor damage compared to add custom 
-> checks all over into the fast paths.
+> We have atomic_long_t for this, but yeah, it would kind of suck to have
+> to create
+> 
+> union {
+> 	atomic_long_t atomic;
+> 	void *ptr;
+> }
+
+Actually, using a union for this is probably one of the worse idea I've
+had recently. Just casting the pointer to unsigned long and vice-versa,
+using atomic_long_*() ops would do the trick. But let's wait and see if
+it's really needed.
+
+Thanks,
+
+Mathieu
+
+> 
+> all around the place. Let's see if we can get to know which PowerPC
+> processor family all this fuss is about, and where this rumour
+> originates from.
+> 
+> Thanks,
+> 
+> Mathieu
 > 
 > 
-> Acked-by: Davide Libenzi <davidel@xmailserver.org>
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
 
-I beefed up the changelog so that it includes Nelson's original description
-of the actual bug.  Please don't omit that from changelogs!
-
-I assume we want to backport this into -stable?  The patch applies to
-2.6.34 and possibly earlier - that's as far as I checked.
-
-
-
-From: Davide Libenzi <davidel@xmailserver.org>
-
-In several places, an epoll fd can call another file's ->f_op->poll()
-method with ep->mtx held.  This is in general unsafe, because that other
-file could itself be an epoll fd that contains the original epoll fd.
-
-The code defends against this possibility in its own ->poll() method using
-ep_call_nested, but there are several other unsafe calls to ->poll
-elsewhere that can be made to deadlock.  For example, the following simple
-program causes the call in ep_insert recursively call the original fd's
-->poll, leading to deadlock:
-
- #include <unistd.h>
- #include <sys/epoll.h>
-
- int main(void) {
-     int e1, e2, p[2];
-     struct epoll_event evt = {
-         .events = EPOLLIN
-     };
-
-     e1 = epoll_create(1);
-     e2 = epoll_create(2);
-     pipe(p);
-
-     epoll_ctl(e2, EPOLL_CTL_ADD, e1, &evt);
-     epoll_ctl(e1, EPOLL_CTL_ADD, p[0], &evt);
-     write(p[1], p, sizeof p);
-     epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
-
-     return 0;
- }
-
-
-
-On insertion, check whether the inserted file is itself a struct epoll,
-and if so, do a recursive walk to detect whether inserting this file would
-create a loop of epoll structures, which could lead to deadlock.
-
-[nelhage@ksplice.com: Use epmutex to serialize concurrent inserts]
-Signed-off-by: Davide Libenzi <davidel@xmailserver.org>
-Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
-Reported-by: Nelson Elhage <nelhage@ksplice.com>
-Tested-by: Nelson Elhage <nelhage@ksplice.com>
-Cc: <stable@kernel.org>		[2.6.34+, possibly earlier]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/eventpoll.c |   95 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 95 insertions(+)
-
-diff -puN fs/eventpoll.c~epoll-prevent-creating-circular-epoll-structures fs/eventpoll.c
---- a/fs/eventpoll.c~epoll-prevent-creating-circular-epoll-structures
-+++ a/fs/eventpoll.c
-@@ -63,6 +63,13 @@
-  * cleanup path and it is also acquired by eventpoll_release_file()
-  * if a file has been pushed inside an epoll set and it is then
-  * close()d without a previous call toepoll_ctl(EPOLL_CTL_DEL).
-+ * It is also acquired when inserting an epoll fd onto another epoll
-+ * fd. We do this so that we walk the epoll tree and ensure that this
-+ * insertion does not create a cycle of epoll file descriptors, which
-+ * could lead to deadlock. We need a global mutex to prevent two
-+ * simultaneous inserts (A into B and B into A) from racing and
-+ * constructing a cycle without either insert observing that it is
-+ * going to.
-  * It is possible to drop the "ep->mtx" and to use the global
-  * mutex "epmutex" (together with "ep->lock") to have it working,
-  * but having "ep->mtx" will make the interface more scalable.
-@@ -224,6 +231,9 @@ static long max_user_watches __read_most
-  */
- static DEFINE_MUTEX(epmutex);
- 
-+/* Used to check for epoll file descriptor inclusion loops */
-+static struct nested_calls poll_loop_ncalls;
-+
- /* Used for safe wake up implementation */
- static struct nested_calls poll_safewake_ncalls;
- 
-@@ -1198,6 +1208,62 @@ retry:
- 	return res;
- }
- 
-+/**
-+ * ep_loop_check_proc - Callback function to be passed to the @ep_call_nested()
-+ *                      API, to verify that adding an epoll file inside another
-+ *                      epoll structure, does not violate the constraints, in
-+ *                      terms of closed loops, or too deep chains (which can
-+ *                      result in excessive stack usage).
-+ *
-+ * @priv: Pointer to the epoll file to be currently checked.
-+ * @cookie: Original cookie for this call. This is the top-of-the-chain epoll
-+ *          data structure pointer.
-+ * @call_nests: Current dept of the @ep_call_nested() call stack.
-+ *
-+ * Returns: Returns zero if adding the epoll @file inside current epoll
-+ *          structure @ep does not violate the constraints, or -1 otherwise.
-+ */
-+static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
-+{
-+	int error = 0;
-+	struct file *file = priv;
-+	struct eventpoll *ep = file->private_data;
-+	struct rb_node *rbp;
-+	struct epitem *epi;
-+
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		epi = rb_entry(rbp, struct epitem, rbn);
-+		if (unlikely(is_file_epoll(epi->ffd.file))) {
-+			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+					       ep_loop_check_proc, epi->ffd.file,
-+					       epi->ffd.file->private_data, current);
-+			if (error != 0)
-+				break;
-+		}
-+	}
-+	mutex_unlock(&ep->mtx);
-+
-+	return error;
-+}
-+
-+/**
-+ * ep_loop_check - Performs a check to verify that adding an epoll file (@file)
-+ *                 another epoll file (represented by @ep) does not create
-+ *                 closed loops or too deep chains.
-+ *
-+ * @ep: Pointer to the epoll private data structure.
-+ * @file: Pointer to the epoll file to be checked.
-+ *
-+ * Returns: Returns zero if adding the epoll @file inside current epoll
-+ *          structure @ep does not violate the constraints, or -1 otherwise.
-+ */
-+static int ep_loop_check(struct eventpoll *ep, struct file *file)
-+{
-+	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+			      ep_loop_check_proc, file, ep, current);
-+}
-+
- /*
-  * Open an eventpoll file descriptor.
-  */
-@@ -1246,6 +1312,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
- 		struct epoll_event __user *, event)
- {
- 	int error;
-+	int did_lock_epmutex = 0;
- 	struct file *file, *tfile;
- 	struct eventpoll *ep;
- 	struct epitem *epi;
-@@ -1287,6 +1354,25 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
- 	 */
- 	ep = file->private_data;
- 
-+	/*
-+	 * When we insert an epoll file descriptor, inside another epoll file
-+	 * descriptor, there is the change of creating closed loops, which are
-+	 * better be handled here, than in more critical paths.
-+	 *
-+	 * We hold epmutex across the loop check and the insert in this case, in
-+	 * order to prevent two separate inserts from racing and each doing the
-+	 * insert "at the same time" such that ep_loop_check passes on both
-+	 * before either one does the insert, thereby creating a cycle.
-+	 */
-+	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD)) {
-+		mutex_lock(&epmutex);
-+		did_lock_epmutex = 1;
-+		error = -ELOOP;
-+		if (ep_loop_check(ep, tfile) != 0)
-+			goto error_tgt_fput;
-+	}
-+
-+
- 	mutex_lock(&ep->mtx);
- 
- 	/*
-@@ -1322,6 +1408,9 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
- 	mutex_unlock(&ep->mtx);
- 
- error_tgt_fput:
-+	if (unlikely(did_lock_epmutex))
-+		mutex_unlock(&epmutex);
-+
- 	fput(tfile);
- error_fput:
- 	fput(file);
-@@ -1441,6 +1530,12 @@ static int __init eventpoll_init(void)
- 		EP_ITEM_COST;
- 	BUG_ON(max_user_watches < 0);
- 
-+	/*
-+	 * Initialize the structure used to perform epoll file descriptor
-+	 * inclusion loops checks.
-+	 */
-+	ep_nested_calls_init(&poll_loop_ncalls);
-+
- 	/* Initialize the structure used to perform safe poll wait head wake ups */
- 	ep_nested_calls_init(&poll_safewake_ncalls);
- 
-_
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
