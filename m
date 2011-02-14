@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1BNMyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 07:54:09 -0500
-Received: from spamap1.ncut.edu.tw ([140.128.71.196]:50457 "EHLO
-	spamap1.ncut.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab1BNMyH (ORCPT
+	id S1754384Ab1BNMyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 07:54:13 -0500
+Received: from spamap2.ncut.edu.tw ([140.128.71.221]:37942 "EHLO
+	spamap2.ncut.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab1BNMyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Feb 2011 07:54:07 -0500
-X-Greylist: delayed 528 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Feb 2011 07:54:06 EST
-Message-Id: <201102141134.p1EBYVNI030480@ccmail.ncut.edu.tw>
+Message-Id: <201102141131.p1EBVgB5029828@ccmail.ncut.edu.tw>
 from: robertjet.fellow@gmail.com
 Reply-To: robertjet.fellow@gmail.com
-Date: Mon, 14 Feb 2011 19:34:30 +0800
+Date: Mon, 14 Feb 2011 19:31:42 +0800
 X-Originating-Ip: [190.41.154.192]
 X-Mailer: Hgiga v0.9
 Senderaccount: <hsuehyun@ncut.edu.tw>
-hmid: 10186666
+hmid: 10186519
 hhid: ncut.edu.tw
 huid: 1053950
 Content-Type: text/plain;
 	charset="big5"
 X-Received-IP: 140.128.71.225
 X-Envelope-From: <robertjet.fellow@gmail.com>
-X-Sherlock-Send: MailFilter (spamap1.ncut.edu.tw)
+X-Sherlock-Send: MailFilter (spamap2.ncut.edu.tw)
 X-SpamCheck: Hit=2.5, SARE_RECV_IP_140117:0.5,HGIGA_sender_951219_02:2.5,HGIGA_noSubject02:3.0,RM_tl_ToNone:4.0,NO_REAL_NAME:2.0,HGIGA_EMPTY_HTML:0.5,MIME_BASE64_TEXT:0.5,HGIGA_SPAM_Bsize_25:4.0,HGIGA_EMPTY_TEXT:0.5,HGRSA_NEW_SPAM_Mail22:1.0,HGRSA_WhiteHeader_Mailer_ALL:-30,BODY_EMPTY:3.0,MSGID_FROM_MTA_HEADER:1.0,HGRSA_NEW_SPAM_Mail64:2.0,HGRSA_NEW_SPAM_Mail290:3.0,HGRSA_NEW_SPAM_Mail291:5.0
 Subject: 
 To: unlisted-recipients:; (no To-header on input)
@@ -30,7 +29,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1ECsCcn014358
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1ECseA9014380
 
 My name is Mr. R. Jet Fellows. Am a citizen of the united states presently in Hong Kong where i have been diagnosed with Esophageal cancer and it has defied all forms of medical treatment, and right now I have only about a few months to live according to the medical experts.
 
