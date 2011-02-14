@@ -1,132 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab1BNDUo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 22:20:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62320 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab1BNDUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 22:20:40 -0500
-Message-ID: <4D589F81.2050408@cn.fujitsu.com>
-Date: Mon, 14 Feb 2011 11:20:33 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755443Ab1BNDXV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 22:23:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:9692 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917Ab1BNDXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 22:23:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,466,1291622400"; 
+   d="scan'208";a="657358357"
+Message-ID: <4D58A01E.9000203@linux.intel.com>
+Date: Sun, 13 Feb 2011 19:23:10 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
- and use_hierarchy interface
-References: <4D51ED26.8050809@cn.fujitsu.com> <4D539821.1090703@cn.fujitsu.com> <20110210205722.GB2600@redhat.com>
-In-Reply-To: <20110210205722.GB2600@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-14 11:19:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-14 11:19:42,
-	Serialize complete at 2011-02-14 11:19:42
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Matt Helsley <matthltc@us.ibm.com>, jacob.jun.pan@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        akpm@linux-foundation.org, rdunlap@xenotime.net,
+        Cedric Le Goater <clg@vnet.ibm.com>
+Subject: Re: [PATCH 1/1, v7] cgroup/freezer: add per freezer duty ratio control
+References: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>	<20110212232907.GN16432@count0.beaverton.ibm.com> <20110214094402.4eefe70d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110214094402.4eefe70d.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Feb 10, 2011 at 03:47:45PM +0800, Gui Jianfeng wrote:
->> CFQ group hierarchical scheduling and use_hierarchy interface.
+On 2/13/2011 4:44 PM, KAMEZAWA Hiroyuki wrote:
+> On Sat, 12 Feb 2011 15:29:07 -0800
+> Matt Helsley<matthltc@us.ibm.com>  wrote:
+>
+>> On Fri, Feb 11, 2011 at 11:10:44AM -0800, jacob.jun.pan@linux.intel.com wrote:
+>>> From: Jacob Pan<jacob.jun.pan@linux.intel.com>
+>>>
+>>> Freezer subsystem is used to manage batch jobs which can start
+>>> stop at the same time. However, sometime it is desirable to let
+>>> the kernel manage the freezer state automatically with a given
+>>> duty ratio.
+>>> For example, if we want to reduce the time that backgroup apps
+>>> are allowed to run we can put them into a freezer subsystem and
+>>> set the kernel to turn them THAWED/FROZEN at given duty ratio.
+>>>
+>>> This patch introduces two file nodes under cgroup
+>>> freezer.duty_ratio_pct and freezer.period_sec
+>> Again: I don't think this is the right approach in the long term.
+>> It would be better not to add this interface and instead enable the
+>> cpu cgroup subsystem for non-rt tasks using a similar duty ratio
+>> concept..
 >>
-> 
-> Hi Gui,
-> 
-> I have done a quick high level review. Some minor comments inline.
-> 
-> [..]
->>  struct cfq_data {
->>  	struct request_queue *queue;
->> -	/* Root service tree for cfq_groups */
->> -	struct cfq_rb_root grp_service_tree;
->>  	struct cfq_group root_group;
->>  
->> +	/* cfq group schedule in flat or hierarchy manner. */
->> +	bool use_hierarchy;
->> +
-> 
-> This seems to be redundant now? Nobody is using it?
-> 
->>  	/*
->>  	 * The priority currently being served
->>  	 */
->> @@ -246,6 +251,9 @@ struct cfq_data {
->>  	unsigned long workload_expires;
->>  	struct cfq_group *serving_group;
->>  
->> +	/* Service tree for cfq group flat scheduling mode. */
->> +	struct cfq_rb_root grp_service_tree;
-> 
-> Above comment is misleading. This service tree is now used both for
-> flat as well as hierarhical mode.
-> 
-> [..]
->>  static void
->>  cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
->>  {
->> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
->>  	struct cfq_entity *cfqe = &cfqg->cfqe;
->> -	struct cfq_entity *__cfqe;
->>  	struct rb_node *n;
->> +	struct cfq_entity *entity;
->> +	struct cfq_rb_root *st;
->> +	struct cfq_group *__cfqg;
->>  
->>  	cfqg->nr_cfqq++;
->> +
->>  	if (!RB_EMPTY_NODE(&cfqe->rb_node))
->>  		return;
->>  
->>  	/*
->> -	 * Currently put the group at the end. Later implement something
->> -	 * so that groups get lesser vtime based on their weights, so that
->> -	 * if group does not loose all if it was not continously backlogged.
->> +	 * Enqueue this group and its ancestors onto their service tree.
->>  	 */
->> -	n = rb_last(&st->rb);
->> -	if (n) {
->> -		__cfqe = rb_entry_entity(n);
->> -		cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
->> -	} else
->> -		cfqe->vdisktime = st->min_vdisktime;
->> +	while (cfqe) {
->> +		if (!RB_EMPTY_NODE(&cfqe->rb_node))
->> +			return;
->>  
->> -	cfq_entity_service_tree_add(st, cfqe);
->> +		/*
->> +		 * Currently put the group at the end. Later implement
->> +		 * something so that groups get lesser vtime based on
->> +		 * their weights, so that if group does not loose all
->> +		 * if it was not continously backlogged.
->> +		 */
-> 
-> Can we use vdisktime boost logic for groups also? I think it can be a separate
-> patch in the series (the last one). Keeping it as a separate patch will
-> also help you to coordinate with chad's patch.
-> 
->> +		st = cfqe->service_tree;
-> 
-> Group entity set their service tree when they get allocated and retain
-> this pointer even when they get deleted from serivce tree. Queue entities
-> seem to have it NULL when they get deleted from service tree and it
-> gets set again when queue is getting inserted. It would be nice if we
-> can fix this discrepancy and keep it consistent. I think clearing up
-> cfqe->service_tree is a better idea and then calculate it again for
-> group also.
+>> Nevertheless, I've added some feedback on the code for you here :).
+>>
+> AFAIK, there was a work for bandwidth control in CFS.
+>
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-10/msg04335.html
+>
+> I tested this and worked fine. This schduler approach seems better for
+> my purpose to limit bandwidth of apprications rather than freezer.
 
-Vivek,
+for our purpose, it's not about bandwidth.
+it's about making sure the class of apps don't run for a long period 
+(30-second range) of time.
 
-Currently, cfq queue might change workload type and io class, so we need to recalculate
-its service_tree. But for cfq groups, IMHO we don't need to add this complexity for the
-time being.
-I think we can add this change as soon as different io classes or workload types are
-introduced. How do you think?
-
-Thanks,
-Gui
