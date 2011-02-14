@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab1BNQ5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:57:41 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57274 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164Ab1BNQ5j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:57:39 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 6/6] hci_ath: Fix the mess in this driver
-To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 Feb 2011 16:28:18 +0000
-Message-ID: <20110214162803.10571.55396.stgit@bob.linux.org.uk>
-In-Reply-To: <20110214162438.10571.8203.stgit@bob.linux.org.uk>
-References: <20110214162438.10571.8203.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1756278Ab1BNQ5z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:57:55 -0500
+Received: from sous-sol.org ([216.99.217.87]:48338 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756162Ab1BNQ5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 11:57:53 -0500
+Date: Mon, 14 Feb 2011 08:57:47 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: sedat.dilek@gmail.com
+Cc: Chris Wright <chrisw@sous-sol.org>, DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Regression - Xorg start failed
+Message-ID: <20110214165747.GK9869@sequoia.sous-sol.org>
+References: <AANLkTi=G5pLNqLw1RGNauD+9D76uJfEgNXuef1Po6km7@mail.gmail.com>
+ <20110214162057.GI9869@sequoia.sous-sol.org>
+ <AANLkTinFN6gmcNvoe=DQ3YPL=Bcj3pKCHO6ZzafE9uak@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinFN6gmcNvoe=DQ3YPL=Bcj3pKCHO6ZzafE9uak@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+* Sedat Dilek (sedat.dilek@googlemail.com) wrote:
+> On Mon, Feb 14, 2011 at 5:20 PM, Chris Wright <chrisw@sous-sol.org> wrote:
+> > * Sedat Dilek (sedat.dilek@googlemail.com) wrote:
+> >> [ As I am not subscribed to both MLs and lazy to pick up all involved people ]
+> >>
+> >> Hi Chris,
+> >>
+> >> The original patch had also this part (see the revert in [1]):
+> >> ...
+> >> +#include <linux/security.h>
+> >> ...
+> >>
+> >> Your new patch in [2] is missing it or is it not required?
+> >
+> > It was just a patch on top of the bad commit (47970b1b), the #include is
+> > required.
+> >
+> > thanks,
+> > -chris
+> >
+> 
+> OK, now I see.
+> Might be good to push a v2 as the initial patch was reverted in the meantime?
+> The explanations of the fixup patch were helpful (to me) and should be included.
 
-Was this exploitable - who knows, but it was certainly totally broken
-
-Signed-of-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/bluetooth/hci_ath.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
-
-
-diff --git a/drivers/bluetooth/hci_ath.c b/drivers/bluetooth/hci_ath.c
-index 6a160c1..bd34406 100644
---- a/drivers/bluetooth/hci_ath.c
-+++ b/drivers/bluetooth/hci_ath.c
-@@ -51,32 +51,32 @@ struct ath_struct {
- 
- static int ath_wakeup_ar3k(struct tty_struct *tty)
- {
--	struct termios settings;
--	int status = tty->driver->ops->tiocmget(tty, NULL);
-+	struct ktermios ktermios;
-+	int status = tty->driver->ops->tiocmget(tty);
- 
- 	if (status & TIOCM_CTS)
- 		return status;
- 
- 	/* Disable Automatic RTSCTS */
--	n_tty_ioctl_helper(tty, NULL, TCGETS, (unsigned long)&settings);
--	settings.c_cflag &= ~CRTSCTS;
--	n_tty_ioctl_helper(tty, NULL, TCSETS, (unsigned long)&settings);
-+	memcpy(&ktermios, tty->termios, sizeof(ktermios));
-+	ktermios.c_cflag &= ~CRTSCTS;
-+	tty_set_termios(tty, &ktermios);
- 
- 	/* Clear RTS first */
--	status = tty->driver->ops->tiocmget(tty, NULL);
--	tty->driver->ops->tiocmset(tty, NULL, 0x00, TIOCM_RTS);
-+	status = tty->driver->ops->tiocmget(tty);
-+	tty->driver->ops->tiocmset(tty, 0x00, TIOCM_RTS);
- 	mdelay(20);
- 
- 	/* Set RTS, wake up board */
--	status = tty->driver->ops->tiocmget(tty, NULL);
--	tty->driver->ops->tiocmset(tty, NULL, TIOCM_RTS, 0x00);
-+	status = tty->driver->ops->tiocmget(tty);
-+	tty->driver->ops->tiocmset(tty, TIOCM_RTS, 0x00);
- 	mdelay(20);
- 
--	status = tty->driver->ops->tiocmget(tty, NULL);
-+	status = tty->driver->ops->tiocmget(tty);
- 
--	n_tty_ioctl_helper(tty, NULL, TCGETS, (unsigned long)&settings);
--	settings.c_cflag |= CRTSCTS;
--	n_tty_ioctl_helper(tty, NULL, TCSETS, (unsigned long)&settings);
-+	/* Disable Automatic RTSCTS */
-+	ktermios.c_cflag |= CRTSCTS;
-+	status = tty_set_termios(tty, &ktermios);
- 
- 	return status;
- }
-
+Yeah, I'll send a new patch to James.
