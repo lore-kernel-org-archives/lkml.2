@@ -1,91 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab1BNOwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 09:52:47 -0500
-Received: from shutemov.name ([188.40.19.243]:46525 "EHLO shutemov.name"
+	id S1755560Ab1BNOzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 09:55:46 -0500
+Received: from cantor.suse.de ([195.135.220.2]:53332 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117Ab1BNOwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 09:52:45 -0500
-Date: Mon, 14 Feb 2011 16:52:44 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v6 2/3] Implement timer slack notifier chain
-Message-ID: <20110214145244.GB3666@shutemov.name>
-References: <1297688787-3592-1-git-send-email-kirill@shutemov.name>
- <1297688787-3592-3-git-send-email-kirill@shutemov.name>
- <alpine.LFD.2.00.1102141428080.26192@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1102141428080.26192@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+	id S1754108Ab1BNOzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 09:55:45 -0500
+Subject: Re: FUSE triggering BUG through blkdev_put()
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        kovariadam@gmail.com
+In-Reply-To: <20110214105659.GB18742@htj.dyndns.org>
+References: <20110214105659.GB18742@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Feb 2011 15:55:40 +0100
+Message-ID: <1297695340.19726.294.camel@tucsk.pomaz.szeredi.hu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 02:32:23PM +0100, Thomas Gleixner wrote:
-> On Mon, 14 Feb 2011, Kirill A. Shutsemov wrote:
+On Mon, 2011-02-14 at 11:56 +0100, Tejun Heo wrote:
+> Please take a look at the following bug.
 > 
-> > From: Kirill A. Shutemov <kirill@shutemov.name>
-> > 
-> > Process can change its timer slack using prctl(). Timer slack notifier
-> > call chain allows to react on such change or forbid it.
+>  https://bugzilla.kernel.org/show_bug.cgi?id=28642
 > 
-> So we add a notifier call chain and more exports to allow what ?
+> The bug title and description are completely misleading but the
+> problem seems to have been caused by the recent eviction related
+> changes.  FUSE ends up blkdev_put'ting while I_CLEAR is still set on
+> the blkdev's inode triggering BUG_ON() in iput().
 
-To allow the cgroup contoller validate the value.
+Thanks for forwarding.
 
-> > --- a/kernel/sys.c
-> > +++ b/kernel/sys.c
-> > @@ -1691,15 +1691,10 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
-> >  			error = perf_event_task_enable();
-> >  			break;
-> >  		case PR_GET_TIMERSLACK:
-> > -			error = current->timer_slack_ns;
-> > +			error = prctl_get_timer_slack();
-> 
->   What's the point of replacing current->timer_slack_ns with a
->   function which does exactly the same ?
+It doesn't look to me that it's related to changes in fuse inode
+eviction.  More likely something from the recent inode locking changes.
 
-To keep it consistent. BTW, prctl_get_seccomp() does the same.
+Thanks,
+Miklos
 
-> 
-> > +long prctl_set_timer_slack(long timer_slack_ns)
-> > +{
-> > +	int err;
-> > +
-> > +	/* Reset timer slack to default value */
-> > +	if (timer_slack_ns <= 0) {
-> > +		current->timer_slack_ns = current->default_timer_slack_ns;
-> > +		return 0;
-> 
->   That does not make any sense at all. Why is setting
->   default_timer_slack_ns not subject to validation ?
-
-Hm.. In case of cgroup_timer_slack it's always valid.
-But, yes, in general, we should validate it.
-
->   Why is it treaded seperately ?
-
-What do you mean?
-
-> > +	}
-> > +
-> > +	err = blocking_notifier_call_chain(&timer_slack_notify_list,
-> > +			timer_slack_ns, NULL);
-> > +	if (err == NOTIFY_DONE)
-> > +		current->timer_slack_ns = timer_slack_ns;
-> > +
-> > +	return notifier_to_errno(err);
-> 
-> Thanks,
-> 
-> 	tglx
-
--- 
- Kirill A. Shutemov
