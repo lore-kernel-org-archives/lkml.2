@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab1BNT3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:29:13 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38317 "EHLO
+	id S1753576Ab1BNT3R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:29:17 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65225 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab1BNT2t (ORCPT
+	with ESMTP id S1753365Ab1BNT2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:28:49 -0500
+	Mon, 14 Feb 2011 14:28:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=hqzMKVuA5c1gzHCMB9GVU17sSK1dDHC3cbNWPnCZ8VP+WpJt9wQSiU8F+fd0dx7xDM
-         zo7kQnvLSUb7+VCrFP2eWKbFUaqLRKPuywYyU/tdzn7IRaGCbDBW2QRtIeauf3MS3zfP
-         HAg9usejw6olcwaEn38/P4Gjf3UvWI2KWUj/o=
+        b=EBN9WEtl2Kby+ydU//fPH7XCp4Bjj/WHWchqonc/BII0jfSBaJa8CEOQN5JMLoOdo3
+         Vu6UzF0l/yRwdhmIbC9Mz88jEravNZVLTCtgXXqlRlwCwf5KwTFL1Eiib+oIi+1aKGm7
+         Q2Rh9INv/MeOjg4xghp2BYObmtaEyiGjq7wjo=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/7] x86-64, NUMA: Unify emulated apicid -> node mapping transformation
-Date: Mon, 14 Feb 2011 20:28:34 +0100
-Message-Id: <1297711715-3086-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/7] x86-64, NUMA: Emulate directly from numa_meminfo
+Date: Mon, 14 Feb 2011 20:28:33 +0100
+Message-Id: <1297711715-3086-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297711715-3086-1-git-send-email-tj@kernel.org>
 References: <1297711715-3086-1-git-send-email-tj@kernel.org>
@@ -30,14 +30,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA emulation changes node mappings and thus apicid -> node mapping
-needs to be updated accordingly.  srat_64 and amdtopology_64 did this
-separately; however, all the necessary information is the mapping from
-emulated nodes to physical nodes which is available in
-emu_nid_to_phys[].
-
-Implement common __apicid_to_node[] transformation in numa_emulation()
-and drop duplicate implementations.
+NUMA emulation built physnodes[] array which could only represent
+configurations from the physical meminfo and emulated nodes using the
+information.  There's no reason to take this extra level of
+indirection.  Update emulation functions so that they operate directly
+on numa_meminfo.  This simplifies the code and makes emulation layout
+behave better with interleaved physical nodes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -48,134 +46,325 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/amdtopology_64.c |    9 ---------
- arch/x86/mm/numa_64.c        |   16 +++++++++++++++-
- arch/x86/mm/srat_64.c        |   24 +-----------------------
- 3 files changed, 16 insertions(+), 33 deletions(-)
+ arch/x86/mm/numa_64.c |  171 ++++++++++++++++++++----------------------------
+ 1 files changed, 71 insertions(+), 100 deletions(-)
 
-diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
-index fd7b609..f37ea2f 100644
---- a/arch/x86/mm/amdtopology_64.c
-+++ b/arch/x86/mm/amdtopology_64.c
-@@ -196,10 +196,6 @@ int __init amd_numa_init(void)
- }
- 
- #ifdef CONFIG_NUMA_EMU
--static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
--	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
--};
--
- /*
-  * For NUMA emulation, fake proximity domain (_PXM) to node id mappings must be
-  * setup to represent the physical topology but reflect the emulated
-@@ -224,20 +220,15 @@ void __init amd_fake_nodes(const struct bootnode *nodes, int nr_nodes)
- 	for (i = 0; i < nr_nodes; i++) {
- 		int index;
- 		int nid;
--		int j;
- 
- 		nid = find_node_by_addr(nodes[i].start);
- 		if (nid == NUMA_NO_NODE)
- 			continue;
- 
- 		index = nodeids[nid] << bits;
--		if (fake_apicid_to_node[index + apicid_base] == NUMA_NO_NODE)
--			for (j = apicid_base; j < cores + apicid_base; j++)
--				fake_apicid_to_node[index + j] = i;
- #ifdef CONFIG_ACPI_NUMA
- 		__acpi_map_pxm_to_node(nid, i);
- #endif
- 	}
--	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
- }
- #endif /* CONFIG_NUMA_EMU */
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 5d10ec0..bbf5565 100644
+index f26e7cd..5d10ec0 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -856,7 +856,7 @@ static bool __init numa_emulation(int acpi, int amd)
- 	static struct numa_meminfo ei __initdata;
- 	static struct numa_meminfo pi __initdata;
- 	const u64 max_addr = max_pfn << PAGE_SHIFT;
--	int i, ret;
-+	int i, j, ret;
+@@ -539,8 +539,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
  
- 	memset(&ei, 0, sizeof(ei));
- 	pi = numa_meminfo;
-@@ -892,6 +892,20 @@ static bool __init numa_emulation(int acpi, int amd)
- 	/* commit */
- 	numa_meminfo = ei;
+ #ifdef CONFIG_NUMA_EMU
+ /* Numa emulation */
+-static struct bootnode physnodes[MAX_NUMNODES] __initdata;
+-
+ static int emu_nid_to_phys[MAX_NUMNODES] __cpuinitdata;
+ static char *emu_cmdline __initdata;
  
-+	/*
-+	 * Transform __apicid_to_node table to use emulated nids by
-+	 * reverse-mapping phys_nid.  The maps should always exist but fall
-+	 * back to zero just in case.
-+	 */
-+	for (i = 0; i < ARRAY_SIZE(__apicid_to_node); i++) {
-+		if (__apicid_to_node[i] == NUMA_NO_NODE)
-+			continue;
-+		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
-+			if (__apicid_to_node[i] == emu_nid_to_phys[j])
-+				break;
-+		__apicid_to_node[i] = j < ARRAY_SIZE(emu_nid_to_phys) ? j : 0;
-+	}
-+
- 	/* make sure all emulated nodes are mapped to a physical node */
- 	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
- 		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index d2f53f3..d4fbfea 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -265,9 +265,6 @@ int __init x86_acpi_numa_init(void)
- static int fake_node_to_pxm_map[MAX_NUMNODES] __initdata = {
- 	[0 ... MAX_NUMNODES-1] = PXM_INVAL
- };
--static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
--	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
--};
+@@ -549,6 +547,16 @@ void __init numa_emu_cmdline(char *str)
+ 	emu_cmdline = str;
+ }
  
- /*
-  * In NUMA emulation, we need to setup proximity domain (_PXM) to node ID
-@@ -279,7 +276,7 @@ static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
-  */
- void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
- {
--	int i, j;
++static int __init emu_find_memblk_by_nid(int nid, const struct numa_meminfo *mi)
++{
 +	int i;
++
++	for (i = 0; i < mi->nr_blks; i++)
++		if (mi->blk[i].nid == nid)
++			return i;
++	return -ENOENT;
++}
++
+ int __init find_node_by_addr(unsigned long addr)
+ {
+ 	const struct numa_meminfo *mi = &numa_meminfo;
+@@ -566,63 +574,6 @@ int __init find_node_by_addr(unsigned long addr)
+ 	return NUMA_NO_NODE;
+ }
  
- 	for (i = 0; i < num_nodes; i++) {
- 		int nid, pxm;
-@@ -291,29 +288,10 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
- 		if (pxm == PXM_INVAL)
- 			continue;
- 		fake_node_to_pxm_map[i] = pxm;
--		/*
--		 * For each apicid_to_node mapping that exists for this real
--		 * node, it must now point to the fake node ID.
--		 */
--		for (j = 0; j < MAX_LOCAL_APIC; j++)
--			if (__apicid_to_node[j] == nid &&
--			    fake_apicid_to_node[j] == NUMA_NO_NODE)
--				fake_apicid_to_node[j] = i;
+-static int __init setup_physnodes(unsigned long start, unsigned long end)
+-{
+-	const struct numa_meminfo *mi = &numa_meminfo;
+-	int ret = 0;
+-	int i;
+-
+-	memset(physnodes, 0, sizeof(physnodes));
+-
+-	for (i = 0; i < mi->nr_blks; i++) {
+-		int nid = mi->blk[i].nid;
+-
+-		if (physnodes[nid].start == physnodes[nid].end) {
+-			physnodes[nid].start = mi->blk[i].start;
+-			physnodes[nid].end = mi->blk[i].end;
+-		} else {
+-			physnodes[nid].start = min(physnodes[nid].start,
+-						   mi->blk[i].start);
+-			physnodes[nid].end = max(physnodes[nid].end,
+-						 mi->blk[i].end);
+-		}
+-	}
+-
+-	/*
+-	 * Basic sanity checking on the physical node map: there may be errors
+-	 * if the SRAT or AMD code incorrectly reported the topology or the mem=
+-	 * kernel parameter is used.
+-	 */
+-	for (i = 0; i < MAX_NUMNODES; i++) {
+-		if (physnodes[i].start == physnodes[i].end)
+-			continue;
+-		if (physnodes[i].start > end) {
+-			physnodes[i].end = physnodes[i].start;
+-			continue;
+-		}
+-		if (physnodes[i].end < start) {
+-			physnodes[i].start = physnodes[i].end;
+-			continue;
+-		}
+-		if (physnodes[i].start < start)
+-			physnodes[i].start = start;
+-		if (physnodes[i].end > end)
+-			physnodes[i].end = end;
+-		ret++;
+-	}
+-
+-	/*
+-	 * If no physical topology was detected, a single node is faked to cover
+-	 * the entire address space.
+-	 */
+-	if (!ret) {
+-		physnodes[ret].start = start;
+-		physnodes[ret].end = end;
+-		ret = 1;
+-	}
+-	return ret;
+-}
+-
+ static void __init fake_physnodes(int acpi, int amd,
+ 				  const struct numa_meminfo *ei)
+ {
+@@ -661,9 +612,11 @@ static void __init fake_physnodes(int acpi, int amd,
+  * something went wrong, 0 otherwise.
+  */
+ static int __init emu_setup_memblk(struct numa_meminfo *ei,
+-				   int nid, int physnid, u64 start, u64 end)
++				   struct numa_meminfo *pi,
++				   int nid, int phys_blk, u64 size)
+ {
+ 	struct numa_memblk *eb = &ei->blk[ei->nr_blks];
++	struct numa_memblk *pb = &pi->blk[phys_blk];
+ 
+ 	if (ei->nr_blks >= NR_NODE_MEMBLKS) {
+ 		pr_err("NUMA: Too many emulated memblks, failing emulation\n");
+@@ -671,12 +624,18 @@ static int __init emu_setup_memblk(struct numa_meminfo *ei,
  	}
  
--	/*
--	 * If there are apicid-to-node mappings for physical nodes that do not
--	 * have a corresponding emulated node, it should default to a guaranteed
--	 * value.
--	 */
--	for (i = 0; i < MAX_LOCAL_APIC; i++)
--		if (__apicid_to_node[i] != NUMA_NO_NODE &&
--		    fake_apicid_to_node[i] == NUMA_NO_NODE)
--			fake_apicid_to_node[i] = 0;
--
- 	for (i = 0; i < num_nodes; i++)
- 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
--	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ 	ei->nr_blks++;
+-	eb->start = start;
+-	eb->end = end;
++	eb->start = pb->start;
++	eb->end = pb->start + size;
+ 	eb->nid = nid;
  
- 	for (i = 0; i < num_nodes; i++)
- 		if (fake_nodes[i].start != fake_nodes[i].end)
+ 	if (emu_nid_to_phys[nid] == NUMA_NO_NODE)
+-		emu_nid_to_phys[nid] = physnid;
++		emu_nid_to_phys[nid] = pb->nid;
++
++	pb->start += size;
++	if (pb->start >= pb->end) {
++		WARN_ON_ONCE(pb->start > pb->end);
++		numa_remove_memblk_from(phys_blk, pi);
++	}
+ 
+ 	printk(KERN_INFO "Faking node %d at %016Lx-%016Lx (%LuMB)\n", nid,
+ 	       eb->start, eb->end, (eb->end - eb->start) >> 20);
+@@ -688,6 +647,7 @@ static int __init emu_setup_memblk(struct numa_meminfo *ei,
+  * to max_addr.  The return value is the number of nodes allocated.
+  */
+ static int __init split_nodes_interleave(struct numa_meminfo *ei,
++					 struct numa_meminfo *pi,
+ 					 u64 addr, u64 max_addr, int nr_nodes)
+ {
+ 	nodemask_t physnode_mask = NODE_MASK_NONE;
+@@ -719,9 +679,8 @@ static int __init split_nodes_interleave(struct numa_meminfo *ei,
+ 		return -1;
+ 	}
+ 
+-	for (i = 0; i < MAX_NUMNODES; i++)
+-		if (physnodes[i].start != physnodes[i].end)
+-			node_set(i, physnode_mask);
++	for (i = 0; i < pi->nr_blks; i++)
++		node_set(pi->blk[i].nid, physnode_mask);
+ 
+ 	/*
+ 	 * Continue to fill physical nodes with fake nodes until there is no
+@@ -729,8 +688,18 @@ static int __init split_nodes_interleave(struct numa_meminfo *ei,
+ 	 */
+ 	while (nodes_weight(physnode_mask)) {
+ 		for_each_node_mask(i, physnode_mask) {
+-			u64 end = physnodes[i].start + size;
+ 			u64 dma32_end = PFN_PHYS(MAX_DMA32_PFN);
++			u64 start, limit, end;
++			int phys_blk;
++
++			phys_blk = emu_find_memblk_by_nid(i, pi);
++			if (phys_blk < 0) {
++				node_clear(i, physnode_mask);
++				continue;
++			}
++			start = pi->blk[phys_blk].start;
++			limit = pi->blk[phys_blk].end;
++			end = start + size;
+ 
+ 			if (nid < big)
+ 				end += FAKE_NODE_MIN_SIZE;
+@@ -739,11 +708,11 @@ static int __init split_nodes_interleave(struct numa_meminfo *ei,
+ 			 * Continue to add memory to this fake node if its
+ 			 * non-reserved memory is less than the per-node size.
+ 			 */
+-			while (end - physnodes[i].start -
+-				memblock_x86_hole_size(physnodes[i].start, end) < size) {
++			while (end - start -
++			       memblock_x86_hole_size(start, end) < size) {
+ 				end += FAKE_NODE_MIN_SIZE;
+-				if (end > physnodes[i].end) {
+-					end = physnodes[i].end;
++				if (end > limit) {
++					end = limit;
+ 					break;
+ 				}
+ 			}
+@@ -762,19 +731,15 @@ static int __init split_nodes_interleave(struct numa_meminfo *ei,
+ 			 * next node, this one must extend to the end of the
+ 			 * physical node.
+ 			 */
+-			if (physnodes[i].end - end -
+-			    memblock_x86_hole_size(end, physnodes[i].end) < size)
+-				end = physnodes[i].end;
++			if (limit - end -
++			    memblock_x86_hole_size(end, limit) < size)
++				end = limit;
+ 
+-			ret = emu_setup_memblk(ei, nid++ % nr_nodes, i,
+-					       physnodes[i].start,
+-					       min(end, physnodes[i].end));
++			ret = emu_setup_memblk(ei, pi, nid++ % nr_nodes,
++					       phys_blk,
++					       min(end, limit) - start);
+ 			if (ret < 0)
+ 				return ret;
+-
+-			physnodes[i].start = min(end, physnodes[i].end);
+-			if (physnodes[i].start == physnodes[i].end)
+-				node_clear(i, physnode_mask);
+ 		}
+ 	}
+ 	return 0;
+@@ -803,6 +768,7 @@ static u64 __init find_end_of_node(u64 start, u64 max_addr, u64 size)
+  * `addr' to `max_addr'.  The return value is the number of nodes allocated.
+  */
+ static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
++					      struct numa_meminfo *pi,
+ 					      u64 addr, u64 max_addr, u64 size)
+ {
+ 	nodemask_t physnode_mask = NODE_MASK_NONE;
+@@ -831,9 +797,9 @@ static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
+ 	}
+ 	size &= FAKE_NODE_MIN_HASH_MASK;
+ 
+-	for (i = 0; i < MAX_NUMNODES; i++)
+-		if (physnodes[i].start != physnodes[i].end)
+-			node_set(i, physnode_mask);
++	for (i = 0; i < pi->nr_blks; i++)
++		node_set(pi->blk[i].nid, physnode_mask);
++
+ 	/*
+ 	 * Fill physical nodes with fake nodes of size until there is no memory
+ 	 * left on any of them.
+@@ -841,10 +807,18 @@ static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
+ 	while (nodes_weight(physnode_mask)) {
+ 		for_each_node_mask(i, physnode_mask) {
+ 			u64 dma32_end = MAX_DMA32_PFN << PAGE_SHIFT;
+-			u64 end;
++			u64 start, limit, end;
++			int phys_blk;
+ 
+-			end = find_end_of_node(physnodes[i].start,
+-						physnodes[i].end, size);
++			phys_blk = emu_find_memblk_by_nid(i, pi);
++			if (phys_blk < 0) {
++				node_clear(i, physnode_mask);
++				continue;
++			}
++			start = pi->blk[phys_blk].start;
++			limit = pi->blk[phys_blk].end;
++
++			end = find_end_of_node(start, limit, size);
+ 			/*
+ 			 * If there won't be at least FAKE_NODE_MIN_SIZE of
+ 			 * non-reserved memory in ZONE_DMA32 for the next node,
+@@ -859,19 +833,15 @@ static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
+ 			 * next node, this one must extend to the end of the
+ 			 * physical node.
+ 			 */
+-			if (physnodes[i].end - end -
+-			    memblock_x86_hole_size(end, physnodes[i].end) < size)
+-				end = physnodes[i].end;
++			if (limit - end -
++			    memblock_x86_hole_size(end, limit) < size)
++				end = limit;
+ 
+-			ret = emu_setup_memblk(ei, nid++ % MAX_NUMNODES, i,
+-					       physnodes[i].start,
+-					       min(end, physnodes[i].end));
++			ret = emu_setup_memblk(ei, pi, nid++ % MAX_NUMNODES,
++					       phys_blk,
++					       min(end, limit) - start);
+ 			if (ret < 0)
+ 				return ret;
+-
+-			physnodes[i].start = min(end, physnodes[i].end);
+-			if (physnodes[i].start == physnodes[i].end)
+-				node_clear(i, physnode_mask);
+ 		}
+ 	}
+ 	return 0;
+@@ -884,10 +854,12 @@ static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
+ static bool __init numa_emulation(int acpi, int amd)
+ {
+ 	static struct numa_meminfo ei __initdata;
++	static struct numa_meminfo pi __initdata;
+ 	const u64 max_addr = max_pfn << PAGE_SHIFT;
+ 	int i, ret;
+ 
+ 	memset(&ei, 0, sizeof(ei));
++	pi = numa_meminfo;
+ 
+ 	for (i = 0; i < MAX_NUMNODES; i++)
+ 		emu_nid_to_phys[i] = NUMA_NO_NODE;
+@@ -901,12 +873,12 @@ static bool __init numa_emulation(int acpi, int amd)
+ 		u64 size;
+ 
+ 		size = memparse(emu_cmdline, &emu_cmdline);
+-		ret = split_nodes_size_interleave(&ei, 0, max_addr, size);
++		ret = split_nodes_size_interleave(&ei, &pi, 0, max_addr, size);
+ 	} else {
+ 		unsigned long n;
+ 
+ 		n = simple_strtoul(emu_cmdline, NULL, 0);
+-		ret = split_nodes_interleave(&ei, 0, max_addr, n);
++		ret = split_nodes_interleave(&ei, &pi, 0, max_addr, n);
+ 	}
+ 
+ 	if (ret < 0)
+@@ -978,7 +950,6 @@ void __init initmem_init(void)
+ 		if (numa_cleanup_meminfo(&numa_meminfo) < 0)
+ 			continue;
+ #ifdef CONFIG_NUMA_EMU
+-		setup_physnodes(0, max_pfn << PAGE_SHIFT);
+ 		/*
+ 		 * If requested, try emulation.  If emulation is not used,
+ 		 * build identity emu_nid_to_phys[] for numa_add_cpu()
 -- 
 1.7.1
 
