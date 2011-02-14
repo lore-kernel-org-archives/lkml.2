@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1BNRaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:30:20 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:64146 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab1BNRaR (ORCPT
+	id S1755772Ab1BNRaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:30:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36202 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab1BNRaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Feb 2011 12:30:17 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=S+ufTBUkKPJTl1EeGKIWmh7/5GdqMR0OkGM1Lp46S8QEWyDBbReK5G5a4Mptslvsh3
-         ya4j0twYbIwCCw/irOcTHcYaj95TB22nd0kPC0WwTDew4G4rEAm581VqBcOQRb9Nbbc+
-         zs/9yTOlvMzrjFkyRQkaI0fujtnDccPHIjMWQ=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=kDLZjVMmjxzOrGym4x7MIc8B8D3ycOGZF79y/ZCI+3U+YXOpCC5l+QQs0DAD8idvYw
+         IhiO7eeHQNS8mkQBmE+K3xef0MceVcwzNGrrjG2tJ/bR6j/EOWewlAZuKVA5iwhxXb9l
+         2GtETM/oUArQVobcxbaimMFrEQIbUY68L0x14=
+Date: Mon, 14 Feb 2011 18:30:12 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110214173012.GA18742@htj.dyndns.org>
+References: <20110204105343.GA12133@htj.dyndns.org>
+ <20110207174821.GA1237@redhat.com>
+ <20110209141803.GH3770@htj.dyndns.org>
+ <201102132325.55353.vda.linux@googlemail.com>
+ <20110214151340.GP18742@htj.dyndns.org>
+ <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1297704447.5226.127.camel@laptop>
-References: <cover.1294239591.git.jbaron@redhat.com> <1297452328.5226.89.camel@laptop>
- <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl> <1297460297.5226.99.camel@laptop>
- <1297536465.5226.108.camel@laptop> <20110214155113.GA2840@redhat.com>
- <1297699024.2401.12.camel@twins> <20110214160437.GB2840@redhat.com>
- <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl> <1297700754.5226.110.camel@laptop>
- <20110214162947.GA3449@redhat.com> <1297701438.5226.113.camel@laptop>
- <1297702013.23343.51.camel@gandalf.stny.rr.com> <1297703892.23343.71.camel@gandalf.stny.rr.com>
- <1297704447.5226.127.camel@laptop>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 14 Feb 2011 12:29:56 -0500
-X-Google-Sender-Auth: IoNiXN2lQaRwSPifoM72VhQbCqQ
-Message-ID: <AANLkTikB74q7z84g5bmYxZu4kaEdf1kF3z1vpqO=9A45@mail.gmail.com>
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        dhowells <dhowells@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "heiko.carstens" <heiko.carstens@de.ibm.com>,
-        benh <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 12:27, Peter Zijlstra wrote:
-> On Mon, 2011-02-14 at 12:18 -0500, Steven Rostedt wrote:
->> blackfin, seems to be doing quite a lot. Not sure if it is required, but
->> that may need a bit of investigating to understand why it does the
->> raw_uncached thing.
->
-> From what I can tell its flushing its write cache, invalidating its
-> d-cache and then issue the read, something which is _way_ overboard.
+Hello,
 
-not when the cores in a SMP system lack cache coherency
+On Mon, Feb 14, 2011 at 06:20:52PM +0100, Denys Vlasenko wrote:
+> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
+> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> >>     (I forgot again why we see it twice. Another quirk I guess...)
+> >> 23:02:23.781310 restart_syscall(<... resuming interrupted call ...>) = 0
+> >> 23:02:45.622433 close(1)                = 0
+> >> 23:02:45.622743 close(2)                = 0
+> >> 23:02:45.622885 exit_group(0)           = ?
+...
+> > This can be fixed by updating strace, right?  strace can look at the
+> > wait(2) exit code and if the tracee stopped for group stop, wait for
+> > the tracee to be continued instead of issuing PTRACE_SYSCALL.
+> 
+> But tracee didn't stop _yet_. Signal is not delivered _yet_, debugger
+> can decide at this point whether to deliver it:
+> ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP)
+> or ignore:
+> ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)
+> 
+> strace has to deliver SIGSTOP if it wants to make program run exactly
+> as it would run without strace. So it tries to do so.
+> Currently, ptrace machinery doesn't react as strace, its user, expects it to.
 
-please to review:
-http://docs.blackfin.uclinux.org/doku.php?id=linux-kernel:smp-like
--mike
+Okay, maybe I'm missing something but so once SIGSTOP is determined to
+be delivered, then the tracee enters group stop and that's the second
+SIGSTOP notification you get.  At that point, strace should wait for
+the tracee to be continued by SIGCONT.  That should work, right?
+
+Thanks.
+
+-- 
+tejun
