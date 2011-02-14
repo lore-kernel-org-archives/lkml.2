@@ -1,244 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab1BNTmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:42:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36614 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab1BNTmD (ORCPT
+	id S1752380Ab1BNTmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:42:15 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:7633 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751882Ab1BNTmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:42:03 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=ed7x048ao0IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=PwWI8tTrfVudTQlDyy0A:9 a=q8AFnj3E-uHfLlQQZkMA:7 a=utmd51wzwKR2heo9iyHVm4FLQ00A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 09/10] tracing: Remove obsolete sched_switch tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>
-In-Reply-To: <20110208221721.132033349@goodmis.org>
-References: <20110208221612.084294240@goodmis.org>
-	 <20110208221721.132033349@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 14 Feb 2011 14:42:00 -0500
-Message-ID: <1297712520.23343.73.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Feb 2011 14:42:12 -0500
+X-SpamScore: -17
+X-BigFish: VPS-17(zzbb2cK1432N98dN4015Lzz1202hzz8275eh8275dha1495iz32i637h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LGMHE5-01-8CB-02
+X-M-MSG: 
+Date: Mon, 14 Feb 2011 20:42:06 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: "mingo@elte.hu" <mingo@elte.hu>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>
+Subject: Re: [patch v2 0/3] OProfile support for System z's hardware
+ sampling
+Message-ID: <20110214194206.GW5874@erda.amd.com>
+References: <20110121100651.821690659@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110121100651.821690659@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-08 at 17:16 -0500, Steven Rostedt wrote:
-> plain text document attachment
-> (0009-tracing-Remove-obsolete-sched_switch-tracer.patch)
-> From: Steven Rostedt <srostedt@redhat.com>
+Heinz,
+
+On 21.01.11 05:06:51, Heinz Graalfs wrote:
+> I'm resending yesterday's mail because I missed to specify the correct sender information.
 > 
-> The trace events sched_switch and sched_wakeup do the same thing
-> as the stand alone sched_switch tracer does. It is no longer needed.
-
-Hmm, is this the right thing to do, or should we do the "WARN_ONCE()"
-when it is used, and give it a year to remove it?
-
--- Steve
-
+> This is a re-posting of the patch series originally posted last month:
 > 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  Documentation/trace/ftrace.txt    |  110 -------------------------------------
->  kernel/trace/trace_sched_switch.c |   48 ----------------
->  2 files changed, 0 insertions(+), 158 deletions(-)
+> http://marc.info/?l=linux-s390&m=129285043619973&w=2
 > 
-> diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
-> index 557c1ed..65eddb7 100644
-> --- a/Documentation/trace/ftrace.txt
-> +++ b/Documentation/trace/ftrace.txt
-> @@ -202,10 +202,6 @@ Here is the list of current tracers that may be configured.
->  	to draw a graph of function calls similar to C code
->  	source.
->  
-> -  "sched_switch"
-> -
-> -	Traces the context switches and wakeups between tasks.
-> -
->    "irqsoff"
->  
->  	Traces the areas that disable interrupts and saves
-> @@ -273,39 +269,6 @@ format, the function name that was traced "path_put" and the
->  parent function that called this function "path_walk". The
->  timestamp is the time at which the function was entered.
->  
-> -The sched_switch tracer also includes tracing of task wakeups
-> -and context switches.
-> -
-> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:R   +  2916:115:S
-> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:R   +    10:115:S
-> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:R ==>    10:115:R
-> -        events/1-10    [01]  1453.070013:     10:115:S ==>  2916:115:R
-> -     kondemand/1-2916  [01]  1453.070013:   2916:115:S ==>     7:115:R
-> -     ksoftirqd/1-7     [01]  1453.070013:      7:115:S ==>     0:140:R
-> -
-> -Wake ups are represented by a "+" and the context switches are
-> -shown as "==>".  The format is:
-> -
-> - Context switches:
-> -
-> -       Previous task              Next Task
-> -
-> -  <pid>:<prio>:<state>  ==>  <pid>:<prio>:<state>
-> -
-> - Wake ups:
-> -
-> -       Current task               Task waking up
-> -
-> -  <pid>:<prio>:<state>    +  <pid>:<prio>:<state>
-> -
-> -The prio is the internal kernel priority, which is the inverse
-> -of the priority that is usually displayed by user-space tools.
-> -Zero represents the highest priority (99). Prio 100 starts the
-> -"nice" priorities with 100 being equal to nice -20 and 139 being
-> -nice 19. The prio "140" is reserved for the idle task which is
-> -the lowest priority thread (pid 0).
-> -
-> -
->  Latency trace format
->  --------------------
->  
-> @@ -491,79 +454,6 @@ x494] <- /root/a.out[+0x4a8] <- /lib/libc-2.7.so[+0x1e1a6]
->                     latencies, as described in "Latency
->                     trace format".
->  
-> -sched_switch
-> -------------
-> -
-> -This tracer simply records schedule switches. Here is an example
-> -of how to use it.
-> -
-> - # echo sched_switch > current_tracer
-> - # echo 1 > tracing_enabled
-> - # sleep 1
-> - # echo 0 > tracing_enabled
-> - # cat trace
-> -
-> -# tracer: sched_switch
-> -#
-> -#           TASK-PID   CPU#    TIMESTAMP  FUNCTION
-> -#              | |      |          |         |
-> -            bash-3997  [01]   240.132281:   3997:120:R   +  4055:120:R
-> -            bash-3997  [01]   240.132284:   3997:120:R ==>  4055:120:R
-> -           sleep-4055  [01]   240.132371:   4055:120:S ==>  3997:120:R
-> -            bash-3997  [01]   240.132454:   3997:120:R   +  4055:120:S
-> -            bash-3997  [01]   240.132457:   3997:120:R ==>  4055:120:R
-> -           sleep-4055  [01]   240.132460:   4055:120:D ==>  3997:120:R
-> -            bash-3997  [01]   240.132463:   3997:120:R   +  4055:120:D
-> -            bash-3997  [01]   240.132465:   3997:120:R ==>  4055:120:R
-> -          <idle>-0     [00]   240.132589:      0:140:R   +     4:115:S
-> -          <idle>-0     [00]   240.132591:      0:140:R ==>     4:115:R
-> -     ksoftirqd/0-4     [00]   240.132595:      4:115:S ==>     0:140:R
-> -          <idle>-0     [00]   240.132598:      0:140:R   +     4:115:S
-> -          <idle>-0     [00]   240.132599:      0:140:R ==>     4:115:R
-> -     ksoftirqd/0-4     [00]   240.132603:      4:115:S ==>     0:140:R
-> -           sleep-4055  [01]   240.133058:   4055:120:S ==>  3997:120:R
-> - [...]
-> -
-> -
-> -As we have discussed previously about this format, the header
-> -shows the name of the trace and points to the options. The
-> -"FUNCTION" is a misnomer since here it represents the wake ups
-> -and context switches.
-> -
-> -The sched_switch file only lists the wake ups (represented with
-> -'+') and context switches ('==>') with the previous task or
-> -current task first followed by the next task or task waking up.
-> -The format for both of these is PID:KERNEL-PRIO:TASK-STATE.
-> -Remember that the KERNEL-PRIO is the inverse of the actual
-> -priority with zero (0) being the highest priority and the nice
-> -values starting at 100 (nice -20). Below is a quick chart to map
-> -the kernel priority to user land priorities.
-> -
-> -   Kernel Space                     User Space
-> - ===============================================================
-> -   0(high) to  98(low)     user RT priority 99(high) to 1(low)
-> -                           with SCHED_RR or SCHED_FIFO
-> - ---------------------------------------------------------------
-> -  99                       sched_priority is not used in scheduling
-> -                           decisions(it must be specified as 0)
-> - ---------------------------------------------------------------
-> - 100(high) to 139(low)     user nice -20(high) to 19(low)
-> - ---------------------------------------------------------------
-> - 140                       idle task priority
-> - ---------------------------------------------------------------
-> -
-> -The task states are:
-> -
-> - R - running : wants to run, may not actually be running
-> - S - sleep   : process is waiting to be woken up (handles signals)
-> - D - disk sleep (uninterruptible sleep) : process must be woken up
-> -					(ignores signals)
-> - T - stopped : process suspended
-> - t - traced  : process is being traced (with something like gdb)
-> - Z - zombie  : process waiting to be cleaned up
-> - X - unknown
-> -
-> -
->  ftrace_enabled
->  --------------
->  
-> diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
-> index 8f758d0..7e62c0a 100644
-> --- a/kernel/trace/trace_sched_switch.c
-> +++ b/kernel/trace/trace_sched_switch.c
-> @@ -247,51 +247,3 @@ void tracing_sched_switch_assign_trace(struct trace_array *tr)
->  	ctx_trace = tr;
->  }
->  
-> -static void stop_sched_trace(struct trace_array *tr)
-> -{
-> -	tracing_stop_sched_switch_record();
-> -}
-> -
-> -static int sched_switch_trace_init(struct trace_array *tr)
-> -{
-> -	ctx_trace = tr;
-> -	tracing_reset_online_cpus(tr);
-> -	tracing_start_sched_switch_record();
-> -	return 0;
-> -}
-> -
-> -static void sched_switch_trace_reset(struct trace_array *tr)
-> -{
-> -	if (sched_ref)
-> -		stop_sched_trace(tr);
-> -}
-> -
-> -static void sched_switch_trace_start(struct trace_array *tr)
-> -{
-> -	sched_stopped = 0;
-> -}
-> -
-> -static void sched_switch_trace_stop(struct trace_array *tr)
-> -{
-> -	sched_stopped = 1;
-> -}
-> -
-> -static struct tracer sched_switch_trace __read_mostly =
-> -{
-> -	.name		= "sched_switch",
-> -	.init		= sched_switch_trace_init,
-> -	.reset		= sched_switch_trace_reset,
-> -	.start		= sched_switch_trace_start,
-> -	.stop		= sched_switch_trace_stop,
-> -	.wait_pipe	= poll_wait_pipe,
-> -#ifdef CONFIG_FTRACE_SELFTEST
-> -	.selftest    = trace_selftest_startup_sched_switch,
-> -#endif
-> -};
-> -
-> -__init static int init_sched_switch_trace(void)
-> -{
-> -	return register_tracer(&sched_switch_trace);
-> -}
-> -device_initcall(init_sched_switch_trace);
-> -
+> Heinz
+> 
+> Changes in
+> 
+> v2:
+>    - kernel module hwsampler removed, everything is now in oprofile kernel module
+>    - functions from hwsampler-main.c and smpctl.c merged into arch/s390/oprofile/hwsampler.c
+>      - functions made static
+>    - arch/s390/include/asm/hwsampler.h moved to arch/s390/oprofile/hwsampler.h
+>      - structs have now hws_ prefix
+>    - config variables changed, HAVE_HWSAMPLER used only
+>    - original patch 4 (handle_munmap.patch) removed
 
+thanks for you patches, I have applied them with modifications to:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git s390
+
+For atomic compilation of single patches I changed patch order and the
+Makefile where necessary. The branch also includes my follow-on
+patches.
+
+I will be travelling the next weeks and wanted to have this series in
+linux-next now for later inclusion to .39. We would run out of time
+otherwise (my bad). Please review and test the changes I made and send
+me possibly updates.
+
+Though I applied the patches I want to have the following changes:
+
+* Merge init.c and hwsampler_file.c, two files are bloated here and
+  hwsampler_file.c is a bad and too long naming.
+
+* Rework functions in cpu_buffer.c (log_sample,
+  __oprofile_add_ext_sample, oprofile_add_ext_hw_sample, etc.). All
+  the (static) functions can be merged to a single functino by
+  implementing a struct that holds all current function arguments.
+  Something like:
+
+static void __oprofile_add_ext_sample(struct *foobar fb);
+void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
+{
+	struct foobar fb = { .regs = regs, .event = event };
+	__oprofile_add_ext_sample(&fb);
+}
+
+  The naming and description of oprofile_add_ext_hw_sample() is also
+  not the best. As interface in include/linux/oprofile.h we could then
+  merge oprofile_add_ext_sample() and oprofile_add_ext_hw_sample() to
+  a single function.
+
+It would be nice if you could implement this.
+
+For all patches in the oprofile/s390 branch I also need the
+s390 maintainer's ack.
+
+Martin or Heiko, please ack.
+
+Thanks,
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
