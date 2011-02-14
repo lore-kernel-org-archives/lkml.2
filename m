@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785Ab1BNRXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:23:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54280 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab1BNRW6 convert rfc822-to-8bit (ORCPT
+	id S1755825Ab1BNRYK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:24:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34426 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab1BNRYF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:22:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,469,1291622400"; 
-   d="scan'208";a="602517429"
-From: "Gorby, Russ" <russ.gorby@intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: David Brownell <dbrownell@users.sourceforge.net>,
-        "open list:SPI SUBSYSTEM" <spi-devel-general@lists.sourceforge.net>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Feb 2011 09:22:49 -0800
-Subject: RE: [PATCH 0/1] Adding intel_mid_ssp_spi driver : 01/27/2011
-Thread-Topic: [PATCH 0/1] Adding intel_mid_ssp_spi driver : 01/27/2011
-Thread-Index: AcvKle48mzTo4vgcRQ+F0hwa+dmcOwB1c1GA
-Message-ID: <4C5E6457CD7911469A07260381288C28D37127C9@orsmsx502.amr.corp.intel.com>
-References: <1296680512-2758-1-git-send-email-russ.gorby@intel.com>
- <20110212091913.GD17755@angua.secretlab.ca>
-In-Reply-To: <20110212091913.GD17755@angua.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Feb 2011 12:24:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=WmpZIHSZiIamSabFwWE3/EL0zR9eJXs0KUDnnZZufF6Vd83kLyNY9rBlmoM/jmSxW3
+         tFz4ePXdPqPGxNrwJCuyELm5ImpxXosS2W390OOhn8t2eTinzeHHjpT5tO2n4sNrl5Hs
+         L2gZI1NpUjRqaLpCJAbPylQVM42P0a0RwfByE=
 MIME-Version: 1.0
+In-Reply-To: <1297703892.23343.71.camel@gandalf.stny.rr.com>
+References: <cover.1294239591.git.jbaron@redhat.com> <1297452328.5226.89.camel@laptop>
+ <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl> <1297460297.5226.99.camel@laptop>
+ <1297536465.5226.108.camel@laptop> <20110214155113.GA2840@redhat.com>
+ <1297699024.2401.12.camel@twins> <20110214160437.GB2840@redhat.com>
+ <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl> <1297700754.5226.110.camel@laptop>
+ <20110214162947.GA3449@redhat.com> <1297701438.5226.113.camel@laptop>
+ <1297702013.23343.51.camel@gandalf.stny.rr.com> <1297703892.23343.71.camel@gandalf.stny.rr.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 14 Feb 2011 12:23:44 -0500
+Message-ID: <AANLkTinbKhZXYHjFD5fDXzCt8myiQ_GrVNgKGaMqO9Ot@mail.gmail.com>
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK got it. Thanks.
+On Mon, Feb 14, 2011 at 12:18, Steven Rostedt wrote:
+> blackfin:
+> #define atomic_read(v)  __raw_uncached_fetch_asm(&(v)->counter)
+>
+> blackfin, seems to be doing quite a lot. Not sure if it is required, but
+> that may need a bit of investigating to understand why it does the
+> raw_uncached thing.
 
->-----Original Message-----
->From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant
->Likely
->Sent: Saturday, February 12, 2011 1:19 AM
->To: Gorby, Russ
->Cc: David Brownell; open list:SPI SUBSYSTEM; open list
->Subject: Re: [PATCH 0/1] Adding intel_mid_ssp_spi driver : 01/27/2011
->
->On Wed, Feb 02, 2011 at 01:01:51PM -0800, Russ Gorby wrote:
->> Hello SPI maintainers,
->> I am sending a patch for the (new) intel_mid_ssp_spi driver for
->> consideration for inclusion in the Linux Kernel. This is a SPI master
->> controller driver that is being used for the intel MID platform
->(Medfield).
->> It uses the on-board Bulverde SSP controller configured for SPI
->(spibus #3)
->> running at 25Mhz.
->
->Hi Russ,
->
->Just for future reference, when you're only sending one patch, please
->put your notes into the patch description itself, or immediately after
->the --- line.  No need for a cover letter like this one.
->
->Thanks,
->g.
-
+this is only for SMP ports, and it's due to our lack of
+cache-coherency.  for non-SMP, we use asm-generic.
+-mike
