@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab1BNCUD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 21:20:03 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:45662 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753810Ab1BNCTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 21:19:55 -0500
-Date: Mon, 14 Feb 2011 13:19:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: linux-next: manual merge of the ext4 tree with Linus'  tree
-Message-Id: <20110214131948.85c625c0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__14_Feb_2011_13_19_48_+1100_=kR5Xv.UPhNH4QOJ"
+	id S1755452Ab1BNCUV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 21:20:21 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:27598 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754202Ab1BNCUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 21:20:15 -0500
+Message-ID: <4D58917E.9050408@bluewatersys.com>
+Date: Mon, 14 Feb 2011 15:20:46 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Thomas Chou <thomas@wytron.com.tw>
+CC: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH v9] spi: New driver for Altera SPI
+References: <1297142509-20158-1-git-send-email-thomas@wytron.com.tw> <1297649443-11491-1-git-send-email-thomas@wytron.com.tw>
+In-Reply-To: <1297649443-11491-1-git-send-email-thomas@wytron.com.tw>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__14_Feb_2011_13_19_48_+1100_=kR5Xv.UPhNH4QOJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/14/2011 03:10 PM, Thomas Chou wrote:
+> This patch adds a new SPI driver to support the Altera SOPC Builder
+> SPI component. It uses the bitbanging library.
+> 
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> ---
 
-Hi Ted,
+> +struct altera_spi {
+> +	/* bitbang has to be first */
+> +	struct spi_bitbang bitbang;
 
-Today's linux-next merge of the ext4 tree got a conflict in
-fs/ext4/mballoc.c between commit 2892c15ddda6a76dc10b7499e56c0f3b892e5a69
-("ext4: make grpinfo slab cache names static") from Linus' tree and
-commit 63a1555068c51e47fcdd3c097e9891ac88e86184 ("ext4: make grpinfo slab
-cache names static") from the ext4 tree.
+Is this still true? I had a quick look and can't see anything which
+relies on spi_bitbang being the first entry. Things like this should be
+using container_of so that position in the struct is irrelevant.
 
-I used the version from Linus' tree (since that one was updated).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+~Ryan
 
---Signature=_Mon__14_Feb_2011_13_19_48_+1100_=kR5Xv.UPhNH4QOJ
-Content-Type: application/pgp-signature
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNWJFEAAoJEDMEi1NhKgbsm1MH/0f1KXFg7TFmR69gMokMRr2h
-I/mCd3qmqVL+/iM/9b/kShT00j5m8Jg/r6xpEPq4O7TJBa9yRRJv8Z08DfELGUOy
-UQdngXCc5PWUD37vibD0KKm+1YyVGn67/WUfTM4ZJuZv+Qh1x7O7F5ZiIZVqN7B6
-LQUXlhpuXpFAzn+vf5kohxtxuYsMTg2CZEFZv4ls8ojD3RlwepVBgBS6cgSwTA9L
-jU6/nJFa59pJ71Cib6EtlfroKWxQ3C8aRAR9Ls5OMPOovZ1ncj0n7prDT/AuisPs
-GG1smDCJZ3HPpYINXC8zKgV1v4vxNQi0M4KNYTcMptBZYZfgWpbGHPQYKrS4Stg=
-=VEJo
------END PGP SIGNATURE-----
-
---Signature=_Mon__14_Feb_2011_13_19_48_+1100_=kR5Xv.UPhNH4QOJ--
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
