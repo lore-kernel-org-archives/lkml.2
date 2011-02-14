@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab1BNR0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:26:41 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62425 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab1BNR0j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:26:39 -0500
+	id S1755850Ab1BNR13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:27:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752726Ab1BNR11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 12:27:27 -0500
+Date: Mon, 14 Feb 2011 18:18:47 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214171847.GA14528@redhat.com>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org> <20110204130455.GA3671@redhat.com> <20110204144858.GI12133@htj.dyndns.org> <201102132224.25197.vda.linux@googlemail.com> <20110214150656.GA8761@redhat.com> <AANLkTin1ufNRPx173HgxD5jbPy3m6kK2-2ppU-jqPx0F@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110214170812.6f54a4bb@lxorguk.ukuu.org.uk>
-References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
- <1297698493.965.5475.camel@petert> <20110214170812.6f54a4bb@lxorguk.ukuu.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 14 Feb 2011 10:26:18 -0700
-X-Google-Sender-Auth: 640zstFqAdnG0cIChGHp0w-in7c
-Message-ID: <AANLkTimyD=U-+=HpXWmF2B9KjrDf8HMCZenAgW3SQgDK@mail.gmail.com>
-Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        "Uwe Kleine-K?nig" <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin1ufNRPx173HgxD5jbPy3m6kK2-2ppU-jqPx0F@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 10:08 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> > If a GPIO driver implements get_direction(), it is called in
->> > gpio_request() to set the initial direction of the pin accurately.
->>
->> I see Grant was just added as a GPIO maintainer, so added him on CC.
->>
->> Anything gating getting these 3 patches being picked up?
+On 02/14, Denys Vlasenko wrote:
 >
-> We need four states for a gpio pin direction though. A pin can be
+> On Mon, Feb 14, 2011 at 4:06 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> > On 02/13, Denys Vlasenko wrote:
+> >>
+> >> For example, PTRACE_DETACH requires tracee to be stopped to succeed.
+> >> If debugger tries to detach while the tracee is running, it will get
+> >> an error. This forces debugger to do stupid things like sending SIGSTOP,
+> >> then waiting for tracee to stop, then doing PTRACE_DETACH, then
+> >> sending SIGCONT. Of course, while this dance is performed,
+> >> any SIGSTOPs/SIGCONTs which may be  sent to the tracee by other processes
+> >> are totally disrupted by this.
+> >
+> > Yes.
+> >
+> >> The natural (for me) fix is to make PTRACE_DETACH work even on running
+> >> tracee. It simply makes a lot of sense. Why on earth do we need tracee
+> >> to be stopped? There is no reason.
+> >
+> > Agreed, but
+> >
+> >> But this is a change in ptrace behavior, and therefore is not acceptable
+> >> for Roland.
+> >
+> > I agree with Roland. Not only this is too visible change, it is not clear
+> > what detach-with-signal can do if the tracee is not stopped.
+> >
+> > This was (very briefly) discussed recently. Probably we can implement
+> > PTRACE_DETACH_RUNNING (the name is random) which doesn't require the
+> > stopped tracee but ignores the "data" argument.
 >
-> - input
-> - output
+> IIRC data argument is already ignored by PTRACE_CONT if it is issued in
+> the ptrace stop which wasn't caused by signal delivery to the tracee.
 
-There are actually multiple output modes that a specific gpio
-controller could implement, but the gpio api only has a boolean
-understanding of output.  I don't know if it is really worthwhile to
-try and encode all the possible configurations in this API.
+Yes, almost correct. There are a couple of exceptions like syscall entry.
 
-> - unknown (hardware lacks get functionality and it has not been set by
->  software yet)
-> - alt_func (pin is in use for some other purpose)
+> So, it isn't a new precedent to make
+> ptrace(PTRACE_DETACH, ...,  <something>);
+> to ignore <something> if tracee isn't in signal-delivery-induced ptrace stop.
+> In particular, if it isn't in any stop at all, if it's running.
 
-What is the use-case for alt_func?  From the point of view of a GPIO
-driver, I don't think it cares if the pin has been dedicated to
-something else.  It can twiddle all it wants, but if the pin is routed
-to something else then it won't have any external effects (pin mux is
-often a separate logic block from the gpio controller).  Also with
-GPIOs, the engineers fiddling with them *really* needs to know what
-the gpios are routed to.  It is highly unlikely to have any kind of
-automatic configuration of gpios; ie. if it isn't wired as a gpio,
-then don't go twiddling it.
+Yes, agreed, but still the new option looks safer to me.
 
->
-> (and being able to set them alt_func was proposed a while ago and I think
-> wants revisiting judging by the number of platforms which use gpio, and
-> in their own arch code are privately handling alt_func stuff)
+Suppose that debugger sends SIGFOO to the tracee and then it does
+ptrace(PTRACE_DETACH, SIGBAR). If it forgets to do wait() in between
+it should see the error.
 
-Fair enough; convince me on alt_func.  What is the use case that I'm missing?
+Perhaps this doesn't matter, but compatibility is always good unless
+we have to break things. And we should change strace anyway to detach
+without SIGSTOP/etc, it can use the new option.
 
-g.
+Oleg.
+
