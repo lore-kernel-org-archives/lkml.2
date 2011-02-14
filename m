@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab1BNKA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 05:00:29 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:38321 "EHLO
+	id S1752829Ab1BNKAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 05:00:23 -0500
+Received: from server103.greatnet.de ([83.133.97.6]:38305 "EHLO
 	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab1BNKAY (ORCPT
+	with ESMTP id S1752268Ab1BNKAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 05:00:24 -0500
+	Mon, 14 Feb 2011 05:00:22 -0500
 From: Henrik Kretzschmar <henne@nachtwindheim.de>
 To: mingo@readhat.com
 Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org, tj@kernel.org,
         yinghai@kernel.org, ak@linux.intel.com, robert.richter@amd.com,
         linux-kernel@vger.kernel.org, henne@nachtwindheim.de
-Subject: [PATCH 4/6] x86: add dummy mp_save_irq()
-Date: Mon, 14 Feb 2011 11:00:10 +0100
-Message-Id: <1297677612-12405-4-git-send-email-henne@nachtwindheim.de>
+Subject: [PATCH 1/6] x86: move ioapic_irq_destination_types
+Date: Mon, 14 Feb 2011 11:00:07 +0100
+Message-Id: <1297677612-12405-1-git-send-email-henne@nachtwindheim.de>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1297677612-12405-1-git-send-email-henne@nachtwindheim.de>
-References: <1297677612-12405-1-git-send-email-henne@nachtwindheim.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmparse.c needs a mp_save_irq() function, which is only available
-when CONFIG_X86_IO_APIC is defined. So here we give it a dummy one.
+This enum is used also by non-ioapic code, e.g apic_noop,
+so its better kept in apicdef.h.
 
 Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
 ---
- arch/x86/include/asm/io_apic.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/apicdef.h |   12 ++++++++++++
+ arch/x86/include/asm/io_apic.h |   11 -----------
+ 2 files changed, 12 insertions(+), 11 deletions(-)
 
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index 47a30ff..2de3e95 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -426,4 +426,16 @@ struct local_apic {
+ #else
+  #define BAD_APICID 0xFFFFu
+ #endif
++
++enum ioapic_irq_destination_types {
++	dest_Fixed = 0,
++	dest_LowestPrio = 1,
++	dest_SMI = 2,
++	dest__reserved_1 = 3,
++	dest_NMI = 4,
++	dest_INIT = 5,
++	dest__reserved_2 = 6,
++	dest_ExtINT = 7
++};
++
+ #endif /* _ASM_X86_APICDEF_H */
 diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index e1a9b0e..7af0f5f 100644
+index f327d38..e1a9b0e 100644
 --- a/arch/x86/include/asm/io_apic.h
 +++ b/arch/x86/include/asm/io_apic.h
-@@ -188,6 +188,7 @@ static inline int mp_find_ioapic(u32 gsi) { return 0; }
- struct io_apic_irq_attr;
- static inline int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr) { return 0; }
-+static inline void mp_save_irq(struct mpc_intsrc *m) { }
- #endif
+@@ -63,17 +63,6 @@ union IO_APIC_reg_03 {
+ 	} __attribute__ ((packed)) bits;
+ };
  
- #endif /* _ASM_X86_IO_APIC_H */
+-enum ioapic_irq_destination_types {
+-	dest_Fixed = 0,
+-	dest_LowestPrio = 1,
+-	dest_SMI = 2,
+-	dest__reserved_1 = 3,
+-	dest_NMI = 4,
+-	dest_INIT = 5,
+-	dest__reserved_2 = 6,
+-	dest_ExtINT = 7
+-};
+-
+ struct IO_APIC_route_entry {
+ 	__u32	vector		:  8,
+ 		delivery_mode	:  3,	/* 000: FIXED
 -- 
 1.7.2.3
 
