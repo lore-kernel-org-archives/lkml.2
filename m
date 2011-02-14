@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab1BNOUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 09:20:25 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38116 "EHLO mx3.mail.elte.hu"
+	id S1755441Ab1BNOVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 09:21:15 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:32944 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754084Ab1BNOUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 09:20:24 -0500
-Date: Mon, 14 Feb 2011 15:20:11 +0100
+	id S1754084Ab1BNOVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 09:21:14 -0500
+Date: Mon, 14 Feb 2011 15:21:00 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, hpa@linux.intel.com
-Subject: Re: [PATCH UPDATED 03/26] x86, NUMA: Drop @start/last_pfn from
- initmem_init() initmem_init()
-Message-ID: <20110214142011.GB27076@elte.hu>
+Subject: Re: [PATCH UPDATED 06/26] x86, NUMA: Move *_numa_init() invocations
+ into initmem_init()
+Message-ID: <20110214142100.GC27076@elte.hu>
 References: <1297530663-26234-1-git-send-email-tj@kernel.org>
- <1297530663-26234-4-git-send-email-tj@kernel.org>
- <20110214135052.GJ18742@htj.dyndns.org>
+ <1297530663-26234-7-git-send-email-tj@kernel.org>
+ <20110214135152.GK18742@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110214135052.GJ18742@htj.dyndns.org>
+In-Reply-To: <20110214135152.GK18742@htj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -37,11 +37,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Tejun Heo <tj@kernel.org> wrote:
 
-> initmem_init() extensively accesses and modifies global data
-> structures and the parameters aren't even followed depending on which
-> path is being used.  Drop @start/last_pfn and let it deal with
-> @max_pfn directly.  This is in preparation for further NUMA init
-> cleanups.
+> There's no reason for these to live in setup_arch().  Move them inside
+> initmem_init().
 > 
 > * x86-32 initmem_init() weren't updated breaking 32bit builds.  Fixed.
 > 
@@ -53,15 +50,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > Cc: David Rientjes <rientjes@google.com>
 > Cc: Ingo Molnar <mingo@elte.hu>
 > Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Ankita Garg <ankita@in.ibm.com>
+> ---
+> Updated to convert 32bit initmem_init() too.  Both parameters weren't
+> being used in 32bit versions.  git tree updated accordingly.
 
-You forgot to add:
+This commit is missing a:
 
-  Reported-by: Yinghai Lu <yinghai@kernel.org>
+  Reported-by: Ankita Garg <ankita@in.ibm.com>
 
-The kernel development process is review and testing limited and we have a clear 
-oversupply in development power. So we want to encourage review and testing feedback 
-as much as possible, so adding all the Reported-by / Tested-by tags is absolutely 
-vital to being able to do more development.
+tag.
 
 Thanks,
 
