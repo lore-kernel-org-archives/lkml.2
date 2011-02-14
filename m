@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab1BNTKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:10:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34437 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751332Ab1BNTKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:10:18 -0500
-Date: Mon, 14 Feb 2011 20:01:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214190141.GA19221@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110214175144.GC15847@redhat.com> <AANLkTi=VVWVkrqqQyOtsP72S5-nWny=Ukmf_r-m1qMwV@mail.gmail.com>
+	id S1752714Ab1BNTK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:10:59 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:40097
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752596Ab1BNTK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 14:10:58 -0500
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Feb 2011 14:10:57 EST
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LGMF8Y-02-3HI-02
+X-M-MSG: 
+Date: Mon, 14 Feb 2011 19:55:48 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+CC: "mingo@elte.hu" <mingo@elte.hu>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
+Subject: Re: [patch v2 3/3] This patch introduces a new oprofile sample add
+ function (oprofile_add_ext_hw_sample)
+Message-ID: <20110214185548.GQ5874@erda.amd.com>
+References: <20110121100651.821690659@linux.vnet.ibm.com>
+ <20110121100842.200732938@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=VVWVkrqqQyOtsP72S5-nWny=Ukmf_r-m1qMwV@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110121100842.200732938@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Denys Vlasenko wrote:
->
-> I tried to simply not do ptrace(PTRACE_SYSCALL, ..., 0) at all.
-> Behavior changes, but it is still wrong. Now tracee doesn't wake up
-> on SIGCONT.
+On 21.01.11 05:06:54, Heinz Graalfs wrote:
+> From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+> 
+> This patch introduces a new oprofile sample add function (oprofile_add_ext_hw_sample)
+> that can also take task_struct as an argument, which is used by the hwsampler kernel module 
+> when copying hardware samples to OProfile buffers.
+> 
+> Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+> Signed-off-by: Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
+> Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+> ---
+>  drivers/oprofile/cpu_buffer.c |   27 ++++++++++++++++++++-------
+>  1 file changed, 20 insertions(+), 7 deletions(-)
 
-please see below,
+Applied with following changes:
+    * removed #include <linux/module.h>
+    * whitespace changes
+    * removed conditional compilation (CONFIG_HAVE_HWSAMPLER)
+    * modified order of functions
+    * fix missing function definition in header file
 
-> 19:41:09.601764 wait4(-1, [{WIFSTOPPED(s) && WSTOPSIG(s) == SIGSTOP}],
-> __WALL, NULL) = 25339
-> 19:41:09.601914 rt_sigprocmask(SIG_BLOCK, [HUP INT QUIT PIPE TERM], NULL, 8) = 0
-> 19:41:09.602081 ptrace(PTRACE_GETSIGINFO, 25339, 0, {si_signo=SIGSTOP,
-> si_code=SI_USER, si_pid=10105, si_uid=0, si_value={int=0, ptr=0}}) = 0
-> 19:41:09.602273 write(2, "--- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> STOP: si_signo:19 si_code:0 si_status:0 si_value:(nil) \n", 99) = 99
-> 19:41:09.602456 ptrace(PTRACE_SYSCALL, 25339, 0x1, SIGSTOP) = 0
-> 19:41:09.602582 --- SIGCHLD (Child exited) @ 0 (0) ---
-> 19:41:09.602652 rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
-> 19:41:09.602792 wait4(-1, [{WIFSTOPPED(s) && WSTOPSIG(s) == SIGSTOP}],
-> __WALL, NULL) = 25339
+-Robert
 
-OK, it is stopped.
-
-> 19:41:09.603081 ptrace(PTRACE_GETSIGINFO, 25339, 0, 0x7fff436fc730) =
-
-And this changes the state to TASK_TRACED. See another email from me.
-That is why SIGCONT doesn't work.
-
-This is another problem, the kernel should help somehow. This was
-already discussed a bit, but it is not clear what exactly we can do.
-
-Oleg.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
