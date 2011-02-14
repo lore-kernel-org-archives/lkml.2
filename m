@@ -1,130 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab1BNQxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:53:10 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58829 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962Ab1BNQxF (ORCPT
+	id S1756100Ab1BNQzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:55:16 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59831 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab1BNQzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:53:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=pa7YhKhzZkyC4TK/RN1JPpqrJ5BcxE8TdyV823pB/M0DJzjupwMsCJ0mx6Yze3wgwL
-         7NP580IVHrvlJ5GYUho47fknAqePNa19HTK9P0eQ1Ck57HaVJc9iImOpwXUxar5kv/HB
-         YzBFA86nR8PM1pqSSqDz3+lisXcrD0wt9qKPY=
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 5/5] drivers/i2c/busses/i2c-nuc900.c: Convert release_resource to release_region/release_mem_region
-Date: Mon, 14 Feb 2011 17:56:18 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-trunk-amd64; KDE/4.4.5; x86_64; ; )
-Cc: ben-linux@fluff.org, kernel-janitors@vger.kernel.org,
-        Baruch Siach <baruch@tkos.co.il>, Dave Airlie <airlied@linux.ie>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1297599132-7226-1-git-send-email-julia@diku.dk> <1297599132-7226-6-git-send-email-julia@diku.dk>
-In-Reply-To: <1297599132-7226-6-git-send-email-julia@diku.dk>
+	Mon, 14 Feb 2011 11:55:14 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [RFC PATCH 0/6] Rework tty helpers to avoid need for file pointers
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 14 Feb 2011 16:25:51 +0000
+Message-ID: <20110214162438.10571.8203.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102141756.19068.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 13 February 2011 13:12:12 Julia Lawall wrote:
-> Request_region should be used with release_region, not release_resource.
-> 
-> The result of request_mem_region is no longer stored.  Instead the field
-> ioarea is used to store a pointer to the resource structure that contains
-> the start address.  This is the information that is needed later in
-> nuc900_i2c_remove to release the region.  The field ioarea is also printed
-> in some debugging code.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,E;
-> @@
-> (
-> *x = request_region(...)
-> 
-> *x = request_mem_region(...)
-> )
-> ... when != release_region(x)
->     when != x = E
-> * release_resource(x);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> Not compiled due to incompatible architecture.
-> 
->  drivers/i2c/busses/i2c-nuc900.c |   13 +++++--------
->  1 file changed, 5 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-nuc900.c
-> b/drivers/i2c/busses/i2c-nuc900.c index 7243426..97b16b7 100644
-> --- a/drivers/i2c/busses/i2c-nuc900.c
-> +++ b/drivers/i2c/busses/i2c-nuc900.c
-> @@ -568,15 +568,13 @@ static int __devinit nuc900_i2c_probe(struct
-> platform_device *pdev) goto err_clk;
->  	}
-> 
-> -	i2c->ioarea = request_mem_region(res->start, resource_size(res),
-> -					 pdev->name);
-> -
-> -	if (i2c->ioarea == NULL) {
-> +	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
+(and then use this to fix the holes in hci_ath)
 
-I prefer the original version here -- it's clearer and also, doesn't the new 
-version violate line-over-80 principle ?
+The cleanup wants doing anyway but we have a reason for needing to do it.
 
->  		dev_err(&pdev->dev, "cannot request IO\n");
->  		ret = -ENXIO;
->  		goto err_clk;
->  	}
-> 
-> +	i2c->ioarea = res;
->  	i2c->regs = ioremap(res->start, resource_size(res));
-> 
->  	if (i2c->regs == NULL) {
-> @@ -645,8 +643,7 @@ static int __devinit nuc900_i2c_probe(struct
-> platform_device *pdev) iounmap(i2c->regs);
-> 
->   err_ioarea:
-> -	release_resource(i2c->ioarea);
-> -	kfree(i2c->ioarea);
-> +	release_mem_region(res->start, resource_size(res));
-> 
->   err_clk:
->  	clk_disable(i2c->clk);
-> @@ -665,6 +662,7 @@ static int __devinit nuc900_i2c_probe(struct
-> platform_device *pdev) static int __devexit nuc900_i2c_remove(struct
-> platform_device *pdev) {
->  	struct nuc900_i2c *i2c = platform_get_drvdata(pdev);
-> +	struct resource *res = i2c->ioarea;
+---
 
-No need for this ...
-> 
->  	i2c_del_adapter(&i2c->adap);
->  	free_irq(i2c->irq, i2c);
-> @@ -674,8 +672,7 @@ static int __devexit nuc900_i2c_remove(struct
-> platform_device *pdev)
-> 
->  	iounmap(i2c->regs);
-> 
-> -	release_resource(i2c->ioarea);
-> -	kfree(i2c->ioarea);
+Alan Cox (6):
+      hci_ath: Fix the mess in this driver
+      tty: add a helper for setting termios data from kernel side
+      tty: now phase out the ioctl file pointer for good
+      tty: remove filp from the USB tty ioctls
+      tiocmset: kill the file pointer argument
+      tiocmget: kill off the passing of the struct file
 
-... the i2c pointer is still available here, why introducing struct resource 
-*res. release_mem_region() looks like a sane change to me though.
 
-> +	release_mem_region(res->start, resource_size(res));
->  	kfree(i2c);
-> 
->  	return 0;
+ drivers/bluetooth/hci_ath.c                 |   26 +++++++++++++-------------
+ drivers/char/amiserial.c                    |    8 ++++----
+ drivers/char/cyclades.c                     |    6 +++---
+ drivers/char/epca.c                         |   16 ++++++++--------
+ drivers/char/ip2/ip2main.c                  |   12 ++++++------
+ drivers/char/isicom.c                       |    8 ++++----
+ drivers/char/istallion.c                    |    8 ++++----
+ drivers/char/moxa.c                         |   12 ++++++------
+ drivers/char/mxser.c                        |    8 ++++----
+ drivers/char/nozomi.c                       |    8 ++++----
+ drivers/char/pcmcia/ipwireless/tty.c        |    8 ++++----
+ drivers/char/pcmcia/synclink_cs.c           |   10 +++++-----
+ drivers/char/riscom8.c                      |    8 ++++----
+ drivers/char/rocket.c                       |    8 ++++----
+ drivers/char/ser_a2232.c                    |    6 +++---
+ drivers/char/serial167.c                    |    7 +++----
+ drivers/char/specialix.c                    |    8 ++++----
+ drivers/char/stallion.c                     |    9 ++++-----
+ drivers/char/sx.c                           |    8 ++++----
+ drivers/char/synclink.c                     |   13 ++++++-------
+ drivers/char/synclink_gt.c                  |   19 +++++++++----------
+ drivers/char/synclinkmp.c                   |   17 ++++++++---------
+ drivers/char/ttyprintk.c                    |    2 +-
+ drivers/char/vme_scc.c                      |    4 ++--
+ drivers/isdn/capi/capi.c                    |   10 ++--------
+ drivers/isdn/gigaset/interface.c            |   12 ++++++------
+ drivers/isdn/gigaset/ser-gigaset.c          |    2 +-
+ drivers/isdn/i4l/isdn_tty.c                 |    7 +++----
+ drivers/mmc/card/sdio_uart.c                |    4 ++--
+ drivers/net/irda/irtty-sir.c                |    2 +-
+ drivers/net/usb/hso.c                       |   10 +++++-----
+ drivers/net/wan/pc300_tty.c                 |    9 ++++-----
+ drivers/staging/quatech_usb2/quatech_usb2.c |    6 +++---
+ drivers/staging/serqt_usb2/serqt_usb2.c     |   13 ++++++-------
+ drivers/tty/hvc/hvsi.c                      |    6 +++---
+ drivers/tty/n_gsm.c                         |    6 +++---
+ drivers/tty/pty.c                           |    4 ++--
+ drivers/tty/serial/68328serial.c            |    2 +-
+ drivers/tty/serial/68360serial.c            |    6 +++---
+ drivers/tty/serial/crisv10.c                |    7 +++----
+ drivers/tty/serial/ifx6x60.c                |    5 ++---
+ drivers/tty/serial/serial_core.c            |   16 ++++++----------
+ drivers/tty/tty_io.c                        |   17 ++++++++---------
+ drivers/tty/tty_ioctl.c                     |   14 +++++++++-----
+ drivers/tty/vt/vt_ioctl.c                   |    6 +++---
+ drivers/usb/class/cdc-acm.c                 |    6 +++---
+ drivers/usb/serial/ark3116.c                |    6 +++---
+ drivers/usb/serial/belkin_sa.c              |    8 ++++----
+ drivers/usb/serial/ch341.c                  |    7 +++----
+ drivers/usb/serial/cp210x.c                 |   19 +++++++++----------
+ drivers/usb/serial/cypress_m8.c             |   12 ++++++------
+ drivers/usb/serial/digi_acceleport.c        |   14 +++++++-------
+ drivers/usb/serial/ftdi_sio.c               |   12 ++++++------
+ drivers/usb/serial/io_edgeport.c            |   12 ++++++------
+ drivers/usb/serial/io_ti.c                  |    6 +++---
+ drivers/usb/serial/iuu_phoenix.c            |    4 ++--
+ drivers/usb/serial/keyspan.c                |    4 ++--
+ drivers/usb/serial/keyspan.h                |    5 ++---
+ drivers/usb/serial/keyspan_pda.c            |    4 ++--
+ drivers/usb/serial/kl5kusb105.c             |    8 ++++----
+ drivers/usb/serial/kobil_sct.c              |   12 ++++++------
+ drivers/usb/serial/mct_u232.c               |   12 ++++++------
+ drivers/usb/serial/mos7720.c                |    8 ++++----
+ drivers/usb/serial/mos7840.c                |    6 +++---
+ drivers/usb/serial/opticon.c                |    4 ++--
+ drivers/usb/serial/oti6858.c                |   12 ++++++------
+ drivers/usb/serial/pl2303.c                 |    6 +++---
+ drivers/usb/serial/sierra.c                 |    4 ++--
+ drivers/usb/serial/spcp8x5.c                |    6 +++---
+ drivers/usb/serial/ssu100.c                 |    6 +++---
+ drivers/usb/serial/ti_usb_3410_5052.c       |   14 +++++++-------
+ drivers/usb/serial/usb-serial.c             |   12 ++++++------
+ drivers/usb/serial/usb-wwan.h               |    6 +++---
+ drivers/usb/serial/usb_wwan.c               |    6 +++---
+ drivers/usb/serial/whiteheat.c              |   12 ++++++------
+ include/linux/tty.h                         |    3 ++-
+ include/linux/tty_driver.h                  |   13 ++++++-------
+ include/linux/usb/serial.h                  |    6 +++---
+ include/net/irda/ircomm_tty.h               |    6 +++---
+ net/bluetooth/rfcomm/tty.c                  |    6 +++---
+ net/irda/ircomm/ircomm_tty_ioctl.c          |   12 ++++++------
+ 81 files changed, 341 insertions(+), 361 deletions(-)
+
+-- 
+Signature
