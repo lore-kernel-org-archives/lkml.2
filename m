@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751707Ab1BNSf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:35:59 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:16138 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab1BNSf5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:35:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Lio4jom4+RruCzH/a6zheXvUcTpZvSX7eMk6Ld1+PQQybP02I0+Cv4+PgGac2GoAYX
-         tXciu0c/KOGts2phbyMg==
+	id S1751475Ab1BNSkp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:40:45 -0500
+Received: from hera.kernel.org ([140.211.167.34]:37930 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750980Ab1BNSkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:40:43 -0500
+Date: Mon, 14 Feb 2011 18:39:59 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com, hpa@zytor.com,
+        mingo@redhat.com, akpm@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, jdike@addtoit.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20110206224515.135703209@linutronix.de>
+References: <20110206224515.135703209@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:um/irq] um: Remove stale irq_chip.end
+Message-ID: <tip-6ea96e7e4946f790330557e4b7c4c8a174c1c6d2@git.kernel.org>
+Git-Commit-ID: 6ea96e7e4946f790330557e4b7c4c8a174c1c6d2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1297683742.30092.11.camel@e102109-lin.cambridge.arm.com>
-References: <1297638813-1315-1-git-send-email-ccross@android.com>
-	<1297683742.30092.11.camel@e102109-lin.cambridge.arm.com>
-Date: Mon, 14 Feb 2011 10:35:37 -0800
-X-Google-Sender-Auth: 47_39DbBbWrnAh28bpWvfpwmbLw
-Message-ID: <AANLkTik_Jey_PtRmr530FVckA6RXHESeX+CyoJC=ZTkR@mail.gmail.com>
-Subject: Re: [PATCH] ARM: vfp: Always save VFP state in vfp_pm_suspend
-From: Colin Cross <ccross@android.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Feb 2011 18:40:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 3:42 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Sun, 2011-02-13 at 23:13 +0000, Colin Cross wrote:
->> vfp_pm_suspend should save the VFP state any time there is
->> a last_VFP_context.  If it only saves when the VFP is enabled,
->> the state can get lost when, on a UP system:
->>    Thread 1 uses the VFP
->>    Context switch occurs to thread 2, VFP is disabled but the
->>       VFP context is not saved to allow lazy save and restore
->>    Thread 2 initiates suspend
->>    vfp_pm_suspend is called with the VFP disabled, but the
->>       context has not been saved.
->
-> At this point is it guaranteed that the thread won't migrate to another
-> CPU? If not, we should use get/put_cpu.
+Commit-ID:  6ea96e7e4946f790330557e4b7c4c8a174c1c6d2
+Gitweb:     http://git.kernel.org/tip/6ea96e7e4946f790330557e4b7c4c8a174c1c6d2
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sun, 6 Feb 2011 22:45:31 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 14 Feb 2011 19:37:39 +0100
 
-Yes, VFP suspend is implemented with a sysdev, which is suspended
-after disable_nonboot_cpus.
+um: Remove stale irq_chip.end
 
->> --- a/arch/arm/vfp/vfpmodule.c
->> +++ b/arch/arm/vfp/vfpmodule.c
->> @@ -415,13 +415,12 @@ static int vfp_pm_suspend(struct sys_device *dev, pm_message_t state)
->>         struct thread_info *ti = current_thread_info();
->>         u32 fpexc = fmrx(FPEXC);
->>
->> -       /* if vfp is on, then save state for resumption */
->> -       if (fpexc & FPEXC_EN) {
->> +       /* save state for resume */
->> +       if (last_VFP_context[ti->cpu]) {
->>                 printk(KERN_DEBUG "%s: saving vfp state\n", __func__);
->> -               vfp_save_state(&ti->vfpstate, fpexc);
->> -
->> -               /* disable, just in case */
->> -               fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
->> +               fmxr(FPEXC, fpexc | FPEXC_EN);
->> +               vfp_save_state(last_VFP_context[ti->cpu], fpexc);
->> +               fmxr(FPEXC, fpexc & ~FPEXC_EN);
->>         }
->
-> We may want to set the last_VFP_context to NULL so that after resuming
-> (to the same thread) we force the VFP reload from the vfpstate
-> structure. The vfp_support_entry code ignores the reloading if the
-> last_VFP_context is the same as vfpstate.
+irq_chip.end got obsolete with the remnoval of __do_IRQ().
 
-Right, will fix.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <20110206224515.135703209@linutronix.de>
+---
+ arch/um/kernel/irq.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/arch/um/kernel/irq.c b/arch/um/kernel/irq.c
+index 3f0ac9e..c916748 100644
+--- a/arch/um/kernel/irq.c
++++ b/arch/um/kernel/irq.c
+@@ -374,7 +374,6 @@ static struct irq_chip normal_irq_type = {
+ 	.disable = dummy,
+ 	.enable = dummy,
+ 	.ack = dummy,
+-	.end = dummy
+ };
+ 
+ static struct irq_chip SIGVTALRM_irq_type = {
+@@ -384,7 +383,6 @@ static struct irq_chip SIGVTALRM_irq_type = {
+ 	.disable = dummy,
+ 	.enable = dummy,
+ 	.ack = dummy,
+-	.end = dummy
+ };
+ 
+ void __init init_IRQ(void)
