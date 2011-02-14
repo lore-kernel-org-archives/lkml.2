@@ -1,113 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1BNM0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 07:26:10 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52674 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753939Ab1BNM0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 07:26:07 -0500
-Date: Mon, 14 Feb 2011 13:25:50 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Tejun Heo <tj@kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH] x86: fix section mismatch in reference from
- native_play_dead
-Message-ID: <20110214122550.GA15860@elte.hu>
-References: <20110203131333.GA4161@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110203131333.GA4161@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754864Ab1BNMZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 07:25:40 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58169 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab1BNMVM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 07:21:12 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Cc: sakari.ailus@maxwell.research.nokia.com
+Subject: [PATCH v9 02/12] media: Media device
+Date: Mon, 14 Feb 2011 13:20:57 +0100
+Message-Id: <1297686067-9666-3-git-send-email-laurent.pinchart@ideasonboard.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
+References: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The media_device structure abstracts functions common to all kind of
+media devices (v4l2, dvb, alsa, ...). It manages media entities and
+offers a userspace API to discover and configure the media device
+internal topology.
 
-* Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
-
-> Fix 
-> 
-> WARNING: arch/x86/kernel/built-in.o(.text+0x19cde): Section mismatch in reference from 
-> the function native_play_dead() to the function .cpuinit.text:mwait_usable()
-> The function native_play_dead() references the function __cpuinit mwait_usable().
-> 
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> 
-> ---
-> 
->  arch/x86/kernel/smpboot.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 0cbe8c0..0b8c6c9 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -1467,7 +1467,7 @@ static inline void hlt_play_dead(void)
->  	}
->  }
->  
-> -void native_play_dead(void)
-> +void __cpuinit native_play_dead(void)
->  {
->  	play_dead_common();
->  	tboot_shutdown(TB_SHUTDOWN_WFS);
-
-I think the right fix is Boris's fix below. Agreed?
-
-Thanks,
-
-	Ingo
-
->From 1c9d16e35911090dee3f9313e6af13af623d66ee Mon Sep 17 00:00:00 2001
-From: Borislav Petkov <bp@amd64.org>
-Date: Fri, 11 Feb 2011 18:17:54 +0100
-Subject: [PATCH] x86: Fix mwait_usable section mismatch
-
-We use it in non __cpuinit code now too so drop marker.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20110211171754.GA21047@aftab>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- arch/x86/include/asm/cpu.h |    2 +-
- arch/x86/kernel/process.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ Documentation/ABI/testing/sysfs-bus-media      |    6 ++
+ Documentation/DocBook/media-entities.tmpl      |    2 +
+ Documentation/DocBook/media.tmpl               |    3 +
+ Documentation/DocBook/v4l/media-controller.xml |   56 +++++++++++++
+ Documentation/media-framework.txt              |   67 ++++++++++++++++
+ drivers/media/Makefile                         |    2 +-
+ drivers/media/media-device.c                   |  100 ++++++++++++++++++++++++
+ include/media/media-device.h                   |   69 ++++++++++++++++
+ 8 files changed, 304 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-media
+ create mode 100644 Documentation/DocBook/v4l/media-controller.xml
+ create mode 100644 Documentation/media-framework.txt
+ create mode 100644 drivers/media/media-device.c
+ create mode 100644 include/media/media-device.h
 
-diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index 6e6e755..4564c8e 100644
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -32,6 +32,6 @@ extern void arch_unregister_cpu(int);
+diff --git a/Documentation/ABI/testing/sysfs-bus-media b/Documentation/ABI/testing/sysfs-bus-media
+new file mode 100644
+index 0000000..7057e57
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-media
+@@ -0,0 +1,6 @@
++What:		/sys/bus/media/devices/.../model
++Date:		January 2011
++Contact:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
++		linux-media@vger.kernel.org
++Description:	Contains the device model name in UTF-8. The device version is
++		is not be appended to the model name.
+diff --git a/Documentation/DocBook/media-entities.tmpl b/Documentation/DocBook/media-entities.tmpl
+index be34dcb..61d6f11 100644
+--- a/Documentation/DocBook/media-entities.tmpl
++++ b/Documentation/DocBook/media-entities.tmpl
+@@ -321,6 +321,8 @@
+ <!ENTITY sub-media-entities SYSTEM "media-entities.tmpl">
+ <!ENTITY sub-media-indices SYSTEM "media-indices.tmpl">
  
- DECLARE_PER_CPU(int, cpu_state);
++<!ENTITY sub-media-controller SYSTEM "v4l/media-controller.xml">
++
+ <!-- Function Reference -->
+ <!ENTITY close SYSTEM "v4l/func-close.xml">
+ <!ENTITY ioctl SYSTEM "v4l/func-ioctl.xml">
+diff --git a/Documentation/DocBook/media.tmpl b/Documentation/DocBook/media.tmpl
+index a99088a..88f2cc6 100644
+--- a/Documentation/DocBook/media.tmpl
++++ b/Documentation/DocBook/media.tmpl
+@@ -106,6 +106,9 @@ Foundation. A copy of the license is included in the chapter entitled
+ &sub-remote_controllers;
+ </chapter>
+ </part>
++<part id="media_common">
++&sub-media-controller;
++</part>
  
--int __cpuinit mwait_usable(const struct cpuinfo_x86 *);
-+int mwait_usable(const struct cpuinfo_x86 *);
+ &sub-fdl-appendix;
  
- #endif /* _ASM_X86_CPU_H */
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e764fc0..3c189e9 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -506,7 +506,7 @@ static void poll_idle(void)
- #define MWAIT_ECX_EXTENDED_INFO		0x01
- #define MWAIT_EDX_C1			0xf0
+diff --git a/Documentation/DocBook/v4l/media-controller.xml b/Documentation/DocBook/v4l/media-controller.xml
+new file mode 100644
+index 0000000..253ddb4
+--- /dev/null
++++ b/Documentation/DocBook/v4l/media-controller.xml
+@@ -0,0 +1,56 @@
++<partinfo>
++  <authorgroup>
++    <author>
++      <firstname>Laurent</firstname>
++      <surname>Pinchart</surname>
++      <affiliation><address><email>laurent.pinchart@ideasonboard.com</email></address></affiliation>
++      <contrib>Initial version.</contrib>
++    </author>
++  </authorgroup>
++  <copyright>
++    <year>2010</year>
++    <holder>Laurent Pinchart</holder>
++  </copyright>
++
++  <revhistory>
++    <!-- Put document revisions here, newest first. -->
++    <revision>
++      <revnumber>1.0.0</revnumber>
++      <date>2010-11-10</date>
++      <authorinitials>lp</authorinitials>
++      <revremark>Initial revision</revremark>
++    </revision>
++  </revhistory>
++</partinfo>
++
++<title>Media Controller API</title>
++
++<chapter id="media_controller">
++  <title>Media Controller</title>
++
++  <section id="media-controller-intro">
++    <title>Introduction</title>
++    <para>Media devices increasingly handle multiple related functions. Many USB
++    cameras include microphones, video capture hardware can also output video,
++    or SoC camera interfaces also perform memory-to-memory operations similar to
++    video codecs.</para>
++    <para>Independent functions, even when implemented in the same hardware, can
++    be modelled as separate devices. A USB camera with a microphone will be
++    presented to userspace applications as V4L2 and ALSA capture devices. The
++    devices' relationships (when using a webcam, end-users shouldn't have to
++    manually select the associated USB microphone), while not made available
++    directly to applications by the drivers, can usually be retrieved from
++    sysfs.</para>
++    <para>With more and more advanced SoC devices being introduced, the current
++    approach will not scale. Device topologies are getting increasingly complex
++    and can't always be represented by a tree structure. Hardware blocks are
++    shared between different functions, creating dependencies between seemingly
++    unrelated devices.</para>
++    <para>Kernel abstraction APIs such as V4L2 and ALSA provide means for
++    applications to access hardware parameters. As newer hardware expose an
++    increasingly high number of those parameters, drivers need to guess what
++    applications really require based on limited information, thereby
++    implementing policies that belong to userspace.</para>
++    <para>The media controller API aims at solving those problems.</para>
++  </section>
++</chapter>
+diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
+new file mode 100644
+index 0000000..1844c3f
+--- /dev/null
++++ b/Documentation/media-framework.txt
+@@ -0,0 +1,67 @@
++Linux kernel media framework
++============================
++
++This document describes the Linux kernel media framework, its data structures,
++functions and their usage.
++
++
++Introduction
++------------
++
++The media controller API is documented in DocBook format in
++Documentation/DocBook/v4l/media-controller.xml. This document will focus on
++the kernel-side implementation of the media framework.
++
++
++Media device
++------------
++
++A media device is represented by a struct media_device instance, defined in
++include/media/media-device.h. Allocation of the structure is handled by the
++media device driver, usually by embedding the media_device instance in a
++larger driver-specific structure.
++
++Drivers register media device instances by calling
++
++	media_device_register(struct media_device *mdev);
++
++The caller is responsible for initializing the media_device structure before
++registration. The following fields must be set:
++
++ - dev must point to the parent device (usually a pci_dev, usb_interface or
++   platform_device instance).
++
++ - model must be filled with the device model name as a NUL-terminated UTF-8
++   string. The device/model revision must not be stored in this field.
++
++The following fields are optional:
++
++ - serial is a unique serial number stored as a NUL-terminated ASCII string.
++   The field is big enough to store a GUID in text form. If the hardware
++   doesn't provide a unique serial number this field must be left empty.
++
++ - bus_info represents the location of the device in the system as a
++   NUL-terminated ASCII string. For PCI/PCIe devices bus_info must be set to
++   "PCI:" (or "PCIe:") followed by the value of pci_name(). For USB devices,
++   the usb_make_path() function must be used. This field is used by
++   applications to distinguish between otherwise identical devices that don't
++   provide a serial number.
++
++ - hw_revision is the hardware device revision in a driver-specific format.
++   When possible the revision should be formatted with the KERNEL_VERSION
++   macro.
++
++ - driver_version is formatted with the KERNEL_VERSION macro. The version
++   minor must be incremented when new features are added to the userspace API
++   without breaking binary compatibility. The version major must be
++   incremented when binary compatibility is broken.
++
++Upon successful registration a character device named media[0-9]+ is created.
++The device major and minor numbers are dynamic. The model name is exported as
++a sysfs attribute.
++
++Drivers unregister media device instances by calling
++
++	media_device_unregister(struct media_device *mdev);
++
++Unregistering a media device that hasn't been registered is *NOT* safe.
+diff --git a/drivers/media/Makefile b/drivers/media/Makefile
+index d56349f..36731aa 100644
+--- a/drivers/media/Makefile
++++ b/drivers/media/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the kernel multimedia device drivers.
+ #
  
--int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
-+int mwait_usable(const struct cpuinfo_x86 *c)
- {
- 	u32 eax, ebx, ecx, edx;
+-media-objs	:= media-devnode.o
++media-objs	:= media-device.o media-devnode.o
  
+ ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
+   obj-$(CONFIG_MEDIA_SUPPORT) += media.o
+diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+new file mode 100644
+index 0000000..bcd3985
+--- /dev/null
++++ b/drivers/media/media-device.c
+@@ -0,0 +1,100 @@
++/*
++ * Media device
++ *
++ * Copyright (C) 2010 Nokia Corporation
++ *
++ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
++ *	     Sakari Ailus <sakari.ailus@iki.fi>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/types.h>
++#include <linux/ioctl.h>
++
++#include <media/media-device.h>
++#include <media/media-devnode.h>
++
++static const struct media_file_operations media_device_fops = {
++	.owner = THIS_MODULE,
++};
++
++/* -----------------------------------------------------------------------------
++ * sysfs
++ */
++
++static ssize_t show_model(struct device *cd,
++			  struct device_attribute *attr, char *buf)
++{
++	struct media_device *mdev = to_media_device(to_media_devnode(cd));
++
++	return sprintf(buf, "%.*s\n", (int)sizeof(mdev->model), mdev->model);
++}
++
++static DEVICE_ATTR(model, S_IRUGO, show_model, NULL);
++
++/* -----------------------------------------------------------------------------
++ * Registration/unregistration
++ */
++
++static void media_device_release(struct media_devnode *mdev)
++{
++}
++
++/**
++ * media_device_register - register a media device
++ * @mdev:	The media device
++ *
++ * The caller is responsible for initializing the media device before
++ * registration. The following fields must be set:
++ *
++ * - dev must point to the parent device
++ * - model must be filled with the device model name
++ */
++int __must_check media_device_register(struct media_device *mdev)
++{
++	int ret;
++
++	if (WARN_ON(mdev->dev == NULL || mdev->model[0] == 0))
++		return -EINVAL;
++
++	/* Register the device node. */
++	mdev->devnode.fops = &media_device_fops;
++	mdev->devnode.parent = mdev->dev;
++	mdev->devnode.release = media_device_release;
++	ret = media_devnode_register(&mdev->devnode);
++	if (ret < 0)
++		return ret;
++
++	ret = device_create_file(&mdev->devnode.dev, &dev_attr_model);
++	if (ret < 0) {
++		media_devnode_unregister(&mdev->devnode);
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(media_device_register);
++
++/**
++ * media_device_unregister - unregister a media device
++ * @mdev:	The media device
++ *
++ */
++void media_device_unregister(struct media_device *mdev)
++{
++	device_remove_file(&mdev->devnode.dev, &dev_attr_model);
++	media_devnode_unregister(&mdev->devnode);
++}
++EXPORT_SYMBOL_GPL(media_device_unregister);
+diff --git a/include/media/media-device.h b/include/media/media-device.h
+new file mode 100644
+index 0000000..30857f7
+--- /dev/null
++++ b/include/media/media-device.h
+@@ -0,0 +1,69 @@
++/*
++ * Media device
++ *
++ * Copyright (C) 2010 Nokia Corporation
++ *
++ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
++ *	     Sakari Ailus <sakari.ailus@iki.fi>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#ifndef _MEDIA_DEVICE_H
++#define _MEDIA_DEVICE_H
++
++#include <linux/device.h>
++#include <linux/list.h>
++
++#include <media/media-devnode.h>
++
++/**
++ * struct media_device - Media device
++ * @dev:	Parent device
++ * @devnode:	Media device node
++ * @model:	Device model name
++ * @serial:	Device serial number (optional)
++ * @bus_info:	Unique and stable device location identifier
++ * @hw_revision: Hardware device revision
++ * @driver_version: Device driver version
++ *
++ * This structure represents an abstract high-level media device. It allows easy
++ * access to entities and provides basic media device-level support. The
++ * structure can be allocated directly or embedded in a larger structure.
++ *
++ * The parent @dev is a physical device. It must be set before registering the
++ * media device.
++ *
++ * @model is a descriptive model name exported through sysfs. It doesn't have to
++ * be unique.
++ */
++struct media_device {
++	/* dev->driver_data points to this struct. */
++	struct device *dev;
++	struct media_devnode devnode;
++
++	char model[32];
++	char serial[40];
++	char bus_info[32];
++	u32 hw_revision;
++	u32 driver_version;
++};
++
++/* media_devnode to media_device */
++#define to_media_device(node) container_of(node, struct media_device, devnode)
++
++int __must_check media_device_register(struct media_device *mdev);
++void media_device_unregister(struct media_device *mdev);
++
++#endif
+-- 
+1.7.3.4
+
