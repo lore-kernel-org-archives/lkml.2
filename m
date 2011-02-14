@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab1BNP5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:57:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40504 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755796Ab1BNP5c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:57:32 -0500
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org
-In-Reply-To: <20110214155113.GA2840@redhat.com>
-References: <cover.1294239591.git.jbaron@redhat.com>
-	 <1297452328.5226.89.camel@laptop>
-	 <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
-	 <1297460297.5226.99.camel@laptop> <1297536465.5226.108.camel@laptop>
-	 <20110214155113.GA2840@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 14 Feb 2011 16:57:04 +0100
-Message-ID: <1297699024.2401.12.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755891Ab1BNQAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:00:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55763 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755740Ab1BNQAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 11:00:18 -0500
+Date: Mon, 14 Feb 2011 16:51:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214155136.GC8761@redhat.com>
+References: <20110204130455.GA3671@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <20110209212526.GA9999@redhat.com> <201102140001.47218.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102140001.47218.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 10:51 -0500, Jason Baron wrote:
-> On Sat, Feb 12, 2011 at 07:47:45PM +0100, Peter Zijlstra wrote:
-> > On Fri, 2011-02-11 at 22:38 +0100, Peter Zijlstra wrote:
-> > > 
-> > > So why can't we make that jump_label_entry::refcount and
-> > > jump_label_key::state an atomic_t and be done with it? 
-> > 
-> > So I had a bit of a poke at this because I didn't quite understand why
-> > all that stuff was as it was. I applied both Jason's patches and then
-> > basically rewrote kernel/jump_label.c just for kicks ;-)
-> > 
-> > I haven't tried compiling this, let alone running it, but provided I
-> > didn't actually forget anything the storage per key is now 16 bytes when
-> > modules are disabled and 24 * (1 + mods) bytes for when they are
-> > enabled. The old code had 64 + 40 * mods bytes.
-> > 
-> > I still need to clean up the static_branch_else bits and look at !x86
-> > aside from the already mentioned bits.. but what do people think?
-> > 
-> > ---
-> 
-> Generally, I really like this! Its the direction I think the jump label
-> code should be going. The complete removal of the hash table, makes the
-> design a lot better and simpler. We just need to get some of the details
-> cleaned up, and of course we need this to compile :) But I don't see any
-> fundamental problems with this approach. 
-> 
-> Things that still need to be sorted out:
-> 
-> 1) Since jump_label.h, are included in kernel.h, (indirectly via the
-> dynamic_debug.h) the atomic_t definitions could be problematic, since
-> atomic.h includes kernel.h indirectly...so we might need some header
-> magic.
+On 02/14, Denys Vlasenko wrote:
+>
+> On Wednesday 09 February 2011 22:25, Oleg Nesterov wrote:
+> >
+> > But yes: this is what the current code does, I am not sure we can
+> > change this, and both PTRACE_CONT-doesnt-resume-until-SIGCONT and
+> > PTRACE_CONT-acts-as-SIGCONT are not "perfect" too.
+>
+> Can you enumerate reasons why each of them are not perfect?
+> I want to understand your thinking better here.
 
-Yes, I remember running into that when I did the jump_label_ref stuff,
-some head-scratching is in order there.
+Standard answer: this can break things ;)
 
-> 2) I had some code to disallow writing to module __init section, by
-> setting the 'key' value to 0, after the module->init was run, but
-> before, the memory was freed. And then I check for a non-zero key value
-> when the jump label is updated. In this way we can't corrupt some random
-> piece of memory. I had this done via the 'MODULE_STATE_LIVE' notifier.
+Also, PTRACE_CONT-acts-as-SIGCONT looks a bit ugly, it can wakeup
+other tracees (or we can turn them into TASK_TRACED, I dunno).
 
-AH! I wondered what that was about.. that wouldn't work now since we
-actually rely on iter->key to remain what it was.
+> > Yes, and this race is already here, ptracer should take care.
+>
+> From the API POV, there is no race,
 
-> 3) For 'jump_label_enable()' 'jump_label_disable()' in the tracepoint
-> code, I'm not sure that there is an enable for each disable. So i'm not
-> sure if a refcount would work there. But we can fix this by first
-> checking 'jump_label_enabled()' before calling 'jump_label_eanble()' or
-> jump_label_ref(). This is safe b/c the the tracepoint code is protected
-> using the tracepoint_mutex.
+Sorry for confusion... I just meant that if the tracee is TASK_STOPPED
+then ptrace(PTRACE_WHATEVER) can always fail if it races with SIGCONT
+from the third party.
 
-Right,.. I hadn't considered people using it like that, but like you
-said, that should be easily fixed.
+> > > In either case, the fundamentals of ptrace operation don't really
+> > > change.  All ptrace operations are still per-task and ptracer almost
+> > > always has control over execution of the tracee.  Sure, it allows
+> > > ptraced task to escape group stop but it seems defined clear enough
+> > > and IMHO actually is a helpful debugging feature.
+> >
+> > Heh, I think we found the place where we can't convince each other.
+> > What if we toss a coin?
+>
+> I'm with Oleg on this. If debugger wants to terminate group-stop,
+> it should just send SIGCONT, not depend on the obscure feature (it is not
+> documented, right?) that PTRACE_CONT somehow affects group-stop state.
+
+Yes, this is PTRACE_CONT-doesnt-resume-until-SIGCONT suggested by Roland.
+
+But Tejun rightly points this can confuse gdb (and nobody knows what
+else ;) Can we do this change and require the applications to learn
+the new rules? I do not know.
+
+> > I hate this from the time when I noticed that the application doesn't
+> > respond to ^Z under strace. And I used strace exactly because I wanted
+> > do debug some (I can't recall exactly) problems with jctl. That is all.
+>
+> Recently I had exactly this experience too. It's frustrating.
+
+Agreed.
+
+> You just succeeded :)
+
+Thanks ;)
+
+Oleg.
+
