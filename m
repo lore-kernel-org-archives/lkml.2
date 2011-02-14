@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab1BNS5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:57:32 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:21868 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab1BNS5a (ORCPT
+	id S1752163Ab1BNS7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:59:39 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37223 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab1BNS7i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:57:30 -0500
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i637h668h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGMFBL-02-3LR-02
-X-M-MSG: 
-Date: Mon, 14 Feb 2011 19:57:23 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
-Subject: Re: [patch v2 1/3] This patch adds support for hardware based
- sampling on System z processors (models z10 and up)
-Message-ID: <20110214185723.GR5874@erda.amd.com>
-References: <20110121100651.821690659@linux.vnet.ibm.com>
- <20110121100841.879534437@linux.vnet.ibm.com>
+	Mon, 14 Feb 2011 13:59:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110121100841.879534437@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+In-Reply-To: <87r5bacvvl.fsf@macbook.be.48ers.dk>
+References: <1297699964-20527-1-git-send-email-jacmet@sunsite.dk>
+ <AANLkTi=pWV+tfD6YGpKbzTkvLVoLXtGA41QRaaF=VFeq@mail.gmail.com> <87r5bacvvl.fsf@macbook.be.48ers.dk>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 14 Feb 2011 11:59:16 -0700
+X-Google-Sender-Auth: fFztAWpcVn3AF_mvEhIt7a-8i7s
+Message-ID: <AANLkTikri_A1VknD3oLR2LwC4ysOgE20RnqMRdYnHbcP@mail.gmail.com>
+Subject: Re: [PATCH] mcp23s08: support mcp23s17 variant
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: dbrownell@users.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.01.11 05:06:52, Heinz Graalfs wrote:
-> From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-> 
-> System z's hardware sampling is described in detail in:
-> 
->    SA23-2260-01 "The Load-Program-Parameter and CPU-Measurement Facilities"
-> 
-> The patch introduces
->  - support for System z's hardware sampler in OProfile's kernel module
->  - it adds functions that control all hardware sampling related operations as
->   - checking if hardware sampling feature is available
->     - ie: on System z models z10 and up, in LPAR mode only, and authorised during LPAR activation
->   - allocating memory for the hardware sampling feature
->   - starting/stopping hardware sampling
-> 
-> All functions required to start and stop hardware sampling have to be
-> invoked by the oprofile kernel module as provided by the other patches of this patch set.
-> 
-> In case hardware based sampling cannot be setup standard timer based sampling is used by OProfile.
-> 
-> Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-> Signed-off-by: Maran Pakkirisamy <maranp@linux.vnet.ibm.com>
-> Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-> ---
->  arch/Kconfig                   |    3
->  arch/s390/Kconfig              |    1
->  arch/s390/oprofile/hwsampler.c | 1256 +++++++++++++++++++++++++++++++++++++++++
->  arch/s390/oprofile/hwsampler.h |  113 +++
->  4 files changed, 1373 insertions(+)
+On Mon, Feb 14, 2011 at 11:29 AM, Peter Korsgaard <jacmet@sunsite.dk> wrote:
+>>>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
+>
+> Hi,
+>
+>  >> -       return (status < 0) ? status : rx[0];
+>  >> +
+>  >> +       if (mcp->type == MCP_TYPE_S17) {
+>  >> +               tx[1] <<= 1;
+>  >> +
+>  >> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 2);
+>  >> +               return (status < 0) ? status : (rx[0] | (rx[1] << 8));
+>  >> +       } else {
+>  >> +               status = spi_write_then_read(mcp->spi, tx, sizeof tx, rx, 1);
+>  >> +               return (status < 0) ? status : rx[0];
+>  >> +       }
+>
+>  Grant> Rather than checking ->type for every transaction, would a set of
+>  Grant> callbacks for each type be better?  It would probably have lower
+>  Grant> overhead and be simpler to maintain.
+>
+> We could. I didn't do it because the 8bit and 16bit cases are very
+> similar, and checking a simple integer is presumably a lot faster than
+> the spi access - But I can rework the patch if you insists.
 
-Applied with following changes:
-    * enable compilation in Makefile
+I won't insist, but it really does look like something that should
+have separate accessors from a code maintenance perspective.
 
--Robert
+>
+>  >> +++ b/include/linux/spi/mcp23s08.h
+>  >> @@ -2,21 +2,24 @@
+>  >>  /* FIXME driver should be able to handle IRQs...  */
+>  >>
+>  >>  struct mcp23s08_chip_info {
+>  >> -       bool    is_present;             /* true iff populated */
+>  >> -       u8      pullups;                /* BIT(x) means enable pullup x */
+>  >> +       bool            is_present;     /* true if populated */
+>  >> +       unsigned        pullups;        /* BIT(x) means enable pullup x */
+>  >>  };
+>
+>  Grant> Unrelated whitespace changes.
+>
+> I wouldn't call it unrelated. It's to ensure it still lines up after the
+> s/u8/unsigned/.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Sorry, you're right.  I missed the s/u8/unsigned/ change.  I don't
+have any problem with whitespace changes in a hunk that is also
+getting a real change.
 
+g.
