@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab1BNATZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 19:19:25 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40176 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab1BNATT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 19:19:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=TC1U0BUEabvXRHu5qNv/roHE2xcinTHQAVqXofKd8wLb+BShWA/iDZ12y+3gbDkonb
-         HjNvKp+e47hAfOEUNLa/Qw8wKapU+k43mQMqX7hkedSG9z/zH18DUdOoOAmpAarLzP1k
-         e9tq8yXQP0MEfGtYoWZSJ/HkFpe+L/gCnF4gE=
+	id S1755319Ab1BNAft (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 19:35:49 -0500
+Received: from sous-sol.org ([216.99.217.87]:44408 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755225Ab1BNAfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 19:35:45 -0500
+Date: Sun, 13 Feb 2011 16:35:31 -0800
+From: Chris Wright <chrisw@sous-sol.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@gmail.com>, Dave Young <hidave.darkstar@gmail.com>,
+        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, Chris Wright <chrisw@sous-sol.org>,
+        James Morris <jmorris@namei.org>
+Subject: Re: Regression - Xorg start failed
+Message-ID: <20110214003531.GH9869@sequoia.sous-sol.org>
+References: <20110213062213.GA2525@darkstar.dhcp.inet.fi>
+ <AANLkTimDuYgL2cSR8gE7Wrm9_w7cvG_wuUUsa=8TKs87@mail.gmail.com>
+ <AANLkTimxCMgdfht7rrg8QiCppb=D7fvR92eeiewdqCpH@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1297414270.14046.1.camel@mola>
-References: <1297414270.14046.1.camel@mola>
-Date: Mon, 14 Feb 2011 09:19:18 +0900
-X-Google-Sender-Auth: dsfc4XbQktlxm8pY6EYlf4h_I6E
-Message-ID: <AANLkTin14rCD1y8sLmSffA4Yhv5WZLXbn9nXPSEn=fCQ@mail.gmail.com>
-Subject: Re: [PATCH] video: s3c-fb: return proper error if clk_get fails
-From: Kyungmin Park <kmpark@infradead.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimxCMgdfht7rrg8QiCppb=D7fvR92eeiewdqCpH@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Sat, Feb 12, 2011 at 11:53 PM, Dave Airlie <airlied@gmail.com> wrote:
+> > Probably should revert first, then work out what is crapping out libpciaccess.
+> 
+> Yeah, I'll revert. The patch is one of those "obviously a good idea,
+> but in practice it's not something we can change now".
 
-On Fri, Feb 11, 2011 at 5:51 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> Return PTR_ERR(sfb->bus_clk) instead of 0 if clk_get fails.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/video/s3c-fb.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-> index 83ce9a0..6817d18 100644
-> --- a/drivers/video/s3c-fb.c
-> +++ b/drivers/video/s3c-fb.c
-> @@ -1340,6 +1340,7 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
->        sfb->bus_clk = clk_get(dev, "lcd");
->        if (IS_ERR(sfb->bus_clk)) {
->                dev_err(dev, "failed to get bus clock\n");
-> +               ret = PTR_ERR(sfb->bus_clk);
->                goto err_sfb;
->        }
->
-> --
-> 1.7.2
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Turns out I'm just a bona fide idiot.
+
+I was not testing the right kernel _and_ didn't get the logic right.
+
+sorry for the screw up,
+-chris
+---
+
+Subject: [PATCH] pci: use security_capable correctly during config space read
+
+Commit 47970b1 ("pci: use security_capable() when checking capablities
+during config space read") is just plain broken.  The normal capable()
+interface returns true on success, but the LSM interface returns 0 on
+success.
+
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
+
+I've tested this quickly (lspci behaviour is as expected).
+
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index f7771f3..ea25e5b 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -369,7 +369,7 @@ pci_read_config(struct file *filp, struct kobject *kobj,
+ 	u8 *data = (u8*) buf;
+ 
+ 	/* Several chips lock up trying to read undefined config space */
+-	if (security_capable(filp->f_cred, CAP_SYS_ADMIN)) {
++	if (security_capable(filp->f_cred, CAP_SYS_ADMIN) == 0) {
+ 		size = dev->cfg_size;
+ 	} else if (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+ 		size = 128;
+
+
