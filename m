@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856Ab1BNWXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:23:06 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:53089 "EHLO mx2.netapp.com"
+	id S1752224Ab1BNWXU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:23:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51346 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab1BNWXE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:23:04 -0500
-X-IronPort-AV: E=Sophos;i="4.60,470,1291622400"; 
-   d="scan'208";a="518420456"
-Subject: Re: [PATCH] NFS: Zap entire 'struct inode' in
- nfs_zap_caches_locked().
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1102142311330.4530@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102142252540.4530@swampdragon.chaosbits.net>
-	 <1297721385.23841.14.camel@heimdal.trondhjem.org>
-	 <alpine.LNX.2.00.1102142311330.4530@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Mon, 14 Feb 2011 17:23:02 -0500
-Message-ID: <1297722182.23841.21.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 14 Feb 2011 22:23:04.0464 (UTC) FILETIME=[BF772100:01CBCC95]
+	id S1751888Ab1BNWXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 17:23:16 -0500
+Message-ID: <4D59AAFC.7010503@zytor.com>
+Date: Mon, 14 Feb 2011 14:21:48 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: David Miller <davem@davemloft.net>, peterz@infradead.org,
+        will.newton@gmail.com, jbaron@redhat.com, mathieu.desnoyers@polymtl.ca,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <1297707868.5226.189.camel@laptop>	 <1297718964.23343.75.camel@gandalf.stny.rr.com>	 <1297719576.23343.80.camel@gandalf.stny.rr.com>	 <20110214.134600.179933733.davem@davemloft.net> <1297722030.23343.86.camel@gandalf.stny.rr.com>
+In-Reply-To: <1297722030.23343.86.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 23:12 +0100, Jesper Juhl wrote: 
-> On Mon, 14 Feb 2011, Trond Myklebust wrote:
+On 02/14/2011 02:20 PM, Steven Rostedt wrote:
 > 
-> > On Mon, 2011-02-14 at 22:56 +0100, Jesper Juhl wrote: 
-> > > nfs_zap_caches_locked() attempts to zero all of the 'struct inode' that's 
-> > > passed in via the pointer variable 'inode'. Unfortunately it only manages 
-> > > to zero the size of a 'pointer to struct inode'. Fix that.
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > ---
-> > >  inode.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > >  compile tested only
-> > > 
-> > > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> > > index 1cc600e..6c4236e 100644
-> > > --- a/fs/nfs/inode.c
-> > > +++ b/fs/nfs/inode.c
-> > > @@ -145,7 +145,7 @@ static void nfs_zap_caches_locked(struct inode *inode)
-> > >  	nfsi->attrtimeo = NFS_MINATTRTIMEO(inode);
-> > >  	nfsi->attrtimeo_timestamp = jiffies;
-> > >  
-> > > -	memset(NFS_COOKIEVERF(inode), 0, sizeof(NFS_COOKIEVERF(inode)));
-> > > +	memset(NFS_COOKIEVERF(inode), 0, sizeof(*NFS_COOKIEVERF(inode)));
-> > >  	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode))
-> > >  		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
-> > >  	else
-> > 
-> > That's incorrect.
-> > 
-> > NFS_COOKIEVERF(inode) expands to NFS_I(inode)->cookieverf, and since
-> > cookieverf is declared inside the struct nfs_inode as 
-> > 
-> > 	u32	cookieverf[2];
-> > 
-> > the sizeof(NFS_I(inode)->cookieverf) should expand to the size of the
-> > cookieverf array (i.e. 8 bytes).
-> > 
-> Ouch, I completely misread/misunderstood that. Thanks for the 
-> clarification and please ignore the patch...
+> Ideally, we would like a single atomic_read() but due to these wacky
+> archs, it may not be possible.
+> 
 
-No problem. I can see how the NFS_COOKIEVERF() macro can be confusing. I
-should post a patch to get rid of that macro for 2.6.39 and just open
-code the few instances that care about accessing the cookieverf field.
+#ifdef ARCH_ATOMIC_READ_SUCKS_EGGS?
 
-Other macros that have outlived their usefulness include NFS_FH(),
-NFS_FILEID(), NFS_CLIENT() and possibly NFS_SERVER()...
+	-hpa
+
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
