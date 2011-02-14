@@ -1,161 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1BNWju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:39:50 -0500
-Received: from shutemov.name ([188.40.19.243]:49955 "EHLO shutemov.name"
+	id S1752853Ab1BNWmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:42:23 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:44522 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753160Ab1BNWjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:39:40 -0500
-Date: Tue, 15 Feb 2011 00:39:39 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v6 3/3] cgroups: introduce timer slack controller
-Message-ID: <20110214223939.GA6230@shutemov.name>
-References: <1297688787-3592-1-git-send-email-kirill@shutemov.name>
- <1297688787-3592-4-git-send-email-kirill@shutemov.name>
- <alpine.LFD.2.00.1102141432440.26192@localhost6.localdomain6>
- <20110214151914.GA4210@shutemov.name>
- <alpine.LFD.2.00.1102141753240.26192@localhost6.localdomain6>
+	id S1751472Ab1BNWmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 17:42:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the drivers-x86 tree
+Date: Mon, 14 Feb 2011 23:42:12 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc4+; KDE/4.4.4; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Paul Fox <pgf@laptop.org>
+References: <20110214163944.53c1241d.sfr@canb.auug.org.au>
+In-Reply-To: <20110214163944.53c1241d.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1102141753240.26192@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102142342.12767.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 06:01:06PM +0100, Thomas Gleixner wrote:
-> B1;2401;0cOn Mon, 14 Feb 2011, Kirill A. Shutemov wrote:
+On Monday, February 14, 2011, Stephen Rothwell wrote:
+> Hi Matthew,
 > 
-> > On Mon, Feb 14, 2011 at 03:00:03PM +0100, Thomas Gleixner wrote:
-> > > On Mon, 14 Feb 2011, Kirill A. Shutsemov wrote:
-> > > > From: Kirill A. Shutemov <kirill@shutemov.name>
-> > > > 
-> > > > Every task_struct has timer_slack_ns value. This value uses to round up
-> > > > poll() and select() timeout values. This feature can be useful in
-> > > > mobile environment where combined wakeups are desired.
-> > > > 
-> > > > cgroup subsys "timer_slack" implement timer slack controller. It
-> > > > provides a way to group tasks by timer slack value and manage the
-> > > > value of group's tasks.
-> > > 
-> > > I have no objections against the whole thing in general, but why do we
-> > > need a module for this? Why can't we add this to the cgroups muck and
-> > > compile it in?
-> > 
-> > It was easier to test and debug with module.
-> > What is wrong with module? Do you worry about number of exports?
+> After merging the drivers-x86 tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
 > 
-> Not only about the number. We don't want exports when they are not
-> techically necessary, i.e. for driver stuff.
-
-Ok, I'll drop module support.
-
-> > > > +static int cgroup_timer_slack_check(struct notifier_block *nb,
-> > > > +		unsigned long slack_ns, void *data)
-> > > > +{
-> > > > +	struct cgroup_subsys_state *css;
-> > > > +	struct timer_slack_cgroup *tslack_cgroup;
-> > > > +
-> > > > +	/* XXX: lockdep false positive? */
-> > > 
-> > >   What? Either this has a reason or not. If it's a false positive then
-> > >   it needs to be fixed in lockdep. If not, ....
-> > 
-> > I was not sure about it. There is similar workaround in freezer_fork().
+> drivers/platform/x86/xo15-ebook.c: In function 'ebook_switch_add':
+> drivers/platform/x86/xo15-ebook.c:136: error: 'struct acpi_device_wakeup' has no member named 'run_wake_count'
 > 
-> I don't care about workarounds in freezer_work() at all. The above
-> question remains and this is new code and therefor it either needs to
-> hold rcu_read_lock() or it does not.
-
-I'll recheck everything once again.
-
-> > > > +	rcu_read_lock();
-> > > > +	css = task_subsys_state(current, timer_slack_subsys.subsys_id);
-> > > > +	tslack_cgroup = container_of(css, struct timer_slack_cgroup, css);
-> > > > +	rcu_read_unlock();
-> > > > +
-> > > > +	if (!is_timer_slack_allowed(tslack_cgroup, slack_ns))
-> > > > +		return notifier_from_errno(-EPERM);
-> > > 
-> > >   If the above needs rcu read lock, why is the acess safe ?
-> > > 
-> > > > +	return NOTIFY_OK;
-> > > 
-> > > > +/*
-> > > > + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
-> > > > + * limits of the cgroup.
-> > > > + */
-> > > > +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
-> > > > +		struct task_struct *tsk)
-> > > > +{
-> > > > +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
-> > > > +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
-> > > > +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
-> > > > +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
-> > > > +
-> > > > +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
-> > > > +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
-> > > > +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
-> > > > +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
-> > > 
-> > > 
-> > >   Why is there not a default slack value for the whole group ?
-> > 
-> > I think it breaks prctl() semantic. default slack value is a value on
-> > fork().
+> Caused by commit f160ad4c2a720411a136db7b867c3b4b868b8933 ("OLPC XO-1.5
+> ebook switch driver") interacting with commit
+> 0cab2dcf9963b1a7ed32e730384e1e8925b099cd ("ACPI: Remove the
+> wakeup.run_wake_count device field") from the acpi tree.
 > 
-> cgroups break a lot of semantics.
+> I have applied this merge fix patch:
 
-I don't know what "a lot of semantics" you mean, but it's not a reason
-to add more breakage.
+The fix is correct, thanks Stephen!
 
-> > > > +static u64 tslack_read_range(struct cgroup *cgroup, struct cftype *cft)
-> > > > +{
-> > > > +	struct timer_slack_cgroup *tslack_cgroup;
-> > > > +
-> > > > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> > > > +	switch (cft->private) {
-> > > > +	case TIMER_SLACK_MIN:
-> > > > +		return tslack_cgroup->min_slack_ns;
-> > > > +	case TIMER_SLACK_MAX:
-> > > > +		return tslack_cgroup->max_slack_ns;
-> > > > +	default:
-> > > > +		BUG();
-> > > 
-> > >   BUG() for soemthing which can be dealt with sensible ?
-> > 
-> > tslack_read_range() and tslack_write_range() have written to handle
-> > defined cftypes. If it used for other cftype it's a bug().
+Rafael
+
+
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 14 Feb 2011 16:36:41 +1100
+> Subject: [PATCH] OLPC: fix for removal of run_wak_count
 > 
-> The only caller is initiated from here, right? So we really don't need
-> another bug just because you might fatfinger your own code.
-
-People make mistakes. I think BUG() is useful here.
-
-> > > > +	list_for_each_entry(cur, &cgroup->children, sibling) {
-> > > > +		child = cgroup_to_tslack_cgroup(cur);
-> > > > +		if (type == TIMER_SLACK_MIN && val > child->min_slack_ns)
-> > > > +			return -EBUSY;
-> > > 
-> > >   I thought the whole point is to propagate values through the group.
-> > 
-> > I think silent change here is wrong. cpuset returns -EBUSY in similar
-> > case.
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/platform/x86/xo15-ebook.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> And how is cpuset relevant for this ? Not at all. This is about
-> timer_slack and we better have a well defined scheme for all of this
-> and not some cobbled together thing with tons of exceptions and corner
-> cases. Of course undocumented as far the code goes.
-
-I don't like silent cascade changes. Userspace can implement it if
-needed. -EBUSY is appropriate.
-
--- 
- Kirill A. Shutemov
+> diff --git a/drivers/platform/x86/xo15-ebook.c b/drivers/platform/x86/xo15-ebook.c
+> index 2343bb3..c1372ed 100644
+> --- a/drivers/platform/x86/xo15-ebook.c
+> +++ b/drivers/platform/x86/xo15-ebook.c
+> @@ -133,7 +133,6 @@ static int ebook_switch_add(struct acpi_device *device)
+>  		/* Button's GPE is run-wake GPE */
+>  		acpi_enable_gpe(device->wakeup.gpe_device,
+>  				device->wakeup.gpe_number);
+> -		device->wakeup.run_wake_count++;
+>  		device_set_wakeup_enable(&device->dev, true);
+>  	}
