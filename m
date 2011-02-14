@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1BNT24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:28:56 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54705 "EHLO
+	id S1753413Ab1BNT2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:28:49 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65225 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425Ab1BNT2w (ORCPT
+	with ESMTP id S1753273Ab1BNT2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:28:52 -0500
+	Mon, 14 Feb 2011 14:28:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=iF47RXwg+0kLl+r47xF3Y07NpmvTJ+XyQ6BxYmxMFpdrtoS3gBYoSrSbdhoIUJLudG
-         ppbe0bFHQgftdSDZ7wni0FAE1qZgLyWfqMBjkn7Z1WYOypBRbzGa1XxCacITcypBkRtM
-         f6GfDqY/ns7NYr/6y8kk+WwGel+rHnRRjAbPU=
+        b=lh5O8CeDt3cQyidfcHPfrIe042MpbN1aNWiSLyOg/F8cU5K6qoaFiugAXeMlyIi8eU
+         nY4GiyTMBCp8FQtrXD4iutN6iDgisy5VQQ4wRUDfR1PXk4cF7JV7z3O7O5cMQeiiqDdx
+         xZNcaWisX+ymN1ewwkRNTgxK1iJdovX8RaRs0=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 7/7] x86-64, NUMA: Unify emulated distance mapping
-Date: Mon, 14 Feb 2011 20:28:35 +0100
-Message-Id: <1297711715-3086-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/7] x86-64, NUMA: Build and use direct emulated nid -> phys nid mapping
+Date: Mon, 14 Feb 2011 20:28:30 +0100
+Message-Id: <1297711715-3086-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297711715-3086-1-git-send-email-tj@kernel.org>
 References: <1297711715-3086-1-git-send-email-tj@kernel.org>
@@ -30,16 +30,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA emulation needs to update node distance information.  It did it
-by remapping apicid to PXM mapping, even when amdtopology is being
-used.  There is no reason to go through such convolution.  The generic
-code has all the information necessary to transform the distance table
-to the emulated nid space.
+NUMA emulation copied physical NUMA configuration into physnodes[] and
+used it to reverse-map emulated nodes to physical nodes, which is
+unnecessarily convoluted.  Build emu_nid_to_phys[] array to map
+emulated nids directly to the matching physical nids and use it in
+numa_add_cpu().
 
-Implement generic distance table transformation in numa_emulation()
-and drop private implementations in srat_64 and amdtopology_64.  This
-makes find_node_by_addr() and fake_physnodes() and related functions
-unnecessary, drop them.
+physnodes[] will be removed with further patches.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -50,358 +47,170 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/acpi.h    |    6 --
- arch/x86/include/asm/amd_nb.h  |    4 --
- arch/x86/include/asm/numa_64.h |    1 -
- arch/x86/mm/amdtopology_64.c   |   38 ---------------
- arch/x86/mm/numa_64.c          |  102 ++++++++++++++++------------------------
- arch/x86/mm/srat_64.c          |   65 -------------------------
- 6 files changed, 40 insertions(+), 176 deletions(-)
+ arch/x86/mm/numa_64.c |   64 +++++++++++++++++++++++++++---------------------
+ 1 files changed, 36 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index 9c9fe1b..a37da6d 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -186,12 +186,6 @@ struct bootnode;
- #ifdef CONFIG_ACPI_NUMA
- extern int acpi_numa;
- extern int x86_acpi_numa_init(void);
--
--#ifdef CONFIG_NUMA_EMU
--extern void acpi_fake_nodes(const struct bootnode *fake_nodes,
--				   int num_nodes);
--extern int acpi_emu_node_distance(int a, int b);
--#endif
- #endif /* CONFIG_ACPI_NUMA */
- 
- #define acpi_unlazy_tlb(x)	leave_mm(x)
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index 627aff3..6982743 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -18,10 +18,6 @@ extern int amd_cache_northbridges(void);
- extern void amd_flush_garts(void);
- extern int amd_numa_init(void);
- 
--#ifdef CONFIG_NUMA_EMU
--extern void amd_fake_nodes(const struct bootnode *nodes, int nr_nodes);
--#endif
--
- struct amd_northbridge {
- 	struct pci_dev *misc;
- };
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 972af9d..fc71c68 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -35,7 +35,6 @@ extern void __init numa_set_distance(int from, int to, int distance);
- #define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
- void numa_emu_cmdline(char *);
--int __init find_node_by_addr(unsigned long addr);
- #endif /* CONFIG_NUMA_EMU */
- #else
- static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
-diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
-index f37ea2f..0919c26 100644
---- a/arch/x86/mm/amdtopology_64.c
-+++ b/arch/x86/mm/amdtopology_64.c
-@@ -194,41 +194,3 @@ int __init amd_numa_init(void)
- 
- 	return 0;
- }
--
--#ifdef CONFIG_NUMA_EMU
--/*
-- * For NUMA emulation, fake proximity domain (_PXM) to node id mappings must be
-- * setup to represent the physical topology but reflect the emulated
-- * environment.  For each emulated node, the real node which it appears on is
-- * found and a fake pxm to nid mapping is created which mirrors the actual
-- * locality.  node_distance() then represents the correct distances between
-- * emulated nodes by using the fake acpi mappings to pxms.
-- */
--void __init amd_fake_nodes(const struct bootnode *nodes, int nr_nodes)
--{
--	unsigned int bits;
--	unsigned int cores;
--	unsigned int apicid_base = 0;
--	int i;
--
--	bits = boot_cpu_data.x86_coreid_bits;
--	cores = 1 << bits;
--	early_get_boot_cpu_id();
--	if (boot_cpu_physical_apicid > 0)
--		apicid_base = boot_cpu_physical_apicid;
--
--	for (i = 0; i < nr_nodes; i++) {
--		int index;
--		int nid;
--
--		nid = find_node_by_addr(nodes[i].start);
--		if (nid == NUMA_NO_NODE)
--			continue;
--
--		index = nodeids[nid] << bits;
--#ifdef CONFIG_ACPI_NUMA
--		__acpi_map_pxm_to_node(nid, i);
--#endif
--	}
--}
--#endif /* CONFIG_NUMA_EMU */
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index bbf5565..a27bea7 100644
+index 10544c2..253a5c3 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -48,10 +48,6 @@ static struct numa_meminfo numa_meminfo __initdata;
- static int numa_distance_cnt;
- static u8 *numa_distance;
+@@ -540,7 +540,9 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ #ifdef CONFIG_NUMA_EMU
+ /* Numa emulation */
+ static struct bootnode nodes[MAX_NUMNODES] __initdata;
+-static struct bootnode physnodes[MAX_NUMNODES] __cpuinitdata;
++static struct bootnode physnodes[MAX_NUMNODES] __initdata;
++
++static int emu_nid_to_phys[MAX_NUMNODES] __cpuinitdata;
+ static char *emu_cmdline __initdata;
  
--#ifdef CONFIG_NUMA_EMU
--static bool numa_emu_dist;
--#endif
--
- /*
-  * Given a shift value, try to populate memnodemap[]
-  * Returns :
-@@ -443,10 +439,6 @@ void __init numa_set_distance(int from, int to, int distance)
- 
- int __node_distance(int from, int to)
- {
--#if defined(CONFIG_ACPI_NUMA) && defined(CONFIG_NUMA_EMU)
--	if (numa_emu_dist)
--		return acpi_emu_node_distance(from, to);
--#endif
- 	if (from >= numa_distance_cnt || to >= numa_distance_cnt)
- 		return from == to ? LOCAL_DISTANCE : REMOTE_DISTANCE;
- 	return numa_distance[from * numa_distance_cnt + to];
-@@ -557,56 +549,6 @@ static int __init emu_find_memblk_by_nid(int nid, const struct numa_meminfo *mi)
- 	return -ENOENT;
- }
- 
--int __init find_node_by_addr(unsigned long addr)
--{
--	const struct numa_meminfo *mi = &numa_meminfo;
--	int i;
--
--	for (i = 0; i < mi->nr_blks; i++) {
--		/*
--		 * Find the real node that this emulated node appears on.  For
--		 * the sake of simplicity, we only use a real node's starting
--		 * address to determine which emulated node it appears on.
--		 */
--		if (addr >= mi->blk[i].start && addr < mi->blk[i].end)
--			return mi->blk[i].nid;
--	}
--	return NUMA_NO_NODE;
--}
--
--static void __init fake_physnodes(int acpi, int amd,
--				  const struct numa_meminfo *ei)
--{
--	static struct bootnode nodes[MAX_NUMNODES] __initdata;
--	int i, nr_nodes = 0;
--
--	for (i = 0; i < ei->nr_blks; i++) {
--		int nid = ei->blk[i].nid;
--
--		if (nodes[nid].start == nodes[nid].end) {
--			nodes[nid].start = ei->blk[i].start;
--			nodes[nid].end = ei->blk[i].end;
--			nr_nodes++;
--		} else {
--			nodes[nid].start = min(ei->blk[i].start, nodes[nid].start);
--			nodes[nid].end = max(ei->blk[i].end, nodes[nid].end);
--		}
--	}
--
--	BUG_ON(acpi && amd);
--#ifdef CONFIG_ACPI_NUMA
--	if (acpi)
--		acpi_fake_nodes(nodes, nr_nodes);
--#endif
--#ifdef CONFIG_AMD_NUMA
--	if (amd)
--		amd_fake_nodes(nodes, nr_nodes);
--#endif
--	if (!acpi && !amd)
--		for (i = 0; i < nr_cpu_ids; i++)
--			numa_set_node(i, 0);
--}
--
- /*
-  * Sets up nid to range from @start to @end.  The return value is -errno if
-  * something went wrong, 0 otherwise.
-@@ -851,11 +793,13 @@ static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
-  * Sets up the system RAM area from start_pfn to last_pfn according to the
-  * numa=fake command-line option.
+ void __init numa_emu_cmdline(char *str)
+@@ -647,7 +649,8 @@ static void __init fake_physnodes(int acpi, int amd, int nr_nodes)
+  * allocation past addr and -1 otherwise.  addr is adjusted to be at
+  * the end of the node.
   */
--static bool __init numa_emulation(int acpi, int amd)
-+static bool __init numa_emulation(void)
+-static int __init setup_node_range(int nid, u64 *addr, u64 size, u64 max_addr)
++static int __init setup_node_range(int nid, int physnid,
++				   u64 *addr, u64 size, u64 max_addr)
  {
- 	static struct numa_meminfo ei __initdata;
- 	static struct numa_meminfo pi __initdata;
- 	const u64 max_addr = max_pfn << PAGE_SHIFT;
-+	int phys_dist_cnt = numa_distance_cnt;
-+	u8 *phys_dist = NULL;
- 	int i, j, ret;
- 
- 	memset(&ei, 0, sizeof(ei));
-@@ -889,6 +833,25 @@ static bool __init numa_emulation(int acpi, int amd)
- 		return false;
+ 	int ret = 0;
+ 	nodes[nid].start = *addr;
+@@ -658,6 +661,10 @@ static int __init setup_node_range(int nid, u64 *addr, u64 size, u64 max_addr)
  	}
+ 	nodes[nid].end = *addr;
+ 	node_set(nid, node_possible_map);
++
++	if (emu_nid_to_phys[nid] == NUMA_NO_NODE)
++		emu_nid_to_phys[nid] = physnid;
++
+ 	printk(KERN_INFO "Faking node %d at %016Lx-%016Lx (%LuMB)\n", nid,
+ 	       nodes[nid].start, nodes[nid].end,
+ 	       (nodes[nid].end - nodes[nid].start) >> 20);
+@@ -754,7 +761,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr, int nr_nodes)
+ 			if (nodes_weight(physnode_mask) + ret >= nr_nodes)
+ 				end = physnodes[i].end;
  
-+	/*
-+	 * Copy the original distance table.  It's temporary so no need to
-+	 * reserve it.
-+	 */
-+	if (phys_dist_cnt) {
-+		size_t size = phys_dist_cnt * sizeof(numa_distance[0]);
-+		u64 phys;
-+
-+		phys = memblock_find_in_range(0,
-+					      (u64)max_pfn_mapped << PAGE_SHIFT,
-+					      size, PAGE_SIZE);
-+		if (phys == MEMBLOCK_ERROR) {
-+			pr_warning("NUMA: Warning: can't allocate copy of distance table, disabling emulation\n");
-+			return false;
-+		}
-+		phys_dist = __va(phys);
-+		memcpy(phys_dist, numa_distance, size);
-+	}
-+
- 	/* commit */
- 	numa_meminfo = ei;
+-			if (setup_node_range(ret++, &physnodes[i].start,
++			if (setup_node_range(ret++, i, &physnodes[i].start,
+ 						end - physnodes[i].start,
+ 						physnodes[i].end) < 0)
+ 				node_clear(i, physnode_mask);
+@@ -850,7 +857,7 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
+ 			 * later.  If setup_node_range() returns non-zero, there
+ 			 * is no more memory available on this physical node.
+ 			 */
+-			if (setup_node_range(ret++, &physnodes[i].start,
++			if (setup_node_range(ret++, i, &physnodes[i].start,
+ 						end - physnodes[i].start,
+ 						physnodes[i].end) < 0)
+ 				node_clear(i, physnode_mask);
+@@ -870,6 +877,9 @@ static int __init numa_emulation(int acpi, int amd)
+ 	int num_nodes;
+ 	int i;
  
-@@ -911,8 +874,23 @@ static bool __init numa_emulation(int acpi, int amd)
- 		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
- 			emu_nid_to_phys[i] = 0;
++	for (i = 0; i < MAX_NUMNODES; i++)
++		emu_nid_to_phys[i] = NUMA_NO_NODE;
++
+ 	/*
+ 	 * If the numa=fake command-line contains a 'M' or 'G', it represents
+ 	 * the fixed node size.  Otherwise, if it is just a single number N,
+@@ -890,6 +900,11 @@ static int __init numa_emulation(int acpi, int amd)
+ 	if (num_nodes < 0)
+ 		return num_nodes;
  
--	fake_physnodes(acpi, amd, &ei);
--	numa_emu_dist = true;
-+	/* transform distance table */
-+	numa_reset_distance();
-+	for (i = 0; i < MAX_NUMNODES; i++) {
-+		for (j = 0; j < MAX_NUMNODES; j++) {
-+			int physi = emu_nid_to_phys[i];
-+			int physj = emu_nid_to_phys[j];
-+			int dist;
++	/* make sure all emulated nodes are mapped to a physical node */
++	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
++		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
++			emu_nid_to_phys[i] = 0;
 +
-+			if (physi >= phys_dist_cnt || physj >= phys_dist_cnt)
-+				dist = physi == physj ?
-+					LOCAL_DISTANCE : REMOTE_DISTANCE;
-+			else
-+				dist = phys_dist[physi * phys_dist_cnt + physj];
+ 	ei.nr_blks = num_nodes;
+ 	for (i = 0; i < ei.nr_blks; i++) {
+ 		ei.blk[i].start = nodes[i].start;
+@@ -915,7 +930,6 @@ static int __init numa_emulation(int acpi, int amd)
+ 						nodes[i].end >> PAGE_SHIFT);
+ 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
+ 	}
+-	setup_physnodes(0, max_addr);
+ 	fake_physnodes(acpi, amd, num_nodes);
+ 	numa_init_array();
+ 	numa_emu_dist = true;
+@@ -973,7 +987,11 @@ void __init initmem_init(void)
+ 		setup_physnodes(0, max_pfn << PAGE_SHIFT);
+ 		if (emu_cmdline && !numa_emulation(i == 0, i == 1))
+ 			return;
+-		setup_physnodes(0, max_pfn << PAGE_SHIFT);
 +
-+			numa_set_distance(i, j, dist);
-+		}
-+	}
- 	return true;
- }
- #endif /* CONFIG_NUMA_EMU */
-@@ -968,7 +946,7 @@ void __init initmem_init(void)
- 		 * If requested, try emulation.  If emulation is not used,
- 		 * build identity emu_nid_to_phys[] for numa_add_cpu()
- 		 */
--		if (!emu_cmdline || !numa_emulation(i == 0, i == 1))
-+		if (!emu_cmdline || !numa_emulation())
- 			for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
- 				emu_nid_to_phys[j] = j;
++		/* not emulating, build identity mapping for numa_add_cpu() */
++		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
++			emu_nid_to_phys[j] = j;
++
+ 		nodes_clear(node_possible_map);
+ 		nodes_clear(node_online_map);
  #endif
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index d4fbfea..8e9d339 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -26,8 +26,6 @@
- 
- int acpi_numa __initdata;
- 
--static struct acpi_table_slit *acpi_slit;
--
- static struct bootnode nodes_add[MAX_NUMNODES];
- 
- static __init int setup_node(int pxm)
-@@ -51,25 +49,11 @@ static __init inline int srat_disabled(void)
- void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
+@@ -1030,7 +1048,6 @@ int __cpuinit numa_cpu_node(int cpu)
+ # ifndef CONFIG_DEBUG_PER_CPU_MAPS
+ void __cpuinit numa_add_cpu(int cpu)
  {
- 	int i, j;
--	unsigned length;
--	unsigned long phys;
+-	unsigned long addr;
+ 	int physnid, nid;
  
- 	for (i = 0; i < slit->locality_count; i++)
- 		for (j = 0; j < slit->locality_count; j++)
- 			numa_set_distance(pxm_to_node(i), pxm_to_node(j),
- 				slit->entry[slit->locality_count * i + j]);
--
--	/* acpi_slit is used only by emulation */
--	length = slit->header.length;
--	phys = memblock_find_in_range(0, max_pfn_mapped<<PAGE_SHIFT, length,
--		 PAGE_SIZE);
--
--	if (phys == MEMBLOCK_ERROR)
--		panic(" Can not save slit!\n");
--
--	acpi_slit = __va(phys);
--	memcpy(acpi_slit, slit, length);
--	memblock_x86_reserve_range(phys, phys + length, "ACPI SLIT");
- }
+ 	nid = numa_cpu_node(cpu);
+@@ -1038,26 +1055,15 @@ void __cpuinit numa_add_cpu(int cpu)
+ 		nid = early_cpu_to_node(cpu);
+ 	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
  
- /* Callback for Proximity Domain -> x2APIC mapping */
-@@ -261,55 +245,6 @@ int __init x86_acpi_numa_init(void)
- 	return srat_disabled() ? -EINVAL : 0;
- }
+-	/*
+-	 * Use the starting address of the emulated node to find which physical
+-	 * node it is allocated on.
+-	 */
+-	addr = node_start_pfn(nid) << PAGE_SHIFT;
+-	for (physnid = 0; physnid < MAX_NUMNODES; physnid++)
+-		if (addr >= physnodes[physnid].start &&
+-		    addr < physnodes[physnid].end)
+-			break;
++	physnid = emu_nid_to_phys[nid];
  
--#ifdef CONFIG_NUMA_EMU
--static int fake_node_to_pxm_map[MAX_NUMNODES] __initdata = {
--	[0 ... MAX_NUMNODES-1] = PXM_INVAL
--};
--
--/*
-- * In NUMA emulation, we need to setup proximity domain (_PXM) to node ID
-- * mappings that respect the real ACPI topology but reflect our emulated
-- * environment.  For each emulated node, we find which real node it appears on
-- * and create PXM to NID mappings for those fake nodes which mirror that
-- * locality.  SLIT will now represent the correct distances between emulated
-- * nodes as a result of the real topology.
-- */
--void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
--{
--	int i;
--
--	for (i = 0; i < num_nodes; i++) {
--		int nid, pxm;
--
--		nid = find_node_by_addr(fake_nodes[i].start);
--		if (nid == NUMA_NO_NODE)
--			continue;
--		pxm = node_to_pxm(nid);
--		if (pxm == PXM_INVAL)
--			continue;
--		fake_node_to_pxm_map[i] = pxm;
+ 	/*
+ 	 * Map the cpu to each emulated node that is allocated on the physical
+ 	 * node of the cpu's apic id.
+ 	 */
+-	for_each_online_node(nid) {
+-		addr = node_start_pfn(nid) << PAGE_SHIFT;
+-		if (addr >= physnodes[physnid].start &&
+-		    addr < physnodes[physnid].end)
++	for_each_online_node(nid)
++		if (emu_nid_to_phys[nid] == physnid)
+ 			cpumask_set_cpu(cpu, node_to_cpumask_map[nid]);
 -	}
--
--	for (i = 0; i < num_nodes; i++)
--		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
--
--	for (i = 0; i < num_nodes; i++)
--		if (fake_nodes[i].start != fake_nodes[i].end)
--			node_set(i, numa_nodes_parsed);
--}
--
--int acpi_emu_node_distance(int a, int b)
--{
--	int index;
--
--	if (!acpi_slit)
--		return node_to_pxm(a) == node_to_pxm(b) ?
--			LOCAL_DISTANCE : REMOTE_DISTANCE;
--	index = acpi_slit->locality_count * node_to_pxm(a);
--	return acpi_slit->entry[index + node_to_pxm(b)];
--}
--#endif /* CONFIG_NUMA_EMU */
--
- #if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) || defined(CONFIG_ACPI_HOTPLUG_MEMORY)
- int memory_add_physaddr_to_nid(u64 start)
+ }
+ 
+ void __cpuinit numa_remove_cpu(int cpu)
+@@ -1070,16 +1076,18 @@ void __cpuinit numa_remove_cpu(int cpu)
+ # else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+ static void __cpuinit numa_set_cpumask(int cpu, int enable)
  {
+-	int node = early_cpu_to_node(cpu);
+ 	struct cpumask *mask;
+-	int i;
++	int nid, i;
+ 
+-	for_each_online_node(i) {
+-		unsigned long addr;
++	nid = numa_cpu_node(cpu);
++	if (nid == NUMA_NO_NODE)
++		nid = early_cpu_to_node(cpu);
++	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
+ 
+-		addr = node_start_pfn(i) << PAGE_SHIFT;
+-		if (addr < physnodes[node].start ||
+-					addr >= physnodes[node].end)
++	physnid = emu_nid_to_phys[nid];
++
++	for_each_online_node(i) {
++		if (emu_nid_to_phys[nid] != physnid)
+ 			continue;
+ 		mask = debug_cpumask_set_cpu(cpu, enable);
+ 		if (!mask)
 -- 
 1.7.1
 
