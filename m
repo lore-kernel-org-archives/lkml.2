@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab1BNXY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 18:24:26 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35340
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab1BNXYZ (ORCPT
+	id S1753785Ab1BNX1Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 18:27:25 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40211 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab1BNX1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 18:24:25 -0500
-Date: Mon, 14 Feb 2011 15:25:00 -0800 (PST)
-Message-Id: <20110214.152500.104069812.davem@davemloft.net>
-To: mathieu.desnoyers@polymtl.ca
-Cc: matt@console-pimps.org, rostedt@goodmis.org, peterz@infradead.org,
-        will.newton@gmail.com, jbaron@redhat.com, hpa@zytor.com, mingo@elte.hu,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org,
-        vapier@gentoo.org, cmetcalf@tilera.com, dhowells@redhat.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <BLU0-SMTP637B2E9372CFBF3A0B5B0996D00@phx.gbl>
-References: <20110214.134600.179933733.davem@davemloft.net>
-	<20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com>
-	<BLU0-SMTP637B2E9372CFBF3A0B5B0996D00@phx.gbl>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 14 Feb 2011 18:27:23 -0500
+Subject: Re: [PATCH][trivial] iSCSI HBA Transport, target: Fix duplicate
+	include and typo in drivers/target/target_core_hba.c
+From: "Nicholas A. Bellinger" <nab@risingtidesystems.com>
+Reply-To: nab@risingtidesystems.com
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>,
+        trivial@kernel.org
+In-Reply-To: <alpine.LNX.2.00.1102142355020.4530@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102142355020.4530@swampdragon.chaosbits.net>
+Content-Type: text/plain
+Organization: Rising Tide Systems
+Date: Mon, 14 Feb 2011 15:20:51 -0800
+Message-Id: <1297725651.29207.39.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Date: Mon, 14 Feb 2011 18:03:01 -0500
-
-> If this is true, then we have bugs in lots of xchg/cmpxchg users (which
-> do not reside in atomic.h), e.g.:
+On Tue, 2011-02-15 at 00:02 +0100, Jesper Juhl wrote:
+> target/target_core_device.h is included twice in 
+> drivers/target/target_core_hba.c .  This patch removes the duplicate.
+> Also correct a typo: copntains --> contains .
 > 
-> fs/fs_struct.c:
-> int current_umask(void)
-> {
->         return current->fs->umask;
-> }
-> EXPORT_SYMBOL(current_umask);
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
 > 
-> kernel/sys.c:
-> SYSCALL_DEFINE1(umask, int, mask)
-> {
->         mask = xchg(&current->fs->umask, mask & S_IRWXUGO);
->         return mask;
-> }
-> 
-> The solution to this would be to force all xchg/cmpxchg users to swap to
-> atomic.h variables, which would force the ll semantic on read. But I'd
-> really like to see where this is documented first -- or which PowerPC
-> engineer we should talk to.
+> diff --git a/drivers/target/target_core_hba.c b/drivers/target/target_core_hba.c
+> index 4bbe820..8780ba8 100644
+> --- a/drivers/target/target_core_hba.c
+> +++ b/drivers/target/target_core_hba.c
+> @@ -1,7 +1,7 @@
+>  /*******************************************************************************
+>   * Filename:  target_core_hba.c
+>   *
+> - * This file copntains the iSCSI HBA Transport related functions.
+> + * This file contains the iSCSI HBA Transport related functions.
+>   *
+>   * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
+>   * Copyright (c) 2005, 2006, 2007 SBE, Inc.
+> @@ -38,7 +38,6 @@
+>  
 
-We can't wholesale to atomic_t because we do this on variables of
-all sizes, not just 32-bit ones.
+Ok, I will be going through and updating the copyrights soon, and I will
+include this spelling correction.
 
-We do them on pointers in the networking for example.
+>  #include <target/target_core_base.h>
+>  #include <target/target_core_device.h>
+> -#include <target/target_core_device.h>
+>  #include <target/target_core_tpg.h>
+>  #include <target/target_core_transport.h>
+>  
+
+This extra include has been removed in lio-core-2.6.git, but has not
+made it to mainline just yet.
+
+--nab
+
