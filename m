@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1BNQJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:09:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38297 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755522Ab1BNQJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:09:57 -0500
-Date: Mon, 14 Feb 2011 17:01:48 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214160148.GD8761@redhat.com>
-References: <20110204130455.GA3671@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <20110209212526.GA9999@redhat.com> <201102140001.47218.vda.linux@googlemail.com> <20110214090356.GA21979@host1.dyn.jankratochvil.net>
+	id S1755923Ab1BNQMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:12:16 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:46903 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab1BNQMM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 11:12:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=klpi7ypwlDJqaw4BgV2k4xOwDvwXcs59xgNz48yfiOw2APdoXm1bOCc1DFlXC7THA9
+         DBz3BBwZVQtXPy/634JXkWYaOIFO94Fpif+TTmIxjkE7Yj/Ng/UNMpMxRsffM1MGGgah
+         6MD9mh4NRRSmjIki4xS8X/yErg8u/Hy01sBgY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110214090356.GA21979@host1.dyn.jankratochvil.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110214112540.GE18742@htj.dyndns.org>
+References: <1297530663-26234-1-git-send-email-tj@kernel.org>
+	<1297530663-26234-3-git-send-email-tj@kernel.org>
+	<4D56C79B.2060201@kernel.org>
+	<AANLkTimiKA91OEMyt-KM5q5V5s6-xS_76Ji-Y8M_k4Bt@mail.gmail.com>
+	<4D56CB9F.8030909@kernel.org>
+	<AANLkTimAceZOxWQq03QqhXhQ42r2jw6MQYA9Vc2XQo5B@mail.gmail.com>
+	<4D56CDDF.8050401@kernel.org>
+	<20110214112540.GE18742@htj.dyndns.org>
+Date: Mon, 14 Feb 2011 08:12:10 -0800
+X-Google-Sender-Auth: bVm0HbDitxPS3mylzWuo4Op7tek
+Message-ID: <AANLkTim3bSWKYcwoJ5+GCO-rPWfXgGEvS1JUbgKx+3f+@mail.gmail.com>
+Subject: Re: [PATCH 02/26] x86-64, NUMA: Simplify hotplug node handling in acpi_numa_memory_affinity_init()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
+        mingo@elte.hu, hpa@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Jan Kratochvil wrote:
+On Mon, Feb 14, 2011 at 3:25 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Yinghai.
 >
-> On Mon, 14 Feb 2011 00:01:47 +0100, Denys Vlasenko wrote:
-> > * sleep runs in nanosleep
-> > * SIGSTOP arrives, strace sees it
-> > * strace logs it and allows it via ptrace(PTRACE_SYSCALL, ..., SIGSTOP)
-> > * sleep process enters group-stop
+> On Sat, Feb 12, 2011 at 10:13:51AM -0800, Yinghai Lu wrote:
+>> > Eh?  The oldnode thing will restore the node to initial state thus
+>> > fulfilling the node empty condition.  Am I missing something?
+>> >
+>>
+>> yes. nd get restored, but it keep node_parsed set for that kind of node.
 >
-> The last point breaks the documented behavior of ptrace:
-
-Well, afaics no. This is what we currently do.
-
-> 	If data is nonzero and not SIGSTOP, it is interpreted as a signal to
-> 	be delivered to the child; otherwise, no signal is delivered.
-
-Fantastic. I never knew the man states this (although the documentation
-above means PTRACE_CONT).
-
-But this is not true. And iirc this was never true. Netither PTRACE_CONT,
-nor any other request threat SIGSTOP specially.
-
-(also, please note that the signal is not necessarily delivered, only
- if we are going to resume the tracee after it reported the signal or
- syscall entry/exit)
-
-> > * nothing happens until some other signal arrives
-> > * say, SIGCONT arrives
+> So, this is the code snippet.  Both @nd->start and end are zero and
+> nodes_parsed for @node is clear.
 >
-> What if other signal arrives?
+>        nd = &nodes[node];
+>        oldnode = *nd;
+>
+> @oldnode->start, end == 0.
+>
+>        if (!node_test_and_set(node, nodes_parsed)) {
+>                nd->start = start;
+>                nd->end = end;
+> This path is taken and @nd->start and end are set.
+>        } else {
+>                if (start < nd->start)
+>                        nd->start = start;
+>                if (nd->end < end)
+>                        nd->end = end;
+>        }
+>
+>        printk(KERN_INFO "SRAT: Node %u PXM %u %lx-%lx\n", node, pxm,
+>               start, end);
+>
+>        if (ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) {
+>                update_nodes_add(node, start, end);
+>                /* restore nodes[node] */
+>                *nd = oldnode;
+> @nd->start and end are restored to zero.
+>                if ((nd->start | nd->end) == 0)
+>                        node_clear(node, nodes_parsed);
+> and @nodes_parsed is cleared.
 
-only SIGCONT can resume the stopped task (ignorign SIGKILL).
+oh, i missed that restore happen first...
 
-> The tracer probably should not be notified as
-> the tracee is in a group-stop.
+sorry.
 
-It is.
-
-Oleg.
-
+Yinghai
