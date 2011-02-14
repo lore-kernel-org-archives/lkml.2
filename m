@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab1BNSqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:46:48 -0500
-Received: from xes-mad.com ([216.165.139.218]:12152 "EHLO xes-mad.com"
+	id S1751553Ab1BNSxx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:53:53 -0500
+Received: from www.tglx.de ([62.245.132.106]:53879 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865Ab1BNSqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:46:46 -0500
-Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
-From: Peter Tyser <ptyser@xes-inc.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>
-In-Reply-To: <AANLkTin7gBNBXKCuwL6Az+-+KQEw8Hsq-DYYr1RTXhFm@mail.gmail.com>
-References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
-	 <1297698493.965.5475.camel@petert>
-	 <20110214170812.6f54a4bb@lxorguk.ukuu.org.uk>
-	 <AANLkTimyD=U-+=HpXWmF2B9KjrDf8HMCZenAgW3SQgDK@mail.gmail.com>
-	 <1297705520.965.5657.camel@petert>
-	 <AANLkTin7gBNBXKCuwL6Az+-+KQEw8Hsq-DYYr1RTXhFm@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Feb 2011 12:46:03 -0600
-Message-ID: <1297709163.965.5858.camel@petert>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751064Ab1BNSxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:53:51 -0500
+Date: Mon, 14 Feb 2011 19:53:25 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: lockdep: possible reason: unannotated irqs-off. (was: Re: Linux
+ 2.6.38-rc4)
+In-Reply-To: <20110214145125.GA2937@zhy>
+Message-ID: <alpine.LFD.2.00.1102141950180.26192@localhost6.localdomain6>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com> <20110208101730.GB7020@liondog.tnic> <1297161712.13327.100.camel@laptop> <20110208121108.GA4824@zhy> <20110208133457.GA5813@zhy> <1297172906.13327.104.camel@laptop>
+ <1297174680.13327.107.camel@laptop> <20110214145125.GA2937@zhy>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 11:04 -0700, Grant Likely wrote:
-> On Mon, Feb 14, 2011 at 10:45 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
-> >> > We need four states for a gpio pin direction though. A pin can be
-> >> >
-> >> > - input
-> >> > - output
-> >>
-> >> There are actually multiple output modes that a specific gpio
-> >> controller could implement, but the gpio api only has a boolean
-> >> understanding of output.  I don't know if it is really worthwhile to
-> >> try and encode all the possible configurations in this API.
-> >>
-> >> > - unknown (hardware lacks get functionality and it has not been set by
-> >> >  software yet)
-> >
-> > I'm not sure how we could handle unknown directions in a better way.  We
-> > really should know the direction by this point for most (all?) GPIO
-> > chips.  I'd think the proper fix would be to make sure we can detect a
-> > direction for all chips - either by reading hardware bits or by having
-> > the platform code let us know (eg pdata->n_latch in pcf857x.c).  If you
-> > have a suggestion about how unknown pins should be used, I can look into
-> > it and submit a follow up patch.
+On Mon, 14 Feb 2011, Yong Zhang wrote:
+
+> On Tue, Feb 08, 2011 at 03:18:00PM +0100, Peter Zijlstra wrote:
+> > Subject: lockdep, timer: Revert the del_timer_sync() annotation
+> > 
+> > Both attempts at trying to allow softirq usage failed, revert for this
+> > release and try again later.
+> > 
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > ---
+> >  kernel/timer.c |    8 +++-----
+> >  1 files changed, 3 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/kernel/timer.c b/kernel/timer.c
+> > index 343ff27..c848cd8 100644
+> > --- a/kernel/timer.c
+> > +++ b/kernel/timer.c
+> > @@ -959,7 +959,7 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+> >   *
+> >   * Synchronization rules: Callers must prevent restarting of the timer,
+> >   * otherwise this function is meaningless. It must not be called from
+> > - * hardirq contexts. The caller must not hold locks which would prevent
+> > + * interrupt contexts. The caller must not hold locks which would prevent
 > 
-> Does it really matter?  Sure it's *nice* to have the current status
-> information if the driver can easily get it, but it probably isn't
-> critical.  Any user of the pin should be putting the pin in the mode
-> it needs regardless of the initial state.
+> I think we don't need to revert this comment.
 
-I don't think it matters too much since I haven't encountered a driver
-where you can't determine a pin direction yet.  But if it were
-impossible to determine a direction, it would throw people off.  They'd
-have to know that the pin direction couldn't be trusted initially, which
-is a big leap (this is the bug I'm trying to fix with this patch).  Eg
-if someone sees a pin direction as "input" via sysfs, what are the odds
-that they'll run "echo input > direction" just to make sure...
+That does not matter. It breaks stuff left and right and we need to go
+back to the old (maybe less broken) state in that phase of -rc. It's
+that simple.
+ 
+> >   * completion of the timer's handler. The timer's handler must not call
+> >   * add_timer_on(). Upon exit the timer is not queued and the handler is
+> >   * not running on any CPU.
+> > @@ -971,12 +971,10 @@ int del_timer_sync(struct timer_list *timer)
+> >  #ifdef CONFIG_LOCKDEP
+> >  	unsigned long flags;
+> >  
+> > -	raw_local_irq_save(flags);
+> > -	local_bh_disable();
+> > +	local_irq_save(flags);
+> 
+> Going back to local_irq_save()/local_irq_restore() doesn't prevent
+> it from using in softirq context.
 
-Anyway, I don't think its a critical issue either since its a corner
-case with an easy workaround.  If we did want to add support for
-allowing a direction of "unknown", it could be in a follow up patch
-since its technically a bigger issue than this patch.
+That does not matter. It goes back to status quo and does not
+introduce new problems. As the changelog says:
 
-Peter
+> > Both attempts at trying to allow softirq usage failed, revert for this
+> > release and try again later.
 
+So it's not forgotten. It's just not fixable right now.
+
+Thanks,
+
+	tglx
