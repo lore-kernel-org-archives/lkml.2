@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab1BNGKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 01:10:55 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:49785 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab1BNGKx (ORCPT
+	id S1751357Ab1BNGMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 01:12:46 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:36603 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab1BNGMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 01:10:53 -0500
-Date: Mon, 14 Feb 2011 11:40:47 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
-        rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com
-Subject: Re: [PATCH 06/26] x86-64, NUMA: Move *_numa_init() invocations into
- initmem_init()
-Message-ID: <20110214061047.GA7065@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1297530663-26234-1-git-send-email-tj@kernel.org>
- <1297530663-26234-7-git-send-email-tj@kernel.org>
+	Mon, 14 Feb 2011 01:12:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=oWL26w30wcidOrzf6QyM7SVN8ugpg83ivl1qPhnStzZWFXXoREpcT5LmRJwKO71ld+
+         ngNhaUQg5ZEN/MlF9tMw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297530663-26234-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110210100210.adf09c49.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101226120919.GA28529@ghc17.ghc.andrew.cmu.edu>
+ <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu> <20110209151046.89e03dcd.akpm@linux-foundation.org>
+ <20110210100210.adf09c49.kamezawa.hiroyu@jp.fujitsu.com>
+From: Paul Menage <menage@google.com>
+Date: Sun, 13 Feb 2011 22:12:19 -0800
+Message-ID: <AANLkTikD6YKO4C-uOHtsUWk1XMr5yXozvHL2BgbwSVAX@mail.gmail.com>
+Subject: Re: [PATCH v8 0/3] cgroups: implement moving a threadgroup's threads
+ atomically with cgroup.procs
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ben Blum <bblum@andrew.cmu.edu>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        oleg@redhat.com, Miao Xie <miaox@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, ebiederm@xmission.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, Feb 12, 2011 at 06:10:43PM +0100, Tejun Heo wrote:
-> There's no reason for these to live in setup_arch().  Move them inside
-> initmem_init().
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Brian Gerst <brgerst@gmail.com>
-> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-> Cc: Shaohui Zheng <shaohui.zheng@intel.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> ---
->  arch/x86/include/asm/page_types.h |    2 +-
->  arch/x86/kernel/setup.c           |   16 +---------------
->  arch/x86/mm/init_64.c             |    2 +-
->  arch/x86/mm/numa_64.c             |   16 +++++++++++++++-
->  4 files changed, 18 insertions(+), 18 deletions(-)
+On Wed, Feb 9, 2011 at 5:02 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> So, I think it's ok to have 'procs' interface for cgroup if
+> overhead/impact of patch is not heavy.
 >
 
-This will break 32bits.
- 
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+Agreed - it's definitely an operation that comes up as either
+confusing or annoying for users, depending on whether or not they
+understand how threads and cgroups interact. (We've been getting
+people wanting to do this internally at Google, and I'm guessing that
+we're one of the bigger users of cgroups.)
+
+In theory it's something that could be handled in userspace, in one of two ways:
+
+- repeatedly scan the old cgroup's tasks file and sweep any threads
+from the given process into the destination cgroup, until you complete
+a clean sweep finding none. (Possibly even this is racy if a thread is
+being slow to fork)
+
+- use a process event notifier to catch thread fork events and keep
+track of any newly created threads that appear after your first sweep
+of threads, and be prepared to handle them for some reasonable length
+of time (tens of milliseconds?) after the last thread has been
+apparently moved.
+
+(The alternative approach, of course, is to give up and never try to
+move a process into a cgroup except right when you're in the middle of
+forking it, before the exec(), when you know that it has only a single
+thread and you're in control of it.)
+
+These are both painful procedures, compared to the very simple
+approach of letting the kernel move the entire process atomically.
+
+It's true that it's a pretty heavyweight operation, but that weight is
+only paid when you actually use it on a very large process (and which
+would be even more expensive to do in userspace). For the rest of the
+kernel, it's just an extra read lock in the fork path on a semaphore
+in a structure that's pretty much guaranteed to be in cache.
+
+Paul
