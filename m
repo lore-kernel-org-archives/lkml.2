@@ -1,121 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab1BNTB4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:01:56 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:41803 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1BNTBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:01:53 -0500
-Date: Mon, 14 Feb 2011 21:01:31 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-X-X-Sender: aaro@loser
-To: "Janorkar, Mayuresh" <mayur@ti.com>
-cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Thomas Winischhofer <thomas@winischhofer.net>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] sisfb: POST should fail if R/W test fails
-In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB0323A959C3@dbde02.ent.ti.com>
-Message-ID: <alpine.DEB.1.10.1102142055400.2962@loser>
-References: <1297635088-13224-1-git-send-email-aaro.koskinen@iki.fi> <1297635088-13224-2-git-send-email-aaro.koskinen@iki.fi> <EAF47CD23C76F840A9E7FCE10091EFAB0323A959C3@dbde02.ent.ti.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1751719Ab1BNTCV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:02:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921Ab1BNTCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 14:02:18 -0500
+Date: Mon, 14 Feb 2011 19:53:38 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214185338.GF15847@redhat.com>
+References: <20110204170602.GB15301@redhat.com> <20110205133926.GM12133@htj.dyndns.org> <20110207134235.GB22538@redhat.com> <20110207141135.GA16992@htj.dyndns.org> <20110207153723.GA27997@redhat.com> <20110207163121.GB16992@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <20110209212526.GA9999@redhat.com> <20110214145024.GN18742@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110214145024.GN18742@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 14 Feb 2011, Janorkar, Mayuresh wrote:
->> diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
->> index 2fb8c5a..2c5de66 100644
->> --- a/drivers/video/sis/sis_main.c
->> +++ b/drivers/video/sis/sis_main.c
->> @@ -4627,11 +4627,11 @@ sisfb_post_xgi_rwtest(struct sis_video_info
->> *ivideo, int starta,
->>  	return 1;
->>  }
->>
->> -static void __devinit
->> +static int __devinit
->>  sisfb_post_xgi_ramsize(struct sis_video_info *ivideo)
->>  {
->>  	unsigned int buswidth, ranksize, channelab, mapsize;
->> -	int i, j, k, l;
->> +	int i, j, k, l, status;
->>  	u8 reg, sr14;
->>  	static const u8 dramsr13[12 * 5] = {
->>  		0x02, 0x0e, 0x0b, 0x80, 0x5d,
->> @@ -4673,7 +4673,7 @@ sisfb_post_xgi_ramsize(struct sis_video_info
->> *ivideo)
->>  		SiS_SetReg(SISSR, 0x13, 0x35);
->>  		SiS_SetReg(SISSR, 0x14, 0x41);
->>  		/* TODO */
->> -		return;
->> +		return -ENOMEM;
->>  	}
->>
->>  	/* Non-interleaving */
->> @@ -4835,6 +4835,7 @@ bail_out:
->>
->>  	j = (ivideo->chip == XGI_20) ? 5 : 9;
->>  	k = (ivideo->chip == XGI_20) ? 12 : 4;
->> +	status = -EIO;
+On 02/14, Tejun Heo wrote:
 >
-> How about assigning this value during variable declaration?
-
-Yes, that can be done.
-
->>
->>  	for(i = 0; i < k; i++) {
->>
->> @@ -4868,11 +4869,15 @@ bail_out:
->>  		SiS_SetRegANDOR(SISSR, 0x14, 0x0f, (reg & 0xf0));
->>  		sisfb_post_xgi_delay(ivideo, 1);
->>
->> -		if(sisfb_post_xgi_rwtest(ivideo, j, ((reg >> 4) + channelab -
->> 2 + 20), mapsize))
->> +		if (sisfb_post_xgi_rwtest(ivideo, j, ((reg >> 4) + channelab -
->> 2 + 20), mapsize)) {
->> +			status = 0;
->>  			break;
->> +		}
->>  	}
->>
->>  	iounmap(ivideo->video_vbase);
->> +
->> +	return status;
->>  }
->>
->>  static void __devinit
->> @@ -5648,6 +5653,7 @@ sisfb_post_xgi(struct pci_dev *pdev)
->>  		SiS_SetReg(SISSR, 0x14, bios[regb + 0xe0 + 8]);
->>
->>  	} else {
->> +		int err;
->>
->>  		/* Set default mode, don't clear screen */
->>  		ivideo->SiS_Pr.SiS_UseOEM = false;
->> @@ -5661,10 +5667,16 @@ sisfb_post_xgi(struct pci_dev *pdev)
->>
->>  		/* Disable read-cache */
->>  		SiS_SetRegAND(SISSR, 0x21, 0xdf);
->> -		sisfb_post_xgi_ramsize(ivideo);
->> +		err = sisfb_post_xgi_ramsize(ivideo);
->>  		/* Enable read-cache */
->>  		SiS_SetRegOR(SISSR, 0x21, 0x20);
->>
->> +		if (err) {
->> +			dev_err(&pdev->dev,
->> +				"%s: RAM size detection failed: %d\n",
->> +				__func__, err);
->> +			return 0;
+> Hello, Oleg.  Sorry about the delay.
 >
+> On Wed, Feb 09, 2011 at 10:25:26PM +0100, Oleg Nesterov wrote:
+> > >   Note that { the task is put into TASK_TRACED state and group stop
+> > >   resume by SIGCONT is ignored. | the task is put into TASK_STOPPED
+> > >   state and the following PTRACE request will transition it into
+> > >   TASK_TRACED.  If SIGCONT is received before transition to
+> > >   TASK_TRACED is made, the task will resume execution.  If PTRACE
+> > >   request faces with SIGCONT, PTRACE request may fail. }
+> >
+> > To me, the first variant looks better. But, only because it is closer
+> > to the current behaviour. I mean, it is better to change the things
+> > incrementally.
 >
-> Are you sure you wish to return 0 when there is an error?
+> Alright, it's the first variant then.
+>
+> > But in the longer term - I do not know. Personally, I like the
+> > TASK_STOPPED variant. To the point, I was thinking that (perhaps)
+> > we can change ptrace_stop() so that it simply calls do_signal_stop()
+> > if it notices ->group_stop_count != 0.
+>
+> I don't know.  IMHO it's enough to give the ptracer a way to honor
+> group stop and notification so things like strace can stay more or
+> less transparent.  I don't think it's something we need to enforce.
 
-sisfb_post_xgi() returns zero on failure.
+Agreed, I don't know too.
 
-A.
+> > And this is what I do not like. I just can't accept the fact there
+> > is a running thread in the SIGNAL_STOP_STOPPED group.
+>
+> Let's agree to disagree here.  I agree it's weird but don't think it's
+> necessarily a bad thing that needs to be changed.
+
+Yes, I see.
+
+> > Yes! and this is very good argument in favour of all your objections ;)
+>
+> My objections to what?  The one thing that I'm really against is
+> allowing group stop to override PTRACE_CONT and that's visible
+> regardless of notifications.  Other than that, I think we're pretty
+> much in agreement now, aren't we?
+
+Ah, OK, good.
+
+> > Oh, currently I am ignoring this, my only concern is how this all
+> > looks to the userland. But this is the good point, and I have to admit
+> > that I never realized this is just wrong. Yes, I agree, we should do
+> > something, but this is not visible to user-space (except this should
+> > fix the bug ;)
+>
+> Mostly not but there's the obscure window where the tracee goes
+> through TASK_RUNNING which can be visible from userland from another
+> task of the ptracer group, which I think is ignorable as long as it's
+> properly masked from the ptracing task itself.  I wanted to make sure
+> we agree on that one.
+
+I think we are.
+
+> > Sure, if we are talking about SIGCONT from "nowhere". But, the same
+> > way ^Z is not reliable too.
+>
+> It doesn't even have to be from "nowhere".  A process can be raising
+> SIGCONT itself.  To me, the whole thing feels more like an
+> administration aid by design than a strict monitor/control mechanism.
+
+Yes, this is true.
+
+> > I hate this from the time when I noticed that the application doesn't
+> > respond to ^Z under strace. And I used strace exactly because I wanted
+> > do debug some (I can't recall exactly) problems with jctl. That is all.
+> >
+> > But in any case. Some users run the services under ptrace. I mean,
+> > the application borns/runs/dies under ptrace. That is why personally
+> > I certainly do not like anything which delays until detach (say,
+> > the-tracee-doesnt-participate-in-group-stop-until-detach logic).
+>
+> I see, so let's make them participate in the group stop and notify the
+> real parent of the group stop.
+
+Great.
+
+> As long as PTRACE_CONT behavior isn't
+> changed, I don't object.
+
+Well, this is important. And, the changes above depend on this. I mean,
+if we do not change PTRACE_CONT behavior, then the tracee should remember
+if it already participated in this group stop (like you previous patches
+did).
+
+I do not think I can add something else to this discussion. But as you
+already noticed, Denys has joined the club ;)
+
+And I hope Jan and Roland can comment this too.
+
+I won't argue any longer (at least I'll try ;), I understand your concerns.
+
+Oleg.
+
