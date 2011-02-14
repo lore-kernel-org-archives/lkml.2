@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab1BNQ0B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:26:01 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:58842 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753452Ab1BNQZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:25:59 -0500
-Date: Mon, 14 Feb 2011 11:25:58 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Len Brown <lenb@kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [RFC][PATCH 2/2] PM: Make system-wide PM and runtime PM handle
- subsystems consistently
-In-Reply-To: <201102122314.41407.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1102141123370.1716-100000@iolanthe.rowland.org>
+	id S1755965Ab1BNQ1X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:27:23 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47775 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940Ab1BNQ1U (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 14 Feb 2011 11:27:20 -0500
+Date: Mon, 14 Feb 2011 11:26:02 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>, Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
+ destroying mappings
+Message-ID: <20110214162602.GB11290@dumpdata.com>
+References: <4D50343E.1020906@kernel.org>
+ <alpine.DEB.2.00.1102071839060.7277@kaball-desktop>
+ <4D504161.2060900@kernel.org>
+ <4D506A85.9030802@goop.org>
+ <4D50B4B5.4050505@kernel.org>
+ <4D519AAA.8070309@zytor.com>
+ <4D547962.8040403@goop.org>
+ <4D547B74.1030302@kernel.org>
+ <4D54844B.4010007@zytor.com>
+ <4D5488D5.2020607@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5488D5.2020607@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D5957B0.00AD:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 12 Feb 2011, Rafael J. Wysocki wrote:
+> BTW: Do we really need to cleanup initial mapping between _brk_end to _end?
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+Did you try to revert the patch and run it under your setup?
 > 
-> The code handling system-wide power transitions (eg. suspend-to-RAM)
-> can in theory execute callbacks provided by the device's bus type,
-> device type and class in each phase of the power transition.  In
-> turn, the runtime PM core code only calls one of those callbacks at
-> a time, preferring bus type callbacks to device type or class
-> callbacks and device type callbacks to class callbacks.
+> origin patch from jan:
 > 
-> It seems reasonable to make them both behave in the same way in that
-> respect.  Moreover, even though a device may belong to two subsystems
-> (eg. bus type and device class) simultaneously, in practice power
-> management callbacks for system-wide power transitions are always
-> provided by only one of them (ie. if the bus type callbacks are
-> defined, the device class ones are not and vice versa).  Thus it is
-> possible to modify the code handling system-wide power transitions
-> so that it follows the core runtime PM code (ie. treats the
-> subsystem callbacks as mutually exclusive).
+> commit 498343967613183611ac37dccb2846496d954c06
+> Author: Jan Beulich <jbeulich@novell.com>
+> Date:   Wed May 6 13:06:47 2009 +0100
 > 
-> On the other hand, the core runtime PM code will choose to execute,
-> for example, a runtime suspend callback provided by the device type
-> even if the bus type's struct dev_pm_ops object exists, but the
-> runtime_suspend pointer in it happens to be NULL.  This is confusing,
-> because it may lead to the execution of callbacks from different
-> subsystems during different operations (eg. the bus type suspend
-> callback may be executed during runtime suspend, while the device
-> type callback will be executed during runtime resume).
+>     x86-64: finish cleanup_highmaps()'s job wrt. _brk_end
+>     
+>     With the introduction of the .brk section, special care must be taken
+>     that no unused page table entries remain if _brk_end and _end are
+>     separated by a 2M page boundary. cleanup_highmap() runs very early and
+>     hence cannot take care of that, hence potential entries needing to be
+>     removed past _brk_end must be cleared once the brk allocator has done
+>     its job.
+>     
+>     [ Impact: avoids undesirable TLB aliases ]
+>     
+>     Signed-off-by: Jan Beulich <jbeulich@novell.com>
+>     Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 > 
-> Make all of the power management code treat subsystem callbacks in
-> a consistent way, such that:
-> (1) If the device's bus type is defined (eg. dev->bus is not NULL)
->     and its pm pointer is not NULL, the callbacks from dev->bus->pm
->     will be used.
-> (2) If dev->bus is NULL or dev->bus->pm is NULL, but the device's
->     device type is defined (eg. dev->type is not NULL) and its pm
->     pointer is not NULL, the callbacks from dev->type->pm will be
->     used.
-> (3) If dev->bus is NULL or dev->bus->pm is NULL and dev->type is
->     NULL or dev->type->pm is NULL, the callbacks from dev->class->pm
->     will be used provided that both dev->class and dev->class->pm
->     are not NULL.
-
-It looks okay, but I haven't tested it.  Just one minor change needed 
-in the documentation:
-
-> +All phases use bus, type, or class callbacks (that is, methods defined in
-> +dev->bus->pm, dev->type->pm, or dev->class->pm).  These callbacks are mutually
-> +exclusive, so if the bus provides a struct dev_pm_ops object pointed to by its
-> +pm field (i.e. both dev->bus and dev->bus->pm are defined), the callbacks
-> +included in that object (i.e. dev->bus->pm) will be used.  In turn, if the
-
-s/In turn/Otherwise/
-
-> +device type provides a struct dev_pm_ops object pointed to by its pm field
-> +(i.e. both dev->type and dev->type->pm are defined), the PM core will used the
-> +callbacks from that object (i.e. dev->type->pm).  Finally, if the pm fields of
-> +both the bus and device type objects are NULL (or those objects do not exist),
-> +the callbacks provided by the class (that is, the callbacks from dev->class->pm)
-> +will be used.
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index fd3da1d..ae4f7b5 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -7,6 +7,7 @@
+>  #include <asm/page.h>
+>  #include <asm/page_types.h>
+>  #include <asm/sections.h>
+> +#include <asm/setup.h>
+>  #include <asm/system.h>
+>  #include <asm/tlbflush.h>
 >  
->  These callbacks may in turn invoke device- or driver-specific methods stored in
->  dev->driver->pm, but they don't have to.
-
-Alan Stern
-
+> @@ -304,8 +305,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>  #endif
+>  
+>  #ifdef CONFIG_X86_64
+> -       if (!after_bootmem)
+> +       if (!after_bootmem && !start) {
+> +               pud_t *pud;
+> +               pmd_t *pmd;
+> +
+>                 mmu_cr4_features = read_cr4();
+> +
+> +               /*
+> +                * _brk_end cannot change anymore, but it and _end may be
+> +                * located on different 2M pages. cleanup_highmap(), however,
+> +                * can only consider _end when it runs, so destroy any
+> +                * mappings beyond _brk_end here.
+> +                */
+> +               pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+> +               pmd = pmd_offset(pud, _brk_end - 1);
+> +               while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+> +                       pmd_clear(pmd);
+> +       }
+>  #endif
+>         __flush_tlb_all();
+>  
