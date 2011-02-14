@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1BNWKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 17:10:14 -0500
-Received: from smtp-68.nebula.fi ([83.145.220.68]:60683 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab1BNWKL (ORCPT
+	id S1751280Ab1BNWNQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 17:13:16 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11541 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1BNWNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 17:10:11 -0500
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Feb 2011 17:10:11 EST
-Message-ID: <4D59A693.2080106@iki.fi>
-Date: Tue, 15 Feb 2011 00:02:59 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101123 SeaMonkey/2.0.11
+	Mon, 14 Feb 2011 17:13:13 -0500
+Date: Mon, 14 Feb 2011 23:12:08 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Zap entire 'struct inode' in
+ nfs_zap_caches_locked().
+In-Reply-To: <1297721385.23841.14.camel@heimdal.trondhjem.org>
+Message-ID: <alpine.LNX.2.00.1102142311330.4530@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102142252540.4530@swampdragon.chaosbits.net> <1297721385.23841.14.camel@heimdal.trondhjem.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-pci@vger.kernel.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH -next] PCI: fix tlan build when CONFIG_PCI is not enabled
-References: <20110214181137.ee8d4c08.sfr@canb.auug.org.au> <20110214122750.e1e03bc8.randy.dunlap@oracle.com> <4D599F60.4010800@iki.fi>
-In-Reply-To: <4D599F60.4010800@iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sakari Ailus wrote:
-> Randy Dunlap wrote:
->> From: Randy Dunlap<randy.dunlap@oracle.com>
->>
->> When CONFIG_PCI is not enabled, tlan.c has a build error:
->> drivers/net/tlan.c:503: error: implicit declaration of function 'pci_wake_from_d3'
->>
->> so add an inline function stub for this function to pci.h when
->> PCI is not enabled, similar to other stubbed PCI functions.
->>
->> Signed-off-by: Randy Dunlap<randy.dunlap@oracle.com>
->> Cc: Sakari Ailus<sakari.ailus@iki.fi>
->
-> Hi Randy,
->
-> I think this issue in tlan driver was caused by my recent patch which
-> added the suspend/resume support to tlan:
->
-> <URL:http://marc.info/?l=linux-netdev&m=129564436110754&w=3>
->
-> There apparently are tlan cards which are EISA (not PCI) which I forgot
-> when writing the patch. The suspend/resume has been only tested with PCI
-> as I have no EISA bus (let alone EISA tlan card!).
+On Mon, 14 Feb 2011, Trond Myklebust wrote:
 
-Right; so I suppose there's no PM support in EISA anyway. Other pci 
-functions appear to be no-ops when CONFIG_PCI isn't defined so this 
-patch seems right to me --- and no changes are needed in the tlan driver.
-
-Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+> On Mon, 2011-02-14 at 22:56 +0100, Jesper Juhl wrote: 
+> > nfs_zap_caches_locked() attempts to zero all of the 'struct inode' that's 
+> > passed in via the pointer variable 'inode'. Unfortunately it only manages 
+> > to zero the size of a 'pointer to struct inode'. Fix that.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  inode.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> >  compile tested only
+> > 
+> > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+> > index 1cc600e..6c4236e 100644
+> > --- a/fs/nfs/inode.c
+> > +++ b/fs/nfs/inode.c
+> > @@ -145,7 +145,7 @@ static void nfs_zap_caches_locked(struct inode *inode)
+> >  	nfsi->attrtimeo = NFS_MINATTRTIMEO(inode);
+> >  	nfsi->attrtimeo_timestamp = jiffies;
+> >  
+> > -	memset(NFS_COOKIEVERF(inode), 0, sizeof(NFS_COOKIEVERF(inode)));
+> > +	memset(NFS_COOKIEVERF(inode), 0, sizeof(*NFS_COOKIEVERF(inode)));
+> >  	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode))
+> >  		nfsi->cache_validity |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA|NFS_INO_INVALID_ACCESS|NFS_INO_INVALID_ACL|NFS_INO_REVAL_PAGECACHE;
+> >  	else
+> 
+> That's incorrect.
+> 
+> NFS_COOKIEVERF(inode) expands to NFS_I(inode)->cookieverf, and since
+> cookieverf is declared inside the struct nfs_inode as 
+> 
+> 	u32	cookieverf[2];
+> 
+> the sizeof(NFS_I(inode)->cookieverf) should expand to the size of the
+> cookieverf array (i.e. 8 bytes).
+> 
+Ouch, I completely misread/misunderstood that. Thanks for the 
+clarification and please ignore the patch...
 
 -- 
-Sakari Ailus
-sakari.ailus@iki.fi
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
