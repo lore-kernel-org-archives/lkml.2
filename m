@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab1BNQ5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:57:55 -0500
-Received: from sous-sol.org ([216.99.217.87]:48338 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756162Ab1BNQ5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:57:53 -0500
-Date: Mon, 14 Feb 2011 08:57:47 -0800
-From: Chris Wright <chrisw@sous-sol.org>
-To: sedat.dilek@gmail.com
-Cc: Chris Wright <chrisw@sous-sol.org>, DRI <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression - Xorg start failed
-Message-ID: <20110214165747.GK9869@sequoia.sous-sol.org>
-References: <AANLkTi=G5pLNqLw1RGNauD+9D76uJfEgNXuef1Po6km7@mail.gmail.com>
- <20110214162057.GI9869@sequoia.sous-sol.org>
- <AANLkTinFN6gmcNvoe=DQ3YPL=Bcj3pKCHO6ZzafE9uak@mail.gmail.com>
+	id S1756300Ab1BNQ6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:58:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756113Ab1BNQ6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 11:58:15 -0500
+Date: Mon, 14 Feb 2011 11:58:03 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
+ for CFQ queue
+Message-ID: <20110214165803.GE13097@redhat.com>
+References: <4D51ED26.8050809@cn.fujitsu.com>
+ <4D539804.9090308@cn.fujitsu.com>
+ <20110210192940.GA2600@redhat.com>
+ <4D55E07A.8060903@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinFN6gmcNvoe=DQ3YPL=Bcj3pKCHO6ZzafE9uak@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4D55E07A.8060903@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sedat Dilek (sedat.dilek@googlemail.com) wrote:
-> On Mon, Feb 14, 2011 at 5:20 PM, Chris Wright <chrisw@sous-sol.org> wrote:
-> > * Sedat Dilek (sedat.dilek@googlemail.com) wrote:
-> >> [ As I am not subscribed to both MLs and lazy to pick up all involved people ]
+On Sat, Feb 12, 2011 at 09:20:58AM +0800, Gui Jianfeng wrote:
+> Vivek Goyal wrote:
+> > On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
+> >> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
+> >> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
+> >> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
+> >> group scheduling on the same service tree.
 > >>
-> >> Hi Chris,
+> >> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> >> ---
+> >>  block/cfq-iosched.c |  219 +++++++++++++++++++++++++++++++++++++++------------
+> >>  1 files changed, 167 insertions(+), 52 deletions(-)
 > >>
-> >> The original patch had also this part (see the revert in [1]):
-> >> ...
-> >> +#include <linux/security.h>
-> >> ...
-> >>
-> >> Your new patch in [2] is missing it or is it not required?
-> >
-> > It was just a patch on top of the bad commit (47970b1b), the #include is
-> > required.
-> >
-> > thanks,
-> > -chris
-> >
+> >> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> >> index f3a126e..41cef2e 100644
+> >> --- a/block/cfq-iosched.c
+> >> +++ b/block/cfq-iosched.c
+> >> @@ -39,6 +39,13 @@ static const int cfq_hist_divisor = 4;
+> >>   */
+> >>  #define CFQ_IDLE_DELAY		(HZ / 5)
+> >>  
+> >> +/* 
+> >> + * The base boosting value.
+> >> + */
+> >> +#define CFQ_BOOST_SYNC_BASE          (HZ / 10)
+> >> +#define CFQ_BOOST_ASYNC_BASE          (HZ / 25)
+> >> +
+> > 
+> > These are same as cfq_slice_sync and cfq_slice_async. Looking at
+> > boost logic, this is equivalent of starting a new queue/group as
+> > if it is being requeued after conuming a full slice. So may be we can divide
+> > it by some const number say 4 or something like that. This is a minor
+> > point though as this algorimthm will kind of evolve and we will learn
+> > what works best.
+> > 
+> > Secondly, I think you wanted to SYNC vs ASYNC logic seem to be reversed.
+> > We would like to give ASYNC queues higher boost (Put these farther in 
+> > tree) and lesser boost to SYNC queues. Looks like above constants will
+> > do the reverse? 
 > 
-> OK, now I see.
-> Might be good to push a v2 as the initial patch was reverted in the meantime?
-> The explanations of the fixup patch were helpful (to me) and should be included.
+> Hi Vivek,
+> 
+> Currently, SYNC and ASYNC queues are in different service tree, they don't
+> impact each other. Here, I Really want use this logic.
 
-Yeah, I'll send a new patch to James.
+Ok, SYNC and ASYNC are on separate service tree so their vtime are not
+comparable (as of today, down the line one might want to look at those for
+better workload selection logic).
+
+Anyway, because two are on seprate tree so why should we have separate
+boosting constants for them? How does it help?
+
+Thanks
+Vivek
