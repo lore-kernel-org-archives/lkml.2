@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab1BNPOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:14:35 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:56471 "EHLO e3.ny.us.ibm.com"
+	id S1755673Ab1BNPPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 10:15:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63698 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754222Ab1BNPOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:14:34 -0500
-Date: Mon, 14 Feb 2011 07:14:02 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Why does the 2.6.37 scheduler hate RT tasks?
-Message-ID: <20110214151402.GA2256@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110202011049.GA15084@linux.vnet.ibm.com>
- <20110214145549.GB2937@zhy>
+	id S1753393Ab1BNPPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 10:15:37 -0500
+Date: Mon, 14 Feb 2011 16:06:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214150656.GA8761@redhat.com>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org> <20110204130455.GA3671@redhat.com> <20110204144858.GI12133@htj.dyndns.org> <201102132224.25197.vda.linux@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110214145549.GB2937@zhy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <201102132224.25197.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 10:55:49PM +0800, Yong Zhang wrote:
-> On Tue, Feb 01, 2011 at 05:10:49PM -0800, Paul E. McKenney wrote:
-> > Hello, Peter,
-> > 
-> > If I create an SCHED_FIFO-priority kthread in pre-2.6.37 kernels,
-> > things work nicely.  If I try in in later kernels, __disable_runtime()
-> > gets upset occasionally during CPU-hotplug calls when CPUs are inserted.
-> > If I make the exact same kthreads run SCHED_NORMAL, no problem.
-> > 
-> > Unfortunately, I need an RT kthread so that I can do priority boosting.
-> > 
-> > My next thing to try is to demote my kthreads to SCHED_NORMAL at the
-> > beginning of a CPU-hotplug event and promote them back to SCHED_FIFO at
-> > the end of the CPU-hotplug event, which would leave the system vulnerable
-> > to RCU priority inversion during CPU-hotplug events.  This would be
-> > better than the current behavior, but I thought that I should check with
-> > you to see if there is a better approach.
-> 
-> Just want to know the status of this issue :)
-> 
-> Does commit 06c3bc655697b19521901f9254eb0bbb2c67e7e8 cure it?
+On 02/13, Denys Vlasenko wrote:
+>
+> For example, PTRACE_DETACH requires tracee to be stopped to succeed.
+> If debugger tries to detach while the tracee is running, it will get
+> an error. This forces debugger to do stupid things like sending SIGSTOP,
+> then waiting for tracee to stop, then doing PTRACE_DETACH, then
+> sending SIGCONT. Of course, while this dance is performed,
+> any SIGSTOPs/SIGCONTs which may be  sent to the tracee by other processes
+> are totally disrupted by this.
 
-Ah, good to see that this got in!  I did extract it from the diagnostic
-patch that Peter sent out, and it does seem to cure the issue.
+Yes.
 
-							Thanx, Paul
+> The natural (for me) fix is to make PTRACE_DETACH work even on running
+> tracee. It simply makes a lot of sense. Why on earth do we need tracee
+> to be stopped? There is no reason.
+
+Agreed, but
+
+> But this is a change in ptrace behavior, and therefore is not acceptable
+> for Roland.
+
+I agree with Roland. Not only this is too visible change, it is not clear
+what detach-with-signal can do if the tracee is not stopped.
+
+This was (very briefly) discussed recently. Probably we can implement
+PTRACE_DETACH_RUNNING (the name is random) which doesn't require the
+stopped tracee but ignores the "data" argument.
+
+Oleg.
+
