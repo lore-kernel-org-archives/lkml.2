@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab1BNVZF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 16:25:05 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:56356 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab1BNVZD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 16:25:03 -0500
-Date: Mon, 14 Feb 2011 15:24:53 -0600
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Steve Grubb <sgrubb@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-Message-ID: <20110214212453.GA6582@localhost>
-References: <1294266337.3237.45.camel@localhost.localdomain>
- <201101270942.07689.sgrubb@redhat.com>
- <20110128184901.GA5134@localhost>
- <201101281410.29794.sgrubb@redhat.com>
- <20110128193809.GB8854@localhost>
- <1296584221.3145.12.camel@localhost.localdomain>
- <20110201212605.GB5294@localhost>
- <AANLkTin6Msom+b8wHULvzEjA+VL5ofQ9wx-ZN5SiK6-p@mail.gmail.com>
- <1297133758.2323.5.camel@localhost.localdomain>
- <AANLkTin701rA70UzDYK21nSmUAYz62Xg=-Rtxg8nebWw@mail.gmail.com>
+	id S1753532Ab1BNVZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 16:25:31 -0500
+Received: from cantor.suse.de ([195.135.220.2]:40065 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753171Ab1BNVZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 16:25:30 -0500
+Date: Mon, 14 Feb 2011 22:25:28 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jesper Krogh <jesper@krogh.cc>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: sync hangs - 2.6.35.10
+Message-ID: <20110214212528.GG3018@quack.suse.cz>
+References: <4D47A99A.6050204@krogh.cc>
+ <20110201121457.GA2059@quack.suse.cz>
+ <4D59999E.9040302@krogh.cc>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTin701rA70UzDYK21nSmUAYz62Xg=-Rtxg8nebWw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4D59999E.9040302@krogh.cc>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric Paris (eparis@parisplace.org):
-> On Mon, Feb 7, 2011 at 9:55 PM, Eric Paris <eparis@redhat.com> wrote:
-> >
-> > Below is what I'm working on.  I've asked dhowells to review the creds
-> > code, since commit_creds() does not take const.  Maybe that's just an
-> > oversight.  Basically I've exposed two new sysctls.
-> >
-> > /proc/sys/kernel/usermodehelper/bset
-> > /proc/sys/kernel/usermodehelper/inheritable
-> >
-> > You must have CAP_SYS_MODULE to change these (changes are &= ONLY).
-> > When the kernel launches a usermodehelper it will do so with these as
-> > the bset and pI.  I haven't attempted securebits and uid (since I didn't
-> > really need them I don't think)  But will if anyone can think of a use
-> > case.
-> >
-> > Is this what you were thinking?
-> 
-> 
-> Anything?  Problems with this patch/approach?
+On Mon 14-02-11 22:07:42, Jesper Krogh wrote:
+> On 2011-02-01 13:14, Jan Kara wrote:
+> >   Definitely. There have been several patches fixing livelock issues
+> >in this area under various conditions. Considering your use case, you
+> >might be hit by problems being fixed by commits:
+> >6585027a5e8cb490e3a761b2f3f3c3acf722aff2
+> >aa373cf550994623efb5d49a4d8775bafd10bbc1
+> >b9543dac5bbc4aef0a598965b6b34f6259ab9a9b
+> >(went into 2.6.38-rc1)
+> I couldn't get above to apply on a 2.6.35.10 kernel, but applied to
+> a 2.6.37 the problem seems solved. Have they been queued up for stable?
+  I don't think so but it's a good idea. Will send them there.
 
-Sorry, I've just not had a chance to take a close enough look.  I'll
-try to do so tonight.
+> >possibly also older
+> >7624ee72aa09334af072853457a5d46d9901c3f8
+> >(in 2.6.36-rc1)
+> This one alone applied to 2.6.35 didn't solve it.
+> 
+> jk@clyde:~$ time sync
+> 
+> real    19m2.650s
+> user    0m0.000s
+> sys    0m0.030s
+> 
+> Without notable disk-activity while waiting. (<5MB/s measured using dstat)
+> This sample was "decent" I've seen sync times over 2 horus on this system
+> with 128GB of memory.. again without any notable disk-activity while
+> waiting.
+  Hmm, then I suspect you hit the case fixed by commit
+b9543dac5bbc4aef0a598965b6b34f6259ab9a9b. Anyway, glad to hear you don't
+see the problems anymore. Thanks for letting me know your results :).
 
--serge
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
