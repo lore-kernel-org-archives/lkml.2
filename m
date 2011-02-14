@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1BNB7g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 20:59:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53365 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab1BNB7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 20:59:31 -0500
-Message-ID: <4D588C67.5030205@zytor.com>
-Date: Sun, 13 Feb 2011 17:59:03 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, x32-abi@googlegroups.com,
-        "H.J. Lu" <hjl.tools@gmail.com>, GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: X32 psABI status
-References: <AANLkTikgfv+L9WS4s6n5mQcXWTzc6YMNUSsgBiAOmKbE@mail.gmail.com>	<AANLkTimZA1Npf0nJ8PF-2=8Oe2LXr_ShyBJNkf8Dn5S5@mail.gmail.com>	<4D584A49.80306@zytor.com>	<201102132328.15360.arnd@arndb.de>	<4D585F5F.6030708@zytor.com> <20110213233926.1b3ca15a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110213233926.1b3ca15a@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755314Ab1BNCEA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 21:04:00 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:57858 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab1BNCDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 21:03:55 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        linux-input@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Walter Goossens <waltergoossens@home.nl>,
+        Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH v4] altera_ps2: Add devicetree support
+Date: Mon, 14 Feb 2011 10:06:42 +0800
+Message-Id: <1297649202-11200-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <20110212092600.GE17755@angua.secretlab.ca>
+References: <20110212092600.GE17755@angua.secretlab.ca>
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2011 03:39 PM, Alan Cox wrote:
->> a. the int $0x80 instruction is much slower than syscall.  An actual
->>     i386 process can use the syscall instruction which is disambiguated
->>     by the CPU based on mode, but an x32 process is in the same CPU mode
->>     as a normal 64-bit process.
->
-> So set a flag, whoopee
+From: Walter Goossens <waltergoossens@home.nl>
 
-That's what we're doing, functionally.
+Signed-off-by: Walter Goossens <waltergoossens@home.nl>
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+---
+v2 use const and add compat version.
+v3 change compatible vendor to ALTR.
+    add dts binding doc.
+v4 condition module device table export for of.
 
->> b. 64-bit arguments have to be split between two registers for the
->>     i386 entry points, requiring user-space stubs.
->
-> Diddums. Given you've yet to explain why everyone desperately needs this
-> extra interface why do we care ?
->
->> All in all, the cost of an extra system call table is quite modest.
->
-> And the cost of not doing it is a gloriously wonderful zero. Yo've still
-> not explained the justification or what large number of apps are going to
-> use it.
->
-> It's a simple question - why do we care, why do we want the overhead and
-> the hassle, what do users get in return ?
+Grant, please take it through your tree as Dmitry agreed.
 
-The target applications are an embedded (closed or mostly closed) 
-environment, and the question is if the performance gain is worth it. 
-It is an open question at this stage and we'll see what the numbers look 
-like and, if it turns out to be worthwhile, what exactly the final 
-implementation will look like.
+ .../devicetree/bindings/serio/altera_ps2.txt       |    4 ++++
+ drivers/input/serio/altera_ps2.c                   |   15 +++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/serio/altera_ps2.txt
 
-	-hpa
+diff --git a/Documentation/devicetree/bindings/serio/altera_ps2.txt b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+new file mode 100644
+index 0000000..4d9eecc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+@@ -0,0 +1,4 @@
++Altera UP PS/2 controller
++
++Required properties:
++- compatible : should be "ALTR,ps2-1.0".
+diff --git a/drivers/input/serio/altera_ps2.c b/drivers/input/serio/altera_ps2.c
+index 7998560..3fee88b 100644
+--- a/drivers/input/serio/altera_ps2.c
++++ b/drivers/input/serio/altera_ps2.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
+ 
+ #define DRV_NAME "altera_ps2"
+ 
+@@ -173,6 +174,16 @@ static int __devexit altera_ps2_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id altera_ps2_match[] = {
++	{ .compatible = "ALTR,ps2-1.0", },
++	{},
++}
++MODULE_DEVICE_TABLE(of, altera_ps2_match);
++#else /* CONFIG_OF */
++#define altera_ps2_match NULL
++#endif /* CONFIG_OF */
++
+ /*
+  * Our device driver structure
+  */
+@@ -182,6 +193,7 @@ static struct platform_driver altera_ps2_driver = {
+ 	.driver	= {
+ 		.name	= DRV_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = altera_ps2_match,
+ 	},
+ };
+ 
+@@ -189,13 +201,12 @@ static int __init altera_ps2_init(void)
+ {
+ 	return platform_driver_register(&altera_ps2_driver);
+ }
++module_init(altera_ps2_init);
+ 
+ static void __exit altera_ps2_exit(void)
+ {
+ 	platform_driver_unregister(&altera_ps2_driver);
+ }
+-
+-module_init(altera_ps2_init);
+ module_exit(altera_ps2_exit);
+ 
+ MODULE_DESCRIPTION("Altera University Program PS2 controller driver");
+-- 
+1.7.4
+
