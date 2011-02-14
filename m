@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab1BNOvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 09:51:46 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33343 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755441Ab1BNOvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 09:51:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DlI44BEQPCWO43syo5mLQ5i7hVhSn1ctBMjV/a1eosZzBiYIa9s00M7ZU3kwPVrU3z
-         TVXUKydW2iKuQ0nKfK3/z8Uv7s1/SFMFkENqlyk3u5FF8SeN5CETs5nsW0PLP2Q722Rf
-         1c27Ky2OyK8SDUgWzRNDwfv2u0LMZMV4A/89o=
-Date: Mon, 14 Feb 2011 22:51:25 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, tglx <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: lockdep: possible reason: unannotated irqs-off. (was: Re:
- Linux 2.6.38-rc4)
-Message-ID: <20110214145125.GA2937@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
- <20110208101730.GB7020@liondog.tnic>
- <1297161712.13327.100.camel@laptop>
- <20110208121108.GA4824@zhy>
- <20110208133457.GA5813@zhy>
- <1297172906.13327.104.camel@laptop>
- <1297174680.13327.107.camel@laptop>
+	id S1755538Ab1BNOwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 09:52:47 -0500
+Received: from shutemov.name ([188.40.19.243]:46525 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752117Ab1BNOwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 09:52:45 -0500
+Date: Mon, 14 Feb 2011 16:52:44 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
+Subject: Re: [PATCH, v6 2/3] Implement timer slack notifier chain
+Message-ID: <20110214145244.GB3666@shutemov.name>
+References: <1297688787-3592-1-git-send-email-kirill@shutemov.name>
+ <1297688787-3592-3-git-send-email-kirill@shutemov.name>
+ <alpine.LFD.2.00.1102141428080.26192@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297174680.13327.107.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1102141428080.26192@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 03:18:00PM +0100, Peter Zijlstra wrote:
-> Subject: lockdep, timer: Revert the del_timer_sync() annotation
+On Mon, Feb 14, 2011 at 02:32:23PM +0100, Thomas Gleixner wrote:
+> On Mon, 14 Feb 2011, Kirill A. Shutsemov wrote:
 > 
-> Both attempts at trying to allow softirq usage failed, revert for this
-> release and try again later.
+> > From: Kirill A. Shutemov <kirill@shutemov.name>
+> > 
+> > Process can change its timer slack using prctl(). Timer slack notifier
+> > call chain allows to react on such change or forbid it.
 > 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/timer.c |    8 +++-----
->  1 files changed, 3 insertions(+), 5 deletions(-)
+> So we add a notifier call chain and more exports to allow what ?
+
+To allow the cgroup contoller validate the value.
+
+> > --- a/kernel/sys.c
+> > +++ b/kernel/sys.c
+> > @@ -1691,15 +1691,10 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+> >  			error = perf_event_task_enable();
+> >  			break;
+> >  		case PR_GET_TIMERSLACK:
+> > -			error = current->timer_slack_ns;
+> > +			error = prctl_get_timer_slack();
 > 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 343ff27..c848cd8 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -959,7 +959,7 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
->   *
->   * Synchronization rules: Callers must prevent restarting of the timer,
->   * otherwise this function is meaningless. It must not be called from
-> - * hardirq contexts. The caller must not hold locks which would prevent
-> + * interrupt contexts. The caller must not hold locks which would prevent
+>   What's the point of replacing current->timer_slack_ns with a
+>   function which does exactly the same ?
 
-I think we don't need to revert this comment.
+To keep it consistent. BTW, prctl_get_seccomp() does the same.
 
->   * completion of the timer's handler. The timer's handler must not call
->   * add_timer_on(). Upon exit the timer is not queued and the handler is
->   * not running on any CPU.
-> @@ -971,12 +971,10 @@ int del_timer_sync(struct timer_list *timer)
->  #ifdef CONFIG_LOCKDEP
->  	unsigned long flags;
->  
-> -	raw_local_irq_save(flags);
-> -	local_bh_disable();
-> +	local_irq_save(flags);
+> 
+> > +long prctl_set_timer_slack(long timer_slack_ns)
+> > +{
+> > +	int err;
+> > +
+> > +	/* Reset timer slack to default value */
+> > +	if (timer_slack_ns <= 0) {
+> > +		current->timer_slack_ns = current->default_timer_slack_ns;
+> > +		return 0;
+> 
+>   That does not make any sense at all. Why is setting
+>   default_timer_slack_ns not subject to validation ?
 
-Going back to local_irq_save()/local_irq_restore() doesn't prevent
-it from using in softirq context.
+Hm.. In case of cgroup_timer_slack it's always valid.
+But, yes, in general, we should validate it.
 
-Thanks,
-Yong
+>   Why is it treaded seperately ?
+
+What do you mean?
+
+> > +	}
+> > +
+> > +	err = blocking_notifier_call_chain(&timer_slack_notify_list,
+> > +			timer_slack_ns, NULL);
+> > +	if (err == NOTIFY_DONE)
+> > +		current->timer_slack_ns = timer_slack_ns;
+> > +
+> > +	return notifier_to_errno(err);
+> 
+> Thanks,
+> 
+> 	tglx
+
+-- 
+ Kirill A. Shutemov
