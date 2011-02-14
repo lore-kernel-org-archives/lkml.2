@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1BNQX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:23:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753073Ab1BNQXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:23:23 -0500
-Date: Mon, 14 Feb 2011 17:15:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110214161515.GA11605@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org>
+	id S1755999Ab1BNQYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:24:07 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49308 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab1BNQYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 11:24:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ar0omz1kpwYqpzUAqqWQivdR803gh9Ep6haxC/nyMLoL0YcXZ/gMIQOdF3aYIxfiWY
+         HRr+HEa4q8O9W4hGJDjDA49ry58Mf8BiM5n4vgyX6kYYxPdlFc4Bw72n9f54MhZ2OIOo
+         eltsT9L0/b5Syv/FIzNYXg3cLFCQS7K5Ge3E4=
+Date: Mon, 14 Feb 2011 17:22:47 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
+        mingo@elte.hu, hpa@linux.intel.com
+Subject: Re: [PATCH 15/26] x86-64, NUMA: Unify the rest of memblk
+ registration
+Message-ID: <20110214162247.GX18742@htj.dyndns.org>
+References: <1297530663-26234-1-git-send-email-tj@kernel.org>
+ <1297530663-26234-16-git-send-email-tj@kernel.org>
+ <4D5729A7.7070706@kernel.org>
+ <20110214113221.GG18742@htj.dyndns.org>
+ <AANLkTin0C2AhtHm6K0av2N4pQxLvK_Fc+4w12Qg_QRkZ@mail.gmail.com>
+ <20110214161249.GV18742@htj.dyndns.org>
+ <AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110214151340.GP18742@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14, Tejun Heo wrote:
->
-> Hello, Denys.
->
-> On Sun, Feb 13, 2011 at 11:25:55PM +0100, Denys Vlasenko wrote:
->
-> > $ strace -tt sleep 30
-> > 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
-> > ...
-> > 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
-> > 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> > 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
-> >     (I forgot again why we see it twice. Another quirk I guess...)
-> > 23:02:23.781310 restart_syscall(<... resuming interrupted call ...>) = 0
-> > 23:02:45.622433 close(1)                = 0
-> > 23:02:45.622743 close(2)                = 0
-> > 23:02:45.622885 exit_group(0)           = ?
-> >
-> > Why sleep didn't stop?
-> >
-> > Because PTRACE_SYSCALL brought the task out of group stop at once,
-> > even though strace did try hard to not do so:
-> >
-> >     ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP) <-- note SIGSTOP!
-> >
-> > PTRACE_CONT in this situation would do the same.
->
-> This can be fixed by updating strace, right?  strace can look at the
-> wait(2) exit code and if the tracee stopped for group stop, wait for
-> the tracee to be continued instead of issuing PTRACE_SYSCALL.
+On Mon, Feb 14, 2011 at 08:17:46AM -0800, Yinghai Lu wrote:
+> why not do it at first point ?
+> 
+> numa_register_meminfo() should only take care of creating correctly
+> struct numa_meminfo.
 
-Yes, in this particular case strace could be more clever.
+No, register meminfo doesn't create numa_meminfo.  It sets up system
+states according to the configuration information in numa_meminfo, and
+I really have no idea what you're arguing for or against.  What's your
+point?
 
-But. The tracee should react to SIGCONT after that, this means we
-shouldn't "delay" this stop or force the TASK_TRACED state.
-
-And note that in this case real_parent == debugger. Another case
-is more interesting, and this means we shouldn't delay or hide the
-notifications.
-
-(I just tried to summarize the previous discussion for Denys)
-
-> > Why gdb can't use SIGCONT instead of PTRACE_CONT, just like every
-> > other tool which needs to resume stopped tasks?
->
-> Because that's how PTRACE_CONT behaved the whole time.
-
-Unfortunately, this is true.
-
-Oleg.
-
+-- 
+tejun
