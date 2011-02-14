@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab1BNSAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:00:17 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54190 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab1BNSAQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:00:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=gdgb8EE8AqImQjSS+q96iIUiaGvTVK6F3n806VY9trMg8kA4c26eu7pX3gVLO2SD2I
-         lhLLlEN38zUtobzs3t5f0nA0LqKR7wd8uxz/LpRmcijSx966+AfDNDRzU0NigOBvcSdW
-         t8kght2vA2vTmX8x7b/pjn0NSWdHsEPtx7tig=
+	id S1751913Ab1BNSAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:00:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751719Ab1BNSAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:00:21 -0500
+Date: Mon, 14 Feb 2011 18:51:44 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110214175144.GC15847@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110214161857.GW18742@htj.dyndns.org>
-References: <1297530663-26234-1-git-send-email-tj@kernel.org>
-	<1297530663-26234-5-git-send-email-tj@kernel.org>
-	<4D56D3C7.8050803@kernel.org>
-	<20110214112931.GF18742@htj.dyndns.org>
-	<AANLkTi==t7SfjuLUoXmLawNL-jVqb8r3R7rOzjkjQh_Z@mail.gmail.com>
-	<20110214161857.GW18742@htj.dyndns.org>
-Date: Mon, 14 Feb 2011 10:00:15 -0800
-X-Google-Sender-Auth: SSnytNxbRaX17St19Z82oe_TZ7o
-Message-ID: <AANLkTin6b=7u3FHawefm8dCLzm4OmY83t=m58L4krUzF@mail.gmail.com>
-Subject: Re: [PATCH 04/26] x86-64, NUMA: Unify {acpi|amd}_{numa_init|scan_nodes}()
- arguments and return values
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
-        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
-        mingo@elte.hu, hpa@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 8:18 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Feb 14, 2011 at 08:14:36AM -0800, Yinghai Lu wrote:
->> when system have acpi support  but SRAT is NOT there,  new
->> acpi_numa_init() will return 0 just like SRAT is there and correct.
->> So it will skip AMD node scanning.
+On 02/14, Denys Vlasenko wrote:
 >
-> How does it return 0?
->
-> ...
->                cnt = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
->                                            acpi_parse_memory_affinity,
->                                            NR_NODE_MEMBLKS);
-> If there's no srat, cnt is zero.
->        }
->
->        /* SLIT: System Locality Information Table */
->        acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
->
->        acpi_numa_arch_fixup();
->
->        if (cnt <= 0)
-> if cnt is zero, the if is taken
->                return cnt ?: -ENOENT;
-> and as cnt is zero, -ENOENT is returned.
->        return 0;
-> The function returns 0 iff cnt > 0.
+> >> $ strace -tt sleep 30
+> >> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
+> >> ...
+> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
+> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
+> >>     (I forgot again why we see it twice. Another quirk I guess...)
+> >> 23:02:23.781310 restart_syscall(<... resuming interrupted call ...>) = 0
+> >> 23:02:45.622433 close(1)                = 0
+> >> 23:02:45.622743 close(2)                = 0
+> >> 23:02:45.622885 exit_group(0)           = ?
+> >>
+> >> Why sleep didn't stop?
+> >>
+> >> Because PTRACE_SYSCALL brought the task out of group stop at once,
+> >> even though strace did try hard to not do so:
+> >>
+> >>     ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP) <-- note SIGSTOP!
+> >>
+> >> PTRACE_CONT in this situation would do the same.
+> >
+> > This can be fixed by updating strace, right?  strace can look at the
+> > wait(2) exit code and if the tracee stopped for group stop, wait for
+> > the tracee to be continued instead of issuing PTRACE_SYSCALL.
 
-oh, I missed it again.
+Ah, I seem to understand the confusion, let me repeat...
 
-Yinghai
+> But tracee didn't stop _yet_.
+
+This depends on "_yet_". strace does ptrace(SYSCALL, SIGSTOP) twice.
+The first time it does this after the tracee reports the signal, and
+the tracee stopps.
+
+> Signal is not delivered _yet_, debugger
+> can decide at this point whether to deliver it:
+> ptrace(PTRACE_SYSCALL, $PID, 0x1, SIGSTOP)
+> or ignore:
+> ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)
+>
+> strace has to deliver SIGSTOP if it wants to make program run exactly
+> as it would run without strace. So it tries to do so.
+> Currently, ptrace machinery doesn't react as strace, its user, expects it to.
+
+It does, see above. But then the tracee actually stopps, and report
+this to the tracer. However, strace handles this case as if this was
+another signal=SIGSTOP, so it does ptrace(SYSCALL, SIGSTOP) again.
+
+SIGSTOP has no effect, but PTRACE_SYSCALL wakeups the tracee.
+
+> >> Why gdb can't use SIGCONT instead of PTRACE_CONT, just like every
+> >> other tool which needs to resume stopped tasks?
+> >
+> > Because that's how PTRACE_CONT behaved the whole time.  It can but
+> > just hasn't needed to.
+>
+> Jan, please put on your gdb maintainer's hat, we need your opinion here.
+> Is it a problem from gdb's POV?
+
+Yes, please ;)
+
+Oleg.
+
