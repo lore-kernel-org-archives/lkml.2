@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab1BNSJr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:09:47 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35504 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab1BNSJo (ORCPT
+	id S1753124Ab1BNSJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:09:57 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:65513 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1BNSJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:09:44 -0500
+	Mon, 14 Feb 2011 13:09:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=Ah59YeGzZ9nfdU6IdirX72YAeXiMRt8QMHRXeIRBiHvCfAGLX5ovjs3ho6CUH4iaGR
-         cnT33EmxOEMjhRehEPp3NJoR3qjVlOrIj6HpoPP3miBgzrfYMrpigZRdJ1x4NyR5Vey5
-         FSJ5TLdjC5rZPUOxH8evFgp71xr7Gj6S2X+fQ=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: chris2553@googlemail.com, LKML <linux-kernel@vger.kernel.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: System lockup with 2.6.38-rc4+
-In-Reply-To: <201102141731.29331.chris2553@googlemail.com>
-References: <201102141731.29331.chris2553@googlemail.com>
-User-Agent: Notmuch/0.5-64-gdd23272 (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Mon, 14 Feb 2011 13:09:03 -0500
-Message-ID: <87fwrqxzcw.fsf@gmail.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Zdc6/eo9KkNMGsuLB2wH6cefudYrQ8U8PKwActcOglJmzu2/3QOnoQdbCX3lSGv3X/
+         yERklDNX2hgO5yIomAGO4mOxj/lxYSsCTb79ySQg3919LNT8ARKTWnneJKcAd41R42nm
+         oOKMHYGSPIPwBFlFR7awlAIgTd4PdZL4melMU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <alpine.DEB.2.00.1102141756550.2826@kaball-desktop>
+References: <4D50343E.1020906@kernel.org>
+	<alpine.DEB.2.00.1102071839060.7277@kaball-desktop>
+	<4D504161.2060900@kernel.org>
+	<4D506A85.9030802@goop.org>
+	<4D50B4B5.4050505@kernel.org>
+	<4D519AAA.8070309@zytor.com>
+	<4D547962.8040403@goop.org>
+	<4D547B74.1030302@kernel.org>
+	<4D54844B.4010007@zytor.com>
+	<4D5488D5.2020607@kernel.org>
+	<20110214162602.GB11290@dumpdata.com>
+	<AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
+	<alpine.DEB.2.00.1102141756550.2826@kaball-desktop>
+Date: Mon, 14 Feb 2011 10:09:54 -0800
+X-Google-Sender-Auth: FKBa-vHtXN9TF1UbDE7DJeNHzWQ
+Message-ID: <AANLkTinXY1vV4Wgdkahc5_vr_X00jDfAA3PKWADCsaEZ@mail.gmail.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
+ destroying mappings
+From: Yinghai Lu <yinghai@kernel.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>, Jan Beulich <JBeulich@novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 17:31:29 +0000, Chris Clayton <chris2553@googlemail.com> wrote:
-> Hi,
-> 
-> I'm not subscribed, so please cc me on any reply.
-> 
-> I've just had a complete system lock up with a kernel that I pulled, built and 
-> installed yesterday morning. IT was locked hard and I had to power off and on 
-> to get it back.
+On Mon, Feb 14, 2011 at 9:58 AM, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+> On Mon, 14 Feb 2011, Yinghai Lu wrote:
+>> On Mon, Feb 14, 2011 at 8:26 AM, Konrad Rzeszutek Wilk
+>> <konrad.wilk@oracle.com> wrote:
+>> >> BTW: Do we really need to cleanup initial mapping between _brk_end to _end?
+>> >
+>> > Did you try to revert the patch and run it under your setup?
+>>
+>> No.
+>>
+>> but it should be ok.
+>>
+>> Assume, we can update vmlinux.lds.S to make _end to be 2M aligned as
+>> Stefano suggested?
 >
-It looks like the GPU barfed. If you SSH'd in to the machine you'd find
-that everything but the display and resources held by the hung X server
-would be fine. Were you doing anything particular in your X session when
-this happened? There's a good chance this isn't actually a kernel bug
-but instead is a DRI client doing something dumb.
+> That would solve the problem as long as cleanup_highmap() is not moved
+> to setup_arch.
 
-Cheers, 
-
-- Ben
-
-P.S. The bzipped kernel image generally won't help in diagnosing the
-problem. The most important thing to include in a bug report is the
-kernel version and the dmesg output from the failure if available. Folks
-will ask later if more is necessary.
+yes.
