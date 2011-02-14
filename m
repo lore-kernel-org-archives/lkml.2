@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab1BNAzk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 19:55:40 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36685
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755344Ab1BNAzd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 19:55:33 -0500
-Date: Sun, 13 Feb 2011 16:56:08 -0800 (PST)
-Message-Id: <20110213.165608.149817059.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, gregkh@suse.de, j.dumon@option.com,
-        f.aben@option.com, d.barow@option.com, ajb@spheresystems.co.uk
-Subject: Re: [PATCH] Net, USB, Option, hso: Do not dereference NULL pointer
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1102132206390.18930@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102132206390.18930@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755344Ab1BNBF0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 20:05:26 -0500
+Received: from tundra.namei.org ([65.99.196.166]:45110 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755225Ab1BNBFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Feb 2011 20:05:20 -0500
+Date: Mon, 14 Feb 2011 12:04:37 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Chris Wright <chrisw@sous-sol.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: Re: Regression - Xorg start failed
+In-Reply-To: <20110214003531.GH9869@sequoia.sous-sol.org>
+Message-ID: <alpine.LRH.2.00.1102141203430.12055@tundra.namei.org>
+References: <20110213062213.GA2525@darkstar.dhcp.inet.fi> <AANLkTimDuYgL2cSR8gE7Wrm9_w7cvG_wuUUsa=8TKs87@mail.gmail.com> <AANLkTimxCMgdfht7rrg8QiCppb=D7fvR92eeiewdqCpH@mail.gmail.com> <20110214003531.GH9869@sequoia.sous-sol.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Sun, 13 Feb 2011 22:15:35 +0100 (CET)
+On Sun, 13 Feb 2011, Chris Wright wrote:
 
-> In drivers/net/usb/hso.c::hso_create_bulk_serial_device() we have this 
-> code:
-> ...
-> 	serial = kzalloc(sizeof(*serial), GFP_KERNEL);
-> 	if (!serial)
-> 		goto exit;
-> ...
-> exit:
-> 	hso_free_tiomget(serial);
-> ...
-> hso_free_tiomget() directly dereferences its argument, which in the 
-> example above is a NULL pointer, ouch.
-> I could just add a 'if (serial)' test at the 'exit' label, but since most 
-> freeing functions in the kernel accept NULL pointers (and it seems like 
-> this was also assumed here) I opted to instead change 'hso_free_tiomget()' 
-> so that it is safe to call it with a NULL argument. I also modified the 
-> function to get rid of a pointles conditional before the call to 
-> 'usb_free_urb()' since that function already tests for NULL itself - 
-> besides fixing the NULL deref this change also buys us a few bytes in 
-> size.
-> Before:
-> $ size drivers/net/usb/hso.o
->    text    data     bss     dec     hex filename
->   32200     592    9960   42752    a700 drivers/net/usb/hso.o
-> After:
-> $ size drivers/net/usb/hso.o
->    text    data     bss     dec     hex filename
->   32196     592    9960   42748    a6fc drivers/net/usb/hso.o
+> Subject: [PATCH] pci: use security_capable correctly during config space read
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> Commit 47970b1 ("pci: use security_capable() when checking capablities
+> during config space read") is just plain broken.  The normal capable()
+> interface returns true on success, but the LSM interface returns 0 on
+> success.
+> 
+> Signed-off-by: Chris Wright <chrisw@sous-sol.org>
 
-Applied.
+Sorry, I should have caught this.
+
+Acked-by: James Morris <jmorris@namei.org>
+
+> ---
+> 
+> I've tested this quickly (lspci behaviour is as expected).
+> 
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index f7771f3..ea25e5b 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -369,7 +369,7 @@ pci_read_config(struct file *filp, struct kobject *kobj,
+>  	u8 *data = (u8*) buf;
+>  
+>  	/* Several chips lock up trying to read undefined config space */
+> -	if (security_capable(filp->f_cred, CAP_SYS_ADMIN)) {
+> +	if (security_capable(filp->f_cred, CAP_SYS_ADMIN) == 0) {
+>  		size = dev->cfg_size;
+>  	} else if (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+>  		size = 128;
+> 
+> 
+
+-- 
+James Morris
+<jmorris@namei.org>
