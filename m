@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab1BNTtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:49:46 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:22994
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751475Ab1BNTto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:49:44 -0500
-X-SpamScore: -6
-X-BigFish: VPS-6(zz936eK4015Lzz1202hzz8275dhz32i637h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGMHQG-01-8XN-02
-X-M-MSG: 
-Date: Mon, 14 Feb 2011 20:49:29 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>
-Subject: [GIT PULL] oprofile fixes for v2.6.38
-Message-ID: <20110214194929.GX5874@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	id S1752531Ab1BNTxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:53:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751515Ab1BNTxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 14:53:52 -0500
+Subject: Re: [PATCH 2/2] security: remove unused security_sysctl hook
+From: Eric Paris <eparis@redhat.com>
+To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+In-Reply-To: <AANLkTimGVCCTVjdw3ODPDGHF9bdJMPUz4JR=1oG86EtF@mail.gmail.com>
+References: <1296578542-5902-1-git-send-email-lucian.grijincu@gmail.com>
+	 <1296578696-5989-1-git-send-email-lucian.grijincu@gmail.com>
+	 <1296587121.12605.30.camel@moss-pluto>
+	 <658335B0-9138-4293-9E25-B557AE0DEF7A@redhat.com>
+	 <AANLkTimGVCCTVjdw3ODPDGHF9bdJMPUz4JR=1oG86EtF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Feb 2011 14:53:47 -0500
+Message-ID: <1297713227.2783.30.camel@unknown001a4b0c2895>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Mon, 2011-02-14 at 21:33 +0200, Lucian Adrian Grijincu wrote:
+> On Tue, Feb 1, 2011 at 10:06 PM, Eric Paris <eparis@redhat.com> wrote:
+> >
+> >
+> >
+> >
+> > On Feb 1, 2011, at 2:05 PM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> >
+> >> On Tue, 2011-02-01 at 18:44 +0200, Lucian Adrian Grijincu wrote:
+> >>> The only user for this hook was selinux. sysctl routes every call
+> >>> through /proc/sys/. Selinux and other security modules use the file
+> >>> system checks for sysctl too, so no need for this hook any more.
+> >>>
+> >>> Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+> >>
+> >> Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
+> >
+> > I've applied both to the selinux tree. Thanks
+> 
+> 
+> I've checked both these trees (on all published branches):
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6.git
+>   git://git.infradead.org/users/eparis/selinux.git
+> 
+> and there's no trace of these patches.
+> 
+> 
+> Am I not looking in the right places for these patches?
 
-please pull oprofile fixes for tip/perf/urgent (v2.6.38):
+The second one is the right tree, I just forgot to push!  Pushed now!
+Sorry.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+-Eric
 
-Thanks,
-
--Robert
-
-
-
-The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
-
-  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git for-next
-
-Ari Kauppi (2):
-      oprofile: Fix usage of CONFIG_HW_PERF_EVENTS for oprofile_perf_init and friends
-      ARM: oprofile: Fix backtraces in timer mode
-
- arch/arm/oprofile/common.c |   12 ++----------
- include/linux/oprofile.h   |   13 +++++++++++--
- 2 files changed, 13 insertions(+), 12 deletions(-)
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
