@@ -1,175 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1BNOBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 09:01:05 -0500
-Received: from www.tglx.de ([62.245.132.106]:38344 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab1BNOBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 09:01:04 -0500
-Date: Mon, 14 Feb 2011 15:00:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v6 3/3] cgroups: introduce timer slack controller
-In-Reply-To: <1297688787-3592-4-git-send-email-kirill@shutemov.name>
-Message-ID: <alpine.LFD.2.00.1102141432440.26192@localhost6.localdomain6>
-References: <1297688787-3592-1-git-send-email-kirill@shutemov.name> <1297688787-3592-4-git-send-email-kirill@shutemov.name>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755181Ab1BNOIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 09:08:06 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36771 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab1BNOIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 09:08:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ChqOrP68cDdg1UByKrWlpK/DxAq/kI0hKNDKBNxRP7bcod+4dL0vBahIa9I4yqVNAu
+         o5wwUK5EV0dk+j9HGc72Gvrr4PC3iY8jS1Lzz16wmTEjkAt8+YhvSiDkWRoUTysP1+ep
+         lg+ySef+e+I4GlUxuz4VjDPeOPT/cOwY5gHb4=
+Date: Mon, 14 Feb 2011 15:07:55 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>,
+        device-mapper development <dm-devel@redhat.com>
+Subject: Re: [PATCH] loop: clear read-only flag in loop_clr_fd.
+Message-ID: <20110214140755.GL18742@htj.dyndns.org>
+References: <4D573BBB.6090200@redhat.com>
+ <1297594735-5593-1-git-send-email-tm@tao.ma>
+ <4D57E67E.1030707@redhat.com>
+ <4D57F357.6060708@tao.ma>
+ <4D580A8B.5050508@redhat.com>
+ <20110214103026.GA18742@htj.dyndns.org>
+ <4D591664.6090203@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D591664.6090203@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011, Kirill A. Shutsemov wrote:
-> From: Kirill A. Shutemov <kirill@shutemov.name>
+Hello, Milan.
+
+On Mon, Feb 14, 2011 at 12:47:48PM +0100, Milan Broz wrote:
+> With patch below (loop cannot be built as module) it fixes the loop problem.
+
+Okay.
+
+> But it doesn't fix the read-only snapshot issue and I guess there will be
+> the same problem with read-only MD code too.
+> (so the 2) issue here https://lkml.org/lkml/2011/2/12/209).
 > 
-> Every task_struct has timer_slack_ns value. This value uses to round up
-> poll() and select() timeout values. This feature can be useful in
-> mobile environment where combined wakeups are desired.
-> 
-> cgroup subsys "timer_slack" implement timer slack controller. It
-> provides a way to group tasks by timer slack value and manage the
-> value of group's tasks.
+> If the call is changed intentionally, we have to fix unconditional blkdev open
+> calls with read-write flag in this code.
+> Before doing that I would like to know if it was intentional change or not...
 
-I have no objections against the whole thing in general, but why do we
-need a module for this? Why can't we add this to the cgroups muck and
-compile it in?
+Yeap, the change was intentional.  It was part of effort to make bdev
+usages more consistent as before there was no mechanism enforcing ro.
+It's still problematic as bdev users can clear ro without consulting
+the actual device driver.  Device driver's ->open() is called w/ ro
+flag but the resulting bdev can be used rw.  I wanted to remove that
+too but filesystems depend on it so maybe later.
 
-> +struct cgroup_subsys timer_slack_subsys;
-> +struct timer_slack_cgroup {
-> +	struct cgroup_subsys_state css;
-> +	unsigned long min_slack_ns;
-> +	unsigned long max_slack_ns;
-> +};
-> +
-> +enum {
-> +	TIMER_SLACK_MIN,
-> +	TIMER_SLACK_MAX,
-> +};
-> +
-> +static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
-> +{
-> +	struct cgroup_subsys_state *css;
-> +
-> +	css = cgroup_subsys_state(cgroup, timer_slack_subsys.subsys_id);
-> +	return container_of(css, struct timer_slack_cgroup, css);
-> +}
-> +
-> +static int is_timer_slack_allowed(struct timer_slack_cgroup *tslack_cgroup,
+Thanks.
 
-  bool perhaps ?
-
-> +		unsigned long slack_ns)
-> +{
-> +	if (slack_ns < tslack_cgroup->min_slack_ns ||
-> +			slack_ns > tslack_cgroup->max_slack_ns)
-> +		return false;
-> +	return true;
-> +}
-> +
-> +static int cgroup_timer_slack_check(struct notifier_block *nb,
-> +		unsigned long slack_ns, void *data)
-> +{
-> +	struct cgroup_subsys_state *css;
-> +	struct timer_slack_cgroup *tslack_cgroup;
-> +
-> +	/* XXX: lockdep false positive? */
-
-  What? Either this has a reason or not. If it's a false positive then
-  it needs to be fixed in lockdep. If not, ....
-
-> +	rcu_read_lock();
-> +	css = task_subsys_state(current, timer_slack_subsys.subsys_id);
-> +	tslack_cgroup = container_of(css, struct timer_slack_cgroup, css);
-> +	rcu_read_unlock();
-> +
-> +	if (!is_timer_slack_allowed(tslack_cgroup, slack_ns))
-> +		return notifier_from_errno(-EPERM);
-
-  If the above needs rcu read lock, why is the acess safe ?
-
-> +	return NOTIFY_OK;
-
-> +/*
-> + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
-> + * limits of the cgroup.
-> + */
-> +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
-> +		struct task_struct *tsk)
-> +{
-> +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
-> +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
-> +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
-> +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
-> +
-> +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
-> +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
-> +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
-> +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
-
-
-  Why is there not a default slack value for the whole group ?
-
-> +static u64 tslack_read_range(struct cgroup *cgroup, struct cftype *cft)
-> +{
-> +	struct timer_slack_cgroup *tslack_cgroup;
-> +
-> +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> +	switch (cft->private) {
-> +	case TIMER_SLACK_MIN:
-> +		return tslack_cgroup->min_slack_ns;
-> +	case TIMER_SLACK_MAX:
-> +		return tslack_cgroup->max_slack_ns;
-> +	default:
-> +		BUG();
-
-  BUG() for soemthing which can be dealt with sensible ?
-
-> +	}
-> +}
-> +
-> +static int validate_change(struct cgroup *cgroup, u64 val, int type)
-> +{
-> +	struct timer_slack_cgroup *tslack_cgroup, *child;
-> +	struct cgroup *cur;
-> +
-> +	BUG_ON(type != TIMER_SLACK_MIN && type != TIMER_SLACK_MAX);
-
-  Ditto. That should be -EINVAL or such.
-
-> +	if (val > ULONG_MAX)
-> +		return -EINVAL;
-> +
-> +	if (cgroup->parent) {
-> +		struct timer_slack_cgroup *parent;
-> +		parent = cgroup_to_tslack_cgroup(cgroup->parent);
-> +		if (!is_timer_slack_allowed(parent, val))
-> +			return -EPERM;
-> +	}
-> +
-> +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> +	if (type == TIMER_SLACK_MIN && val > tslack_cgroup->max_slack_ns)
-> +		return -EINVAL;
-> +	if (type == TIMER_SLACK_MAX && val < tslack_cgroup->min_slack_ns)
-> +		return -EINVAL;
-> +
-> +	list_for_each_entry(cur, &cgroup->children, sibling) {
-> +		child = cgroup_to_tslack_cgroup(cur);
-> +		if (type == TIMER_SLACK_MIN && val > child->min_slack_ns)
-> +			return -EBUSY;
-
-  I thought the whole point is to propagate values through the group.
-
-> +		if (type == TIMER_SLACK_MAX && val < child->max_slack_ns)
-> +			return -EBUSY;
-
-  This is completely confusing w/o any line of comment.
-
-Thanks
-
-	tglx
+-- 
+tejun
