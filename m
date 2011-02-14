@@ -1,137 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab1BNREl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:04:41 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41041 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab1BNREj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:04:39 -0500
-Date: Mon, 14 Feb 2011 18:04:33 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: ben-linux@fluff.org, kernel-janitors@vger.kernel.org,
-        Baruch Siach <baruch@tkos.co.il>, Dave Airlie <airlied@linux.ie>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] drivers/i2c/busses/i2c-nuc900.c: Convert release_resource
- to release_region/release_mem_region
-In-Reply-To: <201102141756.19068.marek.vasut@gmail.com>
-Message-ID: <Pine.LNX.4.64.1102141758180.8551@pc-004.diku.dk>
-References: <1297599132-7226-1-git-send-email-julia@diku.dk>
- <1297599132-7226-6-git-send-email-julia@diku.dk> <201102141756.19068.marek.vasut@gmail.com>
+	id S1755639Ab1BNRFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:05:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38517 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab1BNRF3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 12:05:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=jLv0RTPPnxktzKsrqidH6RTIP289umP4AcXH8L4YRFnefqbqGm4bXJHEBZo9AyVA9e
+         A1J4vOfWAsHBCn8klvfYn2h/fK6KinnF/XaofW52vq8ymPmeYe6O9mvrm202fcE1cfX/
+         c1Qm/brkucJ4Je++st+3io7tLDJ5/KaYnBtKo=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110214150656.GA8761@redhat.com>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+ <20110204130455.GA3671@redhat.com> <20110204144858.GI12133@htj.dyndns.org>
+ <201102132224.25197.vda.linux@googlemail.com> <20110214150656.GA8761@redhat.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 14 Feb 2011 18:05:03 +0100
+Message-ID: <AANLkTin1ufNRPx173HgxD5jbPy3m6kK2-2ppU-jqPx0F@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after PTRACE_ATTACH
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011, Marek Vasut wrote:
+On Mon, Feb 14, 2011 at 4:06 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/13, Denys Vlasenko wrote:
+>>
+>> For example, PTRACE_DETACH requires tracee to be stopped to succeed.
+>> If debugger tries to detach while the tracee is running, it will get
+>> an error. This forces debugger to do stupid things like sending SIGSTOP,
+>> then waiting for tracee to stop, then doing PTRACE_DETACH, then
+>> sending SIGCONT. Of course, while this dance is performed,
+>> any SIGSTOPs/SIGCONTs which may be  sent to the tracee by other processes
+>> are totally disrupted by this.
+>
+> Yes.
+>
+>> The natural (for me) fix is to make PTRACE_DETACH work even on running
+>> tracee. It simply makes a lot of sense. Why on earth do we need tracee
+>> to be stopped? There is no reason.
+>
+> Agreed, but
+>
+>> But this is a change in ptrace behavior, and therefore is not acceptable
+>> for Roland.
+>
+> I agree with Roland. Not only this is too visible change, it is not clear
+> what detach-with-signal can do if the tracee is not stopped.
+>
+> This was (very briefly) discussed recently. Probably we can implement
+> PTRACE_DETACH_RUNNING (the name is random) which doesn't require the
+> stopped tracee but ignores the "data" argument.
 
-> On Sunday 13 February 2011 13:12:12 Julia Lawall wrote:
-> > Request_region should be used with release_region, not release_resource.
-> > 
-> > The result of request_mem_region is no longer stored.  Instead the field
-> > ioarea is used to store a pointer to the resource structure that contains
-> > the start address.  This is the information that is needed later in
-> > nuc900_i2c_remove to release the region.  The field ioarea is also printed
-> > in some debugging code.
-> > 
-> > The semantic match that finds this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @@
-> > expression x,E;
-> > @@
-> > (
-> > *x = request_region(...)
-> > 
-> > *x = request_mem_region(...)
-> > )
-> > ... when != release_region(x)
-> >     when != x = E
-> > * release_resource(x);
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> > Not compiled due to incompatible architecture.
-> > 
-> >  drivers/i2c/busses/i2c-nuc900.c |   13 +++++--------
-> >  1 file changed, 5 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/drivers/i2c/busses/i2c-nuc900.c
-> > b/drivers/i2c/busses/i2c-nuc900.c index 7243426..97b16b7 100644
-> > --- a/drivers/i2c/busses/i2c-nuc900.c
-> > +++ b/drivers/i2c/busses/i2c-nuc900.c
-> > @@ -568,15 +568,13 @@ static int __devinit nuc900_i2c_probe(struct
-> > platform_device *pdev) goto err_clk;
-> >  	}
-> > 
-> > -	i2c->ioarea = request_mem_region(res->start, resource_size(res),
-> > -					 pdev->name);
-> > -
-> > -	if (i2c->ioarea == NULL) {
-> > +	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
-> 
-> I prefer the original version here -- it's clearer and also, doesn't the new 
-> version violate line-over-80 principle ?
+IIRC data argument is already ignored by PTRACE_CONT if it is issued in
+the ptrace stop which wasn't caused by signal delivery to the tracee.
 
-The line ends before column 80.
+Basically, *if debugger sees SIGfoo*, it can either allow it:
+ptrace(PTRACE_CONT, ...,  SIGfoo);
+ignore it:
+ptrace(PTRACE_CONT, ...,  0);
+or even inject some other signal:
+ptrace(PTRACE_CONT, ...,  SIGbar);
 
-I'm not sure that the result of request_mem_region is the proper argment 
-to give to release_region.  In any case, all of the other calls to 
-request_mem_region that do use release_region do not use the return value.  
-They just test it directly as I have done here.
+but if it resumes tracee from, say, post-execve ptrace stop,
+it can't inject a signal: last ptrace() argument will be ignored.
 
-julia
+So, it isn't a new precedent to make
+ptrace(PTRACE_DETACH, ...,  <something>);
+to ignore <something> if tracee isn't in signal-delivery-induced ptrace stop.
+In particular, if it isn't in any stop at all, if it's running.
 
-> >  		dev_err(&pdev->dev, "cannot request IO\n");
-> >  		ret = -ENXIO;
-> >  		goto err_clk;
-> >  	}
-> > 
-> > +	i2c->ioarea = res;
-> >  	i2c->regs = ioremap(res->start, resource_size(res));
-> > 
-> >  	if (i2c->regs == NULL) {
-> > @@ -645,8 +643,7 @@ static int __devinit nuc900_i2c_probe(struct
-> > platform_device *pdev) iounmap(i2c->regs);
-> > 
-> >   err_ioarea:
-> > -	release_resource(i2c->ioarea);
-> > -	kfree(i2c->ioarea);
-> > +	release_mem_region(res->start, resource_size(res));
-> > 
-> >   err_clk:
-> >  	clk_disable(i2c->clk);
-> > @@ -665,6 +662,7 @@ static int __devinit nuc900_i2c_probe(struct
-> > platform_device *pdev) static int __devexit nuc900_i2c_remove(struct
-> > platform_device *pdev) {
-> >  	struct nuc900_i2c *i2c = platform_get_drvdata(pdev);
-> > +	struct resource *res = i2c->ioarea;
-> 
-> No need for this ...
-> > 
-> >  	i2c_del_adapter(&i2c->adap);
-> >  	free_irq(i2c->irq, i2c);
-> > @@ -674,8 +672,7 @@ static int __devexit nuc900_i2c_remove(struct
-> > platform_device *pdev)
-> > 
-> >  	iounmap(i2c->regs);
-> > 
-> > -	release_resource(i2c->ioarea);
-> > -	kfree(i2c->ioarea);
-> 
-> ... the i2c pointer is still available here, why introducing struct resource 
-> *res. release_mem_region() looks like a sane change to me though.
-> 
-> > +	release_mem_region(res->start, resource_size(res));
-> >  	kfree(i2c);
-> > 
-> >  	return 0;
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-- 
+vda
