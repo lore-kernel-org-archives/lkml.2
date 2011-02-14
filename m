@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab1BNMVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 07:21:15 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:58166 "EHLO
+	id S1754068Ab1BNMVS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 07:21:18 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58169 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753Ab1BNMVL (ORCPT
+	with ESMTP id S1753726Ab1BNMVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 07:21:11 -0500
+	Mon, 14 Feb 2011 07:21:14 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
 Cc: sakari.ailus@maxwell.research.nokia.com
-Subject: [PATCH v9 01/12] media: Media device node support
-Date: Mon, 14 Feb 2011 13:20:56 +0100
-Message-Id: <1297686067-9666-2-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v9 06/12] media: Media device information query
+Date: Mon, 14 Feb 2011 13:21:01 +0100
+Message-Id: <1297686067-9666-7-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -21,79 +21,616 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The media_devnode structure provides support for registering and
-unregistering character devices using a dynamic major number. Reference
-counting is handled internally, making device drivers easier to write
-without having to solve the open/disconnect race condition issue over
-and over again.
+Create the following ioctl and implement it at the media device level to
+query device information.
 
-The code is based on video/v4l2-dev.c.
+- MEDIA_IOC_DEVICE_INFO: Query media device information
+
+The ioctl and its data structure are defined in the new kernel header
+linux/media.h available to userspace applications.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/media/Kconfig         |   13 ++
- drivers/media/Makefile        |    6 +
- drivers/media/media-devnode.c |  321 +++++++++++++++++++++++++++++++++++++++++
- include/media/media-devnode.h |   97 +++++++++++++
- 4 files changed, 437 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/media-devnode.c
- create mode 100644 include/media/media-devnode.h
+ Documentation/DocBook/media-entities.tmpl          |   12 ++
+ Documentation/DocBook/v4l/media-controller.xml     |   10 ++
+ Documentation/DocBook/v4l/media-func-close.xml     |   59 +++++++++
+ Documentation/DocBook/v4l/media-func-ioctl.xml     |  116 +++++++++++++++++
+ Documentation/DocBook/v4l/media-func-open.xml      |   94 ++++++++++++++
+ .../DocBook/v4l/media-ioc-device-info.xml          |  132 ++++++++++++++++++++
+ drivers/media/media-device.c                       |   57 +++++++++
+ include/linux/Kbuild                               |    1 +
+ include/linux/media.h                              |   45 +++++++
+ 9 files changed, 526 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/DocBook/v4l/media-func-close.xml
+ create mode 100644 Documentation/DocBook/v4l/media-func-ioctl.xml
+ create mode 100644 Documentation/DocBook/v4l/media-func-open.xml
+ create mode 100644 Documentation/DocBook/v4l/media-ioc-device-info.xml
+ create mode 100644 include/linux/media.h
 
-diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
-index 81b3ba8..2466f2b 100644
---- a/drivers/media/Kconfig
-+++ b/drivers/media/Kconfig
-@@ -14,6 +14,19 @@ if MEDIA_SUPPORT
- comment "Multimedia core support"
+diff --git a/Documentation/DocBook/media-entities.tmpl b/Documentation/DocBook/media-entities.tmpl
+index 61d6f11..6af3375 100644
+--- a/Documentation/DocBook/media-entities.tmpl
++++ b/Documentation/DocBook/media-entities.tmpl
+@@ -11,6 +11,10 @@
+ <!ENTITY func-select "<link linkend='func-select'><function>select()</function></link>">
+ <!ENTITY func-write "<link linkend='func-write'><function>write()</function></link>">
  
- #
-+# Media controller
-+#
++<!ENTITY media-func-close "<link linkend='media-func-close'><function>close()</function></link>">
++<!ENTITY media-func-ioctl "<link linkend='media-func-ioctl'><function>ioctl()</function></link>">
++<!ENTITY media-func-open "<link linkend='media-func-open'><function>open()</function></link>">
 +
-+config MEDIA_CONTROLLER
-+	bool "Media Controller API (EXPERIMENTAL)"
-+	depends on EXPERIMENTAL
-+	---help---
-+	  Enable the media controller API used to query media devices internal
-+	  topology and configure it dynamically.
-+
-+	  This API is mostly used by camera interfaces in embedded platforms.
-+
-+#
- # V4L core and enabled API's
- #
+ <!-- Ioctls -->
+ <!ENTITY VIDIOC-CROPCAP "<link linkend='vidioc-cropcap'><constant>VIDIOC_CROPCAP</constant></link>">
+ <!ENTITY VIDIOC-DBG-G-CHIP-IDENT "<link linkend='vidioc-dbg-g-chip-ident'><constant>VIDIOC_DBG_G_CHIP_IDENT</constant></link>">
+@@ -87,6 +91,8 @@
+ <!ENTITY VIDIOC-TRY-FMT "<link linkend='vidioc-g-fmt'><constant>VIDIOC_TRY_FMT</constant></link>">
+ <!ENTITY VIDIOC-UNSUBSCRIBE-EVENT "<link linkend='vidioc-subscribe-event'><constant>VIDIOC_UNSUBSCRIBE_EVENT</constant></link>">
  
-diff --git a/drivers/media/Makefile b/drivers/media/Makefile
-index b603ea6..d56349f 100644
---- a/drivers/media/Makefile
-+++ b/drivers/media/Makefile
-@@ -2,6 +2,12 @@
- # Makefile for the kernel multimedia device drivers.
- #
- 
-+media-objs	:= media-devnode.o
++<!ENTITY MEDIA-IOC-DEVICE-INFO "<link linkend='media-ioc-device-info'><constant>MEDIA_IOC_DEVICE_INFO</constant></link>">
 +
-+ifeq ($(CONFIG_MEDIA_CONTROLLER),y)
-+  obj-$(CONFIG_MEDIA_SUPPORT) += media.o
-+endif
-+
- obj-y += common/ rc/ video/
+ <!-- Types -->
+ <!ENTITY v4l2-std-id "<link linkend='v4l2-std-id'>v4l2_std_id</link>">
  
- obj-$(CONFIG_VIDEO_DEV) += radio/
-diff --git a/drivers/media/media-devnode.c b/drivers/media/media-devnode.c
+@@ -181,6 +187,8 @@
+ <!ENTITY v4l2-vbi-format "struct&nbsp;<link linkend='v4l2-vbi-format'>v4l2_vbi_format</link>">
+ <!ENTITY v4l2-window "struct&nbsp;<link linkend='v4l2-window'>v4l2_window</link>">
+ 
++<!ENTITY media-device-info "struct&nbsp;<link linkend='media-device-info'>media_device_info</link>">
++
+ <!-- Error Codes -->
+ <!ENTITY EACCES "<errorcode>EACCES</errorcode> error code">
+ <!ENTITY EAGAIN "<errorcode>EAGAIN</errorcode> error code">
+@@ -322,6 +330,10 @@
+ <!ENTITY sub-media-indices SYSTEM "media-indices.tmpl">
+ 
+ <!ENTITY sub-media-controller SYSTEM "v4l/media-controller.xml">
++<!ENTITY sub-media-open SYSTEM "v4l/media-func-open.xml">
++<!ENTITY sub-media-close SYSTEM "v4l/media-func-close.xml">
++<!ENTITY sub-media-ioctl SYSTEM "v4l/media-func-ioctl.xml">
++<!ENTITY sub-media-ioc-device-info SYSTEM "v4l/media-ioc-device-info.xml">
+ 
+ <!-- Function Reference -->
+ <!ENTITY close SYSTEM "v4l/func-close.xml">
+diff --git a/Documentation/DocBook/v4l/media-controller.xml b/Documentation/DocBook/v4l/media-controller.xml
+index f89228d..a46b786 100644
+--- a/Documentation/DocBook/v4l/media-controller.xml
++++ b/Documentation/DocBook/v4l/media-controller.xml
+@@ -74,3 +74,13 @@
+     pad to a sink pad.</para>
+   </section>
+ </chapter>
++
++<appendix id="media-user-func">
++  <title>Function Reference</title>
++  <!-- Keep this alphabetically sorted. -->
++  &sub-media-open;
++  &sub-media-close;
++  &sub-media-ioctl;
++  <!-- All ioctls go here. -->
++  &sub-media-ioc-device-info;
++</appendix>
+diff --git a/Documentation/DocBook/v4l/media-func-close.xml b/Documentation/DocBook/v4l/media-func-close.xml
 new file mode 100644
-index 0000000..5509984
+index 0000000..be149c8
 --- /dev/null
-+++ b/drivers/media/media-devnode.c
-@@ -0,0 +1,321 @@
++++ b/Documentation/DocBook/v4l/media-func-close.xml
+@@ -0,0 +1,59 @@
++<refentry id="media-func-close">
++  <refmeta>
++    <refentrytitle>media close()</refentrytitle>
++    &manvol;
++  </refmeta>
++
++  <refnamediv>
++    <refname>media-close</refname>
++    <refpurpose>Close a media device</refpurpose>
++  </refnamediv>
++
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcsynopsisinfo>#include &lt;unistd.h&gt;</funcsynopsisinfo>
++      <funcprototype>
++	<funcdef>int <function>close</function></funcdef>
++	<paramdef>int <parameter>fd</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
++
++  <refsect1>
++    <title>Arguments</title>
++
++    <variablelist>
++      <varlistentry>
++	<term><parameter>fd</parameter></term>
++	<listitem>
++	  <para>&fd;</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++
++  <refsect1>
++    <title>Description</title>
++
++    <para>Closes the media device. Resources associated with the file descriptor
++    are freed. The device configuration remain unchanged.</para>
++  </refsect1>
++
++  <refsect1>
++    <title>Return Value</title>
++
++    <para><function>close</function> returns 0 on success. On error, -1 is
++    returned, and <varname>errno</varname> is set appropriately. Possible error
++    codes are:</para>
++
++    <variablelist>
++      <varlistentry>
++	<term><errorcode>EBADF</errorcode></term>
++	<listitem>
++	  <para><parameter>fd</parameter> is not a valid open file descriptor.
++	  </para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++</refentry>
+diff --git a/Documentation/DocBook/v4l/media-func-ioctl.xml b/Documentation/DocBook/v4l/media-func-ioctl.xml
+new file mode 100644
+index 0000000..bda8604
+--- /dev/null
++++ b/Documentation/DocBook/v4l/media-func-ioctl.xml
+@@ -0,0 +1,116 @@
++<refentry id="media-func-ioctl">
++  <refmeta>
++    <refentrytitle>media ioctl()</refentrytitle>
++    &manvol;
++  </refmeta>
++
++  <refnamediv>
++    <refname>media-ioctl</refname>
++    <refpurpose>Control a media device</refpurpose>
++  </refnamediv>
++
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcsynopsisinfo>#include &lt;sys/ioctl.h&gt;</funcsynopsisinfo>
++      <funcprototype>
++	<funcdef>int <function>ioctl</function></funcdef>
++	<paramdef>int <parameter>fd</parameter></paramdef>
++	<paramdef>int <parameter>request</parameter></paramdef>
++	<paramdef>void *<parameter>argp</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
++
++  <refsect1>
++    <title>Arguments</title>
++
++    <variablelist>
++      <varlistentry>
++	<term><parameter>fd</parameter></term>
++	<listitem>
++	  <para>&fd;</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>request</parameter></term>
++	<listitem>
++	  <para>Media ioctl request code as defined in the media.h header file,
++	  for example MEDIA_IOC_SETUP_LINK.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>argp</parameter></term>
++	<listitem>
++	  <para>Pointer to a request-specific structure.</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++
++  <refsect1>
++    <title>Description</title>
++    <para>The <function>ioctl()</function> function manipulates media device
++    parameters. The argument <parameter>fd</parameter> must be an open file
++    descriptor.</para>
++    <para>The ioctl <parameter>request</parameter> code specifies the media
++    function to be called. It has encoded in it whether the argument is an
++    input, output or read/write parameter, and the size of the argument
++    <parameter>argp</parameter> in bytes.</para>
++    <para>Macros and structures definitions specifying media ioctl requests and
++    their parameters are located in the media.h header file. All media ioctl
++    requests, their respective function and parameters are specified in
++    <xref linkend="media-user-func" />.</para>
++  </refsect1>
++
++  <refsect1>
++    <title>Return Value</title>
++
++    <para><function>ioctl()</function> returns <returnvalue>0</returnvalue> on
++    success. On failure, <returnvalue>-1</returnvalue> is returned, and the
++    <varname>errno</varname> variable is set appropriately. Generic error codes
++    are listed below, and request-specific error codes are listed in the
++    individual requests descriptions.</para>
++    <para>When an ioctl that takes an output or read/write parameter fails,
++    the parameter remains unmodified.</para>
++
++    <variablelist>
++      <varlistentry>
++	<term><errorcode>EBADF</errorcode></term>
++	<listitem>
++	  <para><parameter>fd</parameter> is not a valid open file descriptor.
++	  </para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>EFAULT</errorcode></term>
++	<listitem>
++	  <para><parameter>argp</parameter> references an inaccessible memory
++	  area.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>EINVAL</errorcode></term>
++	<listitem>
++	  <para>The <parameter>request</parameter> or the data pointed to by
++	  <parameter>argp</parameter> is not valid. This is a very common error
++	  code, see the individual ioctl requests listed in
++	  <xref linkend="media-user-func" /> for actual causes.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>ENOMEM</errorcode></term>
++	<listitem>
++	  <para>Insufficient kernel memory was available to complete the
++	  request.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>ENOTTY</errorcode></term>
++	<listitem>
++	  <para><parameter>fd</parameter> is  not  associated  with  a character
++	  special device.</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++</refentry>
+diff --git a/Documentation/DocBook/v4l/media-func-open.xml b/Documentation/DocBook/v4l/media-func-open.xml
+new file mode 100644
+index 0000000..f7df034
+--- /dev/null
++++ b/Documentation/DocBook/v4l/media-func-open.xml
+@@ -0,0 +1,94 @@
++<refentry id="media-func-open">
++  <refmeta>
++    <refentrytitle>media open()</refentrytitle>
++    &manvol;
++  </refmeta>
++
++  <refnamediv>
++    <refname>media-open</refname>
++    <refpurpose>Open a media device</refpurpose>
++  </refnamediv>
++
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcsynopsisinfo>#include &lt;fcntl.h&gt;</funcsynopsisinfo>
++      <funcprototype>
++	<funcdef>int <function>open</function></funcdef>
++	<paramdef>const char *<parameter>device_name</parameter></paramdef>
++	<paramdef>int <parameter>flags</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
++
++  <refsect1>
++    <title>Arguments</title>
++
++    <variablelist>
++      <varlistentry>
++	<term><parameter>device_name</parameter></term>
++	<listitem>
++	  <para>Device to be opened.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>flags</parameter></term>
++	<listitem>
++	  <para>Open flags. Access mode must be either <constant>O_RDONLY</constant>
++	  or <constant>O_RDWR</constant>. Other flags have no effect.</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++  <refsect1>
++    <title>Description</title>
++    <para>To open a media device applications call <function>open()</function>
++    with the desired device name. The function has no side effects; the device
++    configuration remain unchanged.</para>
++    <para>When the device is opened in read-only mode, attemps to modify its
++    configuration will result in an error, and <varname>errno</varname> will be
++    set to <errorcode>EBADF</errorcode>.</para>
++  </refsect1>
++  <refsect1>
++    <title>Return Value</title>
++
++    <para><function>open</function> returns the new file descriptor on success.
++    On error, -1 is returned, and <varname>errno</varname> is set appropriately.
++    Possible error codes are:</para>
++
++    <variablelist>
++      <varlistentry>
++	<term><errorcode>EACCES</errorcode></term>
++	<listitem>
++	  <para>The requested access to the file is not allowed.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>EMFILE</errorcode></term>
++	<listitem>
++	  <para>The  process  already  has  the  maximum number of files open.
++	  </para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>ENFILE</errorcode></term>
++	<listitem>
++	  <para>The system limit on the total number of open files has been
++	  reached.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>ENOMEM</errorcode></term>
++	<listitem>
++	  <para>Insufficient kernel memory was available.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><errorcode>ENXIO</errorcode></term>
++	<listitem>
++	  <para>No device corresponding to this device special file exists.
++	  </para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++</refentry>
+diff --git a/Documentation/DocBook/v4l/media-ioc-device-info.xml b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+new file mode 100644
+index 0000000..278a312
+--- /dev/null
++++ b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+@@ -0,0 +1,132 @@
++<refentry id="media-ioc-device-info">
++  <refmeta>
++    <refentrytitle>ioctl MEDIA_IOC_DEVICE_INFO</refentrytitle>
++    &manvol;
++  </refmeta>
++
++  <refnamediv>
++    <refname>MEDIA_IOC_DEVICE_INFO</refname>
++    <refpurpose>Query device information</refpurpose>
++  </refnamediv>
++
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcprototype>
++	<funcdef>int <function>ioctl</function></funcdef>
++	<paramdef>int <parameter>fd</parameter></paramdef>
++	<paramdef>int <parameter>request</parameter></paramdef>
++	<paramdef>struct media_device_info *<parameter>argp</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
++
++  <refsect1>
++    <title>Arguments</title>
++
++    <variablelist>
++      <varlistentry>
++	<term><parameter>fd</parameter></term>
++	<listitem>
++	  <para>&fd;</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>request</parameter></term>
++	<listitem>
++	  <para>MEDIA_IOC_DEVICE_INFO</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>argp</parameter></term>
++	<listitem>
++	  <para></para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++
++  <refsect1>
++    <title>Description</title>
++
++    <para>All media devices must support the <constant>MEDIA_IOC_DEVICE_INFO</constant>
++    ioctl. To query device information, applications call the ioctl with a
++    pointer to a &media-device-info;. The driver fills the structure and returns
++    the information to the application.
++    The ioctl never fails.</para>
++
++    <table pgwide="1" frame="none" id="media-device-info">
++      <title>struct <structname>media_device_info</structname></title>
++      <tgroup cols="3">
++	&cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>char</entry>
++	    <entry><structfield>driver</structfield>[16]</entry>
++	    <entry><para>Name of the driver implementing the media API as a
++	    NUL-terminated ASCII string. The driver version is stored in the
++	    <structfield>driver_version</structfield> field.</para>
++	    <para>Driver specific applications can use this information to
++	    verify the driver identity. It is also useful to work around
++	    known bugs, or to identify drivers in error reports.</para></entry>
++	  </row>
++	  <row>
++	    <entry>char</entry>
++	    <entry><structfield>model</structfield>[32]</entry>
++	    <entry>Device model name as a NUL-terminated UTF-8 string. The
++	    device version is stored in the <structfield>device_version</structfield>
++	    field and is not be appended to the model name.</entry>
++	  </row>
++	  <row>
++	    <entry>char</entry>
++	    <entry><structfield>serial</structfield>[40]</entry>
++	    <entry>Serial number as a NUL-terminated ASCII string.</entry>
++	  </row>
++	  <row>
++	    <entry>char</entry>
++	    <entry><structfield>bus_info</structfield>[32]</entry>
++	    <entry>Location of the device in the system as a NUL-terminated
++	    ASCII string. This includes the bus type name (PCI, USB, ...) and a
++	    bus-specific identifier.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>media_version</structfield></entry>
++	    <entry>Media API version, formatted with the
++	    <constant>KERNEL_VERSION()</constant> macro.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>hw_revision</structfield></entry>
++	    <entry>Hardware device revision in a driver-specific format.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>media_version</structfield></entry>
++	    <entry>Media device driver version, formatted with the
++	    <constant>KERNEL_VERSION()</constant> macro. Together with the
++	    <structfield>driver</structfield> field this identifies a particular
++	    driver.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>reserved</structfield>[31]</entry>
++	    <entry>Reserved for future extensions. Drivers and applications must
++	    set this array to zero.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++    <para>The <structfield>serial</structfield> and <structfield>bus_info</structfield>
++    fields can be used to distinguish between multiple instances of otherwise
++    identical hardware. The serial number takes precedence when provided and can
++    be assumed to be unique. If the serial number is an empty string, the
++    <structfield>bus_info</structfield> field can be used instead. The
++    <structfield>bus_info</structfield> field is guaranteed to be unique, but
++    can vary across reboots or device unplug/replug.</para>
++  </refsect1>
++
++  <refsect1>
++    <title>Return value</title>
++    <para>This function doesn't return specific error codes.</para>
++  </refsect1>
++</refentry>
+diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+index d2bc809..92e0d4e 100644
+--- a/drivers/media/media-device.c
++++ b/drivers/media/media-device.c
+@@ -22,13 +22,70 @@
+ 
+ #include <linux/types.h>
+ #include <linux/ioctl.h>
++#include <linux/media.h>
+ 
+ #include <media/media-device.h>
+ #include <media/media-devnode.h>
+ #include <media/media-entity.h>
+ 
++/* -----------------------------------------------------------------------------
++ * Userspace API
++ */
++
++static int media_device_open(struct file *filp)
++{
++	return 0;
++}
++
++static int media_device_close(struct file *filp)
++{
++	return 0;
++}
++
++static int media_device_get_info(struct media_device *dev,
++				 struct media_device_info __user *__info)
++{
++	struct media_device_info info;
++
++	memset(&info, 0, sizeof(info));
++
++	strlcpy(info.driver, dev->dev->driver->name, sizeof(info.driver));
++	strlcpy(info.model, dev->model, sizeof(info.model));
++	strlcpy(info.serial, dev->serial, sizeof(info.serial));
++	strlcpy(info.bus_info, dev->bus_info, sizeof(info.bus_info));
++
++	info.media_version = MEDIA_API_VERSION;
++	info.hw_revision = dev->hw_revision;
++	info.driver_version = dev->driver_version;
++
++	return copy_to_user(__info, &info, sizeof(*__info));
++}
++
++static long media_device_ioctl(struct file *filp, unsigned int cmd,
++			       unsigned long arg)
++{
++	struct media_devnode *devnode = media_devnode_data(filp);
++	struct media_device *dev = to_media_device(devnode);
++	long ret;
++
++	switch (cmd) {
++	case MEDIA_IOC_DEVICE_INFO:
++		ret = media_device_get_info(dev,
++				(struct media_device_info __user *)arg);
++		break;
++
++	default:
++		ret = -ENOIOCTLCMD;
++	}
++
++	return ret;
++}
++
+ static const struct media_file_operations media_device_fops = {
+ 	.owner = THIS_MODULE,
++	.open = media_device_open,
++	.ioctl = media_device_ioctl,
++	.release = media_device_close,
+ };
+ 
+ /* -----------------------------------------------------------------------------
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index 2296d8b..06d18a7 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -232,6 +232,7 @@ header-y += magic.h
+ header-y += major.h
+ header-y += map_to_7segment.h
+ header-y += matroxfb.h
++header-y += media.h
+ header-y += mempolicy.h
+ header-y += meye.h
+ header-y += mii.h
+diff --git a/include/linux/media.h b/include/linux/media.h
+new file mode 100644
+index 0000000..64090db
+--- /dev/null
++++ b/include/linux/media.h
+@@ -0,0 +1,45 @@
 +/*
-+ * Media device node
++ * Multimedia device API
 + *
 + * Copyright (C) 2010 Nokia Corporation
-+ *
-+ * Based on drivers/media/video/v4l2_dev.c code authored by
-+ *	Mauro Carvalho Chehab <mchehab@infradead.org> (version 2)
-+ *	Alan Cox, <alan@lxorguk.ukuu.org.uk> (version 1)
 + *
 + * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 + *	     Sakari Ailus <sakari.ailus@iki.fi>
@@ -110,406 +647,31 @@ index 0000000..5509984
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * --
-+ *
-+ * Generic media device node infrastructure to register and unregister
-+ * character devices using a dynamic major number and proper reference
-+ * counting.
 + */
 +
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/kmod.h>
-+#include <linux/slab.h>
-+#include <linux/mm.h>
-+#include <linux/smp_lock.h>
-+#include <linux/string.h>
++#ifndef __LINUX_MEDIA_H
++#define __LINUX_MEDIA_H
++
++#include <linux/ioctl.h>
 +#include <linux/types.h>
-+#include <linux/uaccess.h>
-+#include <asm/system.h>
++#include <linux/version.h>
 +
-+#include <media/media-devnode.h>
++#define MEDIA_API_VERSION	KERNEL_VERSION(0, 1, 0)
 +
-+#define MEDIA_NUM_DEVICES	256
-+#define MEDIA_NAME		"media"
-+
-+static dev_t media_dev_t;
-+
-+/*
-+ *	Active devices
-+ */
-+static DEFINE_MUTEX(media_devnode_lock);
-+static DECLARE_BITMAP(media_devnode_nums, MEDIA_NUM_DEVICES);
-+
-+/* Called when the last user of the media device exits. */
-+static void media_devnode_release(struct device *cd)
-+{
-+	struct media_devnode *mdev = to_media_devnode(cd);
-+
-+	mutex_lock(&media_devnode_lock);
-+
-+	/* Delete the cdev on this minor as well */
-+	cdev_del(&mdev->cdev);
-+
-+	/* Mark device node number as free */
-+	clear_bit(mdev->minor, media_devnode_nums);
-+
-+	mutex_unlock(&media_devnode_lock);
-+
-+	/* Release media_devnode and perform other cleanups as needed. */
-+	if (mdev->release)
-+		mdev->release(mdev);
-+}
-+
-+static struct bus_type media_bus_type = {
-+	.name = MEDIA_NAME,
++struct media_device_info {
++	char driver[16];
++	char model[32];
++	char serial[40];
++	char bus_info[32];
++	__u32 media_version;
++	__u32 hw_revision;
++	__u32 driver_version;
++	__u32 reserved[31];
 +};
 +
-+static ssize_t media_read(struct file *filp, char __user *buf,
-+		size_t sz, loff_t *off)
-+{
-+	struct media_devnode *mdev = media_devnode_data(filp);
++#define MEDIA_IOC_DEVICE_INFO		_IOWR('M', 1, struct media_device_info)
 +
-+	if (!mdev->fops->read)
-+		return -EINVAL;
-+	if (!media_devnode_is_registered(mdev))
-+		return -EIO;
-+	return mdev->fops->read(filp, buf, sz, off);
-+}
-+
-+static ssize_t media_write(struct file *filp, const char __user *buf,
-+		size_t sz, loff_t *off)
-+{
-+	struct media_devnode *mdev = media_devnode_data(filp);
-+
-+	if (!mdev->fops->write)
-+		return -EINVAL;
-+	if (!media_devnode_is_registered(mdev))
-+		return -EIO;
-+	return mdev->fops->write(filp, buf, sz, off);
-+}
-+
-+static unsigned int media_poll(struct file *filp,
-+			       struct poll_table_struct *poll)
-+{
-+	struct media_devnode *mdev = media_devnode_data(filp);
-+
-+	if (!media_devnode_is_registered(mdev))
-+		return POLLERR | POLLHUP;
-+	if (!mdev->fops->poll)
-+		return DEFAULT_POLLMASK;
-+	return mdev->fops->poll(filp, poll);
-+}
-+
-+static long media_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	struct media_devnode *mdev = media_devnode_data(filp);
-+
-+	if (!mdev->fops->ioctl)
-+		return -ENOTTY;
-+
-+	if (!media_devnode_is_registered(mdev))
-+		return -EIO;
-+
-+	return mdev->fops->ioctl(filp, cmd, arg);
-+}
-+
-+/* Override for the open function */
-+static int media_open(struct inode *inode, struct file *filp)
-+{
-+	struct media_devnode *mdev;
-+	int ret;
-+
-+	/* Check if the media device is available. This needs to be done with
-+	 * the media_devnode_lock held to prevent an open/unregister race:
-+	 * without the lock, the device could be unregistered and freed between
-+	 * the media_devnode_is_registered() and get_device() calls, leading to
-+	 * a crash.
-+	 */
-+	mutex_lock(&media_devnode_lock);
-+	mdev = container_of(inode->i_cdev, struct media_devnode, cdev);
-+	/* return ENXIO if the media device has been removed
-+	   already or if it is not registered anymore. */
-+	if (!media_devnode_is_registered(mdev)) {
-+		mutex_unlock(&media_devnode_lock);
-+		return -ENXIO;
-+	}
-+	/* and increase the device refcount */
-+	get_device(&mdev->dev);
-+	mutex_unlock(&media_devnode_lock);
-+
-+	filp->private_data = mdev;
-+
-+	if (mdev->fops->open) {
-+		ret = mdev->fops->open(filp);
-+		if (ret) {
-+			put_device(&mdev->dev);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/* Override for the release function */
-+static int media_release(struct inode *inode, struct file *filp)
-+{
-+	struct media_devnode *mdev = media_devnode_data(filp);
-+	int ret = 0;
-+
-+	if (mdev->fops->release)
-+		mdev->fops->release(filp);
-+
-+	/* decrease the refcount unconditionally since the release()
-+	   return value is ignored. */
-+	put_device(&mdev->dev);
-+	filp->private_data = NULL;
-+	return ret;
-+}
-+
-+static const struct file_operations media_devnode_fops = {
-+	.owner = THIS_MODULE,
-+	.read = media_read,
-+	.write = media_write,
-+	.open = media_open,
-+	.unlocked_ioctl = media_ioctl,
-+	.release = media_release,
-+	.poll = media_poll,
-+	.llseek = no_llseek,
-+};
-+
-+/**
-+ * media_devnode_register - register a media device node
-+ * @mdev: media device node structure we want to register
-+ *
-+ * The registration code assigns minor numbers and registers the new device node
-+ * with the kernel. An error is returned if no free minor number can be found,
-+ * or if the registration of the device node fails.
-+ *
-+ * Zero is returned on success.
-+ *
-+ * Note that if the media_devnode_register call fails, the release() callback of
-+ * the media_devnode structure is *not* called, so the caller is responsible for
-+ * freeing any data.
-+ */
-+int __must_check media_devnode_register(struct media_devnode *mdev)
-+{
-+	int minor;
-+	int ret;
-+
-+	/* Part 1: Find a free minor number */
-+	mutex_lock(&media_devnode_lock);
-+	minor = find_next_zero_bit(media_devnode_nums, 0, MEDIA_NUM_DEVICES);
-+	if (minor == MEDIA_NUM_DEVICES) {
-+		mutex_unlock(&media_devnode_lock);
-+		printk(KERN_ERR "could not get a free minor\n");
-+		return -ENFILE;
-+	}
-+
-+	set_bit(mdev->minor, media_devnode_nums);
-+	mutex_unlock(&media_devnode_lock);
-+
-+	mdev->minor = minor;
-+
-+	/* Part 2: Initialize and register the character device */
-+	cdev_init(&mdev->cdev, &media_devnode_fops);
-+	mdev->cdev.owner = mdev->fops->owner;
-+
-+	ret = cdev_add(&mdev->cdev, MKDEV(MAJOR(media_dev_t), mdev->minor), 1);
-+	if (ret < 0) {
-+		printk(KERN_ERR "%s: cdev_add failed\n", __func__);
-+		goto error;
-+	}
-+
-+	/* Part 3: Register the media device */
-+	mdev->dev.bus = &media_bus_type;
-+	mdev->dev.devt = MKDEV(MAJOR(media_dev_t), mdev->minor);
-+	mdev->dev.release = media_devnode_release;
-+	if (mdev->parent)
-+		mdev->dev.parent = mdev->parent;
-+	dev_set_name(&mdev->dev, "media%d", mdev->minor);
-+	ret = device_register(&mdev->dev);
-+	if (ret < 0) {
-+		printk(KERN_ERR "%s: device_register failed\n", __func__);
-+		goto error;
-+	}
-+
-+	/* Part 4: Activate this minor. The char device can now be used. */
-+	set_bit(MEDIA_FLAG_REGISTERED, &mdev->flags);
-+
-+	return 0;
-+
-+error:
-+	cdev_del(&mdev->cdev);
-+	clear_bit(mdev->minor, media_devnode_nums);
-+	return ret;
-+}
-+
-+/**
-+ * media_devnode_unregister - unregister a media device node
-+ * @mdev: the device node to unregister
-+ *
-+ * This unregisters the passed device. Future open calls will be met with
-+ * errors.
-+ *
-+ * This function can safely be called if the device node has never been
-+ * registered or has already been unregistered.
-+ */
-+void media_devnode_unregister(struct media_devnode *mdev)
-+{
-+	/* Check if mdev was ever registered at all */
-+	if (!media_devnode_is_registered(mdev))
-+		return;
-+
-+	mutex_lock(&media_devnode_lock);
-+	clear_bit(MEDIA_FLAG_REGISTERED, &mdev->flags);
-+	mutex_unlock(&media_devnode_lock);
-+	device_unregister(&mdev->dev);
-+}
-+
-+/*
-+ *	Initialise media for linux
-+ */
-+static int __init media_devnode_init(void)
-+{
-+	int ret;
-+
-+	printk(KERN_INFO "Linux media interface: v0.10\n");
-+	ret = alloc_chrdev_region(&media_dev_t, 0, MEDIA_NUM_DEVICES,
-+				  MEDIA_NAME);
-+	if (ret < 0) {
-+		printk(KERN_WARNING "media: unable to allocate major\n");
-+		return ret;
-+	}
-+
-+	ret = bus_register(&media_bus_type);
-+	if (ret < 0) {
-+		unregister_chrdev_region(media_dev_t, MEDIA_NUM_DEVICES);
-+		printk(KERN_WARNING "media: bus_register failed\n");
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static void __exit media_devnode_exit(void)
-+{
-+	bus_unregister(&media_bus_type);
-+	unregister_chrdev_region(media_dev_t, MEDIA_NUM_DEVICES);
-+}
-+
-+module_init(media_devnode_init)
-+module_exit(media_devnode_exit)
-+
-+MODULE_AUTHOR("Laurent Pinchart <laurent.pinchart@ideasonboard.com>");
-+MODULE_DESCRIPTION("Device node registration for media drivers");
-+MODULE_LICENSE("GPL");
-diff --git a/include/media/media-devnode.h b/include/media/media-devnode.h
-new file mode 100644
-index 0000000..f6caafc
---- /dev/null
-+++ b/include/media/media-devnode.h
-@@ -0,0 +1,97 @@
-+/*
-+ * Media device node
-+ *
-+ * Copyright (C) 2010 Nokia Corporation
-+ *
-+ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+ *	     Sakari Ailus <sakari.ailus@iki.fi>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * --
-+ *
-+ * Common functions for media-related drivers to register and unregister media
-+ * device nodes.
-+ */
-+
-+#ifndef _MEDIA_DEVNODE_H
-+#define _MEDIA_DEVNODE_H
-+
-+#include <linux/poll.h>
-+#include <linux/fs.h>
-+#include <linux/device.h>
-+#include <linux/cdev.h>
-+
-+/*
-+ * Flag to mark the media_devnode struct as registered. Drivers must not touch
-+ * this flag directly, it will be set and cleared by media_devnode_register and
-+ * media_devnode_unregister.
-+ */
-+#define MEDIA_FLAG_REGISTERED	0
-+
-+struct media_file_operations {
-+	struct module *owner;
-+	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
-+	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
-+	unsigned int (*poll) (struct file *, struct poll_table_struct *);
-+	long (*ioctl) (struct file *, unsigned int, unsigned long);
-+	int (*open) (struct file *);
-+	int (*release) (struct file *);
-+};
-+
-+/**
-+ * struct media_devnode - Media device node
-+ * @parent:	parent device
-+ * @minor:	device node minor number
-+ * @flags:	flags, combination of the MEDIA_FLAG_* constants
-+ *
-+ * This structure represents a media-related device node.
-+ *
-+ * The @parent is a physical device. It must be set by core or device drivers
-+ * before registering the node.
-+ */
-+struct media_devnode {
-+	/* device ops */
-+	const struct media_file_operations *fops;
-+
-+	/* sysfs */
-+	struct device dev;		/* media device */
-+	struct cdev cdev;		/* character device */
-+	struct device *parent;		/* device parent */
-+
-+	/* device info */
-+	int minor;
-+	unsigned long flags;		/* Use bitops to access flags */
-+
-+	/* callbacks */
-+	void (*release)(struct media_devnode *mdev);
-+};
-+
-+/* dev to media_devnode */
-+#define to_media_devnode(cd) container_of(cd, struct media_devnode, dev)
-+
-+int __must_check media_devnode_register(struct media_devnode *mdev);
-+void media_devnode_unregister(struct media_devnode *mdev);
-+
-+static inline struct media_devnode *media_devnode_data(struct file *filp)
-+{
-+	return filp->private_data;
-+}
-+
-+static inline int media_devnode_is_registered(struct media_devnode *mdev)
-+{
-+	return test_bit(MEDIA_FLAG_REGISTERED, &mdev->flags);
-+}
-+
-+#endif /* _MEDIA_DEVNODE_H */
++#endif /* __LINUX_MEDIA_H */
 -- 
 1.7.3.4
 
