@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab1BNVMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 16:12:30 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:38396 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab1BNVM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 16:12:29 -0500
-Subject: Re: pull request: wireless-2.6 2011-02-14
-From: Johannes Berg <johannes@sipsolutions.net>
-To: David Miller <davem@davemloft.net>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110214.130056.115934219.davem@davemloft.net>
-References: <20110214204406.GG2722@tuxdriver.com>
-	 <20110214.125148.59672184.davem@davemloft.net>
-	 <20110214.130056.115934219.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Feb 2011 22:12:22 +0100
-Message-ID: <1297717942.3953.9.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753405Ab1BNVUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 16:20:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58957 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752015Ab1BNVUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 16:20:52 -0500
+Message-ID: <4D599C6F.60600@zytor.com>
+Date: Mon, 14 Feb 2011 13:19:43 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: castet.matthieu@free.fr
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
+        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
+References: <4D473FD5.1090903@free.fr> <20110201080223.GB20372@elte.hu> <1296566732.4d4809cc1f963@imp.free.fr> <20110202062632.GA12256@elte.hu> <4D4CA3FD.6000901@zytor.com> <1296924395.4d4d7eeb6f1fe@imp.free.fr> <4D4F31BC.3000709@zytor.com> <1297108754.4d504f1281802@imp.free.fr>
+In-Reply-To: <1297108754.4d504f1281802@imp.free.fr>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 13:00 -0800, David Miller wrote:
+On 02/07/2011 11:59 AM, castet.matthieu@free.fr wrote:
+>
+> For .39 I hope we could remove most of the RWX rights after init (This means
+> make low memory trampoline NX or !RW).
 
-> Please address this newly introduced warning in a future pull request,
-> thanks:
-> 
-> drivers/net/wireless/iwlwifi/iwl-3945.c:411:13: warning: 'iwl3945_good_plcp_health' defined but not used
+By the way, I think this is the wrong goal.  I think we should have
+things enabled at their lowest permission level *as early as possible*.
+ The current model of tightening down permissions late in the boot is
+really the wrong model.
 
-The function can simply be deleted.
+	-hpa
 
-johannes
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
