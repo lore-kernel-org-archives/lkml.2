@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab1BNQfq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:35:46 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53954 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab1BNQfo (ORCPT
+	id S1756057Ab1BNQgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:36:12 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:60989 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755709Ab1BNQgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:35:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=oMFByZF1btGrRZ8/nFYRBU2yKS6O6botqdl/VgT7Ur8RvO/VPOzRyf64VsOjmCvisq
-         GRh30P2vPFZJOD5TVqyMR1u9M3kZ1WDJc3UOsItwlrExZKCOWGHzPIbKDer4sTnzn0/l
-         wZM6Zyy/Eg5OkWwlCv7kH4qqougQKKGhvWPTI=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110214162057.GI9869@sequoia.sous-sol.org>
-References: <AANLkTi=G5pLNqLw1RGNauD+9D76uJfEgNXuef1Po6km7@mail.gmail.com>
-	<20110214162057.GI9869@sequoia.sous-sol.org>
-Date: Mon, 14 Feb 2011 17:35:42 +0100
-Message-ID: <AANLkTinFN6gmcNvoe=DQ3YPL=Bcj3pKCHO6ZzafE9uak@mail.gmail.com>
-Subject: Re: Regression - Xorg start failed
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: DRI <dri-devel@lists.freedesktop.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Feb 2011 11:36:10 -0500
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
+        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <20110214162947.GA3449@redhat.com>
+References: <cover.1294239591.git.jbaron@redhat.com>
+	 <1297452328.5226.89.camel@laptop>
+	 <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
+	 <1297460297.5226.99.camel@laptop> <1297536465.5226.108.camel@laptop>
+	 <20110214155113.GA2840@redhat.com> <1297699024.2401.12.camel@twins>
+	 <20110214160437.GB2840@redhat.com>
+	 <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl>
+	 <1297700754.5226.110.camel@laptop>  <20110214162947.GA3449@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Feb 2011 17:37:18 +0100
+Message-ID: <1297701438.5226.113.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 5:20 PM, Chris Wright <chrisw@sous-sol.org> wrote:
-> * Sedat Dilek (sedat.dilek@googlemail.com) wrote:
->> [ As I am not subscribed to both MLs and lazy to pick up all involved people ]
->>
->> Hi Chris,
->>
->> The original patch had also this part (see the revert in [1]):
->> ...
->> +#include <linux/security.h>
->> ...
->>
->> Your new patch in [2] is missing it or is it not required?
->
-> It was just a patch on top of the bad commit (47970b1b), the #include is
-> required.
->
-> thanks,
-> -chris
->
+On Mon, 2011-02-14 at 11:29 -0500, Jason Baron wrote:
+> On Mon, Feb 14, 2011 at 05:25:54PM +0100, Peter Zijlstra wrote:
+> > > 
+> > > I remember that atomic_t is defined in types.h now rather than atomic.h.
+> > > Any reason why you should keep including atomic.h from jump_label.h ?
+> > 
+> > Ooh, shiny.. we could probably move the few atomic_{read,inc,dec} users
+> > in jump_label.h into out of line functions and have this sorted.
+> > 
+> 
+> inc and dec sure, but atomic_read() for the disabled case needs to be
+> inline....
 
-OK, now I see.
-Might be good to push a v2 as the initial patch was reverted in the meantime?
-The explanations of the fixup patch were helpful (to me) and should be included.
+D'0h yes of course, I was thinking about jump_label_enabled(), but
+there's still the static_branch() implementation to consider.
 
-- Sedat -
+We could of course cheat implement our own version of atomic_read() in
+order to avoid the whole header mess, but that's not pretty at all
+
