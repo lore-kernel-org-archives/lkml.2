@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab1BNQmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:42:10 -0500
-Received: from lo.gmane.org ([80.91.229.12]:37966 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756057Ab1BNQmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:42:07 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Arkadiusz =?ISO-8859-2?Q?Mi=B6kiewicz?= <arekm@maven.pl>
-Subject: Re: b44 driver causes panic when using swiotlb
-Followup-To: gmane.linux.kernel
-Date: Mon, 14 Feb 2011 17:41:54 +0100
-Message-ID: <ijbm0i$n7h$1@dough.gmane.org>
-References: <20110131105412.7252a09c@katamari> <20110201225443U.fujita.tomonori@lab.ntt.co.jp> <20110214205945W.fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-2"
-Content-Transfer-Encoding: 8Bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 87-207-113-141.dynamic.chello.pl
-User-Agent: KNode/4.4.10
+	id S1756070Ab1BNQnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:43:52 -0500
+Received: from blu0-omc1-s15.blu0.hotmail.com ([65.55.116.26]:52462 "EHLO
+	blu0-omc1-s15.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753956Ab1BNQnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 11:43:49 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP55B0369F59D9044E43B96C96D00@phx.gbl>
+Date: Mon, 14 Feb 2011 11:43:43 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl> <1297460297.5226.99.camel@laptop> <1297536465.5226.108.camel@laptop> <20110214155113.GA2840@redhat.com> <1297699024.2401.12.camel@twins> <20110214160437.GB2840@redhat.com> <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl> <1297700754.5226.110.camel@laptop> <20110214162947.GA3449@redhat.com> <1297701438.5226.113.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1297701438.5226.113.camel@laptop>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 11:41:17 up 313 days,  2:30,  7 users,  load average: 2.05, 1.92,
+	1.75
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 14 Feb 2011 16:43:47.0997 (UTC) FILETIME=[5A10C4D0:01CBCC66]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FUJITA Tomonori wrote:
-
-> On Tue, 1 Feb 2011 22:54:56 +0900
-> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Mon, 2011-02-14 at 11:29 -0500, Jason Baron wrote:
+> > On Mon, Feb 14, 2011 at 05:25:54PM +0100, Peter Zijlstra wrote:
+> > > > 
+> > > > I remember that atomic_t is defined in types.h now rather than atomic.h.
+> > > > Any reason why you should keep including atomic.h from jump_label.h ?
+> > > 
+> > > Ooh, shiny.. we could probably move the few atomic_{read,inc,dec} users
+> > > in jump_label.h into out of line functions and have this sorted.
+> > > 
+> > 
+> > inc and dec sure, but atomic_read() for the disabled case needs to be
+> > inline....
 > 
->> On Mon, 31 Jan 2011 10:54:12 -0500
->> Chuck Ebbert <cebbert@redhat.com> wrote:
->> 
->> > The b44 driver is triggering this panic in swiotlb_map_page():
->> > 
->> >         if (!dma_capable(dev, dev_addr, size))
->> >                 panic("map_single: bounce buffer is not DMA'ble");
->> > 
->> > The kernel log says the bounce buffers are at 0xdb400000, but b44 can
->> > only do DMA to the first 1GB of memory:
->> 
->> Can you try this? b44 has the own bouncing mechanism so if swiotlb
->> returns an error, the driver can allocate an appropriate buffer.
->> 
->> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
->> index c47bbe1..93ca08b 100644
->> --- a/lib/swiotlb.c
->> +++ b/lib/swiotlb.c
->> @@ -686,8 +686,10 @@ dma_addr_t swiotlb_map_page(struct device *dev,
->> struct page *page,
->>  /*
->>  * Ensure that the address returned is DMA'ble
->>  */
->> -	if (!dma_capable(dev, dev_addr, size))
->> -		panic("map_single: bounce buffer is not DMA'ble");
->> +	if (!dma_capable(dev, dev_addr, size)) {
->> +		swiotlb_tbl_unmap_single(dev, map, size, dir);
->> +		dev_addr = swiotlb_virt_to_bus(dev, 
-io_tlb_overflow_buffer);
->> +	}
->>  
->>  return dev_addr;
->>  }
+> D'0h yes of course, I was thinking about jump_label_enabled(), but
+> there's still the static_branch() implementation to consider.
 > 
-> Ping, any chance to try this?
+> We could of course cheat implement our own version of atomic_read() in
+> order to avoid the whole header mess, but that's not pretty at all
+> 
 
-Friend machine oopsed on network with b44 on 2.6.37, so we tried this patch 
-and network card was detected nicely and was actually usable. The oops 
-started to happen after he upgraded memory from 2GB to 4GB in his dell 
-vostro 1500 notebook.
+OK, so the other way around then : why does kernel.h need to include
+dynamic_debug.h (which includes jump_label.h) ?
 
-03:00.0 Ethernet controller: Broadcom Corporation BCM4401-B0 100Base-TX (rev 
-02)
-
-# grep b44 dmesg.log
-[    8.524297] b44 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[    8.576838] b44: b44.c:v2.0
-[    8.593920] b44 ssb1:0: eth0: Broadcom 44xx/47xx 10/100BaseT Ethernet 
-00:1c:23:9b:3f:5f
-[   55.350228] b44 ssb1:0: eth0: Link is up at 100 Mbps, full duplex
-[   55.350233] b44 ssb1:0: eth0: Flow control is off for TX and off for RX
-
-
-> Thanks,
+Mathieu
 
 -- 
-Arkadiusz Mi¶kiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
