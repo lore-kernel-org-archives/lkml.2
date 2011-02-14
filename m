@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab1BNSl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:41:56 -0500
-Received: from hera.kernel.org ([140.211.167.34]:38529 "EHLO hera.kernel.org"
+	id S1751313Ab1BNSp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:45:27 -0500
+Received: from www.tglx.de ([62.245.132.106]:50350 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab1BNSly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:41:54 -0500
-Date: Mon, 14 Feb 2011 18:41:20 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com, hpa@zytor.com,
-        mingo@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, jdike@addtoit.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        tglx@linutronix.de
-In-Reply-To: <20110206224515.430825903@linutronix.de>
-References: <20110206224515.430825903@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:um/irq] um: Select GENERIC_HARDIRQS_NO_DEPRECATED
-Message-ID: <tip-53c39ce56d203d80ba8217a16bb024b25185fb7e@git.kernel.org>
-Git-Commit-ID: 53c39ce56d203d80ba8217a16bb024b25185fb7e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1750800Ab1BNSpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:45:25 -0500
+Date: Mon, 14 Feb 2011 19:43:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Rabin Vincent <rabin@rab.in>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [patch 63/75] genirq: Add IRQCHIP_SET_TYPE_MASKED flag and
+ IRQD_WAKE_SET
+In-Reply-To: <AANLkTin8giwcc-odm29v5hu4fe-yH1Ub1wtJZ8sx93Vf@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1102141942390.26192@localhost6.localdomain6>
+References: <20110210222908.661199947@linutronix.de> <20110210223300.376194902@linutronix.de> <AANLkTin8giwcc-odm29v5hu4fe-yH1Ub1wtJZ8sx93Vf@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Feb 2011 18:41:20 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  53c39ce56d203d80ba8217a16bb024b25185fb7e
-Gitweb:     http://git.kernel.org/tip/53c39ce56d203d80ba8217a16bb024b25185fb7e
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 6 Feb 2011 22:45:38 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 14 Feb 2011 19:37:40 +0100
+On Mon, 14 Feb 2011, Rabin Vincent wrote:
 
-um: Select GENERIC_HARDIRQS_NO_DEPRECATED
+> On Fri, Feb 11, 2011 at 05:08, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > Add also a flag which reflects the WAKEUP state of the interrupt line,
+> > which is also required by some of those chips.
+> 
+> This part (the IRQD_WAKE_SET mentioned in the subject) appears to be
+> missing from this patch?
 
-irq chips converted and proper accessor functions used.
+Yep, intentionally. Subject line is crapped. Fixed locally already.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <20110206224515.430825903@linutronix.de>
----
- arch/um/Kconfig.common |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Thanks for pointing it out.
 
-diff --git a/arch/um/Kconfig.common b/arch/um/Kconfig.common
-index e351e14..1e78940 100644
---- a/arch/um/Kconfig.common
-+++ b/arch/um/Kconfig.common
-@@ -7,6 +7,7 @@ config UML
- 	bool
- 	default y
- 	select HAVE_GENERIC_HARDIRQS
-+	select GENERIC_HARDIRQS_NO_DEPRECATED
- 
- config MMU
- 	bool
+       tglx
+
