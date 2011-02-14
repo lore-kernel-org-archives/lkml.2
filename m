@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab1BNP5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 10:57:22 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:61301 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754954Ab1BNP5S (ORCPT
+	id S1755900Ab1BNP5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 10:57:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:40504 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796Ab1BNP5c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 10:57:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AsNLCgt4sHhB0kOpuJ3TlrUkqQhQu6ycsrz0cJpO6mbG3Ild1epoi/gKufHod2SQr5
-         q5IStMFozB3Gfq7mEMeBW/XojcfhirmGKJGqBOhRtdvb2rfdvPACZQBJOIKQulgo39dk
-         oFnrysv49OJ2FffAMhYneE3wwIA5OSry7G+r0=
-Date: Mon, 14 Feb 2011 23:56:27 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org, greg@kroah.com,
-        john.williams@petalogix.com, monstr@monstr.eu,
-        grant.likely@secretlab.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Fwd: [PATCH] of: Add missing of_address.h to xilinx ehci driver
-Message-ID: <20110214155625.GA1951@gmail.com>
-References: <1297680009-4054-1-git-send-email-monstr@monstr.eu>
- <AANLkTikwaUVs_a_eetGjCj=Tg9qSPKAgxKac11gHWqDe@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikwaUVs_a_eetGjCj=Tg9qSPKAgxKac11gHWqDe@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 14 Feb 2011 10:57:32 -0500
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
+        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org
+In-Reply-To: <20110214155113.GA2840@redhat.com>
+References: <cover.1294239591.git.jbaron@redhat.com>
+	 <1297452328.5226.89.camel@laptop>
+	 <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl>
+	 <1297460297.5226.99.camel@laptop> <1297536465.5226.108.camel@laptop>
+	 <20110214155113.GA2840@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 14 Feb 2011 16:57:04 +0100
+Message-ID: <1297699024.2401.12.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 11:53:13PM +0800, harryxiyou wrote:
-> ---------- Forwarded message ----------
-> From: Michal Simek <monstr@monstr.eu>
-> Date: 2011/2/14
-> Subject: [PATCH] of: Add missing of_address.h to xilinx ehci driver
-> To: glikely@secretlab.ca
-> Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-> Michal Simek <monstr@monstr.eu>, John Williams <john.williams@petalogix.com>
+On Mon, 2011-02-14 at 10:51 -0500, Jason Baron wrote:
+> On Sat, Feb 12, 2011 at 07:47:45PM +0100, Peter Zijlstra wrote:
+> > On Fri, 2011-02-11 at 22:38 +0100, Peter Zijlstra wrote:
+> > > 
+> > > So why can't we make that jump_label_entry::refcount and
+> > > jump_label_key::state an atomic_t and be done with it? 
+> > 
+> > So I had a bit of a poke at this because I didn't quite understand why
+> > all that stuff was as it was. I applied both Jason's patches and then
+> > basically rewrote kernel/jump_label.c just for kicks ;-)
+> > 
+> > I haven't tried compiling this, let alone running it, but provided I
+> > didn't actually forget anything the storage per key is now 16 bytes when
+> > modules are disabled and 24 * (1 + mods) bytes for when they are
+> > enabled. The old code had 64 + 40 * mods bytes.
+> > 
+> > I still need to clean up the static_branch_else bits and look at !x86
+> > aside from the already mentioned bits.. but what do people think?
+> > 
+> > ---
 > 
+> Generally, I really like this! Its the direction I think the jump label
+> code should be going. The complete removal of the hash table, makes the
+> design a lot better and simpler. We just need to get some of the details
+> cleaned up, and of course we need this to compile :) But I don't see any
+> fundamental problems with this approach. 
 > 
-> Build log:
-> In file included from drivers/usb/host/ehci-hcd.c:1208:
-> drivers/usb/host/ehci-xilinx-of.c: In function 'ehci_hcd_xilinx_of_probe':
-> drivers/usb/host/ehci-xilinx-of.c:168: error: implicit declaration of
-> function 'of_address_to_resource'
+> Things that still need to be sorted out:
 > 
-> Signed-off-by: John Williams <john.williams@petalogix.com>
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-Acked-by: Harry Wei <harryxiyou@gmail.com> 
-> ---
->  drivers/usb/host/ehci-xilinx-of.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-xilinx-of.c
-> b/drivers/usb/host/ehci-xilinx-of.c
-> index e8f4f36..a6f21b8 100644
-> --- a/drivers/usb/host/ehci-xilinx-of.c
-> +++ b/drivers/usb/host/ehci-xilinx-of.c
-> @@ -29,6 +29,7 @@
-> 
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_address.h>
-> 
->  /**
->  * ehci_xilinx_of_setup - Initialize the device for ehci_reset()
-> --
-> 1.5.5.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
-> -- 
-> Best Regards.
-> Harry Wei.
-> Do what u like!
+> 1) Since jump_label.h, are included in kernel.h, (indirectly via the
+> dynamic_debug.h) the atomic_t definitions could be problematic, since
+> atomic.h includes kernel.h indirectly...so we might need some header
+> magic.
+
+Yes, I remember running into that when I did the jump_label_ref stuff,
+some head-scratching is in order there.
+
+> 2) I had some code to disallow writing to module __init section, by
+> setting the 'key' value to 0, after the module->init was run, but
+> before, the memory was freed. And then I check for a non-zero key value
+> when the jump label is updated. In this way we can't corrupt some random
+> piece of memory. I had this done via the 'MODULE_STATE_LIVE' notifier.
+
+AH! I wondered what that was about.. that wouldn't work now since we
+actually rely on iter->key to remain what it was.
+
+> 3) For 'jump_label_enable()' 'jump_label_disable()' in the tracepoint
+> code, I'm not sure that there is an enable for each disable. So i'm not
+> sure if a refcount would work there. But we can fix this by first
+> checking 'jump_label_enabled()' before calling 'jump_label_eanble()' or
+> jump_label_ref(). This is safe b/c the the tracepoint code is protected
+> using the tracepoint_mutex.
+
+Right,.. I hadn't considered people using it like that, but like you
+said, that should be easily fixed.
