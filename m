@@ -1,180 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab1BNEd3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Feb 2011 23:33:29 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:1613 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab1BNEdX convert rfc822-to-8bit (ORCPT
+	id S1755496Ab1BNEeM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Feb 2011 23:34:12 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:42934 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459Ab1BNEeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Feb 2011 23:33:23 -0500
+	Sun, 13 Feb 2011 23:34:04 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=G5KBXY4p7H2wByVydjePU+FQhn0eY5DZmR1rJU5q5+X7T8xgMj2VI11PuyM4lQXdPj
-         KR/DSKU1g68nfy18C8iA==
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Z2JVKpEu7OM3HATF45maAUgPy1IRCVFJHhXjfpdwCv49tv4UNrTO00lN5swIHgc8AG
+         C6pJwu4/K3lxS6RSOhod65pD6KtEQjsc6sigBMcAmWZtGPLi9Z2Gg+MYKpy6b/B5MEI1
+         gtFxYNaHMUESm2KGCoK66xRj7kV44/at7Yguc=
+Date: Sun, 13 Feb 2011 20:33:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, stoth@kernellabs.com
+Subject: Re: cx23885-input.c does in fact use a workqueue....
+Message-ID: <20110214043355.GA28090@core.coreip.homeip.net>
+References: <1297647322.19186.61.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1297160655.13327.92.camel@laptop>
-References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
- <1295534345.28776.175.camel@laptop> <1296646160.26581.315.camel@laptop>
- <20110202115012.GA16409@balbir.in.ibm.com> <1296650792.26581.319.camel@laptop>
- <20110202190251.GB16409@balbir.in.ibm.com> <1297095033.13327.46.camel@laptop>
- <AANLkTimF+8XAZxF4psrXSKx1CHFxin6AW=tu5OLGUgNi@mail.gmail.com>
- <1297108959.13327.54.camel@laptop> <AANLkTikWS86TPjp+J=iiwCQJ56pqYTQo8Z9_V20GEcEz@mail.gmail.com>
- <1297160655.13327.92.camel@laptop>
-From: Paul Menage <menage@google.com>
-Date: Sun, 13 Feb 2011 20:32:58 -0800
-Message-ID: <AANLkTikBEbAhN_0SSz76SMewuUueOrE7K7cYr=zS3DB0@mail.gmail.com>
-Subject: Re: [RFC][PATCH] cgroup: Fix cgroup_subsys::exit callback
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: balbir@linux.vnet.ibm.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297647322.19186.61.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 2:24 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> And here I thought Google was starting to understand what community
-> participation meant.. is there anybody you know who can play a more
-> active role in the whole cgroup thing?
+On Sun, Feb 13, 2011 at 08:35:22PM -0500, Andy Walls wrote:
+> Tejun,
+> 
+> I just noticed this commit:
+> 
+> commit 8c71778cbf2c8beaefaa2dee5478aa0622d96682
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Fri Dec 24 16:14:20 2010 +0100
+> 
+>     media/video: don't use flush_scheduled_work()
+>     
+>     This patch converts the remaining users of flush_scheduled_work() in
+>     media/video.
+>     
+>     * bttv-input.c and cx23885-input.c don't use workqueue at all.  No
+>       need to flush.
+> [...]
+> 
+> 
+> The cx23885 driver does in fact schedule work for IR input handling:
+> 
+> Here's where it is scheduled for CX23888 chips:
+> 
+> http://git.linuxtv.org/media_tree.git?a=blob;f=drivers/media/video/cx23885/cx23885-ir.c;h=7125247dd25558678c823ee3262675570c9aa630;hb=HEAD#l76
+> 
+> Here's where it is scheduled for CX23885 chips:
+> 
+> http://git.linuxtv.org/media_tree.git?a=blob;f=drivers/media/video/cx23885/cx23885-core.c;h=359882419b7f588b7c698dbcfb6a39ddb1603301;hb=HEAD#l1861
+> 
+> 
+> The two different chips are handled slightly differently because
+> 
+> a. the CX23888 IR unit is accessable via a PCI register block.  The IR
+> IRQ can be acknowledged with direct PCI register accesses in an
+> interrupt context, and the IR pulse FIFO serviced later in a workqueue
+> context.
+> 
+> b. the CX23885 IR unit is accessed over an I2C bus.  The CX23885 A/V IRQ
+> has to be masked in an interrupt context (with PCI registers accesses).
+> Then the CX23885 A/V unit's IR IRQ is ack'ed over I2C in a workqueue
+> context and the IR pulse FIFO is also serviced over I2C in a workqueue
+> context.
+> 
+> 
+> So what should be done about the flush_scheduled_work()?  I think it
+> belongs there.
+> 
 
-Google has plenty of people actively working on various aspects of
-cgroups (particularly memory and I/O scheduling) in mainline. There's
-no one tasked with core cgroups framework maintenance, but there are
-folks from Fujitsu and IBM (Li Zefan, Balbir Singh, etc) who have more
-experience and state in the core framework than anyone else in Google
-anyway.
+Convert to using threaded irq?
 
->
-> Like the below? Both the perf and sched exit callback are fine with
-> being called under task_lock afaict, but I haven't actually ran with
-
-Sounds good to me.
-
-Acked-by: Paul Menage <menage@google.com>
-
-> lockdep enabled to see if I missed something.
->
-> I also pondered doing the cgroup exit from __put_task_struct() but that
-> had another problem iirc.
-
-My guess is that by that time, so much of the task's context has been
-destroyed that it comes too late in the tear-down for some/many
-subsystems? Proving that guess either true or false (for all current
-and future potential subsystems) would probably be tricky, though.
-
->
-> ---
-> Index: linux-2.6/include/linux/cgroup.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/cgroup.h
-> +++ linux-2.6/include/linux/cgroup.h
-> @@ -474,7 +474,8 @@ struct cgroup_subsys {
->                        struct cgroup *old_cgrp, struct task_struct *tsk,
->                        bool threadgroup);
->        void (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
-> -       void (*exit)(struct cgroup_subsys *ss, struct task_struct *task);
-> +       void (*exit)(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> +                       struct cgroup *old_cgrp, struct task_struct *task);
->        int (*populate)(struct cgroup_subsys *ss,
->                        struct cgroup *cgrp);
->        void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
-> Index: linux-2.6/kernel/cgroup.c
-> ===================================================================
-
-Probably also worth including a note in the docs:
-
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -602,6 +602,7 @@ void fork(struct cgroup_subsy *ss, struct task_struct *task)
- Called when a task is forked into a cgroup.
-
- void exit(struct cgroup_subsys *ss, struct task_struct *task)
-+(task->alloc_lock held by caller)
-
- Called during task exit.
-
-
-> --- linux-2.6.orig/kernel/cgroup.c
-> +++ linux-2.6/kernel/cgroup.c
-> @@ -4230,20 +4230,8 @@ void cgroup_post_fork(struct task_struct
->  */
->  void cgroup_exit(struct task_struct *tsk, int run_callbacks)
->  {
-> -       int i;
->        struct css_set *cg;
-> -
-> -       if (run_callbacks && need_forkexit_callback) {
-> -               /*
-> -                * modular subsystems can't use callbacks, so no need to lock
-> -                * the subsys array
-> -                */
-> -               for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
-> -                       struct cgroup_subsys *ss = subsys[i];
-> -                       if (ss->exit)
-> -                               ss->exit(ss, tsk);
-> -               }
-> -       }
-> +       int i;
->
->        /*
->         * Unlink from the css_set task list if necessary.
-> @@ -4261,7 +4249,24 @@ void cgroup_exit(struct task_struct *tsk
->        task_lock(tsk);
->        cg = tsk->cgroups;
->        tsk->cgroups = &init_css_set;
-> +
-> +       if (run_callbacks && need_forkexit_callback) {
-> +               /*
-> +                * modular subsystems can't use callbacks, so no need to lock
-> +                * the subsys array
-> +                */
-> +               for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
-> +                       struct cgroup_subsys *ss = subsys[i];
-> +                       if (ss->exit) {
-> +                               struct cgroup *old_cgrp =
-> +                                       rcu_dereference_raw(cg->subsys[i])->cgroup;
-> +                               struct cgroup *cgrp = task_cgroup(tsk, i);
-> +                               ss->exit(ss, cgrp, old_cgrp, tsk);
-> +                       }
-> +               }
-> +       }
->        task_unlock(tsk);
-> +
->        if (cg)
->                put_css_set_taskexit(cg);
->  }
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched.c
-> +++ linux-2.6/kernel/sched.c
-> @@ -606,9 +606,6 @@ static inline struct task_group *task_gr
->        struct task_group *tg;
->        struct cgroup_subsys_state *css;
->
-> -       if (p->flags & PF_EXITING)
-> -               return &root_task_group;
-> -
->        css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
->                        lockdep_is_held(&task_rq(p)->lock));
->        tg = container_of(css, struct task_group, css);
-> @@ -9081,7 +9078,8 @@ cpu_cgroup_attach(struct cgroup_subsys *
->  }
->
->  static void
-> -cpu_cgroup_exit(struct cgroup_subsys *ss, struct task_struct *task)
-> +cpu_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> +               struct cgroup *old_cgrp, struct task_struct *task)
->  {
->        /*
->         * cgroup_exit() is called in the copy_process() failure path.
->
->
->
+-- 
+Dmitry
