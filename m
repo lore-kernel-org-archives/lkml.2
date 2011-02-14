@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962Ab1BNSIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:08:39 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45622 "EHLO hera.kernel.org"
+	id S1752938Ab1BNSJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:09:03 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45613 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602Ab1BNSH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:07:26 -0500
-Date: Mon, 14 Feb 2011 13:53:52 GMT
-From: tip-bot for Shaohua Li <shaohua.li@intel.com>
+	id S1752521Ab1BNSHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:07:23 -0500
+Date: Mon, 14 Feb 2011 13:51:55 GMT
+From: tip-bot for Borislav Petkov <bp@amd64.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        andi@firstfloor.org, eric.dumazet@gmail.com, shaohua.li@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
+        tglx@linutronix.de, bp@amd64.org, mingo@elte.hu,
+        borislav.petkov@amd.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, andi@firstfloor.org, tglx@linutronix.de,
-        shaohua.li@intel.com, mingo@elte.hu
-In-Reply-To: <1295232730.1949.710.camel@sli10-conroe>
-References: <1295232730.1949.710.camel@sli10-conroe>
+        tglx@linutronix.de, bp@amd64.org, borislav.petkov@amd.com,
+        mingo@elte.hu
+In-Reply-To: <20110211171754.GA21047@aftab>
+References: <20110211171754.GA21047@aftab>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86: Avoid tlbstate lock if not enough cpus
-Message-ID: <tip-7064d865af804b9b841e7b9a3e9b653e40c3e5ca@git.kernel.org>
-Git-Commit-ID: 7064d865af804b9b841e7b9a3e9b653e40c3e5ca
+Subject: [tip:x86/urgent] x86: Fix mwait_usable section mismatch
+Message-ID: <tip-1c9d16e35911090dee3f9313e6af13af623d66ee@git.kernel.org>
+Git-Commit-ID: 1c9d16e35911090dee3f9313e6af13af623d66ee
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
@@ -31,58 +31,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7064d865af804b9b841e7b9a3e9b653e40c3e5ca
-Gitweb:     http://git.kernel.org/tip/7064d865af804b9b841e7b9a3e9b653e40c3e5ca
-Author:     Shaohua Li <shaohua.li@intel.com>
-AuthorDate: Mon, 17 Jan 2011 10:52:10 +0800
+Commit-ID:  1c9d16e35911090dee3f9313e6af13af623d66ee
+Gitweb:     http://git.kernel.org/tip/1c9d16e35911090dee3f9313e6af13af623d66ee
+Author:     Borislav Petkov <bp@amd64.org>
+AuthorDate: Fri, 11 Feb 2011 18:17:54 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 14 Feb 2011 13:03:08 +0100
+CommitDate: Mon, 14 Feb 2011 12:08:28 +0100
 
-x86: Avoid tlbstate lock if not enough cpus
+x86: Fix mwait_usable section mismatch
 
-This one isn't related to previous patch. If online cpus are
-below NUM_INVALIDATE_TLB_VECTORS, we don't need the lock. The
-comments in the code declares we don't need the check, but a hot
-lock still needs an atomic operation and expensive, so add the
-check here.
+We use it in non __cpuinit code now too so drop marker.
 
-Uses nr_cpu_ids here as suggested by Eric Dumazet.
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-LKML-Reference: <1295232730.1949.710.camel@sli10-conroe>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20110211171754.GA21047@aftab>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/tlb.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/cpu.h |    2 +-
+ arch/x86/kernel/process.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 6acc724..55272d7 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -179,12 +179,8 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
- 	sender = this_cpu_read(tlb_vector_offset);
- 	f = &flush_state[sender];
+diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+index 6e6e755..4564c8e 100644
+--- a/arch/x86/include/asm/cpu.h
++++ b/arch/x86/include/asm/cpu.h
+@@ -32,6 +32,6 @@ extern void arch_unregister_cpu(int);
  
--	/*
--	 * Could avoid this lock when
--	 * num_online_cpus() <= NUM_INVALIDATE_TLB_VECTORS, but it is
--	 * probably not worth checking this for a cache-hot lock.
--	 */
--	raw_spin_lock(&f->tlbstate_lock);
-+	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
-+		raw_spin_lock(&f->tlbstate_lock);
+ DECLARE_PER_CPU(int, cpu_state);
  
- 	f->flush_mm = mm;
- 	f->flush_va = va;
-@@ -202,7 +198,8 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+-int __cpuinit mwait_usable(const struct cpuinfo_x86 *);
++int mwait_usable(const struct cpuinfo_x86 *);
  
- 	f->flush_mm = NULL;
- 	f->flush_va = 0;
--	raw_spin_unlock(&f->tlbstate_lock);
-+	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
-+		raw_spin_unlock(&f->tlbstate_lock);
- }
+ #endif /* _ASM_X86_CPU_H */
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index e764fc0..3c189e9 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -506,7 +506,7 @@ static void poll_idle(void)
+ #define MWAIT_ECX_EXTENDED_INFO		0x01
+ #define MWAIT_EDX_C1			0xf0
  
- void native_flush_tlb_others(const struct cpumask *cpumask,
+-int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
++int mwait_usable(const struct cpuinfo_x86 *c)
+ {
+ 	u32 eax, ebx, ecx, edx;
+ 
