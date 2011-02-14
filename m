@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab1BNSfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:35:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32272 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab1BNSfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:35:30 -0500
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias V2
-From: Eric Paris <eparis@redhat.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sds@tycho.nsa.gov, selinux@tycho.nsa.gov, bfields@fieldses.org,
-        viro@zeniv.linux.org.uk
-In-Reply-To: <1290131575-2489-1-git-send-email-josef@redhat.com>
-References: <1290131575-2489-1-git-send-email-josef@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Feb 2011 13:35:20 -0500
-Message-ID: <1297708520.2783.14.camel@unknown001a4b0c2895>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751707Ab1BNSf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:35:59 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:16138 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab1BNSf5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:35:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Lio4jom4+RruCzH/a6zheXvUcTpZvSX7eMk6Ld1+PQQybP02I0+Cv4+PgGac2GoAYX
+         tXciu0c/KOGts2phbyMg==
+MIME-Version: 1.0
+In-Reply-To: <1297683742.30092.11.camel@e102109-lin.cambridge.arm.com>
+References: <1297638813-1315-1-git-send-email-ccross@android.com>
+	<1297683742.30092.11.camel@e102109-lin.cambridge.arm.com>
+Date: Mon, 14 Feb 2011 10:35:37 -0800
+X-Google-Sender-Auth: 47_39DbBbWrnAh28bpWvfpwmbLw
+Message-ID: <AANLkTik_Jey_PtRmr530FVckA6RXHESeX+CyoJC=ZTkR@mail.gmail.com>
+Subject: Re: [PATCH] ARM: vfp: Always save VFP state in vfp_pm_suspend
+From: Colin Cross <ccross@android.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 20:52 -0500, Josef Bacik wrote:
-> While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> figure out that it was SELinux that was giving me grief, with the following
-> denial
-> 
-> type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-> 
-> Turns out this is because in d_obtain_alias if we can't find an alias we create
-> one and do all the normal instantiation stuff, but we don't do the
-> security_d_instantiate.
-> 
-> Usually we are protected from getting a hashed dentry that hasn't yet run
-> security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
-> option there, so in order to deal with the case that a second thread comes in
-> and finds our new dentry before we get to run security_d_instantiate(), we go
-> ahead and call it if we find a dentry already.  Eric assures me that this is ok
-> as the code checks to see if the dentry has been initialized already so calling
-> security_d_instantiate() against the same dentry multiple times is ok.  With
-> this patch I'm no longer getting errant -EACCESS values.
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
+On Mon, Feb 14, 2011 at 3:42 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Sun, 2011-02-13 at 23:13 +0000, Colin Cross wrote:
+>> vfp_pm_suspend should save the VFP state any time there is
+>> a last_VFP_context.  If it only saves when the VFP is enabled,
+>> the state can get lost when, on a UP system:
+>>    Thread 1 uses the VFP
+>>    Context switch occurs to thread 2, VFP is disabled but the
+>>       VFP context is not saved to allow lazy save and restore
+>>    Thread 2 initiates suspend
+>>    vfp_pm_suspend is called with the VFP disabled, but the
+>>       context has not been saved.
+>
+> At this point is it guaranteed that the thread won't migrate to another
+> CPU? If not, we should use get/put_cpu.
 
-Acked-by: Eric Paris <eparis@redhat.com>
+Yes, VFP suspend is implemented with a sysdev, which is suspended
+after disable_nonboot_cpus.
 
-Al, any chance we can push this along?
+>> --- a/arch/arm/vfp/vfpmodule.c
+>> +++ b/arch/arm/vfp/vfpmodule.c
+>> @@ -415,13 +415,12 @@ static int vfp_pm_suspend(struct sys_device *dev, pm_message_t state)
+>>         struct thread_info *ti = current_thread_info();
+>>         u32 fpexc = fmrx(FPEXC);
+>>
+>> -       /* if vfp is on, then save state for resumption */
+>> -       if (fpexc & FPEXC_EN) {
+>> +       /* save state for resume */
+>> +       if (last_VFP_context[ti->cpu]) {
+>>                 printk(KERN_DEBUG "%s: saving vfp state\n", __func__);
+>> -               vfp_save_state(&ti->vfpstate, fpexc);
+>> -
+>> -               /* disable, just in case */
+>> -               fmxr(FPEXC, fmrx(FPEXC) & ~FPEXC_EN);
+>> +               fmxr(FPEXC, fpexc | FPEXC_EN);
+>> +               vfp_save_state(last_VFP_context[ti->cpu], fpexc);
+>> +               fmxr(FPEXC, fpexc & ~FPEXC_EN);
+>>         }
+>
+> We may want to set the last_VFP_context to NULL so that after resuming
+> (to the same thread) we force the VFP reload from the vfpstate
+> structure. The vfp_support_entry code ignores the reloading if the
+> last_VFP_context is the same as vfpstate.
 
--Eric
-
-> ---
-> V1->V2:
-> -added second security_d_instantiate() call
-> 
->  fs/dcache.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 23702a9..119d489 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1201,9 +1201,12 @@ struct dentry *d_obtain_alias(struct inode *inode)
->  	spin_unlock(&tmp->d_lock);
->  
->  	spin_unlock(&dcache_lock);
-> +	security_d_instantiate(tmp, inode);
->  	return tmp;
->  
->   out_iput:
-> +	if (res && !IS_ERR(res))
-> +		security_d_instantiate(res, inode);
->  	iput(inode);
->  	return res;
->  }
-
-
+Right, will fix.
