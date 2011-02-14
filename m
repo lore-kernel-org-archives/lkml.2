@@ -1,43 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab1BNKQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 05:16:59 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50428 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1BNKQ5 (ORCPT
+	id S1753085Ab1BNKSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 05:18:07 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:54631 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752645Ab1BNKSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 05:16:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=VCybegv1IOptxeq/rvVM4unePSFiKrxYicyHb81boU28KET/wbPk24mWZHu5J2RVhK
-         t2Svh5/I8A4T0AhKCL3jKSIvUdUygBgx5XhExoeDJ6bG0SJQIHyhuqyKWnjwQkfRFa8C
-         DX7idyQO1BMSgeh40b4wUzDqwjB5oNxU1OPOc=
+	Mon, 14 Feb 2011 05:18:06 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] mfd: AB8500 system control driver
+Date: Mon, 14 Feb 2011 11:17:12 +0100
+Message-ID: <1297678632-7217-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-In-Reply-To: <1297436787.2760.47.camel@localhost>
-References: <1297418437-23553-1-git-send-email-antony@niisi.msk.ru> <1297436787.2760.47.camel@localhost>
-From: Guillaume LECERF <glecerf@gmail.com>
-Date: Mon, 14 Feb 2011 11:16:36 +0100
-X-Google-Sender-Auth: 1aoKjrep6VLtH9yK0raBT_1ToJE
-Message-ID: <AANLkTikD3sWpuLGr6De3k7Hr-QZc_N0P+6F5xd=JJfR6@mail.gmail.com>
-Subject: Re: [PATCH] mtd: jedec_probe: initialise make sector erase command variable
-To: dedekind1@gmail.com
-Cc: Antony Pavlov <antony@niisi.msk.ru>, linux-mtd@lists.infradead.org,
-        dwmw2@infradead.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 
-2011/2/11 Artem Bityutskiy <dedekind1@gmail.com>:
-> Pushed to l2-mtd-2.6.git, thanks.
+This adds a pretty straight-forward system control driver for the
+AB8500. This driver will be used from the core platform, e.g the
+clock tree implementation in the machine code, and is by nature
+singleton.
 
-Maybe it should be sent to -stable ?
+There are a few simple functions to read, write, set and clear
+registers so that the machine code can control its own foundation.
 
+Cc: Mattias Wallin <mattias.wallin@stericsson.com>
+Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/Makefile               |    2 +-
+ drivers/mfd/ab8500-sysctrl.c       |   80 +++++++++++
+ include/linux/mfd/ab8500/sysctrl.h |  254 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 335 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/mfd/ab8500-sysctrl.c
+ create mode 100644 include/linux/mfd/ab8500/sysctrl.h
+
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index a54e2c7..af01a17 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -70,7 +70,7 @@ obj-$(CONFIG_ABX500_CORE)	+= abx500-core.o
+ obj-$(CONFIG_AB3100_CORE)	+= ab3100-core.o
+ obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
+ obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
+-obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o
++obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
+ obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
+ obj-$(CONFIG_AB8500_DEBUG)	+= ab8500-debugfs.o
+ obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+new file mode 100644
+index 0000000..3921859
+--- /dev/null
++++ b/drivers/mfd/ab8500-sysctrl.c
+@@ -0,0 +1,80 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ * Author: Mattias Nilsson <mattias.i.nilsson@stericsson.com> for ST Ericsson.
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/ab8500.h>
++#include <linux/mfd/abx500.h>
++#include <linux/mfd/ab8500/sysctrl.h>
++
++static struct device *sysctrl_dev;
++
++static inline bool valid_bank(u8 bank)
++{
++	return ((bank == AB8500_SYS_CTRL1_BLOCK) ||
++		(bank == AB8500_SYS_CTRL2_BLOCK));
++}
++
++int ab8500_sysctrl_read(u16 reg, u8 *value)
++{
++	u8 bank;
++
++	if (sysctrl_dev == NULL)
++		return -EAGAIN;
++
++	bank = (reg >> 8);
++	if (!valid_bank(bank))
++		return -EINVAL;
++
++	return abx500_get_register_interruptible(sysctrl_dev, bank,
++		(u8)(reg & 0xFF), value);
++}
++
++int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value)
++{
++	u8 bank;
++
++	if (sysctrl_dev == NULL)
++		return -EAGAIN;
++
++	bank = (reg >> 8);
++	if (!valid_bank(bank))
++		return -EINVAL;
++
++	return abx500_mask_and_set_register_interruptible(sysctrl_dev, bank,
++		(u8)(reg & 0xFF), mask, value);
++}
++
++static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
++{
++	sysctrl_dev = &pdev->dev;
++	return 0;
++}
++
++static int __devexit ab8500_sysctrl_remove(struct platform_device *pdev)
++{
++	sysctrl_dev = NULL;
++	return 0;
++}
++
++static struct platform_driver ab8500_sysctrl_driver = {
++	.driver = {
++		.name = "ab8500-sysctrl",
++		.owner = THIS_MODULE,
++	},
++	.probe = ab8500_sysctrl_probe,
++	.remove = __devexit_p(ab8500_sysctrl_remove),
++};
++
++static int __init ab8500_sysctrl_init(void)
++{
++	return platform_driver_register(&ab8500_sysctrl_driver);
++}
++subsys_initcall(ab8500_sysctrl_init);
++
++MODULE_AUTHOR("Mattias Nilsson <mattias.i.nilsson@stericsson.com");
++MODULE_DESCRIPTION("AB8500 system control driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/ab8500/sysctrl.h b/include/linux/mfd/ab8500/sysctrl.h
+new file mode 100644
+index 0000000..10da029
+--- /dev/null
++++ b/include/linux/mfd/ab8500/sysctrl.h
+@@ -0,0 +1,254 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ * Author: Mattias Nilsson <mattias.i.nilsson@stericsson.com> for ST Ericsson.
++ * License terms: GNU General Public License (GPL) version 2
++ */
++#ifndef __AB8500_SYSCTRL_H
++#define __AB8500_SYSCTRL_H
++
++#include <linux/bitops.h>
++
++#ifdef CONFIG_AB8500_CORE
++
++int ab8500_sysctrl_read(u16 reg, u8 *value);
++int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value);
++
++#else
++
++static inline int ab8500_sysctrl_read(u16 reg, u8 *value)
++{
++	return 0;
++}
++
++static inline int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value)
++{
++	return 0;
++}
++
++#endif /* CONFIG_AB8500_CORE */
++
++static inline int ab8500_sysctrl_set(u16 reg, u8 bits)
++{
++	return ab8500_sysctrl_write(reg, bits, bits);
++}
++
++static inline int ab8500_sysctrl_clear(u16 reg, u8 bits)
++{
++	return ab8500_sysctrl_write(reg, bits, 0);
++}
++
++/* Registers */
++#define AB8500_TURNONSTATUS		0x100
++#define AB8500_RESETSTATUS		0x101
++#define AB8500_PONKEY1PRESSSTATUS	0x102
++#define AB8500_SYSCLKREQSTATUS		0x142
++#define AB8500_STW4500CTRL1		0x180
++#define AB8500_STW4500CTRL2		0x181
++#define AB8500_STW4500CTRL3		0x200
++#define AB8500_MAINWDOGCTRL		0x201
++#define AB8500_MAINWDOGTIMER		0x202
++#define AB8500_LOWBAT			0x203
++#define AB8500_BATTOK			0x204
++#define AB8500_SYSCLKTIMER		0x205
++#define AB8500_SMPSCLKCTRL		0x206
++#define AB8500_SMPSCLKSEL1		0x207
++#define AB8500_SMPSCLKSEL2		0x208
++#define AB8500_SMPSCLKSEL3		0x209
++#define AB8500_SYSULPCLKCONF		0x20A
++#define AB8500_SYSULPCLKCTRL1		0x20B
++#define AB8500_SYSCLKCTRL		0x20C
++#define AB8500_SYSCLKREQ1VALID		0x20D
++#define AB8500_SYSTEMCTRLSUP		0x20F
++#define AB8500_SYSCLKREQ1RFCLKBUF	0x210
++#define AB8500_SYSCLKREQ2RFCLKBUF	0x211
++#define AB8500_SYSCLKREQ3RFCLKBUF	0x212
++#define AB8500_SYSCLKREQ4RFCLKBUF	0x213
++#define AB8500_SYSCLKREQ5RFCLKBUF	0x214
++#define AB8500_SYSCLKREQ6RFCLKBUF	0x215
++#define AB8500_SYSCLKREQ7RFCLKBUF	0x216
++#define AB8500_SYSCLKREQ8RFCLKBUF	0x217
++#define AB8500_DITHERCLKCTRL		0x220
++#define AB8500_SWATCTRL			0x230
++#define AB8500_HIQCLKCTRL		0x232
++#define AB8500_VSIMSYSCLKCTRL		0x233
++
++/* Bits */
++#define AB8500_TURNONSTATUS_PORNVBAT BIT(0)
++#define AB8500_TURNONSTATUS_PONKEY1DBF BIT(1)
++#define AB8500_TURNONSTATUS_PONKEY2DBF BIT(2)
++#define AB8500_TURNONSTATUS_RTCALARM BIT(3)
++#define AB8500_TURNONSTATUS_MAINCHDET BIT(4)
++#define AB8500_TURNONSTATUS_VBUSDET BIT(5)
++#define AB8500_TURNONSTATUS_USBIDDETECT BIT(6)
++
++#define AB8500_RESETSTATUS_RESETN4500NSTATUS BIT(0)
++#define AB8500_RESETSTATUS_SWRESETN4500NSTATUS BIT(2)
++
++#define AB8500_PONKEY1PRESSSTATUS_PONKEY1PRESSTIME_MASK 0x7F
++#define AB8500_PONKEY1PRESSSTATUS_PONKEY1PRESSTIME_SHIFT 0
++
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ1STATUS BIT(0)
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ2STATUS BIT(1)
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ3STATUS BIT(2)
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ4STATUS BIT(3)
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ5STATUS BIT(4)
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ6STATUS BIT(5)
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ7STATUS BIT(6)
++#define AB8500_SYSCLKREQSTATUS_SYSCLKREQ8STATUS BIT(7)
++
++#define AB8500_STW4500CTRL1_SWOFF BIT(0)
++#define AB8500_STW4500CTRL1_SWRESET4500N BIT(1)
++#define AB8500_STW4500CTRL1_THDB8500SWOFF BIT(2)
++
++#define AB8500_STW4500CTRL2_RESETNVAUX1VALID BIT(0)
++#define AB8500_STW4500CTRL2_RESETNVAUX2VALID BIT(1)
++#define AB8500_STW4500CTRL2_RESETNVAUX3VALID BIT(2)
++#define AB8500_STW4500CTRL2_RESETNVMODVALID BIT(3)
++#define AB8500_STW4500CTRL2_RESETNVEXTSUPPLY1VALID BIT(4)
++#define AB8500_STW4500CTRL2_RESETNVEXTSUPPLY2VALID BIT(5)
++#define AB8500_STW4500CTRL2_RESETNVEXTSUPPLY3VALID BIT(6)
++#define AB8500_STW4500CTRL2_RESETNVSMPS1VALID BIT(7)
++
++#define AB8500_STW4500CTRL3_CLK32KOUT2DIS BIT(0)
++#define AB8500_STW4500CTRL3_RESETAUDN BIT(1)
++#define AB8500_STW4500CTRL3_RESETDENCN BIT(2)
++#define AB8500_STW4500CTRL3_THSDENA BIT(3)
++
++#define AB8500_MAINWDOGCTRL_MAINWDOGENA BIT(0)
++#define AB8500_MAINWDOGCTRL_MAINWDOGKICK BIT(1)
++#define AB8500_MAINWDOGCTRL_WDEXPTURNONVALID BIT(4)
++
++#define AB8500_MAINWDOGTIMER_MAINWDOGTIMER_MASK 0x7F
++#define AB8500_MAINWDOGTIMER_MAINWDOGTIMER_SHIFT 0
++
++#define AB8500_LOWBAT_LOWBATENA BIT(0)
++#define AB8500_LOWBAT_LOWBAT_MASK 0x7E
++#define AB8500_LOWBAT_LOWBAT_SHIFT 1
++
++#define AB8500_BATTOK_BATTOKSEL0THF_MASK 0x0F
++#define AB8500_BATTOK_BATTOKSEL0THF_SHIFT 0
++#define AB8500_BATTOK_BATTOKSEL1THF_MASK 0xF0
++#define AB8500_BATTOK_BATTOKSEL1THF_SHIFT 4
++
++#define AB8500_SYSCLKTIMER_SYSCLKTIMER_MASK 0x0F
++#define AB8500_SYSCLKTIMER_SYSCLKTIMER_SHIFT 0
++#define AB8500_SYSCLKTIMER_SYSCLKTIMERADJ_MASK 0xF0
++#define AB8500_SYSCLKTIMER_SYSCLKTIMERADJ_SHIFT 4
++
++#define AB8500_SMPSCLKCTRL_SMPSCLKINTSEL_MASK 0x03
++#define AB8500_SMPSCLKCTRL_SMPSCLKINTSEL_SHIFT 0
++#define AB8500_SMPSCLKCTRL_3M2CLKINTENA BIT(2)
++
++#define AB8500_SMPSCLKSEL1_VARMCLKSEL_MASK 0x07
++#define AB8500_SMPSCLKSEL1_VARMCLKSEL_SHIFT 0
++#define AB8500_SMPSCLKSEL1_VAPECLKSEL_MASK 0x38
++#define AB8500_SMPSCLKSEL1_VAPECLKSEL_SHIFT 3
++
++#define AB8500_SMPSCLKSEL2_VMODCLKSEL_MASK 0x07
++#define AB8500_SMPSCLKSEL2_VMODCLKSEL_SHIFT 0
++#define AB8500_SMPSCLKSEL2_VSMPS1CLKSEL_MASK 0x38
++#define AB8500_SMPSCLKSEL2_VSMPS1CLKSEL_SHIFT 3
++
++#define AB8500_SMPSCLKSEL3_VSMPS2CLKSEL_MASK 0x07
++#define AB8500_SMPSCLKSEL3_VSMPS2CLKSEL_SHIFT 0
++#define AB8500_SMPSCLKSEL3_VSMPS3CLKSEL_MASK 0x38
++#define AB8500_SMPSCLKSEL3_VSMPS3CLKSEL_SHIFT 3
++
++#define AB8500_SYSULPCLKCONF_ULPCLKCONF_MASK 0x03
++#define AB8500_SYSULPCLKCONF_ULPCLKCONF_SHIFT 0
++#define AB8500_SYSULPCLKCONF_CLK27MHZSTRE BIT(2)
++#define AB8500_SYSULPCLKCONF_TVOUTCLKDELN BIT(3)
++#define AB8500_SYSULPCLKCONF_TVOUTCLKINV BIT(4)
++#define AB8500_SYSULPCLKCONF_ULPCLKSTRE BIT(5)
++#define AB8500_SYSULPCLKCONF_CLK27MHZBUFENA BIT(6)
++#define AB8500_SYSULPCLKCONF_CLK27MHZPDENA BIT(7)
++
++#define AB8500_SYSULPCLKCTRL1_SYSULPCLKINTSEL_MASK 0x03
++#define AB8500_SYSULPCLKCTRL1_SYSULPCLKINTSEL_SHIFT 0
++#define AB8500_SYSULPCLKCTRL1_ULPCLKREQ BIT(2)
++#define AB8500_SYSULPCLKCTRL1_4500SYSCLKREQ BIT(3)
++#define AB8500_SYSULPCLKCTRL1_AUDIOCLKENA BIT(4)
++#define AB8500_SYSULPCLKCTRL1_SYSCLKBUF2REQ BIT(5)
++#define AB8500_SYSULPCLKCTRL1_SYSCLKBUF3REQ BIT(6)
++#define AB8500_SYSULPCLKCTRL1_SYSCLKBUF4REQ BIT(7)
++
++#define AB8500_SYSCLKCTRL_TVOUTPLLENA BIT(0)
++#define AB8500_SYSCLKCTRL_TVOUTCLKENA BIT(1)
++#define AB8500_SYSCLKCTRL_USBCLKENA BIT(2)
++
++#define AB8500_SYSCLKREQ1VALID_SYSCLKREQ1VALID BIT(0)
++#define AB8500_SYSCLKREQ1VALID_ULPCLKREQ1VALID BIT(1)
++#define AB8500_SYSCLKREQ1VALID_USBSYSCLKREQ1VALID BIT(2)
++
++#define AB8500_SYSTEMCTRLSUP_EXTSUP12LPNCLKSEL_MASK 0x03
++#define AB8500_SYSTEMCTRLSUP_EXTSUP12LPNCLKSEL_SHIFT 0
++#define AB8500_SYSTEMCTRLSUP_EXTSUP3LPNCLKSEL_MASK 0x0C
++#define AB8500_SYSTEMCTRLSUP_EXTSUP3LPNCLKSEL_SHIFT 2
++#define AB8500_SYSTEMCTRLSUP_INTDB8500NOD BIT(4)
++
++#define AB8500_SYSCLKREQ1RFCLKBUF_SYSCLKREQ1RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ1RFCLKBUF_SYSCLKREQ1RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ1RFCLKBUF_SYSCLKREQ1RFCLKBUF4 BIT(4)
++
++#define AB8500_SYSCLKREQ2RFCLKBUF_SYSCLKREQ2RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ2RFCLKBUF_SYSCLKREQ2RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ2RFCLKBUF_SYSCLKREQ2RFCLKBUF4 BIT(4)
++
++#define AB8500_SYSCLKREQ3RFCLKBUF_SYSCLKREQ3RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ3RFCLKBUF_SYSCLKREQ3RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ3RFCLKBUF_SYSCLKREQ3RFCLKBUF4 BIT(4)
++
++#define AB8500_SYSCLKREQ4RFCLKBUF_SYSCLKREQ4RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ4RFCLKBUF_SYSCLKREQ4RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ4RFCLKBUF_SYSCLKREQ4RFCLKBUF4 BIT(4)
++
++#define AB8500_SYSCLKREQ5RFCLKBUF_SYSCLKREQ5RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ5RFCLKBUF_SYSCLKREQ5RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ5RFCLKBUF_SYSCLKREQ5RFCLKBUF4 BIT(4)
++
++#define AB8500_SYSCLKREQ6RFCLKBUF_SYSCLKREQ6RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ6RFCLKBUF_SYSCLKREQ6RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ6RFCLKBUF_SYSCLKREQ6RFCLKBUF4 BIT(4)
++
++#define AB8500_SYSCLKREQ7RFCLKBUF_SYSCLKREQ7RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ7RFCLKBUF_SYSCLKREQ7RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ7RFCLKBUF_SYSCLKREQ7RFCLKBUF4 BIT(4)
++
++#define AB8500_SYSCLKREQ8RFCLKBUF_SYSCLKREQ8RFCLKBUF2 BIT(2)
++#define AB8500_SYSCLKREQ8RFCLKBUF_SYSCLKREQ8RFCLKBUF3 BIT(3)
++#define AB8500_SYSCLKREQ8RFCLKBUF_SYSCLKREQ8RFCLKBUF4 BIT(4)
++
++#define AB8500_DITHERCLKCTRL_VARMDITHERENA BIT(0)
++#define AB8500_DITHERCLKCTRL_VSMPS3DITHERENA BIT(1)
++#define AB8500_DITHERCLKCTRL_VSMPS1DITHERENA BIT(2)
++#define AB8500_DITHERCLKCTRL_VSMPS2DITHERENA BIT(3)
++#define AB8500_DITHERCLKCTRL_VMODDITHERENA BIT(4)
++#define AB8500_DITHERCLKCTRL_VAPEDITHERENA BIT(5)
++#define AB8500_DITHERCLKCTRL_DITHERDEL_MASK 0xC0
++#define AB8500_DITHERCLKCTRL_DITHERDEL_SHIFT 6
++
++#define AB8500_SWATCTRL_UPDATERF BIT(0)
++#define AB8500_SWATCTRL_SWATENABLE BIT(1)
++#define AB8500_SWATCTRL_RFOFFTIMER_MASK 0x1C
++#define AB8500_SWATCTRL_RFOFFTIMER_SHIFT 2
++#define AB8500_SWATCTRL_SWATBIT5 BIT(6)
++
++#define AB8500_HIQCLKCTRL_SYSCLKREQ1HIQENAVALID BIT(0)
++#define AB8500_HIQCLKCTRL_SYSCLKREQ2HIQENAVALID BIT(1)
++#define AB8500_HIQCLKCTRL_SYSCLKREQ3HIQENAVALID BIT(2)
++#define AB8500_HIQCLKCTRL_SYSCLKREQ4HIQENAVALID BIT(3)
++#define AB8500_HIQCLKCTRL_SYSCLKREQ5HIQENAVALID BIT(4)
++#define AB8500_HIQCLKCTRL_SYSCLKREQ6HIQENAVALID BIT(5)
++#define AB8500_HIQCLKCTRL_SYSCLKREQ7HIQENAVALID BIT(6)
++#define AB8500_HIQCLKCTRL_SYSCLKREQ8HIQENAVALID BIT(7)
++
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ1VALID BIT(0)
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ2VALID BIT(1)
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ3VALID BIT(2)
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ4VALID BIT(3)
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ5VALID BIT(4)
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ6VALID BIT(5)
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ7VALID BIT(6)
++#define AB8500_VSIMSYSCLKCTRL_VSIMSYSCLKREQ8VALID BIT(7)
++
++#endif /* __AB8500_SYSCTRL_H */
 -- 
-Guillaume LECERF
-GeeXboX developer - www.geexbox.org
+1.7.3.2
+
