@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1BNNBj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:01:39 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:40726 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752631Ab1BNNBh convert rfc822-to-8bit (ORCPT
+	id S1754359Ab1BNNBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:01:51 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54545 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab1BNNBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:01:37 -0500
-Subject: Re: [PATCH v4 16/19] ARM: LPAE: Use generic dma_addr_t type
- definition
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <Will.Deacon@arm.com>
-In-Reply-To: <20110212103413.GD15616@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
-	 <1295891761-18366-17-git-send-email-catalin.marinas@arm.com>
-	 <20110212103413.GD15616@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Mon, 14 Feb 2011 13:01:30 +0000
-Message-ID: <1297688490.31111.38.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 14 Feb 2011 13:01:32.0835 (UTC) FILETIME=[4DB08730:01CBCC47]
-X-MC-Unique: 111021413013401601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Feb 2011 08:01:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=C+hWB2Aof37xOLi8SWuN+D3QsDtf/f4yCxcLrNGhRYytyr/7CUmq/rS7PpgnfvBVBr
+         yaKwVZXs7QRxIWbPnzmV38e1K+eUwZ+dd9XuEFN1dnXd5KJVv4CjWr2N84NIHx/NvOBL
+         7QYK5+DuuRaccybcS4xWMNK8mujh9ebSBXTgM=
+Message-ID: <4D5927B8.2070704@gmail.com>
+Date: Mon, 14 Feb 2011 14:01:44 +0100
+From: =?ISO-8859-1?Q?Nicolas_de_Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>, Changli Gao <xiaosuo@gmail.com>,
+        Jesse Gross <jesse@nicira.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH] core: dev: don't call BUG() on bad input
+References: <1297680967-11893-1-git-send-email-segoon@openwall.com> <4D591D04.4050000@gmail.com> <20110214122313.GA10062@albatros>
+In-Reply-To: <20110214122313.GA10062@albatros>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-02-12 at 10:34 +0000, Russell King - ARM Linux wrote:
-> On Mon, Jan 24, 2011 at 05:55:58PM +0000, Catalin Marinas wrote:
-> > From: Will Deacon <will.deacon@arm.com>
-> >
-> > This patch uses the types.h implementation in asm-generic to define the
-> > dma_addr_t type as the same width as phys_addr_t.
-> >
-> > NOTE: this is a temporary patch until the corresponding patches unifying
-> > the dma_addr_t and removing the dma64_addr_t are merged into mainline.
-> 
-> I'm not too sure about this patch.  All of the DMA devices we have only
-> take 32-bit addresses for their DMA, so making dma_addr_t 64-bit seems
-> wrong as we'll implicitly truncate these addresses.
+Le 14/02/2011 13:23, Vasiliy Kulikov a écrit :
+> Hi Nicolas,
 
-If we don't enable LPAE, the dma_addr_t is 32-bit, so existing platforms
-are not affected. With Cortex-A15, new platforms may have PCIe and be
-able to access memory beyond 32-bit (if they don't support >32-bit DMA
-at least for some critical devices, I'm not sure why they would use
-A15).
+Hi Vasiliy,
 
-For things like hard drives for example, it becomes problematic as pages
-are allocated by the VFS layer from highmem and passed to the driver for
-DMA. If we keep dma_addr_t to 32-bit you would need to use DMA bounce
-even if the PCIe device supports >32-bit physical addresses.
+> On Mon, Feb 14, 2011 at 13:16 +0100, Nicolas de Pesloüan wrote:
+>>> -	BUG_ON(strlen(name)>= sizeof(dev->name));
+>>> +	if (strnlen(name, sizeof(dev->name))>= sizeof(dev->name)) {
+>
+> Ehh...  Space after ")" is needed :)
 
-> As ARM platforms don't (sanely) support DMA, I think dropping this patch
-> for the time being would be a good idea, and stick with 32-bit dma_addr_t,
-> especially as we need to first do a sweep for dma_addr_t usage in device
-> driver structures (such as dma engine scatter lists.)  These really should
-> use __le32/__be32/u32 depending on whether they're little endian, big
-> endian or native endian.
+:-D
 
-Maybe we could make the dma_addr_t size configurable (and disabled by
-default) since I expect there'll be platforms capable of >32-bit DMA.
+>> "size_t strnlen(const char *s, size_t maxlen) : The strnlen()
+>> function returns strlen(s), if that is less than maxlen, or maxlen
+>> if there is no '\0' character among the first maxlen characters
+>> pointed to by s."
+>>
+>> How can strnlen(name, sizeof(dev->name)) be greater than sizeof(dev->name)?
+>>
+>> Shouldn't it be "if (strnlen(name, sizeof(dev->name)) == sizeof(dev->name))" instead?
+>
+> Not a big deal, but MO it's better to guard from everything that
+> is not a good input by negating the check.  strnlen()<  sizeof() is OK,
+> strnlen()>= sizeof() is bad.  Is "==" more preferable for net/ coding style?
 
--- 
-Catalin
+Agreed, both cannot cause any troubles. == is supposed to be better from the API point of view, but 
+ >= is probably more readable.
 
-
+	Nicolas.
