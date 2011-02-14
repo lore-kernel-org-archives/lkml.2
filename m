@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab1BNNJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 08:09:09 -0500
-Received: from spamap1.ncut.edu.tw ([140.128.71.196]:8265 "EHLO
-	spamap1.ncut.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab1BNNJH (ORCPT
+	id S1754935Ab1BNNKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 08:10:01 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59215 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab1BNNJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 08:09:07 -0500
-Message-Id: <201102141149.p1EBnS2N001973@ccmail.ncut.edu.tw>
-from: robertjet.fellow@gmail.com
-Reply-To: robertjet.fellow@gmail.com
-Date: Mon, 14 Feb 2011 19:49:28 +0800
-X-Originating-Ip: [190.41.154.192]
-X-Mailer: Hgiga v0.9
-Senderaccount: <hsuehyun@ncut.edu.tw>
-hmid: 10187592
-hhid: ncut.edu.tw
-huid: 1053950
-Content-Type: text/plain;
-	charset="big5"
-X-Received-IP: 140.128.71.225
-X-Envelope-From: <robertjet.fellow@gmail.com>
-X-Sherlock-Send: MailFilter (spamap1.ncut.edu.tw)
-X-SpamCheck: Hit=2.5, SARE_RECV_IP_140117:0.5,HGIGA_sender_951219_02:2.5,HGIGA_noSubject02:3.0,RM_tl_ToNone:4.0,NO_REAL_NAME:2.0,HGIGA_EMPTY_HTML:0.5,MIME_BASE64_TEXT:0.5,HGIGA_SPAM_Bsize_25:4.0,HGIGA_EMPTY_TEXT:0.5,HGRSA_NEW_SPAM_Mail22:1.0,HGRSA_WhiteHeader_Mailer_ALL:-30,BODY_EMPTY:3.0,MSGID_FROM_MTA_HEADER:1.0,HGRSA_NEW_SPAM_Mail64:2.0,HGRSA_NEW_SPAM_Mail290:3.0,HGRSA_NEW_SPAM_Mail291:5.0
-Subject: 
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 14 Feb 2011 08:09:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BTdqEHPHd2VrKCBebUIOPmkEGTcYqpbLId6GCChAtujvlQZR7+qnn5yoYrgVqbkGxn
+         Iy6gpZxrd39xRF+UuCjkpe2qeb0rMSkqpwvNMRkSv5tYXUu+pIiL5k6mA9AElUcycz08
+         hw37AVLi/IZThjH/mEDmmpOOTKkoSCUkU7X4w=
+Date: Mon, 14 Feb 2011 14:09:54 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ray Jui <rjui@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH wq#fixes-2.6.38] workqueue: wake up a worker when a rescuer
+ is leaving a gcwq
+Message-ID: <20110214130954.GI18742@htj.dyndns.org>
+References: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C2EAC@SJEXCHCCR02.corp.ad.broadcom.com>
+ <20110209102847.GE3770@htj.dyndns.org>
+ <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C3163@SJEXCHCCR02.corp.ad.broadcom.com>
+ <20110214130300.GH18742@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110214130300.GH18742@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1ED9D0v014481
 
-My name is Mr. R. Jet Fellows. Am a citizen of the united states presently in Hong Kong where i have been diagnosed with Esophageal cancer and it has defied all forms of medical treatment, and right now I have only about a few months to live according to the medical experts.
+After executing the matching works, a rescuer leaves the gcwq whether
+there are more pending works or not.  This may decrease the
+concurrency level to zero and stall execution until a new work item is
+queued on the gcwq.
 
-Though am very rich, i never thought of raising my own family, I only focused on my businesses as that was the only thing I cared for. But now I regret all this as I now know that there is more to life than just wanting to have or make all the money in the world. The treatment of this disease has so far squashed a handsome amount of my money in savings.
-Now that my health has deteriorated so badly and it has been confirmed to me by the doctors that my ailment will defy all forms of medical treatment, i have decided not to spend more money on this ailment anymore.
+Make rescuer wake up a regular worker when it leaves a gcwq if there
+are more works to execute, so that execution isn't stalled.
 
-The last of my money which no one knows of is the huge cash deposit of $2.6m United States Dollars that I have with a Finance Vaulting Unit in the Europe . I will want you to help me collect this deposit from the company and help me distribute it to charity in your region. You will have 25% of this total sum for your time and effort. I cannot talk with you on the phone due to my health situation, and I am using my Laptop Computer to communicate with you, since this is my only means of communication. One passionate appeal i will make to you is to keep this transaction confidential until this money gets to you. If you are interested in carrying out this assignment on my behalf fill this form below when when writing me back.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Ray Jui <rjui@broadcom.com>
+Cc: stable@kernel.org
+---
+ kernel/workqueue.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-Email: robertjet.fellow@gmail.com
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 11869fa..90a17ca 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2047,6 +2047,15 @@ repeat:
+ 				move_linked_works(work, scheduled, &n);
+ 
+ 		process_scheduled_works(rescuer);
++
++		/*
++		 * Leave this gcwq.  If keep_working() is %true, notify a
++		 * regular worker; otherwise, we end up with 0 concurrency
++		 * and stalling the execution.
++		 */
++		if (keep_working(gcwq))
++			wake_up_worker(gcwq);
++
+ 		spin_unlock_irq(&gcwq->lock);
+ 	}
+ 
+-- 
+1.7.1
 
-
-Your names .......
-Your resident address. ......
-Your country name..........
-Your present location........
-Your occupation...............
-Your tel/cell number.........
-Your age/sex..................
-Your company name if any.......
-
-I will be waiting to hear from you as soon as you can.
-
-Sincerely yours,
-R. Jet Fellows.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
