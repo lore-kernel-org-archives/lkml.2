@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab1BNQaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 11:30:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31017 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756053Ab1BNQaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 11:30:39 -0500
-Date: Mon, 14 Feb 2011 11:29:47 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, hpa@zytor.com,
-        rostedt@goodmis.org, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-Message-ID: <20110214162947.GA3449@redhat.com>
-References: <cover.1294239591.git.jbaron@redhat.com> <1297452328.5226.89.camel@laptop> <BLU0-SMTP101B686C32E10BA346B15F896EF0@phx.gbl> <1297460297.5226.99.camel@laptop> <1297536465.5226.108.camel@laptop> <20110214155113.GA2840@redhat.com> <1297699024.2401.12.camel@twins> <20110214160437.GB2840@redhat.com> <BLU0-SMTP4069A1A89F06CDFF9B28F896D00@phx.gbl> <1297700754.5226.110.camel@laptop>
+	id S1756083Ab1BNQbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 11:31:44 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42451 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755917Ab1BNQbl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 11:31:41 -0500
+Date: Mon, 14 Feb 2011 16:31:39 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/17] mfd sharing support (v2, part 1)
+Message-ID: <20110214163139.GE8226@opensource.wolfsonmicro.com>
+References: <20110211175735.0d4258dc@queued.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297700754.5226.110.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110211175735.0d4258dc@queued.net>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 05:25:54PM +0100, Peter Zijlstra wrote:
-> > 
-> > I remember that atomic_t is defined in types.h now rather than atomic.h.
-> > Any reason why you should keep including atomic.h from jump_label.h ?
-> 
-> Ooh, shiny.. we could probably move the few atomic_{read,inc,dec} users
-> in jump_label.h into out of line functions and have this sorted.
-> 
+On Fri, Feb 11, 2011 at 05:57:35PM -0800, Andres Salomon wrote:
 
-inc and dec sure, but atomic_read() for the disabled case needs to be
-inline....
+> Here's my second attempt[0] of the MFD sharing.  Rather than go
+> through with the whole thing, this is just the part which makes
+> mfd_cells always available to MFD clients.  I'm planning to later 
+> remove driver_data, and just use a (renamed) platform_data as a
+> general cleanup, but for now..  Here's the first part.
+
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+though I didn't go and check for existing platform data users in the
+affected drivers.
