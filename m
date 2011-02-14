@@ -1,133 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab1BNSKf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:10:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20657 "EHLO mx1.redhat.com"
+	id S1751067Ab1BNSNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:13:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60194 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363Ab1BNSKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:10:33 -0500
-Date: Mon, 14 Feb 2011 13:10:27 -0500
+	id S1750724Ab1BNSN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:13:29 -0500
+Date: Mon, 14 Feb 2011 13:13:22 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
 Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
         lkml <linux-kernel@vger.kernel.org>,
         Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
- and use_hierarchy interface
-Message-ID: <20110214181027.GI13097@redhat.com>
+Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
+ for CFQ queue
+Message-ID: <20110214181322.GJ13097@redhat.com>
 References: <4D51ED26.8050809@cn.fujitsu.com>
- <4D539821.1090703@cn.fujitsu.com>
- <20110210205722.GB2600@redhat.com>
- <4D589F81.2050408@cn.fujitsu.com>
+ <4D539804.9090308@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D589F81.2050408@cn.fujitsu.com>
+In-Reply-To: <4D539804.9090308@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 11:20:33AM +0800, Gui Jianfeng wrote:
-> Vivek Goyal wrote:
-> > On Thu, Feb 10, 2011 at 03:47:45PM +0800, Gui Jianfeng wrote:
-> >> CFQ group hierarchical scheduling and use_hierarchy interface.
-> >>
-> > 
-> > Hi Gui,
-> > 
-> > I have done a quick high level review. Some minor comments inline.
-> > 
-> > [..]
-> >>  struct cfq_data {
-> >>  	struct request_queue *queue;
-> >> -	/* Root service tree for cfq_groups */
-> >> -	struct cfq_rb_root grp_service_tree;
-> >>  	struct cfq_group root_group;
-> >>  
-> >> +	/* cfq group schedule in flat or hierarchy manner. */
-> >> +	bool use_hierarchy;
-> >> +
-> > 
-> > This seems to be redundant now? Nobody is using it?
-> > 
-> >>  	/*
-> >>  	 * The priority currently being served
-> >>  	 */
-> >> @@ -246,6 +251,9 @@ struct cfq_data {
-> >>  	unsigned long workload_expires;
-> >>  	struct cfq_group *serving_group;
-> >>  
-> >> +	/* Service tree for cfq group flat scheduling mode. */
-> >> +	struct cfq_rb_root grp_service_tree;
-> > 
-> > Above comment is misleading. This service tree is now used both for
-> > flat as well as hierarhical mode.
-> > 
-> > [..]
-> >>  static void
-> >>  cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
-> >>  {
-> >> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
-> >>  	struct cfq_entity *cfqe = &cfqg->cfqe;
-> >> -	struct cfq_entity *__cfqe;
-> >>  	struct rb_node *n;
-> >> +	struct cfq_entity *entity;
-> >> +	struct cfq_rb_root *st;
-> >> +	struct cfq_group *__cfqg;
-> >>  
-> >>  	cfqg->nr_cfqq++;
-> >> +
-> >>  	if (!RB_EMPTY_NODE(&cfqe->rb_node))
-> >>  		return;
-> >>  
-> >>  	/*
-> >> -	 * Currently put the group at the end. Later implement something
-> >> -	 * so that groups get lesser vtime based on their weights, so that
-> >> -	 * if group does not loose all if it was not continously backlogged.
-> >> +	 * Enqueue this group and its ancestors onto their service tree.
-> >>  	 */
-> >> -	n = rb_last(&st->rb);
-> >> -	if (n) {
-> >> -		__cfqe = rb_entry_entity(n);
-> >> -		cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
-> >> -	} else
-> >> -		cfqe->vdisktime = st->min_vdisktime;
-> >> +	while (cfqe) {
-> >> +		if (!RB_EMPTY_NODE(&cfqe->rb_node))
-> >> +			return;
-> >>  
-> >> -	cfq_entity_service_tree_add(st, cfqe);
-> >> +		/*
-> >> +		 * Currently put the group at the end. Later implement
-> >> +		 * something so that groups get lesser vtime based on
-> >> +		 * their weights, so that if group does not loose all
-> >> +		 * if it was not continously backlogged.
-> >> +		 */
-> > 
-> > Can we use vdisktime boost logic for groups also? I think it can be a separate
-> > patch in the series (the last one). Keeping it as a separate patch will
-> > also help you to coordinate with chad's patch.
-> > 
-> >> +		st = cfqe->service_tree;
-> > 
-> > Group entity set their service tree when they get allocated and retain
-> > this pointer even when they get deleted from serivce tree. Queue entities
-> > seem to have it NULL when they get deleted from service tree and it
-> > gets set again when queue is getting inserted. It would be nice if we
-> > can fix this discrepancy and keep it consistent. I think clearing up
-> > cfqe->service_tree is a better idea and then calculate it again for
-> > group also.
-> 
-> Vivek,
-> 
-> Currently, cfq queue might change workload type and io class, so we need to recalculate
-> its service_tree. But for cfq groups, IMHO we don't need to add this complexity for the
-> time being.
-> I think we can add this change as soon as different io classes or workload types are
-> introduced. How do you think?
+On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
 
-Ok, that's fine.
+[..]
+> +/*
+> + * The time when a CFQ queue is put onto a service tree is recoreded in
+> + * cfqq->reposition_time. Currently, we check the first priority CFQ queues
+> + * on each service tree, and select the workload type that contains the lowest
+> + * reposition_time CFQ queue among them.
+> + */
+>  static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
+>  				struct cfq_group *cfqg, enum wl_prio_t prio)
+>  {
+>  	struct cfq_entity *cfqe;
+> +	struct cfq_queue *cfqq;
+> +	unsigned long lowest_start_time;
+>  	int i;
+> -	bool key_valid = false;
+> -	unsigned long lowest_key = 0;
+> +	bool time_valid = false;
+>  	enum wl_type_t cur_best = SYNC_NOIDLE_WORKLOAD;
+>  
+> +	/*
+> +	 * TODO: We may take io priority and io class into account when
+> +	 * choosing a workload type. But for the time being just make use of
+> +	 * reposition_time only.
+> +	 */
+>  	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
+> -		/* select the one with lowest rb_key */
+>  		cfqe = cfq_rb_first(service_tree_for(cfqg, prio, i));
+> -		if (cfqe &&
+> -		    (!key_valid || time_before(cfqe->rb_key, lowest_key))) {
+> -			lowest_key = cfqe->rb_key;
+> +		cfqq = cfqq_of_entity(cfqe);
+> +		if (cfqe && (!time_valid ||
+> +			     time_before(cfqq->reposition_time,
+> +					 lowest_start_time))) {
+> +			lowest_start_time = cfqq->reposition_time;
+
+Gui,
+
+Have you had a chance to run some mixed workloads in a group (some sync,
+some async and some sync-idle queues), and see how latency and throughput
+of sync-idle workload changes due to this "resposition_time" logic. I 
+just want to make sure that latency of sync-noidle workload does not
+go up as that's the workload that people care and gets noticed first.
 
 Thanks
 Vivek
