@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751313Ab1BNSYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 13:24:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:32093 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab1BNSYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 13:24:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,469,1291622400"; 
-   d="scan'208";a="657567241"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alex Riesen <raa.lkml@gmail.com>, David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
-	<m1hbce46fw.fsf@fess.ebiederm.org>
-	<AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
-	<m1bp2ly41q.fsf@fess.ebiederm.org>
-	<AANLkTimGH5mU+OLRKb=H3WgLXPZaSc5heR+4w5gj2aD4@mail.gmail.com>
-	<AANLkTikj-ZTS58uAqUmKQEWzdD3f5DJeox=gOJ9z8rSb@mail.gmail.com>
-	<AANLkTinjsimbe6-YgcSK0-zqDuoZ=8xCReHnKZoG4GU9@mail.gmail.com>
-	<m14o87wev8.fsf@fess.ebiederm.org>
-	<AANLkTimO3h80Wk44OhpfkjzxpzdDKnf6emj2fNObn_jD@mail.gmail.com>
-	<m1r5bbthan.fsf@fess.ebiederm.org> <m1fwrrtc0m.fsf@fess.ebiederm.org>
-	<m139nqsk3q.fsf@fess.ebiederm.org>
-	<AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
-Date: Mon, 14 Feb 2011 10:25:14 -0800
-In-Reply-To: <AANLkTikt-PhqRHT8+Zp+ZuGoVNaP8G3yqxMHpGZ_Z98w@mail.gmail.com>
-	(Linus Torvalds's message of "Mon, 14 Feb 2011 08:37:21 -0800")
-Message-ID: <m262smcw39.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751358Ab1BNS10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 13:27:26 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51615 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab1BNS1X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 13:27:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=II/AZRSboKQ7DzD5uVC0KNPXPb7l3QZUvFXbuuMdhOVjQZCghBZAYn1irFtt4HUSxw
+         SHhlMkGkChaf8SF9kyv4r+mhLmuSZHPeGrwtyHOCN6XrgGh8NQUgSw+zPxxIrDplXAX/
+         j5Isa0fPQ2JZpA7tQi6X16ctvqxeSpTCCedPo=
+Date: Mon, 14 Feb 2011 19:27:18 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
+        mingo@elte.hu, hpa@linux.intel.com
+Subject: Re: [PATCH 15/26] x86-64, NUMA: Unify the rest of memblk
+ registration
+Message-ID: <20110214182718.GB18742@htj.dyndns.org>
+References: <1297530663-26234-1-git-send-email-tj@kernel.org>
+ <1297530663-26234-16-git-send-email-tj@kernel.org>
+ <4D5729A7.7070706@kernel.org>
+ <20110214113221.GG18742@htj.dyndns.org>
+ <AANLkTin0C2AhtHm6K0av2N4pQxLvK_Fc+4w12Qg_QRkZ@mail.gmail.com>
+ <20110214161249.GV18742@htj.dyndns.org>
+ <AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com>
+ <20110214162247.GX18742@htj.dyndns.org>
+ <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+Hello,
 
->
-> In other words: I can pretty much guarantee that this is a "struct
-> list" that is in a 8kB allocation at offset 0x1748. And that gets
-> re-initialized after it got freed.
+On Mon, Feb 14, 2011 at 10:14:15AM -0800, Yinghai Lu wrote:
+> I just want seperate setup_bootmem  ( and maybe init_memory_mapping_high...)
+> out  that __register__ function.
+> 
+> that __register__ function do some sth like memblock_register to
+> early_node_map[] looks reasonable.
 
-If it's that the DEBUG_PAGEALLOC should have a good chance of catching
-it.
+Can you please provide some rationales _why_ you think setup_bootmem()
+should be moved elsewhere?  Because it is not apparent to me and I
+cannot read your mind.  I'm not against it given good enough reasons.
+After all, _technically_ it doesn't make one iota of difference, but I
+don't want to change it just because you don't like it and I don't
+think you want that either, so _please_ give me some explanations
+about what you want and _why_.  It's not like we're involved in a
+romantic relationship and even when I'm in one I suck at that implied
+communication thing.
 
--Andi
+Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+tejun
