@@ -1,156 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab1BNXkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 18:40:23 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:3737 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880Ab1BNXkU convert rfc822-to-8bit (ORCPT
+	id S1753949Ab1BNXqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 18:46:06 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43433 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753820Ab1BNXqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 18:40:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=B2jn+WNY3Cxqam1ro9Kacm6Z9uFaqJpLCDVerRPxoAt3F7UViZo+LQlzuJDgaMfPl9
-         zSvGuAv6wVlVyXgehzMQ==
-MIME-Version: 1.0
-In-Reply-To: <1297726034-32762-1-git-send-email-achew@nvidia.com>
-References: <1297726034-32762-1-git-send-email-achew@nvidia.com>
-Date: Mon, 14 Feb 2011 15:40:16 -0800
-X-Google-Sender-Auth: LwIY3ooDdqEZa6fAoO9BUAQZdRc
-Message-ID: <AANLkTinvpo=R1pjvykEZVXV08D+uXLJa=R8CDcMFWWpT@mail.gmail.com>
-Subject: Re: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
-From: Erik Gilling <konkers@android.com>
-To: achew@nvidia.com
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ccross@android.com, olof@lixom.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 14 Feb 2011 18:46:04 -0500
+Date: Mon, 14 Feb 2011 14:47:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Nelson Elhage <nelhage@ksplice.com>, linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        security@kernel.org, stable@kernel.org
+Subject: Re: [PATCH] epoll: Prevent creating circular epoll structures.
+Message-Id: <20110214144704.fb624199.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1102141353250.9755@localhost6.localdomain6>
+References: <alpine.DEB.2.00.1102101700430.19682@localhost6.localdomain6>
+	<1297537415-29535-1-git-send-email-nelhage@ksplice.com>
+	<alpine.DEB.2.00.1102141353250.9755@localhost6.localdomain6>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you want to use syncpts you should be an nvhost_driver link the dc.
+On Mon, 14 Feb 2011 13:56:01 -0800 (PST)
+Davide Libenzi <davidel@xmailserver.org> wrote:
 
-On Mon, Feb 14, 2011 at 3:27 PM,  <achew@nvidia.com> wrote:
-> From: Andrew Chew <achew@nvidia.com>
->
-> Make some Tegra syncpt routines accessible by kernel drivers that need
-> to use the syncpt mechanism.  This is similar to how some nvmap stuff
-> is made accessible to kernel drivers.
->
-> Change-Id: Id6cd2800e75223e5da29d6c0764bac5b233be185
-> Signed-off-by: Andrew Chew <achew@nvidia.com>
-> ---
->  arch/arm/mach-tegra/include/mach/nvsyncpt.h |   36 +++++++++++++++++++++++++++
->  drivers/video/tegra/host/dev.c              |    4 +++
->  drivers/video/tegra/host/nvhost_syncpt.c    |    7 +++++
->  drivers/video/tegra/host/nvhost_syncpt.h    |    2 +
->  4 files changed, 49 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-tegra/include/mach/nvsyncpt.h
->
-> diff --git a/arch/arm/mach-tegra/include/mach/nvsyncpt.h b/arch/arm/mach-tegra/include/mach/nvsyncpt.h
-> new file mode 100644
-> index 0000000..021d498
-> --- /dev/null
-> +++ b/arch/arm/mach-tegra/include/mach/nvsyncpt.h
-> @@ -0,0 +1,36 @@
-> +/*
-> + * Tegra host syncpt exports
-> + *
-> + * Copyright (c) 2009-2010, NVIDIA Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, write to the Free Software Foundation, Inc.,
-> + * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-> + */
-> +
-> +#ifndef __NVSYNCPT_H
-> +#define __NVSYNCPT_H
-> +
-> +#if defined(__KERNEL__)
-> +
-> +struct nvhost_syncpt;
-> +
-> +extern struct nvhost_syncpt *nvhost_getsyncpt(void);
-> +extern u32 nvhost_syncpt_read(struct nvhost_syncpt *sp, u32 id);
-> +extern int nvhost_syncpt_wait_timeout(struct nvhost_syncpt *sp,
-> +                                     u32 id, u32 thresh, u32 timeout);
-> +extern void nvhost_syncpt_cpu_incr(struct nvhost_syncpt *sp, u32 id);
-> +
-> +#endif
-> +
-> +#endif
-> diff --git a/drivers/video/tegra/host/dev.c b/drivers/video/tegra/host/dev.c
-> index 20a4eda..af70a41 100644
-> --- a/drivers/video/tegra/host/dev.c
-> +++ b/drivers/video/tegra/host/dev.c
-> @@ -721,6 +721,8 @@ static int __devinit nvhost_probe(struct platform_device *pdev)
->
->        nvhost_debug_init(host);
->
-> +       nvhost_syncpt = &host->syncpt;
-> +
->        dev_info(&pdev->dev, "initialized\n");
->        return 0;
->
-> @@ -734,6 +736,8 @@ fail:
->
->  static int __exit nvhost_remove(struct platform_device *pdev)
->  {
-> +       nvhost_syncpt = NULL;
-> +
->        return 0;
->  }
->
-> diff --git a/drivers/video/tegra/host/nvhost_syncpt.c b/drivers/video/tegra/host/nvhost_syncpt.c
-> index dd2ab0d..315050d 100644
-> --- a/drivers/video/tegra/host/nvhost_syncpt.c
-> +++ b/drivers/video/tegra/host/nvhost_syncpt.c
-> @@ -27,6 +27,8 @@
->  #define syncpt_to_dev(sp) container_of(sp, struct nvhost_master, syncpt)
->  #define SYNCPT_CHECK_PERIOD 2*HZ
->
-> +struct nvhost_syncpt *nvhost_syncpt;
-> +
->  static bool check_max(struct nvhost_syncpt *sp, u32 id, u32 real)
->  {
->        u32 max;
-> @@ -254,3 +256,8 @@ void nvhost_syncpt_debug(struct nvhost_syncpt *sp)
->
->        }
->  }
-> +
-> +struct nvhost_syncpt *nvhost_getsyncpt(void)
-> +{
-> +       return nvhost_syncpt;
-> +}
-> diff --git a/drivers/video/tegra/host/nvhost_syncpt.h b/drivers/video/tegra/host/nvhost_syncpt.h
-> index f161f20..65f0c95 100644
-> --- a/drivers/video/tegra/host/nvhost_syncpt.h
-> +++ b/drivers/video/tegra/host/nvhost_syncpt.h
-> @@ -72,6 +72,8 @@ struct nvhost_syncpt {
->        u32 base_val[NV_HOST1X_SYNCPT_NB_BASES];
->  };
->
-> +extern struct nvhost_syncpt *nvhost_syncpt;
-> +
->  /**
->  * Updates the value sent to hardware.
->  */
-> --
-> 1.7.0.4
->
->
+> On Sat, 12 Feb 2011, Nelson Elhage wrote:
+> 
+> > From: Davide Libenzi <davidel@xmailserver.org>
+> > 
+> > On insert, check whether the inserted file is itself a struct epoll, and if so,
+> > do a recursive walk to detect whether inserting this file would create a loop of
+> > epoll structures, which could lead to deadlock.
+> 
+> Can't say I love it, but IMO it's the minor damage compared to add custom 
+> checks all over into the fast paths.
+> 
+> 
+> Acked-by: Davide Libenzi <davidel@xmailserver.org>
+
+I beefed up the changelog so that it includes Nelson's original description
+of the actual bug.  Please don't omit that from changelogs!
+
+I assume we want to backport this into -stable?  The patch applies to
+2.6.34 and possibly earlier - that's as far as I checked.
+
+
+
+From: Davide Libenzi <davidel@xmailserver.org>
+
+In several places, an epoll fd can call another file's ->f_op->poll()
+method with ep->mtx held.  This is in general unsafe, because that other
+file could itself be an epoll fd that contains the original epoll fd.
+
+The code defends against this possibility in its own ->poll() method using
+ep_call_nested, but there are several other unsafe calls to ->poll
+elsewhere that can be made to deadlock.  For example, the following simple
+program causes the call in ep_insert recursively call the original fd's
+->poll, leading to deadlock:
+
+ #include <unistd.h>
+ #include <sys/epoll.h>
+
+ int main(void) {
+     int e1, e2, p[2];
+     struct epoll_event evt = {
+         .events = EPOLLIN
+     };
+
+     e1 = epoll_create(1);
+     e2 = epoll_create(2);
+     pipe(p);
+
+     epoll_ctl(e2, EPOLL_CTL_ADD, e1, &evt);
+     epoll_ctl(e1, EPOLL_CTL_ADD, p[0], &evt);
+     write(p[1], p, sizeof p);
+     epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
+
+     return 0;
+ }
+
+
+
+On insertion, check whether the inserted file is itself a struct epoll,
+and if so, do a recursive walk to detect whether inserting this file would
+create a loop of epoll structures, which could lead to deadlock.
+
+[nelhage@ksplice.com: Use epmutex to serialize concurrent inserts]
+Signed-off-by: Davide Libenzi <davidel@xmailserver.org>
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+Reported-by: Nelson Elhage <nelhage@ksplice.com>
+Tested-by: Nelson Elhage <nelhage@ksplice.com>
+Cc: <stable@kernel.org>		[2.6.34+, possibly earlier]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/eventpoll.c |   95 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 95 insertions(+)
+
+diff -puN fs/eventpoll.c~epoll-prevent-creating-circular-epoll-structures fs/eventpoll.c
+--- a/fs/eventpoll.c~epoll-prevent-creating-circular-epoll-structures
++++ a/fs/eventpoll.c
+@@ -63,6 +63,13 @@
+  * cleanup path and it is also acquired by eventpoll_release_file()
+  * if a file has been pushed inside an epoll set and it is then
+  * close()d without a previous call toepoll_ctl(EPOLL_CTL_DEL).
++ * It is also acquired when inserting an epoll fd onto another epoll
++ * fd. We do this so that we walk the epoll tree and ensure that this
++ * insertion does not create a cycle of epoll file descriptors, which
++ * could lead to deadlock. We need a global mutex to prevent two
++ * simultaneous inserts (A into B and B into A) from racing and
++ * constructing a cycle without either insert observing that it is
++ * going to.
+  * It is possible to drop the "ep->mtx" and to use the global
+  * mutex "epmutex" (together with "ep->lock") to have it working,
+  * but having "ep->mtx" will make the interface more scalable.
+@@ -224,6 +231,9 @@ static long max_user_watches __read_most
+  */
+ static DEFINE_MUTEX(epmutex);
+ 
++/* Used to check for epoll file descriptor inclusion loops */
++static struct nested_calls poll_loop_ncalls;
++
+ /* Used for safe wake up implementation */
+ static struct nested_calls poll_safewake_ncalls;
+ 
+@@ -1198,6 +1208,62 @@ retry:
+ 	return res;
+ }
+ 
++/**
++ * ep_loop_check_proc - Callback function to be passed to the @ep_call_nested()
++ *                      API, to verify that adding an epoll file inside another
++ *                      epoll structure, does not violate the constraints, in
++ *                      terms of closed loops, or too deep chains (which can
++ *                      result in excessive stack usage).
++ *
++ * @priv: Pointer to the epoll file to be currently checked.
++ * @cookie: Original cookie for this call. This is the top-of-the-chain epoll
++ *          data structure pointer.
++ * @call_nests: Current dept of the @ep_call_nested() call stack.
++ *
++ * Returns: Returns zero if adding the epoll @file inside current epoll
++ *          structure @ep does not violate the constraints, or -1 otherwise.
++ */
++static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
++{
++	int error = 0;
++	struct file *file = priv;
++	struct eventpoll *ep = file->private_data;
++	struct rb_node *rbp;
++	struct epitem *epi;
++
++	mutex_lock(&ep->mtx);
++	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
++		epi = rb_entry(rbp, struct epitem, rbn);
++		if (unlikely(is_file_epoll(epi->ffd.file))) {
++			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++					       ep_loop_check_proc, epi->ffd.file,
++					       epi->ffd.file->private_data, current);
++			if (error != 0)
++				break;
++		}
++	}
++	mutex_unlock(&ep->mtx);
++
++	return error;
++}
++
++/**
++ * ep_loop_check - Performs a check to verify that adding an epoll file (@file)
++ *                 another epoll file (represented by @ep) does not create
++ *                 closed loops or too deep chains.
++ *
++ * @ep: Pointer to the epoll private data structure.
++ * @file: Pointer to the epoll file to be checked.
++ *
++ * Returns: Returns zero if adding the epoll @file inside current epoll
++ *          structure @ep does not violate the constraints, or -1 otherwise.
++ */
++static int ep_loop_check(struct eventpoll *ep, struct file *file)
++{
++	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++			      ep_loop_check_proc, file, ep, current);
++}
++
+ /*
+  * Open an eventpoll file descriptor.
+  */
+@@ -1246,6 +1312,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 		struct epoll_event __user *, event)
+ {
+ 	int error;
++	int did_lock_epmutex = 0;
+ 	struct file *file, *tfile;
+ 	struct eventpoll *ep;
+ 	struct epitem *epi;
+@@ -1287,6 +1354,25 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 	 */
+ 	ep = file->private_data;
+ 
++	/*
++	 * When we insert an epoll file descriptor, inside another epoll file
++	 * descriptor, there is the change of creating closed loops, which are
++	 * better be handled here, than in more critical paths.
++	 *
++	 * We hold epmutex across the loop check and the insert in this case, in
++	 * order to prevent two separate inserts from racing and each doing the
++	 * insert "at the same time" such that ep_loop_check passes on both
++	 * before either one does the insert, thereby creating a cycle.
++	 */
++	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD)) {
++		mutex_lock(&epmutex);
++		did_lock_epmutex = 1;
++		error = -ELOOP;
++		if (ep_loop_check(ep, tfile) != 0)
++			goto error_tgt_fput;
++	}
++
++
+ 	mutex_lock(&ep->mtx);
+ 
+ 	/*
+@@ -1322,6 +1408,9 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 	mutex_unlock(&ep->mtx);
+ 
+ error_tgt_fput:
++	if (unlikely(did_lock_epmutex))
++		mutex_unlock(&epmutex);
++
+ 	fput(tfile);
+ error_fput:
+ 	fput(file);
+@@ -1441,6 +1530,12 @@ static int __init eventpoll_init(void)
+ 		EP_ITEM_COST;
+ 	BUG_ON(max_user_watches < 0);
+ 
++	/*
++	 * Initialize the structure used to perform epoll file descriptor
++	 * inclusion loops checks.
++	 */
++	ep_nested_calls_init(&poll_loop_ncalls);
++
+ 	/* Initialize the structure used to perform safe poll wait head wake ups */
+ 	ep_nested_calls_init(&poll_safewake_ncalls);
+ 
+_
+
