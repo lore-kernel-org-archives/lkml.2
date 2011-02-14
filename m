@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab1BNR5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 12:57:54 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62430 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab1BNR5w convert rfc822-to-8bit (ORCPT
+	id S1751641Ab1BNR60 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 12:58:26 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:23890 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082Ab1BNR6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 12:57:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=htvIbo1K/B8mk6HSgbKS9/ITJg6GHDKOYWpcDKqEro2za217Kr15r6d+W1/R8J9vcV
-         ObBctHn+fd+u7dCLEp0A6An0A4tjV48/7SHAItznW4q7fVEAA4M6We8nUWc8gttD2Szn
-         U/r+QFixFbuQ4K9sVAoUyPQ54frJEdLvYS+OE=
+	Mon, 14 Feb 2011 12:58:25 -0500
+X-IronPort-AV: E=Sophos;i="4.60,469,1291593600"; 
+   d="scan'208";a="4320376"
+Date: Mon, 14 Feb 2011 17:58:19 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>, Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
+ destroying mappings
+In-Reply-To: <AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1102141756550.2826@kaball-desktop>
+References: <4D50343E.1020906@kernel.org> <alpine.DEB.2.00.1102071839060.7277@kaball-desktop> <4D504161.2060900@kernel.org> <4D506A85.9030802@goop.org> <4D50B4B5.4050505@kernel.org> <4D519AAA.8070309@zytor.com> <4D547962.8040403@goop.org> <4D547B74.1030302@kernel.org>
+ <4D54844B.4010007@zytor.com> <4D5488D5.2020607@kernel.org> <20110214162602.GB11290@dumpdata.com> <AANLkTimVMG1N2Ln+zSCWgGPSSv9kdUM844UGD+HfeOtE@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110214173910.GA15847@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com>
- <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com>
- <20110214153149.GB8761@redhat.com> <AANLkTikYf1CE41x6FjE6FiZ40v8taRSy8aZ3-5tjAvok@mail.gmail.com>
- <20110214173910.GA15847@redhat.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Mon, 14 Feb 2011 18:57:31 +0100
-Message-ID: <AANLkTiku4OQKgwCHF-c5dc4AZzmuCKmzk0EuTaqxK_Wr@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after PTRACE_ATTACH
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 6:39 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 02/14, Denys Vlasenko wrote:
->>
->> On Mon, Feb 14, 2011 at 4:31 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->> > On 02/13, Denys Vlasenko wrote:
->> >>
->> >> $ strace -tt sleep 30
->> >> 23:02:15.619262 execve("/bin/sleep", ["sleep", "30"], [/* 30 vars */]) = 0
->> >> ...
->> >> 23:02:15.622112 nanosleep({30, 0}, NULL) = ? ERESTART_RESTARTBLOCK (To be restarted)
->> >> 23:02:23.781165 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
->> >> 23:02:23.781251 --- SIGSTOP (Stopped (signal)) @ 0 (0) ---
->> >>     (I forgot again why we see it twice. Another quirk I guess...)
->> >
->> >      (this is correct, the tracee reports the signal=SIGSTOP, then
->> >       it reports it actually stopps with exit_code=SIGSTOP)
->>
->> Ah, I see. Is there any way debugger can distinguish between these two
->> different stops?
->
-> IIRC, the (only?) way to distinguish is to check last_siginfo != NULL
-> via ptrace(PTRACE_GETSIGINFO).
+On Mon, 14 Feb 2011, Yinghai Lu wrote:
+> On Mon, Feb 14, 2011 at 8:26 AM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> >> BTW: Do we really need to cleanup initial mapping between _brk_end to _end?
+> >
+> > Did you try to revert the patch and run it under your setup?
+> 
+> No.
+> 
+> but it should be ok.
+> 
+> Assume, we can update vmlinux.lds.S to make _end to be 2M aligned as
+> Stefano suggested?
 
-What do you think strace needs to do when it sees second SIGSTOP
-(meaning "in theory", not "on current kernel which may be buggy")?
-
-ptrace(PTRACE_SYSCALL, $PID, 0x1, 0)?
-nothing?
-something else?
-
--- 
-vda
+That would solve the problem as long as cleanup_highmap() is not moved
+to setup_arch.
