@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab1BNTO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 14:14:28 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:65511 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab1BNTOZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 14:14:25 -0500
-Date: Mon, 14 Feb 2011 12:14:20 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
-Message-ID: <20110214191420.GB30647@angua.secretlab.ca>
-References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
- <1297698493.965.5475.camel@petert>
- <AANLkTins1TanjbbwVJixmLcO9Gs-z7jryN8Hs0o_EWNK@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTins1TanjbbwVJixmLcO9Gs-z7jryN8Hs0o_EWNK@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752678Ab1BNTQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 14:16:31 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:46790 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752333Ab1BNTQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 14:16:29 -0500
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+To: akpm@linux-foundation.org
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        oleg@redhat.com, ebiederm@xmission.com
+Subject: [PATCH 0/3] procfs wrt pid namespace cleanups
+Date: Mon, 14 Feb 2011 20:16:00 +0100
+Message-Id: <1297710963-19843-1-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 09:02:02AM -0700, Grant Likely wrote:
-> On Mon, Feb 14, 2011 at 8:48 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
-> > On Thu, 2011-01-06 at 13:54 -0600, Peter Tyser wrote:
-> >> Add a new get_direction() function to the gpio_chip structure.  This is
-> >> useful so that the direction of a pin can be determined when its
-> >> exported.  Previously, the direction defaulted to 'in' regardless of the
-> >> actual configuration of the GPIO pin which resulted in the 'direction'
-> >> sysfs file often being incorrect.
-> >>
-> >> If a GPIO driver implements get_direction(), it is called in
-> >> gpio_request() to set the initial direction of the pin accurately.
-> >
-> > I see Grant was just added as a GPIO maintainer, so added him on CC.
-> >
-> > Anything gating getting these 3 patches being picked up?
-> 
-> I'll take a look at them later today.
+This patchset is a cleanup and a preparation to unshare the pid
+namespace. These prerequisite prepare the next Eric's patchset
+to give a file descriptor to a namespace and join an existing
+namespace.
 
-What are the other two patches?  I only see this one.  Can you repost?
+The initial authors of this patchset are Eric Biederman and Oleg
+Nesterov.
 
-g.
+Changelog:
+
+        02/14/11 - daniel.lezcano@free.fr
+        * patch 2/3 : fix return ENOMEM and put_pid_ns on error
+        * removed buggy patch #4 from the initial patchset
+
+        01/31/11 - daniel.lezcano@free.fr:
+        * patch 1/4 : wrapped test in a function
+        * patch 2/4 : handle proc_pid_ns_prepare_proc error
+        * patch 2/4 : put parent pid_ns on error
+        * other patches : refreshed against linux-next
+
+
