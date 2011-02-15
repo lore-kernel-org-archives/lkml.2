@@ -1,52 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab1BOTLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 14:11:32 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:29198 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab1BOTL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 14:11:29 -0500
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i637h668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGOAMW-02-Q4G-02
-X-M-MSG: 
-Date: Tue, 15 Feb 2011 20:11:22 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [patch 0/2] delta patch - s390 hw sampling rework on comments
- as of Feb 14th
-Message-ID: <20110215191122.GJ5874@erda.amd.com>
-References: <20110215180212.334742128@linux.vnet.ibm.com>
+	id S1756039Ab1BOTPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 14:15:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53422 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755333Ab1BOTPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 14:15:17 -0500
+Date: Tue, 15 Feb 2011 20:15:14 +0100
+From: Jan Kara <jack@suse.cz>
+To: Milton Miller <miltonm@bga.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [2/2] fs: Fix race between io_destroy() and io_submit() in AIO
+Message-ID: <20110215191514.GM17313@quack.suse.cz>
+References: <1297774764-32731-3-git-send-email-jack@suse.cz>
+ <aio-locking-comment@mdm.bga.com>
+ <20110215171616.GJ17313@quack.suse.cz>
+ <aio-locking-jan-reply@mdm.bga.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110215180212.334742128@linux.vnet.ibm.com>
+In-Reply-To: <aio-locking-jan-reply@mdm.bga.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.02.11 13:02:12, Heinz Graalfs wrote:
->    It is not clear to me how you want me to merge the static functions.
+  Hi,
+
+On Tue 15-02-11 12:50:32, Milton Miller wrote:
+> On Tue, 15 Feb 2011 about 11:16:16 -0600, Jan Kara wrote:
+> > On Tue 15-02-11 12:59:24, Milton Miller wrote:
+> > > > A race can occur when io_submit() races with io_destroy():
+> > > > 
+> > > >  CPU1						CPU2
+> > > > io_submit()
+> > > >   do_io_submit()
+> > > >     ...
+> > > >     ctx = lookup_ioctx(ctx_id);
+> > > > 						io_destroy()
+> > > >     Now do_io_submit() holds the last reference to ctx.
+> > > >     ...
+> > > >     queue new AIO
+> > > >     put_ioctx(ctx) - frees ctx with active AIOs
+> > > > 
+> > > > We solve this issue by checking whether ctx is being destroyed
+> > > > in AIO submission path after adding new AIO to ctx. Then we
+> > > > are guaranteed that either io_destroy() waits for new AIO or
+> > > > we see that ctx is being destroyed and bail out.
+> > > > 
+> > > > Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+> > > > Signed-off-by: Jan Kara <jack@suse.cz>
+> > > > CC: Nick Piggin <npiggin@kernel.dk>
+> > > > 
+> > > > ---
+> > > > fs/aio.c |   15 +++++++++++++++
+> > > >  1 files changed, 15 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/fs/aio.c b/fs/aio.c
+> > > > index b4dd668..0244c04 100644
+> > > > --- a/fs/aio.c
+> > > > +++ b/fs/aio.c
+> > > > @@ -1642,6 +1642,21 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+> > > >  		goto out_put_req;
+> > > >  
+> > > >  	spin_lock_irq(&ctx->ctx_lock);
+> > > > +	/*
+> > > > +	 * We could have raced with io_destroy() and are currently holding a
+> > > > +	 * reference to ctx which should be destroyed. We cannot submit IO
+> > > > +	 * since ctx gets freed as soon as io_submit() puts its reference.
+> > > > +	 * The check here is reliable since io_destroy() sets ctx->dead before
+> > > > +	 * waiting for outstanding IO. Thus if we don't see ctx->dead set here,
+> > > > +	 * io_destroy() waits for our IO to finish.
+> > > > +	 * The check is inside ctx->ctx_lock to avoid extra memory barrier
+> > > > +	 * in this fast path...
+> > > > +	 */
+> > > 
+> > > When reading this comment, and with all of the recient discussions I
+> > > had with Paul in the smp ipi thread (especially with resepect to third
+> > > party writes), I looked to see that the spinlock was paired with the
+> > > spinlock to set dead in io_destroy.  It is not.   It took me some time
+> > > to find that the paired lock is actually in wait_for_all_aios.  Also,
+> > > dead is also set in aio_cancel_all which is under the same spinlock.
+> > > 
+> > > Please update this lack of memory barrier comment to reflect the locking.
 > 
->    One possibility I'm seeing is to merge log_sample, op_add_code, and op_add_sample?
+> This locking description is wrong:
+> 
+> >   Hum, sorry but I don't understand. The above message wants to say that
+> > io_destroy() does
+> >   ctx->dead = 1
+> >   barrier (implied by a spin_unlock)
+> 
+> no spin_unlock only does a release barrier.
+> 
+> >   wait for reqs_active to get to 0
+> 
+> This read can move up into the spinlocked region (up to the lock acquire).
+> 
+> > 
+> > while io_submit() does
+> >   increment reqs_active
+> >   barrier (implied by a spin_lock - on a different lock but that does not
+> > matter as we only need the barrier semantics)
+> 
+> No only an acquire barrier, old writes can move into the spinlock region
+> 
+> >   check ctx->dead
+> 
+> the increment can move down past this check to the unlock here.
+  Ah OK, you're right. I was typing too fast and thinking too slow ;).
 
-Yes, that's it. We don't need all this different functions that almost
-do the same.
+> > So if io_submit() gets past ctx->dead check, io_destroy() will certainly
+> > wait for our reference in reqs_active to be released.
+> > 
+> > I don't see any lock pairing needed here... But maybe I miss something.
+> > 
+> > 								Honza
+> 
+> spin lock and unlock are only half barriers as described in 
+> Documentation/memory-barriers.txt
+> 
+> 
+> Now, as I said, the code is ok because the active count is read and
+> written under ctx->ctx_lock, and aio_cancel_all sets dead under
+> that lock.
+> 
+> But the comment needs to reflect that and not just the the code is
+> under in some random spin_lock region instead of a memory barrier,
+> which is not sufficient.   Bad lock descriptions leads to making bad
+> code in the future, either through copying it to another context or
+> though future work removing the additional constraints not mentioned.
+> 
+> So please, comment which locks are being used here, as what
+> you described is not enough.
+  Yep, I'll improve the comment. Thanks for explanation.
 
--Robert
-
+								Honza
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
