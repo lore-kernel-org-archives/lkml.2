@@ -1,98 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab1BOGC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 01:02:56 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:49613 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1BOGCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 01:02:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=tq7+zYX30N15fMHRz+wfc7JZTychcUG2TtDIC42KPynVge5iwh4W5m3BlaG8F4wyC0
-         yUOP8EKEkEjcT1ZEQt1qhFShXj/CutxGpgGSqWjeU6xCzedePCv7taG5rzO3HyG60n5M
-         om3Wr54lOGEKCyAISwjvwQL3Gr+c+cZOOagyw=
-Date: Tue, 15 Feb 2011 14:02:29 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, harryxiyou@gmail.com
-Subject: Re: + maintainers-add-topgit-for-t.patch added to -mm tree
-Message-ID: <20110215060225.GA2085@gmail.com>
-Mail-Followup-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-	akpm@linux-foundation.org, harryxiyou@gmail.com
-References: <201102142154.p1ELsvwt027845@imap1.linux-foundation.org>
+	id S1752763Ab1BOGFd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 01:05:33 -0500
+Received: from www.tglx.de ([62.245.132.106]:60835 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178Ab1BOGFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 01:05:31 -0500
+Date: Tue, 15 Feb 2011 07:04:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
+Subject: Re: [PATCH, v6 3/3] cgroups: introduce timer slack controller
+In-Reply-To: <20110214223939.GA6230@shutemov.name>
+Message-ID: <alpine.LFD.2.00.1102150658540.26192@localhost6.localdomain6>
+References: <1297688787-3592-1-git-send-email-kirill@shutemov.name> <1297688787-3592-4-git-send-email-kirill@shutemov.name> <alpine.LFD.2.00.1102141432440.26192@localhost6.localdomain6> <20110214151914.GA4210@shutemov.name> <alpine.LFD.2.00.1102141753240.26192@localhost6.localdomain6>
+ <20110214223939.GA6230@shutemov.name>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102142154.p1ELsvwt027845@imap1.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 01:54:56PM -0800, akpm@linux-foundation.org wrote:
+On Tue, 15 Feb 2011, Kirill A. Shutemov wrote:
+> On Mon, Feb 14, 2011 at 06:01:06PM +0100, Thomas Gleixner wrote:
+> > > I think silent change here is wrong. cpuset returns -EBUSY in similar
+> > > case.
+> > 
+> > And how is cpuset relevant for this ? Not at all. This is about
+> > timer_slack and we better have a well defined scheme for all of this
+> > and not some cobbled together thing with tons of exceptions and corner
+> > cases. Of course undocumented as far the code goes.
 > 
-> The patch titled
->      MAINTAINERS: add topgit for T:
-> has been added to the -mm tree.  Its filename is
->      maintainers-add-topgit-for-t.patch
-Thanks.
-> 
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
-Thanks, i will remember the rules :)
-> 
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-> See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
-> out what to do about this
-> 
-> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
-> 
-Thanks, i will do.
+> I don't like silent cascade changes. Userspace can implement it if
+> needed. -EBUSY is appropriate.
 
-Best Regards.
-Harry Wei.
-> ------------------------------------------------------
-> Subject: MAINTAINERS: add topgit for T:
-> From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-> 
-> At least one tree:
-> 
-> 	ARM/EZX SMARTPHONES (A780, A910, A1200, E680, ROKR E2 and ROKR E6)
-> 
-> is available via topgit.  Add mention of topgit in the MAINTAINERS
-> description section.
-> 
-> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  MAINTAINERS |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff -puN MAINTAINERS~maintainers-add-topgit-for-t MAINTAINERS
-> --- a/MAINTAINERS~maintainers-add-topgit-for-t
-> +++ a/MAINTAINERS
-> @@ -72,7 +72,7 @@ Descriptions of section entries:
->  	L: Mailing list that is relevant to this area
->  	W: Web-page with status/info
->  	Q: Patchwork web based patch tracking system site
-> -	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit.
-> +	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit, topgit.
->  	S: Status, one of the following:
->  	   Supported:	Someone is actually paid to look after this.
->  	   Maintained:	Someone actually looks after it.
-> _
-> 
-> Patches currently in -mm which might be from jiaweiwei.xiyou@gmail.com are
-> 
-> linux-next.patch
-> maintainers-add-topgit-for-t.patch
-> 
+And I don't like totally uncommented code which follows come cobbled
+together completely non obvious rules.
+
+It's not about what you like. It's about getting useful functionality
+when we add a new infrastructure like this.
+
+So could you please explain what the rules of updating are, so that a
+reviewer has a chance to understand the rationale of all this.
+
+Thanks,
+
+	tglx
+
+
