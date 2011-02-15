@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab1BORQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:16:25 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:49274 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1BORQV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755544Ab1BORQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:16:23 -0500
+Received: from cantor.suse.de ([195.135.220.2]:49895 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab1BORQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Feb 2011 12:16:21 -0500
-Message-ID: <4D5AB48A.2040504@ru.mvista.com>
-Date: Tue, 15 Feb 2011 20:14:50 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+Date: Tue, 15 Feb 2011 18:16:16 +0100
+From: Jan Kara <jack@suse.cz>
+To: Milton Miller <miltonm@bga.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [2/2] fs: Fix race between io_destroy() and io_submit() in AIO
+Message-ID: <20110215171616.GJ17313@quack.suse.cz>
+References: <1297774764-32731-3-git-send-email-jack@suse.cz>
+ <aio-locking-comment@mdm.bga.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Amit Shah <amitshah@gmx.net>,
-        baoyb <baoyb@avit.org.cn>
-Subject: Re: [PATCH 1/1] USB: serial/usb_wwan, fix tty NULL dereference
-References: <1297781707-3985-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1297781707-3985-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <aio-locking-comment@mdm.bga.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue 15-02-11 12:59:24, Milton Miller wrote:
+> > A race can occur when io_submit() races with io_destroy():
+> > 
+> >  CPU1						CPU2
+> > io_submit()
+> >   do_io_submit()
+> >     ...
+> >     ctx = lookup_ioctx(ctx_id);
+> > 						io_destroy()
+> >     Now do_io_submit() holds the last reference to ctx.
+> >     ...
+> >     queue new AIO
+> >     put_ioctx(ctx) - frees ctx with active AIOs
+> > 
+> > We solve this issue by checking whether ctx is being destroyed
+> > in AIO submission path after adding new AIO to ctx. Then we
+> > are guaranteed that either io_destroy() waits for new AIO or
+> > we see that ctx is being destroyed and bail out.
+> > 
+> > Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > CC: Nick Piggin <npiggin@kernel.dk>
+> > 
+> > ---
+> > fs/aio.c |   15 +++++++++++++++
+> >  1 files changed, 15 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/fs/aio.c b/fs/aio.c
+> > index b4dd668..0244c04 100644
+> > --- a/fs/aio.c
+> > +++ b/fs/aio.c
+> > @@ -1642,6 +1642,21 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+> >  		goto out_put_req;
+> >  
+> >  	spin_lock_irq(&ctx->ctx_lock);
+> > +	/*
+> > +	 * We could have raced with io_destroy() and are currently holding a
+> > +	 * reference to ctx which should be destroyed. We cannot submit IO
+> > +	 * since ctx gets freed as soon as io_submit() puts its reference.
+> > +	 * The check here is reliable since io_destroy() sets ctx->dead before
+> > +	 * waiting for outstanding IO. Thus if we don't see ctx->dead set here,
+> > +	 * io_destroy() waits for our IO to finish.
+> > +	 * The check is inside ctx->ctx_lock to avoid extra memory barrier
+> > +	 * in this fast path...
+> > +	 */
+> 
+> When reading this comment, and with all of the recient discussions I
+> had with Paul in the smp ipi thread (especially with resepect to third
+> party writes), I looked to see that the spinlock was paired with the
+> spinlock to set dead in io_destroy.  It is not.   It took me some time
+> to find that the paired lock is actually in wait_for_all_aios.  Also,
+> dead is also set in aio_cancel_all which is under the same spinlock.
+> 
+> Please update this lack of memory barrier comment to reflect the locking.
+  Hum, sorry but I don't understand. The above message wants to say that
+io_destroy() does
+  ctx->dead = 1
+  barrier (implied by a spin_unlock)
+  wait for reqs_active to get to 0
 
-Jiri Slaby wrote:
+while io_submit() does
+  increment reqs_active
+  barrier (implied by a spin_lock - on a different lock but that does not
+matter as we only need the barrier semantics)
+  check ctx->dead
 
-> tty_port_tty_get may return without any problems NULL. Handle this
-> case and do not oops in usb_wwan_indat_callback by dereferencing it.
+So if io_submit() gets past ctx->dead check, io_destroy() will certainly
+wait for our reference in reqs_active to be released.
 
-> The oops:
-> Unable to handle kernel paging request for data at address 0x000000d8
-> Faulting instruction address: 0xc0175b3c
-> Oops: Kernel access of bad area, sig: 11 [#1]
-> PowerPC 40x Platform
-> last sysfs file:
-> /sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
-> Modules linked in:
-> NIP: c0175b3c LR: c0175e7c CTR: c0215c90
-> REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
-> MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
-> DEAR: 000000d8, ESR: 00000000
-> TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
-> GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
-> GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
-> GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
-> GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
-> NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
-> LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-> Call Trace:
-> [c77f7e00] [00000003] 0x3 (unreliable)
-> [c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-> [c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
-> ...
+I don't see any lock pairing needed here... But maybe I miss something.
 
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
-> Cc: Amit Shah <amitshah@gmx.net>
-> Cc: baoyb <baoyb@avit.org.cn>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> ---
->  drivers/usb/serial/usb_wwan.c |   15 +++++++++------
->  1 files changed, 9 insertions(+), 6 deletions(-)
-
-> diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-> index b004b2a..9c014e2 100644
-> --- a/drivers/usb/serial/usb_wwan.c
-> +++ b/drivers/usb/serial/usb_wwan.c
-> @@ -295,12 +295,15 @@ static void usb_wwan_indat_callback(struct urb *urb)
->  		    __func__, status, endpoint);
->  	} else {
->  		tty = tty_port_tty_get(&port->port);
-> -		if (urb->actual_length) {
-> -			tty_insert_flip_string(tty, data, urb->actual_length);
-> -			tty_flip_buffer_push(tty);
-> -		} else
-> -			dbg("%s: empty read urb received", __func__);
-> -		tty_kref_put(tty);
-> +		if (tty) {
-> +			if (urb->actual_length) {
-> +				tty_insert_flip_string(tty, data,
-> +						urb->actual_length);
-> +				tty_flip_buffer_push(tty);
-> +			} else
-> +				dbg("%s: empty read urb received", __func__);
-
-    Should be {} on the *else* branch too, according to Documentation/CodingStyle...
-
-WBR, Sergei
+								Honza
+> 
+> > +	if (ctx->dead) {
+> > +		spin_unlock_irq(&ctx->ctx_lock);
+> > +		ret = -EINVAL;
+> > +		goto out_put_req;
+> > +	}
+> >  	aio_run_iocb(req);
+> >  	if (!list_empty(&ctx->run_list)) {
+> >  		/* drain the run list */
+> 
+> thanks,
+> milton
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
