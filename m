@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1BOBw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 20:52:27 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7540 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab1BOBwY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 20:52:24 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Mon, 14 Feb 2011 17:52:22 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: "'Erik Gilling'" <konkers@android.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>
-Date: Mon, 14 Feb 2011 17:52:21 -0800
-Subject: RE: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
-Thread-Topic: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
-Thread-Index: AcvMsqi07iIZZN0+QCiQ484BTthIqwAACdcA
-Message-ID: <643E69AA4436674C8F39DCC2C05F763816BD96CFB3@HQMAIL03.nvidia.com>
-References: <1297726034-32762-1-git-send-email-achew@nvidia.com>
-	<AANLkTinvpo=R1pjvykEZVXV08D+uXLJa=R8CDcMFWWpT@mail.gmail.com>
-	<643E69AA4436674C8F39DCC2C05F763816BD96CFB1@HQMAIL03.nvidia.com>
-	<AANLkTin+uxnM-u7N-+aXUzGVm7m2eXZKrenDbRPq1V-W@mail.gmail.com>
-	<643E69AA4436674C8F39DCC2C05F763816BD96CFB2@HQMAIL03.nvidia.com>
- <AANLkTi=aMA_OTgtw37jdDrSyMm4jmvpvFt5LpyyoG9PP@mail.gmail.com>
-In-Reply-To: <AANLkTi=aMA_OTgtw37jdDrSyMm4jmvpvFt5LpyyoG9PP@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1753939Ab1BOByI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 20:54:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60866 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995Ab1BOByF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 20:54:05 -0500
+Message-ID: <4D59DCB6.1020900@cn.fujitsu.com>
+Date: Tue, 15 Feb 2011 09:53:58 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
+ for CFQ queue
+References: <4D51ED26.8050809@cn.fujitsu.com> <4D539804.9090308@cn.fujitsu.com> <20110210192940.GA2600@redhat.com> <4D55E07A.8060903@cn.fujitsu.com> <20110214165803.GE13097@redhat.com>
+In-Reply-To: <20110214165803.GE13097@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-15 09:53:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-15 09:53:08,
+	Serialize complete at 2011-02-15 09:53:08
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > You're right about that global nvhost_syncpt pointer.  That 
-> drives me nuts as well.  Nevertheless, I'm not sure I'm 
-> knowledgeable enough to do the required work to do this the 
-> "right" way.  As far as I know, nvhost is a guaranteed 
-> singleton in practice (not in implementation), so while this 
-> is ugly, it will work fine for existing projects.
+Vivek Goyal wrote:
+> On Sat, Feb 12, 2011 at 09:20:58AM +0800, Gui Jianfeng wrote:
+>> Vivek Goyal wrote:
+>>> On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
+>>>> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
+>>>> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
+>>>> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
+>>>> group scheduling on the same service tree.
+>>>>
+>>>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+>>>> ---
+>>>>  block/cfq-iosched.c |  219 +++++++++++++++++++++++++++++++++++++++------------
+>>>>  1 files changed, 167 insertions(+), 52 deletions(-)
+>>>>
+>>>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+>>>> index f3a126e..41cef2e 100644
+>>>> --- a/block/cfq-iosched.c
+>>>> +++ b/block/cfq-iosched.c
+>>>> @@ -39,6 +39,13 @@ static const int cfq_hist_divisor = 4;
+>>>>   */
+>>>>  #define CFQ_IDLE_DELAY		(HZ / 5)
+>>>>  
+>>>> +/* 
+>>>> + * The base boosting value.
+>>>> + */
+>>>> +#define CFQ_BOOST_SYNC_BASE          (HZ / 10)
+>>>> +#define CFQ_BOOST_ASYNC_BASE          (HZ / 25)
+>>>> +
+>>> These are same as cfq_slice_sync and cfq_slice_async. Looking at
+>>> boost logic, this is equivalent of starting a new queue/group as
+>>> if it is being requeued after conuming a full slice. So may be we can divide
+>>> it by some const number say 4 or something like that. This is a minor
+>>> point though as this algorimthm will kind of evolve and we will learn
+>>> what works best.
+>>>
+>>> Secondly, I think you wanted to SYNC vs ASYNC logic seem to be reversed.
+>>> We would like to give ASYNC queues higher boost (Put these farther in 
+>>> tree) and lesser boost to SYNC queues. Looks like above constants will
+>>> do the reverse? 
+>> Hi Vivek,
+>>
+>> Currently, SYNC and ASYNC queues are in different service tree, they don't
+>> impact each other. Here, I Really want use this logic.
 > 
-> If you feel uncomfortable making this change, I recommend you include
-> the private header file the way the dc does.
+> Ok, SYNC and ASYNC are on separate service tree so their vtime are not
+> comparable (as of today, down the line one might want to look at those for
+> better workload selection logic).
+> 
+> Anyway, because two are on seprate tree so why should we have separate
+> boosting constants for them? How does it help?
 
-Okay, I'll do it this way then.
+Here if we are using CFQ_BOOST_SYNC_BASE for both, I think it might boost
+too much for an ASYNC cfqe as compare to others on the same service tree(async).
+So I make charging and boosting follow the same base.
+
+Thanks,
+Gui
+
+> 
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
