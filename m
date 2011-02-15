@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab1BOGMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 01:12:01 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40737 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab1BOGLv (ORCPT
+	id S1754345Ab1BOGMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 01:12:53 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46533 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab1BOGL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 01:11:51 -0500
+	Tue, 15 Feb 2011 01:11:59 -0500
 From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-omap@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-omap@vger.kernel.org,
         Alexander Shishkin <virtuoso@slind.org>,
         Jason Wessel <jason.wessel@windriver.com>,
         Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/8] ARM: etm: Don't try to clear the buffer full status after reading the buffer
-Date: Mon, 14 Feb 2011 22:11:11 -0800
-Message-Id: <1297750276-12475-3-git-send-email-arve@android.com>
+Subject: [PATCH 6/8] ARM: etm: Add some missing locks and error checks
+Date: Mon, 14 Feb 2011 22:11:14 -0800
+Message-Id: <1297750276-12475-6-git-send-email-arve@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1296701663-12168-1-git-send-email-arve@android.com>
 References: <1296701663-12168-1-git-send-email-arve@android.com>
@@ -28,137 +28,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the write address was at the end of the buffer, toggling the trace
-capture bit would set the RAM-full status instead of clearing it, and
-if any of the stop bits in the formatter is set toggling the trace
-capture bit may not do anything.
+It is not safe to call etm_lock or etb_lock without holding the
+mutex since another thread may also have unlocked the registers.
 
-Instead use the read position to find out if the data has already
-been returned.
-
-This also fixes the read function so it works when the trace buffer is
-larger than the buffer passed in from user space. The old version
-would reset the trace buffer pointers after every read, so the second
-call to read would always return 0.
+Also add some missing checks for valid etb_regs in the etm sysfs
+entries.
 
 Signed-off-by: Arve Hjønnevåg <arve@android.com>
 ---
- arch/arm/kernel/etm.c |   58 ++++++++++++++++++++++---------------------------
- 1 files changed, 26 insertions(+), 32 deletions(-)
+ arch/arm/kernel/etm.c |   57 +++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 39 insertions(+), 18 deletions(-)
 
 diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index 6e15c48..bc7d8f2 100644
+index 96b1abb..8126beb 100644
 --- a/arch/arm/kernel/etm.c
 +++ b/arch/arm/kernel/etm.c
-@@ -91,6 +91,7 @@ static int trace_start(struct tracectx *t)
+@@ -263,8 +263,13 @@ static void etm_dump(void)
  
- 	etb_unlock(t);
- 
-+	etb_writel(t, 0, ETBR_WRITEADDR);
- 	etb_writel(t, 0, ETBR_FORMATTERCTRL);
- 	etb_writel(t, 1, ETBR_CTRL);
- 
-@@ -184,24 +185,15 @@ static int trace_stop(struct tracectx *t)
- static int etb_getdatalen(struct tracectx *t)
+ static void sysrq_etm_dump(int key)
  {
- 	u32 v;
--	int rp, wp;
-+	int wp;
- 
- 	v = etb_readl(t, ETBR_STATUS);
- 
- 	if (v & 1)
- 		return t->etb_bufsz;
- 
--	rp = etb_readl(t, ETBR_READADDR);
- 	wp = etb_readl(t, ETBR_WRITEADDR);
--
--	if (rp > wp) {
--		etb_writel(t, 0, ETBR_READADDR);
--		etb_writel(t, 0, ETBR_WRITEADDR);
--
--		return 0;
--	}
--
--	return wp - rp;
-+	return wp;
- }
- 
- /* sysrq+v will always stop the running trace and leave it at that */
-@@ -234,14 +226,6 @@ static void etm_dump(void)
- 		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
- 	printk(KERN_INFO "\n--- ETB buffer end ---\n");
- 
--	/* deassert the overflow bit */
--	etb_writel(t, 1, ETBR_CTRL);
--	etb_writel(t, 0, ETBR_CTRL);
--
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_WRITEADDR);
--
- 	etb_lock(t);
- }
- 
-@@ -275,6 +259,10 @@ static ssize_t etb_read(struct file *file, char __user *data,
- 	struct tracectx *t = file->private_data;
- 	u32 first = 0;
- 	u32 *buf;
-+	int wpos;
-+	int skip;
-+	long wlength;
-+	loff_t pos = *ppos;
- 
- 	mutex_lock(&t->mutex);
- 
-@@ -289,28 +277,34 @@ static ssize_t etb_read(struct file *file, char __user *data,
- 	if (total == t->etb_bufsz)
- 		first = etb_readl(t, ETBR_WRITEADDR);
- 
-+	if (pos > total * 4) {
-+		skip = 0;
-+		wpos = total;
-+	} else {
-+		skip = (int)pos % 4;
-+		wpos = (int)pos / 4;
++	if (!mutex_trylock(&tracer.mutex)) {
++		printk(KERN_INFO "Tracing hardware busy\n");
++		return;
 +	}
-+	total -= wpos;
-+	first = (first + wpos) % t->etb_bufsz;
+ 	dev_dbg(tracer.dev, "Dumping ETB buffer\n");
+ 	etm_dump();
++	mutex_unlock(&tracer.mutex);
+ }
+ 
+ static struct sysrq_key_op sysrq_etm_op = {
+@@ -373,6 +378,7 @@ static int __init etb_probe(struct amba_device *dev, struct amba_id *id)
+ 	if (ret)
+ 		goto out;
+ 
++	mutex_lock(&t->mutex);
+ 	t->etb_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
+ 	if (!t->etb_regs) {
+ 		ret = -ENOMEM;
+@@ -381,6 +387,16 @@ static int __init etb_probe(struct amba_device *dev, struct amba_id *id)
+ 
+ 	amba_set_drvdata(dev, t);
+ 
++	etb_unlock(t);
++	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
++	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
 +
- 	etb_writel(t, first, ETBR_READADDR);
++	/* make sure trace capture is disabled */
++	etb_writel(t, 0, ETBR_CTRL);
++	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
++	etb_lock(t);
++	mutex_unlock(&t->mutex);
++
+ 	etb_miscdev.parent = &dev->dev;
  
--	length = min(total * 4, (int)len);
--	buf = vmalloc(length);
-+	wlength = min(total, DIV_ROUND_UP(skip + (int)len, 4));
-+	length = min(total * 4 - skip, (int)len);
-+	buf = vmalloc(wlength * 4);
+ 	ret = misc_register(&etb_miscdev);
+@@ -394,25 +410,19 @@ static int __init etb_probe(struct amba_device *dev, struct amba_id *id)
+ 	else
+ 		clk_enable(t->emu_clk);
  
--	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
-+	dev_dbg(t->dev, "ETB read %ld bytes to %lld from %ld words at %d\n",
-+		length, pos, wlength, first);
-+	dev_dbg(t->dev, "ETB buffer length: %d\n", total + wpos);
- 	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
--	for (i = 0; i < length / 4; i++)
-+	for (i = 0; i < wlength; i++)
- 		buf[i] = etb_readl(t, ETBR_READMEM);
- 
--	/* the only way to deassert overflow bit in ETB status is this */
--	etb_writel(t, 1, ETBR_CTRL);
+-	etb_unlock(t);
+-	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
+-	dev_dbg(&dev->dev, "Size: %x\n", t->etb_bufsz);
+-
+-	/* make sure trace capture is disabled */
 -	etb_writel(t, 0, ETBR_CTRL);
+-	etb_writel(t, 0x1000, ETBR_FORMATTERCTRL);
+-	etb_lock(t);
 -
--	etb_writel(t, 0, ETBR_WRITEADDR);
--	etb_writel(t, 0, ETBR_READADDR);
--	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
--
- 	etb_lock(t);
- 
--	length -= copy_to_user(data, buf, length);
-+	length -= copy_to_user(data, (u8 *)buf + skip, length);
- 	vfree(buf);
-+	*ppos = pos + length;
+ 	dev_dbg(&dev->dev, "ETB AMBA driver initialized.\n");
  
  out:
- 	mutex_unlock(&t->mutex);
+ 	return ret;
+ 
+ out_unmap:
++	mutex_lock(&t->mutex);
+ 	amba_set_drvdata(dev, NULL);
+ 	iounmap(t->etb_regs);
++	t->etb_regs = NULL;
+ 
+ out_release:
++	mutex_unlock(&t->mutex);
+ 	amba_release_regions(dev);
+ 
+ 	return ret;
+@@ -474,7 +484,10 @@ static ssize_t trace_running_store(struct kobject *kobj,
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&tracer.mutex);
+-	ret = value ? trace_start(&tracer) : trace_stop(&tracer);
++	if (!tracer.etb_regs)
++		ret = -ENODEV;
++	else
++		ret = value ? trace_start(&tracer) : trace_stop(&tracer);
+ 	mutex_unlock(&tracer.mutex);
+ 
+ 	return ret ? : n;
+@@ -490,18 +503,25 @@ static ssize_t trace_info_show(struct kobject *kobj,
+ 	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
+ 	int datalen;
+ 
+-	etb_unlock(&tracer);
+-	datalen = etb_getdatalen(&tracer);
+-	etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
+-	etb_ra = etb_readl(&tracer, ETBR_READADDR);
+-	etb_st = etb_readl(&tracer, ETBR_STATUS);
+-	etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
+-	etb_lock(&tracer);
++	mutex_lock(&tracer.mutex);
++	if (tracer.etb_regs) {
++		etb_unlock(&tracer);
++		datalen = etb_getdatalen(&tracer);
++		etb_wa = etb_readl(&tracer, ETBR_WRITEADDR);
++		etb_ra = etb_readl(&tracer, ETBR_READADDR);
++		etb_st = etb_readl(&tracer, ETBR_STATUS);
++		etb_fc = etb_readl(&tracer, ETBR_FORMATTERCTRL);
++		etb_lock(&tracer);
++	} else {
++		etb_wa = etb_ra = etb_st = etb_fc = ~0;
++		datalen = -1;
++	}
+ 
+ 	etm_unlock(&tracer);
+ 	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
+ 	etm_st = etm_readl(&tracer, ETMR_STATUS);
+ 	etm_lock(&tracer);
++	mutex_unlock(&tracer.mutex);
+ 
+ 	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
+ 			"ETBR_WRITEADDR:\t%08x\n"
+@@ -651,7 +671,6 @@ static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
+ 
+ 	amba_set_drvdata(dev, t);
+ 
+-	mutex_init(&t->mutex);
+ 	t->dev = &dev->dev;
+ 	t->flags = TRACER_CYCLE_ACC | TRACER_TRACE_DATA;
+ 	t->etm_portsz = 1;
+@@ -745,6 +764,8 @@ static int __init etm_init(void)
+ {
+ 	int retval;
+ 
++	mutex_init(&tracer.mutex);
++
+ 	retval = amba_driver_register(&etb_driver);
+ 	if (retval) {
+ 		printk(KERN_ERR "Failed to register etb\n");
 -- 
 1.7.3.1
 
