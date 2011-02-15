@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab1BOGMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 01:12:24 -0500
+	id S1753974Ab1BOGMB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 01:12:01 -0500
 Received: from mail-px0-f174.google.com ([209.85.212.174]:40737 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab1BOGMD (ORCPT
+	with ESMTP id S1753038Ab1BOGLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 01:12:03 -0500
+	Tue, 15 Feb 2011 01:11:51 -0500
 From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-omap@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-omap@vger.kernel.org,
         Alexander Shishkin <virtuoso@slind.org>,
         Jason Wessel <jason.wessel@windriver.com>,
         Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] ARM: etm: Support multiple ETMs/PTMs.
-Date: Mon, 14 Feb 2011 22:11:16 -0800
-Message-Id: <1297750276-12475-8-git-send-email-arve@android.com>
+Subject: [PATCH 3/8] ARM: etm: Don't try to clear the buffer full status after reading the buffer
+Date: Mon, 14 Feb 2011 22:11:11 -0800
+Message-Id: <1297750276-12475-3-git-send-email-arve@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1296701663-12168-1-git-send-email-arve@android.com>
 References: <1296701663-12168-1-git-send-email-arve@android.com>
@@ -28,497 +28,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If more than one ETM or PTM are present, configure all of them
-and enable the formatter in the ETB. This allows tracing on dual
-core systems (e.g. omap4).
+If the write address was at the end of the buffer, toggling the trace
+capture bit would set the RAM-full status instead of clearing it, and
+if any of the stop bits in the formatter is set toggling the trace
+capture bit may not do anything.
+
+Instead use the read position to find out if the data has already
+been returned.
+
+This also fixes the read function so it works when the trace buffer is
+larger than the buffer passed in from user space. The old version
+would reset the trace buffer pointers after every read, so the second
+call to read would always return 0.
 
 Signed-off-by: Arve Hjønnevåg <arve@android.com>
 ---
- arch/arm/include/asm/hardware/coresight.h |   16 ++-
- arch/arm/kernel/etm.c                     |  234 +++++++++++++++++++----------
- 2 files changed, 166 insertions(+), 84 deletions(-)
+ arch/arm/kernel/etm.c |   58 ++++++++++++++++++++++---------------------------
+ 1 files changed, 26 insertions(+), 32 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-index 6ea507f..6643d6c 100644
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ b/arch/arm/include/asm/hardware/coresight.h
-@@ -25,9 +25,9 @@
- 
- #define TRACER_TIMEOUT 10000
- 
--#define etm_writel(t, v, x) \
--	(__raw_writel((v), (t)->etm_regs + (x)))
--#define etm_readl(t, x) (__raw_readl((t)->etm_regs + (x)))
-+#define etm_writel(t, id, v, x) \
-+	(__raw_writel((v), (t)->etm_regs[(id)] + (x)))
-+#define etm_readl(t, id, x) (__raw_readl((t)->etm_regs[(id)] + (x)))
- 
- /* CoreSight Management Registers */
- #define CSMR_LOCKACCESS 0xfb0
-@@ -126,6 +126,8 @@
- 				ETMCTRL_BRANCH_OUTPUT | \
- 				ETMCTRL_DO_CONTEXTID)
- 
-+#define ETMR_TRACEIDR		0x200
-+
- /* ETM management registers, "ETM Architecture", 3.5.24 */
- #define ETMMR_OSLAR	0x300
- #define ETMMR_OSLSR	0x304
-@@ -148,14 +150,16 @@
- #define ETBFF_TRIGIN		BIT(8)
- #define ETBFF_TRIGEVT		BIT(9)
- #define ETBFF_TRIGFL		BIT(10)
-+#define ETBFF_STOPFL		BIT(12)
- 
- #define etb_writel(t, v, x) \
- 	(__raw_writel((v), (t)->etb_regs + (x)))
- #define etb_readl(t, x) (__raw_readl((t)->etb_regs + (x)))
- 
--#define etm_lock(t) do { etm_writel((t), 0, CSMR_LOCKACCESS); } while (0)
--#define etm_unlock(t) \
--	do { etm_writel((t), UNLOCK_MAGIC, CSMR_LOCKACCESS); } while (0)
-+#define etm_lock(t, id) \
-+	do { etm_writel((t), (id), 0, CSMR_LOCKACCESS); } while (0)
-+#define etm_unlock(t, id) \
-+	do { etm_writel((t), (id), UNLOCK_MAGIC, CSMR_LOCKACCESS); } while (0)
- 
- #define etb_lock(t) do { etb_writel((t), 0, CSMR_LOCKACCESS); } while (0)
- #define etb_unlock(t) \
 diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index 4ad1257..48de5a4 100644
+index 6e15c48..bc7d8f2 100644
 --- a/arch/arm/kernel/etm.c
 +++ b/arch/arm/kernel/etm.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/types.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
- #include <linux/sysrq.h>
- #include <linux/device.h>
- #include <linux/clk.h>
-@@ -36,10 +37,12 @@ MODULE_AUTHOR("Alexander Shishkin");
- struct tracectx {
- 	unsigned int	etb_bufsz;
- 	void __iomem	*etb_regs;
--	void __iomem	*etm_regs;
-+	void __iomem	**etm_regs;
-+	int		etm_regs_count;
- 	unsigned long	flags;
- 	int		ncmppairs;
- 	int		etm_portsz;
-+	u32		etb_fc;
- 	unsigned long	range_start;
- 	unsigned long	range_end;
- 	unsigned long	data_range_start;
-@@ -60,7 +63,7 @@ static inline bool trace_isrunning(struct tracectx *t)
- 	return !!(t->flags & TRACER_RUNNING);
- }
- 
--static int etm_setup_address_range(struct tracectx *t, int n,
-+static int etm_setup_address_range(struct tracectx *t, int id, int n,
- 		unsigned long start, unsigned long end, int exclude, int data)
- {
- 	u32 flags = ETMAAT_ARM | ETMAAT_IGNCONTEXTID | ETMAAT_IGNSECURITY |
-@@ -79,41 +82,31 @@ static int etm_setup_address_range(struct tracectx *t, int n,
- 		flags |= ETMAAT_IEXEC;
- 
- 	/* first comparator for the range */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2));
--	etm_writel(t, start, ETMR_COMP_VAL(n * 2));
-+	etm_writel(t, id, flags, ETMR_COMP_ACC_TYPE(n * 2));
-+	etm_writel(t, id, start, ETMR_COMP_VAL(n * 2));
- 
- 	/* second comparator is right next to it */
--	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
--	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
-+	etm_writel(t, id, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
-+	etm_writel(t, id, end, ETMR_COMP_VAL(n * 2 + 1));
- 
- 	if (data) {
- 		flags = exclude ? ETMVDC3_EXCLONLY : 0;
- 		if (exclude)
- 			n += 8;
--		etm_writel(t, flags | BIT(n), ETMR_VIEWDATACTRL3);
-+		etm_writel(t, id, flags | BIT(n), ETMR_VIEWDATACTRL3);
- 	} else {
- 		flags = exclude ? ETMTE_INCLEXCL : 0;
--		etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
-+		etm_writel(t, id, flags | (1 << n), ETMR_TRACEENCTRL);
- 	}
- 
- 	return 0;
- }
- 
--static int trace_start(struct tracectx *t)
-+static int trace_start_etm(struct tracectx *t, int id)
- {
- 	u32 v;
- 	unsigned long timeout = TRACER_TIMEOUT;
- 
--	etb_unlock(t);
--
--	t->dump_initial_etb = false;
--	etb_writel(t, 0, ETBR_WRITEADDR);
--	etb_writel(t, 0, ETBR_FORMATTERCTRL);
--	etb_writel(t, 1, ETBR_CTRL);
--
--	etb_lock(t);
--
--	/* configure etm */
- 	v = ETMCTRL_OPTS | ETMCTRL_PROGRAM | ETMCTRL_PORTSIZE(t->etm_portsz);
- 
- 	if (t->flags & TRACER_CYCLE_ACC)
-@@ -122,79 +115,122 @@ static int trace_start(struct tracectx *t)
- 	if (t->flags & TRACER_TRACE_DATA)
- 		v |= ETMCTRL_DATA_DO_ADDR;
- 
--	etm_unlock(t);
-+	etm_unlock(t, id);
- 
--	etm_writel(t, v, ETMR_CTRL);
-+	etm_writel(t, id, v, ETMR_CTRL);
- 
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
-+	while (!(etm_readl(t, id, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
- 		;
- 	if (!timeout) {
- 		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
-+		etm_lock(t, id);
- 		return -EFAULT;
- 	}
- 
- 	if (t->range_start || t->range_end)
--		etm_setup_address_range(t, 1,
-+		etm_setup_address_range(t, id, 1,
- 					t->range_start, t->range_end, 0, 0);
- 	else
--		etm_writel(t, ETMTE_INCLEXCL, ETMR_TRACEENCTRL);
-+		etm_writel(t, id, ETMTE_INCLEXCL, ETMR_TRACEENCTRL);
- 
--	etm_writel(t, 0, ETMR_TRACEENCTRL2);
--	etm_writel(t, 0, ETMR_TRACESSCTRL);
--	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
-+	etm_writel(t, id, 0, ETMR_TRACEENCTRL2);
-+	etm_writel(t, id, 0, ETMR_TRACESSCTRL);
-+	etm_writel(t, id, 0x6f, ETMR_TRACEENEVT);
- 
--	etm_writel(t, 0, ETMR_VIEWDATACTRL1);
--	etm_writel(t, 0, ETMR_VIEWDATACTRL2);
-+	etm_writel(t, id, 0, ETMR_VIEWDATACTRL1);
-+	etm_writel(t, id, 0, ETMR_VIEWDATACTRL2);
- 
- 	if (t->data_range_start || t->data_range_end)
--		etm_setup_address_range(t, 2, t->data_range_start,
-+		etm_setup_address_range(t, id, 2, t->data_range_start,
- 					t->data_range_end, 0, 1);
- 	else
--		etm_writel(t, ETMVDC3_EXCLONLY, ETMR_VIEWDATACTRL3);
-+		etm_writel(t, id, ETMVDC3_EXCLONLY, ETMR_VIEWDATACTRL3);
- 
--	etm_writel(t, 0x6f, ETMR_VIEWDATAEVT);
-+	etm_writel(t, id, 0x6f, ETMR_VIEWDATAEVT);
- 
- 	v &= ~ETMCTRL_PROGRAM;
- 	v |= ETMCTRL_PORTSEL;
- 
--	etm_writel(t, v, ETMR_CTRL);
-+	etm_writel(t, id, v, ETMR_CTRL);
- 
- 	timeout = TRACER_TIMEOUT;
--	while (etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM && --timeout)
-+	while (etm_readl(t, id, ETMR_CTRL) & ETMCTRL_PROGRAM && --timeout)
- 		;
- 	if (!timeout) {
- 		dev_dbg(t->dev, "Waiting for progbit to deassert timed out\n");
--		etm_lock(t);
-+		etm_lock(t, id);
- 		return -EFAULT;
- 	}
- 
--	etm_lock(t);
-+	etm_lock(t, id);
-+	return 0;
-+}
-+
-+static int trace_start(struct tracectx *t)
-+{
-+	int ret;
-+	int id;
-+	u32 etb_fc = t->etb_fc;
-+
-+	etb_unlock(t);
-+
-+	t->dump_initial_etb = false;
-+	etb_writel(t, 0, ETBR_WRITEADDR);
-+	etb_writel(t, etb_fc, ETBR_FORMATTERCTRL);
-+	etb_writel(t, 1, ETBR_CTRL);
-+
-+	etb_lock(t);
-+
-+	/* configure etm(s) */
-+	for (id = 0; id < t->etm_regs_count; id++) {
-+		ret = trace_start_etm(t, id);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	t->flags |= TRACER_RUNNING;
- 
- 	return 0;
- }
- 
--static int trace_stop(struct tracectx *t)
-+static int trace_stop_etm(struct tracectx *t, int id)
- {
- 	unsigned long timeout = TRACER_TIMEOUT;
- 
--	etm_unlock(t);
-+	etm_unlock(t, id);
- 
--	etm_writel(t, 0x440, ETMR_CTRL);
--	while (!(etm_readl(t, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
-+	etm_writel(t, id, 0x440, ETMR_CTRL);
-+	while (!(etm_readl(t, id, ETMR_CTRL) & ETMCTRL_PROGRAM) && --timeout)
- 		;
- 	if (!timeout) {
- 		dev_dbg(t->dev, "Waiting for progbit to assert timed out\n");
--		etm_lock(t);
-+		etm_lock(t, id);
- 		return -EFAULT;
- 	}
- 
--	etm_lock(t);
-+	etm_lock(t, id);
-+	return 0;
-+}
-+
-+static int trace_stop(struct tracectx *t)
-+{
-+	int id;
-+	int ret;
-+	unsigned long timeout = TRACER_TIMEOUT;
-+	u32 etb_fc = t->etb_fc;
-+
-+	for (id = 0; id < t->etm_regs_count; id++) {
-+		ret = trace_stop_etm(t, id);
-+		if (ret)
-+			return ret;
-+	}
+@@ -91,6 +91,7 @@ static int trace_start(struct tracectx *t)
  
  	etb_unlock(t);
--	etb_writel(t, ETBFF_MANUAL_FLUSH, ETBR_FORMATTERCTRL);
-+	if (etb_fc) {
-+		etb_fc |= ETBFF_STOPFL;
-+		etb_writel(t, t->etb_fc, ETBR_FORMATTERCTRL);
-+	}
-+	etb_writel(t, etb_fc | ETBFF_MANUAL_FLUSH, ETBR_FORMATTERCTRL);
  
- 	timeout = TRACER_TIMEOUT;
- 	while (etb_readl(t, ETBR_FORMATTERCTRL) &
-@@ -389,6 +425,7 @@ static int __init etb_probe(struct amba_device *dev, struct amba_id *id)
- 		goto out_release;
- 	}
++	etb_writel(t, 0, ETBR_WRITEADDR);
+ 	etb_writel(t, 0, ETBR_FORMATTERCTRL);
+ 	etb_writel(t, 1, ETBR_CTRL);
  
-+	t->dev = &dev->dev;
- 	t->dump_initial_etb = true;
- 	amba_set_drvdata(dev, t);
- 
-@@ -507,6 +544,8 @@ static ssize_t trace_info_show(struct kobject *kobj,
+@@ -184,24 +185,15 @@ static int trace_stop(struct tracectx *t)
+ static int etb_getdatalen(struct tracectx *t)
  {
- 	u32 etb_wa, etb_ra, etb_st, etb_fc, etm_ctrl, etm_st;
- 	int datalen;
-+	int id;
-+	int ret;
+ 	u32 v;
+-	int rp, wp;
++	int wp;
  
- 	mutex_lock(&tracer.mutex);
- 	if (tracer.etb_regs) {
-@@ -522,28 +561,33 @@ static ssize_t trace_info_show(struct kobject *kobj,
- 		datalen = -1;
- 	}
+ 	v = etb_readl(t, ETBR_STATUS);
  
--	etm_unlock(&tracer);
--	etm_ctrl = etm_readl(&tracer, ETMR_CTRL);
--	etm_st = etm_readl(&tracer, ETMR_STATUS);
--	etm_lock(&tracer);
--	mutex_unlock(&tracer.mutex);
+ 	if (v & 1)
+ 		return t->etb_bufsz;
+ 
+-	rp = etb_readl(t, ETBR_READADDR);
+ 	wp = etb_readl(t, ETBR_WRITEADDR);
 -
--	return sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
-+	ret = sprintf(buf, "Trace buffer len: %d\nComparator pairs: %d\n"
- 			"ETBR_WRITEADDR:\t%08x\n"
- 			"ETBR_READADDR:\t%08x\n"
- 			"ETBR_STATUS:\t%08x\n"
--			"ETBR_FORMATTERCTRL:\t%08x\n"
--			"ETMR_CTRL:\t%08x\n"
--			"ETMR_STATUS:\t%08x\n",
-+			"ETBR_FORMATTERCTRL:\t%08x\n",
- 			datalen,
- 			tracer.ncmppairs,
- 			etb_wa,
- 			etb_ra,
- 			etb_st,
--			etb_fc,
-+			etb_fc
-+			);
-+
-+	for (id = 0; id < tracer.etm_regs_count; id++) {
-+		etm_unlock(&tracer, id);
-+		etm_ctrl = etm_readl(&tracer, id, ETMR_CTRL);
-+		etm_st = etm_readl(&tracer, id, ETMR_STATUS);
-+		etm_lock(&tracer, id);
-+		ret += sprintf(buf + ret, "ETMR_CTRL:\t%08x\n"
-+			"ETMR_STATUS:\t%08x\n",
- 			etm_ctrl,
- 			etm_st
- 			);
-+	}
-+	mutex_unlock(&tracer.mutex);
-+
-+	return ret;
+-	if (rp > wp) {
+-		etb_writel(t, 0, ETBR_READADDR);
+-		etb_writel(t, 0, ETBR_WRITEADDR);
+-
+-		return 0;
+-	}
+-
+-	return wp - rp;
++	return wp;
  }
  
- static struct kobj_attribute trace_info_attr =
-@@ -657,37 +701,46 @@ static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
- {
- 	struct tracectx *t = &tracer;
- 	int ret = 0;
-+	void __iomem **new_regs;
-+	int new_count;
+ /* sysrq+v will always stop the running trace and leave it at that */
+@@ -234,14 +226,6 @@ static void etm_dump(void)
+ 		printk("%08x", cpu_to_be32(etb_readl(t, ETBR_READMEM)));
+ 	printk(KERN_INFO "\n--- ETB buffer end ---\n");
  
--	if (t->etm_regs) {
--		dev_dbg(&dev->dev, "ETM already initialized\n");
--		ret = -EBUSY;
-+	mutex_lock(&t->mutex);
-+	new_count = t->etm_regs_count + 1;
-+	new_regs = krealloc(t->etm_regs,
-+				sizeof(t->etm_regs[0]) * new_count, GFP_KERNEL);
+-	/* deassert the overflow bit */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-
+ 	etb_lock(t);
+ }
+ 
+@@ -275,6 +259,10 @@ static ssize_t etb_read(struct file *file, char __user *data,
+ 	struct tracectx *t = file->private_data;
+ 	u32 first = 0;
+ 	u32 *buf;
++	int wpos;
++	int skip;
++	long wlength;
++	loff_t pos = *ppos;
+ 
+ 	mutex_lock(&t->mutex);
+ 
+@@ -289,28 +277,34 @@ static ssize_t etb_read(struct file *file, char __user *data,
+ 	if (total == t->etb_bufsz)
+ 		first = etb_readl(t, ETBR_WRITEADDR);
+ 
++	if (pos > total * 4) {
++		skip = 0;
++		wpos = total;
++	} else {
++		skip = (int)pos % 4;
++		wpos = (int)pos / 4;
++	}
++	total -= wpos;
++	first = (first + wpos) % t->etb_bufsz;
 +
-+	if (!new_regs) {
-+		dev_dbg(&dev->dev, "Failed to allocate ETM register array\n");
-+		ret = -ENOMEM;
- 		goto out;
- 	}
-+	t->etm_regs = new_regs;
+ 	etb_writel(t, first, ETBR_READADDR);
  
- 	ret = amba_request_regions(dev, NULL);
- 	if (ret)
- 		goto out;
+-	length = min(total * 4, (int)len);
+-	buf = vmalloc(length);
++	wlength = min(total, DIV_ROUND_UP(skip + (int)len, 4));
++	length = min(total * 4 - skip, (int)len);
++	buf = vmalloc(wlength * 4);
  
--	t->etm_regs = ioremap_nocache(dev->res.start, resource_size(&dev->res));
--	if (!t->etm_regs) {
-+	t->etm_regs[t->etm_regs_count] =
-+		ioremap_nocache(dev->res.start, resource_size(&dev->res));
-+	if (!t->etm_regs[t->etm_regs_count]) {
- 		ret = -ENOMEM;
- 		goto out_release;
- 	}
+-	dev_dbg(t->dev, "ETB buffer length: %d\n", total);
++	dev_dbg(t->dev, "ETB read %ld bytes to %lld from %ld words at %d\n",
++		length, pos, wlength, first);
++	dev_dbg(t->dev, "ETB buffer length: %d\n", total + wpos);
+ 	dev_dbg(t->dev, "ETB status reg: %x\n", etb_readl(t, ETBR_STATUS));
+-	for (i = 0; i < length / 4; i++)
++	for (i = 0; i < wlength; i++)
+ 		buf[i] = etb_readl(t, ETBR_READMEM);
  
--	amba_set_drvdata(dev, t);
-+	amba_set_drvdata(dev, t->etm_regs[t->etm_regs_count]);
+-	/* the only way to deassert overflow bit in ETB status is this */
+-	etb_writel(t, 1, ETBR_CTRL);
+-	etb_writel(t, 0, ETBR_CTRL);
+-
+-	etb_writel(t, 0, ETBR_WRITEADDR);
+-	etb_writel(t, 0, ETBR_READADDR);
+-	etb_writel(t, 0, ETBR_TRIGGERCOUNT);
+-
+ 	etb_lock(t);
  
--	t->dev = &dev->dev;
- 	t->flags = TRACER_CYCLE_ACC | TRACER_TRACE_DATA;
- 	t->etm_portsz = 1;
- 
--	etm_unlock(t);
--	(void)etm_readl(t, ETMMR_PDSR);
-+	etm_unlock(t, t->etm_regs_count);
-+	(void)etm_readl(t, t->etm_regs_count, ETMMR_PDSR);
- 	/* dummy first read */
--	(void)etm_readl(&tracer, ETMMR_OSSRR);
-+	(void)etm_readl(&tracer, t->etm_regs_count, ETMMR_OSSRR);
- 
--	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
--	etm_writel(t, 0x440, ETMR_CTRL);
--	etm_lock(t);
-+	t->ncmppairs = etm_readl(t, t->etm_regs_count, ETMR_CONFCODE) & 0xf;
-+	etm_writel(t, t->etm_regs_count, 0x440, ETMR_CTRL);
-+	etm_writel(t, t->etm_regs_count, new_count, ETMR_TRACEIDR);
-+	etm_lock(t, t->etm_regs_count);
- 
- 	ret = sysfs_create_file(&dev->dev.kobj,
- 			&trace_running_attr.attr);
-@@ -712,31 +765,34 @@ static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
- 		dev_dbg(&dev->dev,
- 			"Failed to create trace_data_range in sysfs\n");
- 
--	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
-+	dev_dbg(&dev->dev, "ETM AMBA driver initialized.\n");
-+
-+	/* Enable formatter if there are multiple trace sources */
-+	if (new_count > 1)
-+		t->etb_fc = ETBFF_ENFCONT | ETBFF_ENFTC;
-+
-+	t->etm_regs_count = new_count;
+-	length -= copy_to_user(data, buf, length);
++	length -= copy_to_user(data, (u8 *)buf + skip, length);
+ 	vfree(buf);
++	*ppos = pos + length;
  
  out:
-+	mutex_unlock(&t->mutex);
- 	return ret;
- 
- out_unmap:
- 	amba_set_drvdata(dev, NULL);
--	iounmap(t->etm_regs);
-+	iounmap(t->etm_regs[t->etm_regs_count]);
- 
- out_release:
- 	amba_release_regions(dev);
- 
-+	mutex_unlock(&t->mutex);
- 	return ret;
- }
- 
- static int etm_remove(struct amba_device *dev)
- {
--	struct tracectx *t = amba_get_drvdata(dev);
--
--	amba_set_drvdata(dev, NULL);
--
--	iounmap(t->etm_regs);
--	t->etm_regs = NULL;
--
--	amba_release_regions(dev);
-+	int i;
-+	struct tracectx *t = &tracer;
-+	void __iomem	*etm_regs = amba_get_drvdata(dev);
- 
- 	sysfs_remove_file(&dev->dev.kobj, &trace_running_attr.attr);
- 	sysfs_remove_file(&dev->dev.kobj, &trace_info_attr.attr);
-@@ -744,6 +800,24 @@ static int etm_remove(struct amba_device *dev)
- 	sysfs_remove_file(&dev->dev.kobj, &trace_range_attr.attr);
- 	sysfs_remove_file(&dev->dev.kobj, &trace_data_range_attr.attr);
- 
-+	amba_set_drvdata(dev, NULL);
-+
-+	mutex_lock(&t->mutex);
-+	for (i = 0; i < t->etm_regs_count; i++)
-+		if (t->etm_regs[i] == etm_regs)
-+			break;
-+	for (; i < t->etm_regs_count - 1; i++)
-+		t->etm_regs[i] = t->etm_regs[i + 1];
-+	t->etm_regs_count--;
-+	if (!t->etm_regs_count) {
-+		kfree(t->etm_regs);
-+		t->etm_regs = NULL;
-+	}
-+	mutex_unlock(&t->mutex);
-+
-+	iounmap(etm_regs);
-+	amba_release_regions(dev);
-+
- 	return 0;
- }
- 
-@@ -752,6 +826,10 @@ static struct amba_id etm_ids[] = {
- 		.id	= 0x0003b921,
- 		.mask	= 0x0007ffff,
- 	},
-+	{
-+		.id	= 0x0003b950,
-+		.mask	= 0x0007ffff,
-+	},
- 	{ 0, 0 },
- };
- 
+ 	mutex_unlock(&t->mutex);
 -- 
 1.7.3.1
 
