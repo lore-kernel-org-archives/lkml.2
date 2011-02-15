@@ -1,82 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab1BOAkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 19:40:05 -0500
-Received: from sh.osrg.net ([192.16.179.4]:46828 "EHLO sh.osrg.net"
+	id S1753955Ab1BOAnP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 19:43:15 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:46369 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab1BOAkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 19:40:01 -0500
-Date: Tue, 15 Feb 2011 09:39:41 +0900
-To: arekm@maven.pl
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: b44 driver causes panic when using swiotlb
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <ijbm0i$n7h$1@dough.gmane.org>
-References: <20110201225443U.fujita.tomonori@lab.ntt.co.jp>
-	<20110214205945W.fujita.tomonori@lab.ntt.co.jp>
-	<ijbm0i$n7h$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-2022-jp-2
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110215093922R.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 15 Feb 2011 09:39:43 +0900 (JST)
+	id S1751712Ab1BOAnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 19:43:13 -0500
+Date: Mon, 14 Feb 2011 16:42:59 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Matt Fleming <matt@console-pimps.org>, David Miller <davem@davemloft.net>,
+        rostedt@goodmis.org, peterz@infradead.org, will.newton@gmail.com,
+        jbaron@redhat.com, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org,
+        Segher Boessenkool <segher@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+Message-ID: <20110215004259.GP2256@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1297707868.5226.189.camel@laptop>
+ <1297718964.23343.75.camel@gandalf.stny.rr.com>
+ <1297719576.23343.80.camel@gandalf.stny.rr.com>
+ <20110214.134600.179933733.davem@davemloft.net>
+ <20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com>
+ <BLU0-SMTP166A8555C791786059B0FF96D00@phx.gbl>
+ <20110214230902.GM2256@linux.vnet.ibm.com>
+ <BLU0-SMTP984E876DBDFBC13F4C86F896D00@phx.gbl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BLU0-SMTP984E876DBDFBC13F4C86F896D00@phx.gbl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 17:41:54 +0100
-Arkadiusz Miśkiewicz <arekm@maven.pl> wrote:
-
-> FUJITA Tomonori wrote:
+On Mon, Feb 14, 2011 at 06:29:47PM -0500, Mathieu Desnoyers wrote:
+> [ added Segher Boessenkool and Paul Mackerras to CC list ]
 > 
-> > On Tue, 1 Feb 2011 22:54:56 +0900
-> > FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > On Mon, Feb 14, 2011 at 06:03:01PM -0500, Mathieu Desnoyers wrote:
+> > > * Matt Fleming (matt@console-pimps.org) wrote:
+> > > > On Mon, 14 Feb 2011 13:46:00 -0800 (PST)
+> > > > David Miller <davem@davemloft.net> wrote:
+> > > > 
+> > > > > From: Steven Rostedt <rostedt@goodmis.org>
+> > > > > Date: Mon, 14 Feb 2011 16:39:36 -0500
+> > > > > 
+> > > > > > Thus it is not about global, as global is updated by normal means
+> > > > > > and will update the caches. atomic_t is updated via the ll/sc that
+> > > > > > ignores the cache and causes all this to break down. IOW... broken
+> > > > > > hardware ;)
+> > > > > 
+> > > > > I don't see how cache coherency can possibly work if the hardware
+> > > > > behaves this way.
+> > > > 
+> > > > Cache coherency is still maintained provided writes/reads both go
+> > > > through the cache ;-)
+> > > > 
+> > > > The problem is that for read-modify-write operations the arbitration
+> > > > logic that decides who "wins" and is allowed to actually perform the
+> > > > write, assuming two or more CPUs are competing for a single memory
+> > > > address, is not implemented in the cache controller, I think. I'm not a
+> > > > hardware engineer and I never understood how the arbitration logic
+> > > > worked but I'm guessing that's the reason that the ll/sc instructions
+> > > > bypass the cache.
+> > > > 
+> > > > Which is why the atomic_t functions worked out really well for that
+> > > > arch, such that any accesses to an atomic_t * had to go through the
+> > > > wrapper functions.
 > > 
-> >> On Mon, 31 Jan 2011 10:54:12 -0500
-> >> Chuck Ebbert <cebbert@redhat.com> wrote:
-> >> 
-> >> > The b44 driver is triggering this panic in swiotlb_map_page():
-> >> > 
-> >> >         if (!dma_capable(dev, dev_addr, size))
-> >> >                 panic("map_single: bounce buffer is not DMA'ble");
-> >> > 
-> >> > The kernel log says the bounce buffers are at 0xdb400000, but b44 can
-> >> > only do DMA to the first 1GB of memory:
-> >> 
-> >> Can you try this? b44 has the own bouncing mechanism so if swiotlb
-> >> returns an error, the driver can allocate an appropriate buffer.
-> >> 
-> >> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> >> index c47bbe1..93ca08b 100644
-> >> --- a/lib/swiotlb.c
-> >> +++ b/lib/swiotlb.c
-> >> @@ -686,8 +686,10 @@ dma_addr_t swiotlb_map_page(struct device *dev,
-> >> struct page *page,
-> >>  /*
-> >>  * Ensure that the address returned is DMA'ble
-> >>  */
-> >> -	if (!dma_capable(dev, dev_addr, size))
-> >> -		panic("map_single: bounce buffer is not DMA'ble");
-> >> +	if (!dma_capable(dev, dev_addr, size)) {
-> >> +		swiotlb_tbl_unmap_single(dev, map, size, dir);
-> >> +		dev_addr = swiotlb_virt_to_bus(dev, 
-> io_tlb_overflow_buffer);
-> >> +	}
-> >>  
-> >>  return dev_addr;
-> >>  }
+> > ???
 > > 
-> > Ping, any chance to try this?
+> > What CPU family are we talking about here?  For cache coherent CPUs,
+> > cache coherence really is supposed to work, even for mixed atomic and
+> > non-atomic instructions to the same variable.
+> > 
 > 
-> Friend machine oopsed on network with b44 on 2.6.37, so we tried this patch 
-> and network card was detected nicely and was actually usable. The oops 
+> I'm really curious to know which CPU families too. I've used git blame
+> to see where these lwz/stw instructions were added to powerpc, and it
+> points to:
 
-Thanks for the confirmation.
+But lwz and stw instructions are normal non-atomic PowerPC loads and
+stores.  No LL/SC -- those would instead be lwarx and stwcx.
 
-> started to happen after he upgraded memory from 2GB to 4GB in his dell 
-> vostro 1500 notebook.
+							Thanx, Paul
 
-Yeah, a system with 2GB memory doesn't use swiotlb so you don't hit
-this bug.
-
-Thanks,
+> commit 9f0cbea0d8cc47801b853d3c61d0e17475b0cc89
+> Author: Segher Boessenkool <segher@kernel.crashing.org>
+> Date:   Sat Aug 11 10:15:30 2007 +1000
+> 
+>     [POWERPC] Implement atomic{, 64}_{read, write}() without volatile
+>     
+>     Instead, use asm() like all other atomic operations already do.
+>     
+>     Also use inline functions instead of macros; this actually
+>     improves code generation (some code becomes a little smaller,
+>     probably because of improved alias information -- just a few
+>     hundred bytes total on a default kernel build, nothing shocking).
+>     
+>     Signed-off-by: Segher Boessenkool <segher@kernel.crashing.org>
+>     Signed-off-by: Paul Mackerras <paulus@samba.org>
+> 
+> So let's ping the relevant people to see if there was any reason for
+> making these atomic read/set operations different from other
+> architectures in the first place.
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
