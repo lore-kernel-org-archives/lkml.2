@@ -1,89 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab1BOOzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 09:55:19 -0500
-Received: from mail.pripojeni.net ([217.66.174.14]:49471 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab1BOOzQ (ORCPT
+	id S1755145Ab1BOOzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 09:55:35 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:50426 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755087Ab1BOOzd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 09:55:16 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Amit Shah <amitshah@gmx.net>,
-        baoyb <baoyb@avit.org.cn>
-Subject: [PATCH 1/1] USB: serial/usb_wwan, fix tty NULL dereference
-Date: Tue, 15 Feb 2011 15:55:07 +0100
-Message-Id: <1297781707-3985-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.4
+	Tue, 15 Feb 2011 09:55:33 -0500
+Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v9)
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        lizf@cn.fujitsu.com
+In-Reply-To: <4d590250.114ddf0a.689e.4482@mx.google.com>
+References: <4d590250.114ddf0a.689e.4482@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 15 Feb 2011 15:55:10 +0100
+Message-ID: <1297781710.2413.17.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty_port_tty_get may return without any problems NULL. Handle this
-case and do not oops in usb_wwan_indat_callback by dereferencing it.
+On Mon, 2011-02-14 at 11:20 +0200, Stephane Eranian wrote:
+> +                       if (mode & PERF_CGROUP_SWOUT) {
+> +                               cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+> +                               /*
+> +                                * must not be done before ctxswout dur
+> +                                * to event_filter_match() in event_sched_out()
+> +                                */
+> +                               cpuctx->cgrp = NULL;
+> +                       } 
 
-The oops:
-Unable to handle kernel paging request for data at address 0x000000d8
-Faulting instruction address: 0xc0175b3c
-Oops: Kernel access of bad area, sig: 11 [#1]
-PowerPC 40x Platform
-last sysfs file:
-/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
-Modules linked in:
-NIP: c0175b3c LR: c0175e7c CTR: c0215c90
-REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
-MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
-DEAR: 000000d8, ESR: 00000000
-TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
-GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
-GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
-GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
-GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
-NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
-LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-Call Trace:
-[c77f7e00] [00000003] 0x3 (unreliable)
-[c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-[c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
-...
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
-Cc: Amit Shah <amitshah@gmx.net>
-Cc: baoyb <baoyb@avit.org.cn>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/serial/usb_wwan.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index b004b2a..9c014e2 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -295,12 +295,15 @@ static void usb_wwan_indat_callback(struct urb *urb)
- 		    __func__, status, endpoint);
- 	} else {
- 		tty = tty_port_tty_get(&port->port);
--		if (urb->actual_length) {
--			tty_insert_flip_string(tty, data, urb->actual_length);
--			tty_flip_buffer_push(tty);
--		} else
--			dbg("%s: empty read urb received", __func__);
--		tty_kref_put(tty);
-+		if (tty) {
-+			if (urb->actual_length) {
-+				tty_insert_flip_string(tty, data,
-+						urb->actual_length);
-+				tty_flip_buffer_push(tty);
-+			} else
-+				dbg("%s: empty read urb received", __func__);
-+			tty_kref_put(tty);
-+		}
- 
- 		/* Resubmit urb so we continue receiving */
- 		if (status != -ESHUTDOWN) {
--- 
-1.7.3.4
-
-
+s/dur/due/ ?
