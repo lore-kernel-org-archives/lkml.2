@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab1BOJNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 04:13:15 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:3381 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754245Ab1BOJNI (ORCPT
+	id S1754265Ab1BOJQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 04:16:07 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:56607 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592Ab1BOJQE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 04:13:08 -0500
-Message-ID: <4D5A4396.9080003@bluewatersys.com>
-Date: Tue, 15 Feb 2011 22:12:54 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Thomas Chou <thomas@wytron.com.tw>
-CC: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH v9] spi: New driver for Altera SPI
-References: <1297142509-20158-1-git-send-email-thomas@wytron.com.tw> <1297649443-11491-1-git-send-email-thomas@wytron.com.tw> <4D58917E.9050408@bluewatersys.com> <4D5A2591.5090901@wytron.com.tw>
-In-Reply-To: <4D5A2591.5090901@wytron.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Feb 2011 04:16:04 -0500
+Subject: Re: [PATCH] sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Nick Piggin <npiggin@gmail.com>, "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+In-Reply-To: <1297473616.2806.16.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <1296852688-1665-1-git-send-email-venki@google.com>
+	 <1296854731-25039-1-git-send-email-venki@google.com>
+	 <1297086642.13327.15.camel@laptop>
+	 <AANLkTi=xo8bq6uTjYQ7yxJ69ATry1Xs3q0deE7UN9jPj@mail.gmail.com>
+	 <1297108399.8221.35.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <1297266928.13327.216.camel@laptop>
+	 <1297473616.2806.16.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 15 Feb 2011 10:15:26 +0100
+Message-ID: <1297761326.2401.14.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/02/11 20:04, Thomas Chou wrote:
-> Dear Ryan,
-> 
-> On 02/14/2011 10:20 AM, Ryan Mallon wrote:
->> On 02/14/2011 03:10 PM, Thomas Chou wrote:
->>> This patch adds a new SPI driver to support the Altera SOPC Builder
->>> SPI component. It uses the bitbanging library.
->>>
->>> Signed-off-by: Thomas Chou<thomas@wytron.com.tw>
->>> ---
->>
->>> +struct altera_spi {
->>> +    /* bitbang has to be first */
->>> +    struct spi_bitbang bitbang;
->>
->> Is this still true? I had a quick look and can't see anything which
->> relies on spi_bitbang being the first entry. Things like this should be
->> using container_of so that position in the struct is irrelevant.
->>
->> ~Ryan
->>
-> 
-> Yes, sadly true. This is due to the implementation of the bitbanging
-> library, spi_bitbang.c, which assumes the struct spi_bitbang is the
-> first of drvdata. Though it could be changed in the future (beyond this
-> little driver), every bitbanging library user has to follow this for now.
+On Fri, 2011-02-11 at 17:20 -0800, Suresh Siddha wrote:
+> I will request Alex and Tim to run their
+> performance workloads to make sure that this doesn't show any
+> regressions.
 
-Hmm, I see how it works now. Shouldn't the conversion be done like this:
+Are those workloads public? If so which are they?
 
-  struct spi_bitbang *bitbang = spi_master_get_devdata(master);
-  struct altera_spi *altera = container_of(bitbang,
-				 struct altera_spi, bitbang);
-
-Which doesn't require the bitbang field to be the first in the struct
-and makes it more clear what is actually going on. The above could be
-wrapped into a to_altera_spi macro.
-
-~Ryan
-
-
+It would be good if all of us working on this could use them.. :-)
