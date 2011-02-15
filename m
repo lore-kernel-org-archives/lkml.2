@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1BOQv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:51:29 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:35856 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752716Ab1BOQv1 convert rfc822-to-8bit (ORCPT
+	id S1755375Ab1BOQxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:53:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49355 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716Ab1BOQxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:51:27 -0500
-Subject: Re: [PATCH v2] ARM: vfp: Always save VFP state in vfp_pm_suspend
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-In-Reply-To: <1297724147-6320-1-git-send-email-ccross@android.com>
-References: <AANLkTik_Jey_PtRmr530FVckA6RXHESeX+CyoJC=ZTkR@mail.gmail.com>
-	 <1297724147-6320-1-git-send-email-ccross@android.com>
-Organization: ARM Limited
-Date: Tue, 15 Feb 2011 16:51:19 +0000
-Message-ID: <1297788679.28844.4.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 15 Feb 2011 16:51:22.0217 (UTC) FILETIME=[9336FD90:01CBCD30]
-X-MC-Unique: 111021516512400501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Feb 2011 11:53:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rihS6Yq+wL/Sa2rlOkLEHjVuuY7MihLXEo8sTAZQ5Vqu5rlEfjv4763Zyy35ZpZbEf
+         hOymxsMPdi2s9PiKwLLVRbu7leWpC9nYwKaeuj+GFkwNC9aIu/+wZh1fMHzF0fTSd9Zh
+         6vqWaNQgu02cgxinG7yTpZ4XE02ZGhQaMKAfU=
+Date: Tue, 15 Feb 2011 17:53:06 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 00/14] [GIT PULL][v2.6.39] tracing/filter: More robust
+ filtering
+Message-ID: <20110215165302.GA2272@nowhere>
+References: <20110208015617.902200587@goodmis.org>
+ <20110215044425.GA9994@elte.hu>
+ <1297776787.23343.104.camel@gandalf.stny.rr.com>
+ <1297787362.23343.109.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297787362.23343.109.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-14 at 22:55 +0000, Colin Cross wrote:
-> vfp_pm_suspend should save the VFP state any time there is
-> a last_VFP_context.  If it only saves when the VFP is enabled,
-> the state can get lost when, on a UP system:
->    Thread 1 uses the VFP
->    Context switch occurs to thread 2, VFP is disabled but the
->       VFP context is not saved to allow lazy save and restore
->    Thread 2 initiates suspend
->    vfp_pm_suspend is called with the VFP disabled, but the
->       context has not been saved.
+On Tue, Feb 15, 2011 at 11:29:22AM -0500, Steven Rostedt wrote:
+> On Tue, 2011-02-15 at 08:33 -0500, Steven Rostedt wrote:
 > 
-> Modify vfp_pm_suspend to save the VFP context whenever
-> last_VFP_context is set.
+> > Thanks for letting me waste three days on developing this. I even posted
+> > an RFC a while back, and no one complained then.
 > 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Colin Cross <ccross@android.com>
+> Sorry about being a bit bitchy in my reply here. I need to make a note
+> not to reply to LKML before my first cup of coffee. ;)
+> 
+> Arnaldo,
+> 
+> Thanks for the post, I'll help you out where you need it. trace-cmd has
+> some features that reports back to the user on failed filter usage. We
+> can incorporate that into perf.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Cool!
 
+That said I agree that we should not block improvements in the generic
+filtering code because of issues in perf uses of filters.
 
+I believe it used to work better in perf by the past, but I saw similar
+issues lately like those Ingo noticed. So probably something
+broke and we need to investigate. But until then your patches are
+still nice improvements: lesser memory usage, lesser kernel stack usage in the
+fast path, lesser limitation, faster and smarter filter evaluation...
