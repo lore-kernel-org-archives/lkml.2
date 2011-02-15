@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab1BOSms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 13:42:48 -0500
-Received: from kroah.org ([198.145.64.141]:38965 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755892Ab1BOSmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 13:42:46 -0500
-Date: Tue, 15 Feb 2011 10:42:20 -0800
-From: Greg KH <greg@kroah.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Amit Shah <amitshah@gmx.net>, baoyb <baoyb@avit.org.cn>
-Subject: Re: [PATCH 1/1] USB: serial/usb_wwan, fix tty NULL dereference
-Message-ID: <20110215184220.GA21432@kroah.com>
-References: <1297781707-3985-1-git-send-email-jslaby@suse.cz>
- <4D5AB48A.2040504@ru.mvista.com>
+	id S1755954Ab1BOSoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 13:44:54 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49415 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab1BOSow (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 13:44:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DlASohRW0tL1qcfetjxNk9Y6b0v67L4kc6M4tde9Hw5rcAlH93hB/YMFNRYQ3P/2n4
+         W1J8yWd4AijMd74kQ/xcAskDqpWZs50tcgkD1NR9uERADHJMWNodUqz4pdm64VQwqJFp
+         y16oa24a4nMQ/Foif207aA1TymARs9QwxilYo=
+Date: Tue, 15 Feb 2011 10:44:42 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 2/3]: Staging: hv: Use native wait primitives
+Message-ID: <20110215184441.GA19688@core.coreip.homeip.net>
+References: <1297447183-21807-1-git-send-email-kys@microsoft.com>
+ <4D5A4565.5030501@gmail.com>
+ <FB42D5CCD7B5934EB1827DB5ED9B850E07085CF8@TK5EX14MBXC104.redmond.corp.microsoft.com>
+ <20110215140305.GA10301@suse.de>
+ <FB42D5CCD7B5934EB1827DB5ED9B850E07085D7F@TK5EX14MBXC104.redmond.corp.microsoft.com>
+ <20110215162933.GA30626@suse.de>
+ <FB42D5CCD7B5934EB1827DB5ED9B850E07085DE6@TK5EX14MBXC104.redmond.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D5AB48A.2040504@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <FB42D5CCD7B5934EB1827DB5ED9B850E07085DE6@TK5EX14MBXC104.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 08:14:50PM +0300, Sergei Shtylyov wrote:
-> Hello.
+On Tue, Feb 15, 2011 at 05:52:46PM +0000, KY Srinivasan wrote:
 > 
-> Jiri Slaby wrote:
+> If I understand you correctly, you would be prefer to have unbounded waiting with comments 
+> justifying why we cannot have timeouts. I will roll out a patch once the tree stabilizes.
 > 
-> >tty_port_tty_get may return without any problems NULL. Handle this
-> >case and do not oops in usb_wwan_indat_callback by dereferencing it.
-> 
-> >The oops:
-> >Unable to handle kernel paging request for data at address 0x000000d8
-> >Faulting instruction address: 0xc0175b3c
-> >Oops: Kernel access of bad area, sig: 11 [#1]
-> >PowerPC 40x Platform
-> >last sysfs file:
-> >/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
-> >Modules linked in:
-> >NIP: c0175b3c LR: c0175e7c CTR: c0215c90
-> >REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
-> >MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
-> >DEAR: 000000d8, ESR: 00000000
-> >TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
-> >GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
-> >GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
-> >GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
-> >GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
-> >NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
-> >LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-> >Call Trace:
-> >[c77f7e00] [00000003] 0x3 (unreliable)
-> >[c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-> >[c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
-> >...
-> 
-> >References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
-> >Cc: Amit Shah <amitshah@gmx.net>
-> >Cc: baoyb <baoyb@avit.org.cn>
-> >Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> >Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> >---
-> > drivers/usb/serial/usb_wwan.c |   15 +++++++++------
-> > 1 files changed, 9 insertions(+), 6 deletions(-)
-> 
-> >diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-> >index b004b2a..9c014e2 100644
-> >--- a/drivers/usb/serial/usb_wwan.c
-> >+++ b/drivers/usb/serial/usb_wwan.c
-> >@@ -295,12 +295,15 @@ static void usb_wwan_indat_callback(struct urb *urb)
-> > 		    __func__, status, endpoint);
-> > 	} else {
-> > 		tty = tty_port_tty_get(&port->port);
-> >-		if (urb->actual_length) {
-> >-			tty_insert_flip_string(tty, data, urb->actual_length);
-> >-			tty_flip_buffer_push(tty);
-> >-		} else
-> >-			dbg("%s: empty read urb received", __func__);
-> >-		tty_kref_put(tty);
-> >+		if (tty) {
-> >+			if (urb->actual_length) {
-> >+				tty_insert_flip_string(tty, data,
-> >+						urb->actual_length);
-> >+				tty_flip_buffer_push(tty);
-> >+			} else
-> >+				dbg("%s: empty read urb received", __func__);
-> 
->    Should be {} on the *else* branch too, according to Documentation/CodingStyle...
 
-It's not an issue, it is fine as-is.
+Just make sure to add a comment explaining why the wait is unbounded.
 
-Jiri, thanks for the fix, I'll queue it up soon.
-
-greg k-h
+-- 
+Dmitry
