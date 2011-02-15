@@ -1,113 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1BOQzV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:55:21 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59074 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab1BOQzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:55:16 -0500
-Date: Tue, 15 Feb 2011 11:55:10 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 0/5] fix up /proc/$pid/smaps to not split huge pages
-Message-ID: <20110215165510.GA2550@mgebm.net>
-References: <20110209195406.B9F23C9F@kernel>
+	id S1755396Ab1BOQ4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:56:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab1BOQ4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 11:56:31 -0500
+Date: Tue, 15 Feb 2011 16:56:18 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
+	read-write for read-only mappings
+Message-ID: <20110215165618.GA28164@agk-dp.fab.redhat.com>
+Mail-Followup-To: Tejun Heo <tj@kernel.org>, Milan Broz <mbroz@redhat.com>,
+	Alasdair G Kergon <agk@redhat.com>,
+	device-mapper development <dm-devel@redhat.com>,
+	Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>,
+	linux-kernel@vger.kernel.org
+References: <4D5A6EF4.3030905@redhat.com> <20110215124629.GF5825@agk-dp.fab.redhat.com> <20110215152033.GK3160@htj.dyndns.org> <20110215154625.GG5825@agk-dp.fab.redhat.com> <20110215155018.GM3160@htj.dyndns.org> <4D5AA45C.7050600@redhat.com> <20110215161228.GN3160@htj.dyndns.org> <4D5AAB8F.50901@redhat.com> <20110215164128.GQ3160@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110209195406.B9F23C9F@kernel>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110215164128.GQ3160@htj.dyndns.org>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 15, 2011 at 05:41:28PM +0100, Tejun Heo wrote:
+> That said, maybe -EROFS is the better fit.  I really have no idea.
+> Maybe we should just revert and leave rw accesses to ro block devices
+> alone.
+ 
+I'd agree that the change to enforce readonly devs is a desirable change
+to make.  But we're still discovering exactly what things it breaks and
+as well as further kernel patches some userspace changes seem
+unavoidable.  Personally I'd prefer it if this change went back into
+linux-next to give us more time to prepare for it cleanly.  It's
+unfortunate none of us picked up on these problems sooner.
 
---C7zPtVaVf+AK4Oqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Alasdair
 
-On Wed, 09 Feb 2011, Dave Hansen wrote:
-
-> Andrea, after playing with this for a week or two, I'm quite a bit
-> more confident that it's not causing much harm.  Seems a fairly
-> low-risk feature.  Could we stick these somewhere so they'll at
-> least hit linux-next for the 2.6.40 cycle perhaps?
->=20
-> --
->=20
-> I'm working on some more reports that transparent huge pages and
-> KSM do not play nicely together.  Basically, whenever THP's are
-> present along with KSM, there is a lot of attrition over time,
-> and we do not see much overall progress keeping THP's around:
->=20
-> 	http://sr71.net/~dave/ibm/038_System_Anonymous_Pages.png
->=20
-> (That's Karl Rister's graph, thanks Karl!)
->=20
-> However, I realized that we do not currently have a nice way to
-> find out where individual THP's might be on the system.  We
-> have an overall count, but no way of telling which processes or
-> VMAs they might be in.
->=20
-> I started to implement this in the /proc/$pid/smaps code, but
-> quickly realized that the lib/pagewalk.c code unconditionally
-> splits THPs up.  This set reworks that code a bit and, in the
-> end, gives you a per-map count of the numbers of huge pages.
-> It also makes it possible for page walks to _not_ split THPs.
->=20
-
-I have been running these patches on top of 2.6.38-rc4 all
-morning and looked at a number of smaps files for processes
-using THP areas.  They don't seem to be pulled apart as my
-AnonHugePages: counter in meminfo is stable.
-
-I am noticing in smaps that KernelPageSize is wrong of areas
-that have been merged into THP.  For instance:
-
-7ff852a00000-7ff852c00000 rw-p 00000000 00:00 0=20
-Size:               2048 kB
-Rss:                2048 kB
-Pss:                2048 kB
-Shared_Clean:          0 kB
-Shared_Dirty:          0 kB
-Private_Clean:         0 kB
-Private_Dirty:      2048 kB
-Referenced:         2048 kB
-Anonymous:          2048 kB
-AnonHugePages:      2048 kB
-Swap:                  0 kB
-KernelPageSize:        4 kB
-MMUPageSize:           4 kB
-Locked:                0 kB
-
-The entire mapping is contained in a THP but the
-KernelPageSize shows 4kb.  For cases where the mapping might
-have mixed page sizes this may be okay, but for this
-particular mapping the 4kb page size is wrong.
-
-Tested-by: Eric B Munson <emunson@mgebm.net>
-
---C7zPtVaVf+AK4Oqc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNWq/uAAoJEH65iIruGRnNiEQH/1t8WlbMPXxK4G8HmgHhQiSj
-MominANJ7iDW9OmeV8xuL1rEwB3BoQeyhhs1QUm0FkBS3yEzvId9khIc+SwG+2nd
-D8m8edWLz7riQxsMc938EEhCPCWgqmCP0iQRIzs7HHToH1PEupxrM2i9o9vvQ+xb
-ZjuINAolRykXkGqMWhWAAGCl29id/NW06xiKy9ddxPtWv4qaHBeKh5McwickI78x
-sB3Eps2hlrT1JzkLpoQWZ+dDaZ5gfvuLPZoE8R5Kv79Z+Rzm3zE2iCDiPkUNaaS8
-XlX2tuT4Q/czI4gbaHo3B5r8rmn3GS/fBIg/g0OrqXIRFDkrTu2zyHdUAegwTnw=
-=l1un
------END PGP SIGNATURE-----
-
---C7zPtVaVf+AK4Oqc--
