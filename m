@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1BOOEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 09:04:14 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:51870 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab1BOOEM convert rfc822-to-8bit (ORCPT
+	id S1754929Ab1BOOIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 09:08:11 -0500
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:58937 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab1BOOIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 09:04:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TjjnrBC3vzO7l8o4PYssWhRcTfNubJlH/i+cJNxO60heU1LUrbfdd91u+QKWKBvzr0
-         xk/YU5BBOtK507mtSf24LVaKozzFdGdCs8FulWxnZeiZ6Iy6NEihFVqINcHb+knjc7Ks
-         54OvJK4q7Dq0QTucgY7KMGUBLt6SHT9/wrbv4=
+	Tue, 15 Feb 2011 09:08:09 -0500
+Date: Tue, 15 Feb 2011 09:07:34 -0500 (EST)
+From: Dave Anderson <anderson@redhat.com>
+To: "Discussion list for crash utility usage, maintenance and development" 
+	<crash-utility@redhat.com>,
+        ebiederm@xmission.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alex Riesen <raa.lkml@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>
+Message-ID: <1786262081.42701.1297778854137.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <AANLkTiko+Rsaf4-erkXdriGhSSt8DFptTaMBWd7ZsotA@mail.gmail.com>
+Subject: Re: [Crash-utility] Heads up Linux 2.6.38-rc4 compile problems.
 MIME-Version: 1.0
-In-Reply-To: <4D5A8021.2060001@zytor.com>
-References: <1297707868.5226.189.camel@laptop>
-	<1297718964.23343.75.camel@gandalf.stny.rr.com>
-	<1297719576.23343.80.camel@gandalf.stny.rr.com>
-	<20110214.134600.179933733.davem@davemloft.net>
-	<20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com>
-	<4D59B891.8010300@zytor.com>
-	<AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
-	<4D5A8021.2060001@zytor.com>
-Date: Tue, 15 Feb 2011 14:04:08 +0000
-Message-ID: <AANLkTikVB6Vf5W-KACdLJOz=FmtU4syQ4z1EWmjunB5o@mail.gmail.com>
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Will Newton <will.newton@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matt Fleming <matt@console-pimps.org>, David Miller <davem@davemloft.net>,
-        rostedt@goodmis.org, peterz@infradead.org, jbaron@redhat.com,
-        mathieu.desnoyers@polymtl.ca, mingo@elte.hu, tglx@linutronix.de,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
-        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        benh@kernel.crashing.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 1:31 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 02/15/2011 03:01 AM, Will Newton wrote:
->>
->> The CPU in question has two sets of instructions:
->>
->>   load/store - these go via the cache (write through)
->>   ll/sc - these operate literally as if there is no cache (they do not
->> hit on read or write)
->>
->> This may or may not be a sensible way to architect a CPU, but I think
->> it is possible to make it work. Making it work efficiently is more of
->> a challenge.
->>
->
-> a) What "CPU in question" is this?
 
-http://imgtec.com/meta/meta-technology.asp
 
-> b) Why should we let this particular insane CPU slow ALL OTHER CPUs down?
+----- Original Message -----
+> Hey Eric,
+> 
+> On Mon, Feb 14, 2011 at 12:34 AM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+> >
+> > And for completeness. When I was rebooting v2.6.38-rc4 to start running
+> > 795abaf1e4e188c4171e3cd3dbb11a9fcacaf505 I hit this.
+> >
+> > Sigh. I wish crash worked on something besides redhats enterprise
+> > kernels. Then I could use the system core file I have to do more than
+> > extract the dmesg.
 
-I didn't propose we do that. I brought it up just to make people aware
-that there are these odd architectures out there, and indeed it turns
-out Blackfin has some superficially similar issues.
+I update the upstream version of crash typically once a month.
+
+Perhaps you are using an older version?  I just built a 2.6.38-rc4 
+kernel, and the latest version of crash (5.1.2) works OK with it:
+
+  [root@hp-z400-02 ~]# crash
+  
+  crash 5.1.2
+  Copyright (C) 2002-2011  Red Hat, Inc.
+  Copyright (C) 2004, 2005, 2006  IBM Corporation
+  Copyright (C) 1999-2006  Hewlett-Packard Co
+  Copyright (C) 2005, 2006  Fujitsu Limited
+  Copyright (C) 2006, 2007  VA Linux Systems Japan K.K.
+  Copyright (C) 2005  NEC Corporation
+  Copyright (C) 1999, 2002, 2007  Silicon Graphics, Inc.
+  Copyright (C) 1999, 2000, 2001, 2002  Mission Critical Linux, Inc.
+  This program is free software, covered by the GNU General Public License,
+  and you are welcome to change it and/or distribute copies of it under
+  certain conditions.  Enter "help copying" to see the conditions.
+  This program has absolutely no warranty.  Enter "help warranty" for details.
+   
+  GNU gdb (GDB) 7.0
+  Copyright (C) 2009 Free Software Foundation, Inc.
+  License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+  This is free software: you are free to change and redistribute it.
+  There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+  and "show warranty" for details.
+  This GDB was configured as "x86_64-unknown-linux-gnu"...
+  
+        KERNEL: /vmlinux
+      DUMPFILE: /dev/mem
+          CPUS: 6
+          DATE: Tue Feb 15 08:57:17 2011
+        UPTIME: 00:00:54
+  LOAD AVERAGE: 0.37, 0.10, 0.04
+         TASKS: 132
+      NODENAME: hp-z400-02.lab.bos.redhat.com
+       RELEASE: 2.6.38-rc4
+       VERSION: #1 SMP Mon Feb 14 17:41:17 EST 2011
+       MACHINE: x86_64  (3067 Mhz)
+        MEMORY: 4 GB
+           PID: 1539
+       COMMAND: "crash"
+          TASK: ffff8801363f9710  [THREAD_INFO: ffff880135f2a000]
+           CPU: 0
+         STATE: TASK_RUNNING (ACTIVE)
+  
+  crash>
+
+Dave
+
+> 
+> Then you should cc crash-utility@redhat.com (now cc'd) and work with
+> Dave Anderson (e.g. get him your vmlinux and core files, which version
+> of crash you're using and how it fails). Dave does an amazing job of
+> working through crash issues which are reported against upstream
+> kernels -- the key first step is the report.
+> 
+> Mike
+> 
+> --
+> Crash-utility mailing list
+> Crash-utility@redhat.com
+> https://www.redhat.com/mailman/listinfo/crash-utility
