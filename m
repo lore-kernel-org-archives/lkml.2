@@ -1,93 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab1BOQVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:21:00 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36620 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab1BOQUz (ORCPT
+	id S1753993Ab1BOQWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:22:24 -0500
+Received: from mailc.microsoft.com ([131.107.115.214]:33772 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab1BOQWV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:20:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=HSPYSVyv05+AbtzAjNXnEHuhjp33Eon1plDiSSDt7s4zE/w8us9C29eVghz1nzTLUx
-         b/K34rw6l+0J0pRCLBqS3S8pxAPiaEJ6C0dSGJBAhxdyb1FWTLuBBDzWI7GuZ4i2RVg3
-         guONGIudqakX7azKhdpph18MCccXEqkGXCL2I=
-Subject: [PATCH] ARM: pxa: support 806MHz operating points for PXA31x
- processors A2 stepping
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Igor Grinberg <grinberg@compulab.co.il>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Feb 2011 00:20:49 +0800
-Message-ID: <1297786849.2596.13.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Feb 2011 11:22:21 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 2/3]: Staging: hv: Use native wait primitives
+Thread-Topic: [PATCH 2/3]: Staging: hv: Use native wait primitives
+Thread-Index: AQHLyhRfU1AHw/SIZkauajJIU383GpQC1SmA//+ugvCAAKBqgP//m01Q
+Date: Tue, 15 Feb 2011 16:22:20 +0000
+Message-ID: <FB42D5CCD7B5934EB1827DB5ED9B850E07085D7F@TK5EX14MBXC104.redmond.corp.microsoft.com>
+References: <1297447183-21807-1-git-send-email-kys@microsoft.com>
+ <4D5A4565.5030501@gmail.com>
+ <FB42D5CCD7B5934EB1827DB5ED9B850E07085CF8@TK5EX14MBXC104.redmond.corp.microsoft.com>
+ <20110215140305.GA10301@suse.de>
+In-Reply-To: <20110215140305.GA10301@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PXA3xx Specification Update document states that the 806MHz
-operating points were added for PXA31x processors A2 stepping.
-
-This patch adds 806MHz operating points support for PXA31x A2 stepping.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-
-I cannot find any details for PXA31x stepping B1 and B2,
-thus I made this patch for PXA31x stepping A2 only.
-
-Axel
-
- arch/arm/mach-pxa/cpufreq-pxa3xx.c |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-pxa/cpufreq-pxa3xx.c b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-index 88fbec0..f4f0c2e 100644
---- a/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-+++ b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
-@@ -210,15 +210,30 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
- 
- 	/* set default policy and cpuinfo */
- 	policy->cpuinfo.min_freq = 104000;
--	policy->cpuinfo.max_freq = (cpu_is_pxa320()) ? 806000 : 624000;
-+
-+	if (cpu_is_pxa300())
-+		policy->cpuinfo.max_freq = 624000;
-+	else if (cpu_is_pxa310())
-+		policy->cpuinfo.max_freq = ((read_cpuid_id() & 0xf) == 0x2) ?
-+						806000 : 624000;
-+	else if (cpu_is_pxa320())
-+		policy->cpuinfo.max_freq = 806000;
-+
- 	policy->cpuinfo.transition_latency = 1000; /* FIXME: 1 ms, assumed */
- 	policy->max = pxa3xx_get_clk_frequency_khz(0);
- 	policy->cur = policy->min = policy->max;
- 
--	if (cpu_is_pxa300() || cpu_is_pxa310())
-+	if (cpu_is_pxa300())
- 		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa300_freqs));
--
--	if (cpu_is_pxa320())
-+	else if (cpu_is_pxa310())
-+		/* PXA310 A2 STEPPING supports 806Mhz operating points */
-+		if ((read_cpuid_id() & 0xf) == 0x2)
-+			ret = setup_freqs_table(policy,
-+						ARRAY_AND_SIZE(pxa320_freqs));
-+		else
-+			ret = setup_freqs_table(policy,
-+						ARRAY_AND_SIZE(pxa300_freqs));
-+	else if (cpu_is_pxa320())
- 		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa320_freqs));
- 
- 	if (ret) {
--- 
-1.7.2
 
 
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Tuesday, February 15, 2011 9:03 AM
+> To: KY Srinivasan
+> Cc: Jiri Slaby; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org
+> Subject: Re: [PATCH 2/3]: Staging: hv: Use native wait primitives
+> 
+> On Tue, Feb 15, 2011 at 01:35:56PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Jiri Slaby [mailto:jirislaby@gmail.com]
+> > > Sent: Tuesday, February 15, 2011 4:21 AM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > > Subject: Re: [PATCH 2/3]: Staging: hv: Use native wait primitives
+> > >
+> > > On 02/11/2011 06:59 PM, K. Y. Srinivasan wrote:
+> > > > In preperation for getting rid of the osd layer; change
+> > > > the code to use native wait interfaces. As part of this,
+> > > > fixed the buggy implementation in the osd_wait_primitive
+> > > > where the condition was cleared potentially after the
+> > > > condition was signalled.
+> > > ...
+> > > > @@ -566,7 +567,11 @@ int vmbus_establish_gpadl(struct vmbus_channel
+> > > *channel, void *kbuffer,
+> > > >
+> > > >  		}
+> > > >  	}
+> > > > -	osd_waitevent_wait(msginfo->waitevent);
+> > > > +	wait_event_timeout(msginfo->waitevent,
+> > > > +				msginfo->wait_condition,
+> > > > +				msecs_to_jiffies(1000));
+> > > > +	BUG_ON(msginfo->wait_condition == 0);
+> > >
+> > > The added BUG_ONs all over the code look scary. These shouldn't be
+> > > BUG_ONs at all. You should maybe warn and bail out, but not kill the
+> > > whole machine.
+> >
+> > This is Linux code running as a guest on a Windows host; and so the guest
+> cannot
+> > tolerate a failure of the host. In the cases where I have chosen to BUG_ON,
+> there
+> > is no reasonable recovery possible when the host is non-functional (as
+> determined
+> > by a non-responsive host).
+> 
+> If you have a non-responsive host, wouldn't that imply that this guest
+> code wouldn't run at all?  :)
+
+The fact  that on a particular transaction the host has not responded within an expected
+time interval does not necessarily  mean that the guest code would not be running. There may be 
+issues on the host side that may be either transient or permanent that may cause problems like
+this. Keep in mind, HyperV is a type 1 hypervisor that would schedule all VMs including the host
+and so, guest would get scheduled.
+
+> 
+> Having BUG_ON() in drivers is not a good idea either way.  Please remove
+> these in future patches.
+
+In situations where there is not a reasonable rollback strategy (for
+instance in one of the cases, we are granting access to the guest
+physical pages to the host) we really have only 2 options:
+
+1) Wait until the host responds. This wait could potentially be unbounded
+and in fact this  was the way the code was to begin with. One of the reviewers
+had suggested that unbounded wait was to be corrected.
+2) Wait for a specific period and if the host does not respond
+within a reasonable period, kill the guest since there is no recovery
+possible.
+
+I chose option 2, as part of addressing some of the prior review
+comments. If the consensus now is to go back to option 1, I am fine with that;
+I will send you a patch to rectify this.
+
+Regards,
+
+K. Y
+  
+> 
+> > > And looking at the code, more appropriate would be completion instead of
+> > > wait events.
+> > >
+> > > And msecs_to_jiffies(1000) == HZ.
+> >
+> > Agreed. In this first round of cleanup, I chose to keep the primitives
+> > as they were in osd.c. Greg, if it is ok with you, I will send you a
+> > patch that fixes these issues on top of the patches I have already
+> > sent.
+> 
+> Yes, that is fine.
+> 
+> thanks,
+> 
+> greg k-h
 
