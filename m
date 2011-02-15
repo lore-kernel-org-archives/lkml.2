@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1BOR34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:29:56 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:63628 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703Ab1BOR3y (ORCPT
+	id S1755845Ab1BORaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:30:09 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:34072 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755816Ab1BORaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:29:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MqUYoy7Ln60RD9qA7qDXx6ZUQHRNOeJrLqyss7Do86gLrxyt7jBYIPLXoNtE0iWaGX
-         ua0hXJVQqJbD85FJC6Y//RPtOXqZCXZ35/+xOMb8235udTaSJE/UmJdw2fA83JSJQdkl
-         94reJdqxfQUybs/X6doedCfhoWLbyrYZjjgl0=
-Date: Tue, 15 Feb 2011 18:29:41 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
-        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH V10 12/15] ptp: Added a brand new class driver for ptp
- clocks.
-Message-ID: <20110215172941.GA21150@riccoc20.at.omicron.at>
-References: <cover.1296124770.git.richard.cochran@omicron.at>
- <ada07b1d09b1e8eb717c5203e64856d2eaad7456.1296124770.git.richard.cochran@omicron.at>
- <1296612031.3336.201.camel@work-vm>
- <20110211081524.GA12270@riccoc20.at.omicron.at>
+	Tue, 15 Feb 2011 12:30:05 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: JfrivggVM1m47FCdSasw4KgAfSdBnfWBYYH6rydXkbG1Mrd
+ hL9ealisZEufm8NwQlnMiWyKL3Ztt3Axl5FB4gzk0Ggb081wQQZhBVhQ5e8H
+ _AhMnDbmTF6V3zjQ3mZTkXMtQ4cRqu6AIpPtq4_lJRzJWoN1zSOA9Zm1rFOc
+ EhZfOTrQ3NyeKsDTFPXdn9teuKt64dqJRPTlUeh293NWzU4LCI_M.9WrZcdz
+ KNyHv45SdilTlR_AuYwZuV2GyAKpCxEYZOguqzDEzG0x3a0_xl6gxfe7B5j9
+ .JCB1g_Gisjwq2fM9TaHZoZpQB3JfwGxiRnuDB30CSlE_Afc-
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 15 Feb 2011 11:30:02 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Peter Kruse <pk@q-leap.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: I have a blaze of 353 page allocation failures, all alike
+In-Reply-To: <4D5A2EDB.8060603@q-leap.com>
+Message-ID: <alpine.DEB.2.00.1102151040560.10511@router.home>
+References: <4D53FE43.8030106@q-leap.com> <alpine.DEB.2.00.1102141046170.26158@router.home> <4D5A2EDB.8060603@q-leap.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110211081524.GA12270@riccoc20.at.omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII; FORMAT=flowed
+Content-ID: <alpine.DEB.2.00.1102151040562.10511@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 09:15:24AM +0100, Richard Cochran wrote:
-> On Tue, Feb 01, 2011 at 06:00:31PM -0800, John Stultz wrote:
-> > So what is serializing access to the timestamp_event_queue here? I don't
-> > see any usage of tsevq_mux by the callers. Am I missing it? It looks
-> > like its called from interrupt context, so do you really need a spinlock
-> > and not a mutex here?
-> 
-> The external timestamp FIFO is written only from interrupt context.
+On Tue, 15 Feb 2011, Peter Kruse wrote:
 
-Oops, I lied. After reworking the phyter driver, I find that I want to
-enqueue time stamps from non-interrupt contexts, too.
+> > > we have set vm.min_free_kbytes = 2097152 but the problem
+> > > obviously did not go away.
+> >
+> > 2GB of reserves? How much memory does your system have?
+>
+> 48GB
 
-So, you are right. This will need a spin lock...
+Ok then you just may potentially clog up the DMA zones. Maybe set the
+reserves to a reasonable level like 10M or so?
 
-Thanks,
+How many buffers are configured at the various levels for the device that
+is receiving messages? I guess that may be a bit on the high side?
 
-Richard
+> > Could you post the entire messages from the kernel log? We need the OOM
+> > info to figure out more about the problem.
+> >
+>
+> I attach one of the call traces, or would it be better if I send the
+> kern.log (about 6MB)?
+
+The call traces are sufficient but the traces vanished when I hit reply.
+Include them inline next time. It would be good to have the log starting
+at the last system boot. There is some information cut off that I would to
+see.
+
+An atomic order 1 allocation failed and led to the OOM but it seems that
+there is still ample memory available. Slab is in "fallback_alloc" so
+something went wrong with the regular allocation attempt. Any use of
+cpusets or cgroups?
+
+A significant amount of memory has been allocated to reclaimable slabs.
+I guess these are the socket buffers?
+
+Feb 10 11:59:49 beosrv1-t kernel: [1968911.211777] Node 0 Normal
+free:965164kB min:917952kB low:1147440kB high:1376928kB
+active_anon:2742680kB inactive_anon:293184kB active_file:4801512kB
+inactive_file:11129708kB unevictable:0kB isolated(anon):0kB
+isolated(file):0kB present:21719040kB mlocked:0kB dirty:600kB
+writeback:0kB mapped:26356kB shmem:4896kB slab_reclaimable:1780208kB <-----!!
+slab_unreclaimable:199576kB kernel_stack:1576kB pagetables:22956kB
+unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
+all_unreclaimable? no
+
+Could you try to reduce the number of network buffers?
+
