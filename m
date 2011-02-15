@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab1BOJw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 04:52:57 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63958 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab1BOJwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 04:52:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qomvo7x5M2vWkKSNCYpILSZrWDNuTa7z/PSudo+KKtsfZPAXVNT8TPO/f2EJ7W3nBM
-         UvvGHOVDME6ri1EwfrhtPftumuQ1HBMMi44YgMJDUBol64UkmennBqVI+eRZ2Gx4BLFJ
-         tIlqaK6gxVPRhVcwY3QXydrQZMj17WyUu64Sk=
-Date: Tue, 15 Feb 2011 11:52:45 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Corey Minyard <minyard@acm.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Subject: [PATCH] char/ipmi: fix cleanup_one_si section mismatch
-Message-ID: <20110215095245.GB4350@swordfish.minsk.epam.com>
-References: <20110214150310.GA4350@swordfish.minsk.epam.com>
- <4D59BAED.9060501@acm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D59BAED.9060501@acm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754263Ab1BOJyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 04:54:13 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:8686 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268Ab1BOJyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 04:54:10 -0500
+X-IronPort-AV: E=Sophos;i="4.60,473,1291611600"; 
+   d="scan'208";a="135917945"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: [PATCH] xen: suspend and resume system devices when running PVHVM
+Date: Tue, 15 Feb 2011 09:54:05 +0000
+Message-Id: <1297763645-23274-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.5.6.5
+X-OriginalArrivalTime: 15 Feb 2011 09:54:08.0554 (UTC) FILETIME=[49FD28A0:01CBCCF6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Otherwise we fail to properly suspend/resume all of the emulated devices.
 
-commit d2478521afc20227658a10a8c5c2bf1a2aa615b3
-Author: Corey Minyard<minyard@acm.org>
-Date:   Thu Feb 10 16:08:38 2011 -0600
+Something between 2.6.38-rc2 and rc3 appears to have exposed this
+issue, but it's always been wrong not to do this.
 
-     char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
-
-
-Introduced section mismatch by calling __exit cleanup_ipmi_si from __devinit 
-init_ipmi_si. Remove __exit annotation from cleanup_ipmi_si.
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Acked-by: Corey Minyard <cminyard@mvista.com>
-
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
 ---
+ drivers/xen/manage.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
- drivers/char/ipmi/ipmi_si_intf.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 7855f9f..94cd2ce 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -3532,7 +3532,7 @@ static void cleanup_one_si(struct smi_info *to_clean)
- 	kfree(to_clean);
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index db8c4c4..2417727 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -37,11 +37,19 @@ static enum shutdown_state shutting_down = SHUTDOWN_INVALID;
+ #ifdef CONFIG_PM_SLEEP
+ static int xen_hvm_suspend(void *data)
+ {
++	int err;
+ 	struct sched_shutdown r = { .reason = SHUTDOWN_suspend };
+ 	int *cancelled = data;
+ 
+ 	BUG_ON(!irqs_disabled());
+ 
++	err = sysdev_suspend(PMSG_SUSPEND);
++	if (err) {
++		printk(KERN_ERR "xen_hvm_suspend: sysdev_suspend failed: %d\n",
++		       err);
++		return err;
++	}
++
+ 	*cancelled = HYPERVISOR_sched_op(SCHEDOP_shutdown, &r);
+ 
+ 	xen_hvm_post_suspend(*cancelled);
+@@ -53,6 +61,8 @@ static int xen_hvm_suspend(void *data)
+ 		xen_timer_resume();
+ 	}
+ 
++	sysdev_resume();
++
+ 	return 0;
  }
  
--static void __exit cleanup_ipmi_si(void)
-+static void cleanup_ipmi_si(void)
- {
- 	struct smi_info *e, *tmp_e;
- 
+-- 
+1.5.6.5
+
