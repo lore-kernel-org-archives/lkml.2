@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab1BOR5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:57:48 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:3717 "EHLO mms1.broadcom.com"
+	id S1755870Ab1BOSAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 13:00:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36950 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752266Ab1BOR5q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:57:46 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Ray Jui" <rjui@broadcom.com>
-To: "Tejun Heo" <tj@kernel.org>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 15 Feb 2011 09:57:21 -0800
-Subject: RE: Questions about Linux workqueue in 2.6.36
-Thread-Topic: Questions about Linux workqueue in 2.6.36
-Thread-Index: AcvMR8pZSHZn4UkNQKSdVEvzZx9sbQA8Sxdg
-Message-ID: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF03CDD8A@SJEXCHCCR02.corp.ad.broadcom.com>
-References: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C2EAC@SJEXCHCCR02.corp.ad.broadcom.com>
- <20110209102847.GE3770@htj.dyndns.org>
- <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C3163@SJEXCHCCR02.corp.ad.broadcom.com>
- <20110214130300.GH18742@htj.dyndns.org>
-In-Reply-To: <20110214130300.GH18742@htj.dyndns.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1754123Ab1BOSAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 13:00:32 -0500
+Date: Tue, 15 Feb 2011 19:00:26 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Eric B Munson <emunson@mgebm.net>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 0/5] fix up /proc/$pid/smaps to not split huge pages
+Message-ID: <20110215180026.GH5935@random.random>
+References: <20110209195406.B9F23C9F@kernel>
+ <20110215165510.GA2550@mgebm.net>
+ <20110215170152.GF5935@random.random>
+ <1297789525.9829.9616.camel@nimitz>
 MIME-Version: 1.0
-X-WSS-ID: 6144608B3DG9842406-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297789525.9829.9616.camel@nimitz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Tue, Feb 15, 2011 at 09:05:25AM -0800, Dave Hansen wrote:
+> On Tue, 2011-02-15 at 18:01 +0100, Andrea Arcangeli wrote:
+> > > The entire mapping is contained in a THP but the
+> > > KernelPageSize shows 4kb.  For cases where the mapping might
+> > > have mixed page sizes this may be okay, but for this
+> > > particular mapping the 4kb page size is wrong.
+> > 
+> > I'm not sure this is a bug, if the mapping grows it may become 4096k
+> > but the new pages may be 4k. There's no such thing as a
+> > vma_mmu_pagesize in terms of hugepages because we support graceful
+> > fallback and collapse/split on the fly without altering the vma. So I
+> > think 4k is correct here
+> 
+> How about we bump MMUPageSize for mappings that are _entirely_ huge
+> pages, but leave it at 4k for mixed mappings?  Anyone needing more
+> detail than that can use the new AnonHugePages count.
 
-Regarding your second patch, which changes the initial mayday timeout to
-MAYDAY_INITIAL_TIMEOUT	= HZ / 100 >= 2 ? HZ / 100 : 2,
+Anyone needing the detail that you ask for, already can use the
+AnonHugePages count.
 
-That's a minimum of 2 timer ticks, which is 20 ms in our system. Since the timer resolution in our system is 10 ms and it takes 15 ~ 20 ms to create a new kworker during kernel startup in our system, I verified that I need to change the minimum timer tick to 3 for the rescuer NOT to kick in our system during startup.
+> KernelPageSize is pretty ambiguous, and we could certainly make the
+> argument that the kernel is or can still deal with things in 4k blocks.
 
-Thanks,
+That's my point. We could bring it to 2m whenever
+AnonHugePages==Anonymous, that's a two liner change, but I'm not
+really sure if it makes sense or it provides any meaningful info.
 
-Ray
-
------Original Message-----
-From: Tejun Heo [mailto:htejun@gmail.com] On Behalf Of Tejun Heo
-Sent: Monday, February 14, 2011 5:03 AM
-To: Ray Jui
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Questions about Linux workqueue in 2.6.36
-
-Hello,
-
-On Wed, Feb 09, 2011 at 02:38:36PM -0800, Ray Jui wrote:
-> You are right. The problem with the rescuer is that when it is
-> leaving a gcwq, it does not check to see whether it needs to wake up
-> a worker to process subsequent work items. After applying your
-> patch, I see pid 26 getting waken up by the rescuer and work items
-> from mmc1 and mmc2 are now being processed properly.
-
-Cool, I'll send the patch to upstream and stable.
-
-> I also did a quick profiling on the amount of time it takes to
-> create a new worker on our system. It takes 15 ~ 20 ms. This is not
-> surprising as it's an embedded system and it was during kernel boot
-> up and the system was getting quite busy. Regardless, the current 10
-> ms initial mayday timeout has resolution issues on a lot of embedded
-> systems with worse timer resolutions (e.g., 10 ms on our system).
-
-Can you please verify the second patch removes the unncessary rescuer
-invocation?
-
-Thanks.
-
--- 
-tejun
-
-
+That is a slot specific to show hugetlbfs presence and to
+differentiate between 2m/1g mappings. I think remaining mutually
+exclusive between AnonHugePages > 0 and MMUPageSize >4k is actually
+cleaner than a two liner magic returning 2m if AnonHugePages ==
+Anonymous.
