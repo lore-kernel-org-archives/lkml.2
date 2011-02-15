@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab1BOUga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 15:36:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753140Ab1BOUg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 15:36:28 -0500
-Date: Tue, 15 Feb 2011 21:27:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Roland McGrath <roland@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Denys Vlasenko <vda.linux@googlemail.com>,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110215202747.GA20560@redhat.com>
-References: <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110214175144.GC15847@redhat.com> <AANLkTi=VVWVkrqqQyOtsP72S5-nWny=Ukmf_r-m1qMwV@mail.gmail.com> <20110214190141.GA19221@redhat.com> <AANLkTi=_af8+XKD+d-677JpQZA=AN2EsydscSYxk7z55@mail.gmail.com> <20110214200130.GA21559@redhat.com> <20110215152448.GL3160@htj.dyndns.org> <20110215173149.239601807B7@magilla.sf.frob.com>
+	id S1756057Ab1BOUkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 15:40:18 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45798 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab1BOUkP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 15:40:15 -0500
+Date: Tue, 15 Feb 2011 13:40:11 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Michal Simek <monstr@monstr.eu>
+Cc: glikely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        John Williams <john.williams@petalogix.com>
+Subject: Re: [PATCH] of: Add missing of_address.h to xilinx ehci driver
+Message-ID: <20110215204011.GB24022@angua.secretlab.ca>
+References: <1297680009-4054-1-git-send-email-monstr@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110215173149.239601807B7@magilla.sf.frob.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1297680009-4054-1-git-send-email-monstr@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15, Roland McGrath wrote:
->
-> > Actually I was thinking along this line.  We can allow
-> > PTRACE_GETSIGINFO to proceed without forcing the tracee into TRACED
-> > state, the rationale being the operation is required to tell between
-> > group stop and ptrace trap.  Am I missing something?
->
-> The reason for the transition to TASK_TRACED is to prevent a race with
-> SIGCONT waking the task.  There is always a race with SIGKILL waking it,
-> but the circumstances where that can really matter are far fewer.
-> You need to make sure that the work PTRACE_GETSIGINFO does to access
-> last_siginfo cannot race with that pointer disappearing or the stack
-> space it points to becoming invalid.  I think the use of siglock ensures
-> that, but Oleg should verify it.
+On Mon, Feb 14, 2011 at 11:40:09AM +0100, Michal Simek wrote:
+> Build log:
+> In file included from drivers/usb/host/ehci-hcd.c:1208:
+> drivers/usb/host/ehci-xilinx-of.c: In function 'ehci_hcd_xilinx_of_probe':
+> drivers/usb/host/ehci-xilinx-of.c:168: error: implicit declaration of function 'of_address_to_resource'
+> 
+> Signed-off-by: John Williams <john.williams@petalogix.com>
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
 
-Yes, I think this is safe.
+Applied, thanks.
 
-I do not really like this idea because it looks a bit strange to treat
-PTRACE_GETSIGINFO specially, and this doesn't solve all problems. And,
-once again, I still hope we can change ptrace_resume() so that it doesn't
-wakeup the stopped (I mean, SIGNAL_STOP_STOPPED) tracee, in this case this
-hack is not needed.
+g.
 
-And. We are going to add the new requests which doesn't need the stopped
-tracee anyway. So we can just add PTRACE_HAS_SIGINFO which returns
-child->last_siginfo != NULL. This looks simpler, and this is compatible.
-Of course this check is racy, but this doesn't matter. PTRACE_GETSIGINFO
-is equally racy if it doesn't change the state to TASK_TRACED.
-
-But I won't argue if you/Denys/Tejun prefer to change PTRACE_GETSIGINFO.
-
-Oleg.
-
+> ---
+>  drivers/usb/host/ehci-xilinx-of.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
+> index e8f4f36..a6f21b8 100644
+> --- a/drivers/usb/host/ehci-xilinx-of.c
+> +++ b/drivers/usb/host/ehci-xilinx-of.c
+> @@ -29,6 +29,7 @@
+>  
+>  #include <linux/of.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/of_address.h>
+>  
+>  /**
+>   * ehci_xilinx_of_setup - Initialize the device for ehci_reset()
+> -- 
+> 1.5.5.6
+> 
