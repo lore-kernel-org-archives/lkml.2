@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab1BOUBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 15:01:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35123 "EHLO mx1.redhat.com"
+	id S1755672Ab1BOUGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 15:06:39 -0500
+Received: from www.tglx.de ([62.245.132.106]:37464 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755353Ab1BOUBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 15:01:23 -0500
-Message-ID: <4D5ADB72.2050006@redhat.com>
-Date: Tue, 15 Feb 2011 18:00:50 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1755313Ab1BOUGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 15:06:37 -0500
+Date: Tue, 15 Feb 2011 21:05:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>, Larry Woodman <lwoodman@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] fix pgd_lock deadlock
+In-Reply-To: <20110215195450.GO5935@random.random>
+Message-ID: <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
+References: <4CB76E8B.2090309@goop.org> <4CC0AB73.8060609@goop.org> <20110203024838.GI5843@random.random> <4D4B1392.5090603@goop.org> <20110204012109.GP5843@random.random> <4D4C6F45.6010204@goop.org> <20110207232045.GJ3347@random.random>
+ <20110215190710.GL5935@random.random> <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6> <20110215195450.GO5935@random.random>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andy Walls <awalls@md.metrocast.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        stoth@kernellabs.com
-Subject: Re: [PATCH] cx23885: restore flushes of cx23885_dev work items
-References: <1297647322.19186.61.camel@localhost> <20110214043355.GA28090@core.coreip.homeip.net> <20110214110339.GC18742@htj.dyndns.org> <1297731276.2394.19.camel@localhost> <20110215092012.GE3160@htj.dyndns.org>
-In-Reply-To: <20110215092012.GE3160@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 15-02-2011 07:20, Tejun Heo escreveu:
-> Commit 8c71778c (media/video: don't use flush_scheduled_work())
-> dropped flush_scheduled_work() from cx23885_input_ir_stop()
-> incorrectly assuming that it didn't use any work item; however,
-> cx23885_dev makes use of three work items - cx25840_work and
-> ir_{r|t}x_work.
+On Tue, 15 Feb 2011, Andrea Arcangeli wrote:
+> On Tue, Feb 15, 2011 at 08:26:51PM +0100, Thomas Gleixner wrote:
 > 
-> Make cx23885_input_ir_stop() sync flush all three work items before
-> returning.
+> With NR_CPUs < 4, or with THP enabled, rmap.c will do
+> spin_lock(&mm->page_table_lock) (or pte_offset_map_lock where the lock
+> is still mm->page_table_lock and not the PT lock). Then it will send
+> IPIs to flush the tlb of the other CPUs.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Andy Walls <awalls@md.metrocast.net>
-> Reviewed-by: Andy Walls <awalls@md.metrocast.net>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> But the other CPU is running the vmalloc_sync_all, and it is trying to
+> take the page_table_lock with irq disabled. It will never take the
+> lock because the CPU waiting the IPI delivery holds it. And it will
+> never run the IPI because it has irqs disabled.
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-> ---
->  drivers/media/video/cx23885/cx23885-input.c |    3 +++
->  1 file changed, 3 insertions(+)
+Ok, that makes sense :)
+ 
+> Now the big question is if anything is taking the pgd_lock from
+> irqs. Normal testing could never reveal it as even if it happens it
+> has a slim chance to happen while the pgd_lock is already hold by
+> normal kernel context. But the VM_BUG_ON(in_interrupt()) should
+> hopefully have revealed it already if it ever happened, I hope.
 > 
-> diff --git a/drivers/media/video/cx23885/cx23885-input.c b/drivers/media/video/cx23885/cx23885-input.c
-> index 199b996..e27cedb 100644
-> --- a/drivers/media/video/cx23885/cx23885-input.c
-> +++ b/drivers/media/video/cx23885/cx23885-input.c
-> @@ -229,6 +229,9 @@ static void cx23885_input_ir_stop(struct cx23885_dev *dev)
->  		v4l2_subdev_call(dev->sd_ir, ir, rx_s_parameters, &params);
->  		v4l2_subdev_call(dev->sd_ir, ir, rx_g_parameters, &params);
->  	}
-> +	flush_work_sync(&dev->cx25840_work);
-> +	flush_work_sync(&dev->ir_rx_work);
-> +	flush_work_sync(&dev->ir_tx_work);
->  }
->  
->  static void cx23885_input_ir_close(struct rc_dev *rc)
+> Clearly we could try to fix it in other ways, but still if there's no
+> reason to do the _irqsave this sounds a good idea to apply my fix
+> anyway.
+
+Did you try with DEBUG_PAGEALLOC, which is calling into cpa quite a
+lot?
+
+Thanks,
+
+	tglx
 
