@@ -1,308 +1,397 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab1BOSJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 13:09:35 -0500
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:56636 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755886Ab1BOSJd (ORCPT
+	id S1755962Ab1BOSJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 13:09:52 -0500
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:54656 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755617Ab1BOSJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 13:09:33 -0500
-Message-Id: <20110215180928.393664852@linux.vnet.ibm.com>
+	Tue, 15 Feb 2011 13:09:31 -0500
+Message-Id: <20110215180928.546457180@linux.vnet.ibm.com>
 User-Agent: quilt/0.47-1
-Date: Tue, 15 Feb 2011 19:02:13 +0100
+Date: Tue, 15 Feb 2011 19:02:14 +0100
 From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
 To: robert.richter@amd.com
 Cc: mingo@elte.hu, oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, borntraeger@de.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
-Subject: [patch 1/2] Put parameters in a structure and pass the pointer to the struct instead
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Subject: [patch 2/2] Remove hwsampler_files.c and merge its contents into init.c 
 References: <20110215180212.334742128@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=oprofile_parms_struct.patch
+Content-Disposition: inline; filename=oprofile_merge_init.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
 
-To reduce the number of parameters in various functions use a struct to host specific sample input data.
+I've merged the contents of hwsampler_files.c into according to Robert Richter's comment.
  
+Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
 ---
- drivers/oprofile/cpu_buffer.c |  105 +++++++++++++++++++++++++-----------------
- drivers/oprofile/cpu_buffer.h |    9 +++
- 2 files changed, 73 insertions(+), 41 deletions(-)
+ arch/s390/oprofile/Makefile          |    2 
+ arch/s390/oprofile/hwsampler_files.c |  162 -----------------------------------
+ arch/s390/oprofile/init.c            |  161 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 159 insertions(+), 166 deletions(-)
 
-Index: s390/drivers/oprofile/cpu_buffer.c
+Index: s390/arch/s390/oprofile/init.c
 ===================================================================
---- s390.orig/drivers/oprofile/cpu_buffer.c
-+++ s390/drivers/oprofile/cpu_buffer.c
-@@ -1,12 +1,13 @@
- /**
-  * @file cpu_buffer.c
+--- s390.orig/arch/s390/oprofile/init.c
++++ s390/arch/s390/oprofile/init.c
+@@ -4,19 +4,174 @@
+  * S390 Version
+  *   Copyright (C) 2003 IBM Deutschland Entwicklung GmbH, IBM Corporation
+  *   Author(s): Thomas Spatzier (tspat@de.ibm.com)
++ *   Author(s): Mahesh Salgaonkar (mahesh@linux.vnet.ibm.com)
++ *   Author(s): Heinz Graalfs (graalfs@linux.vnet.ibm.com)
   *
-- * @remark Copyright 2002-2009 OProfile authors
+- * @remark Copyright 2002 OProfile authors
 + * @remark Copyright 2002-2011 OProfile authors
-  * @remark Read the file COPYING
-  *
-  * @author John Levon <levon@movementarian.org>
-  * @author Barry Kasindorf <barry.kasindorf@amd.com>
-  * @author Robert Richter <robert.richter@amd.com>
-+ * @author Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-  *
-  * Each CPU has a local buffer that stores PC value/event
-  * pairs. We also log context switches when we notice them.
-@@ -179,8 +180,8 @@ unsigned long op_cpu_buffer_entries(int
- }
- 
- static int
--op_add_code(struct oprofile_cpu_buffer *cpu_buf, unsigned long backtrace,
--	    int is_kernel, struct task_struct *task)
-+op_add_code(struct oprofile_cpu_buffer *cpu_buf,
-+		    struct oprofile_sample_parms *parms)
- {
- 	struct op_entry entry;
- 	struct op_sample *sample;
-@@ -189,21 +190,21 @@ op_add_code(struct oprofile_cpu_buffer *
- 
- 	flags = 0;
- 
--	if (backtrace)
-+	if (parms->backtrace)
- 		flags |= TRACE_BEGIN;
- 
- 	/* notice a switch from user->kernel or vice versa */
--	is_kernel = !!is_kernel;
--	if (cpu_buf->last_is_kernel != is_kernel) {
--		cpu_buf->last_is_kernel = is_kernel;
-+	parms->is_kernel = !!parms->is_kernel;
-+	if (cpu_buf->last_is_kernel != parms->is_kernel) {
-+		cpu_buf->last_is_kernel = parms->is_kernel;
- 		flags |= KERNEL_CTX_SWITCH;
--		if (is_kernel)
-+		if (parms->is_kernel)
- 			flags |= IS_KERNEL;
- 	}
- 
- 	/* notice a task switch */
--	if (cpu_buf->last_task != task) {
--		cpu_buf->last_task = task;
-+	if (cpu_buf->last_task != parms->task) {
-+		cpu_buf->last_task = parms->task;
- 		flags |= USER_CTX_SWITCH;
- 	}
- 
-@@ -224,7 +225,7 @@ op_add_code(struct oprofile_cpu_buffer *
- 	sample->event = flags;
- 
- 	if (size)
--		op_cpu_buffer_add_data(&entry, (unsigned long)task);
-+		op_cpu_buffer_add_data(&entry, (unsigned long)parms->task);
- 
- 	op_cpu_buffer_write_commit(&entry);
- 
-@@ -233,7 +234,7 @@ op_add_code(struct oprofile_cpu_buffer *
- 
- static inline int
- op_add_sample(struct oprofile_cpu_buffer *cpu_buf,
--	      unsigned long pc, unsigned long event)
-+		      struct oprofile_sample_parms *parms)
- {
- 	struct op_entry entry;
- 	struct op_sample *sample;
-@@ -242,8 +243,8 @@ op_add_sample(struct oprofile_cpu_buffer
- 	if (!sample)
- 		return -ENOMEM;
- 
--	sample->eip = pc;
--	sample->event = event;
-+	sample->eip = parms->pc;
-+	sample->event = parms->event;
- 
- 	return op_cpu_buffer_write_commit(&entry);
- }
-@@ -256,23 +257,23 @@ op_add_sample(struct oprofile_cpu_buffer
-  * pc. We tag this in the buffer by generating kernel enter/exit
-  * events whenever is_kernel changes
   */
+ 
+ #include <linux/oprofile.h>
+ #include <linux/init.h>
+ #include <linux/errno.h>
++#include <linux/oprofile.h>
++#include <linux/errno.h>
++#include <linux/fs.h>
 +
- static int
--log_sample(struct oprofile_cpu_buffer *cpu_buf, unsigned long pc,
--	   unsigned long backtrace, int is_kernel, unsigned long event,
--	   struct task_struct *task)
-+log_sample(struct oprofile_cpu_buffer *cpu_buf,
-+	   struct oprofile_sample_parms *parms)
- {
--	struct task_struct *tsk = task ? task : current;
-+	parms->task = parms->task ? parms->task : current;
- 	cpu_buf->sample_received++;
- 
--	if (pc == ESCAPE_CODE) {
-+	if (parms->pc == ESCAPE_CODE) {
- 		cpu_buf->sample_invalid_eip++;
- 		return 0;
- 	}
- 
--	if (op_add_code(cpu_buf, backtrace, is_kernel, tsk))
-+	if (op_add_code(cpu_buf, parms))
- 		goto fail;
- 
--	if (op_add_sample(cpu_buf, pc, event))
-+	if (op_add_sample(cpu_buf, parms))
- 		goto fail;
- 
- 	return 1;
-@@ -293,26 +294,24 @@ static inline void oprofile_end_trace(st
- }
- 
- static inline void
--__oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
--			  unsigned long event, int is_kernel,
--			  struct task_struct *task)
-+__oprofile_add_ext_sample(struct oprofile_sample_parms *parms)
- {
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
--	unsigned long backtrace = oprofile_backtrace_depth;
-+	parms->backtrace = oprofile_backtrace_depth;
- 
- 	/*
- 	 * if log_sample() fail we can't backtrace since we lost the
- 	 * source of this event
- 	 */
--	if (!log_sample(cpu_buf, pc, backtrace, is_kernel, event, task))
-+	if (!log_sample(cpu_buf, parms))
- 		/* failed */
- 		return;
- 
--	if (!backtrace)
-+	if (!parms->backtrace)
- 		return;
- 
- 	oprofile_begin_trace(cpu_buf);
--	oprofile_ops.backtrace(regs, backtrace);
-+	oprofile_ops.backtrace(parms->regs, parms->backtrace);
- 	oprofile_end_trace(cpu_buf);
- }
- 
-@@ -320,29 +319,41 @@ void oprofile_add_ext_hw_sample(unsigned
- 				unsigned long event, int is_kernel,
- 				struct task_struct *task)
- {
--	__oprofile_add_ext_sample(pc, regs, event, is_kernel, task);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = event,
-+		.is_kernel = is_kernel, .regs = regs,
-+		.task = task ? task : current
-+	};
++#include "../../../drivers/oprofile/oprof.h"
++#include "hwsampler.h"
 +
-+	__oprofile_add_ext_sample(&parms);
- }
++#define DEFAULT_INTERVAL	4096
++
++#define DEFAULT_SDBT_BLOCKS	1
++#define DEFAULT_SDB_BLOCKS	511
++
++static unsigned long oprofile_hw_interval = DEFAULT_INTERVAL;
++static unsigned long oprofile_min_interval;
++static unsigned long oprofile_max_interval;
  
- void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
- 			     unsigned long event, int is_kernel)
- {
--	__oprofile_add_ext_sample(pc, regs, event, is_kernel, NULL);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = event,
-+		.is_kernel = is_kernel, .regs = regs, .task = NULL
-+	};
-+	__oprofile_add_ext_sample(&parms);
- }
+-extern int oprofile_hwsampler_init(struct oprofile_operations* ops);
+-extern void oprofile_hwsampler_exit(void);
++static unsigned long oprofile_sdbt_blocks = DEFAULT_SDBT_BLOCKS;
++static unsigned long oprofile_sdb_blocks = DEFAULT_SDB_BLOCKS;
++
++static int hwsampler_file;
++static int hwsampler_running;	/* start_mutex must be held to change */
++
++static struct oprofile_operations timer_ops;
  
- void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
- {
--	int is_kernel;
--	unsigned long pc;
-+	struct oprofile_sample_parms parms = {
-+		.pc = 0, .backtrace = 0, .event = event,
-+		.is_kernel = 0, .regs = regs, .task = NULL
-+	};
+ extern void s390_backtrace(struct pt_regs * const regs, unsigned int depth);
  
- 	if (likely(regs)) {
--		is_kernel = !user_mode(regs);
--		pc = profile_pc(regs);
-+		parms.is_kernel = !user_mode(regs);
-+		parms.pc = profile_pc(regs);
- 	} else {
--		is_kernel = 0;    /* This value will not be used */
--		pc = ESCAPE_CODE; /* as this causes an early return. */
-+		parms.is_kernel = 0;    /* This value will not be used */
-+		parms.pc = ESCAPE_CODE; /* as this causes an early return. */
- 	}
- 
--	__oprofile_add_ext_sample(pc, regs, event, is_kernel, NULL);
-+	__oprofile_add_ext_sample(&parms);
- }
- 
- /*
-@@ -356,13 +367,17 @@ oprofile_write_reserve(struct op_entry *
- 		       unsigned long pc, int code, int size)
- {
- 	struct op_sample *sample;
--	int is_kernel = !user_mode(regs);
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = 0,
-+		.is_kernel = !user_mode(regs), .task = current,
-+		.regs = regs
-+	};
- 
- 	cpu_buf->sample_received++;
- 
- 	/* no backtraces for samples with data */
--	if (op_add_code(cpu_buf, 0, is_kernel, current))
-+	if (op_add_code(cpu_buf, &parms))
- 		goto fail;
- 
- 	sample = op_cpu_buffer_write_reserve(entry, size + 2);
-@@ -413,12 +428,20 @@ int oprofile_write_commit(struct op_entr
- void oprofile_add_pc(unsigned long pc, int is_kernel, unsigned long event)
- {
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
--	log_sample(cpu_buf, pc, 0, is_kernel, event, NULL);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = event,
-+		.is_kernel = is_kernel, .task = NULL, .regs = NULL
-+	};
-+	log_sample(cpu_buf, &parms);
- }
- 
- void oprofile_add_trace(unsigned long pc)
- {
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = 0,
-+		.is_kernel = 0, .task = NULL, .regs = NULL
-+	};
- 
- 	if (!cpu_buf->tracing)
- 		return;
-@@ -430,7 +453,7 @@ void oprofile_add_trace(unsigned long pc
- 	if (pc == ESCAPE_CODE)
- 		goto fail;
- 
--	if (op_add_sample(cpu_buf, pc, 0))
-+	if (op_add_sample(cpu_buf, &parms))
- 		goto fail;
- 
- 	return;
-Index: s390/drivers/oprofile/cpu_buffer.h
-===================================================================
---- s390.orig/drivers/oprofile/cpu_buffer.h
-+++ s390/drivers/oprofile/cpu_buffer.h
-@@ -51,6 +51,15 @@ struct oprofile_cpu_buffer {
- 	struct delayed_work work;
- };
- 
-+struct oprofile_sample_parms {
-+	int is_kernel;
-+	unsigned long pc;
-+	unsigned long backtrace;
-+	unsigned long event;
-+	struct task_struct *task;
-+	struct pt_regs *regs;
++static int oprofile_hwsampler_start(void)
++{
++	int retval;
++
++	hwsampler_running = hwsampler_file;
++
++	if (!hwsampler_running)
++		return timer_ops.start();
++
++	retval = hwsampler_allocate(oprofile_sdbt_blocks, oprofile_sdb_blocks);
++	if (retval)
++		return retval;
++
++	retval = hwsampler_start_all(oprofile_hw_interval);
++	if (retval)
++		hwsampler_deallocate();
++
++	return retval;
++}
++
++static void oprofile_hwsampler_stop(void)
++{
++	if (!hwsampler_running) {
++		timer_ops.stop();
++		return;
++	}
++
++	hwsampler_stop_all();
++	hwsampler_deallocate();
++	return;
++}
++
++static ssize_t hwsampler_read(struct file *file, char __user *buf,
++		size_t count, loff_t *offset)
++{
++	return oprofilefs_ulong_to_user(hwsampler_file, buf, count, offset);
++}
++
++static ssize_t hwsampler_write(struct file *file, char const __user *buf,
++		size_t count, loff_t *offset)
++{
++	unsigned long val;
++	int retval;
++
++	if (*offset)
++		return -EINVAL;
++
++	retval = oprofilefs_ulong_from_user(&val, buf, count);
++	if (retval)
++		return retval;
++
++	if (oprofile_started)
++		/*
++		 * save to do without locking as we set
++		 * hwsampler_running in start() when start_mutex is
++		 * held
++		 */
++		return -EBUSY;
++
++	hwsampler_file = val;
++
++	return count;
++}
++
++static const struct file_operations hwsampler_fops = {
++	.read		= hwsampler_read,
++	.write		= hwsampler_write,
 +};
 +
- DECLARE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
++static int oprofile_create_hwsampling_files(struct super_block *sb,
++						struct dentry *root)
++{
++	struct dentry *hw_dir;
++
++	/* reinitialize default values */
++	hwsampler_file = 1;
++
++	hw_dir = oprofilefs_mkdir(sb, root, "hwsampling");
++	if (!hw_dir)
++		return -EINVAL;
++
++	oprofilefs_create_file(sb, hw_dir, "hwsampler", &hwsampler_fops);
++	oprofilefs_create_ulong(sb, hw_dir, "hw_interval",
++				&oprofile_hw_interval);
++	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_min_interval",
++				&oprofile_min_interval);
++	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_max_interval",
++				&oprofile_max_interval);
++	oprofilefs_create_ulong(sb, hw_dir, "hw_sdbt_blocks",
++				&oprofile_sdbt_blocks);
++
++	return 0;
++}
++
++int oprofile_hwsampler_init(struct oprofile_operations* ops)
++{
++	if (hwsampler_setup())
++		return -ENODEV;
++
++	/*
++	 * create hwsampler files only if hwsampler_setup() succeeds.
++	 */
++	oprofile_min_interval = hwsampler_query_min_interval();
++	if (oprofile_min_interval < 0) {
++		oprofile_min_interval = 0;
++		return -ENODEV;
++	}
++	oprofile_max_interval = hwsampler_query_max_interval();
++	if (oprofile_max_interval < 0) {
++		oprofile_max_interval = 0;
++		return -ENODEV;
++	}
++
++	if (oprofile_timer_init(ops))
++		return -ENODEV;
++
++	printk(KERN_INFO "oprofile: using hardware sampling\n");
++
++	memcpy(&timer_ops, ops, sizeof(timer_ops));
++
++	ops->start = oprofile_hwsampler_start;
++	ops->stop = oprofile_hwsampler_stop;
++	ops->create_files = oprofile_create_hwsampling_files;
++
++	return 0;
++}
++
++void oprofile_hwsampler_exit(void)
++{
++	oprofile_timer_exit();
++	hwsampler_shutdown();
++}
++
+ int __init oprofile_arch_init(struct oprofile_operations* ops)
+ {
+ 	ops->backtrace = s390_backtrace;
+Index: s390/arch/s390/oprofile/Makefile
+===================================================================
+--- s390.orig/arch/s390/oprofile/Makefile
++++ s390/arch/s390/oprofile/Makefile
+@@ -6,4 +6,4 @@ DRIVER_OBJS = $(addprefix ../../../drive
+ 		oprofilefs.o oprofile_stats.o  \
+ 		timer_int.o )
  
- /*
+-oprofile-y :=	$(DRIVER_OBJS) init.o backtrace.o hwsampler.o hwsampler_files.o
++oprofile-y :=	$(DRIVER_OBJS) init.o backtrace.o hwsampler.o
+Index: s390/arch/s390/oprofile/hwsampler_files.c
+===================================================================
+--- s390.orig/arch/s390/oprofile/hwsampler_files.c
++++ /dev/null
+@@ -1,162 +0,0 @@
+-/**
+- * arch/s390/oprofile/hwsampler_files.c
+- *
+- * Copyright IBM Corp. 2010
+- * Author: Mahesh Salgaonkar (mahesh@linux.vnet.ibm.com)
+- */
+-#include <linux/oprofile.h>
+-#include <linux/errno.h>
+-#include <linux/fs.h>
+-
+-#include "../../../drivers/oprofile/oprof.h"
+-#include "hwsampler.h"
+-
+-#define DEFAULT_INTERVAL	4096
+-
+-#define DEFAULT_SDBT_BLOCKS	1
+-#define DEFAULT_SDB_BLOCKS	511
+-
+-static unsigned long oprofile_hw_interval = DEFAULT_INTERVAL;
+-static unsigned long oprofile_min_interval;
+-static unsigned long oprofile_max_interval;
+-
+-static unsigned long oprofile_sdbt_blocks = DEFAULT_SDBT_BLOCKS;
+-static unsigned long oprofile_sdb_blocks = DEFAULT_SDB_BLOCKS;
+-
+-static int hwsampler_file;
+-static int hwsampler_running;	/* start_mutex must be held to change */
+-
+-static struct oprofile_operations timer_ops;
+-
+-static int oprofile_hwsampler_start(void)
+-{
+-	int retval;
+-
+-	hwsampler_running = hwsampler_file;
+-
+-	if (!hwsampler_running)
+-		return timer_ops.start();
+-
+-	retval = hwsampler_allocate(oprofile_sdbt_blocks, oprofile_sdb_blocks);
+-	if (retval)
+-		return retval;
+-
+-	retval = hwsampler_start_all(oprofile_hw_interval);
+-	if (retval)
+-		hwsampler_deallocate();
+-
+-	return retval;
+-}
+-
+-static void oprofile_hwsampler_stop(void)
+-{
+-	if (!hwsampler_running) {
+-		timer_ops.stop();
+-		return;
+-	}
+-
+-	hwsampler_stop_all();
+-	hwsampler_deallocate();
+-	return;
+-}
+-
+-static ssize_t hwsampler_read(struct file *file, char __user *buf,
+-		size_t count, loff_t *offset)
+-{
+-	return oprofilefs_ulong_to_user(hwsampler_file, buf, count, offset);
+-}
+-
+-static ssize_t hwsampler_write(struct file *file, char const __user *buf,
+-		size_t count, loff_t *offset)
+-{
+-	unsigned long val;
+-	int retval;
+-
+-	if (*offset)
+-		return -EINVAL;
+-
+-	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
+-		return retval;
+-
+-	if (oprofile_started)
+-		/*
+-		 * save to do without locking as we set
+-		 * hwsampler_running in start() when start_mutex is
+-		 * held
+-		 */
+-		return -EBUSY;
+-
+-	hwsampler_file = val;
+-
+-	return count;
+-}
+-
+-static const struct file_operations hwsampler_fops = {
+-	.read		= hwsampler_read,
+-	.write		= hwsampler_write,
+-};
+-
+-static int oprofile_create_hwsampling_files(struct super_block *sb,
+-						struct dentry *root)
+-{
+-	struct dentry *hw_dir;
+-
+-	/* reinitialize default values */
+-	hwsampler_file = 1;
+-
+-	hw_dir = oprofilefs_mkdir(sb, root, "hwsampling");
+-	if (!hw_dir)
+-		return -EINVAL;
+-
+-	oprofilefs_create_file(sb, hw_dir, "hwsampler", &hwsampler_fops);
+-	oprofilefs_create_ulong(sb, hw_dir, "hw_interval",
+-				&oprofile_hw_interval);
+-	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_min_interval",
+-				&oprofile_min_interval);
+-	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_max_interval",
+-				&oprofile_max_interval);
+-	oprofilefs_create_ulong(sb, hw_dir, "hw_sdbt_blocks",
+-				&oprofile_sdbt_blocks);
+-
+-	return 0;
+-}
+-
+-int oprofile_hwsampler_init(struct oprofile_operations* ops)
+-{
+-	if (hwsampler_setup())
+-		return -ENODEV;
+-
+-	/*
+-	 * create hwsampler files only if hwsampler_setup() succeeds.
+-	 */
+-	oprofile_min_interval = hwsampler_query_min_interval();
+-	if (oprofile_min_interval < 0) {
+-		oprofile_min_interval = 0;
+-		return -ENODEV;
+-	}
+-	oprofile_max_interval = hwsampler_query_max_interval();
+-	if (oprofile_max_interval < 0) {
+-		oprofile_max_interval = 0;
+-		return -ENODEV;
+-	}
+-
+-	if (oprofile_timer_init(ops))
+-		return -ENODEV;
+-
+-	printk(KERN_INFO "oprofile: using hardware sampling\n");
+-
+-	memcpy(&timer_ops, ops, sizeof(timer_ops));
+-
+-	ops->start = oprofile_hwsampler_start;
+-	ops->stop = oprofile_hwsampler_stop;
+-	ops->create_files = oprofile_create_hwsampling_files;
+-
+-	return 0;
+-}
+-
+-void oprofile_hwsampler_exit(void)
+-{
+-	oprofile_timer_exit();
+-	hwsampler_shutdown();
+-}
 
