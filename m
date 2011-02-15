@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab1BOTQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 14:16:40 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56762 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524Ab1BOTQj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 14:16:39 -0500
+	id S1755991Ab1BOTYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 14:24:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6777 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751792Ab1BOTYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 14:24:33 -0500
+Date: Tue, 15 Feb 2011 20:15:21 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        xemul@openvz.org, sukadev@us.ibm.com, ebiederm@xmission.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH 0/1] Was: pidns: Support unsharing the pid namespace.
+Message-ID: <20110215191521.GB16707@redhat.com>
+References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr> <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr> <20110215190118.GA16707@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinf_GiHFd56jkF4dyfaOEGY58OxRp8ohbO3Qiox@mail.gmail.com>
-References: <20110212084814.22218.92022.stgit@localhost6.localdomain6> <AANLkTinf_GiHFd56jkF4dyfaOEGY58OxRp8ohbO3Qiox@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 15 Feb 2011 12:16:17 -0700
-X-Google-Sender-Auth: wYIeCXUwMwPmEkV_P5ohB-0izg8
-Message-ID: <AANLkTi=GL0KJPzxhc1GyxFf9Au+eDuNTHoHO9hU-FuMc@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Add entry for GPIO subsystem
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110215190118.GA16707@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 7:20 AM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Sat, Feb 12, 2011 at 3:48 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> I'll probably regret this....
->>
->> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+On 02/15, Oleg Nesterov wrote:
 >
-> You  might as well just do the below instead, given the number of
-> subsystems you maintain and areas of focus you have. ;)
-
-heh, I think you overstate my influence.
-
-I won't put my name forward for this, but I won't object if the arch
-and embedded maintainers think I should be added to this list.
-
-g.
-
+> On 02/15, Daniel Lezcano wrote:
+> >
+> > - Pass both nsproxy->pid_ns and task_active_pid_ns to copy_pid_ns
+> >   As they can now be different.
 >
-> josh
+> But since they can be different we have to convert some users of
+> current->nsproxy first? But that patch was dropped.
 >
-> ---
+> > Unsharing of the pid namespace unlike unsharing of other namespaces
+> > does not take effect immediately.  Instead it affects the children
+> > created with fork and clone.
 >
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 531c5cf..7773c8a 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2409,6 +2409,7 @@ F:        drivers/net/ehea/
+> IOW, unshare(CLONE_NEWPID) implicitly affects the subsequent fork(),
+> using the very subtle way.
 >
->  EMBEDDED LINUX
->  M:     Paul Gortmaker <paul.gortmaker@windriver.com>
-> +M:     Grant Likely <grant.likely@secretlab.ca>
->  M:     Matt Mackall <mpm@selenic.com>
->  M:     David Woodhouse <dwmw2@infradead.org>
->  L:     linux-embedded@vger.kernel.org
+> I have to admit, I can't say I like this very much. OK, if we need
+> this, can't we just put something into, say, signal->flags so that
+> copy_process can check and create the new namespace.
 >
+> Also. I remember, I already saw something like this and google found
+> my questions. I didn't actually read the new version, perhaps my
+> concerns were already answered...
+>
+> 	But what if the task T does unshare(CLONE_NEWPID) and then, say,
+> 	pthread_create() ? Unless I missed something, the new thread won't
+> 	be able to see T ?
+>
+> 	and, in this case the exiting sub-namespace init also kills its
+> 	parent?
+>
+> 	OK, suppose it does fork() after unshare(), then another fork().
+> 	In this case the second child lives in the same namespace with
+> 	init created by the 1st fork, but it is not descendant ? This means
+> 	in particular that if the new init exits, zap_pid_ns_processes()->
+> 	do_wait() can't work.
+>
+> Or not?
 
+And, can't resist. If we are going to change sys_unshare(), I'd like
+very much to cleanup it first.
 
+Dear all! I promise, I will resend this patch forever until somebody
+explains me why it is constantly ignored ;)
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Oleg.
+
