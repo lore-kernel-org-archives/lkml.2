@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab1BOJ07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 04:26:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56723 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754428Ab1BOJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 04:26:57 -0500
-Date: Tue, 15 Feb 2011 10:26:56 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] fix comment typo initilaization
-In-Reply-To: <1297724802.1793.36.camel@t41.thuisdomein>
-Message-ID: <alpine.LNX.2.00.1102151026510.2160@pobox.suse.cz>
-References: <1297724802.1793.36.camel@t41.thuisdomein>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754542Ab1BOJ2O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 04:28:14 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34548 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab1BOJ2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 04:28:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IEngQkW2/4VjqYlFy9bmqdDkl4bduerQS91jnjo0AY8gNMtmtpcNBisYJKIvM5BIAh
+         9h1DjsJL38iLATbqkcm7T7z8bx55GGkG2ekNT26JRTST9Oee9I+3OqduCLifHExy0j+8
+         F35wv3nyWhOe2nTUbtQx/q/U8oDhZcBwJ4UFo=
+Date: Tue, 15 Feb 2011 10:26:33 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, brgerst@gmail.com,
+        gorcunov@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
+        mingo@elte.hu, hpa@linux.intel.com, ankita@in.ibm.com
+Subject: Re: [PATCHSET x86/numa] x86-64, NUMA: bring sanity to NUMA
+ emulation
+Message-ID: <20110215092633.GF3160@htj.dyndns.org>
+References: <1297711715-3086-1-git-send-email-tj@kernel.org>
+ <AANLkTikNy-vQ2V95dhyQ8k1jkQCiUOukY8ShP_GWM1w6@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikNy-vQ2V95dhyQ8k1jkQCiUOukY8ShP_GWM1w6@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Feb 2011, Paul Bolle wrote:
+Hello,
 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
->  fs/fuse/cuse.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/fuse/cuse.c b/fs/fuse/cuse.c
-> index 3e87cce..7c39b88 100644
-> --- a/fs/fuse/cuse.c
-> +++ b/fs/fuse/cuse.c
-> @@ -458,7 +458,7 @@ static void cuse_fc_release(struct fuse_conn *fc)
->   * @file: file struct being opened
->   *
->   * Userland CUSE server can create a CUSE device by opening /dev/cuse
-> - * and replying to the initilaization request kernel sends.  This
-> + * and replying to the initialization request kernel sends.  This
->   * function is responsible for handling CUSE device initialization.
->   * Because the fd opened by this function is used during
->   * initialization, this function only creates cuse_conn and sends
+On Mon, Feb 14, 2011 at 12:00:43PM -0800, Yinghai Lu wrote:
+> wonder if numa_emu code could be put into one single file like
+> numa_emu.c
 
-Applied.
+Yeah, it isn't difficult at all.  After the series, emulation code is
+isolated into <400 lines of code and the states it modifies is
+immediately apparent.  We can just move all the functions inside
+CONFIG_NUMA_EMU and let initmem_init() pass all the states which are
+necessary for emulation to numa_emulation().  If that's desirable,
+I'll send a patch to do that on top once the whole thing settles a
+bit.
+
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+tejun
