@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab1BOQkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:40:47 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:38376 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754174Ab1BOQko (ORCPT
+	id S1755033Ab1BOQlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:41:36 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62019 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab1BOQld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:40:44 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: viSabBgVM1m274OyoD7cJH39Wu86eU56KXWgcYF.2jORKM2
- q5_v5Ec2cXSX_YGSztQQXwjcSldLKx2T6z4P7JrFF8DafULkBs6hXMYyM6nR
- MuTSbc.rA0kYwr7RIHSuXyPCXSlgklxkSHvCiRTACy7f8qODQTVUOyLq9XOu
- D4duD00zfgQZsXlDyzHn9seUUhaX4DZ6hnj6ZYWXedXn6mJnR96AFMF_pmvm
- BAqO0S0zZQQxHIDQhx.z05MCFSsmOr7YJ4AgphWm9YRbVozDR71qSIdDOs0I
- _2l.2qvghEgIUE4L1mleW29zz6zs6B.W8dMhHabmnHnkF4ao-
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 15 Feb 2011 10:40:38 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-        casteyde.christian@free.fr, Changli Gao <xiaosuo@gmail.com>,
-        Vegard Nossum <vegardno@ifi.uio.no>,
-        David Miller <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [Bugme-new] [Bug 27212] New: Warning kmemcheck: Caught 64-bit
- read from uninitialized memory in netlink_broadcast_filtered
-In-Reply-To: <AANLkTinKTdeO5mnE38n==aZMz5P1XKKM+kykhoBu0=9k@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1102151034400.10511@router.home>
-References: <bug-27212-10286@https.bugzilla.kernel.org/> <20110120122549.85863a84.akpm@linux-foundation.org> <1295556085.2613.22.camel@edumazet-laptop> <4D393A99.9060104@kernel.org> <1297704922.2996.60.camel@edumazet-laptop>
- <AANLkTinKTdeO5mnE38n==aZMz5P1XKKM+kykhoBu0=9k@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 15 Feb 2011 11:41:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=onho6QNLILcLMlGel27af+8+7jqCrLX6qMdcHyS/nCBxjaobBo1tMcYjOZMo59WXvp
+         J7mrExjkgbDl3K1I7oNmvqwlwbgTyg1r2WPlBtcoxvvb68vwHlXWtG7SS/MwbHFTFdFL
+         WbmcWbkLaw/4EQ8AA9LN+xlqazXwPztPw3vaE=
+Date: Tue, 15 Feb 2011 17:41:28 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Alasdair G Kergon <agk@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
+ read-write for read-only mappings
+Message-ID: <20110215164128.GQ3160@htj.dyndns.org>
+References: <4D5A6EF4.3030905@redhat.com>
+ <20110215124629.GF5825@agk-dp.fab.redhat.com>
+ <20110215152033.GK3160@htj.dyndns.org>
+ <20110215154625.GG5825@agk-dp.fab.redhat.com>
+ <20110215155018.GM3160@htj.dyndns.org>
+ <4D5AA45C.7050600@redhat.com>
+ <20110215161228.GN3160@htj.dyndns.org>
+ <4D5AAB8F.50901@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5AAB8F.50901@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Feb 2011, Pekka Enberg wrote:
+Hello,
 
-> Looks good to me. Christoph, David, any objections to the patch?
+On Tue, Feb 15, 2011 at 05:36:31PM +0100, Milan Broz wrote:
+> Well, I am also not sure about that.
+> 
+> But the problem is that read-write open fails now while it worked before.
+> (TBH I have no idea when that EROFS fallback worked - because the code
+> opened device RW, issued EROGET ioctl and set read-only... for years.)
+> 
+> Anyway I think EROFS is used on block devices, just grep kernel source.
 
-My eyes hurt. Is there some way you could use tabs or spaces instead of
-these weird symbols?
+Ah, okay, so the fallback was there just in case.  It didn't really
+trigger and right it wouldn't have triggered until now, so your
+assertion about how many programs would break is kinda bogus.  You
+just have single isolated case which hasn't been excercised till now.
+There may as well be code pieces which check against EACCES or what
+not.
 
-If the kmemcheck people are fine with checking data beyond the last byte
-of the object then its fine with me.
+That said, maybe -EROFS is the better fit.  I really have no idea.
+Maybe we should just revert and leave rw accesses to ro block devices
+alone.  Jens, what do you think?
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Thanks.
 
+-- 
+tejun
