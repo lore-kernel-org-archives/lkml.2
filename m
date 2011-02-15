@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab1BOUPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 15:15:19 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34306
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756032Ab1BOUPR (ORCPT
+	id S1756121Ab1BOURQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 15:17:16 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:59828 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab1BOURP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 15:15:17 -0500
-Date: Tue, 15 Feb 2011 12:15:53 -0800 (PST)
-Message-Id: <20110215.121553.112596232.davem@davemloft.net>
-To: miltonm@bga.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tj@kernel.org,
-        isdn@linux-pingi.de, jj@chaosbits.net
-Subject: Re: potential null pointer dereference in
- drivers/isdn/hisax/isdnl2.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1297800556_10580@mail4.comsite.net>
-References: <20110213.165309.123985803.davem@davemloft.net>
-	<1297800556_10580@mail4.comsite.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 15 Feb 2011 15:17:15 -0500
+Subject: Re: BUG at fs/namei.c:405 (nameidata_drop_rcu)
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Chuck Ebbert <cebbert@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>
+In-Reply-To: <20110211000247.5e8fbed8@katamari>
+References: <20110211000247.5e8fbed8@katamari>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Canonical
+Date: Tue, 15 Feb 2011 18:17:08 -0200
+Message-ID: <1297801028.2403.27.camel@herton-IdeaPad-Y430>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Milton Miller <miltonm@bga.com>
-Date: Tue, 15 Feb 2011 14:09:16 -0600
-
-> On Mon, 14 Feb 2011 00:53:09 -0000, Dave Miler wrote:
->> diff --git a/drivers/isdn/hisax/isdnl2.c b/drivers/isdn/hisax/isdnl2.c
->> index 0858791..98ac835 100644
->> --- a/drivers/isdn/hisax/isdnl2.c
->> +++ b/drivers/isdn/hisax/isdnl2.c
->> @@ -1243,14 +1243,21 @@ l2_st7_tout_203(struct FsmInst *fi, int event, void *arg)
->>  	st->l2.rc = 0;
->>  }
->>  
->> +static int l2_hdr_space_needed(struct Layer2 *l2)
->> +{
->> +	int len = test_bit(FLG_LAPD, &l2->flag) ? 2 : 1;
->> +
->> +	return len + (test_bit(FLG_LAPD, &l2->flag) ? 2 : 1);
->> +}
->> +
+Em Sex, 2011-02-11 às 00:02 -0500, Chuck Ebbert escreveu:
+> Apparently hit this very early in nameidata_drop_rcu():
 > 
-> That struck me as an funny way to write 2 * len, so I finally looked
-> at the code.  I think one of those should be FLG_MOD128, but then
-> at that point why not use the existing l2headersize(l2, ui) with
-> ui = 0?
+>         BUG_ON(!(nd->flags & LOOKUP_RCU));
 > 
-> I see this is in linux-next of Feb 15, 2011.
+> The user reports he ran "fuser /var/cache/yum" while logged in to
+> an X session with his home directory mounted via NFS4. Home dirs
+> are normally automounted, but manually mounting the dir still
+> reproduces the problem.
 
-Good catch, thanks.  I'll fix this.
+I got a similar report too, and was able to reproduce here with nfs4
+too.
+
+We hit it at force_reval_path
+
+>From what I saw force_reval_path is never called with LOOKUP_RCU flag
+set. Who calls force_reval_path is __do_follow_link, and
+__do_follow_link is called from do_filp_open and do_follow_link. When
+do_filp_open calls it, it already dropped LOOKUP_RCU (if path rcu lookup
+didn't work). do_follow_link also calls it without LOOKUP_RCU set from
+what I'm seeing, as before each do_follow_link call
+nameidata_dentry_drop_rcu_maybe is called.
+
+So simply removing again nameidata_drop_rcu from force_reval_path should
+do it. I'm running now on this change and didn't experience the same bug
+or other problems.
+
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+
+diff --git a/fs/namei.c b/fs/namei.c
+index ec4b2d0..7dcedbc 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -668,9 +668,7 @@ force_reval_path(struct path *path, struct nameidata *nd)
+ 		return 0;
+ 
+ 	if (!status) {
+-		/* Don't d_invalidate in rcu-walk mode */
+-		if (nameidata_drop_rcu(nd))
+-			return -ECHILD;
++		BUG_ON(nd->flags & LOOKUP_RCU);
+ 		d_invalidate(dentry);
+ 		status = -ESTALE;
+ 	}
+
+
