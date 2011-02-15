@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab1BNXzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 18:55:23 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:50813 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751456Ab1BNXzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 18:55:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhMIALJOWU15LMsw/2dsb2JhbACXRI4ddLt6DYVRBA
-Date: Tue, 15 Feb 2011 10:55:17 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: tm@tao.ma
-Cc: Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: XFS status update for January 2011
-Message-ID: <20110214235517.GC13052@dastard>
-References: <20110213184219.GA22792@infradead.org>
- <4D5890B6.2090105@tao.ma>
- <20110214120237.GB13052@dastard>
- <04650f485d5814ddfe6893a3a7c8429b.squirrel@box585.bluehost.com>
+	id S1753867Ab1BOAAc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 19:00:32 -0500
+Received: from ozlabs.org ([203.10.76.45]:44166 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab1BOAA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 19:00:29 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: sedat.dilek@gmail.com
+Subject: Re: [next-20110214] Kernel-modules with unknown parameter
+Date: Tue, 15 Feb 2011 10:30:26 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; i686; ; )
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+References: <AANLkTimM1Tmws46DUyoNGsn+P8WN1XPsRu=L8yPzd=xU@mail.gmail.com> <AANLkTikO=5zBCvPbd2MXqgzE_mvnabTtH_e2C5_5bpQv@mail.gmail.com> <AANLkTinFOPc+BM8cnPE3SLt7Dc2TFOw1v+bntFu01hpO@mail.gmail.com>
+In-Reply-To: <AANLkTinFOPc+BM8cnPE3SLt7Dc2TFOw1v+bntFu01hpO@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <04650f485d5814ddfe6893a3a7c8429b.squirrel@box585.bluehost.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102151030.26956.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 08:20:18AM -0700, tm@tao.ma wrote:
-> Hi Dave,
-> > On Mon, Feb 14, 2011 at 10:17:26AM +0800, Tao Ma wrote:
-> >> Hi Christoph,
-> >> On 02/14/2011 02:42 AM, Christoph Hellwig wrote:
-> >> >On the 4th of January we saw the release of Linux 2.6.37, which
-> >> contains a
-> >> >large XFS update:
-> >> >
-> >> >     67 files changed, 1424 insertions(+), 1524 deletions(-)
-> >> >
-> >> >User visible changes are the new XFS_IOC_ZERO_RANGE ioctl which allows
-> >> >to convert already allocated space into unwritten extents that return
-> >> >zeros on a read,
-> >> would you mind describing some scenario that this ioctl can be used. I
-> >> am
-> >> just wondering whether ocfs2 can implement it as well.
-> >
-> > Zeroing a file without doing IO or having to punch out the blocks
-> > already allocated to the file.
-> >
-> > In this case, we had a couple of different people in cloud storage
-> > land asking for such functionality to optimise record deletion
-> > be avoiding disruption of their preallocated file layouts as a
-> > punch-then-preallocate operation does.
-> Thanks for the info. yeah, ocfs2 is also used to host images in some cloud
-> computing environment. So It looks helpful for us too.
+On Mon, 14 Feb 2011 11:45:59 pm Sedat Dilek wrote:
+> >> Any idea what's going on? Stephen, Randy noticed the same like me?
 
-Just to be clear, this optimisation isn't relevant for hosting VM
-images in a cloud compute environment - this was added for
-optimising the back end of distributed storage applications that
-hold tens of millions of records and tens of TB of data per back end
-storage host.
+Dmitry broke module parameters with a "trivial" transform which turned out
+not to be.
 
-Hosting VM images is largely static, especially if you are
-preallocating them - they never, ever get punched. Even if you are
-using thin provisioning semantics and punching TRIMmed ranges, you
-aren't converting the TRIMmed ranges back to preallocated state so
-you wouldn't be using this interface. Hence I don't see this as
-something that you would use in such an environment.
+I wasn't paying enough attention, and let it through.
 
-The distributed storage applications that this was added for
-required atomic record deletes from the back end and the fastest and
-safest way to do that was to turn the record being deleted back into
-unwritten extents.  This allows that operation to be done atomically
-by the filesystem whilst providing simple recovery semantics to the
-application. The XFS_IOC_ZERO_RANGE ioctl simply prevents the
-fragmentation that this punch-then-preallocate operation was causing
-and allows the back end to scale to much larger record stores...
+> My damn brain can't understand - looking at the series file in [2] -
+> why the hell the "possible" patch [3] is not included in linux-next?
+
+There are markers in the series file, which indicate what goes into
+linux-next.
 
 Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Rusty.
