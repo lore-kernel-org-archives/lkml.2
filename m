@@ -1,196 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab1BORF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:05:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60066 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab1BORFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:05:24 -0500
-Date: Tue, 15 Feb 2011 18:05:07 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, mingo@elte.hu,
-        ananth@in.ibm.com, davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] kprobes - do not allow optimized kprobes in entry code
-Message-ID: <20110215170507.GD3135@jolsa.brq.redhat.com>
-References: <1297696354-6990-1-git-send-email-jolsa@redhat.com>
- <4D5A4A66.4010503@hitachi.com>
- <20110215123058.GB3135@jolsa.brq.redhat.com>
- <4D5AA209.7070309@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5AA209.7070309@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755531Ab1BORFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:05:43 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60167 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab1BORFk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 12:05:40 -0500
+Subject: Re: [PATCH 0/5] fix up /proc/$pid/smaps to not split huge pages
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Eric B Munson <emunson@mgebm.net>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>
+In-Reply-To: <20110215170152.GF5935@random.random>
+References: <20110209195406.B9F23C9F@kernel>
+	 <20110215165510.GA2550@mgebm.net>  <20110215170152.GF5935@random.random>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 15 Feb 2011 09:05:25 -0800
+Message-ID: <1297789525.9829.9616.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can crash the kernel using kprobe tracer by running:
+On Tue, 2011-02-15 at 18:01 +0100, Andrea Arcangeli wrote:
+> > The entire mapping is contained in a THP but the
+> > KernelPageSize shows 4kb.  For cases where the mapping might
+> > have mixed page sizes this may be okay, but for this
+> > particular mapping the 4kb page size is wrong.
+> 
+> I'm not sure this is a bug, if the mapping grows it may become 4096k
+> but the new pages may be 4k. There's no such thing as a
+> vma_mmu_pagesize in terms of hugepages because we support graceful
+> fallback and collapse/split on the fly without altering the vma. So I
+> think 4k is correct here
 
-echo "p system_call_after_swapgs" > ./kprobe_events
-echo 1 > ./events/kprobes/enable
+How about we bump MMUPageSize for mappings that are _entirely_ huge
+pages, but leave it at 4k for mixed mappings?  Anyone needing more
+detail than that can use the new AnonHugePages count.
 
-The reason is that at the system_call_after_swapgs label, the kernel
-stack is not set up. If optimized kprobes are enabled, the user space
-stack is being used in this case (see optimized kprobe template) and
-this might result in a crash.
+KernelPageSize is pretty ambiguous, and we could certainly make the
+argument that the kernel is or can still deal with things in 4k blocks.
 
-There are several places like this over the entry code (entry_$BIT).
-As it seems there's no any reasonable/maintainable way to disable only
-those places where the stack is not ready, I switched off the whole
-entry code from kprobe optimizing.
-
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/ia32/ia32entry.S         |    2 ++
- arch/x86/kernel/entry_32.S        |    6 ++++--
- arch/x86/kernel/entry_64.S        |    6 ++++--
- arch/x86/kernel/kprobes.c         |    8 ++++++++
- arch/x86/kernel/vmlinux.lds.S     |    1 +
- include/asm-generic/sections.h    |    1 +
- include/asm-generic/vmlinux.lds.h |    6 ++++++
- 7 files changed, 26 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 0ed7896..50f1630 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -25,6 +25,8 @@
- #define sysretl_audit ia32_ret_from_sys_call
- #endif
- 
-+	.section .entry.text, "ax"
-+
- #define IA32_NR_syscalls ((ia32_syscall_end - ia32_sys_call_table)/8)
- 
- 	.macro IA32_ARG_FIXUP noebp=0
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..f5accf8 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -65,6 +65,8 @@
- #define sysexit_audit	syscall_exit_work
- #endif
- 
-+	.section .entry.text, "ax"
-+
- /*
-  * We use macros for low-level operations which need to be overridden
-  * for paravirtualization.  The following will never clobber any registers:
-@@ -788,7 +790,7 @@ ENDPROC(ptregs_clone)
-  */
- .section .init.rodata,"a"
- ENTRY(interrupt)
--.text
-+.section .entry.text, "ax"
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -807,7 +809,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.long 1b
--      .text
-+      .section .entry.text, "ax"
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 891268c..39f8d21 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -61,6 +61,8 @@
- #define __AUDIT_ARCH_LE	   0x40000000
- 
- 	.code64
-+	.section .entry.text, "ax"
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- ENTRY(mcount)
-@@ -744,7 +746,7 @@ END(stub_rt_sigreturn)
-  */
- 	.section .init.rodata,"a"
- ENTRY(interrupt)
--	.text
-+	.section .entry.text
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -763,7 +765,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.quad 1b
--      .text
-+      .section .entry.text
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index d91c477..d03bc1e 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1276,6 +1276,14 @@ static int __kprobes can_optimize(unsigned long paddr)
- 	if (!kallsyms_lookup_size_offset(paddr, &size, &offset))
- 		return 0;
- 
-+	/*
-+	 * Do not optimize in the entry code due to the unstable
-+	 * stack handling.
-+	 */
-+	if ((paddr >= (unsigned long ) __entry_text_start) &&
-+	    (paddr <  (unsigned long ) __entry_text_end))
-+		return 0;
-+
- 	/* Check there is enough space for a relative jump. */
- 	if (size - offset < RELATIVEJUMP_SIZE)
- 		return 0;
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index e9f7a3c..0381e1f 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -105,6 +105,7 @@ SECTIONS
- 		SCHED_TEXT
- 		LOCK_TEXT
- 		KPROBES_TEXT
-+		ENTRY_TEXT
- 		IRQENTRY_TEXT
- 		*(.fixup)
- 		*(.gnu.warning)
-diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
-index b3bfabc..c1a1216 100644
---- a/include/asm-generic/sections.h
-+++ b/include/asm-generic/sections.h
-@@ -11,6 +11,7 @@ extern char _sinittext[], _einittext[];
- extern char _end[];
- extern char __per_cpu_load[], __per_cpu_start[], __per_cpu_end[];
- extern char __kprobes_text_start[], __kprobes_text_end[];
-+extern char __entry_text_start[], __entry_text_end[];
- extern char __initdata_begin[], __initdata_end[];
- extern char __start_rodata[], __end_rodata[];
- 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index fe77e33..906c3ce 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -424,6 +424,12 @@
- 		*(.kprobes.text)					\
- 		VMLINUX_SYMBOL(__kprobes_text_end) = .;
- 
-+#define ENTRY_TEXT							\
-+		ALIGN_FUNCTION();					\
-+		VMLINUX_SYMBOL(__entry_text_start) = .;			\
-+		*(.entry.text)						\
-+		VMLINUX_SYMBOL(__entry_text_end) = .;
-+
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- #define IRQENTRY_TEXT							\
- 		ALIGN_FUNCTION();					\
--- 
-1.7.1
+-- Dave
 
