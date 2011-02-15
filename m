@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab1BOOd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 09:33:57 -0500
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:56435 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244Ab1BOOdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 09:33:54 -0500
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: add IRTOUCH infrared USB to hid_have_special_driver
-Date: Tue, 15 Feb 2011 15:33:48 +0100
-Message-Id: <1297780428-3805-1-git-send-email-benjamin.tissoires@enac.fr>
-X-Mailer: git-send-email 1.7.4
+	id S1755321Ab1BOOf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 09:35:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49821 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755211Ab1BOOf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 09:35:26 -0500
+Date: Tue, 15 Feb 2011 09:27:52 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
+ and use_hierarchy interface
+Message-ID: <20110215142752.GC27296@redhat.com>
+References: <4D51ED26.8050809@cn.fujitsu.com>
+ <4D539821.1090703@cn.fujitsu.com>
+ <20110210205722.GB2600@redhat.com>
+ <4D55EEBB.8060304@cn.fujitsu.com>
+ <20110214180428.GF13097@redhat.com>
+ <4D59E728.3030209@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D59E728.3030209@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, the device is handled by hidinput and does
-not have the right behavior.
+On Tue, Feb 15, 2011 at 10:38:32AM +0800, Gui Jianfeng wrote:
+> Vivek Goyal wrote:
+> > On Sat, Feb 12, 2011 at 10:21:47AM +0800, Gui Jianfeng wrote:
+> > [..]
+> >>>> +static struct cfq_group *
+> >>>> +cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+> >>>> +{
+> >>>> +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+> >>>> +	struct cfq_group *cfqg = NULL;
+> >>>> +	void *key = cfqd;
+> >>>> +	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+> >>>> +	unsigned int major, minor;
+> >>>> +
+> >>>> +	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+> >>>> +	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+> >>>> +		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> >>>> +		cfqg->blkg.dev = MKDEV(major, minor);
+> >>>> +		goto done;
+> >>>> +	}
+> >>> Should we make this updation of this info hierarhical?
+> >> IMHO, it's fine to defer the updation when we really get the cfqg.
+> > 
+> > But if cfqg is alrady present, we will never hit the allocation path 
+> > again. So if somebody creates 2-3 level deep hierarchy and does IO
+> > only in the children cgroup, parent cgroups will potentially not get
+> > device info updated hence no visible stats?
+> 
+> Ahh, I see your concern. But do we really need to show the stats even if
+> a cgroup doesn't issue any IO on a given device? 
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
----
-Hi guys,
+I am assuming that once use_hierarchy=1, you are aggregating the stats
+in parent cgroups? So if a child services 5 IOs, these are accounted
+to parent group also when user_hier=1?
 
-In the previous patch including the support to IRTOUCH devices, I forgot to add it to hid_have_special_driver. Sorry.
+What happens in case of  memoy cgroup controller?
 
-Cheers,
-Benjamin
-
- drivers/hid/hid-core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index d678cf3..a5f6439 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1345,6 +1345,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HANVON, USB_DEVICE_ID_HANVON_MULTITOUCH) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS, USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
--- 
-1.7.4
-
+Thanks
+Vivek
