@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab1BOR3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:29:37 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:43033
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751209Ab1BOR3f (ORCPT
+	id S1755778Ab1BOR34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:29:56 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:63628 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755703Ab1BOR3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:29:35 -0500
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGO5WH-02-HQG-02
-X-M-MSG: 
-Date: Tue, 15 Feb 2011 18:29:06 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>
-Subject: Re: [patch v2 0/3] OProfile support for System z's hardware
- sampling
-Message-ID: <20110215172906.GG5874@erda.amd.com>
-References: <20110121100651.821690659@linux.vnet.ibm.com>
- <20110214194206.GW5874@erda.amd.com>
- <1297789169.3231.9.camel@BR8HFPP0.boeblingen.de.ibm.com>
+	Tue, 15 Feb 2011 12:29:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MqUYoy7Ln60RD9qA7qDXx6ZUQHRNOeJrLqyss7Do86gLrxyt7jBYIPLXoNtE0iWaGX
+         ua0hXJVQqJbD85FJC6Y//RPtOXqZCXZ35/+xOMb8235udTaSJE/UmJdw2fA83JSJQdkl
+         94reJdqxfQUybs/X6doedCfhoWLbyrYZjjgl0=
+Date: Tue, 15 Feb 2011 18:29:41 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Lameter <cl@linux.com>,
+        David Miller <davem@davemloft.net>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH V10 12/15] ptp: Added a brand new class driver for ptp
+ clocks.
+Message-ID: <20110215172941.GA21150@riccoc20.at.omicron.at>
+References: <cover.1296124770.git.richard.cochran@omicron.at>
+ <ada07b1d09b1e8eb717c5203e64856d2eaad7456.1296124770.git.richard.cochran@omicron.at>
+ <1296612031.3336.201.camel@work-vm>
+ <20110211081524.GA12270@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297789169.3231.9.camel@BR8HFPP0.boeblingen.de.ibm.com>
+In-Reply-To: <20110211081524.GA12270@riccoc20.at.omicron.at>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.02.11 11:59:29, Heinz Graalfs wrote:
-
-> > * Merge init.c and hwsampler_file.c, two files are bloated here and
-> >   hwsampler_file.c is a bad and too long naming.
-> > 
+On Fri, Feb 11, 2011 at 09:15:24AM +0100, Richard Cochran wrote:
+> On Tue, Feb 01, 2011 at 06:00:31PM -0800, John Stultz wrote:
+> > So what is serializing access to the timestamp_event_queue here? I don't
+> > see any usage of tsevq_mux by the callers. Am I missing it? It looks
+> > like its called from interrupt context, so do you really need a spinlock
+> > and not a mutex here?
 > 
-> OK, I've merged all hwsampler_files.c contents into init.c
-> 
-> > * Rework functions in cpu_buffer.c (log_sample,
-> >   __oprofile_add_ext_sample, oprofile_add_ext_hw_sample, etc.). All
-> >   the (static) functions can be merged to a single functino by
-> >   implementing a struct that holds all current function arguments.
-> >   Something like:
-> > 
-> > static void __oprofile_add_ext_sample(struct *foobar fb);
-> > void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
-> > {
-> > 	struct foobar fb = { .regs = regs, .event = event };
-> > 	__oprofile_add_ext_sample(&fb);
-> > }
-> 
-> OK, I've done this
-> 
-> > 
-> >   The naming and description of oprofile_add_ext_hw_sample() is also
-> >   not the best. As interface in include/linux/oprofile.h we could then
-> >   merge oprofile_add_ext_sample() and oprofile_add_ext_hw_sample() to
-> >   a single function.
-> > 
-> > It would be nice if you could implement this.
-> 
-> sure, I will do this, however I'm not sure what you exactly mean.
-> Could you specify the interface in oprofile.h what you basically have in
-> mind?
+> The external timestamp FIFO is written only from interrupt context.
 
-I mean to replace oprofile_add_ext_sample() and
-oprofile_add_ext_hw_sample() by a new one. The interface would be in
-the form of:
+Oops, I lied. After reworking the phyter driver, I find that I want to
+enqueue time stamps from non-interrupt contexts, too.
 
-struct foobar {
-       ...
-}
+So, you are right. This will need a spin lock...
 
-static void __oprofile_add_ext_sample(struct *foobar fb);
+Thanks,
 
-Hope this makes sense. The advantage would be that we don't need to
-extend the functions argument list anymore, we simply extend the
-struct.
-
-Please send me delta patches to oprofile/s390.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Richard
