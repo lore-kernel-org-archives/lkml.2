@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab1BOBsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 20:48:46 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52782
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752620Ab1BOBsn (ORCPT
+	id S1753867Ab1BOBuC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 20:50:02 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:61344 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab1BOBt7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 20:48:43 -0500
-Date: Mon, 14 Feb 2011 17:49:19 -0800 (PST)
-Message-Id: <20110214.174919.48492611.davem@davemloft.net>
-To: casey@schaufler-ca.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        ext-jarkko.2.sakkinen@nokia.com, Janne.Karhunen@nokia.com,
-        elena.reshetova@nokia.com
-Subject: Re: [PATCH] net: provide capability and group sets via SCM
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D51C38B.1060902@schaufler-ca.com>
-References: <4D3466BD.10500@schaufler-ca.com>
-	<4D51C38B.1060902@schaufler-ca.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Feb 2011 20:49:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=aD6Z0sUur8K+Uh94w34rOuW876KzI+Ly2ENe9RFd7/x1SkFz0rxZKpycxcCBRDS/gc
+         VRGpTfoLmbRmCXDmk4wQ==
+MIME-Version: 1.0
+In-Reply-To: <643E69AA4436674C8F39DCC2C05F763816BD96CFB2@HQMAIL03.nvidia.com>
+References: <1297726034-32762-1-git-send-email-achew@nvidia.com>
+	<AANLkTinvpo=R1pjvykEZVXV08D+uXLJa=R8CDcMFWWpT@mail.gmail.com>
+	<643E69AA4436674C8F39DCC2C05F763816BD96CFB1@HQMAIL03.nvidia.com>
+	<AANLkTin+uxnM-u7N-+aXUzGVm7m2eXZKrenDbRPq1V-W@mail.gmail.com>
+	<643E69AA4436674C8F39DCC2C05F763816BD96CFB2@HQMAIL03.nvidia.com>
+Date: Mon, 14 Feb 2011 17:49:54 -0800
+X-Google-Sender-Auth: qjKCcS0Ty9g9HMxsVkqPtgfwzsc
+Message-ID: <AANLkTi=aMA_OTgtw37jdDrSyMm4jmvpvFt5LpyyoG9PP@mail.gmail.com>
+Subject: Re: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
+From: Erik Gilling <konkers@android.com>
+To: Andrew Chew <AChew@nvidia.com>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Casey Schaufler <casey@schaufler-ca.com>
-Date: Tue, 08 Feb 2011 14:28:27 -0800
+On Mon, Feb 14, 2011 at 4:47 PM, Andrew Chew <AChew@nvidia.com> wrote:
+>> Yeah, including the relative path was a bit of a hack since the nvhost
+>> drivers needs some serious work before it's upstreamable.  A "right"
+>> way to do this is to have the syncpt functions take an nvhost_device
+>> pointer (or create helper functions that do that,) then expose those
+>> functions in mach/nvhost.h.  This obviates the need for a global
+>> nvhost_sycpt pointer.
+>>
+>> -Erik
+>
+> You're right about that global nvhost_syncpt pointer.  That drives me nuts as well.  Nevertheless, I'm not sure I'm knowledgeable enough to do the required work to do this the "right" way.  As far as I know, nvhost is a guaranteed singleton in practice (not in implementation), so while this is ugly, it will work fine for existing projects.
 
-> 
-> Subject: [PATCH] net: provide group lists and capability set via CMSG
-> 
-> Provide the namespace converted group list of the peer
-> process using the SCM mechanism. Provide the capability
-> set of the peer process. The capability set is not
-> namespace converted on the assumption that there is no
-> such conversion available or required.
-> 
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+If you feel uncomfortable making this change, I recommend you include
+the private header file the way the dc does.
 
-You can't just hit the asm-generic header, you have to also hit
-all of the architectures that don't use the asm-generic header,
-including sparc, powerpc, mips, s390, arm, alpha, cris, frv, h8300,
-ia64, m32r, m68k, m68knommu, mn10300, parisc, and xtensa.
+> Can we use nvmap as precedent and do it this way for now?  I'd like to get the V4L2 camera host driver up to the Tegra community as soon as possible.  When the problem is solved for the dc driver, I can adapt that to the V4L2 camera host driver.
+
+nvmap (another piece of code that needs a lot of work before it's
+upstream) is a horrible example to use as a precedent.  This whole
+discussion is somewhat moot as you're building your driver against two
+pieces that have no clear path to being upstreamed.  You are welcome
+to make any changes you want in your own repository for supporing V4L2
+but I won't be pulling this syncpt patch into
+git://android.git.kernel.org/kernel/tegra.git.
+
+-Erik
