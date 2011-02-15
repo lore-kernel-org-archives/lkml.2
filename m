@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab1BOPsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:48:55 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34492 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab1BOPsx convert rfc822-to-8bit (ORCPT
+	id S1755275Ab1BOPu0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:50:26 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58217 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754109Ab1BOPuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:48:53 -0500
-Subject: Re: [PATCH v3 4/6] KVM-GST: KVM Steal time registration
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <4D5A9091.6090506@redhat.com>
-References: <1297448364-14051-1-git-send-email-glommer@redhat.com>
-	 <1297448364-14051-5-git-send-email-glommer@redhat.com>
-	 <4D5A9091.6090506@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 15 Feb 2011 16:48:47 +0100
-Message-ID: <1297784927.2413.28.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 15 Feb 2011 10:50:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=a4UhKHaajuyfPEFHOYomzQcR2fEu/rBNY+YYZghGlvPW92r+63As9nfuF4O/ij1cYG
+         AmXeH+MsMhwKl3MVD4b/JjiR8rSb2w5h1FNOMRWQa+G9sfNomRNFpR49+zILvHNJ+vf5
+         MXGk9mSBXOnV54thRkOVRkxe4fiN8JuHgBemo=
+Date: Tue, 15 Feb 2011 16:50:18 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Milan Broz <mbroz@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
+ read-write for read-only mappings
+Message-ID: <20110215155018.GM3160@htj.dyndns.org>
+References: <4D5A6EF4.3030905@redhat.com>
+ <20110215124629.GF5825@agk-dp.fab.redhat.com>
+ <20110215152033.GK3160@htj.dyndns.org>
+ <20110215154625.GG5825@agk-dp.fab.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110215154625.GG5825@agk-dp.fab.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-15 at 16:41 +0200, Avi Kivity wrote:
-> > +static int kvm_register_steal_time(void)
-> > +{
-> > +     int cpu = smp_processor_id();
-> > +     int low, high, ret;
-> > +     struct kvm_steal_time *st =&per_cpu(steal_time, cpu);
-> > +
-> > +     if (!hypervisor_steal_time)
-> > +             return 0;
+Hello,
+
+On Tue, Feb 15, 2011 at 03:46:25PM +0000, Alasdair G Kergon wrote:
+> Exactly:)  If the filesystem permissions were what was blocking this
+> (say r--) then I'd agree with EACCES.  Interpret those man pages in the
+> context of 'pathname refers to a block device not a file'.
+>  
+> If it's EACCES, I just need to gain more privilege/capabilities and then
+> repeat the system call and it could succeed.
 > 
-> You're using hypervisor_steal_time to communicate the existence of the 
-> feature.  Yuck. 
+> But EROFS tells me however much extra privilege I get it's going to make
+> no difference.
+> 
+> That's why I'm arguing EACCES is not a good error to return and EROFS is
+> more appropriate.
 
-Yeah, ideally we make steal_time_clock() a proper paravirt op with:
+Frankly, I don't really mind one way or the other but EROFS isn't
+usually used in those areas.  It might make sense for this use case
+and then there will be cases it just feels awkward.  This being a dm
+thing, wouldn't it be just better to let dm massage the return value?
 
-u64 native_steal_time_clock(int cpu)
-{
-	WARN_ONCE(1, "Using steal_time_clock() on actual hardware..\n");
-	return 0;
-}
+Thanks.
 
-And use paravirt_enabled() to avoid calling it where possible. Then once
-we have all the jump_label stuff sorted we can make paravirt_enabled() a
-static_branch() and it'll just go away on native.
-
-
+-- 
+tejun
