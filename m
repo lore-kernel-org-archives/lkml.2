@@ -1,196 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab1BOQxp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:53:45 -0500
-Received: from mailb.microsoft.com ([131.107.115.215]:41517 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716Ab1BOQxn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:53:43 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: RE: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzSITk3u3GOCeg0WgYewl8DvZjZQDPp0A//+A0dA=
-Date: Tue, 15 Feb 2011 16:53:41 +0000
-Message-ID: <FB42D5CCD7B5934EB1827DB5ED9B850E07085DA1@TK5EX14MBXC104.redmond.corp.microsoft.com>
-References: <1297782937-24082-1-git-send-email-kys@microsoft.com>
- <20110215155954.GA32313@suse.de>
-In-Reply-To: <20110215155954.GA32313@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755482Ab1BOQyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:54:15 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:49655 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754776Ab1BOQyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 11:54:12 -0500
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+To: akpm@linux-foundation.org
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        xemul@openvz.org, sukadev@us.ibm.com, oleg@redhat.com,
+        ebiederm@xmission.com
+Subject: [PATCH 2/2] pidns: Support unsharing the pid namespace.
+Date: Tue, 15 Feb 2011 17:53:44 +0100
+Message-Id: <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr>
+References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Eric W. Biederman <ebiederm@xmission.com>
 
+- Allow CLONEW_NEWPID into unshare.
+- Pass both nsproxy->pid_ns and task_active_pid_ns to copy_pid_ns
+  As they can now be different.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Tuesday, February 15, 2011 11:00 AM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; Haiyang Zhang; Hank Janssen
-> Subject: Re: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
-> 
-> On Tue, Feb 15, 2011 at 07:15:37AM -0800, K. Y. Srinivasan wrote:
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> >
-> > ---
-> >  drivers/staging/hv/vmbus_drv.c |   49 +++++++++++++++++++++++++++------
-> ------
-> >  1 files changed, 34 insertions(+), 15 deletions(-)
-> >
-> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-> > index 459c707..f279e6a 100644
-> > --- a/drivers/staging/hv/vmbus_drv.c
-> > +++ b/drivers/staging/hv/vmbus_drv.c
-> > @@ -36,9 +36,7 @@
-> >  #include "vmbus_private.h"
-> >
-> >
-> > -/* FIXME! We need to do this dynamically for PIC and APIC system */
-> > -#define VMBUS_IRQ		0x5
-> > -#define VMBUS_IRQ_VECTOR	IRQ5_VECTOR
-> > +static int vmbus_irq;
-> >
-> >  /* Main vmbus driver data structure */
-> >  struct vmbus_driver_context {
-> > @@ -57,6 +55,25 @@ struct vmbus_driver_context {
-> >  	struct vm_device device_ctx;
-> >  };
-> >
-> > +/*
-> > + * Find an un-used IRQ that the VMBUS can use. If none is available; return -1.
-> > + */
-> > +
-> > +static int vmbus_get_irq(void)
-> 
-> No extra blank line between function comment and function.
+Unsharing of the pid namespace unlike unsharing of other namespaces
+does not take effect immediately.  Instead it affects the children
+created with fork and clone.  The first of these children becomes the init
+process of the new pid namespace, the rest become oddball children
+of pid 0.  From the point of view of the new pid namespace the process
+that created it is pid 0, as it's pid does not map.
 
-I will take care of this.
-> 
-> > +{
-> > +	unsigned int avail_irq_mask;
-> > +	int irq = -1;
-> > +	/*
-> 
-> Put an extra blank line after your variables please.
+A couple of different semantics were considered but this one was
+settled on because it is easy to implement and it is usable from
+pam modules.  The core reasons for the existence of unshare.
 
-Will do.
-> 
-> > +	 * Pick the first unused interrupt. HyperV can
-> > +	 * interrupt us on any interrupt line we specify.
-> > +	 */
-> > +	avail_irq_mask = probe_irq_on();
-> > +	if (avail_irq_mask != 0)
-> > +		irq = ffs(avail_irq_mask);
-> > +	probe_irq_off(avail_irq_mask);
-> > +	return irq;
-> > +}
-> > +
-> >  static int vmbus_match(struct device *device, struct device_driver *driver);
-> >  static int vmbus_probe(struct device *device);
-> >  static int vmbus_remove(struct device *device);
-> > @@ -80,7 +97,6 @@ EXPORT_SYMBOL(vmbus_loglevel);
-> >  	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
-> >  	/* (((VMBUS | VMBUS_DRV)<<16) | DEBUG_LVL_ENTEREXIT); */
-> >
-> > -static int vmbus_irq = VMBUS_IRQ;
-> >
-> >  /* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
-> >  static struct device_attribute vmbus_device_attrs[] = {
-> > @@ -466,7 +482,7 @@ static int vmbus_bus_init(void)
-> >  	struct hv_driver *driver = &vmbus_drv.drv_obj;
-> >  	struct vm_device *dev_ctx = &vmbus_drv.device_ctx;
-> >  	int ret;
-> > -	unsigned int vector;
-> > +	unsigned int vector, prev_irq = ~0;
-> >
-> >  	DPRINT_INFO(VMBUS, "+++++++ HV Driver version = %s +++++++",
-> >  		    HV_DRV_VERSION);
-> > @@ -518,19 +534,23 @@ static int vmbus_bus_init(void)
-> >  	}
-> >
-> >  	/* Get the interrupt resource */
-> > -	ret = request_irq(vmbus_irq, vmbus_isr, IRQF_SAMPLE_RANDOM,
-> > -			  driver->name, NULL);
-> > -
-> > -	if (ret != 0) {
-> > -		DPRINT_ERR(VMBUS_DRV, "ERROR - Unable to request IRQ %d",
-> > -			   vmbus_irq);
-> > -
-> > +get_irq_again:
-> > +	vmbus_irq = vmbus_get_irq();
-> > +	if ((vmbus_irq < 0) || (prev_irq == vmbus_irq)) {
-> > +		printk(KERN_WARNING "VMBUS_DRV: Failed to allocate IRQ\n");
-> >  		bus_unregister(&vmbus_drv_ctx->bus);
-> > -
-> >  		ret = -1;
-> 
-> Please provide a "real" error code.
+I took a survey of the callers of pam modules and the following
+appears to be a representative sample of their logic.
+{
+	setup stuff include pam
+	child = fork();
+	if (!child) {
+		setuid()
+                exec /bin/bash
+        }
+        waitpid(child);
 
-Will do.
-> 
-> >  		goto cleanup;
-> >  	}
-> > -	vector = VMBUS_IRQ_VECTOR;
-> > +	prev_irq = vmbus_irq;
-> > +
-> > +	ret = request_irq(vmbus_irq, vmbus_isr, IRQF_SAMPLE_RANDOM,
-> > +			  driver->name, NULL);
-> > +
-> > +	if (ret != 0)
-> > +		goto get_irq_again;
-> 
-> You just set up the potential for an endless loop.  You almost _never_
-> want to goto backwards in a function.  Please don't do this.
+        pam and other cleanup
+}
 
-The loop is not endless. We need to take care of two conditions here:
-1) From the point we selected an irq line to the point where we call
-request_irq(), it is possible that someone else could have requested
-the same line and so we need to close this window.
-2) request_irq() may fail for reasons other than the fact that we
-may have lost the line that we thought we got.
+As you can see there is a fork to create the unprivileged user
+space process.  Which means that the unprivileged user space
+process will appear as pid 1 in the new pid namespace.  Further
+most login processes do not cope with extraneous children which
+means shifting the duty of reaping extraneous child process to
+the creator of those extraneous children makes the system more
+comprehensible.
 
-So, while we loopback, we check to see if the irq line we got is the same 
-that we got before (refer to the check soon after the call
-to vmbus_get_irq()). This check would ensure that we would not loop
-endlessly.
+The practical reason for this set of pid namespace semantics is
+that it is simple to implement and verify they work correctly.
+Whereas an implementation that requires changing the struct
+pid on a process comes with a lot more races and pain.  Not
+the least of which is that glibc caches getpid().
 
-> 
-> > +
-> > +	vector = IRQ0_VECTOR + vmbus_irq;
-> 
-> What's this for?
-This is what gets passed to the hypervisor - refer to vmbus_dev_add(). 
-This is existing code.
-> 
-> >  	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", vmbus_irq, vector);
-> 
-> And why are you still printing this out for the whole world to see?
-Greg, this patch addressed a specific comment with regards dynamically allocate the irq. 
-Hank is working on a patch to address the various DPRINTS in the code.
+These semantics are implemented by having two notions
+of the pid namespace of a process.  There is task_active_pid_ns
+which is the pid namspace the process was created with
+and the pid namespace that all pids are presented to
+that process in.  The task_active_pid_ns is stored
+in the struct pid of the task.
 
-Regards,
+There is the pid namespace that will be used for children
+that pid namespace is stored in task->nsproxy->pid_ns.
 
-K. Y
-> 
-> thanks,
-> 
-> greg k-h
+There is one really nasty corner case in all of this.  Which
+pid namespace are you in if your parent unshared it's pid
+namespace and then on clone you also unshare the pid namespace.
+To me there are only two possible answers.  Either the cases
+is so bizarre and we deny it completely.  or the new pid
+namespace is a descendent of our parent's active pid namespace,
+and we ignore the task->nsproxy->pid_ns.
+
+To that end I have modified copy_pid_ns to take both of these
+pid namespaces.  The active pid namespace and the default
+pid namespace of children.  Allowing me to simply implement
+unsharing a pid namespace in clone after already unsharing
+a pid namespace with unshare.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+---
+ include/linux/pid_namespace.h |   14 +++++++++-----
+ kernel/fork.c                 |    3 ++-
+ kernel/nsproxy.c              |    5 +++--
+ kernel/pid_namespace.c        |    8 +++++---
+ 4 files changed, 19 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index b447d37..4316347 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -43,7 +43,10 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+ 	return ns;
+ }
+ 
+-extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
++extern struct pid_namespace *copy_pid_ns(unsigned long flags,
++					 struct pid_namespace *default_ns,
++					 struct pid_namespace *active_ns);
++
+ extern void free_pid_ns(struct kref *kref);
+ extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
+ 
+@@ -61,12 +64,13 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+ 	return ns;
+ }
+ 
+-static inline struct pid_namespace *
+-copy_pid_ns(unsigned long flags, struct pid_namespace *ns)
++static inline struct pid_namespace *copy_pid_ns(unsigned long flags,
++						struct pid_namespace *default_ns,
++						struct pid_namespace *active_ns)
+ {
+ 	if (flags & CLONE_NEWPID)
+-		ns = ERR_PTR(-EINVAL);
+-	return ns;
++		return ERR_PTR(-EINVAL);
++	return default_ns;
+ }
+ 
+ static inline void put_pid_ns(struct pid_namespace *ns)
+diff --git a/kernel/fork.c b/kernel/fork.c
+index e7a5907..4b019f1 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1633,7 +1633,8 @@ SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
+ 	err = -EINVAL;
+ 	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
+ 				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
+-				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
++			        CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|
++			        CLONE_NEWPID))
+ 		goto bad_unshare_out;
+ 
+ 	/*
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index f74e6c0..a9cf251 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -81,7 +81,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		goto out_ipc;
+ 	}
+ 
+-	new_nsp->pid_ns = copy_pid_ns(flags, task_active_pid_ns(tsk));
++	new_nsp->pid_ns = copy_pid_ns(flags, tsk->nsproxy->pid_ns,
++				      task_active_pid_ns(tsk));
+ 	if (IS_ERR(new_nsp->pid_ns)) {
+ 		err = PTR_ERR(new_nsp->pid_ns);
+ 		goto out_pid;
+@@ -185,7 +186,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+ 	int err = 0;
+ 
+ 	if (!(unshare_flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
+-			       CLONE_NEWNET)))
++			       CLONE_NEWNET | CLONE_NEWPID)))
+ 		return 0;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index e8ea25d..9e101c1 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -123,13 +123,15 @@ static void destroy_pid_namespace(struct pid_namespace *ns)
+ 	kmem_cache_free(pid_ns_cachep, ns);
+ }
+ 
+-struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *old_ns)
++struct pid_namespace *copy_pid_ns(unsigned long flags,
++				  struct pid_namespace *default_ns,
++				  struct pid_namespace *active_ns)
+ {
+ 	if (!(flags & CLONE_NEWPID))
+-		return get_pid_ns(old_ns);
++		return get_pid_ns(default_ns);
+ 	if (flags & (CLONE_THREAD|CLONE_PARENT))
+ 		return ERR_PTR(-EINVAL);
+-	return create_pid_namespace(old_ns);
++	return create_pid_namespace(active_ns);
+ }
+ 
+ void free_pid_ns(struct kref *kref)
+-- 
+1.7.1
 
