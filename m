@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab1BOWZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 17:25:36 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48920 "EHLO lunge.queued.net"
+	id S1756336Ab1BOWZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 17:25:42 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48956 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab1BOWZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 17:25:34 -0500
+	id S1756278Ab1BOWZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 17:25:40 -0500
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/9] mfd-core: clean up platform_data/driver_data from mfd_cell
-Date: Tue, 15 Feb 2011 14:25:20 -0800
-Message-Id: <1297808729-21110-1-git-send-email-dilinger@queued.net>
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org
+Subject: [PATCH 7/9] tmio-fb: use mfd_data instead of driver_data
+Date: Tue, 15 Feb 2011 14:25:27 -0800
+Message-Id: <1297808729-21110-8-git-send-email-dilinger@queued.net>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1297808729-21110-1-git-send-email-dilinger@queued.net>
+References: <1297808729-21110-1-git-send-email-dilinger@queued.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches build on top of the prior MFD set (that adds mfd_get_cell
-and friends to the core API).
+Use mfd_data for passing information from mfd drivers to mfd
+clients.  The mfd_cell's driver_data field is being phased out.
 
-This set gets rid of driver_data, which a number of people have issues with
-(and some drivers were using in a buggy fashion), as well as renaming
-platform_data to mfd_data.
+Clients that were using driver_data now access .mfd_data
+via mfd_get_data().  This changes tmio-fb only; mfd drivers with
+other cells are not modified.
 
- b/drivers/gpio/rdc321x-gpio.c       |    2 -
- b/drivers/mfd/ab3100-core.c         |    2 -
- b/drivers/mfd/ab3550-core.c         |    2 -
- b/drivers/mfd/asic3.c               |    2 -
- b/drivers/mfd/davinci_voicecodec.c  |    4 +-
- b/drivers/mfd/htc-pasic3.c          |    3 --
- b/drivers/mfd/janz-cmodio.c         |    2 -
- b/drivers/mfd/mc13xxx-core.c        |    2 -
- b/drivers/mfd/mfd-core.c            |    1 
- b/drivers/mfd/rdc321x-southbridge.c |    4 +-
- b/drivers/mfd/sh_mobile_sdhi.c      |    2 -
- b/drivers/mfd/t7l66xb.c             |    2 -
- b/drivers/mfd/tc6387xb.c            |    2 -
- b/drivers/mfd/tc6393xb.c            |    2 -
- b/drivers/mfd/timberdale.c          |   54 ++++++++++++++++++------------------
- b/drivers/mfd/twl4030-codec.c       |    4 +-
- b/drivers/mfd/wl1273-core.c         |    4 +-
- b/drivers/mfd/wm8400-core.c         |    2 -
- b/drivers/mmc/host/tmio_mmc.c       |   26 ++++++-----------
- b/drivers/mtd/nand/tmio_nand.c      |    3 --
- b/drivers/video/tmiofb.c            |   15 ++++------
- b/drivers/w1/masters/ds1wm.c        |    4 +-
- b/drivers/watchdog/rdc321x_wdt.c    |    2 -
- b/include/linux/mfd/core.h          |    8 ++---
- b/sound/soc/codecs/cq93vc.c         |    3 +-
- b/sound/soc/codecs/wm8400.c         |    2 -
- b/sound/soc/davinci/davinci-vcif.c  |    2 -
- drivers/mfd/asic3.c                 |    2 -
- drivers/mfd/t7l66xb.c               |    2 -
- drivers/mfd/tc6393xb.c              |    4 +-
- include/linux/mfd/core.h            |    3 --
- 31 files changed, 79 insertions(+), 93 deletions(-)
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/mfd/tc6393xb.c |    2 +-
+ drivers/video/tmiofb.c |   15 +++++++--------
+ 2 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+index ecb045b..3d62ded 100644
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -694,7 +694,7 @@ static int __devinit tc6393xb_probe(struct platform_device *dev)
+ 	}
+ 
+ 	tc6393xb_cells[TC6393XB_CELL_NAND].mfd_data = tcpd->nand_data;
+-	tc6393xb_cells[TC6393XB_CELL_FB].driver_data = tcpd->fb_data;
++	tc6393xb_cells[TC6393XB_CELL_FB].mfd_data = tcpd->fb_data;
+ 
+ 	ret = mfd_add_devices(&dev->dev, dev->id,
+ 			tc6393xb_cells, ARRAY_SIZE(tc6393xb_cells),
+diff --git a/drivers/video/tmiofb.c b/drivers/video/tmiofb.c
+index 6302882..7e57d3b 100644
+--- a/drivers/video/tmiofb.c
++++ b/drivers/video/tmiofb.c
+@@ -250,8 +250,7 @@ static irqreturn_t tmiofb_irq(int irq, void *__info)
+  */
+ static int tmiofb_hw_stop(struct platform_device *dev)
+ {
+-	struct mfd_cell *cell = mfd_get_cell(dev);
+-	struct tmio_fb_data *data = cell->driver_data;
++	struct tmio_fb_data *data = mfd_get_data(dev);
+ 	struct fb_info *info = platform_get_drvdata(dev);
+ 	struct tmiofb_par *par = info->par;
+ 
+@@ -313,7 +312,7 @@ static int tmiofb_hw_init(struct platform_device *dev)
+ static void tmiofb_hw_mode(struct platform_device *dev)
+ {
+ 	struct mfd_cell *cell = mfd_get_cell(dev);
+-	struct tmio_fb_data *data = cell->driver_data;
++	struct tmio_fb_data *data = mfd_get_data(dev);
+ 	struct fb_info *info = platform_get_drvdata(dev);
+ 	struct fb_videomode *mode = info->mode;
+ 	struct tmiofb_par *par = info->par;
+@@ -559,8 +558,8 @@ static int tmiofb_ioctl(struct fb_info *fbi,
+ static struct fb_videomode *
+ tmiofb_find_mode(struct fb_info *info, struct fb_var_screeninfo *var)
+ {
+-	struct mfd_cell *cell = mfd_get_cell(to_platform_device(info->device));
+-	struct tmio_fb_data *data = cell->driver_data;
++	struct tmio_fb_data *data =
++			mfd_get_data(to_platform_device(info->device));
+ 	struct fb_videomode *best = NULL;
+ 	int i;
+ 
+@@ -580,8 +579,8 @@ static int tmiofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+ {
+ 
+ 	struct fb_videomode *mode;
+-	struct mfd_cell *cell = mfd_get_cell(to_platform_device(info->device));
+-	struct tmio_fb_data *data = cell->driver_data;
++	struct tmio_fb_data *data =
++			mfd_get_data(to_platform_device(info->device));
+ 
+ 	mode = tmiofb_find_mode(info, var);
+ 	if (!mode || var->bits_per_pixel > 16)
+@@ -682,7 +681,7 @@ static struct fb_ops tmiofb_ops = {
+ static int __devinit tmiofb_probe(struct platform_device *dev)
+ {
+ 	struct mfd_cell *cell = mfd_get_cell(dev);
+-	struct tmio_fb_data *data = cell->driver_data;
++	struct tmio_fb_data *data = mfd_get_data(dev);
+ 	struct resource *ccr = platform_get_resource(dev, IORESOURCE_MEM, 1);
+ 	struct resource *lcr = platform_get_resource(dev, IORESOURCE_MEM, 0);
+ 	struct resource *vram = platform_get_resource(dev, IORESOURCE_MEM, 2);
+-- 
+1.7.2.3
 
