@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab1BOArw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 19:47:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8662 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab1BOArl convert rfc822-to-8bit (ORCPT
+	id S1754055Ab1BOAsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 19:48:24 -0500
+Received: from blu0-omc1-s7.blu0.hotmail.com ([65.55.116.18]:65354 "EHLO
+	blu0-omc1-s7.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752505Ab1BOAsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 19:47:41 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Mon, 14 Feb 2011 16:47:39 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: "'Erik Gilling'" <konkers@android.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>
-Date: Mon, 14 Feb 2011 16:47:34 -0800
-Subject: RE: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
-Thread-Topic: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
-Thread-Index: AcvMpmf2QItRyKQ7SJa1uVIFB7HRxQAAr/4Q
-Message-ID: <643E69AA4436674C8F39DCC2C05F763816BD96CFB2@HQMAIL03.nvidia.com>
-References: <1297726034-32762-1-git-send-email-achew@nvidia.com>
-	<AANLkTinvpo=R1pjvykEZVXV08D+uXLJa=R8CDcMFWWpT@mail.gmail.com>
-	<643E69AA4436674C8F39DCC2C05F763816BD96CFB1@HQMAIL03.nvidia.com>
- <AANLkTin+uxnM-u7N-+aXUzGVm7m2eXZKrenDbRPq1V-W@mail.gmail.com>
-In-Reply-To: <AANLkTin+uxnM-u7N-+aXUzGVm7m2eXZKrenDbRPq1V-W@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Feb 2011 19:48:21 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP40BE75C23253DAF196A5E96D30@phx.gbl>
+Date: Mon, 14 Feb 2011 19:48:13 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Segher Boessenkool <segher@kernel.crashing.org>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        peterz@infradead.org, will.newton@gmail.com, jbaron@redhat.com,
+        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <1297707868.5226.189.camel@laptop> <1297718964.23343.75.camel@gandalf.stny.rr.com> <1297719576.23343.80.camel@gandalf.stny.rr.com> <20110214.134600.179933733.davem@davemloft.net> <20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com> <BLU0-SMTP166A8555C791786059B0FF96D00@phx.gbl> <20110214230902.GM2256@linux.vnet.ibm.com> <BLU0-SMTP4599FAAD7330498472B87396D00@phx.gbl> <57049.94.211.195.167.1297729198.squirrel@gate.crashing.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <57049.94.211.195.167.1297729198.squirrel@gate.crashing.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 19:47:00 up 313 days, 10:36,  5 users,  load average: 2.10, 1.89,
+	1.86
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 15 Feb 2011 00:48:20.0228 (UTC) FILETIME=[0A772C40:01CBCCAA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yeah, including the relative path was a bit of a hack since the nvhost
-> drivers needs some serious work before it's upstreamable.  A "right"
-> way to do this is to have the syncpt functions take an nvhost_device
-> pointer (or create helper functions that do that,) then expose those
-> functions in mach/nvhost.h.  This obviates the need for a global
-> nvhost_sycpt pointer.
-> 
-> -Erik
-
-You're right about that global nvhost_syncpt pointer.  That drives me nuts as well.  Nevertheless, I'm not sure I'm knowledgeable enough to do the required work to do this the "right" way.  As far as I know, nvhost is a guaranteed singleton in practice (not in implementation), so while this is ugly, it will work fine for existing projects.
-
-Can we use nvmap as precedent and do it this way for now?  I'd like to get the V4L2 camera host driver up to the Tegra community as soon as possible.  When the problem is solved for the dc driver, I can adapt that to the V4L2 camera host driver.
-
-> On Mon, Feb 14, 2011 at 4:08 PM, Andrew Chew <AChew@nvidia.com> wrote:
-> >> If you want to use syncpts you should be an nvhost_driver 
-> link the dc.
+* Segher Boessenkool (segher@kernel.crashing.org) wrote:
+> >> What CPU family are we talking about here?  For cache coherent CPUs,
+> >> cache coherence really is supposed to work, even for mixed atomic and
+> >> non-atomic instructions to the same variable.
 > >
-> > Looking at drivers/video/tegra/dc, I notice that it gets 
-> access to the syncpt functions by using a relative path 
-> (../host/dev.h) to include dev.h, which in turn includes 
-> nvhost_syncpt.h (in drivers/video/tegra/host).  Is this proper form?
+> > I'm really curious to know which CPU families too. I've used git blame
+> > to see where these lwz/stw instructions were added to powerpc, and it
+> > points to:
 > >
-> > This syncpt access is for a Tegra V4L2 driver, which will 
-> live in drivers/media/video.  I was trying to avoid using 
-> relative paths for #includes.  I assumed that the header 
-> files in drivers/video/tegra/host were not meant to be 
-> publicly available to other drivers, which is why I looked 
-> for some precedent in how nvhost functions were made 
-> available to other kernel drivers, hence I modeled this after nvmap.
+> > commit 9f0cbea0d8cc47801b853d3c61d0e17475b0cc89
 > 
+> > So let's ping the relevant people to see if there was any reason for
+> > making these atomic read/set operations different from other
+> > architectures in the first place.
+> 
+> lwz is a simple 32-bit load.  On PowerPC, such a load is guaranteed
+> to be atomic (except some unaligned cases).  stw is similar, for stores.
+> These are the normal insns, not ll/sc or anything.
+> 
+> At the time, volatile tricks were used to make the accesses atomic; this
+> patch changed that.  Result is (or should be!) better code generation.
+> 
+> Is there a problem with it?
+
+It seems fine then. It seems to be my confusion to think that Matt
+referred to PowerPC in his statement. It's probably an unrelated
+architecture.
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
