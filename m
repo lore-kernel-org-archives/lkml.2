@@ -1,145 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab1BOCZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 21:25:19 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56648 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab1BOCZQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 21:25:16 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 15 Feb 2011 11:18:57 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>, jacob.jun.pan@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        rdunlap@xenotime.net, Cedric Le Goater <clg@vnet.ibm.com>
-Subject: Re: [PATCH 1/1, v7] cgroup/freezer: add per freezer duty ratio
- control
-Message-Id: <20110215111857.47907dc5.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110214150730.058319a5.akpm@linux-foundation.org>
-References: <1297451444-15277-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20110212232907.GN16432@count0.beaverton.ibm.com>
-	<20110214094402.4eefe70d.kamezawa.hiroyu@jp.fujitsu.com>
-	<4D58A01E.9000203@linux.intel.com>
-	<20110214150730.058319a5.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753868Ab1BOC3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 21:29:03 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58501 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751675Ab1BOC3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 21:29:00 -0500
+Date: Tue, 15 Feb 2011 03:28:42 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, x86@kernel.org,
+        brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
+        rientjes@google.com, hpa@linux.intel.com, ankita@in.ibm.com
+Subject: Re: [PATCHSET x86/numa] x86-64, NUMA: bring sanity to NUMA emulation
+Message-ID: <20110215022842.GD31134@elte.hu>
+References: <1297711715-3086-1-git-send-email-tj@kernel.org>
+ <AANLkTikNy-vQ2V95dhyQ8k1jkQCiUOukY8ShP_GWM1w6@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikNy-vQ2V95dhyQ8k1jkQCiUOukY8ShP_GWM1w6@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 15:07:30 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> On Sun, 13 Feb 2011 19:23:10 -0800
-> Arjan van de Ven <arjan@linux.intel.com> wrote:
+* Yinghai Lu <yinghai@kernel.org> wrote:
+
+> On Mon, Feb 14, 2011 at 11:28 AM, Tejun Heo <tj@kernel.org> wrote:
+> > Hello,
+> >
+> > NUMA emulation is quite convoluted involving unnecessary mapping and
+> > reverse mapping between apicids, PXMs, nodes and memory addresses.
+> > This patchset tries to restore some sanity to the whole thing.
+> >
+> > Tested on an opteron NUMA machine which can do both ACPI and AMD
+> > configs.  All NUMA configs, emulations, !NUMA and UP work as expected.
+> >
+> > This patchset is on top of tip/x86/numa[1] +
+> > bring-sanity-to-NUMA-configuration patchset[2] and contains the
+> > following 7 patches.
+> >
+> >  0001-x86-64-NUMA-Trivial-changes-to-prepare-for-emulation.patch
+> >  0002-x86-64-NUMA-Build-and-use-direct-emulated-nid-phys-n.patch
+> >  0003-x86-64-NUMA-Make-emulation-code-build-numa_meminfo-a.patch
+> >  0004-x86-64-NUMA-Wrap-node-ID-during-emulation.patch
+> >  0005-x86-64-NUMA-Emulate-directly-from-numa_meminfo.patch
+> >  0006-x86-64-NUMA-Unify-emulated-apicid-node-mapping-trans.patch
+> >  0007-x86-64-NUMA-Unify-emulated-distance-mapping.patch
+> >
+> > The patchset is available in the following git branch.
+> >
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_64-numa-emu-unify
+> >
+> > Diffstat follows.
+> >
+> >  arch/x86/include/asm/acpi.h    |    6
+> >  arch/x86/include/asm/amd_nb.h  |    4
+> >  arch/x86/include/asm/numa_64.h |    1
+> >  arch/x86/mm/amdtopology_64.c   |   47 ----
+> >  arch/x86/mm/numa_64.c          |  429 ++++++++++++++++++-----------------------
+> >  arch/x86/mm/srat_64.c          |   87 --------
+> >  6 files changed, 197 insertions(+), 377 deletions(-)
 > 
-> > On 2/13/2011 4:44 PM, KAMEZAWA Hiroyuki wrote:
-> > > On Sat, 12 Feb 2011 15:29:07 -0800
-> > > Matt Helsley<matthltc@us.ibm.com>  wrote:
-> > >
-> > >> On Fri, Feb 11, 2011 at 11:10:44AM -0800, jacob.jun.pan@linux.intel.com wrote:
-> > >>> From: Jacob Pan<jacob.jun.pan@linux.intel.com>
-> > >>>
-> > >>> Freezer subsystem is used to manage batch jobs which can start
-> > >>> stop at the same time. However, sometime it is desirable to let
-> > >>> the kernel manage the freezer state automatically with a given
-> > >>> duty ratio.
-> > >>> For example, if we want to reduce the time that backgroup apps
-> > >>> are allowed to run we can put them into a freezer subsystem and
-> > >>> set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> > >>>
-> > >>> This patch introduces two file nodes under cgroup
-> > >>> freezer.duty_ratio_pct and freezer.period_sec
-> > >> Again: I don't think this is the right approach in the long term.
-> > >> It would be better not to add this interface and instead enable the
-> > >> cpu cgroup subsystem for non-rt tasks using a similar duty ratio
-> > >> concept..
-> > >>
-> > >> Nevertheless, I've added some feedback on the code for you here :).
-> > >>
-> > > AFAIK, there was a work for bandwidth control in CFS.
-> > >
-> > > http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-10/msg04335.html
-> > >
-> > > I tested this and worked fine. This schduler approach seems better for
-> > > my purpose to limit bandwidth of apprications rather than freezer.
-> > 
-> > for our purpose, it's not about bandwidth.
-> > it's about making sure the class of apps don't run for a long period 
-> > (30-second range) of time.
-> > 
-> 
-> The discussion about this patchset seems to have been upside-down: lots
-> of talk about a particular implementation, with people walking back
-> from the implemetnation trying to work out what the requirements were,
-> then seeing if other implementations might suit those requirements. 
-> Whatever they were.
-> 
-> I think it would be helpful to start again, ignoring (for now) any
-> implementation.
-> 
-> 
-> What are the requirements here, guys?  What effects are we actually
-> trying to achieve?  Once that is understood and agreed to, we can
-> think about implementations.
-> 
-> 
-> And maybe you people _are_ clear about the requirements.  But I'm not and
-> I'm sure many others aren't too.  A clear statement of them would help
-> things along and would doubtless lead to better code.  This is pretty
-> basic stuff!
-> 
+> wonder if numa_emu code could be put into one single file like numa_emu.c
 
-Ok, my(our) reuquirement is mostly 2 requirements.
+That would be nice if it can be done sanely.
 
-- control batch jobs.
-- control kvm and limit usage of cpu.
-
-Considering kvm, we need to allow putting intaractive jobs and
-batch jobs onto a cpu. This will be difference in requirements.
-We need some latency sensitive control and static guarantee in peformance
-limit. For example, when a user limits a process to use 50% of cpu.
-Checks cpu usage by 'top -d 1', and should see almost '50%' value.
-
-
-IIUC, freezer is like a system to deliver SIGSTOP. set tasks as
-TASK_UNINTERRUPTIBLE and make them sleep. This check is done at
-places usual signal-check and some hooks in kernel threads.
-This means the subsystem checks all threads one by one and set flags,
-make them TASK_UNINTERRUPTIBLE finally when them wakes up.
-So, sleep/wakeup cost depeneds on the number of tasks and a task may
-not be freezable until it finds hooks of try_to_freeze().
-
-I hear when using FUSE, a task may never freeze if a process for FUSE operation
-is freezed before it freezes. This sounds freezer cgroup is not easy to use.
-
-CFS+bandwidh is a scheduler.
-It removes a sub scheduler entity from a tree when it exceeds allowed time
-slice. The cost of calculation of allowed time slice is involved in scheduler
-but I think it will not be too heavy. (Because MAINTAINERS will see what's
-going on and they are sensitive to the cost.)
-Tasks are all RUNNABLE. A task in group releases cpu when it see
-'reschedule' flag. We have plenty of hooks of cond_resched(). (And we know
-we tries to change spin_lock to mutex if spin_lock is huge cost)
-
-This will show a good result of perofmance even with 'top -d 1'. We'll not see
-TASK_RUNNING <-> TASK_INTERRUPTIBLE status change. And I think
-we can make period of time slice smaller than using freezer for better latency.
-
+We could do it as a delta, on top of these existing patches, to not delay the 
+testing of these fixes/improvements, they are looking pretty good (on paper) 
+already, do you agree?
 
 Thanks,
--Kame
 
-
-
-
-
+	Ingo
