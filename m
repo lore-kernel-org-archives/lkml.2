@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab1BOW0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 17:26:46 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48942 "EHLO lunge.queued.net"
+	id S1756508Ab1BOW05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 17:26:57 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48928 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756283Ab1BOWZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 17:25:37 -0500
+	id S1756237Ab1BOWZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 17:25:35 -0500
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Evgeniy Polyakov <johnpol@2ka.mipt.ru>
-Subject: [PATCH 4/9] ds1wm: use mfd_data instead of driver_data
-Date: Tue, 15 Feb 2011 14:25:24 -0800
-Message-Id: <1297808729-21110-5-git-send-email-dilinger@queued.net>
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 2/9] davinci_voicecodec: use mfd_data instead of driver_data
+Date: Tue, 15 Feb 2011 14:25:22 -0800
+Message-Id: <1297808729-21110-3-git-send-email-dilinger@queued.net>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297808729-21110-1-git-send-email-dilinger@queued.net>
 References: <1297808729-21110-1-git-send-email-dilinger@queued.net>
@@ -20,80 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use mfd_data for passing information from mfd drivers to mfd
+Use mfd_data for passing information from mfd drivers to soc
 clients.  The mfd_cell's driver_data field is being phased out.
 
 Clients that were using driver_data now access .mfd_data
-via mfd_get_data().  This changes ds1wm only; mfd drivers with
-other cells are not modified, with the exception of led_cell.
-
-The led_cell.driver_data line is dropped from htc-pasic3.c in this
-patch as well.  It's not used in mainline (there's no leds-pasic3
-platform driver), so it should be safe to take care of that here.
+via mfd_get_data().
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/mfd/asic3.c        |    2 +-
- drivers/mfd/htc-pasic3.c   |    3 +--
- drivers/w1/masters/ds1wm.c |    4 ++--
- 3 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/mfd/davinci_voicecodec.c |    4 ++--
+ sound/soc/codecs/cq93vc.c        |    3 ++-
+ sound/soc/davinci/davinci-vcif.c |    2 +-
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
-index 71d2901..549d14d 100644
---- a/drivers/mfd/asic3.c
-+++ b/drivers/mfd/asic3.c
-@@ -682,7 +682,7 @@ static struct mfd_cell asic3_cell_ds1wm = {
- 	.name          = "ds1wm",
- 	.enable        = ds1wm_enable,
- 	.disable       = ds1wm_disable,
--	.driver_data   = &ds1wm_pdata,
-+	.mfd_data      = &ds1wm_pdata,
- 	.num_resources = ARRAY_SIZE(ds1wm_resources),
- 	.resources     = ds1wm_resources,
- };
-diff --git a/drivers/mfd/htc-pasic3.c b/drivers/mfd/htc-pasic3.c
-index 079d396..fb9770b 100644
---- a/drivers/mfd/htc-pasic3.c
-+++ b/drivers/mfd/htc-pasic3.c
-@@ -117,7 +117,7 @@ static struct mfd_cell ds1wm_cell __initdata = {
- 	.name          = "ds1wm",
- 	.enable        = ds1wm_enable,
- 	.disable       = ds1wm_disable,
--	.driver_data   = &ds1wm_pdata,
-+	.mfd_data      = &ds1wm_pdata,
- 	.num_resources = 2,
- 	.resources     = ds1wm_resources,
- };
-@@ -172,7 +172,6 @@ static int __init pasic3_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
+index 33c923d..f946c0b 100644
+--- a/drivers/mfd/davinci_voicecodec.c
++++ b/drivers/mfd/davinci_voicecodec.c
+@@ -119,12 +119,12 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	/* Voice codec interface client */
+ 	cell = &davinci_vc->cells[DAVINCI_VC_VCIF_CELL];
+ 	cell->name = "davinci_vcif";
+-	cell->driver_data = davinci_vc;
++	cell->mfd_data = davinci_vc;
  
- 	if (pdata && pdata->led_pdata) {
--		led_cell.driver_data = pdata->led_pdata;
- 		ret = mfd_add_devices(&pdev->dev, pdev->id, &led_cell, 1, r, 0);
- 		if (ret < 0)
- 			dev_warn(dev, "failed to register LED device\n");
-diff --git a/drivers/w1/masters/ds1wm.c b/drivers/w1/masters/ds1wm.c
-index 94f55d8..22fc726 100644
---- a/drivers/w1/masters/ds1wm.c
-+++ b/drivers/w1/masters/ds1wm.c
-@@ -216,7 +216,7 @@ static int ds1wm_find_divisor(int gclk)
- static void ds1wm_up(struct ds1wm_data *ds1wm_data)
+ 	/* Voice codec CQ93VC client */
+ 	cell = &davinci_vc->cells[DAVINCI_VC_CQ93VC_CELL];
+ 	cell->name = "cq93vc";
+-	cell->driver_data = davinci_vc;
++	cell->mfd_data = davinci_vc;
+ 
+ 	ret = mfd_add_devices(&pdev->dev, pdev->id, davinci_vc->cells,
+ 			      DAVINCI_VC_CELLS, NULL, 0);
+diff --git a/sound/soc/codecs/cq93vc.c b/sound/soc/codecs/cq93vc.c
+index 46dbfd0..b8066ef 100644
+--- a/sound/soc/codecs/cq93vc.c
++++ b/sound/soc/codecs/cq93vc.c
+@@ -153,7 +153,8 @@ static int cq93vc_resume(struct snd_soc_codec *codec)
+ 
+ static int cq93vc_probe(struct snd_soc_codec *codec)
  {
- 	int divisor;
--	struct ds1wm_driver_data *plat = ds1wm_data->cell->driver_data;
-+	struct ds1wm_driver_data *plat = mfd_get_data(ds1wm_data->pdev);
+-	struct davinci_vc *davinci_vc = codec->dev->platform_data;
++	struct davinci_vc *davinci_vc =
++			mfd_get_data(to_platform_device(codec->dev));
  
- 	if (ds1wm_data->cell->enable)
- 		ds1wm_data->cell->enable(ds1wm_data->pdev);
-@@ -356,7 +356,7 @@ static int ds1wm_probe(struct platform_device *pdev)
- 		ret = -ENOMEM;
- 		goto err0;
- 	}
--	plat = cell->driver_data;
-+	plat = mfd_get_data(pdev);
+ 	davinci_vc->cq93vc.codec = codec;
+ 	codec->control_data = davinci_vc;
+diff --git a/sound/soc/davinci/davinci-vcif.c b/sound/soc/davinci/davinci-vcif.c
+index 9d2afcc..13e05a3 100644
+--- a/sound/soc/davinci/davinci-vcif.c
++++ b/sound/soc/davinci/davinci-vcif.c
+@@ -205,7 +205,7 @@ static struct snd_soc_dai_driver davinci_vcif_dai = {
  
- 	/* calculate bus shift from mem resource */
- 	ds1wm_data->bus_shift = resource_size(res) >> 3;
+ static int davinci_vcif_probe(struct platform_device *pdev)
+ {
+-	struct davinci_vc *davinci_vc = platform_get_drvdata(pdev);
++	struct davinci_vc *davinci_vc = mfd_get_data(pdev);
+ 	struct davinci_vcif_dev *davinci_vcif_dev;
+ 	int ret;
+ 
 -- 
 1.7.2.3
 
