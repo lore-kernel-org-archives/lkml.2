@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab1BORGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:06:48 -0500
-Received: from xes-mad.com ([216.165.139.218]:34042 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596Ab1BORGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:06:45 -0500
-Subject: Re: [PATCH 1/3] gpiolib: Add ability to get GPIO pin direction
-From: Peter Tyser <ptyser@xes-inc.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>
-In-Reply-To: <20110215114210.1f1a8470@lxorguk.ukuu.org.uk>
-References: <1294343654-20354-1-git-send-email-ptyser@xes-inc.com>
-	 <1297698493.965.5475.camel@petert>
-	 <20110214170812.6f54a4bb@lxorguk.ukuu.org.uk>
-	 <AANLkTimyD=U-+=HpXWmF2B9KjrDf8HMCZenAgW3SQgDK@mail.gmail.com>
-	 <20110214193502.101759d0@lxorguk.ukuu.org.uk>
-	 <1297726502.965.6921.camel@petert>
-	 <20110215114210.1f1a8470@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Feb 2011 11:05:48 -0600
-Message-ID: <1297789548.965.10101.camel@petert>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755498Ab1BORPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:15:12 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48944 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755188Ab1BORPJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 12:15:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=yAS3FV/EFbf3PMF4bnD3EB243RuWDjSjmsAvghRnA7lfwNFFmEOhC2HwU1BCNNKU0B
+         xNniXsTcTI3oie7LS3Wbs7Q9LPJqoGMGAtRjsDuPbmQ/o732bT0MzLYda/BR1xTjIkqP
+         /zR94xojvxLdOQXmDu+23iILLeDAMrjhNxKXI=
+MIME-Version: 1.0
+In-Reply-To: <20110215055426.GA468@in.ibm.com>
+References: <AANLkTi=Ca4Lcc_war-atpr81eJcZA3ks+EKFf9Rq5pKs@mail.gmail.com>
+	<20110215055426.GA468@in.ibm.com>
+Date: Tue, 15 Feb 2011 12:15:08 -0500
+Message-ID: <AANLkTikkLuCeWpHBU5HO=39vO_DjhQkFMmnpB4kqtEmD@mail.gmail.com>
+Subject: Re: Mapping memory between kernel and user space
+From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+To: Ankita Garg <ankita@in.ibm.com>
+Cc: Kernel-newbies <kernelnewbies@nl.linux.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Also, in most cases I'd think that the BIOS/U-Boot/firmware should have
-> > configured the GPIO pins appropriately, which Linux should inherit in
-> > general.  Linux currently inherits GPIO states that were set in firmware
-> > when a GPIO is requested, but it doesn't properly report those values
-> > via sysfs - that's the only bug I'm trying to fix.
-> 
-> Yes - however you can't fix it unless you are prepared to admit that the
-> gpio has multiple states. At minimum you need to be able to report
-> 
-> 	input/output/unknown/unavailable
-> 
-> if you want to generalise it. Otherwise you don't solve the problem
-> because you are asking a question that driver cannot answer correctly.
+As was suggested I started reading chap 15v from LDD. I ran more into
+confusion state.
 
-As far as the "unknown" state, I can update the patch to have the logic:
-+       if (chip->get_direction) {
-+               /* chip->get_direction may sleep */
-+               spin_unlock_irqrestore(&gpio_lock, flags);
-+               if (chip->get_direction(chip, gpio - chip->base) > 0)
-+                       set_bit(FLAG_IS_OUT, &desc->flags);
-+               spin_lock_irqsave(&gpio_lock, flags);
-+       } else {
-+               set_bit(FLAG_IS_UNKNOWN, &desc->flags);
-+       }
+I know that virtual address(process space), linear address
+(segmentation) and physical address. And how are they resolved from
+virtual to physical.
+But coming to kernel they distinguish logical address from virtual
+address. What is the main difference.
+Also, they emphasize on high memory and low memory. Why can not high
+memory can be mapped in to kernel completely.
+Why is that kernel has less visibility of complete space available on RAM.
+Linux MM is it a very specific implementation of linux, or Is that a
+traditional implementation.
 
-This would have the side effect of having nearly all GPIO drivers
-default to an "unknown" direction until they implement the new
-get_direction() function, which I think is an improvement over the
-current system where they are all unconditionally shown as "input",
-often incorrectly.  Are you OK with this Grant?
+what is very minimal implementation of MMU for real time systems.
+
+Thanks in advance.
+
+--Sri.
+
+On Tue, Feb 15, 2011 at 12:54 AM, Ankita Garg <ankita@in.ibm.com> wrote:
+> On Wed, Feb 09, 2011 at 06:45:42PM -0500, Sri Ram Vemulpali wrote:
+>> Hi all,
+>>
+>>   How do I map some space between kernel and user space. Can anyone
+>> point me in to right direction. I was trying to map the packets from
+>> my netfilter function to kernel user space, to avoid over head of
+>> copying. Thanks in advance.
+>>
+>
+> You can take a look at remap_pfn_range() routine when implementing mmap
+> in your driver.
+>
+> --
+> Regards,
+> Ankita Garg (ankita@in.ibm.com)
+> Linux Technology Center
+> IBM India Systems & Technology Labs,
+> Bangalore, India
+>
 
 
-For the "unavailable" state, I didn't think it would be necessary.  As
-is, if someone calls gpio_request() on an invalid or alt_use pin, they
-shouldn't get access to the GPIO, which makes the "unavailable value
-moot since they couldn't access the GPIO in the first place.
 
-Changing the logic to allow "unavailable" GPIO pins to be
-requested/exported would require larger changes to the code, and
-wouldn't provide much benefit without additional changes (eg an alt_func
-feature).  So I'd vote to not add support for "unavailable" pins in this
-patch and rather wait until someone has a specific use for it, and add
-it then.
-
-Peter
-
+-- 
+Regards,
+Sri.
