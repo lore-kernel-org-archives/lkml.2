@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab1BOONk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 09:13:40 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35625 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab1BOONi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 09:13:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Gu6QoqFr5o0TXb20UIs89mEwM1HMoOqe8MI+C5YUDFU6f1Z76Dps4ZQN2OFe4MvFBO
-         KByIdc007MsTQNZHY6IhUEoZv9jjwa6s9DxaXQmLY00rIwG9tOuMLLcIZ5ZHx49gSsTY
-         WxcWOKen84vIZQBn+Cwd7pCC5KetoXiwfOKMY=
-Date: Tue, 15 Feb 2011 22:13:04 +0800
-From: Richard Zhao <linuxzsc@gmail.com>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dima Zavin <dmitriyz@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
-Message-ID: <20110215141304.GA1968@richard-laptop>
-References: <1297233693.242364.862698430999.1.gpush@pororo>
- <201102151526.54280.jeremy.kerr@canonical.com>
- <20110215083759.GA4152@n2100.arm.linux.org.uk>
- <201102151733.30332.jeremy.kerr@canonical.com>
+	id S1754900Ab1BOOQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 09:16:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37791 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089Ab1BOOQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 09:16:16 -0500
+Date: Tue, 15 Feb 2011 16:13:26 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, x86@kernel.org, tj@kernel.org,
+        yinghai@kernel.org, ak@linux.intel.com, robert.richter@amd.com,
+        weidong.han@intel.com
+Subject: Re: [PATCH 2/6] x86: ifdef enable_IR_x2apic() out
+Message-ID: <20110215141326.GZ14984@redhat.com>
+References: <1297677612-12405-1-git-send-email-henne@nachtwindheim.de>
+ <1297677612-12405-2-git-send-email-henne@nachtwindheim.de>
+ <20110214110340.GC7140@elte.hu>
+ <4D5A8406.3030703@nachtwindheim.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201102151733.30332.jeremy.kerr@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D5A8406.3030703@nachtwindheim.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 05:33:29PM +0800, Jeremy Kerr wrote:
-> Hi Russell,
-> 
-> > > Why is that? Consider two devices using one clock; one does some
-> > > initialisation based on the return value of clk_get_rate(), the other
-> > > calls clk_set_rate() some time later. Now the first device is
-> > > incorrectly initialised.
+On Tue, Feb 15, 2011 at 02:47:50PM +0100, Henrik Kretzschmar wrote:
+> Am 14.02.2011 12:03, schrieb Ingo Molnar:
 > > 
-> > What about a clock sourced from a PLL which provides the dotclock for a
-> > framebuffer device?  On every mode set, should the clk have to be disabled,
-> > unprepared, rate set, re-prepared and re-enabled?
+> > 
+> > * Henrik Kretzschmar <henne@nachtwindheim.de> wrote:
+> > 
+> >> +#ifdef CONFIG_X86_64
+> >>  extern void enable_IR_x2apic(void);
+> >> +#endif
+> > 
+> > Cannot we use the CONFIG_X86_X2APIC Kconfig switch here, instead of CONFIG_X86_64?
+> > 
+> > enable_IR_x2apic() is not a 64-bit CPU feature.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> > 
+> > 
 > 
-> Sounds heavy-handed, but I honestly have no idea if that's reasonable or not.
+> Thats what I had liked also.
 > 
-> Other options are:
+> At the time you moved the apic code from x86/kernel it was exactly that way.
+> But after that, in commit 937582382c71b75b29fbb92615629494e1a05ac0, it was explicitely moved out of
+> CONFIG_X86_X2APIC, which made that function also compile on 32bit machines, even if its not used there.
 > 
->  * Require that the driver has called clk_prepare, and that prepare_count
->    is 1 during the set_rate call (indicating that this is the only user); or
+> Also commit ce69a784504222c3ab6f1b3c357d09ec5772127a enabled the x2apic without interrupt remapping,
+> which means that CONFIG_X86_X2APIC depends on CONFIG_INTR_REMAP has been bypassed and so Kconfig is
+> broken/not representing what happens to the code.
 > 
->  * Leave the set_rate and set_parent semantics as-is and assume that anything
->    calling either knows what it's doing (and that it won't affect other
->    devices)
-I vote the second option. Two reasons:
-1. Has any mach specific clock restricted clk_set_rate use? I don't hear any.
-2. In my opinion, clk_set_rate is not called very often by drivers, especially
-for the clock which has child clocks. Leaf clock are seldom shared. Even if it's
-shared, we can let drivers handle it case by case .
+Intel asked to leave Kconfig dependency in place.
 
-Thanks
-Richard
+> So since I dont have an x2apic and therefore cannot test changes,
+> I decided for CONFIG_X86_64 without touching code which seems to work.
 > 
-> Are you OK if we address this separately to the API unification though?
+> I wish I could offer something better here.
 > 
-> Cheers,
+> Greets,
+> Henrik Kretzschmar
 > 
 > 
-> Jeremy
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+--
+			Gleb.
