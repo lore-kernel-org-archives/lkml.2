@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab1BOP4B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:56:01 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:41819 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab1BOPz7 (ORCPT
+	id S1755331Ab1BOP5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:57:23 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56310 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab1BOP5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:55:59 -0500
-X-AuditID: b753bd60-a4f4eba0000001d0-e0-4d5aa20c3193
-X-AuditID: b753bd60-a4f4eba0000001d0-e0-4d5aa20c3193
-Message-ID: <4D5AA209.7070309@hitachi.com>
-Date: Wed, 16 Feb 2011 00:55:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC,PATCH] kprobes - optimized kprobes might crash before setting
- kernel stack
-References: <1297696354-6990-1-git-send-email-jolsa@redhat.com> <4D5A4A66.4010503@hitachi.com> <20110215123058.GB3135@jolsa.brq.redhat.com>
-In-Reply-To: <20110215123058.GB3135@jolsa.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 15 Feb 2011 10:57:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=PUgtDUJT+uYY0Vd/ySbH3CpaJtotp44mQltrWUrEnKRf2nfV4ro+4ooftIa2yxTu1p
+         kpcsiTDShW2cwcA2ESiAoqdgfk08cfm3aZuzGbdc9faLKJTnY4s0hBWNSfhBlBRueSXk
+         RSjMkCV792H6rykkK5blCpbT1sVbkBeB5t0PU=
+Subject: [PATCH RESEND] backlight: jornada720_bl/jornada720_lcd: make
+ needlessly global symbols static
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Feb 2011 23:57:12 +0800
+Message-ID: <1297785432.2596.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/02/15 21:30), Jiri Olsa wrote:
-> On Tue, Feb 15, 2011 at 06:41:58PM +0900, Masami Hiramatsu wrote:
->> (2011/02/15 0:12), Jiri Olsa wrote:
->>> hi,
->>>
->>> you can crash the kernel using kprobe tracer via:
->>>
->>> echo "p system_call_after_swapgs" > ./kprobe_events
->>> echo 1 > ./events/kprobes/enable
->>
->> Ah, thank you very much!
->>
->>> The reason is that at the system_call_after_swapgs label,
->>> the kernel stack is not set up. If optimized kprobes are
->>> enabled, the user space stack is being used in this case
->>> (see optimized kprobe template) and this might result in a crash.
->>
->> Verified here, and also it didn't occur when turning optimization
->> off by sysctl. So this is a bug of kprobe jump optimization, not
->> kprobes itself.
->>
->>> Looks like there are several places like this over the entry_$(BIT)
->>> code. First I thought it'd be ok to localize those places, but
->>> I haven't found any reasonable/maintainable way to disable only those
->>> places.
->>
->> Hmm, agreed.
->>
->>> So I switched off the whole entry code from optimizing, but this
->>> also switch many safe places (attached patch - tested on x86_64).
->>
->> I'm OK for this solution. I think possible another solution is using
->> interrupt stack in optprobe template too. Anyway in short term, this
->> solution will be good.
-> 
-> ok, I'll test on 32 bits and resend to Ingo
+The following symbols are needlessly defined global:
+jornada_bl_init
+jornada_bl_exit
+jornada_lcd_init
+jornada_lcd_exit
 
-Thanks!
-And also, with deeply thinking about this problem, it seems that
-your idea could be the best way to fix, because kprobes can not
-know where the kernel stack is ready without those text section.
+This patch makes the symbols static.
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+---
+It was sent on https://lkml.org/lkml/2010/7/29/460
+with Kristoffer's ack http://lkml.org/lkml/2010/7/30/694
 
->>> Also not sure this crash falls in to the area of that once such
->>> probe is used, user should know consequences..
->>
->> User can see that those probe is not optimized via sysfs.
-> 
-> I cannot find this, where can I see this info?
+Axel
 
-Ah, actually, that is under debugfs, which is usually mounted on
-/sys/kernel/debug. You can read "/sys/kernel/debug/kprobes/list"
-for getting a list of currently registered probes.
+ drivers/video/backlight/jornada720_bl.c  |    4 ++--
+ drivers/video/backlight/jornada720_lcd.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-Thank you,
+diff --git a/drivers/video/backlight/jornada720_bl.c b/drivers/video/backlight/jornada720_bl.c
+index 60e1d28..a20a01a 100644
+--- a/drivers/video/backlight/jornada720_bl.c
++++ b/drivers/video/backlight/jornada720_bl.c
+@@ -146,12 +146,12 @@ static struct platform_driver jornada_bl_driver = {
+ 	},
+ };
+ 
+-int __init jornada_bl_init(void)
++static int __init jornada_bl_init(void)
+ {
+ 	return platform_driver_register(&jornada_bl_driver);
+ }
+ 
+-void __exit jornada_bl_exit(void)
++static void __exit jornada_bl_exit(void)
+ {
+ 	platform_driver_unregister(&jornada_bl_driver);
+ }
+diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
+index 8fe0181..9fd7af2 100644
+--- a/drivers/video/backlight/jornada720_lcd.c
++++ b/drivers/video/backlight/jornada720_lcd.c
+@@ -135,12 +135,12 @@ static struct platform_driver jornada_lcd_driver = {
+ 	},
+ };
+ 
+-int __init jornada_lcd_init(void)
++static int __init jornada_lcd_init(void)
+ {
+ 	return platform_driver_register(&jornada_lcd_driver);
+ }
+ 
+-void __exit jornada_lcd_exit(void)
++static void __exit jornada_lcd_exit(void)
+ {
+ 	platform_driver_unregister(&jornada_lcd_driver);
+ }
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.5.4.3
+
+
+
