@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab1BOQ7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:59:33 -0500
-Received: from smtp.microsoft.com ([131.107.115.215]:46614 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab1BOQ7a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:59:30 -0500
-From: Hank Janssen <hjanssen@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>, Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>,
-        Hashir Abdi <habdi@microsoft.com>,
-        "Mike Sterling" <Mike.Sterling@microsoft.com>
-Subject: RE: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzSIS6znEnyFqNE6ccb9lSMyu/JQDPp0AgAAPB4D//3rkwA==
-Date: Tue, 15 Feb 2011 16:59:28 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56233F9714A@TK5EX14MBXC114.redmond.corp.microsoft.com>
-References: <1297782937-24082-1-git-send-email-kys@microsoft.com>
- <20110215155954.GA32313@suse.de>
- <FB42D5CCD7B5934EB1827DB5ED9B850E07085DA1@TK5EX14MBXC104.redmond.corp.microsoft.com>
-In-Reply-To: <FB42D5CCD7B5934EB1827DB5ED9B850E07085DA1@TK5EX14MBXC104.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752783Ab1BORCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:02:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab1BORB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 12:01:58 -0500
+Date: Tue, 15 Feb 2011 18:01:52 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 0/5] fix up /proc/$pid/smaps to not split huge pages
+Message-ID: <20110215170152.GF5935@random.random>
+References: <20110209195406.B9F23C9F@kernel>
+ <20110215165510.GA2550@mgebm.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110215165510.GA2550@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 15, 2011 at 11:55:10AM -0500, Eric B Munson wrote:
+> I am noticing in smaps that KernelPageSize is wrong of areas
+> that have been merged into THP.  For instance:
+> 
+> 7ff852a00000-7ff852c00000 rw-p 00000000 00:00 0 
+> Size:               2048 kB
+> Rss:                2048 kB
+> Pss:                2048 kB
+> Shared_Clean:          0 kB
+> Shared_Dirty:          0 kB
+> Private_Clean:         0 kB
+> Private_Dirty:      2048 kB
+> Referenced:         2048 kB
+> Anonymous:          2048 kB
+> AnonHugePages:      2048 kB
+> Swap:                  0 kB
+> KernelPageSize:        4 kB
+> MMUPageSize:           4 kB
+> Locked:                0 kB
+> 
+> The entire mapping is contained in a THP but the
+> KernelPageSize shows 4kb.  For cases where the mapping might
+> have mixed page sizes this may be okay, but for this
+> particular mapping the 4kb page size is wrong.
 
-
-> -----Original Message-----
-> From: KY Srinivasan
-> Sent: Tuesday, February 15, 2011 8:54 AM
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@suse.de]
-> > Sent: Tuesday, February 15, 2011 11:00 AM
-> > To: KY Srinivasan
-> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > virtualization@lists.osdl.org; Haiyang Zhang; Hank Janssen
-> > Subject: Re: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
-> >
-
-> > And why are you still printing this out for the whole world to see?
-> Greg, this patch addressed a specific comment with regards dynamically
-> allocate the irq.
-> Hank is working on a patch to address the various DPRINTS in the code.
-
-Before the end of the week I will submit two patches for this;
-
-	Remove DPRINT and change it to printk
-	Remove excessive printouts on startup of vmbus
-
-Hank.
+I'm not sure this is a bug, if the mapping grows it may become 4096k
+but the new pages may be 4k. There's no such thing as a
+vma_mmu_pagesize in terms of hugepages because we support graceful
+fallback and collapse/split on the fly without altering the vma. So I
+think 4k is correct here.
 
