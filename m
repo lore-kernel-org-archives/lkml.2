@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939Ab1BOByI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 20:54:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60866 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995Ab1BOByF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 20:54:05 -0500
-Message-ID: <4D59DCB6.1020900@cn.fujitsu.com>
-Date: Tue, 15 Feb 2011 09:53:58 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
- for CFQ queue
-References: <4D51ED26.8050809@cn.fujitsu.com> <4D539804.9090308@cn.fujitsu.com> <20110210192940.GA2600@redhat.com> <4D55E07A.8060903@cn.fujitsu.com> <20110214165803.GE13097@redhat.com>
-In-Reply-To: <20110214165803.GE13097@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-15 09:53:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-15 09:53:08,
-	Serialize complete at 2011-02-15 09:53:08
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1753979Ab1BOB5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 20:57:22 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40951 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab1BOB5S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 20:57:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=WQDZoNuqN+Y86Zn5Xvtr319tSPh5mEhrcZjBcklCAckxPpOlZBv6pV8MFPBt0PVI3F
+         vxCEPMWMJrRsjY8+6OdwuTltMtWxzGPPUFeUAvTaSKpZAN6MAPLfBr7JQrDrk8s4bDpo
+         QJ27jdV1Ns/KunSaHqBjN10BlE+5QbdAbX0UQ=
+From: "Cho, Yu-Chen" <acho@novell.com>
+To: marcel@holtmann.org, padovan@profusion.mobi,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acho@novell.com, jlee@novell.com
+Subject: [PATCH] Add Atheros BT AR5BBU12 fw supported
+Date: Tue, 15 Feb 2011 09:58:54 +0800
+Message-Id: <ce34a9f1d05bc28c97d7de0c2a99225f56b11953.1297735066.git.acho@novell.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Sat, Feb 12, 2011 at 09:20:58AM +0800, Gui Jianfeng wrote:
->> Vivek Goyal wrote:
->>> On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
->>>> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
->>>> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
->>>> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
->>>> group scheduling on the same service tree.
->>>>
->>>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
->>>> ---
->>>>  block/cfq-iosched.c |  219 +++++++++++++++++++++++++++++++++++++++------------
->>>>  1 files changed, 167 insertions(+), 52 deletions(-)
->>>>
->>>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->>>> index f3a126e..41cef2e 100644
->>>> --- a/block/cfq-iosched.c
->>>> +++ b/block/cfq-iosched.c
->>>> @@ -39,6 +39,13 @@ static const int cfq_hist_divisor = 4;
->>>>   */
->>>>  #define CFQ_IDLE_DELAY		(HZ / 5)
->>>>  
->>>> +/* 
->>>> + * The base boosting value.
->>>> + */
->>>> +#define CFQ_BOOST_SYNC_BASE          (HZ / 10)
->>>> +#define CFQ_BOOST_ASYNC_BASE          (HZ / 25)
->>>> +
->>> These are same as cfq_slice_sync and cfq_slice_async. Looking at
->>> boost logic, this is equivalent of starting a new queue/group as
->>> if it is being requeued after conuming a full slice. So may be we can divide
->>> it by some const number say 4 or something like that. This is a minor
->>> point though as this algorimthm will kind of evolve and we will learn
->>> what works best.
->>>
->>> Secondly, I think you wanted to SYNC vs ASYNC logic seem to be reversed.
->>> We would like to give ASYNC queues higher boost (Put these farther in 
->>> tree) and lesser boost to SYNC queues. Looks like above constants will
->>> do the reverse? 
->> Hi Vivek,
->>
->> Currently, SYNC and ASYNC queues are in different service tree, they don't
->> impact each other. Here, I Really want use this logic.
-> 
-> Ok, SYNC and ASYNC are on separate service tree so their vtime are not
-> comparable (as of today, down the line one might want to look at those for
-> better workload selection logic).
-> 
-> Anyway, because two are on seprate tree so why should we have separate
-> boosting constants for them? How does it help?
+Add the btusb.c blacklist [0489:e02c] for Atheros AR5BBU12 BT
+and add to ath3k.c supported this device.
 
-Here if we are using CFQ_BOOST_SYNC_BASE for both, I think it might boost
-too much for an ASYNC cfqe as compare to others on the same service tree(async).
-So I make charging and boosting follow the same base.
+Signed-off-by: Cho, Yu-Chen <acho@novell.com>
+---
+ drivers/bluetooth/ath3k.c |    4 ++++
+ drivers/bluetooth/btusb.c |    3 +++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
 
-Thanks,
-Gui
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 333c212..d4065c0 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -41,6 +41,10 @@ static struct usb_device_id ath3k_table[] = {
+ 
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
++
++	/* Atheros AR5BBU12 with sflash firmware */
++	{ USB_DEVICE(0x0489, 0xE02C) },
++
+ 	{ }	/* Terminating entry */
+ };
+ 
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 4cefa91..0ae22fd 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -105,6 +105,9 @@ static struct usb_device_id blacklist_table[] = {
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+ 
++	/* Atheros AR5BBU12 with sflash firmware */
++	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
++
+ 	/* Broadcom BCM2035 */
+ 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
+ 	{ USB_DEVICE(0x0a5c, 0x200a), .driver_info = BTUSB_WRONG_SCO_MTU },
+-- 
+1.7.1
 
-> 
-> Thanks
-> Vivek
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
