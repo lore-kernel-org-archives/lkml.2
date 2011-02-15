@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab1BOMqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 07:46:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25301 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754539Ab1BOMqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 07:46:43 -0500
-Date: Tue, 15 Feb 2011 12:46:29 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Milan Broz <mbroz@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
-	read-write for read-only mappings
-Message-ID: <20110215124629.GF5825@agk-dp.fab.redhat.com>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>,
-	device-mapper development <dm-devel@redhat.com>,
-	Milan Broz <mbroz@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-	Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
+	id S1754881Ab1BOMrR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 07:47:17 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41865 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab1BOMrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 07:47:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=pJhNT0dpbtRfdCRiRt/xIefbc35JJv7Nn8jOVmMWtBViQy/WS3cAPaJFq6uG0EMuQV
+         as3/iG1XeJDk56vKAdnvd+f5CP4MYPedjNj6HNWI2xIEg+moERn6/BZjnon1mBvx+uE3
+         K28j65+I2bMIwVHf9ZPY6YNVhkzeqkAgfjgVs=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: dbrownell@users.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mcp23s08: support mcp23s17 variant
+References: <1297699964-20527-1-git-send-email-jacmet@sunsite.dk>
+	<AANLkTi=pWV+tfD6YGpKbzTkvLVoLXtGA41QRaaF=VFeq@mail.gmail.com>
+	<87r5bacvvl.fsf@macbook.be.48ers.dk>
+	<AANLkTikri_A1VknD3oLR2LwC4ysOgE20RnqMRdYnHbcP@mail.gmail.com>
+Date: Tue, 15 Feb 2011 13:47:04 +0100
+In-Reply-To: <AANLkTikri_A1VknD3oLR2LwC4ysOgE20RnqMRdYnHbcP@mail.gmail.com>
+	(Grant Likely's message of "Mon, 14 Feb 2011 11:59:16 -0700")
+Message-ID: <87mxlxa2if.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D5A6EF4.3030905@redhat.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 01:17:56PM +0100, Milan Broz wrote:
->         fd = open(device, O_RDWR | flags);
->         if (fd == -1 && errno == EROFS) {
->                 *readonly = 1;
->                 fd = open(device, O_RDONLY | flags);
->         }
+>>>>> "Grant" == Grant Likely <grant.likely@secretlab.ca> writes:
 
-Would it be reasonable for your patch to return EROFS rather than
-EACCES?
+Hi,
 
-man 2 open:
-       int open(const char *pathname, int flags, mode_t mode);
+ >> We could. I didn't do it because the 8bit and 16bit cases are very
+ >> similar, and checking a simple integer is presumably a lot faster than
+ >> the spi access - But I can rework the patch if you insists.
 
-       EROFS  pathname  refers  to a file on a read-only file system and write
-              access was requested.
+ Grant> I won't insist, but it really does look like something that should
+ Grant> have separate accessors from a code maintenance perspective.
 
-       EACCES The requested access to the file is not allowed, or search  per‐
-              mission  is denied for one of the directories in the path prefix
-              of pathname, or the file did not exist yet and write  access  to
-              the  parent  directory  is  not allowed.  (See also path_resolu‐
-              tion(7).)
+Ok, I've just respun the patch with seperate accessors.
 
-Alasdair
+ >> I wouldn't call it unrelated. It's to ensure it still lines up after the
+ >> s/u8/unsigned/.
 
+ Grant> Sorry, you're right.  I missed the s/u8/unsigned/ change.  I don't
+ Grant> have any problem with whitespace changes in a hunk that is also
+ Grant> getting a real change.
+
+Ok, good.
+
+-- 
+Bye, Peter Korsgaard
