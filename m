@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab1BOArn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 19:47:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46884 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505Ab1BOArk (ORCPT
+	id S1754043Ab1BOArw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 19:47:52 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8662 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab1BOArl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 19:47:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Jd8Ra4DUE/zHwp3dEvWyJ5mtipV58mbViUQaVgYhSApYSOXO5noEA4r2EEIHDR0d0I
-         PeChBc8VPIxz9g/Glv58bbrrqYQBcKQnHoKCDrvzc6OShQ9Rq5HSJ8sz5MVSyxSF0mEv
-         lwfpSKdeMzgnPU1mZYfDhbQSFV7lbdyFhrnXw=
-Message-ID: <4D59CD28.7070108@gmail.com>
-Date: Mon, 14 Feb 2011 18:47:36 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Mon, 14 Feb 2011 19:47:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp04.nvidia.com on Mon, 14 Feb 2011 16:47:39 -0800
+From: Andrew Chew <AChew@nvidia.com>
+To: "'Erik Gilling'" <konkers@android.com>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>
+Date: Mon, 14 Feb 2011 16:47:34 -0800
+Subject: RE: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
+Thread-Topic: [PATCH 1/1] [tegra] Make syncpt routines accessible by drivers
+Thread-Index: AcvMpmf2QItRyKQ7SJa1uVIFB7HRxQAAr/4Q
+Message-ID: <643E69AA4436674C8F39DCC2C05F763816BD96CFB2@HQMAIL03.nvidia.com>
+References: <1297726034-32762-1-git-send-email-achew@nvidia.com>
+	<AANLkTinvpo=R1pjvykEZVXV08D+uXLJa=R8CDcMFWWpT@mail.gmail.com>
+	<643E69AA4436674C8F39DCC2C05F763816BD96CFB1@HQMAIL03.nvidia.com>
+ <AANLkTin+uxnM-u7N-+aXUzGVm7m2eXZKrenDbRPq1V-W@mail.gmail.com>
+In-Reply-To: <AANLkTin+uxnM-u7N-+aXUzGVm7m2eXZKrenDbRPq1V-W@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: ak@linux.intel.com, cebbert@redhat.com, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org
-Subject: Re: b44 driver causes panic when using swiotlb
-References: <4D4759BD.2000006@gmail.com>	<20110201102707C.fujita.tomonori@lab.ntt.co.jp>	<4D477C6F.8000906@gmail.com> <20110201142103M.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110201142103M.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2011 11:22 PM, FUJITA Tomonori wrote:
-> On Mon, 31 Jan 2011 21:22:23 -0600
-> Robert Hancock<hancockrwd@gmail.com>  wrote:
->
->>> Some ideas to implement something that works for such device were
->>> discussed. Seems that the conclusion is that it's doesn't worth making
->>> the common code complicated for such minor and insane devices.
->>
->> I don't think this is the only device that has sub-32-bit DMA
->> restrictions, this will just lead to a bunch of duplicated code.
->
-> Yeah, not only device but not many.
->
-> The block layer has the own bouncing mechanism. Some network drivers
-> have the similar bouncing code. I don't know if there are other kinds
-> of drivers that have the own bouncing code.
->
-> I thought that we can make mm/bounce.c (used for block drivers now)
-> work any drivers without complicating it. We could make swiotlb to do
-> but it's too complicated and it doesn't worth.
->
->
->> In
->> particular, how is LPC DMA supposed to work?
->
-> LPC DMA can't do 32bit dma?
+> Yeah, including the relative path was a bit of a hack since the nvhost
+> drivers needs some serious work before it's upstreamable.  A "right"
+> way to do this is to have the syncpt functions take an nvhost_device
+> pointer (or create helper functions that do that,) then expose those
+> functions in mach/nvhost.h.  This obviates the need for a global
+> nvhost_sycpt pointer.
+> 
+> -Erik
 
-At least not if it's using ISA-style 3rd-party DMA. Some devices may do 
-bus-mastering and be able to do 32-bit DMA, but I've never seen one, at 
-least.
+You're right about that global nvhost_syncpt pointer.  That drives me nuts as well.  Nevertheless, I'm not sure I'm knowledgeable enough to do the required work to do this the "right" way.  As far as I know, nvhost is a guaranteed singleton in practice (not in implementation), so while this is ugly, it will work fine for existing projects.
 
->
->
->> At the very least we should be allowing the driver to deal with the
->> failure instead of panicing the system. Otherwise we are just leaving a
->> land mine for people to trip over.
->
-> Agreed. swiotlb shouldn't panic in this case. I'll take care of it.
+Can we use nvmap as precedent and do it this way for now?  I'd like to get the V4L2 camera host driver up to the Tegra community as soon as possible.  When the problem is solved for the dc driver, I can adapt that to the V4L2 camera host driver.
 
+> On Mon, Feb 14, 2011 at 4:08 PM, Andrew Chew <AChew@nvidia.com> wrote:
+> >> If you want to use syncpts you should be an nvhost_driver 
+> link the dc.
+> >
+> > Looking at drivers/video/tegra/dc, I notice that it gets 
+> access to the syncpt functions by using a relative path 
+> (../host/dev.h) to include dev.h, which in turn includes 
+> nvhost_syncpt.h (in drivers/video/tegra/host).  Is this proper form?
+> >
+> > This syncpt access is for a Tegra V4L2 driver, which will 
+> live in drivers/media/video.  I was trying to avoid using 
+> relative paths for #includes.  I assumed that the header 
+> files in drivers/video/tegra/host were not meant to be 
+> publicly available to other drivers, which is why I looked 
+> for some precedent in how nvhost functions were made 
+> available to other kernel drivers, hence I modeled this after nvmap.
+> 
