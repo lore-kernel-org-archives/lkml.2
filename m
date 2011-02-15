@@ -1,107 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab1BOSmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 13:42:39 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43703 "EHLO mx2.mail.elte.hu"
+	id S1755968Ab1BOSms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 13:42:48 -0500
+Received: from kroah.org ([198.145.64.141]:38965 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754998Ab1BOSmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 13:42:36 -0500
-Date: Tue, 15 Feb 2011 19:42:00 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/14] [GIT PULL][v2.6.39] tracing/filter: More robust
- filtering
-Message-ID: <20110215184200.GA7335@elte.hu>
-References: <20110208015617.902200587@goodmis.org>
- <20110215044425.GA9994@elte.hu>
- <1297776787.23343.104.camel@gandalf.stny.rr.com>
+	id S1755892Ab1BOSmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 13:42:46 -0500
+Date: Tue, 15 Feb 2011 10:42:20 -0800
+From: Greg KH <greg@kroah.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Amit Shah <amitshah@gmx.net>, baoyb <baoyb@avit.org.cn>
+Subject: Re: [PATCH 1/1] USB: serial/usb_wwan, fix tty NULL dereference
+Message-ID: <20110215184220.GA21432@kroah.com>
+References: <1297781707-3985-1-git-send-email-jslaby@suse.cz>
+ <4D5AB48A.2040504@ru.mvista.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297776787.23343.104.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D5AB48A.2040504@ru.mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Tue, 2011-02-15 at 05:44 +0100, Ingo Molnar wrote:
-
-> > So ... i have to say that this tracing filter business is unusable crap from a 
-> > user POV right now and i see no reason to pull *anything* in this area until it 
-> > does not get improved to *much* better levels of usability and utility.
-> > 
-> > Nobody could *ever* have tested this with a 'naive but curious user' hat on and 
-> > this is really sad. We need to do much better!
+On Tue, Feb 15, 2011 at 08:14:50PM +0300, Sergei Shtylyov wrote:
+> Hello.
 > 
-> Sorry I did not work with perf in writing this code. I was using the debugfs 
-> directly. I figured that any improvement I made there would also improve perf as I 
-> tried to make sure the perf hooks into that code were updated too.
+> Jiri Slaby wrote:
 > 
-> My question is, did this patch set cause any of the perf problems or did these 
-> problems always exist?
+> >tty_port_tty_get may return without any problems NULL. Handle this
+> >case and do not oops in usb_wwan_indat_callback by dereferencing it.
 > 
-> I'm just saying that perf is not the only user. And to deny improvements in the 
-> code because one user does not currently work well with them is just hindering 
-> progress.
+> >The oops:
+> >Unable to handle kernel paging request for data at address 0x000000d8
+> >Faulting instruction address: 0xc0175b3c
+> >Oops: Kernel access of bad area, sig: 11 [#1]
+> >PowerPC 40x Platform
+> >last sysfs file:
+> >/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
+> >Modules linked in:
+> >NIP: c0175b3c LR: c0175e7c CTR: c0215c90
+> >REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
+> >MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
+> >DEAR: 000000d8, ESR: 00000000
+> >TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
+> >GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
+> >GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
+> >GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
+> >GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
+> >NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
+> >LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+> >Call Trace:
+> >[c77f7e00] [00000003] 0x3 (unreliable)
+> >[c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+> >[c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
+> >...
 > 
-> There happens to be real users out in the world that are still using ftrace. I see 
-> no reason to stop improving it because your goal is to have everyone move to perf.
+> >References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
+> >Cc: Amit Shah <amitshah@gmx.net>
+> >Cc: baoyb <baoyb@avit.org.cn>
+> >Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> >Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> >---
+> > drivers/usb/serial/usb_wwan.c |   15 +++++++++------
+> > 1 files changed, 9 insertions(+), 6 deletions(-)
 > 
-> Thanks for letting me waste three days on developing this. I even posted an RFC a 
-> while back, and no one complained then.
+> >diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+> >index b004b2a..9c014e2 100644
+> >--- a/drivers/usb/serial/usb_wwan.c
+> >+++ b/drivers/usb/serial/usb_wwan.c
+> >@@ -295,12 +295,15 @@ static void usb_wwan_indat_callback(struct urb *urb)
+> > 		    __func__, status, endpoint);
+> > 	} else {
+> > 		tty = tty_port_tty_get(&port->port);
+> >-		if (urb->actual_length) {
+> >-			tty_insert_flip_string(tty, data, urb->actual_length);
+> >-			tty_flip_buffer_push(tty);
+> >-		} else
+> >-			dbg("%s: empty read urb received", __func__);
+> >-		tty_kref_put(tty);
+> >+		if (tty) {
+> >+			if (urb->actual_length) {
+> >+				tty_insert_flip_string(tty, data,
+> >+						urb->actual_length);
+> >+				tty_flip_buffer_push(tty);
+> >+			} else
+> >+				dbg("%s: empty read urb received", __func__);
+> 
+>    Should be {} on the *else* branch too, according to Documentation/CodingStyle...
 
-I initially pulled your bits with the intention of merging them, tested them as the 
-final line of defense, gave you my feedback in my mail in a very detailed way, with 
-suggestions of what to improve.
+It's not an issue, it is fine as-is.
 
-A few lines I would normally not worry about, but I refuse to pull such a massive 
-diffstat:
+Jiri, thanks for the fix, I'll queue it up soon.
 
- 3 files changed, 754 insertions(+), 170 deletions(-)
-
-That ignores a major usecase. I do not pull bits that are arcane to begin with which 
-improve something that we don't even know whether it works in all cases - in fact 
-which we know does not work at all in a major usecase, as my testing has shown.
-
-My point is that you guys need to work this out with the 'other side' *before* it 
-goes upstream. The tracing and perf code needs to stop doing this kind of 
-self-serving improvements *when basic utility sucks so much*.
-
-And yes, it sucks both on the perf and the ftrace tracing 'side' - in no small part 
-because there's two sides.
-
-We had huge churn in the tracing code in the last 2 years and frankly i do not see 
-the results and i do not see it getting cleaned up and i do not see it getting 
-unified.
-
-I find this kind of 'the other side does not exist' schizm quite harmful to the 
-'generic' code in question and am pushing back on you, as i'm expected to. I don't 
-care whether it's "perf's fault" or "ftrace's fault" - i find the whole artificial 
-division harmful and refuse to elongate/deepen it.
-
-Anyway, there's certainly encouraging responses in this thread so i'm hopeful that 
-it's getting fixed and improved and we can push the generic bits upstream.
-
-Thanks,
-
-	Ingo
+greg k-h
