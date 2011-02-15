@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab1BOWVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 17:21:21 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:22941 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250Ab1BOWVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 17:21:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=HAHBtwnoAlvGP4rP5iCeCZ7xkWy60rzQPxhBUvCXVvaoz9PkahmppFIXGT5Sic6kmj
-         JzcvD/m2UM10N85YVtyg==
-Date: Tue, 15 Feb 2011 14:21:11 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-        casteyde.christian@free.fr, Changli Gao <xiaosuo@gmail.com>,
-        Vegard Nossum <vegardno@ifi.uio.no>,
-        David Miller <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [Bugme-new] [Bug 27212] New: Warning kmemcheck: Caught 64-bit
- read from uninitialized memory in netlink_broadcast_filtered
-In-Reply-To: <AANLkTinKTdeO5mnE38n==aZMz5P1XKKM+kykhoBu0=9k@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1102151403170.10742@chino.kir.corp.google.com>
-References: <bug-27212-10286@https.bugzilla.kernel.org/> <20110120122549.85863a84.akpm@linux-foundation.org> <1295556085.2613.22.camel@edumazet-laptop> <4D393A99.9060104@kernel.org> <1297704922.2996.60.camel@edumazet-laptop>
- <AANLkTinKTdeO5mnE38n==aZMz5P1XKKM+kykhoBu0=9k@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1756261Ab1BOWWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 17:22:23 -0500
+Received: from gate.crashing.org ([63.228.1.57]:53990 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755249Ab1BOWWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 17:22:22 -0500
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: simoneau@ele.uri.edu, will.newton@gmail.com, hpa@zytor.com,
+        matt@console-pimps.org, rostedt@goodmis.org, peterz@infradead.org,
+        jbaron@redhat.com, mathieu.desnoyers@polymtl.ca, mingo@elte.hu,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        vapier@gentoo.org, cmetcalf@tilera.com, dhowells@redhat.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+In-Reply-To: <20110215.132702.39199169.davem@davemloft.net>
+References: <4D59B891.8010300@zytor.com>
+	 <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
+	 <20110215211123.GA3094@ele.uri.edu>
+	 <20110215.132702.39199169.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Feb 2011 16:20:18 -0600
+Message-ID: <1297808418.2460.9.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Feb 2011, Pekka Enberg wrote:
+On Tue, 2011-02-15 at 13:27 -0800, David Miller wrote:
+> From: Will Simoneau <simoneau@ele.uri.edu>
+> Date: Tue, 15 Feb 2011 16:11:23 -0500
+> 
+> > Note how the cache and cache coherence protocol are fundamental parts of this
+> > operation; if these instructions simply bypassed the cache, they *could not*
+> > work correctly - how do you detect when the underlying memory has been
+> > modified?
+> 
+> The issue here isn't L2 cache bypassing, it's local L1 cache bypassing.
+> 
+> The chips in question aparently do not consult the local L1 cache on
+> "ll" instructions.
+> 
+> Therefore you must only ever access such atomic data using "ll"
+> instructions.
 
-> > [PATCH] slub: fix kmemcheck calls to match ksize() hints
-> >
-> > Recent use of ksize() in network stack (commit ca44ac38 : net: don't
-> > reallocate skb->head unless the current one hasn't the needed extra size
-> > or is shared) triggers kmemcheck warnings, because ksize() can return
-> > more space than kmemcheck is aware of.
-> >
-> > Pekka Enberg noticed SLAB+kmemcheck is doing the right thing, while SLUB
-> > +kmemcheck doesnt.
-> >
-> > Bugzilla reference #27212
-> >
-> > Reported-by: Christian Casteyde <casteyde.christian@free.fr>
-> > Suggested-by: Pekka Enberg <penberg@kernel.org>
-> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> > CC: David Miller <davem@davemloft.net>
-> > CC: Changli Gao <xiaosuo@gmail.com>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
+Note that it's actually a reasonable design choice to not consult the L1
+in these case .... as long as you invalidate it on the way. That's how
+current powerpcs do it afaik, they send a kill to any matching L1 line
+along as reading from the L2. (Of course, L1 has to be write-through for
+that to work).
 
-Acked-by: David Rientjes <rientjes@google.com>
+Cheers,
+Ben.
+
+
