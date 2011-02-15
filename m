@@ -1,137 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1BOQWY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:22:24 -0500
-Received: from mailc.microsoft.com ([131.107.115.214]:33772 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab1BOQWV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:22:21 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 2/3]: Staging: hv: Use native wait primitives
-Thread-Topic: [PATCH 2/3]: Staging: hv: Use native wait primitives
-Thread-Index: AQHLyhRfU1AHw/SIZkauajJIU383GpQC1SmA//+ugvCAAKBqgP//m01Q
-Date: Tue, 15 Feb 2011 16:22:20 +0000
-Message-ID: <FB42D5CCD7B5934EB1827DB5ED9B850E07085D7F@TK5EX14MBXC104.redmond.corp.microsoft.com>
-References: <1297447183-21807-1-git-send-email-kys@microsoft.com>
- <4D5A4565.5030501@gmail.com>
- <FB42D5CCD7B5934EB1827DB5ED9B850E07085CF8@TK5EX14MBXC104.redmond.corp.microsoft.com>
- <20110215140305.GA10301@suse.de>
-In-Reply-To: <20110215140305.GA10301@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754073Ab1BOQZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:25:29 -0500
+Received: from kroah.org ([198.145.64.141]:41943 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751986Ab1BOQZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 11:25:27 -0500
+Date: Tue, 15 Feb 2011 08:20:11 -0800
+From: Greg KH <greg@kroah.com>
+To: NeilBrown <neilb@suse.de>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, a.p.zijlstra@chello.nl,
+        linux-tip-commits@vger.kernel.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, stable@kernel.org, mingo@redhat.com,
+        hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Subject: Re: [stable] [tip:sched/core] sched: Change
+ wait_for_completion_*_timeout() to return a signed long
+Message-ID: <20110215162011.GA12814@kroah.com>
+References: <20110105125016.64ccab0e@notabene.brown>
+ <tip-6bf4123760a5aece6e4829ce90b70b6ffd751d65@git.kernel.org>
+ <20110111214457.GD28537@fieldses.org>
+ <20110112090707.4a794483@notabene.brown>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110112090707.4a794483@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Tuesday, February 15, 2011 9:03 AM
-> To: KY Srinivasan
-> Cc: Jiri Slaby; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org
-> Subject: Re: [PATCH 2/3]: Staging: hv: Use native wait primitives
+On Wed, Jan 12, 2011 at 09:07:07AM +1100, NeilBrown wrote:
+> On Tue, 11 Jan 2011 16:44:58 -0500 "J. Bruce Fields" <bfields@fieldses.org>
+> wrote:
 > 
-> On Tue, Feb 15, 2011 at 01:35:56PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Jiri Slaby [mailto:jirislaby@gmail.com]
-> > > Sent: Tuesday, February 15, 2011 4:21 AM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> > > Subject: Re: [PATCH 2/3]: Staging: hv: Use native wait primitives
-> > >
-> > > On 02/11/2011 06:59 PM, K. Y. Srinivasan wrote:
-> > > > In preperation for getting rid of the osd layer; change
-> > > > the code to use native wait interfaces. As part of this,
-> > > > fixed the buggy implementation in the osd_wait_primitive
-> > > > where the condition was cleared potentially after the
-> > > > condition was signalled.
-> > > ...
-> > > > @@ -566,7 +567,11 @@ int vmbus_establish_gpadl(struct vmbus_channel
-> > > *channel, void *kbuffer,
-> > > >
-> > > >  		}
-> > > >  	}
-> > > > -	osd_waitevent_wait(msginfo->waitevent);
-> > > > +	wait_event_timeout(msginfo->waitevent,
-> > > > +				msginfo->wait_condition,
-> > > > +				msecs_to_jiffies(1000));
-> > > > +	BUG_ON(msginfo->wait_condition == 0);
-> > >
-> > > The added BUG_ONs all over the code look scary. These shouldn't be
-> > > BUG_ONs at all. You should maybe warn and bail out, but not kill the
-> > > whole machine.
-> >
-> > This is Linux code running as a guest on a Windows host; and so the guest
-> cannot
-> > tolerate a failure of the host. In the cases where I have chosen to BUG_ON,
-> there
-> > is no reasonable recovery possible when the host is non-functional (as
-> determined
-> > by a non-responsive host).
+> > Doesn't this belong in 2.6.37.y as well?
 > 
-> If you have a non-responsive host, wouldn't that imply that this guest
-> code wouldn't run at all?  :)
+> Yes indeed!
+> I should have tagged it for Cc:stable@kernel.org in the first place.  I had
+> been meaning to forward it to stable@kernel.org, but you beat me to it!
 
-The fact  that on a particular transaction the host has not responded within an expected
-time interval does not necessarily  mean that the guest code would not be running. There may be 
-issues on the host side that may be either transient or permanent that may cause problems like
-this. Keep in mind, HyperV is a type 1 hypervisor that would schedule all VMs including the host
-and so, guest would get scheduled.
+Now applied, thanks.
 
-> 
-> Having BUG_ON() in drivers is not a good idea either way.  Please remove
-> these in future patches.
-
-In situations where there is not a reasonable rollback strategy (for
-instance in one of the cases, we are granting access to the guest
-physical pages to the host) we really have only 2 options:
-
-1) Wait until the host responds. This wait could potentially be unbounded
-and in fact this  was the way the code was to begin with. One of the reviewers
-had suggested that unbounded wait was to be corrected.
-2) Wait for a specific period and if the host does not respond
-within a reasonable period, kill the guest since there is no recovery
-possible.
-
-I chose option 2, as part of addressing some of the prior review
-comments. If the consensus now is to go back to option 1, I am fine with that;
-I will send you a patch to rectify this.
-
-Regards,
-
-K. Y
-  
-> 
-> > > And looking at the code, more appropriate would be completion instead of
-> > > wait events.
-> > >
-> > > And msecs_to_jiffies(1000) == HZ.
-> >
-> > Agreed. In this first round of cleanup, I chose to keep the primitives
-> > as they were in osd.c. Greg, if it is ok with you, I will send you a
-> > patch that fixes these issues on top of the patches I have already
-> > sent.
-> 
-> Yes, that is fine.
-> 
-> thanks,
-> 
-> greg k-h
-
+greg k-h
