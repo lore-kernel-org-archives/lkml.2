@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab1BOWZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 17:25:56 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48960 "EHLO lunge.queued.net"
+	id S1756421Ab1BOWZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 17:25:58 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48952 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756311Ab1BOWZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 17:25:41 -0500
+	id S1756302Ab1BOWZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 17:25:39 -0500
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Florian Fainelli <florian@openwrt.org>, linux-watchdog@vger.kernel.org
-Subject: [PATCH 8/9] rdc321x-southbridge: use mfd_data instead of driver_data
-Date: Tue, 15 Feb 2011 14:25:28 -0800
-Message-Id: <1297808729-21110-9-git-send-email-dilinger@queued.net>
+        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH 6/9] tmio-nand: use mfd_data instead of driver_data
+Date: Tue, 15 Feb 2011 14:25:26 -0800
+Message-Id: <1297808729-21110-7-git-send-email-dilinger@queued.net>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297808729-21110-1-git-send-email-dilinger@queued.net>
 References: <1297808729-21110-1-git-send-email-dilinger@queued.net>
@@ -21,64 +21,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use mfd_data for passing information from mfd drivers to soc
+Use mfd_data for passing information from mfd drivers to mfd
 clients.  The mfd_cell's driver_data field is being phased out.
 
 Clients that were using driver_data now access .mfd_data
-via mfd_get_data().
+via mfd_get_data().  This changes tmio-nand only; mfd drivers with
+other cells are not modified.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/gpio/rdc321x-gpio.c       |    2 +-
- drivers/mfd/rdc321x-southbridge.c |    4 ++--
- drivers/watchdog/rdc321x_wdt.c    |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/mfd/t7l66xb.c        |    2 +-
+ drivers/mfd/tc6393xb.c       |    2 +-
+ drivers/mtd/nand/tmio_nand.c |    3 +--
+ 3 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpio/rdc321x-gpio.c b/drivers/gpio/rdc321x-gpio.c
-index 897e057..5ecc9e1 100644
---- a/drivers/gpio/rdc321x-gpio.c
-+++ b/drivers/gpio/rdc321x-gpio.c
-@@ -135,7 +135,7 @@ static int __devinit rdc321x_gpio_probe(struct platform_device *pdev)
- 	struct rdc321x_gpio *rdc321x_gpio_dev;
- 	struct rdc321x_gpio_pdata *pdata;
+diff --git a/drivers/mfd/t7l66xb.c b/drivers/mfd/t7l66xb.c
+index 3c9e389..af57fc7 100644
+--- a/drivers/mfd/t7l66xb.c
++++ b/drivers/mfd/t7l66xb.c
+@@ -383,7 +383,7 @@ static int t7l66xb_probe(struct platform_device *dev)
  
--	pdata = platform_get_drvdata(pdev);
-+	pdata = mfd_get_data(pdev);
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "no platform data supplied\n");
- 		return -ENODEV;
-diff --git a/drivers/mfd/rdc321x-southbridge.c b/drivers/mfd/rdc321x-southbridge.c
-index 5092297..193c940 100644
---- a/drivers/mfd/rdc321x-southbridge.c
-+++ b/drivers/mfd/rdc321x-southbridge.c
-@@ -61,12 +61,12 @@ static struct mfd_cell rdc321x_sb_cells[] = {
- 		.name		= "rdc321x-wdt",
- 		.resources	= rdc321x_wdt_resource,
- 		.num_resources	= ARRAY_SIZE(rdc321x_wdt_resource),
--		.driver_data	= &rdc321x_wdt_pdata,
-+		.mfd_data	= &rdc321x_wdt_pdata,
- 	}, {
- 		.name		= "rdc321x-gpio",
- 		.resources	= rdc321x_gpio_resources,
- 		.num_resources	= ARRAY_SIZE(rdc321x_gpio_resources),
--		.driver_data	= &rdc321x_gpio_pdata,
-+		.mfd_data	= &rdc321x_gpio_pdata,
- 	},
- };
+ 	t7l66xb_attach_irq(dev);
  
-diff --git a/drivers/watchdog/rdc321x_wdt.c b/drivers/watchdog/rdc321x_wdt.c
-index 3939e53..9fd382d 100644
---- a/drivers/watchdog/rdc321x_wdt.c
-+++ b/drivers/watchdog/rdc321x_wdt.c
-@@ -231,7 +231,7 @@ static int __devinit rdc321x_wdt_probe(struct platform_device *pdev)
- 	struct resource *r;
- 	struct rdc321x_wdt_pdata *pdata;
+-	t7l66xb_cells[T7L66XB_CELL_NAND].driver_data = pdata->nand_data;
++	t7l66xb_cells[T7L66XB_CELL_NAND].mfd_data = pdata->nand_data;
  
--	pdata = platform_get_drvdata(pdev);
-+	pdata = mfd_get_data(pdev);
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "no platform data supplied\n");
- 		return -ENODEV;
+ 	ret = mfd_add_devices(&dev->dev, dev->id,
+ 			      t7l66xb_cells, ARRAY_SIZE(t7l66xb_cells),
+diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+index 7f7b9fa..ecb045b 100644
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -693,7 +693,7 @@ static int __devinit tc6393xb_probe(struct platform_device *dev)
+ 			goto err_setup;
+ 	}
+ 
+-	tc6393xb_cells[TC6393XB_CELL_NAND].driver_data = tcpd->nand_data;
++	tc6393xb_cells[TC6393XB_CELL_NAND].mfd_data = tcpd->nand_data;
+ 	tc6393xb_cells[TC6393XB_CELL_FB].driver_data = tcpd->fb_data;
+ 
+ 	ret = mfd_add_devices(&dev->dev, dev->id,
+diff --git a/drivers/mtd/nand/tmio_nand.c b/drivers/mtd/nand/tmio_nand.c
+index 5bf63e3..2383b8f 100644
+--- a/drivers/mtd/nand/tmio_nand.c
++++ b/drivers/mtd/nand/tmio_nand.c
+@@ -372,8 +372,7 @@ static void tmio_hw_stop(struct platform_device *dev, struct tmio_nand *tmio)
+ 
+ static int tmio_probe(struct platform_device *dev)
+ {
+-	struct mfd_cell *cell = mfd_get_cell(dev);
+-	struct tmio_nand_data *data = cell->driver_data;
++	struct tmio_nand_data *data = mfd_get_data(dev);
+ 	struct resource *fcr = platform_get_resource(dev,
+ 			IORESOURCE_MEM, 0);
+ 	struct resource *ccr = platform_get_resource(dev,
 -- 
 1.7.2.3
 
