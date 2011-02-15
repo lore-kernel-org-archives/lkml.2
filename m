@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab1BOURQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 15:17:16 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:59828 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab1BOURP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 15:17:15 -0500
-Subject: Re: BUG at fs/namei.c:405 (nameidata_drop_rcu)
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Chuck Ebbert <cebbert@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>
-In-Reply-To: <20110211000247.5e8fbed8@katamari>
-References: <20110211000247.5e8fbed8@katamari>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Canonical
-Date: Tue, 15 Feb 2011 18:17:08 -0200
-Message-ID: <1297801028.2403.27.camel@herton-IdeaPad-Y430>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8BIT
+	id S1755722Ab1BOU1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 15:27:45 -0500
+Received: from www.tglx.de ([62.245.132.106]:54638 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751726Ab1BOU1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 15:27:43 -0500
+Date: Tue, 15 Feb 2011 21:26:35 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>, Larry Woodman <lwoodman@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] fix pgd_lock deadlock
+In-Reply-To: <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1102152125180.26192@localhost6.localdomain6>
+References: <4CB76E8B.2090309@goop.org> <4CC0AB73.8060609@goop.org> <20110203024838.GI5843@random.random> <4D4B1392.5090603@goop.org> <20110204012109.GP5843@random.random> <4D4C6F45.6010204@goop.org> <20110207232045.GJ3347@random.random>
+ <20110215190710.GL5935@random.random> <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6> <20110215195450.GO5935@random.random> <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sex, 2011-02-11 às 00:02 -0500, Chuck Ebbert escreveu:
-> Apparently hit this very early in nameidata_drop_rcu():
+On Tue, 15 Feb 2011, Thomas Gleixner wrote:
+
+> On Tue, 15 Feb 2011, Andrea Arcangeli wrote:
+> > On Tue, Feb 15, 2011 at 08:26:51PM +0100, Thomas Gleixner wrote:
+> > 
+> > With NR_CPUs < 4, or with THP enabled, rmap.c will do
+> > spin_lock(&mm->page_table_lock) (or pte_offset_map_lock where the lock
+> > is still mm->page_table_lock and not the PT lock). Then it will send
+> > IPIs to flush the tlb of the other CPUs.
+> > 
+> > But the other CPU is running the vmalloc_sync_all, and it is trying to
+> > take the page_table_lock with irq disabled. It will never take the
+> > lock because the CPU waiting the IPI delivery holds it. And it will
+> > never run the IPI because it has irqs disabled.
 > 
->         BUG_ON(!(nd->flags & LOOKUP_RCU));
+> Ok, that makes sense :)
+>  
+> > Now the big question is if anything is taking the pgd_lock from
+> > irqs. Normal testing could never reveal it as even if it happens it
+> > has a slim chance to happen while the pgd_lock is already hold by
+> > normal kernel context. But the VM_BUG_ON(in_interrupt()) should
+> > hopefully have revealed it already if it ever happened, I hope.
+> > 
+> > Clearly we could try to fix it in other ways, but still if there's no
+> > reason to do the _irqsave this sounds a good idea to apply my fix
+> > anyway.
 > 
-> The user reports he ran "fuser /var/cache/yum" while logged in to
-> an X session with his home directory mounted via NFS4. Home dirs
-> are normally automounted, but manually mounting the dir still
-> reproduces the problem.
+> Did you try with DEBUG_PAGEALLOC, which is calling into cpa quite a
+> lot?
 
-I got a similar report too, and was able to reproduce here with nfs4
-too.
+Another thing. You check for in_interrupt(), but what makes sure that
+the code which takes pgd_lock is never taken with interrupts disabled
+except during early boot ?
 
-We hit it at force_reval_path
+Thanks,
 
->From what I saw force_reval_path is never called with LOOKUP_RCU flag
-set. Who calls force_reval_path is __do_follow_link, and
-__do_follow_link is called from do_filp_open and do_follow_link. When
-do_filp_open calls it, it already dropped LOOKUP_RCU (if path rcu lookup
-didn't work). do_follow_link also calls it without LOOKUP_RCU set from
-what I'm seeing, as before each do_follow_link call
-nameidata_dentry_drop_rcu_maybe is called.
-
-So simply removing again nameidata_drop_rcu from force_reval_path should
-do it. I'm running now on this change and didn't experience the same bug
-or other problems.
-
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-
-diff --git a/fs/namei.c b/fs/namei.c
-index ec4b2d0..7dcedbc 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -668,9 +668,7 @@ force_reval_path(struct path *path, struct nameidata *nd)
- 		return 0;
- 
- 	if (!status) {
--		/* Don't d_invalidate in rcu-walk mode */
--		if (nameidata_drop_rcu(nd))
--			return -ECHILD;
-+		BUG_ON(nd->flags & LOOKUP_RCU);
- 		d_invalidate(dentry);
- 		status = -ESTALE;
- 	}
-
-
+	tglx
