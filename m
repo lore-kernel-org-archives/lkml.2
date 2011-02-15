@@ -1,94 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab1BOQys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:54:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23386 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751209Ab1BOQyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:54:46 -0500
-Date: Tue, 15 Feb 2011 17:54:43 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC,PATCH] kprobes - optimized kprobes might crash before
- setting kernel stack
-Message-ID: <20110215165443.GC3135@jolsa.brq.redhat.com>
-References: <1297696354-6990-1-git-send-email-jolsa@redhat.com>
- <4D5A4A66.4010503@hitachi.com>
- <20110215123058.GB3135@jolsa.brq.redhat.com>
- <4D5AA209.7070309@hitachi.com>
+	id S1755509Ab1BOQzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:55:21 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59074 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab1BOQzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 11:55:16 -0500
+Date: Tue, 15 Feb 2011 11:55:10 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 0/5] fix up /proc/$pid/smaps to not split huge pages
+Message-ID: <20110215165510.GA2550@mgebm.net>
+References: <20110209195406.B9F23C9F@kernel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
 Content-Disposition: inline
-In-Reply-To: <4D5AA209.7070309@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110209195406.B9F23C9F@kernel>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 12:55:53AM +0900, Masami Hiramatsu wrote:
-> (2011/02/15 21:30), Jiri Olsa wrote:
-> > On Tue, Feb 15, 2011 at 06:41:58PM +0900, Masami Hiramatsu wrote:
-> >> (2011/02/15 0:12), Jiri Olsa wrote:
-> >>> hi,
-> >>>
-> >>> you can crash the kernel using kprobe tracer via:
-> >>>
-> >>> echo "p system_call_after_swapgs" > ./kprobe_events
-> >>> echo 1 > ./events/kprobes/enable
-> >>
-> >> Ah, thank you very much!
-> >>
-> >>> The reason is that at the system_call_after_swapgs label,
-> >>> the kernel stack is not set up. If optimized kprobes are
-> >>> enabled, the user space stack is being used in this case
-> >>> (see optimized kprobe template) and this might result in a crash.
-> >>
-> >> Verified here, and also it didn't occur when turning optimization
-> >> off by sysctl. So this is a bug of kprobe jump optimization, not
-> >> kprobes itself.
-> >>
-> >>> Looks like there are several places like this over the entry_$(BIT)
-> >>> code. First I thought it'd be ok to localize those places, but
-> >>> I haven't found any reasonable/maintainable way to disable only those
-> >>> places.
-> >>
-> >> Hmm, agreed.
-> >>
-> >>> So I switched off the whole entry code from optimizing, but this
-> >>> also switch many safe places (attached patch - tested on x86_64).
-> >>
-> >> I'm OK for this solution. I think possible another solution is using
-> >> interrupt stack in optprobe template too. Anyway in short term, this
-> >> solution will be good.
-> > 
-> > ok, I'll test on 32 bits and resend to Ingo
-> 
-> Thanks!
-> And also, with deeply thinking about this problem, it seems that
-> your idea could be the best way to fix, because kprobes can not
-> know where the kernel stack is ready without those text section.
-> 
-> 
-> >>> Also not sure this crash falls in to the area of that once such
-> >>> probe is used, user should know consequences..
-> >>
-> >> User can see that those probe is not optimized via sysfs.
-> > 
-> > I cannot find this, where can I see this info?
-> 
-> Ah, actually, that is under debugfs, which is usually mounted on
-> /sys/kernel/debug. You can read "/sys/kernel/debug/kprobes/list"
-> for getting a list of currently registered probes.
 
-I see, thanks
+--C7zPtVaVf+AK4Oqc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-jirka
+On Wed, 09 Feb 2011, Dave Hansen wrote:
 
-> 
-> Thank you,
-> -- 
-> Masami HIRAMATSU
-> 2nd Dept. Linux Technology Center
-> Hitachi, Ltd., Systems Development Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
+> Andrea, after playing with this for a week or two, I'm quite a bit
+> more confident that it's not causing much harm.  Seems a fairly
+> low-risk feature.  Could we stick these somewhere so they'll at
+> least hit linux-next for the 2.6.40 cycle perhaps?
+>=20
+> --
+>=20
+> I'm working on some more reports that transparent huge pages and
+> KSM do not play nicely together.  Basically, whenever THP's are
+> present along with KSM, there is a lot of attrition over time,
+> and we do not see much overall progress keeping THP's around:
+>=20
+> 	http://sr71.net/~dave/ibm/038_System_Anonymous_Pages.png
+>=20
+> (That's Karl Rister's graph, thanks Karl!)
+>=20
+> However, I realized that we do not currently have a nice way to
+> find out where individual THP's might be on the system.  We
+> have an overall count, but no way of telling which processes or
+> VMAs they might be in.
+>=20
+> I started to implement this in the /proc/$pid/smaps code, but
+> quickly realized that the lib/pagewalk.c code unconditionally
+> splits THPs up.  This set reworks that code a bit and, in the
+> end, gives you a per-map count of the numbers of huge pages.
+> It also makes it possible for page walks to _not_ split THPs.
+>=20
+
+I have been running these patches on top of 2.6.38-rc4 all
+morning and looked at a number of smaps files for processes
+using THP areas.  They don't seem to be pulled apart as my
+AnonHugePages: counter in meminfo is stable.
+
+I am noticing in smaps that KernelPageSize is wrong of areas
+that have been merged into THP.  For instance:
+
+7ff852a00000-7ff852c00000 rw-p 00000000 00:00 0=20
+Size:               2048 kB
+Rss:                2048 kB
+Pss:                2048 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:      2048 kB
+Referenced:         2048 kB
+Anonymous:          2048 kB
+AnonHugePages:      2048 kB
+Swap:                  0 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+Locked:                0 kB
+
+The entire mapping is contained in a THP but the
+KernelPageSize shows 4kb.  For cases where the mapping might
+have mixed page sizes this may be okay, but for this
+particular mapping the 4kb page size is wrong.
+
+Tested-by: Eric B Munson <emunson@mgebm.net>
+
+--C7zPtVaVf+AK4Oqc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNWq/uAAoJEH65iIruGRnNiEQH/1t8WlbMPXxK4G8HmgHhQiSj
+MominANJ7iDW9OmeV8xuL1rEwB3BoQeyhhs1QUm0FkBS3yEzvId9khIc+SwG+2nd
+D8m8edWLz7riQxsMc938EEhCPCWgqmCP0iQRIzs7HHToH1PEupxrM2i9o9vvQ+xb
+ZjuINAolRykXkGqMWhWAAGCl29id/NW06xiKy9ddxPtWv4qaHBeKh5McwickI78x
+sB3Eps2hlrT1JzkLpoQWZ+dDaZ5gfvuLPZoE8R5Kv79Z+Rzm3zE2iCDiPkUNaaS8
+XlX2tuT4Q/czI4gbaHo3B5r8rmn3GS/fBIg/g0OrqXIRFDkrTu2zyHdUAegwTnw=
+=l1un
+-----END PGP SIGNATURE-----
+
+--C7zPtVaVf+AK4Oqc--
