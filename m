@@ -1,54 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab1BOGxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 01:53:13 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46606 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab1BOGxL (ORCPT
+	id S1754174Ab1BOGx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 01:53:56 -0500
+Received: from smtp-relay1.palm.com ([63.80.53.70]:38974 "EHLO
+	smtp-relay1.palm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab1BOGxy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 01:53:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=G2SbKOqLLCAX5/+9oS1/v2yJrGiFc3uXzFOSBBdecK9aEwQGgAcj19/Y2cKO7gpGXg
-         ng8As5fzwC2kd1gmU7P5mjxA23DxYFg029+GBVlFxFv8Q3KYmsxTJ/ol3cqAkjiYTLcD
-         9VS9LDkVRXNNd0OFlUCTgMhJb/PFkzX++qDj8=
+	Tue, 15 Feb 2011 01:53:54 -0500
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Feb 2011 01:53:54 EST
+X-IronPort-AV: E=Sophos;i="4.60,473,1291622400"; 
+   d="scan'208";a="34220444"
+From: "Kenneth Albanowski (Palm GBU)" <Kenneth.Albanowski@palm.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Feb 2011 22:43:47 -0800
+Subject: Question about clearing of tsk->robust_list in clone
+Thread-Topic: Question about clearing of tsk->robust_list in clone
+Thread-Index: AQHLzNjxwFse+SuB2kymKMYIZTKndg==
+Message-ID: <23C1F4DA0B73684F85AD25A73E4BB50315252BD7@ushqwmb09>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: BF6C Bosz Boyh B2mQ CH9g D5f+ FLmL FQW8 FXJy F3qu HMPY
+ HpMC H1uX H9RJ LTUq
+ MN1r;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{AF34F1DF-1CF6-4A75-A42D-938228F72F8D};awBlAG4AbgBlAHQAaAAuAGEAbABiAGEAbgBvAHcAcwBrAGkAQABwAGEAbABtAC4AYwBvAG0A;Tue,
+ 15 Feb 2011 06:43:47
+ GMT;UQB1AGUAcwB0AGkAbwBuACAAYQBiAG8AdQB0ACAAYwBsAGUAYQByAGkAbgBnACAAbwBmACAAdABzAGsALQA+AHIAbwBiAHUAcwB0AF8AbABpAHMAdAAgAGkAbgAgAGMAbABvAG4AZQA=
+x-cr-puzzleid: {AF34F1DF-1CF6-4A75-A42D-938228F72F8D}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Date: Tue, 15 Feb 2011 07:53:09 +0100
-Message-ID: <AANLkTimf3SL+BpzjVK=F9y4_dGnDp6ghmMKq5k=4hs0x@mail.gmail.com>
-Subject: Should asus-wmi provide a way to switch displays, and why
- video_output class is unused
-From: Corentin Chary <corentin.chary@gmail.com>
-To: platform-driver-x86@vger.kernel.org
-Cc: linux acpi <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Luming Yu <luming.yu@intel.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-In the ongoing effort to split eeepc-wmi, and add support for Asus WMI
-capable notebooks, I found that some of them are able to control
-dispay output.
-Currently, asus-laptop, asus_acpi and eeepc-laptop are also all able
-to do that, and they use a simple sysfs file with a bitmask to do
-that.
+I've been tracking down a bug I ran into with a robust pthreads mutex
+shared between a parent and a child that it forked. This finally came
+down to a bad interaction between glibc and the kernel (and looks to
+be present in the current Linux trees as well as glibc 2.13): 
+copy_process() explicitly clears the robust_list pointer in the cloned
+child. However, there is currently no logic in nptl to re-establish
+the robust list pointer after a fork.
 
-Now, I was searching the right, generic way to do that, and I found
-video_output class. The issue is that nobody, even acpi/video.ko, use
-it.
+There was some conversation about this in the Fedora bugtracker:
 
-So, what's the right way to do that ?
+  https://bugzilla.redhat.com/show_bug.cgi?id=628608
 
-Note, that in my case, I can't know what output are available, so
-anyway, using video_output would be a little tricky. But still, I'm
-not really comfortable adding another cryptic sysfs file, even with
-proper documentation in Docuementation/ABI/.
+Those folks appear to have reached the same conclusion as I: this
+could either be solved with some potentially complex glibc code, or by
+simply not having the kernel NULL out robust_list in the child.
 
-Thanks,
--- 
-Corentin Chary
-http://xf.iksaif.net
+That code came in at:
+
+    commit 8f17d3a5049d32392b79925c73a0cf99ce6d5af0
+    Author: Ingo Molnar <mingo@elte.hu>
+    Date:   Mon Mar 27 01:16:27 2006 -0800
+
+        [PATCH] lightweight robust futexes updates
+    
+        - fix: initialize the robust list(s) to NULL in copy_process.
+    
+        - doc update
+    
+        - cleanup: rename _inuser to _inatomic
+    
+        - __user cleanups and other small cleanups
+    
+Can anyone say what problem was being fixed by initializing the robust
+list(s) to NULL? I've stared at the implementation, and I cannot see any
+harm (potentially a slight bit more work in exec, but no harm) in not
+clearing them.
+
+Test program appended, to demonstrate the issue somewhat concisely.
+
+- Kenneth
+
+-- child_robust_mutex_death.c --
+#define _GNU_SOURCE // for ROBUST mutexes from pthread.h
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
+
+int main()
+{
+  // Use an anonymous shared mapping to put the same mutex in child as in parent. Any other
+  // sharing technique would work, this is simply easy and doesn't clutter.
+  void * region = mmap(NULL, 4096, PROT_READ|PROT_WRITE,MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  pthread_mutex_t * mutex = (pthread_mutex_t*)region;
+
+  pthread_mutexattr_t attr;
+
+  pthread_mutexattr_init(&attr);
+  pthread_mutexattr_setrobust_np(&attr, PTHREAD_MUTEX_ROBUST_NP);
+  pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+  pthread_mutex_init(mutex, &attr); 
+
+  if (fork() == 0) {
+    // child
+    // To demonstrate issue, this lock must occur directly in a fork child which has not exec'd, and
+    // not in a thread created via pthread_create after forking.
+    pthread_mutex_lock(mutex);
+
+    // We now exit from the child, which should trigger the robust mechanism to clean up the mutex.
+    _exit(0);
+    
+  } else {
+    // parent
+    wait(NULL); // wait for child to die.
+    
+    // try to obtain the lock, indicating whether the child still has it. This test could be
+    // done from any process with access to the mutex, it is merely convenient to do it from
+    // the parent.
+      
+    int err = pthread_mutex_trylock(mutex);
+    if (err == 0) {
+      printf("Failed, mutex unlocked, but no EOWNERDEAD -- I don't know what happened.\n");
+    } else if (err == EBUSY) {
+      printf("Failed, mutex not unlocked -- fork child tsk->robust_list == NULL issue.\n");
+    } else if (err == EOWNERDEAD) {
+      printf("Success, robust mutex reported owner death as intended.\n");
+    }
+    _exit(0);
+  }
+}
+
