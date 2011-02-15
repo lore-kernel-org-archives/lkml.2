@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab1BOUkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 15:40:18 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45798 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab1BOUkP (ORCPT
+	id S1755381Ab1BOUyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 15:54:20 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:65150 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab1BOUyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 15:40:15 -0500
-Date: Tue, 15 Feb 2011 13:40:11 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Michal Simek <monstr@monstr.eu>
-Cc: glikely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        John Williams <john.williams@petalogix.com>
-Subject: Re: [PATCH] of: Add missing of_address.h to xilinx ehci driver
-Message-ID: <20110215204011.GB24022@angua.secretlab.ca>
-References: <1297680009-4054-1-git-send-email-monstr@monstr.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297680009-4054-1-git-send-email-monstr@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 15 Feb 2011 15:54:18 -0500
+Date: Tue, 15 Feb 2011 15:53:41 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [GIT] tools/power patches for 2.6.38-rc4
+Message-id: <alpine.LFD.2.02.1102151549560.843@x980>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 11:40:09AM +0100, Michal Simek wrote:
-> Build log:
-> In file included from drivers/usb/host/ehci-hcd.c:1208:
-> drivers/usb/host/ehci-xilinx-of.c: In function 'ehci_hcd_xilinx_of_probe':
-> drivers/usb/host/ehci-xilinx-of.c:168: error: implicit declaration of function 'of_address_to_resource'
-> 
-> Signed-off-by: John Williams <john.williams@petalogix.com>
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
+Hi Linus,
 
-Applied, thanks.
+please pull from: 
 
-g.
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git tools-release
 
-> ---
->  drivers/usb/host/ehci-xilinx-of.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
-> index e8f4f36..a6f21b8 100644
-> --- a/drivers/usb/host/ehci-xilinx-of.c
-> +++ b/drivers/usb/host/ehci-xilinx-of.c
-> @@ -29,6 +29,7 @@
->  
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_address.h>
->  
->  /**
->   * ehci_xilinx_of_setup - Initialize the device for ehci_reset()
-> -- 
-> 1.5.5.6
-> 
+a bug-fix, plus some style updates that didn't seem worth delaying,
+especially since turbostat is brand-new to the tree in 2.6.38.
+
+This will update the files shown below.
+
+thanks!
+
+Len Brown
+Intel Open Source Technology Center
+
+
+ps. individual patches are available on linux-pm@lists.linux-foundation.org
+
+ tools/power/x86/turbostat/turbostat.c |  200 ++++++++++++++++-----------------
+ 1 files changed, 98 insertions(+), 102 deletions(-)
+
+through these commits:
+
+Len Brown (1):
+      tools: turbostat: style updates
+
+Thomas Renninger (1):
+      tools: turbostat: fix bitwise and operand
+
+with this log:
+
+commit a829eb4d7e08b316e2d48880ecab3630497f300f
+Author: Len Brown <len.brown@intel.com>
+Date:   Thu Feb 10 23:36:34 2011 -0500
+
+    tools: turbostat: style updates
+    
+    Follow kernel coding style traditions more closely.
+    Delete typedef, re-name "per cpu counters" to
+    simply be counters etc.
+    
+    This patch changes no functionality.
+    
+    Suggested-by: Thiago Farina <tfransosi@gmail.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 8209e054b6bd0805a25b8c4af971160fa146bf22
+Author: Thomas Renninger <trenn@suse.de>
+Date:   Fri Jan 21 15:11:19 2011 +0100
+
+    tools: turbostat: fix bitwise and operand
+    
+    bug could cause false positive on indicating
+    presence of invarient TSC or APERF support.
+    
+    Signed-off-by: Thomas Renninger <trenn@suse.de>
+    Signed-off-by: Len Brown <len.brown@intel.com>
