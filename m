@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab1BOS1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 13:27:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60121 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab1BOS1l (ORCPT
+	id S1755465Ab1BOSgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 13:36:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36003 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab1BOSge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 13:27:41 -0500
+	Tue, 15 Feb 2011 13:36:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=lDbIkIUt2+k37ND5gZTfGt3gKf+IU9go2HRPmigtd4kzSb0wJpeIgXxzkKEJkw5FpV
-         M8+sMMwgirs1fG7nH0tdKoLQTECSj3nT5QRbTuy64VDZnRm9ccQ5WW/yBUKwnuY/5GPB
-         3cSWBiHdqzNQ99P22HYeaU+t3sqdVzBkXyWoI=
-Message-ID: <4D5AC599.9050507@gmail.com>
-Date: Tue, 15 Feb 2011 21:27:37 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=kVZXKCG2J6983V57qXOdyJwbO6NkYIQGCq5UGCXEMUi9b4VKMBrXhqFZpEgMJmr75o
+         lkMCda+xueQEXHRnwLJ6im6Im5u4o++hbkRQoNEcbtNUjcAcLaXykXq3qthFC5XXtwsW
+         5cR7Pp0dDweyIy3U+STPCbcXx5qb0cpc/hBTc=
+Message-ID: <4D5AC7AC.2020702@gmail.com>
+Date: Tue, 15 Feb 2011 19:36:28 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, x86@kernel.org,
-        brgerst@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
-        mingo@elte.hu, hpa@linux.intel.com
-Subject: Re: [PATCH 10/26] x86-64, NUMA: Move apicid to numa mapping initialization
- from amd_scan_nodes() to amd_numa_init()
-References: <1297530663-26234-1-git-send-email-tj@kernel.org>	<1297530663-26234-11-git-send-email-tj@kernel.org>	<4D59B3CE.7010408@gmail.com>	<20110215093631.GG3160@htj.dyndns.org>	<4D5AB86A.9030009@gmail.com> <AANLkTi=pmLTRa7K0_E5qXfO2P_+nT3fRXOMDXUpHzK4S@mail.gmail.com> <4D5ABF94.6020001@gmail.com>
-In-Reply-To: <4D5ABF94.6020001@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Amit Shah <amitshah@gmx.net>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>, Jiri Slaby <jslaby@suse.cz>,
+        gregkh@suse.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] USB: serial/usb_wwan, fix tty NULL dereference
+References: <1297781707-3985-1-git-send-email-jslaby@suse.cz> <4D5AB48A.2040504@ru.mvista.com> <20110215181045.GA12700@amit-x200.redhat.com>
+In-Reply-To: <20110215181045.GA12700@amit-x200.redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2011 09:01 PM, Cyrill Gorcunov wrote:
-> On 02/15/2011 08:54 PM, Yinghai Lu wrote:
-> ...
+On 02/15/2011 07:10 PM, Amit Shah wrote:
+> On (Tue) 15 Feb 2011 [20:14:50], Sergei Shtylyov wrote:
+>> Hello.
 >>
->> could just change
+>> Jiri Slaby wrote:
 >>
->> - if (boot_cpu_physical_apicid> 0) {
->> + if (boot_cpu_physical_apicid != -1U) {
->> pr_info("BSP APIC ID: %02x\n", boot_cpu_physical_apicid);
->> apicid_base = boot_cpu_physical_apicid;
->> }
+>>> tty_port_tty_get may return without any problems NULL. Handle this
+>>> case and do not oops in usb_wwan_indat_callback by dereferencing it.
+> 
+> Thanks for looking at this!
+> 
+>>> The oops:
+>>> Unable to handle kernel paging request for data at address 0x000000d8
+>>> Faulting instruction address: 0xc0175b3c
+>>> Oops: Kernel access of bad area, sig: 11 [#1]
+>>> PowerPC 40x Platform
+>>> last sysfs file:
+>>> /sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
+>>> Modules linked in:
+>>> NIP: c0175b3c LR: c0175e7c CTR: c0215c90
+>>> REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
+>>> MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
+>>> DEAR: 000000d8, ESR: 00000000
+>>> TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
+>>> GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
+>>> GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
+>>> GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
+>>> GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
+>>> NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
+>>> LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+>>> Call Trace:
+>>> [c77f7e00] [00000003] 0x3 (unreliable)
+>>> [c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+>>> [c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
+>>> ...
 >>
->> Thanks
+>>> References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
+>>> Cc: Amit Shah <amitshah@gmx.net>
+>>> Cc: baoyb <baoyb@avit.org.cn>
+>>> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+>>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>>> ---
+>>> drivers/usb/serial/usb_wwan.c |   15 +++++++++------
+>>> 1 files changed, 9 insertions(+), 6 deletions(-)
 >>
->> Yinghai
->
-> yup, that is exactly what Tejun suggested in first place ;) I'll update to
-> this form and add your Acked-by then, ok?
->
+>>> diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+>>> index b004b2a..9c014e2 100644
+>>> --- a/drivers/usb/serial/usb_wwan.c
+>>> +++ b/drivers/usb/serial/usb_wwan.c
+>>> @@ -295,12 +295,15 @@ static void usb_wwan_indat_callback(struct urb *urb)
+>>> 		    __func__, status, endpoint);
+>>> 	} else {
+>>> 		tty = tty_port_tty_get(&port->port);
+>>> -		if (urb->actual_length) {
+>>> -			tty_insert_flip_string(tty, data, urb->actual_length);
+>>> -			tty_flip_buffer_push(tty);
+>>> -		} else
+>>> -			dbg("%s: empty read urb received", __func__);
+>>> -		tty_kref_put(tty);
+>>> +		if (tty) {
+>>> +			if (urb->actual_length) {
+>>> +				tty_insert_flip_string(tty, data,
+>>> +						urb->actual_length);
+>>> +				tty_flip_buffer_push(tty);
+>>> +			} else
+>>> +				dbg("%s: empty read urb received", __func__);
+>>
+>>    Should be {} on the *else* branch too, according to Documentation/CodingStyle...
+> 
+> If you're fixing that, might as well return in the 'if' above
 
-Tejun I've updated it on top of your tj-numa/x86_64-numa-unify branch
-and added Acks.
+No, the urb has to be resubmitted.
 
+regards,
 -- 
-x86, numa: amd -- Check for screwed MADT table
-
-In case if MADT table is corrupted we might end up
-with boot_cpu_physical_apicid = -1U, corebits > 0 and
-get out of __apicid_to_node array bound access. Check for
-boot_cpu_physical_apicid being a sane value.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
----
-  arch/x86/mm/amdtopology_64.c |    6 ++++--
-  1 file changed, 4 insertions(+), 2 deletions(-)
-
-Index: linux-2.6.git/arch/x86/mm/amdtopology_64.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/mm/amdtopology_64.c
-+++ linux-2.6.git/arch/x86/mm/amdtopology_64.c
-@@ -212,14 +212,16 @@ void __init amd_fake_nodes(const struct
-  {
-  	unsigned int bits;
-  	unsigned int cores;
--	unsigned int apicid_base = 0;
-+	unsigned int apicid_base;
-  	int i;
-
-  	bits = boot_cpu_data.x86_coreid_bits;
-  	cores = 1 << bits;
-  	early_get_boot_cpu_id();
--	if (boot_cpu_physical_apicid > 0)
-+	if (boot_cpu_physical_apicid != -1U)
-  		apicid_base = boot_cpu_physical_apicid;
-+	else
-+		apicid_base = 0;
-
-  	for (i = 0; i < nr_nodes; i++) {
-  		int index;
+js
