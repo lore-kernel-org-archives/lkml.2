@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1BOObQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 09:31:16 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52925 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab1BOObM (ORCPT
+	id S1755267Ab1BOOd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 09:33:57 -0500
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:56435 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab1BOOdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 09:31:12 -0500
-Date: Tue, 15 Feb 2011 14:23:39 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 15/19] ARM: LPAE: use phys_addr_t instead of
-	unsigned long for physical addresses
-Message-ID: <20110215142339.GL4152@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-16-git-send-email-catalin.marinas@arm.com> <20110212102803.GC15616@n2100.arm.linux.org.uk> <1297770742.21448.2.camel@e102144-lin.cambridge.arm.com> <20110215123522.GH4152@n2100.arm.linux.org.uk> <1297773569.14691.36.camel@e102109-lin.cambridge.arm.com> <1297777027.1293.2.camel@e102144-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297777027.1293.2.camel@e102144-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 15 Feb 2011 09:33:54 -0500
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: add IRTOUCH infrared USB to hid_have_special_driver
+Date: Tue, 15 Feb 2011 15:33:48 +0100
+Message-Id: <1297780428-3805-1-git-send-email-benjamin.tissoires@enac.fr>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 01:37:07PM +0000, Will Deacon wrote:
-> I should've spotted this either way. I've superseded the old patch with
-> 6674/1.
+Without this patch, the device is handled by hidinput and does
+not have the right behavior.
 
-One additional thing that I think has been lost.  I said in the original
-reply to Catalin:
-| asm/memory.h will conflict non-trivially with p2v patch set, but I think
-| we can merge the changes to everything but __virt_to_phys/__phys_to_virt.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+---
+Hi guys,
 
-So 6670/1 which I'm intending to apply to the p2v branch can't be merged
-as-is.  The ideal solution would be a version of 6670/1 to apply on top
-of the existing p2v branch.
+In the previous patch including the support to IRTOUCH devices, I forgot to add it to hid_have_special_driver. Sorry.
 
-Thanks.
+Cheers,
+Benjamin
+
+ drivers/hid/hid-core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index d678cf3..a5f6439 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1345,6 +1345,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HANVON, USB_DEVICE_ID_HANVON_MULTITOUCH) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS, USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
+-- 
+1.7.4
+
