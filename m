@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab1BOU1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 15:27:45 -0500
-Received: from www.tglx.de ([62.245.132.106]:54638 "EHLO www.tglx.de"
+	id S1756007Ab1BOUga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 15:36:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27959 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab1BOU1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 15:27:43 -0500
-Date: Tue, 15 Feb 2011 21:26:35 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Jan Beulich <JBeulich@novell.com>, Larry Woodman <lwoodman@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] fix pgd_lock deadlock
-In-Reply-To: <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1102152125180.26192@localhost6.localdomain6>
-References: <4CB76E8B.2090309@goop.org> <4CC0AB73.8060609@goop.org> <20110203024838.GI5843@random.random> <4D4B1392.5090603@goop.org> <20110204012109.GP5843@random.random> <4D4C6F45.6010204@goop.org> <20110207232045.GJ3347@random.random>
- <20110215190710.GL5935@random.random> <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6> <20110215195450.GO5935@random.random> <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753140Ab1BOUg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 15:36:28 -0500
+Date: Tue, 15 Feb 2011 21:27:47 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Denys Vlasenko <vda.linux@googlemail.com>,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110215202747.GA20560@redhat.com>
+References: <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110214175144.GC15847@redhat.com> <AANLkTi=VVWVkrqqQyOtsP72S5-nWny=Ukmf_r-m1qMwV@mail.gmail.com> <20110214190141.GA19221@redhat.com> <AANLkTi=_af8+XKD+d-677JpQZA=AN2EsydscSYxk7z55@mail.gmail.com> <20110214200130.GA21559@redhat.com> <20110215152448.GL3160@htj.dyndns.org> <20110215173149.239601807B7@magilla.sf.frob.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110215173149.239601807B7@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Feb 2011, Thomas Gleixner wrote:
+On 02/15, Roland McGrath wrote:
+>
+> > Actually I was thinking along this line.  We can allow
+> > PTRACE_GETSIGINFO to proceed without forcing the tracee into TRACED
+> > state, the rationale being the operation is required to tell between
+> > group stop and ptrace trap.  Am I missing something?
+>
+> The reason for the transition to TASK_TRACED is to prevent a race with
+> SIGCONT waking the task.  There is always a race with SIGKILL waking it,
+> but the circumstances where that can really matter are far fewer.
+> You need to make sure that the work PTRACE_GETSIGINFO does to access
+> last_siginfo cannot race with that pointer disappearing or the stack
+> space it points to becoming invalid.  I think the use of siglock ensures
+> that, but Oleg should verify it.
 
-> On Tue, 15 Feb 2011, Andrea Arcangeli wrote:
-> > On Tue, Feb 15, 2011 at 08:26:51PM +0100, Thomas Gleixner wrote:
-> > 
-> > With NR_CPUs < 4, or with THP enabled, rmap.c will do
-> > spin_lock(&mm->page_table_lock) (or pte_offset_map_lock where the lock
-> > is still mm->page_table_lock and not the PT lock). Then it will send
-> > IPIs to flush the tlb of the other CPUs.
-> > 
-> > But the other CPU is running the vmalloc_sync_all, and it is trying to
-> > take the page_table_lock with irq disabled. It will never take the
-> > lock because the CPU waiting the IPI delivery holds it. And it will
-> > never run the IPI because it has irqs disabled.
-> 
-> Ok, that makes sense :)
->  
-> > Now the big question is if anything is taking the pgd_lock from
-> > irqs. Normal testing could never reveal it as even if it happens it
-> > has a slim chance to happen while the pgd_lock is already hold by
-> > normal kernel context. But the VM_BUG_ON(in_interrupt()) should
-> > hopefully have revealed it already if it ever happened, I hope.
-> > 
-> > Clearly we could try to fix it in other ways, but still if there's no
-> > reason to do the _irqsave this sounds a good idea to apply my fix
-> > anyway.
-> 
-> Did you try with DEBUG_PAGEALLOC, which is calling into cpa quite a
-> lot?
+Yes, I think this is safe.
 
-Another thing. You check for in_interrupt(), but what makes sure that
-the code which takes pgd_lock is never taken with interrupts disabled
-except during early boot ?
+I do not really like this idea because it looks a bit strange to treat
+PTRACE_GETSIGINFO specially, and this doesn't solve all problems. And,
+once again, I still hope we can change ptrace_resume() so that it doesn't
+wakeup the stopped (I mean, SIGNAL_STOP_STOPPED) tracee, in this case this
+hack is not needed.
 
-Thanks,
+And. We are going to add the new requests which doesn't need the stopped
+tracee anyway. So we can just add PTRACE_HAS_SIGINFO which returns
+child->last_siginfo != NULL. This looks simpler, and this is compatible.
+Of course this check is racy, but this doesn't matter. PTRACE_GETSIGINFO
+is equally racy if it doesn't change the state to TASK_TRACED.
 
-	tglx
+But I won't argue if you/Denys/Tejun prefer to change PTRACE_GETSIGINFO.
+
+Oleg.
+
