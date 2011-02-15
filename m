@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab1BOQ67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:58:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755497Ab1BOQ64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:58:56 -0500
-Message-ID: <4D5AB0C5.9030304@redhat.com>
-Date: Tue, 15 Feb 2011 17:58:45 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1755645Ab1BOQ7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:59:33 -0500
+Received: from smtp.microsoft.com ([131.107.115.215]:46614 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab1BOQ7a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 11:59:30 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>, Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>,
+        Hashir Abdi <habdi@microsoft.com>,
+        "Mike Sterling" <Mike.Sterling@microsoft.com>
+Subject: RE: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
+Thread-Topic: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
+Thread-Index: AQHLzSIS6znEnyFqNE6ccb9lSMyu/JQDPp0AgAAPB4D//3rkwA==
+Date: Tue, 15 Feb 2011 16:59:28 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56233F9714A@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <1297782937-24082-1-git-send-email-kys@microsoft.com>
+ <20110215155954.GA32313@suse.de>
+ <FB42D5CCD7B5934EB1827DB5ED9B850E07085DA1@TK5EX14MBXC104.redmond.corp.microsoft.com>
+In-Reply-To: <FB42D5CCD7B5934EB1827DB5ED9B850E07085DA1@TK5EX14MBXC104.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Alasdair G Kergon <agk@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device read-write
- for read-only mappings
-References: <4D5A6EF4.3030905@redhat.com> <20110215124629.GF5825@agk-dp.fab.redhat.com> <20110215152033.GK3160@htj.dyndns.org> <20110215154625.GG5825@agk-dp.fab.redhat.com> <20110215155018.GM3160@htj.dyndns.org> <4D5AA45C.7050600@redhat.com> <20110215161228.GN3160@htj.dyndns.org> <4D5AAB8F.50901@redhat.com> <20110215164128.GQ3160@htj.dyndns.org>
-In-Reply-To: <20110215164128.GQ3160@htj.dyndns.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 02/15/2011 05:41 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Feb 15, 2011 at 05:36:31PM +0100, Milan Broz wrote:
->> Well, I am also not sure about that.
->>
->> But the problem is that read-write open fails now while it worked before.
->> (TBH I have no idea when that EROFS fallback worked - because the code
->> opened device RW, issued EROGET ioctl and set read-only... for years.)
->>
->> Anyway I think EROFS is used on block devices, just grep kernel source.
-> 
-> Ah, okay, so the fallback was there just in case.  It didn't really
-> trigger and right it wouldn't have triggered until now, so your
-> assertion about how many programs would break is kinda bogus.  You
-> just have single isolated case which hasn't been excercised till now.
-> There may as well be code pieces which check against EACCES or what
-> not.
 
-If you want another example, here is MD one.
+> -----Original Message-----
+> From: KY Srinivasan
+> Sent: Tuesday, February 15, 2011 8:54 AM
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > Sent: Tuesday, February 15, 2011 11:00 AM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > virtualization@lists.osdl.org; Haiyang Zhang; Hank Janssen
+> > Subject: Re: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
+> >
 
-# blockdev --setrw /dev/sd[bcde]
-# mdadm -A /dev/md0 /dev/sd[bcde]
-mdadm: /dev/md0 has been started with 4 drives.
-# mdadm --stop /dev/md0
-mdadm: stopped /dev/md0
-# blockdev --setro /dev/sd[bcde]
-# mdadm -A /dev/md0 /dev/sd[bcde]
-mdadm: cannot re-read metadata from /dev/sdb - aborting
+> > And why are you still printing this out for the whole world to see?
+> Greg, this patch addressed a specific comment with regards dynamically
+> allocate the irq.
+> Hank is working on a patch to address the various DPRINTS in the code.
 
-Works on 2.6.36.
+Before the end of the week I will submit two patches for this;
 
-Thanks,
-Milan
+	Remove DPRINT and change it to printk
+	Remove excessive printouts on startup of vmbus
+
+Hank.
+
