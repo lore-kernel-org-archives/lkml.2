@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab1BOQGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:06:09 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36384 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157Ab1BOQGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:06:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=l39lFfJwUq7pRuRpVdZJec+o4yzyb+fgYcLPbaf8G8up0wVWPDHgOrzFj3qq9ZdVnO
-         kv9WNe7PkywRwKoh1Qwc+Q1RutQztVbAL371iVN796umJITnHkISPxbHMLqRDYWfXRgw
-         4quQKmz46AqXvuEuQF4FFT6e+ejkCWpzyd4eU=
+	id S1755428Ab1BOQGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:06:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14338 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755157Ab1BOQGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 11:06:04 -0500
+Message-ID: <4D5AA45C.7050600@redhat.com>
+Date: Tue, 15 Feb 2011 17:05:48 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
 MIME-Version: 1.0
-Date: Tue, 15 Feb 2011 08:06:06 -0800
-Message-ID: <AANLkTik0E+7mTWT7B0E+MmXWdEO2fBztPZT3yv69M3ig@mail.gmail.com>
-Subject: Hello world from x32 glibc
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: GCC Development <gcc@gcc.gnu.org>,
-        GNU C Library <libc-alpha@sourceware.org>,
-        LKML <linux-kernel@vger.kernel.org>, x32-abi@googlegroups.com
+To: Tejun Heo <tj@kernel.org>
+CC: Alasdair G Kergon <agk@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device read-write
+ for read-only mappings
+References: <4D5A6EF4.3030905@redhat.com> <20110215124629.GF5825@agk-dp.fab.redhat.com> <20110215152033.GK3160@htj.dyndns.org> <20110215154625.GG5825@agk-dp.fab.redhat.com> <20110215155018.GM3160@htj.dyndns.org>
+In-Reply-To: <20110215155018.GM3160@htj.dyndns.org>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 12, 2011 at 11:41 AM, H.J. Lu <hjl.tools@gmail.com> wrote:
-> Hi,
->
-> We made lots of progresses on x32 pABI:
->
-> https://sites.google.com/site/x32abi/
->
-> 1. Kernel interface with syscall is close to be finalized.
-> 2. GCC x32 branch is stabilizing.
-> 3. The Bionic C library works with the syscall kernel interface.
->
-> The next major milestone will be x32 glibc port.
->
+On 02/15/2011 04:50 PM, Tejun Heo wrote:
+>> That's why I'm arguing EACCES is not a good error to return and EROFS is
+>> more appropriate.
+> 
+> Frankly, I don't really mind one way or the other but EROFS isn't
+> usually used in those areas.  It might make sense for this use case
+> and then there will be cases it just feels awkward.  This being a dm
+> thing, wouldn't it be just better to let dm massage the return value?
 
-[hjl@gnu-6 gcc]$ cat x.c
-#include <stdio.h>
+It is not DM thing. That code was checking for generic block device.
+No DM there (it was from cryptsetup code but not related to DM part).
 
-int
-main ()
-{
-  printf ("hello world\n");
-  return 0;
-}
-[hjl@gnu-6 gcc]$ ./xgcc -B./ -mx32 -O x.c
-[hjl@gnu-6 gcc]$ ./a.out
-hello world
-[hjl@gnu-6 gcc]$ readelf -h a.out
-ELF Header:
-  Magic:   7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00
-  Class:                             ELF32
-  Data:                              2's complement, little endian
-  Version:                           1 (current)
-  OS/ABI:                            UNIX - System V
-  ABI Version:                       0
-  Type:                              EXEC (Executable file)
-  Machine:                           Advanced Micro Devices X86-64
-  Version:                           0x1
-  Entry point address:               0x4002b0
-  Start of program headers:          52 (bytes into file)
-  Start of section headers:          3684 (bytes into file)
-  Flags:                             0x0
-  Size of this header:               52 (bytes)
-  Size of program headers:           32 (bytes)
-  Number of program headers:         8
-  Size of section headers:           40 (bytes)
-  Number of section headers:         36
-  Section header string table index: 33
-[hjl@gnu-6 gcc]$ /lib32/ld-linux-x32.so.2 --list ./a.out
-	linux-gate.so.1 =>  (0x0012e000)
-	libc.so.6 => /lib32/libc.so.6 (0xf7c74000)
-	/lib32/ld-linux-x32.so.2 (0x00110000)
-[hjl@gnu-6 gcc]$
+Yes, code is not perfect but it worked for >5 years. How many userspace
+programs it breaks now?
 
-
--- 
-H.J.
+Milan
