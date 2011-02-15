@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab1BOPCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:02:05 -0500
+	id S1755154Ab1BOPDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:03:51 -0500
 Received: from mx1.redhat.com ([209.132.183.28]:9077 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145Ab1BOPCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:02:02 -0500
-Message-ID: <4D5A8F28.4090306@redhat.com>
-Date: Tue, 15 Feb 2011 16:35:20 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1755047Ab1BOPDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 10:03:49 -0500
+Date: Tue, 15 Feb 2011 09:21:50 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Justin TerAvest <teravest@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
+ for CFQ queue
+Message-ID: <20110215142149.GA27296@redhat.com>
+References: <4D51ED26.8050809@cn.fujitsu.com>
+ <4D539804.9090308@cn.fujitsu.com>
+ <AANLkTimi=7_CEJy2m6Dhcy-aszXKBBL0fbC8mbD9JLOP@mail.gmail.com>
+ <4D59DA8C.9020108@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 3/6] KVM-GST: KVM Steal time accounting
-References: <1297448364-14051-1-git-send-email-glommer@redhat.com> <1297448364-14051-4-git-send-email-glommer@redhat.com>
-In-Reply-To: <1297448364-14051-4-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D59DA8C.9020108@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 08:19 PM, Glauber Costa wrote:
-> This patch accounts steal time time in kernel/sched.
-> I kept it from last proposal, because I still see advantages
-> in it: Doing it here will give us easier access from scheduler
-> variables such as the cpu rq. The next patch shows an example of
-> usage for it.
->
-> Since functions like account_idle_time() can be called from
-> multiple places, not only account_process_tick(), steal time
-> grabbing is repeated in each account function separatedely.
->
+On Tue, Feb 15, 2011 at 09:44:44AM +0800, Gui Jianfeng wrote:
 
-I still don't see how we export this to userspace for top(1) and friends.
+[..]
+> >> +static inline u64 cfq_get_boost(struct cfq_data *cfqd,
+> >> +                                struct cfq_queue *cfqq)
+> >> +{
+> >> +       u64 d;
+> >> +
+> >> +       if (cfq_cfqq_sync(cfqq))
+> >> +               d = CFQ_BOOST_SYNC_BASE << CFQ_SERVICE_SHIFT;
+> >> +       else
+> >> +               d = CFQ_BOOST_ASYNC_BASE << CFQ_SERVICE_SHIFT;
+> >> +
+> >> +       d = d * BLKIO_WEIGHT_DEFAULT;
+> >> +       do_div(d, cfqq->cfqe.weight);
+> >> +       return d;
+> >> +}
+> > 
+> > The logic for cfq_get_boost() looks a lot like cfq_scale_slice().
+> > Instead of duplicating code, can't it just be
+> > u64 d;
+> > if (cfq_cfqq_sync(cfqq))
+> >         return cfq_scale_slice(CFQ_BOOST_SYNC_BASE, cfqq->cfqe);
+> > else
+> >         return cfq_scale_slice(CFQ_BOOST_ASYNC_BASE, cfqq->cfqe);
+> > 
 
--- 
-error compiling committee.c: too many arguments to function
+I still think that we should use smaller values for CFQ_BOOST_SYNC_BASE
+because otherwise what it means is that for freshly backlogged queues
+we assume that these have already used one slice and then requeue these
+accordingly. Instead it should be reverse where freshly backlogged queues
+should get preference over already queues which are hogging the disk
+for long time.
 
+Thanks
+Vivek 
