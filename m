@@ -1,248 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab1BOTZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 14:25:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11467 "EHLO mx1.redhat.com"
+	id S1756085Ab1BOT2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 14:28:11 -0500
+Received: from www.tglx.de ([62.245.132.106]:33512 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754770Ab1BOTZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 14:25:35 -0500
-Date: Tue, 15 Feb 2011 20:17:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        xemul@openvz.org, sukadev@us.ibm.com, ebiederm@xmission.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH 1/1][3rd resend] sys_unshare: remove the dead
-	CLONE_THREAD/SIGHAND/VM code
-Message-ID: <20110215191711.GC16707@redhat.com>
-References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr> <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr> <20110215190118.GA16707@redhat.com> <20110215191521.GB16707@redhat.com>
+	id S1755302Ab1BOT2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 14:28:10 -0500
+Date: Tue, 15 Feb 2011 20:26:51 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>, Larry Woodman <lwoodman@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] fix pgd_lock deadlock
+In-Reply-To: <20110215190710.GL5935@random.random>
+Message-ID: <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6>
+References: <4CB76E8B.2090309@goop.org> <4CC0AB73.8060609@goop.org> <20110203024838.GI5843@random.random> <4D4B1392.5090603@goop.org> <20110204012109.GP5843@random.random> <4D4C6F45.6010204@goop.org> <20110207232045.GJ3347@random.random>
+ <20110215190710.GL5935@random.random>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110215191521.GB16707@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup: kill the dead code which does nothing but complicates the code
-and confuses the reader.
+On Tue, 15 Feb 2011, Andrea Arcangeli wrote:
 
-sys_unshare(CLONE_THREAD/SIGHAND/VM) is not really implemented, and I doubt
-very much it will ever work. At least, nobody even tried since the original
-"unshare system call -v5: system call handler function" commit
-99d1419d96d7df9cfa56bc977810be831bd5ef64 was applied more than 4 years ago.
+> Hello,
+> 
+> Without this patch we can deadlock in the page_table_lock with NR_CPUS
+> < 4 or THP on, with this patch we hopefully won't deadlock in the
+> pgd_lock (if taken from irq). I can't see anything taking it from irq
+> (maybe aio? to check I also tried the libaio testuite with no apparent
+> VM_BUG_ON triggering), so unless somebody sees it, I think we should
+> apply it. I've been running for a while with this patch applied
+> without apparent problems. Other archs may follow suit if it's proven
+> that there's nothing taking the pgd_lock from irq.
+> 
+> ===
+> Subject: fix pgd_lock deadlock
+> 
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> It's forbidden to take the page_table_lock with the irq disabled or if there's
+> contention the IPIs (for tlb flushes) sent with the page_table_lock held will
+> never run leading to a deadlock.
 
-And the code is not consistent. unshare_thread() always fails unconditionally,
-while unshare_sighand() and unshare_vm() pretend to work if there is nothing
-to unshare.
+I really read this thing 5 times and still cannot make any sense of it.
 
-Remove unshare_thread(), unshare_sighand(), unshare_vm() helpers and related
-variables and add a simple CLONE_THREAD | CLONE_SIGHAND| CLONE_VM check into
-check_unshare_flags().
+You talk about page_table_lock and then fiddle with pgd_lock.
 
-Also, move the "CLONE_NEWNS needs CLONE_FS" check from check_unshare_flags()
-to sys_unshare(). This looks more consistent and matches the similar
-do_sysvsem check in sys_unshare().
+-ENOSENSE
 
-Note: with or without this patch "atomic_read(mm->mm_users) > 1" can give
-a false positive due to get_task_mm().
+	tglx
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@redhat.com>
----
-
- kernel/fork.c |  123 +++++++++++-----------------------------------------------
- 1 file changed, 25 insertions(+), 98 deletions(-)
-
---- 2.6.37/kernel/fork.c~unshare-killcrap	2010-11-05 18:03:28.000000000 +0100
-+++ 2.6.37/kernel/fork.c	2010-11-05 18:09:52.000000000 +0100
-@@ -1522,38 +1522,24 @@ void __init proc_caches_init(void)
- }
  
- /*
-- * Check constraints on flags passed to the unshare system call and
-- * force unsharing of additional process context as appropriate.
-+ * Check constraints on flags passed to the unshare system call.
-  */
--static void check_unshare_flags(unsigned long *flags_ptr)
-+static int check_unshare_flags(unsigned long unshare_flags)
- {
-+	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
-+				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
-+				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
-+		return -EINVAL;
- 	/*
--	 * If unsharing a thread from a thread group, must also
--	 * unshare vm.
--	 */
--	if (*flags_ptr & CLONE_THREAD)
--		*flags_ptr |= CLONE_VM;
--
--	/*
--	 * If unsharing vm, must also unshare signal handlers.
--	 */
--	if (*flags_ptr & CLONE_VM)
--		*flags_ptr |= CLONE_SIGHAND;
--
--	/*
--	 * If unsharing namespace, must also unshare filesystem information.
-+	 * Not implemented, but pretend it works if there is nothing to
-+	 * unshare. Note that unsharing CLONE_THREAD or CLONE_SIGHAND
-+	 * needs to unshare vm.
- 	 */
--	if (*flags_ptr & CLONE_NEWNS)
--		*flags_ptr |= CLONE_FS;
--}
--
--/*
-- * Unsharing of tasks created with CLONE_THREAD is not supported yet
-- */
--static int unshare_thread(unsigned long unshare_flags)
--{
--	if (unshare_flags & CLONE_THREAD)
--		return -EINVAL;
-+	if (unshare_flags & (CLONE_THREAD | CLONE_SIGHAND | CLONE_VM)) {
-+		/* FIXME: get_task_mm() increments ->mm_users */
-+		if (atomic_read(&current->mm->mm_users) > 1)
-+			return -EINVAL;
-+	}
- 
- 	return 0;
- }
-@@ -1580,34 +1566,6 @@ static int unshare_fs(unsigned long unsh
- }
- 
- /*
-- * Unsharing of sighand is not supported yet
-- */
--static int unshare_sighand(unsigned long unshare_flags, struct sighand_struct **new_sighp)
--{
--	struct sighand_struct *sigh = current->sighand;
--
--	if ((unshare_flags & CLONE_SIGHAND) && atomic_read(&sigh->count) > 1)
--		return -EINVAL;
--	else
--		return 0;
--}
--
--/*
-- * Unshare vm if it is being shared
-- */
--static int unshare_vm(unsigned long unshare_flags, struct mm_struct **new_mmp)
--{
--	struct mm_struct *mm = current->mm;
--
--	if ((unshare_flags & CLONE_VM) &&
--	    (mm && atomic_read(&mm->mm_users) > 1)) {
--		return -EINVAL;
--	}
--
--	return 0;
--}
--
--/*
-  * Unshare file descriptor table if it is being shared
-  */
- static int unshare_fd(unsigned long unshare_flags, struct files_struct **new_fdp)
-@@ -1635,45 +1593,37 @@ static int unshare_fd(unsigned long unsh
-  */
- SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
- {
--	int err = 0;
- 	struct fs_struct *fs, *new_fs = NULL;
--	struct sighand_struct *new_sigh = NULL;
--	struct mm_struct *mm, *new_mm = NULL, *active_mm = NULL;
- 	struct files_struct *fd, *new_fd = NULL;
- 	struct nsproxy *new_nsproxy = NULL;
- 	int do_sysvsem = 0;
-+	int err;
- 
--	check_unshare_flags(&unshare_flags);
--
--	/* Return -EINVAL for all unsupported flags */
--	err = -EINVAL;
--	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
--				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
--				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
-+	err = check_unshare_flags(unshare_flags);
-+	if (err)
- 		goto bad_unshare_out;
- 
- 	/*
-+	 * If unsharing namespace, must also unshare filesystem information.
-+	 */
-+	if (unshare_flags & CLONE_NEWNS)
-+		unshare_flags |= CLONE_FS;
-+	/*
- 	 * CLONE_NEWIPC must also detach from the undolist: after switching
- 	 * to a new ipc namespace, the semaphore arrays from the old
- 	 * namespace are unreachable.
- 	 */
- 	if (unshare_flags & (CLONE_NEWIPC|CLONE_SYSVSEM))
- 		do_sysvsem = 1;
--	if ((err = unshare_thread(unshare_flags)))
--		goto bad_unshare_out;
- 	if ((err = unshare_fs(unshare_flags, &new_fs)))
--		goto bad_unshare_cleanup_thread;
--	if ((err = unshare_sighand(unshare_flags, &new_sigh)))
--		goto bad_unshare_cleanup_fs;
--	if ((err = unshare_vm(unshare_flags, &new_mm)))
--		goto bad_unshare_cleanup_sigh;
-+		goto bad_unshare_out;
- 	if ((err = unshare_fd(unshare_flags, &new_fd)))
--		goto bad_unshare_cleanup_vm;
-+		goto bad_unshare_cleanup_fs;
- 	if ((err = unshare_nsproxy_namespaces(unshare_flags, &new_nsproxy,
- 			new_fs)))
- 		goto bad_unshare_cleanup_fd;
- 
--	if (new_fs ||  new_mm || new_fd || do_sysvsem || new_nsproxy) {
-+	if (new_fs || new_fd || do_sysvsem || new_nsproxy) {
- 		if (do_sysvsem) {
- 			/*
- 			 * CLONE_SYSVSEM is equivalent to sys_exit().
-@@ -1699,19 +1649,6 @@ SYSCALL_DEFINE1(unshare, unsigned long, 
- 			spin_unlock(&fs->lock);
- 		}
- 
--		if (new_mm) {
--			mm = current->mm;
--			active_mm = current->active_mm;
--			current->mm = new_mm;
--			current->active_mm = new_mm;
--			if (current->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
--				atomic_dec(&mm->oom_disable_count);
--				atomic_inc(&new_mm->oom_disable_count);
--			}
--			activate_mm(active_mm, new_mm);
--			new_mm = mm;
--		}
--
- 		if (new_fd) {
- 			fd = current->files;
- 			current->files = new_fd;
-@@ -1728,20 +1665,10 @@ bad_unshare_cleanup_fd:
- 	if (new_fd)
- 		put_files_struct(new_fd);
- 
--bad_unshare_cleanup_vm:
--	if (new_mm)
--		mmput(new_mm);
--
--bad_unshare_cleanup_sigh:
--	if (new_sigh)
--		if (atomic_dec_and_test(&new_sigh->count))
--			kmem_cache_free(sighand_cachep, new_sigh);
--
- bad_unshare_cleanup_fs:
- 	if (new_fs)
- 		free_fs_struct(new_fs);
- 
--bad_unshare_cleanup_thread:
- bad_unshare_out:
- 	return err;
- }
-
