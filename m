@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab1BOKZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 05:25:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58777 "EHLO mx2.suse.de"
+	id S1754608Ab1BOKwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 05:52:31 -0500
+Received: from cantor.suse.de ([195.135.220.2]:60427 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab1BOKZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 05:25:51 -0500
-Date: Tue, 15 Feb 2011 11:25:50 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: use __GFP_NOWARN for try_fill_recv in
- virtnet_poll
-Message-ID: <20110215102549.GD8341@tiehlicka.suse.cz>
-References: <20110215093527.GB8341@tiehlicka.suse.cz>
- <201102152041.29179.rusty@rustcorp.com.au>
+	id S1752960Ab1BOKw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 05:52:29 -0500
+Date: Tue, 15 Feb 2011 11:52:26 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        dmitry pervushin <dimka@embeddedalley.com>
+Subject: Re: [PATCH][trivial] Freescale STMP37XX/STMP378X Application UART
+ driver: remove duplicate linux/device.h include
+In-Reply-To: <alpine.LNX.2.00.1102142351100.4530@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1102151151560.2160@pobox.suse.cz>
+References: <alpine.LNX.2.00.1102142351100.4530@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102152041.29179.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-02-11 20:41:29, Rusty Russell wrote:
-> On Tue, 15 Feb 2011 08:05:27 pm Michal Hocko wrote:
-> > Hi,
-> > we have started seeing a lot of allocator messages complaining about
-> > failed allocations from virtnet_poll in soft IRQ. Could you consider the
-> > following patch, please?
+On Mon, 14 Feb 2011, Jesper Juhl wrote:
+
+> Do not include linux/device.h twice in drivers/tty/serial/mxs-auart.c .
+> Once is enough.
 > 
-> Do we really want to silence this?  Isn't warning about it kind of the
-> point?  Your network is probably sucking if this happens...
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  mxs-auart.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+> index 6d01ac9..7e02c9c 100644
+> --- a/drivers/tty/serial/mxs-auart.c
+> +++ b/drivers/tty/serial/mxs-auart.c
+> @@ -15,7 +15,6 @@
+>   */
+>  
+>  #include <linux/kernel.h>
+> -#include <linux/device.h>
+>  #include <linux/errno.h>
+>  #include <linux/init.h>
+>  #include <linux/console.h>
 
-What can user do about it? Is the low level memory allocator message
-very much usefull for him?  Maybe we can add a printk_once in the fail
-path with some more useful and virtio specific message.
+I don't see this file in Linus' tree as of now, so I guess this is -next 
+stuff. Though I will not be applying it, and will let Sascha/Dmitry to 
+take care of it.
 
-Thanks
+Thanks,
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Jiri Kosina
+SUSE Labs, Novell Inc.
