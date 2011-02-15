@@ -1,147 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1BOQUz (ORCPT <rfc822;w@1wt.eu>);
+	id S1753130Ab1BOQVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:21:00 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36620 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab1BOQUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Feb 2011 11:20:55 -0500
-Received: from cantor.suse.de ([195.135.220.2]:47627 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140Ab1BOQUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:20:54 -0500
-Date: Tue, 15 Feb 2011 07:59:54 -0800
-From: Greg KH <gregkh@suse.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH ]:Staging: hv: Allocate the vmbus irq dynamically
-Message-ID: <20110215155954.GA32313@suse.de>
-References: <1297782937-24082-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297782937-24082-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=HSPYSVyv05+AbtzAjNXnEHuhjp33Eon1plDiSSDt7s4zE/w8us9C29eVghz1nzTLUx
+         b/K34rw6l+0J0pRCLBqS3S8pxAPiaEJ6C0dSGJBAhxdyb1FWTLuBBDzWI7GuZ4i2RVg3
+         guONGIudqakX7azKhdpph18MCccXEqkGXCL2I=
+Subject: [PATCH] ARM: pxa: support 806MHz operating points for PXA31x
+ processors A2 stepping
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Igor Grinberg <grinberg@compulab.co.il>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Feb 2011 00:20:49 +0800
+Message-ID: <1297786849.2596.13.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 07:15:37AM -0800, K. Y. Srinivasan wrote:
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> 
-> ---
->  drivers/staging/hv/vmbus_drv.c |   49 +++++++++++++++++++++++++++------------
->  1 files changed, 34 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-> index 459c707..f279e6a 100644
-> --- a/drivers/staging/hv/vmbus_drv.c
-> +++ b/drivers/staging/hv/vmbus_drv.c
-> @@ -36,9 +36,7 @@
->  #include "vmbus_private.h"
->  
->  
-> -/* FIXME! We need to do this dynamically for PIC and APIC system */
-> -#define VMBUS_IRQ		0x5
-> -#define VMBUS_IRQ_VECTOR	IRQ5_VECTOR
-> +static int vmbus_irq;
->  
->  /* Main vmbus driver data structure */
->  struct vmbus_driver_context {
-> @@ -57,6 +55,25 @@ struct vmbus_driver_context {
->  	struct vm_device device_ctx;
->  };
->  
-> +/*
-> + * Find an un-used IRQ that the VMBUS can use. If none is available; return -1.
-> + */
-> +
-> +static int vmbus_get_irq(void)
+PXA3xx Specification Update document states that the 806MHz
+operating points were added for PXA31x processors A2 stepping.
 
-No extra blank line between function comment and function.
+This patch adds 806MHz operating points support for PXA31x A2 stepping.
 
-> +{
-> +	unsigned int avail_irq_mask;
-> +	int irq = -1;
-> +	/*
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
 
-Put an extra blank line after your variables please.
+I cannot find any details for PXA31x stepping B1 and B2,
+thus I made this patch for PXA31x stepping A2 only.
 
-> +	 * Pick the first unused interrupt. HyperV can
-> +	 * interrupt us on any interrupt line we specify.
-> +	 */
-> +	avail_irq_mask = probe_irq_on();
-> +	if (avail_irq_mask != 0)
-> +		irq = ffs(avail_irq_mask);
-> +	probe_irq_off(avail_irq_mask);
-> +	return irq;
-> +}
-> +
->  static int vmbus_match(struct device *device, struct device_driver *driver);
->  static int vmbus_probe(struct device *device);
->  static int vmbus_remove(struct device *device);
-> @@ -80,7 +97,6 @@ EXPORT_SYMBOL(vmbus_loglevel);
->  	/* (ALL_MODULES << 16 | DEBUG_LVL_ENTEREXIT); */
->  	/* (((VMBUS | VMBUS_DRV)<<16) | DEBUG_LVL_ENTEREXIT); */
->  
-> -static int vmbus_irq = VMBUS_IRQ;
->  
->  /* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
->  static struct device_attribute vmbus_device_attrs[] = {
-> @@ -466,7 +482,7 @@ static int vmbus_bus_init(void)
->  	struct hv_driver *driver = &vmbus_drv.drv_obj;
->  	struct vm_device *dev_ctx = &vmbus_drv.device_ctx;
->  	int ret;
-> -	unsigned int vector;
-> +	unsigned int vector, prev_irq = ~0;
->  
->  	DPRINT_INFO(VMBUS, "+++++++ HV Driver version = %s +++++++",
->  		    HV_DRV_VERSION);
-> @@ -518,19 +534,23 @@ static int vmbus_bus_init(void)
->  	}
->  
->  	/* Get the interrupt resource */
-> -	ret = request_irq(vmbus_irq, vmbus_isr, IRQF_SAMPLE_RANDOM,
-> -			  driver->name, NULL);
-> -
-> -	if (ret != 0) {
-> -		DPRINT_ERR(VMBUS_DRV, "ERROR - Unable to request IRQ %d",
-> -			   vmbus_irq);
-> -
-> +get_irq_again:
-> +	vmbus_irq = vmbus_get_irq();
-> +	if ((vmbus_irq < 0) || (prev_irq == vmbus_irq)) {
-> +		printk(KERN_WARNING "VMBUS_DRV: Failed to allocate IRQ\n");
->  		bus_unregister(&vmbus_drv_ctx->bus);
-> -
->  		ret = -1;
+Axel
 
-Please provide a "real" error code.
+ arch/arm/mach-pxa/cpufreq-pxa3xx.c |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
 
->  		goto cleanup;
->  	}
-> -	vector = VMBUS_IRQ_VECTOR;
-> +	prev_irq = vmbus_irq;
-> +
-> +	ret = request_irq(vmbus_irq, vmbus_isr, IRQF_SAMPLE_RANDOM,
-> +			  driver->name, NULL);
-> +
-> +	if (ret != 0)
-> +		goto get_irq_again;
+diff --git a/arch/arm/mach-pxa/cpufreq-pxa3xx.c b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
+index 88fbec0..f4f0c2e 100644
+--- a/arch/arm/mach-pxa/cpufreq-pxa3xx.c
++++ b/arch/arm/mach-pxa/cpufreq-pxa3xx.c
+@@ -210,15 +210,30 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
+ 
+ 	/* set default policy and cpuinfo */
+ 	policy->cpuinfo.min_freq = 104000;
+-	policy->cpuinfo.max_freq = (cpu_is_pxa320()) ? 806000 : 624000;
++
++	if (cpu_is_pxa300())
++		policy->cpuinfo.max_freq = 624000;
++	else if (cpu_is_pxa310())
++		policy->cpuinfo.max_freq = ((read_cpuid_id() & 0xf) == 0x2) ?
++						806000 : 624000;
++	else if (cpu_is_pxa320())
++		policy->cpuinfo.max_freq = 806000;
++
+ 	policy->cpuinfo.transition_latency = 1000; /* FIXME: 1 ms, assumed */
+ 	policy->max = pxa3xx_get_clk_frequency_khz(0);
+ 	policy->cur = policy->min = policy->max;
+ 
+-	if (cpu_is_pxa300() || cpu_is_pxa310())
++	if (cpu_is_pxa300())
+ 		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa300_freqs));
+-
+-	if (cpu_is_pxa320())
++	else if (cpu_is_pxa310())
++		/* PXA310 A2 STEPPING supports 806Mhz operating points */
++		if ((read_cpuid_id() & 0xf) == 0x2)
++			ret = setup_freqs_table(policy,
++						ARRAY_AND_SIZE(pxa320_freqs));
++		else
++			ret = setup_freqs_table(policy,
++						ARRAY_AND_SIZE(pxa300_freqs));
++	else if (cpu_is_pxa320())
+ 		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa320_freqs));
+ 
+ 	if (ret) {
+-- 
+1.7.2
 
-You just set up the potential for an endless loop.  You almost _never_
-want to goto backwards in a function.  Please don't do this.
 
-> +
-> +	vector = IRQ0_VECTOR + vmbus_irq;
 
-What's this for?
-
->  	DPRINT_INFO(VMBUS_DRV, "irq 0x%x vector 0x%x", vmbus_irq, vector);
-
-And why are you still printing this out for the whole world to see?
-
-thanks,
-
-greg k-h
