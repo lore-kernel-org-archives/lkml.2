@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab1BOWJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 17:09:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42797 "EHLO mx1.redhat.com"
+	id S1756227Ab1BOWLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 17:11:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26629 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755954Ab1BOWJT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 17:09:19 -0500
-Date: Tue, 15 Feb 2011 17:06:07 -0500
-From: Chuck Ebbert <cebbert@redhat.com>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: BUG at fs/namei.c:405 (nameidata_drop_rcu)
-Message-ID: <20110215170607.7a555b38@katamari>
-In-Reply-To: <1297801028.2403.27.camel@herton-IdeaPad-Y430>
-References: <20110211000247.5e8fbed8@katamari>
-	<1297801028.2403.27.camel@herton-IdeaPad-Y430>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754752Ab1BOWLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 17:11:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,476,1291622400"; 
+   d="scan'208";a="708212601"
+From: jacob.jun.pan@linux.intel.com
+To: LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        akpm@linux-foundation.org, rdunlap@xenotime.net,
+        Cedric Le Goater <clg@fr.ibm.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 0/1, v9] cgroup/freezer: add per freezer duty ratio control
+Date: Tue, 15 Feb 2011 14:09:09 -0800
+Message-Id: <1297807750-28844-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Feb 2011 18:17:08 -0200
-Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com> wrote:
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-> Em Sex, 2011-02-11 às 00:02 -0500, Chuck Ebbert escreveu:
-> > Apparently hit this very early in nameidata_drop_rcu():
-> > 
-> >         BUG_ON(!(nd->flags & LOOKUP_RCU));
-> > 
-> > The user reports he ran "fuser /var/cache/yum" while logged in to
-> > an X session with his home directory mounted via NFS4. Home dirs
-> > are normally automounted, but manually mounting the dir still
-> > reproduces the problem.
-> 
-> I got a similar report too, and was able to reproduce here with nfs4
-> too.
-> 
-> We hit it at force_reval_path
-> 
-> From what I saw force_reval_path is never called with LOOKUP_RCU flag
-> set. Who calls force_reval_path is __do_follow_link, and
-> __do_follow_link is called from do_filp_open and do_follow_link. When
-> do_filp_open calls it, it already dropped LOOKUP_RCU (if path rcu lookup
-> didn't work). do_follow_link also calls it without LOOKUP_RCU set from
-> what I'm seeing, as before each do_follow_link call
-> nameidata_dentry_drop_rcu_maybe is called.
-> 
-> So simply removing again nameidata_drop_rcu from force_reval_path should
-> do it. I'm running now on this change and didn't experience the same bug
-> or other problems.
-> 
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index ec4b2d0..7dcedbc 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -668,9 +668,7 @@ force_reval_path(struct path *path, struct nameidata *nd)
->  		return 0;
->  
->  	if (!status) {
-> -		/* Don't d_invalidate in rcu-walk mode */
-> -		if (nameidata_drop_rcu(nd))
-> -			return -ECHILD;
-> +		BUG_ON(nd->flags & LOOKUP_RCU);
->  		d_invalidate(dentry);
->  		status = -ESTALE;
->  	}
-> 
-> 
+Fixing subject in cover letter, should be v4 instead of v3
 
-Looks like this is fixed today by commit 844a391799c25d9ba85cbce33e4697db06083ec6
+Changelog:
+v9:	- merged duty ratio related data structs
+	- removed toggling bit, replaced with freezer->state
+	- consolidated toggling mode cancellation function	
+	- use spin lock to protect duty ratio parameter writes
+	- use second as period
+	- allow 0% and 100% frozen time, aligned behavior with
+	  freezer_write()
+v8:	- minor clean up
+v7:	- use delayed workqueue instead of per cgroup kernel thread
+	  to manage toggling
+	- make freezer.state higher priority than duty ratio setting
+	- small correction in documentation
+
+v6:	- remove check for duty ratio == 100 case
+v5:	- improve error handling in duty ratio/ period writes
+	- fix the logic to avoid kthread creation when ratio and
+	  period are invalid.
+	- 100% frozen is not permitted in duty ratio set up
+
+v4:	- limit kthread creation only when valid duty ratio
+	  parameters are given.
+	- changed period back to milisecond
+	- consolidated paramter write functions
+
+v3:	- added documentation
+
+v2:
+	- use read_u64/write_u64 instead of string read/write
+	- use period in second instead of ms
+	- renamed duty_ratio to duty_ratio_pct, be more specific
+	- removed locking around period and duty_ratio reads
+
+
+Jacob Pan (1):
+  cgroup/freezer: add per freezer duty ratio control
+
+ Documentation/cgroups/freezer-subsystem.txt |   23 ++++++
+ kernel/cgroup_freezer.c                     |  109 ++++++++++++++++++++++++++-
+ 2 files changed, 130 insertions(+), 2 deletions(-)
+
