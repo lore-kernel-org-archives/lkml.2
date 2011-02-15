@@ -1,268 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab1BORCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:02:51 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33920 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab1BORCs (ORCPT
+	id S1755230Ab1BOREC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:04:02 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32885 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab1BORD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:02:48 -0500
-Date: Tue, 15 Feb 2011 22:31:27 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@gmail.com>,
-        Tim Chen <tim.c.chen@intel.com>, Alex Shi <alex.shi@intel.com>
-Subject: Re: [PATCH] sched: Wholesale removal of sd_idle logic
-Message-ID: <20110215170127.GA28865@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <1297473616.2806.16.camel@sbsiddha-MOBL3.sc.intel.com>
- <1297723130-693-1-git-send-email-venki@google.com>
+	Tue, 15 Feb 2011 12:03:59 -0500
+Date: Tue, 15 Feb 2011 17:03:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: vfp: Always save VFP state in vfp_pm_suspend
+Message-ID: <20110215170336.GP4152@n2100.arm.linux.org.uk>
+References: <AANLkTik_Jey_PtRmr530FVckA6RXHESeX+CyoJC=ZTkR@mail.gmail.com> <1297724147-6320-1-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297723130-693-1-git-send-email-venki@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1297724147-6320-1-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Venkatesh Pallipadi <venki@google.com> [2011-02-14 14:38:50]:
+On Mon, Feb 14, 2011 at 02:55:47PM -0800, Colin Cross wrote:
+> diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+> index 66bf8d1..7231d18 100644
+> --- a/arch/arm/vfp/vfpmodule.c
+> +++ b/arch/arm/vfp/vfpmodule.c
+> @@ -415,13 +415,13 @@ static int vfp_pm_suspend(struct sys_device *dev, pm_message_t state)
+>  	struct thread_info *ti = current_thread_info();
+>  	u32 fpexc = fmrx(FPEXC);
+>  
+> -	/* if vfp is on, then save state for resumption */
+> -	if (fpexc & FPEXC_EN) {
+> +	/* save state for resume */
+> +	if (last_VFP_context[ti->cpu]) {
 
-> sd_idle logic was introduced way back in 2005 (commit 5969fe06),
-> as an HT optimization.
-> 
-> As per the discussion in the thread here
-> lkml subject - sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
-> https://patchwork.kernel.org/patch/532501/
-> 
-> the capacity based logic in the load balancer right now handles this
-> in a much cleaner way, handling more than 2 SMT siblings etc, and sd_idle
-> does not seem to bring any adiitional benefits. sd_idle logic also has
-> some bugs that has performance impact. Here is the patch that removes
-> the sd_idle logic altogether.
-> 
-> The initial patch here - https://patchwork.kernel.org/patch/532501/
-> applies cleanly over the below change and provides a micro-optimization
-> for a specific case, where an idle core can pull tasks instead of a
-> core with one thread being idle and other thread being busy.
-> It will be good to get some data on whether this micro-optimization
-> matters or not.
-> 
-> Also, there was a dependency of sched_mc_power_savings == 2, with sd_idle
-> logic. Copying Vaidy to know the impact of this change there.
+I'm not entirely happy with this.
 
-Hi Venki,
+It is true that last_VFP_context[] when non-NULL indicates who owns the
+hardware VFP state, so saving it would seem logical.  However, this new
+code now saves the state with the saved fpexc indicating that it's disabled.
 
-The dependency is to avoid active balancing when there is a busy
-sibling and power save balance is not set.
+This will cause a VFP exception to misbehave by reloading the state, and
+then disabling the VFP unit.  That will cause another VFP exception which
+will find the VFP unit disabled, and re-enable it.  All in all, this is
+rather wasteful.
 
-Another logic would propagate/force sd_idle=1 to induce more frequent
-balancing for idle sibling in case of power save balance.  Removing
-sd_idle will make this default.
-
-Your changes look good.  I will test and report.
-
-> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-
-Acked-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-
-> ---
->  kernel/sched_fair.c |   53 ++++++++++----------------------------------------
->  1 files changed, 11 insertions(+), 42 deletions(-)
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 0c26e2d..932dc13 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -2610,7 +2610,6 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
->   * @this_cpu: Cpu for which load balance is currently performed.
->   * @idle: Idle status of this_cpu
->   * @load_idx: Load index of sched_domain of this_cpu for load calc.
-> - * @sd_idle: Idle status of the sched_domain containing group.
->   * @local_group: Does group contain this_cpu.
->   * @cpus: Set of cpus considered for load balancing.
->   * @balance: Should we balance.
-> @@ -2618,7 +2617,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
->   */
->  static inline void update_sg_lb_stats(struct sched_domain *sd,
->  			struct sched_group *group, int this_cpu,
-> -			enum cpu_idle_type idle, int load_idx, int *sd_idle,
-> +			enum cpu_idle_type idle, int load_idx,
->  			int local_group, const struct cpumask *cpus,
->  			int *balance, struct sg_lb_stats *sgs)
->  {
-> @@ -2638,9 +2637,6 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
->  	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
->  		struct rq *rq = cpu_rq(i);
-> 
-> -		if (*sd_idle && rq->nr_running)
-> -			*sd_idle = 0;
-> -
->  		/* Bias balancing toward cpus of our domain */
->  		if (local_group) {
->  			if (idle_cpu(i) && !first_idle_cpu) {
-> @@ -2755,15 +2751,13 @@ static bool update_sd_pick_busiest(struct sched_domain *sd,
->   * @sd: sched_domain whose statistics are to be updated.
->   * @this_cpu: Cpu for which load balance is currently performed.
->   * @idle: Idle status of this_cpu
-> - * @sd_idle: Idle status of the sched_domain containing sg.
->   * @cpus: Set of cpus considered for load balancing.
->   * @balance: Should we balance.
->   * @sds: variable to hold the statistics for this sched_domain.
->   */
->  static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
-> -			enum cpu_idle_type idle, int *sd_idle,
-> -			const struct cpumask *cpus, int *balance,
-> -			struct sd_lb_stats *sds)
-> +			enum cpu_idle_type idle, const struct cpumask *cpus,
-> +			int *balance, struct sd_lb_stats *sds)
->  {
->  	struct sched_domain *child = sd->child;
->  	struct sched_group *sg = sd->groups;
-> @@ -2781,7 +2775,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
-> 
->  		local_group = cpumask_test_cpu(this_cpu, sched_group_cpus(sg));
->  		memset(&sgs, 0, sizeof(sgs));
-> -		update_sg_lb_stats(sd, sg, this_cpu, idle, load_idx, sd_idle,
-> +		update_sg_lb_stats(sd, sg, this_cpu, idle, load_idx,
->  				local_group, cpus, balance, &sgs);
-> 
->  		if (local_group && !(*balance))
-> @@ -3033,7 +3027,6 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
->   * @imbalance: Variable which stores amount of weighted load which should
->   *		be moved to restore balance/put a group to idle.
->   * @idle: The idle status of this_cpu.
-> - * @sd_idle: The idleness of sd
->   * @cpus: The set of CPUs under consideration for load-balancing.
->   * @balance: Pointer to a variable indicating if this_cpu
->   *	is the appropriate cpu to perform load balancing at this_level.
-> @@ -3046,7 +3039,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
->  static struct sched_group *
->  find_busiest_group(struct sched_domain *sd, int this_cpu,
->  		   unsigned long *imbalance, enum cpu_idle_type idle,
-> -		   int *sd_idle, const struct cpumask *cpus, int *balance)
-> +		   const struct cpumask *cpus, int *balance)
->  {
->  	struct sd_lb_stats sds;
-> 
-> @@ -3056,8 +3049,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
->  	 * Compute the various statistics relavent for load balancing at
->  	 * this level.
->  	 */
-> -	update_sd_lb_stats(sd, this_cpu, idle, sd_idle, cpus,
-> -					balance, &sds);
-> +	update_sd_lb_stats(sd, this_cpu, idle, cpus, balance, &sds);
-> 
->  	/* Cases where imbalance does not exist from POV of this_cpu */
->  	/* 1) this_cpu is not the appropriate cpu to perform load balancing
-> @@ -3193,7 +3185,7 @@ find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
->  /* Working cpumask for load_balance and load_balance_newidle. */
->  static DEFINE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
-> 
-> -static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle,
-> +static int need_active_balance(struct sched_domain *sd, int idle,
->  			       int busiest_cpu, int this_cpu)
->  {
->  	if (idle == CPU_NEWLY_IDLE) {
-> @@ -3225,10 +3217,6 @@ static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle,
->  		 * move_tasks() will succeed.  ld_moved will be true and this
->  		 * active balance code will not be triggered.
->  		 */
-> -		if (!sd_idle && sd->flags & SD_SHARE_CPUPOWER &&
-> -		    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
-> -			return 0;
-> -
-
-This condition will nack active balancing for semi idle core when
-sched_smt_powersavings is not set.  f_b_g() itself should have
-returned NULL if there are no power savings opportunity.
-
->  		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
->  			return 0;
->  	}
-> @@ -3246,7 +3234,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->  			struct sched_domain *sd, enum cpu_idle_type idle,
->  			int *balance)
->  {
-> -	int ld_moved, all_pinned = 0, active_balance = 0, sd_idle = 0;
-> +	int ld_moved, all_pinned = 0, active_balance = 0;
->  	struct sched_group *group;
->  	unsigned long imbalance;
->  	struct rq *busiest;
-> @@ -3255,20 +3243,10 @@ static int load_balance(int this_cpu, struct rq *this_rq,
-> 
->  	cpumask_copy(cpus, cpu_active_mask);
-> 
-> -	/*
-> -	 * When power savings policy is enabled for the parent domain, idle
-> -	 * sibling can pick up load irrespective of busy siblings. In this case,
-> -	 * let the state of idle sibling percolate up as CPU_IDLE, instead of
-> -	 * portraying it as CPU_NOT_IDLE.
-> -	 */
-> -	if (idle != CPU_NOT_IDLE && sd->flags & SD_SHARE_CPUPOWER &&
-> -	    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
-> -		sd_idle = 1;
-
-This is kind of becoming the default now when sd_idle is removed.
-When powersave balance is set, we want to run load balancer more
-frequently.
-
-> -
->  	schedstat_inc(sd, lb_count[idle]);
-> 
->  redo:
-> -	group = find_busiest_group(sd, this_cpu, &imbalance, idle, &sd_idle,
-> +	group = find_busiest_group(sd, this_cpu, &imbalance, idle,
->  				   cpus, balance);
-> 
->  	if (*balance == 0)
-> @@ -3330,8 +3308,7 @@ redo:
->  		if (idle != CPU_NEWLY_IDLE)
->  			sd->nr_balance_failed++;
-> 
-> -		if (need_active_balance(sd, sd_idle, idle, cpu_of(busiest),
-> -					this_cpu)) {
-> +		if (need_active_balance(sd, idle, cpu_of(busiest), this_cpu)) {
->  			raw_spin_lock_irqsave(&busiest->lock, flags);
-> 
->  			/* don't kick the active_load_balance_cpu_stop,
-> @@ -3386,10 +3363,6 @@ redo:
->  			sd->balance_interval *= 2;
->  	}
-> 
-> -	if (!ld_moved && !sd_idle && sd->flags & SD_SHARE_CPUPOWER &&
-> -	    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
-> -		ld_moved = -1;
-
-I have not figured out where ld_moved is checked for -1 and why we
-need to treat this as a special case.
-
-Your bug fix in idle_balance() for if (pulled_task) {...} is a good
-catch.
-
-> -
->  	goto out;
-> 
->  out_balanced:
-> @@ -3403,11 +3376,7 @@ out_one_pinned:
->  			(sd->balance_interval < sd->max_interval))
->  		sd->balance_interval *= 2;
-> 
-> -	if (!sd_idle && sd->flags & SD_SHARE_CPUPOWER &&
-> -	    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
-> -		ld_moved = -1;
-> -	else
-> -		ld_moved = 0;
-
-Ack.  But why did we have to flag this case earlier?
-
-> +	ld_moved = 0;
->  out:
->  	return ld_moved;
->  }
-
---Vaidy
-
+So...
+	/* If lazy disable, re-enable the VFP ready for it to be saved */
+	if (last_VFP_context[ti->cpu] != &ti->vfpstate) {
+		fpexc |= FPEXC_EN;
+		fmxr(FPEXC, fpexc);
+	}
+	/* If VFP is on, then save state for resumption */
+	if (fpexc & FPEXC_EN) {
+		...
