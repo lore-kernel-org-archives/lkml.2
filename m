@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab1BOLsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 06:48:31 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39564 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539Ab1BOLsa convert rfc822-to-8bit (ORCPT
+	id S1754757Ab1BOLvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 06:51:00 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:58808 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524Ab1BOLu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 06:48:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OC2f7BQ6Gch1bt/HZcIuRFruV060xG+MM1++KB6SA8lbhN5XJfjRgWY2ltQ/7FWAs+
-         v+sgYwZQ6ywXN9AjCVuiSTnykak3rrjIHh/YTE5/kVIY3uQdE/dicI7T2tb3w4nZRmYd
-         mMKXiQHosFVKfgkTOa8+hB3Vm2qQ6XYiGY0RM=
+	Tue, 15 Feb 2011 06:50:58 -0500
+Message-ID: <4D5A6874.1080705@corscience.de>
+Date: Tue, 15 Feb 2011 12:50:12 +0100
+From: Thomas Weber <weber@corscience.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20110121 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D59A93A.7090800@metafoo.de>
-References: <1297539554-13957-8-git-send-email-lars@metafoo.de>
-	<1297652493-7207-1-git-send-email-lars@metafoo.de>
-	<AANLkTimn2JYtUSUrJBQKzXrw+URD5n0Y2h7QMaFzKFdY@mail.gmail.com>
-	<4D59A93A.7090800@metafoo.de>
-Date: Tue, 15 Feb 2011 13:48:28 +0200
-Message-ID: <AANLkTi=RJfYEoiCPgesmZUoeOy+MehZQWeWDCWoW7vnh@mail.gmail.com>
-Subject: Re: [PATCH 07/14 v3] bq27x00: Cache battery registers
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Pali Rohar <pali.rohar@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+CC: balbi@ti.com, Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
+        linux-omap@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Tejun Heo <tj@kernel.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] video: omap24xxcam: Fix compilation
+References: <1297068547-10635-1-git-send-email-weber@corscience.de> <4D5A6353.7040907@maxwell.research.nokia.com> <20110215113717.GN2570@legolas.emea.dhcp.ti.com> <4D5A672A.7040000@samsung.com>
+In-Reply-To: <4D5A672A.7040000@samsung.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:QP5/2dKMFVzKO6TZX8VcgXu+KtbjTjJ0pL5Sg4U8I5/
+ QdTikNU1BH3jEb662GMYQPZExHn++AX0m8iMI1GBuZ9mMbJZ7Y
+ gqhXyUdxKe6MVNOzytUDi8EXROO11+IM//x/u2IiuAnGL9v67j
+ et1fbZWpncslS3KO2cSkHQKyMa71o6j8nxaDx5DLoUBJaNJBgn
+ PI2JOeSNHwNJNdKpXPjYg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 12:14 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 02/14/2011 10:58 PM, Grazvydas Ignotas wrote:
->> On Mon, Feb 14, 2011 at 5:01 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>>
->>> -       ret = bq27x00_read(di, BQ27x00_REG_AI, &curr, false);
->>> -       if (ret) {
->>> -               dev_err(di->dev, "error reading current\n");
->>> -               return 0;
->>> -       }
->>> +       if (di->chip == BQ27500)
->>> +           curr = bq27x00_read(di, BQ27x00_REG_AI, false);
->>> +       else
->>> +           curr = di->cache.current_now;
->>> +
->>> +       if (curr < 0)
->>> +               return curr;
->>
->> This is wrong, as read function returns negative values for bq27500
->> when discharging. That's why read function used to pass value through
->> argument before your series (return value was for error code).
+Am 15.02.2011 12:44, schrieb Sylwester Nawrocki:
+> Hi Felipe,
 >
-> I don't think so. The register is 16bit wide and it is read as a unsigned. So
-> in the non error case bq27x00_read will always return >= 0.
-> The value is later reinterpreted as a signed 16bit.(See the other lines you
-> quoted underneath).
+> On 02/15/2011 12:37 PM, Felipe Balbi wrote:
+>> On Tue, Feb 15, 2011 at 01:28:19PM +0200, Sakari Ailus wrote:
+>>> Thomas Weber wrote:
+>>>> Add linux/sched.h because of missing declaration of TASK_NORMAL.
+>>>>
+>>>> This patch fixes the following error:
+>>>>
+>>>> drivers/media/video/omap24xxcam.c: In function
+>>>> 'omap24xxcam_vbq_complete':
+>>>> drivers/media/video/omap24xxcam.c:415: error: 'TASK_NORMAL' undeclared
+>>>> (first use in this function)
+>>>> drivers/media/video/omap24xxcam.c:415: error: (Each undeclared
+>>>> identifier is reported only once
+>>>> drivers/media/video/omap24xxcam.c:415: error: for each function it
+>>>> appears in.)
+>>>>
+>>>> Signed-off-by: Thomas Weber <weber@corscience.de>
+>>> Thanks, Thomas!
+>> Are we using the same tree ? I don't see anything related to TASK_* on
+> Please have a look at definition of macro wake_up. This where those
+> TASK_* flags are used.
+>
+>> that function on today's mainline, here's a copy of the function:
+>>
+>>  387 static void omap24xxcam_vbq_complete(struct omap24xxcam_sgdma *sgdma,
+>>  388                                      u32 csr, void *arg)
+>>  389 {
+>>  390         struct omap24xxcam_device *cam =
+>>  391                 container_of(sgdma, struct omap24xxcam_device, sgdma);
+>>  392         struct omap24xxcam_fh *fh = cam->streaming->private_data;
+>>  393         struct videobuf_buffer *vb = (struct videobuf_buffer *)arg;
+>>  394         const u32 csr_error = CAMDMA_CSR_MISALIGNED_ERR
+>>  395                 | CAMDMA_CSR_SUPERVISOR_ERR | CAMDMA_CSR_SECURE_ERR
+>>  396                 | CAMDMA_CSR_TRANS_ERR | CAMDMA_CSR_DROP;
+>>  397         unsigned long flags;
+>>  398 
+>>  399         spin_lock_irqsave(&cam->core_enable_disable_lock, flags);
+>>  400         if (--cam->sgdma_in_queue == 0)
+>>  401                 omap24xxcam_core_disable(cam);
+>>  402         spin_unlock_irqrestore(&cam->core_enable_disable_lock, flags);
+>>  403 
+>>  404         do_gettimeofday(&vb->ts);
+>>  405         vb->field_count = atomic_add_return(2, &fh->field_count);
+>>  406         if (csr & csr_error) {
+>>  407                 vb->state = VIDEOBUF_ERROR;
+>>  408                 if (!atomic_read(&fh->cam->in_reset)) {
+>>  409                         dev_dbg(cam->dev, "resetting camera, csr 0x%x\n", csr);
+>>  410                         omap24xxcam_reset(cam);
+>>  411                 }
+>>  412         } else
+>>  413                 vb->state = VIDEOBUF_DONE;
+>>  414         wake_up(&vb->done);
+>>  415 }
+>>
+>> see that line 415 is where the function ends. My head is
+>> 795abaf1e4e188c4171e3cd3dbb11a9fcacaf505
+>>
+> Cheers,
+> Sylwester Nawrocki
+> --
 
-Hmh, right..
+Hello Felipe,
 
-> Did you experience any actual problem with current being wrong?
+in include/linux/wait.h
 
-Yes, the returned current values were randomly jumping between -500000
-and 600000 while the device was discharging, so I thought
-uninitialized values were being returned (this never happened before
-the series; no errors in dmesg). I'll need to debug a bit more I
-guess..
+#define wake_up(x)            __wake_up(x, TASK_NORMAL, 1, NULL)
+
+Regards,
+Thomas
