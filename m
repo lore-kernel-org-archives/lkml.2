@@ -1,126 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1BOREr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:04:47 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58143 "EHLO e5.ny.us.ibm.com"
+	id S1755528Ab1BORF1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:05:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60066 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841Ab1BOREp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:04:45 -0500
-Subject: Re: [patch v2 0/3] OProfile support for System z's hardware
- sampling
-From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "borntraeger@de.ibm.com" <borntraeger@de.ibm.com>
-In-Reply-To: <20110214194206.GW5874@erda.amd.com>
-References: <20110121100651.821690659@linux.vnet.ibm.com>
-	 <20110214194206.GW5874@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Feb 2011 17:59:29 +0100
-Message-ID: <1297789169.3231.9.camel@BR8HFPP0.boeblingen.de.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752579Ab1BORFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 12:05:24 -0500
+Date: Tue, 15 Feb 2011 18:05:07 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, mingo@elte.hu,
+        ananth@in.ibm.com, davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] kprobes - do not allow optimized kprobes in entry code
+Message-ID: <20110215170507.GD3135@jolsa.brq.redhat.com>
+References: <1297696354-6990-1-git-send-email-jolsa@redhat.com>
+ <4D5A4A66.4010503@hitachi.com>
+ <20110215123058.GB3135@jolsa.brq.redhat.com>
+ <4D5AA209.7070309@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5AA209.7070309@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Robert,
+You can crash the kernel using kprobe tracer by running:
 
-thanks for the positive reply.
+echo "p system_call_after_swapgs" > ./kprobe_events
+echo 1 > ./events/kprobes/enable
 
-Please see my comments below. I suppose I still need some more detailed
-directions from you.
-Unfortunately I will not be in the office Thursday and Friday.
+The reason is that at the system_call_after_swapgs label, the kernel
+stack is not set up. If optimized kprobes are enabled, the user space
+stack is being used in this case (see optimized kprobe template) and
+this might result in a crash.
 
-Heinz
+There are several places like this over the entry code (entry_$BIT).
+As it seems there's no any reasonable/maintainable way to disable only
+those places where the stack is not ready, I switched off the whole
+entry code from kprobe optimizing.
 
-On Mon, 2011-02-14 at 20:42 +0100, Robert Richter wrote:
-> Heinz,
-> 
-> On 21.01.11 05:06:51, Heinz Graalfs wrote:
-> > I'm resending yesterday's mail because I missed to specify the correct sender information.
-> > 
-> > This is a re-posting of the patch series originally posted last month:
-> > 
-> > http://marc.info/?l=linux-s390&m=129285043619973&w=2
-> > 
-> > Heinz
-> > 
-> > Changes in
-> > 
-> > v2:
-> >    - kernel module hwsampler removed, everything is now in oprofile kernel module
-> >    - functions from hwsampler-main.c and smpctl.c merged into arch/s390/oprofile/hwsampler.c
-> >      - functions made static
-> >    - arch/s390/include/asm/hwsampler.h moved to arch/s390/oprofile/hwsampler.h
-> >      - structs have now hws_ prefix
-> >    - config variables changed, HAVE_HWSAMPLER used only
-> >    - original patch 4 (handle_munmap.patch) removed
-> 
-> thanks for you patches, I have applied them with modifications to:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git s390
-> 
-> For atomic compilation of single patches I changed patch order and the
-> Makefile where necessary. The branch also includes my follow-on
-> patches.
-> 
-> I will be travelling the next weeks and wanted to have this series in
-> linux-next now for later inclusion to .39. We would run out of time
-> otherwise (my bad). Please review and test the changes I made and send
-> me possibly updates.
-> 
-> Though I applied the patches I want to have the following changes:
-> 
-> * Merge init.c and hwsampler_file.c, two files are bloated here and
->   hwsampler_file.c is a bad and too long naming.
-> 
+wbr,
+jirka
 
-OK, I've merged all hwsampler_files.c contents into init.c
 
-> * Rework functions in cpu_buffer.c (log_sample,
->   __oprofile_add_ext_sample, oprofile_add_ext_hw_sample, etc.). All
->   the (static) functions can be merged to a single functino by
->   implementing a struct that holds all current function arguments.
->   Something like:
-> 
-> static void __oprofile_add_ext_sample(struct *foobar fb);
-> void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
-> {
-> 	struct foobar fb = { .regs = regs, .event = event };
-> 	__oprofile_add_ext_sample(&fb);
-> }
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ arch/x86/ia32/ia32entry.S         |    2 ++
+ arch/x86/kernel/entry_32.S        |    6 ++++--
+ arch/x86/kernel/entry_64.S        |    6 ++++--
+ arch/x86/kernel/kprobes.c         |    8 ++++++++
+ arch/x86/kernel/vmlinux.lds.S     |    1 +
+ include/asm-generic/sections.h    |    1 +
+ include/asm-generic/vmlinux.lds.h |    6 ++++++
+ 7 files changed, 26 insertions(+), 4 deletions(-)
 
-OK, I've done this
-
-> 
->   The naming and description of oprofile_add_ext_hw_sample() is also
->   not the best. As interface in include/linux/oprofile.h we could then
->   merge oprofile_add_ext_sample() and oprofile_add_ext_hw_sample() to
->   a single function.
-> 
-> It would be nice if you could implement this.
-
-sure, I will do this, however I'm not sure what you exactly mean.
-Could you specify the interface in oprofile.h what you basically have in
-mind?
-
-> 
-> For all patches in the oprofile/s390 branch I also need the
-> s390 maintainer's ack.
-> 
-> Martin or Heiko, please ack.
-> 
-> Thanks,
-> 
-> -Robert
-> 
-
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 0ed7896..50f1630 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -25,6 +25,8 @@
+ #define sysretl_audit ia32_ret_from_sys_call
+ #endif
+ 
++	.section .entry.text, "ax"
++
+ #define IA32_NR_syscalls ((ia32_syscall_end - ia32_sys_call_table)/8)
+ 
+ 	.macro IA32_ARG_FIXUP noebp=0
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index c8b4efa..f5accf8 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -65,6 +65,8 @@
+ #define sysexit_audit	syscall_exit_work
+ #endif
+ 
++	.section .entry.text, "ax"
++
+ /*
+  * We use macros for low-level operations which need to be overridden
+  * for paravirtualization.  The following will never clobber any registers:
+@@ -788,7 +790,7 @@ ENDPROC(ptregs_clone)
+  */
+ .section .init.rodata,"a"
+ ENTRY(interrupt)
+-.text
++.section .entry.text, "ax"
+ 	.p2align 5
+ 	.p2align CONFIG_X86_L1_CACHE_SHIFT
+ ENTRY(irq_entries_start)
+@@ -807,7 +809,7 @@ vector=FIRST_EXTERNAL_VECTOR
+       .endif
+       .previous
+ 	.long 1b
+-      .text
++      .section .entry.text, "ax"
+ vector=vector+1
+     .endif
+   .endr
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 891268c..39f8d21 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -61,6 +61,8 @@
+ #define __AUDIT_ARCH_LE	   0x40000000
+ 
+ 	.code64
++	.section .entry.text, "ax"
++
+ #ifdef CONFIG_FUNCTION_TRACER
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ ENTRY(mcount)
+@@ -744,7 +746,7 @@ END(stub_rt_sigreturn)
+  */
+ 	.section .init.rodata,"a"
+ ENTRY(interrupt)
+-	.text
++	.section .entry.text
+ 	.p2align 5
+ 	.p2align CONFIG_X86_L1_CACHE_SHIFT
+ ENTRY(irq_entries_start)
+@@ -763,7 +765,7 @@ vector=FIRST_EXTERNAL_VECTOR
+       .endif
+       .previous
+ 	.quad 1b
+-      .text
++      .section .entry.text
+ vector=vector+1
+     .endif
+   .endr
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index d91c477..d03bc1e 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -1276,6 +1276,14 @@ static int __kprobes can_optimize(unsigned long paddr)
+ 	if (!kallsyms_lookup_size_offset(paddr, &size, &offset))
+ 		return 0;
+ 
++	/*
++	 * Do not optimize in the entry code due to the unstable
++	 * stack handling.
++	 */
++	if ((paddr >= (unsigned long ) __entry_text_start) &&
++	    (paddr <  (unsigned long ) __entry_text_end))
++		return 0;
++
+ 	/* Check there is enough space for a relative jump. */
+ 	if (size - offset < RELATIVEJUMP_SIZE)
+ 		return 0;
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index e9f7a3c..0381e1f 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -105,6 +105,7 @@ SECTIONS
+ 		SCHED_TEXT
+ 		LOCK_TEXT
+ 		KPROBES_TEXT
++		ENTRY_TEXT
+ 		IRQENTRY_TEXT
+ 		*(.fixup)
+ 		*(.gnu.warning)
+diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
+index b3bfabc..c1a1216 100644
+--- a/include/asm-generic/sections.h
++++ b/include/asm-generic/sections.h
+@@ -11,6 +11,7 @@ extern char _sinittext[], _einittext[];
+ extern char _end[];
+ extern char __per_cpu_load[], __per_cpu_start[], __per_cpu_end[];
+ extern char __kprobes_text_start[], __kprobes_text_end[];
++extern char __entry_text_start[], __entry_text_end[];
+ extern char __initdata_begin[], __initdata_end[];
+ extern char __start_rodata[], __end_rodata[];
+ 
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index fe77e33..906c3ce 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -424,6 +424,12 @@
+ 		*(.kprobes.text)					\
+ 		VMLINUX_SYMBOL(__kprobes_text_end) = .;
+ 
++#define ENTRY_TEXT							\
++		ALIGN_FUNCTION();					\
++		VMLINUX_SYMBOL(__entry_text_start) = .;			\
++		*(.entry.text)						\
++		VMLINUX_SYMBOL(__entry_text_end) = .;
++
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ #define IRQENTRY_TEXT							\
+ 		ALIGN_FUNCTION();					\
+-- 
+1.7.1
 
