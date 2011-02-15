@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab1BOQlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 11:41:55 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:36536 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab1BOQlx (ORCPT
+	id S1755249Ab1BOQnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:43:40 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:39085 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754721Ab1BOQng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 11:41:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pXyG4zVWToNImyqmX4yloBMUqPlmXKxMUJ15lR1cm2tNyLBehL7XVs9+AB/ZQIqQX/
-         bQ4o9BKkLRNRQkcKVyY2sGd8MsrWdvcE1nw2avcM3bmdaIWLPwWYaaGO5BKCA9ntykY/
-         zNXlIaM0+49yu0H1l8ZxkoP0pN9/1ncXkoDPI=
-Date: Tue, 15 Feb 2011 08:41:45 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.38-rc4
-Message-ID: <20110215164145.GA32308@core.coreip.homeip.net>
-References: <20110107065448.GC29038@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107065448.GC29038@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Feb 2011 11:43:36 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+yrmliDUeygkLRtcHc7N7xtR5gdXOpsjFmZqG6c/
+	XEta/ttiDmyxHX
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+From: Mike Galbraith <efault@gmx.de>
+To: torbenh <torbenh@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Yong Zhang <yong.zhang0@gmail.com>, bharata@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110215154612.GI3055@siel.b>
+References: <20110110091622.GF2772@in.ibm.com>
+	 <1294655388.8197.22.camel@marge.simson.net>
+	 <1294657154.2016.459.camel@laptop>
+	 <1294677746.8345.4.camel@marge.simson.net>
+	 <20110111171046.GL4772@in.ibm.com>
+	 <1294771686.8006.15.camel@marge.simson.net>
+	 <1294810842.8370.7.camel@marge.simson.net>
+	 <AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
+	 <1294890890.8089.39.camel@marge.simson.net>
+	 <1295270160.30950.96.camel@laptop>  <20110215154612.GI3055@siel.b>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Feb 2011 17:43:30 +0100
+Message-ID: <1297788210.15382.51.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 2011-02-15 at 16:46 +0100, torbenh wrote:
+> On Mon, Jan 17, 2011 at 02:16:00PM +0100, Peter Zijlstra wrote:
+> > On Thu, 2011-01-13 at 04:54 +0100, Mike Galbraith wrote:
+> > > sched, autogroup: fix CONFIG_RT_GROUP_SCHED sched_setscheduler() failure.
+> > > 
+> > > If CONFIG_RT_GROUP_SCHED is set, __sched_setscheduler() fails due to autogroup
+> > > not allocating rt_runtime.  Free unused/unusable rt_se and rt_rq, redirect RT
+> > > tasks to the root task group, and tell __sched_setscheduler() that it's ok.
+> > > 
+> > > Signed-off-by: Mike Galbraith <efault@gmx.de>
+> > > Reported-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> > 
+> > Thanks, applied!
+> 
+> while this behaviour is certeinly necessary, i think this is a hack.
+> it fixes the problem for autogroups.
+> But its not fixed for things which want to control the cfs shares via
+> normal cgroups.
 
-Please pull from:
+You mean automated control ala systemd?  For a static set of groups, it
+works fine.  I was wondering how systemd would deal with it.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+> why isnt rt_runtime_us residing in a separate (new) subsystem ?
 
-to receive updates for the input subsystem. Nothing exciting, just small
-fixups to the drivers.
+The allocation problem was shamelessly punted back to the user, where I
+think it truly belongs.
 
-Changelog:
----------
+	-Mike
 
-Alexander Stein (1):
-      Input: rotary_encoder - use proper irqflags
-
-Alexander Strakh (1):
-      Input: wacom - fix error path in wacom_probe()
-
-Dmitry Torokhov (3):
-      Input: sysrq - rework re-inject logic
-      Revert "Input: do not pass injected events back to the originating handler"
-      Input: ads7846 - check proper condition when freeing gpio
-
-Duncan Laurie (1):
-      Input: serio - clear pending rescans after sysfs driver rebind
-
-Ping Cheng (1):
-      Input: wacom_w8001 - report resolution to userland
-
-Trilok Soni (1):
-      Input: matrix_keypad - increase the limit of rows and columns
-
-
-Diffstat:
---------
-
- drivers/input/input.c                   |   37 +++++++++---------------------
- drivers/input/misc/rotary_encoder.c     |    4 +-
- drivers/input/serio/serio.c             |   11 +++++---
- drivers/input/tablet/wacom_sys.c        |    2 +-
- drivers/input/touchscreen/ads7846.c     |   38 ++++++++++++++++++-------------
- drivers/input/touchscreen/wacom_w8001.c |   13 +++++++++-
- drivers/tty/sysrq.c                     |   17 +++++++++++++-
- include/linux/input/matrix_keypad.h     |    4 +-
- 8 files changed, 72 insertions(+), 54 deletions(-)
-
--- 
-Dmitry
