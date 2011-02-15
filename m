@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab1BOCB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 21:01:57 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63778 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab1BOCB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 21:01:56 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=M7KJ_pm0K9UA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=mIxFq-LZL0PHU3xRJtEA:9 a=n086jQ4M3z1nIQOesVbm-g6kiawA:4 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [Stable-review] [PATCH 20/23] tracing: Fix panic when lseek()
- called on "trace" opened for writing
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, Slava Pestov <slavapestov@google.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <1297733919.3104.126.camel@localhost>
-References: <20110206232253.378726212@pcw.home.local>
-	 <1297725267.3104.84.camel@localhost>
-	 <1297733613.23343.92.camel@gandalf.stny.rr.com>
-	 <1297733919.3104.126.camel@localhost>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 14 Feb 2011 21:01:54 -0500
-Message-ID: <1297735314.23343.94.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754073Ab1BOCEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 21:04:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23548 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752849Ab1BOCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 21:04:05 -0500
+Date: Tue, 15 Feb 2011 02:03:52 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
+        Milan Broz <mbroz@redhat.com>
+Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
+	read-write for read-only mappings
+Message-ID: <20110215020351.GD5825@agk-dp.fab.redhat.com>
+Mail-Followup-To: device-mapper development <dm-devel@redhat.com>,
+	Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+	Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
+	Milan Broz <mbroz@redhat.com>
+References: <4D57E67E.1030707@redhat.com> <4D57F357.6060708@tao.ma> <4D580A8B.5050508@redhat.com> <20110214103026.GA18742@htj.dyndns.org> <4D591664.6090203@redhat.com> <4D592AD1.6020500@redhat.com> <20110214140940.GM18742@htj.dyndns.org> <4D593AD8.7070901@redhat.com> <20110214154430.GR18742@htj.dyndns.org> <20110215101506.43d41ca8@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110215101506.43d41ca8@notabene.brown>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-15 at 01:38 +0000, Ben Hutchings wrote:
-> On Mon, 2011-02-14 at 20:33 -0500, Steven Rostedt wrote:
-> > On Mon, 2011-02-14 at 23:14 +0000, Ben Hutchings wrote:
-> > > On Mon, 2011-02-07 at 00:23 +0100, Willy Tarreau wrote:
-> > > > 2.6.27.58-stable review patch.  If anyone has any objections, please let us know.
-> > > > 
-> > > > ------------------
-> > > > 
-> > > > From: Slava Pestov <slavapestov@google.com>
-> > > > 
-> > > > commit 364829b1263b44aa60383824e4c1289d83d78ca7 upstream.
-> > > > 
-> > > > The file_ops struct for the "trace" special file defined llseek as seq_lseek().
-> > > > However, if the file was opened for writing only, seq_open() was not called,
-> > > > and the seek would dereference a null pointer, file->private_data.
-> > > > 
-> > > > This patch introduces a new wrapper for seq_lseek() which checks if the file
-> > > > descriptor is opened for reading first. If not, it does nothing.
-> > > [...]
-> > > > --- longterm-2.6.27.orig/kernel/trace/trace.c	2011-01-23 10:52:37.000000000 +0100
-> > > > +++ longterm-2.6.27/kernel/trace/trace.c	2011-01-29 11:42:07.287067215 +0100
-> > > > @@ -2041,17 +2041,25 @@
-> > > >  	return ret;
-> > > >  }
-> > > >  
-> > > > +static loff_t tracing_seek(struct file *file, loff_t offset, int origin)
-> > > [...]
-> > > > +	.llseek		= tracing_lseek,
-> > > [...]
-> > > > +	.llseek		= tracing_lseek,
-> > > [...]
-> > > 
-> > > These names don't agree!
-> > 
-> > What don't they agree on?
-> 
-> Whether seek is spelt with an 'l'...
+On Tue, Feb 15, 2011 at 10:15:06AM +1100, Neil Brown wrote:
+> Sounds sensible ... though it is not all that easy to assemble an
+> array as 'read-only'....  it is possible though.
+ 
+For dm, it is looking like this change will *require* an upgrade to
+userspace LVM tools: some people who just update their kernels without
+updating their LVM tools too may find booting their machine fails.  We
+are still evaluating exactly which parts of LVM and which classes of
+users are affected and how best to deal with this, but I know from
+experience that changes where a kernel update requires an associated
+userspace update are never well-received and we would normally try to
+give plenty of lead time by updating the userspace tools and starting to
+get them into the distributions before imposing the kernel change.
 
-Ah, I was looking at the two .llseek lines ;)
+> When the array is switched to read-write, do I have to call blkdev_get again
+> asking for rw access, then close the old blkdev, or can I 'upgrade'?
+ 
+In dm we upgrade_mode() as you describe.
 
-Yeah, in mainline it's just tracing_seek.
+> If a device has multiple opens: some read-only and some read-write, can I
+> find out when the last read-write close is gone?  That would be really useful,
+> especially if a filesystem down-graded its open to read-only when it is
+> remounted read-only..
+ 
+Likewise, dm has no mechanism for downgrading as yet.
 
--- Steve
-
+Alasdair
 
