@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab1BOGFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 01:05:33 -0500
-Received: from www.tglx.de ([62.245.132.106]:60835 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab1BOGFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 01:05:31 -0500
-Date: Tue, 15 Feb 2011 07:04:00 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH, v6 3/3] cgroups: introduce timer slack controller
-In-Reply-To: <20110214223939.GA6230@shutemov.name>
-Message-ID: <alpine.LFD.2.00.1102150658540.26192@localhost6.localdomain6>
-References: <1297688787-3592-1-git-send-email-kirill@shutemov.name> <1297688787-3592-4-git-send-email-kirill@shutemov.name> <alpine.LFD.2.00.1102141432440.26192@localhost6.localdomain6> <20110214151914.GA4210@shutemov.name> <alpine.LFD.2.00.1102141753240.26192@localhost6.localdomain6>
- <20110214223939.GA6230@shutemov.name>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753001Ab1BOGLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 01:11:50 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45219 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab1BOGLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 01:11:46 -0500
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-omap@vger.kernel.org,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8] ARM: etm: Don't require clock control
+Date: Mon, 14 Feb 2011 22:11:09 -0800
+Message-Id: <1297750276-12475-1-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1296701663-12168-1-git-send-email-arve@android.com>
+References: <1296701663-12168-1-git-send-email-arve@android.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Feb 2011, Kirill A. Shutemov wrote:
-> On Mon, Feb 14, 2011 at 06:01:06PM +0100, Thomas Gleixner wrote:
-> > > I think silent change here is wrong. cpuset returns -EBUSY in similar
-> > > case.
-> > 
-> > And how is cpuset relevant for this ? Not at all. This is about
-> > timer_slack and we better have a well defined scheme for all of this
-> > and not some cobbled together thing with tons of exceptions and corner
-> > cases. Of course undocumented as far the code goes.
-> 
-> I don't like silent cascade changes. Userspace can implement it if
-> needed. -EBUSY is appropriate.
+If clk_get fail, assume the etb does not need a separate clock.
 
-And I don't like totally uncommented code which follows come cobbled
-together completely non obvious rules.
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+---
+ arch/arm/kernel/etm.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-It's not about what you like. It's about getting useful functionality
-when we add a new infrastructure like this.
-
-So could you please explain what the rules of updating are, so that a
-reviewer has a chance to understand the rationale of all this.
-
-Thanks,
-
-	tglx
-
+diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
+index 11db628..d4ec368 100644
+--- a/arch/arm/kernel/etm.c
++++ b/arch/arm/kernel/etm.c
+@@ -361,13 +361,12 @@ static int __init etb_probe(struct amba_device *dev, struct amba_id *id)
+ 	if (ret)
+ 		goto out_unmap;
+ 
++	/* Get optional clock. Currently used to select clock source on omap3 */
+ 	t->emu_clk = clk_get(&dev->dev, "emu_src_ck");
+-	if (IS_ERR(t->emu_clk)) {
++	if (IS_ERR(t->emu_clk))
+ 		dev_dbg(&dev->dev, "Failed to obtain emu_src_ck.\n");
+-		return -EFAULT;
+-	}
+-
+-	clk_enable(t->emu_clk);
++	else
++		clk_enable(t->emu_clk);
+ 
+ 	etb_unlock(t);
+ 	t->etb_bufsz = etb_readl(t, ETBR_DEPTH);
+@@ -402,8 +401,10 @@ static int etb_remove(struct amba_device *dev)
+ 	iounmap(t->etb_regs);
+ 	t->etb_regs = NULL;
+ 
+-	clk_disable(t->emu_clk);
+-	clk_put(t->emu_clk);
++	if (!IS_ERR(t->emu_clk)) {
++		clk_disable(t->emu_clk);
++		clk_put(t->emu_clk);
++	}
+ 
+ 	amba_release_regions(dev);
+ 
+-- 
+1.7.3.1
 
