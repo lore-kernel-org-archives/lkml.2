@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab1BOXSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 18:18:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106Ab1BOXSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 18:18:20 -0500
-Date: Wed, 16 Feb 2011 00:17:33 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Jan Beulich <JBeulich@novell.com>, Larry Woodman <lwoodman@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] fix pgd_lock deadlock
-Message-ID: <20110215231733.GR5935@random.random>
-References: <20110204012109.GP5843@random.random>
- <4D4C6F45.6010204@goop.org>
- <20110207232045.GJ3347@random.random>
- <20110215190710.GL5935@random.random>
- <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6>
- <20110215195450.GO5935@random.random>
- <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
- <alpine.LFD.2.00.1102152125180.26192@localhost6.localdomain6>
- <20110215225234.GP5935@random.random>
- <alpine.LFD.2.00.1102160002300.26192@localhost6.localdomain6>
+	id S1756401Ab1BOXTe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 18:19:34 -0500
+Received: from fmmailgate02.web.de ([217.72.192.227]:42889 "EHLO
+	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755952Ab1BOXTc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 18:19:32 -0500
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: Stephen Hemminger <shemminger@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        bridge@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Multicast snooping fixes and suggestions
+Date: Wed, 16 Feb 2011 00:19:16 +0100
+Message-Id: <1297811961-19249-1-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1102160002300.26192@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V01U2FsdGVkX1/uR+3OwNYtaDqi/37H5X2ecxYmYr9QqpXVkgA2
+	8eEvg0GoQzglDOAKJBoQPUZXbcISwEULrjAW91UNkPDoKgFlV3
+	Rjx6AS9aIuAhruxGWPSg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 12:03:30AM +0100, Thomas Gleixner wrote:
-> I assume you run it with a lockdep enabled kernel as well, right ?
+Hello everyone,
 
-Yes, I always run with lockdep and prove locking enabled on my test
-box, not sure how it's meant to trigger more bugs in this case, the
-debug check that should be relevant for this is DEBUG_VM and that is
-enabled too of course. I didn't try DEBUG_PAGEALLOC yet.
+While testing the (very awesome!) bridge igmp/mld snooping support I came across
+two issues which are breaking IPv6 multicast snooping and IPv6
+non-link-local multicast on bridges with multicast snooping support enabled
+in general. The first two patches shall fix these issues.
+
+The third one addresses a potential bug on little endian machines which I noticed
+during this little code reviewing. This patch is untested though, feedback welcome.
+
+The fourth and fifth patch are a suggestion to also permit using the bridge multicast
+snooping feature for link local multimedia multicast traffic. Therefore
+using the transient multicast flag instead of the non-link-local scope criteria
+seems to be a suitable solution at least for IPv6, in my opinion. Let me know what
+you think about it.
+
+Thanks for reviewing these patches.
+
+Cheers,
+Linus
