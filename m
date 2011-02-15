@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab1BOCaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 21:30:14 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58552 "EHLO mx3.mail.elte.hu"
+	id S1754107Ab1BOCdw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 21:33:52 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:42016 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675Ab1BOCaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 21:30:10 -0500
-Date: Tue, 15 Feb 2011 03:29:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
-        shaohui.zheng@intel.com, rientjes@google.com, hpa@linux.intel.com
-Subject: Re: [PATCH UPDATED 03/26] x86, NUMA: Drop @start/last_pfn from
- initmem_init() initmem_init()
-Message-ID: <20110215022956.GE31134@elte.hu>
-References: <1297530663-26234-1-git-send-email-tj@kernel.org>
- <1297530663-26234-4-git-send-email-tj@kernel.org>
- <20110214135052.GJ18742@htj.dyndns.org>
- <20110214142011.GB27076@elte.hu>
- <20110214145802.GO18742@htj.dyndns.org>
- <4D597C87.8040404@kernel.org>
- <20110214193114.GD18742@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110214193114.GD18742@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752620Ab1BOCdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 21:33:50 -0500
+Date: Tue, 15 Feb 2011 13:33:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20110215133342.daa93f5e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-* Tejun Heo <tj@kernel.org> wrote:
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-> On Mon, Feb 14, 2011 at 11:03:35AM -0800, Yinghai Lu wrote:
-> > initmem_init() extensively accesses and modifies global data
-> > structures and the parameters aren't even followed depending on which
-> > path is being used.  Drop @start/last_pfn and let it deal with
-> > @max_pfn directly.  This is in preparation for further NUMA init
-> > cleanups.
-> > 
-> > -v2: x86-32 initmem_init() weren't updated breaking 32bit builds.  Fixed.
-> >      Found by Yinghai
-> 
-> Alright, updated accordingly in the git tree.
+sound/soc/codecs/wm8903.c:376: error: redefinition of 'wm8903_dcs_event'
+sound/soc/codecs/wm8903.c:279: note: previous definition of 'wm8903_dcs_eve=
+nt' was here
+sound/soc/codecs/wm8903.c:398: error: redefinition of 'wm8903_seq_notifier'
+sound/soc/codecs/wm8903.c:301: note: previous definition of 'wm8903_seq_not=
+ifier' was here
 
-Yeah, that kind of tag is fine too, or:
+It looks like commit "ASoC: Actively manage WM8903 DC servo
+configuration" has been applied twice as commits c5b6a9feaeb0 and
+8e715c3194e4.
 
- Build-bug-in-v1-found-by: ...
+I have used the version of the sound-asoc tree from next-20110214 for
+today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-:-)
+--Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-	Ingo
+iQEcBAEBAgAGBQJNWeYGAAoJEDMEi1NhKgbst4MH/RwLNIYxY+9WdA7CPce1Z6Gj
+d9y5D/pugA/tzAiD8HsuW9AIsvVF5gF4QNrx7T5ixXUGY1fI8Pz5u47uMoQZNpFm
+DZ7K1qRtYkF1ZWby1Y0JGD0UUGps8K5xum82mvfBzJXJFff07o61JzYvJZtqHXX+
+zXoGlIeOgctm6RHCvprpNwevffv9NfIwhyEl+4R2XZHFkQJkZN+ERQDCLJynaU6G
+oyMS3jgq/XzpjVx0OJoZ6A4y1qYzoVKsPR1ES3TQWJ3WRw6ugh7TXNvMw86g2XZm
+/6wryWwFYm+640IyApqyx/2/2Q3oKgHKreyfrFVsUaPW5CCgZW+kigDbbLUuz4g=
+=Sa/K
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A--
