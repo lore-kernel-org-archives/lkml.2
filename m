@@ -1,77 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab1BORCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 12:02:32 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56863 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754809Ab1BORCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 12:02:30 -0500
-Date: Tue, 15 Feb 2011 18:02:16 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] locking fix
-Message-ID: <20110215170216.GA3966@elte.hu>
+	id S1755472Ab1BORCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 12:02:51 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33920 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab1BORCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 12:02:48 -0500
+Date: Tue, 15 Feb 2011 22:31:27 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@gmail.com>,
+        Tim Chen <tim.c.chen@intel.com>, Alex Shi <alex.shi@intel.com>
+Subject: Re: [PATCH] sched: Wholesale removal of sd_idle logic
+Message-ID: <20110215170127.GA28865@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <1297473616.2806.16.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1297723130-693-1-git-send-email-venki@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1297723130-693-1-git-send-email-venki@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+* Venkatesh Pallipadi <venki@google.com> [2011-02-14 14:38:50]:
 
-Please pull the latest core-fixes-for-linus git tree from:
+> sd_idle logic was introduced way back in 2005 (commit 5969fe06),
+> as an HT optimization.
+> 
+> As per the discussion in the thread here
+> lkml subject - sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
+> https://patchwork.kernel.org/patch/532501/
+> 
+> the capacity based logic in the load balancer right now handles this
+> in a much cleaner way, handling more than 2 SMT siblings etc, and sd_idle
+> does not seem to bring any adiitional benefits. sd_idle logic also has
+> some bugs that has performance impact. Here is the patch that removes
+> the sd_idle logic altogether.
+> 
+> The initial patch here - https://patchwork.kernel.org/patch/532501/
+> applies cleanly over the below change and provides a micro-optimization
+> for a specific case, where an idle core can pull tasks instead of a
+> core with one thread being idle and other thread being busy.
+> It will be good to get some data on whether this micro-optimization
+> matters or not.
+> 
+> Also, there was a dependency of sched_mc_power_savings == 2, with sd_idle
+> logic. Copying Vaidy to know the impact of this change there.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-fixes-for-linus
+Hi Venki,
 
- Thanks,
+The dependency is to avoid active balancing when there is a busy
+sibling and power save balance is not set.
 
-	Ingo
+Another logic would propagate/force sd_idle=1 to induce more frequent
+balancing for idle sibling in case of power save balance.  Removing
+sd_idle will make this default.
 
------------------->
-Peter Zijlstra (1):
-      Revert "lockdep, timer: Fix del_timer_sync() annotation"
+Your changes look good.  I will test and report.
 
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 
- kernel/timer.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+Acked-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index d53ce66..d645992 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -959,7 +959,7 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
-  *
-  * Synchronization rules: Callers must prevent restarting of the timer,
-  * otherwise this function is meaningless. It must not be called from
-- * hardirq contexts. The caller must not hold locks which would prevent
-+ * interrupt contexts. The caller must not hold locks which would prevent
-  * completion of the timer's handler. The timer's handler must not call
-  * add_timer_on(). Upon exit the timer is not queued and the handler is
-  * not running on any CPU.
-@@ -971,12 +971,10 @@ int del_timer_sync(struct timer_list *timer)
- #ifdef CONFIG_LOCKDEP
- 	unsigned long flags;
- 
--	raw_local_irq_save(flags);
--	local_bh_disable();
-+	local_irq_save(flags);
- 	lock_map_acquire(&timer->lockdep_map);
- 	lock_map_release(&timer->lockdep_map);
--	_local_bh_enable();
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
- #endif
- 	/*
- 	 * don't use it in hardirq context, because it
+> ---
+>  kernel/sched_fair.c |   53 ++++++++++----------------------------------------
+>  1 files changed, 11 insertions(+), 42 deletions(-)
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 0c26e2d..932dc13 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -2610,7 +2610,6 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+>   * @this_cpu: Cpu for which load balance is currently performed.
+>   * @idle: Idle status of this_cpu
+>   * @load_idx: Load index of sched_domain of this_cpu for load calc.
+> - * @sd_idle: Idle status of the sched_domain containing group.
+>   * @local_group: Does group contain this_cpu.
+>   * @cpus: Set of cpus considered for load balancing.
+>   * @balance: Should we balance.
+> @@ -2618,7 +2617,7 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+>   */
+>  static inline void update_sg_lb_stats(struct sched_domain *sd,
+>  			struct sched_group *group, int this_cpu,
+> -			enum cpu_idle_type idle, int load_idx, int *sd_idle,
+> +			enum cpu_idle_type idle, int load_idx,
+>  			int local_group, const struct cpumask *cpus,
+>  			int *balance, struct sg_lb_stats *sgs)
+>  {
+> @@ -2638,9 +2637,6 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+>  	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
+>  		struct rq *rq = cpu_rq(i);
+> 
+> -		if (*sd_idle && rq->nr_running)
+> -			*sd_idle = 0;
+> -
+>  		/* Bias balancing toward cpus of our domain */
+>  		if (local_group) {
+>  			if (idle_cpu(i) && !first_idle_cpu) {
+> @@ -2755,15 +2751,13 @@ static bool update_sd_pick_busiest(struct sched_domain *sd,
+>   * @sd: sched_domain whose statistics are to be updated.
+>   * @this_cpu: Cpu for which load balance is currently performed.
+>   * @idle: Idle status of this_cpu
+> - * @sd_idle: Idle status of the sched_domain containing sg.
+>   * @cpus: Set of cpus considered for load balancing.
+>   * @balance: Should we balance.
+>   * @sds: variable to hold the statistics for this sched_domain.
+>   */
+>  static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+> -			enum cpu_idle_type idle, int *sd_idle,
+> -			const struct cpumask *cpus, int *balance,
+> -			struct sd_lb_stats *sds)
+> +			enum cpu_idle_type idle, const struct cpumask *cpus,
+> +			int *balance, struct sd_lb_stats *sds)
+>  {
+>  	struct sched_domain *child = sd->child;
+>  	struct sched_group *sg = sd->groups;
+> @@ -2781,7 +2775,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+> 
+>  		local_group = cpumask_test_cpu(this_cpu, sched_group_cpus(sg));
+>  		memset(&sgs, 0, sizeof(sgs));
+> -		update_sg_lb_stats(sd, sg, this_cpu, idle, load_idx, sd_idle,
+> +		update_sg_lb_stats(sd, sg, this_cpu, idle, load_idx,
+>  				local_group, cpus, balance, &sgs);
+> 
+>  		if (local_group && !(*balance))
+> @@ -3033,7 +3027,6 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
+>   * @imbalance: Variable which stores amount of weighted load which should
+>   *		be moved to restore balance/put a group to idle.
+>   * @idle: The idle status of this_cpu.
+> - * @sd_idle: The idleness of sd
+>   * @cpus: The set of CPUs under consideration for load-balancing.
+>   * @balance: Pointer to a variable indicating if this_cpu
+>   *	is the appropriate cpu to perform load balancing at this_level.
+> @@ -3046,7 +3039,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
+>  static struct sched_group *
+>  find_busiest_group(struct sched_domain *sd, int this_cpu,
+>  		   unsigned long *imbalance, enum cpu_idle_type idle,
+> -		   int *sd_idle, const struct cpumask *cpus, int *balance)
+> +		   const struct cpumask *cpus, int *balance)
+>  {
+>  	struct sd_lb_stats sds;
+> 
+> @@ -3056,8 +3049,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
+>  	 * Compute the various statistics relavent for load balancing at
+>  	 * this level.
+>  	 */
+> -	update_sd_lb_stats(sd, this_cpu, idle, sd_idle, cpus,
+> -					balance, &sds);
+> +	update_sd_lb_stats(sd, this_cpu, idle, cpus, balance, &sds);
+> 
+>  	/* Cases where imbalance does not exist from POV of this_cpu */
+>  	/* 1) this_cpu is not the appropriate cpu to perform load balancing
+> @@ -3193,7 +3185,7 @@ find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
+>  /* Working cpumask for load_balance and load_balance_newidle. */
+>  static DEFINE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
+> 
+> -static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle,
+> +static int need_active_balance(struct sched_domain *sd, int idle,
+>  			       int busiest_cpu, int this_cpu)
+>  {
+>  	if (idle == CPU_NEWLY_IDLE) {
+> @@ -3225,10 +3217,6 @@ static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle,
+>  		 * move_tasks() will succeed.  ld_moved will be true and this
+>  		 * active balance code will not be triggered.
+>  		 */
+> -		if (!sd_idle && sd->flags & SD_SHARE_CPUPOWER &&
+> -		    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
+> -			return 0;
+> -
+
+This condition will nack active balancing for semi idle core when
+sched_smt_powersavings is not set.  f_b_g() itself should have
+returned NULL if there are no power savings opportunity.
+
+>  		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
+>  			return 0;
+>  	}
+> @@ -3246,7 +3234,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>  			struct sched_domain *sd, enum cpu_idle_type idle,
+>  			int *balance)
+>  {
+> -	int ld_moved, all_pinned = 0, active_balance = 0, sd_idle = 0;
+> +	int ld_moved, all_pinned = 0, active_balance = 0;
+>  	struct sched_group *group;
+>  	unsigned long imbalance;
+>  	struct rq *busiest;
+> @@ -3255,20 +3243,10 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+> 
+>  	cpumask_copy(cpus, cpu_active_mask);
+> 
+> -	/*
+> -	 * When power savings policy is enabled for the parent domain, idle
+> -	 * sibling can pick up load irrespective of busy siblings. In this case,
+> -	 * let the state of idle sibling percolate up as CPU_IDLE, instead of
+> -	 * portraying it as CPU_NOT_IDLE.
+> -	 */
+> -	if (idle != CPU_NOT_IDLE && sd->flags & SD_SHARE_CPUPOWER &&
+> -	    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
+> -		sd_idle = 1;
+
+This is kind of becoming the default now when sd_idle is removed.
+When powersave balance is set, we want to run load balancer more
+frequently.
+
+> -
+>  	schedstat_inc(sd, lb_count[idle]);
+> 
+>  redo:
+> -	group = find_busiest_group(sd, this_cpu, &imbalance, idle, &sd_idle,
+> +	group = find_busiest_group(sd, this_cpu, &imbalance, idle,
+>  				   cpus, balance);
+> 
+>  	if (*balance == 0)
+> @@ -3330,8 +3308,7 @@ redo:
+>  		if (idle != CPU_NEWLY_IDLE)
+>  			sd->nr_balance_failed++;
+> 
+> -		if (need_active_balance(sd, sd_idle, idle, cpu_of(busiest),
+> -					this_cpu)) {
+> +		if (need_active_balance(sd, idle, cpu_of(busiest), this_cpu)) {
+>  			raw_spin_lock_irqsave(&busiest->lock, flags);
+> 
+>  			/* don't kick the active_load_balance_cpu_stop,
+> @@ -3386,10 +3363,6 @@ redo:
+>  			sd->balance_interval *= 2;
+>  	}
+> 
+> -	if (!ld_moved && !sd_idle && sd->flags & SD_SHARE_CPUPOWER &&
+> -	    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
+> -		ld_moved = -1;
+
+I have not figured out where ld_moved is checked for -1 and why we
+need to treat this as a special case.
+
+Your bug fix in idle_balance() for if (pulled_task) {...} is a good
+catch.
+
+> -
+>  	goto out;
+> 
+>  out_balanced:
+> @@ -3403,11 +3376,7 @@ out_one_pinned:
+>  			(sd->balance_interval < sd->max_interval))
+>  		sd->balance_interval *= 2;
+> 
+> -	if (!sd_idle && sd->flags & SD_SHARE_CPUPOWER &&
+> -	    !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
+> -		ld_moved = -1;
+> -	else
+> -		ld_moved = 0;
+
+Ack.  But why did we have to flag this case earlier?
+
+> +	ld_moved = 0;
+>  out:
+>  	return ld_moved;
+>  }
+
+--Vaidy
+
