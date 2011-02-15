@@ -1,113 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab1BOXCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 18:02:51 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:58721 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204Ab1BOXCu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 18:02:50 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=JHiq1QXJJuAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=1nSz6Ew-AAAA:8 a=CzxOTPpkqUexjptvYFoA:9 a=y1-VWANZoW2qu0XCdNUXBNGR6f0A:4 a=PUjeQqilurYA:10 a=0kPLrQdw3YYA:10 a=LI9Vle30uBYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=nj4rVwXhlm8A:10 a=_RhRFcbxBZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been
- added to the 2.6.32-longterm tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: gregkh@suse.de
-Cc: srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl, efault@gmx.de,
-        ghaskins@novell.com, mingo@elte.hu, stable@kernel.org,
-        stable-commits@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <12978046423644@kroah.org>
-References: <12978046423644@kroah.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 15 Feb 2011 18:02:47 -0500
-Message-ID: <1297810967.23343.122.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755893Ab1BOXEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 18:04:24 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:39619 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755093Ab1BOXEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 18:04:22 -0500
+Date: Tue, 15 Feb 2011 23:03:54 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1102152258030.5315@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1647677421-1297811034=:5315"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added LKML ]
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Tue, 2011-02-15 at 13:17 -0800, gregkh@suse.de wrote:
-> This is a note to let you know that I've just added the patch titled
-> 
->     sched: Give CPU bound RT tasks preference
-> 
-> to the 2.6.32-longterm tree which can be found at:
->     http://www.kernel.org/git/?p=linux/kernel/git/longterm/longterm-queue-2.6.32.git;a=summary
-> 
-> The filename of the patch is:
->      0006-sched-Give-CPU-bound-RT-tasks-preference.patch
-> and it can be found in the queue-2.6.32 subdirectory.
-> 
-> If you, or anyone else, feels it should not be added to the 2.6.32 longterm tree,
-> please let <stable@kernel.org> know about it.
-> 
-> 
-
-I don't mind this patch being added to the long term tree. But I'm
-curious about what is the criteria for adding changes to it? This is a
-performance improvement and not a critical bug fix.
-
--- Steve
-
-> >From 10db390cadda977081a7a34f60b8ce62557521c9 Mon Sep 17 00:00:00 2001
-> From: stable-bot for Steven Rostedt <srostedt@redhat.com>
-> Date: Thu, 10 Feb 2011 10:21:08 +0100
-> Subject: sched: Give CPU bound RT tasks preference
-> 
-> From:: Steven Rostedt <srostedt@redhat.com>
-> 
-> Commit: b3bc211cfe7d5fe94b310480d78e00bea96fbf2a upstream
-> 
-> If a high priority task is waking up on a CPU that is running a
-> lower priority task that is bound to a CPU, see if we can move the
-> high RT task to another CPU first. Note, if all other CPUs are
-> running higher priority tasks than the CPU bounded current task,
-> then it will be preempted regardless.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Gregory Haskins <ghaskins@novell.com>
-> LKML-Reference: <20100921024138.888922071@goodmis.org>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  kernel/sched_rt.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -965,7 +965,8 @@ select_task_rq_rt(struct rq *rq, struct
->  	 * For equal prio tasks, we just let the scheduler sort it out.
->  	 */
->  	if (unlikely(rt_task(rq->curr)) &&
-> -	    rq->curr->prio < p->prio &&
-> +	    (rq->curr->rt.nr_cpus_allowed < 2 ||
-> +	     rq->curr->prio < p->prio) &&
->  	    (p->rt.nr_cpus_allowed > 1)) {
->  		int cpu = find_lowest_rq(p);
->  
-> @@ -1493,9 +1494,10 @@ static void task_woken_rt(struct rq *rq,
->  	if (!task_running(rq, p) &&
->  	    !test_tsk_need_resched(rq->curr) &&
->  	    has_pushable_tasks(rq) &&
-> +	    p->rt.nr_cpus_allowed > 1 &&
->  	    rt_task(rq->curr) &&
-> -	    rq->curr->prio < p->prio &&
-> -	    p->rt.nr_cpus_allowed > 1)
-> +	    (rq->curr->rt.nr_cpus_allowed < 2 ||
-> +	     rq->curr->prio < p->prio))
->  		push_rt_tasks(rq);
->  }
->  
-> 
-> 
-> Patches currently in longterm-queue-2.6.32 which might be from srostedt@redhat.com are
+--29444707-1647677421-1297811034=:5315
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
 
+Hi Linus,
+
+Slightly bigger than I'd prefer, but we got a lot of endian fixes for 
+radeon spread out all over the place, Alex has hopefully discovered the 
+correct answer for the PLL nightmares, also a race condition on GPU reset 
+that was causing an oops and full machine hang. Usually smattering of 
+Intel fixes, RC6 power saving is off again due to hard hangs on some 
+machines, and a resume regression fix.
+
+Hopefully along with Len's ACPI pull we are rid of most of the regressions 
+now.
+
+Dave.
+
+The following changes since commit 091994cfb8e7d7a372c2d547778a91012d899e16:
+
+  Merge branch 'spi/merge' of git://git.secretlab.ca/git/linux-2.6 (2011-02-13 07:59:48 -0800)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (9):
+      drm/radeon/kms: fix interlaced modes on dce4+
+      drm/radeon/kms: add connector table for mac g5 9600
+      drm/radeon/kms: evergreen/ni big endian fixes (v2)
+      drm/radeon/kms: use linear aligned for 6xx/7xx bo blits
+      drm/radeon/kms: use linear aligned for evergreen/ni bo blits
+      drm/radeon/kms: improve 6xx/7xx CS error output
+      drm/radeon/kms: fix a few more atombios endian issues
+      drm/radeon/kms: add bounds checking to avivo pll algo
+      drm/radeon/kms: hopefully fix pll issues for real (v3)
+
+Chris Wilson (7):
+      drm/i915: Invalidate TLB caches on SNB BLT/BSD rings
+      drm/i915/lvds: Restore dithering on native modes for gen2/3
+      drm/i915: Disable RC6 on Ironlake
+      drm/i915/sdvo: If we have an EDID confirm it matches the mode of the connection
+      drm/i915: Trigger modesetting if force-audio changes
+      drm/i915/tv: Use polling rather than interrupt-based hotplug
+      drm/i915: Fix resume regression from 5d1d0cc
+
+Cédric Cano (3):
+      drm/radeon: 6xx/7xx non-kms endian fixes
+      drm/radeon/kms: atombios big endian fixes
+      drm/radeon/kms: 6xx/7xx big endian fixes
+
+Dave Airlie (3):
+      drm/radeon: fix memory debugging since d961db75ce86a84f1f04e91ad1014653ed7d9f46
+      drm/radeon: fix race between GPU reset and TTM delayed delete thread.
+      Merge remote branch 'intel/drm-intel-fixes' of /ssd/git/drm-next into drm-fixes
+
+Jesper Juhl (1):
+      radeon mkregtable: Add missing fclose() calls
+
+Kees Cook (1):
+      drm: do not leak kernel addresses via /proc/dri/*/vma
+
+Marek Ol¨ák (3):
+      drm/radeon/kms: optimize CS state checking for r100->r500
+      drm/radeon/kms: fix tracking of BLENDCNTL, COLOR_CHANNEL_MASK, and GB_Z on r300
+      drm/radeon/kms: check AA resolve registers on r300
+
+Xiao Jiang (1):
+      drm: fix wrong usages of drm_device in DRM Developer's Guide
+
+ Documentation/DocBook/drm.tmpl                  |    6 +-
+ drivers/gpu/drm/drm_info.c                      |    9 +-
+ drivers/gpu/drm/i915/i915_drv.c                 |    5 +-
+ drivers/gpu/drm/i915/i915_drv.h                 |    1 +
+ drivers/gpu/drm/i915/i915_reg.h                 |    4 +-
+ drivers/gpu/drm/i915/intel_display.c            |   95 ++++++++++++----------
+ drivers/gpu/drm/i915/intel_dp.c                 |   36 +++++++--
+ drivers/gpu/drm/i915/intel_drv.h                |    1 -
+ drivers/gpu/drm/i915/intel_hdmi.c               |   39 ++++++++--
+ drivers/gpu/drm/i915/intel_lvds.c               |   12 ++--
+ drivers/gpu/drm/i915/intel_ringbuffer.c         |   26 ++++---
+ drivers/gpu/drm/i915/intel_sdvo.c               |   66 +++++++++++++---
+ drivers/gpu/drm/i915/intel_tv.c                 |   43 +++++++---
+ drivers/gpu/drm/radeon/atombios_crtc.c          |   98 +++++++++-------------
+ drivers/gpu/drm/radeon/evergreen.c              |   22 ++++-
+ drivers/gpu/drm/radeon/evergreen_blit_kms.c     |   23 ++++--
+ drivers/gpu/drm/radeon/evergreen_blit_shaders.c |    8 ++
+ drivers/gpu/drm/radeon/evergreend.h             |    1 +
+ drivers/gpu/drm/radeon/mkregtable.c             |    5 +-
+ drivers/gpu/drm/radeon/r100.c                   |   63 ++++++++++++++-
+ drivers/gpu/drm/radeon/r100_track.h             |   13 ++--
+ drivers/gpu/drm/radeon/r200.c                   |   18 ++++
+ drivers/gpu/drm/radeon/r300.c                   |   42 +++++++++-
+ drivers/gpu/drm/radeon/r300_reg.h               |    2 +
+ drivers/gpu/drm/radeon/r600.c                   |   22 ++++-
+ drivers/gpu/drm/radeon/r600_blit.c              |   11 ++-
+ drivers/gpu/drm/radeon/r600_blit_kms.c          |   29 +++++--
+ drivers/gpu/drm/radeon/r600_blit_shaders.c      |    4 +
+ drivers/gpu/drm/radeon/r600_cp.c                |   31 ++++++--
+ drivers/gpu/drm/radeon/r600_cs.c                |   46 ++++++-----
+ drivers/gpu/drm/radeon/r600d.h                  |    9 +-
+ drivers/gpu/drm/radeon/radeon_atombios.c        |   48 ++++++------
+ drivers/gpu/drm/radeon/radeon_combios.c         |   47 +++++++++++
+ drivers/gpu/drm/radeon/radeon_device.c          |    4 +
+ drivers/gpu/drm/radeon/radeon_display.c         |   10 +++
+ drivers/gpu/drm/radeon/radeon_drv.h             |    1 +
+ drivers/gpu/drm/radeon/radeon_encoders.c        |   24 ++++--
+ drivers/gpu/drm/radeon/radeon_mode.h            |    1 +
+ drivers/gpu/drm/radeon/radeon_ttm.c             |    4 +-
+ drivers/gpu/drm/radeon/reg_srcs/r300            |    6 +-
+ drivers/gpu/drm/radeon/reg_srcs/r420            |    7 +--
+ drivers/gpu/drm/radeon/reg_srcs/rs600           |    6 +-
+ drivers/gpu/drm/radeon/reg_srcs/rv515           |    7 +--
+ drivers/gpu/drm/radeon/rs690.c                  |   12 ++--
+ drivers/gpu/drm/radeon/rv770.c                  |    6 +-
+ drivers/gpu/drm/radeon/rv770d.h                 |    8 +-
+ 46 files changed, 679 insertions(+), 302 deletions(-)
+--29444707-1647677421-1297811034=:5315--
