@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab1BOCEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 21:04:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23548 "EHLO mx1.redhat.com"
+	id S1753877Ab1BOCQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 21:16:25 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:52250 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab1BOCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 21:04:05 -0500
-Date: Tue, 15 Feb 2011 02:03:52 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
-        Milan Broz <mbroz@redhat.com>
-Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
-	read-write for read-only mappings
-Message-ID: <20110215020351.GD5825@agk-dp.fab.redhat.com>
-Mail-Followup-To: device-mapper development <dm-devel@redhat.com>,
-	Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-	Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
-	Milan Broz <mbroz@redhat.com>
-References: <4D57E67E.1030707@redhat.com> <4D57F357.6060708@tao.ma> <4D580A8B.5050508@redhat.com> <20110214103026.GA18742@htj.dyndns.org> <4D591664.6090203@redhat.com> <4D592AD1.6020500@redhat.com> <20110214140940.GM18742@htj.dyndns.org> <4D593AD8.7070901@redhat.com> <20110214154430.GR18742@htj.dyndns.org> <20110215101506.43d41ca8@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110215101506.43d41ca8@notabene.brown>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752521Ab1BOCQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 21:16:23 -0500
+Date: Tue, 15 Feb 2011 13:16:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the bluetooth tree
+Message-Id: <20110215131615.39f30d8a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__15_Feb_2011_13_16_15_+1100_GWTpjdYxO87W6YDX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 10:15:06AM +1100, Neil Brown wrote:
-> Sounds sensible ... though it is not all that easy to assemble an
-> array as 'read-only'....  it is possible though.
- 
-For dm, it is looking like this change will *require* an upgrade to
-userspace LVM tools: some people who just update their kernels without
-updating their LVM tools too may find booting their machine fails.  We
-are still evaluating exactly which parts of LVM and which classes of
-users are affected and how best to deal with this, but I know from
-experience that changes where a kernel update requires an associated
-userspace update are never well-received and we would normally try to
-give plenty of lead time by updating the userspace tools and starting to
-get them into the distributions before imposing the kernel change.
+--Signature=_Tue__15_Feb_2011_13_16_15_+1100_GWTpjdYxO87W6YDX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> When the array is switched to read-write, do I have to call blkdev_get again
-> asking for rw access, then close the old blkdev, or can I 'upgrade'?
- 
-In dm we upgrade_mode() as you describe.
+Hi Gustavo,
 
-> If a device has multiple opens: some read-only and some read-write, can I
-> find out when the last read-write close is gone?  That would be really useful,
-> especially if a filesystem down-graded its open to read-only when it is
-> remounted read-only..
- 
-Likewise, dm has no mechanism for downgrading as yet.
+After merging the bluetooth tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Alasdair
+ERROR: "l2cap_load" [net/bluetooth/cmtp/cmtp.ko] undefined!
 
+Caused by commit de5b38d18ca4f3f8b8e297211c3226c2a63226fe ("Bluetooth:
+remove l2cap_load() hack").
+
+I havbe used the version of the bluetooth tree from next-20110214 for
+today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__15_Feb_2011_13_16_15_+1100_GWTpjdYxO87W6YDX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNWeHvAAoJEDMEi1NhKgbsTSEIAJMvkeabqg7Y6dobnrsnmNxH
+pEw3WMp7qLpb8KKkbPbJ+P597tJDYk9DrP6C6qyT4AaqNkgEwS8gGc3bSuhQPzCX
+TxAVAo46bAcofuLurkl/Ux8ZWT1QX17586ZCdG3AqmbWVS9+9IHQzBm1Syxa8cer
+UhvNLYeXw+51gav7ZaI2jhV9OpRLr/1UYPGF7obzucWBT4UnmQ9o7QymLutvfMm7
+NVbAyyxDPAktgXErq69DsaG8PumY6P/NtWtPSZLboPujC8Ovb7iUjZPwxfluqNkk
+Pbw1jR0A8ybwi8/G6pEiEZvDvlHfl+1bYl4DxDBALzdDFhGfTPX+f3Zhyxv1I90=
+=6eya
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__15_Feb_2011_13_16_15_+1100_GWTpjdYxO87W6YDX--
