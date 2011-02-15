@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1BOO2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 09:28:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3753 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab1BOO2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 09:28:18 -0500
-Message-ID: <4D5A8CCD.1070506@redhat.com>
-Date: Tue, 15 Feb 2011 16:25:17 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3 1/6] KVM-HDR: KVM Steal time implementation
-References: <1297448364-14051-1-git-send-email-glommer@redhat.com> <1297448364-14051-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1297448364-14051-2-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755058Ab1BOOzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 09:55:19 -0500
+Received: from mail.pripojeni.net ([217.66.174.14]:49471 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab1BOOzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 09:55:16 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Amit Shah <amitshah@gmx.net>,
+        baoyb <baoyb@avit.org.cn>
+Subject: [PATCH 1/1] USB: serial/usb_wwan, fix tty NULL dereference
+Date: Tue, 15 Feb 2011 15:55:07 +0100
+Message-Id: <1297781707-3985-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 08:19 PM, Glauber Costa wrote:
-> To implement steal time, we need the hypervisor to pass the guest information
-> about how much time was spent running other processes outside the VM.
-> This is per-vcpu, and using the kvmclock structure for that is an abuse
-> we decided not to make.
->
-> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
-> holds the memory area address containing information about steal time
->
-> This patch contains the headers for it. I am keeping it separate to facilitate
-> backports to people who wants to backport the kernel part but not the
-> hypervisor, or the other way around.
->
->
-> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-> index ea2dc1a..233374a 100644
-> --- a/include/linux/kvm.h
-> +++ b/include/linux/kvm.h
-> @@ -541,6 +541,7 @@ struct kvm_ppc_pvinfo {
->   #define KVM_CAP_PPC_GET_PVINFO 57
->   #define KVM_CAP_PPC_IRQ_LEVEL 58
->   #define KVM_CAP_ASYNC_PF 59
-> +#define KVM_CAP_STEAL_TIME 60
->
->   #ifdef KVM_CAP_IRQ_ROUTING
->
+tty_port_tty_get may return without any problems NULL. Handle this
+case and do not oops in usb_wwan_indat_callback by dereferencing it.
 
-This isn't related to the guest/host interface and should come with the 
-hypervisor patch.
+The oops:
+Unable to handle kernel paging request for data at address 0x000000d8
+Faulting instruction address: 0xc0175b3c
+Oops: Kernel access of bad area, sig: 11 [#1]
+PowerPC 40x Platform
+last sysfs file:
+/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
+Modules linked in:
+NIP: c0175b3c LR: c0175e7c CTR: c0215c90
+REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
+MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
+DEAR: 000000d8, ESR: 00000000
+TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
+GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
+GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
+GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
+GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
+NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
+LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+Call Trace:
+[c77f7e00] [00000003] 0x3 (unreliable)
+[c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
+[c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
+...
 
+References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
+Cc: Amit Shah <amitshah@gmx.net>
+Cc: baoyb <baoyb@avit.org.cn>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/usb/serial/usb_wwan.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index b004b2a..9c014e2 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -295,12 +295,15 @@ static void usb_wwan_indat_callback(struct urb *urb)
+ 		    __func__, status, endpoint);
+ 	} else {
+ 		tty = tty_port_tty_get(&port->port);
+-		if (urb->actual_length) {
+-			tty_insert_flip_string(tty, data, urb->actual_length);
+-			tty_flip_buffer_push(tty);
+-		} else
+-			dbg("%s: empty read urb received", __func__);
+-		tty_kref_put(tty);
++		if (tty) {
++			if (urb->actual_length) {
++				tty_insert_flip_string(tty, data,
++						urb->actual_length);
++				tty_flip_buffer_push(tty);
++			} else
++				dbg("%s: empty read urb received", __func__);
++			tty_kref_put(tty);
++		}
+ 
+ 		/* Resubmit urb so we continue receiving */
+ 		if (status != -ESHUTDOWN) {
 -- 
-error compiling committee.c: too many arguments to function
+1.7.3.4
+
 
