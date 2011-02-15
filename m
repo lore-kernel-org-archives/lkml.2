@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab1BOLkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 06:40:39 -0500
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:19562 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753787Ab1BOLkg (ORCPT
+	id S1754638Ab1BOLou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 06:44:50 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:53116 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754363Ab1BOLoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 06:40:36 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Feb 2011 06:40:35 EST
-Message-ID: <4D5A63DE.3040600@draigBrady.com>
-Date: Tue, 15 Feb 2011 11:30:38 +0000
-From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Marti Raudsepp <marti@juffo.org>
-CC: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
-        btrfs hackers <linux-btrfs@vger.kernel.org>,
-        Kernel hackers <linux-kernel@vger.kernel.org>, 8001@debbugs.gnu.org
-Subject: Re: btrfs: compression breaks cp and cross-FS mv, FS_IOC_FIEMAP bug?
-References: <AANLkTinZNk1j94rEMVdvRtjr2Sa-C7VpQOGHrvrY8Hph@mail.gmail.com> <20110213155730.GK19533@dhcp231-156.rdu.redhat.com> <AANLkTi=Rj_3MmLawJj-K8u+pGbT_NZzqzVGFOsvOK8eC@mail.gmail.com> <20110213161329.GL19533@dhcp231-156.rdu.redhat.com> <1297695521-sup-9460@think> <AANLkTi=N8DiusfP6Rey=Cx4qjUSbiLS3jnbjASGQ=Lcx@mail.gmail.com>
-In-Reply-To: <AANLkTi=N8DiusfP6Rey=Cx4qjUSbiLS3jnbjASGQ=Lcx@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 15 Feb 2011 06:44:46 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=ISO-8859-1
+Date: Tue, 15 Feb 2011 12:44:42 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH resend] video: omap24xxcam: Fix compilation
+In-reply-to: <20110215113717.GN2570@legolas.emea.dhcp.ti.com>
+To: balbi@ti.com
+Cc: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
+        Thomas Weber <weber@corscience.de>, linux-omap@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Tejun Heo <tj@kernel.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-id: <4D5A672A.7040000@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US;	rv:1.9.2.13)
+ Gecko/20101208 Thunderbird/3.1.7
+References: <1297068547-10635-1-git-send-email-weber@corscience.de>
+ <4D5A6353.7040907@maxwell.research.nokia.com>
+ <20110215113717.GN2570@legolas.emea.dhcp.ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/02/11 17:58, Marti Raudsepp wrote:
-> On Mon, Feb 14, 2011 at 17:01, Chris Mason <chris.mason@oracle.com> wrote:
->> Or, it could just be delalloc ;)
+Hi Felipe,
+
+On 02/15/2011 12:37 PM, Felipe Balbi wrote:
+> On Tue, Feb 15, 2011 at 01:28:19PM +0200, Sakari Ailus wrote:
+>> Thomas Weber wrote:
+>>> Add linux/sched.h because of missing declaration of TASK_NORMAL.
+>>>
+>>> This patch fixes the following error:
+>>>
+>>> drivers/media/video/omap24xxcam.c: In function
+>>> 'omap24xxcam_vbq_complete':
+>>> drivers/media/video/omap24xxcam.c:415: error: 'TASK_NORMAL' undeclared
+>>> (first use in this function)
+>>> drivers/media/video/omap24xxcam.c:415: error: (Each undeclared
+>>> identifier is reported only once
+>>> drivers/media/video/omap24xxcam.c:415: error: for each function it
+>>> appears in.)
+>>>
+>>> Signed-off-by: Thomas Weber <weber@corscience.de>
+>>
+>> Thanks, Thomas!
 > 
-> I suspect delalloc. After creating the file, filefrag reports "1
-> extent found", but for some reason it doesn't actually print out
-> details of the extent.
+> Are we using the same tree ? I don't see anything related to TASK_* on
 
-That's a bug in `filefrag -v` that I noticed independently yesterday.
-Without -v it will correctly report 0 extents.
-I've already suggested a patch to fix upstream.
+Please have a look at definition of macro wake_up. This where those
+TASK_* flags are used.
 
-> After a "sync" call, the extent appears and "cp" starts working as expected:
+> that function on today's mainline, here's a copy of the function:
+> 
+>  387 static void omap24xxcam_vbq_complete(struct omap24xxcam_sgdma *sgdma,
+>  388                                      u32 csr, void *arg)
+>  389 {
+>  390         struct omap24xxcam_device *cam =
+>  391                 container_of(sgdma, struct omap24xxcam_device, sgdma);
+>  392         struct omap24xxcam_fh *fh = cam->streaming->private_data;
+>  393         struct videobuf_buffer *vb = (struct videobuf_buffer *)arg;
+>  394         const u32 csr_error = CAMDMA_CSR_MISALIGNED_ERR
+>  395                 | CAMDMA_CSR_SUPERVISOR_ERR | CAMDMA_CSR_SECURE_ERR
+>  396                 | CAMDMA_CSR_TRANS_ERR | CAMDMA_CSR_DROP;
+>  397         unsigned long flags;
+>  398 
+>  399         spin_lock_irqsave(&cam->core_enable_disable_lock, flags);
+>  400         if (--cam->sgdma_in_queue == 0)
+>  401                 omap24xxcam_core_disable(cam);
+>  402         spin_unlock_irqrestore(&cam->core_enable_disable_lock, flags);
+>  403 
+>  404         do_gettimeofday(&vb->ts);
+>  405         vb->field_count = atomic_add_return(2, &fh->field_count);
+>  406         if (csr & csr_error) {
+>  407                 vb->state = VIDEOBUF_ERROR;
+>  408                 if (!atomic_read(&fh->cam->in_reset)) {
+>  409                         dev_dbg(cam->dev, "resetting camera, csr 0x%x\n", csr);
+>  410                         omap24xxcam_reset(cam);
+>  411                 }
+>  412         } else
+>  413                 vb->state = VIDEOBUF_DONE;
+>  414         wake_up(&vb->done);
+>  415 }
+> 
+> see that line 415 is where the function ends. My head is
+> 795abaf1e4e188c4171e3cd3dbb11a9fcacaf505
+> 
 
-About that sync.
-I've noticed on ext4 loop back at least (and I suspect BTRFS is the same)
-that specifying FIEMAP_FLAG_SYNC (which cp does) is ineffective.
-I worked around this for cp tests by explicitly syncing with:
-dd if=/dev/null of=foo conv=notrunc,fdatasync
-
-> % rm -f foo bar
-> % echo foo > foo
-> % sync
-> % filefrag -v foo
-> Filesystem type is: 9123683e
-> File size of foo is 4 (1 block, blocksize 4096)
->  ext logical physical expected length flags
->    0       0        0            4096 not_aligned,inline,eof
-> foo: 1 extent found
-> % cp foo bar
-> % hexdump bar
-> 0000000 6f66 0a6f
-> 0000004
-
-OK that's fine for normal files.
-cp (from coreutils >= 8.10) may still do the wrong thing
-as it currently ignores FIEMAP_EXTENT_DATA_ENCRYPTED and FIEMAP_EXTENT_ENCODED
-as I've already reported:
-http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg08356.html
-I'd appreciate some `filefrag -v` output from a large compressed file.
-
-cheers,
-Pádraig.
+Cheers,
+Sylwester Nawrocki
