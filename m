@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1BOB5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 20:57:22 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40951 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab1BOB5S (ORCPT
+	id S1754027Ab1BOCAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 21:00:47 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:43293 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab1BOCAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 20:57:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=WQDZoNuqN+Y86Zn5Xvtr319tSPh5mEhrcZjBcklCAckxPpOlZBv6pV8MFPBt0PVI3F
-         vxCEPMWMJrRsjY8+6OdwuTltMtWxzGPPUFeUAvTaSKpZAN6MAPLfBr7JQrDrk8s4bDpo
-         QJ27jdV1Ns/KunSaHqBjN10BlE+5QbdAbX0UQ=
-From: "Cho, Yu-Chen" <acho@novell.com>
-To: marcel@holtmann.org, padovan@profusion.mobi,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: acho@novell.com, jlee@novell.com
-Subject: [PATCH] Add Atheros BT AR5BBU12 fw supported
-Date: Tue, 15 Feb 2011 09:58:54 +0800
-Message-Id: <ce34a9f1d05bc28c97d7de0c2a99225f56b11953.1297735066.git.acho@novell.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 14 Feb 2011 21:00:44 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect enable/prepare semantics
+Date: Tue, 15 Feb 2011 10:00:28 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; x86_64; ; )
+Cc: Richard Zhao <richard.zhao@freescale.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+References: <1297233693.241680.897691111624.0.gpush@pororo> <1297233693.243373.411051105619.3.gpush@pororo> <20110210093756.GA24710@b20223-02.ap.freescale.net>
+In-Reply-To: <20110210093756.GA24710@b20223-02.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102151000.29385.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the btusb.c blacklist [0489:e02c] for Atheros AR5BBU12 BT
-and add to ath3k.c supported this device.
+Hi Richard,
 
-Signed-off-by: Cho, Yu-Chen <acho@novell.com>
----
- drivers/bluetooth/ath3k.c |    4 ++++
- drivers/bluetooth/btusb.c |    3 +++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+> >  void clk_unprepare(struct clk *clk)
+> >  {
+> > 
+> > +	WARN_ON(clk->enable_count != 0);
+> > +
+> 
+> Other drivers may be using the clock and increased the enable_count.
+> This check may be moved to where we actually do unprepare.
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index 333c212..d4065c0 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -41,6 +41,10 @@ static struct usb_device_id ath3k_table[] = {
- 
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03F0, 0x311D) },
-+
-+	/* Atheros AR5BBU12 with sflash firmware */
-+	{ USB_DEVICE(0x0489, 0xE02C) },
-+
- 	{ }	/* Terminating entry */
- };
- 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 4cefa91..0ae22fd 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -105,6 +105,9 @@ static struct usb_device_id blacklist_table[] = {
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
- 
-+	/* Atheros AR5BBU12 with sflash firmware */
-+	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
-+
- 	/* Broadcom BCM2035 */
- 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
- 	{ USB_DEVICE(0x0a5c, 0x200a), .driver_info = BTUSB_WRONG_SCO_MTU },
--- 
-1.7.1
+Of course, thanks. Will update the series.
 
+
+Jeremy
