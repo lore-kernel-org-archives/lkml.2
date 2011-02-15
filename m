@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab1BOP1B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:27:01 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:39727 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753833Ab1BOP05 convert rfc822-to-8bit (ORCPT
+	id S1755325Ab1BOP1E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:27:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54845 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab1BOP1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:26:57 -0500
-Subject: Re: [PATCH v4 15/19] ARM: LPAE: use phys_addr_t instead of
- unsigned long for physical addresses
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110215142339.GL4152@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
-	 <1295891761-18366-16-git-send-email-catalin.marinas@arm.com>
-	 <20110212102803.GC15616@n2100.arm.linux.org.uk>
-	 <1297770742.21448.2.camel@e102144-lin.cambridge.arm.com>
-	 <20110215123522.GH4152@n2100.arm.linux.org.uk>
-	 <1297773569.14691.36.camel@e102109-lin.cambridge.arm.com>
-	 <1297777027.1293.2.camel@e102144-lin.cambridge.arm.com>
-	 <20110215142339.GL4152@n2100.arm.linux.org.uk>
-Date: Tue, 15 Feb 2011 15:26:49 +0000
-Message-ID: <1297783609.23889.6.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 15 Feb 2011 15:26:52.0398 (UTC) FILETIME=[C55E00E0:01CBCD24]
-X-MC-Unique: 111021515265403301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Feb 2011 10:27:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=M4MYcMOcpGitgMuleHg63rR2iKSc4IjjECbYJuFWw6H7RV5E6mEQ7vBx95ScqIIVvo
+         MKc2w/wwJYi4xdp3OJruUxvnDLI0ZjtSNFcoI4EE5i/RzqUd1vH4z3i2Uwf7LqV7SDg0
+         m1lILFTmfjGtwxpJPG+9qDP7m4kVgXxbNMYW8=
+Date: Tue, 15 Feb 2011 16:24:48 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110215152448.GL3160@htj.dyndns.org>
+References: <20110207174821.GA1237@redhat.com>
+ <20110209141803.GH3770@htj.dyndns.org>
+ <201102132325.55353.vda.linux@googlemail.com>
+ <20110214151340.GP18742@htj.dyndns.org>
+ <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+ <20110214175144.GC15847@redhat.com>
+ <AANLkTi=VVWVkrqqQyOtsP72S5-nWny=Ukmf_r-m1qMwV@mail.gmail.com>
+ <20110214190141.GA19221@redhat.com>
+ <AANLkTi=_af8+XKD+d-677JpQZA=AN2EsydscSYxk7z55@mail.gmail.com>
+ <20110214200130.GA21559@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110214200130.GA21559@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Hello, Oleg, Denys.
 
-On Tue, 2011-02-15 at 14:23 +0000, Russell King - ARM Linux wrote:
-> On Tue, Feb 15, 2011 at 01:37:07PM +0000, Will Deacon wrote:
-> > I should've spotted this either way. I've superseded the old patch with
-> > 6674/1.
+On Mon, Feb 14, 2011 at 09:01:30PM +0100, Oleg Nesterov wrote:
+> > Or we can avoid entering TASK_TRACED on ptrace(PTRACE_GETSIGINFO) et al.
+> > Can we remain in TASK_STOPPED?
 > 
-> One additional thing that I think has been lost.  I said in the original
-> reply to Catalin:
-> | asm/memory.h will conflict non-trivially with p2v patch set, but I think
-> | we can merge the changes to everything but __virt_to_phys/__phys_to_virt.
-> 
-> So 6670/1 which I'm intending to apply to the p2v branch can't be merged
-> as-is.  The ideal solution would be a version of 6670/1 to apply on top
-> of the existing p2v branch.
-> 
+> Oh, unlikely, I think.
 
-The conflict with the p2v branch is fairly hefty, but something like
-this should do (if you're happy I'll submit it to replace 6670/1):
+Actually I was thinking along this line.  We can allow
+PTRACE_GETSIGINFO to proceed without forcing the tracee into TRACED
+state, the rationale being the operation is required to tell between
+group stop and ptrace trap.  Am I missing something?
 
-Note that because the v2p macros only work for lowmem, I've not bothered
-to add casts for the __v2p macros (rather, I've just changed the types
-of the static inline functions). This simplifies the code and means we
-can stay clear of the runtime fixup stuff.
+Thanks.
 
-
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 015fd5e..791cb3e 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -15,6 +15,7 @@
- 
- #include <linux/compiler.h>
- #include <linux/const.h>
-+#include <linux/types.h>
- #include <mach/memory.h>
- #include <asm/sizes.h>
- 
-@@ -135,8 +136,8 @@
- /*
-  * Convert a physical address to a Page Frame Number and back
-  */
--#define        __phys_to_pfn(paddr)    ((paddr) >> PAGE_SHIFT)
--#define        __pfn_to_phys(pfn)      ((pfn) << PAGE_SHIFT)
-+#define        __phys_to_pfn(paddr)    ((unsigned long)((paddr) >> PAGE_SHIFT))
-+#define        __pfn_to_phys(pfn)      ((phys_addr_t)(pfn) << PAGE_SHIFT)
- 
- /*
-  * Convert a page to/from a physical address
-@@ -234,12 +235,12 @@ static inline unsigned long __phys_to_virt(unsigned long x)
-  * translation for translating DMA addresses.  Use the driver
-  * DMA support - see dma-mapping.h.
-  */
--static inline unsigned long virt_to_phys(void *x)
-+static inline phys_addr_t virt_to_phys(void *x)
- {
-        return __virt_to_phys((unsigned long)(x));
- }
- 
--static inline void *phys_to_virt(unsigned long x)
-+static inline void *phys_to_virt(phys_addr_t x)
- {
-        return (void *)(__phys_to_virt((unsigned long)(x)));
- }
-
-
-Cheers,
-
-Will
-
-
+-- 
+tejun
