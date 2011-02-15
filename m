@@ -1,51 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab1BOLJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 06:09:09 -0500
-Received: from ozlabs.org ([203.10.76.45]:54528 "EHLO ozlabs.org"
+	id S1754539Ab1BOLLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 06:11:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60761 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab1BOLJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 06:09:07 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] virtio: use __GFP_NOWARN for try_fill_recv in virtnet_poll
-Date: Tue, 15 Feb 2011 21:39:03 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; i686; ; )
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20110215093527.GB8341@tiehlicka.suse.cz> <201102152041.29179.rusty@rustcorp.com.au> <20110215102549.GD8341@tiehlicka.suse.cz>
-In-Reply-To: <20110215102549.GD8341@tiehlicka.suse.cz>
+	id S1752969Ab1BOLL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 06:11:29 -0500
+Date: Tue, 15 Feb 2011 12:11:26 +0100
+From: Jan Kara <jack@suse.cz>
+To: Feng Tang <feng.tang@intel.com>
+Cc: op.q.liu@gmail.com, linux-kernel@vger.kernel.org,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
+        jack@suse.cz
+Subject: Re: ext2 write performance regression from 2.6.32
+Message-ID: <20110215111126.GD17313@quack.suse.cz>
+References: <AANLkTinES_gU=MxbSnidorsKDsMnAwzHVx+yntOLCf=f@mail.gmail.com>
+ <AANLkTikvpyTPVnP1cxC4rSLARO3thpscyhmB4=BpFW-G@mail.gmail.com>
+ <20110215144641.05318556@feng-i7>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102152139.03451.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110215144641.05318556@feng-i7>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Feb 2011 08:55:50 pm Michal Hocko wrote:
-> On Tue 15-02-11 20:41:29, Rusty Russell wrote:
-> > On Tue, 15 Feb 2011 08:05:27 pm Michal Hocko wrote:
-> > > Hi,
-> > > we have started seeing a lot of allocator messages complaining about
-> > > failed allocations from virtnet_poll in soft IRQ. Could you consider the
-> > > following patch, please?
-> > 
-> > Do we really want to silence this?  Isn't warning about it kind of the
-> > point?  Your network is probably sucking if this happens...
+  Hello,
+
+On Tue 15-02-11 14:46:41, Feng Tang wrote:
+> After some debugging, here is one possible root cause for the dd performance
+> drop between 2.6.30 and 2.6.32 (33/34/35 as well): in .30 the dd is a pure
+> sequential operation while in .32 it isn't, and the change is related to
+> the introduction of per-pdi flush.
 > 
-> What can user do about it? Is the low level memory allocator message
-> very much usefull for him?  Maybe we can add a printk_once in the fail
-> path with some more useful and virtio specific message.
+> I used a laptop with SDHC controller and run a simple dd of a double RAM size
+>  _file_ to a 1G SDHC card, the drop from .32 to .30 is about 30%, from roughly
+> 10MB/s to 7MB/s
+> 
+> I'm not very familiar with .30/.32 code, and here is a simple analysis:
+> 
+> When dd to a big ext2 file, there are 2 types of metadata will be updated
+> besides the file data:
+> 1. The ext2 global info like group descriptors and block bitmaps, whose
+>    buffer_header will be marked dirty in ext2_new_blocks()
+> 2. The inode of the file under written, marked dirty in ext2_write/update_inode(),
+>    which is called by write_inode() and in writeback path.
+> 
+> In 2.6.30, with old pdflush interface, during the dd, the writeback of the 2
+> types of metadata will be triggered from wb_timer_fn() and dirty_balance_pages(),
+> but they are always delayed in pdflush_operations() as the pdflush_list is
+> empty. So that only the file data got be written back in a very smooth
+> sequential mode. 
+> 
+> In 2.6.32, the writeback is per-bdi operation, every time the bdi for the sd
+> card is called for flush, it will check and try to write back all the dirty
+> pages, including both the metadata and data pages, so the previously sequential
+> sd block access is periodically chimed in by the metadata block, which cause
+> the performance drop. And if I ugly delayed the metadata writeback, the
+> performance will be restored same as .30.
+  Umm, interesting. 7 vs 10 MB/s is rather big difference. For non-rotating
+media like is your SD card, I'd expect much less impact of IO randomness,
+especially if we write in those 4 MB chunks. But we are probably hit by the
+erase block size being big and thus FTL has to do a lot of work.
 
-That's an argument against ever printing any message.
+What might happen is that flusher thread competes with the process doing
+writeback from balance_dirty_pages(). There are basically two dirty inodes
+in the bdi in your test case - the file you write and the device inode. So
+while one task flushes the file data pages, the other task has no other
+choice but flush the device inode. But I'd expect this to happen with
+pdflush as well. Can you send me raw block traces from both kernels so that
+I can have a look? Thanks.
 
-What we need to know is why does this happen with virtio_net and not other
-cards?  If it happens to them too, and they silently fall back, all good.
+								Honza
 
-I want to make sure we're not papering over a real problem...
-
-Thanks,
-Rusty.
+> > ---------- Forwarded message ----------
+> > From: Kyle liu <op.q.liu@gmail.com>
+> > Date: 2011/1/28
+> > Subject: ext2 write performance regression from 2.6.32
+> > To: linux-kernel@vger.kernel.org
+> > 
+> > 
+> > Hello,
+> > 
+> > Since upgrading 2.6.30->2.6.32, ext2 write performance of SATA/SD/USB
+> > card is very low (except SSD). The issue is also exist after 2.6.32,
+> > e.g. 2.6.34, 2.6.35. Write performance of SATA decreased from 115MB/s
+> > to 80MB/s. Write performance of SDHC decreased from 12MB/s to 3MB/s.
+> > 
+> > My test tool is iozone  and dd, test file size is 2*RAM size. CPU is
+> > PowerPC core e500, SATA disk is WD 10000RPM drives, SDHC is Sandisk
+> > class 10 card.
+> > 
+> > What decrease the performance? Because the sequence of block of
+> > writing is not continuous.
+> > Here are some debug info below (in function  mmc_blk_issue_rq).
+> > major means major device number of the device, pos means the position
+> > of writing, blocks means the block number need writing.
+> > 
+> > iozone -Rab result -i0 -r64 -n512m -g512m -f /mnt/ff
+> > dd if=/dev/zero of=/mnt/ff bs=16K count=32768
+> > …………..
+> > major=179, pos=270360, blocks=8
+> > major=179, pos=278736, blocks=8
+> > major=179, pos=24, blocks=8
+> > major=179, pos=8216, blocks=24
+> > major=0, pos=16424, blocks=8
+> > major=0, pos=196624, blocks=104
+> > major=179, pos=204920, blocks=16
+> > major=0, pos=204936, blocks=128
+> > …………..
+> > major=179, pos=1048592, blocks=8
+> > major=179, pos=1074256, blocks=8
+> > major=179, pos=1090656, blocks=8
+> > major=179, pos=16, blocks=8
+> > major=0, pos=884704, blocks=128
+> > major=0, pos=884832, blocks=128
+> > major=0, pos=884960, blocks=128
+> > major=0, pos=885088, blocks=32
+> > major=179, pos=1082456, blocks=8
+> > major=179, pos=1098856, blocks=8
+> > major=179, pos=24, blocks=8
+> > major=179, pos=8232, blocks=8
+> > major=179, pos=204920, blocks=8
+> > major=0, pos=885120, blocks=128
+> > ………….
+> > 
+> > Some write are from write_boundary_block, these are necessary. But
+> > others that major is not zero is from def_blk_aops->blkdev_writepage.
+> > Before 2.6.32, there is no case happened like this. And why, I have
+> > already mount filesystem. What are the usage of these data?
+> > 
+> > Temporarily, I mask all these write operations in do_writepage()
+> > below, /* no need to write device if the operation is not used to
+> > format device */ if (imajor(mapping->host) && (wbc->sync_mode ==
+> > WB_SYNC_NONE)) return 0;
+> > 
+> > test record below (same behavior to 2.6.30):
+> > …………
+> > major=0, pos=23488, blocks=128
+> > major=0, pos=23616, blocks=128
+> > major=0, pos=23744, blocks=128
+> > major=0, pos=23872, blocks=128
+> > major=0, pos=24000, blocks=128
+> > major=0, pos=24128, blocks=128
+> > major=0, pos=24256, blocks=128
+> > major=0, pos=24384, blocks=128
+> > major=0, pos=24512, blocks=128
+> > major=0, pos=24640, blocks=128
+> > major=179, pos=24768, blocks=8—from write_boundary_block()
+> > major=0, pos=24784, blocks=128
+> > major=0, pos=24912, blocks=128
+> > major=0, pos=25040, blocks=128
+> > major=0, pos=29136, blocks=128
+> > major=0, pos=29264, blocks=128
+> > major=0, pos=29392, blocks=128
+> > major=0, pos=29520, blocks=128
+> > …………..
+> > 
+> > Until now it works fine (except format disk). Data integrity is fine.
+> > Who can tell me what is the usage of the redundant data. I’m not
+> > familiar with filesystem.
+> > 
+> > Thanks.
+> > 
+> > Best Regards
+> > Eiji
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
