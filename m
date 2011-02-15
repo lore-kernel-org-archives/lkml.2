@@ -1,53 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab1BOPqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:46:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50746 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198Ab1BOPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:46:37 -0500
-Date: Tue, 15 Feb 2011 15:46:25 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Milan Broz <mbroz@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
-	read-write for read-only mappings
-Message-ID: <20110215154625.GG5825@agk-dp.fab.redhat.com>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>,
-	device-mapper development <dm-devel@redhat.com>,
-	Milan Broz <mbroz@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-	Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
-References: <4D5A6EF4.3030905@redhat.com> <20110215124629.GF5825@agk-dp.fab.redhat.com> <20110215152033.GK3160@htj.dyndns.org>
+	id S1751792Ab1BOPso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:48:44 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49563 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab1BOPsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 10:48:42 -0500
+Date: Tue, 15 Feb 2011 15:48:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 15/19] ARM: LPAE: use phys_addr_t instead of
+	unsigned long for physical addresses
+Message-ID: <20110215154819.GO4152@n2100.arm.linux.org.uk>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-16-git-send-email-catalin.marinas@arm.com> <20110212102803.GC15616@n2100.arm.linux.org.uk> <1297770742.21448.2.camel@e102144-lin.cambridge.arm.com> <20110215123522.GH4152@n2100.arm.linux.org.uk> <1297773569.14691.36.camel@e102109-lin.cambridge.arm.com> <1297777027.1293.2.camel@e102144-lin.cambridge.arm.com> <20110215142339.GL4152@n2100.arm.linux.org.uk> <1297783609.23889.6.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110215152033.GK3160@htj.dyndns.org>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1297783609.23889.6.camel@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 04:20:33PM +0100, Tejun Heo wrote:
-> Hmmm... but -EACCES is the correct one here.  The device node itself
-> is rejecting RW access.  There's no FS which is enforcing RO.
+On Tue, Feb 15, 2011 at 03:26:49PM +0000, Will Deacon wrote:
+> The conflict with the p2v branch is fairly hefty, but something like
+> this should do (if you're happy I'll submit it to replace 6670/1):
 
-Exactly:)  If the filesystem permissions were what was blocking this
-(say r--) then I'd agree with EACCES.  Interpret those man pages in the
-context of 'pathname refers to a block device not a file'.
- 
-If it's EACCES, I just need to gain more privilege/capabilities and then
-repeat the system call and it could succeed.
+I was thinking that was the case - which is why I wanted this split up
+so this can be tackled separately.
 
-But EROFS tells me however much extra privilege I get it's going to make
-no difference.
+> Note that because the v2p macros only work for lowmem, I've not bothered
+> to add casts for the __v2p macros (rather, I've just changed the types
+> of the static inline functions). This simplifies the code and means we
+> can stay clear of the runtime fixup stuff.
 
-That's why I'm arguing EACCES is not a good error to return and EROFS is
-more appropriate.
-
-Alasdair
-
+This patch looks good enough, thanks.
