@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1BOP5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:57:23 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:56310 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab1BOP5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:57:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=PUgtDUJT+uYY0Vd/ySbH3CpaJtotp44mQltrWUrEnKRf2nfV4ro+4ooftIa2yxTu1p
-         kpcsiTDShW2cwcA2ESiAoqdgfk08cfm3aZuzGbdc9faLKJTnY4s0hBWNSfhBlBRueSXk
-         RSjMkCV792H6rykkK5blCpbT1sVbkBeB5t0PU=
-Subject: [PATCH RESEND] backlight: jornada720_bl/jornada720_lcd: make
- needlessly global symbols static
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Feb 2011 23:57:12 +0800
-Message-ID: <1297785432.2596.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755370Ab1BOQAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 11:00:35 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46442 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755302Ab1BOQAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 11:00:34 -0500
+Date: Tue, 15 Feb 2011 06:03:05 -0800
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 2/3]: Staging: hv: Use native wait primitives
+Message-ID: <20110215140305.GA10301@suse.de>
+References: <1297447183-21807-1-git-send-email-kys@microsoft.com>
+ <4D5A4565.5030501@gmail.com>
+ <FB42D5CCD7B5934EB1827DB5ED9B850E07085CF8@TK5EX14MBXC104.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <FB42D5CCD7B5934EB1827DB5ED9B850E07085CF8@TK5EX14MBXC104.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following symbols are needlessly defined global:
-jornada_bl_init
-jornada_bl_exit
-jornada_lcd_init
-jornada_lcd_exit
+On Tue, Feb 15, 2011 at 01:35:56PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Jiri Slaby [mailto:jirislaby@gmail.com]
+> > Sent: Tuesday, February 15, 2011 4:21 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > Subject: Re: [PATCH 2/3]: Staging: hv: Use native wait primitives
+> > 
+> > On 02/11/2011 06:59 PM, K. Y. Srinivasan wrote:
+> > > In preperation for getting rid of the osd layer; change
+> > > the code to use native wait interfaces. As part of this,
+> > > fixed the buggy implementation in the osd_wait_primitive
+> > > where the condition was cleared potentially after the
+> > > condition was signalled.
+> > ...
+> > > @@ -566,7 +567,11 @@ int vmbus_establish_gpadl(struct vmbus_channel
+> > *channel, void *kbuffer,
+> > >
+> > >  		}
+> > >  	}
+> > > -	osd_waitevent_wait(msginfo->waitevent);
+> > > +	wait_event_timeout(msginfo->waitevent,
+> > > +				msginfo->wait_condition,
+> > > +				msecs_to_jiffies(1000));
+> > > +	BUG_ON(msginfo->wait_condition == 0);
+> > 
+> > The added BUG_ONs all over the code look scary. These shouldn't be
+> > BUG_ONs at all. You should maybe warn and bail out, but not kill the
+> > whole machine.
+> 
+> This is Linux code running as a guest on a Windows host; and so the guest cannot
+> tolerate a failure of the host. In the cases where I have chosen to BUG_ON, there 
+> is no reasonable recovery possible when the host is non-functional (as determined 
+> by a non-responsive host). 
 
-This patch makes the symbols static.
+If you have a non-responsive host, wouldn't that imply that this guest
+code wouldn't run at all?  :)
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Kristoffer Ericson <kristoffer.ericson@gmail.com>
----
-It was sent on https://lkml.org/lkml/2010/7/29/460
-with Kristoffer's ack http://lkml.org/lkml/2010/7/30/694
+Having BUG_ON() in drivers is not a good idea either way.  Please remove
+these in future patches.
 
-Axel
+> > And looking at the code, more appropriate would be completion instead of
+> > wait events.
+> > 
+> > And msecs_to_jiffies(1000) == HZ.
+> 
+> Agreed. In this first round of cleanup, I chose to keep the primitives
+> as they were in osd.c. Greg, if it is ok with you, I will send you a
+> patch that fixes these issues on top of the patches I have already
+> sent.
 
- drivers/video/backlight/jornada720_bl.c  |    4 ++--
- drivers/video/backlight/jornada720_lcd.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Yes, that is fine.
 
-diff --git a/drivers/video/backlight/jornada720_bl.c b/drivers/video/backlight/jornada720_bl.c
-index 60e1d28..a20a01a 100644
---- a/drivers/video/backlight/jornada720_bl.c
-+++ b/drivers/video/backlight/jornada720_bl.c
-@@ -146,12 +146,12 @@ static struct platform_driver jornada_bl_driver = {
- 	},
- };
- 
--int __init jornada_bl_init(void)
-+static int __init jornada_bl_init(void)
- {
- 	return platform_driver_register(&jornada_bl_driver);
- }
- 
--void __exit jornada_bl_exit(void)
-+static void __exit jornada_bl_exit(void)
- {
- 	platform_driver_unregister(&jornada_bl_driver);
- }
-diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
-index 8fe0181..9fd7af2 100644
---- a/drivers/video/backlight/jornada720_lcd.c
-+++ b/drivers/video/backlight/jornada720_lcd.c
-@@ -135,12 +135,12 @@ static struct platform_driver jornada_lcd_driver = {
- 	},
- };
- 
--int __init jornada_lcd_init(void)
-+static int __init jornada_lcd_init(void)
- {
- 	return platform_driver_register(&jornada_lcd_driver);
- }
- 
--void __exit jornada_lcd_exit(void)
-+static void __exit jornada_lcd_exit(void)
- {
- 	platform_driver_unregister(&jornada_lcd_driver);
- }
--- 
-1.5.4.3
+thanks,
 
-
-
+greg k-h
