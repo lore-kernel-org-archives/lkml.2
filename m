@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1BOCdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 21:33:52 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:42016 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620Ab1BOCdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 21:33:50 -0500
-Date: Tue, 15 Feb 2011 13:33:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20110215133342.daa93f5e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A"
+	id S1754062Ab1BOCim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 21:38:42 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53234 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab1BOCik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 21:38:40 -0500
+Message-ID: <4D59E728.3030209@cn.fujitsu.com>
+Date: Tue, 15 Feb 2011 10:38:32 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
+ and use_hierarchy interface
+References: <4D51ED26.8050809@cn.fujitsu.com> <4D539821.1090703@cn.fujitsu.com> <20110210205722.GB2600@redhat.com> <4D55EEBB.8060304@cn.fujitsu.com> <20110214180428.GF13097@redhat.com>
+In-Reply-To: <20110214180428.GF13097@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-15 10:37:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-15 10:37:43,
+	Serialize complete at 2011-02-15 10:37:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Vivek Goyal wrote:
+> On Sat, Feb 12, 2011 at 10:21:47AM +0800, Gui Jianfeng wrote:
+> [..]
+>>>> +static struct cfq_group *
+>>>> +cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+>>>> +{
+>>>> +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+>>>> +	struct cfq_group *cfqg = NULL;
+>>>> +	void *key = cfqd;
+>>>> +	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
+>>>> +	unsigned int major, minor;
+>>>> +
+>>>> +	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+>>>> +	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+>>>> +		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+>>>> +		cfqg->blkg.dev = MKDEV(major, minor);
+>>>> +		goto done;
+>>>> +	}
+>>> Should we make this updation of this info hierarhical?
+>> IMHO, it's fine to defer the updation when we really get the cfqg.
+> 
+> But if cfqg is alrady present, we will never hit the allocation path 
+> again. So if somebody creates 2-3 level deep hierarchy and does IO
+> only in the children cgroup, parent cgroups will potentially not get
+> device info updated hence no visible stats?
 
-Hi all,
+Ahh, I see your concern. But do we really need to show the stats even if
+a cgroup doesn't issue any IO on a given device? 
+For example, on valinna kernel, when we create a new cgroup, we check the
+stats, say blkio.io_service_bytes, we will get "Total 0", and no disk
+specific stats.
+Currently, As soon as a cgroup issue one IO request, cfqg->blkg.dev will
+be updated.
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Thanks,
+Gui
 
-sound/soc/codecs/wm8903.c:376: error: redefinition of 'wm8903_dcs_event'
-sound/soc/codecs/wm8903.c:279: note: previous definition of 'wm8903_dcs_eve=
-nt' was here
-sound/soc/codecs/wm8903.c:398: error: redefinition of 'wm8903_seq_notifier'
-sound/soc/codecs/wm8903.c:301: note: previous definition of 'wm8903_seq_not=
-ifier' was here
-
-It looks like commit "ASoC: Actively manage WM8903 DC servo
-configuration" has been applied twice as commits c5b6a9feaeb0 and
-8e715c3194e4.
-
-I have used the version of the sound-asoc tree from next-20110214 for
-today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNWeYGAAoJEDMEi1NhKgbst4MH/RwLNIYxY+9WdA7CPce1Z6Gj
-d9y5D/pugA/tzAiD8HsuW9AIsvVF5gF4QNrx7T5ixXUGY1fI8Pz5u47uMoQZNpFm
-DZ7K1qRtYkF1ZWby1Y0JGD0UUGps8K5xum82mvfBzJXJFff07o61JzYvJZtqHXX+
-zXoGlIeOgctm6RHCvprpNwevffv9NfIwhyEl+4R2XZHFkQJkZN+ERQDCLJynaU6G
-oyMS3jgq/XzpjVx0OJoZ6A4y1qYzoVKsPR1ES3TQWJ3WRw6ugh7TXNvMw86g2XZm
-/6wryWwFYm+640IyApqyx/2/2Q3oKgHKreyfrFVsUaPW5CCgZW+kigDbbLUuz4g=
-=Sa/K
------END PGP SIGNATURE-----
-
---Signature=_Tue__15_Feb_2011_13_33_42_+1100_sRknwcMrTRmfxe9A--
+> 
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
