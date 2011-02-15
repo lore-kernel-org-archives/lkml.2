@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab1BOPso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:48:44 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49563 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab1BOPsm (ORCPT
+	id S1755327Ab1BOPsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:48:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34492 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab1BOPsx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:48:42 -0500
-Date: Tue, 15 Feb 2011 15:48:19 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 15/19] ARM: LPAE: use phys_addr_t instead of
-	unsigned long for physical addresses
-Message-ID: <20110215154819.GO4152@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-16-git-send-email-catalin.marinas@arm.com> <20110212102803.GC15616@n2100.arm.linux.org.uk> <1297770742.21448.2.camel@e102144-lin.cambridge.arm.com> <20110215123522.GH4152@n2100.arm.linux.org.uk> <1297773569.14691.36.camel@e102109-lin.cambridge.arm.com> <1297777027.1293.2.camel@e102144-lin.cambridge.arm.com> <20110215142339.GL4152@n2100.arm.linux.org.uk> <1297783609.23889.6.camel@e102144-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297783609.23889.6.camel@e102144-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 15 Feb 2011 10:48:53 -0500
+Subject: Re: [PATCH v3 4/6] KVM-GST: KVM Steal time registration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <4D5A9091.6090506@redhat.com>
+References: <1297448364-14051-1-git-send-email-glommer@redhat.com>
+	 <1297448364-14051-5-git-send-email-glommer@redhat.com>
+	 <4D5A9091.6090506@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 15 Feb 2011 16:48:47 +0100
+Message-ID: <1297784927.2413.28.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 03:26:49PM +0000, Will Deacon wrote:
-> The conflict with the p2v branch is fairly hefty, but something like
-> this should do (if you're happy I'll submit it to replace 6670/1):
+On Tue, 2011-02-15 at 16:41 +0200, Avi Kivity wrote:
+> > +static int kvm_register_steal_time(void)
+> > +{
+> > +     int cpu = smp_processor_id();
+> > +     int low, high, ret;
+> > +     struct kvm_steal_time *st =&per_cpu(steal_time, cpu);
+> > +
+> > +     if (!hypervisor_steal_time)
+> > +             return 0;
+> 
+> You're using hypervisor_steal_time to communicate the existence of the 
+> feature.  Yuck. 
 
-I was thinking that was the case - which is why I wanted this split up
-so this can be tackled separately.
+Yeah, ideally we make steal_time_clock() a proper paravirt op with:
 
-> Note that because the v2p macros only work for lowmem, I've not bothered
-> to add casts for the __v2p macros (rather, I've just changed the types
-> of the static inline functions). This simplifies the code and means we
-> can stay clear of the runtime fixup stuff.
+u64 native_steal_time_clock(int cpu)
+{
+	WARN_ONCE(1, "Using steal_time_clock() on actual hardware..\n");
+	return 0;
+}
 
-This patch looks good enough, thanks.
+And use paravirt_enabled() to avoid calling it where possible. Then once
+we have all the jump_label stuff sorted we can make paravirt_enabled() a
+static_branch() and it'll just go away on native.
+
+
