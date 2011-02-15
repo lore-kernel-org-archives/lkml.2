@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab1BOSCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 13:02:04 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58055 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873Ab1BOSCB (ORCPT
+	id S1755592Ab1BOSJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 13:09:05 -0500
+Received: from smtp107.prem.mail.sp1.yahoo.com ([98.136.44.62]:47710 "HELO
+	smtp107.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754885Ab1BOSJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 13:02:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=cP26gQM2hVqY7zkbU/Jyf5tf69ZQH1TrK0UDAFgQ4ziJe8LuYlR8DgNwc8Zmr9p2eY
-         fNITcuWYFHG49Ci+Cm2XM4XtsuA70ZBy6ONJSqK0JwulqtklBxau8Z6ZOg2/CrHlnDui
-         3qd7tIpJc3ZAbfl0LVdJQlzwjqCEg6/d7m93U=
-Message-ID: <4D5ABF94.6020001@gmail.com>
-Date: Tue, 15 Feb 2011 21:01:56 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Tue, 15 Feb 2011 13:09:02 -0500
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: oArMxecVM1muiCDe9TdETXVDyHxyOoxNwQXKgEZKOrQJcva
+ 1RI2Wk8AnMtkyTCrpH359XZeRklzTWIsjfBtg9MsCcod0Z6O46f1yybuPOC1
+ iCTlqeUvXoWWw37HMQyxkkFjwfB8zagliO3ks5ozGElIlDLRDihZIgga2SMM
+ o3D5gnHbE_vhc8lnNs3gKfVJM2Ys3n.0PFMEspBqV3PFw1LQL28mugApiIn2
+ Y_RECGsbqCtahezEVSb2EAECMpf9JWvDhmEKicxLpew2lZJQ5AMosBvWW3ET
+ 1mFuwS8k3WhrdlhBso5qJD2lH2HrX7NwSQcHC
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4D5AC13C.10000@schaufler-ca.com>
+Date: Tue, 15 Feb 2011 10:09:00 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, x86@kernel.org,
-        brgerst@gmail.com, shaohui.zheng@intel.com, rientjes@google.com,
-        mingo@elte.hu, hpa@linux.intel.com
-Subject: Re: [PATCH 10/26] x86-64, NUMA: Move apicid to numa mapping initialization
- from amd_scan_nodes() to amd_numa_init()
-References: <1297530663-26234-1-git-send-email-tj@kernel.org>	<1297530663-26234-11-git-send-email-tj@kernel.org>	<4D59B3CE.7010408@gmail.com>	<20110215093631.GG3160@htj.dyndns.org>	<4D5AB86A.9030009@gmail.com> <AANLkTi=pmLTRa7K0_E5qXfO2P_+nT3fRXOMDXUpHzK4S@mail.gmail.com>
-In-Reply-To: <AANLkTi=pmLTRa7K0_E5qXfO2P_+nT3fRXOMDXUpHzK4S@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ext-jarkko.2.sakkinen@nokia.com, Janne.Karhunen@nokia.com,
+        elena.reshetova@nokia.com, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] net: provide capability and group sets via SCM
+References: <4D3466BD.10500@schaufler-ca.com>	<4D51C38B.1060902@schaufler-ca.com> <20110214.174919.48492611.davem@davemloft.net>
+In-Reply-To: <20110214.174919.48492611.davem@davemloft.net>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2011 08:54 PM, Yinghai Lu wrote:
-...
+On 2/14/2011 5:49 PM, David Miller wrote:
+> From: Casey Schaufler <casey@schaufler-ca.com>
+> Date: Tue, 08 Feb 2011 14:28:27 -0800
 >
-> could just change
->
->   -       if (boot_cpu_physical_apicid>  0) {
->   +       if (boot_cpu_physical_apicid != -1U) {
->                  pr_info("BSP APIC ID: %02x\n", boot_cpu_physical_apicid);
->                  apicid_base = boot_cpu_physical_apicid;
->          }
->
-> Thanks
->
-> Yinghai
+>> Subject: [PATCH] net: provide group lists and capability set via CMSG
+>>
+>> Provide the namespace converted group list of the peer
+>> process using the SCM mechanism. Provide the capability
+>> set of the peer process. The capability set is not
+>> namespace converted on the assumption that there is no
+>> such conversion available or required.
+>>
+>> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+> You can't just hit the asm-generic header, you have to also hit
+> all of the architectures that don't use the asm-generic header,
+> including sparc, powerpc, mips, s390, arm, alpha, cris, frv, h8300,
+> ia64, m32r, m68k, m68knommu, mn10300, parisc, and xtensa.
 
-yup, that is exactly what Tejun suggested in first place ;) I'll update to
-this form and add your Acked-by then, ok?
+OK, I was afraid of that. Updated version will include those.
+Thank you.
 
--- 
-     Cyrill
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+
