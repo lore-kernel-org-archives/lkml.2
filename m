@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab1BOJnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 04:43:41 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44908 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab1BOJnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 04:43:40 -0500
-Date: Tue, 15 Feb 2011 10:43:27 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, brgerst@gmail.com, gorcunov@gmail.com,
-        shaohui.zheng@intel.com, rientjes@google.com, hpa@linux.intel.com
-Subject: Re: [PATCH 15/26] x86-64, NUMA: Unify the rest of memblk registration
-Message-ID: <20110215094327.GA1387@elte.hu>
-References: <AANLkTin0C2AhtHm6K0av2N4pQxLvK_Fc+4w12Qg_QRkZ@mail.gmail.com>
- <20110214161249.GV18742@htj.dyndns.org>
- <AANLkTim8vaDDbdAK3Q2+LNOcYsH+VbpG+XUdD6wggNfL@mail.gmail.com>
- <20110214162247.GX18742@htj.dyndns.org>
- <AANLkTi=1xKqmedFqHPgDR32OrmNXg-T34NFo8qEnymfp@mail.gmail.com>
- <20110214182718.GB18742@htj.dyndns.org>
- <4D597D56.5060408@kernel.org>
- <20110214193050.GC18742@htj.dyndns.org>
- <4D5983EA.4020103@kernel.org>
- <20110215091103.GC3160@htj.dyndns.org>
+	id S1754449Ab1BOJw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 04:52:57 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63958 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419Ab1BOJwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 04:52:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qomvo7x5M2vWkKSNCYpILSZrWDNuTa7z/PSudo+KKtsfZPAXVNT8TPO/f2EJ7W3nBM
+         UvvGHOVDME6ri1EwfrhtPftumuQ1HBMMi44YgMJDUBol64UkmennBqVI+eRZ2Gx4BLFJ
+         tIlqaK6gxVPRhVcwY3QXydrQZMj17WyUu64Sk=
+Date: Tue, 15 Feb 2011 11:52:45 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Corey Minyard <minyard@acm.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: [PATCH] char/ipmi: fix cleanup_one_si section mismatch
+Message-ID: <20110215095245.GB4350@swordfish.minsk.epam.com>
+References: <20110214150310.GA4350@swordfish.minsk.epam.com>
+ <4D59BAED.9060501@acm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110215091103.GC3160@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D59BAED.9060501@acm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Tejun Heo <tj@kernel.org> wrote:
+commit d2478521afc20227658a10a8c5c2bf1a2aa615b3
+Author: Corey Minyard<minyard@acm.org>
+Date:   Thu Feb 10 16:08:38 2011 -0600
 
-> On Mon, Feb 14, 2011 at 11:35:06AM -0800, Yinghai Lu wrote:
-> > On 02/14/2011 11:30 AM, Tejun Heo wrote:
-> > > On Mon, Feb 14, 2011 at 11:07:02AM -0800, Yinghai Lu wrote:
-> > >> Never mind. will send out patch after your patches get merged into tip.
-> > > 
-> > > Alright, fair enough.
-> > > 
-> > >> BTW, you may need to rebase your on top of tip/master.
-> > > 
-> > > Yeah, I saw a new patch going into the numa branch, but shouldn't this
-> > > and the next series based on x86/numa?  That was how it was done with
-> > > the previous series.
-> > 
-> > there is patch about init_memory_mapping_high() in tip/x86/bootmem.
-> > it will put pgtable on local nodes.
-> 
-> Ingo, hpa, how do you guys want to handle this?  Maybe you can cherry
-> pick or pull the branch into x86/numa?
+     char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
 
-Would be nice to have a version against the latest tip:x86/numa tree, the current 
-one conflicts in arch/x86/mm/numa_64.c with your tree. Also, i suspect you want to 
-propagate Yinghai's Acked-by's into the commits?
 
-Thanks,
+Introduced section mismatch by calling __exit cleanup_ipmi_si from __devinit 
+init_ipmi_si. Remove __exit annotation from cleanup_ipmi_si.
 
-	Ingo
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Acked-by: Corey Minyard <cminyard@mvista.com>
+
+---
+
+ drivers/char/ipmi/ipmi_si_intf.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 7855f9f..94cd2ce 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -3532,7 +3532,7 @@ static void cleanup_one_si(struct smi_info *to_clean)
+ 	kfree(to_clean);
+ }
+ 
+-static void __exit cleanup_ipmi_si(void)
++static void cleanup_ipmi_si(void)
+ {
+ 	struct smi_info *e, *tmp_e;
+ 
