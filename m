@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab1BOJZI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 04:25:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56632 "EHLO mx2.suse.de"
+	id S1754515Ab1BOJ0A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 04:26:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56652 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754373Ab1BOJZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 04:25:04 -0500
-Date: Tue, 15 Feb 2011 10:25:03 +0100 (CET)
+	id S1753787Ab1BOJZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 04:25:58 -0500
+Date: Tue, 15 Feb 2011 10:25:57 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Jesper Juhl <jj@chaosbits.net>
 Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] hvcs: fix typo in comment
-In-Reply-To: <alpine.LNX.2.00.1102150012390.4530@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1102151024550.2160@pobox.suse.cz>
-References: <1297724735.1793.34.camel@t41.thuisdomein> <alpine.LNX.2.00.1102150012390.4530@swampdragon.chaosbits.net>
+Subject: Re: [PATCH] [TRIVIAL] mISDN: fix printk typo fushing
+In-Reply-To: <alpine.LNX.2.00.1102150012140.4530@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1102151025500.2160@pobox.suse.cz>
+References: <1297724762.1793.35.camel@t41.thuisdomein> <alpine.LNX.2.00.1102150012140.4530@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,27 +27,43 @@ On Tue, 15 Feb 2011, Jesper Juhl wrote:
 > 
 > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > > ---
-> >  drivers/char/hvcs.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >  drivers/isdn/mISDN/hwchannel.c |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
 > > 
-> > diff --git a/drivers/tty/hvc/hvcs.c b/drivers/tty/hvc/hvcs.c
-> > index bedc6c1..af4e650 100644
-> > --- a/drivers/tty/hvc/hvcs.c
-> > +++ b/drivers/tty/hvc/hvcs.c
-> > @@ -292,7 +292,7 @@ struct hvcs_struct {
-> >  	/*
-> >  	 * Any variable below the kref is valid before a tty is connected and
-> >  	 * stays valid after the tty is disconnected.  These shouldn't be
-> > -	 * whacked until the koject refcount reaches zero though some entries
-> > +	 * whacked until the kobject refcount reaches zero though some entries
-> >  	 * may be changed via sysfs initiatives.
-> >  	 */
-> >  	struct kref kref; /* ref count & hvcs_struct lifetime */
+> > diff --git a/drivers/isdn/mISDN/hwchannel.c b/drivers/isdn/mISDN/hwchannel.c
+> > index 199f374..f6e108d 100644
+> > --- a/drivers/isdn/mISDN/hwchannel.c
+> > +++ b/drivers/isdn/mISDN/hwchannel.c
+> > @@ -206,7 +206,7 @@ recv_Bchannel(struct bchannel *bch, unsigned int id)
+> >  	hh->id = id;
+> >  	if (bch->rcount >= 64) {
+> >  		printk(KERN_WARNING "B-channel %p receive queue overflow, "
+> > -			"fushing!\n", bch);
+> > +			"flushing!\n", bch);
+> >  		skb_queue_purge(&bch->rqueue);
+> >  		bch->rcount = 0;
+> >  		return;
+> > @@ -231,7 +231,7 @@ recv_Bchannel_skb(struct bchannel *bch, struct sk_buff *skb)
+> >  {
+> >  	if (bch->rcount >= 64) {
+> >  		printk(KERN_WARNING "B-channel %p receive queue overflow, "
+> > -			"fushing!\n", bch);
+> > +			"flushing!\n", bch);
+> >  		skb_queue_purge(&bch->rqueue);
+> >  		bch->rcount = 0;
+> >  	}
+> > @@ -279,7 +279,7 @@ confirm_Bsend(struct bchannel *bch)
+> >  
+> >  	if (bch->rcount >= 64) {
+> >  		printk(KERN_WARNING "B-channel %p receive queue overflow, "
+> > -			"fushing!\n", bch);
+> > +			"flushing!\n", bch);
+> >  		skb_queue_purge(&bch->rqueue);
+> >  		bch->rcount = 0;
+> >  	}
 > > 
-> 
-> Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-Applied, thanks.
+Applied.
 
 -- 
 Jiri Kosina
