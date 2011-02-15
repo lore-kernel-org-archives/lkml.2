@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab1BOWVC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 17:21:02 -0500
-Received: from kroah.org ([198.145.64.141]:58736 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756338Ab1BOWVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 17:21:00 -0500
-Date: Tue, 15 Feb 2011 13:18:59 -0800
-From: Greg KH <greg@kroah.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: stable@kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [stable] [PATCH 00/28] 2.6.32.stable scheduler backport series
-Message-ID: <20110215211859.GA26366@kroah.com>
-References: <1297340643.5512.0.camel@marge.simson.net>
- <1297341441.5512.32.camel@marge.simson.net>
- <20110210181711.GB14376@kroah.com>
- <1297362514.5364.13.camel@marge.simson.net>
+	id S932111Ab1BOWVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 17:21:21 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:22941 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab1BOWVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 17:21:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=HAHBtwnoAlvGP4rP5iCeCZ7xkWy60rzQPxhBUvCXVvaoz9PkahmppFIXGT5Sic6kmj
+         JzcvD/m2UM10N85YVtyg==
+Date: Tue, 15 Feb 2011 14:21:11 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
+        casteyde.christian@free.fr, Changli Gao <xiaosuo@gmail.com>,
+        Vegard Nossum <vegardno@ifi.uio.no>,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [Bugme-new] [Bug 27212] New: Warning kmemcheck: Caught 64-bit
+ read from uninitialized memory in netlink_broadcast_filtered
+In-Reply-To: <AANLkTinKTdeO5mnE38n==aZMz5P1XKKM+kykhoBu0=9k@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1102151403170.10742@chino.kir.corp.google.com>
+References: <bug-27212-10286@https.bugzilla.kernel.org/> <20110120122549.85863a84.akpm@linux-foundation.org> <1295556085.2613.22.camel@edumazet-laptop> <4D393A99.9060104@kernel.org> <1297704922.2996.60.camel@edumazet-laptop>
+ <AANLkTinKTdeO5mnE38n==aZMz5P1XKKM+kykhoBu0=9k@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297362514.5364.13.camel@marge.simson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 07:28:34PM +0100, Mike Galbraith wrote:
-> On Thu, 2011-02-10 at 10:17 -0800, Greg KH wrote:
-> > On Thu, Feb 10, 2011 at 01:37:21PM +0100, Mike Galbraith wrote:
-> > > (Letting series escape is _one_ way of settling on a format.  Hohum.
-> > > Fly patches, fly)
-> > 
-> > Heh, ok, that works, I'll review them and queue them up for the next .32
-> > series :)
-> 
-> Thanks :-/
+On Tue, 15 Feb 2011, Pekka Enberg wrote:
 
-Ok, I got the first 28, I'll queue the remaining 2 up after lunch...
+> > [PATCH] slub: fix kmemcheck calls to match ksize() hints
+> >
+> > Recent use of ksize() in network stack (commit ca44ac38 : net: don't
+> > reallocate skb->head unless the current one hasn't the needed extra size
+> > or is shared) triggers kmemcheck warnings, because ksize() can return
+> > more space than kmemcheck is aware of.
+> >
+> > Pekka Enberg noticed SLAB+kmemcheck is doing the right thing, while SLUB
+> > +kmemcheck doesnt.
+> >
+> > Bugzilla reference #27212
+> >
+> > Reported-by: Christian Casteyde <casteyde.christian@free.fr>
+> > Suggested-by: Pekka Enberg <penberg@kernel.org>
+> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > CC: David Miller <davem@davemloft.net>
+> > CC: Changli Gao <xiaosuo@gmail.com>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
 
-thanks,
-
-greg k-h
+Acked-by: David Rientjes <rientjes@google.com>
