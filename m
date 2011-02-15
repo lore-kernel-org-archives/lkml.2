@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab1BOOak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 09:30:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58816 "EHLO mx1.redhat.com"
+	id S1755293Ab1BOOeC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 09:34:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48559 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083Ab1BOOaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 09:30:39 -0500
-Date: Tue, 15 Feb 2011 09:24:16 -0500
+	id S1755245Ab1BOOdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 09:33:55 -0500
+Date: Tue, 15 Feb 2011 09:29:19 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
- for CFQ queue
-Message-ID: <20110215142416.GB27296@redhat.com>
-References: <4D51ED26.8050809@cn.fujitsu.com>
- <4D539804.9090308@cn.fujitsu.com>
- <20110210192940.GA2600@redhat.com>
- <4D55E07A.8060903@cn.fujitsu.com>
- <20110214165803.GE13097@redhat.com>
- <4D59DCB6.1020900@cn.fujitsu.com>
+Cc: Chad Talbott <ctalbott@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 0/6 v4] cfq-iosched: Introduce CFQ group hierarchical
+ scheduling and "use_hierarchy" interface
+Message-ID: <20110215142919.GD27296@redhat.com>
+References: <4D5397A9.6040404@cn.fujitsu.com>
+ <20110210183053.GD2524@redhat.com>
+ <4D5623F6.7020101@cn.fujitsu.com>
+ <20110214180612.GG13097@redhat.com>
+ <4D59EF6C.2090303@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D59DCB6.1020900@cn.fujitsu.com>
+In-Reply-To: <4D59EF6C.2090303@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 09:53:58AM +0800, Gui Jianfeng wrote:
+On Tue, Feb 15, 2011 at 11:13:48AM +0800, Gui Jianfeng wrote:
 > Vivek Goyal wrote:
-> > On Sat, Feb 12, 2011 at 09:20:58AM +0800, Gui Jianfeng wrote:
+> > On Sat, Feb 12, 2011 at 02:08:54PM +0800, Gui Jianfeng wrote:
 > >> Vivek Goyal wrote:
-> >>> On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
-> >>>> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
-> >>>> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
-> >>>> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
-> >>>> group scheduling on the same service tree.
+> >>> On Thu, Feb 10, 2011 at 03:45:45PM +0800, Gui Jianfeng wrote:
+> >>>> Hi
 > >>>>
-> >>>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-> >>>> ---
-> >>>>  block/cfq-iosched.c |  219 +++++++++++++++++++++++++++++++++++++++------------
-> >>>>  1 files changed, 167 insertions(+), 52 deletions(-)
+> >>>> Previously, I posted a patchset to add support of CFQ group hierarchical scheduling
+> >>>> in the way that it puts all CFQ queues in a hidden group and schedules with other 
+> >>>> CFQ group under their parent. The patchset is available here,
+> >>>> http://lkml.org/lkml/2010/8/30/30
 > >>>>
-> >>>> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> >>>> index f3a126e..41cef2e 100644
-> >>>> --- a/block/cfq-iosched.c
-> >>>> +++ b/block/cfq-iosched.c
-> >>>> @@ -39,6 +39,13 @@ static const int cfq_hist_divisor = 4;
-> >>>>   */
-> >>>>  #define CFQ_IDLE_DELAY		(HZ / 5)
-> >>>>  
-> >>>> +/* 
-> >>>> + * The base boosting value.
-> >>>> + */
-> >>>> +#define CFQ_BOOST_SYNC_BASE          (HZ / 10)
-> >>>> +#define CFQ_BOOST_ASYNC_BASE          (HZ / 25)
-> >>>> +
-> >>> These are same as cfq_slice_sync and cfq_slice_async. Looking at
-> >>> boost logic, this is equivalent of starting a new queue/group as
-> >>> if it is being requeued after conuming a full slice. So may be we can divide
-> >>> it by some const number say 4 or something like that. This is a minor
-> >>> point though as this algorimthm will kind of evolve and we will learn
-> >>> what works best.
+> >>>> Vivek think this approach isn't so instinct that we should treat CFQ queues
+> >>>> and groups at the same level. Here is the new approach for hierarchical 
+> >>>> scheduling based on Vivek's suggestion. The most big change of CFQ is that
+> >>>> it gets rid of cfq_slice_offset logic, and makes use of vdisktime for CFQ
+> >>>> queue scheduling just like CFQ group does. But I still give cfqq some jump 
+> >>>> in vdisktime based on ioprio, thanks for Vivek to point out this. Now CFQ 
+> >>>> queue and CFQ group use the same scheduling algorithm. 
+> >>>>
+> >>>> "use_hierarchy" interface is now added to switch between hierarchical mode
+> >>>> and flat mode. It works as memcg.
+> >>>>
+> >>>> --
+> >>>> V3 -> V4 Changes:
+> >>>> - Take io class into account when calculating the boost value.
+> >>>> - Refine the vtime boosting logic as Vivek's Suggestion.
+> >>> Hi Gui,
 > >>>
-> >>> Secondly, I think you wanted to SYNC vs ASYNC logic seem to be reversed.
-> >>> We would like to give ASYNC queues higher boost (Put these farther in 
-> >>> tree) and lesser boost to SYNC queues. Looks like above constants will
-> >>> do the reverse? 
+> >>> What testing did you do to make sure that this vtime boosting logic is working
+> >>> and is good replacement for slice_offset() logic for cfqq?
+> >>>
+> >>> Secondly, did you get a chance to look at chad's patch of keeping track
+> >>> of previous assigned vdisktime and keeping track of genrations. I think
+> >>> his patch is going to coflict with yours, so one of you will have to
+> >>> make adjustments. I think both the boost logic and keeping track of generation
+> >>> logic can be combined.
 > >> Hi Vivek,
 > >>
-> >> Currently, SYNC and ASYNC queues are in different service tree, they don't
-> >> impact each other. Here, I Really want use this logic.
+> >> For the time being, boosting logic only works for cfq queue, and keepinging track of
+> >> generation works for cfq group.
+> >> I think when we introduce boosting logic for cfq group, we can combine these two logic
+> >> together.
 > > 
-> > Ok, SYNC and ASYNC are on separate service tree so their vtime are not
-> > comparable (as of today, down the line one might want to look at those for
-> > better workload selection logic).
+> > Ok, I am assuming that now you are introducing another patch in the series
+> > to get boosting logic working for groups also.
 > > 
-> > Anyway, because two are on seprate tree so why should we have separate
-> > boosting constants for them? How does it help?
+> > Also, it might be easier to test it with group_idle=0, as right now groups
+> > don't preempt each other.
 > 
-> Here if we are using CFQ_BOOST_SYNC_BASE for both, I think it might boost
-> too much for an ASYNC cfqe as compare to others on the same service tree(async).
-> So I make charging and boosting follow the same base.
+> Vivek,
+> 
+> If you don't object, I'd like to introduce this in a seperate patch when this series
+> gets merged. For I don't want to add more complexity for this seires. ;) 
+> I'll post v5.
 
-Ok, that makes sense. So as suggested in other mails, lets use a even
-smaller base so that freshly backlogged queues get smaller vdisktimes
-as compared to existing queues which are using disks for longer time.
+Ok, that's fine. We can implement boosting logic for groups later.
+
+I think Chad's patch of remembering generation should help in getting service
+differentiation even with idiling disabled.
 
 Thanks
 Vivek
