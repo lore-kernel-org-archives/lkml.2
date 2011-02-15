@@ -1,383 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1BOW1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 17:27:10 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48923 "EHLO lunge.queued.net"
+	id S1756527Ab1BOW12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 17:27:28 -0500
+Received: from www.tglx.de ([62.245.132.106]:56191 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756230Ab1BOWZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 17:25:34 -0500
-From: Andres Salomon <dilinger@queued.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/9] mfd-core: rename platform_data field of mfd_cell to mfd_data
-Date: Tue, 15 Feb 2011 14:25:21 -0800
-Message-Id: <1297808729-21110-2-git-send-email-dilinger@queued.net>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1297808729-21110-1-git-send-email-dilinger@queued.net>
-References: <1297808729-21110-1-git-send-email-dilinger@queued.net>
+	id S1756397Ab1BOW11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 17:27:27 -0500
+Date: Tue, 15 Feb 2011 23:27:09 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: BUG: ARM: MMP and PXA: nr_irqs > NR_IRQS
+In-Reply-To: <4D5AF54D.3020208@metafoo.de>
+Message-ID: <alpine.LFD.2.00.1102152307480.26192@localhost6.localdomain6>
+References: <4D5AF54D.3020208@metafoo.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the platform_data variable to imply a distinction between
-common platform_data driver usage (typically accessed via
-pdev->dev.platform_data) and the way MFD passes data down to
-clients (using a wrapper named mfd_get_data).
+On Tue, 15 Feb 2011, Lars-Peter Clausen wrote:
+> 
+> I stumbled upon this while looking through the existing archs using SPARSE_IRQ.
+> Even with SPARSE_IRQ the NR_IRQS is still the upper limit for the number of IRQs.
+> 
+> Both PXA and MMP set NR_IRQS to IRQ_BOARD_START, with IRQ_BOARD_START being the
+> number of IRQs used by the core.
+> In various machine files the nr_irqs field of the ARM machine defintion struct
+> is then set to "IRQ_BOARD_START + NR_BOARD_IRQS".
+> As a result "nr_irqs" will greater then NR_IRQS which then again causes the
+> "allocated_irqs" bitmap in the core irq code to be accessed beyond its size
+> overwriting unrelated data.
+> 
+> So as a fix I suggest setting NR_IRQS to a large a enough value like 1024 or
+> something.
 
-All clients have already been changed to use the wrapper function,
-so this can be a quick single-commit change that only touches things
-in drivers/mfd.
+Thanks for pointing that out! The core code really misses a check. :(
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/mfd/ab3100-core.c   |    2 +-
- drivers/mfd/ab3550-core.c   |    2 +-
- drivers/mfd/janz-cmodio.c   |    2 +-
- drivers/mfd/mc13xxx-core.c  |    2 +-
- drivers/mfd/timberdale.c    |   54 +++++++++++++++++++++---------------------
- drivers/mfd/twl4030-codec.c |    4 +-
- drivers/mfd/wl1273-core.c   |    4 +-
- include/linux/mfd/core.h    |    8 +++---
- 8 files changed, 39 insertions(+), 39 deletions(-)
+I just checked and by chance the compiler/linker places data behind
+that bitmap which gets initialized later on those two platforms. So
+this went silently unnoticed.
 
-diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-index b44c3d9..865251e 100644
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -950,7 +950,7 @@ static int __devinit ab3100_probe(struct i2c_client *client,
- 
- 	/* Set up and register the platform devices. */
- 	for (i = 0; i < ARRAY_SIZE(ab3100_devs); i++)
--		ab3100_devs[i].platform_data = ab3100_plf_data;
-+		ab3100_devs[i].mfd_data = ab3100_plf_data;
- 
- 	err = mfd_add_devices(&client->dev, 0, ab3100_devs,
- 		ARRAY_SIZE(ab3100_devs), NULL, 0);
-diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
-index d849087..f4c12a4 100644
---- a/drivers/mfd/ab3550-core.c
-+++ b/drivers/mfd/ab3550-core.c
-@@ -1321,7 +1321,7 @@ static int __init ab3550_probe(struct i2c_client *client,
- 
- 	/* Set up and register the platform devices. */
- 	for (i = 0; i < AB3550_NUM_DEVICES; i++)
--		ab3550_devs[i].platform_data = ab3550_plf_data->dev_data[i];
-+		ab3550_devs[i].mfd_data = ab3550_plf_data->dev_data[i];
- 
- 	err = mfd_add_devices(&client->dev, 0, ab3550_devs,
- 		ARRAY_SIZE(ab3550_devs), NULL,
-diff --git a/drivers/mfd/janz-cmodio.c b/drivers/mfd/janz-cmodio.c
-index 58de1e2..fc41911 100644
---- a/drivers/mfd/janz-cmodio.c
-+++ b/drivers/mfd/janz-cmodio.c
-@@ -86,7 +86,7 @@ static int __devinit cmodio_setup_subdevice(struct cmodio_device *priv,
- 
- 	/* Add platform data */
- 	pdata->modno = modno;
--	cell->platform_data = pdata;
-+	cell->mfd_data = pdata;
- 
- 	/* MODULbus registers -- PCI BAR3 is big-endian MODULbus access */
- 	res->flags = IORESOURCE_MEM;
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 00c5490..b19b50a 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -689,7 +689,7 @@ static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
- 	const char *name = mc13xxx_get_chipname(mc13xxx);
- 
- 	struct mfd_cell cell = {
--		.platform_data = pdata,
-+		.mfd_data = pdata,
- 	};
- 
- 	/* there is no asnprintf in the kernel :-( */
-diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
-index 6353921..94c6c8a 100644
---- a/drivers/mfd/timberdale.c
-+++ b/drivers/mfd/timberdale.c
-@@ -384,7 +384,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
- 		.name = "timb-dma",
- 		.num_resources = ARRAY_SIZE(timberdale_dma_resources),
- 		.resources = timberdale_dma_resources,
--		.platform_data = &timb_dma_platform_data,
-+		.mfd_data = &timb_dma_platform_data,
- 	},
- 	{
- 		.name = "timb-uart",
-@@ -395,37 +395,37 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
- 		.name = "xiic-i2c",
- 		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
- 		.resources = timberdale_xiic_resources,
--		.platform_data = &timberdale_xiic_platform_data,
-+		.mfd_data = &timberdale_xiic_platform_data,
- 	},
- 	{
- 		.name = "timb-gpio",
- 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
- 		.resources = timberdale_gpio_resources,
--		.platform_data = &timberdale_gpio_platform_data,
-+		.mfd_data = &timberdale_gpio_platform_data,
- 	},
- 	{
- 		.name = "timb-video",
- 		.num_resources = ARRAY_SIZE(timberdale_video_resources),
- 		.resources = timberdale_video_resources,
--		.platform_data = &timberdale_video_platform_data,
-+		.mfd_data = &timberdale_video_platform_data,
- 	},
- 	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
--		.platform_data = &timberdale_radio_platform_data,
-+		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
- 		.name = "xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
--		.platform_data = &timberdale_xspi_platform_data,
-+		.mfd_data = &timberdale_xspi_platform_data,
- 	},
- 	{
- 		.name = "ks8842",
- 		.num_resources = ARRAY_SIZE(timberdale_eth_resources),
- 		.resources = timberdale_eth_resources,
--		.platform_data = &timberdale_ks8842_platform_data,
-+		.mfd_data = &timberdale_ks8842_platform_data,
- 	},
- };
- 
-@@ -434,7 +434,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
- 		.name = "timb-dma",
- 		.num_resources = ARRAY_SIZE(timberdale_dma_resources),
- 		.resources = timberdale_dma_resources,
--		.platform_data = &timb_dma_platform_data,
-+		.mfd_data = &timb_dma_platform_data,
- 	},
- 	{
- 		.name = "timb-uart",
-@@ -450,13 +450,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
- 		.name = "xiic-i2c",
- 		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
- 		.resources = timberdale_xiic_resources,
--		.platform_data = &timberdale_xiic_platform_data,
-+		.mfd_data = &timberdale_xiic_platform_data,
- 	},
- 	{
- 		.name = "timb-gpio",
- 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
- 		.resources = timberdale_gpio_resources,
--		.platform_data = &timberdale_gpio_platform_data,
-+		.mfd_data = &timberdale_gpio_platform_data,
- 	},
- 	{
- 		.name = "timb-mlogicore",
-@@ -467,25 +467,25 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
- 		.name = "timb-video",
- 		.num_resources = ARRAY_SIZE(timberdale_video_resources),
- 		.resources = timberdale_video_resources,
--		.platform_data = &timberdale_video_platform_data,
-+		.mfd_data = &timberdale_video_platform_data,
- 	},
- 	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
--		.platform_data = &timberdale_radio_platform_data,
-+		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
- 		.name = "xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
--		.platform_data = &timberdale_xspi_platform_data,
-+		.mfd_data = &timberdale_xspi_platform_data,
- 	},
- 	{
- 		.name = "ks8842",
- 		.num_resources = ARRAY_SIZE(timberdale_eth_resources),
- 		.resources = timberdale_eth_resources,
--		.platform_data = &timberdale_ks8842_platform_data,
-+		.mfd_data = &timberdale_ks8842_platform_data,
- 	},
- };
- 
-@@ -494,7 +494,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
- 		.name = "timb-dma",
- 		.num_resources = ARRAY_SIZE(timberdale_dma_resources),
- 		.resources = timberdale_dma_resources,
--		.platform_data = &timb_dma_platform_data,
-+		.mfd_data = &timb_dma_platform_data,
- 	},
- 	{
- 		.name = "timb-uart",
-@@ -505,31 +505,31 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
- 		.name = "xiic-i2c",
- 		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
- 		.resources = timberdale_xiic_resources,
--		.platform_data = &timberdale_xiic_platform_data,
-+		.mfd_data = &timberdale_xiic_platform_data,
- 	},
- 	{
- 		.name = "timb-gpio",
- 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
- 		.resources = timberdale_gpio_resources,
--		.platform_data = &timberdale_gpio_platform_data,
-+		.mfd_data = &timberdale_gpio_platform_data,
- 	},
- 	{
- 		.name = "timb-video",
- 		.num_resources = ARRAY_SIZE(timberdale_video_resources),
- 		.resources = timberdale_video_resources,
--		.platform_data = &timberdale_video_platform_data,
-+		.mfd_data = &timberdale_video_platform_data,
- 	},
- 	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
--		.platform_data = &timberdale_radio_platform_data,
-+		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
- 		.name = "xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
--		.platform_data = &timberdale_xspi_platform_data,
-+		.mfd_data = &timberdale_xspi_platform_data,
- 	},
- };
- 
-@@ -538,7 +538,7 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
- 		.name = "timb-dma",
- 		.num_resources = ARRAY_SIZE(timberdale_dma_resources),
- 		.resources = timberdale_dma_resources,
--		.platform_data = &timb_dma_platform_data,
-+		.mfd_data = &timb_dma_platform_data,
- 	},
- 	{
- 		.name = "timb-uart",
-@@ -549,37 +549,37 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
- 		.name = "ocores-i2c",
- 		.num_resources = ARRAY_SIZE(timberdale_ocores_resources),
- 		.resources = timberdale_ocores_resources,
--		.platform_data = &timberdale_ocores_platform_data,
-+		.mfd_data = &timberdale_ocores_platform_data,
- 	},
- 	{
- 		.name = "timb-gpio",
- 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
- 		.resources = timberdale_gpio_resources,
--		.platform_data = &timberdale_gpio_platform_data,
-+		.mfd_data = &timberdale_gpio_platform_data,
- 	},
- 	{
- 		.name = "timb-video",
- 		.num_resources = ARRAY_SIZE(timberdale_video_resources),
- 		.resources = timberdale_video_resources,
--		.platform_data = &timberdale_video_platform_data,
-+		.mfd_data = &timberdale_video_platform_data,
- 	},
- 	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
--		.platform_data = &timberdale_radio_platform_data,
-+		.mfd_data = &timberdale_radio_platform_data,
- 	},
- 	{
- 		.name = "xilinx_spi",
- 		.num_resources = ARRAY_SIZE(timberdale_spi_resources),
- 		.resources = timberdale_spi_resources,
--		.platform_data = &timberdale_xspi_platform_data,
-+		.mfd_data = &timberdale_xspi_platform_data,
- 	},
- 	{
- 		.name = "ks8842",
- 		.num_resources = ARRAY_SIZE(timberdale_eth_resources),
- 		.resources = timberdale_eth_resources,
--		.platform_data = &timberdale_ks8842_platform_data,
-+		.mfd_data = &timberdale_ks8842_platform_data,
- 	},
- };
- 
-diff --git a/drivers/mfd/twl4030-codec.c b/drivers/mfd/twl4030-codec.c
-index 0f57426..c02fded 100644
---- a/drivers/mfd/twl4030-codec.c
-+++ b/drivers/mfd/twl4030-codec.c
-@@ -208,13 +208,13 @@ static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- 	if (pdata->audio) {
- 		cell = &codec->cells[childs];
- 		cell->name = "twl4030-codec";
--		cell->platform_data = pdata->audio;
-+		cell->mfd_data = pdata->audio;
- 		childs++;
- 	}
- 	if (pdata->vibra) {
- 		cell = &codec->cells[childs];
- 		cell->name = "twl4030-vibra";
--		cell->platform_data = pdata->vibra;
-+		cell->mfd_data = pdata->vibra;
- 		childs++;
- 	}
- 
-diff --git a/drivers/mfd/wl1273-core.c b/drivers/mfd/wl1273-core.c
-index 703085e..f49e04e 100644
---- a/drivers/mfd/wl1273-core.c
-+++ b/drivers/mfd/wl1273-core.c
-@@ -79,7 +79,7 @@ static int __devinit wl1273_core_probe(struct i2c_client *client,
- 
- 	cell = &core->cells[children];
- 	cell->name = "wl1273_fm_radio";
--	cell->platform_data = &core;
-+	cell->mfd_data = &core;
- 	children++;
- 
- 	if (pdata->children & WL1273_CODEC_CHILD) {
-@@ -87,7 +87,7 @@ static int __devinit wl1273_core_probe(struct i2c_client *client,
- 
- 		dev_dbg(&client->dev, "%s: Have codec.\n", __func__);
- 		cell->name = "wl1273-codec";
--		cell->platform_data = &core;
-+		cell->mfd_data = &core;
- 		children++;
- 	}
- 
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index 923ec25..f317fe4 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -33,8 +33,8 @@ struct mfd_cell {
- 	/* driver-specific data for MFD-aware "cell" drivers */
- 	void			*driver_data;
- 
--	/* platform_data can be used to pass data to "generic" drivers */
--	void			*platform_data;
-+	/* mfd_data can be used to pass data to client drivers */
-+	void			*mfd_data;
- 
- 	/*
- 	 * These resources can be specified relative to the parent device.
-@@ -64,11 +64,11 @@ static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
- 
- /*
-  * Given a platform device that's been created by mfd_add_devices(), fetch
-- * the .platform_data entry from the mfd_cell that created it.
-+ * the .mfd_data entry from the mfd_cell that created it.
-  */
- static inline void *mfd_get_data(struct platform_device *pdev)
- {
--	return mfd_get_cell(pdev)->platform_data;
-+	return mfd_get_cell(pdev)->mfd_data;
- }
- 
- extern int mfd_add_devices(struct device *parent, int id,
--- 
-1.7.2.3
+So the obvious fix is to add a sanity check in early_irq_init() and
+break all affected platforms. Though that check wants to be backported
+to stable as well, which will require to fix all known problematic
+platforms and probably some more yet not known ones as well. Lots of
+churn.
 
+We really should get rid of NR_IRQS as the limiting factor - we should
+get rid of !sparse_irq as well, but that's a different problem.
+
+So I came up with a fix which addresses the issue at hand, is small
+enough to backport and does not require more backports.
+
+Further it allows us later to extend nr_irqs on demand, by simply
+reallocating the bit field under sparse_irq_lock().
+
+Comments ?
+
+Thanks,
+
+	tglx
+
+Index: linux-2.6/kernel/irq/irqdesc.c
+===================================================================
+--- linux-2.6.orig/kernel/irq/irqdesc.c
++++ linux-2.6/kernel/irq/irqdesc.c
+@@ -94,10 +94,10 @@ int nr_irqs = NR_IRQS;
+ EXPORT_SYMBOL_GPL(nr_irqs);
+ 
+ static DEFINE_MUTEX(sparse_irq_lock);
+-static DECLARE_BITMAP(allocated_irqs, NR_IRQS);
+ 
+ #ifdef CONFIG_SPARSE_IRQ
+ 
++static unsigned long *allocated_irqs;
+ static RADIX_TREE(irq_desc_tree, GFP_KERNEL);
+ 
+ static void irq_insert_desc(unsigned int irq, struct irq_desc *desc)
+@@ -217,6 +217,9 @@ int __init early_irq_init(void)
+ 	initcnt = arch_probe_nr_irqs();
+ 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
+ 
++	allocated_irqs = kzalloc(BITS_TO_LONGS(nr_irqs) * sizeof(unsigned long),
++				 GFP_KERNEL);
++
+ 	for (i = 0; i < initcnt; i++) {
+ 		desc = alloc_desc(i, node);
+ 		set_bit(i, allocated_irqs);
+@@ -227,6 +230,8 @@ int __init early_irq_init(void)
+ 
+ #else /* !CONFIG_SPARSE_IRQ */
+ 
++static DECLARE_BITMAP(allocated_irqs, NR_IRQS);
++
+ struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
+ 	[0 ... NR_IRQS-1] = {
+ 		.status		= IRQ_DEFAULT_INIT_FLAGS,
