@@ -1,108 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab1BOShw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 13:37:52 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:33340 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab1BOSht (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 13:37:49 -0500
-Date: Tue, 15 Feb 2011 12:37:07 -0600
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+	id S1755900Ab1BOSjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 13:39:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab1BOSjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 13:39:44 -0500
+Date: Tue, 15 Feb 2011 19:30:28 +0100
+From: Oleg Nesterov <oleg@redhat.com>
 To: Daniel Lezcano <daniel.lezcano@free.fr>
 Cc: akpm@linux-foundation.org, containers@lists.linux-foundation.org,
-        ebiederm@xmission.com, linux-kernel@vger.kernel.org, oleg@redhat.com
-Subject: Re: [PATCH 1/3] pid: Remove the child_reaper special case in
- init/main.c
-Message-ID: <20110215183706.GA16364@localhost>
-References: <1297710963-19843-1-git-send-email-daniel.lezcano@free.fr>
- <1297710963-19843-2-git-send-email-daniel.lezcano@free.fr>
+        linux-kernel@vger.kernel.org, xemul@openvz.org, sukadev@us.ibm.com,
+        ebiederm@xmission.com
+Subject: Re: [PATCH 1/2] pidns: Don't allow new pids after the namespace is
+	dead.
+Message-ID: <20110215183028.GA15568@redhat.com>
+References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297710963-19843-2-git-send-email-daniel.lezcano@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Daniel Lezcano (daniel.lezcano@free.fr):
-> From: Eric W. Biederman <ebiederm@xmission.com>
-> 
-> It turns out that the existing assignment in copy_process of
-> the child_reaper can handle the initial assignment of child_reaper
-> we just need to generalize the test in kernel/fork.c
-> 
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+On 02/15, Daniel Lezcano wrote:
+>
+> In the case of unsharing or joining a pid namespace, it becomes
+> possible to attempt to allocate a pid after zap_pid_namespace has
+> killed everything in the namespace.  Close the hole for now by simply
+> not allowing any of those pid allocations to succeed.
 
-Acked-by: Serge E. Hallyn <serge@hallyn.com>
+Daniel, please explain more. It seems, a long ago I knew the reason
+for this patch, but now I can't recall and can't understand this change.
 
-> ---
->  include/linux/pid.h |   11 +++++++++++
->  init/main.c         |    9 ---------
->  kernel/fork.c       |    2 +-
->  3 files changed, 12 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/pid.h b/include/linux/pid.h
-> index 49f1c2f..efceda0 100644
-> --- a/include/linux/pid.h
-> +++ b/include/linux/pid.h
-> @@ -141,6 +141,17 @@ static inline struct pid_namespace *ns_of_pid(struct pid *pid)
->  }
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -20,6 +20,7 @@ struct pid_namespace {
+>  	struct kref kref;
+>  	struct pidmap pidmap[PIDMAP_ENTRIES];
+>  	int last_pid;
+> +	atomic_t dead;
+
+Why atomic_t? It is used as a plain boolean.
+
+And I can't unde
+
+> --- a/kernel/pid.c
+> +++ b/kernel/pid.c
+> @@ -282,6 +282,10 @@ struct pid *alloc_pid(struct pid_namespace *ns)
+>  	struct pid_namespace *tmp;
+>  	struct upid *upid;
 >  
->  /*
-> + * is_child_reaper returns true if the pid is the init process
-> + * of the current namespace. As this one could be checked before
-> + * pid_ns->child_reaper is assigned in copy_process, we check
-> + * with the pid number.
-> + */
-> +static inline bool is_child_reaper(struct pid *pid)
-> +{
-> +	return pid->numbers[pid->level].nr == 1;
-> +}
+> +	pid = NULL;
+> +	if (atomic_read(&ns->dead))
+> +		goto out;
 > +
-> +/*
->   * the helpers to get the pid's id seen from different namespaces
->   *
->   * pid_nr()    : global id, i.e. the id seen from the init namespace;
-> diff --git a/init/main.c b/init/main.c
-> index 33c37c3..793ebfd 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -875,15 +875,6 @@ static int __init kernel_init(void * unused)
->  	 * init can run on any cpu.
->  	 */
->  	set_cpus_allowed_ptr(current, cpu_all_mask);
-> -	/*
-> -	 * Tell the world that we're going to be the grim
-> -	 * reaper of innocent orphaned children.
-> -	 *
-> -	 * We don't want people to have to make incorrect
-> -	 * assumptions about where in the task array this
-> -	 * can be found.
-> -	 */
-> -	init_pid_ns.child_reaper = current;
->  
->  	cad_pid = task_pid(current);
->  
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 25e4291..c9f0784 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1289,7 +1289,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  		tracehook_finish_clone(p, clone_flags, trace);
->  
->  		if (thread_group_leader(p)) {
-> -			if (clone_flags & CLONE_NEWPID)
-> +			if (is_child_reaper(pid))
->  				p->nsproxy->pid_ns->child_reaper = p;
->  
->  			p->signal->leader_pid = pid;
-> -- 
-> 1.7.1
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
+
+So why this is needed?
+
+If we see ns->dead != 0 we are already killed by zap_pid_ns_processes()
+which sets ns->dead = 1.
+
+Oleg.
+
