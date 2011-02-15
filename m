@@ -1,130 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1BONof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 08:44:35 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:47440 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab1BONoe (ORCPT
+	id S1752531Ab1BONr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 08:47:57 -0500
+Received: from server103.greatnet.de ([83.133.97.6]:56961 "EHLO
+	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1BONrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 08:44:34 -0500
-Date: Tue, 15 Feb 2011 11:44:09 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 00/14] [GIT PULL][v2.6.39] tracing/filter: More robust
- filtering
-Message-ID: <20110215134409.GA23092@ghostprotocols.net>
-References: <20110208015617.902200587@goodmis.org>
- <20110215044425.GA9994@elte.hu>
+	Tue, 15 Feb 2011 08:47:55 -0500
+Message-ID: <4D5A8406.3030703@nachtwindheim.de>
+Date: Tue, 15 Feb 2011 14:47:50 +0100
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110215044425.GA9994@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        x86@kernel.org, tj@kernel.org, yinghai@kernel.org, ak@linux.intel.com,
+        robert.richter@amd.com, weidong.han@intel.com, gleb@redhat.com
+Subject: Re: [PATCH 2/6] x86: ifdef enable_IR_x2apic() out
+References: <1297677612-12405-1-git-send-email-henne@nachtwindheim.de> <1297677612-12405-2-git-send-email-henne@nachtwindheim.de> <20110214110340.GC7140@elte.hu>
+In-Reply-To: <20110214110340.GC7140@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addressing the tools/perf/ suggestions:
+Am 14.02.2011 12:03, schrieb Ingo Molnar:
+> 
+> 
+> * Henrik Kretzschmar <henne@nachtwindheim.de> wrote:
+> 
+>> +#ifdef CONFIG_X86_64
+>>  extern void enable_IR_x2apic(void);
+>> +#endif
+> 
+> Cannot we use the CONFIG_X86_X2APIC Kconfig switch here, instead of CONFIG_X86_64?
+> 
+> enable_IR_x2apic() is not a 64-bit CPU feature.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+> 
 
-Em Tue, Feb 15, 2011 at 05:44:25AM +0100, Ingo Molnar escreveu:
-> Here is what i've done. Firstly, i have put my 'naive but curious user trying to 
-> make use of filters' hat on.
-> 
-> I did:
-> 
-> 	perf list | grep Tracepoint | less
-> 
-> to get a list of tracepoints.
-> 
->  #
->  #  Btw., unrelated feature request, it would be nice if the following shorcut did the 
->  #  obvious thing:
->  #
->  #	perf list Tracepoint
->  #
+Thats what I had liked also.
 
-Will do
- 
-> I picked one of the interesting looking tracepoints:
-> 
->   syscalls:sys_enter_close                   [Tracepoint event]
-> 
-> first roadblock: 
-> 
-> I had absolutely no idea how to proceed from here any further. I knew it from 'perf 
-> list --help' that I could stick 'syscalls:sys_enter_close' into -e expressions, but 
-> i had no idea how to utilize filter expressions at all.
+At the time you moved the apic code from x86/kernel it was exactly that way.
+But after that, in commit 937582382c71b75b29fbb92615629494e1a05ac0, it was explicitely moved out of
+CONFIG_X86_X2APIC, which made that function also compile on 32bit machines, even if its not used there.
 
-<SNIP>
- 
->  aldebaran:~> cat /debug/tracing/events/syscalls/sys_enter_close/format 
->  name: sys_enter_close
->  ID: 404
->  format:
-> 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-> 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-> 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-> 	field:int common_pid;	offset:4;	size:4;	signed:1;
-> 	field:int common_lock_depth;	offset:8;	size:4;	signed:1;
-> 
-> 	field:int nr;	offset:12;	size:4;	signed:1;
-> 	field:unsigned int fd;	offset:16;	size:8;	signed:0;
-> 
->  print fmt: "fd: 0x%08lx", ((unsigned long)(REC->fd))
-> 
-> And putting my kernel tracing hacker hat on i knew that the only interesting piece 
-> of information for a filter would be the 'fd' word.
+Also commit ce69a784504222c3ab6f1b3c357d09ec5772127a enabled the x2apic without interrupt remapping,
+which means that CONFIG_X86_X2APIC depends on CONFIG_INTR_REMAP has been bypassed and so Kconfig is
+broken/not representing what happens to the code.
 
-Something in the TUI that allows the user to navigate thru the
-tracepoints, grouping them and allowing something like:
+So since I dont have an x2apic and therefore cannot test changes,
+I decided for CONFIG_X86_64 without touching code which seems to work.
 
-    + Hardware
-    + Dynamic Probes
-    + Software
-      + Scheduler
-      + Block I/O
-      - System Calls
-        - close
-            entry
-            exit
+I wish I could offer something better here.
 
-And at any point in the tree allow enabling the tree branch and allowing
-filters for fields that are common from that point down, i.e. fd should
-be usable as a filter for file system events, allowing to see all events
-that have an fd for a given pid.
+Greets,
+Henrik Kretzschmar
 
-Worth some experimentation.
 
-<SNIP>
 
->  aldebaran:~> perf record -e syscalls:sys_enter_close --filter 'fd == 10' ./hackbench 1
->  Time: 0.079
->  [ perf record: Woken up 1 times to write data ]
->  [ perf record: Captured and wrote 0.007 MB perf.data (~325 samples) ]
-> 
-> Cool i thought, it has 325 samples, success!
-> 
-> Lets look at it via 'perf report' i thought:
-> 
->  aldebaran:~> perf report
->  aldebaran:~> 
-> 
-> ouch. The TUI flickered something which went away immediately (feature request: 
-> don't do that - at least try to mumble something about non-existent data or so).
 
-Right, as the tools do when it finds LOST events, they should emit a
-warning stating "No EVENT_NAME samples found in file foo.data", will do.
-
-- Arnaldo
