@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab1BOPBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:01:13 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48186 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102Ab1BOPBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:01:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=B3QMJARgXLWtcFmc98LJSyixCCzml6XF5s9cw5dpR+DB098jztf/gp1UkNOnsKVnVp
-         ElyGT/QywU90XsnzTiUS5bRHBIix9D32mycn1PndQT2cF/cZWlv66/yYEqw8E9kDID2h
-         IzhR2zy47l7PTPAG9pFXlFjRbrymqxuKkp+mo=
+	id S1755122Ab1BOPCF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:02:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754145Ab1BOPCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 10:02:02 -0500
+Message-ID: <4D5A8F28.4090306@redhat.com>
+Date: Tue, 15 Feb 2011 16:35:20 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <1297781710.2413.17.camel@twins>
-References: <4d590250.114ddf0a.689e.4482@mx.google.com>
-	<1297781710.2413.17.camel@twins>
-Date: Tue, 15 Feb 2011 16:01:09 +0100
-Message-ID: <AANLkTin6oeDreACiYZfGnLFx8gjK1Qqd_6Mtp3ZHG+b7@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v9)
-From: stephane eranian <eranian@googlemail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-Content-Type: text/plain; charset=UTF-8
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v3 3/6] KVM-GST: KVM Steal time accounting
+References: <1297448364-14051-1-git-send-email-glommer@redhat.com> <1297448364-14051-4-git-send-email-glommer@redhat.com>
+In-Reply-To: <1297448364-14051-4-git-send-email-glommer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1FF1Ms6021924
 
-On Tue, Feb 15, 2011 at 3:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-02-14 at 11:20 +0200, Stephane Eranian wrote:
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (mode & PERF_CGROUP_SWOUT) {
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  cpu_ctx_sched_out(cpuctx, EVENT_ALL);
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  /*
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â * must not be done before ctxswout dur
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â * to event_filter_match() in event_sched_out()
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â */
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  cpuctx->cgrp = NULL;
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  }
+On 02/11/2011 08:19 PM, Glauber Costa wrote:
+> This patch accounts steal time time in kernel/sched.
+> I kept it from last proposal, because I still see advantages
+> in it: Doing it here will give us easier access from scheduler
+> variables such as the cpu rq. The next patch shows an example of
+> usage for it.
 >
-> s/dur/due/ ?
+> Since functions like account_idle_time() can be called from
+> multiple places, not only account_process_tick(), steal time
+> grabbing is repeated in each account function separatedely.
 >
-Yep, sorry about that.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+I still don't see how we export this to userspace for top(1) and friends.
+
+-- 
+error compiling committee.c: too many arguments to function
+
