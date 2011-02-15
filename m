@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab1BOPYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 10:24:17 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:32965 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751201Ab1BOPYP convert rfc822-to-8bit (ORCPT
+	id S1755230Ab1BOPZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 10:25:50 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53195 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362Ab1BOPZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 10:24:15 -0500
-Subject: Re: [PATCH v4 16/19] ARM: LPAE: Use generic dma_addr_t type
- definition
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <Will.Deacon@arm.com>
-In-Reply-To: <20110215142730.GM4152@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
-	 <1295891761-18366-17-git-send-email-catalin.marinas@arm.com>
-	 <20110212103413.GD15616@n2100.arm.linux.org.uk>
-	 <1297688490.31111.38.camel@e102109-lin.cambridge.arm.com>
-	 <20110215142730.GM4152@n2100.arm.linux.org.uk>
-Organization: ARM Limited
-Date: Tue, 15 Feb 2011 15:24:06 +0000
-Message-ID: <1297783446.14691.167.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 15 Feb 2011 15:24:09.0278 (UTC) FILETIME=[6423DDE0:01CBCD24]
-X-MC-Unique: 111021515241209601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Feb 2011 10:25:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=oIkILNwxBHL4S/Slaa5rSUteNwJEVxCIhq2KS7tx9rLEyB+1f6IaUvRM92zpg80p6u
+         c+MsTeTzw9D4zqPyalSRHXXqnMC6o60w9/t0SNBFCf16kP5hMXYbcSRahtGB25ud8s6+
+         m63VCujKsyiBGVSRqEaqJzV3qig8/SYhG2OmE=
+Date: Tue, 15 Feb 2011 16:20:33 +0100
+From: Tejun Heo <tj@kernel.org>
+To: device-mapper development <dm-devel@redhat.com>,
+        Milan Broz <mbroz@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
+ read-write for read-only mappings
+Message-ID: <20110215152033.GK3160@htj.dyndns.org>
+References: <4D5A6EF4.3030905@redhat.com>
+ <20110215124629.GF5825@agk-dp.fab.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110215124629.GF5825@agk-dp.fab.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-15 at 14:27 +0000, Russell King - ARM Linux wrote:
-> On Mon, Feb 14, 2011 at 01:01:30PM +0000, Catalin Marinas wrote:
-> > Maybe we could make the dma_addr_t size configurable (and disabled by
-> > default) since I expect there'll be platforms capable of >32-bit DMA.
+Hello,
+
+On Tue, Feb 15, 2011 at 12:46:29PM +0000, Alasdair G Kergon wrote:
+> On Tue, Feb 15, 2011 at 01:17:56PM +0100, Milan Broz wrote:
+> >         fd = open(device, O_RDWR | flags);
+> >         if (fd == -1 && errno == EROFS) {
+> >                 *readonly = 1;
+> >                 fd = open(device, O_RDONLY | flags);
+> >         }
 > 
-> It would be far better to fix the dma_addr_t abuses.
+> Would it be reasonable for your patch to return EROFS rather than
+> EACCES?
+> 
+> man 2 open:
+>        int open(const char *pathname, int flags, mode_t mode);
+> 
+>        EROFS  pathname  refers  to a file on a read-only file system and write
+>               access was requested.
+> 
+>        EACCES The requested access to the file is not allowed, or search  per‐
+>               mission  is denied for one of the directories in the path prefix
+>               of pathname, or the file did not exist yet and write  access  to
+>               the  parent  directory  is  not allowed.  (See also path_resolu‐
+>               tion(7).)
 
-That's not a simple task, I have no idea how many drivers get used on
-ARM systems. We can defer this until people start using Cortex-A15 in
-real hardware and only fix the drivers they need.
+Hmmm... but -EACCES is the correct one here.  The device node itself
+is rejecting RW access.  There's no FS which is enforcing RO.  But if
+the userland is already expecting that, dm can simply change the error
+code, no?
 
-BTW, can sparse help here (I haven't used it much)?
+Thanks.
 
 -- 
-Catalin
-
-
+tejun
