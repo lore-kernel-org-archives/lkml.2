@@ -1,188 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab1BOVJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 16:09:16 -0500
-Received: from vms173019pub.verizon.net ([206.46.173.19]:37250 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab1BOVJN (ORCPT
+	id S1755845Ab1BOVUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 16:20:37 -0500
+Received: from eastrmfepi101.cox.net ([68.230.241.197]:38419 "EHLO
+	eastrmfepi101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489Ab1BOVUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 16:09:13 -0500
-Date: Tue, 15 Feb 2011 16:08:57 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] ACPI patches for 2.6.38-rc4
-Message-id: <alpine.LFD.2.02.1102151607320.843@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: MULTIPART/MIXED; BOUNDARY="8323328-112778775-1297804138=:843"
+	Tue, 15 Feb 2011 16:20:35 -0500
+X-Greylist: delayed 549 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Feb 2011 16:20:35 EST
+X-VR-Score: -200.00
+X-Authority-Analysis: v=1.1 cv=72mwMHry7RVIehb2GilHRvg51L14SqmocFmEXpMAk0g=
+ c=1 sm=1 a=4UV-9Kl2S54A:10 a=UFf5x1fKmGVfY+5MkVsK7Q==:17 a=oGMlB6cnAAAA:8
+ a=8pif782wAAAA:8 a=qhgeTVs5YOj12Lg6C_8A:9 a=j-ZIYDFsFUdIfLF5U7QA:7
+ a=Qsgym4f3QbBoBbIlA5cmyFHHOH0A:4 a=CjuIK1q_8ugA:10 a=CY6gl2JlH4YA:10
+ a=cKZJf8hrtHtSonyQ:21 a=zmfYgE4bM3GyqYVF:21 a=azUtSEKio4gRhm_uCAAA:9
+ a=6b70LVxBGgZ9_-ncTRV3tEBuXAsA:4 a=UFf5x1fKmGVfY+5MkVsK7Q==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Date: Tue, 15 Feb 2011 16:11:23 -0500
+From: Will Simoneau <simoneau@ele.uri.edu>
+To: Will Newton <will.newton@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt@console-pimps.org>,
+        David Miller <davem@davemloft.net>, rostedt@goodmis.org,
+        peterz@infradead.org, jbaron@redhat.com, mathieu.desnoyers@polymtl.ca,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
+        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
+        ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+Message-ID: <20110215211123.GA3094@ele.uri.edu>
+References: <1297707868.5226.189.camel@laptop>
+ <1297718964.23343.75.camel@gandalf.stny.rr.com>
+ <1297719576.23343.80.camel@gandalf.stny.rr.com>
+ <20110214.134600.179933733.davem@davemloft.net>
+ <20110214223755.436e7cf4@mfleming-mobl1.ger.corp.intel.com>
+ <4D59B891.8010300@zytor.com>
+ <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+In-Reply-To: <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 [Linux 2.6.37-rc4+ x86_64]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323328-112778775-1297804138=:843
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+On 11:01 Tue 17 Feb     , Will Newton wrote:
+> On Mon, Feb 14, 2011 at 11:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > On 02/14/2011 02:37 PM, Matt Fleming wrote:
+> >>>
+> >>> I don't see how cache coherency can possibly work if the hardware
+> >>> behaves this way.
+> >>
+> >> Cache coherency is still maintained provided writes/reads both go
+> >> through the cache ;-)
+> >>
+> >> The problem is that for read-modify-write operations the arbitration
+> >> logic that decides who "wins" and is allowed to actually perform the
+> >> write, assuming two or more CPUs are competing for a single memory
+> >> address, is not implemented in the cache controller, I think. I'm not a
+> >> hardware engineer and I never understood how the arbitration logic
+> >> worked but I'm guessing that's the reason that the ll/sc instructions
+> >> bypass the cache.
+> >>
+> >> Which is why the atomic_t functions worked out really well for that
+> >> arch, such that any accesses to an atomic_t * had to go through the
+> >> wrapper functions.
+> >
+> > I'm sorry... this doesn't compute. ?Either reads can work normally (go
+> > through the cache) in which case atomic_read() can simply be a read or
+> > they don't, so I don't understand this at all.
+>=20
+> The CPU in question has two sets of instructions:
+>=20
+>   load/store - these go via the cache (write through)
+>   ll/sc - these operate literally as if there is no cache (they do not
+> hit on read or write)
+>=20
+> This may or may not be a sensible way to architect a CPU, but I think
+> it is possible to make it work. Making it work efficiently is more of
+> a challenge.
 
-please pull from: 
+Speaking as a (non-commercial) processor designer here, but feel free to po=
+int
+out anything I'm wrong on. I have direct experience implementing these
+operations in hardware so I'd hope what I say here is right. This informati=
+on
+is definitely relevant to the MIPS R4000 as well as my own hardware. A quick
+look at the PPC documentation seems to indicate it's the same there too, an=
+d it
+should agree with the Wikipedia article on the subject:
+http://en.wikipedia.org/wiki/Load-link/store-conditional
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
+The entire point of implementing load-linked (ll) / store-conditional (sc)
+instructions is to have lockless atomic primitives *using the cache*. Proper
+implementations do not bypass the cache; in fact, the cache coherence proto=
+col
+must get involved for them to be correct. If properly implemented, these
+operations cause no external bus traffic if the critical section is unconte=
+nded
+and hits the cache (good for scalability). These are the semantics:
 
-Three regression fixes plus a bug fix.
-This will update the files shown below.
+ll: Essentially the same as a normal word load. Implementations will need t=
+o do
+a little internal book-keeping (i.e. save physical address of last ll
+instruction and/or modify coherence state for the cacheline).
 
-thanks!
+sc: Store a word if and only if the address has not been written by any oth=
+er
+processor since the last ll. If the store fails, write 0 to a register,
+otherwise write 1.
 
--Len Brown
-Intel Open Source Technology Center
+The address may be tracked on cacheline granularity; this operation may
+spuriously fail, depending on implementation details (called "weak" ll/sc).
+Arguably the "obvious" way to implement this is to have sc fail if the local
+CPU snoops a read-for-ownership for the address in question coming from a
+remote CPU. This works because the remote CPU will need to gain the cacheli=
+ne
+for exclusive access before its competing sc can execute. Code is supposed =
+to
+put ll/sc in a loop and simply retry the operation until the sc succeeds.
 
-ps. individual patches are available on linux-acpi@vger.kernel.org
+Note how the cache and cache coherence protocol are fundamental parts of th=
+is
+operation; if these instructions simply bypassed the cache, they *could not*
+work correctly - how do you detect when the underlying memory has been
+modified? You can't simply detect whether the value has changed - it may ha=
+ve
+been changed to another value and then back ("ABA" problem). You have to sn=
+oop
+bus transactions, and that is what the cache and its coherence algorithm
+already do. ll/sc can be implemented entirely using the side-effects of the
+cache coherence algorithm; my own working hardware implementation does this.
 
- drivers/acpi/acpica/evxfgpe.c |   49 +++++++++++++++++++++-------------------
- drivers/acpi/osl.c            |   25 +++++++++++++++------
- drivers/acpi/video_detect.c   |    5 ++++
- drivers/acpi/wakeup.c         |    6 ++++-
- 4 files changed, 54 insertions(+), 31 deletions(-)
+So, atomically reading the variable can be accomplished with a normal load
+instruction. I can't speak for unaligned loads on implementations that do t=
+hem
+in hardware, but at least an aligned load of word size should be atomic on =
+any
+sane architecture. Only an atomic read-modify-write of the variable needs to
+use ll/sc at all, and only for the reason of preventing another concurrent
+modification between the load and store. A plain aligned word store should =
+be
+atomic too, but it's not too useful because a another concurrent store would
+not be ordered relative to the local store.
 
-through these commits:
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature
 
-Michael Karcher (1):
-      ACPI / Video: Probe for output switch method when searching video devices.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
 
-Rafael J. Wysocki (3):
-      ACPI: Fix acpi_os_read_memory() and acpi_os_write_memory() (v2)
-      ACPI / ACPICA: Avoid crashing if _PRW is defined for the root object
-      ACPI / Wakeup: Enable button GPEs unconditionally during initialization
+iEYEARECAAYFAk1a6/sACgkQLYBaX8VDLLXlTwCeIYQN1Aw82NNtO4jj+j8slg7P
+CeEAnjHU/OTozPVLLmwKvzz6+g2HcQ6Z
+=X3HF
+-----END PGP SIGNATURE-----
 
-with this log:
-
-commit dc3397437d740dd7ba5b8d1bf548b7288f564152
-Merge: ed764e7 884b821
-Author: Len Brown <len.brown@intel.com>
-Date:   Tue Feb 15 15:25:48 2011 -0500
-
-    Merge branch 'iomem' into release
-
-commit ed764e7ca042dbf4cc1c7f4e12cd842c7789f133
-Author: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-Date:   Sat Feb 12 01:40:16 2011 +0100
-
-    ACPI / Video: Probe for output switch method when searching video devices.
-    
-    This patch reverts one hunk of 677bd810eedce61edf15452491781ff046b92edc
-    "ACPI video: remove output switching control", namely the removal of
-    probing for _DOS/_DOD when searching for video devices.
-    
-    This is needed on some Fujitsu Laptops (at least S7110, P8010) for the
-    ACPI backlight interface to work, as an these machines, neither ROM nor
-    posting methods are available, and after removal of output switching,
-    none of the caps triggers, which prevents the backlight search from
-    being entered.
-    
-    Tested on a Fujitsu Lifebook S7110 and Fujitsu Lifebook P8010.
-    This probably fixes https://bugzilla.kernel.org/show_bug.cgi?id=27312
-    for the people who have no entry in /sys/class/backlight.
-    
-    This is the complete list of public (starting with "_") methods implemented
-    on the S7110, BIOS rev 1.34:
-    
-    \_SB_.PCI0.GFX0._ADR
-    \_SB_.PCI0.GFX0._DOS
-    \_SB_.PCI0.GFX0._DOD
-    \_SB_.PCI0.GFX0.CRT._ADR
-    \_SB_.PCI0.GFX0.CRT._DCS
-    \_SB_.PCI0.GFX0.CRT._DGS
-    \_SB_.PCI0.GFX0.CRT._DSS
-    \_SB_.PCI0.GFX0.LCD._ADR
-    \_SB_.PCI0.GFX0.LCD._BCL
-    \_SB_.PCI0.GFX0.LCD._BCM
-    \_SB_.PCI0.GFX0.LCD._BQC
-    \_SB_.PCI0.GFX0.LCD._DCS
-    \_SB_.PCI0.GFX0.LCD._DGS
-    \_SB_.PCI0.GFX0.LCD._DSS
-    \_SB_.PCI0.GFX0.LCD._PS0
-    \_SB_.PCI0.GFX0.LCD._PS3
-    \_SB_.PCI0.GFX0.TV._ADR
-    \_SB_.PCI0.GFX0.TV._DCS
-    \_SB_.PCI0.GFX0.TV._DGS
-    \_SB_.PCI0.GFX0.TV._DSS
-    \_SB_.PCI0.GFX0.DVI._ADR
-    \_SB_.PCI0.GFX0.DVI._DCS
-    \_SB_.PCI0.GFX0.DVI._DGS
-    \_SB_.PCI0.GFX0.DVI._DSS
-    
-    Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-    Acked-by: Zhang Rui <rui.zhang@intel.com>
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-commit 2a5d24286e8bdafdc272b37ec5bdd9e977b3767c
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sat Feb 12 01:39:53 2011 +0100
-
-    ACPI / Wakeup: Enable button GPEs unconditionally during initialization
-    
-    Commit 9630bdd (ACPI: Use GPE reference counting to support shared
-    GPEs) introduced a suspend regression where boxes resume immediately
-    after being suspended due to the lid or sleep button wakeup status
-    not being cleared properly.  This happens if the GPEs corresponding
-    to those devices are not enabled all the time, which apparently is
-    expected by some BIOSes.
-    
-    To fix this problem, enable button and lid GPEs unconditionally
-    during initialization and keep them enabled all the time, regardless
-    of whether or not the ACPI button driver is used.
-    
-    References: https://bugzilla.kernel.org/show_bug.cgi?id=27372
-    Reported-and-tested-by: Ferenc Wágner <wferi@niif.hu>
-    Cc: stable@kernel.org
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-commit 2d55951368faa32ff098398c56780ebb6405a3d9
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sat Feb 12 01:39:15 2011 +0100
-
-    ACPI / ACPICA: Avoid crashing if _PRW is defined for the root object
-    
-    Some ACPI BIOSes define _PRW for the root object which causes
-    acpi_setup_gpe_for_wake() to crash when trying to dereference the
-    bogus device_node pointer.  Avoid the crash by checking if
-    wake_device is not the root object before attempting to set up the
-    "implicit notify" mechanism for it.
-    
-    The problem was introduced by commit bba63a296ffab20e08d9e8252d2f0d99
-    (ACPICA: Implicit notify support) that added the wake_device argument
-    to acpi_setup_gpe_for_wake().
-    
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-
-commit 884b821fa27a5e3714d4871976d3e7c3abfa0d1b
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Tue Feb 8 23:37:16 2011 +0100
-
-    ACPI: Fix acpi_os_read_memory() and acpi_os_write_memory() (v2)
-    
-    The functions acpi_os_read_memory() and acpi_os_write_memory() do
-    two wrong things.  First, they shouldn't call rcu_read_unlock()
-    before the looked up address is actually used for I/O, because in
-    that case the iomap it belongs to may be removed before the I/O
-    is done.  Second, if they have to create a new mapping, they should
-    check the returned virtual address and tell the caller that the
-    operation failed if it is NULL (in fact, I think they even should not
-    attempt to map an address that's not present in one of the existing
-    ACPI iomaps, because that may cause problems to happen when they are
-    called from nonpreemptible context and their callers ought to know
-    what they are doing and map the requisite memory regions beforehand).
-    
-    Make these functions call rcu_read_unlock() when the I/O is complete
-    (or if it's necessary to map the given address "on the fly") and
-    return an error code if the requested physical address is not present
-    in the existing ACPI iomaps and cannot be mapped.
-    
-    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
---8323328-112778775-1297804138=:843--
+--RnlQjJ0d97Da+TV1--
