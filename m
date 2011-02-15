@@ -1,101 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab1BOCja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Feb 2011 21:39:30 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58796 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231Ab1BOCj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Feb 2011 21:39:26 -0500
-Date: Tue, 15 Feb 2011 03:38:47 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Micha Nelissen <micha@neli.hopto.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "Venkatesh Pallipadi (Venki)" <venki@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH] Add support for multiple MSI on x86
-Message-ID: <20110215023847.GF31134@elte.hu>
-References: <4D583E31.4070507@neli.hopto.org>
- <20110214123443.GF15860@elte.hu>
- <4D5986DF.8000808@neli.hopto.org>
+	id S1754156Ab1BOCmB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Feb 2011 21:42:01 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:43549 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab1BOCl6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Feb 2011 21:41:58 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
+Date: Tue, 15 Feb 2011 10:41:40 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; x86_64; ; )
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dima Zavin <dmitriyz@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>, Ben Dooks <ben-linux@fluff.org>,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+References: <1297233693.242364.862698430999.1.gpush@pororo> <4D53749B.6010102@codeaurora.org>
+In-Reply-To: <4D53749B.6010102@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5986DF.8000808@neli.hopto.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102151041.40655.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Saravana,
 
-* Micha Nelissen <micha@neli.hopto.org> wrote:
+> Shouldn't you be grabbing the prepare_lock here?
 
-> Ingo Molnar wrote:
-> >* Micha Nelissen <micha@neli.hopto.org> wrote:
-> >>Patch is based on earlier patch from Matthew Wilcox.
-> >
-> >Hm, there's an awful lot of 'background', 'implementation',
-> >'advantages', 'disadvantages', 'testing' description missing.
-> 
-> Sorry, my bad, wrong assumption that this would be common knowledge.
+This depends on semantics that (as far as I can tell) aren't defined yet. We 
+may even want to disallow set_rate (and set_parent) when prepare_count is non-
+zero.
 
-When it comes to changes done to a kernel tree used by millions of people then 
-common knowledge and mundane details need to be written down, in painstaking detail.
+Ideally, we should work out what the semantics are with regards to changing a 
+clock's rate when it has multiple users and/or is enabled or prepared, but 
+that's a separate issue, and we should *definitely* implement that as a 
+separate change.
 
-You cannot really err when it comes to details: i've reviewed over a ten thousand 
-patches in my life and i've yet to see a single one where the description was too 
-verbose ;-)
+I'd prefer to enforce the 'sleepability' with might_sleep instead.
 
-> PCI devices interrupt the CPU using 'legacy' INTx; or PCI-e devices
-> can do a special write, called an MSI (message signaled interrupt).
-> The interrupt vector is chosen by the CPU, different devices use
-> different vectors so that software can keep the interrupt sources
-> separate (instead of using shared INTx "lines").
-> 
-> Most PCI-e devices support what's called MSI-X, but not all do.
-> Especially for FPGA based endpoints it's easier to implement only
-> 'regular' MSI support. MSI-X basically involves implementing a
-> lookup table that maps interrupt types in the device to interrupt
-> vectors for the CPU. 'Regular' MSI (non MSI-X) only supports a
-> contiguous block of interrupt vectors: a base vector with a vector
-> count (which is a power of 2).
-> 
-> The x86 code to allocate these interrupt vectors does not handle the
-> <> 1 vector count case; it would return that it could only handle 1.
-> So either device drivers had 1 MSI, or the device should support
-> MSI-X to have multiple interrupts (and handlers) for one device.
-> 
-> This patch adds the needed code to support multiple MSI per device.
-> 
-> Advantages: separate interrupt handlers for separate tasks in the
-> device. This allows device drivers to be better structured. Easy
-> 'diagnostics' due to /proc/interrupts counting number of interrupts
-> for separate functionality separately.
-> 
-> Disadvantages: more complex code due to requirement that it is a
-> contiguous block, so needs some effort to look for a free block with
-> the requested count.
-> 
-> Tested: on an Atom platform, with a Xilinx based PCI-e core in FPGA.
-> 
-> Please review; thanks,
+> You should probably rename the lock to something else since it's not
+> limited to prepare/unprepare. How about resource_lock?
 
-That was a good description, thanks Micha!
+It's not, but that's the only thing it's protecting in the common code. I'm 
+open for better names, but resource_lock is too generic.
 
-	Ingo
+> > +int clk_set_parent(struct clk *clk, struct clk *parent)
+> > +{
+> > +	if (clk->ops->set_parent)
+> > +		return clk->ops->set_parent(clk, parent);
+> 
+> I'm not sure on this one. If the prepare ops for a clock also calls the
+> prepare ops on the parent, shouldn't we prevent changing the parent
+> while the prepare/unprepare is going on?
+
+Again, this is related to set_rate during enable/disable or prepare/unprepare; 
+we don't have defined semantics for this at present.
+
+> > +
+> > +/* static initialiser for clocks */
+> > +#define INIT_CLK(name, o) {						\
+> > +	.ops		=&o,						\
+> > +	.enable_count	= 0,						\
+> > +	.prepare_count	= 0,						\
+> 
+> Do we need these inits? Doesn't check patch complain about initing
+> static/global to 0? If it's generally frowned upon, why the exception
+> here. I realize that checkpatch won't catch this, but still...
+
+This took some reading through c99, but yes, it looks like we can drop these 
+zero initialisations.
+
+However, the coding style convention for the implicit zeroing of static 
+variables is to allow these variables to be put into the .bss section, 
+reducing object size. In this case, the clock will never be able to go into 
+.bss (it has non-zero elements too), and so this will have no change on object 
+size. I prefer to be explicit here, and show that the counts are initialised 
+to zero.
+
+I'm happy to go either way. I have a preference for the explicit 
+initialisation, but that may not be general style.
+
+> 
+> > +	.enable_lock	= __SPIN_LOCK_UNLOCKED(name.enable_lock),	\
+> > +	.prepare_lock	= __MUTEX_INITIALIZER(name.prepare_lock),	\
+> 
+> After a long day, I'm not able to wrap my head around this. Probably a
+> stupid question, but will this name.xxx thing prevent using this
+> INIT_CLK macro to initialize an array of clocks? More specifically,
+> prevent the sub class macro (like INIT_CLK_FIXED) from being used to
+> initialize an array of clocks?
+
+That's correct. For an array of clocks, you'll have to use a different 
+initialiser. We can add helpers for that that when (and if) the need arises.
+
+> > + * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
+> > + * implementations to split any work between atomic (enable) and
+> > sleepable + * (prepare) contexts.  If a clock requires blocking code to
+> > be turned on, this
+> 
+> Aren't all locks blocking? Shouldn't it be, "If turning on a clock
+> requires code that might sleep, it should be done in clk_prepare"?
+> Replace all "blocking" with "sleepable" or "sleeping" in the comments?
+
+I think "blocking" is generally accepted as is intended in this case, but it's 
+probably better to be explicit here.
+> 
+> > + * should be done in clk_prepare. Switching that will not block should
+> > be done + * in clk_enable.
+> > + *
+> > + * Typically, drivers will call clk_prepare when a clock may be needed
+> > later + * (eg. when a device is opened), and clk_enable when the clock
+> > is actually + * required (eg. from an interrupt). Note that clk_prepare
+> > *must* have been + * called before clk_enable.
+> > + *
+> > + * For other callbacks, see the corresponding clk_* functions.
+> > Parameters and + * return values are passed directly from/to these API
+> > functions, or + * -ENOSYS (or zero, in the case of clk_get_rate) is
+> > returned if the callback + * is NULL, see kernel/clk.c for
+> > implementation details. All are optional.
+> 
+> is NULL. See kernel... ?
+
+Ah, yes, I'll update this.
+
+Cheers,
+
+
+Jeremy
