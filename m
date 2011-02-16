@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab1BPWMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 17:12:13 -0500
-Received: from smtp.scorch.co.nz ([27.110.127.199]:40728 "HELO scorch.co.nz"
+	id S1755221Ab1BPWOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 17:14:34 -0500
+Received: from juliet.he.net ([184.105.210.2]:33211 "HELO xenotime.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754010Ab1BPWMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 17:12:12 -0500
-X-Virus-Checked: Checked by ClamAV on scorch.co.nz
-From: Charles Manning <manningc2@actrix.gen.nz>
-To: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
-Date: Thu, 17 Feb 2011 11:12:06 +1300
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        ryan@bluewatersys.com, akpm@linux-foundation.org
-References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102100722.47854.manningc2@actrix.gen.nz> <20110216080419.GA21261@infradead.org>
-In-Reply-To: <20110216080419.GA21261@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1752039Ab1BPWOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 17:14:32 -0500
+Date: Wed, 16 Feb 2011 14:14:29 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jesse Barnes <jesse.barnes@intel.com>
+Cc: "jgq516@gmail.com" <jgq516@gmail.com>,
+        "airlied@redhat.com" <airlied@redhat.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] drm: fix wrong usages of drm_device in DRM
+ Developer's Guide
+Message-Id: <20110216141429.44668924.rdunlap@xenotime.net>
+In-Reply-To: <20110216121859.31ab0e57@jbarnes-desktop>
+References: <1297677503-11175-1-git-send-email-jgq516@gmail.com>
+	<20110216121859.31ab0e57@jbarnes-desktop>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201102171112.07101.manningc2@actrix.gen.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chrisoph
+On Wed, 16 Feb 2011 12:18:59 -0800 Jesse Barnes wrote:
 
-On Wednesday 16 February 2011 21:04:20 Christoph Hellwig wrote:
-> On Thu, Feb 10, 2011 at 07:22:47AM +1300, Charles Manning wrote:
-> > Can you be a bit more specific?
->
-> Just compare the mes in yaffs_linux.c with a normal linux filesystem.
-> All that gross magic nfsd detection in readdir could have been removed
-> long ago.  ->readlink should not be implemented by a normal filesystem
-> but use generic_readlink,
-
-Fair comment. I'm sure there are better ways to handle that.
-
-> the fs-specific inode should embedd the vfs 
-> inode instead of requiring two allocations,
-
-The approach used here significantly reduces memory footprint. 
-The yaffs inodes (== yaffs objects) live all the time while the vfs inodes 
-come and go. It is far better to just link these together when in use.
-
-> tons of useless function 
-> pointer indirections like sb_dirty_fn and the put_super_fn really must
-> go away.  
-
-Ok.
-
-> The procfs interfaces should be replaced by something saner, 
-> the insane amount of ad-hoc tracing crap should be replaced by much
-> less strategically placed trace events, and all those stupid compile
-> time options have absolutely no business at all beeing there for a
-> filesystem - 
-
-Why not?
-
-> remember you can get media from all over the place. 
-
-No you can't. This is a flash file system for soldered down flash. I think 
-that is a fundamental place where your understanding of what yaffs is falls 
-down.
-
-> If you can't encode these difference in your on-disk format it has
-> absolutely no business going into mainline with this format.
-
-Yaffs does not really have an on-disk format like most other fs do.
-
-> And last but not least there's no way we'll merge a filesystem with a
-> global mutex and all kinds of hacky release and reaquire semantics
-> these days. 
-
-I could change the locking but that would require considerable work.
-
-> I really think you need to get back to the drawing board. 
-
-I'm starting to think that the distance from where yaffs is now to what people 
-will accept into the kernel tree might be quite large.
-
-I might just be easier to walk away from the mainlining effort. Yaffs is a 
-highly successful and useful fs and very easy to patch in to a kernel. People 
-could continue to use it that way as they have for the last 9 ears or so.
-
--- Charles
+> On Mon, 14 Feb 2011 01:58:23 -0800
+> "jgq516@gmail.com" <jgq516@gmail.com> wrote:
+> 
+> > From: Xiao Jiang <jgq516@gmail.com>
+> > 
+> > A few wrong usages of drm_device, which should be drm_driver.
+> > 
+> 
+> Ah thanks, yeah it's mixed up.
+> 
+> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
 
+Thanks, added to my docs quilt queue (unless someone else grabs it :).
 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
