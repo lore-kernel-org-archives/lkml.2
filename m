@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab1BPCQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:16:44 -0500
-Received: from kroah.org ([198.145.64.141]:38659 "EHLO coco.kroah.org"
+	id S1756719Ab1BPCRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:17:05 -0500
+Received: from kroah.org ([198.145.64.141]:38650 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756652Ab1BPAS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:29 -0500
+	id S1756626Ab1BPAS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:26 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:27 2011
-Message-Id: <20110216001427.239401863@clark.kroah.org>
+Message-Id: <20110216001427.038679007@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:19 -0800
+Date: Tue, 15 Feb 2011 16:11:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolaus Colberg <nicolaus.colberg@cinterion.com>
-Subject: [022/272] USB: adding USB support for Cinterions HC2x, EU3 and PH8 products
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [020/272] USB: usb-storage: unusual_devs entry for Coby MP3 player
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit aa52b3a92918039b273fc9d1994bd34227c40269 upstream.
+commit 3ea3c9b5a8464ec8223125f95e5dddb3bfd02a39 upstream.
 
-/drivers/usb/serial/option.c: Adding support for Cinterion's HC25, HC28,
-HC28J, EU3-E, EU3-P and PH8 by correcting/adding Cinterion's and
-Siemens' Vendor IDs as well as Product IDs and USB_DEVICE tuples
+This patch (as1444) adds an unusual_devs entry for an MP3 player from
+Coby electronics.  The device has two nasty bugs.
 
-Signed-off-by: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Jasper Mackenzie <scarletpimpernal@hotmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -382,7 +382,16 @@ static void option_instat_callback(struc
- #define HAIER_VENDOR_ID				0x201e
- #define HAIER_PRODUCT_CE100			0x2009
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1890,6 +1890,13 @@ UNUSUAL_DEV(  0x1e68, 0x001b, 0x0000, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
  
--#define CINTERION_VENDOR_ID			0x0681
-+/* Cinterion (formerly Siemens) products */
-+#define SIEMENS_VENDOR_ID				0x0681
-+#define CINTERION_VENDOR_ID				0x1e2d
-+#define CINTERION_PRODUCT_HC25_MDM		0x0047
-+#define CINTERION_PRODUCT_HC25_MDMNET	0x0040
-+#define CINTERION_PRODUCT_HC28_MDM		0x004C
-+#define CINTERION_PRODUCT_HC28_MDMNET	0x004A /* same for HC28J */
-+#define CINTERION_PRODUCT_EU3_E			0x0051
-+#define CINTERION_PRODUCT_EU3_P			0x0052
-+#define CINTERION_PRODUCT_PH8			0x0053
- 
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
-@@ -945,7 +954,17 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
--	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
-+	/* Cinterion */
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++/* Reported by Jasper Mackenzie <scarletpimpernal@hotmail.com> */
++UNUSUAL_DEV( 0x1e74, 0x4621, 0x0000, 0x0000,
++		"Coby Electronics",
++		"MP3 Player",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_BULK_IGNORE_TAG | US_FL_MAX_SECTORS_64 ),
 +
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+ UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
+ 		"ST",
+ 		"2A",
 
 
