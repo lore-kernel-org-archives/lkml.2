@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab1BPB14 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:27:56 -0500
-Received: from kroah.org ([198.145.64.141]:39463 "EHLO coco.kroah.org"
+	id S1757404Ab1BPB2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:28:13 -0500
+Received: from kroah.org ([198.145.64.141]:39456 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932162Ab1BPAWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:06 -0500
+	id S932153Ab1BPAWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:39 2011
-Message-Id: <20110216001439.137611606@clark.kroah.org>
+Message-Id: <20110216001439.049568009@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:18 -0800
+Date: Tue, 15 Feb 2011 16:13:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [141/272] ipv4: IP defragmentation must be ECN aware
+Subject: [140/272] net: add POLLPRI to sock_def_readable()
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,137 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 6623e3b24a5ebb07e81648c478d286a1329ab891 ]
+[ Upstream commit 2c6607c611cb7bf0a6750bcea34a258144e302c5 ]
 
-RFC3168 (The Addition of Explicit Congestion Notification to IP)
-states :
+Leonardo Chiquitto found poll() could block forever on tcp sockets and
+Urgent data was received, if the event flag only contains POLLPRI.
 
-5.3.  Fragmentation
+He did a bisection and found commit 4938d7e0233 (poll: avoid extra
+wakeups in select/poll) was the source of the problem.
 
-   ECN-capable packets MAY have the DF (Don't Fragment) bit set.
-   Reassembly of a fragmented packet MUST NOT lose indications of
-   congestion.  In other words, if any fragment of an IP packet to be
-   reassembled has the CE codepoint set, then one of two actions MUST be
-   taken:
+Problem is TCP sockets use standard sock_def_readable() function for
+their sk_data_ready() handler, and sock_def_readable() doesnt signal
+POLLPRI.
 
-      * Set the CE codepoint on the reassembled packet.  However, this
-        MUST NOT occur if any of the other fragments contributing to
-        this reassembly carries the Not-ECT codepoint.
+Only TCP is affected by the problem. Adding POLLPRI to the list of flags
+might trigger unnecessary schedules, but URGENT handling is such a
+seldom used feature this seems a good compromise.
 
-      * The packet is dropped, instead of being reassembled, for any
-        other reason.
+Thanks a lot to Leonardo for providing the bisection result and a test
+program as well.
 
-This patch implements this requirement for IPv4, choosing the first
-action :
+Reference : http://www.spinics.net/lists/netdev/msg151793.html
 
-If one fragment had NO-ECT codepoint
-        reassembled frame has NO-ECT
-ElIf one fragment had CE codepoint
-        reassembled frame has CE
-
+Reported-and-bisected-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
 Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/ip_fragment.c |   34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ net/core/sock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/ip_fragment.c
-+++ b/net/ipv4/ip_fragment.c
-@@ -45,6 +45,7 @@
- #include <linux/udp.h>
- #include <linux/inet.h>
- #include <linux/netfilter_ipv4.h>
-+#include <net/inet_ecn.h>
- 
- /* NOTE. Logic of IP defragmentation is parallel to corresponding IPv6
-  * code now. If you change something here, _PLEASE_ update ipv6/reassembly.c
-@@ -70,11 +71,28 @@ struct ipq {
- 	__be32		daddr;
- 	__be16		id;
- 	u8		protocol;
-+	u8		ecn; /* RFC3168 support */
- 	int             iif;
- 	unsigned int    rid;
- 	struct inet_peer *peer;
- };
- 
-+#define IPFRAG_ECN_CLEAR  0x01 /* one frag had INET_ECN_NOT_ECT */
-+#define IPFRAG_ECN_SET_CE 0x04 /* one frag had INET_ECN_CE */
-+
-+static inline u8 ip4_frag_ecn(u8 tos)
-+{
-+	tos = (tos & INET_ECN_MASK) + 1;
-+	/*
-+	 * After the last operation we have (in binary):
-+	 * INET_ECN_NOT_ECT => 001
-+	 * INET_ECN_ECT_1   => 010
-+	 * INET_ECN_ECT_0   => 011
-+	 * INET_ECN_CE      => 100
-+	 */
-+	return (tos & 2) ? 0 : tos;
-+}
-+
- static struct inet_frags ip4_frags;
- 
- int ip_frag_nqueues(struct net *net)
-@@ -137,6 +155,7 @@ static void ip4_frag_init(struct inet_fr
- 
- 	qp->protocol = arg->iph->protocol;
- 	qp->id = arg->iph->id;
-+	qp->ecn = ip4_frag_ecn(arg->iph->tos);
- 	qp->saddr = arg->iph->saddr;
- 	qp->daddr = arg->iph->daddr;
- 	qp->user = arg->user;
-@@ -316,6 +335,7 @@ static int ip_frag_reinit(struct ipq *qp
- 	qp->q.fragments = NULL;
- 	qp->q.fragments_tail = NULL;
- 	qp->iif = 0;
-+	qp->ecn = 0;
- 
- 	return 0;
- }
-@@ -328,6 +348,7 @@ static int ip_frag_queue(struct ipq *qp,
- 	int flags, offset;
- 	int ihl, end;
- 	int err = -ENOENT;
-+	u8 ecn;
- 
- 	if (qp->q.last_in & INET_FRAG_COMPLETE)
- 		goto err;
-@@ -339,6 +360,7 @@ static int ip_frag_queue(struct ipq *qp,
- 		goto err;
- 	}
- 
-+	ecn = ip4_frag_ecn(ip_hdr(skb)->tos);
- 	offset = ntohs(ip_hdr(skb)->frag_off);
- 	flags = offset & ~IP_OFFSET;
- 	offset &= IP_OFFSET;
-@@ -472,6 +494,7 @@ found:
- 	}
- 	qp->q.stamp = skb->tstamp;
- 	qp->q.meat += skb->len;
-+	qp->ecn |= ecn;
- 	atomic_add(skb->truesize, &qp->q.net->mem);
- 	if (offset == 0)
- 		qp->q.last_in |= INET_FRAG_FIRST_IN;
-@@ -583,6 +606,17 @@ static int ip_frag_reasm(struct ipq *qp,
- 	iph = ip_hdr(head);
- 	iph->frag_off = 0;
- 	iph->tot_len = htons(len);
-+	/* RFC3168 5.3 Fragmentation support
-+	 * If one fragment had INET_ECN_NOT_ECT,
-+	 *	reassembled frame also has INET_ECN_NOT_ECT
-+	 * Elif one fragment had INET_ECN_CE
-+	 *	reassembled frame also has INET_ECN_CE
-+	 */
-+	if (qp->ecn & IPFRAG_ECN_CLEAR)
-+		iph->tos &= ~INET_ECN_MASK;
-+	else if (qp->ecn & IPFRAG_ECN_SET_CE)
-+		iph->tos |= INET_ECN_CE;
-+
- 	IP_INC_STATS_BH(net, IPSTATS_MIB_REASMOKS);
- 	qp->q.fragments = NULL;
- 	qp->q.fragments_tail = NULL;
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1907,7 +1907,7 @@ static void sock_def_readable(struct soc
+ 	rcu_read_lock();
+ 	wq = rcu_dereference(sk->sk_wq);
+ 	if (wq_has_sleeper(wq))
+-		wake_up_interruptible_sync_poll(&wq->wait, POLLIN |
++		wake_up_interruptible_sync_poll(&wq->wait, POLLIN | POLLPRI |
+ 						POLLRDNORM | POLLRDBAND);
+ 	sk_wake_async(sk, SOCK_WAKE_WAITD, POLL_IN);
+ 	rcu_read_unlock();
 
 
