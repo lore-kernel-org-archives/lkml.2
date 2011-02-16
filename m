@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab1BPAZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:25:23 -0500
-Received: from kroah.org ([198.145.64.141]:49860 "EHLO coco.kroah.org"
+	id S932525Ab1BPAZz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:25:55 -0500
+Received: from kroah.org ([198.145.64.141]:49934 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757691Ab1BPAZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:10 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:50 2011
-Message-Id: <20110216001450.187833816@clark.kroah.org>
+	id S932470Ab1BPAZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:51 2011
+Message-Id: <20110216001451.363435557@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:08 -0800
+Date: Tue, 15 Feb 2011 16:15:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [251/272] drm/radeon: remove 0x4243 pci id
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [263/272] drm/i915: Recognise non-VGA display devices
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 63a507800c8aca5a1891d598ae13f829346e8e39 upstream.
+commit 934f992c763ae1e5eefcce8af769c16444085df7 upstream.
 
-0x4243 is a PCI bridge, not a GPU.
+Starting with SandyBridge (though possible with earlier hacked BIOSes),
+the BIOS may initialise the IGFX as secondary to a discrete GPU. Prior,
+it would simply disable the integrated GPU. So we adjust our PCI class
+mask to match any DISPLAY_CLASS device.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=33815
+In such a configuration, the IGFX is not a primary VGA controller and
+so should not take part in VGA arbitration, and the error return from
+vga_client_register() is expected.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/drm/drm_pciids.h |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c |   10 ++++++++--
+ drivers/gpu/drm/i915/i915_drv.c |    2 +-
+ drivers/gpu/vga/vgaarb.c        |    2 +-
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -28,7 +28,6 @@
- 	{0x1002, 0x4156, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV350}, \
- 	{0x1002, 0x4237, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP}, \
- 	{0x1002, 0x4242, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R200}, \
--	{0x1002, 0x4243, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R200}, \
- 	{0x1002, 0x4336, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS100|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x4337, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x4437, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS200|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1243,9 +1243,15 @@ static int i915_load_modeset_init(struct
+ 	if (ret)
+ 		DRM_INFO("failed to find VBIOS tables\n");
+ 
+-	/* if we have > 1 VGA cards, then disable the radeon VGA resources */
++	/* If we have > 1 VGA cards, then we need to arbitrate access
++	 * to the common VGA resources.
++	 *
++	 * If we are a secondary display controller (!PCI_DISPLAY_CLASS_VGA),
++	 * then we do not take part in VGA arbitration and the
++	 * vga_client_register() fails with -ENODEV.
++	 */
+ 	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+-	if (ret)
++	if (ret && ret != -ENODEV)
+ 		goto cleanup_ringbuffer;
+ 
+ 	intel_register_dsm_handler();
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -54,7 +54,7 @@ extern int intel_agp_enabled;
+ 
+ #define INTEL_VGA_DEVICE(id, info) {		\
+ 	.class = PCI_CLASS_DISPLAY_VGA << 8,	\
+-	.class_mask = 0xffff00,			\
++	.class_mask = 0xff0000,			\
+ 	.vendor = 0x8086,			\
+ 	.device = id,				\
+ 	.subvendor = PCI_ANY_ID,		\
+--- a/drivers/gpu/vga/vgaarb.c
++++ b/drivers/gpu/vga/vgaarb.c
+@@ -636,7 +636,7 @@ int vga_client_register(struct pci_dev *
+ 			void (*irq_set_state)(void *cookie, bool state),
+ 			unsigned int (*set_vga_decode)(void *cookie, bool decode))
+ {
+-	int ret = -1;
++	int ret = -ENODEV;
+ 	struct vga_device *vgadev;
+ 	unsigned long flags;
+ 
 
 
