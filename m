@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933521Ab1BPAyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:54:37 -0500
-Received: from kroah.org ([198.145.64.141]:46275 "EHLO coco.kroah.org"
+	id S933483Ab1BPAv7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:51:59 -0500
+Received: from kroah.org ([198.145.64.141]:46245 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933489Ab1BPAwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:52:02 -0500
+	id S933375Ab1BPAvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:54 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:15 2011
-Message-Id: <20110216002115.587752331@clark.kroah.org>
+Message-Id: <20110216002115.091541263@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:14 -0800
+Date: Tue, 15 Feb 2011 16:22:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [patch 166/176] drm: Restore the old_fb upon modeset failure
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>
+Subject: [patch 161/176] drm/radeon/kms: make the mac rv630 quirk generic
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 0ba41e449fd0f45f5b29c1009020ab1b298bedda upstream.
+commit be23da8ad219650517cbbb7acbeaeb235667113a upstream.
 
-... or else we may end up disabling the wrong framebuffer, leading to an
-OOPS, e.g:
+Seems some other boards do this as well.
 
-[ 6033.229012] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3271!
-[ 6033.229012] invalid opcode: 0000 [#1] SMP
-[ 6033.229012] last sysfs file:
-/sys/devices/virtual/backlight/acpi_video0/uevent
-[ 6033.229012] Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq
-mperf snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_seq
-snd_seq_device snd_pcm snd_timer thinkpad_acpi ppdev snd r852 sm_common
-iTCO_wdt uvcvideo i2c_i801 iTCO_vendor_support microcode wmi nand
-videodev nand_ids nand_ecc snd_page_alloc parport_pc parport mtd
-soundcore joydev v4l1_compat pcspkr uinput ipv6 sdhci_pci sdhci mmc_core
-yenta_socket i915 drm_kms_helper drm i2c_algo_bit i2c_core video output
-[last unloaded: scsi_wait_scan]
-[ 6033.229012]
-[ 6033.229012] Pid: 4834, comm: Xorg Not tainted 2.6.37-rc8+ #25 7661BL5/7661BL5
-[ 6033.229012] EIP: 0060:[<f86fda5e>] EFLAGS: 00013246 CPU: 0
-[ 6033.229012] EIP is at i915_gem_object_unpin+0x23/0x76 [i915]
-[ 6033.229012] EAX: f68a4000 EBX: f6831f00 ECX: 000600fa EDX: f68a8000
-[ 6033.229012] ESI: f68a4014 EDI: f68a42b8 EBP: f2169c44 ESP: f2169c3c
-[ 6033.229012]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[ 6033.229012] Process Xorg (pid: 4834, ti=f2168000 task=f21c8000 task.ti=f2168000)
-[ 6033.229012] Stack:
-[ 6033.229012]  f3a84800 f68a4014 f2169c54 f87045d8 f3a84800 f872d9a8 f2169c68 f7fd8091
-[ 6033.229012]  f3b952a4 00000000 f68a414c f2169cf0 f7fd9377 00000000 00000000 f7fd98b0
-[ 6033.229012]  f7fd9f4e 0000000f f7f328a0 00000000 00000000 00000000 f2169ca4 f68a414c
-[ 6033.229012] Call Trace:
-[ 6033.229012]  [<f87045d8>] ? intel_crtc_disable+0x36/0x41 [i915]
-[ 6033.229012]  [<f7fd8091>] ?  drm_helper_disable_unused_functions+0xcd/0xf9 [drm_kms_helper]
-[ 6033.229012]  [<f7fd9377>] ? drm_crtc_helper_set_config+0x62a/0x7f7 [drm_kms_helper]
-[ 6033.229012]  [<c04daa10>] ? __slab_free+0x1b/0xa4
-[ 6033.229012]  [<f7fd7e62>] ? drm_fb_helper_initial_config+0x466/0x497 [drm_kms_helper]
-[ 6033.229012]  [<f7fd7ea3>] ? drm_fb_helper_restore+0x10/0x2a [drm_kms_helper]
-[ 6033.229012]  [<f86f2577>] ? i915_driver_lastclose+0x2a/0x57 [i915]
-[ 6033.229012]  [<f7f1989f>] ? drm_lastclose+0x45/0x23e [drm]
-[ 6033.229012]  [<f7f1a0b4>] ? drm_release+0x462/0x4d7 [drm]
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: Andrea Merello <andrea.merello@gmail.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_crtc_helper.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -649,6 +649,7 @@ int drm_crtc_helper_set_config(struct dr
- 						      old_fb)) {
- 				DRM_ERROR("failed to set mode on [CRTC:%d]\n",
- 					  set->crtc->base.id);
-+				set->crtc->fb = old_fb;
- 				ret = -EINVAL;
- 				goto fail;
- 			}
-@@ -663,8 +664,10 @@ int drm_crtc_helper_set_config(struct dr
- 			set->crtc->fb = set->fb;
- 		ret = crtc_funcs->mode_set_base(set->crtc,
- 						set->x, set->y, old_fb);
--		if (ret != 0)
-+		if (ret != 0) {
-+			set->crtc->fb = old_fb;
- 			goto fail;
-+		}
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -387,15 +387,11 @@ static bool radeon_atom_apply_quirks(str
+ 			*line_mux = 0x90;
  	}
  
- 	kfree(save_connectors);
+-	/* mac rv630 */
+-	if ((dev->pdev->device == 0x9588) &&
+-	    (dev->pdev->subsystem_vendor == 0x106b) &&
+-	    (dev->pdev->subsystem_device == 0x00a6)) {
+-		if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
+-		    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
+-			*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
+-			*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
+-		}
++	/* mac rv630, rv730, others */
++	if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
++	    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
++		*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
++		*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
+ 	}
+ 
+ 	/* ASUS HD 3600 XT board lists the DVI port as HDMI */
 
 
