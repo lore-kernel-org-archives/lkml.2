@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933308Ab1BPBBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:01:52 -0500
-Received: from kroah.org ([198.145.64.141]:46005 "EHLO coco.kroah.org"
+	id S933298Ab1BPBB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:01:57 -0500
+Received: from kroah.org ([198.145.64.141]:45993 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933253Ab1BPAup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:45 -0500
+	id S933151Ab1BPAuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:40 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:11 2011
-Message-Id: <20110216002111.633544940@clark.kroah.org>
+Message-Id: <20110216002111.440150410@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:34 -0800
+Date: Tue, 15 Feb 2011 16:21:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Timur Tabi <timur@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [patch 126/176] powerpc/85xx: fix compatible properties of the P1022DS DMA nodes used for audio
+        "David S. Miller" <davem@davemloft.net>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: [patch 124/176] klist: Fix object alignment on 64-bit.
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timur Tabi <timur@freescale.com>
+From: David Miller <davem@davemloft.net>
 
-commit b2e0861e51f2961954330dcafe6d148ee3ab5cff upstream.
+commit 795abaf1e4e188c4171e3cd3dbb11a9fcacaf505 upstream.
 
-In order to prevent the fsl_dma driver from claiming the DMA channels that the
-P1022DS audio driver needs, the compatible properties for those nodes must say
-"fsl,ssi-dma-channel" instead of "fsl,eloplus-dma-channel".
+Commit c0e69a5bbc6f ("klist.c: bit 0 in pointer can't be used as flag")
+intended to make sure that all klist objects were at least pointer size
+aligned, but used the constant "4" which only works on 32-bit.
 
-Signed-off-by: Timur Tabi <timur@freescale.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Use "sizeof(void *)" which is correct in all cases.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/boot/dts/p1022ds.dts |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/klist.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/boot/dts/p1022ds.dts
-+++ b/arch/powerpc/boot/dts/p1022ds.dts
-@@ -280,13 +280,13 @@
- 			ranges = <0x0 0xc100 0x200>;
- 			cell-index = <1>;
- 			dma00: dma-channel@0 {
--				compatible = "fsl,eloplus-dma-channel";
-+				compatible = "fsl,ssi-dma-channel";
- 				reg = <0x0 0x80>;
- 				cell-index = <0>;
- 				interrupts = <76 2>;
- 			};
- 			dma01: dma-channel@80 {
--				compatible = "fsl,eloplus-dma-channel";
-+				compatible = "fsl,ssi-dma-channel";
- 				reg = <0x80 0x80>;
- 				cell-index = <1>;
- 				interrupts = <77 2>;
+--- a/include/linux/klist.h
++++ b/include/linux/klist.h
+@@ -22,7 +22,7 @@ struct klist {
+ 	struct list_head	k_list;
+ 	void			(*get)(struct klist_node *);
+ 	void			(*put)(struct klist_node *);
+-} __attribute__ ((aligned (4)));
++} __attribute__ ((aligned (sizeof(void *))));
+ 
+ #define KLIST_INIT(_name, _get, _put)					\
+ 	{ .k_lock	= __SPIN_LOCK_UNLOCKED(_name.k_lock),		\
 
 
