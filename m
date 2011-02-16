@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932715Ab1BPAqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:46:47 -0500
-Received: from kroah.org ([198.145.64.141]:49195 "EHLO coco.kroah.org"
+	id S1757470Ab1BPAqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:46:51 -0500
+Received: from kroah.org ([198.145.64.141]:49187 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757458Ab1BPAWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:35 -0500
+	id S1757455Ab1BPAWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:34 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:40 2011
-Message-Id: <20110216001440.790662736@clark.kroah.org>
+Message-Id: <20110216001440.689754285@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:34 -0800
+Date: Tue, 15 Feb 2011 16:13:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [157/272] ASoC: Handle low measured DC offsets for wm_hubs devices
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [156/272] ASoC: correct link specifications for corgi, poodle and spitz
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +27,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit 20a4e7fc7e213365ea3771d7bf1e10a6bab853be upstream.
+commit a3adfa00e8089aa72826c6ba04bcb18cfceaf0a9 upstream.
 
-The DC servo codes are actually signed numbers so need to be treated as
-such.
+ASoC DAI link descriptions for Corgi, Poodle and Spitz platforms
+contained incorrect names for cpu_dai and codec, which effectievly disabled sound
+on theese platforms. Fix that errors.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm_hubs.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ sound/soc/pxa/corgi.c  |    4 ++--
+ sound/soc/pxa/poodle.c |    2 +-
+ sound/soc/pxa/spitz.c  |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -92,6 +92,7 @@ static void wait_for_dc_servo(struct snd
- static void calibrate_dc_servo(struct snd_soc_codec *codec)
- {
- 	struct wm_hubs_data *hubs = snd_soc_codec_get_drvdata(codec);
-+	s8 offset;
- 	u16 reg, reg_l, reg_r, dcs_cfg;
- 
- 	/* Set for 32 series updates */
-@@ -130,16 +131,14 @@ static void calibrate_dc_servo(struct sn
- 		dev_dbg(codec->dev, "DCS input: %x %x\n", reg_l, reg_r);
- 
- 		/* HPOUT1L */
--		if (reg_l + hubs->dcs_codes > 0 &&
--		    reg_l + hubs->dcs_codes < 0xff)
--			reg_l += hubs->dcs_codes;
--		dcs_cfg = reg_l << WM8993_DCS_DAC_WR_VAL_1_SHIFT;
-+		offset = reg_l;
-+		offset += hubs->dcs_codes;
-+		dcs_cfg = (u8)offset << WM8993_DCS_DAC_WR_VAL_1_SHIFT;
- 
- 		/* HPOUT1R */
--		if (reg_r + hubs->dcs_codes > 0 &&
--		    reg_r + hubs->dcs_codes < 0xff)
--			reg_r += hubs->dcs_codes;
--		dcs_cfg |= reg_r;
-+		offset = reg_r;
-+		offset += hubs->dcs_codes;
-+		dcs_cfg |= (u8)offset;
- 
- 		dev_dbg(codec->dev, "DCS result: %x\n", dcs_cfg);
- 
+--- a/sound/soc/pxa/corgi.c
++++ b/sound/soc/pxa/corgi.c
+@@ -305,10 +305,10 @@ static int corgi_wm8731_init(struct snd_
+ static struct snd_soc_dai_link corgi_dai = {
+ 	.name = "WM8731",
+ 	.stream_name = "WM8731",
+-	.cpu_dai_name = "pxa-is2-dai",
++	.cpu_dai_name = "pxa2xx-i2s",
+ 	.codec_dai_name = "wm8731-hifi",
+ 	.platform_name = "pxa-pcm-audio",
+-	.codec_name = "wm8731-codec-0.001a",
++	.codec_name = "wm8731-codec-0.001b",
+ 	.init = corgi_wm8731_init,
+ 	.ops = &corgi_ops,
+ };
+--- a/sound/soc/pxa/poodle.c
++++ b/sound/soc/pxa/poodle.c
+@@ -274,7 +274,7 @@ static struct snd_soc_dai_link poodle_da
+ 	.cpu_dai_name = "pxa2xx-i2s",
+ 	.codec_dai_name = "wm8731-hifi",
+ 	.platform_name = "pxa-pcm-audio",
+-	.codec_name = "wm8731-codec.0-001a",
++	.codec_name = "wm8731-codec.0-001b",
+ 	.init = poodle_wm8731_init,
+ 	.ops = &poodle_ops,
+ };
+--- a/sound/soc/pxa/spitz.c
++++ b/sound/soc/pxa/spitz.c
+@@ -313,10 +313,10 @@ static int spitz_wm8750_init(struct snd_
+ static struct snd_soc_dai_link spitz_dai = {
+ 	.name = "wm8750",
+ 	.stream_name = "WM8750",
+-	.cpu_dai_name = "pxa-is2",
++	.cpu_dai_name = "pxa2xx-i2s",
+ 	.codec_dai_name = "wm8750-hifi",
+ 	.platform_name = "pxa-pcm-audio",
+-	.codec_name = "wm8750-codec.0-001a",
++	.codec_name = "wm8750-codec.0-001b",
+ 	.init = spitz_wm8750_init,
+ 	.ops = &spitz_ops,
+ };
 
 
