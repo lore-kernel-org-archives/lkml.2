@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab1BPAW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:22:28 -0500
-Received: from kroah.org ([198.145.64.141]:49140 "EHLO coco.kroah.org"
+	id S932148Ab1BPAWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:22:01 -0500
+Received: from kroah.org ([198.145.64.141]:39405 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757383Ab1BPAWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:20 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:40 2011
-Message-Id: <20110216001440.039082662@clark.kroah.org>
+	id S1757363Ab1BPAVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:52 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:38 2011
+Message-Id: <20110216001438.309687561@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:27 -0800
+Date: Tue, 15 Feb 2011 16:13:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shaohua Li <shaohua.li@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [150/272] intel_idle: open broadcast clock event
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [133/272] ext4: unregister features interface on module unload
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,108 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shaohua.li@intel.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 2a2d31c8dc6f1ebcf5eab1d93a0cb0fb4ed57c7c upstream.
+commit 8f021222c1e2756ea4c9dde93b23e1d2a0a4ec37 upstream.
 
-Intel_idle driver uses CLOCK_EVT_NOTIFY_BROADCAST_ENTER
-CLOCK_EVT_NOTIFY_BROADCAST_EXIT
-for broadcast clock events. The _ENTER/_EXIT doesn't really open broadcast clock
-events, please see processor_idle.c for an example. In some situation, this will
-cause boot hang, because some CPUs enters idle but local APIC timer stalls.
+Ext4 features interface was not properly unregistered which led to
+problems while unloading/reloading ext4 module. This commit fixes that by
+adding proper kobject unregistration code into ext4_exit_fs() as well as
+fail-path of ext4_init_fs()
 
-Reported-and-tested-by: Yan Zheng <zheng.z.yan@intel.com>
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Reported-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/idle/intel_idle.c |   47 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 46 insertions(+), 1 deletion(-)
+ fs/ext4/super.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -59,6 +59,8 @@
- #include <linux/hrtimer.h>	/* ktime_get_real() */
- #include <trace/events/power.h>
- #include <linux/sched.h>
-+#include <linux/notifier.h>
-+#include <linux/cpu.h>
- #include <asm/mwait.h>
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4757,7 +4757,7 @@ static struct file_system_type ext4_fs_t
+ 	.fs_flags	= FS_REQUIRES_DEV,
+ };
  
- #define INTEL_IDLE_VERSION "0.4"
-@@ -73,6 +75,7 @@ static int max_cstate = MWAIT_MAX_NUM_CS
- 
- static unsigned int mwait_substates;
- 
-+#define LAPIC_TIMER_ALWAYS_RELIABLE 0xFFFFFFFF
- /* Reliable LAPIC Timer States, bit 1 for C1 etc.  */
- static unsigned int lapic_timer_reliable_states = (1 << 1);	 /* Default to only C1 */
- 
-@@ -244,6 +247,39 @@ static int intel_idle(struct cpuidle_dev
- 	return usec_delta;
+-int __init ext4_init_feat_adverts(void)
++static int __init ext4_init_feat_adverts(void)
+ {
+ 	struct ext4_features *ef;
+ 	int ret = -ENOMEM;
+@@ -4781,6 +4781,13 @@ out:
+ 	return ret;
  }
  
-+static void __setup_broadcast_timer(void *arg)
++static void ext4_exit_feat_adverts(void)
 +{
-+	unsigned long reason = (unsigned long)arg;
-+	int cpu = smp_processor_id();
-+
-+	reason = reason ?
-+		CLOCK_EVT_NOTIFY_BROADCAST_ON : CLOCK_EVT_NOTIFY_BROADCAST_OFF;
-+
-+	clockevents_notify(reason, &cpu);
++	kobject_put(&ext4_feat->f_kobj);
++	wait_for_completion(&ext4_feat->f_kobj_unregister);
++	kfree(ext4_feat);
 +}
 +
-+static int __cpuinit setup_broadcast_cpuhp_notify(struct notifier_block *n,
-+		unsigned long action, void *hcpu)
-+{
-+	int hotcpu = (unsigned long)hcpu;
-+
-+	switch (action & 0xf) {
-+	case CPU_ONLINE:
-+		smp_call_function_single(hotcpu, __setup_broadcast_timer,
-+			(void *)true, 1);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+		smp_call_function_single(hotcpu, __setup_broadcast_timer,
-+			(void *)false, 1);
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block __cpuinitdata setup_broadcast_notifier = {
-+	.notifier_call = setup_broadcast_cpuhp_notify,
-+};
-+
- /*
-  * intel_idle_probe()
-  */
-@@ -306,7 +342,11 @@ static int intel_idle_probe(void)
- 	}
- 
- 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
--		lapic_timer_reliable_states = 0xFFFFFFFF;
-+		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
-+	else {
-+		smp_call_function(__setup_broadcast_timer, (void *)true, 1);
-+		register_cpu_notifier(&setup_broadcast_notifier);
-+	}
- 
- 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
- 		" model 0x%X\n", boot_cpu_data.x86_model);
-@@ -429,6 +469,11 @@ static void __exit intel_idle_exit(void)
- 	intel_idle_cpuidle_devices_uninit();
- 	cpuidle_unregister_driver(&intel_idle_driver);
- 
-+	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE) {
-+		smp_call_function(__setup_broadcast_timer, (void *)false, 1);
-+		unregister_cpu_notifier(&setup_broadcast_notifier);
-+	}
-+
- 	return;
- }
- 
+ static int __init ext4_init_fs(void)
+ {
+ 	int err;
+@@ -4827,7 +4834,7 @@ out1:
+ out2:
+ 	ext4_exit_mballoc();
+ out3:
+-	kfree(ext4_feat);
++	ext4_exit_feat_adverts();
+ 	remove_proc_entry("fs/ext4", NULL);
+ 	kset_unregister(ext4_kset);
+ out4:
+@@ -4846,6 +4853,7 @@ static void __exit ext4_exit_fs(void)
+ 	destroy_inodecache();
+ 	ext4_exit_xattr();
+ 	ext4_exit_mballoc();
++	ext4_exit_feat_adverts();
+ 	remove_proc_entry("fs/ext4", NULL);
+ 	kset_unregister(ext4_kset);
+ 	ext4_exit_system_zone();
 
 
