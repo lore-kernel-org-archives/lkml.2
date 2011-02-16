@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933529Ab1BPAwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:52:18 -0500
-Received: from kroah.org ([198.145.64.141]:46297 "EHLO coco.kroah.org"
+	id S933521Ab1BPAyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:54:37 -0500
+Received: from kroah.org ([198.145.64.141]:46275 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933499Ab1BPAwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:52:07 -0500
+	id S933489Ab1BPAwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:52:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:15 2011
-Message-Id: <20110216002115.899593566@clark.kroah.org>
+Message-Id: <20110216002115.587752331@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:17 -0800
+Date: Tue, 15 Feb 2011 16:22:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [patch 169/176] drm/i915: Add dependency on CONFIG_TMPFS
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [patch 166/176] drm: Restore the old_fb upon modeset failure
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit f7ab9b407b3bc83161c2aa74c992ba4782e87c9c upstream.
+commit 0ba41e449fd0f45f5b29c1009020ab1b298bedda upstream.
 
-Without tmpfs, shmem_readpage() is not compiled in causing an OOPS as
-soon as we try to allocate some swappable pages for GEM.
+... or else we may end up disabling the wrong framebuffer, leading to an
+OOPS, e.g:
 
-Jan 19 22:52:26 harlie kernel: Modules linked in: i915(+) drm_kms_helper cfbcopyarea video backlight cfbimgblt cfbfillrect
-Jan 19 22:52:26 harlie kernel:
-Jan 19 22:52:26 harlie kernel: Pid: 1125, comm: modprobe Not tainted 2.6.37Harlie #10 To be filled by O.E.M./To be filled by O.E.M.
-Jan 19 22:52:26 harlie kernel: EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 3
-Jan 19 22:52:26 harlie kernel: EIP is at 0x0
-Jan 19 22:52:26 harlie kernel: EAX: 00000000 EBX: f7b7d000 ECX: f3383100 EDX: f7b7d000
-Jan 19 22:52:26 harlie kernel: ESI: f1456118 EDI: 00000000 EBP: f2303c98 ESP: f2303c7c
-Jan 19 22:52:26 harlie kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-Jan 19 22:52:26 harlie kernel: Process modprobe (pid: 1125, ti=f2302000 task=f259cd80 task.ti=f2302000)
-Jan 19 22:52:26 harlie kernel: Stack:
-Jan 19 22:52:26 harlie udevd-work[1072]: '/sbin/modprobe -b pci:v00008086d00000046sv00000000sd00000000bc03sc00i00' unexpected exit with status 0x0009
-Jan 19 22:52:26 harlie kernel:  c1074061 000000d0 f2f42b80 00000000 000a13d2 f2d5dcc0 00000001 f2303cac
-Jan 19 22:52:26 harlie kernel:  c107416f 00000000 000a13d2 00000000 f2303cd4 f8d620ed f2cee620 00001000
-Jan 19 22:52:26 harlie kernel:  00000000 000a13d2 f1456118 f2d5dcc0 f1a40000 00001000 f2303d04 f8d637ab
-Jan 19 22:52:26 harlie kernel: Call Trace:
-Jan 19 22:52:26 harlie kernel:  [<c1074061>] ? do_read_cache_page+0x71/0x160
-Jan 19 22:52:26 harlie kernel:  [<c107416f>] ? read_cache_page_gfp+0x1f/0x30
-Jan 19 22:52:26 harlie kernel:  [<f8d620ed>] ? i915_gem_object_get_pages+0xad/0x1d0 [i915]
-Jan 19 22:52:26 harlie kernel:  [<f8d637ab>] ? i915_gem_object_bind_to_gtt+0xeb/0x2d0 [i915]
-Jan 19 22:52:26 harlie kernel:  [<f8d65961>] ? i915_gem_object_pin+0x151/0x190 [i915]
-Jan 19 22:52:26 harlie kernel:  [<c11e16ed>] ? drm_gem_object_init+0x3d/0x60
-Jan 19 22:52:26 harlie kernel:  [<f8d65aa5>] ? i915_gem_init_ringbuffer+0x105/0x1e0 [i915]
-Jan 19 22:52:26 harlie kernel:  [<f8d571b7>] ? i915_driver_load+0x667/0x1160 [i915]
+[ 6033.229012] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3271!
+[ 6033.229012] invalid opcode: 0000 [#1] SMP
+[ 6033.229012] last sysfs file:
+/sys/devices/virtual/backlight/acpi_video0/uevent
+[ 6033.229012] Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq
+mperf snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_seq
+snd_seq_device snd_pcm snd_timer thinkpad_acpi ppdev snd r852 sm_common
+iTCO_wdt uvcvideo i2c_i801 iTCO_vendor_support microcode wmi nand
+videodev nand_ids nand_ecc snd_page_alloc parport_pc parport mtd
+soundcore joydev v4l1_compat pcspkr uinput ipv6 sdhci_pci sdhci mmc_core
+yenta_socket i915 drm_kms_helper drm i2c_algo_bit i2c_core video output
+[last unloaded: scsi_wait_scan]
+[ 6033.229012]
+[ 6033.229012] Pid: 4834, comm: Xorg Not tainted 2.6.37-rc8+ #25 7661BL5/7661BL5
+[ 6033.229012] EIP: 0060:[<f86fda5e>] EFLAGS: 00013246 CPU: 0
+[ 6033.229012] EIP is at i915_gem_object_unpin+0x23/0x76 [i915]
+[ 6033.229012] EAX: f68a4000 EBX: f6831f00 ECX: 000600fa EDX: f68a8000
+[ 6033.229012] ESI: f68a4014 EDI: f68a42b8 EBP: f2169c44 ESP: f2169c3c
+[ 6033.229012]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[ 6033.229012] Process Xorg (pid: 4834, ti=f2168000 task=f21c8000 task.ti=f2168000)
+[ 6033.229012] Stack:
+[ 6033.229012]  f3a84800 f68a4014 f2169c54 f87045d8 f3a84800 f872d9a8 f2169c68 f7fd8091
+[ 6033.229012]  f3b952a4 00000000 f68a414c f2169cf0 f7fd9377 00000000 00000000 f7fd98b0
+[ 6033.229012]  f7fd9f4e 0000000f f7f328a0 00000000 00000000 00000000 f2169ca4 f68a414c
+[ 6033.229012] Call Trace:
+[ 6033.229012]  [<f87045d8>] ? intel_crtc_disable+0x36/0x41 [i915]
+[ 6033.229012]  [<f7fd8091>] ?  drm_helper_disable_unused_functions+0xcd/0xf9 [drm_kms_helper]
+[ 6033.229012]  [<f7fd9377>] ? drm_crtc_helper_set_config+0x62a/0x7f7 [drm_kms_helper]
+[ 6033.229012]  [<c04daa10>] ? __slab_free+0x1b/0xa4
+[ 6033.229012]  [<f7fd7e62>] ? drm_fb_helper_initial_config+0x466/0x497 [drm_kms_helper]
+[ 6033.229012]  [<f7fd7ea3>] ? drm_fb_helper_restore+0x10/0x2a [drm_kms_helper]
+[ 6033.229012]  [<f86f2577>] ? i915_driver_lastclose+0x2a/0x57 [i915]
+[ 6033.229012]  [<f7f1989f>] ? drm_lastclose+0x45/0x23e [drm]
+[ 6033.229012]  [<f7f1a0b4>] ? drm_release+0x462/0x4d7 [drm]
 
-Reported-by: John J. Stimson-III <john@idsfa.net>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/Kconfig |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/drm_crtc_helper.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -97,7 +97,10 @@ config DRM_I830
- config DRM_I915
- 	tristate "i915 driver"
- 	depends on AGP_INTEL
-+	# we need shmfs for the swappable backing store, and in particular
-+	# the shmem_readpage() which depends upon tmpfs
- 	select SHMEM
-+	select TMPFS
- 	select DRM_KMS_HELPER
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -649,6 +649,7 @@ int drm_crtc_helper_set_config(struct dr
+ 						      old_fb)) {
+ 				DRM_ERROR("failed to set mode on [CRTC:%d]\n",
+ 					  set->crtc->base.id);
++				set->crtc->fb = old_fb;
+ 				ret = -EINVAL;
+ 				goto fail;
+ 			}
+@@ -663,8 +664,10 @@ int drm_crtc_helper_set_config(struct dr
+ 			set->crtc->fb = set->fb;
+ 		ret = crtc_funcs->mode_set_base(set->crtc,
+ 						set->x, set->y, old_fb);
+-		if (ret != 0)
++		if (ret != 0) {
++			set->crtc->fb = old_fb;
+ 			goto fail;
++		}
+ 	}
+ 
+ 	kfree(save_connectors);
 
 
