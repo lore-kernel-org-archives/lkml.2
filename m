@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab1BPAZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:25:35 -0500
-Received: from kroah.org ([198.145.64.141]:49879 "EHLO coco.kroah.org"
+	id S932452Ab1BPAYz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:24:55 -0500
+Received: from kroah.org ([198.145.64.141]:49706 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757547Ab1BPAZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:50 2011
-Message-Id: <20110216001450.488127211@clark.kroah.org>
+	id S932367Ab1BPAYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:48 2011
+Message-Id: <20110216001448.004953483@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:11 -0800
+Date: Tue, 15 Feb 2011 16:14:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [254/272] drm: Restore the old_fb upon modeset failure
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [229/272] watchdog: Fix broken nowatchdog logic
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 0ba41e449fd0f45f5b29c1009020ab1b298bedda upstream.
+commit 4135038a582c20ffdadfcf6564852e0b72a20968 upstream.
 
-... or else we may end up disabling the wrong framebuffer, leading to an
-OOPS, e.g:
+Passing nowatchdog to kernel disables 2 things: creation of
+watchdog threads AND initialization of percpu watchdog_hrtimer.
+As hrtimers are initialized only at boot it's not possible to
+enable watchdog later - for me all watchdog threads started to
+eat 100% of CPU time, but they could just crash.
 
-[ 6033.229012] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3271!
-[ 6033.229012] invalid opcode: 0000 [#1] SMP
-[ 6033.229012] last sysfs file:
-/sys/devices/virtual/backlight/acpi_video0/uevent
-[ 6033.229012] Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq
-mperf snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_seq
-snd_seq_device snd_pcm snd_timer thinkpad_acpi ppdev snd r852 sm_common
-iTCO_wdt uvcvideo i2c_i801 iTCO_vendor_support microcode wmi nand
-videodev nand_ids nand_ecc snd_page_alloc parport_pc parport mtd
-soundcore joydev v4l1_compat pcspkr uinput ipv6 sdhci_pci sdhci mmc_core
-yenta_socket i915 drm_kms_helper drm i2c_algo_bit i2c_core video output
-[last unloaded: scsi_wait_scan]
-[ 6033.229012]
-[ 6033.229012] Pid: 4834, comm: Xorg Not tainted 2.6.37-rc8+ #25 7661BL5/7661BL5
-[ 6033.229012] EIP: 0060:[<f86fda5e>] EFLAGS: 00013246 CPU: 0
-[ 6033.229012] EIP is at i915_gem_object_unpin+0x23/0x76 [i915]
-[ 6033.229012] EAX: f68a4000 EBX: f6831f00 ECX: 000600fa EDX: f68a8000
-[ 6033.229012] ESI: f68a4014 EDI: f68a42b8 EBP: f2169c44 ESP: f2169c3c
-[ 6033.229012]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[ 6033.229012] Process Xorg (pid: 4834, ti=f2168000 task=f21c8000 task.ti=f2168000)
-[ 6033.229012] Stack:
-[ 6033.229012]  f3a84800 f68a4014 f2169c54 f87045d8 f3a84800 f872d9a8 f2169c68 f7fd8091
-[ 6033.229012]  f3b952a4 00000000 f68a414c f2169cf0 f7fd9377 00000000 00000000 f7fd98b0
-[ 6033.229012]  f7fd9f4e 0000000f f7f328a0 00000000 00000000 00000000 f2169ca4 f68a414c
-[ 6033.229012] Call Trace:
-[ 6033.229012]  [<f87045d8>] ? intel_crtc_disable+0x36/0x41 [i915]
-[ 6033.229012]  [<f7fd8091>] ?  drm_helper_disable_unused_functions+0xcd/0xf9 [drm_kms_helper]
-[ 6033.229012]  [<f7fd9377>] ? drm_crtc_helper_set_config+0x62a/0x7f7 [drm_kms_helper]
-[ 6033.229012]  [<c04daa10>] ? __slab_free+0x1b/0xa4
-[ 6033.229012]  [<f7fd7e62>] ? drm_fb_helper_initial_config+0x466/0x497 [drm_kms_helper]
-[ 6033.229012]  [<f7fd7ea3>] ? drm_fb_helper_restore+0x10/0x2a [drm_kms_helper]
-[ 6033.229012]  [<f86f2577>] ? i915_driver_lastclose+0x2a/0x57 [i915]
-[ 6033.229012]  [<f7f1989f>] ? drm_lastclose+0x45/0x23e [drm]
-[ 6033.229012]  [<f7f1a0b4>] ? drm_release+0x462/0x4d7 [drm]
+Additionally, even if these threads would start properly,
+watchdog_disable_all_cpus was guarded by no_watchdog check, so
+you couldn't disable watchdog.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+To fix this, remove no_watchdog variable and use already
+existing watchdog_enabled variable.
+
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+[ removed another no_watchdog instance ]
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <1296230433-6261-1-git-send-email-dzickus@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 
 ---
- drivers/gpu/drm/drm_crtc_helper.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/watchdog.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -650,6 +650,7 @@ int drm_crtc_helper_set_config(struct dr
- 						      old_fb)) {
- 				DRM_ERROR("failed to set mode on [CRTC:%d]\n",
- 					  set->crtc->base.id);
-+				set->crtc->fb = old_fb;
- 				ret = -EINVAL;
- 				goto fail;
- 			}
-@@ -664,8 +665,10 @@ int drm_crtc_helper_set_config(struct dr
- 			set->crtc->fb = set->fb;
- 		ret = crtc_funcs->mode_set_base(set->crtc,
- 						set->x, set->y, old_fb);
--		if (ret != 0)
-+		if (ret != 0) {
-+			set->crtc->fb = old_fb;
- 			goto fail;
-+		}
- 	}
- 	DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
- 	for (i = 0; i < set->num_connectors; i++) {
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -27,7 +27,7 @@
+ #include <asm/irq_regs.h>
+ #include <linux/perf_event.h>
+ 
+-int watchdog_enabled;
++int watchdog_enabled = 1;
+ int __read_mostly softlockup_thresh = 60;
+ 
+ static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
+@@ -43,9 +43,6 @@ static DEFINE_PER_CPU(unsigned long, hrt
+ static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+ #endif
+ 
+-static int no_watchdog;
+-
+-
+ /* boot commands */
+ /*
+  * Should we panic when a soft-lockup or hard-lockup occurs:
+@@ -75,7 +72,7 @@ __setup("softlockup_panic=", softlockup_
+ 
+ static int __init nowatchdog_setup(char *str)
+ {
+-	no_watchdog = 1;
++	watchdog_enabled = 0;
+ 	return 1;
+ }
+ __setup("nowatchdog", nowatchdog_setup);
+@@ -83,7 +80,7 @@ __setup("nowatchdog", nowatchdog_setup);
+ /* deprecated */
+ static int __init nosoftlockup_setup(char *str)
+ {
+-	no_watchdog = 1;
++	watchdog_enabled = 0;
+ 	return 1;
+ }
+ __setup("nosoftlockup", nosoftlockup_setup);
+@@ -475,9 +472,6 @@ static void watchdog_disable_all_cpus(vo
+ {
+ 	int cpu;
+ 
+-	if (no_watchdog)
+-		return;
+-
+ 	for_each_online_cpu(cpu)
+ 		watchdog_disable(cpu);
+ 
+@@ -531,7 +525,8 @@ cpu_callback(struct notifier_block *nfb,
+ 		break;
+ 	case CPU_ONLINE:
+ 	case CPU_ONLINE_FROZEN:
+-		err = watchdog_enable(hotcpu);
++		if (watchdog_enabled)
++			err = watchdog_enable(hotcpu);
+ 		break;
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	case CPU_UP_CANCELED:
+@@ -556,9 +551,6 @@ static int __init spawn_watchdog_task(vo
+ 	void *cpu = (void *)(long)smp_processor_id();
+ 	int err;
+ 
+-	if (no_watchdog)
+-		return 0;
+-
+ 	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
+ 	WARN_ON(notifier_to_errno(err));
+ 
 
 
