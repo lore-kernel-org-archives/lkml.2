@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab1BPAtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:49:41 -0500
-Received: from kroah.org ([198.145.64.141]:45708 "EHLO coco.kroah.org"
+	id S933166Ab1BPAtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:49:55 -0500
+Received: from kroah.org ([198.145.64.141]:45749 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086Ab1BPAtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:07 2011
-Message-Id: <20110216002107.511964437@clark.kroah.org>
+	id S933127Ab1BPAtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:08 2011
+Message-Id: <20110216002108.109396338@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:52 -0800
+Date: Tue, 15 Feb 2011 16:20:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [patch 084/176] ALSA: hrtimer: handle delayed timer interrupts
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [patch 090/176] NFS: Fix an NFS client lockdep issue
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit b1d4f7f4bdcf9915c41ff8cfc4425c84dabb1fde upstream.
+commit e00b8a24041f37e56b4b8415ce4eba1cbc238065 upstream.
 
-If a timer interrupt was delayed too much, hrtimer_forward_now() will
-forward the timer expiry more than once.  When this happens, the
-additional number of elapsed ALSA timer ticks must be passed to
-snd_timer_interrupt() to prevent the ALSA timer from falling behind.
+There is no reason to be freeing the delegation cred in the rcu callback,
+and doing so is resulting in a lockdep complaint that rpc_credcache_lock
+is being called from both softirq and non-softirq contexts.
 
-This mostly fixes MIDI slowdown problems on highly-loaded systems with
-badly behaved interrupt handlers.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-and-tested-by: Arthur Marsh <arthur.marsh@internode.on.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/core/hrtimer.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/nfs/delegation.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/sound/core/hrtimer.c
-+++ b/sound/core/hrtimer.c
-@@ -45,12 +45,13 @@ static enum hrtimer_restart snd_hrtimer_
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -24,8 +24,6 @@
+ 
+ static void nfs_do_free_delegation(struct nfs_delegation *delegation)
  {
- 	struct snd_hrtimer *stime = container_of(hrt, struct snd_hrtimer, hrt);
- 	struct snd_timer *t = stime->timer;
-+	unsigned long oruns;
+-	if (delegation->cred)
+-		put_rpccred(delegation->cred);
+ 	kfree(delegation);
+ }
  
- 	if (!atomic_read(&stime->running))
- 		return HRTIMER_NORESTART;
+@@ -38,6 +36,10 @@ static void nfs_free_delegation_callback
  
--	hrtimer_forward_now(hrt, ns_to_ktime(t->sticks * resolution));
--	snd_timer_interrupt(stime->timer, t->sticks);
-+	oruns = hrtimer_forward_now(hrt, ns_to_ktime(t->sticks * resolution));
-+	snd_timer_interrupt(stime->timer, t->sticks * oruns);
+ static void nfs_free_delegation(struct nfs_delegation *delegation)
+ {
++	if (delegation->cred) {
++		put_rpccred(delegation->cred);
++		delegation->cred = NULL;
++	}
+ 	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
+ }
  
- 	if (!atomic_read(&stime->running))
- 		return HRTIMER_NORESTART;
 
 
