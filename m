@@ -1,194 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab1BPOpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 09:45:01 -0500
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:32280 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751174Ab1BPOo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 09:44:57 -0500
-X-Greylist: delayed 918 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Feb 2011 09:44:56 EST
-From: Daniel Drake <dsd@laptop.org>
-To: cbou@mail.ru
-To: dwmw2@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org
-Cc: tglx@linutronix.de
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: dilinger@queued.net
-Cc: dmitry.torokhov@gmail.com
-Subject: [PATCH v2] olpc_battery: convert to platform device
-Message-Id: <20110216142931.694DE9D401C@zog.reactivated.net>
-Date: Wed, 16 Feb 2011 14:29:31 +0000 (GMT)
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=b-sXyytvFsEA:10 a=Op-mwl0xAAAA:8 a=JfrnYn6hAAAA:8 a=n_1kXKBb8GsEM_GdpjgA:9 a=zWmedTRqKUuJad4gxc0A:7 a=YyLvPIikYDG6-2wtkUQn5tlYMZcA:4 a=d4CUUju0HPYA:10 a=3Rfx1nUSh_UA:10 a=-CQJRAnK5FjRlewF:21 a=kCiDAImgomj5Ro-8:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1752013Ab1BPOpM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 09:45:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab1BPOpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 09:45:08 -0500
+Date: Wed, 16 Feb 2011 15:44:32 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kent Overstreet <kent.overstreet@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: vmscan: Stop reclaim/compaction earlier due to
+ insufficient progress if !__GFP_REPEAT
+Message-ID: <20110216144432.GZ5935@random.random>
+References: <20110209164656.GA1063@csn.ul.ie>
+ <20110209182846.GN3347@random.random>
+ <20110210102109.GB17873@csn.ul.ie>
+ <20110210124838.GU3347@random.random>
+ <20110210133323.GH17873@csn.ul.ie>
+ <20110210141447.GW3347@random.random>
+ <20110210145813.GK17873@csn.ul.ie>
+ <20110216095048.GA4473@csn.ul.ie>
+ <20110216101301.GT5935@random.random>
+ <20110216112232.GC4473@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216112232.GC4473@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed so that suspend/resume (wakeup) support can be added.
+On Wed, Feb 16, 2011 at 11:22:32AM +0000, Mel Gorman wrote:
+> Out of curiousity, what are you measuring the latency of and how? I used
+> a combination of the function_graph ftrace analyser and the mm_page_alloc
+> tracepoint myself to avoid any additional patching and it was easier than
+> cobbling together something with kprobes. A perl script configures ftrace
+> and then parses the contents of trace_pipe - crude but does the job without
+> patching the kernel.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- arch/x86/platform/olpc/olpc.c |   15 +++++++++++
- drivers/power/olpc_battery.c  |   53 +++++++++++++++++++++++-----------------
- 2 files changed, 45 insertions(+), 23 deletions(-)
+It's some complex benchmark that is measuring the latency from
+userland, I think latency is measured from clients (not the server
+running compaction).
 
-v2: add MODULE_ALIAS thanks to Dmitry Torokhov
+> How big are the discrepancies?
 
-diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
-index edaf3fe..a5fb933 100644
---- a/arch/x86/platform/olpc/olpc.c
-+++ b/arch/x86/platform/olpc/olpc.c
-@@ -239,6 +239,17 @@ static int __init add_xo1_platform_devices(void)
- 	return 0;
- }
- 
-+static int __init add_common_platform_devices(void)
-+{
-+	struct platform_device *pdev;
-+
-+	pdev = platform_device_register_simple("olpc-battery", -1, NULL, 0);
-+	if (IS_ERR(pdev))
-+		return PTR_ERR(pdev);
-+
-+	return 0;
-+}
-+
- static int __init olpc_init(void)
- {
- 	int r = 0;
-@@ -269,6 +280,10 @@ static int __init olpc_init(void)
- 			olpc_platform_info.boardrev >> 4,
- 			olpc_platform_info.ecver);
- 
-+	r = add_common_platform_devices();
-+	if (r)
-+		return r;
-+
- 	if (olpc_platform_info.boardrev < olpc_board_pre(0xd0)) { /* XO-1 */
- 		r = add_xo1_platform_devices();
- 		if (r)
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index 0b0ff3a..021ebe3 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -519,8 +519,6 @@ static struct device_attribute olpc_bat_error = {
-  *		Initialisation
-  *********************************************************************/
- 
--static struct platform_device *bat_pdev;
--
- static struct power_supply olpc_bat = {
- 	.get_property = olpc_bat_get_property,
- 	.use_for_apm = 1,
-@@ -534,14 +532,11 @@ void olpc_battery_trigger_uevent(unsigned long cause)
- 		kobject_uevent(&olpc_bat.dev->kobj, KOBJ_CHANGE);
- }
- 
--static int __init olpc_bat_init(void)
-+static int __devinit olpc_battery_probe(struct platform_device *pdev)
- {
--	int ret = 0;
-+	int ret;
- 	uint8_t status;
- 
--	if (!olpc_platform_info.ecver)
--		return -ENXIO;
--
- 	/*
- 	 * We've seen a number of EC protocol changes; this driver requires
- 	 * the latest EC protocol, supported by 0x44 and above.
-@@ -552,21 +547,16 @@ static int __init olpc_bat_init(void)
- 		return -ENXIO;
- 	}
- 
-+	/* Ignore the status. It doesn't actually matter */
- 	ret = olpc_ec_cmd(EC_BAT_STATUS, NULL, 0, &status, 1);
- 	if (ret)
- 		return ret;
- 
--	/* Ignore the status. It doesn't actually matter */
--
--	bat_pdev = platform_device_register_simple("olpc-battery", 0, NULL, 0);
--	if (IS_ERR(bat_pdev))
--		return PTR_ERR(bat_pdev);
--
--	ret = power_supply_register(&bat_pdev->dev, &olpc_ac);
-+	ret = power_supply_register(&pdev->dev, &olpc_ac);
- 	if (ret)
--		goto ac_failed;
-+		return ret;
- 
--	olpc_bat.name = bat_pdev->name;
-+	olpc_bat.name = pdev->name;
- 	if (olpc_board_at_least(olpc_board_pre(0xd0))) { /* XO-1.5 */
- 		olpc_bat.properties = olpc_xo15_bat_props;
- 		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo15_bat_props);
-@@ -575,7 +565,7 @@ static int __init olpc_bat_init(void)
- 		olpc_bat.num_properties = ARRAY_SIZE(olpc_xo1_bat_props);
- 	}
- 
--	ret = power_supply_register(&bat_pdev->dev, &olpc_bat);
-+	ret = power_supply_register(&pdev->dev, &olpc_bat);
- 	if (ret)
- 		goto battery_failed;
- 
-@@ -587,7 +577,7 @@ static int __init olpc_bat_init(void)
- 	if (ret)
- 		goto error_failed;
- 
--	goto success;
-+	return 0;
- 
- error_failed:
- 	device_remove_bin_file(olpc_bat.dev, &olpc_bat_eeprom);
-@@ -595,19 +585,35 @@ eeprom_failed:
- 	power_supply_unregister(&olpc_bat);
- battery_failed:
- 	power_supply_unregister(&olpc_ac);
--ac_failed:
--	platform_device_unregister(bat_pdev);
--success:
- 	return ret;
- }
- 
--static void __exit olpc_bat_exit(void)
-+static int __exit olpc_battery_remove(struct platform_device *pdev)
- {
- 	device_remove_file(olpc_bat.dev, &olpc_bat_error);
- 	device_remove_bin_file(olpc_bat.dev, &olpc_bat_eeprom);
- 	power_supply_unregister(&olpc_bat);
- 	power_supply_unregister(&olpc_ac);
--	platform_device_unregister(bat_pdev);
-+	return 0;
-+}
-+
-+static struct platform_driver olpc_battery_drv = {
-+	.driver = {
-+		.name = "olpc-battery",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = olpc_battery_probe,
-+	.remove = __devexit_p(olpc_battery_remove),
-+};
-+
-+static int __init olpc_bat_init(void)
-+{
-+	return platform_driver_register(&olpc_battery_drv);
-+}
-+
-+static void __exit olpc_bat_exit(void)
-+{
-+	platform_driver_unregister(&olpc_battery_drv);
- }
- 
- module_init(olpc_bat_init);
-@@ -616,3 +622,4 @@ module_exit(olpc_bat_exit);
- MODULE_AUTHOR("David Woodhouse <dwmw2@infradead.org>");
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Battery driver for One Laptop Per Child 'XO' machine");
-+MODULE_ALIAS("platform:olpc-battery");
--- 
-1.7.4
+Latency in msec/op goes up from 1.1 to 5.4 starting from half the peak
+load. But then latency stays flat with compaction, eventually the peak
+load latency is similar. It just goes immediately from 1.1 to 5.4 in
+the middle and it's slightly higher even for the light load runs.
 
+> No idea.
+
+I guess it's very hard to tell unless we try. I just nuked the
+bulk_latency for the jumbo frames and forced the driver to always
+stay in low_latency mode (in NAPI ->poll method of the driver), just
+in case it's not compaction to blame but a side effect of compaction
+providing jumbo frames much more frequently to the driver.
+
+> Can I have your ack on the patch then? Even if it doesn't resolve the
+
+Sure, I acked it explicitly in separate email ;).
+
+> jumbo frame problems, it's in the right direction. Measuring how it
+> currently behaves and what direction should be taken may be something
+> still worth discussing at LSF/MM.
+
+Agreed!
+
+> > One issue with compaction for jumbo frames, is the potentially very
+> > long loop, for the scan in isolated_migratepages.
+> 
+> Yes, the scanner is poor. The scanner for free pages is potentially just
+> as bad. I prototyped some designs that should have been faster but they
+> didn't make any significant difference so they got discarded.
+
+But the scanner for free pages a nr_scanned countdown and breaks the
+loop way sooner. Also most of the >order allocations must have a
+fallback so scanning everything for succeeding order 0 is much more
+obviously safe than scanning everything to provide an order 2
+allocation, if the order 0 allocation could be provided immediately
+without scanning anything. It's not a trivial problem when we deal
+with short lived allocations. Also the throughput is equal or a little
+higher (not necessarily related to compaction though), the latency is
+the real measurable regression.
+
+> This surprises me. In my own tests at least, the compaction stuff was
+> way down in the profile and I wouldn't have expected scanning to take so
+> long as to require a cond_resched. I was depending on the cond_resched()
+> in migrate_pages() to yield the processor as necessary.
+
+If migrate_pages runs often likely won't need to scan too many pages
+in the first place. I think cond_resched is good idea in that
+loop considering the current possible worst case.
+
+This is the profiling. This is with basically 2.6.37 compaction code
+so only enabled for THP sized allocations and not for order <=
+PAGE_ALLOC_COSTLY_ORDER and not for kswapd.
+
+Samples          % of Total       Cum. Samples     Cum. % of Total   module:function
+-------------------------------------------------------------------------------------------------
+177786           6.178            177786           6.178             sunrpc:svc_recv
+128779           4.475            306565           10.654            sunrpc:svc_xprt_enqueue
+80786            2.807            387351           13.462            vmlinux:__d_lookup
+62272            2.164            449623           15.626            ext4:ext4_htree_store_dirent
+55896            1.942            505519           17.569            jbd2:journal_clean_one_cp_list
+43868            1.524            549387           19.093            vmlinux:task_rq_lock
+43572            1.514            592959           20.608            vmlinux:kfree
+37620            1.307            630579           21.915            vmlinux:mwait_idle
+36169            1.257            666748           23.172            vmlinux:schedule
+34037            1.182            700785           24.355            e1000:e1000_clean
+31945            1.110            732730           25.465            vmlinux:find_busiest_group
+31491            1.094            764221           26.560            qla2xxx:qla24xx_intr_handler
+30681            1.066            794902           27.626            vmlinux:_atomic_dec_and_lock 
+7425             0.258            xxxxxx           xxxxxx            vmlinux:get_page_from_freelist
+
+This is with 2.6.38 compaction code enabled for all !order in both
+direct compaction and kswapd (it includes async compaction/migrate and
+the preferred pageblock selection in !cc->sync mode). It basically
+only doesn't include the should_continue_reclaim loop as that could
+only potentially increase the latency even further so I skipped it for
+now (I'll add it later with your __GFP_RECLAIM new patch).
+
+Samples          % of Total       Cum. Samples     Cum. % of Total   module:function
+-------------------------------------------------------------------------------------------------
+1182928          17.358           1182928          17.358            vmlinux:get_page_from_freelist
+657802           9.652            1840730          27.011            vmlinux:free_pcppages_bulk
+579976           8.510            2420706          35.522            sunrpc:svc_xprt_enqueue
+508953           7.468            2929659          42.991            sunrpc:svc_recv
+490538           7.198            3420197          50.189            vmlinux:compaction_alloc
+188620           2.767            3608817          52.957            vmlinux:tg_shares_up
+97527            1.431            3706344          54.388            vmlinux:__d_lookup
+85670            1.257            3792014          55.646            jbd2:journal_clean_one_cp_list
+71738            1.052            3863752          56.698            vmlinux:mutex_spin_on_owner
+71037            1.042            3934789          57.741            vmlinux:kfree
+
+Basically it was my patch that enabled compaction for all order sized
+allocations and in kswapd as well that started this but I think I only
+exposed the problem and if the jumbo frame would have order 4 instead
+of order 1/2/3, it'd happen regardless of my patch. Later I'm also
+going to check if it's the kswapd invocation that causes the problem
+(so trying with only direct compaction) but I doubt it'll help.
