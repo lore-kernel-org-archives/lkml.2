@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786Ab1BPRjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 12:39:19 -0500
-Received: from juliet.he.net ([184.105.210.2]:44884 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753591Ab1BPRjO convert rfc822-to-8bit (ORCPT
+	id S1753886Ab1BPRlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 12:41:47 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:52233 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab1BPRlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 12:39:14 -0500
-X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Feb 2011 12:39:14 EST
-Date: Wed, 16 Feb 2011 09:29:02 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] ARM: reenable DEBUG_SECTION_MISMATCH
-Message-Id: <20110216092902.3e6e97b2.rdunlap@xenotime.net>
-In-Reply-To: <1297876993-4146-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1297876993-4146-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Feb 2011 12:41:44 -0500
+Date: Wed, 16 Feb 2011 19:41:40 +0200 (EET)
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+X-X-Sender: aaro@loser
+To: linux-fbdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] sisfb: XGI Z9 POST
+In-Reply-To: <1297635088-13224-1-git-send-email-aaro.koskinen@iki.fi>
+Message-ID: <alpine.DEB.1.10.1102161916510.479@loser>
+References: <1297635088-13224-1-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Feb 2011 18:23:13 +0100 Uwe Kleine-König wrote:
+Hi,
 
-> For 2.6.38-rc4-git9 only 29 out of 133 defconfigs still produce section
-> mismatches.  These defconfigs produce 55 mismatches (weighted sum, so
-> maybe less uniq mismatches).
-> 
-> This is in my opinion enough to start scaring people about the remaining
-> problems.
+On Mon, 14 Feb 2011, Aaro Koskinen wrote:
+> Here's some patches to get POST working with XGI Z9. I have tested them
+> with the following card:
+>
+> 	http://www.roboard.com/Files/RB-100/MiniPCI-VGA-Z9s_UM_v1r1A.pdf
+>
+> I'm using the card on an ARM board where the bootloader knows nothing
+> about VGA or VGA BIOS, so having POST support in the kernel driver
+> is mandatory. With these patches the memory size is correct detected,
+> R/W test passes and it's possible to use e.g. framebuffer console.
+>
+> Aaro Koskinen (6):
+>  sisfb: POST should fail if R/W test fails
+>  sisfb: move XGI POST RAM type detection into a subroutine
+>  sisfb: add subroutine for detecting XGI Z9
+>  sisfb: add RAM type detection for XGI Z9
+>  sisfb: move XGI POST DDR2 bootup code into subroutines
+>  sisfb: add support for XGI Z9 DDR2 POST
 
-Yes, we have way too many of these and need more eyes on them.
+Hmm, I think these patches can be ignored, at least for a while.
 
+I realized that xgifb driver is now in staging, and it has much wider
+support for XGI chips. So, we should work on getting that driver into
+an acceptable form. And after that, it should be even possible to drop
+XGI support from sisfb.
 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-
-> ---
->  lib/Kconfig.debug |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 3967c23..1130dd4 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -102,7 +102,7 @@ config HEADERS_CHECK
->  
->  config DEBUG_SECTION_MISMATCH
->  	bool "Enable full Section mismatch analysis"
-> -	depends on UNDEFINED || (BLACKFIN)
-> +	depends on ARM || BLACKFIN
-
-I would even like something like this:
-
-	depends on ARM || BLACKFIN || KERNEL_DEVELOPER
-
-or even
-	select DEBUG_SECTION_MISMATCH if KERNEL_DEVELOPER
-
-to make these warnings appear... but even with today's other warnings, lots
-of them are ignored.
-
-
->  	default y
->  	# This option is on purpose disabled for now.
->  	# It will be enabled when we are down to a reasonable number
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+A.
