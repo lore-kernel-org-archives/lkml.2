@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab1BPBJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:09:18 -0500
-Received: from kroah.org ([198.145.64.141]:45745 "EHLO coco.kroah.org"
+	id S933187Ab1BPBJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:09:38 -0500
+Received: from kroah.org ([198.145.64.141]:45722 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933122Ab1BPAtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:39 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:08 2011
-Message-Id: <20110216002108.013448534@clark.kroah.org>
+	id S933109Ab1BPAtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:35 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:07 2011
+Message-Id: <20110216002107.713641937@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:57 -0800
+Date: Tue, 15 Feb 2011 16:20:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Frysinger <vapier@gentoo.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [patch 089/176] ASoC: Blackfin TDM: fix missed snd_soc_dai_get_drvdata update
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [patch 086/176] ASoC: When disabling WM8994 FLL force a source selection
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 15d2e22b820bad62854d6ad99d8af8320adf4a91 upstream.
+commit 4514e8997fbefd5befd6176ac9785e287b4daed4 upstream.
 
-One spot was missed in this driver when converting from
-snd_soc_dai.private_data to snd_soc_dai_get_drvdata.
+When we disable the WM8994 FLL code path sharing means that we end up
+writing out a configuration. Currently this is the currently active
+input and output frequency (which causes snd_soc_update_bits() to
+suppress actual writes both immediately and in the common case where
+we reenable the same configuration later) but we allow machine drivers
+to pass through a source of zero. Since the register values written
+are one less than the source constants this causes corruption of other
+bitfields in the register.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Fix this by using the most recently configured FLL source when none is
+provided.
+
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/blackfin/bf5xx-tdm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm8994.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/soc/blackfin/bf5xx-tdm.c
-+++ b/sound/soc/blackfin/bf5xx-tdm.c
-@@ -210,7 +210,7 @@ static int bf5xx_tdm_set_channel_map(str
- #ifdef CONFIG_PM
- static int bf5xx_tdm_suspend(struct snd_soc_dai *dai)
- {
--	struct sport_device *sport = dai->private_data;
-+	struct sport_device *sport = snd_soc_dai_get_drvdata(dai);
- 
- 	if (!dai->active)
- 		return 0;
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -2914,6 +2914,7 @@ static int wm8994_set_fll(struct snd_soc
+ 		/* Allow no source specification when stopping */
+ 		if (freq_out)
+ 			return -EINVAL;
++		src = wm8994->fll[id].src;
+ 		break;
+ 	case WM8994_FLL_SRC_MCLK1:
+ 	case WM8994_FLL_SRC_MCLK2:
 
 
