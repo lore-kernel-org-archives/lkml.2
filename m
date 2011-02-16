@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab1BPBlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:41:05 -0500
-Received: from kroah.org ([198.145.64.141]:38975 "EHLO coco.kroah.org"
+	id S1757951Ab1BPBlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:41:22 -0500
+Received: from kroah.org ([198.145.64.141]:38967 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757003Ab1BPAT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:57 -0500
+	id S1756988Ab1BPATz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:55 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:32 2011
-Message-Id: <20110216001432.344548175@clark.kroah.org>
+Message-Id: <20110216001432.245944069@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:09 -0800
+Date: Tue, 15 Feb 2011 16:12:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Dillow <dillowda@ornl.gov>,
+        Kashyap Desai <kashyap.desai@lsi.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [072/272] [SCSI] fix incorrect value of SCSI_MAX_SG_CHAIN_SEGMENTS due to include file ordering
+Subject: [071/272] [SCSI] mpt2sas: fix Integrated Raid unsynced on shutdown problem
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Dillow <dillowda@ornl.gov>
+From: Kashyap, Desai <kashyap.desai@lsi.com>
 
-commit ac61c46f4f7665ab4548e90430c37b2529e16cff upstream.
+commit 3a9c913a3e57b170887d39456e04c18f2305ec67 upstream.
 
-If the compiled object doesn't include linux/scatterlist.h before
-scsi/scsi.h, it will get an incorrect definition of
-SCSI_MAX_SG_CHAIN_SEGMENTS.
+Issue:
+IR shutdown(sending) and IR shutdown(complete) messages not
+listed in /var/log/messages when driver is removed.
 
-Signed-off-by: David Dillow <dillowda@ornl.gov>
+The driver needs to issue a MPI2_RAID_ACTION_SYSTEM_SHUTDOWN_INITIATED
+request when the driver is unloaded so the IR metadata journal is updated.
+If this request is not sent, then the volume would need a "check
+consistency" issued on the next bootup if the volume was roamed from one
+initiator to another. The current driver supports this feature only when the
+system is rebooted, however this also need to be supported if the driver is
+unloaded
+
+Fix:
+To fix this issue, the driver is going
+to need to call the _scsih_ir_shutdown prior to reporting
+the volumes missing from the OS, hence the device handles
+are still present.
+
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/scsi/scsi.h |    1 +
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/include/scsi/scsi.h
-+++ b/include/scsi/scsi.h
-@@ -9,6 +9,7 @@
- #define _SCSI_SCSI_H
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -6687,6 +6687,7 @@ _scsih_remove(struct pci_dev *pdev)
+ 		destroy_workqueue(wq);
  
- #include <linux/types.h>
-+#include <linux/scatterlist.h>
- 
- struct scsi_cmnd;
- 
+ 	/* release all the volumes */
++	_scsih_ir_shutdown(ioc);
+ 	list_for_each_entry_safe(raid_device, next, &ioc->raid_device_list,
+ 	    list) {
+ 		if (raid_device->starget) {
 
 
