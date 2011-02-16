@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1BPPVU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 10:21:20 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:42292 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357Ab1BPPVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 10:21:18 -0500
-Date: Wed, 16 Feb 2011 07:20:28 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: Jean Delvare <khali@linux-fr.org>,
+	id S1752169Ab1BPPZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 10:25:10 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49481 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab1BPPZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 10:25:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=cc:message-id:from:to:in-reply-to:content-type
+         :content-transfer-encoding:mime-version:subject:date:references
+         :x-mailer;
+        b=HfBXmPTE1dg95abGd+poJJ+6RR9M+uBrtyuz+uWjTHwADS5bDJotiXqhMk9m4Ak7lN
+         SFSps5tZ1wjny8S1XDml3MJ5PEFByrMeV6BenJsItagDkwjM2Q9RoBG+J+0HJB77dDsN
+         7SxatztBD3qSPp++LKwZc7XCdgiCee2D9efYI=
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 3/3] hwmon: (jc42) do not allow writing to
- locked registers
-Message-ID: <20110216152028.GA14199@ericsson.com>
-References: <4D5BCA87.7010204@ladisch.de>
- <4D5BCAEE.6030502@ladisch.de>
- <20110216145049.GC13872@ericsson.com>
- <4D5BE927.7000306@ladisch.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4D5BE927.7000306@ladisch.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Message-Id: <2ACEFAB7-915A-409A-A17B-FD4F1749D25C@gmail.com>
+From: Justin Mattock <justinmattock@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1102161001440.2160@pobox.suse.cz>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [PATCH 1/3]arch:cris:arch-v10i:init.c Fix typo occationally to occasionally
+Date: Wed, 16 Feb 2011 07:25:02 -0800
+References: <1297839284-3091-1-git-send-email-justinmattock@gmail.com> <20110216072424.GZ13204@axis.com> <alpine.LNX.2.00.1102161001440.2160@pobox.suse.cz>
+X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 10:11:35AM -0500, Clemens Ladisch wrote:
-> Guenter Roeck wrote:
-> > On Wed, Feb 16, 2011 at 08:02:38AM -0500, Clemens Ladisch wrote:
-> > > +		readonly = config & JC42_CFG_TCRIT_LOCK;
-> > 
-> > You are assigning a non-bool to a bool. I can see that recent C compilers
-> > do the right thing, but I am not sure if that is always the case.
-> > So I would prefer
-> > 		readonly = !!(config & JC42_CFG_TCRIT_LOCK);
-> > 
-> > Same for the assignments below. I can make that change if you are ok with it.
-> 
-> I cannot imagine how a compiler could get this wrong even if it tried
-> to, but if you think so, go ahead.  :)
-> 
-I don't know. Maybe I am just paranoid. Using !! is how I usually see it done.
-Is it really needed ? No idea. Better safe than sorry...
 
-Applied with above changes.
+On Feb 16, 2011, at 1:01 AM, Jiri Kosina wrote:
 
-Thanks,
-Guenter
+> On Wed, 16 Feb 2011, Jesper Nilsson wrote:
+>
+>>> The below patch fixes a typo occationally to occasionally.
+>>>
+>>> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>>
+>> Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+>
+> Applied.
+>
+> -- 
+> Jiri Kosina
+> SUSE Labs, Novell Inc.
 
+
+o.k.!!
+
+Justin P. Mattock
