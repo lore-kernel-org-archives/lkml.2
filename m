@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1BPQGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 11:06:48 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49169 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab1BPQGq (ORCPT
+	id S1752780Ab1BPQML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 11:12:11 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:42358
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751699Ab1BPQMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 11:06:46 -0500
-Date: Wed, 16 Feb 2011 16:06:43 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.38-rc5
-Message-ID: <20110216160643.GE22723@ZenIV.linux.org.uk>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
- <1297854842.3201.197.camel@edumazet-laptop>
- <AANLkTimnLPF0wz+ya-Wj1U1hQjPJpUhmL893OxBWqZYM@mail.gmail.com>
+	Wed, 16 Feb 2011 11:12:08 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh95h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+From: John Linn <john.linn@xilinx.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, <arnd@arndb.de>
+CC: John Linn <john.linn@xilinx.com>
+Subject: [PATCH V3 4/4] ARM: Xilinx: Adding Xilinx platform infrastructure support
+Date: Wed, 16 Feb 2011 09:11:56 -0700
+X-Mailer: git-send-email 1.5.6.6
+In-Reply-To: <1297872716-13353-4-git-send-email-john.linn@xilinx.com>
+References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com>
+ <1297872716-13353-2-git-send-email-john.linn@xilinx.com>
+ <1297872716-13353-3-git-send-email-john.linn@xilinx.com>
+ <1297872716-13353-4-git-send-email-john.linn@xilinx.com>
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimnLPF0wz+ya-Wj1U1hQjPJpUhmL893OxBWqZYM@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+Message-ID: <192538dd-0a5b-4bea-94a1-35f44e69be31@VA3EHSMHS020.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 07:46:20AM -0800, Linus Torvalds wrote:
-> On Wed, Feb 16, 2011 at 3:14 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >
-> > Using this kernel on my dev machine (2x4x2 cpus), I hit BUG_ON() in
-> > fs/namei.c:1461 on my kernel build (make -j16)
-> 
-> Uhhuh. We replaced one BUG_ON() with another.
-> 
-> And I think it's a really silly problem too: when Al moved the
-> 
->         /* We drop rcu-walk here */
->         if (nameidata_dentry_drop_rcu_maybe(nd, path->dentry))
->                 return -ECHILD;
-> 
-> test into do_follow_link(), he _should_ have moved the BUG_ON() in
-> there too, methinks. He didn't, and as a result the BUG_ON() is now
-> before the "drop_rcu_maybe".
-> 
-> This patch should fix it. Al? Comments?
+Minimum infrastructure to add the Xilinx machine and allow it to
+be selected in the build.
 
-Sigh...  I see what's going on.  We'd got inode from dentry that is getting
-crapped under us.  We will *not* survive dropping RCU - it's bad enough for
-full restart in normal mode.  So right after we'd seen that (already wrong)
-inode has ->follow_link(), we decide to drop RCU.  Originally this BUG_ON
-hadn't been reached in that case - we had already failed with -ECHILD before
-we got to it.  Now we don't...
+Signed-off-by: John Linn <john.linn@xilinx.com>
+---
 
-_However_, I don't like passing inode to do_follow_link().  I'd rather set
-nd->inode to inode first and use it there.  Let me think a bit and see if
-it's feasible...
+No updates for V3
+
+V2 Changes
+
+Updates based on Russell King's comments	
+	Cleanup of the Kconfig
+	Moved this patch to be last in the patch series
+
+ arch/arm/Kconfig    |   13 +++++++++++++
+ arch/arm/Makefile   |    1 +
+ arch/arm/mm/Kconfig |    2 +-
+ 3 files changed, 15 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 5cff165..3317671 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -875,6 +875,17 @@ config PLAT_SPEAR
+ 	help
+ 	  Support for ST's SPEAr platform (SPEAr3xx, SPEAr6xx and SPEAr13xx).
+ 
++config ARCH_XILINX
++	bool "Xilinx ARM Cortex A9 Based FPGA"
++	select CPU_V7
++	select GENERIC_TIME
++	select GENERIC_CLOCKEVENTS
++	select CLKDEV_LOOKUP
++	select ARM_GIC
++	select ARM_AMBA
++	help
++	  Support for Xilinx ARM Cortex A9 Based FPGA
++
+ endchoice
+ 
+ #
+@@ -1009,6 +1020,8 @@ source "arch/arm/mach-vexpress/Kconfig"
+ 
+ source "arch/arm/mach-w90x900/Kconfig"
+ 
++source "arch/arm/mach-xilinx/Kconfig"
++
+ # Definitions to make life easier
+ config ARCH_ACORN
+ 	bool
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index c22c1ad..4bad6ef 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -197,6 +197,7 @@ machine-$(CONFIG_MACH_SPEAR300)		:= spear3xx
+ machine-$(CONFIG_MACH_SPEAR310)		:= spear3xx
+ machine-$(CONFIG_MACH_SPEAR320)		:= spear3xx
+ machine-$(CONFIG_MACH_SPEAR600)		:= spear6xx
++machine-$(CONFIG_ARCH_XILINX)		:= xilinx
+ 
+ # Platform directory name.  This list is sorted alphanumerically
+ # by CONFIG_* macro name.
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 9d30c6f..c8a9f5c 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -813,7 +813,7 @@ config CACHE_L2X0
+ 	depends on REALVIEW_EB_ARM11MP || MACH_REALVIEW_PB11MP || MACH_REALVIEW_PB1176 || \
+ 		   REALVIEW_EB_A9MP || ARCH_MX35 || ARCH_MX31 || MACH_REALVIEW_PBX || \
+ 		   ARCH_NOMADIK || ARCH_OMAP4 || ARCH_S5PV310 || ARCH_TEGRA || \
+-		   ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_SHMOBILE
++		   ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_SHMOBILE || ARCH_XILINX
+ 	default y
+ 	select OUTER_CACHE
+ 	select OUTER_CACHE_SYNC
+-- 
+1.6.2.1
+
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
