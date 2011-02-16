@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab1BPEuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 23:50:10 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:44890 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756159Ab1BPEuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 23:50:06 -0500
-From: Andy Whitcroft <apw@canonical.com>
-To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
-        Dustin Kirkland <kirkland@canonical.com>
-Cc: ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 1/1] ecryptfs: read on a directory should return EISDIR if not supported
-Date: Wed, 16 Feb 2011 04:49:59 +0000
-Message-Id: <1297831799-5169-1-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.1
+	id S1758516Ab1BPEv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 23:51:27 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:60077 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756565Ab1BPEvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 23:51:24 -0500
+Date: Tue, 15 Feb 2011 20:50:35 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Dirk Eibach <eibach@gdsys.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2] hwmon: Add support for Texas Instruments ADS1015
+Message-ID: <20110216045035.GA12173@ericsson.com>
+References: <20110214112228.59269651@endymion.delvare>
+ <1297689710-17840-1-git-send-email-eibach@gdsys.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1297689710-17840-1-git-send-email-eibach@gdsys.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-read() calls against a file descriptor connected to a directory are
-incorrectly returning EINVAL rather than EISDIR:
+On Mon, Feb 14, 2011 at 08:21:50AM -0500, Dirk Eibach wrote:
+> Signed-off-by: Dirk Eibach <eibach@gdsys.de>
+> ---
+> Changes since v1:
+> - fixed/extended Documentation
+> - removed unused register definitions
+> - hardcoded PGA fullscale table size
+> - made sure patch applies against v2.6.38-rc4
+> - reordered functions to avoid forward declaration
+> - results from i2c_smbus_read_word_data() are handled correctly
+> - moved locking into ads1015_read_value()
+> - removed unnecessray clearing of bit
+> - proper error handling in ads1015_read_value()
+> - use DIV_ROUND_CLOSEST for scaling result
+> - removed detect()
+> 
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
-  [EISDIR]
-    [XSI] [Option Start] The fildes argument refers to a directory and the
-    implementation does not allow the directory to be read using read()
-    or pread(). The readdir() function should be used instead. [Option End]
+Jean,
 
-This occurs because we do not have a .read operation defined for
-ecryptfs directories.  Connect this up to generic_read_dir().
+any further comments ?
 
-BugLink: http://bugs.launchpad.net/bugs/719691
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- fs/ecryptfs/file.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+If not, do you want me to apply it to my tree, or do you want to take it into yours ?
 
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index 81e10e6..7d1050e 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -317,6 +317,7 @@ ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 
- const struct file_operations ecryptfs_dir_fops = {
- 	.readdir = ecryptfs_readdir,
-+	.read = generic_read_dir,
- 	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = ecryptfs_compat_ioctl,
--- 
-1.7.1
-
+Thanks,
+Guenter
