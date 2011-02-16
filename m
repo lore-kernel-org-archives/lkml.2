@@ -1,134 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab1BPVAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 16:00:00 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34826 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab1BPU76 (ORCPT
+	id S1754580Ab1BPVBR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 16:01:17 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:58234 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241Ab1BPVBN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 15:59:58 -0500
-Message-ID: <4D5C3A40.1060106@kernel.org>
-Date: Wed, 16 Feb 2011 12:57:36 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Wed, 16 Feb 2011 16:01:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=jNA0O+qOToBj+fMrqh2MrZHmAgMuc1Rg3DxVX6zC3/l+89UXtoKl12sjtRxJHvfbT1
+         CqC6l7hygqsMkLjRK6lg==
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, numa: seperate alloc_numa_distance from numa_reset_distance.
-References: <4D5C3A0F.3080107@kernel.org>
-In-Reply-To: <4D5C3A0F.3080107@kernel.org>
+In-Reply-To: <4D5C34E0.5000209@codeaurora.org>
+References: <1297590033-15035-1-git-send-email-ccross@android.com>
+	<1297590033-15035-13-git-send-email-ccross@android.com>
+	<4D5C34E0.5000209@codeaurora.org>
+Date: Wed, 16 Feb 2011 13:01:09 -0800
+X-Google-Sender-Auth: vKWRU8DxgUB_3EfB6OiniPYu4mc
+Message-ID: <AANLkTi=knKY65xaOT85jFidy6Be8K8RT0L1XtGqq_v2V@mail.gmail.com>
+Subject: Re: [PATCH 12/21] ARM: tegra: clock: Add shared bus clock type
+From: Colin Cross <ccross@android.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        konkers@android.com, linux-kernel@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B020B.4D5C3ABB.0017,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 16, 2011 at 12:34 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 02/13/2011 01:40 AM, Colin Cross wrote:
+>> +/* shared bus ops */
+>> +/*
+>> + * Some clocks may have multiple downstream users that need to request a
+>> + * higher clock rate.  Shared bus clocks provide a unique shared_bus_user
+>> + * clock to each user.  The frequency of the bus is set to the highest
+>> + * enabled shared_bus_user clock, with a minimum value set by the
+>> + * shared bus.
+>> + */
+>> +static void tegra_clk_shared_bus_update(struct clk *bus)
+>> +{
+>> +     struct clk *c;
+>> +     unsigned long rate = bus->min_rate;
+>> +
+>> +     list_for_each_entry(c, &bus->shared_bus_list, u.shared_bus_user.node)
+>> +             if (c->u.shared_bus_user.enabled)
+>> +                     rate = max(c->u.shared_bus_user.rate, rate);
+>> +
+>> +     if (rate != clk_get_rate(bus))
+>> +             clk_set_rate(bus, rate);
+>
+> What do you do if clk_set_rate() fails? Should you unwind all the state
+> such as the rate and if it's enabled/disabled? Or is it safe to say
+> clk_set_rate() can't fail unless the kernel is buggy in which case why
+> aren't all those return -E* in the set rate functions just BUG_ONs?
 
-alloc code is much bigger the setting self.
+In general, clk_set_rate can fail and return an error, but in this
+case the failure may not be directly related to the driver that called
+into tegra_clk_shared_bus_update.  For example, if clk_disable is
+called on a shared clock handle, the rate may drop to the rate
+requested by another shared clock handle.  clk_disable cannot fail, so
+there's nothing that could be done with the return code, and the
+problem was not caused by the driver that called clk_disable, so an
+error would be meaningless.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+I will modify tegra_clk_shared_bus_update to BUG on a failed
+clk_set_rate, and modify tegra_clk_shared_bus_set_rate to
+call clk_round_rate on the parent to ensure that the requested rate is valid.
 
----
- arch/x86/mm/numa_64.c |   77 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 42 insertions(+), 35 deletions(-)
+>> +};
+>> +
+>> +static void tegra_clk_shared_bus_init(struct clk *c)
+>> +{
+>> +     c->max_rate = c->parent->max_rate;
+>> +     c->u.shared_bus_user.rate = c->parent->max_rate;
+>> +     c->state = OFF;
+>> +#ifdef CONFIG_DEBUG_FS
+>> +     c->set = 1;
+>> +#endif
+>> +
+>> +     list_add_tail(&c->u.shared_bus_user.node,
+>> +             &c->parent->shared_bus_list);
+>> +}
+>> +
+>> +static int tegra_clk_shared_bus_set_rate(struct clk *c, unsigned long rate)
+>> +{
+>> +     c->u.shared_bus_user.rate = rate;
+>> +     tegra_clk_shared_bus_update(c->parent);
+>> +     return 0;
+>> +}
+>> +
+>> +static long tegra_clk_shared_bus_round_rate(struct clk *c, unsigned long rate)
+>> +{
+>> +     return clk_round_rate(c->parent, rate);
+>> +}
+>> +
+>> +static int tegra_clk_shared_bus_enable(struct clk *c)
+>> +{
+>> +     c->u.shared_bus_user.enabled = true;
+>> +     tegra_clk_shared_bus_update(c->parent);
+>> +     return 0;
+>> +}
+>
+> Shouldn't you call clk_enable(c->parent)? And do you need to check for
+> errors from clk_enable()?
 
-Index: linux-2.6/arch/x86/mm/numa_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/numa_64.c
-+++ linux-2.6/arch/x86/mm/numa_64.c
-@@ -384,6 +384,43 @@ static void __init numa_reset_distance(v
- 	numa_distance_cnt = 0;
- }
- 
-+static void __init alloc_numa_distance(void)
-+{
-+	nodemask_t nodes_parsed;
-+	size_t size;
-+	int i, j, cnt = 0;
-+	u64 phys;
-+
-+	/* size the new table and allocate it */
-+	nodes_parsed = numa_nodes_parsed;
-+	numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
-+
-+	for_each_node_mask(i, nodes_parsed)
-+		cnt = i;
-+	size = ++cnt * sizeof(numa_distance[0]);
-+
-+	phys = memblock_find_in_range(0,
-+				      (u64)max_pfn_mapped << PAGE_SHIFT,
-+				      size, PAGE_SIZE);
-+	if (phys == MEMBLOCK_ERROR) {
-+		pr_warning("NUMA: Warning: can't allocate distance table!\n");
-+		/* don't retry until explicitly reset */
-+		numa_distance = (void *)1LU;
-+		return;
-+	}
-+	memblock_x86_reserve_range(phys, phys + size, "NUMA DIST");
-+
-+	numa_distance = __va(phys);
-+	numa_distance_cnt = cnt;
-+
-+	/* fill with the default distances */
-+	for (i = 0; i < cnt; i++)
-+		for (j = 0; j < cnt; j++)
-+			numa_distance[i * cnt + j] = i == j ?
-+				LOCAL_DISTANCE : REMOTE_DISTANCE;
-+	printk(KERN_DEBUG "NUMA: Initialized distance table, cnt=%d\n", cnt);
-+}
-+
- /*
-  * Set the distance between node @from to @to to @distance.  If distance
-  * table doesn't exist, one which is large enough to accomodate all the
-@@ -391,41 +428,11 @@ static void __init numa_reset_distance(v
-  */
- void __init numa_set_distance(int from, int to, int distance)
- {
--	if (!numa_distance) {
--		nodemask_t nodes_parsed;
--		size_t size;
--		int i, j, cnt = 0;
--		u64 phys;
--
--		/* size the new table and allocate it */
--		nodes_parsed = numa_nodes_parsed;
--		numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
--
--		for_each_node_mask(i, nodes_parsed)
--			cnt = i;
--		size = ++cnt * sizeof(numa_distance[0]);
--
--		phys = memblock_find_in_range(0,
--					      (u64)max_pfn_mapped << PAGE_SHIFT,
--					      size, PAGE_SIZE);
--		if (phys == MEMBLOCK_ERROR) {
--			pr_warning("NUMA: Warning: can't allocate distance table!\n");
--			/* don't retry until explicitly reset */
--			numa_distance = (void *)1LU;
--			return;
--		}
--		memblock_x86_reserve_range(phys, phys + size, "NUMA DIST");
--
--		numa_distance = __va(phys);
--		numa_distance_cnt = cnt;
--
--		/* fill with the default distances */
--		for (i = 0; i < cnt; i++)
--			for (j = 0; j < cnt; j++)
--				numa_distance[i * cnt + j] = i == j ?
--					LOCAL_DISTANCE : REMOTE_DISTANCE;
--		printk(KERN_DEBUG "NUMA: Initialized distance table, cnt=%d\n", cnt);
--	}
-+	if (!numa_distance)
-+		alloc_numa_distance();
-+
-+	if (!numa_distance_cnt)
-+		return;
- 
- 	if (from >= numa_distance_cnt || to >= numa_distance_cnt) {
- 		printk_once(KERN_DEBUG "NUMA: Debug: distance out of bound, from=%d to=%d distance=%d\n",
+clk_enable on the parent is handled by the clock op implementation in
+mach-tegra/clock.c
+
+>> +
+>> +static void tegra_clk_shared_bus_disable(struct clk *c)
+>> +{
+>> +     c->u.shared_bus_user.enabled = false;
+>> +     tegra_clk_shared_bus_update(c->parent);
+>> +}
+>
+> And a similar clk_disable(c->parent) here.
+
+Same for disable
