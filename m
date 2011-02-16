@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab1BPCSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:18:41 -0500
-Received: from kroah.org ([198.145.64.141]:38597 "EHLO coco.kroah.org"
+	id S1756426Ab1BPCTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:19:01 -0500
+Received: from kroah.org ([198.145.64.141]:38592 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab1BPASK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:10 -0500
+	id S1756488Ab1BPASI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:26 2011
-Message-Id: <20110216001426.162371342@clark.kroah.org>
+Message-Id: <20110216001426.065881969@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:08 -0800
+Date: Tue, 15 Feb 2011 16:11:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Edgar Hucek <gimli@dark-green.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
+        Jean Delvare <khali@linux-fr.org>,
         Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [011/272] hwmon: (applesmc) Add MacBookAir3,1(3,2) support
+Subject: [010/272] hwmon: (via686a) Initialize fan_div values
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Edgar Hucek <gimli@dark-green.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 132af03233b493101a53010383b5abb5b9ff1e51 upstream.
+commit f790674d3f87df6390828ac21a7d1530f71b59c8 upstream.
 
-This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
-applesmc driver.
+Functions set_fan_min() and set_fan_div() assume that the fan_div
+values have already been read from the register. The driver currently
+doesn't initialize them at load time, they are only set when function
+via686a_update_device() is called. This means that set_fan_min() and
+set_fan_div() misbehave if, for example, "sensors -s" is called
+before any monitoring application (e.g. "sensors") is has been run.
 
-[rydberg@euromail.se: minor cleanup]
-Cc: stable@kernel.org
-Signed-off-by: Edgar Hucek <gimli@dark-green.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Fix the problem by always initializing the fan_div values at device
+bind time.
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/applesmc.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/hwmon/via686a.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -162,6 +162,10 @@ static const char *temperature_sensors_s
- /* Set 22: MacBook Pro 7,1 */
- 	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0P", "TN0D", "TN0P", "TN0S",
- 	  "TN1D", "TN1F", "TN1G", "TN1S", "Th1H", "Ts0P", "Ts0S", NULL },
-+/* Set 23: MacBook Air 3,1 */
-+	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0E", "TC0P", "TC1E", "TCZ3",
-+	  "TCZ4", "TCZ5", "TG0E", "TG1E", "TG2E", "TGZ3", "TGZ4", "TGZ5",
-+	  "TH0F", "TH0O", "TM0P" },
- };
+--- a/drivers/hwmon/via686a.c
++++ b/drivers/hwmon/via686a.c
+@@ -687,6 +687,13 @@ static int __devexit via686a_remove(stru
+ 	return 0;
+ }
  
- /* List of keys used to read/write fan speeds */
-@@ -1524,11 +1528,17 @@ static __initdata struct dmi_match_data
- 	{ .accelerometer = 1, .light = 1, .temperature_set = 21 },
- /* MacBook Pro 7,1: accelerometer, backlight and temperature set 22 */
- 	{ .accelerometer = 1, .light = 1, .temperature_set = 22 },
-+/* MacBook Air 3,1: accelerometer, backlight and temperature set 23 */
-+	{ .accelerometer = 0, .light = 0, .temperature_set = 23 },
- };
++static void via686a_update_fan_div(struct via686a_data *data)
++{
++	int reg = via686a_read_value(data, VIA686A_REG_FANDIV);
++	data->fan_div[0] = (reg >> 4) & 0x03;
++	data->fan_div[1] = reg >> 6;
++}
++
+ static void __devinit via686a_init_device(struct via686a_data *data)
+ {
+ 	u8 reg;
+@@ -700,6 +707,9 @@ static void __devinit via686a_init_devic
+ 	via686a_write_value(data, VIA686A_REG_TEMP_MODE,
+ 			    (reg & ~VIA686A_TEMP_MODE_MASK)
+ 			    | VIA686A_TEMP_MODE_CONTINUOUS);
++
++	/* Pre-read fan clock divisor values */
++	via686a_update_fan_div(data);
+ }
  
- /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
-  * So we need to put "Apple MacBook Pro" before "Apple MacBook". */
- static __initdata struct dmi_system_id applesmc_whitelist[] = {
-+	{ applesmc_dmi_match, "Apple MacBook Air 3", {
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3") },
-+		&applesmc_dmi_data[23]},
- 	{ applesmc_dmi_match, "Apple MacBook Air 2", {
- 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
- 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir2") },
+ static struct via686a_data *via686a_update_device(struct device *dev)
+@@ -751,9 +761,7 @@ static struct via686a_data *via686a_upda
+ 		    (via686a_read_value(data, VIA686A_REG_TEMP_LOW23) &
+ 		     0xc0) >> 6;
+ 
+-		i = via686a_read_value(data, VIA686A_REG_FANDIV);
+-		data->fan_div[0] = (i >> 4) & 0x03;
+-		data->fan_div[1] = i >> 6;
++		via686a_update_fan_div(data);
+ 		data->alarms =
+ 		    via686a_read_value(data,
+ 				       VIA686A_REG_ALARM1) |
 
 
