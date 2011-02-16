@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758948Ab1BPMRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:17:44 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:21961 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756223Ab1BPMRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:17:42 -0500
-Date: Wed, 16 Feb 2011 13:57:29 +0200
-From: Eduardo Valentin <eduardo.valentin@nokia.com>
-To: ext Linus Walleij <linus.walleij@linaro.org>
-Cc: Eduardo Valentin <eduardo.valentin@nokia.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        ext Kevin Hilman <khilman@deeprootsystems.com>,
-        Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
-        santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
-        felipe.balbi@nokia.com, Jouni Hogander <jouni.hogander@nokia.com>,
-        Paul Mundt <lethal@linux-sh.org>, Lee Jones <Lee.Jones@linaro.org>,
-        maxime.coquelin-nonst@stericsson.com,
-        Jonas =?utf-8?B?77+9YmVyZw==?= <jonas.aberg@stericsson.com>,
-        ext Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
- OMAP data
-Message-ID: <20110216115729.GA29817@besouro.research.nokia.com>
-Reply-To: eduardo.valentin@nokia.com
-References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
- <AANLkTin7vRMreG3hOAk95MYZUCV-Kr6ac7gD7jgvX6Gf@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin7vRMreG3hOAk95MYZUCV-Kr6ac7gD7jgvX6Gf@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
+	id S1758964Ab1BPMTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:19:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:54215 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754761Ab1BPMS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 07:18:59 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=4UV-9Kl2S54A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=bZSih4UtgmnRTX-y6tAA:9 a=6LJMykJkeSWPHUueayiYEawzLXQA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Newton <will.newton@gmail.com>
+Cc: Will Simoneau <simoneau@ele.uri.edu>, David Miller <davem@davemloft.net>,
+        hpa@zytor.com, matt@console-pimps.org, peterz@infradead.org,
+        jbaron@redhat.com, mathieu.desnoyers@polymtl.ca, mingo@elte.hu,
+        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
+        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        avi@redhat.com, sam@ravnborg.org, ddaney@caviumnetworks.com,
+        michael@ellerman.id.au, linux-kernel@vger.kernel.org,
+        vapier@gentoo.org, cmetcalf@tilera.com, dhowells@redhat.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org
+In-Reply-To: <AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com>
+References: <4D59B891.8010300@zytor.com>
+	 <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
+	 <20110215211123.GA3094@ele.uri.edu>
+	 <20110215.132702.39199169.davem@davemloft.net>
+	 <20110215215604.GA3177@ele.uri.edu>
+	 <AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 16 Feb 2011 07:18:54 -0500
+Message-ID: <1297858734.23343.138.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Wed, 2011-02-16 at 10:15 +0000, Will Newton wrote:
 
-On Tue, Feb 15, 2011 at 01:58:00PM +0100, ext Linus Walleij wrote:
-> 2010/5/11 Eduardo Valentin <eduardo.valentin@nokia.com>:
+> > That's some really crippled hardware... it does seem like *any* loads
+> > from *any* address updated by an sc would have to be done with ll as
+> > well, else they may load stale values. One could work this into
+> > atomic_read(), but surely there are other places that are problems.
 > 
-> > Here is the version 5 of the change to export OMAP data to userspace
-> > (name, revision, id code, production id and die id).
-> >
-> > Basically, this version is still attempting to create a new file under /proc.
-> > It is the /proc/socinfo, which should be used to export bits which are SoC specific
-> > (not CPU related, nor machine related).
-> >
-> > So, differences between previous version are:
-> > - merged patch 02/04 with 03/04 to avoid compilation breakages.
-> > - simplified the seq_file usage by using the single_open and single_release functions
-> > - exported a function to register a seq_operation .show callback
-> > - adapted the changes accordingly
-> >
-> > As usual, comments are welcome.
-> 
-> Eduardo, what has happened to this patchset?
+> I think it's actually ok, atomics have arch implemented accessors, as
+> do spinlocks and atomic bitops. Those are the only place we do sc so
+> we can make sure we always ll or invalidate manually.
 
-Got forgotten :-(. Unfortunately I didn't pushed it hard enough.
+I'm curious, how is cmpxchg() implemented on this architecture? As there
+are several places in the kernel that uses this on regular variables
+without any "accessor" functions.
 
-> 
-> Now we need something similar for arch/arm/mach-ux500 and I was sort of
-> hoping that this infrastructure would be in place already... wrong I was.
+-- Steve
 
-Right.
 
-> 
-> Do you want help in picking it up and try to polish it up?
-
-Yeah, but it would need a refactoring. IIRC, result of last discussion was that
-we should not mess with /proc. So, maybe moving back to something under sysfs.
-Perhaps /sys/devices/soc or so?
-
-> 
-> Yours,
-> Linus Walleij
-
--- 
-Eduardo Valentin
