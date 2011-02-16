@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab1BPAsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:48:22 -0500
-Received: from kroah.org ([198.145.64.141]:45257 "EHLO coco.kroah.org"
+	id S932973Ab1BPAsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:48:43 -0500
+Received: from kroah.org ([198.145.64.141]:45468 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932852Ab1BPAsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:02 2011
-Message-Id: <20110216002102.112055302@clark.kroah.org>
+	id S932940Ab1BPAse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:03 2011
+Message-Id: <20110216002103.904039746@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:58 -0800
+Date: Tue, 15 Feb 2011 16:20:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arvid Ephraim Picciani <arvid.picciani@nokia.com>
-Subject: [patch 030/176] USB: cdc-acm: Adding second ACM channel support for Nokia N8
+        Felix Fietkau <nbd@openwrt.org>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 048/176] mac80211: fix initialization of skb->cb in ieee80211_subif_start_xmit
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 721d92fc6373dee15846216f9d178ec240ec0fd7 upstream.
+commit 489ee9195a7de9e6bc833d639ff6b553ffdad90e upstream.
 
-This adds the N8 to the list of devices in cdc-acm, in order to get the
-secondary ACM device exposed.
+The change 'mac80211: Fix BUG in pskb_expand_head when transmitting shared skbs'
+added a check for copying the skb if it's shared, however the tx info variable
+still points at the cb of the old skb
 
-In the spirit of:
-http://kerneltrap.org/mailarchive/linux-usb/2010/9/4/6264554
-
-Signed-off-by: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/tx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1607,6 +1607,7 @@ static const struct usb_device_id acm_id
- 	{ NOKIA_PCSUITE_ACM_INFO(0x0154), }, /* Nokia 5800 XpressMusic */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x04ce), }, /* Nokia E90 */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x01d4), }, /* Nokia E55 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0302), }, /* Nokia N8 */
- 	{ SAMSUNG_PCSUITE_ACM_INFO(0x6651), }, /* Samsung GTi8510 (INNOV8) */
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1694,7 +1694,7 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ {
+ 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+ 	struct ieee80211_local *local = sdata->local;
+-	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
++	struct ieee80211_tx_info *info;
+ 	int ret = NETDEV_TX_BUSY, head_need;
+ 	u16 ethertype, hdrlen,  meshhdrlen = 0;
+ 	__le16 fc;
+@@ -1984,6 +1984,7 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 	skb_set_network_header(skb, nh_pos);
+ 	skb_set_transport_header(skb, h_pos);
  
- 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
++	info = IEEE80211_SKB_CB(skb);
+ 	memset(info, 0, sizeof(*info));
+ 
+ 	dev->trans_start = jiffies;
 
 
