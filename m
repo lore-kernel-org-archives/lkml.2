@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab1BPAvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:51:11 -0500
-Received: from kroah.org ([198.145.64.141]:46047 "EHLO coco.kroah.org"
+	id S933388Ab1BPA7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:59:16 -0500
+Received: from kroah.org ([198.145.64.141]:46106 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933279Ab1BPAu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:57 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:12 2011
-Message-Id: <20110216002112.225860971@clark.kroah.org>
+	id S933348Ab1BPAvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:14 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:13 2011
+Message-Id: <20110216002113.054438838@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:40 -0800
+Date: Tue, 15 Feb 2011 16:21:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [patch 132/176] watchdog: Fix sysctl consistency
+        NeilBrown <neilb@suse.de>
+Subject: [patch 140/176] md: fix regression resulting in delays in clearing bits in a bitmap
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,57 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 397357666de6b5b6adb5fa99f9758ec8cf30ac34 upstream.
+commit 6c9879101442b08581e8a0e3ae6b7f643a78fd63 upstream.
 
-If it was not possible to enable watchdog for any cpu, switch
-watchdog_enabled back to 0, because it's visible via
-kernel.watchdog sysctl.
+commit 589a594be1fb (2.6.37-rc4) fixed a problem were md_thread would
+sometimes call the ->run function at a bad time.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <1296230433-6261-2-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+If an error is detected during array start up after the md_thread has
+been started, the md_thread is killed.  This resulted in the ->run
+function being called once.  However the array may not be in a state
+that it is safe to call ->run.
+
+However the fix imposed meant that  ->run was not called on a timeout.
+This means that when an array goes idle, bitmap bits do not get
+cleared promptly.  While the array is busy the bits will still be
+cleared when appropriate so this is not very serious.  There is no
+risk to data.
+
+Change the test so that we only avoid calling ->run when the thread
+is being stopped.  This more explicitly addresses the problem situation.
+
+This is suitable for 2.6.37-stable and any -stable kernel to which
+589a594be1fb was applied.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/watchdog.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/md/md.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -441,9 +441,6 @@ static int watchdog_enable(int cpu)
- 		wake_up_process(p);
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -6038,7 +6038,8 @@ static int md_thread(void * arg)
+ 			 || kthread_should_stop(),
+ 			 thread->timeout);
+ 
+-		if (test_and_clear_bit(THREAD_WAKEUP, &thread->flags))
++		clear_bit(THREAD_WAKEUP, &thread->flags);
++		if (!kthread_should_stop())
+ 			thread->run(thread->mddev);
  	}
  
--	/* if any cpu succeeds, watchdog is considered enabled for the system */
--	watchdog_enabled = 1;
--
- 	return 0;
- }
- 
-@@ -471,12 +468,16 @@ static void watchdog_disable(int cpu)
- static void watchdog_enable_all_cpus(void)
- {
- 	int cpu;
--	int result = 0;
-+
-+	watchdog_enabled = 0;
- 
- 	for_each_online_cpu(cpu)
--		result += watchdog_enable(cpu);
-+		if (!watchdog_enable(cpu))
-+			/* if any cpu succeeds, watchdog is considered
-+			   enabled for the system */
-+			watchdog_enabled = 1;
- 
--	if (result)
-+	if (!watchdog_enabled)
- 		printk(KERN_ERR "watchdog: failed to be enabled on some cpus\n");
- 
- }
 
 
