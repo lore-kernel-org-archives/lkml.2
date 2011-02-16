@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab1BPBf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:35:56 -0500
-Received: from kroah.org ([198.145.64.141]:39155 "EHLO coco.kroah.org"
+	id S1757835Ab1BPBgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:36:16 -0500
+Received: from kroah.org ([198.145.64.141]:39148 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757018Ab1BPAUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:20:46 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:35 2011
-Message-Id: <20110216001435.006490685@clark.kroah.org>
+	id S1757188Ab1BPAUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:20:43 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:34 2011
+Message-Id: <20110216001434.897061132@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:36 -0800
+Date: Tue, 15 Feb 2011 16:12:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: [099/272] Input: rc-keymap - return KEY_RESERVED for unknown mappings
+        "Edgar (gimli) Hucek" <gimli@dark-green.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>
+Subject: [098/272] input: bcm5974: Add support for MacBookAir3
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,67 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Edgar (gimli) Hucek <gimli@dark-green.com>
 
-commit 54e74b87e2a9941c6fa82189f270b47cceeba714 upstream.
+commit 6021afcf19d8c6f5db6d11cadcfb6a22d0c28a48 upstream.
 
-Do not respond with -EINVAL to EVIOCGKEYCODE for not-yet-mapped
-scancodes, but rather return KEY_RESERVED.
+This patch adds support for the MacBookAir3,1 and MacBookAir3,2
+models.
 
-This fixes breakage with Ubuntu's input-kbd utility that stopped
-returning full keymaps for remote controls.
-
-Tested-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Tested-by: Mark Lord <kernel@teksavvy.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[rydberg@euromail.se: touchpad range calibration]
+Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/media/IR/ir-keytable.c |   28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+ drivers/input/mouse/bcm5974.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
---- a/drivers/media/IR/ir-keytable.c
-+++ b/drivers/media/IR/ir-keytable.c
-@@ -374,21 +374,27 @@ static int ir_getkeycode(struct input_de
- 		index = ir_lookup_by_scancode(rc_tab, scancode);
- 	}
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -55,6 +55,14 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI	0x0236
+ #define USB_DEVICE_ID_APPLE_WELLSPRING3_ISO	0x0237
+ #define USB_DEVICE_ID_APPLE_WELLSPRING3_JIS	0x0238
++/* MacbookAir3,2 (unibody), aka wellspring5 */
++#define USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI	0x023f
++#define USB_DEVICE_ID_APPLE_WELLSPRING4_ISO	0x0240
++#define USB_DEVICE_ID_APPLE_WELLSPRING4_JIS	0x0241
++/* MacbookAir3,1 (unibody), aka wellspring4 */
++#define USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI	0x0242
++#define USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO	0x0243
++#define USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS	0x0244
  
--	if (index >= rc_tab->len) {
--		if (!(ke->flags & INPUT_KEYMAP_BY_INDEX))
--			IR_dprintk(1, "unknown key for scancode 0x%04x\n",
--				   scancode);
-+	if (index < rc_tab->len) {
-+		entry = &rc_tab->scan[index];
-+
-+		ke->index = index;
-+		ke->keycode = entry->keycode;
-+		ke->len = sizeof(entry->scancode);
-+		memcpy(ke->scancode, &entry->scancode, sizeof(entry->scancode));
-+
-+	} else if (!(ke->flags & INPUT_KEYMAP_BY_INDEX)) {
-+		/*
-+		 * We do not really know the valid range of scancodes
-+		 * so let's respond with KEY_RESERVED to anything we
-+		 * do not have mapping for [yet].
-+		 */
-+		ke->index = index;
-+		ke->keycode = KEY_RESERVED;
-+	} else {
- 		retval = -EINVAL;
- 		goto out;
- 	}
+ #define BCM5974_DEVICE(prod) {					\
+ 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
+@@ -80,6 +88,14 @@ static const struct usb_device_id bcm597
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_ISO),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_JIS),
++	/* MacbookAir3,2 */
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_ISO),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_JIS),
++	/* MacbookAir3,1 */
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS),
+ 	/* Terminating entry */
+ 	{}
+ };
+@@ -234,6 +250,30 @@ static const struct bcm5974_config bcm59
+ 		{ DIM_X, DIM_X / SN_COORD, -4460, 5166 },
+ 		{ DIM_Y, DIM_Y / SN_COORD, -75, 6700 }
+ 	},
++	{
++		USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI,
++		USB_DEVICE_ID_APPLE_WELLSPRING4_ISO,
++		USB_DEVICE_ID_APPLE_WELLSPRING4_JIS,
++		HAS_INTEGRATED_BUTTON,
++		0x84, sizeof(struct bt_data),
++		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
++		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
++		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
++		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
++		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
++	},
++	{
++		USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI,
++		USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO,
++		USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS,
++		HAS_INTEGRATED_BUTTON,
++		0x84, sizeof(struct bt_data),
++		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
++		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
++		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
++		{ DIM_X, DIM_X / SN_COORD, -4616, 5112 },
++		{ DIM_Y, DIM_Y / SN_COORD, -142, 5234 }
++	},
+ 	{}
+ };
  
--	entry = &rc_tab->scan[index];
--
--	ke->index = index;
--	ke->keycode = entry->keycode;
--	ke->len = sizeof(entry->scancode);
--	memcpy(ke->scancode, &entry->scancode, sizeof(entry->scancode));
--
- 	retval = 0;
- 
- out:
 
 
