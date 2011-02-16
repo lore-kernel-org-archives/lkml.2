@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038Ab1BPCOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:14:35 -0500
-Received: from kroah.org ([198.145.64.141]:48700 "EHLO coco.kroah.org"
+	id S1756878Ab1BPCPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:15:10 -0500
+Received: from kroah.org ([198.145.64.141]:48678 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758058Ab1BPBtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:03 -0500
+	id S1756752Ab1BPBs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:48:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:54 2011
-Message-Id: <20110216014654.800264538@clark.kroah.org>
+Message-Id: <20110216014654.502566745@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:31 -0800
+Date: Tue, 15 Feb 2011 17:44:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [005/115] hwmon: (via686a) Initialize fan_div values
+        Alex He <alex.he@amd.com>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: [002/115] USB: EHCI: ASPM quirk of ISOC on AMD SB800
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +26,228 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Alex He <alex.he@amd.com>
 
-commit f790674d3f87df6390828ac21a7d1530f71b59c8 upstream.
+commit 05570297ecbe834b1756b522412b68eaffb9ab11 upstream.
 
-Functions set_fan_min() and set_fan_div() assume that the fan_div
-values have already been read from the register. The driver currently
-doesn't initialize them at load time, they are only set when function
-via686a_update_device() is called. This means that set_fan_min() and
-set_fan_div() misbehave if, for example, "sensors -s" is called
-before any monitoring application (e.g. "sensors") is has been run.
+When ASPM PM Feature is enabled on UMI link, devices that use ISOC stream of
+data transfer may be exposed to longer latency causing less than optimal per-
+formance of the device. The longer latencies are normal and are due to link
+wake time coming out of low power state which happens frequently to save
+power when the link is not active.
+The following code will make exception for certain features of ASPM to be by
+passed and keep the logic normal state only when the ISOC device is connected
+and active. This change will allow the device to run at optimal performance
+yet minimize the impact on overall power savings.
 
-Fix the problem by always initializing the fan_div values at device
-bind time.
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Alex He <alex.he@amd.com>
+Acked-by: David Brownell <dbrownell@users.sourceforge.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/via686a.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/usb/host/ehci-hcd.c   |    8 ++++
+ drivers/usb/host/ehci-pci.c   |   32 +++++++++++++++++
+ drivers/usb/host/ehci-sched.c |   79 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/ehci.h       |    1 
+ 4 files changed, 120 insertions(+)
 
---- a/drivers/hwmon/via686a.c
-+++ b/drivers/hwmon/via686a.c
-@@ -687,6 +687,13 @@ static int __devexit via686a_remove(stru
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -103,6 +103,9 @@ MODULE_PARM_DESC (ignore_oc, "ignore bog
+ 
+ #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
+ 
++/* for ASPM quirk of ISOC on AMD SB800 */
++static struct pci_dev *amd_nb_dev;
++
+ /*-------------------------------------------------------------------------*/
+ 
+ #include "ehci.h"
+@@ -502,6 +505,11 @@ static void ehci_stop (struct usb_hcd *h
+ 	spin_unlock_irq (&ehci->lock);
+ 	ehci_mem_cleanup (ehci);
+ 
++	if (amd_nb_dev) {
++		pci_dev_put(amd_nb_dev);
++		amd_nb_dev = NULL;
++	}
++
+ #ifdef	EHCI_STATS
+ 	ehci_dbg (ehci, "irq normal %ld err %ld reclaim %ld (lost %ld)\n",
+ 		ehci->stats.normal, ehci->stats.error, ehci->stats.reclaim,
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -41,6 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
  	return 0;
  }
  
-+static void via686a_update_fan_div(struct via686a_data *data)
++static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
 +{
-+	int reg = via686a_read_value(data, VIA686A_REG_FANDIV);
-+	data->fan_div[0] = (reg >> 4) & 0x03;
-+	data->fan_div[1] = reg >> 6;
++	struct pci_dev *amd_smbus_dev;
++	u8 rev = 0;
++
++	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
++	if (!amd_smbus_dev)
++		return 0;
++
++	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
++	if (rev < 0x40) {
++		pci_dev_put(amd_smbus_dev);
++		amd_smbus_dev = NULL;
++		return 0;
++	}
++
++	if (!amd_nb_dev)
++		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
++	if (!amd_nb_dev)
++		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
++
++	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
++
++	pci_dev_put(amd_smbus_dev);
++	amd_smbus_dev = NULL;
++
++	return 1;
 +}
 +
- static void __devinit via686a_init_device(struct via686a_data *data)
+ /* called during probe() after chip reset completes */
+ static int ehci_pci_setup(struct usb_hcd *hcd)
  {
- 	u8 reg;
-@@ -700,6 +707,9 @@ static void __devinit via686a_init_devic
- 	via686a_write_value(data, VIA686A_REG_TEMP_MODE,
- 			    (reg & ~VIA686A_TEMP_MODE_MASK)
- 			    | VIA686A_TEMP_MODE_CONTINUOUS);
+@@ -99,6 +128,9 @@ static int ehci_pci_setup(struct usb_hcd
+ 	/* cache this readonly data; minimize chip reads */
+ 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+ 
++	if (ehci_quirk_amd_SB800(ehci))
++		ehci->amd_l1_fix = 1;
 +
-+	/* Pre-read fan clock divisor values */
-+	via686a_update_fan_div(data);
+ 	retval = ehci_halt(ehci);
+ 	if (retval)
+ 		return retval;
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1576,6 +1576,63 @@ itd_link (struct ehci_hcd *ehci, unsigne
+ 	*hw_p = cpu_to_hc32(ehci, itd->itd_dma | Q_TYPE_ITD);
  }
  
- static struct via686a_data *via686a_update_device(struct device *dev)
-@@ -751,9 +761,7 @@ static struct via686a_data *via686a_upda
- 		    (via686a_read_value(data, VIA686A_REG_TEMP_LOW23) &
- 		     0xc0) >> 6;
++#define AB_REG_BAR_LOW 0xe0
++#define AB_REG_BAR_HIGH 0xe1
++#define AB_INDX(addr) ((addr) + 0x00)
++#define AB_DATA(addr) ((addr) + 0x04)
++#define NB_PCIE_INDX_ADDR 0xe0
++#define NB_PCIE_INDX_DATA 0xe4
++#define NB_PIF0_PWRDOWN_0 0x01100012
++#define NB_PIF0_PWRDOWN_1 0x01100013
++
++static void ehci_quirk_amd_L1(struct ehci_hcd *ehci, int disable)
++{
++	u32 addr, addr_low, addr_high, val;
++
++	outb_p(AB_REG_BAR_LOW, 0xcd6);
++	addr_low = inb_p(0xcd7);
++	outb_p(AB_REG_BAR_HIGH, 0xcd6);
++	addr_high = inb_p(0xcd7);
++	addr = addr_high << 8 | addr_low;
++	outl_p(0x30, AB_INDX(addr));
++	outl_p(0x40, AB_DATA(addr));
++	outl_p(0x34, AB_INDX(addr));
++	val = inl_p(AB_DATA(addr));
++
++	if (disable) {
++		val &= ~0x8;
++		val |= (1 << 4) | (1 << 9);
++	} else {
++		val |= 0x8;
++		val &= ~((1 << 4) | (1 << 9));
++	}
++	outl_p(val, AB_DATA(addr));
++
++	if (amd_nb_dev) {
++		addr = NB_PIF0_PWRDOWN_0;
++		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
++		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
++		if (disable)
++			val &= ~(0x3f << 7);
++		else
++			val |= 0x3f << 7;
++
++		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
++
++		addr = NB_PIF0_PWRDOWN_1;
++		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
++		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
++		if (disable)
++			val &= ~(0x3f << 7);
++		else
++			val |= 0x3f << 7;
++
++		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
++	}
++
++	return;
++}
++
+ /* fit urb's itds into the selected schedule slot; activate as needed */
+ static int
+ itd_link_urb (
+@@ -1603,6 +1660,12 @@ itd_link_urb (
+ 			next_uframe >> 3, next_uframe & 0x7);
+ 		stream->start = jiffies;
+ 	}
++
++	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
++		if (ehci->amd_l1_fix == 1)
++			ehci_quirk_amd_L1(ehci, 1);
++	}
++
+ 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
  
--		i = via686a_read_value(data, VIA686A_REG_FANDIV);
--		data->fan_div[0] = (i >> 4) & 0x03;
--		data->fan_div[1] = i >> 6;
-+		via686a_update_fan_div(data);
- 		data->alarms =
- 		    via686a_read_value(data,
- 				       VIA686A_REG_ALARM1) |
+ 	/* fill iTDs uframe by uframe */
+@@ -1729,6 +1792,11 @@ itd_complete (
+ 	(void) disable_periodic(ehci);
+ 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
+ 
++	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
++		if (ehci->amd_l1_fix == 1)
++			ehci_quirk_amd_L1(ehci, 0);
++	}
++
+ 	if (unlikely(list_is_singular(&stream->td_list))) {
+ 		ehci_to_hcd(ehci)->self.bandwidth_allocated
+ 				-= stream->bandwidth;
+@@ -2016,6 +2084,12 @@ sitd_link_urb (
+ 			stream->interval, hc32_to_cpu(ehci, stream->splits));
+ 		stream->start = jiffies;
+ 	}
++
++	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
++		if (ehci->amd_l1_fix == 1)
++			ehci_quirk_amd_L1(ehci, 1);
++	}
++
+ 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
+ 
+ 	/* fill sITDs frame by frame */
+@@ -2118,6 +2192,11 @@ sitd_complete (
+ 	(void) disable_periodic(ehci);
+ 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
+ 
++	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
++		if (ehci->amd_l1_fix == 1)
++			ehci_quirk_amd_L1(ehci, 0);
++	}
++
+ 	if (list_is_singular(&stream->td_list)) {
+ 		ehci_to_hcd(ehci)->self.bandwidth_allocated
+ 				-= stream->bandwidth;
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -130,6 +130,7 @@ struct ehci_hcd {			/* one per controlle
+ 	unsigned		has_amcc_usb23:1;
+ 	unsigned		need_io_watchdog:1;
+ 	unsigned		broken_periodic:1;
++	unsigned		amd_l1_fix:1;
+ 
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
 
 
