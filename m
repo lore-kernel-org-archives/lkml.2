@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab1BPA3G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:29:06 -0500
-Received: from kroah.org ([198.145.64.141]:49905 "EHLO coco.kroah.org"
+	id S1757740Ab1BPA3X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:29:23 -0500
+Received: from kroah.org ([198.145.64.141]:49892 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757814Ab1BPAZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:23 -0500
+	id S1757787Ab1BPAZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:19 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:50 2011
-Message-Id: <20110216001450.867490143@clark.kroah.org>
+Message-Id: <20110216001450.674593697@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:15 -0800
+Date: Tue, 15 Feb 2011 16:15:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
         Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [258/272] drm/i915: fix calculation of eDP signal levels on Sandybridge
+Subject: [256/272] drm/i915/sdvo: Defer detection of output capabilities until probing
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,78 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 3c5a62b5226ca5db993660281e9c2a7275d9fb02 upstream.
+commit 97aaf910731b03b27b1c4c8a58006a1dc99dcd9a upstream.
 
-Some voltage swing/pre-emphasis level use the same value on eDP
-Sandybridge, like 400mv_0db and 600mv_0db are with the same value
-of (0x0 << 22). So, fix them, and point out the value if it isn't
-a supported voltage swing/pre-emphasis level.
+Alex Fiestas reported an issue with his HDMI connector being misdetected
+as DVI unless he had something connected upon boot. By moving the
+decision as to whether to use HDMI or DVI encoding for the HDMI capable
+output until we probe the monitor means that we should avoid sending a
+HDMI signal to a DVI monitor and also correctly detect hardware like
+Alex's.
 
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+However, to really determine what connector is soldered onto the wire we
+need to inspect the VBT sdvo child devices - but can we trust it?
+
+Reported-by: Alex Fiestas <alex@eyeos.org>
+Tested-by: Alex Fiestas <alex@eyeos.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=32828
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h |    9 +++++----
- drivers/gpu/drm/i915/intel_dp.c |   23 ++++++++++++++++-------
- 2 files changed, 21 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/i915/intel_sdvo.c |   33 +++++++++++----------------------
+ 1 file changed, 11 insertions(+), 22 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3057,10 +3057,11 @@
- #define  EDP_LINK_TRAIN_600MV_3_5DB_SNB_A	(0x01<<22)
- #define  EDP_LINK_TRAIN_800MV_0DB_SNB_A		(0x0<<22)
- /* SNB B-stepping */
--#define  EDP_LINK_TRAIN_400MV_0DB_SNB_B		(0x0<<22)
--#define  EDP_LINK_TRAIN_400MV_6DB_SNB_B		(0x3a<<22)
--#define  EDP_LINK_TRAIN_600MV_3_5DB_SNB_B	(0x39<<22)
--#define  EDP_LINK_TRAIN_800MV_0DB_SNB_B		(0x38<<22)
-+#define  EDP_LINK_TRAIN_400_600MV_0DB_SNB_B	(0x0<<22)
-+#define  EDP_LINK_TRAIN_400MV_3_5DB_SNB_B	(0x1<<22)
-+#define  EDP_LINK_TRAIN_400_600MV_6DB_SNB_B	(0x3a<<22)
-+#define  EDP_LINK_TRAIN_600_800MV_3_5DB_SNB_B	(0x39<<22)
-+#define  EDP_LINK_TRAIN_800_1200MV_0DB_SNB_B	(0x38<<22)
- #define  EDP_LINK_TRAIN_VOL_EMP_MASK_SNB	(0x3f<<22)
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1024,9 +1024,13 @@ static void intel_sdvo_mode_set(struct d
+ 	if (!intel_sdvo_set_target_input(intel_sdvo))
+ 		return;
  
- #endif /* _I915_REG_H_ */
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1153,18 +1153,27 @@ intel_dp_signal_levels(uint8_t train_set
- static uint32_t
- intel_gen6_edp_signal_levels(uint8_t train_set)
+-	if (intel_sdvo->has_hdmi_monitor &&
+-	    !intel_sdvo_set_avi_infoframe(intel_sdvo))
+-		return;
++	if (intel_sdvo->has_hdmi_monitor) {
++		intel_sdvo_set_encode(intel_sdvo, SDVO_ENCODE_HDMI);
++		intel_sdvo_set_colorimetry(intel_sdvo,
++					   SDVO_COLORIMETRY_RGB256);
++		intel_sdvo_set_avi_infoframe(intel_sdvo);
++	} else
++		intel_sdvo_set_encode(intel_sdvo, SDVO_ENCODE_DVI);
+ 
+ 	if (intel_sdvo->is_tv &&
+ 	    !intel_sdvo_set_tv_format(intel_sdvo))
+@@ -1395,6 +1399,9 @@ intel_sdvo_detect(struct drm_connector *
+ 
+ 	intel_sdvo->attached_output = response;
+ 
++	intel_sdvo->has_hdmi_monitor = false;
++	intel_sdvo->has_hdmi_audio = false;
++
+ 	if ((intel_sdvo_connector->output_flag & response) == 0)
+ 		ret = connector_status_disconnected;
+ 	else if (response & SDVO_TMDS_MASK)
+@@ -1919,20 +1926,7 @@ intel_sdvo_select_i2c_bus(struct drm_i91
+ static bool
+ intel_sdvo_is_hdmi_connector(struct intel_sdvo *intel_sdvo, int device)
  {
--	switch (train_set & (DP_TRAIN_VOLTAGE_SWING_MASK|DP_TRAIN_PRE_EMPHASIS_MASK)) {
-+	int signal_levels = train_set & (DP_TRAIN_VOLTAGE_SWING_MASK |
-+					 DP_TRAIN_PRE_EMPHASIS_MASK);
-+	switch (signal_levels) {
- 	case DP_TRAIN_VOLTAGE_SWING_400 | DP_TRAIN_PRE_EMPHASIS_0:
--		return EDP_LINK_TRAIN_400MV_0DB_SNB_B;
-+	case DP_TRAIN_VOLTAGE_SWING_600 | DP_TRAIN_PRE_EMPHASIS_0:
-+		return EDP_LINK_TRAIN_400_600MV_0DB_SNB_B;
-+	case DP_TRAIN_VOLTAGE_SWING_400 | DP_TRAIN_PRE_EMPHASIS_3_5:
-+		return EDP_LINK_TRAIN_400MV_3_5DB_SNB_B;
- 	case DP_TRAIN_VOLTAGE_SWING_400 | DP_TRAIN_PRE_EMPHASIS_6:
--		return EDP_LINK_TRAIN_400MV_6DB_SNB_B;
-+	case DP_TRAIN_VOLTAGE_SWING_600 | DP_TRAIN_PRE_EMPHASIS_6:
-+		return EDP_LINK_TRAIN_400_600MV_6DB_SNB_B;
- 	case DP_TRAIN_VOLTAGE_SWING_600 | DP_TRAIN_PRE_EMPHASIS_3_5:
--		return EDP_LINK_TRAIN_600MV_3_5DB_SNB_B;
-+	case DP_TRAIN_VOLTAGE_SWING_800 | DP_TRAIN_PRE_EMPHASIS_3_5:
-+		return EDP_LINK_TRAIN_600_800MV_3_5DB_SNB_B;
- 	case DP_TRAIN_VOLTAGE_SWING_800 | DP_TRAIN_PRE_EMPHASIS_0:
--		return EDP_LINK_TRAIN_800MV_0DB_SNB_B;
-+	case DP_TRAIN_VOLTAGE_SWING_1200 | DP_TRAIN_PRE_EMPHASIS_0:
-+		return EDP_LINK_TRAIN_800_1200MV_0DB_SNB_B;
- 	default:
--		DRM_DEBUG_KMS("Unsupported voltage swing/pre-emphasis level\n");
--		return EDP_LINK_TRAIN_400MV_0DB_SNB_B;
-+		DRM_DEBUG_KMS("Unsupported voltage swing/pre-emphasis level:"
-+			      "0x%x\n", signal_levels);
-+		return EDP_LINK_TRAIN_400_600MV_0DB_SNB_B;
- 	}
+-	int is_hdmi;
+-
+-	if (!intel_sdvo_check_supp_encode(intel_sdvo))
+-		return false;
+-
+-	if (!intel_sdvo_set_target_output(intel_sdvo,
+-					  device == 0 ? SDVO_OUTPUT_TMDS0 : SDVO_OUTPUT_TMDS1))
+-		return false;
+-
+-	is_hdmi = 0;
+-	if (!intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_ENCODE, &is_hdmi, 1))
+-		return false;
+-
+-	return !!is_hdmi;
++	return intel_sdvo_check_supp_encode(intel_sdvo);
  }
  
+ static u8
+@@ -2034,12 +2028,7 @@ intel_sdvo_dvi_init(struct intel_sdvo *i
+ 	connector->connector_type = DRM_MODE_CONNECTOR_DVID;
+ 
+ 	if (intel_sdvo_is_hdmi_connector(intel_sdvo, device)) {
+-		/* enable hdmi encoding mode if supported */
+-		intel_sdvo_set_encode(intel_sdvo, SDVO_ENCODE_HDMI);
+-		intel_sdvo_set_colorimetry(intel_sdvo,
+-					   SDVO_COLORIMETRY_RGB256);
+ 		connector->connector_type = DRM_MODE_CONNECTOR_HDMIA;
+-
+ 		intel_sdvo->is_hdmi = true;
+ 	}
+ 	intel_sdvo->base.clone_mask = ((1 << INTEL_SDVO_NON_TV_CLONE_BIT) |
 
 
