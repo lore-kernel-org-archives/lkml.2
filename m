@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab1BPCBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:01:47 -0500
-Received: from kroah.org ([198.145.64.141]:49141 "EHLO coco.kroah.org"
+	id S1758544Ab1BPCCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:02:07 -0500
+Received: from kroah.org ([198.145.64.141]:49124 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753533Ab1BPBvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:01 -0500
+	id S1758487Ab1BPBuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:50:55 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:01 2011
-Message-Id: <20110216014701.851996887@clark.kroah.org>
+Message-Id: <20110216014701.564498801@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:42 -0800
+Date: Tue, 15 Feb 2011 17:45:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: [076/115] dm mpath: disable blk_abort_queue
+        Eric Paris <eparis@redhat.com>
+Subject: [073/115] SELinux: do not compute transition labels on mountpoint labeled filesystems
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,81 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit 09c9d4c9b6a2b5909ae3c6265e4cd3820b636863 upstream.
+commit 415103f9932d45f7927f4b17e3a9a13834cdb9a1 upstream.
 
-Revert commit 224cb3e981f1b2f9f93dbd49eaef505d17d894c2
-  dm: Call blk_abort_queue on failed paths
+selinux_inode_init_security computes transitions sids even for filesystems
+that use mount point labeling.  It shouldn't do that.  It should just use
+the mount point label always and no matter what.
 
-Multipath began to use blk_abort_queue() to allow for
-lower latency path deactivation.  This was found to
-cause list corruption:
+This causes 2 problems.  1) it makes file creation slower than it needs to be
+since we calculate the transition sid and 2) it allows files to be created
+with a different label than the mount point!
 
-   the cmd gets blk_abort_queued/timedout run on it and the scsi eh
-   somehow is able to complete and run scsi_queue_insert while
-   scsi_request_fn is still trying to process the request.
+# id -Z
+staff_u:sysadm_r:sysadm_t:s0-s0:c0.c1023
+# sesearch --type --class file --source sysadm_t --target tmp_t
+Found 1 semantic te rules:
+   type_transition sysadm_t tmp_t : file user_tmp_t;
 
-   https://www.redhat.com/archives/dm-devel/2010-November/msg00085.html
+# mount -o loop,context="system_u:object_r:tmp_t:s0"  /tmp/fs /mnt/tmp
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Cc: Mike Anderson <andmike@linux.vnet.ibm.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
+# ls -lZ /mnt/tmp
+drwx------. root root system_u:object_r:tmp_t:s0       lost+found
+# touch /mnt/tmp/file1
+# ls -lZ /mnt/tmp
+-rw-r--r--. root root staff_u:object_r:user_tmp_t:s0   file1
+drwx------. root root system_u:object_r:tmp_t:s0       lost+found
+
+Whoops, we have a mount point labeled filesystem tmp_t with a user_tmp_t
+labeled file!
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Reviewed-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-mpath.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ security/selinux/hooks.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -33,7 +33,6 @@ struct pgpath {
- 	unsigned fail_count;		/* Cumulative failure count */
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -2601,7 +2601,10 @@ static int selinux_inode_init_security(s
+ 	sid = tsec->sid;
+ 	newsid = tsec->create_sid;
  
- 	struct dm_path path;
--	struct work_struct deactivate_path;
- 	struct work_struct activate_path;
- };
- 
-@@ -113,7 +112,6 @@ static struct workqueue_struct *kmultipa
- static void process_queued_ios(struct work_struct *work);
- static void trigger_event(struct work_struct *work);
- static void activate_path(struct work_struct *work);
--static void deactivate_path(struct work_struct *work);
- 
- 
- /*-----------------------------------------------
-@@ -126,7 +124,6 @@ static struct pgpath *alloc_pgpath(void)
- 
- 	if (pgpath) {
- 		pgpath->is_active = 1;
--		INIT_WORK(&pgpath->deactivate_path, deactivate_path);
- 		INIT_WORK(&pgpath->activate_path, activate_path);
- 	}
- 
-@@ -138,14 +135,6 @@ static void free_pgpath(struct pgpath *p
- 	kfree(pgpath);
- }
- 
--static void deactivate_path(struct work_struct *work)
--{
--	struct pgpath *pgpath =
--		container_of(work, struct pgpath, deactivate_path);
--
--	blk_abort_queue(pgpath->path.dev->bdev->bd_disk->queue);
--}
--
- static struct priority_group *alloc_priority_group(void)
- {
- 	struct priority_group *pg;
-@@ -949,7 +938,6 @@ static int fail_path(struct pgpath *pgpa
- 		      pgpath->path.dev->name, m->nr_valid_paths);
- 
- 	schedule_work(&m->trigger_event);
--	queue_work(kmultipathd, &pgpath->deactivate_path);
- 
- out:
- 	spin_unlock_irqrestore(&m->lock, flags);
+-	if (!newsid || !(sbsec->flags & SE_SBLABELSUPP)) {
++	if ((sbsec->flags & SE_SBINITIALIZED) &&
++	    (sbsec->behavior == SECURITY_FS_USE_MNTPOINT))
++		newsid = sbsec->mntpoint_sid;
++	else if (!newsid || !(sbsec->flags & SE_SBLABELSUPP)) {
+ 		rc = security_transition_sid(sid, dsec->sid,
+ 					     inode_mode_to_security_class(inode->i_mode),
+ 					     &newsid);
 
 
