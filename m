@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab1BPCAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:00:47 -0500
-Received: from kroah.org ([198.145.64.141]:49178 "EHLO coco.kroah.org"
+	id S1758505Ab1BPBvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:51:05 -0500
+Received: from kroah.org ([198.145.64.141]:49046 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab1BPBvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:11 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:02 2011
-Message-Id: <20110216014702.358548085@clark.kroah.org>
+	id S1758355Ab1BPBub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:50:31 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:00 2011
+Message-Id: <20110216014700.378532571@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:47 -0800
+Date: Tue, 15 Feb 2011 17:45:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [081/115] drm/radeon/kms: fix s/r issues with bios scratch regs
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [061/115] USB: serial: pl2303: Hybrid reader Uniform HCR331
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +24,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Simone Contini <s.contini@oltrelinux.com>
 
-commit 87364760de5d631390c478fcbac8db1b926e0adf upstream.
+commit 18344a1cd5889d48dac67229fcf024ed300030d5 upstream.
 
-The accelerate mode bit gets checked by certain atom
-command tables to set up some register state.  It needs
-to be clear when setting modes and set when not.
+I tried a magnetic stripe reader
+(http://www.kimaldi.com/kimaldi_eng/productos/lectores_de_tarjetas/lectores_tarjeta_chip_y_dni/lector_hibrido_uniform_hcr_331)
+and I see that it is interfaced with a PL2303. I wrote a patch to use
+your driver which simply adds the product ID for the device and it
+seems working fine.
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=26942
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+From: Simone Contini <s.contini@oltrelinux.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/usb/serial/pl2303.c |    1 +
+ drivers/usb/serial/pl2303.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -1217,7 +1217,7 @@ void radeon_atom_initialize_bios_scratch
- 	bios_2_scratch &= ~ATOM_S2_VRI_BRIGHT_ENABLE;
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -59,6 +59,7 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_ALDIGA) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MMX) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
++	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
+ 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -20,6 +20,7 @@
+ #define PL2303_PRODUCT_ID_ALDIGA	0x0611
+ #define PL2303_PRODUCT_ID_MMX		0x0612
+ #define PL2303_PRODUCT_ID_GPRS		0x0609
++#define PL2303_PRODUCT_ID_HCR331	0x331a
  
- 	/* tell the bios not to handle mode switching */
--	bios_6_scratch |= (ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH | ATOM_S6_ACC_MODE);
-+	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
- 
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
-@@ -1268,10 +1268,13 @@ void radeon_atom_output_lock(struct drm_
- 	else
- 		bios_6_scratch = RREG32(RADEON_BIOS_6_SCRATCH);
- 
--	if (lock)
-+	if (lock) {
- 		bios_6_scratch |= ATOM_S6_CRITICAL_STATE;
--	else
-+		bios_6_scratch &= ~ATOM_S6_ACC_MODE;
-+	} else {
- 		bios_6_scratch &= ~ATOM_S6_CRITICAL_STATE;
-+		bios_6_scratch |= ATOM_S6_ACC_MODE;
-+	}
- 
- 	if (rdev->family >= CHIP_R600)
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
+ #define ATEN_VENDOR_ID		0x0557
+ #define ATEN_VENDOR_ID2		0x0547
 
 
