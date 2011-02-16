@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab1BPBQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:16:56 -0500
-Received: from kroah.org ([198.145.64.141]:45452 "EHLO coco.kroah.org"
+	id S1753903Ab1BPBRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:17:11 -0500
+Received: from kroah.org ([198.145.64.141]:45447 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935Ab1BPAsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:30 -0500
+	id S932927Ab1BPAs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:03 2011
-Message-Id: <20110216002103.713265913@clark.kroah.org>
+Message-Id: <20110216002103.620740835@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:14 -0800
+Date: Tue, 15 Feb 2011 16:20:13 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Luciano Coelho <coelho@ti.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 046/176] mac80211: use maximum number of AMPDU frames as default in BA RX
+Subject: [patch 045/176] mac80211: add missing synchronize_rcu
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,52 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luciano Coelho <coelho@ti.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 82694f764dad783a123394e2220b92b9be721b43 upstream.
+commit d2460f4b2fa6dbdeec800414f9cf5b1fc8b71197 upstream.
 
-When the buffer size is set to zero in the block ack parameter set
-field, we should use the maximum supported number of subframes.  The
-existing code was bogus and was doing some unnecessary calculations
-that lead to wrong values.
+commit ad0e2b5a00dbec303e4682b403bb6703d11dcdb2
+Author: Johannes Berg <johannes.berg@intel.com>
+Date:   Tue Jun 1 10:19:19 2010 +0200
 
-Thanks Johannes for helping me figure this one out.
+    mac80211: simplify key locking
 
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Luciano Coelho <coelho@ti.com>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+removed the synchronization against RCU and thus
+opened a race window where we can use a key for
+TX while it is already freed. Put a synchronisation
+into the right place to close that window.
+
+Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
 ---
- net/mac80211/agg-rx.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ net/mac80211/key.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/mac80211/agg-rx.c
-+++ b/net/mac80211/agg-rx.c
-@@ -172,8 +172,6 @@ void ieee80211_process_addba_request(str
- 				     struct ieee80211_mgmt *mgmt,
- 				     size_t len)
- {
--	struct ieee80211_hw *hw = &local->hw;
--	struct ieee80211_conf *conf = &hw->conf;
- 	struct tid_ampdu_rx *tid_agg_rx;
- 	u16 capab, tid, timeout, ba_policy, buf_size, start_seq_num, status;
- 	u8 dialog_token;
-@@ -218,13 +216,8 @@ void ieee80211_process_addba_request(str
- 		goto end_no_lock;
- 	}
- 	/* determine default buffer size */
--	if (buf_size == 0) {
--		struct ieee80211_supported_band *sband;
--
--		sband = local->hw.wiphy->bands[conf->channel->band];
--		buf_size = IEEE80211_MIN_AMPDU_BUF;
--		buf_size = buf_size << sband->ht_cap.ampdu_factor;
--	}
-+	if (buf_size == 0)
-+		buf_size = IEEE80211_MAX_AMPDU_BUF;
+--- a/net/mac80211/key.c
++++ b/net/mac80211/key.c
+@@ -323,6 +323,12 @@ static void __ieee80211_key_destroy(stru
+ 	if (!key)
+ 		return;
  
++	/*
++	 * Synchronize so the TX path can no longer be using
++	 * this key before we free/remove it.
++	 */
++	synchronize_rcu();
++
+ 	if (key->local)
+ 		ieee80211_key_disable_hw_accel(key);
  
- 	/* examine state machine */
 
 
