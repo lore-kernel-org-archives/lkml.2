@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab1BPAqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:46:07 -0500
-Received: from kroah.org ([198.145.64.141]:49250 "EHLO coco.kroah.org"
+	id S1757482Ab1BPAWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:22:45 -0500
+Received: from kroah.org ([198.145.64.141]:49212 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757492Ab1BPAWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:48 -0500
+	id S1757463Ab1BPAWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:40 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:41 2011
-Message-Id: <20110216001441.604873012@clark.kroah.org>
+Message-Id: <20110216001441.118287698@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:42 -0800
+Date: Tue, 15 Feb 2011 16:13:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Machek <pavel@ucw.cz>
-Subject: [165/272] serial: unbreak billionton CF card
+        Bruce Rogers <brogers@novell.com>, Olaf Kirch <okir@suse.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [160/272] virtio_net: Add schedule check to napi_enable call
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Machek <pavel@ucw.cz>
+From: Bruce Rogers <brogers@novell.com>
 
-commit d0694e2aeb815042aa0f3e5036728b3db4446f1d upstream.
+commit 3e9d08ec0a68f6faf718d5a7e050fe5ca0ba004f upstream.
 
-Unbreak Billionton CF bluetooth card. This actually fixes a regression
-on zaurus.
+Under harsh testing conditions, including low memory, the guest would
+stop receiving packets. With this patch applied we no longer see any
+problems in the driver while performing these tests for extended periods
+of time.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Make sure napi is scheduled subsequent to each napi_enable.
+
+Signed-off-by: Bruce Rogers <brogers@novell.com>
+Signed-off-by: Olaf Kirch <okir@suse.de>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/serial/8250.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/virtio_net.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -236,7 +236,8 @@ static const struct serial8250_config ua
- 		.fifo_size	= 128,
- 		.tx_loadsz	= 128,
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
--		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
-+		/* UART_CAP_EFR breaks billionon CF bluetooth card. */
-+		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP,
- 	},
- 	[PORT_16654] = {
- 		.name		= "ST16654",
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -446,6 +446,20 @@ static void skb_recv_done(struct virtque
+ 	}
+ }
+ 
++static void virtnet_napi_enable(struct virtnet_info *vi)
++{
++	napi_enable(&vi->napi);
++
++	/* If all buffers were filled by other side before we napi_enabled, we
++	 * won't get another interrupt, so process any outstanding packets
++	 * now.  virtnet_poll wants re-enable the queue, so we disable here.
++	 * We synchronize against interrupts via NAPI_STATE_SCHED */
++	if (napi_schedule_prep(&vi->napi)) {
++		virtqueue_disable_cb(vi->rvq);
++		__napi_schedule(&vi->napi);
++	}
++}
++
+ static void refill_work(struct work_struct *work)
+ {
+ 	struct virtnet_info *vi;
+@@ -454,7 +468,7 @@ static void refill_work(struct work_stru
+ 	vi = container_of(work, struct virtnet_info, refill.work);
+ 	napi_disable(&vi->napi);
+ 	still_empty = !try_fill_recv(vi, GFP_KERNEL);
+-	napi_enable(&vi->napi);
++	virtnet_napi_enable(vi);
+ 
+ 	/* In theory, this can happen: if we don't get any buffers in
+ 	 * we will *never* try to fill again. */
+@@ -638,16 +652,7 @@ static int virtnet_open(struct net_devic
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
+-	napi_enable(&vi->napi);
+-
+-	/* If all buffers were filled by other side before we napi_enabled, we
+-	 * won't get another interrupt, so process any outstanding packets
+-	 * now.  virtnet_poll wants re-enable the queue, so we disable here.
+-	 * We synchronize against interrupts via NAPI_STATE_SCHED */
+-	if (napi_schedule_prep(&vi->napi)) {
+-		virtqueue_disable_cb(vi->rvq);
+-		__napi_schedule(&vi->napi);
+-	}
++	virtnet_napi_enable(vi);
+ 	return 0;
+ }
+ 
 
 
