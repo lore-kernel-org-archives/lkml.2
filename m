@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab1BPAiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:38:12 -0500
-Received: from kroah.org ([198.145.64.141]:49558 "EHLO coco.kroah.org"
+	id S932353Ab1BPAi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:38:27 -0500
+Received: from kroah.org ([198.145.64.141]:49551 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab1BPAX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:57 -0500
+	id S932207Ab1BPAXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:55 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:45 2011
-Message-Id: <20110216001445.848172974@clark.kroah.org>
+Message-Id: <20110216001445.752474283@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:24 -0800
+Date: Tue, 15 Feb 2011 16:14:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        openipmi-developer@lists.sourceforge.net,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Corey Minyard <cminyard@mvista.com>
-Subject: [207/272] char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [206/272] perf: Validate cpu early in perf_event_alloc()
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <minyard@acm.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit d2478521afc20227658a10a8c5c2bf1a2aa615b3 upstream.
+commit 66832eb4baaaa9abe4c993ddf9113a79e39b9915 upstream.
 
-This patch fixes an OOPS triggered when calling modprobe ipmi_si a
-second time after the first modprobe returned without finding any ipmi
-devices.  This can happen if you reload the module after having the
-first module load fail.  The driver was not deregistering from PNP in
-that case.
+Starting from perf_event_alloc()->perf_init_event(), the kernel
+assumes that event->cpu is either -1 or the valid CPU number.
 
-Peter Huewe originally reported this patch and supplied a fix, I have a
-different patch based on Linus' suggestion that cleans things up a bit
-more.
+Change perf_event_alloc() to validate this argument early. This
+also means we can remove the similar check in
+find_get_context().
 
-Cc: openipmi-developer@lists.sourceforge.net
-Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
+Cc: Roland McGrath <roland@redhat.com>
+LKML-Reference: <20110118161032.GC693@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ kernel/perf_event.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -320,6 +320,7 @@ static int unload_when_empty = 1;
- static int add_smi(struct smi_info *smi);
- static int try_smi_init(struct smi_info *smi);
- static void cleanup_one_si(struct smi_info *to_clean);
-+static void cleanup_ipmi_si(void);
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2105,9 +2105,6 @@ find_get_context(struct pmu *pmu, struct
+ 		if (perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
+ 			return ERR_PTR(-EACCES);
  
- static ATOMIC_NOTIFIER_HEAD(xaction_notifier_list);
- static int register_xaction_notifier(struct notifier_block *nb)
-@@ -3435,16 +3436,7 @@ static int __devinit init_ipmi_si(void)
- 	mutex_lock(&smi_infos_lock);
- 	if (unload_when_empty && list_empty(&smi_infos)) {
- 		mutex_unlock(&smi_infos_lock);
--#ifdef CONFIG_PCI
--		if (pci_registered)
--			pci_unregister_driver(&ipmi_pci_driver);
--#endif
+-		if (cpu < 0 || cpu >= nr_cpumask_bits)
+-			return ERR_PTR(-EINVAL);
 -
--#ifdef CONFIG_PPC_OF
--		if (of_registered)
--			of_unregister_platform_driver(&ipmi_of_platform_driver);
--#endif
--		driver_unregister(&ipmi_driver.driver);
-+		cleanup_ipmi_si();
- 		printk(KERN_WARNING PFX
- 		       "Unable to find any System Interface(s)\n");
- 		return -ENODEV;
+ 		/*
+ 		 * We could be clever and allow to attach a event to an
+ 		 * offline CPU and activate it when the CPU comes up, but
+@@ -5304,6 +5301,11 @@ perf_event_alloc(struct perf_event_attr
+ 	struct hw_perf_event *hwc;
+ 	long err;
+ 
++	if ((unsigned)cpu >= nr_cpu_ids) {
++		if (!task || cpu != -1)
++			return ERR_PTR(-EINVAL);
++	}
++
+ 	event = kzalloc(sizeof(*event), GFP_KERNEL);
+ 	if (!event)
+ 		return ERR_PTR(-ENOMEM);
+@@ -5352,7 +5354,7 @@ perf_event_alloc(struct perf_event_attr
+ 
+ 	if (!overflow_handler && parent_event)
+ 		overflow_handler = parent_event->overflow_handler;
+-	
++
+ 	event->overflow_handler	= overflow_handler;
+ 
+ 	if (attr->disabled)
 
 
