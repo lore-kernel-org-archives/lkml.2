@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab1BPCJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:09:05 -0500
-Received: from kroah.org ([198.145.64.141]:48832 "EHLO coco.kroah.org"
+	id S1758145Ab1BPBtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:49:41 -0500
+Received: from kroah.org ([198.145.64.141]:48784 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758158Ab1BPBto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:44 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:57 2011
-Message-Id: <20110216014657.618566679@clark.kroah.org>
+	id S1756479Ab1BPBta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:30 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:56 2011
+Message-Id: <20110216014656.696621915@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:59 -0800
+Date: Tue, 15 Feb 2011 17:44:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [033/115] [SCSI] fix medium error problems with some arrays which can cause data corruption
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [024/115] USB: prevent buggy hubs from crashing the USB stack
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@suse.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a8733c7baf457b071528e385a0b7d4aaec79287c upstream.
+commit d199c96d41d80a567493e12b8e96ea056a1350c1 upstream.
 
-Our current handling of medium error assumes that data is returned up
-to the bad sector.  This assumption holds good for all disk devices,
-all DIF arrays and most ordinary arrays.  However, an LSI array engine
-was recently discovered which reports a medium error without returning
-any data.  This means that when we report good data up to the medium
-error, we've reported junk originally in the buffer as good.  Worse,
-if the read consists of requested data plus a readahead, and the error
-occurs in readahead, we'll just strip off the readahead and report
-junk up to userspace as good data with no error.
+If anyone comes across a high-speed hub that (by mistake or by design)
+claims to have no Transaction Translators, plugging a full- or
+low-speed device into it will cause the USB stack to crash.  This
+patch (as1446) prevents the problem by ignoring such devices, since
+the kernel has no way to communicate with them.
 
-The fix for this is to have the error position computation take into
-account the amount of data returned by the driver using the scsi
-residual data.  Unfortunately, not every driver fills in this data,
-but for those who don't, it's set to zero, which means we'll think a
-full set of data was transferred and the behaviour will be identical
-to the prior behaviour of the code (believe the buffer up to the error
-sector).  All modern drivers seem to set the residual, so that should
-fix up the LSI failure/corruption case.
-
-Reported-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Perry Neben <neben@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/sd.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1040,6 +1040,12 @@ static unsigned int sd_completed_bytes(s
- 	u64 end_lba = blk_rq_pos(scmd->request) + (scsi_bufflen(scmd) / 512);
- 	u64 bad_lba;
- 	int info_valid;
-+	/*
-+	 * resid is optional but mostly filled in.  When it's unused,
-+	 * its value is zero, so we assume the whole buffer transferred
-+	 */
-+	unsigned int transferred = scsi_bufflen(scmd) - scsi_get_resid(scmd);
-+	unsigned int good_bytes;
- 
- 	if (!blk_fs_request(scmd->request))
- 		return 0;
-@@ -1073,7 +1079,8 @@ static unsigned int sd_completed_bytes(s
- 	/* This computation should always be done in terms of
- 	 * the resolution of the device's medium.
- 	 */
--	return (bad_lba - start_lba) * scmd->device->sector_size;
-+	good_bytes = (bad_lba - start_lba) * scmd->device->sector_size;
-+	return min(good_bytes, transferred);
- }
- 
- /**
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2683,6 +2683,11 @@ hub_port_init (struct usb_hub *hub, stru
+ 		udev->ttport = hdev->ttport;
+ 	} else if (udev->speed != USB_SPEED_HIGH
+ 			&& hdev->speed == USB_SPEED_HIGH) {
++		if (!hub->tt.hub) {
++			dev_err(&udev->dev, "parent hub has no TT\n");
++			retval = -EINVAL;
++			goto fail;
++		}
+ 		udev->tt = &hub->tt;
+ 		udev->ttport = port1;
+ 	}
 
 
