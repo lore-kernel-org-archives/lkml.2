@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358Ab1BPBb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:31:26 -0500
-Received: from kroah.org ([198.145.64.141]:39316 "EHLO coco.kroah.org"
+	id S1757523Ab1BPBbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:31:40 -0500
+Received: from kroah.org ([198.145.64.141]:39299 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756975Ab1BPAVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:34 -0500
+	id S1756958Ab1BPAVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:30 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:37 2011
-Message-Id: <20110216001437.344826778@clark.kroah.org>
+Message-Id: <20110216001437.156260243@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:00 -0800
+Date: Tue, 15 Feb 2011 16:12:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Junichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [123/272] mm: fix migration hangs on anon_vma lock
+        Jerome Marchand <jmarchan@redhat.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [121/272] block: fix accounting bug on cross partition merges
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,137 +27,233 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Jerome Marchand <jmarchan@redhat.com>
 
-commit 1ce82b69e96c838d007f316b8347b911fdfa9842 upstream.
+commit 09e099d4bafea3b15be003d548bdf94b4b6e0e17 upstream.
 
-Increased usage of page migration in mmotm reveals that the anon_vma
-locking in unmap_and_move() has been deficient since 2.6.36 (or even
-earlier).  Review at the time of f18194275c39835cb84563500995e0d503a32d9a
-("mm: fix hang on anon_vma->root->lock") missed the issue here: the
-anon_vma to which we get a reference may already have been freed back to
-its slab (it is in use when we check page_mapped, but that can change),
-and so its anon_vma->root may be switched at any moment by reuse in
-anon_vma_prepare.
+/proc/diskstats would display a strange output as follows.
 
-Perhaps we could fix that with a get_anon_vma_unless_zero(), but let's
-not: just rely on page_lock_anon_vma() to do all the hard thinking for us,
-then we don't need any rcu read locking over here.
+$ cat /proc/diskstats |grep sda
+   8       0 sda 90524 7579 102154 20464 0 0 0 0 0 14096 20089
+   8       1 sda1 19085 1352 21841 4209 0 0 0 0 4294967064 15689 4293424691
+                                                ~~~~~~~~~~
+   8       2 sda2 71252 3624 74891 15950 0 0 0 0 232 23995 1562390
+   8       3 sda3 54 487 2188 92 0 0 0 0 0 88 92
+   8       4 sda4 4 0 8 0 0 0 0 0 0 0 0
+   8       5 sda5 81 2027 2130 138 0 0 0 0 0 87 137
 
-In removing the rcu_unlock label: since PageAnon is a bit in
-page->mapping, it's impossible for a !page->mapping page to be anon; but
-insert VM_BUG_ON in case the implementation ever changes.
+Its reason is the wrong way of accounting hd_struct->in_flight. When a bio is
+merged into a request belongs to different partition by ELEVATOR_FRONT_MERGE.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The detailed root cause is as follows.
+
+Assuming that there are two partition, sda1 and sda2.
+
+1. A request for sda2 is in request_queue. Hence sda1's hd_struct->in_flight
+   is 0 and sda2's one is 1.
+
+        | hd_struct->in_flight
+   ---------------------------
+   sda1 |          0
+   sda2 |          1
+   ---------------------------
+
+2. A bio belongs to sda1 is issued and is merged into the request mentioned on
+   step1 by ELEVATOR_BACK_MERGE. The first sector of the request is changed
+   from sda2 region to sda1 region. However the two partition's
+   hd_struct->in_flight are not changed.
+
+        | hd_struct->in_flight
+   ---------------------------
+   sda1 |          0
+   sda2 |          1
+   ---------------------------
+
+3. The request is finished and blk_account_io_done() is called. In this case,
+   sda2's hd_struct->in_flight, not a sda1's one, is decremented.
+
+        | hd_struct->in_flight
+   ---------------------------
+   sda1 |         -1
+   sda2 |          1
+   ---------------------------
+
+The patch fixes the problem by caching the partition lookup
+inside the request structure, hence making sure that the increment
+and decrement will always happen on the same partition struct. This
+also speeds up IO with accounting enabled, since it cuts down on
+the number of lookups we have to do.
+
+Also add a refcount to struct hd_struct to keep the partition in
+memory as long as users exist. We use kref_test_and_get() to ensure
+we don't add a reference to a partition which is going away.
+
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/migrate.c |   48 +++++++++++++++++++-----------------------------
- 1 file changed, 19 insertions(+), 29 deletions(-)
+ block/blk-core.c       |   26 +++++++++++++++++++++-----
+ block/blk-merge.c      |    3 ++-
+ block/genhd.c          |    1 +
+ fs/partitions/check.c  |   10 +++++++++-
+ include/linux/blkdev.h |    1 +
+ include/linux/genhd.h  |    2 ++
+ 6 files changed, 36 insertions(+), 7 deletions(-)
 
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -620,7 +620,6 @@ static int unmap_and_move(new_page_t get
- 	int *result = NULL;
- 	struct page *newpage = get_new_page(page, private, &result);
- 	int remap_swapcache = 1;
--	int rcu_locked = 0;
- 	int charge = 0;
- 	struct mem_cgroup *mem = NULL;
- 	struct anon_vma *anon_vma = NULL;
-@@ -672,20 +671,26 @@ static int unmap_and_move(new_page_t get
- 	/*
- 	 * By try_to_unmap(), page->mapcount goes down to 0 here. In this case,
- 	 * we cannot notice that anon_vma is freed while we migrates a page.
--	 * This rcu_read_lock() delays freeing anon_vma pointer until the end
-+	 * This get_anon_vma() delays freeing anon_vma pointer until the end
- 	 * of migration. File cache pages are no problem because of page_lock()
- 	 * File Caches may use write_page() or lock_page() in migration, then,
- 	 * just care Anon page here.
- 	 */
- 	if (PageAnon(page)) {
--		rcu_read_lock();
--		rcu_locked = 1;
--
--		/* Determine how to safely use anon_vma */
--		if (!page_mapped(page)) {
--			if (!PageSwapCache(page))
--				goto rcu_unlock;
--
-+		/*
-+		 * Only page_lock_anon_vma() understands the subtleties of
-+		 * getting a hold on an anon_vma from outside one of its mms.
-+		 */
-+		anon_vma = page_lock_anon_vma(page);
-+		if (anon_vma) {
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -64,13 +64,27 @@ static void drive_stat_acct(struct reque
+ 		return;
+ 
+ 	cpu = part_stat_lock();
+-	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+ 
+-	if (!new_io)
++	if (!new_io) {
++		part = rq->part;
+ 		part_stat_inc(cpu, part, merges[rw]);
+-	else {
++	} else {
++		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
++		if (!kref_test_and_get(&part->ref)) {
 +			/*
-+			 * Take a reference count on the anon_vma if the
-+			 * page is mapped so that it is guaranteed to
-+			 * exist when the page is remapped later
++			 * The partition is already being removed,
++			 * the request will be accounted on the disk only
++			 *
++			 * We take a reference on disk->part0 although that
++			 * partition will never be deleted, so we can treat
++			 * it as any other partition.
 +			 */
-+			get_anon_vma(anon_vma);
-+			page_unlock_anon_vma(anon_vma);
-+		} else if (PageSwapCache(page)) {
- 			/*
- 			 * We cannot be sure that the anon_vma of an unmapped
- 			 * swapcache page is safe to use because we don't
-@@ -700,13 +705,7 @@ static int unmap_and_move(new_page_t get
- 			 */
- 			remap_swapcache = 0;
- 		} else {
--			/*
--			 * Take a reference count on the anon_vma if the
--			 * page is mapped so that it is guaranteed to
--			 * exist when the page is remapped later
--			 */
--			anon_vma = page_anon_vma(page);
--			get_anon_vma(anon_vma);
-+			goto uncharge;
- 		}
++			part = &rq->rq_disk->part0;
++			kref_get(&part->ref);
++		}
+ 		part_round_stats(cpu, part);
+ 		part_inc_in_flight(part, rw);
++		rq->part = part;
  	}
  
-@@ -723,16 +722,10 @@ static int unmap_and_move(new_page_t get
- 	 * free the metadata, so the page can be freed.
- 	 */
- 	if (!page->mapping) {
--		if (!PageAnon(page) && page_has_private(page)) {
--			/*
--			 * Go direct to try_to_free_buffers() here because
--			 * a) that's what try_to_release_page() would do anyway
--			 * b) we may be under rcu_read_lock() here, so we can't
--			 *    use GFP_KERNEL which is what try_to_release_page()
--			 *    needs to be effective.
--			 */
-+		VM_BUG_ON(PageAnon(page));
-+		if (page_has_private(page)) {
- 			try_to_free_buffers(page);
--			goto rcu_unlock;
-+			goto uncharge;
- 		}
- 		goto skip_unmap;
+ 	part_stat_unlock();
+@@ -128,6 +142,7 @@ void blk_rq_init(struct request_queue *q
+ 	rq->ref_count = 1;
+ 	rq->start_time = jiffies;
+ 	set_start_time_ns(rq);
++	rq->part = NULL;
+ }
+ EXPORT_SYMBOL(blk_rq_init);
+ 
+@@ -1776,7 +1791,7 @@ static void blk_account_io_completion(st
+ 		int cpu;
+ 
+ 		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = req->part;
+ 		part_stat_add(cpu, part, sectors[rw], bytes >> 9);
+ 		part_stat_unlock();
  	}
-@@ -746,14 +739,11 @@ skip_unmap:
+@@ -1796,13 +1811,14 @@ static void blk_account_io_done(struct r
+ 		int cpu;
  
- 	if (rc && remap_swapcache)
- 		remove_migration_ptes(page, page);
--rcu_unlock:
+ 		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = req->part;
  
- 	/* Drop an anon_vma reference if we took one */
- 	if (anon_vma)
- 		drop_anon_vma(anon_vma);
+ 		part_stat_inc(cpu, part, ios[rw]);
+ 		part_stat_add(cpu, part, ticks[rw], duration);
+ 		part_round_stats(cpu, part);
+ 		part_dec_in_flight(part, rw);
  
--	if (rcu_locked)
--		rcu_read_unlock();
- uncharge:
- 	if (!charge)
- 		mem_cgroup_end_migration(mem, page, newpage);
++		kref_put(&part->ref, __delete_partition);
+ 		part_stat_unlock();
+ 	}
+ }
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -351,11 +351,12 @@ static void blk_account_io_merge(struct
+ 		int cpu;
+ 
+ 		cpu = part_stat_lock();
+-		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
++		part = req->part;
+ 
+ 		part_round_stats(cpu, part);
+ 		part_dec_in_flight(part, rq_data_dir(req));
+ 
++		kref_put(&part->ref, __delete_partition);
+ 		part_stat_unlock();
+ 	}
+ }
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1192,6 +1192,7 @@ struct gendisk *alloc_disk_node(int mino
+ 			return NULL;
+ 		}
+ 		disk->part_tbl->part[0] = &disk->part0;
++		kref_init(&disk->part0.ref);
+ 
+ 		disk->minors = minors;
+ 		rand_initialize_disk(disk);
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -372,6 +372,13 @@ static void delete_partition_rcu_cb(stru
+ 	put_device(part_to_dev(part));
+ }
+ 
++void __delete_partition(struct kref *ref)
++{
++	struct hd_struct *part = container_of(ref, struct hd_struct, ref);
++
++	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
++}
++
+ void delete_partition(struct gendisk *disk, int partno)
+ {
+ 	struct disk_part_tbl *ptbl = disk->part_tbl;
+@@ -390,7 +397,7 @@ void delete_partition(struct gendisk *di
+ 	kobject_put(part->holder_dir);
+ 	device_del(part_to_dev(part));
+ 
+-	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
++	kref_put(&part->ref, __delete_partition);
+ }
+ 
+ static ssize_t whole_disk_show(struct device *dev,
+@@ -489,6 +496,7 @@ struct hd_struct *add_partition(struct g
+ 	if (!dev_get_uevent_suppress(ddev))
+ 		kobject_uevent(&pdev->kobj, KOBJ_ADD);
+ 
++	kref_init(&p->ref);
+ 	return p;
+ 
+ out_free_info:
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -115,6 +115,7 @@ struct request {
+ 	void *elevator_private3;
+ 
+ 	struct gendisk *rq_disk;
++	struct hd_struct *part;
+ 	unsigned long start_time;
+ #ifdef CONFIG_BLK_CGROUP
+ 	unsigned long long start_time_ns;
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -116,6 +116,7 @@ struct hd_struct {
+ 	struct disk_stats dkstats;
+ #endif
+ 	struct rcu_head rcu_head;
++	struct kref ref;
+ };
+ 
+ #define GENHD_FL_REMOVABLE			1
+@@ -583,6 +584,7 @@ extern struct hd_struct * __must_check a
+ 						     sector_t len, int flags,
+ 						     struct partition_meta_info
+ 						       *info);
++extern void __delete_partition(struct kref *ref);
+ extern void delete_partition(struct gendisk *, int);
+ extern void printk_all_partitions(void);
+ 
 
 
