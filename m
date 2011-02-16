@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab1BPEfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 23:35:45 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:65502 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1BPEfn (ORCPT
+	id S1758682Ab1BPEgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 23:36:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33822 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab1BPEgT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 23:35:43 -0500
-Date: Tue, 15 Feb 2011 21:35:40 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c-ocores: register devices on child nodes
-Message-ID: <20110216043540.GB11684@angua.secretlab.ca>
-References: <1297306314-11483-1-git-send-email-thomas@wytron.com.tw>
+	Tue, 15 Feb 2011 23:36:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=szKc5bK8kNm6W/oyPX+QsX5ZNV0iurVlyipM/VucvPkGVus82D/NyyQGGvvMQwuDZh
+         PqdOjgQ8iwBp7AHWpvHCRZcNzznkfUELpwCzvL9uNBYIHv0xmNm4pLRSHfCSX8Sq80nJ
+         u/Vi/P4hGUXCebnzouT4FP9EXz5NDMweKkYvI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297306314-11483-1-git-send-email-thomas@wytron.com.tw>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <e647042e-419e-4e61-a563-e489596bd659@default>
+References: <20110207032407.GA27404@ca-server1.us.oracle.com>
+	<1ddd01a8-591a-42bc-8bb3-561843b31acb@default>
+	<AANLkTimFATx-gYVgY_pVdZsySSBmXvKFkhTJUeVFBcop@mail.gmail.com>
+	<AANLkTimqSSxHrLhL9t4DOmDeuAA41B9e-qnr+vnUsucL@mail.gmail.com>
+	<AANLkTi=4QkV4wtMmDd6+XXhvkva+fq9m5PVYGC0qBUc3@mail.gmail.com>
+	<AANLkTimOssgM7JYSpwB=5zmF_JJ2ByH+PWO7N+YZNB_y@mail.gmail.com>
+	<e647042e-419e-4e61-a563-e489596bd659@default>
+Date: Wed, 16 Feb 2011 13:36:18 +0900
+Message-ID: <AANLkTim_U+mJtHk7drvqMOmUwd4ro8J0dazZMDsNqH=o@mail.gmail.com>
+Subject: Re: [PATCH V2 0/3] drivers/staging: zcache: dynamic page cache/swap compression
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Matt <jackdachef@gmail.com>, gregkh@suse.de,
+        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org, linux-btrfs@vger.kernel.org,
+        Josef Bacik <josef@redhat.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Yan Zheng <zheng.z.yan@intel.com>, miaox@cn.fujitsu.com,
+        Li Zefan <lizf@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 10, 2011 at 10:51:54AM +0800, Thomas Chou wrote:
-> This patch registers devices on the devicetree child nodes to the bus.
-> Also removes one trailing whitespace.
-> 
-> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+On Wed, Feb 16, 2011 at 10:27 AM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+>> -----Original Message-----
+>> From: Matt [mailto:jackdachef@gmail.com]
+>> Sent: Tuesday, February 15, 2011 5:12 PM
+>> To: Minchan Kim
+>> Cc: Dan Magenheimer; gregkh@suse.de; Chris Mason; linux-
+>> kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; linux-
+>> btrfs@vger.kernel.org; Josef Bacik; Dan Rosenberg; Yan Zheng;
+>> miaox@cn.fujitsu.com; Li Zefan
+>> Subject: Re: [PATCH V2 0/3] drivers/staging: zcache: dynamic page
+>> cache/swap compression
+>>
+>> On Mon, Feb 14, 2011 at 4:35 AM, Minchan Kim <minchan.kim@gmail.com>
+>> > Just my guessing. I might be wrong.
+>> >
+>> > __cleancache_flush_inode calls cleancache_get_key with
+>> cleancache_filekey.
+>> > cleancache_file_key's size is just 6 * u32.
+>> > cleancache_get_key calls btrfs_encode_fh with the key.
+>> > but btrfs_encode_fh does typecasting the key to btrfs_fid which is
+>> > bigger size than cleancache_filekey's one so it should not access
+>> > fields beyond cleancache_get_key.
+>> >
+>> > I think some file systems use extend fid so in there, this problem
+>> can
+>> > happen. I don't know why we can't find it earlier. Maybe Dan and
+>> > others test it for a long time.
+>> >
+>> > Am I missing something?
+>> >
+>> >
+>> >
+>> > --
+>> > Kind regards,
+>> > Minchan Kim
+>> >
+>>
+>> reposting Minchan's message for reference to the btrfs mailing list
+>> while also adding
+>>
+>> Li Zefan, Miao Xie, Yan Zheng, Dan Rosenberg and Josef Bacik to CC
+>>
+>> Regards
+>>
+>> Matt
+>
+> Hi Matt and Minchan --
+>
+> (BTRFS EXPERTS SEE *** BELOW)
+>
+> I definitely see a bug in cleancache_get_key in the monolithic
+> zcache+cleancache+frontswap patch I posted on oss.oracle.com
+> that is corrected in linux-next but I don't see how it could
+> get provoked by btrfs.
+>
+> The bug is that, in cleancache_get_key, the return value of fhfn should
+> be checked against 255.  If the return value is 255, cleancache_get_key
+> should return -1.  This should disable cleancache for any filesystem
+> where KEY_MAX is too large.
+>
+> But cleancache_get_key always calls fhfn with connectable == 0 and
+> CLEANCACHE_KEY_MAX==6 should be greater than BTRFS_FID_SIZE_CONNECTABLE
+> (which I think should be 5?).  And the elements written into the
+> typecast btrfs_fid should be only writing the first 5 32-bit words.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+BTRFS_FID_SIZE_NON_CONNECTALBE is 5,  not BTRFS_FID_SIZE_CONNECTABLE.
+Anyway, you passed connectable with 0 so it should be only writing the
+first 5 32-bit words as you said.
+That's one I missed. ;-)
 
-Ben, do you want to pick this one up?  Or should I merge it via my
-devicetree branch?
-
-g.
-
-> ---
->  drivers/i2c/busses/i2c-ocores.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
-> index ef3bcb1..c63838f 100644
-> --- a/drivers/i2c/busses/i2c-ocores.c
-> +++ b/drivers/i2c/busses/i2c-ocores.c
-> @@ -18,7 +18,7 @@
->   * - interrupts      : interrupt number
->   * - regstep         : size of device registers in bytes
->   * - clock-frequency : frequency of bus clock in Hz
-> - * 
-> + *
->   * Example:
->   *
->   *  i2c0: ocores@a0000000 {
-> @@ -55,6 +55,7 @@
->  #include <linux/i2c-ocores.h>
->  #include <linux/slab.h>
->  #include <linux/io.h>
-> +#include <linux/of_i2c.h>
->  
->  struct ocores_i2c {
->  	void __iomem *base;
-> @@ -347,6 +348,9 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
->  			i2c_new_device(&i2c->adap, pdata->devices + i);
->  	}
->  
-> +	/* Now register all the child nodes */
-> +	of_i2c_register_devices(&i2c->adap);
-> +
->  	return 0;
->  }
->  
-> -- 
-> 1.7.4
-> 
+Thanks.
+-- 
+Kind regards,
+Minchan Kim
