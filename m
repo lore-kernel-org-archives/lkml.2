@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933540Ab1BPAxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:53:53 -0500
-Received: from kroah.org ([198.145.64.141]:46315 "EHLO coco.kroah.org"
+	id S933529Ab1BPAwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:52:18 -0500
+Received: from kroah.org ([198.145.64.141]:46297 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933512Ab1BPAwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:52:12 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:16 2011
-Message-Id: <20110216002116.211063521@clark.kroah.org>
+	id S933499Ab1BPAwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:52:07 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:15 2011
+Message-Id: <20110216002115.899593566@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:20 -0800
+Date: Tue, 15 Feb 2011 16:22:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Kitt <steve@sk2.org>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kulikov Vasiliy <segooon@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [patch 172/176] agp: ensure GART has an address before enabling it
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [patch 169/176] drm/i915: Add dependency on CONFIG_TMPFS
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,85 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Kitt <steve@sk2.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit a70b95c017e8b518e1e069853355e4e497453dbb upstream.
+commit f7ab9b407b3bc83161c2aa74c992ba4782e87c9c upstream.
 
-Some BIOSs (eg.  the AMI BIOS on the Asus P4P800 motherboard) don't
-initialise the GART address, and pcibios_assign_resources() can ignore it
-because it can be marked as a host bridge (see
-https://bugzilla.kernel.org/show_bug.cgi?id=24392#c5 for details).  This
-was handled correctly up to 2.6.35, but the pci_enable_device() cleanup in
-2.6.36 96576a9e1a0cdb8 ("agp: intel-agp: do not use PCI resources before
-pci_enable_device()") means that the kernel tries to enable the GART
-before assigning it an address; in such cases the GART overlaps with other
-device assignments and ends up being disabled.
+Without tmpfs, shmem_readpage() is not compiled in causing an OOPS as
+soon as we try to allocate some swappable pages for GEM.
 
-This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=24392
+Jan 19 22:52:26 harlie kernel: Modules linked in: i915(+) drm_kms_helper cfbcopyarea video backlight cfbimgblt cfbfillrect
+Jan 19 22:52:26 harlie kernel:
+Jan 19 22:52:26 harlie kernel: Pid: 1125, comm: modprobe Not tainted 2.6.37Harlie #10 To be filled by O.E.M./To be filled by O.E.M.
+Jan 19 22:52:26 harlie kernel: EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 3
+Jan 19 22:52:26 harlie kernel: EIP is at 0x0
+Jan 19 22:52:26 harlie kernel: EAX: 00000000 EBX: f7b7d000 ECX: f3383100 EDX: f7b7d000
+Jan 19 22:52:26 harlie kernel: ESI: f1456118 EDI: 00000000 EBP: f2303c98 ESP: f2303c7c
+Jan 19 22:52:26 harlie kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+Jan 19 22:52:26 harlie kernel: Process modprobe (pid: 1125, ti=f2302000 task=f259cd80 task.ti=f2302000)
+Jan 19 22:52:26 harlie kernel: Stack:
+Jan 19 22:52:26 harlie udevd-work[1072]: '/sbin/modprobe -b pci:v00008086d00000046sv00000000sd00000000bc03sc00i00' unexpected exit with status 0x0009
+Jan 19 22:52:26 harlie kernel:  c1074061 000000d0 f2f42b80 00000000 000a13d2 f2d5dcc0 00000001 f2303cac
+Jan 19 22:52:26 harlie kernel:  c107416f 00000000 000a13d2 00000000 f2303cd4 f8d620ed f2cee620 00001000
+Jan 19 22:52:26 harlie kernel:  00000000 000a13d2 f1456118 f2d5dcc0 f1a40000 00001000 f2303d04 f8d637ab
+Jan 19 22:52:26 harlie kernel: Call Trace:
+Jan 19 22:52:26 harlie kernel:  [<c1074061>] ? do_read_cache_page+0x71/0x160
+Jan 19 22:52:26 harlie kernel:  [<c107416f>] ? read_cache_page_gfp+0x1f/0x30
+Jan 19 22:52:26 harlie kernel:  [<f8d620ed>] ? i915_gem_object_get_pages+0xad/0x1d0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d637ab>] ? i915_gem_object_bind_to_gtt+0xeb/0x2d0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d65961>] ? i915_gem_object_pin+0x151/0x190 [i915]
+Jan 19 22:52:26 harlie kernel:  [<c11e16ed>] ? drm_gem_object_init+0x3d/0x60
+Jan 19 22:52:26 harlie kernel:  [<f8d65aa5>] ? i915_gem_init_ringbuffer+0x105/0x1e0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d571b7>] ? i915_driver_load+0x667/0x1160 [i915]
 
-Note that I imagine efficeon-agp.c probably has the same problem, but
-I can't test that and I'd like to make sure this patch is suitable for
--stable (since 2.6.36 and 2.6.37 are affected).
-
-Signed-off-by: Stephen Kitt <steve@sk2.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Florian Mickler <florian@mickler.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: John J. Stimson-III <john@idsfa.net>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/agp/intel-agp.c |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/Kconfig |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/char/agp/intel-agp.c
-+++ b/drivers/char/agp/intel-agp.c
-@@ -927,20 +927,14 @@ static int __devinit agp_intel_probe(str
- 	dev_info(&pdev->dev, "Intel %s Chipset\n", intel_agp_chipsets[i].name);
- 
- 	/*
--	* If the device has not been properly setup, the following will catch
--	* the problem and should stop the system from crashing.
--	* 20030610 - hamish@zot.org
--	*/
--	if (pci_enable_device(pdev)) {
--		dev_err(&pdev->dev, "can't enable PCI device\n");
--		agp_put_bridge(bridge);
--		return -ENODEV;
--	}
--
--	/*
- 	* The following fixes the case where the BIOS has "forgotten" to
- 	* provide an address range for the GART.
- 	* 20030610 - hamish@zot.org
-+	* This happens before pci_enable_device() intentionally;
-+	* calling pci_enable_device() before assigning the resource
-+	* will result in the GART being disabled on machines with such
-+	* BIOSs (the GART ends up with a BAR starting at 0, which
-+	* conflicts a lot of other devices).
- 	*/
- 	r = &pdev->resource[0];
- 	if (!r->start && r->end) {
-@@ -951,6 +945,17 @@ static int __devinit agp_intel_probe(str
- 		}
- 	}
- 
-+	/*
-+	* If the device has not been properly setup, the following will catch
-+	* the problem and should stop the system from crashing.
-+	* 20030610 - hamish@zot.org
-+	*/
-+	if (pci_enable_device(pdev)) {
-+		dev_err(&pdev->dev, "can't enable PCI device\n");
-+		agp_put_bridge(bridge);
-+		return -ENODEV;
-+	}
-+
- 	/* Fill in the mode register */
- 	if (cap_ptr) {
- 		pci_read_config_dword(pdev,
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -97,7 +97,10 @@ config DRM_I830
+ config DRM_I915
+ 	tristate "i915 driver"
+ 	depends on AGP_INTEL
++	# we need shmfs for the swappable backing store, and in particular
++	# the shmem_readpage() which depends upon tmpfs
+ 	select SHMEM
++	select TMPFS
+ 	select DRM_KMS_HELPER
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
 
 
