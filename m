@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab1BPA3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:29:23 -0500
-Received: from kroah.org ([198.145.64.141]:49892 "EHLO coco.kroah.org"
+	id S1757759Ab1BPA3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:29:47 -0500
+Received: from kroah.org ([198.145.64.141]:49871 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757787Ab1BPAZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:19 -0500
+	id S1757748Ab1BPAZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:13 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:50 2011
-Message-Id: <20110216001450.674593697@clark.kroah.org>
+Message-Id: <20110216001450.399869720@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:13 -0800
+Date: Tue, 15 Feb 2011 16:15:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [256/272] drm/i915/sdvo: Defer detection of output capabilities until probing
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [253/272] drm/radeon/kms: fix s/r issues with bios scratch regs
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,93 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 97aaf910731b03b27b1c4c8a58006a1dc99dcd9a upstream.
+commit 87364760de5d631390c478fcbac8db1b926e0adf upstream.
 
-Alex Fiestas reported an issue with his HDMI connector being misdetected
-as DVI unless he had something connected upon boot. By moving the
-decision as to whether to use HDMI or DVI encoding for the HDMI capable
-output until we probe the monitor means that we should avoid sending a
-HDMI signal to a DVI monitor and also correctly detect hardware like
-Alex's.
+The accelerate mode bit gets checked by certain atom
+command tables to set up some register state.  It needs
+to be clear when setting modes and set when not.
 
-However, to really determine what connector is soldered onto the wire we
-need to inspect the VBT sdvo child devices - but can we trust it?
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=26942
 
-Reported-by: Alex Fiestas <alex@eyeos.org>
-Tested-by: Alex Fiestas <alex@eyeos.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=32828
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   33 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 22 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1024,9 +1024,13 @@ static void intel_sdvo_mode_set(struct d
- 	if (!intel_sdvo_set_target_input(intel_sdvo))
- 		return;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2357,7 +2357,7 @@ void radeon_atom_initialize_bios_scratch
+ 	bios_2_scratch &= ~ATOM_S2_VRI_BRIGHT_ENABLE;
  
--	if (intel_sdvo->has_hdmi_monitor &&
--	    !intel_sdvo_set_avi_infoframe(intel_sdvo))
--		return;
-+	if (intel_sdvo->has_hdmi_monitor) {
-+		intel_sdvo_set_encode(intel_sdvo, SDVO_ENCODE_HDMI);
-+		intel_sdvo_set_colorimetry(intel_sdvo,
-+					   SDVO_COLORIMETRY_RGB256);
-+		intel_sdvo_set_avi_infoframe(intel_sdvo);
-+	} else
-+		intel_sdvo_set_encode(intel_sdvo, SDVO_ENCODE_DVI);
+ 	/* tell the bios not to handle mode switching */
+-	bios_6_scratch |= (ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH | ATOM_S6_ACC_MODE);
++	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
  
- 	if (intel_sdvo->is_tv &&
- 	    !intel_sdvo_set_tv_format(intel_sdvo))
-@@ -1395,6 +1399,9 @@ intel_sdvo_detect(struct drm_connector *
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+@@ -2408,10 +2408,13 @@ void radeon_atom_output_lock(struct drm_
+ 	else
+ 		bios_6_scratch = RREG32(RADEON_BIOS_6_SCRATCH);
  
- 	intel_sdvo->attached_output = response;
+-	if (lock)
++	if (lock) {
+ 		bios_6_scratch |= ATOM_S6_CRITICAL_STATE;
+-	else
++		bios_6_scratch &= ~ATOM_S6_ACC_MODE;
++	} else {
+ 		bios_6_scratch &= ~ATOM_S6_CRITICAL_STATE;
++		bios_6_scratch |= ATOM_S6_ACC_MODE;
++	}
  
-+	intel_sdvo->has_hdmi_monitor = false;
-+	intel_sdvo->has_hdmi_audio = false;
-+
- 	if ((intel_sdvo_connector->output_flag & response) == 0)
- 		ret = connector_status_disconnected;
- 	else if (response & SDVO_TMDS_MASK)
-@@ -1919,20 +1926,7 @@ intel_sdvo_select_i2c_bus(struct drm_i91
- static bool
- intel_sdvo_is_hdmi_connector(struct intel_sdvo *intel_sdvo, int device)
- {
--	int is_hdmi;
--
--	if (!intel_sdvo_check_supp_encode(intel_sdvo))
--		return false;
--
--	if (!intel_sdvo_set_target_output(intel_sdvo,
--					  device == 0 ? SDVO_OUTPUT_TMDS0 : SDVO_OUTPUT_TMDS1))
--		return false;
--
--	is_hdmi = 0;
--	if (!intel_sdvo_get_value(intel_sdvo, SDVO_CMD_GET_ENCODE, &is_hdmi, 1))
--		return false;
--
--	return !!is_hdmi;
-+	return intel_sdvo_check_supp_encode(intel_sdvo);
- }
- 
- static u8
-@@ -2034,12 +2028,7 @@ intel_sdvo_dvi_init(struct intel_sdvo *i
- 	connector->connector_type = DRM_MODE_CONNECTOR_DVID;
- 
- 	if (intel_sdvo_is_hdmi_connector(intel_sdvo, device)) {
--		/* enable hdmi encoding mode if supported */
--		intel_sdvo_set_encode(intel_sdvo, SDVO_ENCODE_HDMI);
--		intel_sdvo_set_colorimetry(intel_sdvo,
--					   SDVO_COLORIMETRY_RGB256);
- 		connector->connector_type = DRM_MODE_CONNECTOR_HDMIA;
--
- 		intel_sdvo->is_hdmi = true;
- 	}
- 	intel_sdvo->base.clone_mask = ((1 << INTEL_SDVO_NON_TV_CLONE_BIT) |
+ 	if (rdev->family >= CHIP_R600)
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
 
 
