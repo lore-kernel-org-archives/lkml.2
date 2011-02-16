@@ -1,310 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab1BPFuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 00:50:04 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64506 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab1BPFuC (ORCPT
+	id S1752010Ab1BPFwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 00:52:16 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48142 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab1BPFwM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 00:50:02 -0500
-Date: Tue, 15 Feb 2011 22:49:56 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
-        linux-i2c@vger.kernel.org, Albert Herranz <albert_herranz@yahoo.es>
-Subject: Re: [PATCH v5] i2c-gpio: add devicetree support
-Message-ID: <20110216054956.GD11684@angua.secretlab.ca>
-References: <1297304967-3759-1-git-send-email-thomas@wytron.com.tw>
- <1297650610-12400-1-git-send-email-thomas@wytron.com.tw>
+	Wed, 16 Feb 2011 00:52:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PUzZak5bL7M/vpL/GKkU+LxfPowFAmRkCgrfdiFFfBopIbdw5ot8i7XTTWS5tcFE1b
+         Ca6qDRwxZkn4VEo0CSyYSmkl7HX5S+SsuQqiQCaaAvKYDeXcRfzbCmWfiZ1YfeLAqotv
+         8mN+9df8gc865hzYxN/qKpeaWiBQSMUBLguJg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297650610-12400-1-git-send-email-thomas@wytron.com.tw>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikkLuCeWpHBU5HO=39vO_DjhQkFMmnpB4kqtEmD@mail.gmail.com>
+References: <AANLkTi=Ca4Lcc_war-atpr81eJcZA3ks+EKFf9Rq5pKs@mail.gmail.com>
+	<20110215055426.GA468@in.ibm.com>
+	<AANLkTikkLuCeWpHBU5HO=39vO_DjhQkFMmnpB4kqtEmD@mail.gmail.com>
+Date: Wed, 16 Feb 2011 11:22:11 +0530
+Message-ID: <AANLkTi=VSEo47WnenaiET5NksdWxtj4osRn8kv3UqyG+@mail.gmail.com>
+Subject: Re: Mapping memory between kernel and user space
+From: Rajat Sharma <fs.rajat@gmail.com>
+To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+Cc: Ankita Garg <ankita@in.ibm.com>,
+        Kernel-newbies <kernelnewbies@nl.linux.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 10:30:10AM +0800, Thomas Chou wrote:
-> From: Albert Herranz <albert_herranz@yahoo.es>
-> 
-> This patch adds devicetree support to i2c-gpio driver. The allocation
-> of local data is integrated to a private structure, and use devm_*
-> helper for easy cleanup.
-> 
-> It is base on an earlier patch for gc-linux from
-> Albert Herranz <albert_herranz@yahoo.es>.
-> 
-> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
-> CC: Albert Herranz <albert_herranz@yahoo.es>
-> Acked-by: Haavard Skinnemoen <hskinnemoen@gmail.com>
+> But coming to kernel they distinguish logical address from virtual
+> address. What is the main difference.
 
-One minor nitpick below, but I'd be fine with cleaning that up via a
-followup patch.  This one looks correct to me.
+kernel logical address has linear (one-to-one) mapping of physical
+address to virtual address range. e.g. kernel logical address (linear
+address) from 3G to 4G (on x86) can map physical memory of 0-1G, so it
+is intutive to get physical address from a logical address by
+subtrating 3G from logical address.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+while kernel virtual address can be though of as logical address with
+no restriction of linear mapping. Then how they map to physical pages?
+Well this is achieved through page tables mapping like user space
+address, however the virtual address range falls in 3G-4G (on x86)
+range only. Basically you can say it is the process mapping of kernel
+virtual address range (3G-4G) in its page tables. CPU works through
+page-tables hence requires kernel virtual address in code
+instructions. So, it is possible thats a kernel page has kernel
+virtual address as well as logical address.
 
-Ben, this one depends on a patch in my devicetree/next tree.  How do
-you want to handle it?
+> Also, they emphasize on high memory and low memory. Why can not high
+> memory can be mapped in to kernel completely.
+> Why is that kernel has less visibility of complete space available on RAM.
 
-g.
+For a limited address space range of linear mapping, physical memory
+has to be limited (one-to-one mapping). So, if your system (x86) has
+more than 1G physical RAM, Linux provides some mechanism releasing
+some small slot between (3G + 896M) to 4G for dynamically mapping High
+phyical memory page frames (>896M physical address), since you can't
+always map the complete physical RAM all the time. This dynamic
+mapping is done through kmap().
 
-> ---
-> for v2.6.39
-> v2 move of nodes probing to a hook, which will be optimized out
->      when devicetree is not used.
->    use linux/gpio.h.
->    move binding doc to i2c/i2c-gpio.txt.
-> v3 use speed-hz instead of udelay in dts binding.
->    condition the devicetree probe.
-> v4 simplify private allocation.
-> v5 condition module device table export for of.
-> 
->  Documentation/devicetree/bindings/i2c/i2c-gpio.txt |   40 +++++++
->  drivers/i2c/busses/i2c-gpio.c                      |  113 ++++++++++++++++----
->  2 files changed, 133 insertions(+), 20 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-gpio.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-gpio.txt b/Documentation/devicetree/bindings/i2c/i2c-gpio.txt
-> new file mode 100644
-> index 0000000..38ef4f2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-gpio.txt
-> @@ -0,0 +1,40 @@
-> +GPIO-based I2C
-> +
-> +Required properties:
-> +- compatible : should be "i2c-gpio".
-> +- gpios : should specify GPIOs used for SDA and SCL lines, in that order.
-> +Optional properties:
-> +- sda-is-open-drain : present if SDA gpio is open-drain.
-> +- scl-is-open-drain : present if SCL gpio is open-drain.
-> +- scl-is-output-only : present if the output driver for SCL cannot be
-> +	turned off. this will prevent clock stretching from working.
-> +- speed-hz : SCL frequency.
-> +- timeout : clock stretching timeout in milliseconds.
-> +
-> +Example:
-> +
-> +gpio0: starlet-gpio@0d8000c0 {
-> +	compatible = "nintendo,starlet-gpio";
-> +	reg = <0d8000c0 4>;
-> +	gpio-controller;
-> +	#gpio-cells = <2>;
-> +};
-> +
-> +i2c-video {
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
-> +	compatible = "i2c-gpio";
-> +
-> +	gpios = <&gpio0 10 0	/* SDA line */
-> +		 &gpio0 11 0	/* SCL line */
-> +		>;
-> +	sda-is-open-drain;
-> +	scl-is-open-drain;
-> +	scl-is-output-only;
-> +	speed-hz = <250000>;
-> +
-> +	audio-video-encoder {
-> +		compatible = "nintendo,wii-ave-rvl";
-> +		reg = <70>;
-> +	};
-> +};
-> diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
-> index d9aa9a6..6cc5f15 100644
-> --- a/drivers/i2c/busses/i2c-gpio.c
-> +++ b/drivers/i2c/busses/i2c-gpio.c
-> @@ -14,8 +14,14 @@
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  #include <linux/platform_device.h>
-> +#include <linux/gpio.h>
-> +#include <linux/of_i2c.h>
->  
-> -#include <asm/gpio.h>
-> +struct i2c_gpio_private_data {
-> +	struct i2c_adapter adap;
-> +	struct i2c_algo_bit_data bit_data;
-> +	struct i2c_gpio_platform_data pdata;
-> +};
->  
->  /* Toggle SDA by changing the direction of the pin */
->  static void i2c_gpio_setsda_dir(void *data, int state)
-> @@ -78,24 +84,80 @@ static int i2c_gpio_getscl(void *data)
->  	return gpio_get_value(pdata->scl_pin);
->  }
->  
-> +#ifdef CONFIG_OF
-> +#include <linux/of_gpio.h>
+> what is very minimal implementation of MMU for real time systems.
+# CONFIG_MMU is not set
+means linear mapping of all physical address to virtual address. Not
+sure, but seems it requires processor support to work on linear
+address bypassing page-tables conversion.
 
-Instead of putting the include here, please add #ifdef CONFIG_OF
-protection around the contents of linux/of_gpio.h itself.  I fully
-support that change so that includes can remain at the top where they
-belong.
+Rajat
 
-> +
-> +/* Check if devicetree nodes exist and build platform data */
-> +static int i2c_gpio_of_probe(struct platform_device *pdev,
-> +			     struct i2c_gpio_platform_data *pdata)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	const __be32 *prop;
-> +	int sda_pin, scl_pin;
-> +	int len;
-> +
-> +	if (!np || of_gpio_count(np) < 2)
-> +		return -ENXIO;
-> +
-> +	sda_pin = of_get_gpio_flags(np, 0, NULL);
-> +	scl_pin = of_get_gpio_flags(np, 1, NULL);
-> +	if (sda_pin < 0 || scl_pin < 0) {
-> +		pr_err("%s: invalid GPIO pins, sda=%d/scl=%d\n",
-> +		       np->full_name, sda_pin, scl_pin);
-> +		return -ENXIO;
-> +	}
-> +
-> +	pdata->sda_pin = sda_pin;
-> +	pdata->scl_pin = scl_pin;
-> +	prop = of_get_property(np, "sda-is-open-drain", NULL);
-> +	if (prop)
-> +		pdata->sda_is_open_drain = 1;
-> +	prop = of_get_property(np, "scl-is-open-drain", NULL);
-> +	if (prop)
-> +		pdata->scl_is_open_drain = 1;
-> +	prop = of_get_property(np, "scl-is-output-only", NULL);
-> +	if (prop)
-> +		pdata->scl_is_output_only = 1;
-> +	prop = of_get_property(np, "speed-hz", &len);
-> +	if (prop && len >= sizeof(__be32))
-> +		pdata->udelay = DIV_ROUND_UP(1000000, be32_to_cpup(prop) * 2);
-> +	prop = of_get_property(np, "timeout", &len);
-> +	if (prop && len >= sizeof(__be32))
-> +		pdata->timeout = msecs_to_jiffies(be32_to_cpup(prop));
-> +
-> +	return 0;
-> +}
-> +#else
-> +static int i2c_gpio_of_probe(struct platform_device *pdev,
-> +			     struct i2c_gpio_platform_data *pdata)
-> +{
-> +	return -ENXIO;
-> +}
-> +#endif
-> +
->  static int __devinit i2c_gpio_probe(struct platform_device *pdev)
->  {
-> +	struct i2c_gpio_private_data *priv;
->  	struct i2c_gpio_platform_data *pdata;
->  	struct i2c_algo_bit_data *bit_data;
->  	struct i2c_adapter *adap;
->  	int ret;
->  
-> -	pdata = pdev->dev.platform_data;
-> -	if (!pdata)
-> -		return -ENXIO;
-> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +	adap = &priv->adap;
-> +	bit_data = &priv->bit_data;
-> +	pdata = &priv->pdata;
->  
-> -	ret = -ENOMEM;
-> -	adap = kzalloc(sizeof(struct i2c_adapter), GFP_KERNEL);
-> -	if (!adap)
-> -		goto err_alloc_adap;
-> -	bit_data = kzalloc(sizeof(struct i2c_algo_bit_data), GFP_KERNEL);
-> -	if (!bit_data)
-> -		goto err_alloc_bit_data;
-> +	if (pdev->dev.platform_data) {
-> +		*pdata = *(struct i2c_gpio_platform_data *)
-> +			pdev->dev.platform_data;
-> +	} else {
-> +		ret = i2c_gpio_of_probe(pdev, pdata);
-> +		if (ret)
-> +			return ret;
-> +	}
->  
->  	ret = gpio_request(pdata->sda_pin, "sda");
->  	if (ret)
-> @@ -143,6 +205,7 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
->  	adap->algo_data = bit_data;
->  	adap->class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
->  	adap->dev.parent = &pdev->dev;
-> +	adap->dev.of_node = pdev->dev.of_node;
->  
->  	/*
->  	 * If "dev->id" is negative we consider it as zero.
-> @@ -154,13 +217,16 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
->  	if (ret)
->  		goto err_add_bus;
->  
-> -	platform_set_drvdata(pdev, adap);
-> +	platform_set_drvdata(pdev, priv);
->  
->  	dev_info(&pdev->dev, "using pins %u (SDA) and %u (SCL%s)\n",
->  		 pdata->sda_pin, pdata->scl_pin,
->  		 pdata->scl_is_output_only
->  		 ? ", no clock stretching" : "");
->  
-> +	/* Now register all the child nodes */
-> +	of_i2c_register_devices(adap);
-> +
->  	return 0;
->  
->  err_add_bus:
-> @@ -168,34 +234,41 @@ err_add_bus:
->  err_request_scl:
->  	gpio_free(pdata->sda_pin);
->  err_request_sda:
-> -	kfree(bit_data);
-> -err_alloc_bit_data:
-> -	kfree(adap);
-> -err_alloc_adap:
->  	return ret;
->  }
->  
->  static int __devexit i2c_gpio_remove(struct platform_device *pdev)
->  {
-> +	struct i2c_gpio_private_data *priv;
->  	struct i2c_gpio_platform_data *pdata;
->  	struct i2c_adapter *adap;
->  
-> -	adap = platform_get_drvdata(pdev);
-> -	pdata = pdev->dev.platform_data;
-> +	priv = platform_get_drvdata(pdev);
-> +	adap = &priv->adap;
-> +	pdata = &priv->pdata;
->  
->  	i2c_del_adapter(adap);
->  	gpio_free(pdata->scl_pin);
->  	gpio_free(pdata->sda_pin);
-> -	kfree(adap->algo_data);
-> -	kfree(adap);
->  
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id i2c_gpio_match[] = {
-> +	{ .compatible = "i2c-gpio", },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, i2c_gpio_match);
-> +#else /* CONFIG_OF */
-> +#define i2c_gpio_match NULL
-> +#endif /* CONFIG_OF */
-> +
->  static struct platform_driver i2c_gpio_driver = {
->  	.driver		= {
->  		.name	= "i2c-gpio",
->  		.owner	= THIS_MODULE,
-> +		.of_match_table = i2c_gpio_match,
->  	},
->  	.probe		= i2c_gpio_probe,
->  	.remove		= __devexit_p(i2c_gpio_remove),
-> -- 
-> 1.7.4
-> 
+On Tue, Feb 15, 2011 at 10:45 PM, Sri Ram Vemulpali
+<sri.ram.gmu06@gmail.com> wrote:
+> As was suggested I started reading chap 15v from LDD. I ran more into
+> confusion state.
+>
+> I know that virtual address(process space), linear address
+> (segmentation) and physical address. And how are they resolved from
+> virtual to physical.
+> But coming to kernel they distinguish logical address from virtual
+> address. What is the main difference.
+> Also, they emphasize on high memory and low memory. Why can not high
+> memory can be mapped in to kernel completely.
+> Why is that kernel has less visibility of complete space available on RAM.
+> Linux MM is it a very specific implementation of linux, or Is that a
+> traditional implementation.
+>
+> what is very minimal implementation of MMU for real time systems.
+>
+> Thanks in advance.
+>
+> --Sri.
+>
+> On Tue, Feb 15, 2011 at 12:54 AM, Ankita Garg <ankita@in.ibm.com> wrote:
+>> On Wed, Feb 09, 2011 at 06:45:42PM -0500, Sri Ram Vemulpali wrote:
+>>> Hi all,
+>>>
+>>>   How do I map some space between kernel and user space. Can anyone
+>>> point me in to right direction. I was trying to map the packets from
+>>> my netfilter function to kernel user space, to avoid over head of
+>>> copying. Thanks in advance.
+>>>
+>>
+>> You can take a look at remap_pfn_range() routine when implementing mmap
+>> in your driver.
+>>
+>> --
+>> Regards,
+>> Ankita Garg (ankita@in.ibm.com)
+>> Linux Technology Center
+>> IBM India Systems & Technology Labs,
+>> Bangalore, India
+>>
+>
+>
+>
+> --
+> Regards,
+> Sri.
+>
+> _______________________________________________
+> Kernelnewbies mailing list
+> Kernelnewbies@kernelnewbies.org
+> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+>
