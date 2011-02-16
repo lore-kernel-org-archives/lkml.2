@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab1BPA5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:57:03 -0500
-Received: from kroah.org ([198.145.64.141]:46196 "EHLO coco.kroah.org"
+	id S933461Ab1BPA53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:57:29 -0500
+Received: from kroah.org ([198.145.64.141]:46178 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933427Ab1BPAvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:41 -0500
+	id S933401Ab1BPAvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:35 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:14 2011
-Message-Id: <20110216002114.404264840@clark.kroah.org>
+Message-Id: <20110216002114.101547970@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:02 -0800
+Date: Tue, 15 Feb 2011 16:21:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [patch 154/176] tpm: Autodetect itpm devices
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>
+Subject: [patch 151/176] KEYS: Dont call up_write() if __key_link_begin() returns an error
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,75 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 3f0d3d016d89a5efb8b926d4707eb21fa13f3d27 upstream.
+commit 3fc5e98d8cf85e0d77fc597b49e9268dff67400e upstream.
 
-Some Lenovos have TPMs that require a quirk to function correctly. This can
-be autodetected by checking whether the device has a _HID of INTC0102. This
-is an invalid PNPid, and as such is discarded by the pnp layer - however
-it's still present in the ACPI code, so we can pull it out that way. This
-means that the quirk won't be automatically applied on non-ACPI systems,
-but without ACPI we don't have any way to identify the chip anyway so I
-don't think that's a great concern.
+In construct_alloc_key(), up_write() is called in the error path if
+__key_link_begin() fails, but this is incorrect as __key_link_begin() only
+returns with the nominated keyring locked if it returns successfully.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Tested-by: Jiri Kosina <jkosina@suse.cz>
-Tested-by: Andy Isaacson <adi@hexapodia.org>
-Signed-off-by: James Morris <jmorris@namei.org>
+Without this patch, you might see the following in dmesg:
+
+	=====================================
+	[ BUG: bad unlock balance detected! ]
+	-------------------------------------
+	mount.cifs/5769 is trying to release lock (&key->sem) at:
+	[<ffffffff81201159>] request_key_and_link+0x263/0x3fc
+	but there are no more locks to release!
+
+	other info that might help us debug this:
+	3 locks held by mount.cifs/5769:
+	 #0:  (&type->s_umount_key#41/1){+.+.+.}, at: [<ffffffff81131321>] sget+0x278/0x3e7
+	 #1:  (&ret_buf->session_mutex){+.+.+.}, at: [<ffffffffa0258e59>] cifs_get_smb_ses+0x35a/0x443 [cifs]
+	 #2:  (root_key_user.cons_lock){+.+.+.}, at: [<ffffffff81201000>] request_key_and_link+0x10a/0x3fc
+
+	stack backtrace:
+	Pid: 5769, comm: mount.cifs Not tainted 2.6.37-rc6+ #1
+	Call Trace:
+	 [<ffffffff81201159>] ? request_key_and_link+0x263/0x3fc
+	 [<ffffffff81081601>] print_unlock_inbalance_bug+0xca/0xd5
+	 [<ffffffff81083248>] lock_release_non_nested+0xc1/0x263
+	 [<ffffffff81201159>] ? request_key_and_link+0x263/0x3fc
+	 [<ffffffff81201159>] ? request_key_and_link+0x263/0x3fc
+	 [<ffffffff81083567>] lock_release+0x17d/0x1a4
+	 [<ffffffff81073f45>] up_write+0x23/0x3b
+	 [<ffffffff81201159>] request_key_and_link+0x263/0x3fc
+	 [<ffffffffa026fe9e>] ? cifs_get_spnego_key+0x61/0x21f [cifs]
+	 [<ffffffff812013c5>] request_key+0x41/0x74
+	 [<ffffffffa027003d>] cifs_get_spnego_key+0x200/0x21f [cifs]
+	 [<ffffffffa026e296>] CIFS_SessSetup+0x55d/0x1273 [cifs]
+	 [<ffffffffa02589e1>] cifs_setup_session+0x90/0x1ae [cifs]
+	 [<ffffffffa0258e7e>] cifs_get_smb_ses+0x37f/0x443 [cifs]
+	 [<ffffffffa025a9e3>] cifs_mount+0x1aa1/0x23f3 [cifs]
+	 [<ffffffff8111fd94>] ? alloc_debug_processing+0xdb/0x120
+	 [<ffffffffa027002c>] ? cifs_get_spnego_key+0x1ef/0x21f [cifs]
+	 [<ffffffffa024cc71>] cifs_do_mount+0x165/0x2b3 [cifs]
+	 [<ffffffff81130e72>] vfs_kern_mount+0xaf/0x1dc
+	 [<ffffffff81131007>] do_kern_mount+0x4d/0xef
+	 [<ffffffff811483b9>] do_mount+0x6f4/0x733
+	 [<ffffffff8114861f>] sys_mount+0x88/0xc2
+	 [<ffffffff8100ac42>] system_call_fastpath+0x16/0x1b
+
+Reported-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-and-Tested-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm_tis.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ security/keys/request_key.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -25,6 +25,7 @@
- #include <linux/slab.h>
- #include <linux/interrupt.h>
- #include <linux/wait.h>
-+#include <linux/acpi.h>
- #include "tpm.h"
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -403,7 +403,6 @@ link_check_failed:
+ 	return ret;
  
- #define TPM_HEADER_SIZE 10
-@@ -78,6 +79,26 @@ enum tis_defaults {
- static LIST_HEAD(tis_chips);
- static DEFINE_SPINLOCK(tis_lock);
- 
-+#ifdef CONFIG_ACPI
-+static int is_itpm(struct pnp_dev *dev)
-+{
-+	struct acpi_device *acpi = pnp_acpi_device(dev);
-+	struct acpi_hardware_id *id;
-+
-+	list_for_each_entry(id, &acpi->pnp.ids, list) {
-+		if (!strcmp("INTC0102", id->id))
-+			return 1;
-+	}
-+
-+	return 0;
-+}
-+#else
-+static int is_itpm(struct pnp_dev *dev)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int check_locality(struct tpm_chip *chip, int l)
- {
- 	if ((ioread8(chip->vendor.iobase + TPM_ACCESS(l)) &
-@@ -474,6 +495,9 @@ static int tpm_tis_init(struct device *d
- 		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
- 		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
- 
-+	if (is_itpm(to_pnp_dev(dev)))
-+		itpm = 1;
-+
- 	if (itpm)
- 		dev_info(dev, "Intel iTPM workaround enabled\n");
- 
+ link_prealloc_failed:
+-	up_write(&dest_keyring->sem);
+ 	mutex_unlock(&user->cons_lock);
+ 	kleave(" = %d [prelink]", ret);
+ 	return ret;
 
 
