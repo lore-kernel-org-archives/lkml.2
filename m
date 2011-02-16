@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab1BPAug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:50:36 -0500
-Received: from kroah.org ([198.145.64.141]:45942 "EHLO coco.kroah.org"
+	id S933251Ab1BPBCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:02:34 -0500
+Received: from kroah.org ([198.145.64.141]:45978 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933222Ab1BPAu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:27 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:10 2011
-Message-Id: <20110216002110.757566911@clark.kroah.org>
+	id S933260Ab1BPAuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:37 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:11 2011
+Message-Id: <20110216002111.245284155@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:25 -0800
+Date: Tue, 15 Feb 2011 16:21:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tim Deegan <Tim.Deegan@citrix.com>, Jan Beulich <jbeulich@novell.com>,
-        Jiri Slaby <jslaby@suse.cz>, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [patch 117/176] fix jiffy calculations in calibrate_delay_direct to handle overflow
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Mike Frysinger <vapier@gentoo.org>, Chris Ball <cjb@laptop.org>
+Subject: [patch 122/176] mmc: bfin_sdh: fix alloc size for private data
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Deegan <Tim.Deegan@citrix.com>
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-commit 70a062286b9dfcbd24d2e11601aecfead5cf709a upstream.
+commit a34650f0f1ca589cda09c48cb62baf15e680a247 upstream.
 
-Fixes a hang when booting as dom0 under Xen, when jiffies can be
-quite large by the time the kernel init gets this far.
+The bfin_sdh driver allocates the wrong size for the private data
+in the mmc_host.  The first parameter of mmc_alloc_host should be
+the size of the local driver struct rather than the common mmc_host.
 
-Signed-off-by: Tim Deegan <Tim.Deegan@citrix.com>
-[jbeulich@novell.com: !time_after() -> time_before_eq() as suggested by Jiri Slaby]
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- init/calibrate.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/mmc/host/bfin_sdh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -66,7 +66,7 @@ static unsigned long __cpuinit calibrate
- 		pre_start = 0;
- 		read_current_timer(&start);
- 		start_jiffies = jiffies;
--		while (jiffies <= (start_jiffies + 1)) {
-+		while (time_before_eq(jiffies, start_jiffies + 1)) {
- 			pre_start = start;
- 			read_current_timer(&start);
- 		}
-@@ -74,8 +74,8 @@ static unsigned long __cpuinit calibrate
+--- a/drivers/mmc/host/bfin_sdh.c
++++ b/drivers/mmc/host/bfin_sdh.c
+@@ -462,7 +462,7 @@ static int __devinit sdh_probe(struct pl
+ 		goto out;
+ 	}
  
- 		pre_end = 0;
- 		end = post_start;
--		while (jiffies <=
--		       (start_jiffies + 1 + DELAY_CALIBRATION_TICKS)) {
-+		while (time_before_eq(jiffies, start_jiffies + 1 +
-+					       DELAY_CALIBRATION_TICKS)) {
- 			pre_end = end;
- 			read_current_timer(&end);
- 		}
+-	mmc = mmc_alloc_host(sizeof(*mmc), &pdev->dev);
++	mmc = mmc_alloc_host(sizeof(struct sdh_host), &pdev->dev);
+ 	if (!mmc) {
+ 		ret = -ENOMEM;
+ 		goto out;
 
 
