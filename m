@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab1BPNhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 08:37:46 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61821 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab1BPNhl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 08:37:41 -0500
-Date: Wed, 16 Feb 2011 08:37:36 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: NFS Regression in commit 0b26a0bf6ff398
-Message-ID: <20110216133735.GA2947@mgebm.net>
-References: <20110216005640.GA2841@mgebm.net>
- <1297818155.10103.43.camel@heimdal.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
-Content-Disposition: inline
-In-Reply-To: <1297818155.10103.43.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754270Ab1BPNi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 08:38:59 -0500
+Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:46458 "EHLO
+	homiemail-a60.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751067Ab1BPNi5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 08:38:57 -0500
+Subject: Re: [PATCH v2 1/2] USB: ffs-test: fix header path
+From: Davidlohr Bueso <dave@gnu.org>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org
+In-Reply-To: <1297012413.2039.8.camel@offworld>
+References: <1297012413.2039.8.camel@offworld>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Feb 2011 10:38:36 -0300
+Message-ID: <1297863516.2184.1.camel@offworld>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg, just following up on this (ping) with the requested changes.
 
---BXVAT5kNtrzKuDFl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks.
 
-On Tue, 15 Feb 2011, Trond Myklebust wrote:
+On Sun, 2011-02-06 at 14:13 -0300, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> When compiling this program the functionfs.h header cannot be found, producing:
+> ffs-test.c:40: fatal error: linux/usb/functionfs.h: No such file or directory
+> 
+> This patch also fixes the following warning:
+> ffs-test.c:453: warning: format ‘%4d’ expects type ‘int’, but argument 3 has type ‘size_t’
+> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> ---
+>  tools/usb/ffs-test.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
+> index bbe2e3a..f2c6524 100644
+> --- a/tools/usb/ffs-test.c
+> +++ b/tools/usb/ffs-test.c
+> @@ -37,7 +37,7 @@
+>  #include <sys/types.h>
+>  #include <unistd.h>
+>  
+> -#include <linux/usb/functionfs.h>
+> +#include "../../include/linux/usb/functionfs.h"
+>  
+> 
+>  /******************** Little Endian Handling ********************************/
+> @@ -450,7 +450,7 @@ invalid:
+>  		    len, expected, *p);
+>  		for (p = buf, len = 0; len < nbytes; ++p, ++len) {
+>  			if (0 == (len % 32))
+> -				fprintf(stderr, "%4d:", len);
+> +				fprintf(stderr, "%4zd", len);
+>  			fprintf(stderr, " %02x", *p);
+>  			if (31 == (len % 32))
+>  				fprintf(stderr, "\n");
 
-> On Tue, 2011-02-15 at 19:56 -0500, Eric B Munson wrote:=20
-> > While testing some 2.6.38 work my rsync backup script started consuming
-> > large amounts of memory (all available before dying with no more availa=
-ble
-> > memory).  I have bisected the problem back to 0b26a0bf6ff398.  I am
-> > unfamiliar with the NFS code so I don't know where to start looking for=
- a
-> > possible fix.  My backups files from my home directory to an NFS mounted
-> > directory.  The NFS server is a Synology DS-411+ if it matters.  Let me=
- know
-> > if there is any other information I can provide.
->=20
-> Exactly which 2.6.38 kernel are you running, and which NFS version?
 
-The problem shows in the head of Linus' tree but I was able to reproduce on
-vanilla 2.6.37.  I am using NFS version 3.
-
->=20
-> I'm having trouble seeing how the patch in question can be responsible
-> for what you are seeing, so please could you provide more details of
-> your test setup.
-
-I have a simple backup script that rsyncs the important files from my home
-directory to an NFS mounted directory on the same machine.  It is a small
-home network, just a single switch between machine and file server.  The er=
-ror
-can be reproduced all the way back to that patch, I tested 2.6.37 looking f=
-or
-a good point to start bisection and had to go back to 2.6.36 to find it.  W=
-hen
-it happens, my backup script stalls and the rsync process starts eating all=
- the
-free memory on the system.  There are three active rsync processes, two are
-stalled in calls to select and the third is repeating a call to lstat on the
-same file until rsync fails a memory allocation.
-
->=20
-> --=20
-> Trond Myklebust
-> Linux NFS client maintainer
->=20
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
->=20
-
---BXVAT5kNtrzKuDFl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNW9MfAAoJEH65iIruGRnNeoIIAMx4sXEuj7wNpu+nH1bB8X/W
-EhYjab10dkxef4dB0IhtOjUeUpm68b1YLuP4L6cTkizZNPfkSBAIPV5D/u6D70Cy
-AFYj8iPUvyMQX2LM27pFCdtxrpS7UuYVAQyxZgbe955RqZAmuIMwvFoWTTzcR6H0
-jtSVMyiscDy+2wd2PXpK33+UawRDsAk2gZsFgFFzjoCkjxUkKlMDJqh7NlPkYkUm
-fxbtx3X6oKkrBOzIfTL8HA7jpRWwWFG5MDZalxJ3uk2S5Stj0FxN/TrFrw0wy8/H
-jbgIs/ZdqW8NVgY/nIIQLJ/eUISLwD+XVYSGecnnUC+jO2k1Gy0k4cBt7WWxVtg=
-=C41H
------END PGP SIGNATURE-----
-
---BXVAT5kNtrzKuDFl--
