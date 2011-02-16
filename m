@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab1BPXIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 18:08:18 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36160 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab1BPXIQ (ORCPT
+	id S1754774Ab1BPXKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 18:10:07 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20769 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab1BPXKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 18:08:16 -0500
-Subject: Re: [PATCH 0/4] IMA: making i_readcount a first class inode citizen
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>, torvalds@linux-foundation.org,
-        eparis@redhat.com, viro@zeniv.linux.org.uk,
-        Dave Chinner <david@fromorbit.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        David Safford <safford@watson.ibm.com>
-In-Reply-To: <1297715397-4141-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1297715397-4141-1-git-send-email-zohar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Feb 2011 18:08:13 -0500
-Message-ID: <1297897693.2524.201.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+	Wed, 16 Feb 2011 18:10:04 -0500
+Message-ID: <4D5C5909.4020405@kernel.org>
+Date: Wed, 16 Feb 2011 15:08:57 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, numa: exit early on numa_reset_distance()
+References: <4D5C3A0F.3080107@kernel.org> <20110216223943.GA29600@atj.dyndns.org>
+In-Reply-To: <20110216223943.GA29600@atj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D5C5937.012F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
-
-As Linus has already agreed that the i_readcount patches (1 - 4) can be
-upstreamed (https://lkml.org/lkml/2010/11/18/670), do I need to do
-anything else (eg. send James a request to pull)?
-
-thanks,
-
-Mimi
-
-On Mon, 2011-02-14 at 15:29 -0500, Mimi Zohar wrote:
-> This is a repost of patches 1 - 4 of the ima-i_readcount patch set rebased
-> against security-testing/#next, as requested a while ago.  The patches are
-> also available from:
-> git://git.kernel.org/pub/scm/linux/kernel/git/zohar/ima-2.6.git/#next
+On 02/16/2011 02:39 PM, Tejun Heo wrote:
+> On Wed, Feb 16, 2011 at 12:56:47PM -0800, Yinghai Lu wrote:
+>>
+>> Do not call __pa(numa_distance), if it is not allocated before.
+>>
+>> it will get BUG_ON if VIRTUAL_DEBUG is on.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > 
-> This patchset separates the incrementing/decrementing of the i_readcount,
-> in the VFS layer, from other IMA functionality, by replacing the current
-> ima_counts_get() call with i_readcount_inc(). Its unclear whether this
-> call to increment i_readcount should be made earlier, like i_writecount.
-> Currently the call is situated immediately after the switch from put_filp()
-> to fput() for cleanup.
+> Thanks for spotting this.
 > 
-> Mimi
+>> Index: linux-2.6/arch/x86/mm/numa_64.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/mm/numa_64.c
+>> +++ linux-2.6/arch/x86/mm/numa_64.c
+>> @@ -371,6 +371,12 @@ static void __init numa_reset_distance(v
+>>  {
+>>  	size_t size;
+>>  
+>> +	if (!numa_distance_cnt) {
+>> +		numa_distance = NULL;
+>> +
+>> +		return;
+>> +	}
+>> +
 > 
-> Mimi Zohar (4):
->   IMA: convert i_readcount to atomic
->   IMA: define readcount functions
->   IMA: maintain i_readcount in the VFS layer
->   IMA: remove IMA imbalance checking
-> 
->  fs/file_table.c                   |    5 +-
->  fs/open.c                         |    3 +-
->  include/linux/fs.h                |   23 ++++++-
->  include/linux/ima.h               |    6 --
->  security/integrity/ima/ima_iint.c |    5 --
->  security/integrity/ima/ima_main.c |  130 ++++---------------------------------
->  6 files changed, 40 insertions(+), 132 deletions(-)
-> 
+> But please move the existing numa_distance = NULL before the
+> conditional and do if (!numa_distance_cnt) return;
 
+confused. Do you mean this one ?
+
+[PATCH -v2] x86, numa: exit early on numa_reset_distance()
+
+Do not call __pa(numa_distance), if it is not allocated before.
+
+it will get BUG_ON if VIRTUAL_DEBUG is on.
+
+-v2: change to check existing path as tj requested.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/mm/numa_64.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/arch/x86/mm/numa_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/numa_64.c
++++ linux-2.6/arch/x86/mm/numa_64.c
+@@ -371,11 +371,13 @@ static void __init numa_reset_distance(v
+ {
+ 	size_t size;
+ 
+-	size = numa_distance_cnt * sizeof(numa_distance[0]);
+-	memblock_x86_free_range(__pa(numa_distance),
+-				__pa(numa_distance) + size);
++	if (numa_distance_cnt) {
++		size = numa_distance_cnt * sizeof(numa_distance[0]);
++		memblock_x86_free_range(__pa(numa_distance),
++					__pa(numa_distance) + size);
++		numa_distance_cnt = 0;
++	}
+ 	numa_distance = NULL;
+-	numa_distance_cnt = 0;
+ }
+ 
+ /*
 
