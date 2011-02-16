@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab1BPBVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:21:30 -0500
-Received: from kroah.org ([198.145.64.141]:45231 "EHLO coco.kroah.org"
+	id S1757431Ab1BPBWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:22:03 -0500
+Received: from kroah.org ([198.145.64.141]:45189 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932782Ab1BPArz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:55 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:01 2011
-Message-Id: <20110216002101.491038033@clark.kroah.org>
+	id S932684Ab1BPArl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:00 2011
+Message-Id: <20110216002100.889251579@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:52 -0800
+Date: Tue, 15 Feb 2011 16:19:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Roland Kletzing <devzero@web.de>, "Craig W. Nadler" <craig@nadler.us>
-Subject: [patch 024/176] USB: g_printer: fix bug in unregistration
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [patch 018/176] USB: usb-storage: unusual_devs entry for Coby MP3 player
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,42 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Stern <stern@rowland.harvard.edu>
 
-commit d5aa475180d03d45c5dc6134aa833f1b3e89c45e upstream.
+commit 3ea3c9b5a8464ec8223125f95e5dddb3bfd02a39 upstream.
 
-This patch (as1441) fixes a bug in g_printer.  The gadget driver, char
-device number, and class device should be unregistered in reverse
-order of registration.  As it is now, when the module is unloaded the
-class device gets unregistered first, causing a crash when the unbind
-method tries to access it.
-
-This fixes Bugzilla #25882.
+This patch (as1444) adds an unusual_devs entry for an MP3 player from
+Coby electronics.  The device has two nasty bugs.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Roland Kletzing <devzero@web.de>
-CC: Craig W. Nadler <craig@nadler.us>
+Tested-by: Jasper Mackenzie <scarletpimpernal@hotmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/printer.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/gadget/printer.c
-+++ b/drivers/usb/gadget/printer.c
-@@ -1596,13 +1596,12 @@ cleanup(void)
- 	int status;
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1884,6 +1884,13 @@ UNUSUAL_DEV(  0x1e68, 0x001b, 0x0000, 0x
+ 		US_SC_DEVICE, US_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
  
- 	mutex_lock(&usb_printer_gadget.lock_printer_io);
--	class_destroy(usb_gadget_class);
--	unregister_chrdev_region(g_printer_devno, 2);
--
- 	status = usb_gadget_unregister_driver(&printer_driver);
- 	if (status)
- 		ERROR(dev, "usb_gadget_unregister_driver %x\n", status);
- 
-+	unregister_chrdev_region(g_printer_devno, 2);
-+	class_destroy(usb_gadget_class);
- 	mutex_unlock(&usb_printer_gadget.lock_printer_io);
- }
- module_exit(cleanup);
++/* Reported by Jasper Mackenzie <scarletpimpernal@hotmail.com> */
++UNUSUAL_DEV( 0x1e74, 0x4621, 0x0000, 0x0000,
++		"Coby Electronics",
++		"MP3 Player",
++		US_SC_DEVICE, US_PR_DEVICE, NULL,
++		US_FL_BULK_IGNORE_TAG | US_FL_MAX_SECTORS_64 ),
++
+ UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
+ 		"ST",
+ 		"2A",
 
 
