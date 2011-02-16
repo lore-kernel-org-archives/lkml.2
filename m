@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab1BPMVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:21:50 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36104 "EHLO
+	id S932569Ab1BPMWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:22:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52471 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287Ab1BPMVm (ORCPT
+	with ESMTP id S932442Ab1BPMVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:21:42 -0500
+	Wed, 16 Feb 2011 07:21:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=dLOmNmufV47mx7DHT1YBJTBf09/sloa+qpTuN5nb0XaRCBg9dRldCXugUdcF507TCz
-         1486+fPYzjbIvJhCGf8QCCOMygl/uloFCu+kaAc+gQMRYbcwzlaTEuwUWJQzqJAqz60c
-         q5KfYPehFJYMNxc+LnBOPmdk94XABC9KVZtAo=
+        b=JaP75igr6oOd02kf6JJSu1F0obkyXBH+8FMvDxjTyNsnfqT7YajFzkE3tRKqkbLP3D
+         HeY28dFWe3sqRQjVYGlcaQlvFNrWVyE9dTrT3GP1bbcms8WNE8lgYBXa0TYN8EL97Cqr
+         oD9GOyb6ZJjsKSeUiGq1jjWWjDLFv3HKyfTEk=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 17/33] x86-64, NUMA: Remove %NULL @nodeids handling from compute_hash_shift()
-Date: Wed, 16 Feb 2011 13:20:51 +0100
-Message-Id: <1297858867-25981-18-git-send-email-tj@kernel.org>
+Subject: [PATCH 22/33] x86-64, NUMA: Add common find_node_by_addr()
+Date: Wed, 16 Feb 2011 13:20:56 +0100
+Message-Id: <1297858867-25981-23-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297858867-25981-1-git-send-email-tj@kernel.org>
 References: <1297858867-25981-1-git-send-email-tj@kernel.org>
@@ -30,11 +30,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-numa_emulation() called compute_hash_shift() with %NULL @nodeids which
-meant identity mapping between index and nodeid.  Make
-numa_emulation() build identity array and drop %NULL @nodeids handling
-from populate_memnodemap() and thus from compute_hash_shift().  This
-is to prepare for transition to using memblks instead.
+srat_64.c and amdtopology_64.c had their own versions of
+find_node_by_addr() which were basically the same.  Add common one in
+numa_64.c and remove the duplicates.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -45,48 +43,107 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/numa_64.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/numa_64.h |    1 +
+ arch/x86/mm/amdtopology_64.c   |   13 -------------
+ arch/x86/mm/numa_64.c          |   19 +++++++++++++++++++
+ arch/x86/mm/srat_64.c          |   18 ------------------
+ 4 files changed, 20 insertions(+), 31 deletions(-)
 
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+index fbc9d33..867d41b 100644
+--- a/arch/x86/include/asm/numa_64.h
++++ b/arch/x86/include/asm/numa_64.h
+@@ -36,6 +36,7 @@ extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
+ #define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
+ #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
+ void numa_emu_cmdline(char *);
++int __init find_node_by_addr(unsigned long addr);
+ #endif /* CONFIG_NUMA_EMU */
+ #else
+ static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index 90cf297..8f7a5eb 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -205,19 +205,6 @@ static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+ 	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+ };
+ 
+-static int __init find_node_by_addr(unsigned long addr)
+-{
+-	int ret = NUMA_NO_NODE;
+-	int i;
+-
+-	for (i = 0; i < 8; i++)
+-		if (addr >= numa_nodes[i].start && addr < numa_nodes[i].end) {
+-			ret = i;
+-			break;
+-		}
+-	return ret;
+-}
+-
+ /*
+  * For NUMA emulation, fake proximity domain (_PXM) to node id mappings must be
+  * setup to represent the physical topology but reflect the emulated
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index e211c00..243d18d 100644
+index 20aa1d3..681bc0d 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -63,12 +63,7 @@ static int __init populate_memnodemap(const struct bootnode *nodes,
- 		do {
- 			if (memnodemap[addr >> shift] != NUMA_NO_NODE)
- 				return -1;
--
--			if (!nodeids)
--				memnodemap[addr >> shift] = i;
--			else
--				memnodemap[addr >> shift] = nodeids[i];
--
-+			memnodemap[addr >> shift] = nodeids[i];
- 			addr += (1UL << shift);
- 		} while (addr < end);
- 		res = 1;
-@@ -706,6 +701,7 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
- static int __init numa_emulation(unsigned long start_pfn,
- 			unsigned long last_pfn, int acpi, int amd)
- {
-+	static int nodeid[NR_NODE_MEMBLKS] __initdata;
- 	u64 addr = start_pfn << PAGE_SHIFT;
- 	u64 max_addr = last_pfn << PAGE_SHIFT;
- 	int num_nodes;
-@@ -730,7 +726,11 @@ static int __init numa_emulation(unsigned long start_pfn,
+@@ -430,6 +430,25 @@ void __init numa_emu_cmdline(char *str)
+ 	cmdline = str;
+ }
  
- 	if (num_nodes < 0)
- 		return num_nodes;
--	memnode_shift = compute_hash_shift(nodes, num_nodes, NULL);
++int __init find_node_by_addr(unsigned long addr)
++{
++	int ret = NUMA_NO_NODE;
++	int i;
 +
-+	for (i = 0; i < ARRAY_SIZE(nodeid); i++)
-+		nodeid[i] = i;
++	for_each_node_mask(i, mem_nodes_parsed) {
++		/*
++		 * Find the real node that this emulated node appears on.  For
++		 * the sake of simplicity, we only use a real node's starting
++		 * address to determine which emulated node it appears on.
++		 */
++		if (addr >= numa_nodes[i].start && addr < numa_nodes[i].end) {
++			ret = i;
++			break;
++		}
++	}
++	return ret;
++}
 +
-+	memnode_shift = compute_hash_shift(nodes, num_nodes, nodeid);
- 	if (memnode_shift < 0) {
- 		memnode_shift = 0;
- 		printk(KERN_ERR "No NUMA hash function found.  NUMA emulation "
+ static int __init setup_physnodes(unsigned long start, unsigned long end)
+ {
+ 	int ret = 0;
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index d56eff8..51d0733 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -277,24 +277,6 @@ static int fake_node_to_pxm_map[MAX_NUMNODES] __initdata = {
+ static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+ 	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+ };
+-static int __init find_node_by_addr(unsigned long addr)
+-{
+-	int ret = NUMA_NO_NODE;
+-	int i;
+-
+-	for_each_node_mask(i, mem_nodes_parsed) {
+-		/*
+-		 * Find the real node that this emulated node appears on.  For
+-		 * the sake of simplicity, we only use a real node's starting
+-		 * address to determine which emulated node it appears on.
+-		 */
+-		if (addr >= numa_nodes[i].start && addr < numa_nodes[i].end) {
+-			ret = i;
+-			break;
+-		}
+-	}
+-	return ret;
+-}
+ 
+ /*
+  * In NUMA emulation, we need to setup proximity domain (_PXM) to node ID
 -- 
 1.7.1
 
