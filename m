@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab1BPNtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 08:49:22 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40037 "EHLO hera.kernel.org"
+	id S1755006Ab1BPNtm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 08:49:42 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40060 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754555Ab1BPNtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 08:49:19 -0500
-Date: Wed, 16 Feb 2011 13:48:50 GMT
+	id S1754717Ab1BPNtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 08:49:39 -0500
+Date: Wed, 16 Feb 2011 13:49:16 GMT
 From: tip-bot for Robert Richter <robert.richter@amd.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
@@ -14,169 +14,298 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         robert.richter@amd.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <1296664860-10886-5-git-send-email-robert.richter@amd.com>
-References: <1296664860-10886-5-git-send-email-robert.richter@amd.com>
+In-Reply-To: <20110215135210.GB5874@erda.amd.com>
+References: <20110215135210.GB5874@erda.amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Store perfctr msr addresses in config_base/event_base
-Message-ID: <tip-73d6e52206a20354738418625cedc244cbfd5023@git.kernel.org>
-Git-Commit-ID: 73d6e52206a20354738418625cedc244cbfd5023
+Subject: [tip:perf/core] perf, x86: Add support for AMD family 15h core counters
+Message-ID: <tip-4979d2729af22f6ce8faa325fc60a85a2c2daa02@git.kernel.org>
+Git-Commit-ID: 4979d2729af22f6ce8faa325fc60a85a2c2daa02
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Feb 2011 13:48:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Feb 2011 13:49:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  73d6e52206a20354738418625cedc244cbfd5023
-Gitweb:     http://git.kernel.org/tip/73d6e52206a20354738418625cedc244cbfd5023
+Commit-ID:  4979d2729af22f6ce8faa325fc60a85a2c2daa02
+Gitweb:     http://git.kernel.org/tip/4979d2729af22f6ce8faa325fc60a85a2c2daa02
 Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Wed, 2 Feb 2011 17:40:59 +0100
+AuthorDate: Wed, 2 Feb 2011 17:36:12 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 16 Feb 2011 13:30:52 +0100
+CommitDate: Wed, 16 Feb 2011 13:30:53 +0100
 
-perf, x86: Store perfctr msr addresses in config_base/event_base
+perf, x86: Add support for AMD family 15h core counters
 
-Instead of storing the base addresses we can store the counter's msr
-addresses directly in config_base/event_base of struct hw_perf_event.
-This avoids recalculating the address with each msr access. The
-addresses are configured one time. We also need this change to later
-modify the address calculation.
+This patch adds support for AMD family 15h core counters. There are
+major changes compared to family 10h. First, there is a new perfctr
+msr range for up to 6 counters. Northbridge counters are separate
+now. This patch only adds support for core counters. Second, certain
+events may only be scheduled on certain counters. For this we need to
+extend the event scheduling and constraints.
+
+We use cpu feature flags to calculate family 15h msr address offsets.
+This way we later can implement a faster ALTERNATIVE() version for
+this.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1296664860-10886-5-git-send-email-robert.richter@amd.com>
+LKML-Reference: <20110215135210.GB5874@erda.amd.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event.c    |   21 ++++++++-------------
- arch/x86/kernel/cpu/perf_event_p4.c |    8 ++++----
- arch/x86/kernel/cpu/perf_event_p6.c |    4 ++--
- 3 files changed, 14 insertions(+), 19 deletions(-)
+ arch/x86/include/asm/cpufeature.h    |    2 +
+ arch/x86/kernel/cpu/perf_event.c     |   12 ++-
+ arch/x86/kernel/cpu/perf_event_amd.c |  175 +++++++++++++++++++++++++++++++++-
+ 3 files changed, 186 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 220e2ea..91f3e087 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -160,6 +160,7 @@
+ #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
+ #define X86_FEATURE_TBM		(6*32+21) /* trailing bit manipulations */
+ #define X86_FEATURE_TOPOEXT	(6*32+22) /* topology extensions CPUID leafs */
++#define X86_FEATURE_PERFCTR_CORE (6*32+23) /* core performance counter extensions */
+ 
+ /*
+  * Auxiliary flags: Linux defined - For features scattered in various
+@@ -279,6 +280,7 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_xsave		boot_cpu_has(X86_FEATURE_XSAVE)
+ #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
+ #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
++#define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
+ 
+ #if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
+ # define cpu_has_invlpg		1
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index ee40c1ad..3161943 100644
+index 3161943..10bfe24 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -298,7 +298,7 @@ x86_perf_event_update(struct perf_event *event)
- 	 */
- again:
- 	prev_raw_count = local64_read(&hwc->prev_count);
--	rdmsrl(hwc->event_base + idx, new_raw_count);
-+	rdmsrl(hwc->event_base, new_raw_count);
+@@ -321,14 +321,22 @@ again:
+ 	return new_raw_count;
+ }
  
- 	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
- 					new_raw_count) != prev_raw_count)
-@@ -655,7 +655,7 @@ static void x86_pmu_disable(struct pmu *pmu)
- static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
- 					  u64 enable_mask)
++/* using X86_FEATURE_PERFCTR_CORE to later implement ALTERNATIVE() here */
++static inline int x86_pmu_addr_offset(int index)
++{
++	if (boot_cpu_has(X86_FEATURE_PERFCTR_CORE))
++		return index << 1;
++	return index;
++}
++
+ static inline unsigned int x86_pmu_config_addr(int index)
  {
--	wrmsrl(hwc->config_base + hwc->idx, hwc->config | enable_mask);
-+	wrmsrl(hwc->config_base, hwc->config | enable_mask);
+-	return x86_pmu.eventsel + index;
++	return x86_pmu.eventsel + x86_pmu_addr_offset(index);
  }
  
- static void x86_pmu_enable_all(int added)
-@@ -834,15 +834,10 @@ static inline void x86_assign_hw_event(struct perf_event *event,
- 		hwc->event_base	= 0;
- 	} else if (hwc->idx >= X86_PMC_IDX_FIXED) {
- 		hwc->config_base = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
--		/*
--		 * We set it so that event_base + idx in wrmsr/rdmsr maps to
--		 * MSR_ARCH_PERFMON_FIXED_CTR0 ... CTR2:
--		 */
--		hwc->event_base =
--			MSR_ARCH_PERFMON_FIXED_CTR0 - X86_PMC_IDX_FIXED;
-+		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0;
- 	} else {
--		hwc->config_base = x86_pmu.eventsel;
--		hwc->event_base  = x86_pmu.perfctr;
-+		hwc->config_base = x86_pmu_config_addr(hwc->idx);
-+		hwc->event_base  = x86_pmu_event_addr(hwc->idx);
- 	}
- }
- 
-@@ -932,7 +927,7 @@ static inline void x86_pmu_disable_event(struct perf_event *event)
+ static inline unsigned int x86_pmu_event_addr(int index)
  {
- 	struct hw_perf_event *hwc = &event->hw;
- 
--	wrmsrl(hwc->config_base + hwc->idx, hwc->config);
-+	wrmsrl(hwc->config_base, hwc->config);
+-	return x86_pmu.perfctr + index;
++	return x86_pmu.perfctr + x86_pmu_addr_offset(index);
  }
  
- static DEFINE_PER_CPU(u64 [X86_PMC_IDX_MAX], pmc_prev_left);
-@@ -985,7 +980,7 @@ x86_perf_event_set_period(struct perf_event *event)
- 	 */
- 	local64_set(&hwc->prev_count, (u64)-left);
+ static atomic_t active_events;
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index 67e2202..461f62b 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -127,6 +127,11 @@ static int amd_pmu_hw_config(struct perf_event *event)
+ /*
+  * AMD64 events are detected based on their event codes.
+  */
++static inline unsigned int amd_get_event_code(struct hw_perf_event *hwc)
++{
++	return ((hwc->config >> 24) & 0x0f00) | (hwc->config & 0x00ff);
++}
++
+ static inline int amd_is_nb_event(struct hw_perf_event *hwc)
+ {
+ 	return (hwc->config & 0xe0) == 0xe0;
+@@ -385,13 +390,181 @@ static __initconst const struct x86_pmu amd_pmu = {
+ 	.cpu_dead		= amd_pmu_cpu_dead,
+ };
  
--	wrmsrl(hwc->event_base + idx, (u64)(-left) & x86_pmu.cntval_mask);
-+	wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
++/* AMD Family 15h */
++
++#define AMD_EVENT_TYPE_MASK	0x000000F0ULL
++
++#define AMD_EVENT_FP		0x00000000ULL ... 0x00000010ULL
++#define AMD_EVENT_LS		0x00000020ULL ... 0x00000030ULL
++#define AMD_EVENT_DC		0x00000040ULL ... 0x00000050ULL
++#define AMD_EVENT_CU		0x00000060ULL ... 0x00000070ULL
++#define AMD_EVENT_IC_DE		0x00000080ULL ... 0x00000090ULL
++#define AMD_EVENT_EX_LS		0x000000C0ULL
++#define AMD_EVENT_DE		0x000000D0ULL
++#define AMD_EVENT_NB		0x000000E0ULL ... 0x000000F0ULL
++
++/*
++ * AMD family 15h event code/PMC mappings:
++ *
++ * type = event_code & 0x0F0:
++ *
++ * 0x000	FP	PERF_CTL[5:3]
++ * 0x010	FP	PERF_CTL[5:3]
++ * 0x020	LS	PERF_CTL[5:0]
++ * 0x030	LS	PERF_CTL[5:0]
++ * 0x040	DC	PERF_CTL[5:0]
++ * 0x050	DC	PERF_CTL[5:0]
++ * 0x060	CU	PERF_CTL[2:0]
++ * 0x070	CU	PERF_CTL[2:0]
++ * 0x080	IC/DE	PERF_CTL[2:0]
++ * 0x090	IC/DE	PERF_CTL[2:0]
++ * 0x0A0	---
++ * 0x0B0	---
++ * 0x0C0	EX/LS	PERF_CTL[5:0]
++ * 0x0D0	DE	PERF_CTL[2:0]
++ * 0x0E0	NB	NB_PERF_CTL[3:0]
++ * 0x0F0	NB	NB_PERF_CTL[3:0]
++ *
++ * Exceptions:
++ *
++ * 0x003	FP	PERF_CTL[3]
++ * 0x00B	FP	PERF_CTL[3]
++ * 0x00D	FP	PERF_CTL[3]
++ * 0x023	DE	PERF_CTL[2:0]
++ * 0x02D	LS	PERF_CTL[3]
++ * 0x02E	LS	PERF_CTL[3,0]
++ * 0x043	CU	PERF_CTL[2:0]
++ * 0x045	CU	PERF_CTL[2:0]
++ * 0x046	CU	PERF_CTL[2:0]
++ * 0x054	CU	PERF_CTL[2:0]
++ * 0x055	CU	PERF_CTL[2:0]
++ * 0x08F	IC	PERF_CTL[0]
++ * 0x187	DE	PERF_CTL[0]
++ * 0x188	DE	PERF_CTL[0]
++ * 0x0DB	EX	PERF_CTL[5:0]
++ * 0x0DC	LS	PERF_CTL[5:0]
++ * 0x0DD	LS	PERF_CTL[5:0]
++ * 0x0DE	LS	PERF_CTL[5:0]
++ * 0x0DF	LS	PERF_CTL[5:0]
++ * 0x1D6	EX	PERF_CTL[5:0]
++ * 0x1D8	EX	PERF_CTL[5:0]
++ */
++
++static struct event_constraint amd_f15_PMC0  = EVENT_CONSTRAINT(0, 0x01, 0);
++static struct event_constraint amd_f15_PMC20 = EVENT_CONSTRAINT(0, 0x07, 0);
++static struct event_constraint amd_f15_PMC3  = EVENT_CONSTRAINT(0, 0x08, 0);
++static struct event_constraint amd_f15_PMC30 = EVENT_CONSTRAINT(0, 0x09, 0);
++static struct event_constraint amd_f15_PMC50 = EVENT_CONSTRAINT(0, 0x3F, 0);
++static struct event_constraint amd_f15_PMC53 = EVENT_CONSTRAINT(0, 0x38, 0);
++
++static struct event_constraint *
++amd_get_event_constraints_f15h(struct cpu_hw_events *cpuc, struct perf_event *event)
++{
++	unsigned int event_code = amd_get_event_code(&event->hw);
++
++	switch (event_code & AMD_EVENT_TYPE_MASK) {
++	case AMD_EVENT_FP:
++		switch (event_code) {
++		case 0x003:
++		case 0x00B:
++		case 0x00D:
++			return &amd_f15_PMC3;
++		default:
++			return &amd_f15_PMC53;
++		}
++	case AMD_EVENT_LS:
++	case AMD_EVENT_DC:
++	case AMD_EVENT_EX_LS:
++		switch (event_code) {
++		case 0x023:
++		case 0x043:
++		case 0x045:
++		case 0x046:
++		case 0x054:
++		case 0x055:
++			return &amd_f15_PMC20;
++		case 0x02D:
++			return &amd_f15_PMC3;
++		case 0x02E:
++			return &amd_f15_PMC30;
++		default:
++			return &amd_f15_PMC50;
++		}
++	case AMD_EVENT_CU:
++	case AMD_EVENT_IC_DE:
++	case AMD_EVENT_DE:
++		switch (event_code) {
++		case 0x08F:
++		case 0x187:
++		case 0x188:
++			return &amd_f15_PMC0;
++		case 0x0DB ... 0x0DF:
++		case 0x1D6:
++		case 0x1D8:
++			return &amd_f15_PMC50;
++		default:
++			return &amd_f15_PMC20;
++		}
++	case AMD_EVENT_NB:
++		/* not yet implemented */
++		return &emptyconstraint;
++	default:
++		return &emptyconstraint;
++	}
++}
++
++static __initconst const struct x86_pmu amd_pmu_f15h = {
++	.name			= "AMD Family 15h",
++	.handle_irq		= x86_pmu_handle_irq,
++	.disable_all		= x86_pmu_disable_all,
++	.enable_all		= x86_pmu_enable_all,
++	.enable			= x86_pmu_enable_event,
++	.disable		= x86_pmu_disable_event,
++	.hw_config		= amd_pmu_hw_config,
++	.schedule_events	= x86_schedule_events,
++	.eventsel		= MSR_F15H_PERF_CTL,
++	.perfctr		= MSR_F15H_PERF_CTR,
++	.event_map		= amd_pmu_event_map,
++	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
++	.num_counters		= 6,
++	.cntval_bits		= 48,
++	.cntval_mask		= (1ULL << 48) - 1,
++	.apic			= 1,
++	/* use highest bit to detect overflow */
++	.max_period		= (1ULL << 47) - 1,
++	.get_event_constraints	= amd_get_event_constraints_f15h,
++	/* nortbridge counters not yet implemented: */
++#if 0
++	.put_event_constraints	= amd_put_event_constraints,
++
++	.cpu_prepare		= amd_pmu_cpu_prepare,
++	.cpu_starting		= amd_pmu_cpu_starting,
++	.cpu_dead		= amd_pmu_cpu_dead,
++#endif
++};
++
+ static __init int amd_pmu_init(void)
+ {
+ 	/* Performance-monitoring supported from K7 and later: */
+ 	if (boot_cpu_data.x86 < 6)
+ 		return -ENODEV;
  
- 	/*
- 	 * Due to erratum on certan cpu we need
-@@ -993,7 +988,7 @@ x86_perf_event_set_period(struct perf_event *event)
- 	 * is updated properly
- 	 */
- 	if (x86_pmu.perfctr_second_write) {
--		wrmsrl(hwc->event_base + idx,
-+		wrmsrl(hwc->event_base,
- 			(u64)(-left) & x86_pmu.cntval_mask);
- 	}
+-	x86_pmu = amd_pmu;
++	/*
++	 * If core performance counter extensions exists, it must be
++	 * family 15h, otherwise fail. See x86_pmu_addr_offset().
++	 */
++	switch (boot_cpu_data.x86) {
++	case 0x15:
++		if (!cpu_has_perfctr_core)
++			return -ENODEV;
++		x86_pmu = amd_pmu_f15h;
++		break;
++	default:
++		if (cpu_has_perfctr_core)
++			return -ENODEV;
++		x86_pmu = amd_pmu;
++		break;
++	}
  
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index ff751a9..3769ac8 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -764,9 +764,9 @@ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
- 	u64 v;
- 
- 	/* an official way for overflow indication */
--	rdmsrl(hwc->config_base + hwc->idx, v);
-+	rdmsrl(hwc->config_base, v);
- 	if (v & P4_CCCR_OVF) {
--		wrmsrl(hwc->config_base + hwc->idx, v & ~P4_CCCR_OVF);
-+		wrmsrl(hwc->config_base, v & ~P4_CCCR_OVF);
- 		return 1;
- 	}
- 
-@@ -815,7 +815,7 @@ static inline void p4_pmu_disable_event(struct perf_event *event)
- 	 * state we need to clear P4_CCCR_OVF, otherwise interrupt get
- 	 * asserted again and again
- 	 */
--	(void)checking_wrmsrl(hwc->config_base + hwc->idx,
-+	(void)checking_wrmsrl(hwc->config_base,
- 		(u64)(p4_config_unpack_cccr(hwc->config)) &
- 			~P4_CCCR_ENABLE & ~P4_CCCR_OVF & ~P4_CCCR_RESERVED);
- }
-@@ -885,7 +885,7 @@ static void p4_pmu_enable_event(struct perf_event *event)
- 	p4_pmu_enable_pebs(hwc->config);
- 
- 	(void)checking_wrmsrl(escr_addr, escr_conf);
--	(void)checking_wrmsrl(hwc->config_base + hwc->idx,
-+	(void)checking_wrmsrl(hwc->config_base,
- 				(cccr & ~P4_CCCR_RESERVED) | P4_CCCR_ENABLE);
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index 34ba07b..20c097e 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -68,7 +68,7 @@ p6_pmu_disable_event(struct perf_event *event)
- 	if (cpuc->enabled)
- 		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
- 
--	(void)checking_wrmsrl(hwc->config_base + hwc->idx, val);
-+	(void)checking_wrmsrl(hwc->config_base, val);
- }
- 
- static void p6_pmu_enable_event(struct perf_event *event)
-@@ -81,7 +81,7 @@ static void p6_pmu_enable_event(struct perf_event *event)
- 	if (cpuc->enabled)
- 		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
- 
--	(void)checking_wrmsrl(hwc->config_base + hwc->idx, val);
-+	(void)checking_wrmsrl(hwc->config_base, val);
- }
- 
- static __initconst const struct x86_pmu p6_pmu = {
+ 	/* Events are common for all AMDs */
+ 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
