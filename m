@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab1BPAVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:21:31 -0500
-Received: from kroah.org ([198.145.64.141]:39278 "EHLO coco.kroah.org"
+	id S1757349Ab1BPAVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:21:47 -0500
+Received: from kroah.org ([198.145.64.141]:39367 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757131Ab1BPAVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:24 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:36 2011
-Message-Id: <20110216001436.855492347@clark.kroah.org>
+	id S1757336Ab1BPAVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:43 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:37 2011
+Message-Id: <20110216001437.822305986@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:55 -0800
+Date: Tue, 15 Feb 2011 16:13:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Anderson <anderson@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [118/272] /proc/kcore: fix seeking
+        Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
+        Jan Engelhardt <jengelh@medozas.de>, Jens Axboe <axboe@kernel.dk>
+Subject: [128/272] writeback: avoid livelocking WB_SYNC_ALL writeback
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Anderson <anderson@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit ceff1a770933e2ca2bf995b453dade4ec47a9878 upstream.
+commit b9543dac5bbc4aef0a598965b6b34f6259ab9a9b upstream.
 
-Commit 34aacb2920 ("procfs: Use generic_file_llseek in /proc/kcore") broke
-seeking on /proc/kcore.  This changes it back to use default_llseek in
-order to restore the original behavior.
+When wb_writeback() is called in WB_SYNC_ALL mode, work->nr_to_write is
+usually set to LONG_MAX.  The logic in wb_writeback() then calls
+__writeback_inodes_sb() with nr_to_write == MAX_WRITEBACK_PAGES and we
+easily end up with non-positive nr_to_write after the function returns, if
+the inode has more than MAX_WRITEBACK_PAGES dirty pages at the moment.
 
-The problem with generic_file_llseek is that it only allows seeks up to
-inode->i_sb->s_maxbytes, which is 2GB-1 on procfs, where the memory file
-offset values in the /proc/kcore PT_LOAD segments may exceed or start
-beyond that offset value.
+When nr_to_write is <= 0 wb_writeback() decides we need another round of
+writeback but this is wrong in some cases!  For example when a single
+large file is continuously dirtied, we would never finish syncing it
+because each pass would be able to write MAX_WRITEBACK_PAGES and inode
+dirty timestamp never gets updated (as inode is never completely clean).
+Thus __writeback_inodes_sb() would write the redirtied inode again and
+again.
 
-A similar revert was made for /proc/vmcore.
+Fix the issue by setting nr_to_write to LONG_MAX in WB_SYNC_ALL mode.  We
+do not need nr_to_write in WB_SYNC_ALL mode anyway since
+write_cache_pages() does livelock avoidance using page tagging in
+WB_SYNC_ALL mode.
 
-Signed-off-by: Dave Anderson <anderson@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+This makes wb_writeback() call __writeback_inodes_sb() only once on
+WB_SYNC_ALL.  The latter function won't livelock because it works on
+
+- a finite set of files by doing queue_io() once at the beginning
+- a finite set of pages by PAGECACHE_TAG_TOWRITE page tagging
+
+After this patch, program from http://lkml.org/lkml/2010/10/24/154 is no
+longer able to stall sync forever.
+
+[fengguang.wu@intel.com: fix locking comment]
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Jan Engelhardt <jengelh@medozas.de>
+Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/kcore.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fs-writeback.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/fs/proc/kcore.c
-+++ b/fs/proc/kcore.c
-@@ -558,7 +558,7 @@ static int open_kcore(struct inode *inod
- static const struct file_operations proc_kcore_operations = {
- 	.read		= read_kcore,
- 	.open		= open_kcore,
--	.llseek		= generic_file_llseek,
-+	.llseek		= default_llseek,
- };
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -629,6 +629,7 @@ static long wb_writeback(struct bdi_writ
+ 	};
+ 	unsigned long oldest_jif;
+ 	long wrote = 0;
++	long write_chunk;
+ 	struct inode *inode;
  
- #ifdef CONFIG_MEMORY_HOTPLUG
+ 	if (wbc.for_kupdate) {
+@@ -641,6 +642,24 @@ static long wb_writeback(struct bdi_writ
+ 		wbc.range_end = LLONG_MAX;
+ 	}
+ 
++	/*
++	 * WB_SYNC_ALL mode does livelock avoidance by syncing dirty
++	 * inodes/pages in one big loop. Setting wbc.nr_to_write=LONG_MAX
++	 * here avoids calling into writeback_inodes_wb() more than once.
++	 *
++	 * The intended call sequence for WB_SYNC_ALL writeback is:
++	 *
++	 *      wb_writeback()
++	 *          __writeback_inodes_sb()     <== called only once
++	 *              write_cache_pages()     <== called once for each inode
++	 *                   (quickly) tag currently dirty pages
++	 *                   (maybe slowly) sync all tagged pages
++	 */
++	if (wbc.sync_mode == WB_SYNC_NONE)
++		write_chunk = MAX_WRITEBACK_PAGES;
++	else
++		write_chunk = LONG_MAX;
++
+ 	wbc.wb_start = jiffies; /* livelock avoidance */
+ 	for (;;) {
+ 		/*
+@@ -667,7 +686,7 @@ static long wb_writeback(struct bdi_writ
+ 			break;
+ 
+ 		wbc.more_io = 0;
+-		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
++		wbc.nr_to_write = write_chunk;
+ 		wbc.pages_skipped = 0;
+ 
+ 		trace_wbc_writeback_start(&wbc, wb->bdi);
+@@ -677,8 +696,8 @@ static long wb_writeback(struct bdi_writ
+ 			writeback_inodes_wb(wb, &wbc);
+ 		trace_wbc_writeback_written(&wbc, wb->bdi);
+ 
+-		work->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+-		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
++		work->nr_pages -= write_chunk - wbc.nr_to_write;
++		wrote += write_chunk - wbc.nr_to_write;
+ 
+ 		/*
+ 		 * If we consumed everything, see if we have more
+@@ -693,7 +712,7 @@ static long wb_writeback(struct bdi_writ
+ 		/*
+ 		 * Did we write something? Try for more
+ 		 */
+-		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
++		if (wbc.nr_to_write < write_chunk)
+ 			continue;
+ 		/*
+ 		 * Nothing written. Wait for some inode to
 
 
