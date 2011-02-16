@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142Ab1BPAtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:49:45 -0500
-Received: from kroah.org ([198.145.64.141]:45726 "EHLO coco.kroah.org"
+	id S933238Ab1BPBIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:08:30 -0500
+Received: from kroah.org ([198.145.64.141]:45773 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933116Ab1BPAtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:36 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:07 2011
-Message-Id: <20110216002107.801369169@clark.kroah.org>
+	id S933145Ab1BPAtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:08 2011
+Message-Id: <20110216002108.486944398@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:55 -0800
+Date: Tue, 15 Feb 2011 16:21:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [patch 087/176] ASoC: WM8990: msleep() takes milliseconds not jiffies
+        Paul Fox <pgf@laptop.org>, Daniel Drake <dsd@laptop.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [patch 094/176] rtc-cmos: fix suspend/resume
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,59 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+From: Paul Fox <pgf@laptop.org>
 
-commit 7ebcf5d6021a696680ee77d9162a2edec2d671dd upstream.
+commit 2fb08e6ca9f00d1aedb3964983e9c8f84b36b807 upstream.
 
-Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+rtc-cmos was setting suspend/resume hooks at the device_driver level.
+However, the platform bus code (drivers/base/platform.c) only looks for
+resume hooks at the dev_pm_ops level, or within the platform_driver.
+
+Switch rtc_cmos to use dev_pm_ops so that suspend/resume code is executed
+again.
+
+Paul said:
+
+: The user visible symptom in our (XO laptop) case was that rtcwake would
+: fail to wake the laptop.  The RTC alarm would expire, but the wakeup
+: wasn't unmasked.
+:
+: As for severity, the impact may have been reduced because if I recall
+: correctly, the bug only affected platforms with CONFIG_PNP disabled.
+
+Signed-off-by: Paul Fox <pgf@laptop.org>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8990.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/rtc/rtc-cmos.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/sound/soc/codecs/wm8990.c
-+++ b/sound/soc/codecs/wm8990.c
-@@ -1183,7 +1183,7 @@ static int wm8990_set_bias_level(struct
- 				     WM8990_VMIDTOG);
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -36,6 +36,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
++#include <linux/pm.h>
  
- 			/* Delay to allow output caps to discharge */
--			msleep(msecs_to_jiffies(300));
-+			msleep(300);
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -850,7 +851,7 @@ static void __exit cmos_do_remove(struct
  
- 			/* Disable VMIDTOG */
- 			snd_soc_write(codec, WM8990_ANTIPOP2, WM8990_SOFTST |
-@@ -1195,17 +1195,17 @@ static int wm8990_set_bias_level(struct
- 			/* Enable outputs */
- 			snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1b00);
+ #ifdef	CONFIG_PM
  
--			msleep(msecs_to_jiffies(50));
-+			msleep(50);
+-static int cmos_suspend(struct device *dev, pm_message_t mesg)
++static int cmos_suspend(struct device *dev)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+ 	unsigned char	tmp;
+@@ -898,7 +899,7 @@ static int cmos_suspend(struct device *d
+  */
+ static inline int cmos_poweroff(struct device *dev)
+ {
+-	return cmos_suspend(dev, PMSG_HIBERNATE);
++	return cmos_suspend(dev);
+ }
  
- 			/* Enable VMID at 2x50k */
- 			snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1f02);
+ static int cmos_resume(struct device *dev)
+@@ -945,9 +946,9 @@ static int cmos_resume(struct device *de
+ 	return 0;
+ }
  
--			msleep(msecs_to_jiffies(100));
-+			msleep(100);
++static SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
++
+ #else
+-#define	cmos_suspend	NULL
+-#define	cmos_resume	NULL
  
- 			/* Enable VREF */
- 			snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1f03);
+ static inline int cmos_poweroff(struct device *dev)
+ {
+@@ -1077,7 +1078,7 @@ static void __exit cmos_pnp_remove(struc
  
--			msleep(msecs_to_jiffies(600));
-+			msleep(600);
+ static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
+ {
+-	return cmos_suspend(&pnp->dev, mesg);
++	return cmos_suspend(&pnp->dev);
+ }
  
- 			/* Enable BUFIOEN */
- 			snd_soc_write(codec, WM8990_ANTIPOP2, WM8990_SOFTST |
-@@ -1250,7 +1250,7 @@ static int wm8990_set_bias_level(struct
- 		/* Disable VMID */
- 		snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1f01);
+ static int cmos_pnp_resume(struct pnp_dev *pnp)
+@@ -1157,8 +1158,9 @@ static struct platform_driver cmos_platf
+ 	.shutdown	= cmos_platform_shutdown,
+ 	.driver = {
+ 		.name		= (char *) driver_name,
+-		.suspend	= cmos_suspend,
+-		.resume		= cmos_resume,
++#ifdef CONFIG_PM
++		.pm		= &cmos_pm_ops,
++#endif
+ 	}
+ };
  
--		msleep(msecs_to_jiffies(300));
-+		msleep(300);
- 
- 		/* Enable all output discharge bits */
- 		snd_soc_write(codec, WM8990_ANTIPOP1, WM8990_DIS_LLINE |
 
 
