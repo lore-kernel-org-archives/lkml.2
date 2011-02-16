@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab1BPA6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:58:55 -0500
-Received: from kroah.org ([198.145.64.141]:46124 "EHLO coco.kroah.org"
+	id S933275Ab1BPAvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:51:11 -0500
+Received: from kroah.org ([198.145.64.141]:46047 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933360Ab1BPAvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:13 2011
-Message-Id: <20110216002113.329058322@clark.kroah.org>
+	id S933279Ab1BPAu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:57 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:12 2011
+Message-Id: <20110216002112.225860971@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:51 -0800
+Date: Tue, 15 Feb 2011 16:21:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [patch 143/176] pata_mpc52xx: inherit from ata_bmdma_port_ops
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [patch 132/176] watchdog: Fix sysctl consistency
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 77c5fd19075d299fe820bb59bb21b0b113676e20 upstream.
+commit 397357666de6b5b6adb5fa99f9758ec8cf30ac34 upstream.
 
-pata_mpc52xx supports BMDMA but inherits ata_sff_port_ops which
-triggers BUG_ON() when a DMA command is issued.  Fix it.
+If it was not possible to enable watchdog for any cpu, switch
+watchdog_enabled back to 0, because it's visible via
+kernel.watchdog sysctl.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Roman Fietze <roman.fietze@telemotive.de>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <1296230433-6261-2-git-send-email-dzickus@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/pata_mpc52xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/watchdog.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/ata/pata_mpc52xx.c
-+++ b/drivers/ata/pata_mpc52xx.c
-@@ -610,7 +610,7 @@ static struct scsi_host_template mpc52xx
- };
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -441,9 +441,6 @@ static int watchdog_enable(int cpu)
+ 		wake_up_process(p);
+ 	}
  
- static struct ata_port_operations mpc52xx_ata_port_ops = {
--	.inherits		= &ata_sff_port_ops,
-+	.inherits		= &ata_bmdma_port_ops,
- 	.sff_dev_select		= mpc52xx_ata_dev_select,
- 	.set_piomode		= mpc52xx_ata_set_piomode,
- 	.set_dmamode		= mpc52xx_ata_set_dmamode,
+-	/* if any cpu succeeds, watchdog is considered enabled for the system */
+-	watchdog_enabled = 1;
+-
+ 	return 0;
+ }
+ 
+@@ -471,12 +468,16 @@ static void watchdog_disable(int cpu)
+ static void watchdog_enable_all_cpus(void)
+ {
+ 	int cpu;
+-	int result = 0;
++
++	watchdog_enabled = 0;
+ 
+ 	for_each_online_cpu(cpu)
+-		result += watchdog_enable(cpu);
++		if (!watchdog_enable(cpu))
++			/* if any cpu succeeds, watchdog is considered
++			   enabled for the system */
++			watchdog_enabled = 1;
+ 
+-	if (result)
++	if (!watchdog_enabled)
+ 		printk(KERN_ERR "watchdog: failed to be enabled on some cpus\n");
+ 
+ }
 
 
