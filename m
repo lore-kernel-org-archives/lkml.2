@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933450Ab1BPA4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:56:49 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56588 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933422Ab1BPA4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:56:45 -0500
-Date: Tue, 15 Feb 2011 19:56:40 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: Trond.Myklebust@netapp.com
-Cc: nfs@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: NFS Regression in commit 0b26a0bf6ff398
-Message-ID: <20110216005640.GA2841@mgebm.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933436Ab1BPAvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:51:43 -0500
+Received: from kroah.org ([198.145.64.141]:46185 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933388Ab1BPAvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:37 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:14 2011
+Message-Id: <20110216002114.188299208@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 15 Feb 2011 16:22:00 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>
+Subject: [patch 152/176] SELinux: define permissions for DCB netlink messages
+In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
---tKW2IUtsqtDRztdT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-While testing some 2.6.38 work my rsync backup script started consuming
-large amounts of memory (all available before dying with no more available
-memory).  I have bisected the problem back to 0b26a0bf6ff398.  I am
-unfamiliar with the NFS code so I don't know where to start looking for a
-possible fix.  My backups files from my home directory to an NFS mounted
-directory.  The NFS server is a Synology DS-411+ if it matters.  Let me know
-if there is any other information I can provide.
+From: Eric Paris <eparis@redhat.com>
 
-Eric
+commit 350e4f31e0eaf56dfc3b328d24a11bdf42a41fb8 upstream.
 
---tKW2IUtsqtDRztdT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Commit 2f90b865 added two new netlink message types to the netlink route
+socket.  SELinux has hooks to define if netlink messages are allowed to
+be sent or received, but it did not know about these two new message
+types.  By default we allow such actions so noone likely noticed.  This
+patch adds the proper definitions and thus proper permissions
+enforcement.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Cc: James Morris <jmorris@namei.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-iQEcBAEBAgAGBQJNWyDIAAoJEH65iIruGRnN8cIIAKzs8G4ZQKbje4FQCNSGVHiT
-o7wxwngCKXkWUYQy8hBuWFwmzoWr2I3h5cbClFuG0bWB/lt5uJGhv+DtGNv8lOsO
-dBJzctnGr64JRX0CnAtKQGliP0os3P9fJ75UF0PcJAOi9vgNkPfbW5UYfUf4wIQo
-TAqEq030AZuetCiu2bEke8Dp/NvCvJKN0GiQwMkH/EW7WogYaq/RDUONe39n4qGW
-f0p14ow9dflJVyjh0LcQ5aRyEKjOt9m+91GBQ43MJAhr1vyCqAvQG/Vf7ED53q+j
-CkIsiE1qyNOiz8l54PJgmQJVfuqoG75Lel2Zp+m7ZZY+rYQFZ6OiIOMaBBbmwA0=
-=cFJj
------END PGP SIGNATURE-----
+---
+ security/selinux/nlmsgtab.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---tKW2IUtsqtDRztdT--
+--- a/security/selinux/nlmsgtab.c
++++ b/security/selinux/nlmsgtab.c
+@@ -65,6 +65,8 @@ static struct nlmsg_perm nlmsg_route_per
+ 	{ RTM_NEWADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+ 	{ RTM_DELADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+ 	{ RTM_GETADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_READ  },
++	{ RTM_GETDCB,		NETLINK_ROUTE_SOCKET__NLMSG_READ  },
++	{ RTM_SETDCB,		NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+ };
+ 
+ static struct nlmsg_perm nlmsg_firewall_perms[] =
+
+
