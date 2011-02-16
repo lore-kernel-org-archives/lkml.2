@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab1BPCCZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:02:25 -0500
-Received: from kroah.org ([198.145.64.141]:49118 "EHLO coco.kroah.org"
+	id S932867Ab1BPCC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:02:28 -0500
+Received: from kroah.org ([198.145.64.141]:49111 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758367Ab1BPBuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:50:54 -0500
+	id S1758462Ab1BPBuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:50:52 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:01 2011
-Message-Id: <20110216014701.478928642@clark.kroah.org>
+Message-Id: <20110216014701.377339918@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:38 -0800
+Date: Tue, 15 Feb 2011 17:45:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>
-Subject: [072/115] SELinux: define permissions for DCB netlink messages
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: [071/115] tpm_tis: Use timeouts returned from TPM
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
 
-commit 350e4f31e0eaf56dfc3b328d24a11bdf42a41fb8 upstream.
+commit 9b29050f8f75916f974a2d231ae5d3cd59792296 upstream.
 
-Commit 2f90b865 added two new netlink message types to the netlink route
-socket.  SELinux has hooks to define if netlink messages are allowed to
-be sent or received, but it did not know about these two new message
-types.  By default we allow such actions so noone likely noticed.  This
-patch adds the proper definitions and thus proper permissions
-enforcement.
+The current TPM TIS driver in git discards the timeout values returned
+from the TPM. The check of the response packet needs to consider that
+the return_code field is 0 on success and the size of the expected
+packet is equivalent to the header size + u32 length indicator for the
+TPM_GetCapability() result + 3 timeout indicators of type u32.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Cc: James Morris <jmorris@namei.org>
+I am also adding a sysfs entry 'timeouts' showing the timeouts that are
+being used.
+
+Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Tested-by: Guillaume Chazarain <guichaz@gmail.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/selinux/nlmsgtab.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/char/tpm/tpm.c     |   18 ++++++++++++++++--
+ drivers/char/tpm/tpm.h     |    2 ++
+ drivers/char/tpm/tpm_tis.c |    4 +++-
+ 3 files changed, 21 insertions(+), 3 deletions(-)
 
---- a/security/selinux/nlmsgtab.c
-+++ b/security/selinux/nlmsgtab.c
-@@ -66,6 +66,8 @@ static struct nlmsg_perm nlmsg_route_per
- 	{ RTM_NEWADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
- 	{ RTM_DELADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
- 	{ RTM_GETADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_READ  },
-+	{ RTM_GETDCB,		NETLINK_ROUTE_SOCKET__NLMSG_READ  },
-+	{ RTM_SETDCB,		NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -566,9 +566,11 @@ duration:
+ 	if (rc)
+ 		return;
+ 
+-	if (be32_to_cpu(tpm_cmd.header.out.return_code)
+-	    != 3 * sizeof(u32))
++	if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
++	    be32_to_cpu(tpm_cmd.header.out.length)
++	    != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 * sizeof(u32))
+ 		return;
++
+ 	duration_cap = &tpm_cmd.params.getcap_out.cap.duration;
+ 	chip->vendor.duration[TPM_SHORT] =
+ 	    usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
+@@ -912,6 +914,18 @@ ssize_t tpm_show_caps_1_2(struct device
+ }
+ EXPORT_SYMBOL_GPL(tpm_show_caps_1_2);
+ 
++ssize_t tpm_show_timeouts(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct tpm_chip *chip = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d %d %d\n",
++	               jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
++	               jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
++	               jiffies_to_usecs(chip->vendor.duration[TPM_LONG]));
++}
++EXPORT_SYMBOL_GPL(tpm_show_timeouts);
++
+ ssize_t tpm_store_cancel(struct device *dev, struct device_attribute *attr,
+ 			const char *buf, size_t count)
+ {
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -56,6 +56,8 @@ extern ssize_t tpm_show_owned(struct dev
+ 				char *);
+ extern ssize_t tpm_show_temp_deactivated(struct device *,
+ 					 struct device_attribute *attr, char *);
++extern ssize_t tpm_show_timeouts(struct device *,
++				 struct device_attribute *attr, char *);
+ 
+ struct tpm_chip;
+ 
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -354,6 +354,7 @@ static DEVICE_ATTR(temp_deactivated, S_I
+ 		   NULL);
+ static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
+ static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
++static DEVICE_ATTR(timeouts, S_IRUGO, tpm_show_timeouts, NULL);
+ 
+ static struct attribute *tis_attrs[] = {
+ 	&dev_attr_pubek.attr,
+@@ -363,7 +364,8 @@ static struct attribute *tis_attrs[] = {
+ 	&dev_attr_owned.attr,
+ 	&dev_attr_temp_deactivated.attr,
+ 	&dev_attr_caps.attr,
+-	&dev_attr_cancel.attr, NULL,
++	&dev_attr_cancel.attr,
++	&dev_attr_timeouts.attr, NULL,
  };
  
- static struct nlmsg_perm nlmsg_firewall_perms[] =
+ static struct attribute_group tis_attr_grp = {
 
 
