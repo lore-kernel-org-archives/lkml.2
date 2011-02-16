@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab1BPATc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:19:32 -0500
-Received: from kroah.org ([198.145.64.141]:38843 "EHLO coco.kroah.org"
+	id S1756973Ab1BPATw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:19:52 -0500
+Received: from kroah.org ([198.145.64.141]:38912 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab1BPAT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:26 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:30 2011
-Message-Id: <20110216001430.426961273@clark.kroah.org>
+	id S1756887Ab1BPATl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:31 2011
+Message-Id: <20110216001431.337269986@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:50 -0800
+Date: Tue, 15 Feb 2011 16:11:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
+        Rajkumar Manoharan <rmanoharan@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [053/272] mac80211: fix a crash in ieee80211_beacon_get_tim on change_interface
+Subject: [062/272] ath9k: fix beacon restart on channel change
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-commit eb3e554b4b3a56386ef5214dbe0e3935a350178b upstream.
+commit 1186488b4a4d4871e40cb1604ba3ede3d4b7cc90 upstream.
 
-Some drivers (e.g. ath9k) do not always disable beacons when they're
-supposed to. When an interface is changed using the change_interface op,
-the mode specific sdata part is in an undefined state and trying to
-get a beacon at this point can produce weird crashes.
+Restart the beacon timers only if the beacon
+was already configured. Otherwise beacons timers
+are restarted unnecessarily in unassociated state too.
 
-To fix this, add a check for ieee80211_sdata_running before using
-anything from the sdata.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/tx.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/ath/ath9k/main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -2207,6 +2207,9 @@ struct sk_buff *ieee80211_beacon_get_tim
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -295,7 +295,8 @@ int ath_set_channel(struct ath_softc *sc
+ 	ath9k_hw_set_interrupts(ah, ah->imask);
  
- 	sdata = vif_to_sdata(vif);
- 
-+	if (!ieee80211_sdata_running(sdata))
-+		goto out;
-+
- 	if (tim_offset)
- 		*tim_offset = 0;
- 	if (tim_length)
+ 	if (!(sc->sc_flags & (SC_OP_OFFCHANNEL))) {
+-		ath_beacon_config(sc, NULL);
++		if (sc->sc_flags & SC_OP_BEACONS)
++			ath_beacon_config(sc, NULL);
+ 		ieee80211_queue_delayed_work(sc->hw, &sc->tx_complete_work, 0);
+ 		ath_start_ani(common);
+ 	}
 
 
