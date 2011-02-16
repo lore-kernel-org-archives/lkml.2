@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334Ab1BPBBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:01:12 -0500
-Received: from kroah.org ([198.145.64.141]:46030 "EHLO coco.kroah.org"
+	id S933347Ab1BPBB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:01:29 -0500
+Received: from kroah.org ([198.145.64.141]:46024 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933292Ab1BPAuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:51 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:12 2011
-Message-Id: <20110216002111.954260342@clark.kroah.org>
+	id S933231Ab1BPAut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:49 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:11 2011
+Message-Id: <20110216002111.843368135@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:37 -0800
+Date: Tue, 15 Feb 2011 16:21:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Anton Blanchard <anton@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [patch 129/176] powerpc: Fix some 6xx/7xxx CPU setup functions
+Subject: [patch 128/176] powerpc/numa: Fix bug in unmap_cpu_from_node
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,139 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit 1f1936ff3febf38d582177ea319eaa278f32c91f upstream.
+commit 429f4d8d20b91e4a6c239f951c06a56a6ac22957 upstream.
 
-Some of those functions try to adjust the CPU features, for example
-to remove NAP support on some revisions. However, they seem to use
-r5 as an index into the CPU table entry, which might have been right
-a long time ago but no longer is. r4 is the right register to use.
+When converting to the new cpumask code I screwed up:
 
-This probably caused some off behaviours on some PowerMac variants
-using 750cx or 7455 processor revisions.
+-       if (cpu_isset(cpu, numa_cpumask_lookup_table[node])) {
+-               cpu_clear(cpu, numa_cpumask_lookup_table[node]);
++       if (cpumask_test_cpu(cpu, node_to_cpumask_map[node])) {
++               cpumask_set_cpu(cpu, node_to_cpumask_map[node]);
 
+This was introduced in commit 25863de07af9 (powerpc/cpumask: Convert NUMA code
+to new cpumask API)
+
+Fix it.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/cpu_setup_6xx.S |   40 ++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+ arch/powerpc/mm/numa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/cpu_setup_6xx.S
-+++ b/arch/powerpc/kernel/cpu_setup_6xx.S
-@@ -18,7 +18,7 @@
- #include <asm/mmu.h>
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -181,7 +181,7 @@ static void unmap_cpu_from_node(unsigned
+ 	dbg("removing cpu %lu from node %d\n", cpu, node);
  
- _GLOBAL(__setup_cpu_603)
--	mflr	r4
-+	mflr	r5
- BEGIN_MMU_FTR_SECTION
- 	li	r10,0
- 	mtspr	SPRN_SPRG_603_LRU,r10		/* init SW LRU tracking */
-@@ -27,60 +27,60 @@ BEGIN_FTR_SECTION
- 	bl	__init_fpu_registers
- END_FTR_SECTION_IFCLR(CPU_FTR_FPU_UNAVAILABLE)
- 	bl	setup_common_caches
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_604)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_604_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750cx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750cx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750fx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750fx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7400)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7400_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7410)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7410_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	li	r3,0
- 	mtspr	SPRN_L2CR2,r3
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_745x)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_745x_specifics
--	mtlr	r4
-+	mtlr	r5
- 	blr
- 
- /* Enable caches for 603's, 604, 750 & 7400 */
-@@ -194,10 +194,10 @@ setup_750cx:
- 	cror	4*cr0+eq,4*cr0+eq,4*cr1+eq
- 	cror	4*cr0+eq,4*cr0+eq,4*cr2+eq
- 	bnelr
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 	blr
- 
- /* 750fx specific
-@@ -225,12 +225,12 @@ BEGIN_FTR_SECTION
- 	andis.	r11,r11,L3CR_L3E@h
- 	beq	1f
- END_FTR_SECTION_IFSET(CPU_FTR_L3CR)
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	andi.	r0,r6,CPU_FTR_L3_DISABLE_NAP
- 	beq	1f
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 1:
- 	mfspr	r11,SPRN_HID0
- 
+ 	if (cpumask_test_cpu(cpu, node_to_cpumask_map[node])) {
+-		cpumask_set_cpu(cpu, node_to_cpumask_map[node]);
++		cpumask_clear_cpu(cpu, node_to_cpumask_map[node]);
+ 	} else {
+ 		printk(KERN_ERR "WARNING: cpu %lu not found in node %d\n",
+ 		       cpu, node);
 
 
