@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab1BPIj7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 03:39:59 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:60855 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750934Ab1BPIj5 (ORCPT
+	id S1753647Ab1BPIkE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 03:40:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54926 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab1BPIj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Feb 2011 03:39:57 -0500
-Message-ID: <4D5B8D47.2010809@stericsson.com>
-Date: Wed, 16 Feb 2011 09:39:35 +0100
-From: Linus Walleij <linus.walleij@stericsson.com>
-Organization: ST-Ericsson SA
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=D50mOnX2YXSBy2hc9UuMEKxLdJm9zQkAmXkcY3drI0CSMve937/WUlrQVajItMuQco
+         bv1VGmVk9VbV9H1iB520dwbMQuXItB41G+SE4TqejroqYYOB8YRbAW7x48/LghoWxrgy
+         J9aSmC+B33svr1po5dd2qXqqpxJanfyGbgws0=
+Date: Wed, 16 Feb 2011 09:39:51 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Alasdair G Kergon <agk@redhat.com>, Neil Brown <neilb@suse.de>,
+        device-mapper development <dm-devel@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tao Ma <tm@tao.ma>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH][RFC] dm: Do not open log and cow device
+ read-write for read-only mappings
+Message-ID: <20110216083951.GC19830@htj.dyndns.org>
+References: <4D5A6EF4.3030905@redhat.com>
+ <20110215124629.GF5825@agk-dp.fab.redhat.com>
+ <20110215152033.GK3160@htj.dyndns.org>
+ <20110215154625.GG5825@agk-dp.fab.redhat.com>
+ <20110215155018.GM3160@htj.dyndns.org>
+ <4D5AA45C.7050600@redhat.com>
+ <20110215161228.GN3160@htj.dyndns.org>
+ <4D5AAB8F.50901@redhat.com>
+ <20110215164128.GQ3160@htj.dyndns.org>
+ <4D5AB0C5.9030304@redhat.com>
 MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/9] mfd-core: rename platform_data field of mfd_cell
- to mfd_data
-References: <1297808729-21110-1-git-send-email-dilinger@queued.net> <1297808729-21110-2-git-send-email-dilinger@queued.net>
-In-Reply-To: <1297808729-21110-2-git-send-email-dilinger@queued.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5AB0C5.9030304@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2011 11:25 PM, Andres Salomon wrote:
-> Rename the platform_data variable to imply a distinction between
-> common platform_data driver usage (typically accessed via
-> pdev->dev.platform_data) and the way MFD passes data down to
-> clients (using a wrapper named mfd_get_data).
->
-> All clients have already been changed to use the wrapper function,
-> so this can be a quick single-commit change that only touches things
-> in drivers/mfd.
->
-> Signed-off-by: Andres Salomon<dilinger@queued.net>
->    
+On Tue, Feb 15, 2011 at 05:58:45PM +0100, Milan Broz wrote:
+> # blockdev --setrw /dev/sd[bcde]
+> # mdadm -A /dev/md0 /dev/sd[bcde]
+> mdadm: /dev/md0 has been started with 4 drives.
+> # mdadm --stop /dev/md0
+> mdadm: stopped /dev/md0
+> # blockdev --setro /dev/sd[bcde]
+> # mdadm -A /dev/md0 /dev/sd[bcde]
+> mdadm: cannot re-read metadata from /dev/sdb - aborting
+> 
+> Works on 2.6.36.
 
-Thanks, I like easy-to-read code.
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Isn't failing to assemble rw array from ro devices the expected
+behavior?  I think I'd want that to fail.  Neil, what do you think?
 
-Yours,
-Linus Walleij
+-- 
+tejun
