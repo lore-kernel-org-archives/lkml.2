@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758145Ab1BPBtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:49:41 -0500
-Received: from kroah.org ([198.145.64.141]:48784 "EHLO coco.kroah.org"
+	id S1758302Ab1BPCJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:09:28 -0500
+Received: from kroah.org ([198.145.64.141]:48820 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756479Ab1BPBta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:30 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:56 2011
-Message-Id: <20110216014656.696621915@clark.kroah.org>
+	id S1758142Ab1BPBtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:57 2011
+Message-Id: <20110216014657.413293709@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:50 -0800
+Date: Tue, 15 Feb 2011 17:44:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [024/115] USB: prevent buggy hubs from crashing the USB stack
+        Felix Fietkau <nbd@openwrt.org>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [031/115] ath9k: Fix bug in delimiter padding computation
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Vasanthakumar Thiagarajan <vasanth@atheros.com>
 
-commit d199c96d41d80a567493e12b8e96ea056a1350c1 upstream.
+commit 39ec2997c374b528cdbf65099b6d6b8593a67f7f upstream.
 
-If anyone comes across a high-speed hub that (by mistake or by design)
-claims to have no Transaction Translators, plugging a full- or
-low-speed device into it will cause the USB stack to crash.  This
-patch (as1446) prevents the problem by ignoring such devices, since
-the kernel has no way to communicate with them.
+There is a roundng error in delimiter padding computation
+which causes severe throughput drop with some of AR9003.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Perry Neben <neben@vmware.com>
+signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/wireless/ath/ath9k/ath9k.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2683,6 +2683,11 @@ hub_port_init (struct usb_hub *hub, stru
- 		udev->ttport = hdev->ttport;
- 	} else if (udev->speed != USB_SPEED_HIGH
- 			&& hdev->speed == USB_SPEED_HIGH) {
-+		if (!hub->tt.hub) {
-+			dev_err(&udev->dev, "parent hub has no TT\n");
-+			retval = -EINVAL;
-+			goto fail;
-+		}
- 		udev->tt = &hub->tt;
- 		udev->ttport = port1;
- 	}
+--- a/drivers/net/wireless/ath/ath9k/ath9k.h
++++ b/drivers/net/wireless/ath/ath9k/ath9k.h
+@@ -214,8 +214,8 @@ void ath_descdma_cleanup(struct ath_soft
+ 
+ /* returns delimiter padding required given the packet length */
+ #define ATH_AGGR_GET_NDELIM(_len)					\
+-	(((((_len) + ATH_AGGR_DELIM_SZ) < ATH_AGGR_MINPLEN) ?           \
+-	  (ATH_AGGR_MINPLEN - (_len) - ATH_AGGR_DELIM_SZ) : 0) >> 2)
++       (((_len) >= ATH_AGGR_MINPLEN) ? 0 :                             \
++        DIV_ROUND_UP(ATH_AGGR_MINPLEN - (_len), ATH_AGGR_DELIM_SZ))
+ 
+ #define BAW_WITHIN(_start, _bawsz, _seqno) \
+ 	((((_seqno) - (_start)) & 4095) < (_bawsz))
 
 
