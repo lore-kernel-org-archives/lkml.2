@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab1BPB3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:29:41 -0500
-Received: from ns3.baby-dragons.com ([64.62.236.141]:50136 "EHLO
-	ns3.baby-dragons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757273Ab1BPB3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:29:32 -0500
-Date: Tue, 15 Feb 2011 16:29:20 -0900 (AKST)
-From: "Mr. James W. Laferriere" <babydr@baby-dragons.com>
-To: Lukasz Trabinski <lukasz@trabinski.net>
-cc: Linux Kernel Maillist <linux-kernel@vger.kernel.org>,
-        NetDev <netdev@vger.kernel.org>
-Subject: Re: [kernel] net.ipv6.route.max_size
-In-Reply-To: <alpine.LFD.2.00.1102142024460.6561@oceanic.wsisiz.edu.pl>
-Message-ID: <alpine.LNX.2.01.1102151627260.23788@filesrv1.baby-dragons.com>
-References: <alpine.LFD.2.00.1102142024460.6561@oceanic.wsisiz.edu.pl>
-User-Agent: Alpine 2.01 (LNX 1184 2008-12-16)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (ns3.baby-dragons.com [64.62.236.141]); Wed, 16 Feb 2011 01:29:26 +0000 (UTC)
+	id S1757374Ab1BPBaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:30:03 -0500
+Received: from kroah.org ([198.145.64.141]:39377 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757341Ab1BPAVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:45 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:38 2011
+Message-Id: <20110216001437.927412910@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 15 Feb 2011 16:13:06 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [129/272] ext4: fix uninitialized variable in ext4_register_li_request
+In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 	Hello Lukasz ,
- 	Since I have not seen anyone else suggest this or to do so I'll forward 
-this onto the NetDev <netdev@vger.kernel.org> list for their perusal as well .
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
- 		Hth ,  JimL
+------------------
 
-On Mon, 14 Feb 2011, Lukasz Trabinski wrote:
-> Hello
->
-> IPv6 route table size is still growing. In stanard linux box configuration
-> with IPv6 BGP session (with ipv6 world table) and BGP application like 
-> Quagga,
-> we have problem like this:
->
-> 2011/02/12 18:43:52 ZEBRA: netlink-cmd error: Cannot allocate memory,
-> type=RTM_NEWROUTE(24), seq=11124600, pid=0
->
-> This problem shows us that's all prefixes comes from BGP can't be install 
-> into FIB
->
-> IN BGP application we can see, that's we recive 4484 prefixes from ipv6 
-> neighbor:
->
-> cosmos> show bgp summary
-> Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down 
-> State/PfxRcd
-> 2001:1a68:0:c::1
->                4 24724  431945   70172        0    0    0 2d01h18m     4484
->
->
-> I suggest that net->ipv6.sysctl.ip6_rt_max_size should be increase.
-> Below _simple_ patch for this problem. I don't understand why in ipv4/route 
-> we have different method to count ip4_rt_max_size? My value 65536 in near 
-> future will be also wrong. I know also, that we can change it by sysctl, but 
-> I thing that it's not good way to fix it.
->
->
-> --- route.c~    2011-02-14 20:26:12.000000000 +0100
-> +++ route.c     2011-02-14 20:30:04.000000000 +0100
-> @@ -2708,7 +2708,7 @@
-> #endif
->
->        net->ipv6.sysctl.flush_delay = 0;
-> -       net->ipv6.sysctl.ip6_rt_max_size = 4096;
-> +       net->ipv6.sysctl.ip6_rt_max_size = 65536;
->        net->ipv6.sysctl.ip6_rt_gc_min_interval = HZ / 2;
->        net->ipv6.sysctl.ip6_rt_gc_timeout = 60*HZ;
->        net->ipv6.sysctl.ip6_rt_gc_interval = 30*HZ;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+From: Andrew Morton <akpm@linux-foundation.org>
 
--- 
-+------------------------------------------------------------------+
-| James   W.   Laferriere | System    Techniques | Give me VMS     |
-| Network&System Engineer | 3237     Holden Road |  Give me Linux  |
-| babydr@baby-dragons.com | Fairbanks, AK. 99709 |   only  on  AXP |
-+------------------------------------------------------------------+
+commit 6c5a6cb998854f3c579ecb2bc1423d302bcb1b76 upstream.
+
+fs/ext4/super.c: In function 'ext4_register_li_request':
+fs/ext4/super.c:2936: warning: 'ret' may be used uninitialized in this function
+
+It looks buggy to me, too.
+
+Cc: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/ext4/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2916,7 +2916,7 @@ static int ext4_register_li_request(stru
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+ 	struct ext4_li_request *elr;
+ 	ext4_group_t ngroups = EXT4_SB(sb)->s_groups_count;
+-	int ret;
++	int ret = 0;
+ 
+ 	if (sbi->s_li_request != NULL)
+ 		return 0;
+
+
