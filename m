@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933263Ab1BPBEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:04:22 -0500
-Received: from kroah.org ([198.145.64.141]:45908 "EHLO coco.kroah.org"
+	id S933204Ab1BPAuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:50:14 -0500
+Received: from kroah.org ([198.145.64.141]:45852 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933216Ab1BPAuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:17 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:10 2011
-Message-Id: <20110216002110.261245356@clark.kroah.org>
+	id S933116Ab1BPAuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:04 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:09 2011
+Message-Id: <20110216002109.488482993@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:20 -0800
+Date: Tue, 15 Feb 2011 16:21:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dario Lombardo <dario.lombardo@libero.it>
-Subject: [patch 112/176] drivers: update to pl2303 usb-serial to support Motorola cables
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
+Subject: [patch 104/176] cpuidle: Make cpuidle_enable_device() call poll_idle_init()
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dario Lombardo <dario.lombardo@libero.it>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit 96a3e79edff6f41b0f115a82f1a39d66218077a7 upstream.
+commit d8c216cfa57e8a579f41729cbb88c97835d9ac8d upstream.
 
-Added 0x0307 device id to support Motorola cables to the pl2303 usb
-serial driver. This cable has a modified chip that is a pl2303, but
-declares itself as 0307. Fixed by adding the right device id to the
-supported devices list, assigning it the code labeled
-PL2303_PRODUCT_ID_MOTOROLA.
+The following scenario is possible with the current cpuidle code and
+the ACPI cpuidle driver:
+(1) acpi_processor_cst_has_changed() is called,
+(2) cpuidle_disable_device() is called,
+(3) cpuidle_remove_state_sysfs() is called to remove the (presumably
+    outdated) states info from sysfs,
+(3) acpi_processor_get_power_info() is called, the first entry in the
+    pr->power.states[] table is filled with zeros,
+(4) acpi_processor_setup_cpuidle() is called and it doesn't fill the
+    first entry in pr->power.states[],
+(5) cpuidle_enable_device() is called,
+(6) __cpuidle_register_device() is _not_ called, since the device has
+    already been registered,
+(7) Consequently, poll_idle_init() is _not_ called either,
+(8) cpuidle_add_state_sysfs() is called to create the sysfs attributes
+    for the new states and it uses the bogus first table entry from
+    acpi_processor_get_power_info() for creating state0.
 
-Signed-off-by: Dario Lombardo <dario.lombardo@libero.it>
+This problem is avoided if cpuidle_enable_device()
+unconditionally calls poll_idle_init().
+
+Reported-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/pl2303.c |    1 +
- drivers/usb/serial/pl2303.h |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/cpuidle/cpuidle.c |   82 +++++++++++++++++++++++-----------------------
+ 1 file changed, 41 insertions(+), 41 deletions(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -50,6 +50,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MMX) },
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
-+	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
- 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -21,6 +21,7 @@
- #define PL2303_PRODUCT_ID_MMX		0x0612
- #define PL2303_PRODUCT_ID_GPRS		0x0609
- #define PL2303_PRODUCT_ID_HCR331	0x331a
-+#define PL2303_PRODUCT_ID_MOTOROLA	0x0307
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -154,6 +154,45 @@ void cpuidle_resume_and_unlock(void)
  
- #define ATEN_VENDOR_ID		0x0557
- #define ATEN_VENDOR_ID2		0x0547
+ EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
+ 
++#ifdef CONFIG_ARCH_HAS_CPU_RELAX
++static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
++{
++	ktime_t	t1, t2;
++	s64 diff;
++	int ret;
++
++	t1 = ktime_get();
++	local_irq_enable();
++	while (!need_resched())
++		cpu_relax();
++
++	t2 = ktime_get();
++	diff = ktime_to_us(ktime_sub(t2, t1));
++	if (diff > INT_MAX)
++		diff = INT_MAX;
++
++	ret = (int) diff;
++	return ret;
++}
++
++static void poll_idle_init(struct cpuidle_device *dev)
++{
++	struct cpuidle_state *state = &dev->states[0];
++
++	cpuidle_set_statedata(state, NULL);
++
++	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
++	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
++	state->exit_latency = 0;
++	state->target_residency = 0;
++	state->power_usage = -1;
++	state->flags = CPUIDLE_FLAG_POLL;
++	state->enter = poll_idle;
++}
++#else
++static void poll_idle_init(struct cpuidle_device *dev) {}
++#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
++
+ /**
+  * cpuidle_enable_device - enables idle PM for a CPU
+  * @dev: the CPU
+@@ -178,6 +217,8 @@ int cpuidle_enable_device(struct cpuidle
+ 			return ret;
+ 	}
+ 
++	poll_idle_init(dev);
++
+ 	if ((ret = cpuidle_add_state_sysfs(dev)))
+ 		return ret;
+ 
+@@ -232,45 +273,6 @@ void cpuidle_disable_device(struct cpuid
+ 
+ EXPORT_SYMBOL_GPL(cpuidle_disable_device);
+ 
+-#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+-static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
+-{
+-	ktime_t	t1, t2;
+-	s64 diff;
+-	int ret;
+-
+-	t1 = ktime_get();
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
+-
+-	t2 = ktime_get();
+-	diff = ktime_to_us(ktime_sub(t2, t1));
+-	if (diff > INT_MAX)
+-		diff = INT_MAX;
+-
+-	ret = (int) diff;
+-	return ret;
+-}
+-
+-static void poll_idle_init(struct cpuidle_device *dev)
+-{
+-	struct cpuidle_state *state = &dev->states[0];
+-
+-	cpuidle_set_statedata(state, NULL);
+-
+-	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
+-	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+-	state->exit_latency = 0;
+-	state->target_residency = 0;
+-	state->power_usage = -1;
+-	state->flags = CPUIDLE_FLAG_POLL;
+-	state->enter = poll_idle;
+-}
+-#else
+-static void poll_idle_init(struct cpuidle_device *dev) {}
+-#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
+-
+ /**
+  * __cpuidle_register_device - internal register function called before register
+  * and enable routines
+@@ -291,8 +293,6 @@ static int __cpuidle_register_device(str
+ 
+ 	init_completion(&dev->kobj_unregister);
+ 
+-	poll_idle_init(dev);
+-
+ 	/*
+ 	 * cpuidle driver should set the dev->power_specified bit
+ 	 * before registering the device if the driver provides
 
 
