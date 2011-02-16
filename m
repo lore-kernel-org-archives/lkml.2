@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757840Ab1BPAnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:43:03 -0500
-Received: from kroah.org ([198.145.64.141]:49406 "EHLO coco.kroah.org"
+	id S1757599Ab1BPAXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:23:21 -0500
+Received: from kroah.org ([198.145.64.141]:49315 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757606Ab1BPAXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:24 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:43 2011
-Message-Id: <20110216001443.793736886@clark.kroah.org>
+	id S1757544Ab1BPAXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:42 2011
+Message-Id: <20110216001442.530563260@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:04 -0800
+Date: Tue, 15 Feb 2011 16:13:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [187/272] sched: Fix update_curr_rt()
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [174/272] ARM: initrd: disable initrd if passed address overlaps reserved region
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 06c3bc655697b19521901f9254eb0bbb2c67e7e8 upstream.
+commit b0a2679d27408d97ce31e5f800b44227d3388b84 upstream.
 
-cpu_stopper_thread()
-  migration_cpu_stop()
-    __migrate_task()
-      deactivate_task()
-        dequeue_task()
-          dequeue_task_rq()
-            update_curr_rt()
+Disable the initrd if the passed address already overlaps the reserved
+region.  This avoids oopses on Netwinders when NeTTrom tells the kernel
+that an initrd is located at mem+4MB, but this overlaps the BSS,
+resulting in the kernels in-use BSS being freed.
 
-Will call update_curr_rt() on rq->curr, which at that time is
-rq->stop. The problem is that rq->stop.prio matches an RT prio and
-thus falsely assumes its a rt_sched_class task.
+This should be applied to v2.6.37-stable.
 
-Reported-Debuged-Tested-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched_rt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mm/init.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -606,7 +606,7 @@ static void update_curr_rt(struct rq *rq
- 	struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
- 	u64 delta_exec;
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -297,6 +297,12 @@ void __init arm_memblock_init(struct mem
+ 	memblock_reserve(__pa(_stext), _end - _stext);
+ #endif
+ #ifdef CONFIG_BLK_DEV_INITRD
++	if (phys_initrd_size &&
++	    memblock_is_region_reserved(phys_initrd_start, phys_initrd_size)) {
++		pr_err("INITRD: 0x%08lx+0x%08lx overlaps in-use memory region - disabling initrd\n",
++		       phys_initrd_start, phys_initrd_size);
++		phys_initrd_start = phys_initrd_size = 0;
++	}
+ 	if (phys_initrd_size) {
+ 		memblock_reserve(phys_initrd_start, phys_initrd_size);
  
--	if (!task_has_rt_policy(curr))
-+	if (curr->sched_class != &rt_sched_class)
- 		return;
- 
- 	delta_exec = rq->clock_task - curr->se.exec_start;
 
 
