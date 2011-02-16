@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab1BPAu1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:50:27 -0500
-Received: from kroah.org ([198.145.64.141]:45920 "EHLO coco.kroah.org"
+	id S933097Ab1BPAuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:50:22 -0500
+Received: from kroah.org ([198.145.64.141]:45901 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933222Ab1BPAuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:21 -0500
+	id S933116Ab1BPAuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:15 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:10 2011
-Message-Id: <20110216002110.444711031@clark.kroah.org>
+Message-Id: <20110216002110.165937003@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:22 -0800
+Date: Tue, 15 Feb 2011 16:21:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [patch 114/176] ptrace: use safer wake up on ptrace_detach()
+        Hans de Goede <hdegoede@redhat.com>, Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [patch 111/176] virtio: console: Wake up outvq on host notifications
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit 01e05e9a90b8f4c3997ae0537e87720eb475e532 upstream.
+commit 2770c5ea501be69989a7acf54ec4cb3554c47191 upstream.
 
-The wake_up_process() call in ptrace_detach() is spurious and not
-interlocked with the tracee state.  IOW, the tracee could be running or
-sleeping in any place in the kernel by the time wake_up_process() is
-called.  This can lead to the tracee waking up unexpectedly which can be
-dangerous.
+The outvq needs to be woken up on host notifications so that buffers
+consumed by the host can be reclaimed, outvq freed, and application
+writes may proceed again.
 
-The wake_up is spurious and should be removed but for now reduce its
-toxicity by only waking up if the tracee is in TRACED or STOPPED state.
+The need for this is now finally noticed when I have qemu patches ready
+to use nonblocking IO and flow control.
 
-This bug can possibly be used as an attack vector.  I don't think it
-will take too much effort to come up with an attack which triggers oops
-somewhere.  Most sleeps are wrapped in condition test loops and should
-be safe but we have quite a number of places where sleep and wakeup
-conditions are expected to be interlocked.  Although the window of
-opportunity is tiny, ptrace can be used by non-privileged users and with
-some loading the window can definitely be extended and exploited.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Roland McGrath <roland@redhat.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/ptrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/virtio_console.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -313,7 +313,7 @@ int ptrace_detach(struct task_struct *ch
- 		child->exit_code = data;
- 		dead = __ptrace_detach(current, child);
- 		if (!child->exit_state)
--			wake_up_process(child);
-+			wake_up_state(child, TASK_TRACED | TASK_STOPPED);
- 	}
- 	write_unlock_irq(&tasklist_lock);
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1314,6 +1314,17 @@ static void control_work_handler(struct
+ 	spin_unlock(&portdev->cvq_lock);
+ }
  
++static void out_intr(struct virtqueue *vq)
++{
++	struct port *port;
++
++	port = find_port_by_vq(vq->vdev->priv, vq);
++	if (!port)
++		return;
++
++	wake_up_interruptible(&port->waitqueue);
++}
++
+ static void in_intr(struct virtqueue *vq)
+ {
+ 	struct port *port;
+@@ -1430,7 +1441,7 @@ static int init_vqs(struct ports_device
+ 	 */
+ 	j = 0;
+ 	io_callbacks[j] = in_intr;
+-	io_callbacks[j + 1] = NULL;
++	io_callbacks[j + 1] = out_intr;
+ 	io_names[j] = "input";
+ 	io_names[j + 1] = "output";
+ 	j += 2;
+@@ -1444,7 +1455,7 @@ static int init_vqs(struct ports_device
+ 		for (i = 1; i < nr_ports; i++) {
+ 			j += 2;
+ 			io_callbacks[j] = in_intr;
+-			io_callbacks[j + 1] = NULL;
++			io_callbacks[j + 1] = out_intr;
+ 			io_names[j] = "input";
+ 			io_names[j + 1] = "output";
+ 		}
 
 
