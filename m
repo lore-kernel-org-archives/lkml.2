@@ -1,118 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758682Ab1BPEgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 23:36:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33822 "EHLO
+	id S1758675Ab1BPEkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 23:40:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43664 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab1BPEgT convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756349Ab1BPEkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 23:36:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=szKc5bK8kNm6W/oyPX+QsX5ZNV0iurVlyipM/VucvPkGVus82D/NyyQGGvvMQwuDZh
-         PqdOjgQ8iwBp7AHWpvHCRZcNzznkfUELpwCzvL9uNBYIHv0xmNm4pLRSHfCSX8Sq80nJ
-         u/Vi/P4hGUXCebnzouT4FP9EXz5NDMweKkYvI=
+	Tue, 15 Feb 2011 23:40:19 -0500
+Date: Tue, 15 Feb 2011 21:40:16 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw, linux-input@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Walter Goossens <waltergoossens@home.nl>
+Subject: Re: [PATCH v4] altera_ps2: Add devicetree support
+Message-ID: <20110216044016.GC11684@angua.secretlab.ca>
+References: <20110212092600.GE17755@angua.secretlab.ca>
+ <1297649202-11200-1-git-send-email-thomas@wytron.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <e647042e-419e-4e61-a563-e489596bd659@default>
-References: <20110207032407.GA27404@ca-server1.us.oracle.com>
-	<1ddd01a8-591a-42bc-8bb3-561843b31acb@default>
-	<AANLkTimFATx-gYVgY_pVdZsySSBmXvKFkhTJUeVFBcop@mail.gmail.com>
-	<AANLkTimqSSxHrLhL9t4DOmDeuAA41B9e-qnr+vnUsucL@mail.gmail.com>
-	<AANLkTi=4QkV4wtMmDd6+XXhvkva+fq9m5PVYGC0qBUc3@mail.gmail.com>
-	<AANLkTimOssgM7JYSpwB=5zmF_JJ2ByH+PWO7N+YZNB_y@mail.gmail.com>
-	<e647042e-419e-4e61-a563-e489596bd659@default>
-Date: Wed, 16 Feb 2011 13:36:18 +0900
-Message-ID: <AANLkTim_U+mJtHk7drvqMOmUwd4ro8J0dazZMDsNqH=o@mail.gmail.com>
-Subject: Re: [PATCH V2 0/3] drivers/staging: zcache: dynamic page cache/swap compression
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Matt <jackdachef@gmail.com>, gregkh@suse.de,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org, linux-btrfs@vger.kernel.org,
-        Josef Bacik <josef@redhat.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Yan Zheng <zheng.z.yan@intel.com>, miaox@cn.fujitsu.com,
-        Li Zefan <lizf@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297649202-11200-1-git-send-email-thomas@wytron.com.tw>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 10:27 AM, Dan Magenheimer
-<dan.magenheimer@oracle.com> wrote:
->> -----Original Message-----
->> From: Matt [mailto:jackdachef@gmail.com]
->> Sent: Tuesday, February 15, 2011 5:12 PM
->> To: Minchan Kim
->> Cc: Dan Magenheimer; gregkh@suse.de; Chris Mason; linux-
->> kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; linux-
->> btrfs@vger.kernel.org; Josef Bacik; Dan Rosenberg; Yan Zheng;
->> miaox@cn.fujitsu.com; Li Zefan
->> Subject: Re: [PATCH V2 0/3] drivers/staging: zcache: dynamic page
->> cache/swap compression
->>
->> On Mon, Feb 14, 2011 at 4:35 AM, Minchan Kim <minchan.kim@gmail.com>
->> > Just my guessing. I might be wrong.
->> >
->> > __cleancache_flush_inode calls cleancache_get_key with
->> cleancache_filekey.
->> > cleancache_file_key's size is just 6 * u32.
->> > cleancache_get_key calls btrfs_encode_fh with the key.
->> > but btrfs_encode_fh does typecasting the key to btrfs_fid which is
->> > bigger size than cleancache_filekey's one so it should not access
->> > fields beyond cleancache_get_key.
->> >
->> > I think some file systems use extend fid so in there, this problem
->> can
->> > happen. I don't know why we can't find it earlier. Maybe Dan and
->> > others test it for a long time.
->> >
->> > Am I missing something?
->> >
->> >
->> >
->> > --
->> > Kind regards,
->> > Minchan Kim
->> >
->>
->> reposting Minchan's message for reference to the btrfs mailing list
->> while also adding
->>
->> Li Zefan, Miao Xie, Yan Zheng, Dan Rosenberg and Josef Bacik to CC
->>
->> Regards
->>
->> Matt
->
-> Hi Matt and Minchan --
->
-> (BTRFS EXPERTS SEE *** BELOW)
->
-> I definitely see a bug in cleancache_get_key in the monolithic
-> zcache+cleancache+frontswap patch I posted on oss.oracle.com
-> that is corrected in linux-next but I don't see how it could
-> get provoked by btrfs.
->
-> The bug is that, in cleancache_get_key, the return value of fhfn should
-> be checked against 255.  If the return value is 255, cleancache_get_key
-> should return -1.  This should disable cleancache for any filesystem
-> where KEY_MAX is too large.
->
-> But cleancache_get_key always calls fhfn with connectable == 0 and
-> CLEANCACHE_KEY_MAX==6 should be greater than BTRFS_FID_SIZE_CONNECTABLE
-> (which I think should be 5?).  And the elements written into the
-> typecast btrfs_fid should be only writing the first 5 32-bit words.
+On Mon, Feb 14, 2011 at 10:06:42AM +0800, Thomas Chou wrote:
+> From: Walter Goossens <waltergoossens@home.nl>
+> 
+> Signed-off-by: Walter Goossens <waltergoossens@home.nl>
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-BTRFS_FID_SIZE_NON_CONNECTALBE is 5,  not BTRFS_FID_SIZE_CONNECTABLE.
-Anyway, you passed connectable with 0 so it should be only writing the
-first 5 32-bit words as you said.
-That's one I missed. ;-)
+Merged, thanks,
+g.
 
-Thanks.
--- 
-Kind regards,
-Minchan Kim
+> ---
+> v2 use const and add compat version.
+> v3 change compatible vendor to ALTR.
+>     add dts binding doc.
+> v4 condition module device table export for of.
+> 
+> Grant, please take it through your tree as Dmitry agreed.
+> 
+>  .../devicetree/bindings/serio/altera_ps2.txt       |    4 ++++
+>  drivers/input/serio/altera_ps2.c                   |   15 +++++++++++++--
+>  2 files changed, 17 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/serio/altera_ps2.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/serio/altera_ps2.txt b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+> new file mode 100644
+> index 0000000..4d9eecc
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+> @@ -0,0 +1,4 @@
+> +Altera UP PS/2 controller
+> +
+> +Required properties:
+> +- compatible : should be "ALTR,ps2-1.0".
+> diff --git a/drivers/input/serio/altera_ps2.c b/drivers/input/serio/altera_ps2.c
+> index 7998560..3fee88b 100644
+> --- a/drivers/input/serio/altera_ps2.c
+> +++ b/drivers/input/serio/altera_ps2.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+> +#include <linux/of.h>
+>  
+>  #define DRV_NAME "altera_ps2"
+>  
+> @@ -173,6 +174,16 @@ static int __devexit altera_ps2_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id altera_ps2_match[] = {
+> +	{ .compatible = "ALTR,ps2-1.0", },
+> +	{},
+> +}
+> +MODULE_DEVICE_TABLE(of, altera_ps2_match);
+> +#else /* CONFIG_OF */
+> +#define altera_ps2_match NULL
+> +#endif /* CONFIG_OF */
+> +
+>  /*
+>   * Our device driver structure
+>   */
+> @@ -182,6 +193,7 @@ static struct platform_driver altera_ps2_driver = {
+>  	.driver	= {
+>  		.name	= DRV_NAME,
+>  		.owner	= THIS_MODULE,
+> +		.of_match_table = altera_ps2_match,
+>  	},
+>  };
+>  
+> @@ -189,13 +201,12 @@ static int __init altera_ps2_init(void)
+>  {
+>  	return platform_driver_register(&altera_ps2_driver);
+>  }
+> +module_init(altera_ps2_init);
+>  
+>  static void __exit altera_ps2_exit(void)
+>  {
+>  	platform_driver_unregister(&altera_ps2_driver);
+>  }
+> -
+> -module_init(altera_ps2_init);
+>  module_exit(altera_ps2_exit);
+>  
+>  MODULE_DESCRIPTION("Altera University Program PS2 controller driver");
+> -- 
+> 1.7.4
+> 
