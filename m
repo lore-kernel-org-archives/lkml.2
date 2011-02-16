@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab1BPRy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 12:54:59 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58871 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab1BPRy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 12:54:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=UhQe0GFg/sM/dKlWMWtDtojSFq/pQI7nnovNrm6SOM5Fal9n/F6YZNAaM4WtbE9A3i
-         ZrTiSAE6IBIsE2z96POYDdlfotOSVAtXT6YtKg+OtlLaK21EaO4NKT84+Q4BvDisrnTc
-         he6avyouylmoZpAG8iInjC1SqPoOt6kdEvQ3E=
+	id S1754110Ab1BPSGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 13:06:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753975Ab1BPSGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 13:06:37 -0500
+Date: Wed, 16 Feb 2011 13:06:28 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>
+Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
+ and use_hierarchy interface
+Message-ID: <20110216180628.GF14653@redhat.com>
+References: <4D51ED26.8050809@cn.fujitsu.com>
+ <4D539821.1090703@cn.fujitsu.com>
+ <20110210205722.GB2600@redhat.com>
+ <4D55EEBB.8060304@cn.fujitsu.com>
+ <20110214180428.GF13097@redhat.com>
+ <4D59E728.3030209@cn.fujitsu.com>
+ <20110215142752.GC27296@redhat.com>
+ <4D5B2C07.9050909@cn.fujitsu.com>
+ <AANLkTi=Lrb+CLo_dn9L+RhWUf7SAaTepFrdpje+PgqMX@mail.gmail.com>
+ <AANLkTinUcSxJZ24NeUwQ_6W4=+atRWX-7G9K5iymuOsz@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1102161837140.2160@pobox.suse.cz>
-References: <1297780428-3805-1-git-send-email-benjamin.tissoires@enac.fr>
-	<alpine.LNX.2.00.1102160003420.2160@pobox.suse.cz>
-	<AANLkTi=QF-9QtGK8V795R9ZO4-c6sQ8MSTW+JMxwd2+d@mail.gmail.com>
-	<alpine.LNX.2.00.1102161837140.2160@pobox.suse.cz>
-Date: Wed, 16 Feb 2011 18:54:54 +0100
-X-Google-Sender-Auth: HSPs75uzfR4Wr461zEIjWjCQrI4
-Message-ID: <AANLkTinbHq7yusE1nk-FCmf76foUcpUeU37wpHg-tsUN@mail.gmail.com>
-Subject: Re: [PATCH] HID: add IRTOUCH infrared USB to hid_have_special_driver
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinUcSxJZ24NeUwQ_6W4=+atRWX-7G9K5iymuOsz@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 18:38, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 16 Feb 2011, Benjamin Tissoires wrote:
->
->> Thanks for applying those two patches.
->> BTW I'm a little worried: apparently you applied this patch in the
->> branch upstream-fixes but you didn't applied "HID: hid-multitouch:
->> introduce IrTouch Infrared USB..." and it's parents in this branch....
->> I'm afraid this will broke compilation of the upstream branch
->> (USB_VENDOR_ID_IRTOUCHSYSTEMS and USB_DEVICE_ID_IRTOUCH_INFRARED_USB
->> are not defined).
->
-> Hi,
->
-> yes, I pushed the patch to wrong remote branch yesterday, but apparently
-> sync to git.kernel.org in which I fixed it hasn't made it yet for some
-> reason.
->
-> Sorry for the noise,
+On Wed, Feb 16, 2011 at 09:28:07AM -0800, Divyesh Shah wrote:
+> On Wed, Feb 16, 2011 at 9:22 AM, Divyesh Shah <dpshah@google.com> wrote:
+> > On Tue, Feb 15, 2011 at 5:44 PM, Gui Jianfeng
+> > <guijianfeng@cn.fujitsu.com> wrote:
+> >> Hmm, it seems memcg aggregating stats in parent group.
+> >> But do we really need to do that in kernel? I think it's easier to do it in
+> >> userland, and it makes kernel much simpler.
+> >>
+> >
+> > I would prefer having stats aggregated up the hierarchy. One trick we
+> > used at Google earlier was to do lazy updates for most stats. So we
+> 
+> Note that this was on ancient version of the blkio controller :). As
+> Vivek mentioned,
+> it may be ok to add the hierarchical accounting later.
 
-No problem, and after all it was my fault at the beginning ;)
+One improvement we can probably do is make accounting per cpu and make
+it lockless.
 
-Thanks for taking care of this.
-
-Cheers,
-Benjamin
+Thanks
+Vivek
