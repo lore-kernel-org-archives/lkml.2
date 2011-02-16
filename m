@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933552Ab1BPBKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:10:23 -0500
-Received: from kroah.org ([198.145.64.141]:45692 "EHLO coco.kroah.org"
+	id S933124Ab1BPBLA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:11:00 -0500
+Received: from kroah.org ([198.145.64.141]:45664 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933093Ab1BPAt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:28 -0500
+	id S933080Ab1BPAtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:07 2011
-Message-Id: <20110216002107.321959207@clark.kroah.org>
+Message-Id: <20110216002106.926730792@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:50 -0800
+Date: Tue, 15 Feb 2011 16:20:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Edgar (gimli) Hucek" <gimli@dark-green.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>
-Subject: [patch 082/176] input: bcm5974: Add support for MacBookAir3
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [patch 078/176] ALSA: fix invalid hardware.h include in ac97c for AVR32 architecture
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,85 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Edgar (gimli) Hucek <gimli@dark-green.com>
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
 
-commit 6021afcf19d8c6f5db6d11cadcfb6a22d0c28a48 upstream.
+commit fd76804f3f5484b35e6a51214c91e916ebba05aa upstream.
 
-This patch adds support for the MacBookAir3,1 and MacBookAir3,2
-models.
+This patch fixes the non-compiling AC97C driver for AVR32 architecture by
+include mach/hardware.h only for AT91 architecture. The AVR32 architecture does
+not supply the hardware.h include file.
 
-[rydberg@euromail.se: touchpad range calibration]
-Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/mouse/bcm5974.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ sound/atmel/ac97c.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -55,6 +55,14 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI	0x0236
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_ISO	0x0237
- #define USB_DEVICE_ID_APPLE_WELLSPRING3_JIS	0x0238
-+/* MacbookAir3,2 (unibody), aka wellspring5 */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI	0x023f
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4_ISO	0x0240
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4_JIS	0x0241
-+/* MacbookAir3,1 (unibody), aka wellspring4 */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI	0x0242
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO	0x0243
-+#define USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS	0x0244
+--- a/sound/atmel/ac97c.c
++++ b/sound/atmel/ac97c.c
+@@ -33,9 +33,12 @@
+ #include <linux/dw_dmac.h>
  
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-@@ -80,6 +88,14 @@ static const struct usb_device_id bcm597
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_ANSI),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_ISO),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING3_JIS),
-+	/* MacbookAir3,2 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4_JIS),
-+	/* MacbookAir3,1 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS),
- 	/* Terminating entry */
- 	{}
- };
-@@ -234,6 +250,30 @@ static const struct bcm5974_config bcm59
- 		{ DIM_X, DIM_X / SN_COORD, -4460, 5166 },
- 		{ DIM_Y, DIM_Y / SN_COORD, -75, 6700 }
- 	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0x84, sizeof(struct bt_data),
-+		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-+		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-+		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-+		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
-+		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
-+	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING4A_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4A_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0x84, sizeof(struct bt_data),
-+		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-+		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-+		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-+		{ DIM_X, DIM_X / SN_COORD, -4616, 5112 },
-+		{ DIM_Y, DIM_Y / SN_COORD, -142, 5234 }
-+	},
- 	{}
- };
+ #include <mach/cpu.h>
+-#include <mach/hardware.h>
+ #include <mach/gpio.h>
  
++#ifdef CONFIG_ARCH_AT91
++#include <mach/hardware.h>
++#endif
++
+ #include "ac97c.h"
+ 
+ enum {
 
 
