@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab1BPUeo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 15:34:44 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:16851 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab1BPUel (ORCPT
+	id S1754338Ab1BPUg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 15:36:58 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:40542 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752544Ab1BPUg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 15:34:41 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6259"; a="74833283"
-Message-ID: <4D5C34E0.5000209@codeaurora.org>
-Date: Wed, 16 Feb 2011 12:34:40 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 16 Feb 2011 15:36:56 -0500
+Date: Wed, 16 Feb 2011 15:36:53 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Roland McGrath <roland@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Julien Desfossez <julien.desfossez@polymtl.ca>,
+        dominique.toupin@ericsson.com, ltt-dev@lists.casi.polymtl.ca,
+        systemtap@sources.redhat.com, linux-kernel@vger.kernel.org,
+        Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
+        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        davem@davemloft.net, sam@ravnborg.org, michael@ellerman.id.au,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Porting "jump labels" to userspace
+Message-ID: <20110216203653.GA2015@Krystal>
+References: <4D5AA164.1050607@polymtl.ca> <y0mvd0ltgba.fsf@fche.csb> <AANLkTi=Nsy6fXE9=Njxs9LPHuohHzf=q5kD+fK765Rht@mail.gmail.com> <1297853778.3224.90.camel@springer.wildebeest.org> <20110216185056.CAD7B1806E0@magilla.sf.frob.com> <20110216200034.GA6066@Krystal> <4D5C3024.6040807@caviumnetworks.com>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        konkers@android.com, linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 12/21] ARM: tegra: clock: Add shared bus clock type
-References: <1297590033-15035-1-git-send-email-ccross@android.com> <1297590033-15035-13-git-send-email-ccross@android.com>
-In-Reply-To: <1297590033-15035-13-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5C3024.6040807@caviumnetworks.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:36:22 up 85 days,  1:39,  4 users,  load average: 0.02, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2011 01:40 AM, Colin Cross wrote:
-> +/* shared bus ops */
-> +/*
-> + * Some clocks may have multiple downstream users that need to request a
-> + * higher clock rate.  Shared bus clocks provide a unique shared_bus_user
-> + * clock to each user.  The frequency of the bus is set to the highest
-> + * enabled shared_bus_user clock, with a minimum value set by the
-> + * shared bus.
-> + */
-> +static void tegra_clk_shared_bus_update(struct clk *bus)
-> +{
-> +	struct clk *c;
-> +	unsigned long rate = bus->min_rate;
-> +
-> +	list_for_each_entry(c, &bus->shared_bus_list, u.shared_bus_user.node)
-> +		if (c->u.shared_bus_user.enabled)
-> +			rate = max(c->u.shared_bus_user.rate, rate);
-> +
-> +	if (rate != clk_get_rate(bus))
-> +		clk_set_rate(bus, rate);
+* David Daney (ddaney@caviumnetworks.com) wrote:
+> On 02/16/2011 12:00 PM, Mathieu Desnoyers wrote:
+> [...]>
+>> Actually, creating the equivalent of the jump labels for userspace is on our
+>> list of "things to do" for the UST project.
+>>
+>> If Jason and other jump label contributors agree to dual-license the jump label
+>> generic and per-arch implementations under both GPLv2 and LGPLv2.1, we could
+>> probably re-use a large part of this code to create a static jump label library
+>> for userspace. The concerned authors are precisely: Jason for generic and x86
+>> code, Steven for some improvements in generic code and David S. Miller for the
+>> sparc port. After things settle down with the current jump label changes
+>> proposed by Peter Zijlstra, we might also want to ask for his permission to
+>> LGPLize his changes.
+>>
+> FWIW:  MIPS jump label support is now in as of:
+>
+> 94bb0c1 (MIPS: jump label: Add MIPS support.)
+>
+> I would be the author of that.
 
-What do you do if clk_set_rate() fails? Should you unwind all the state
-such as the rate and if it's enabled/disabled? Or is it safe to say
-clk_set_rate() can't fail unless the kernel is buggy in which case why
-aren't all those return -E* in the set rate functions just BUG_ONs?
+Sorry David, my tree was a bit outdated from Linus's head :)
 
-> +};
-> +
-> +static void tegra_clk_shared_bus_init(struct clk *c)
-> +{
-> +	c->max_rate = c->parent->max_rate;
-> +	c->u.shared_bus_user.rate = c->parent->max_rate;
-> +	c->state = OFF;
-> +#ifdef CONFIG_DEBUG_FS
-> +	c->set = 1;
-> +#endif
-> +
-> +	list_add_tail(&c->u.shared_bus_user.node,
-> +		&c->parent->shared_bus_list);
-> +}
-> +
-> +static int tegra_clk_shared_bus_set_rate(struct clk *c, unsigned long rate)
-> +{
-> +	c->u.shared_bus_user.rate = rate;
-> +	tegra_clk_shared_bus_update(c->parent);
-> +	return 0;
-> +}
-> +
-> +static long tegra_clk_shared_bus_round_rate(struct clk *c, unsigned long rate)
-> +{
-> +	return clk_round_rate(c->parent, rate);
-> +}
-> +
-> +static int tegra_clk_shared_bus_enable(struct clk *c)
-> +{
-> +	c->u.shared_bus_user.enabled = true;
-> +	tegra_clk_shared_bus_update(c->parent);
-> +	return 0;
-> +}
+Mathieu
 
-Shouldn't you call clk_enable(c->parent)? And do you need to check for
-errors from clk_enable()?
-
-> +
-> +static void tegra_clk_shared_bus_disable(struct clk *c)
-> +{
-> +	c->u.shared_bus_user.enabled = false;
-> +	tegra_clk_shared_bus_update(c->parent);
-> +}
-
-And a similar clk_disable(c->parent) here.
+>
+> David Daney
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
