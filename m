@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758812Ab1BPJWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 04:22:37 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51592 "EHLO mx3.mail.elte.hu"
+	id S1758825Ab1BPJXP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 04:23:15 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33750 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758811Ab1BPJWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 04:22:34 -0500
-Date: Wed, 16 Feb 2011 10:22:03 +0100
+	id S1758807Ab1BPJXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 04:23:11 -0500
+Date: Wed, 16 Feb 2011 10:23:03 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Jiri Slaby <jirislaby@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>, Steven Rostedt <rostedt@goodmis.org>,
-        gregkh@suse.de, srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl,
-        ghaskins@novell.com, stable@kernel.org, stable-commits@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been added
- to the 2.6.32-longterm tree
-Message-ID: <20110216092203.GD18842@elte.hu>
-References: <12978046423644@kroah.org>
- <1297810967.23343.122.camel@gandalf.stny.rr.com>
- <1297821667.5126.11.camel@marge.simson.net>
- <20110216082559.GA16529@elte.hu>
- <4D5B90E8.6080605@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yhlu.kernel@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 1/2 -tip/master] x86, x2apic: minimize IPI register writes
+ using cluster groups
+Message-ID: <20110216092303.GE18842@elte.hu>
+References: <4D4B1835.10606@gmail.com>
+ <20110214114515.GA9867@elte.hu>
+ <4D5945C8.4080108@gmail.com>
+ <20110215032259.GA8489@elte.hu>
+ <AANLkTiknLx8-SisY6it_1YitKp-HOPAt7ch5BG4=xbv-@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D5B90E8.6080605@gmail.com>
+In-Reply-To: <AANLkTiknLx8-SisY6it_1YitKp-HOPAt7ch5BG4=xbv-@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,43 +38,99 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-[ about -stable merge policy ]
+* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-* Jiri Slaby <jirislaby@gmail.com> wrote:
-
-> > We try to concentrate on regression fixes though.
+> On 2/15/11, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> >
+> >> On 02/14/2011 02:45 PM, Ingo Molnar wrote:
+> >> >
+> >> >* Cyrill Gorcunov<gorcunov@gmail.com>  wrote:
+> >> >
+> >> >>In the case of x2apic cluster mode we can group IPI register writes
+> >> >> based on the
+> >> >>cluster group instead of individual per-cpu destiantion messages. This
+> >> >> reduces the
+> >> >>apic register writes and reduces the amount of IPI messages (in the best
+> >> >> case we
+> >> >>can reduce it by a factor of 16).
+> >> >>
+> >> >>With this change, microbenchmark measuring the cost of
+> >> >> flush_tlb_others(), with
+> >> >>the flush tlb IPI being sent from a cpu in the socket-1 to all the
+> >> >> logical cpus in
+> >> >>socket-2 (on a Westmere-EX system that has 20 logical cpus in a socket)
+> >> >> is 3x
+> >> >>times better now (compared to the former 'send one-by-one' algorithm).
+> >> >
+> >> >Pretty nice!
+> >> >
+> >> >I have a few structural and nitpicking comments:
+> >>
+> >> Thanks a lot for review, Ingo! I'll address all the nits during this week.
+> >>
+> >> ...
+> >> >
+> >> >>+void x2apic_init_cpu_notifier(void)
+> >> >>+{
+> >> >>+	int cpu = smp_processor_id();
+> >> >>
+> >> >>+	zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL);
+> >> >>+	zalloc_cpumask_var(&per_cpu(ipi_mask, cpu), GFP_KERNEL);
+> >> >>+	BUG_ON(!per_cpu(cpus_in_cluster, cpu) || !per_cpu(ipi_mask, cpu));
+> >> >
+> >> >Such a BUG_ON() is not particularly user friendly - and this could
+> >> > trigger during
+> >> >CPU hotplug events, i.e. while the system is fully booted up, right?
+> >> >
+> >> >Thanks,
+> >> >
+> >> >	Ingo
+> >>
+> >> Yup is not that much friendly but it's called during system bootup,
+> >> hotplug events are handled by
+> >>
+> >> +static int __cpuinit
+> >> +cluster_setup(struct notifier_block *nfb, unsigned long action, void
+> >> *hcpu)
+> >> +{
+> >> +	unsigned int cpu = (unsigned long)hcpu;
+> >> +	int err = 0;
+> >> +
+> >> +	switch (action) {
+> >> +	case CPU_UP_PREPARE:
+> >> +		zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL);
+> >> +		zalloc_cpumask_var(&per_cpu(ipi_mask, cpu), GFP_KERNEL);
+> >> +		if (!per_cpu(cpus_in_cluster, cpu) || !per_cpu(ipi_mask, cpu)) {
+> >> +			free_cpumask_var(per_cpu(cpus_in_cluster, cpu));
+> >> +			free_cpumask_var(per_cpu(ipi_mask, cpu));
+> >> +			err = -ENOMEM;
+> >> +		}
+> >> +		break;
+> >>
+> >> so it returns -ENOMEM if failed. And btw just noted that we forgot to make
+> >> x2apic_init_cpu_notifier being in __init section.
+> >>
+> >> Or I miss something?
+> >
+> > Is there no GFP_NOFAIL or GFP_FAIL_ON_PANIC variant that could be used the
+> > 'must not
+> > fail' property of the boot-time allocation?
+> >
+> > Thanks,
+> >
+> > 	Ingo
+> >
 > 
-> Hi, I cannot fully agree with this. The question is who are "we" here?
+> If only i'm not missing something obvious we can set GFP_NOFAIL ending
+> in endless loop if allocation failed (slab should be already running
+> at this point of boot). Probably another option might be to switch to
+> no-apic mode if there is no enough memory to allocate this masks
+> (though i guess if allocation failed at this point we likely to fail
+> in further allocations in kernel anyway)
 
-It's the upstream policy and the scheduler tree certainly follows it.
-
-I think i remember Linus having stated it before (cannot find the mail), but it's 
-pretty common-sense so easy to reproduce (i've Cc:-ed Linus in case he wants to 
-chime in):
-
-   The idea is to treat Linus's tree and -stable as an organic whole: so -stable
-   is upstream as well, but with *bug* fixes backported. It's emphatically not a 
-   separate "for backporting interesting/important bits" tree.
-
-   And as such whatever a maintainer can send to Linus in -rc's (in particular late
-   -rc's) is -stable eligible.
-
-   For the rest of patches: generally not eligible, but with common-sense 
-   exceptions.
-
-   "It's a nice patch" or "it will obviously not cause problems" or "this is
-   important to us" does not make a patch eligible for -stable.
-
-   Adding a -stable tag to a commit and *not* sending it to Linus for the next -rc
-   also makes a patch almost automatically *not* eligible: if it was not important
-   enough to have it in the next -rc then it's doubly not eligible for -stable ...
-
-   I think this common-sense rule is easy to follow:
-
-    " If you ever have to ask yourself whether a patch queued up for -stable is 
-      really -stable eligible it probably isnt. "
-
-   It's called -stable for a reason.
+Ok, if it's boot time only then it's no big deal.
 
 Thanks,
 
