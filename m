@@ -1,137 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758825Ab1BPJXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 04:23:15 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33750 "EHLO mx2.mail.elte.hu"
+	id S1758827Ab1BPJZH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 04:25:07 -0500
+Received: from 1wt.eu ([62.212.114.60]:60587 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758807Ab1BPJXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 04:23:11 -0500
-Date: Wed, 16 Feb 2011 10:23:03 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 1/2 -tip/master] x86, x2apic: minimize IPI register writes
- using cluster groups
-Message-ID: <20110216092303.GE18842@elte.hu>
-References: <4D4B1835.10606@gmail.com>
- <20110214114515.GA9867@elte.hu>
- <4D5945C8.4080108@gmail.com>
- <20110215032259.GA8489@elte.hu>
- <AANLkTiknLx8-SisY6it_1YitKp-HOPAt7ch5BG4=xbv-@mail.gmail.com>
-MIME-Version: 1.0
+	id S1754842Ab1BPJZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 04:25:04 -0500
+Date: Wed, 16 Feb 2011 10:24:02 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>, Kay Sievers <kay.sievers@vrfy.org>,
+        Dan Carpenter <error27@gmail.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable-review@kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable@kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [114/115] sched: Remove  some dead code
+Message-ID: <20110216092402.GC1558@1wt.eu>
+References: <20110216014741.GA24678@kroah.com> <20110216014705.654816731@clark.kroah.org> <20110216073701.GS4384@bicker> <1297843004.8874.1.camel@marge.simson.net> <20110216083025.GB16529@elte.hu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTiknLx8-SisY6it_1YitKp-HOPAt7ch5BG4=xbv-@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110216083025.GB16529@elte.hu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On 2/15/11, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> >
-> >> On 02/14/2011 02:45 PM, Ingo Molnar wrote:
-> >> >
-> >> >* Cyrill Gorcunov<gorcunov@gmail.com>  wrote:
-> >> >
-> >> >>In the case of x2apic cluster mode we can group IPI register writes
-> >> >> based on the
-> >> >>cluster group instead of individual per-cpu destiantion messages. This
-> >> >> reduces the
-> >> >>apic register writes and reduces the amount of IPI messages (in the best
-> >> >> case we
-> >> >>can reduce it by a factor of 16).
-> >> >>
-> >> >>With this change, microbenchmark measuring the cost of
-> >> >> flush_tlb_others(), with
-> >> >>the flush tlb IPI being sent from a cpu in the socket-1 to all the
-> >> >> logical cpus in
-> >> >>socket-2 (on a Westmere-EX system that has 20 logical cpus in a socket)
-> >> >> is 3x
-> >> >>times better now (compared to the former 'send one-by-one' algorithm).
-> >> >
-> >> >Pretty nice!
-> >> >
-> >> >I have a few structural and nitpicking comments:
-> >>
-> >> Thanks a lot for review, Ingo! I'll address all the nits during this week.
-> >>
-> >> ...
-> >> >
-> >> >>+void x2apic_init_cpu_notifier(void)
-> >> >>+{
-> >> >>+	int cpu = smp_processor_id();
-> >> >>
-> >> >>+	zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL);
-> >> >>+	zalloc_cpumask_var(&per_cpu(ipi_mask, cpu), GFP_KERNEL);
-> >> >>+	BUG_ON(!per_cpu(cpus_in_cluster, cpu) || !per_cpu(ipi_mask, cpu));
-> >> >
-> >> >Such a BUG_ON() is not particularly user friendly - and this could
-> >> > trigger during
-> >> >CPU hotplug events, i.e. while the system is fully booted up, right?
-> >> >
-> >> >Thanks,
-> >> >
-> >> >	Ingo
-> >>
-> >> Yup is not that much friendly but it's called during system bootup,
-> >> hotplug events are handled by
-> >>
-> >> +static int __cpuinit
-> >> +cluster_setup(struct notifier_block *nfb, unsigned long action, void
-> >> *hcpu)
-> >> +{
-> >> +	unsigned int cpu = (unsigned long)hcpu;
-> >> +	int err = 0;
-> >> +
-> >> +	switch (action) {
-> >> +	case CPU_UP_PREPARE:
-> >> +		zalloc_cpumask_var(&per_cpu(cpus_in_cluster, cpu), GFP_KERNEL);
-> >> +		zalloc_cpumask_var(&per_cpu(ipi_mask, cpu), GFP_KERNEL);
-> >> +		if (!per_cpu(cpus_in_cluster, cpu) || !per_cpu(ipi_mask, cpu)) {
-> >> +			free_cpumask_var(per_cpu(cpus_in_cluster, cpu));
-> >> +			free_cpumask_var(per_cpu(ipi_mask, cpu));
-> >> +			err = -ENOMEM;
-> >> +		}
-> >> +		break;
-> >>
-> >> so it returns -ENOMEM if failed. And btw just noted that we forgot to make
-> >> x2apic_init_cpu_notifier being in __init section.
-> >>
-> >> Or I miss something?
-> >
-> > Is there no GFP_NOFAIL or GFP_FAIL_ON_PANIC variant that could be used the
-> > 'must not
-> > fail' property of the boot-time allocation?
-> >
-> > Thanks,
-> >
-> > 	Ingo
-> >
+On Wed, Feb 16, 2011 at 09:30:25AM +0100, Ingo Molnar wrote:
 > 
-> If only i'm not missing something obvious we can set GFP_NOFAIL ending
-> in endless loop if allocation failed (slab should be already running
-> at this point of boot). Probably another option might be to switch to
-> no-apic mode if there is no enough memory to allocate this masks
-> (though i guess if allocation failed at this point we likely to fail
-> in further allocations in kernel anyway)
+> * Mike Galbraith <efault@gmx.de> wrote:
+> 
+> > On Wed, 2011-02-16 at 10:37 +0300, Dan Carpenter wrote:
+> > > On Tue, Feb 15, 2011 at 05:46:20PM -0800, Greg KH wrote:
+> > > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > 
+> > > > From: Dan Carpenter <error27@gmail.com>
+> > > > 
+> > > > commit 618765801ebc271fe0ba3eca99fcfd62a1f786e1 upstream.
+> > > > 
+> > > > This was left over from "7c9414385e sched: Remove USER_SCHED"
+> > > > 
+> > > > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > > 
+> > > This is just a cleanup patch.  It doesn't really warrant backporting.
+> > 
+> > There's no reason to leave the dirt lying about though.
+> 
+> That's not the threshold for -stable backporting though.
+> 
+> A patch is eligible for -stable if and only if it's eligible for sending it to Linus 
+> via tip:sched/urgent as well: i.e. important bugfix or fresh regression.
+> 
+> Now, a cleanup patch might still be eligible to be sent to Linus if for some reason 
+> it's absolutely required for a fix - but in general we do not backport them.
+> 
+> The risk to -stable is obvious: instead of having a well-known .32 scheduler we have 
+> this morphing code that no-one has really tested in that form.
+> 
+> So while i dont mind the series you sent, please lets be *much* more careful with 
+> -stable backports in the future. Rule #1: if you ever have to ask yourself whether a 
+> patch is -stable eligible it probably isnt.
 
-Ok, if it's boot time only then it's no big deal.
+Sometimes cleanup patches make the work easier for stable maintainers because
+further patches apply without conflicts. It happened to me from time to time
+in the past to merge such patches because I got bored of systematically having
+to manually apply patches. But I agree with you that generally we should avoid
+to merge such patches.
 
-Thanks,
+In my opinion the right question to ask oneself about the eligibility of a
+patch is how you'd justify it to your end users. If you can justify it by
+an improvement they can perceive (reliability, security, speed) then it may
+be worth it. If it's just "that code was not used anymore", they'll start
+to lose trust.
 
-	Ingo
+Regards,
+Willy
+
