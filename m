@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032Ab1BPBpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:45:30 -0500
-Received: from kroah.org ([198.145.64.141]:38816 "EHLO coco.kroah.org"
+	id S1758042Ab1BPBpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:45:50 -0500
+Received: from kroah.org ([198.145.64.141]:38809 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756836Ab1BPATT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:30 2011
-Message-Id: <20110216001429.980526475@clark.kroah.org>
+	id S1756829Ab1BPATR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:17 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:29 2011
+Message-Id: <20110216001429.881006988@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:46 -0800
+Date: Tue, 15 Feb 2011 16:11:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arend van Spriel <arend@broadcom.com>
-Subject: [049/272] staging: brcm80211: fix suspend/resume issue in brcmsmac
+        Roel Kluin <roel.kluin@gmail.com>
+Subject: [048/272] Staging: speakup: &&/|| confusion in silent_store()
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,134 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arend van Spriel <arend@broadcom.com>
+From: roel kluin <roel.kluin@gmail.com>
 
-commit 4032ec639af9b735fdd903fab09de567bd73eaa0 upstream.
+commit e7bf352fcd85c33b0805da891fc97fea8b5e996e upstream.
 
-PCI PM suspend callback took down the interface and resume brought
-it back up. In the mac80211 context this is done in subsequent calls.
-Rework implementation so that suspend only stores config, and sets
-PCI power state. The resume return to full power state (D0), restores
-the config, and brings hardware back up. Full bringup is done by
-subsequent mac80211 calls.
+Fix test: the branch is always taken.
 
-Reviewed-by: Brett Rudley <brudley@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/brcm80211/sys/wl_mac80211.c |   45 ++++++++++++++--------------
- 1 file changed, 23 insertions(+), 22 deletions(-)
+ drivers/staging/speakup/kobjects.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/brcm80211/sys/wl_mac80211.c
-+++ b/drivers/staging/brcm80211/sys/wl_mac80211.c
-@@ -299,11 +299,8 @@ static void wl_ops_stop(struct ieee80211
- 	wl_info_t *wl = hw->priv;
- 	ASSERT(wl);
- 	WL_LOCK(wl);
--	wl_down(wl);
- 	ieee80211_stop_queues(hw);
- 	WL_UNLOCK(wl);
--
--	return;
- }
+--- a/drivers/staging/speakup/kobjects.c
++++ b/drivers/staging/speakup/kobjects.c
+@@ -332,7 +332,7 @@ static ssize_t silent_store(struct kobje
+ 	unsigned long flags;
  
- static int
-@@ -336,7 +333,14 @@ wl_ops_add_interface(struct ieee80211_hw
- static void
- wl_ops_remove_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
- {
--	return;
-+	struct wl_info *wl;
-+
-+	wl = HW_TO_WL(hw);
-+
-+	/* put driver in down state */
-+	WL_LOCK(wl);
-+	wl_down(wl);
-+	WL_UNLOCK(wl);
- }
- 
- static int
-@@ -972,7 +976,7 @@ static wl_info_t *wl_attach(u16 vendor,
- 	wl_found++;
- 	return wl;
- 
-- fail:
-+fail:
- 	wl_free(wl);
- fail1:
- 	return NULL;
-@@ -1356,7 +1360,6 @@ wl_pci_probe(struct pci_dev *pdev, const
- 	return 0;
- }
- 
--#ifdef LINUXSTA_PS
- static int wl_suspend(struct pci_dev *pdev, pm_message_t state)
- {
- 	wl_info_t *wl;
-@@ -1371,11 +1374,12 @@ static int wl_suspend(struct pci_dev *pd
- 		return -ENODEV;
- 	}
- 
-+	/* only need to flag hw is down for proper resume */
- 	WL_LOCK(wl);
--	wl_down(wl);
- 	wl->pub->hw_up = false;
- 	WL_UNLOCK(wl);
--	pci_save_state(pdev, wl->pci_psstate);
-+
-+	pci_save_state(pdev);
- 	pci_disable_device(pdev);
- 	return pci_set_power_state(pdev, PCI_D3hot);
- }
-@@ -1399,7 +1403,7 @@ static int wl_resume(struct pci_dev *pde
- 	if (err)
- 		return err;
- 
--	pci_restore_state(pdev, wl->pci_psstate);
-+	pci_restore_state(pdev);
- 
- 	err = pci_enable_device(pdev);
- 	if (err)
-@@ -1411,13 +1415,12 @@ static int wl_resume(struct pci_dev *pde
- 	if ((val & 0x0000ff00) != 0)
- 		pci_write_config_dword(pdev, 0x40, val & 0xffff00ff);
- 
--	WL_LOCK(wl);
--	err = wl_up(wl);
--	WL_UNLOCK(wl);
--
-+	/*
-+	*  done. driver will be put in up state
-+	*  in wl_ops_add_interface() call.
-+	*/
- 	return err;
- }
--#endif				/* LINUXSTA_PS */
- 
- static void wl_remove(struct pci_dev *pdev)
- {
-@@ -1450,14 +1453,12 @@ static void wl_remove(struct pci_dev *pd
- }
- 
- static struct pci_driver wl_pci_driver = {
-- .name  = "brcm80211",
-- .probe = wl_pci_probe,
--#ifdef LINUXSTA_PS
-- .suspend = wl_suspend,
-- .resume  = wl_resume,
--#endif				/* LINUXSTA_PS */
-- .remove   = __devexit_p(wl_remove),
-- .id_table = wl_id_table,
-+	.name = "brcm80211",
-+	.probe = wl_pci_probe,
-+	.suspend = wl_suspend,
-+	.resume = wl_resume,
-+	.remove = __devexit_p(wl_remove),
-+	.id_table = wl_id_table,
- };
- #endif				/* !BCMSDIO */
- 
+ 	len = strlen(buf);
+-	if (len > 0 || len < 3) {
++	if (len > 0 && len < 3) {
+ 		ch = buf[0];
+ 		if (ch == '\n')
+ 			ch = '0';
 
 
