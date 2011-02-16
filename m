@@ -1,108 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab1BPNYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 08:24:50 -0500
-Received: from blu0-omc1-s13.blu0.hotmail.com ([65.55.116.24]:14865 "EHLO
-	blu0-omc1-s13.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751067Ab1BPNYr (ORCPT
+	id S1752046Ab1BPNeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 08:34:15 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54424 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab1BPNeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 08:24:47 -0500
-X-Originating-IP: [174.91.193.52]
-X-Originating-Email: [pdumas9@sympatico.ca]
-Message-ID: <BLU0-SMTP5EDE1BB3410CC9856693096D20@phx.gbl>
-Date: Wed, 16 Feb 2011 08:24:38 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Will Newton <will.newton@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, Will Simoneau <simoneau@ele.uri.edu>,
-        David Miller <davem@davemloft.net>, hpa@zytor.com,
-        matt@console-pimps.org, peterz@infradead.org, jbaron@redhat.com,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org,
-        roland@redhat.com, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
-        ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
-        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        benh@kernel.crashing.org
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-References: <4D59B891.8010300@zytor.com> <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com> <20110215211123.GA3094@ele.uri.edu> <20110215.132702.39199169.davem@davemloft.net> <20110215215604.GA3177@ele.uri.edu> <AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com> <1297858734.23343.138.camel@gandalf.stny.rr.com> <AANLkTinzr6rb=WwFs7QApsvdy5f7PHZ1qS9ZVrncEzZD@mail.gmail.com>
+	Wed, 16 Feb 2011 08:34:13 -0500
+X-AuditID: b753bd60-a46baba000004916-37-4d5bd252944b
+X-AuditID: b753bd60-a46baba000004916-37-4d5bd252944b
+Message-ID: <4D5BD24F.3060601@hitachi.com>
+Date: Wed, 16 Feb 2011 22:34:07 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 00/14] [GIT PULL][v2.6.39] tracing/filter: More robust
+ filtering
+References: <20110208015617.902200587@goodmis.org> <20110215044425.GA9994@elte.hu> <1297776787.23343.104.camel@gandalf.stny.rr.com> <1297787362.23343.109.camel@gandalf.stny.rr.com> <20110215165302.GA2272@nowhere> <20110215183558.GE30208@ghostprotocols.net>
+In-Reply-To: <20110215183558.GE30208@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <AANLkTinzr6rb=WwFs7QApsvdy5f7PHZ1qS9ZVrncEzZD@mail.gmail.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 08:09:27 up 314 days, 22:59,  6 users,  load average: 1.28, 1.56,
-	1.56
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 16 Feb 2011 13:24:46.0450 (UTC) FILETIME=[E12CCD20:01CBCDDC]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Will Newton (will.newton@gmail.com) wrote:
-> On Wed, Feb 16, 2011 at 12:18 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Wed, 2011-02-16 at 10:15 +0000, Will Newton wrote:
-> >
-> >> > That's some really crippled hardware... it does seem like *any* loads
-> >> > from *any* address updated by an sc would have to be done with ll as
-> >> > well, else they may load stale values. One could work this into
-> >> > atomic_read(), but surely there are other places that are problems.
-> >>
-> >> I think it's actually ok, atomics have arch implemented accessors, as
-> >> do spinlocks and atomic bitops. Those are the only place we do sc so
-> >> we can make sure we always ll or invalidate manually.
-> >
-> > I'm curious, how is cmpxchg() implemented on this architecture? As there
-> > are several places in the kernel that uses this on regular variables
-> > without any "accessor" functions.
+(2011/02/16 3:35), Arnaldo Carvalho de Melo wrote:
+> Em Tue, Feb 15, 2011 at 05:53:06PM +0100, Frederic Weisbecker escreveu:
+>> On Tue, Feb 15, 2011 at 11:29:22AM -0500, Steven Rostedt wrote:
+>>> On Tue, 2011-02-15 at 08:33 -0500, Steven Rostedt wrote:
+>>>
+>>>> Thanks for letting me waste three days on developing this. I even posted
+>>>> an RFC a while back, and no one complained then.
+>>>
+>>> Sorry about being a bit bitchy in my reply here. I need to make a note
+>>> not to reply to LKML before my first cup of coffee. ;)
+>>>
+>>> Arnaldo,
+>>>
+>>> Thanks for the post, I'll help you out where you need it. trace-cmd has
+>>> some features that reports back to the user on failed filter usage. We
+>>> can incorporate that into perf.
 > 
-> We can invalidate the cache manually. The current cpu will see the new
-> value (post-cache invalidate) and the other cpus will see either the
-> old value or the new value depending on whether they read before or
-> after the invalidate, which is racy but I don't think it is
-> problematic. Unless I'm missing something...
+> Thanks!
 
-Assuming the invalidate is specific to a cache-line, I'm concerned about
-the failure of a scenario like the following:
+Sounds good :)
 
-initially:
-foo = 0
-bar = 0
+>  
+>> Cool!
+>>
+>> That said I agree that we should not block improvements in the generic
+>> filtering code because of issues in perf uses of filters.
+>>
+>> I believe it used to work better in perf by the past, but I saw similar
+>> issues lately like those Ingo noticed. So probably something
+>> broke and we need to investigate. But until then your patches are
+>> still nice improvements: lesser memory usage, lesser kernel stack usage in the
+>> fast path, lesser limitation, faster and smarter filter evaluation...
+> 
+> Yeah, usability of the --filter parameter in perf is a bit
+> (understatement) lacking, one has to look at the /format thing in
+> /sys/kernel/debug/tracing... and not commit any mistake, else a generic
+> invalid 22 message is spit out.
 
-CPU A                            CPU B
+And also, there seems very less comment in perf-record.txt.
 
-xchg(&foo, 1);
-  ll foo
-  sc foo
+--filter=<filter>::
+        Event filter.
 
-  -> interrupt
+Hmm, I think, at least, there should be a comment where user should
+refer to and if possible, how he can use it...
 
-  if (foo == 1)
-    xchg(&bar, 1);
-      ll bar
-      sc bar
-      invalidate bar
 
-                                 lbar = bar;
-                                 smp_mb()
-                                 lfoo = foo;
-                                 BUG_ON(lbar == 1 && lfoo == 0);
-  invalidate foo
+> I tried it and after some back and forth changing hats and scratching my
+> head while doing so, it got to work.
+> 
+> I talked with Steven and the same operation using trace-cmd would
+> produce a better error report, stating that the field used in the filter
+> expression was not valid.
 
-It should be valid to expect that every time "bar" read by CPU B is 1,
-then "foo" is always worth 1. However, in this case, the lack of
-invalidate on foo is keeping the cacheline from reaching CPU B. There
-seems to be a problem with interrupts/NMIs coming right between sc and
-invalidate, as Ingo pointed out.
+If possible, please show us what parameters we can use on that event too.
+perf list gives us a list of events, but not show us what parameters
+we can use on those events. I think we can update perf list for that
+purpose.
 
-Thanks,
+e.g.)
+perf list --field kvm:kvm_entry
+ unsigned short common_type;
+ unsigned char common_flags;
+ unsigned char common_preempt_count;
+ int common_pid;
+ int common_lock_depth;
+ unsigned int vcpu_id;
 
-Mathieu
+
+> 
+> I'll try to get that code from trace-cmd and glue that into
+> tools/perf/util/, that eventually will get moved to tools/lib/ or
+> something like that, as Borislav has been experimenting with for some
+> time already.
+> 
+> The location in the source tree is not the most important thing at this
+> point, usability improvements are, so I'm not rushing to moving code
+> around all the time (even doing it more than I would like), lets try to
+> improve usability first and then we can move it to tools/lib.
+> 
+> - Arnaldo
+
+
+Thank you,
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
