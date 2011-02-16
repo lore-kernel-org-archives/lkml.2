@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab1BPCR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:17:27 -0500
-Received: from kroah.org ([198.145.64.141]:38639 "EHLO coco.kroah.org"
+	id S1756602Ab1BPCSA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:18:00 -0500
+Received: from kroah.org ([198.145.64.141]:38616 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755720Ab1BPASW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:22 -0500
+	id S1756580Ab1BPASP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:15 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:26 2011
-Message-Id: <20110216001426.834654787@clark.kroah.org>
+Message-Id: <20110216001426.440141181@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:15 -0800
+Date: Tue, 15 Feb 2011 16:11:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>
-Subject: [018/272] USB: usb-storage: unusual_devs update for TrekStor DataStation maxi g.u external hard drive enclosure
+        Craig Shelley <craig@microtron.org.uk>
+Subject: [014/272] USB: CP210x Add two device IDs
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>
+From: Craig Shelley <craig@microtron.org.uk>
 
-commit 7e1e7bd9dbd469267b6e6de1bf8d71a7d65ce86a upstream.
+commit faea63f7ccfddfb8fc19798799fcd38c58415172 upstream.
 
-The TrekStor DataStation maxi g.u external hard drive enclosure uses a
-JMicron USB to SATA chip which needs the US_FL_IGNORE_RESIDUE flag to work
-properly.
+Device Ids added for IRZ Automation Teleport SG-10 GSM/GPRS Modem and
+DekTec DTA Plus VHF/UHF Booster/Attenuator.
 
-Signed-off-by: Richard SchÃ¼tz <r.schtz@t-online.de>
+Signed-off-by: Craig Shelley <craig@microtron.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/usb/serial/cp210x.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1872,6 +1872,15 @@ UNUSUAL_DEV( 0x1908, 0x3335, 0x0200, 0x0
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_READ_DISC_INFO ),
- 
-+/* Patch by Richard Schütz <r.schtz@t-online.de>
-+ * This external hard drive enclosure uses a JMicron chip which
-+ * needs the US_FL_IGNORE_RESIDUE flag to work properly. */
-+UNUSUAL_DEV(  0x1e68, 0x001b, 0x0000, 0x0000,
-+		"TrekStor GmbH & Co. KG",
-+		"DataStation maxi g.u",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
-+
- UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
- 		"ST",
- 		"2A",
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -109,7 +109,9 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
+ 	{ USB_DEVICE(0x10C4, 0x8382) }, /* Cygnal Integrated Products, Inc. */
+ 	{ USB_DEVICE(0x10C4, 0x83A8) }, /* Amber Wireless AMB2560 */
++	{ USB_DEVICE(0x10C4, 0x83D8) }, /* DekTec DTA Plus VHF/UHF Booster/Attenuator */
+ 	{ USB_DEVICE(0x10C4, 0x8411) }, /* Kyocera GPS Module */
++	{ USB_DEVICE(0x10C4, 0x8418) }, /* IRZ Automation Teleport SG-10 GSM/GPRS Modem */
+ 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
+ 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
 
 
