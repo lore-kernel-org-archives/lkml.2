@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab1BPAXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:23:36 -0500
-Received: from kroah.org ([198.145.64.141]:49361 "EHLO coco.kroah.org"
+	id S932389Ab1BPAYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:24:37 -0500
+Received: from kroah.org ([198.145.64.141]:49658 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757580Ab1BPAXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:14 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:43 2011
-Message-Id: <20110216001443.195966005@clark.kroah.org>
+	id S932257Ab1BPAYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:47 2011
+Message-Id: <20110216001447.238238082@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:58 -0800
+Date: Tue, 15 Feb 2011 16:14:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [181/272] xen-platform: use PCI interfaces to request IO and MEM resources.
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [221/272] PM / Runtime: Dont enable interrupts while running in_interrupt
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 00f28e4037c8d5782fa7a1b2666b0dca21522d69 upstream.
+commit c3810c88788d505d4ffd786addd111b745e42161 upstream.
 
-This is the correct interface to use and something has broken the use
-of the previous incorrect interface (which fails because the request
-conflicts with the resources assigned for the PCI device itself
-instead of nesting like the PCI interfaces do).
+This patch (as1445) fixes a bug in the runtime PM core left over from
+the addition of the no_callbacks flag.  If this flag is set then it is
+possible for rpm_suspend() to be called in_interrupt, so when
+releasing spinlocks it's important not to re-enable interrupts.
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To avoid an unnecessary save-and-restore of the interrupt flag, the
+patch also inlines a pm_request_idle() call.
+
+This fixes Bugzilla #27482.
+
+(The offending code was added in 2.6.37, so it's not necessary to apply
+this to any earlier stable kernels.)
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: tim blechmann <tim@klingt.org>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/platform-pci.c |   21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+ drivers/base/power/runtime.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/xen/platform-pci.c
-+++ b/drivers/xen/platform-pci.c
-@@ -105,7 +105,7 @@ static int __devinit platform_pci_init(s
- 				       const struct pci_device_id *ent)
- {
- 	int i, ret;
--	long ioaddr, iolen;
-+	long ioaddr;
- 	long mmio_addr, mmio_len;
- 	unsigned int max_nr_gframes;
- 
-@@ -114,7 +114,6 @@ static int __devinit platform_pci_init(s
- 		return i;
- 
- 	ioaddr = pci_resource_start(pdev, 0);
--	iolen = pci_resource_len(pdev, 0);
- 
- 	mmio_addr = pci_resource_start(pdev, 1);
- 	mmio_len = pci_resource_len(pdev, 1);
-@@ -125,19 +124,13 @@ static int __devinit platform_pci_init(s
- 		goto pci_out;
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -404,12 +404,15 @@ static int rpm_suspend(struct device *de
+ 		goto out;
  	}
  
--	if (request_mem_region(mmio_addr, mmio_len, DRV_NAME) == NULL) {
--		dev_err(&pdev->dev, "MEM I/O resource 0x%lx @ 0x%lx busy\n",
--		       mmio_addr, mmio_len);
--		ret = -EBUSY;
-+	ret = pci_request_region(pdev, 1, DRV_NAME);
-+	if (ret < 0)
- 		goto pci_out;
--	}
++	/* Maybe the parent is now able to suspend. */
+ 	if (parent && !parent->power.ignore_children) {
+-		spin_unlock_irq(&dev->power.lock);
++		spin_unlock(&dev->power.lock);
  
--	if (request_region(ioaddr, iolen, DRV_NAME) == NULL) {
--		dev_err(&pdev->dev, "I/O resource 0x%lx @ 0x%lx busy\n",
--		       iolen, ioaddr);
--		ret = -EBUSY;
-+	ret = pci_request_region(pdev, 0, DRV_NAME);
-+	if (ret < 0)
- 		goto mem_out;
--	}
+-		pm_request_idle(parent);
++		spin_lock(&parent->power.lock);
++		rpm_idle(parent, RPM_ASYNC);
++		spin_unlock(&parent->power.lock);
  
- 	platform_mmio = mmio_addr;
- 	platform_mmiolen = mmio_len;
-@@ -169,9 +162,9 @@ static int __devinit platform_pci_init(s
- 	return 0;
+-		spin_lock_irq(&dev->power.lock);
++		spin_lock(&dev->power.lock);
+ 	}
  
- out:
--	release_region(ioaddr, iolen);
-+	pci_release_region(pdev, 0);
- mem_out:
--	release_mem_region(mmio_addr, mmio_len);
-+	pci_release_region(pdev, 1);
- pci_out:
- 	pci_disable_device(pdev);
- 	return ret;
+  out:
 
 
