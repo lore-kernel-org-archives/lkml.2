@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab1BPBWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:22:03 -0500
-Received: from kroah.org ([198.145.64.141]:45189 "EHLO coco.kroah.org"
+	id S1757463Ab1BPBWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:22:20 -0500
+Received: from kroah.org ([198.145.64.141]:45185 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932684Ab1BPArl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:41 -0500
+	id S932769Ab1BPArj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:39 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:00 2011
-Message-Id: <20110216002100.889251579@clark.kroah.org>
+Message-Id: <20110216002100.792988357@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:46 -0800
+Date: Tue, 15 Feb 2011 16:19:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [patch 018/176] USB: usb-storage: unusual_devs entry for Coby MP3 player
+Subject: [patch 017/176] USB: usb-storage: unusual_devs entry for CamSport Evo
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,34 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 3ea3c9b5a8464ec8223125f95e5dddb3bfd02a39 upstream.
+commit 12f68c480c7155a66bd2a76ab2fef28dd5f93fa2 upstream.
 
-This patch (as1444) adds an unusual_devs entry for an MP3 player from
-Coby electronics.  The device has two nasty bugs.
+This patch (as1438) adds an unusual_devs entry for the MagicPixel
+FW_Omega2 chip, used in the CamSport Evo camera.  The firmware
+incorrectly reports a vendor-specific bDeviceClass.
 
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Jasper Mackenzie <scarletpimpernal@hotmail.com>
+Reported-by: <ttkspam@free.fr>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/storage/unusual_devs.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 --- a/drivers/usb/storage/unusual_devs.h
 +++ b/drivers/usb/storage/unusual_devs.h
-@@ -1884,6 +1884,13 @@ UNUSUAL_DEV(  0x1e68, 0x001b, 0x0000, 0x
+@@ -1043,6 +1043,15 @@ UNUSUAL_DEV(  0x084d, 0x0011, 0x0110, 0x
  		US_SC_DEVICE, US_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
+ 		US_FL_BULK32),
  
-+/* Reported by Jasper Mackenzie <scarletpimpernal@hotmail.com> */
-+UNUSUAL_DEV( 0x1e74, 0x4621, 0x0000, 0x0000,
-+		"Coby Electronics",
-+		"MP3 Player",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_BULK_IGNORE_TAG | US_FL_MAX_SECTORS_64 ),
++/* Reported by <ttkspam@free.fr>
++ * The device reports a vendor-specific device class, requiring an
++ * explicit vendor/product match.
++ */
++UNUSUAL_DEV(  0x0851, 0x1542, 0x0002, 0x0002,
++		"MagicPixel",
++		"FW_Omega2",
++		US_SC_DEVICE, US_PR_DEVICE, NULL, 0),
 +
- UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
- 		"ST",
- 		"2A",
+ /* Andrew Lunn <andrew@lunn.ch>
+  * PanDigital Digital Picture Frame. Does not like ALLOW_MEDIUM_REMOVAL
+  * on LUN 4.
 
 
