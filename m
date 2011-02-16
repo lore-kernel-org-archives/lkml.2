@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab1BPPKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 10:10:50 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:33444 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751811Ab1BPPKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 10:10:48 -0500
-X-Sasl-enc: vsuefZXCWKuOkBc9WqinroxN08u3ppyIxFMa7jPzcmsA 1297869047
-Message-ID: <4D5BE927.7000306@ladisch.de>
-Date: Wed, 16 Feb 2011 16:11:35 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752078Ab1BPPRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 10:17:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34367 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab1BPPRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 10:17:38 -0500
+Date: Wed, 16 Feb 2011 07:18:29 -0800
+From: Greg KH <gregkh@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dtor@mail.ru>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        David Woodhouse <dwmw2@infradead.org>, Alex Dubov <oakad@yahoo.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: Re: [PATCH] workqueue, freezer: unify spelling of 'freeze' +
+ 'able' to 'freezable'
+Message-ID: <20110216151829.GC3550@suse.de>
+References: <20110216083442.GB19830@htj.dyndns.org>
 MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 3/3] hwmon: (jc42) do not allow writing to
- locked registers
-References: <4D5BCA87.7010204@ladisch.de> <4D5BCAEE.6030502@ladisch.de> <20110216145049.GC13872@ericsson.com>
-In-Reply-To: <20110216145049.GC13872@ericsson.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20110216083442.GB19830@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter Roeck wrote:
-> On Wed, Feb 16, 2011 at 08:02:38AM -0500, Clemens Ladisch wrote:
-> > +		readonly = config & JC42_CFG_TCRIT_LOCK;
+On Wed, Feb 16, 2011 at 09:34:42AM +0100, Tejun Heo wrote:
+> There are two spellings in use for 'freeze' + 'able' - 'freezable' and
+> 'freezeable'.  The former is the more prominent one.  The latter is
+> mostly used by workqueue and in a few other odd places.  Unify the
+> spelling to 'freezable'.
 > 
-> You are assigning a non-bool to a bool. I can see that recent C compilers
-> do the right thing, but I am not sure if that is always the case.
-> So I would prefer
-> 		readonly = !!(config & JC42_CFG_TCRIT_LOCK));
-> 
-> Same for the assignments below. I can make that change if you are ok with it.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Alex Dubov <oakad@yahoo.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
-I cannot imagine how a compiler could get this wrong even if it tried
-to, but if you think so, go ahead.  :)
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
-Regards,
-Clemens
