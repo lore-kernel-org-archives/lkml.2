@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab1BPAV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:21:28 -0500
-Received: from kroah.org ([198.145.64.141]:39272 "EHLO coco.kroah.org"
+	id S1757298Ab1BPAVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:21:31 -0500
+Received: from kroah.org ([198.145.64.141]:39278 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757220Ab1BPAVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:22 -0500
+	id S1757131Ab1BPAVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:36 2011
-Message-Id: <20110216001436.767793923@clark.kroah.org>
+Message-Id: <20110216001436.855492347@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:54 -0800
+Date: Tue, 15 Feb 2011 16:12:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [117/272] RDMA/cxgb4: Limit MAXBURST EQ context field to 256B
+        Dave Anderson <anderson@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [118/272] /proc/kcore: fix seeking
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Dave Anderson <anderson@redhat.com>
 
-commit 6a09a9d6946dd516d243d072bee83fae3c683471 upstream.
+commit ceff1a770933e2ca2bf995b453dade4ec47a9878 upstream.
 
-MAXBURST cannot exceed 256B for on-chip queues.  With a 512B MAXBURST,
-we can lock up the chip.
+Commit 34aacb2920 ("procfs: Use generic_file_llseek in /proc/kcore") broke
+seeking on /proc/kcore.  This changes it back to use default_llseek in
+order to restore the original behavior.
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+The problem with generic_file_llseek is that it only allows seeks up to
+inode->i_sb->s_maxbytes, which is 2GB-1 on procfs, where the memory file
+offset values in the /proc/kcore PT_LOAD segments may exceed or start
+beyond that offset value.
+
+A similar revert was made for /proc/vmcore.
+
+Signed-off-by: Dave Anderson <anderson@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/hw/cxgb4/qp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/proc/kcore.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/cxgb4/qp.c
-+++ b/drivers/infiniband/hw/cxgb4/qp.c
-@@ -220,7 +220,7 @@ static int create_qp(struct c4iw_rdev *r
- 		V_FW_RI_RES_WR_DCAEN(0) |
- 		V_FW_RI_RES_WR_DCACPU(0) |
- 		V_FW_RI_RES_WR_FBMIN(2) |
--		V_FW_RI_RES_WR_FBMAX(3) |
-+		V_FW_RI_RES_WR_FBMAX(2) |
- 		V_FW_RI_RES_WR_CIDXFTHRESHO(0) |
- 		V_FW_RI_RES_WR_CIDXFTHRESH(0) |
- 		V_FW_RI_RES_WR_EQSIZE(eqsize));
-@@ -243,7 +243,7 @@ static int create_qp(struct c4iw_rdev *r
- 		V_FW_RI_RES_WR_DCAEN(0) |
- 		V_FW_RI_RES_WR_DCACPU(0) |
- 		V_FW_RI_RES_WR_FBMIN(2) |
--		V_FW_RI_RES_WR_FBMAX(3) |
-+		V_FW_RI_RES_WR_FBMAX(2) |
- 		V_FW_RI_RES_WR_CIDXFTHRESHO(0) |
- 		V_FW_RI_RES_WR_CIDXFTHRESH(0) |
- 		V_FW_RI_RES_WR_EQSIZE(eqsize));
+--- a/fs/proc/kcore.c
++++ b/fs/proc/kcore.c
+@@ -558,7 +558,7 @@ static int open_kcore(struct inode *inod
+ static const struct file_operations proc_kcore_operations = {
+ 	.read		= read_kcore,
+ 	.open		= open_kcore,
+-	.llseek		= generic_file_llseek,
++	.llseek		= default_llseek,
+ };
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG
 
 
