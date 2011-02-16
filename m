@@ -1,105 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759031Ab1BPMVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:21:19 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52471 "EHLO
+	id S1759065Ab1BPMVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:21:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36104 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab1BPMVQ (ORCPT
+	with ESMTP id S1759028Ab1BPMVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:21:16 -0500
+	Wed, 16 Feb 2011 07:21:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:subject:date:message-id:x-mailer;
-        b=uvo3+iOcC/gCpZ5RQPSn1YczZetaQT2M7XV5cmubZmlEdEFCAYpfu+/0+N085LkT1R
-         a2ujP37k43O+cUrsE61PXCEuvVl76592EO/57agKWoecxvRQeuLuvtd8KdG3NngK4Wok
-         yPm9C9VQ03zr1BcUy4upAKQtPBD4tXWgOEjC8=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=oFsM0KpQKw7o6yV5ef/MK+flC1oh7843X/vRv6vlWpJBzQGe7Nj3SPYD/4d+NQkKWw
+         B7m4rAsdB1GSAhoDVq3SqukCwIcnR6tePXugmPfWdBB5ovJu36VzwCar/Q7aKS/+fBiu
+         nPPB22wKfSegPxpdt+qnF4yQudjuT1IfSeN9k=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
-Subject: [PATCHSET x86/numa] x86-64, NUMA: bring sanity to NUMA config/emulation
-Date: Wed, 16 Feb 2011 13:20:34 +0100
-Message-Id: <1297858867-25981-1-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 03/33] x86, NUMA: Drop @start/last_pfn from initmem_init()
+Date: Wed, 16 Feb 2011 13:20:37 +0100
+Message-Id: <1297858867-25981-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1297858867-25981-1-git-send-email-tj@kernel.org>
+References: <1297858867-25981-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+initmem_init() extensively accesses and modifies global data
+structures and the parameters aren't even followed depending on which
+path is being used.  Drop @start/last_pfn and let it deal with
+@max_pfn directly.  This is in preparation for further NUMA init
+cleanups.
 
-This patchset is combination of bring-sanity-to-NUMA-configuration[1]
-and bring-sanity-to-NUMA-emulation[2] patchsets.  The patchsets have
-been rebased on the current tip/x86/mm[3].
+- v2: x86-32 initmem_init() weren't updated breaking 32bit builds.
+  Fixed.  Found by Yinghai.
 
-Most conflicts are from the addition of init_memory_mapping_high() by
-commit 1411e0ec31 (x86-64, numa: Put pgtable to local node memory).
-The patches in this series have been updated to carry the calls around
-but the changes are all straight forward.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Brian Gerst <brgerst@gmail.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Shaohui Zheng <shaohui.zheng@intel.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/page_types.h |    3 +--
+ arch/x86/kernel/setup.c           |    2 +-
+ arch/x86/mm/init_32.c             |    3 +--
+ arch/x86/mm/init_64.c             |    5 ++---
+ arch/x86/mm/numa_32.c             |    3 +--
+ arch/x86/mm/numa_64.c             |   21 ++++++++-------------
+ 6 files changed, 14 insertions(+), 23 deletions(-)
 
-This patchset contains the following 33 patches
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index 731d211..eb9ed00 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -56,8 +56,7 @@ extern unsigned long init_memory_mapping(unsigned long start,
+ 
+ void init_memory_mapping_high(void);
+ 
+-extern void initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+-				int acpi, int k8);
++extern void initmem_init(int acpi, int k8);
+ extern void free_initmem(void);
+ 
+ #endif	/* !__ASSEMBLY__ */
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index ac909ba..756d640 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1003,7 +1003,7 @@ void __init setup_arch(char **cmdline_p)
+ 		amd = !amd_numa_init(0, max_pfn);
+ #endif
+ 
+-	initmem_init(0, max_pfn, acpi, amd);
++	initmem_init(acpi, amd);
+ 	memblock_find_dma_reserve();
+ 	dma32_reserve_bootmem();
+ 
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index c821074..16adb66 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -644,8 +644,7 @@ void __init find_low_pfn_range(void)
+ }
+ 
+ #ifndef CONFIG_NEED_MULTIPLE_NODES
+-void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+-				int acpi, int k8)
++void __init initmem_init(int acpi, int k8)
+ {
+ #ifdef CONFIG_HIGHMEM
+ 	highstart_pfn = highend_pfn = max_pfn;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 194f273..04cc027 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -603,10 +603,9 @@ kernel_physical_mapping_init(unsigned long start,
+ }
+ 
+ #ifndef CONFIG_NUMA
+-void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+-				int acpi, int k8)
++void __init initmem_init(int acpi, int k8)
+ {
+-	memblock_x86_register_active_regions(0, start_pfn, end_pfn);
++	memblock_x86_register_active_regions(0, 0, max_pfn);
+ 	init_memory_mapping_high();
+ }
+ #endif
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 505bb04..3249b37 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -352,8 +352,7 @@ static void init_remap_allocator(int nid)
+ 		(ulong) node_remap_end_vaddr[nid]);
+ }
+ 
+-void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+-				int acpi, int k8)
++void __init initmem_init(int acpi, int k8)
+ {
+ 	int nid;
+ 	long kva_target_pfn;
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index b7d78d7..d7e4aaf 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -579,8 +579,7 @@ static int __init numa_emulation(unsigned long start_pfn,
+ }
+ #endif /* CONFIG_NUMA_EMU */
+ 
+-void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+-				int acpi, int amd)
++void __init initmem_init(int acpi, int amd)
+ {
+ 	int i;
+ 
+@@ -588,19 +587,16 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ 	nodes_clear(node_online_map);
+ 
+ #ifdef CONFIG_NUMA_EMU
+-	setup_physnodes(start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT,
+-			acpi, amd);
+-	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, amd))
++	setup_physnodes(0, max_pfn << PAGE_SHIFT, acpi, amd);
++	if (cmdline && !numa_emulation(0, max_pfn, acpi, amd))
+ 		return;
+-	setup_physnodes(start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT,
+-			acpi, amd);
++	setup_physnodes(0, max_pfn << PAGE_SHIFT, acpi, amd);
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
+ 
+ #ifdef CONFIG_ACPI_NUMA
+-	if (!numa_off && acpi && !acpi_scan_nodes(start_pfn << PAGE_SHIFT,
+-						  last_pfn << PAGE_SHIFT))
++	if (!numa_off && acpi && !acpi_scan_nodes(0, max_pfn << PAGE_SHIFT))
+ 		return;
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+@@ -616,8 +612,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ 	       numa_off ? "NUMA turned off" : "No NUMA configuration found");
+ 
+ 	printk(KERN_INFO "Faking a node at %016lx-%016lx\n",
+-	       start_pfn << PAGE_SHIFT,
+-	       last_pfn << PAGE_SHIFT);
++	       0LU, max_pfn << PAGE_SHIFT);
+ 	/* setup dummy node covering all memory */
+ 	memnode_shift = 63;
+ 	memnodemap = memnode.embedded_map;
+@@ -626,9 +621,9 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ 	node_set(0, node_possible_map);
+ 	for (i = 0; i < MAX_LOCAL_APIC; i++)
+ 		set_apicid_to_node(i, NUMA_NO_NODE);
+-	memblock_x86_register_active_regions(0, start_pfn, last_pfn);
++	memblock_x86_register_active_regions(0, 0, max_pfn);
+ 	init_memory_mapping_high();
+-	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
++	setup_node_bootmem(0, 0, max_pfn << PAGE_SHIFT);
+ 	numa_init_array();
+ }
+ 
+-- 
+1.7.1
 
- 0001-x86-64-NUMA-Make-dummy-node-initialization-path-simi.patch
- 0002-x86-64-NUMA-Simplify-hotplug-node-handling-in-acpi_n.patch
- 0003-x86-NUMA-Drop-start-last_pfn-from-initmem_init.patch
- 0004-x86-64-NUMA-Unify-acpi-amd-_-numa_init-scan_nodes-ar.patch
- 0005-x86-64-NUMA-Wrap-acpi_numa_init-so-that-failure-can-.patch
- 0006-x86-NUMA-Move-_numa_init-invocations-into-initmem_in.patch
- 0007-x86-64-NUMA-Restructure-initmem_init.patch
- 0008-x86-64-NUMA-Use-common-cpu-mem-_nodes_parsed.patch
- 0009-x86-64-NUMA-Remove-local-variable-found-from-amd_num.patch
- 0010-x86-64-NUMA-Move-apicid-to-numa-mapping-initializati.patch
- 0011-x86-64-NUMA-Use-common-numa_nodes.patch
- 0012-x86-64-NUMA-Kill-acpi-amd-_get_nodes.patch
- 0013-x86-64-NUMA-Factor-out-memblk-handling-into-numa_-ad.patch
- 0014-x86-64-NUMA-Unify-use-of-memblk-in-all-init-methods.patch
- 0015-x86-64-NUMA-Unify-the-rest-of-memblk-registration.patch
- 0016-x86-64-NUMA-Kill-acpi-amd-dummy-_scan_nodes.patch
- 0017-x86-64-NUMA-Remove-NULL-nodeids-handling-from-comput.patch
- 0018-x86-64-NUMA-Introduce-struct-numa_meminfo.patch
- 0019-x86-64-NUMA-Separate-out-numa_cleanup_meminfo.patch
- 0020-x86-64-NUMA-make-numa_cleanup_meminfo-prettier.patch
- 0021-x86-64-NUMA-consolidate-and-improve-memblk-sanity-ch.patch
- 0022-x86-64-NUMA-Add-common-find_node_by_addr.patch
- 0023-x86-64-NUMA-Kill-numa_nodes.patch
- 0024-x86-64-NUMA-Rename-cpu_nodes_parsed-to-numa_nodes_pa.patch
- 0025-x86-64-NUMA-Kill-mem_nodes_parsed.patch
- 0026-x86-64-NUMA-Implement-generic-node-distance-handling.patch
- 0027-x86-64-NUMA-Trivial-changes-to-prepare-for-emulation.patch
- 0028-x86-64-NUMA-Build-and-use-direct-emulated-nid-phys-n.patch
- 0029-x86-64-NUMA-Make-emulation-code-build-numa_meminfo-a.patch
- 0030-x86-64-NUMA-Wrap-node-ID-during-emulation.patch
- 0031-x86-64-NUMA-Emulate-directly-from-numa_meminfo.patch
- 0032-x86-64-NUMA-Unify-emulated-apicid-node-mapping-trans.patch
- 0033-x86-64-NUMA-Unify-emulated-distance-mapping.patch
-
-and is available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_64-numa-emu-unify
-
-Upto patch 26, which excludes all emulation related changes, is
-available in the branch x86_64-numa-unify.  Diffstat follows.
-
- arch/x86/include/asm/acpi.h       |   10 
- arch/x86/include/asm/amd_nb.h     |    8 
- arch/x86/include/asm/numa_64.h    |   10 
- arch/x86/include/asm/page_types.h |    3 
- arch/x86/include/asm/topology.h   |    2 
- arch/x86/kernel/setup.c           |   16 
- arch/x86/mm/amdtopology_64.c      |  142 ------
- arch/x86/mm/init_32.c             |    3 
- arch/x86/mm/init_64.c             |    5 
- arch/x86/mm/numa_32.c             |    3 
- arch/x86/mm/numa_64.c             |  816 ++++++++++++++++++++++++++------------
- arch/x86/mm/srat_64.c             |  365 ----------------
- drivers/acpi/numa.c               |    9 
- 13 files changed, 632 insertions(+), 760 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1099256/
-[2] http://thread.gmane.org/gmane.linux.kernel/1099981
-[3] 275a88d3cf0e: Merge branch 'x86/amd-nb' into x86/mm
