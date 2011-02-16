@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757784Ab1BPAZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:25:18 -0500
-Received: from kroah.org ([198.145.64.141]:49853 "EHLO coco.kroah.org"
+	id S932565Ab1BPAaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:30:09 -0500
+Received: from kroah.org ([198.145.64.141]:49846 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757658Ab1BPAZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:08 -0500
+	id S1757618Ab1BPAZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:50 2011
-Message-Id: <20110216001450.091942368@clark.kroah.org>
+Message-Id: <20110216001449.994305467@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:07 -0800
+Date: Tue, 15 Feb 2011 16:15:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [250/272] drm/radeon/kms: Enable new pll calculation for avivo+ asics
+Subject: [249/272] drm/radeon/kms: add new pll algo for avivo asics
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,101 +27,228 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 619efb105924d8cafa0c1dd9389e9ab506f5425d upstream.
+commit f523f74eac1897b13c05c88ce6e5de0a7c34578b upstream.
 
-New algo is used for r5xx+ and legacy is used for
-r1xx-r4xx, rv515.
-
-I've tested on all relevant GPUs and monitors that I
-have access to and have found no problems.
-
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=26562
-https://bugzilla.kernel.org/show_bug.cgi?id=26552
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=32556
+Based on the vbios code.  This should hopefully
+fix the pll problems on a number of avivo asics
+once it's enabled.
 
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c   |   18 ++++++++++++++++--
- drivers/gpu/drm/radeon/radeon_atombios.c |   10 ----------
- drivers/gpu/drm/radeon/radeon_display.c  |    3 +++
- 3 files changed, 19 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c      |    4 
+ drivers/gpu/drm/radeon/radeon_display.c     |  123 ++++++++++++++++++++++++++--
+ drivers/gpu/drm/radeon/radeon_legacy_crtc.c |    6 -
+ drivers/gpu/drm/radeon/radeon_mode.h        |   23 +++--
+ 4 files changed, 137 insertions(+), 19 deletions(-)
 
 --- a/drivers/gpu/drm/radeon/atombios_crtc.c
 +++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -531,6 +531,7 @@ static u32 atombios_adjust_pll(struct dr
- 					dp_clock = dig_connector->dp_clock;
- 				}
- 			}
-+/* this might work properly with the new pll algo */
- #if 0 /* doesn't work properly on some laptops */
- 			/* use recommended ref_div for ss */
- 			if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-@@ -548,6 +549,11 @@ static u32 atombios_adjust_pll(struct dr
- 					adjusted_clock = mode->clock * 2;
- 				if (radeon_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
- 					pll->flags |= RADEON_PLL_PREFER_CLOSEST_LOWER;
-+				/* rv515 needs more testing with this option */
-+				if (rdev->family != CHIP_RV515) {
-+					if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
-+						pll->flags |= RADEON_PLL_IS_LCD;
-+				}
- 			} else {
- 				if (encoder->encoder_type != DRM_MODE_ENCODER_DAC)
- 					pll->flags |= RADEON_PLL_NO_ODD_POST_DIV;
-@@ -915,8 +921,16 @@ static void atombios_crtc_set_pll(struct
+@@ -915,8 +915,8 @@ static void atombios_crtc_set_pll(struct
  	/* adjust pixel clock as needed */
  	adjusted_clock = atombios_adjust_pll(crtc, mode, pll, ss_enabled, &ss);
  
--	radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
--				  &ref_div, &post_div);
-+	/* rv515 seems happier with the old algo */
-+	if (rdev->family == CHIP_RV515)
-+		radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
-+					  &ref_div, &post_div);
-+	else if (ASIC_IS_AVIVO(rdev))
-+		radeon_compute_pll_avivo(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
-+					 &ref_div, &post_div);
-+	else
-+		radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
-+					  &ref_div, &post_div);
+-	radeon_compute_pll(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
+-			   &ref_div, &post_div);
++	radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
++				  &ref_div, &post_div);
  
  	atombios_crtc_program_ss(crtc, ATOM_DISABLE, radeon_crtc->pll_id, &ss);
  
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -1136,16 +1136,6 @@ bool radeon_atom_get_clock_info(struct d
- 				p1pll->pll_out_min = 64800;
- 			else
- 				p1pll->pll_out_min = 20000;
--		} else if (p1pll->pll_out_min > 64800) {
--			/* Limiting the pll output range is a good thing generally as
--			 * it limits the number of possible pll combinations for a given
--			 * frequency presumably to the ones that work best on each card.
--			 * However, certain duallink DVI monitors seem to like
--			 * pll combinations that would be limited by this at least on
--			 * pre-DCE 3.0 r6xx hardware.  This might need to be adjusted per
--			 * family.
--			 */
--			p1pll->pll_out_min = 64800;
- 		}
- 
- 		p1pll->pll_in_min =
 --- a/drivers/gpu/drm/radeon/radeon_display.c
 +++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -603,6 +603,9 @@ void radeon_compute_pll_legacy(struct ra
- 		pll_out_max = pll->pll_out_max;
- 	}
+@@ -448,6 +448,115 @@ static int radeon_ddc_dump(struct drm_co
+ 	return ret;
+ }
  
-+	if (pll_out_min > 64800)
-+		pll_out_min = 64800;
++/* avivo */
++static void avivo_get_fb_div(struct radeon_pll *pll,
++			     u32 target_clock,
++			     u32 post_div,
++			     u32 ref_div,
++			     u32 *fb_div,
++			     u32 *frac_fb_div)
++{
++	u32 tmp = post_div * ref_div;
 +
- 	if (pll->flags & RADEON_PLL_USE_REF_DIV)
- 		min_ref_div = max_ref_div = pll->reference_div;
- 	else {
++	tmp *= target_clock;
++	*fb_div = tmp / pll->reference_freq;
++	*frac_fb_div = tmp % pll->reference_freq;
++}
++
++static u32 avivo_get_post_div(struct radeon_pll *pll,
++			      u32 target_clock)
++{
++	u32 vco, post_div, tmp;
++
++	if (pll->flags & RADEON_PLL_USE_POST_DIV)
++		return pll->post_div;
++
++	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP) {
++		if (pll->flags & RADEON_PLL_IS_LCD)
++			vco = pll->lcd_pll_out_min;
++		else
++			vco = pll->pll_out_min;
++	} else {
++		if (pll->flags & RADEON_PLL_IS_LCD)
++			vco = pll->lcd_pll_out_max;
++		else
++			vco = pll->pll_out_max;
++	}
++
++	post_div = vco / target_clock;
++	tmp = vco % target_clock;
++
++	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP) {
++		if (tmp)
++			post_div++;
++	} else {
++		if (!tmp)
++			post_div--;
++	}
++
++	return post_div;
++}
++
++#define MAX_TOLERANCE 10
++
++void radeon_compute_pll_avivo(struct radeon_pll *pll,
++			      u32 freq,
++			      u32 *dot_clock_p,
++			      u32 *fb_div_p,
++			      u32 *frac_fb_div_p,
++			      u32 *ref_div_p,
++			      u32 *post_div_p)
++{
++	u32 target_clock = freq / 10;
++	u32 post_div = avivo_get_post_div(pll, target_clock);
++	u32 ref_div = pll->min_ref_div;
++	u32 fb_div = 0, frac_fb_div = 0, tmp;
++
++	if (pll->flags & RADEON_PLL_USE_REF_DIV)
++		ref_div = pll->reference_div;
++
++	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV) {
++		avivo_get_fb_div(pll, target_clock, post_div, ref_div, &fb_div, &frac_fb_div);
++		frac_fb_div = (100 * frac_fb_div) / pll->reference_freq;
++		if (frac_fb_div >= 5) {
++			frac_fb_div -= 5;
++			frac_fb_div = frac_fb_div / 10;
++			frac_fb_div++;
++		}
++		if (frac_fb_div >= 10) {
++			fb_div++;
++			frac_fb_div = 0;
++		}
++	} else {
++		while (ref_div <= pll->max_ref_div) {
++			avivo_get_fb_div(pll, target_clock, post_div, ref_div,
++					 &fb_div, &frac_fb_div);
++			if (frac_fb_div >= (pll->reference_freq / 2))
++				fb_div++;
++			frac_fb_div = 0;
++			tmp = (pll->reference_freq * fb_div) / (post_div * ref_div);
++			tmp = (tmp * 10000) / target_clock;
++
++			if (tmp > (10000 + MAX_TOLERANCE))
++				ref_div++;
++			else if (tmp >= (10000 - MAX_TOLERANCE))
++				break;
++			else
++				ref_div++;
++		}
++	}
++
++	*dot_clock_p = ((pll->reference_freq * fb_div * 10) + (pll->reference_freq * frac_fb_div)) /
++		(ref_div * post_div * 10);
++	*fb_div_p = fb_div;
++	*frac_fb_div_p = frac_fb_div;
++	*ref_div_p = ref_div;
++	*post_div_p = post_div;
++	DRM_DEBUG_KMS("%d, pll dividers - fb: %d.%d ref: %d, post %d\n",
++		      *dot_clock_p, fb_div, frac_fb_div, ref_div, post_div);
++}
++
++/* pre-avivo */
+ static inline uint32_t radeon_div(uint64_t n, uint32_t d)
+ {
+ 	uint64_t mod;
+@@ -458,13 +567,13 @@ static inline uint32_t radeon_div(uint64
+ 	return n;
+ }
+ 
+-void radeon_compute_pll(struct radeon_pll *pll,
+-			uint64_t freq,
+-			uint32_t *dot_clock_p,
+-			uint32_t *fb_div_p,
+-			uint32_t *frac_fb_div_p,
+-			uint32_t *ref_div_p,
+-			uint32_t *post_div_p)
++void radeon_compute_pll_legacy(struct radeon_pll *pll,
++			       uint64_t freq,
++			       uint32_t *dot_clock_p,
++			       uint32_t *fb_div_p,
++			       uint32_t *frac_fb_div_p,
++			       uint32_t *ref_div_p,
++			       uint32_t *post_div_p)
+ {
+ 	uint32_t min_ref_div = pll->min_ref_div;
+ 	uint32_t max_ref_div = pll->max_ref_div;
+--- a/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_crtc.c
+@@ -778,9 +778,9 @@ static void radeon_set_pll(struct drm_cr
+ 	DRM_DEBUG_KMS("\n");
+ 
+ 	if (!use_bios_divs) {
+-		radeon_compute_pll(pll, mode->clock,
+-				   &freq, &feedback_div, &frac_fb_div,
+-				   &reference_div, &post_divider);
++		radeon_compute_pll_legacy(pll, mode->clock,
++					  &freq, &feedback_div, &frac_fb_div,
++					  &reference_div, &post_divider);
+ 
+ 		for (post_div = &post_divs[0]; post_div->divider; ++post_div) {
+ 			if (post_div->divider == post_divider)
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -149,6 +149,7 @@ struct radeon_tmds_pll {
+ #define RADEON_PLL_PREFER_CLOSEST_LOWER (1 << 11)
+ #define RADEON_PLL_USE_POST_DIV         (1 << 12)
+ #define RADEON_PLL_IS_LCD               (1 << 13)
++#define RADEON_PLL_PREFER_MINM_OVER_MAXP (1 << 14)
+ 
+ struct radeon_pll {
+ 	/* reference frequency */
+@@ -510,13 +511,21 @@ extern bool radeon_atombios_get_asic_ss_
+ 					     struct radeon_atom_ss *ss,
+ 					     int id, u32 clock);
+ 
+-extern void radeon_compute_pll(struct radeon_pll *pll,
+-			       uint64_t freq,
+-			       uint32_t *dot_clock_p,
+-			       uint32_t *fb_div_p,
+-			       uint32_t *frac_fb_div_p,
+-			       uint32_t *ref_div_p,
+-			       uint32_t *post_div_p);
++extern void radeon_compute_pll_legacy(struct radeon_pll *pll,
++				      uint64_t freq,
++				      uint32_t *dot_clock_p,
++				      uint32_t *fb_div_p,
++				      uint32_t *frac_fb_div_p,
++				      uint32_t *ref_div_p,
++				      uint32_t *post_div_p);
++
++extern void radeon_compute_pll_avivo(struct radeon_pll *pll,
++				     u32 freq,
++				     u32 *dot_clock_p,
++				     u32 *fb_div_p,
++				     u32 *frac_fb_div_p,
++				     u32 *ref_div_p,
++				     u32 *post_div_p);
+ 
+ extern void radeon_setup_encoder_clones(struct drm_device *dev);
+ 
 
 
