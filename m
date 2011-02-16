@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329Ab1BPAvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:51:06 -0500
-Received: from kroah.org ([198.145.64.141]:46039 "EHLO coco.kroah.org"
+	id S933550Ab1BPBAC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:00:02 -0500
+Received: from kroah.org ([198.145.64.141]:46078 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933299Ab1BPAuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:55 -0500
+	id S933321Ab1BPAvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:05 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:12 2011
-Message-Id: <20110216002112.137116825@clark.kroah.org>
+Message-Id: <20110216002112.653561538@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:39 -0800
+Date: Tue, 15 Feb 2011 16:21:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guy Martin <gmsoft@tuxicoman.be>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [patch 131/176] parisc : Remove broken line wrapping handling pdc_iodc_print()
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: [patch 136/176] backlight: fix 88pm860x_bl macro collision
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,74 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guy Martin <gmsoft@tuxicoman.be>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-commit fbea668498e93bb38ac9226c7af9120a25957375 upstream.
+commit 2550326ac7a062fdfc204f9a3b98bdb9179638fc upstream.
 
-Remove the broken line wrapping handling in pdc_iodc_print().
-It is broken in 3 ways :
-  - It doesn't keep track of the current screen position, it just
-    assumes that the new buffer will be printed at the begining of the
-    screen.
-  - It doesn't take in account that non printable characters won't
-    increase the current position on the screen.
-  - And last but not least, it triggers a kernel panic if a backspace
-    is the first char in the provided buffer :
+Fix collision with kernel-supplied #define:
 
- Backtrace:
-  [<0000000040128ec4>] pdc_console_write+0x44/0x78
-  [<0000000040128f18>] pdc_console_tty_write+0x20/0x38
-  [<000000004032f1ac>] n_tty_write+0x2a4/0x550
-  [<000000004032b158>] tty_write+0x1e0/0x2d8
-  [<00000000401bb420>] vfs_write+0xb8/0x188
-  [<00000000401bb630>] sys_write+0x68/0xb8
-  [<0000000040104eb8>] syscall_exit+0x0/0x14
+  drivers/video/backlight/88pm860x_bl.c:24:1: warning: "CURRENT_MASK" redefined
+  arch/x86/include/asm/page_64_types.h:6:1: warning: this is the location of the previous definition
 
-Most terminals handle the line wrapping just fine. I've confirmed that
-it works correctly on a C8000 with both vga and serial output.
-
-Signed-off-by: Guy Martin <gmsoft@tuxicoman.be>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/kernel/firmware.c |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+ drivers/video/backlight/88pm860x_bl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/parisc/kernel/firmware.c
-+++ b/arch/parisc/kernel/firmware.c
-@@ -1126,15 +1126,13 @@ int pdc_iodc_print(const unsigned char *
- 	unsigned int i;
- 	unsigned long flags;
+--- a/drivers/video/backlight/88pm860x_bl.c
++++ b/drivers/video/backlight/88pm860x_bl.c
+@@ -21,7 +21,7 @@
+ #define MAX_BRIGHTNESS		(0xFF)
+ #define MIN_BRIGHTNESS		(0)
  
--	for (i = 0; i < count && i < 79;) {
-+	for (i = 0; i < count;) {
- 		switch(str[i]) {
- 		case '\n':
- 			iodc_dbuf[i+0] = '\r';
- 			iodc_dbuf[i+1] = '\n';
- 			i += 2;
- 			goto print;
--		case '\b':	/* BS */
--			i--; /* overwrite last */
- 		default:
- 			iodc_dbuf[i] = str[i];
- 			i++;
-@@ -1142,15 +1140,6 @@ int pdc_iodc_print(const unsigned char *
+-#define CURRENT_MASK		(0x1F << 1)
++#define CURRENT_BITMASK		(0x1F << 1)
+ 
+ struct pm860x_backlight_data {
+ 	struct pm860x_chip *chip;
+@@ -85,7 +85,7 @@ static int pm860x_backlight_set(struct b
+ 	if ((data->current_brightness == 0) && brightness) {
+ 		if (data->iset) {
+ 			ret = pm860x_set_bits(data->i2c, wled_idc(data->port),
+-					      CURRENT_MASK, data->iset);
++					      CURRENT_BITMASK, data->iset);
+ 			if (ret < 0)
+ 				goto out;
  		}
- 	}
- 
--	/* if we're at the end of line, and not already inserting a newline,
--	 * insert one anyway. iodc console doesn't claim to support >79 char
--	 * lines. don't account for this in the return value.
--	 */
--	if (i == 79 && iodc_dbuf[i-1] != '\n') {
--		iodc_dbuf[i+0] = '\r';
--		iodc_dbuf[i+1] = '\n';
--	}
--
- print:
-         spin_lock_irqsave(&pdc_lock, flags);
-         real32_call(PAGE0->mem_cons.iodc_io,
 
 
