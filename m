@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799Ab1BPArv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:47:51 -0500
-Received: from kroah.org ([198.145.64.141]:45198 "EHLO coco.kroah.org"
+	id S932851Ab1BPAsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:48:05 -0500
+Received: from kroah.org ([198.145.64.141]:45224 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932669Ab1BPAro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:44 -0500
+	id S932810Ab1BPAry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:54 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:01 2011
-Message-Id: <20110216002101.092070009@clark.kroah.org>
+Message-Id: <20110216002101.395659887@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:48 -0800
+Date: Tue, 15 Feb 2011 16:19:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolaus Colberg <nicolaus.colberg@cinterion.com>
-Subject: [patch 020/176] USB: adding USB support for Cinterions HC2x, EU3 and PH8 products
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Subject: [patch 023/176] USB: EHCI: fix DMA deallocation bug
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit aa52b3a92918039b273fc9d1994bd34227c40269 upstream.
+commit f75593ceaa08e6d27aec1a5de31cded19e850dd1 upstream.
 
-/drivers/usb/serial/option.c: Adding support for Cinterion's HC25, HC28,
-HC28J, EU3-E, EU3-P and PH8 by correcting/adding Cinterion's and
-Siemens' Vendor IDs as well as Product IDs and USB_DEVICE tuples
+This patch (as1440) fixes a bug in ehci-hcd.  ehci->periodic_size is
+used to compute the size in a dma_alloc_coherent() call, but then it
+gets changed later on.  As a result, the corresponding call to
+dma_free_coherent() passes a different size from the original
+allocation.  Fix the problem by adjusting ehci->periodic_size before
+carrying out any of the memory allocations.
 
-Signed-off-by: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+CC: David Brownell <david-b@pacbell.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-hcd.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -382,7 +382,16 @@ static void option_instat_callback(struc
- #define HAIER_VENDOR_ID				0x201e
- #define HAIER_PRODUCT_CE100			0x2009
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -557,6 +557,8 @@ static int ehci_init(struct usb_hcd *hcd
+ 	ehci->iaa_watchdog.function = ehci_iaa_watchdog;
+ 	ehci->iaa_watchdog.data = (unsigned long) ehci;
  
--#define CINTERION_VENDOR_ID			0x0681
-+/* Cinterion (formerly Siemens) products */
-+#define SIEMENS_VENDOR_ID				0x0681
-+#define CINTERION_VENDOR_ID				0x1e2d
-+#define CINTERION_PRODUCT_HC25_MDM		0x0047
-+#define CINTERION_PRODUCT_HC25_MDMNET	0x0040
-+#define CINTERION_PRODUCT_HC28_MDM		0x004C
-+#define CINTERION_PRODUCT_HC28_MDMNET	0x004A /* same for HC28J */
-+#define CINTERION_PRODUCT_EU3_E			0x0051
-+#define CINTERION_PRODUCT_EU3_P			0x0052
-+#define CINTERION_PRODUCT_PH8			0x0053
- 
- /* Olivetti products */
- #define OLIVETTI_VENDOR_ID			0x0b3c
-@@ -939,7 +948,17 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
- 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
--	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
-+	/* Cinterion */
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) },
-+	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
-+	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
 +
- 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
- 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
- 	{ } /* Terminating entry */
+ 	/*
+ 	 * hw default: 1K periodic list heads, one per frame.
+ 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
+@@ -564,11 +566,20 @@ static int ehci_init(struct usb_hcd *hcd
+ 	ehci->periodic_size = DEFAULT_I_TDPS;
+ 	INIT_LIST_HEAD(&ehci->cached_itd_list);
+ 	INIT_LIST_HEAD(&ehci->cached_sitd_list);
++
++	if (HCC_PGM_FRAMELISTLEN(hcc_params)) {
++		/* periodic schedule size can be smaller than default */
++		switch (EHCI_TUNE_FLS) {
++		case 0: ehci->periodic_size = 1024; break;
++		case 1: ehci->periodic_size = 512; break;
++		case 2: ehci->periodic_size = 256; break;
++		default:	BUG();
++		}
++	}
+ 	if ((retval = ehci_mem_init(ehci, GFP_KERNEL)) < 0)
+ 		return retval;
+ 
+ 	/* controllers may cache some of the periodic schedule ... */
+-	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+ 	if (HCC_ISOC_CACHE(hcc_params))		// full frame cache
+ 		ehci->i_thresh = 2 + 8;
+ 	else					// N microframes cached
+@@ -622,12 +633,6 @@ static int ehci_init(struct usb_hcd *hcd
+ 		/* periodic schedule size can be smaller than default */
+ 		temp &= ~(3 << 2);
+ 		temp |= (EHCI_TUNE_FLS << 2);
+-		switch (EHCI_TUNE_FLS) {
+-		case 0: ehci->periodic_size = 1024; break;
+-		case 1: ehci->periodic_size = 512; break;
+-		case 2: ehci->periodic_size = 256; break;
+-		default:	BUG();
+-		}
+ 	}
+ 	if (HCC_LPM(hcc_params)) {
+ 		/* support link power management EHCI 1.1 addendum */
 
 
