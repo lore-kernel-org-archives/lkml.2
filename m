@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595Ab1BPBvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:51:48 -0500
-Received: from kroah.org ([198.145.64.141]:49162 "EHLO coco.kroah.org"
+	id S1758421Ab1BPBuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:50:44 -0500
+Received: from kroah.org ([198.145.64.141]:49005 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758495Ab1BPBvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:07 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:02 2011
-Message-Id: <20110216014702.158688059@clark.kroah.org>
+	id S1758133Ab1BPBuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:50:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:59 2011
+Message-Id: <20110216014659.780320438@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:45 -0800
+Date: Tue, 15 Feb 2011 17:45:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [079/115] drm/radeon/kms: add pll debugging output
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [055/115] p54: fix sequence no. accounting off-by-one error
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 51d4bf840a27fe02c883ddc6d9708af056773769 upstream.
+commit 3b5c5827d1f80ad8ae844a8b1183f59ddb90fe25 upstream.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+P54_HDR_FLAG_DATA_OUT_SEQNR is meant to tell the
+firmware that "the frame's sequence number has
+already been set by the application."
+
+Whereas IEEE80211_TX_CTL_ASSIGN_SEQ is set for
+frames which lack a valid sequence number and
+either the driver or firmware has to assign one.
+
+Yup, it's the exact opposite!
+
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_display.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/p54/txrx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -540,6 +540,10 @@ void radeon_compute_pll(struct radeon_pl
- 	*frac_fb_div_p = best_frac_feedback_div;
- 	*ref_div_p = best_ref_div;
- 	*post_div_p = best_post_div;
-+	DRM_DEBUG_KMS("%d %d, pll dividers - fb: %d.%d ref: %d, post %d\n",
-+		      freq, best_freq / 1000, best_feedback_div, best_frac_feedback_div,
-+		      best_ref_div, best_post_div);
-+
- }
+--- a/drivers/net/wireless/p54/txrx.c
++++ b/drivers/net/wireless/p54/txrx.c
+@@ -617,7 +617,7 @@ static void p54_tx_80211_header(struct p
+ 	else
+ 		*burst_possible = false;
  
- static void radeon_user_framebuffer_destroy(struct drm_framebuffer *fb)
+-	if (info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ)
++	if (!(info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ))
+ 		*flags |= P54_HDR_FLAG_DATA_OUT_SEQNR;
+ 
+ 	if (info->flags & IEEE80211_TX_CTL_PSPOLL_RESPONSE)
 
 
