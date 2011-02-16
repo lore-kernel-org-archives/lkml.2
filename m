@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab1BPAYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:24:43 -0500
-Received: from kroah.org ([198.145.64.141]:49672 "EHLO coco.kroah.org"
+	id S932425Ab1BPAYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:24:48 -0500
+Received: from kroah.org ([198.145.64.141]:49666 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932265Ab1BPAYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:25 -0500
+	id S932324Ab1BPAYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:47 2011
-Message-Id: <20110216001447.521565564@clark.kroah.org>
+Message-Id: <20110216001447.420334221@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:41 -0800
+Date: Tue, 15 Feb 2011 16:14:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Olof Johansson <olof@lixom.net>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [224/272] tpm: fix panic caused by "tpm: Autodetect itpm devices"
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [223/272] nilfs2: fix crash after one superblock became unavailable
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit e5cce6c13c25d9ac56955a3ae2fd562719848172 upstream.
+commit 0ca7a5b9ac5d301845dd6382ff25a699b6263a81 upstream.
 
-commit 3f0d3d016d89a5efb8b926d4707eb21fa13f3d27 adds a check for
-PNP device id to the common tpm_tis_init() function, which in some
-cases (force=1) will be called without the device being a member of
-a pnp_dev. Oopsing and panics ensue.
+Fixes the following kernel oops in nilfs_setup_super() which could
+arise if one of two super-blocks is unavailable.
 
-Move the test up to before the call to tpm_tis_init(), since it
-just modifies a global variable anyway.
+> BUG: unable to handle kernel NULL pointer dereference at   (null)
+> Pid: 3529, comm: mount.nilfs2 Not tainted 2.6.37 #1 /
+> EIP: 0060:[<c03196bc>] EFLAGS: 00010202 CPU: 3
+> EIP is at memcpy+0xc/0x1b
+> Call Trace:
+>  [<f953720e>] ? nilfs_setup_super+0x6c/0xa5 [nilfs2]
+>  [<f95369e9>] ? nilfs_get_root_dentry+0x81/0xcb [nilfs2]
+>  [<f9537a08>] ? nilfs_mount+0x4f9/0x62c [nilfs2]
+>  [<c02745cf>] ? kstrdup+0x36/0x3f
+>  [<f953750f>] ? nilfs_mount+0x0/0x62c [nilfs2]
+>  [<c0293940>] ? vfs_kern_mount+0x4d/0x12c
+>  [<c02a5100>] ? get_fs_type+0x76/0x8f
+>  [<c0293a68>] ? do_kern_mount+0x33/0xbf
+>  [<c02a784a>] ? do_mount+0x2ed/0x714
+>  [<c02a6171>] ? copy_mount_options+0x28/0xfc
+>  [<c02a7ce3>] ? sys_mount+0x72/0xaf
+>  [<c0473085>] ? syscall_call+0x7/0xb
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Reported-by: Wakko Warner <wakko@animx.eu.org>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Wakko Warner <wakko@animx.eu.org>
+LKML-Reference: <20110121024918.GA29598@animx.eu.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm_tis.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nilfs2/super.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -493,9 +493,6 @@ static int tpm_tis_init(struct device *d
- 		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
- 		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
- 
--	if (is_itpm(to_pnp_dev(dev)))
--		itpm = 1;
--
- 	if (itpm)
- 		dev_info(dev, "Intel iTPM workaround enabled\n");
- 
-@@ -637,6 +634,9 @@ static int __devinit tpm_tis_pnp_init(st
- 	else
- 		interrupts = 0;
- 
-+	if (is_itpm(pnp_dev))
-+		itpm = 1;
-+
- 	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@ -688,7 +688,8 @@ skip_mount_setup:
+ 	sbp[0]->s_state =
+ 		cpu_to_le16(le16_to_cpu(sbp[0]->s_state) & ~NILFS_VALID_FS);
+ 	/* synchronize sbp[1] with sbp[0] */
+-	memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
++	if (sbp[1])
++		memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
+ 	return nilfs_commit_super(sbi, NILFS_SB_COMMIT_ALL);
  }
  
 
