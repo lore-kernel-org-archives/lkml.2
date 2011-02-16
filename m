@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab1BPBcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:32:09 -0500
-Received: from kroah.org ([198.145.64.141]:39285 "EHLO coco.kroah.org"
+	id S1757284Ab1BPBca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:32:30 -0500
+Received: from kroah.org ([198.145.64.141]:39262 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757284Ab1BPAV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:26 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:37 2011
-Message-Id: <20110216001436.959539382@clark.kroah.org>
+	id S1757266Ab1BPAVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:36 2011
+Message-Id: <20110216001436.678974580@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:56 -0800
+Date: Tue, 15 Feb 2011 16:12:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Fox <pgf@laptop.org>, Daniel Drake <dsd@laptop.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [119/272] rtc-cmos: fix suspend/resume
+        Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [116/272] RDMA/cxgb4: Set the correct device physical function for iWARP connections
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,97 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Fox <pgf@laptop.org>
+From: Steve Wise <swise@opengridcomputing.com>
 
-commit 2fb08e6ca9f00d1aedb3964983e9c8f84b36b807 upstream.
+commit 94788657c94169171971968c9d4b6222c5e704aa upstream.
 
-rtc-cmos was setting suspend/resume hooks at the device_driver level.
-However, the platform bus code (drivers/base/platform.c) only looks for
-resume hooks at the dev_pm_ops level, or within the platform_driver.
+The PF passed to FW was 0, causing PCI failures in an SR-IOV environment.
 
-Switch rtc_cmos to use dev_pm_ops so that suspend/resume code is executed
-again.
-
-Paul said:
-
-: The user visible symptom in our (XO laptop) case was that rtcwake would
-: fail to wake the laptop.  The RTC alarm would expire, but the wakeup
-: wasn't unmasked.
-:
-: As for severity, the impact may have been reduced because if I recall
-: correctly, the bug only affected platforms with CONFIG_PNP disabled.
-
-Signed-off-by: Paul Fox <pgf@laptop.org>
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-cmos.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/infiniband/hw/cxgb4/cm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -36,6 +36,7 @@
- #include <linux/platform_device.h>
- #include <linux/mod_devicetable.h>
- #include <linux/log2.h>
-+#include <linux/pm.h>
+--- a/drivers/infiniband/hw/cxgb4/cm.c
++++ b/drivers/infiniband/hw/cxgb4/cm.c
+@@ -380,7 +380,7 @@ static void send_flowc(struct c4iw_ep *e
+ 					  16)) | FW_WR_FLOWID(ep->hwtid));
  
- /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
- #include <asm-generic/rtc.h>
-@@ -850,7 +851,7 @@ static void __exit cmos_do_remove(struct
- 
- #ifdef	CONFIG_PM
- 
--static int cmos_suspend(struct device *dev, pm_message_t mesg)
-+static int cmos_suspend(struct device *dev)
- {
- 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
- 	unsigned char	tmp;
-@@ -898,7 +899,7 @@ static int cmos_suspend(struct device *d
-  */
- static inline int cmos_poweroff(struct device *dev)
- {
--	return cmos_suspend(dev, PMSG_HIBERNATE);
-+	return cmos_suspend(dev);
- }
- 
- static int cmos_resume(struct device *dev)
-@@ -945,9 +946,9 @@ static int cmos_resume(struct device *de
- 	return 0;
- }
- 
-+static SIMPLE_DEV_PM_OPS(cmos_pm_ops, cmos_suspend, cmos_resume);
-+
- #else
--#define	cmos_suspend	NULL
--#define	cmos_resume	NULL
- 
- static inline int cmos_poweroff(struct device *dev)
- {
-@@ -1077,7 +1078,7 @@ static void __exit cmos_pnp_remove(struc
- 
- static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
- {
--	return cmos_suspend(&pnp->dev, mesg);
-+	return cmos_suspend(&pnp->dev);
- }
- 
- static int cmos_pnp_resume(struct pnp_dev *pnp)
-@@ -1157,8 +1158,9 @@ static struct platform_driver cmos_platf
- 	.shutdown	= cmos_platform_shutdown,
- 	.driver = {
- 		.name		= (char *) driver_name,
--		.suspend	= cmos_suspend,
--		.resume		= cmos_resume,
-+#ifdef CONFIG_PM
-+		.pm		= &cmos_pm_ops,
-+#endif
- 	}
- };
- 
+ 	flowc->mnemval[0].mnemonic = FW_FLOWC_MNEM_PFNVFN;
+-	flowc->mnemval[0].val = cpu_to_be32(0);
++	flowc->mnemval[0].val = cpu_to_be32(PCI_FUNC(ep->com.dev->rdev.lldi.pdev->devfn) << 8);
+ 	flowc->mnemval[1].mnemonic = FW_FLOWC_MNEM_CH;
+ 	flowc->mnemval[1].val = cpu_to_be32(ep->tx_chan);
+ 	flowc->mnemval[2].mnemonic = FW_FLOWC_MNEM_PORT;
 
 
