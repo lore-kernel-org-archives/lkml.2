@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933471Ab1BPAvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:51:53 -0500
-Received: from kroah.org ([198.145.64.141]:46228 "EHLO coco.kroah.org"
+	id S933399Ab1BPAvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:51:33 -0500
+Received: from kroah.org ([198.145.64.141]:46137 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933380Ab1BPAvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:14 2011
-Message-Id: <20110216002114.806615132@clark.kroah.org>
+	id S933375Ab1BPAvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:23 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:13 2011
+Message-Id: <20110216002113.535935005@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:06 -0800
+Date: Tue, 15 Feb 2011 16:21:53 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com,
+        avi@redhat.com, mtosatti@redhat.com
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shawn Guo <shawn.guo@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [patch 158/176] net/fec: fix MMFR_OP type in fec_enet_mdio_write
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [patch 145/176] KVM: i8259: initialize isr_ack
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@freescale.com>
 
-commit 862f0982eadcea0e114576c57ea426d3d51a69a6 upstream.
+From: Avi Kivity <avi@redhat.com>
 
-FEC_MMFR_OP_WRITE should be used than FEC_MMFR_OP_READ in
-a mdio write operation.
+commit a0272630bb594b4eac03a79e77957df7dad8eade upstream.
 
-It's probably a typo introduced by commit:
+isr_ack is never initialized.  So, until the first PIC reset, interrupts
+may fail to be injected.  This can cause Windows XP to fail to boot, as
+reported in the fallout from the fix to
+https://bugzilla.kernel.org/show_bug.cgi?id=21962.
 
-e6b043d512fa8d9a3801bf5d72bfa3b8fc3b3cc8
-netdev/fec.c: add phylib supporting to enable carrier detection (v2)
-
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Nicolas Prochazka <prochazka.nicolas@gmail.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/net/fec.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/i8259.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/fec.c
-+++ b/drivers/net/fec.c
-@@ -651,8 +651,8 @@ static int fec_enet_mdio_write(struct mi
- 	fep->mii_timeout = 0;
- 	init_completion(&fep->mdio_done);
+--- a/arch/x86/kvm/i8259.c
++++ b/arch/x86/kvm/i8259.c
+@@ -570,6 +570,8 @@ struct kvm_pic *kvm_create_pic(struct kv
+ 	s->pics[1].elcr_mask = 0xde;
+ 	s->pics[0].pics_state = s;
+ 	s->pics[1].pics_state = s;
++	s->pics[0].isr_ack = 0xff;
++	s->pics[1].isr_ack = 0xff;
  
--	/* start a read op */
--	writel(FEC_MMFR_ST | FEC_MMFR_OP_READ |
-+	/* start a write op */
-+	writel(FEC_MMFR_ST | FEC_MMFR_OP_WRITE |
- 		FEC_MMFR_PA(mii_id) | FEC_MMFR_RA(regnum) |
- 		FEC_MMFR_TA | FEC_MMFR_DATA(value),
- 		fep->hwp + FEC_MII_DATA);
+ 	/*
+ 	 * Initialize PIO device
 
 
