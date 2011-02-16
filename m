@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab1BPBev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:34:51 -0500
-Received: from kroah.org ([198.145.64.141]:39185 "EHLO coco.kroah.org"
+	id S932098Ab1BPAUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:20:50 -0500
+Received: from kroah.org ([198.145.64.141]:39133 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932127Ab1BPAUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:20:55 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:35 2011
-Message-Id: <20110216001435.481892072@clark.kroah.org>
+	id S1757176Ab1BPAUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:20:40 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:34 2011
+Message-Id: <20110216001434.695608916@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:41 -0800
+Date: Tue, 15 Feb 2011 16:12:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [104/272] ALSA: HDA: Add subwoofer quirk for Acer Aspire 8942G
+Subject: [096/272] ALSA: hda - Fix memory leaks in conexant jack arrays
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a6c47a85b8e7e4a8c47394607c5e5c43224b0892 upstream.
+commit 70f7db11c45a313b23922cacf248c613c3b2144c upstream.
 
-According to the reporter, node 0x15 needs to be muted for subwoofer
-to stop sounding. This pin is marked as unused by BIOS, so fix that.
+The Conexant codec driver adds the jack arrays in init callback which
+may be called also in each PM resume.  This results in the addition of
+new jack element at each time.
 
-BugLink: http://bugs.launchpad.net/bugs/715877
+The fix is to check whether the requested jack is already present in
+the array.
 
-Reported-by: Hans Peter
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Reference: Novell bug 668929
+	https://bugzilla.novell.com/show_bug.cgi?id=668929
+
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_conexant.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -19380,6 +19380,7 @@ static const struct alc_fixup alc662_fix
- };
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -403,10 +403,16 @@ static int conexant_add_jack(struct hda_
+ 	struct conexant_spec *spec;
+ 	struct conexant_jack *jack;
+ 	const char *name;
+-	int err;
++	int i, err;
  
- static struct snd_pci_quirk alc662_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1025, 0x0308, "Acer Aspire 8942G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x1025, 0x038b, "Acer Aspire 8943G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x144d, 0xc051, "Samsung R720", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo Ideapad Y550P", ALC662_FIXUP_IDEAPAD),
+ 	spec = codec->spec;
+ 	snd_array_init(&spec->jacks, sizeof(*jack), 32);
++
++	jack = spec->jacks.list;
++	for (i = 0; i < spec->jacks.used; i++, jack++)
++		if (jack->nid == nid)
++			return 0 ; /* already present */
++
+ 	jack = snd_array_new(&spec->jacks);
+ 	name = (type == SND_JACK_HEADPHONE) ? "Headphone" : "Mic" ;
+ 
 
 
