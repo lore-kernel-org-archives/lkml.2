@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758429Ab1BPCLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:11:43 -0500
-Received: from kroah.org ([198.145.64.141]:48767 "EHLO coco.kroah.org"
+	id S932318Ab1BPBtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:49:22 -0500
+Received: from kroah.org ([198.145.64.141]:48743 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932398Ab1BPBtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:56 2011
-Message-Id: <20110216014656.396134845@clark.kroah.org>
+	id S932227Ab1BPBtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:55 2011
+Message-Id: <20110216014655.905826813@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:47 -0800
+Date: Tue, 15 Feb 2011 17:44:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [021/115] USB: ftdi_sio: add ST Micro Connect Lite uart support
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Subject: [016/115] USB: EHCI: fix DMA deallocation bug
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,93 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 6ec2f46c4b4abf48c88c0ae7c476f347b97e1105 upstream.
+commit f75593ceaa08e6d27aec1a5de31cded19e850dd1 upstream.
 
-on ST Micro Connect Lite we have 4 port
-Part A and B for the JTAG
-Port C Uart
-Port D for PIO
+This patch (as1440) fixes a bug in ehci-hcd.  ehci->periodic_size is
+used to compute the size in a dma_alloc_coherent() call, but then it
+gets changed later on.  As a result, the corresponding call to
+dma_free_coherent() passes a different size from the original
+allocation.  Fix the problem by adjusting ehci->periodic_size before
+carrying out any of the memory allocations.
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+CC: David Brownell <david-b@pacbell.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   26 ++++++++++++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 32 insertions(+)
+ drivers/usb/host/ehci-hcd.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -104,6 +104,7 @@ struct ftdi_sio_quirk {
- static int   ftdi_jtag_probe(struct usb_serial *serial);
- static int   ftdi_mtxorb_hack_setup(struct usb_serial *serial);
- static int   ftdi_NDI_device_setup(struct usb_serial *serial);
-+static int   ftdi_stmclite_probe(struct usb_serial *serial);
- static void  ftdi_USB_UIRT_setup(struct ftdi_private *priv);
- static void  ftdi_HE_TIRA1_setup(struct ftdi_private *priv);
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -545,6 +545,8 @@ static int ehci_init(struct usb_hcd *hcd
+ 	ehci->iaa_watchdog.function = ehci_iaa_watchdog;
+ 	ehci->iaa_watchdog.data = (unsigned long) ehci;
  
-@@ -127,6 +128,10 @@ static struct ftdi_sio_quirk ftdi_HE_TIR
- 	.port_probe = ftdi_HE_TIRA1_setup,
- };
++	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
++
+ 	/*
+ 	 * hw default: 1K periodic list heads, one per frame.
+ 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
+@@ -552,11 +554,20 @@ static int ehci_init(struct usb_hcd *hcd
+ 	ehci->periodic_size = DEFAULT_I_TDPS;
+ 	INIT_LIST_HEAD(&ehci->cached_itd_list);
+ 	INIT_LIST_HEAD(&ehci->cached_sitd_list);
++
++	if (HCC_PGM_FRAMELISTLEN(hcc_params)) {
++		/* periodic schedule size can be smaller than default */
++		switch (EHCI_TUNE_FLS) {
++		case 0: ehci->periodic_size = 1024; break;
++		case 1: ehci->periodic_size = 512; break;
++		case 2: ehci->periodic_size = 256; break;
++		default:	BUG();
++		}
++	}
+ 	if ((retval = ehci_mem_init(ehci, GFP_KERNEL)) < 0)
+ 		return retval;
  
-+static struct ftdi_sio_quirk ftdi_stmclite_quirk = {
-+	.probe	= ftdi_stmclite_probe,
-+};
-+
- /*
-  * The 8U232AM has the same API as the sio except for:
-  * - it can support MUCH higher baudrates; up to:
-@@ -815,6 +820,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOTEC_PID) },
- 	{ USB_DEVICE(QIHARDWARE_VID, MILKYMISTONE_JTAGSERIAL_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(ST_VID, ST_STMCLT1030_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_stmclite_quirk },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
-@@ -1748,6 +1755,25 @@ static int ftdi_jtag_probe(struct usb_se
- }
+ 	/* controllers may cache some of the periodic schedule ... */
+-	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+ 	if (HCC_ISOC_CACHE(hcc_params))		// full frame cache
+ 		ehci->i_thresh = 8;
+ 	else					// N microframes cached
+@@ -605,12 +616,6 @@ static int ehci_init(struct usb_hcd *hcd
+ 		/* periodic schedule size can be smaller than default */
+ 		temp &= ~(3 << 2);
+ 		temp |= (EHCI_TUNE_FLS << 2);
+-		switch (EHCI_TUNE_FLS) {
+-		case 0: ehci->periodic_size = 1024; break;
+-		case 1: ehci->periodic_size = 512; break;
+-		case 2: ehci->periodic_size = 256; break;
+-		default:	BUG();
+-		}
+ 	}
+ 	ehci->command = temp;
  
- /*
-+ * First and second port on STMCLiteadaptors is reserved for JTAG interface
-+ * and the forth port for pio
-+ */
-+static int ftdi_stmclite_probe(struct usb_serial *serial)
-+{
-+	struct usb_device *udev = serial->dev;
-+	struct usb_interface *interface = serial->interface;
-+
-+	dbg("%s", __func__);
-+
-+	if (interface == udev->actconfig->interface[2])
-+		return 0;
-+
-+	dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
-+
-+	return -ENODEV;
-+}
-+
-+/*
-  * The Matrix Orbital VK204-25-USB has an invalid IN endpoint.
-  * We have to correct it if we want to read from it.
-  */
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1041,6 +1041,12 @@
- #define WHT_PID			0x0004 /* Wireless Handheld Terminal */
- 
- /*
-+ * STMicroelectonics
-+ */
-+#define ST_VID			0x0483
-+#define ST_STMCLT1030_PID	0x3747 /* ST Micro Connect Lite STMCLT1030 */
-+
-+/*
-  * Papouch products (http://www.papouch.com/)
-  * Submitted by Folkert van Heusden
-  */
 
 
