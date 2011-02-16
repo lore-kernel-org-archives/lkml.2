@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933574Ab1BPBCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:02:41 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:59588 "EHLO mx2.netapp.com"
+	id S933279Ab1BPBDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:03:22 -0500
+Received: from kroah.org ([198.145.64.141]:45958 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933553Ab1BPBCh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:02:37 -0500
-X-IronPort-AV: E=Sophos;i="4.60,477,1291622400"; 
-   d="scan'208";a="518947298"
-Subject: Re: NFS Regression in commit 0b26a0bf6ff398
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110216005640.GA2841@mgebm.net>
-References: <20110216005640.GA2841@mgebm.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Tue, 15 Feb 2011 20:02:35 -0500
-Message-ID: <1297818155.10103.43.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 16 Feb 2011 01:02:36.0956 (UTC) FILETIME=[33873DC0:01CBCD75]
+	id S933126Ab1BPAub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:31 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:11 2011
+Message-Id: <20110216002110.947989053@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 15 Feb 2011 16:21:27 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Kacper Kornet <kornet@camk.edu.pl>, Jiri Slaby <jslaby@suse.cz>
+Subject: [patch 119/176] Fix prlimit64 for suid/sgid processes
+In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-15 at 19:56 -0500, Eric B Munson wrote: 
-> While testing some 2.6.38 work my rsync backup script started consuming
-> large amounts of memory (all available before dying with no more available
-> memory).  I have bisected the problem back to 0b26a0bf6ff398.  I am
-> unfamiliar with the NFS code so I don't know where to start looking for a
-> possible fix.  My backups files from my home directory to an NFS mounted
-> directory.  The NFS server is a Synology DS-411+ if it matters.  Let me know
-> if there is any other information I can provide.
+2.6.36-stable review patch.  If anyone has any objections, please let us know.
 
-Exactly which 2.6.38 kernel are you running, and which NFS version?
+------------------
 
-I'm having trouble seeing how the patch in question can be responsible
-for what you are seeing, so please could you provide more details of
-your test setup.
+From: Kacper Kornet <kornet@camk.edu.pl>
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+commit aa5bd67dcfdf9af34c7fa36ebc87d4e1f7e91873 upstream.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Since check_prlimit_permission always fails in the case of SUID/GUID
+processes, such processes are not able to read or set their own limits.
+This commit changes this by assuming that process can always read/change
+its own limits.
+
+Signed-off-by: Kacper Kornet <kornet@camk.edu.pl>
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/sys.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1377,7 +1377,8 @@ static int check_prlimit_permission(stru
+ 	const struct cred *cred = current_cred(), *tcred;
+ 
+ 	tcred = __task_cred(task);
+-	if ((cred->uid != tcred->euid ||
++	if (current != task &&
++	    (cred->uid != tcred->euid ||
+ 	     cred->uid != tcred->suid ||
+ 	     cred->uid != tcred->uid  ||
+ 	     cred->gid != tcred->egid ||
+
 
