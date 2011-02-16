@@ -1,116 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758829Ab1BPLXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 06:23:04 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:47404 "EHLO gir.skynet.ie"
+	id S1758925Ab1BPLek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 06:34:40 -0500
+Received: from hera.kernel.org ([140.211.167.34]:54083 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754761Ab1BPLXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 06:23:00 -0500
-Date: Wed, 16 Feb 2011 11:22:32 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Kent Overstreet <kent.overstreet@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: vmscan: Stop reclaim/compaction earlier due to
-	insufficient progress if !__GFP_REPEAT
-Message-ID: <20110216112232.GC4473@csn.ul.ie>
-References: <20110209154606.GJ27110@cmpxchg.org> <20110209164656.GA1063@csn.ul.ie> <20110209182846.GN3347@random.random> <20110210102109.GB17873@csn.ul.ie> <20110210124838.GU3347@random.random> <20110210133323.GH17873@csn.ul.ie> <20110210141447.GW3347@random.random> <20110210145813.GK17873@csn.ul.ie> <20110216095048.GA4473@csn.ul.ie> <20110216101301.GT5935@random.random>
+	id S1756134Ab1BPLeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 06:34:37 -0500
+Date: Wed, 16 Feb 2011 11:33:58 GMT
+From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        gorcunov@openvz.org, a.p.zijlstra@chello.nl, airlied@gmail.com,
+        linux@horizon.com, ming.m.lin@intel.com, mroos@linux.ee,
+        tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        gorcunov@openvz.org, a.p.zijlstra@chello.nl, airlied@gmail.com,
+        linux@horizon.com, ming.m.lin@intel.com, mroos@linux.ee,
+        tglx@linutronix.de, dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <AANLkTinfuTfCck_FfaOHrDqQZZehtRzkBum4SpFoO=KJ@mail.gmail.com>
+References: <AANLkTinfuTfCck_FfaOHrDqQZZehtRzkBum4SpFoO=KJ@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf, x86: P4 PMU: Fix spurious NMI messages
+Message-ID: <tip-7d44ec193d95416d1342cdd86392a1eeb7461186@git.kernel.org>
+Git-Commit-ID: 7d44ec193d95416d1342cdd86392a1eeb7461186
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110216101301.GT5935@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Feb 2011 11:34:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 11:13:01AM +0100, Andrea Arcangeli wrote:
-> On Wed, Feb 16, 2011 at 09:50:49AM +0000, Mel Gorman wrote:
-> > The mean allocation times for THP allocations are also slightly reduced.
-> > The maximum latency was slightly increased as predicted by the comments due
-> > to reclaim/compaction breaking early. However, workloads care more about the
-> > latency of lower-order allocations than THP so it's an acceptable trade-off.
-> > Please consider merging for 2.6.38.
-> 
-> Full agreement. I'm currently dealing with latency issues (nothing
-> major! but still not nice to see a reproducible regression, even if a
-> small one only visible in the benchmark) with compaction and jumbo
-> frames.
+Commit-ID:  7d44ec193d95416d1342cdd86392a1eeb7461186
+Gitweb:     http://git.kernel.org/tip/7d44ec193d95416d1342cdd86392a1eeb7461186
+Author:     Cyrill Gorcunov <gorcunov@openvz.org>
+AuthorDate: Wed, 16 Feb 2011 14:08:02 +0300
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 16 Feb 2011 12:26:12 +0100
 
-Out of curiousity, what are you measuring the latency of and how? I used
-a combination of the function_graph ftrace analyser and the mm_page_alloc
-tracepoint myself to avoid any additional patching and it was easier than
-cobbling together something with kprobes. A perl script configures ftrace
-and then parses the contents of trace_pipe - crude but does the job without
-patching the kernel.
+perf, x86: P4 PMU: Fix spurious NMI messages
 
-> This won't be enough to close them completely though because I
-> didn't backport the change to vmscan.c and should_continue_reclaim (I
-> backported all the other compaction improvements though, so this
-> practically is the only missing bit).
+Several people have reported spurious unknown NMI
+messages on some P4 CPUs.
 
-How big are the discrepancies?
+This patch fixes it by checking for an overflow (negative
+counter values) directly, instead of relying on the
+P4_CCCR_OVF bit.
 
-> I also suspected the e1000
-> driver, that sets the NAPI latency to bulk_latency when it uses jumbo
-> frames, so I wonder if it could be that with compaction we get more
-> jumbo frames and the latency then gets reduced by the driver as side
-> effect. Not sure yet.
-> 
+Reported-by: George Spelvin <linux@horizon.com>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Reported-by: Don Zickus <dzickus@redhat.com>
+Reported-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Lin Ming <ming.m.lin@intel.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <AANLkTinfuTfCck_FfaOHrDqQZZehtRzkBum4SpFoO=KJ@mail.gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/perf_event_p4.h |    1 +
+ arch/x86/kernel/cpu/perf_event_p4.c  |   11 ++++++++---
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-No idea.
-
-> I like the above because it's less likely to give us compaction issues
-> with jumbo frames when I add should_continue_reclaim on top. It seems
-> anonymous memory allocation are orders of magnitude more long lived
-> than jumbo frames could ever be, so at this point I'm not even
-> entirely certain it's ok to enable compaction at all for jumbo
-> frames. But I still like the above regardless of my current issue
-> (just because of the young bits going nuked in one go the lumpy hammer
-> way, even if it actually increases latency a bit for THP allocations).
-> 
-
-Can I have your ack on the patch then? Even if it doesn't resolve the
-jumbo frame problems, it's in the right direction. Measuring how it
-currently behaves and what direction should be taken may be something
-still worth discussing at LSF/MM.
-
-> One issue with compaction for jumbo frames, is the potentially very
-> long loop, for the scan in isolated_migratepages.
-
-Yes, the scanner is poor. The scanner for free pages is potentially just
-as bad. I prototyped some designs that should have been faster but they
-didn't make any significant difference so they got discarded.
-
-> I added a counter to
-> break the loop after 1024 pages scanned. This is extreme but this is a
-> debug patch for now, I also did if (retval == bulk_latency) reval =
-> low_latency in the e1000* drivers to see if it makes a difference. If
-> any of the two will help I will track down how much each change
-> contributes to lowering the network latency to pre-compaction
-> levels. It may very well be only a compaction issue, or only a driver
-> issue, I don't know yet (the latter less likely because this very
-> compaction loop spikes at the top of oprofile output, but maybe that
-> only affects throughput and the driver is to blame for the latency
-> reduction... this is what I'm going to find pretty soon). Also this
-> isolate_migratepages loop I think needs a cond_resched()
-
-This surprises me. In my own tests at least, the compaction stuff was
-way down in the profile and I wouldn't have expected scanning to take so
-long as to require a cond_resched. I was depending on the cond_resched()
-in migrate_pages() to yield the processor as necessary.
-
-> (I didn't add
-> that yet ;). 1024 pages scanned is too few, I just want to see how it
-> behaves with an extremely permissive setting. I'll let you know when I
-> come to some more reliable conclusion.
-> 
-
-Thanks.
-
--- 
-Mel Gorman
-SUSE Labs
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index e2f6a99..cc29086 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -22,6 +22,7 @@
+ 
+ #define ARCH_P4_CNTRVAL_BITS	(40)
+ #define ARCH_P4_CNTRVAL_MASK	((1ULL << ARCH_P4_CNTRVAL_BITS) - 1)
++#define ARCH_P4_UNFLAGGED_BIT	((1ULL) << (ARCH_P4_CNTRVAL_BITS - 1))
+ 
+ #define P4_ESCR_EVENT_MASK	0x7e000000U
+ #define P4_ESCR_EVENT_SHIFT	25
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index f7a0993..ff751a9 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -770,9 +770,14 @@ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
+ 		return 1;
+ 	}
+ 
+-	/* it might be unflagged overflow */
+-	rdmsrl(hwc->event_base + hwc->idx, v);
+-	if (!(v & ARCH_P4_CNTRVAL_MASK))
++	/*
++	 * In some circumstances the overflow might issue an NMI but did
++	 * not set P4_CCCR_OVF bit. Because a counter holds a negative value
++	 * we simply check for high bit being set, if it's cleared it means
++	 * the counter has reached zero value and continued counting before
++	 * real NMI signal was received:
++	 */
++	if (!(v & ARCH_P4_UNFLAGGED_BIT))
+ 		return 1;
+ 
+ 	return 0;
