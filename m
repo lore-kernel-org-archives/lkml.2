@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab1BPBbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:31:40 -0500
-Received: from kroah.org ([198.145.64.141]:39299 "EHLO coco.kroah.org"
+	id S1757355Ab1BPBbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:31:55 -0500
+Received: from kroah.org ([198.145.64.141]:39290 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756958Ab1BPAVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:30 -0500
+	id S1757291Ab1BPAV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:28 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:37 2011
-Message-Id: <20110216001437.156260243@clark.kroah.org>
+Message-Id: <20110216001437.059165660@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:58 -0800
+Date: Tue, 15 Feb 2011 16:12:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jerome Marchand <jmarchan@redhat.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Jens Axboe <jaxboe@fusionio.com>
-Subject: [121/272] block: fix accounting bug on cross partition merges
+Subject: [120/272] kref: add kref_test_and_get
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,231 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jerome Marchand <jmarchan@redhat.com>
 
-commit 09e099d4bafea3b15be003d548bdf94b4b6e0e17 upstream.
+commit e4a683c899cd5a49f8d684a054c95bd115a0c005 upstream.
 
-/proc/diskstats would display a strange output as follows.
-
-$ cat /proc/diskstats |grep sda
-   8       0 sda 90524 7579 102154 20464 0 0 0 0 0 14096 20089
-   8       1 sda1 19085 1352 21841 4209 0 0 0 0 4294967064 15689 4293424691
-                                                ~~~~~~~~~~
-   8       2 sda2 71252 3624 74891 15950 0 0 0 0 232 23995 1562390
-   8       3 sda3 54 487 2188 92 0 0 0 0 0 88 92
-   8       4 sda4 4 0 8 0 0 0 0 0 0 0 0
-   8       5 sda5 81 2027 2130 138 0 0 0 0 0 87 137
-
-Its reason is the wrong way of accounting hd_struct->in_flight. When a bio is
-merged into a request belongs to different partition by ELEVATOR_FRONT_MERGE.
-
-The detailed root cause is as follows.
-
-Assuming that there are two partition, sda1 and sda2.
-
-1. A request for sda2 is in request_queue. Hence sda1's hd_struct->in_flight
-   is 0 and sda2's one is 1.
-
-        | hd_struct->in_flight
-   ---------------------------
-   sda1 |          0
-   sda2 |          1
-   ---------------------------
-
-2. A bio belongs to sda1 is issued and is merged into the request mentioned on
-   step1 by ELEVATOR_BACK_MERGE. The first sector of the request is changed
-   from sda2 region to sda1 region. However the two partition's
-   hd_struct->in_flight are not changed.
-
-        | hd_struct->in_flight
-   ---------------------------
-   sda1 |          0
-   sda2 |          1
-   ---------------------------
-
-3. The request is finished and blk_account_io_done() is called. In this case,
-   sda2's hd_struct->in_flight, not a sda1's one, is decremented.
-
-        | hd_struct->in_flight
-   ---------------------------
-   sda1 |         -1
-   sda2 |          1
-   ---------------------------
-
-The patch fixes the problem by caching the partition lookup
-inside the request structure, hence making sure that the increment
-and decrement will always happen on the same partition struct. This
-also speeds up IO with accounting enabled, since it cuts down on
-the number of lookups we have to do.
-
-Also add a refcount to struct hd_struct to keep the partition in
-memory as long as users exist. We use kref_test_and_get() to ensure
-we don't add a reference to a partition which is going away.
+Add kref_test_and_get() function, which atomically add a reference only if
+refcount is not zero. This prevent to add a reference to an object that is
+already being removed.
 
 Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-core.c       |   26 +++++++++++++++++++++-----
- block/blk-merge.c      |    3 ++-
- block/genhd.c          |    1 +
- fs/partitions/check.c  |   10 +++++++++-
- include/linux/blkdev.h |    1 +
- include/linux/genhd.h  |    2 ++
- 6 files changed, 36 insertions(+), 7 deletions(-)
+ include/linux/kref.h |    1 +
+ lib/kref.c           |   12 ++++++++++++
+ 2 files changed, 13 insertions(+)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -64,13 +64,27 @@ static void drive_stat_acct(struct reque
- 		return;
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -23,6 +23,7 @@ struct kref {
  
- 	cpu = part_stat_lock();
--	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+ void kref_init(struct kref *kref);
+ void kref_get(struct kref *kref);
++int kref_test_and_get(struct kref *kref);
+ int kref_put(struct kref *kref, void (*release) (struct kref *kref));
  
--	if (!new_io)
-+	if (!new_io) {
-+		part = rq->part;
- 		part_stat_inc(cpu, part, merges[rw]);
--	else {
-+	} else {
-+		part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
-+		if (!kref_test_and_get(&part->ref)) {
-+			/*
-+			 * The partition is already being removed,
-+			 * the request will be accounted on the disk only
-+			 *
-+			 * We take a reference on disk->part0 although that
-+			 * partition will never be deleted, so we can treat
-+			 * it as any other partition.
-+			 */
-+			part = &rq->rq_disk->part0;
-+			kref_get(&part->ref);
-+		}
- 		part_round_stats(cpu, part);
- 		part_inc_in_flight(part, rw);
-+		rq->part = part;
- 	}
- 
- 	part_stat_unlock();
-@@ -128,6 +142,7 @@ void blk_rq_init(struct request_queue *q
- 	rq->ref_count = 1;
- 	rq->start_time = jiffies;
- 	set_start_time_ns(rq);
-+	rq->part = NULL;
- }
- EXPORT_SYMBOL(blk_rq_init);
- 
-@@ -1776,7 +1791,7 @@ static void blk_account_io_completion(st
- 		int cpu;
- 
- 		cpu = part_stat_lock();
--		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
-+		part = req->part;
- 		part_stat_add(cpu, part, sectors[rw], bytes >> 9);
- 		part_stat_unlock();
- 	}
-@@ -1796,13 +1811,14 @@ static void blk_account_io_done(struct r
- 		int cpu;
- 
- 		cpu = part_stat_lock();
--		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
-+		part = req->part;
- 
- 		part_stat_inc(cpu, part, ios[rw]);
- 		part_stat_add(cpu, part, ticks[rw], duration);
- 		part_round_stats(cpu, part);
- 		part_dec_in_flight(part, rw);
- 
-+		kref_put(&part->ref, __delete_partition);
- 		part_stat_unlock();
- 	}
- }
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -351,11 +351,12 @@ static void blk_account_io_merge(struct
- 		int cpu;
- 
- 		cpu = part_stat_lock();
--		part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
-+		part = req->part;
- 
- 		part_round_stats(cpu, part);
- 		part_dec_in_flight(part, rq_data_dir(req));
- 
-+		kref_put(&part->ref, __delete_partition);
- 		part_stat_unlock();
- 	}
- }
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1192,6 +1192,7 @@ struct gendisk *alloc_disk_node(int mino
- 			return NULL;
- 		}
- 		disk->part_tbl->part[0] = &disk->part0;
-+		kref_init(&disk->part0.ref);
- 
- 		disk->minors = minors;
- 		rand_initialize_disk(disk);
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -372,6 +372,13 @@ static void delete_partition_rcu_cb(stru
- 	put_device(part_to_dev(part));
+ #endif /* _KREF_H_ */
+--- a/lib/kref.c
++++ b/lib/kref.c
+@@ -37,6 +37,18 @@ void kref_get(struct kref *kref)
  }
  
-+void __delete_partition(struct kref *ref)
+ /**
++ * kref_test_and_get - increment refcount for object only if refcount is not
++ * zero.
++ * @kref: object.
++ *
++ * Return non-zero if the refcount was incremented, 0 otherwise
++ */
++int kref_test_and_get(struct kref *kref)
 +{
-+	struct hd_struct *part = container_of(ref, struct hd_struct, ref);
-+
-+	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
++	return atomic_inc_not_zero(&kref->refcount);
 +}
 +
- void delete_partition(struct gendisk *disk, int partno)
- {
- 	struct disk_part_tbl *ptbl = disk->part_tbl;
-@@ -390,7 +397,7 @@ void delete_partition(struct gendisk *di
- 	kobject_put(part->holder_dir);
- 	device_del(part_to_dev(part));
- 
--	call_rcu(&part->rcu_head, delete_partition_rcu_cb);
-+	kref_put(&part->ref, __delete_partition);
- }
- 
- static ssize_t whole_disk_show(struct device *dev,
-@@ -489,6 +496,7 @@ struct hd_struct *add_partition(struct g
- 	if (!dev_get_uevent_suppress(ddev))
- 		kobject_uevent(&pdev->kobj, KOBJ_ADD);
- 
-+	kref_init(&p->ref);
- 	return p;
- 
- out_free_info:
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -115,6 +115,7 @@ struct request {
- 	void *elevator_private3;
- 
- 	struct gendisk *rq_disk;
-+	struct hd_struct *part;
- 	unsigned long start_time;
- #ifdef CONFIG_BLK_CGROUP
- 	unsigned long long start_time_ns;
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -116,6 +116,7 @@ struct hd_struct {
- 	struct disk_stats dkstats;
- #endif
- 	struct rcu_head rcu_head;
-+	struct kref ref;
- };
- 
- #define GENHD_FL_REMOVABLE			1
-@@ -583,6 +584,7 @@ extern struct hd_struct * __must_check a
- 						     sector_t len, int flags,
- 						     struct partition_meta_info
- 						       *info);
-+extern void __delete_partition(struct kref *ref);
- extern void delete_partition(struct gendisk *, int);
- extern void printk_all_partitions(void);
- 
++/**
+  * kref_put - decrement refcount for object.
+  * @kref: object.
+  * @release: pointer to the function that will clean up the object when the
 
 
