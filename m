@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab1BPByV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:54:21 -0500
-Received: from kroah.org ([198.145.64.141]:49388 "EHLO coco.kroah.org"
+	id S1758619Ab1BPBv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:51:56 -0500
+Received: from kroah.org ([198.145.64.141]:49203 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758575Ab1BPBwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:52:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:05 2011
-Message-Id: <20110216014704.947751476@clark.kroah.org>
+	id S1758538Ab1BPBvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:51:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:02 2011
+Message-Id: <20110216014702.755080591@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:46:13 -0800
+Date: Tue, 15 Feb 2011 17:45:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [107/115] sched: Export account_system_vtime()
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [085/115] usb: Realloc xHCI structures after a hub is verified.
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Commit: b7dadc38797584f6203386da1947ed5edf516646 upstream
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-KVM uses it for example:
+commit 653a39d1f61bdc9f277766736d21d2e9be0391cb upstream.
 
- ERROR: "account_system_vtime" [arch/x86/kvm/kvm.ko] undefined!
+When there's an xHCI host power loss after a suspend from memory, the USB
+core attempts to reset and verify the USB devices that are attached to the
+system.  The xHCI driver has to reallocate those devices, since the
+hardware lost all knowledge of them during the power loss.
 
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286237003-12406-3-git-send-email-venki@google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+When a hub is plugged in, and the host loses power, the xHCI hardware
+structures are not updated to say the device is a hub.  This is usually
+done in hub_configure() when the USB hub is detected.  That function is
+skipped during a reset and verify by the USB core, since the core restores
+the old configuration and alternate settings, and the hub driver has no
+idea this happened.  This bug makes the xHCI host controller reject the
+enumeration of low speed devices under the resumed hub.
+
+Therefore, make the USB core re-setup the internal xHCI hub device
+information by calling update_hub_device() when hub_activate() is called
+for a hub reset resume.  After a host power loss, all devices under the
+roothub get a reset-resume or a disconnect.
+
+This patch should be queued for the 2.6.37 stable tree.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- kernel/sched.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1889,6 +1889,7 @@ void account_system_vtime(struct task_st
- 
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(account_system_vtime);
- 
- static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
+---
+ drivers/usb/core/hub.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -648,6 +648,8 @@ static void hub_init_func3(struct work_s
+ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
  {
+ 	struct usb_device *hdev = hub->hdev;
++	struct usb_hcd *hcd;
++	int ret;
+ 	int port1;
+ 	int status;
+ 	bool need_debounce_delay = false;
+@@ -686,6 +688,25 @@ static void hub_activate(struct usb_hub
+ 			atomic_set(&to_usb_interface(hub->intfdev)->
+ 					pm_usage_cnt, 1);
+ 			return;		/* Continues at init2: below */
++		} else if (type == HUB_RESET_RESUME) {
++			/* The internal host controller state for the hub device
++			 * may be gone after a host power loss on system resume.
++			 * Update the device's info so the HW knows it's a hub.
++			 */
++			hcd = bus_to_hcd(hdev->bus);
++			if (hcd->driver->update_hub_device) {
++				ret = hcd->driver->update_hub_device(hcd, hdev,
++						&hub->tt, GFP_NOIO);
++				if (ret < 0) {
++					dev_err(hub->intfdev, "Host not "
++							"accepting hub info "
++							"update.\n");
++					dev_err(hub->intfdev, "LS/FS devices "
++							"and hubs may not work "
++							"under this hub\n.");
++				}
++			}
++			hub_power_on(hub, true);
+ 		} else {
+ 			hub_power_on(hub, true);
+ 		}
 
 
