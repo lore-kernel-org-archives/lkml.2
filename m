@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab1BPMV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:21:56 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52471 "EHLO
+	id S1759103Ab1BPMX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:23:28 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36104 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab1BPMVn (ORCPT
+	with ESMTP id S932542Ab1BPMWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:21:43 -0500
+	Wed, 16 Feb 2011 07:22:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=UFWnLMtMbVf484C6vyrjV8nzne8eygkmkIDLlRAubMlf3EIgYOw0OVotLRKCB0QltB
-         5khnAEP3SXbZjZzKGU4/s1f2u5UW2wT68NOMYrH4R6eskhhTqsrgsahOaVSW/LyS65ic
-         KFoH5EmukAvdj3/Kfoo91LOTCA3WVT8TQstuU=
+        b=I6pUaKxDaHkBnTTaPy/gVScDx8bNiptQj9BSQXhzxq47eZ0o8x6Ib60kLKVbaKZQIH
+         hzmO8kQOApwpto1mDahI60OVpx5TJOh3OBVgZp8VQY/5CEzein2r5Fj7SNWgyD1/RpQo
+         I3tV3wohDbj4nSfF87xWzZtpaE2M9WkTImmtk=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 18/33] x86-64, NUMA: Introduce struct numa_meminfo
-Date: Wed, 16 Feb 2011 13:20:52 +0100
-Message-Id: <1297858867-25981-19-git-send-email-tj@kernel.org>
+Subject: [PATCH 32/33] x86-64, NUMA: Unify emulated apicid -> node mapping transformation
+Date: Wed, 16 Feb 2011 13:21:06 +0100
+Message-Id: <1297858867-25981-33-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297858867-25981-1-git-send-email-tj@kernel.org>
 References: <1297858867-25981-1-git-send-email-tj@kernel.org>
@@ -30,10 +30,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arrays for memblks and nodeids and their length lived in separate
-variables making things unnecessarily cumbersome.  Introduce struct
-numa_meminfo which contains all memory configuration info.  This patch
-doesn't cause any behavior change.
+NUMA emulation changes node mappings and thus apicid -> node mapping
+needs to be updated accordingly.  srat_64 and amdtopology_64 did this
+separately; however, all the necessary information is the mapping from
+emulated nodes to physical nodes which is available in
+emu_nid_to_phys[].
+
+Implement common __apicid_to_node[] transformation in numa_emulation()
+and drop duplicate implementations.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -44,295 +48,134 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/numa_64.c |  145 +++++++++++++++++++++++++------------------------
- 1 files changed, 75 insertions(+), 70 deletions(-)
+ arch/x86/mm/amdtopology_64.c |    9 ---------
+ arch/x86/mm/numa_64.c        |   16 +++++++++++++++-
+ arch/x86/mm/srat_64.c        |   24 +-----------------------
+ 3 files changed, 16 insertions(+), 33 deletions(-)
 
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index fd7b609..f37ea2f 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -196,10 +196,6 @@ int __init amd_numa_init(void)
+ }
+ 
+ #ifdef CONFIG_NUMA_EMU
+-static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+-	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+-};
+-
+ /*
+  * For NUMA emulation, fake proximity domain (_PXM) to node id mappings must be
+  * setup to represent the physical topology but reflect the emulated
+@@ -224,20 +220,15 @@ void __init amd_fake_nodes(const struct bootnode *nodes, int nr_nodes)
+ 	for (i = 0; i < nr_nodes; i++) {
+ 		int index;
+ 		int nid;
+-		int j;
+ 
+ 		nid = find_node_by_addr(nodes[i].start);
+ 		if (nid == NUMA_NO_NODE)
+ 			continue;
+ 
+ 		index = nodeids[nid] << bits;
+-		if (fake_apicid_to_node[index + apicid_base] == NUMA_NO_NODE)
+-			for (j = apicid_base; j < cores + apicid_base; j++)
+-				fake_apicid_to_node[index + j] = i;
+ #ifdef CONFIG_ACPI_NUMA
+ 		__acpi_map_pxm_to_node(nid, i);
+ #endif
+ 	}
+-	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ }
+ #endif /* CONFIG_NUMA_EMU */
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 243d18d..c3496e2 100644
+index c382ed0..288086c 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -22,6 +22,17 @@
- #include <asm/acpi.h>
- #include <asm/amd_nb.h>
+@@ -858,7 +858,7 @@ static bool __init numa_emulation(int acpi, int amd)
+ 	static struct numa_meminfo ei __initdata;
+ 	static struct numa_meminfo pi __initdata;
+ 	const u64 max_addr = max_pfn << PAGE_SHIFT;
+-	int i, ret;
++	int i, j, ret;
  
-+struct numa_memblk {
-+	u64			start;
-+	u64			end;
-+	int			nid;
-+};
-+
-+struct numa_meminfo {
-+	int			nr_blks;
-+	struct numa_memblk	blk[NR_NODE_MEMBLKS];
-+};
-+
- struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
- EXPORT_SYMBOL(node_data);
+ 	memset(&ei, 0, sizeof(ei));
+ 	pi = numa_meminfo;
+@@ -894,6 +894,20 @@ static bool __init numa_emulation(int acpi, int amd)
+ 	/* commit */
+ 	numa_meminfo = ei;
  
-@@ -33,9 +44,7 @@ struct memnode memnode;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
- 
--static int num_node_memblks __initdata;
--static struct bootnode node_memblk_range[NR_NODE_MEMBLKS] __initdata;
--static int memblk_nodeid[NR_NODE_MEMBLKS] __initdata;
-+static struct numa_meminfo numa_meminfo __initdata;
- 
- struct bootnode numa_nodes[MAX_NUMNODES] __initdata;
- 
-@@ -46,16 +55,15 @@ struct bootnode numa_nodes[MAX_NUMNODES] __initdata;
-  * 0 if memnodmap[] too small (of shift too small)
-  * -1 if node overlap or lost ram (shift too big)
-  */
--static int __init populate_memnodemap(const struct bootnode *nodes,
--				      int numnodes, int shift, int *nodeids)
-+static int __init populate_memnodemap(const struct numa_meminfo *mi, int shift)
- {
- 	unsigned long addr, end;
- 	int i, res = -1;
- 
- 	memset(memnodemap, 0xff, sizeof(s16)*memnodemapsize);
--	for (i = 0; i < numnodes; i++) {
--		addr = nodes[i].start;
--		end = nodes[i].end;
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		addr = mi->blk[i].start;
-+		end = mi->blk[i].end;
- 		if (addr >= end)
- 			continue;
- 		if ((end >> shift) >= memnodemapsize)
-@@ -63,7 +71,7 @@ static int __init populate_memnodemap(const struct bootnode *nodes,
- 		do {
- 			if (memnodemap[addr >> shift] != NUMA_NO_NODE)
- 				return -1;
--			memnodemap[addr >> shift] = nodeids[i];
-+			memnodemap[addr >> shift] = mi->blk[i].nid;
- 			addr += (1UL << shift);
- 		} while (addr < end);
- 		res = 1;
-@@ -101,16 +109,15 @@ static int __init allocate_cachealigned_memnodemap(void)
-  * The LSB of all start and end addresses in the node map is the value of the
-  * maximum possible shift.
-  */
--static int __init extract_lsb_from_nodes(const struct bootnode *nodes,
--					 int numnodes)
-+static int __init extract_lsb_from_nodes(const struct numa_meminfo *mi)
- {
- 	int i, nodes_used = 0;
- 	unsigned long start, end;
- 	unsigned long bitfield = 0, memtop = 0;
- 
--	for (i = 0; i < numnodes; i++) {
--		start = nodes[i].start;
--		end = nodes[i].end;
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		start = mi->blk[i].start;
-+		end = mi->blk[i].end;
- 		if (start >= end)
- 			continue;
- 		bitfield |= start;
-@@ -126,18 +133,17 @@ static int __init extract_lsb_from_nodes(const struct bootnode *nodes,
- 	return i;
- }
- 
--static int __init compute_hash_shift(struct bootnode *nodes, int numnodes,
--				     int *nodeids)
-+static int __init compute_hash_shift(const struct numa_meminfo *mi)
- {
- 	int shift;
- 
--	shift = extract_lsb_from_nodes(nodes, numnodes);
-+	shift = extract_lsb_from_nodes(mi);
- 	if (allocate_cachealigned_memnodemap())
- 		return -1;
- 	printk(KERN_DEBUG "NUMA: Using %d for the hash shift.\n",
- 		shift);
- 
--	if (populate_memnodemap(nodes, numnodes, shift, nodeids) != 1) {
-+	if (populate_memnodemap(mi, shift) != 1) {
- 		printk(KERN_INFO "Your memory is not aligned you need to "
- 		       "rebuild your kernel with a bigger NODEMAPSIZE "
- 		       "shift=%d\n", shift);
-@@ -185,21 +191,25 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
- 
- static __init int conflicting_memblks(unsigned long start, unsigned long end)
- {
-+	struct numa_meminfo *mi = &numa_meminfo;
- 	int i;
--	for (i = 0; i < num_node_memblks; i++) {
--		struct bootnode *nd = &node_memblk_range[i];
--		if (nd->start == nd->end)
-+
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		struct numa_memblk *blk = &mi->blk[i];
-+
-+		if (blk->start == blk->end)
- 			continue;
--		if (nd->end > start && nd->start < end)
--			return memblk_nodeid[i];
--		if (nd->end == end && nd->start == start)
--			return memblk_nodeid[i];
-+		if (blk->end > start && blk->start < end)
-+			return blk->nid;
-+		if (blk->end == end && blk->start == start)
-+			return blk->nid;
- 	}
- 	return -1;
- }
- 
- int __init numa_add_memblk(int nid, u64 start, u64 end)
- {
-+	struct numa_meminfo *mi = &numa_meminfo;
- 	int i;
- 
- 	i = conflicting_memblks(start, end);
-@@ -213,10 +223,10 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
- 		return -EINVAL;
- 	}
- 
--	node_memblk_range[num_node_memblks].start = start;
--	node_memblk_range[num_node_memblks].end = end;
--	memblk_nodeid[num_node_memblks] = nid;
--	num_node_memblks++;
-+	mi->blk[mi->nr_blks].start = start;
-+	mi->blk[mi->nr_blks].end = end;
-+	mi->blk[mi->nr_blks].nid = nid;
-+	mi->nr_blks++;
- 	return 0;
- }
- 
-@@ -315,66 +325,59 @@ static int __init nodes_cover_memory(const struct bootnode *nodes)
- 
- static int __init numa_register_memblks(void)
- {
-+	struct numa_meminfo *mi = &numa_meminfo;
- 	int i;
- 
- 	/*
- 	 * Join together blocks on the same node, holes between
- 	 * which don't overlap with memory on other nodes.
- 	 */
--	for (i = 0; i < num_node_memblks; ++i) {
-+	for (i = 0; i < mi->nr_blks; ++i) {
-+		struct numa_memblk *bi = &mi->blk[i];
- 		int j, k;
- 
--		for (j = i + 1; j < num_node_memblks; ++j) {
-+		for (j = i + 1; j < mi->nr_blks; ++j) {
-+			struct numa_memblk *bj = &mi->blk[j];
- 			unsigned long start, end;
- 
--			if (memblk_nodeid[i] != memblk_nodeid[j])
-+			if (bi->nid != bj->nid)
- 				continue;
--			start = min(node_memblk_range[i].end,
--			            node_memblk_range[j].end);
--			end = max(node_memblk_range[i].start,
--			          node_memblk_range[j].start);
--			for (k = 0; k < num_node_memblks; ++k) {
--				if (memblk_nodeid[i] == memblk_nodeid[k])
-+			start = min(bi->end, bj->end);
-+			end = max(bi->start, bj->start);
-+			for (k = 0; k < mi->nr_blks; ++k) {
-+				struct numa_memblk *bk = &mi->blk[k];
-+
-+				if (bi->nid == bk->nid)
- 					continue;
--				if (start < node_memblk_range[k].end &&
--				    end > node_memblk_range[k].start)
-+				if (start < bk->end && end > bk->start)
- 					break;
- 			}
--			if (k < num_node_memblks)
-+			if (k < mi->nr_blks)
- 				continue;
--			start = min(node_memblk_range[i].start,
--			            node_memblk_range[j].start);
--			end = max(node_memblk_range[i].end,
--			          node_memblk_range[j].end);
-+			start = min(bi->start, bj->start);
-+			end = max(bi->end, bj->end);
- 			printk(KERN_INFO "NUMA: Node %d [%Lx,%Lx) + [%Lx,%Lx) -> [%lx,%lx)\n",
--			       memblk_nodeid[i],
--			       node_memblk_range[i].start,
--			       node_memblk_range[i].end,
--			       node_memblk_range[j].start,
--			       node_memblk_range[j].end,
-+			       bi->nid, bi->start, bi->end, bj->start, bj->end,
- 			       start, end);
--			node_memblk_range[i].start = start;
--			node_memblk_range[i].end = end;
--			k = --num_node_memblks - j;
--			memmove(memblk_nodeid + j, memblk_nodeid + j+1,
--				k * sizeof(*memblk_nodeid));
--			memmove(node_memblk_range + j, node_memblk_range + j+1,
--				k * sizeof(*node_memblk_range));
-+			bi->start = start;
-+			bi->end = end;
-+			k = --mi->nr_blks - j;
-+			memmove(mi->blk + j, mi->blk + j + 1,
-+				k * sizeof(mi->blk[0]));
- 			--j;
- 		}
- 	}
- 
--	memnode_shift = compute_hash_shift(node_memblk_range, num_node_memblks,
--					   memblk_nodeid);
-+	memnode_shift = compute_hash_shift(mi);
- 	if (memnode_shift < 0) {
- 		printk(KERN_ERR "NUMA: No NUMA node hash function found. Contact maintainer\n");
- 		return -EINVAL;
- 	}
- 
--	for (i = 0; i < num_node_memblks; i++)
--		memblock_x86_register_active_regions(memblk_nodeid[i],
--				node_memblk_range[i].start >> PAGE_SHIFT,
--				node_memblk_range[i].end >> PAGE_SHIFT);
-+	for (i = 0; i < mi->nr_blks; i++)
-+		memblock_x86_register_active_regions(mi->blk[i].nid,
-+					mi->blk[i].start >> PAGE_SHIFT,
-+					mi->blk[i].end >> PAGE_SHIFT);
- 
- 	/* for out of order entries */
- 	sort_node_map();
-@@ -701,7 +704,7 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
- static int __init numa_emulation(unsigned long start_pfn,
- 			unsigned long last_pfn, int acpi, int amd)
- {
--	static int nodeid[NR_NODE_MEMBLKS] __initdata;
-+	static struct numa_meminfo ei __initdata;
- 	u64 addr = start_pfn << PAGE_SHIFT;
- 	u64 max_addr = last_pfn << PAGE_SHIFT;
- 	int num_nodes;
-@@ -727,10 +730,14 @@ static int __init numa_emulation(unsigned long start_pfn,
- 	if (num_nodes < 0)
- 		return num_nodes;
- 
--	for (i = 0; i < ARRAY_SIZE(nodeid); i++)
--		nodeid[i] = i;
-+	ei.nr_blks = num_nodes;
-+	for (i = 0; i < ei.nr_blks; i++) {
-+		ei.blk[i].start = nodes[i].start;
-+		ei.blk[i].end = nodes[i].end;
-+		ei.blk[i].nid = i;
++	/*
++	 * Transform __apicid_to_node table to use emulated nids by
++	 * reverse-mapping phys_nid.  The maps should always exist but fall
++	 * back to zero just in case.
++	 */
++	for (i = 0; i < ARRAY_SIZE(__apicid_to_node); i++) {
++		if (__apicid_to_node[i] == NUMA_NO_NODE)
++			continue;
++		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
++			if (__apicid_to_node[i] == emu_nid_to_phys[j])
++				break;
++		__apicid_to_node[i] = j < ARRAY_SIZE(emu_nid_to_phys) ? j : 0;
 +	}
++
+ 	/* make sure all emulated nodes are mapped to a physical node */
+ 	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
+ 		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index d2f53f3..d4fbfea 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -265,9 +265,6 @@ int __init x86_acpi_numa_init(void)
+ static int fake_node_to_pxm_map[MAX_NUMNODES] __initdata = {
+ 	[0 ... MAX_NUMNODES-1] = PXM_INVAL
+ };
+-static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+-	[0 ... MAX_LOCAL_APIC-1] = NUMA_NO_NODE
+-};
  
--	memnode_shift = compute_hash_shift(nodes, num_nodes, nodeid);
-+	memnode_shift = compute_hash_shift(&ei);
- 	if (memnode_shift < 0) {
- 		memnode_shift = 0;
- 		printk(KERN_ERR "No NUMA hash function found.  NUMA emulation "
-@@ -797,9 +804,7 @@ void __init initmem_init(void)
- 		nodes_clear(mem_nodes_parsed);
- 		nodes_clear(node_possible_map);
- 		nodes_clear(node_online_map);
--		num_node_memblks = 0;
--		memset(node_memblk_range, 0, sizeof(node_memblk_range));
--		memset(memblk_nodeid, 0, sizeof(memblk_nodeid));
-+		memset(&numa_meminfo, 0, sizeof(numa_meminfo));
- 		memset(numa_nodes, 0, sizeof(numa_nodes));
- 		remove_all_active_ranges();
+ /*
+  * In NUMA emulation, we need to setup proximity domain (_PXM) to node ID
+@@ -279,7 +276,7 @@ static s16 fake_apicid_to_node[MAX_LOCAL_APIC] __initdata = {
+  */
+ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ {
+-	int i, j;
++	int i;
  
+ 	for (i = 0; i < num_nodes; i++) {
+ 		int nid, pxm;
+@@ -291,29 +288,10 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ 		if (pxm == PXM_INVAL)
+ 			continue;
+ 		fake_node_to_pxm_map[i] = pxm;
+-		/*
+-		 * For each apicid_to_node mapping that exists for this real
+-		 * node, it must now point to the fake node ID.
+-		 */
+-		for (j = 0; j < MAX_LOCAL_APIC; j++)
+-			if (__apicid_to_node[j] == nid &&
+-			    fake_apicid_to_node[j] == NUMA_NO_NODE)
+-				fake_apicid_to_node[j] = i;
+ 	}
+ 
+-	/*
+-	 * If there are apicid-to-node mappings for physical nodes that do not
+-	 * have a corresponding emulated node, it should default to a guaranteed
+-	 * value.
+-	 */
+-	for (i = 0; i < MAX_LOCAL_APIC; i++)
+-		if (__apicid_to_node[i] != NUMA_NO_NODE &&
+-		    fake_apicid_to_node[i] == NUMA_NO_NODE)
+-			fake_apicid_to_node[i] = 0;
+-
+ 	for (i = 0; i < num_nodes; i++)
+ 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
+-	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
+ 
+ 	for (i = 0; i < num_nodes; i++)
+ 		if (fake_nodes[i].start != fake_nodes[i].end)
 -- 
 1.7.1
 
