@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab1BPCBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:01:09 -0500
-Received: from kroah.org ([198.145.64.141]:49157 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758503Ab1BPBvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:02 2011
-Message-Id: <20110216014702.065113535@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:44 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>
-Subject: [078/115] drm/radeon/kms: make the mac rv630 quirk generic
-In-Reply-To: <20110216014741.GA24678@kroah.com>
+	id S932753Ab1BPCBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:01:18 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:58651 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758642Ab1BPCBO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 21:01:14 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/3fvIkfe33spKUMWRifYl0QZ95nBdXDFewi8tuFB
+	Dn6BVu+tn4ZW2k
+Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been
+ added to the 2.6.32-longterm tree
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: gregkh@suse.de, srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl,
+        ghaskins@novell.com, mingo@elte.hu, stable@kernel.org,
+        stable-commits@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1297810967.23343.122.camel@gandalf.stny.rr.com>
+References: <12978046423644@kroah.org>
+	 <1297810967.23343.122.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Feb 2011 03:01:07 +0100
+Message-ID: <1297821667.5126.11.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Tue, 2011-02-15 at 18:02 -0500, Steven Rostedt wrote:
+> [ Added LKML ]
+> 
+> On Tue, 2011-02-15 at 13:17 -0800, gregkh@suse.de wrote:
+> > This is a note to let you know that I've just added the patch titled
+> > 
+> >     sched: Give CPU bound RT tasks preference
+> > 
+> > to the 2.6.32-longterm tree which can be found at:
+> >     http://www.kernel.org/git/?p=linux/kernel/git/longterm/longterm-queue-2.6.32.git;a=summary
+> > 
+> > The filename of the patch is:
+> >      0006-sched-Give-CPU-bound-RT-tasks-preference.patch
+> > and it can be found in the queue-2.6.32 subdirectory.
+> > 
+> > If you, or anyone else, feels it should not be added to the 2.6.32 longterm tree,
+> > please let <stable@kernel.org> know about it.
+> > 
+> > 
+> 
+> I don't mind this patch being added to the long term tree. But I'm
+> curious about what is the criteria for adding changes to it? This is a
+> performance improvement and not a critical bug fix.
 
-------------------
+Yes, I added it for the performance.  .32-stable is enterprise beans and
+biscuits.  Same reason I added the load balancing fixes, boxen won't
+explode without them, but load balancing performs better with them.
 
-From: Alex Deucher <alexdeucher@gmail.com>
+	-Mike
 
-commit be23da8ad219650517cbbb7acbeaeb235667113a upstream.
-
-Seems some other boards do this as well.
-
-Reported-by: Andrea Merello <andrea.merello@gmail.com>
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/gpu/drm/radeon/radeon_atombios.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
-
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -152,15 +152,11 @@ static bool radeon_atom_apply_quirks(str
- 			return false;
- 	}
- 
--	/* mac rv630 */
--	if ((dev->pdev->device == 0x9588) &&
--	    (dev->pdev->subsystem_vendor == 0x106b) &&
--	    (dev->pdev->subsystem_device == 0x00a6)) {
--		if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
--		    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
--			*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
--			*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
--		}
-+	/* mac rv630, rv730, others */
-+	if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
-+	    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
-+		*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
-+		*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
- 	}
- 
- 	/* ASUS HD 3600 XT board lists the DVI port as HDMI */
 
 
