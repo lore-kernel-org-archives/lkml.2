@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab1BPWOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 17:14:34 -0500
-Received: from juliet.he.net ([184.105.210.2]:33211 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752039Ab1BPWOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 17:14:32 -0500
-Date: Wed, 16 Feb 2011 14:14:29 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Jesse Barnes <jesse.barnes@intel.com>
-Cc: "jgq516@gmail.com" <jgq516@gmail.com>,
-        "airlied@redhat.com" <airlied@redhat.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] drm: fix wrong usages of drm_device in DRM
- Developer's Guide
-Message-Id: <20110216141429.44668924.rdunlap@xenotime.net>
-In-Reply-To: <20110216121859.31ab0e57@jbarnes-desktop>
-References: <1297677503-11175-1-git-send-email-jgq516@gmail.com>
-	<20110216121859.31ab0e57@jbarnes-desktop>
-Organization: YPO4
+	id S1755038Ab1BPWSv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 17:18:51 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20378 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab1BPWSt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 17:18:49 -0500
+Date: Wed, 16 Feb 2011 14:17:55 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Subject: [PATCH] docbook: add fs/eventfd.c kernel-doc
+Message-Id: <20110216141755.a570694f.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0202.4D5C4D46.01D4:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Feb 2011 12:18:59 -0800 Jesse Barnes wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> On Mon, 14 Feb 2011 01:58:23 -0800
-> "jgq516@gmail.com" <jgq516@gmail.com> wrote:
-> 
-> > From: Xiao Jiang <jgq516@gmail.com>
-> > 
-> > A few wrong usages of drm_device, which should be drm_driver.
-> > 
-> 
-> Ah thanks, yeah it's mixed up.
-> 
-> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Add fs/eventfd.c to filesystems docbook.
+Make typo corrections in fs/eventfd.c.
 
-
-Thanks, added to my docs quilt queue (unless someone else grabs it :).
-
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Davide Libenzi <davidel@xmailserver.org>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ Documentation/DocBook/filesystems.tmpl |    5 +++++
+ fs/eventfd.c                           |   12 ++++++------
+ 2 files changed, 11 insertions(+), 6 deletions(-)
+
+--- lnx-2638-rc3.orig/Documentation/DocBook/filesystems.tmpl
++++ lnx-2638-rc3/Documentation/DocBook/filesystems.tmpl
+@@ -82,6 +82,11 @@
+      </sect1>
+   </chapter>
+ 
++  <chapter id="fs_events">
++     <title>Events based on file descriptors</title>
++!Efs/eventfd.c
++  </chapter>
++
+   <chapter id="sysfs">
+      <title>The Filesystem for Exporting Kernel Objects</title>
+ !Efs/sysfs/file.c
+--- lnx-2638-rc3.orig/fs/eventfd.c
++++ lnx-2638-rc3/fs/eventfd.c
+@@ -99,7 +99,7 @@ EXPORT_SYMBOL_GPL(eventfd_ctx_get);
+  * @ctx: [in] Pointer to eventfd context.
+  *
+  * The eventfd context reference must have been previously acquired either
+- * with eventfd_ctx_get() or eventfd_ctx_fdget()).
++ * with eventfd_ctx_get() or eventfd_ctx_fdget().
+  */
+ void eventfd_ctx_put(struct eventfd_ctx *ctx)
+ {
+@@ -146,9 +146,9 @@ static void eventfd_ctx_do_read(struct e
+  * eventfd_ctx_remove_wait_queue - Read the current counter and removes wait queue.
+  * @ctx: [in] Pointer to eventfd context.
+  * @wait: [in] Wait queue to be removed.
+- * @cnt: [out] Pointer to the 64bit conter value.
++ * @cnt: [out] Pointer to the 64-bit counter value.
+  *
+- * Returns zero if successful, or the following error codes:
++ * Returns %0 if successful, or the following error codes:
+  *
+  * -EAGAIN      : The operation would have blocked.
+  *
+@@ -175,11 +175,11 @@ EXPORT_SYMBOL_GPL(eventfd_ctx_remove_wai
+  * eventfd_ctx_read - Reads the eventfd counter or wait if it is zero.
+  * @ctx: [in] Pointer to eventfd context.
+  * @no_wait: [in] Different from zero if the operation should not block.
+- * @cnt: [out] Pointer to the 64bit conter value.
++ * @cnt: [out] Pointer to the 64-bit counter value.
+  *
+- * Returns zero if successful, or the following error codes:
++ * Returns %0 if successful, or the following error codes:
+  *
+- * -EAGAIN      : The operation would have blocked but @no_wait was nonzero.
++ * -EAGAIN      : The operation would have blocked but @no_wait was non-zero.
+  * -ERESTARTSYS : A signal interrupted the wait operation.
+  *
+  * If @no_wait is zero, the function might sleep until the eventfd internal
+---
