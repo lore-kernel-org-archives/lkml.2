@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab1BPAWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:22:43 -0500
-Received: from kroah.org ([198.145.64.141]:49200 "EHLO coco.kroah.org"
+	id S932715Ab1BPAqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:46:47 -0500
+Received: from kroah.org ([198.145.64.141]:49195 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757406Ab1BPAWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:37 -0500
+	id S1757458Ab1BPAWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:35 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:40 2011
-Message-Id: <20110216001440.903099587@clark.kroah.org>
+Message-Id: <20110216001440.790662736@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:35 -0800
+Date: Tue, 15 Feb 2011 16:13:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Qiao Zhou <zhouqiao@marvell.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [158/272] ASoC: WM8994: fix wrong value in tristate function
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [157/272] ASoC: Handle low measured DC offsets for wm_hubs devices
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qiao Zhou <zhouqiao@marvell.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 78b3fb46753872fc79bffecc8d50355a8622b39b upstream.
+commit 20a4e7fc7e213365ea3771d7bf1e10a6bab853be upstream.
 
-fix wrong value in wm8994_set_tristate func. when updating reg bits,
-it should use "value", not "reg".
+The DC servo codes are actually signed numbers so need to be treated as
+such.
 
-Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8994.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/wm_hubs.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -3513,7 +3513,7 @@ static int wm8994_set_tristate(struct sn
- 	else
- 		val = 0;
+--- a/sound/soc/codecs/wm_hubs.c
++++ b/sound/soc/codecs/wm_hubs.c
+@@ -92,6 +92,7 @@ static void wait_for_dc_servo(struct snd
+ static void calibrate_dc_servo(struct snd_soc_codec *codec)
+ {
+ 	struct wm_hubs_data *hubs = snd_soc_codec_get_drvdata(codec);
++	s8 offset;
+ 	u16 reg, reg_l, reg_r, dcs_cfg;
  
--	return snd_soc_update_bits(codec, reg, mask, reg);
-+	return snd_soc_update_bits(codec, reg, mask, val);
- }
+ 	/* Set for 32 series updates */
+@@ -130,16 +131,14 @@ static void calibrate_dc_servo(struct sn
+ 		dev_dbg(codec->dev, "DCS input: %x %x\n", reg_l, reg_r);
  
- #define WM8994_RATES SNDRV_PCM_RATE_8000_96000
+ 		/* HPOUT1L */
+-		if (reg_l + hubs->dcs_codes > 0 &&
+-		    reg_l + hubs->dcs_codes < 0xff)
+-			reg_l += hubs->dcs_codes;
+-		dcs_cfg = reg_l << WM8993_DCS_DAC_WR_VAL_1_SHIFT;
++		offset = reg_l;
++		offset += hubs->dcs_codes;
++		dcs_cfg = (u8)offset << WM8993_DCS_DAC_WR_VAL_1_SHIFT;
+ 
+ 		/* HPOUT1R */
+-		if (reg_r + hubs->dcs_codes > 0 &&
+-		    reg_r + hubs->dcs_codes < 0xff)
+-			reg_r += hubs->dcs_codes;
+-		dcs_cfg |= reg_r;
++		offset = reg_r;
++		offset += hubs->dcs_codes;
++		dcs_cfg |= (u8)offset;
+ 
+ 		dev_dbg(codec->dev, "DCS result: %x\n", dcs_cfg);
+ 
 
 
