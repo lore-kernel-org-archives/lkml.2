@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab1BPBmC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:42:02 -0500
-Received: from kroah.org ([198.145.64.141]:38938 "EHLO coco.kroah.org"
+	id S1756942Ab1BPATr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:19:47 -0500
+Received: from kroah.org ([198.145.64.141]:38895 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756897Ab1BPATt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:49 -0500
+	id S1756897Ab1BPATh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:37 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:31 2011
-Message-Id: <20110216001431.825211308@clark.kroah.org>
+Message-Id: <20110216001431.137023988@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:04 -0800
+Date: Tue, 15 Feb 2011 16:11:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [067/272] [S390] qdio: use proper QEBSM operand for SIGA-R and SIGA-S
+        Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [060/272] ath9k: fix assumptions for idle calls on suspend/resume
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,140 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Glauber <jang@linux.vnet.ibm.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 958c0ba403cb6a693b54be2389f9ef53377fa259 upstream.
+commit a08e7ade9ddf4fe79576f953cc5c1725e944d26c upstream.
 
-If QIOASSIST is enabled for a qdio device the SIGA instruction requires
-a modified function code. This function code modifier was missing for
-SIGA-R and SIGA-S which can lead to a kernel panic caused by an
-operand exception.
+mac80211 will notify drivers when to go idle and ath9k
+assumed that it would get further notifications for idle
+states after a device stop() config call but as per agreed
+semantics the idle state of the radio is left up to driver
+after mac80211 issues the stop() callback. The driver is
+resposnbile for ensuring the device remains idle after
+that even between suspend / resume calls.
 
-Signed-off-by: Jan Glauber <jang@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+This fixes suspend/resume when you issue suspend and resume
+twice on ath9k when ath9k_stop() was already called. We need
+to put the radio to full sleep in order for resume to work
+correctly.
+
+What might seem fishy is we are turning the radio off
+after resume. The reason why we do this is because we know
+we should not have anything enabled after a mac80211 tells
+us to stop(), if we resume and never get a start() we won't
+get another stop() by mac80211 so to be safe always bring
+the 802.11 device with the radio disabled after resume,
+this ensures that if we suspend we already have the radio
+disabled and only a start() will ever trigger it on.
+
+Cc: Paul Stewart <pstew@google.com>
+Cc: Amod Bodas <amod.bodas@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/s390/cio/qdio.h      |    6 ++++++
- drivers/s390/cio/qdio_main.c |   43 ++++++++++++++++++++++++++++---------------
- 2 files changed, 34 insertions(+), 15 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    4 ++--
+ drivers/net/wireless/ath/ath9k/pci.c  |    3 +++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/cio/qdio.h
-+++ b/drivers/s390/cio/qdio.h
-@@ -91,6 +91,12 @@ enum qdio_irq_states {
- #define AC1_SC_QEBSM_AVAILABLE		0x02	/* available for subchannel */
- #define AC1_SC_QEBSM_ENABLED		0x01	/* enabled for subchannel */
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1418,8 +1418,8 @@ static void ath9k_stop(struct ieee80211_
+ 	ath9k_hw_configpcipowersave(ah, 1, 1);
+ 	ath9k_ps_restore(sc);
  
-+/* SIGA flags */
-+#define QDIO_SIGA_WRITE		0x00
-+#define QDIO_SIGA_READ		0x01
-+#define QDIO_SIGA_SYNC		0x02
-+#define QDIO_SIGA_QEBSM_FLAG	0x80
+-	/* Finally, put the chip in FULL SLEEP mode */
+-	ath9k_setpower(sc, ATH9K_PM_FULL_SLEEP);
++	sc->ps_idle = true;
++	ath_radio_disable(sc, hw);
+ 
+ 	sc->sc_flags |= SC_OP_INVALID;
+ 
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -290,6 +290,9 @@ static int ath_pci_resume(struct pci_dev
+ 			    AR_GPIO_OUTPUT_MUX_AS_OUTPUT);
+ 	ath9k_hw_set_gpio(sc->sc_ah, sc->sc_ah->led_pin, 1);
+ 
++	sc->ps_idle = true;
++	ath_radio_disable(sc, hw);
 +
- #ifdef CONFIG_64BIT
- static inline int do_sqbs(u64 token, unsigned char state, int queue,
- 			  int *start, int *count)
---- a/drivers/s390/cio/qdio_main.c
-+++ b/drivers/s390/cio/qdio_main.c
-@@ -29,11 +29,12 @@ MODULE_AUTHOR("Utz Bacher <utz.bacher@de
- MODULE_DESCRIPTION("QDIO base support");
- MODULE_LICENSE("GPL");
- 
--static inline int do_siga_sync(struct subchannel_id schid,
--			       unsigned int out_mask, unsigned int in_mask)
-+static inline int do_siga_sync(unsigned long schid,
-+			       unsigned int out_mask, unsigned int in_mask,
-+			       unsigned int fc)
- {
--	register unsigned long __fc asm ("0") = 2;
--	register struct subchannel_id __schid asm ("1") = schid;
-+	register unsigned long __fc asm ("0") = fc;
-+	register unsigned long __schid asm ("1") = schid;
- 	register unsigned long out asm ("2") = out_mask;
- 	register unsigned long in asm ("3") = in_mask;
- 	int cc;
-@@ -47,10 +48,11 @@ static inline int do_siga_sync(struct su
- 	return cc;
+ 	return 0;
  }
  
--static inline int do_siga_input(struct subchannel_id schid, unsigned int mask)
-+static inline int do_siga_input(unsigned long schid, unsigned int mask,
-+				unsigned int fc)
- {
--	register unsigned long __fc asm ("0") = 1;
--	register struct subchannel_id __schid asm ("1") = schid;
-+	register unsigned long __fc asm ("0") = fc;
-+	register unsigned long __schid asm ("1") = schid;
- 	register unsigned long __mask asm ("2") = mask;
- 	int cc;
- 
-@@ -279,6 +281,8 @@ void qdio_init_buf_states(struct qdio_ir
- static inline int qdio_siga_sync(struct qdio_q *q, unsigned int output,
- 			  unsigned int input)
- {
-+	unsigned long schid = *((u32 *) &q->irq_ptr->schid);
-+	unsigned int fc = QDIO_SIGA_SYNC;
- 	int cc;
- 
- 	if (!need_siga_sync(q))
-@@ -287,7 +291,12 @@ static inline int qdio_siga_sync(struct
- 	DBF_DEV_EVENT(DBF_INFO, q->irq_ptr, "siga-s:%1d", q->nr);
- 	qperf_inc(q, siga_sync);
- 
--	cc = do_siga_sync(q->irq_ptr->schid, output, input);
-+	if (is_qebsm(q)) {
-+		schid = q->irq_ptr->sch_token;
-+		fc |= QDIO_SIGA_QEBSM_FLAG;
-+	}
-+
-+	cc = do_siga_sync(schid, output, input, fc);
- 	if (cc)
- 		DBF_ERROR("%4x SIGA-S:%2d", SCH_NO(q), cc);
- 	return cc;
-@@ -313,8 +322,8 @@ static inline int qdio_siga_sync_all(str
- 
- static int qdio_siga_output(struct qdio_q *q, unsigned int *busy_bit)
- {
--	unsigned long schid;
--	unsigned int fc = 0;
-+	unsigned long schid = *((u32 *) &q->irq_ptr->schid);
-+	unsigned int fc = QDIO_SIGA_WRITE;
- 	u64 start_time = 0;
- 	int cc;
- 
-@@ -323,11 +332,8 @@ static int qdio_siga_output(struct qdio_
- 
- 	if (is_qebsm(q)) {
- 		schid = q->irq_ptr->sch_token;
--		fc |= 0x80;
-+		fc |= QDIO_SIGA_QEBSM_FLAG;
- 	}
--	else
--		schid = *((u32 *)&q->irq_ptr->schid);
--
- again:
- 	cc = do_siga_output(schid, q->mask, busy_bit, fc);
- 
-@@ -347,12 +353,19 @@ again:
- 
- static inline int qdio_siga_input(struct qdio_q *q)
- {
-+	unsigned long schid = *((u32 *) &q->irq_ptr->schid);
-+	unsigned int fc = QDIO_SIGA_READ;
- 	int cc;
- 
- 	DBF_DEV_EVENT(DBF_INFO, q->irq_ptr, "siga-r:%1d", q->nr);
- 	qperf_inc(q, siga_read);
- 
--	cc = do_siga_input(q->irq_ptr->schid, q->mask);
-+	if (is_qebsm(q)) {
-+		schid = q->irq_ptr->sch_token;
-+		fc |= QDIO_SIGA_QEBSM_FLAG;
-+	}
-+
-+	cc = do_siga_input(schid, q->mask, fc);
- 	if (cc)
- 		DBF_ERROR("%4x SIGA-R:%2d", SCH_NO(q), cc);
- 	return cc;
 
 
