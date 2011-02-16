@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab1BPAmV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:42:21 -0500
-Received: from kroah.org ([198.145.64.141]:49426 "EHLO coco.kroah.org"
+	id S1757771Ab1BPAmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:42:40 -0500
+Received: from kroah.org ([198.145.64.141]:49413 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757626Ab1BPAX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:29 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:44 2011
-Message-Id: <20110216001444.122941207@clark.kroah.org>
+	id S1757612Ab1BPAXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:43 2011
+Message-Id: <20110216001443.906566574@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:07 -0800
+Date: Tue, 15 Feb 2011 16:14:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [190/272] powerpc: Fix hcall tracepoint recursion
+        Justin TerAvest <teravest@google.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [188/272] cfq-iosched: Dont wait if queue already has requests.
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,84 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Justin TerAvest <teravest@google.com>
 
-commit 57cdfdf829a850a317425ed93c6a576c9ee6329c upstream.
+commit 02a8f01b5a9f396d0327977af4c232d0f94c45fd upstream.
 
-Spinlocks on shared processor partitions use H_YIELD to notify the
-hypervisor we are waiting on another virtual CPU. Unfortunately this means
-the hcall tracepoints can recurse.
+Commit 7667aa0630407bc07dc38dcc79d29cc0a65553c1 added logic to wait for
+the last queue of the group to become busy (have at least one request),
+so that the group does not lose out for not being continuously
+backlogged. The commit did not check for the condition that the last
+queue already has some requests. As a result, if the queue already has
+requests, wait_busy is set. Later on, cfq_select_queue() checks the
+flag, and decides that since the queue has a request now and wait_busy
+is set, the queue is expired.  This results in early expiration of the
+queue.
 
-The patch below adds a percpu depth and checks it on both the entry and
-exit hcall tracepoints.
+This patch fixes the problem by adding a check to see if queue already
+has requests. If it does, wait_busy is not set. As a result, time slices
+do not expire early.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+The queues with more than one request are usually buffered writers.
+Testing shows improvement in isolation between buffered writers.
+
+Signed-off-by: Justin TerAvest <teravest@google.com>
+Reviewed-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/platforms/pseries/lpar.c |   37 ++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+ block/cfq-iosched.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -701,6 +701,13 @@ EXPORT_SYMBOL(arch_free_page);
- /* NB: reg/unreg are called while guarded with the tracepoints_mutex */
- extern long hcall_tracepoint_refcount;
- 
-+/*
-+ * Since the tracing code might execute hcalls we need to guard against
-+ * recursion. One example of this are spinlocks calling H_YIELD on
-+ * shared processor partitions.
-+ */
-+static DEFINE_PER_CPU(unsigned int, hcall_trace_depth);
-+
- void hcall_tracepoint_regfunc(void)
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3412,6 +3412,10 @@ static bool cfq_should_wait_busy(struct
  {
- 	hcall_tracepoint_refcount++;
-@@ -713,12 +720,42 @@ void hcall_tracepoint_unregfunc(void)
+ 	struct cfq_io_context *cic = cfqd->active_cic;
  
- void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
- {
-+	unsigned long flags;
-+	unsigned int *depth;
++	/* If the queue already has requests, don't wait */
++	if (!RB_EMPTY_ROOT(&cfqq->sort_list))
++		return false;
 +
-+	local_irq_save(flags);
-+
-+	depth = &__get_cpu_var(hcall_trace_depth);
-+
-+	if (*depth)
-+		goto out;
-+
-+	(*depth)++;
- 	trace_hcall_entry(opcode, args);
-+	(*depth)--;
-+
-+out:
-+	local_irq_restore(flags);
- }
- 
- void __trace_hcall_exit(long opcode, unsigned long retval,
- 			unsigned long *retbuf)
- {
-+	unsigned long flags;
-+	unsigned int *depth;
-+
-+	local_irq_save(flags);
-+
-+	depth = &__get_cpu_var(hcall_trace_depth);
-+
-+	if (*depth)
-+		goto out;
-+
-+	(*depth)++;
- 	trace_hcall_exit(opcode, retval, retbuf);
-+	(*depth)--;
-+
-+out:
-+	local_irq_restore(flags);
- }
- #endif
+ 	/* If there are other queues in the group, don't wait */
+ 	if (cfqq->cfqg->nr_cfqq > 1)
+ 		return false;
 
 
