@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab1BPAry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:47:54 -0500
-Received: from kroah.org ([198.145.64.141]:45191 "EHLO coco.kroah.org"
+	id S1756977Ab1BPBVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:21:30 -0500
+Received: from kroah.org ([198.145.64.141]:45231 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932782Ab1BPArm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:42 -0500
+	id S932782Ab1BPArz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:55 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:01 2011
-Message-Id: <20110216002100.984745850@clark.kroah.org>
+Message-Id: <20110216002101.491038033@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:47 -0800
+Date: Tue, 15 Feb 2011 16:19:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pieter Maes <maescool@gmail.com>
-Subject: [patch 019/176] USB: serial: Updated support for ICOM devices
+        Alan Stern <stern@rowland.harvard.edu>,
+        Roland Kletzing <devzero@web.de>, "Craig W. Nadler" <craig@nadler.us>
+Subject: [patch 024/176] USB: g_printer: fix bug in unregistration
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,73 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pieter Maes <maescool@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a9d61bc49188e32d2ae9cf0f683cde3e1744feef upstream.
+commit d5aa475180d03d45c5dc6134aa833f1b3e89c45e upstream.
 
-I found the original patch on the db0fhn repeater wiki (couldn't find the email
-of the origial author) I guess it was never commited.
-I updated and added some Icom HAM-radio devices to the ftdi driver.
-Added extra comments to make clear what devices it are.
+This patch (as1441) fixes a bug in g_printer.  The gadget driver, char
+device number, and class device should be unregistered in reverse
+order of registration.  As it is now, when the module is unloaded the
+class device gets unregistered first, causing a crash when the unbind
+method tries to access it.
 
-Signed-off-by: Pieter Maes <maescool@gmail.com>
+This fixes Bugzilla #25882.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Roland Kletzing <devzero@web.de>
+CC: Craig W. Nadler <craig@nadler.us>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   12 +++++++++++-
- drivers/usb/serial/ftdi_sio_ids.h |   20 ++++++++++++++++----
- 2 files changed, 27 insertions(+), 5 deletions(-)
+ drivers/usb/gadget/printer.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -675,7 +675,17 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_PCDJ_DAC2_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
--	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_1_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_OPC_U_UC_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C1_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C2_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2D_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2VT_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2VR_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP4KVT_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP4KVR_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2KVT_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2KVR_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -569,11 +569,23 @@
- #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+--- a/drivers/usb/gadget/printer.c
++++ b/drivers/usb/gadget/printer.c
+@@ -1596,13 +1596,12 @@ cleanup(void)
+ 	int status;
  
- /*
-- * Icom ID-1 digital transceiver
-+ * Definitions for Icom Inc. devices
-  */
+ 	mutex_lock(&usb_printer_gadget.lock_printer_io);
+-	class_destroy(usb_gadget_class);
+-	unregister_chrdev_region(g_printer_devno, 2);
 -
--#define ICOM_ID1_VID            0x0C26
--#define ICOM_ID1_PID            0x0004
-+#define ICOM_VID		0x0C26 /* Icom vendor ID */
-+/* Note: ID-1 is a communications tranceiver for HAM-radio operators */
-+#define ICOM_ID_1_PID		0x0004 /* ID-1 USB to RS-232 */
-+/* Note: OPC is an Optional cable to connect an Icom Tranceiver */
-+#define ICOM_OPC_U_UC_PID	0x0018 /* OPC-478UC, OPC-1122U cloning cable */
-+/* Note: ID-RP* devices are Icom Repeater Devices for HAM-radio */
-+#define ICOM_ID_RP2C1_PID	0x0009 /* ID-RP2C Asset 1 to RS-232 */
-+#define ICOM_ID_RP2C2_PID	0x000A /* ID-RP2C Asset 2 to RS-232 */
-+#define ICOM_ID_RP2D_PID	0x000B /* ID-RP2D configuration port*/
-+#define ICOM_ID_RP2VT_PID	0x000C /* ID-RP2V Transmit config port */
-+#define ICOM_ID_RP2VR_PID	0x000D /* ID-RP2V Receive config port */
-+#define ICOM_ID_RP4KVT_PID	0x0010 /* ID-RP4000V Transmit config port */
-+#define ICOM_ID_RP4KVR_PID	0x0011 /* ID-RP4000V Receive config port */
-+#define ICOM_ID_RP2KVT_PID	0x0012 /* ID-RP2000V Transmit config port */
-+#define ICOM_ID_RP2KVR_PID	0x0013 /* ID-RP2000V Receive config port */
+ 	status = usb_gadget_unregister_driver(&printer_driver);
+ 	if (status)
+ 		ERROR(dev, "usb_gadget_unregister_driver %x\n", status);
  
- /*
-  * GN Otometrics (http://www.otometrics.com)
++	unregister_chrdev_region(g_printer_devno, 2);
++	class_destroy(usb_gadget_class);
+ 	mutex_unlock(&usb_printer_gadget.lock_printer_io);
+ }
+ module_exit(cleanup);
 
 
