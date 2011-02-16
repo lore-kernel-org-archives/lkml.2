@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187Ab1BPBJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:09:38 -0500
-Received: from kroah.org ([198.145.64.141]:45722 "EHLO coco.kroah.org"
+	id S933239Ab1BPBJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:09:58 -0500
+Received: from kroah.org ([198.145.64.141]:45699 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933109Ab1BPAtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:35 -0500
+	id S933099Ab1BPAta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:30 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:07 2011
-Message-Id: <20110216002107.713641937@clark.kroah.org>
+Message-Id: <20110216002107.411270152@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:54 -0800
+Date: Tue, 15 Feb 2011 16:20:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [patch 086/176] ASoC: When disabling WM8994 FLL force a source selection
+        Dirk Eibach <eibach@gdsys.de>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [patch 083/176] hwmon: (lm63) Consider LM64 temperature offset
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Dirk Eibach <eibach@gdsys.de>
 
-commit 4514e8997fbefd5befd6176ac9785e287b4daed4 upstream.
+commit 2778fb13ba0fed1b3e4a040e71f7881d399610a3 upstream.
 
-When we disable the WM8994 FLL code path sharing means that we end up
-writing out a configuration. Currently this is the currently active
-input and output frequency (which causes snd_soc_update_bits() to
-suppress actual writes both immediately and in the common case where
-we reenable the same configuration later) but we allow machine drivers
-to pass through a source of zero. Since the register values written
-are one less than the source constants this causes corruption of other
-bitfields in the register.
+LM64 has 16 degrees Celsius temperature offset on all
+remote sensor registers.
+This was not considered When LM64 support was added to lm63.c.
 
-Fix this by using the most recently configured FLL source when none is
-provided.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Dirk Eibach <eibach@gdsys.de>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8994.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/lm63.c |   59 ++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 47 insertions(+), 12 deletions(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -2914,6 +2914,7 @@ static int wm8994_set_fll(struct snd_soc
- 		/* Allow no source specification when stopping */
- 		if (freq_out)
- 			return -EINVAL;
-+		src = wm8994->fll[id].src;
- 		break;
- 	case WM8994_FLL_SRC_MCLK1:
- 	case WM8994_FLL_SRC_MCLK2:
+--- a/drivers/hwmon/lm63.c
++++ b/drivers/hwmon/lm63.c
+@@ -98,6 +98,9 @@ static const unsigned short normal_i2c[]
+  * value, it uses signed 8-bit values with LSB = 1 degree Celsius.
+  * For remote temperature, low and high limits, it uses signed 11-bit values
+  * with LSB = 0.125 degree Celsius, left-justified in 16-bit registers.
++ * For LM64 the actual remote diode temperature is 16 degree Celsius higher
++ * than the register reading. Remote temperature setpoints have to be
++ * adapted accordingly.
+  */
+ 
+ #define FAN_FROM_REG(reg)	((reg) == 0xFFFC || (reg) == 0 ? 0 : \
+@@ -165,6 +168,8 @@ struct lm63_data {
+ 	struct mutex update_lock;
+ 	char valid; /* zero until following fields are valid */
+ 	unsigned long last_updated; /* in jiffies */
++	int kind;
++	int temp2_offset;
+ 
+ 	/* registers values */
+ 	u8 config, config_fan;
+@@ -247,16 +252,34 @@ static ssize_t show_pwm1_enable(struct d
+ 	return sprintf(buf, "%d\n", data->config_fan & 0x20 ? 1 : 2);
+ }
+ 
+-static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
+-			  char *buf)
++/*
++ * There are 8bit registers for both local(temp1) and remote(temp2) sensor.
++ * For remote sensor registers temp2_offset has to be considered,
++ * for local sensor it must not.
++ * So we need separate 8bit accessors for local and remote sensor.
++ */
++static ssize_t show_local_temp8(struct device *dev,
++				struct device_attribute *devattr,
++				char *buf)
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct lm63_data *data = lm63_update_device(dev);
+ 	return sprintf(buf, "%d\n", TEMP8_FROM_REG(data->temp8[attr->index]));
+ }
+ 
+-static ssize_t set_temp8(struct device *dev, struct device_attribute *dummy,
+-			 const char *buf, size_t count)
++static ssize_t show_remote_temp8(struct device *dev,
++				 struct device_attribute *devattr,
++				 char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct lm63_data *data = lm63_update_device(dev);
++	return sprintf(buf, "%d\n", TEMP8_FROM_REG(data->temp8[attr->index])
++		       + data->temp2_offset);
++}
++
++static ssize_t set_local_temp8(struct device *dev,
++			       struct device_attribute *dummy,
++			       const char *buf, size_t count)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct lm63_data *data = i2c_get_clientdata(client);
+@@ -274,7 +297,8 @@ static ssize_t show_temp11(struct device
+ {
+ 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+ 	struct lm63_data *data = lm63_update_device(dev);
+-	return sprintf(buf, "%d\n", TEMP11_FROM_REG(data->temp11[attr->index]));
++	return sprintf(buf, "%d\n", TEMP11_FROM_REG(data->temp11[attr->index])
++		       + data->temp2_offset);
+ }
+ 
+ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+@@ -294,7 +318,7 @@ static ssize_t set_temp11(struct device
+ 	int nr = attr->index;
+ 
+ 	mutex_lock(&data->update_lock);
+-	data->temp11[nr] = TEMP11_TO_REG(val);
++	data->temp11[nr] = TEMP11_TO_REG(val - data->temp2_offset);
+ 	i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2],
+ 				  data->temp11[nr] >> 8);
+ 	i2c_smbus_write_byte_data(client, reg[(nr - 1) * 2 + 1],
+@@ -310,6 +334,7 @@ static ssize_t show_temp2_crit_hyst(stru
+ {
+ 	struct lm63_data *data = lm63_update_device(dev);
+ 	return sprintf(buf, "%d\n", TEMP8_FROM_REG(data->temp8[2])
++		       + data->temp2_offset
+ 		       - TEMP8_FROM_REG(data->temp2_crit_hyst));
+ }
+ 
+@@ -324,7 +349,7 @@ static ssize_t set_temp2_crit_hyst(struc
+ 	long hyst;
+ 
+ 	mutex_lock(&data->update_lock);
+-	hyst = TEMP8_FROM_REG(data->temp8[2]) - val;
++	hyst = TEMP8_FROM_REG(data->temp8[2]) + data->temp2_offset - val;
+ 	i2c_smbus_write_byte_data(client, LM63_REG_REMOTE_TCRIT_HYST,
+ 				  HYST_TO_REG(hyst));
+ 	mutex_unlock(&data->update_lock);
+@@ -355,16 +380,21 @@ static SENSOR_DEVICE_ATTR(fan1_min, S_IW
+ static DEVICE_ATTR(pwm1, S_IWUSR | S_IRUGO, show_pwm1, set_pwm1);
+ static DEVICE_ATTR(pwm1_enable, S_IRUGO, show_pwm1_enable, NULL);
+ 
+-static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp8, NULL, 0);
+-static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp8,
+-	set_temp8, 1);
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_local_temp8, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_local_temp8,
++	set_local_temp8, 1);
+ 
+ static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_temp11, NULL, 0);
+ static SENSOR_DEVICE_ATTR(temp2_min, S_IWUSR | S_IRUGO, show_temp11,
+ 	set_temp11, 1);
+ static SENSOR_DEVICE_ATTR(temp2_max, S_IWUSR | S_IRUGO, show_temp11,
+ 	set_temp11, 2);
+-static SENSOR_DEVICE_ATTR(temp2_crit, S_IRUGO, show_temp8, NULL, 2);
++/*
++ * On LM63, temp2_crit can be set only once, which should be job
++ * of the bootloader.
++ */
++static SENSOR_DEVICE_ATTR(temp2_crit, S_IRUGO, show_remote_temp8,
++	NULL, 2);
+ static DEVICE_ATTR(temp2_crit_hyst, S_IWUSR | S_IRUGO, show_temp2_crit_hyst,
+ 	set_temp2_crit_hyst);
+ 
+@@ -479,7 +509,12 @@ static int lm63_probe(struct i2c_client
+ 	data->valid = 0;
+ 	mutex_init(&data->update_lock);
+ 
+-	/* Initialize the LM63 chip */
++	/* Set the device type */
++	data->kind = id->driver_data;
++	if (data->kind == lm64)
++		data->temp2_offset = 16000;
++
++	/* Initialize chip */
+ 	lm63_init_client(new_client);
+ 
+ 	/* Register sysfs hooks */
 
 
