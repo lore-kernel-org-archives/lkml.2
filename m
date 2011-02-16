@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab1BPAtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:49:20 -0500
-Received: from kroah.org ([198.145.64.141]:45634 "EHLO coco.kroah.org"
+	id S1756190Ab1BPBLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:11:16 -0500
+Received: from kroah.org ([198.145.64.141]:45660 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933040Ab1BPAtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:14 -0500
+	id S933040Ab1BPAtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:20 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:06 2011
-Message-Id: <20110216002106.448146942@clark.kroah.org>
+Message-Id: <20110216002106.833293174@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:41 -0800
+Date: Tue, 15 Feb 2011 16:20:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Easwar Krishnan <easwar.krishnan@atheros.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 073/176] cfg80211: pass the reg hint initiator to helpers
+        Raymond Yau <superquad.vortex2@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [patch 077/176] ALSA : au88x0 - Limit number of channels to fix Oops via OSS emu
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Raymond Yau <superquad.vortex2@gmail.com>
 
-commit 7ca43d03b1291481bdf894bbaec5d580e7684e7d upstream.
+commit d9ab344336f74c012f6643ed3d1ad8ca0136de3b upstream.
 
-This is required later.
+Fix playback/capture channels patch to change supported playback
+channels of au8830 to 1,2,4 and capture channels to 1,2.
+This prevent oops when oss emulation use SNDCTL_DSP_CHANNELS to
+set 3 Channels
 
-Cc: Easwar Krishnan <easwar.krishnan@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Raymond Yau <superquad.vortex2@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/reg.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ sound/pci/au88x0/au88x0_pcm.c |   24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -723,7 +723,9 @@ EXPORT_SYMBOL(freq_reg_info);
-  * on the wiphy with the target_bw specified. Then we can simply use
-  * that below for the desired_bw_khz below.
-  */
--static void handle_channel(struct wiphy *wiphy, enum ieee80211_band band,
-+static void handle_channel(struct wiphy *wiphy,
-+			   enum nl80211_reg_initiator initiator,
-+			   enum ieee80211_band band,
- 			   unsigned int chan_idx)
+--- a/sound/pci/au88x0/au88x0_pcm.c
++++ b/sound/pci/au88x0/au88x0_pcm.c
+@@ -42,11 +42,7 @@ static struct snd_pcm_hardware snd_vorte
+ 	.rate_min = 5000,
+ 	.rate_max = 48000,
+ 	.channels_min = 1,
+-#ifdef CHIP_AU8830
+-	.channels_max = 4,
+-#else
+ 	.channels_max = 2,
+-#endif
+ 	.buffer_bytes_max = 0x10000,
+ 	.period_bytes_min = 0x1,
+ 	.period_bytes_max = 0x1000,
+@@ -115,6 +111,17 @@ static struct snd_pcm_hardware snd_vorte
+ 	.periods_max = 64,
+ };
+ #endif
++#ifdef CHIP_AU8830
++static unsigned int au8830_channels[3] = {
++	1, 2, 4,
++};
++
++static struct snd_pcm_hw_constraint_list hw_constraints_au8830_channels = {
++	.count = ARRAY_SIZE(au8830_channels),
++	.list = au8830_channels,
++	.mask = 0,
++};
++#endif
+ /* open callback */
+ static int snd_vortex_pcm_open(struct snd_pcm_substream *substream)
  {
- 	int r;
-@@ -787,7 +789,9 @@ static void handle_channel(struct wiphy
- 		chan->max_power = (int) MBM_TO_DBM(power_rule->max_eirp);
- }
- 
--static void handle_band(struct wiphy *wiphy, enum ieee80211_band band)
-+static void handle_band(struct wiphy *wiphy,
-+			enum ieee80211_band band,
-+			enum nl80211_reg_initiator initiator)
- {
- 	unsigned int i;
- 	struct ieee80211_supported_band *sband;
-@@ -796,7 +800,7 @@ static void handle_band(struct wiphy *wi
- 	sband = wiphy->bands[band];
- 
- 	for (i = 0; i < sband->n_channels; i++)
--		handle_channel(wiphy, band, i);
-+		handle_channel(wiphy, initiator, band, i);
- }
- 
- static bool ignore_reg_update(struct wiphy *wiphy,
-@@ -1033,7 +1037,7 @@ void wiphy_update_regulatory(struct wiph
- 		goto out;
- 	for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
- 		if (wiphy->bands[band])
--			handle_band(wiphy, band);
-+			handle_band(wiphy, band, initiator);
+@@ -156,6 +163,15 @@ static int snd_vortex_pcm_open(struct sn
+ 		if (VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_ADB
+ 		    || VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_I2S)
+ 			runtime->hw = snd_vortex_playback_hw_adb;
++#ifdef CHIP_AU8830
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
++			VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_ADB) {
++			runtime->hw.channels_max = 4;
++			snd_pcm_hw_constraint_list(runtime, 0,
++				SNDRV_PCM_HW_PARAM_CHANNELS,
++				&hw_constraints_au8830_channels);
++		}
++#endif
+ 		substream->runtime->private_data = NULL;
  	}
- out:
- 	reg_process_beacons(wiphy);
+ #ifndef CHIP_AU8810
 
 
