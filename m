@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab1BPBCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:02:37 -0500
-Received: from kroah.org ([198.145.64.141]:45969 "EHLO coco.kroah.org"
+	id S933574Ab1BPBCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:02:41 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:59588 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933258Ab1BPAug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:36 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:11 2011
-Message-Id: <20110216002111.153576037@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:29 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@in.ibm.com>
-Subject: [patch 121/176] memcg: fix account leak at failure of memsw acconting
-In-Reply-To: <20110216002212.GA9246@kroah.com>
+	id S933553Ab1BPBCh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:02:37 -0500
+X-IronPort-AV: E=Sophos;i="4.60,477,1291622400"; 
+   d="scan'208";a="518947298"
+Subject: Re: NFS Regression in commit 0b26a0bf6ff398
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110216005640.GA2841@mgebm.net>
+References: <20110216005640.GA2841@mgebm.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Tue, 15 Feb 2011 20:02:35 -0500
+Message-ID: <1297818155.10103.43.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 16 Feb 2011 01:02:36.0956 (UTC) FILETIME=[33873DC0:01CBCD75]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 2011-02-15 at 19:56 -0500, Eric B Munson wrote: 
+> While testing some 2.6.38 work my rsync backup script started consuming
+> large amounts of memory (all available before dying with no more available
+> memory).  I have bisected the problem back to 0b26a0bf6ff398.  I am
+> unfamiliar with the NFS code so I don't know where to start looking for a
+> possible fix.  My backups files from my home directory to an NFS mounted
+> directory.  The NFS server is a Synology DS-411+ if it matters.  Let me know
+> if there is any other information I can provide.
 
-------------------
+Exactly which 2.6.38 kernel are you running, and which NFS version?
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I'm having trouble seeing how the patch in question can be responsible
+for what you are seeing, so please could you provide more details of
+your test setup.
 
-commit 01c88e2d6b7330c0cc5867fe2297e7d826e1337d upstream.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Commit 4b53433468 ("memcg: clean up try_charge main loop") removes a
-cancel of charge at case: memory charge-> success.  mem+swap charge->
-failure.
-
-This leaks usage of memory.  Fix it.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Balbir Singh <balbir@in.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- mm/memcontrol.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1647,6 +1647,7 @@ static int __mem_cgroup_do_charge(struct
- 		if (likely(!ret))
- 			return CHARGE_OK;
- 
-+		res_counter_uncharge(&mem->res, csize);
- 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
- 		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
- 	} else
-
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
