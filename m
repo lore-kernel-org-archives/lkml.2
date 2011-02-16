@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab1BPASv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:18:51 -0500
-Received: from kroah.org ([198.145.64.141]:38707 "EHLO coco.kroah.org"
+	id S1756757Ab1BPAS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:18:58 -0500
+Received: from kroah.org ([198.145.64.141]:38737 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756696Ab1BPASn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:43 -0500
+	id S1756696Ab1BPASx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:28 2011
-Message-Id: <20110216001428.066853850@clark.kroah.org>
+Message-Id: <20110216001428.577704972@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:27 -0800
+Date: Tue, 15 Feb 2011 16:11:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nick Holloway <Nick.Holloway@pyrites.org.uk>
-Subject: [030/272] USB: Storage: Add unusual_devs entry for VTech Kidizoom
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [035/272] USB: prevent buggy hubs from crashing the USB stack
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nick Holloway <Nick.Holloway@pyrites.org.uk>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit c25f6b1591b158f7ae3b9132367d0fa6d632e70e upstream.
+commit d199c96d41d80a567493e12b8e96ea056a1350c1 upstream.
 
-This device suffers from the off-by-one error when reporting the capacity,
-so add entry with US_FL_FIX_CAPACITY.
+If anyone comes across a high-speed hub that (by mistake or by design)
+claims to have no Transaction Translators, plugging a full- or
+low-speed device into it will cause the USB stack to crash.  This
+patch (as1446) prevents the problem by ignoring such devices, since
+the kernel has no way to communicate with them.
 
-Signed-off-by: Nick Holloway <Nick.Holloway@pyrites.org.uk>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Perry Neben <neben@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/core/hub.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1397,6 +1397,13 @@ UNUSUAL_DEV(  0x0f19, 0x0105, 0x0100, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE ),
- 
-+/* Submitted by Nick Holloway */
-+UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0100,
-+		"VTech",
-+		"Kidizoom",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_FIX_CAPACITY ),
-+
- /* Reported by Michael Stattmann <michael@stattmann.com> */
- UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
- 		"Sony Ericsson",
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2723,6 +2723,11 @@ hub_port_init (struct usb_hub *hub, stru
+ 		udev->ttport = hdev->ttport;
+ 	} else if (udev->speed != USB_SPEED_HIGH
+ 			&& hdev->speed == USB_SPEED_HIGH) {
++		if (!hub->tt.hub) {
++			dev_err(&udev->dev, "parent hub has no TT\n");
++			retval = -EINVAL;
++			goto fail;
++		}
+ 		udev->tt = &hub->tt;
+ 		udev->ttport = port1;
+ 	}
 
 
