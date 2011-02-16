@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab1BPCQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:16:25 -0500
-Received: from kroah.org ([198.145.64.141]:38669 "EHLO coco.kroah.org"
+	id S1756731Ab1BPCQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:16:44 -0500
+Received: from kroah.org ([198.145.64.141]:38659 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756647Ab1BPASd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:33 -0500
+	id S1756652Ab1BPAS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:27 2011
-Message-Id: <20110216001427.445346424@clark.kroah.org>
+Message-Id: <20110216001427.239401863@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:21 -0800
+Date: Tue, 15 Feb 2011 16:11:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex He <alex.he@amd.com>
-Subject: [024/272] USB: EHCI: ASPM quirk of ISOC on AMD Hudson
+        Nicolaus Colberg <nicolaus.colberg@cinterion.com>
+Subject: [022/272] USB: adding USB support for Cinterions HC2x, EU3 and PH8 products
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex He <alex.he@amd.com>
+From: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 
-commit baab93afc2844b68d57b0dcca5e1d34c5d7cf411 upstream.
+commit aa52b3a92918039b273fc9d1994bd34227c40269 upstream.
 
-AMD Hudson also needs the same ASPM quirk as SB800
+/drivers/usb/serial/option.c: Adding support for Cinterion's HC25, HC28,
+HC28J, EU3-E, EU3-P and PH8 by correcting/adding Cinterion's and
+Siemens' Vendor IDs as well as Product IDs and USB_DEVICE tuples
 
-Signed-off-by: Alex He <alex.he@amd.com>
+Signed-off-by: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-pci.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ drivers/usb/serial/option.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -41,28 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
- 	return 0;
- }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -382,7 +382,16 @@ static void option_instat_callback(struc
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
  
--static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
-+static int ehci_quirk_amd_hudson(struct ehci_hcd *ehci)
- {
- 	struct pci_dev *amd_smbus_dev;
- 	u8 rev = 0;
+-#define CINTERION_VENDOR_ID			0x0681
++/* Cinterion (formerly Siemens) products */
++#define SIEMENS_VENDOR_ID				0x0681
++#define CINTERION_VENDOR_ID				0x1e2d
++#define CINTERION_PRODUCT_HC25_MDM		0x0047
++#define CINTERION_PRODUCT_HC25_MDMNET	0x0040
++#define CINTERION_PRODUCT_HC28_MDM		0x004C
++#define CINTERION_PRODUCT_HC28_MDMNET	0x004A /* same for HC28J */
++#define CINTERION_PRODUCT_EU3_E			0x0051
++#define CINTERION_PRODUCT_EU3_P			0x0052
++#define CINTERION_PRODUCT_PH8			0x0053
  
- 	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
--	if (!amd_smbus_dev)
--		return 0;
--
--	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
--	if (rev < 0x40) {
--		pci_dev_put(amd_smbus_dev);
--		amd_smbus_dev = NULL;
--		return 0;
-+	if (amd_smbus_dev) {
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x40) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
-+	} else {
-+		amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
-+		if (!amd_smbus_dev)
-+			return 0;
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x11 || rev > 0x18) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
- 	}
- 
- 	if (!amd_nb_dev)
- 		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
--	if (!amd_nb_dev)
--		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
- 
--	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
-+	ehci_info(ehci, "QUIRK: Enable exception for AMD Hudson ASPM\n");
- 
- 	pci_dev_put(amd_smbus_dev);
- 	amd_smbus_dev = NULL;
-@@ -128,7 +135,7 @@ static int ehci_pci_setup(struct usb_hcd
- 	/* cache this readonly data; minimize chip reads */
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
- 
--	if (ehci_quirk_amd_SB800(ehci))
-+	if (ehci_quirk_amd_hudson(ehci))
- 		ehci->amd_l1_fix = 1;
- 
- 	retval = ehci_halt(ehci);
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -945,7 +954,17 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
++	/* Cinterion */
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
 
 
