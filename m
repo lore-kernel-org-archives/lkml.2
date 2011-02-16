@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758673Ab1BPEUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 23:20:24 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56418 "EHLO e9.ny.us.ibm.com"
+	id S1758431Ab1BPEUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 23:20:18 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:56316 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab1BPEUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 23:20:14 -0500
+	id S1751638Ab1BPEUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 23:20:13 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Jamie Lokier <jamie@shareable.org>,
@@ -13,9 +13,9 @@ Cc: John Stultz <john.stultz@linaro.org>, Jamie Lokier <jamie@shareable.org>,
         Alexander Shishkin <virtuoso@slind.org>,
         =?UTF-8?q?Arve=20Hj=C3=83=C2=B8nnev=C3=83=C2=A5g?= 
 	<arve@android.com>
-Subject: [PATCH 3/5] time: Extend get_xtime_and_monotonic_offset() to also return sleep
-Date: Tue, 15 Feb 2011 20:20:05 -0800
-Message-Id: <1297830007-426-4-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 4/5] timers: Add CLOCK_BOOTTIME hrtimer base
+Date: Tue, 15 Feb 2011 20:20:06 -0800
+Message-Id: <1297830007-426-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1297830007-426-1-git-send-email-john.stultz@linaro.org>
 References: <1297830007-426-1-git-send-email-john.stultz@linaro.org>
@@ -27,8 +27,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend get_xtime_and_monotonic_offset to
-get_xtime_and_monotonic_and_sleep_offset().
+CLOCK_MONOTONIC stops while the system is in suspend. This is because
+to applications system suspend is invisible. However, there is a
+growing set of applications that are wanting to be suspend-aware,
+but do not want to deal with the complications of CLOCK_REALTIME
+(which might jump around if settimeofday is called).
+
+For these applications, I propose a new clockid: CLOCK_BOOTTIME.
+CLOCK_BOOTTIME is idential to CLOCK_MONOTONIC, except it also
+includes any time spent in suspend.
+
+This patch add hrtimer base for CLOCK_BOOTTIME, using
+get_monotonic_boottime/ktime_get_boottime, to allow
+in kernel users to set timers against.
 
 CC: Jamie Lokier <jamie@shareable.org>
 CC: Thomas Gleixner <tglx@linutronix.de>
@@ -36,81 +47,89 @@ CC: Alexander Shishkin <virtuoso@slind.org>
 CC: Arve HjÃ¸nnevÃ¥g <arve@android.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/time.h      |    3 ++-
- kernel/hrtimer.c          |    9 +++++----
- kernel/time/timekeeping.c |    5 ++++-
- 3 files changed, 11 insertions(+), 6 deletions(-)
+ include/linux/hrtimer.h |    1 +
+ include/linux/time.h    |    1 +
+ kernel/hrtimer.c        |   16 ++++++++++++----
+ 3 files changed, 14 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index 7a9e7ee..6bc1804 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -151,6 +151,7 @@ struct hrtimer_clock_base {
+ enum  hrtimer_base_type {
+ 	HRTIMER_BASE_REALTIME,
+ 	HRTIMER_BASE_MONOTONIC,
++	HRTIMER_BASE_BOOTTIME,
+ 	HRTIMER_MAX_CLOCK_BASES,
+ };
+ 
 diff --git a/include/linux/time.h b/include/linux/time.h
-index fa39150..02d48fb 100644
+index 02d48fb..454a262 100644
 --- a/include/linux/time.h
 +++ b/include/linux/time.h
-@@ -124,7 +124,8 @@ unsigned long get_seconds(void);
- struct timespec current_kernel_time(void);
- struct timespec __current_kernel_time(void); /* does not take xtime_lock */
- struct timespec get_monotonic_coarse(void);
--void get_xtime_and_monotonic_offset(struct timespec *xtim, struct timespec *wtom);
-+void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
-+				struct timespec *wtom, struct timespec *sleep);
+@@ -293,6 +293,7 @@ struct itimerval {
+ #define CLOCK_MONOTONIC_RAW		4
+ #define CLOCK_REALTIME_COARSE		5
+ #define CLOCK_MONOTONIC_COARSE		6
++#define CLOCK_BOOTTIME			7
  
- #define CURRENT_TIME		(current_kernel_time())
- #define CURRENT_TIME_SEC	((struct timespec) { get_seconds(), 0 })
+ /*
+  * The IDs of various hardware clocks:
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index ca99e24..e8bf3ad 100644
+index e8bf3ad..4c53af1 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -91,9 +91,9 @@ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
+@@ -73,6 +73,11 @@ DEFINE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases) =
+ 			.get_time = &ktime_get,
+ 			.resolution = KTIME_LOW_RES,
+ 		},
++		{
++			.index = CLOCK_BOOTTIME,
++			.get_time = &ktime_get_boottime,
++			.resolution = KTIME_LOW_RES,
++		},
+ 	}
+ };
+ 
+@@ -90,16 +95,17 @@ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
+  */
  static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
  {
- 	ktime_t xtim, tomono;
--	struct timespec xts, tom;
-+	struct timespec xts, tom, slp;
+-	ktime_t xtim, tomono;
++	ktime_t xtim, mono, boot;
+ 	struct timespec xts, tom, slp;
  
--	get_xtime_and_monotonic_offset(&xts, &tom);
-+	get_xtime_and_monotonic_and_sleep_offset(&xts, &tom, &slp);
+ 	get_xtime_and_monotonic_and_sleep_offset(&xts, &tom, &slp);
  
  	xtim = timespec_to_ktime(xts);
- 	tomono = timespec_to_ktime(tom);
-@@ -614,12 +614,13 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- static void retrigger_next_event(void *arg)
- {
- 	struct hrtimer_cpu_base *base;
--	struct timespec realtime_offset, wtm;
-+	struct timespec realtime_offset, wtm, sleep;
- 
- 	if (!hrtimer_hres_active())
- 		return;
- 
--	get_xtime_and_monotonic_offset(&realtime_offset, &wtm);
-+	get_xtime_and_monotonic_and_sleep_offset(&realtime_offset, &wtm,
-+							&sleep);
- 	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
- 
- 	base = &__get_cpu_var(hrtimer_bases);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 5fbd9aa..29f75aa 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1043,8 +1043,10 @@ void do_timer(unsigned long ticks)
-  * get_xtime_and_monotonic_offset() - get xtime and wall_to_monotonic
-  * @xtim:	pointer to timespec to be set with xtime
-  * @wtom:	pointer to timespec to be set with wall_to_monotonic
-+ * @sleep:	pointer to timespec to be set with time in suspend
-  */
--void get_xtime_and_monotonic_offset(struct timespec *xtim, struct timespec *wtom)
-+void get_xtime_and_monotonic_and_sleep_offset(struct timespec *xtim,
-+				struct timespec *wtom, struct timespec *sleep)
- {
- 	unsigned long seq;
- 
-@@ -1052,6 +1054,7 @@ void get_xtime_and_monotonic_offset(struct timespec *xtim, struct timespec *wtom
- 		seq = read_seqbegin(&xtime_lock);
- 		*xtim = xtime;
- 		*wtom = wall_to_monotonic;
-+		*sleep = total_sleep_time;
- 	} while (read_seqretry(&xtime_lock, seq));
+-	tomono = timespec_to_ktime(tom);
++	mono = ktime_add(xtim, timespec_to_ktime(tom));
++	boot = ktime_add(mono, timespec_to_ktime(slp));
+ 	base->clock_base[HRTIMER_BASE_REALTIME].softirq_time = xtim;
+-	base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time =
+-		ktime_add(xtim, tomono);
++	base->clock_base[HRTIMER_BASE_MONOTONIC].softirq_time = mono;
++	base->clock_base[HRTIMER_BASE_BOOTTIME].softirq_time = boot;
  }
  
+ /*
+@@ -727,6 +733,7 @@ static int hrtimer_switch_to_hres(void)
+ 	base->hres_active = 1;
+ 	base->clock_base[HRTIMER_BASE_REALTIME].resolution = KTIME_HIGH_RES;
+ 	base->clock_base[HRTIMER_BASE_MONOTONIC].resolution = KTIME_HIGH_RES;
++	base->clock_base[HRTIMER_BASE_BOOTTIME].resolution = KTIME_HIGH_RES;
+ 
+ 	tick_setup_sched_timer();
+ 
+@@ -1719,6 +1726,7 @@ void __init hrtimers_init(void)
+ {
+ 	hrtimer_clock_to_base_table[CLOCK_REALTIME] = HRTIMER_BASE_REALTIME;
+ 	hrtimer_clock_to_base_table[CLOCK_MONOTONIC] = HRTIMER_BASE_MONOTONIC;
++	hrtimer_clock_to_base_table[CLOCK_BOOTTIME] = HRTIMER_BASE_BOOTTIME;
+ 
+ 	hrtimer_cpu_notify(&hrtimers_nb, (unsigned long)CPU_UP_PREPARE,
+ 			  (void *)(long)smp_processor_id());
 -- 
 1.7.3.2.146.gca209
 
