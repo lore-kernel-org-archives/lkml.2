@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab1BPWSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 17:18:51 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20378 "EHLO
+	id S1755266Ab1BPWTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 17:19:00 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20853 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab1BPWSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 17:18:49 -0500
-Date: Wed, 16 Feb 2011 14:17:55 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Subject: [PATCH] docbook: add fs/eventfd.c kernel-doc
-Message-Id: <20110216141755.a570694f.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+	with ESMTP id S1755226Ab1BPWS5 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 16 Feb 2011 17:18:57 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] xen-pcifront: Sanity check the MSI/MSI-X values
+Date: Wed, 16 Feb 2011 17:17:17 -0500
+Message-Id: <1297894638-28007-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1297894638-28007-1-git-send-email-konrad.wilk@oracle.com>
+References: <1297894638-28007-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0202.4D5C4D46.01D4:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4D5C4D48.0011:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Check the returned vector values for any values that are
+odd or plain incorrect (say vector value zero), and if so
+print a warning. Also fixup the return values.
 
-Add fs/eventfd.c to filesystems docbook.
-Make typo corrections in fs/eventfd.c.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Davide Libenzi <davidel@xmailserver.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- Documentation/DocBook/filesystems.tmpl |    5 +++++
- fs/eventfd.c                           |   12 ++++++------
- 2 files changed, 11 insertions(+), 6 deletions(-)
+ drivers/pci/xen-pcifront.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
---- lnx-2638-rc3.orig/Documentation/DocBook/filesystems.tmpl
-+++ lnx-2638-rc3/Documentation/DocBook/filesystems.tmpl
-@@ -82,6 +82,11 @@
-      </sect1>
-   </chapter>
- 
-+  <chapter id="fs_events">
-+     <title>Events based on file descriptors</title>
-+!Efs/eventfd.c
-+  </chapter>
-+
-   <chapter id="sysfs">
-      <title>The Filesystem for Exporting Kernel Objects</title>
- !Efs/sysfs/file.c
---- lnx-2638-rc3.orig/fs/eventfd.c
-+++ lnx-2638-rc3/fs/eventfd.c
-@@ -99,7 +99,7 @@ EXPORT_SYMBOL_GPL(eventfd_ctx_get);
-  * @ctx: [in] Pointer to eventfd context.
-  *
-  * The eventfd context reference must have been previously acquired either
-- * with eventfd_ctx_get() or eventfd_ctx_fdget()).
-+ * with eventfd_ctx_get() or eventfd_ctx_fdget().
-  */
- void eventfd_ctx_put(struct eventfd_ctx *ctx)
- {
-@@ -146,9 +146,9 @@ static void eventfd_ctx_do_read(struct e
-  * eventfd_ctx_remove_wait_queue - Read the current counter and removes wait queue.
-  * @ctx: [in] Pointer to eventfd context.
-  * @wait: [in] Wait queue to be removed.
-- * @cnt: [out] Pointer to the 64bit conter value.
-+ * @cnt: [out] Pointer to the 64-bit counter value.
-  *
-- * Returns zero if successful, or the following error codes:
-+ * Returns %0 if successful, or the following error codes:
-  *
-  * -EAGAIN      : The operation would have blocked.
-  *
-@@ -175,11 +175,11 @@ EXPORT_SYMBOL_GPL(eventfd_ctx_remove_wai
-  * eventfd_ctx_read - Reads the eventfd counter or wait if it is zero.
-  * @ctx: [in] Pointer to eventfd context.
-  * @no_wait: [in] Different from zero if the operation should not block.
-- * @cnt: [out] Pointer to the 64bit conter value.
-+ * @cnt: [out] Pointer to the 64-bit counter value.
-  *
-- * Returns zero if successful, or the following error codes:
-+ * Returns %0 if successful, or the following error codes:
-  *
-- * -EAGAIN      : The operation would have blocked but @no_wait was nonzero.
-+ * -EAGAIN      : The operation would have blocked but @no_wait was non-zero.
-  * -ERESTARTSYS : A signal interrupted the wait operation.
-  *
-  * If @no_wait is zero, the function might sleep until the eventfd internal
----
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index 3a5a6fc..6acf6ae 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -277,13 +277,20 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
+ 	if (likely(!err)) {
+ 		if (likely(!op.value)) {
+ 			/* we get the result */
+-			for (i = 0; i < nvec; i++)
++			for (i = 0; i < nvec; i++) {
++				if (op.msix_entries[i].vector <= 0) {
++					dev_warn(&dev->dev, "MSI-X entry %d" \
++						" is zero!\n", i);
++					err = -EINVAL;
++					continue;
++				}
+ 				*(*vector+i) = op.msix_entries[i].vector;
+-			return 0;
++			}
++			return err;
+ 		} else {
+ 			printk(KERN_DEBUG "enable msix get value %x\n",
+ 				op.value);
+-			return op.value;
++			return err;
+ 		}
+ 	} else {
+ 		dev_err(&dev->dev, "enable msix get err %x\n", err);
+@@ -325,6 +332,10 @@ static int pci_frontend_enable_msi(struct pci_dev *dev, int **vector)
+ 	err = do_pci_op(pdev, &op);
+ 	if (likely(!err)) {
+ 		*(*vector) = op.value;
++		if (op.value <= 0) {
++			dev_warn(&dev->dev, "MSI entry is zero!\n");
++			err = -EINVAL;
++		}
+ 	} else {
+ 		dev_err(&dev->dev, "pci frontend enable msi failed for dev "
+ 				    "%x:%x\n", op.bus, op.devfn);
+-- 
+1.7.1
+
