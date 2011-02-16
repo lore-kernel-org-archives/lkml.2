@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab1BPBrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:47:36 -0500
-Received: from kroah.org ([198.145.64.141]:38757 "EHLO coco.kroah.org"
+	id S1756747Ab1BPASz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:18:55 -0500
+Received: from kroah.org ([198.145.64.141]:38718 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756770Ab1BPATA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:00 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:29 2011
-Message-Id: <20110216001428.977793830@clark.kroah.org>
+	id S1756710Ab1BPASr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:28 2011
+Message-Id: <20110216001428.262636803@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:36 -0800
+Date: Tue, 15 Feb 2011 16:11:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ruben Smits <ruben.smits@mech.kuleuven.be>
-Subject: [039/272] staging: comedi: add support for newer jr3 1-channel pci board
+        Arvid Ephraim Picciani <arvid.picciani@nokia.com>
+Subject: [032/272] USB: cdc-acm: Adding second ACM channel support for Nokia N8
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ruben Smits <ruben.smits@mech.kuleuven.be>
+From: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
 
-commit 6292817d58637f85dd623cfe563c7f5ec4f4c470 upstream.
+commit 721d92fc6373dee15846216f9d178ec240ec0fd7 upstream.
 
-add DEVICE_ID to table
+This adds the N8 to the list of devices in cdc-acm, in order to get the
+secondary ACM device exposed.
 
-Signed-off-by: Ruben Smits <ruben.smits@mech.kuleuven.be>
+In the spirit of:
+http://kerneltrap.org/mailarchive/linux-usb/2010/9/4/6264554
+
+Signed-off-by: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/class/cdc-acm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -54,6 +54,7 @@ Devices: [JR3] PCI force sensor board (j
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1607,6 +1607,7 @@ static const struct usb_device_id acm_id
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x0154), }, /* Nokia 5800 XpressMusic */
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x04ce), }, /* Nokia E90 */
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x01d4), }, /* Nokia E55 */
++	{ NOKIA_PCSUITE_ACM_INFO(0x0302), }, /* Nokia N8 */
+ 	{ SAMSUNG_PCSUITE_ACM_INFO(0x6651), }, /* Samsung GTi8510 (INNOV8) */
  
- #define PCI_VENDOR_ID_JR3 0x1762
- #define PCI_DEVICE_ID_JR3_1_CHANNEL 0x3111
-+#define PCI_DEVICE_ID_JR3_1_CHANNEL_NEW 0x1111
- #define PCI_DEVICE_ID_JR3_2_CHANNEL 0x3112
- #define PCI_DEVICE_ID_JR3_3_CHANNEL 0x3113
- #define PCI_DEVICE_ID_JR3_4_CHANNEL 0x3114
-@@ -73,6 +74,8 @@ static DEFINE_PCI_DEVICE_TABLE(jr3_pci_p
- 	{
- 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL,
- 		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
-+	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL_NEW,
-+		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
- 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_2_CHANNEL,
- 		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
- 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_3_CHANNEL,
-@@ -807,6 +810,10 @@ static int jr3_pci_attach(struct comedi_
- 					devpriv->n_channels = 1;
- 				}
- 				break;
-+			case PCI_DEVICE_ID_JR3_1_CHANNEL_NEW:{
-+					devpriv->n_channels = 1;
-+				}
-+				break;
- 			case PCI_DEVICE_ID_JR3_2_CHANNEL:{
- 					devpriv->n_channels = 2;
- 				}
+ 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
 
 
