@@ -1,28 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933596Ab1BPBHe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:07:34 -0500
-Received: from kroah.org ([198.145.64.141]:45795 "EHLO coco.kroah.org"
+	id S933189Ab1BPBHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:07:54 -0500
+Received: from kroah.org ([198.145.64.141]:45790 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933159Ab1BPAtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:52 -0500
+	id S933157Ab1BPAtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:51 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:08 2011
-Message-Id: <20110216002108.787652188@clark.kroah.org>
+Message-Id: <20110216002108.691644624@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:05 -0800
+Date: Tue, 15 Feb 2011 16:21:04 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Taranowski <tom@baringforge.com>,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Micha Nelissen <micha@neli.hopto.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [patch 097/176] rapidio: fix hang on RapidIO doorbell queue full condition
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [patch 096/176] ext4: fix memory leak in ext4_free_branches
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,44 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Taranowski <tom@baringforge.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 12a4dc43911785f51a596f771ae0701b18d436f1 upstream.
+commit 1c5b9e9065567876c2d4a7a16d78f0fed154a5bf upstream.
 
-In fsl_rio_dbell_handler() the code currently simply acknowledges the QFI
-queue full interrupt, but does nothing to resolve the queue full
-condition.  Instead, it jumps to the end of the isr.  When a queue full
-condition occurs, the isr is then re-entered immediately and continually,
-forever.
+Commit 40389687 moved a call to ext4_forget() out of
+ext4_free_branches and let ext4_free_blocks() handle calling
+bforget().  But that change unfortunately did not replace the call to
+ext4_forget() with brelse(), which was needed to drop the in-use count
+of the indirect block's buffer head, which lead to a memory leak when
+deleting files that used indirect blocks.  Fix this.
 
-The fix is to just fall through and read out current doorbell entries.
+Thanks to Hugh Dickins for pointing this out.
 
-Signed-off-by: Thomas Taranowski <tom@baringforge.com>
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Thomas Moll <thomas.moll@sysgo.com>
-Cc: Micha Nelissen <micha@neli.hopto.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/sysdev/fsl_rio.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/ext4/inode.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/sysdev/fsl_rio.c
-+++ b/arch/powerpc/sysdev/fsl_rio.c
-@@ -954,7 +954,6 @@ fsl_rio_dbell_handler(int irq, void *dev
- 	if (dsr & DOORBELL_DSR_QFI) {
- 		pr_info("RIO: doorbell queue full\n");
- 		out_be32(&priv->msg_regs->dsr, DOORBELL_DSR_QFI);
--		goto out;
- 	}
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4530,6 +4530,7 @@ static void ext4_free_branches(handle_t
+ 					(__le32 *) bh->b_data,
+ 					(__le32 *) bh->b_data + addr_per_block,
+ 					depth);
++			brelse(bh);
  
- 	/* XXX Need to check/dispatch until queue empty */
+ 			/*
+ 			 * Everything below this this pointer has been
 
 
