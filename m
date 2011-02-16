@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab1BPAim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:38:42 -0500
-Received: from kroah.org ([198.145.64.141]:49539 "EHLO coco.kroah.org"
+	id S932207Ab1BPAi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:38:58 -0500
+Received: from kroah.org ([198.145.64.141]:49528 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202Ab1BPAXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:54 -0500
+	id S932187Ab1BPAXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:52 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:45 2011
-Message-Id: <20110216001445.654656926@clark.kroah.org>
+Message-Id: <20110216001445.555901477@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:22 -0800
+Date: Tue, 15 Feb 2011 16:14:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [205/272] perf: Find_get_context: fix the per-cpu-counter check
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [204/272] perf: Fix alloc_callchain_buffers()
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,44 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 22a4ec729017ba613337a28f306f94ba5023fe2e upstream.
+commit 88d4f0db7fa8785859c1d637f9aac210932b6216 upstream.
 
-If task == NULL, find_get_context() should always check that cpu
-is correct.
+Commit 927c7a9e92c4 ("perf: Fix race in callchains") introduced
+a mismatch in the sizing of struct callchain_cpus_entries.
 
-Afaics, the bug was introduced by 38a81da2 "perf events: Clean
-up pid passing", but even before that commit "&& cpu != -1" was
-not exactly right, -ESRCH from find_task_by_vpid() is not
-accurate.
+nr_cpu_ids must be used instead of num_possible_cpus(), or we
+might get out of bound memory accesses on some machines.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Prasad <prasad@linux.vnet.ibm.com>
-Cc: Roland McGrath <roland@redhat.com>
-LKML-Reference: <20110118161008.GB693@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <1295980851.3588.351.camel@edumazet-laptop>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/perf_event.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/perf_event.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -2100,7 +2100,7 @@ find_get_context(struct pmu *pmu, struct
- 	unsigned long flags;
- 	int ctxn, err;
+@@ -1872,8 +1872,7 @@ static int alloc_callchain_buffers(void)
+ 	 * accessed from NMI. Use a temporary manual per cpu allocation
+ 	 * until that gets sorted out.
+ 	 */
+-	size = sizeof(*entries) + sizeof(struct perf_callchain_entry *) *
+-		num_possible_cpus();
++	size = offsetof(struct callchain_cpus_entries, cpu_entries[nr_cpu_ids]);
  
--	if (!task && cpu != -1) {
-+	if (!task) {
- 		/* Must be root to operate on a CPU event: */
- 		if (perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
- 			return ERR_PTR(-EACCES);
+ 	entries = kzalloc(size, GFP_KERNEL);
+ 	if (!entries)
 
 
