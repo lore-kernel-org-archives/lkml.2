@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758521Ab1BPBvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:51:10 -0500
-Received: from kroah.org ([198.145.64.141]:49064 "EHLO coco.kroah.org"
+	id S1758553Ab1BPCAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:00:47 -0500
+Received: from kroah.org ([198.145.64.141]:49178 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758289Ab1BPBuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:50:37 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:00 2011
-Message-Id: <20110216014700.694532430@clark.kroah.org>
+	id S1752579Ab1BPBvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:51:11 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:02 2011
+Message-Id: <20110216014702.358548085@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:30 -0800
+Date: Tue, 15 Feb 2011 17:45:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [064/115] powerpc: Fix some 6xx/7xxx CPU setup functions
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [081/115] drm/radeon/kms: fix s/r issues with bios scratch regs
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,139 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 1f1936ff3febf38d582177ea319eaa278f32c91f upstream.
+commit 87364760de5d631390c478fcbac8db1b926e0adf upstream.
 
-Some of those functions try to adjust the CPU features, for example
-to remove NAP support on some revisions. However, they seem to use
-r5 as an index into the CPU table entry, which might have been right
-a long time ago but no longer is. r4 is the right register to use.
+The accelerate mode bit gets checked by certain atom
+command tables to set up some register state.  It needs
+to be clear when setting modes and set when not.
 
-This probably caused some off behaviours on some PowerMac variants
-using 750cx or 7455 processor revisions.
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=26942
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/cpu_setup_6xx.S |   40 ++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/kernel/cpu_setup_6xx.S
-+++ b/arch/powerpc/kernel/cpu_setup_6xx.S
-@@ -18,7 +18,7 @@
- #include <asm/mmu.h>
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -1217,7 +1217,7 @@ void radeon_atom_initialize_bios_scratch
+ 	bios_2_scratch &= ~ATOM_S2_VRI_BRIGHT_ENABLE;
  
- _GLOBAL(__setup_cpu_603)
--	mflr	r4
-+	mflr	r5
- BEGIN_MMU_FTR_SECTION
- 	li	r10,0
- 	mtspr	SPRN_SPRG_603_LRU,r10		/* init SW LRU tracking */
-@@ -27,60 +27,60 @@ BEGIN_FTR_SECTION
- 	bl	__init_fpu_registers
- END_FTR_SECTION_IFCLR(CPU_FTR_FPU_UNAVAILABLE)
- 	bl	setup_common_caches
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_604)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_604_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750cx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750cx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_750fx)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	bl	setup_750fx
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7400)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7400_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_7410)
--	mflr	r4
-+	mflr	r5
- 	bl	__init_fpu_registers
- 	bl	setup_7410_workarounds
- 	bl	setup_common_caches
- 	bl	setup_750_7400_hid0
- 	li	r3,0
- 	mtspr	SPRN_L2CR2,r3
--	mtlr	r4
-+	mtlr	r5
- 	blr
- _GLOBAL(__setup_cpu_745x)
--	mflr	r4
-+	mflr	r5
- 	bl	setup_common_caches
- 	bl	setup_745x_specifics
--	mtlr	r4
-+	mtlr	r5
- 	blr
+ 	/* tell the bios not to handle mode switching */
+-	bios_6_scratch |= (ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH | ATOM_S6_ACC_MODE);
++	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
  
- /* Enable caches for 603's, 604, 750 & 7400 */
-@@ -194,10 +194,10 @@ setup_750cx:
- 	cror	4*cr0+eq,4*cr0+eq,4*cr1+eq
- 	cror	4*cr0+eq,4*cr0+eq,4*cr2+eq
- 	bnelr
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 	blr
+ 	if (rdev->family >= CHIP_R600) {
+ 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
+@@ -1268,10 +1268,13 @@ void radeon_atom_output_lock(struct drm_
+ 	else
+ 		bios_6_scratch = RREG32(RADEON_BIOS_6_SCRATCH);
  
- /* 750fx specific
-@@ -225,12 +225,12 @@ BEGIN_FTR_SECTION
- 	andis.	r11,r11,L3CR_L3E@h
- 	beq	1f
- END_FTR_SECTION_IFSET(CPU_FTR_L3CR)
--	lwz	r6,CPU_SPEC_FEATURES(r5)
-+	lwz	r6,CPU_SPEC_FEATURES(r4)
- 	andi.	r0,r6,CPU_FTR_L3_DISABLE_NAP
- 	beq	1f
- 	li	r7,CPU_FTR_CAN_NAP
- 	andc	r6,r6,r7
--	stw	r6,CPU_SPEC_FEATURES(r5)
-+	stw	r6,CPU_SPEC_FEATURES(r4)
- 1:
- 	mfspr	r11,SPRN_HID0
+-	if (lock)
++	if (lock) {
+ 		bios_6_scratch |= ATOM_S6_CRITICAL_STATE;
+-	else
++		bios_6_scratch &= ~ATOM_S6_ACC_MODE;
++	} else {
+ 		bios_6_scratch &= ~ATOM_S6_CRITICAL_STATE;
++		bios_6_scratch |= ATOM_S6_ACC_MODE;
++	}
  
+ 	if (rdev->family >= CHIP_R600)
+ 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
 
 
