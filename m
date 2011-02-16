@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab1BPBdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:33:04 -0500
-Received: from kroah.org ([198.145.64.141]:39244 "EHLO coco.kroah.org"
+	id S1757252Ab1BPBdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:33:23 -0500
+Received: from kroah.org ([198.145.64.141]:39238 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757239Ab1BPAVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:14 -0500
+	id S1757234Ab1BPAVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:12 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:36 2011
-Message-Id: <20110216001436.398815984@clark.kroah.org>
+Message-Id: <20110216001436.296365517@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:50 -0800
+Date: Tue, 15 Feb 2011 16:12:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [113/272] nfsd4: name->id mapping should fail with BADOWNER not BADNAME
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [112/272] NFS: Fix "kernel BUG at fs/aio.c:554!"
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +26,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: J. Bruce Fields <bfields@redhat.com>
+From: Chuck Lever <chuck.lever@oracle.com>
 
-commit f6af99ec1b261e21219d5eba99e3af48fc6c32d4 upstream.
+commit 839f7ad6932d95f4d5ae7267b95c574714ff3d5b upstream.
 
-According to rfc 3530 BADNAME is for strings that represent paths;
-BADOWNER is for user/group names that don't map.
+Nick Piggin reports:
 
-And the too-long name should probably be BADOWNER as well; it's
-effectively the same as if we couldn't map it.
+> I'm getting use after frees in aio code in NFS
+>
+> [ 2703.396766] Call Trace:
+> [ 2703.396858]  [<ffffffff8100b057>] ? native_sched_clock+0x27/0x80
+> [ 2703.396959]  [<ffffffff8108509e>] ? put_lock_stats+0xe/0x40
+> [ 2703.397058]  [<ffffffff81088348>] ? lock_release_holdtime+0xa8/0x140
+> [ 2703.397159]  [<ffffffff8108a2a5>] lock_acquire+0x95/0x1b0
+> [ 2703.397260]  [<ffffffff811627db>] ? aio_put_req+0x2b/0x60
+> [ 2703.397361]  [<ffffffff81039701>] ? get_parent_ip+0x11/0x50
+> [ 2703.397464]  [<ffffffff81612a31>] _raw_spin_lock_irq+0x41/0x80
+> [ 2703.397564]  [<ffffffff811627db>] ? aio_put_req+0x2b/0x60
+> [ 2703.397662]  [<ffffffff811627db>] aio_put_req+0x2b/0x60
+> [ 2703.397761]  [<ffffffff811647fe>] do_io_submit+0x2be/0x7c0
+> [ 2703.397895]  [<ffffffff81164d0b>] sys_io_submit+0xb/0x10
+> [ 2703.397995]  [<ffffffff8100307b>] system_call_fastpath+0x16/0x1b
+>
+> Adding some tracing, it is due to nfs completing the request then
+> returning something other than -EIOCBQUEUED, so aio.c
+> also completes the request.
 
-Reported-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Reported-by: Simon Kirby <sim@hostway.ca>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+To address this, prevent the NFS direct I/O engine from completing
+async iocbs when the forward path returns an error without starting
+any I/O.
+
+This fix appears to survive ^C during both "xfstest no. 208" and "fsx
+-Z."
+
+It's likely this bug has existed for a very long while, as we are seeing
+very similar symptoms in OEL 5.  Copying stable.
+
+Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4idmap.c |    4 ++--
- fs/nfsd/nfsd.h      |    1 +
- fs/nfsd/nfsproc.c   |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ fs/nfs/direct.c |   34 ++++++++++++++++++++--------------
+ 1 file changed, 20 insertions(+), 14 deletions(-)
 
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -524,13 +524,13 @@ idmap_name_to_id(struct svc_rqst *rqstp,
- 	int ret;
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -407,15 +407,18 @@ static ssize_t nfs_direct_read_schedule_
+ 		pos += vec->iov_len;
+ 	}
  
- 	if (namelen + 1 > sizeof(key.name))
--		return -EINVAL;
-+		return -ESRCH; /* nfserr_badowner */
- 	memcpy(key.name, name, namelen);
- 	key.name[namelen] = '\0';
- 	strlcpy(key.authname, rqst_authname(rqstp), sizeof(key.authname));
- 	ret = idmap_lookup(rqstp, nametoid_lookup, &key, &nametoid_cache, &item);
- 	if (ret == -ENOENT)
--		ret = -ESRCH; /* nfserr_badname */
-+		ret = -ESRCH; /* nfserr_badowner */
- 	if (ret)
- 		return ret;
- 	*id = item->id;
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -158,6 +158,7 @@ void		nfsd_lockd_shutdown(void);
- #define	nfserr_attrnotsupp	cpu_to_be32(NFSERR_ATTRNOTSUPP)
- #define	nfserr_bad_xdr		cpu_to_be32(NFSERR_BAD_XDR)
- #define	nfserr_openmode		cpu_to_be32(NFSERR_OPENMODE)
-+#define	nfserr_badowner		cpu_to_be32(NFSERR_BADOWNER)
- #define	nfserr_locks_held	cpu_to_be32(NFSERR_LOCKS_HELD)
- #define	nfserr_op_illegal	cpu_to_be32(NFSERR_OP_ILLEGAL)
- #define	nfserr_grace		cpu_to_be32(NFSERR_GRACE)
---- a/fs/nfsd/nfsproc.c
-+++ b/fs/nfsd/nfsproc.c
-@@ -737,7 +737,7 @@ nfserrno (int errno)
- 		{ nfserr_jukebox, -ERESTARTSYS },
- 		{ nfserr_dropit, -EAGAIN },
- 		{ nfserr_dropit, -ENOMEM },
--		{ nfserr_badname, -ESRCH },
-+		{ nfserr_badowner, -ESRCH },
- 		{ nfserr_io, -ETXTBSY },
- 		{ nfserr_notsupp, -EOPNOTSUPP },
- 		{ nfserr_toosmall, -ETOOSMALL },
++	/*
++	 * If no bytes were started, return the error, and let the
++	 * generic layer handle the completion.
++	 */
++	if (requested_bytes == 0) {
++		nfs_direct_req_release(dreq);
++		return result < 0 ? result : -EIO;
++	}
++
+ 	if (put_dreq(dreq))
+ 		nfs_direct_complete(dreq);
+-
+-	if (requested_bytes != 0)
+-		return 0;
+-
+-	if (result < 0)
+-		return result;
+-	return -EIO;
++	return 0;
+ }
+ 
+ static ssize_t nfs_direct_read(struct kiocb *iocb, const struct iovec *iov,
+@@ -841,15 +844,18 @@ static ssize_t nfs_direct_write_schedule
+ 		pos += vec->iov_len;
+ 	}
+ 
++	/*
++	 * If no bytes were started, return the error, and let the
++	 * generic layer handle the completion.
++	 */
++	if (requested_bytes == 0) {
++		nfs_direct_req_release(dreq);
++		return result < 0 ? result : -EIO;
++	}
++
+ 	if (put_dreq(dreq))
+ 		nfs_direct_write_complete(dreq, dreq->inode);
+-
+-	if (requested_bytes != 0)
+-		return 0;
+-
+-	if (result < 0)
+-		return result;
+-	return -EIO;
++	return 0;
+ }
+ 
+ static ssize_t nfs_direct_write(struct kiocb *iocb, const struct iovec *iov,
 
 
