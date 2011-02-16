@@ -1,129 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab1BPNeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 08:34:15 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:54424 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab1BPNeN (ORCPT
+	id S1754070Ab1BPNhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 08:37:46 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61821 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1BPNhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 08:34:13 -0500
-X-AuditID: b753bd60-a46baba000004916-37-4d5bd252944b
-X-AuditID: b753bd60-a46baba000004916-37-4d5bd252944b
-Message-ID: <4D5BD24F.3060601@hitachi.com>
-Date: Wed, 16 Feb 2011 22:34:07 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 16 Feb 2011 08:37:41 -0500
+Date: Wed, 16 Feb 2011 08:37:36 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: NFS Regression in commit 0b26a0bf6ff398
+Message-ID: <20110216133735.GA2947@mgebm.net>
+References: <20110216005640.GA2841@mgebm.net>
+ <1297818155.10103.43.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 00/14] [GIT PULL][v2.6.39] tracing/filter: More robust
- filtering
-References: <20110208015617.902200587@goodmis.org> <20110215044425.GA9994@elte.hu> <1297776787.23343.104.camel@gandalf.stny.rr.com> <1297787362.23343.109.camel@gandalf.stny.rr.com> <20110215165302.GA2272@nowhere> <20110215183558.GE30208@ghostprotocols.net>
-In-Reply-To: <20110215183558.GE30208@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+In-Reply-To: <1297818155.10103.43.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/02/16 3:35), Arnaldo Carvalho de Melo wrote:
-> Em Tue, Feb 15, 2011 at 05:53:06PM +0100, Frederic Weisbecker escreveu:
->> On Tue, Feb 15, 2011 at 11:29:22AM -0500, Steven Rostedt wrote:
->>> On Tue, 2011-02-15 at 08:33 -0500, Steven Rostedt wrote:
->>>
->>>> Thanks for letting me waste three days on developing this. I even posted
->>>> an RFC a while back, and no one complained then.
->>>
->>> Sorry about being a bit bitchy in my reply here. I need to make a note
->>> not to reply to LKML before my first cup of coffee. ;)
->>>
->>> Arnaldo,
->>>
->>> Thanks for the post, I'll help you out where you need it. trace-cmd has
->>> some features that reports back to the user on failed filter usage. We
->>> can incorporate that into perf.
-> 
-> Thanks!
 
-Sounds good :)
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  
->> Cool!
->>
->> That said I agree that we should not block improvements in the generic
->> filtering code because of issues in perf uses of filters.
->>
->> I believe it used to work better in perf by the past, but I saw similar
->> issues lately like those Ingo noticed. So probably something
->> broke and we need to investigate. But until then your patches are
->> still nice improvements: lesser memory usage, lesser kernel stack usage in the
->> fast path, lesser limitation, faster and smarter filter evaluation...
-> 
-> Yeah, usability of the --filter parameter in perf is a bit
-> (understatement) lacking, one has to look at the /format thing in
-> /sys/kernel/debug/tracing... and not commit any mistake, else a generic
-> invalid 22 message is spit out.
+On Tue, 15 Feb 2011, Trond Myklebust wrote:
 
-And also, there seems very less comment in perf-record.txt.
+> On Tue, 2011-02-15 at 19:56 -0500, Eric B Munson wrote:=20
+> > While testing some 2.6.38 work my rsync backup script started consuming
+> > large amounts of memory (all available before dying with no more availa=
+ble
+> > memory).  I have bisected the problem back to 0b26a0bf6ff398.  I am
+> > unfamiliar with the NFS code so I don't know where to start looking for=
+ a
+> > possible fix.  My backups files from my home directory to an NFS mounted
+> > directory.  The NFS server is a Synology DS-411+ if it matters.  Let me=
+ know
+> > if there is any other information I can provide.
+>=20
+> Exactly which 2.6.38 kernel are you running, and which NFS version?
 
---filter=<filter>::
-        Event filter.
+The problem shows in the head of Linus' tree but I was able to reproduce on
+vanilla 2.6.37.  I am using NFS version 3.
 
-Hmm, I think, at least, there should be a comment where user should
-refer to and if possible, how he can use it...
+>=20
+> I'm having trouble seeing how the patch in question can be responsible
+> for what you are seeing, so please could you provide more details of
+> your test setup.
 
+I have a simple backup script that rsyncs the important files from my home
+directory to an NFS mounted directory on the same machine.  It is a small
+home network, just a single switch between machine and file server.  The er=
+ror
+can be reproduced all the way back to that patch, I tested 2.6.37 looking f=
+or
+a good point to start bisection and had to go back to 2.6.36 to find it.  W=
+hen
+it happens, my backup script stalls and the rsync process starts eating all=
+ the
+free memory on the system.  There are three active rsync processes, two are
+stalled in calls to select and the third is repeating a call to lstat on the
+same file until rsync fails a memory allocation.
 
-> I tried it and after some back and forth changing hats and scratching my
-> head while doing so, it got to work.
-> 
-> I talked with Steven and the same operation using trace-cmd would
-> produce a better error report, stating that the field used in the filter
-> expression was not valid.
+>=20
+> --=20
+> Trond Myklebust
+> Linux NFS client maintainer
+>=20
+> NetApp
+> Trond.Myklebust@netapp.com
+> www.netapp.com
+>=20
 
-If possible, please show us what parameters we can use on that event too.
-perf list gives us a list of events, but not show us what parameters
-we can use on those events. I think we can update perf list for that
-purpose.
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-e.g.)
-perf list --field kvm:kvm_entry
- unsigned short common_type;
- unsigned char common_flags;
- unsigned char common_preempt_count;
- int common_pid;
- int common_lock_depth;
- unsigned int vcpu_id;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJNW9MfAAoJEH65iIruGRnNeoIIAMx4sXEuj7wNpu+nH1bB8X/W
+EhYjab10dkxef4dB0IhtOjUeUpm68b1YLuP4L6cTkizZNPfkSBAIPV5D/u6D70Cy
+AFYj8iPUvyMQX2LM27pFCdtxrpS7UuYVAQyxZgbe955RqZAmuIMwvFoWTTzcR6H0
+jtSVMyiscDy+2wd2PXpK33+UawRDsAk2gZsFgFFzjoCkjxUkKlMDJqh7NlPkYkUm
+fxbtx3X6oKkrBOzIfTL8HA7jpRWwWFG5MDZalxJ3uk2S5Stj0FxN/TrFrw0wy8/H
+jbgIs/ZdqW8NVgY/nIIQLJ/eUISLwD+XVYSGecnnUC+jO2k1Gy0k4cBt7WWxVtg=
+=C41H
+-----END PGP SIGNATURE-----
 
-> 
-> I'll try to get that code from trace-cmd and glue that into
-> tools/perf/util/, that eventually will get moved to tools/lib/ or
-> something like that, as Borislav has been experimenting with for some
-> time already.
-> 
-> The location in the source tree is not the most important thing at this
-> point, usability improvements are, so I'm not rushing to moving code
-> around all the time (even doing it more than I would like), lets try to
-> improve usability first and then we can move it to tools/lib.
-> 
-> - Arnaldo
-
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--BXVAT5kNtrzKuDFl--
