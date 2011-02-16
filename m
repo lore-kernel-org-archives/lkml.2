@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1BPAlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:41:18 -0500
-Received: from kroah.org ([198.145.64.141]:49453 "EHLO coco.kroah.org"
+	id S1757648Ab1BPAXd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:23:33 -0500
+Received: from kroah.org ([198.145.64.141]:49355 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757665Ab1BPAXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:44 2011
-Message-Id: <20110216001444.543240721@clark.kroah.org>
+	id S1757335Ab1BPAXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:13 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:43 2011
+Message-Id: <20110216001443.087000898@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:11 -0800
+Date: Tue, 15 Feb 2011 16:13:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [194/272] firewire: core: fix unstable I/O with Canon camcorder
+        Kees Cook <kees.cook@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [180/272] net: ax25: fix information leak to userland harder
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,79 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Kees Cook <kees.cook@canonical.com>
 
-commit 6044565af458e7fa6e748bff437ecc49dea88d79 upstream.
+commit 5b919f833d9d60588d026ad82d17f17e8872c7a9 upstream.
 
-Regression since commit 10389536742c, "firewire: core: check for 1394a
-compliant IRM, fix inaccessibility of Sony camcorder":
+Commit fe10ae53384e48c51996941b7720ee16995cbcb7 adds a memset() to clear
+the structure being sent back to userspace, but accidentally used the
+wrong size.
 
-The camcorder Canon MV5i generates lots of bus resets when asynchronous
-requests are sent to it (e.g. Config ROM read requests or FCP Command
-write requests) if the camcorder is not root node.  This causes drop-
-outs in videos or makes the camcorder entirely inaccessible.
-https://bugzilla.redhat.com/show_bug.cgi?id=633260
-
-Fix this by allowing any Canon device, even if it is a pre-1394a IRM
-like MV5i are, to remain root node (if it is at least Cycle Master
-capable).  With the FireWire controller cards that I tested, MV5i always
-becomes root node when plugged in and left to its own devices.
-
-Reported-by: Ralf Lange
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/core-card.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ net/ax25/af_ax25.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/firewire/core-card.c
-+++ b/drivers/firewire/core-card.c
-@@ -75,6 +75,8 @@ static size_t config_rom_length = 1 + 4
- #define BIB_IRMC		((1) << 31)
- #define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
+--- a/net/ax25/af_ax25.c
++++ b/net/ax25/af_ax25.c
+@@ -1392,7 +1392,7 @@ static int ax25_getname(struct socket *s
+ 	ax25_cb *ax25;
+ 	int err = 0;
  
-+#define CANON_OUI		0x000085
-+
- static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
- {
- 	struct fw_descriptor *desc;
-@@ -284,6 +286,7 @@ static void bm_work(struct work_struct *
- 	bool root_device_is_running;
- 	bool root_device_is_cmc;
- 	bool irm_is_1394_1995_only;
-+	bool keep_this_irm;
+-	memset(fsa, 0, sizeof(fsa));
++	memset(fsa, 0, sizeof(*fsa));
+ 	lock_sock(sk);
+ 	ax25 = ax25_sk(sk);
  
- 	spin_lock_irq(&card->lock);
- 
-@@ -305,6 +308,10 @@ static void bm_work(struct work_struct *
- 	irm_is_1394_1995_only = irm_device && irm_device->config_rom &&
- 			(irm_device->config_rom[2] & 0x000000f0) == 0;
- 
-+	/* Canon MV5i works unreliably if it is not root node. */
-+	keep_this_irm = irm_device && irm_device->config_rom &&
-+			irm_device->config_rom[3] >> 8 == CANON_OUI;
-+
- 	root_id  = root_node->node_id;
- 	irm_id   = card->irm_node->node_id;
- 	local_id = card->local_node->node_id;
-@@ -333,7 +340,7 @@ static void bm_work(struct work_struct *
- 			goto pick_me;
- 		}
- 
--		if (irm_is_1394_1995_only) {
-+		if (irm_is_1394_1995_only && !keep_this_irm) {
- 			new_root_id = local_id;
- 			fw_notify("%s, making local node (%02x) root.\n",
- 				  "IRM is not 1394a compliant", new_root_id);
-@@ -382,7 +389,7 @@ static void bm_work(struct work_struct *
- 
- 		spin_lock_irq(&card->lock);
- 
--		if (rcode != RCODE_COMPLETE) {
-+		if (rcode != RCODE_COMPLETE && !keep_this_irm) {
- 			/*
- 			 * The lock request failed, maybe the IRM
- 			 * isn't really IRM capable after all. Let's
 
 
