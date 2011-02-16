@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab1BPB2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:28:41 -0500
-Received: from kroah.org ([198.145.64.141]:39435 "EHLO coco.kroah.org"
+	id S1757381Ab1BPB24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:28:56 -0500
+Received: from kroah.org ([198.145.64.141]:39418 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab1BPAV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:59 -0500
+	id S1757372Ab1BPAV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:38 2011
-Message-Id: <20110216001438.743560914@clark.kroah.org>
+Message-Id: <20110216001438.524201583@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:14 -0800
+Date: Tue, 15 Feb 2011 16:13:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>,
-        "Fabio M. Di NItto" <fabbione@fabbione.net>
-Subject: [137/272] atyfb: Fix bootup hangs on sparc64.
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [135/272] ext4: make grpinfo slab cache names static
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +25,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Eric Sandeen <sandeen@redhat.com>
 
-[ Upstream commit 09798eb9479da3413bdf96e7d22a84d8b21e05e1 ]
+commit 2892c15ddda6a76dc10b7499e56c0f3b892e5a69 upstream.
 
-After commit 25edd6946a1d74e5e77813c2324a0908c68bcf9e ("sparc64: Get
-rid of indirect p1275 PROM call buffer.")  we can't pass virtual
-addresses >4GB to PROM calls.
+In 2.6.37 I was running into oopses with repeated module
+loads & unloads.  I tracked this down to:
 
-Largely this is never necessary in drivers because we have a copy of
-the entire PROM device tree in the kernel and a set of of_*()
-interfaces to access it.
+fb1813f4 ext4: use dedicated slab caches for group_info structures
 
-Unfortunately there were some lingering prom calls in the atyfb
-driver, in particular prom_finddevice() was being called with an
-on-stack address which could be anywhere.
+(this was in addition to the features advert unload problem)
 
-This code is actually probing for information we already have, the
-PROM choosen console output device is stored in of_console_device so
-all of this nasty code consolidates into a one-line comparison.
+The kstrdup & subsequent kfree of the cache name was causing
+a double free.  In slub, at least, if I read it right it allocates
+& frees the name itself, slab seems to do something different...
+so in slub I think we were leaking -our- cachep->name, and double
+freeing the one allocated by slub.
 
-Next we have some prom_getintdefault() calls which are trivially
-transformed into the equivalent of_getintprop_default().
+After getting lost in slab/slub/slob a bit, I just looked at other
+sized-caches that get allocated.  jbd2, biovec, sgpool all do it
+more or less the way jbd2 does.  Below patch follows the jbd2
+method of dynamically allocating a cache at mount time from
+a list of static names.
 
-Special thanks to Fabio, who figured out exactly where the bootup
-was hanging.  That made this bug trivial to fix.
+(This might also possibly fix a race creating the caches with
+parallel mounts running).
 
-Reported-by: Fabio M. Di NItto <fabbione@fabbione.net>
-Reported-by: Sam Ravnborg <sam@ravnborg.org>
-Reported-by: Frans van Berckel <fberckel@xs4all.nl>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Fabio M. Di NItto <fabbione@fabbione.net>
+[Folded in a fix from Dan Carpenter which fixed an off-by-one error in
+the original patch]
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/video/aty/atyfb_base.c |   27 +++++----------------------
- 1 file changed, 5 insertions(+), 22 deletions(-)
 
---- a/drivers/video/aty/atyfb_base.c
-+++ b/drivers/video/aty/atyfb_base.c
-@@ -2969,10 +2969,8 @@ static int __devinit atyfb_setup_sparc(s
- {
- 	struct atyfb_par *par = info->par;
- 	struct device_node *dp;
--	char prop[128];
--	phandle node;
--	int len, i, j, ret;
- 	u32 mem, chip_id;
-+	int i, j, ret;
+---
+ fs/ext4/mballoc.c |  100 ++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 60 insertions(+), 40 deletions(-)
+
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -342,10 +342,15 @@ static struct kmem_cache *ext4_free_ext_
+ /* We create slab caches for groupinfo data structures based on the
+  * superblock block size.  There will be one per mounted filesystem for
+  * each unique s_blocksize_bits */
+-#define NR_GRPINFO_CACHES	\
+-	(EXT4_MAX_BLOCK_LOG_SIZE - EXT4_MIN_BLOCK_LOG_SIZE + 1)
++#define NR_GRPINFO_CACHES 8
+ static struct kmem_cache *ext4_groupinfo_caches[NR_GRPINFO_CACHES];
  
- 	/*
- 	 * Map memory-mapped registers.
-@@ -3088,23 +3086,8 @@ static int __devinit atyfb_setup_sparc(s
- 		aty_st_le32(MEM_CNTL, mem, par);
++static const char *ext4_groupinfo_slab_names[NR_GRPINFO_CACHES] = {
++	"ext4_groupinfo_1k", "ext4_groupinfo_2k", "ext4_groupinfo_4k",
++	"ext4_groupinfo_8k", "ext4_groupinfo_16k", "ext4_groupinfo_32k",
++	"ext4_groupinfo_64k", "ext4_groupinfo_128k"
++};
++
+ static void ext4_mb_generate_from_pa(struct super_block *sb, void *bitmap,
+ 					ext4_group_t group);
+ static void ext4_mb_generate_from_freelist(struct super_block *sb, void *bitmap,
+@@ -2414,6 +2419,55 @@ err_freesgi:
+ 	return -ENOMEM;
+ }
+ 
++static void ext4_groupinfo_destroy_slabs(void)
++{
++	int i;
++
++	for (i = 0; i < NR_GRPINFO_CACHES; i++) {
++		if (ext4_groupinfo_caches[i])
++			kmem_cache_destroy(ext4_groupinfo_caches[i]);
++		ext4_groupinfo_caches[i] = NULL;
++	}
++}
++
++static int ext4_groupinfo_create_slab(size_t size)
++{
++	static DEFINE_MUTEX(ext4_grpinfo_slab_create_mutex);
++	int slab_size;
++	int blocksize_bits = order_base_2(size);
++	int cache_index = blocksize_bits - EXT4_MIN_BLOCK_LOG_SIZE;
++	struct kmem_cache *cachep;
++
++	if (cache_index >= NR_GRPINFO_CACHES)
++		return -EINVAL;
++
++	if (unlikely(cache_index < 0))
++		cache_index = 0;
++
++	mutex_lock(&ext4_grpinfo_slab_create_mutex);
++	if (ext4_groupinfo_caches[cache_index]) {
++		mutex_unlock(&ext4_grpinfo_slab_create_mutex);
++		return 0;	/* Already created */
++	}
++
++	slab_size = offsetof(struct ext4_group_info,
++				bb_counters[blocksize_bits + 2]);
++
++	cachep = kmem_cache_create(ext4_groupinfo_slab_names[cache_index],
++					slab_size, 0, SLAB_RECLAIM_ACCOUNT,
++					NULL);
++
++	mutex_unlock(&ext4_grpinfo_slab_create_mutex);
++	if (!cachep) {
++		printk(KERN_EMERG "EXT4: no memory for groupinfo slab cache\n");
++		return -ENOMEM;
++	}
++
++	ext4_groupinfo_caches[cache_index] = cachep;
++
++	return 0;
++}
++
+ int ext4_mb_init(struct super_block *sb, int needs_recovery)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+@@ -2421,9 +2475,6 @@ int ext4_mb_init(struct super_block *sb,
+ 	unsigned offset;
+ 	unsigned max;
+ 	int ret;
+-	int cache_index;
+-	struct kmem_cache *cachep;
+-	char *namep = NULL;
+ 
+ 	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_offsets);
+ 
+@@ -2440,30 +2491,9 @@ int ext4_mb_init(struct super_block *sb,
+ 		goto out;
  	}
  
--	/*
--	 * If this is the console device, we will set default video
--	 * settings to what the PROM left us with.
--	 */
--	node = prom_getchild(prom_root_node);
--	node = prom_searchsiblings(node, "aliases");
--	if (node) {
--		len = prom_getproperty(node, "screen", prop, sizeof(prop));
--		if (len > 0) {
--			prop[len] = '\0';
--			node = prom_finddevice(prop);
--		} else
--			node = 0;
--	}
+-	cache_index = sb->s_blocksize_bits - EXT4_MIN_BLOCK_LOG_SIZE;
+-	cachep = ext4_groupinfo_caches[cache_index];
+-	if (!cachep) {
+-		char name[32];
+-		int len = offsetof(struct ext4_group_info,
+-					bb_counters[sb->s_blocksize_bits + 2]);
 -
- 	dp = pci_device_to_OF_node(pdev);
--	if (node == dp->phandle) {
-+	if (dp == of_console_device) {
- 		struct fb_var_screeninfo *var = &default_var;
- 		unsigned int N, P, Q, M, T, R;
- 		u32 v_total, h_total;
-@@ -3112,9 +3095,9 @@ static int __devinit atyfb_setup_sparc(s
- 		u8 pll_regs[16];
- 		u8 clock_cntl;
+-		sprintf(name, "ext4_groupinfo_%d", sb->s_blocksize_bits);
+-		namep = kstrdup(name, GFP_KERNEL);
+-		if (!namep) {
+-			ret = -ENOMEM;
+-			goto out;
+-		}
+-
+-		/* Need to free the kmem_cache_name() when we
+-		 * destroy the slab */
+-		cachep = kmem_cache_create(namep, len, 0,
+-					     SLAB_RECLAIM_ACCOUNT, NULL);
+-		if (!cachep) {
+-			ret = -ENOMEM;
+-			goto out;
+-		}
+-		ext4_groupinfo_caches[cache_index] = cachep;
+-	}
++	ret = ext4_groupinfo_create_slab(sb->s_blocksize);
++	if (ret < 0)
++		goto out;
  
--		crtc.vxres = prom_getintdefault(node, "width", 1024);
--		crtc.vyres = prom_getintdefault(node, "height", 768);
--		var->bits_per_pixel = prom_getintdefault(node, "depth", 8);
-+		crtc.vxres = of_getintprop_default(dp, "width", 1024);
-+		crtc.vyres = of_getintprop_default(dp, "height", 768);
-+		var->bits_per_pixel = of_getintprop_default(dp, "depth", 8);
- 		var->xoffset = var->yoffset = 0;
- 		crtc.h_tot_disp = aty_ld_le32(CRTC_H_TOTAL_DISP, par);
- 		crtc.h_sync_strt_wid = aty_ld_le32(CRTC_H_SYNC_STRT_WID, par);
+ 	/* order 0 is regular bitmap */
+ 	sbi->s_mb_maxs[0] = sb->s_blocksize << 3;
+@@ -2520,7 +2550,6 @@ out:
+ 	if (ret) {
+ 		kfree(sbi->s_mb_offsets);
+ 		kfree(sbi->s_mb_maxs);
+-		kfree(namep);
+ 	}
+ 	return ret;
+ }
+@@ -2734,7 +2763,6 @@ int __init ext4_init_mballoc(void)
+ 
+ void ext4_exit_mballoc(void)
+ {
+-	int i;
+ 	/*
+ 	 * Wait for completion of call_rcu()'s on ext4_pspace_cachep
+ 	 * before destroying the slab cache.
+@@ -2743,15 +2771,7 @@ void ext4_exit_mballoc(void)
+ 	kmem_cache_destroy(ext4_pspace_cachep);
+ 	kmem_cache_destroy(ext4_ac_cachep);
+ 	kmem_cache_destroy(ext4_free_ext_cachep);
+-
+-	for (i = 0; i < NR_GRPINFO_CACHES; i++) {
+-		struct kmem_cache *cachep = ext4_groupinfo_caches[i];
+-		if (cachep) {
+-			char *name = (char *)kmem_cache_name(cachep);
+-			kmem_cache_destroy(cachep);
+-			kfree(name);
+-		}
+-	}
++	ext4_groupinfo_destroy_slabs();
+ 	ext4_remove_debugfs_entry();
+ }
+ 
 
 
