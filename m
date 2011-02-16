@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab1BPUkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 15:40:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14350 "EHLO mx1.redhat.com"
+	id S1754468Ab1BPUlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 15:41:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60247 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754468Ab1BPUkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 15:40:36 -0500
+	id S1754280Ab1BPUlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 15:41:03 -0500
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH v2 1/2] intel-iommu: Unlink domain from iommu
+Subject: [PATCH v2 2/2] intel-iommu: Fix get_domain_for_dev() error path
 To: dwmw2@infradead.org, iommu@lists.linux-foundation.org
 Cc: alex.williamson@redhat.com, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, ddutile@redhat.com, chrisw@redhat.com
-Date: Wed, 16 Feb 2011 13:39:59 -0700
-Message-ID: <20110216203947.2979.45119.stgit@s20.home>
+Date: Wed, 16 Feb 2011 13:40:08 -0700
+Message-ID: <20110216204005.2979.51224.stgit@s20.home>
 In-Reply-To: <20110216203204.2979.13203.stgit@s20.home>
 References: <20110216203204.2979.13203.stgit@s20.home>
 User-Agent: StGIT/0.14.3
@@ -23,49 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we remove a device, we unlink the iommu from the domain, but
-we never do the reverse unlinking of the domain from the iommu.
-This means that we never clear iommu->domain_ids, eventually leading
-to resource exhaustion if we repeatedly bind and unbind a device
-to a driver.  Also free empty domains to avoid a resource leak.
+If we run out of domain_ids and fail iommu_attach_domain(), we
+fall into domain_exit() without having setup enough of the
+domain structure for this to do anything useful.  In fact, it
+typically runs off into the weeds walking the bogus domain->devices
+list.  Just free the domain.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- drivers/pci/intel-iommu.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+ drivers/pci/intel-iommu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 4789f8e..b670b06 100644
+index b670b06..b0343d1 100644
 --- a/drivers/pci/intel-iommu.c
 +++ b/drivers/pci/intel-iommu.c
-@@ -3260,9 +3260,15 @@ static int device_notifier(struct notifier_block *nb,
- 	if (!domain)
- 		return 0;
+@@ -1835,7 +1835,7 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
  
--	if (action == BUS_NOTIFY_UNBOUND_DRIVER && !iommu_pass_through)
-+	if (action == BUS_NOTIFY_UNBOUND_DRIVER && !iommu_pass_through) {
- 		domain_remove_one_dev_info(domain, pdev);
- 
-+		if (!(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE) &&
-+	    	    !(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY) &&
-+		    list_empty(&domain->devices))
-+			domain_exit(domain);
-+	}
-+
- 	return 0;
- }
- 
-@@ -3411,6 +3417,11 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 		domain->iommu_count--;
- 		domain_update_iommu_cap(domain);
- 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
-+
-+		spin_lock_irqsave(&iommu->lock, tmp_flags);
-+		clear_bit(domain->id, iommu->domain_ids);
-+		iommu->domains[domain->id] = NULL;
-+		spin_unlock_irqrestore(&iommu->lock, tmp_flags);
+ 	ret = iommu_attach_domain(domain, iommu);
+ 	if (ret) {
+-		domain_exit(domain);
++		free_domain_mem(domain);
+ 		goto error;
  	}
  
- 	spin_unlock_irqrestore(&device_domain_lock, flags);
 
