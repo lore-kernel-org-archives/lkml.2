@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab1BPBXB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:23:01 -0500
-Received: from kroah.org ([198.145.64.141]:45172 "EHLO coco.kroah.org"
+	id S932740Ab1BPArc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:47:32 -0500
+Received: from kroah.org ([198.145.64.141]:45143 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932743Ab1BPAre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:34 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:00 2011
-Message-Id: <20110216002100.492728134@clark.kroah.org>
+	id S932684Ab1BPArX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:23 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:20:59 2011
+Message-Id: <20110216002059.742032464@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:42 -0800
+Date: Tue, 15 Feb 2011 16:19:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>
-Subject: [patch 014/176] USB: qcaux: add Pantech UML290 device ID
+        Jay Cliburn <jcliburn@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [patch 007/176] atl1: fix oops when changing tx/rx ring params
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: J. K. Cliburn <jcliburn@gmail.com>
 
-commit a58861fbde2a350df4d27fc62fb42905669b37ce upstream.
+commit 2f32c867219734b06abc980d4812f67b6d6fe517 upstream.
 
-Another CDC-ACM + vendor specific interface layout for the QCDM port.
+Commit 3f5a2a713aad28480d86b0add00c68484b54febc zeroes out the statistics
+message block (SMB) and coalescing message block (CMB) when adapter ring
+resources are freed.  This is desirable behavior, but, as a side effect,
+the commit leads to an oops when atl1_set_ringparam() attempts to alter
+the number of rx or tx elements in the ring buffer (by using ethtool
+-G, for example).  We don't want SMB or CMB to change during this
+operation.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+Modify atl1_set_ringparam() to preserve SMB and CMB when changing ring
+parameters.
+
+Signed-off-by: Jay Cliburn <jcliburn@gmail.com>
+Reported-by: Tõnu Raitviir <jussuf@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/qcaux.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/atlx/atl1.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/qcaux.c
-+++ b/drivers/usb/serial/qcaux.c
-@@ -36,6 +36,7 @@
- #define UTSTARCOM_PRODUCT_UM175_V1		0x3712
- #define UTSTARCOM_PRODUCT_UM175_V2		0x3714
- #define UTSTARCOM_PRODUCT_UM175_ALLTEL		0x3715
-+#define PANTECH_PRODUCT_UML290_VZW		0x3718
+--- a/drivers/net/atlx/atl1.c
++++ b/drivers/net/atlx/atl1.c
+@@ -3503,6 +3503,8 @@ static int atl1_set_ringparam(struct net
+ 	struct atl1_rfd_ring rfd_old, rfd_new;
+ 	struct atl1_rrd_ring rrd_old, rrd_new;
+ 	struct atl1_ring_header rhdr_old, rhdr_new;
++	struct atl1_smb smb;
++	struct atl1_cmb cmb;
+ 	int err;
  
- /* CMOTECH devices */
- #define CMOTECH_VENDOR_ID			0x16d8
-@@ -66,6 +67,7 @@ static struct usb_device_id id_table[] =
- 	{ USB_DEVICE_AND_INTERFACE_INFO(LG_VENDOR_ID, LG_PRODUCT_VX4400_6000, 0xff, 0xff, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SANYO_VENDOR_ID, SANYO_PRODUCT_KATANA_LX, 0xff, 0xff, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_U520, 0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(UTSTARCOM_VENDOR_ID, PANTECH_PRODUCT_UML290_VZW, 0xff, 0xff, 0xff) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+ 	tpd_old = adapter->tpd_ring;
+@@ -3543,11 +3545,19 @@ static int atl1_set_ringparam(struct net
+ 		adapter->rrd_ring = rrd_old;
+ 		adapter->tpd_ring = tpd_old;
+ 		adapter->ring_header = rhdr_old;
++		/*
++		 * Save SMB and CMB, since atl1_free_ring_resources
++		 * will clear them.
++		 */
++		smb = adapter->smb;
++		cmb = adapter->cmb;
+ 		atl1_free_ring_resources(adapter);
+ 		adapter->rfd_ring = rfd_new;
+ 		adapter->rrd_ring = rrd_new;
+ 		adapter->tpd_ring = tpd_new;
+ 		adapter->ring_header = rhdr_new;
++		adapter->smb = smb;
++		adapter->cmb = cmb;
+ 
+ 		err = atl1_up(adapter);
+ 		if (err)
 
 
