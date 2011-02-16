@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab1BPCUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:20:15 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:55140 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209Ab1BPCUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 21:20:11 -0500
-X-BOX-Message-Id: p1G2K1Tq001185
-Message-ID: <4D5B3419.7010909@realsil.com.cn>
-Date: Wed, 16 Feb 2011 10:19:05 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101230 Lanikai/3.1.7
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: rts_pstor: fix sparse warning
-References: <1297820618-11962-1-git-send-email-wei_wang@realsil.com.cn> <20110216020944.GA29648@suse.de>
-In-Reply-To: <20110216020944.GA29648@suse.de>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
+	id S1755360Ab1BPCUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:20:47 -0500
+Received: from kroah.org ([198.145.64.141]:38545 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755875Ab1BPARy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:17:54 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:25 2011
+Message-Id: <20110216001425.262748615@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 15 Feb 2011 16:10:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?M=C3=A1rton=20N=C3=A9meth?= <nm127@freemail.hu>
+Subject: [002/272] staging: usbip: remove double giveback of URB
+In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg:
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-Do you mean that exactly one modification corresponds to one patch? Such
-as, if I add 2 static modifier and delete one function, I should send 3
-patches?
+------------------
 
-wwang
+From: =?UTF-8?q?M=C3=A1rton=20N=C3=A9meth?= <nm127@freemail.hu>
 
-于 2011年02月16日 10:09, Greg KH 写道:
-> On Wed, Feb 16, 2011 at 09:43:38AM +0800, wei_wang@realsil.com.cn wrote:
->> From: wwang <wei_wang@realsil.com.cn>
->>
->> Add static modifier before some function definitions; delete function
->> named rtsx_transfer_sglist which won't be called.
-> Thanks for describing this better.
->
-> And now that we can easily see that you are doing more than one thing in
-> this patch, please redo it, only doing one-thing-per-patch as is the way
-> we require patches to be.
->
-> Care to resend this as a series of patches?
->
-> thanks,
->
-> greg k-h
+commit 7571f089d7522a95c103558faf313c7af8856ceb upstream.
+
+In the vhci_urb_dequeue() function the TCP connection is checked twice.
+Each time when the TCP connection is closed the URB is unlinked and given
+back. Remove the second attempt of unlinking and giving back of the URB completely.
+
+This patch fixes the bug described at https://bugzilla.kernel.org/show_bug.cgi?id=24872 .
+
+Signed-off-by: M谩rton N茅meth <nm127@freemail.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/staging/usbip/vhci_hcd.c |   14 --------------
+ 1 file changed, 14 deletions(-)
+
+--- a/drivers/staging/usbip/vhci_hcd.c
++++ b/drivers/staging/usbip/vhci_hcd.c
+@@ -799,20 +799,6 @@ static int vhci_urb_dequeue(struct usb_h
+ 		spin_unlock_irqrestore(&vdev->priv_lock, flags2);
+ 	}
+ 
+-
+-	if (!vdev->ud.tcp_socket) {
+-		/* tcp connection is closed */
+-		usbip_uinfo("vhci_hcd: vhci_urb_dequeue() gives back urb %p\n",
+-									urb);
+-
+-		usb_hcd_unlink_urb_from_ep(hcd, urb);
+-
+-		spin_unlock_irqrestore(&the_controller->lock, flags);
+-		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb,
+-								urb->status);
+-		spin_lock_irqsave(&the_controller->lock, flags);
+-	}
+-
+ 	spin_unlock_irqrestore(&the_controller->lock, flags);
+ 
+ 	usbip_dbg_vhci_hc("leave\n");
+
 
