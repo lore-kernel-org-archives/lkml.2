@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab1BPBRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:17:11 -0500
-Received: from kroah.org ([198.145.64.141]:45447 "EHLO coco.kroah.org"
+	id S1753975Ab1BPBR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:17:29 -0500
+Received: from kroah.org ([198.145.64.141]:45435 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932927Ab1BPAs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:29 -0500
+	id S932918Ab1BPAs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:26 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:03 2011
-Message-Id: <20110216002103.620740835@clark.kroah.org>
+Message-Id: <20110216002103.407870126@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:13 -0800
+Date: Tue, 15 Feb 2011 16:20:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 045/176] mac80211: add missing synchronize_rcu
+        Denis Kirjanov <dkirjanov@kernel.org>
+Subject: [patch 043/176] staging: rt2860: Fix incorrect netif_stop_queue usage warning
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Denis Kirjanov <dkirjanov@kernel.org>
 
-commit d2460f4b2fa6dbdeec800414f9cf5b1fc8b71197 upstream.
+commit 9c33008412683eba91bce2dc4575f28c728b6bd1 upstream.
 
-commit ad0e2b5a00dbec303e4682b403bb6703d11dcdb2
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Tue Jun 1 10:19:19 2010 +0200
+The TX queues are allocated inside register_netdev.
+It doesn't make any sense to stop the queue before
+allocation.
 
-    mac80211: simplify key locking
-
-removed the synchronization against RCU and thus
-opened a race window where we can use a key for
-TX while it is already freed. Put a synchronisation
-into the right place to close that window.
-
-Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/key.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/staging/rt2860/rt_main_dev.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/net/mac80211/key.c
-+++ b/net/mac80211/key.c
-@@ -323,6 +323,12 @@ static void __ieee80211_key_destroy(stru
- 	if (!key)
- 		return;
+--- a/drivers/staging/rt2860/rt_main_dev.c
++++ b/drivers/staging/rt2860/rt_main_dev.c
+@@ -483,8 +483,6 @@ struct net_device *RtmpPhyNetDevInit(str
+ 	net_dev->ml_priv = (void *)pAd;
+ 	pAd->net_dev = net_dev;
  
-+	/*
-+	 * Synchronize so the TX path can no longer be using
-+	 * this key before we free/remove it.
-+	 */
-+	synchronize_rcu();
-+
- 	if (key->local)
- 		ieee80211_key_disable_hw_accel(key);
+-	netif_stop_queue(net_dev);
+-
+ 	return net_dev;
  
+ }
 
 
