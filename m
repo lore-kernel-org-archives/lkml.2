@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab1BPBjd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:39:33 -0500
-Received: from kroah.org ([198.145.64.141]:39032 "EHLO coco.kroah.org"
+	id S1757797Ab1BPBju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:39:50 -0500
+Received: from kroah.org ([198.145.64.141]:39023 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757059Ab1BPAUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:20:10 -0500
+	id S1757050Ab1BPAUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:20:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:33 2011
-Message-Id: <20110216001433.129529352@clark.kroah.org>
+Message-Id: <20110216001433.043154646@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:17 -0800
+Date: Tue, 15 Feb 2011 16:12:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Easwar Krishnan <easwar.krishnan@atheros.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [080/272] cfg80211: pass the reg hint initiator to helpers
+        Dean Nelson <dnelson@redhat.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [079/272] e1000: fix return value not set on error
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Dean Nelson <dnelson@redhat.com>
 
-commit 7ca43d03b1291481bdf894bbaec5d580e7684e7d upstream.
+commit 19a0b67afd174c4db261d587b5c67704dcd53c17 upstream.
 
-This is required later.
+Dean noticed that 'err' wasn't being set when the "goto err_dma"
+statement is executed in the following hunk from the commit. It's value
+will be zero as a result of a successful call to e1000_init_hw_struct().
 
-Cc: Easwar Krishnan <easwar.krishnan@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch changes the error condition to be correctly propagated.
+
+Signed-off-by:  Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Tested-by: Emil Tantilov <emil.s.tantilov@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/reg.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/e1000/e1000_main.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -720,7 +720,9 @@ EXPORT_SYMBOL(freq_reg_info);
-  * on the wiphy with the target_bw specified. Then we can simply use
-  * that below for the desired_bw_khz below.
-  */
--static void handle_channel(struct wiphy *wiphy, enum ieee80211_band band,
-+static void handle_channel(struct wiphy *wiphy,
-+			   enum nl80211_reg_initiator initiator,
-+			   enum ieee80211_band band,
- 			   unsigned int chan_idx)
- {
- 	int r;
-@@ -784,7 +786,9 @@ static void handle_channel(struct wiphy
- 		chan->max_power = (int) MBM_TO_DBM(power_rule->max_eirp);
- }
- 
--static void handle_band(struct wiphy *wiphy, enum ieee80211_band band)
-+static void handle_band(struct wiphy *wiphy,
-+			enum ieee80211_band band,
-+			enum nl80211_reg_initiator initiator)
- {
- 	unsigned int i;
- 	struct ieee80211_supported_band *sband;
-@@ -793,7 +797,7 @@ static void handle_band(struct wiphy *wi
- 	sband = wiphy->bands[band];
- 
- 	for (i = 0; i < sband->n_channels; i++)
--		handle_channel(wiphy, band, i);
-+		handle_channel(wiphy, initiator, band, i);
- }
- 
- static bool ignore_reg_update(struct wiphy *wiphy,
-@@ -1030,7 +1034,7 @@ void wiphy_update_regulatory(struct wiph
- 		goto out;
- 	for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
- 		if (wiphy->bands[band])
--			handle_band(wiphy, band);
-+			handle_band(wiphy, band, initiator);
+--- a/drivers/net/e1000/e1000_main.c
++++ b/drivers/net/e1000/e1000_main.c
+@@ -971,11 +971,13 @@ static int __devinit e1000_probe(struct
+ 		 */
+ 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+ 		pci_using_dac = 1;
+-	} else if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
+-		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+ 	} else {
+-		pr_err("No usable DMA config, aborting\n");
+-		goto err_dma;
++		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++		if (err) {
++			pr_err("No usable DMA config, aborting\n");
++			goto err_dma;
++		}
++		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
  	}
- out:
- 	reg_process_beacons(wiphy);
+ 
+ 	netdev->netdev_ops = &e1000_netdev_ops;
 
 
