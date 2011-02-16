@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab1BPBqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:46:10 -0500
-Received: from kroah.org ([198.145.64.141]:38805 "EHLO coco.kroah.org"
+	id S1758061Ab1BPBqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:46:30 -0500
+Received: from kroah.org ([198.145.64.141]:38794 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756775Ab1BPATP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:15 -0500
+	id S1756802Ab1BPATL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:29 2011
-Message-Id: <20110216001429.775992328@clark.kroah.org>
+Message-Id: <20110216001429.558689048@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:44 -0800
+Date: Tue, 15 Feb 2011 16:11:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Denis Kirjanov <dkirjanov@kernel.org>
-Subject: [047/272] staging: rt2860: Fix incorrect netif_stop_queue usage warning
+        Chun-Yi Lee <jlee@novell.com>, Chien-Chia Chen <machen@novell.com>
+Subject: [045/272] Staging: rt3090: Fix RT3090 scan AP function
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis Kirjanov <dkirjanov@kernel.org>
+From: Chien-Chia Chen <machen@novell.com>
 
-commit 9c33008412683eba91bce2dc4575f28c728b6bd1 upstream.
+commit 1226056d9608d241db4b558a0d88a347ad5c66ae upstream.
 
-The TX queues are allocated inside register_netdev.
-It doesn't make any sense to stop the queue before
-allocation.
+Fix RT3090 scan AP function.
 
-Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+This patch fixes the rt3090 wireless module failed
+to scan AP around due to  Windows driver causing
+rt3090 module unable to scan AP in Linux.
+
+Acked-by: Chun-Yi Lee <jlee@novell.com>
+Signed-off-by: Chien-Chia Chen <machen@novell.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rt2860/rt_main_dev.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/staging/rt2860/chips/rt3090.c |    3 ++-
+ drivers/staging/rt2860/chips/rt30xx.c |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/rt2860/rt_main_dev.c
-+++ b/drivers/staging/rt2860/rt_main_dev.c
-@@ -483,8 +483,6 @@ struct net_device *RtmpPhyNetDevInit(str
- 	net_dev->ml_priv = (void *)pAd;
- 	pAd->net_dev = net_dev;
+--- a/drivers/staging/rt2860/chips/rt3090.c
++++ b/drivers/staging/rt2860/chips/rt3090.c
+@@ -51,7 +51,8 @@ void NICInitRT3090RFRegisters(struct rt_
+ 	if (IS_RT3090(pAd)) {
+ 		/* Init RF calibration */
+ 		/* Driver should toggle RF R30 bit7 before init RF registers */
+-		u32 RfReg = 0, data;
++		u8 RfReg;
++		u32 data;
  
--	netif_stop_queue(net_dev);
--
- 	return net_dev;
- 
- }
+ 		RT30xxReadRFRegister(pAd, RF_R30, (u8 *)&RfReg);
+ 		RfReg |= 0x80;
+--- a/drivers/staging/rt2860/chips/rt30xx.c
++++ b/drivers/staging/rt2860/chips/rt30xx.c
+@@ -53,7 +53,7 @@ struct rt_reg_pair RT30xx_RFRegTable[] =
+ 	,
+ 	{RF_R06, 0x02}
+ 	,
+-	{RF_R07, 0x70}
++	{RF_R07, 0x60}
+ 	,
+ 	{RF_R09, 0x0F}
+ 	,
 
 
