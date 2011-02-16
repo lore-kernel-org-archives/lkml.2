@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595Ab1BPAcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:32:24 -0500
-Received: from kroah.org ([198.145.64.141]:49773 "EHLO coco.kroah.org"
+	id S932324Ab1BPAcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:32:41 -0500
+Received: from kroah.org ([198.145.64.141]:49760 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932324Ab1BPAYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:50 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:49 2011
-Message-Id: <20110216001448.991333455@clark.kroah.org>
+	id S932418Ab1BPAYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:48 2011
+Message-Id: <20110216001448.801029142@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:56 -0800
+Date: Tue, 15 Feb 2011 16:14:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        Mike Anderson <andmike@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: [239/272] dm mpath: disable blk_abort_queue
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [237/272] ieee80211: correct IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK macro
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,81 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 09c9d4c9b6a2b5909ae3c6265e4cd3820b636863 upstream.
+commit 8d661f1e462d50bd83de87ee628aaf820ce3c66c upstream.
 
-Revert commit 224cb3e981f1b2f9f93dbd49eaef505d17d894c2
-  dm: Call blk_abort_queue on failed paths
+It is defined in include/linux/ieee80211.h. As per IEEE spec.
+bit6 to bit15 in block ack parameter represents buffer size.
+So the bitmask should be 0xFFC0.
 
-Multipath began to use blk_abort_queue() to allow for
-lower latency path deactivation.  This was found to
-cause list corruption:
-
-   the cmd gets blk_abort_queued/timedout run on it and the scsi eh
-   somehow is able to complete and run scsi_queue_insert while
-   scsi_request_fn is still trying to process the request.
-
-   https://www.redhat.com/archives/dm-devel/2010-November/msg00085.html
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Cc: Mike Anderson <andmike@linux.vnet.ibm.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-mpath.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ include/linux/ieee80211.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -33,7 +33,6 @@ struct pgpath {
- 	unsigned fail_count;		/* Cumulative failure count */
+--- a/include/linux/ieee80211.h
++++ b/include/linux/ieee80211.h
+@@ -959,7 +959,7 @@ struct ieee80211_ht_info {
+ /* block-ack parameters */
+ #define IEEE80211_ADDBA_PARAM_POLICY_MASK 0x0002
+ #define IEEE80211_ADDBA_PARAM_TID_MASK 0x003C
+-#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFA0
++#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFC0
+ #define IEEE80211_DELBA_PARAM_TID_MASK 0xF000
+ #define IEEE80211_DELBA_PARAM_INITIATOR_MASK 0x0800
  
- 	struct dm_path path;
--	struct work_struct deactivate_path;
- 	struct work_struct activate_path;
- };
- 
-@@ -116,7 +115,6 @@ static struct workqueue_struct *kmultipa
- static void process_queued_ios(struct work_struct *work);
- static void trigger_event(struct work_struct *work);
- static void activate_path(struct work_struct *work);
--static void deactivate_path(struct work_struct *work);
- 
- 
- /*-----------------------------------------------
-@@ -129,7 +127,6 @@ static struct pgpath *alloc_pgpath(void)
- 
- 	if (pgpath) {
- 		pgpath->is_active = 1;
--		INIT_WORK(&pgpath->deactivate_path, deactivate_path);
- 		INIT_WORK(&pgpath->activate_path, activate_path);
- 	}
- 
-@@ -141,14 +138,6 @@ static void free_pgpath(struct pgpath *p
- 	kfree(pgpath);
- }
- 
--static void deactivate_path(struct work_struct *work)
--{
--	struct pgpath *pgpath =
--		container_of(work, struct pgpath, deactivate_path);
--
--	blk_abort_queue(pgpath->path.dev->bdev->bd_disk->queue);
--}
--
- static struct priority_group *alloc_priority_group(void)
- {
- 	struct priority_group *pg;
-@@ -995,7 +984,6 @@ static int fail_path(struct pgpath *pgpa
- 		      pgpath->path.dev->name, m->nr_valid_paths);
- 
- 	schedule_work(&m->trigger_event);
--	queue_work(kmultipathd, &pgpath->deactivate_path);
- 
- out:
- 	spin_unlock_irqrestore(&m->lock, flags);
 
 
