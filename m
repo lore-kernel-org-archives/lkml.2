@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab1BPBqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:46:30 -0500
-Received: from kroah.org ([198.145.64.141]:38794 "EHLO coco.kroah.org"
+	id S1758075Ab1BPBqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:46:33 -0500
+Received: from kroah.org ([198.145.64.141]:38788 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756802Ab1BPATL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:11 -0500
+	id S1756696Ab1BPATJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:29 2011
-Message-Id: <20110216001429.558689048@clark.kroah.org>
+Message-Id: <20110216001429.458513718@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:42 -0800
+Date: Tue, 15 Feb 2011 16:11:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chun-Yi Lee <jlee@novell.com>, Chien-Chia Chen <machen@novell.com>
-Subject: [045/272] Staging: rt3090: Fix RT3090 scan AP function
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [044/272] staging: hv: Enable sending GARP packet after live migration
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chien-Chia Chen <machen@novell.com>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit 1226056d9608d241db4b558a0d88a347ad5c66ae upstream.
+commit 7c161d0b900ea9bd9fc5ea5d3fa9916e9eb0dd88 upstream.
 
-Fix RT3090 scan AP function.
+The hv_netvsc gets RNDIS_STATUS_MEDIA_CONNECT event after the VM
+is live migrated. Adding call to netif_notify_peers() for this event
+to send GARP (Gratuitous ARP) to notify network peers. Otherwise,
+the VM's network connection may stop after a live migration.
 
-This patch fixes the rt3090 wireless module failed
-to scan AP around due to  Windows driver causing
-rt3090 module unable to scan AP in Linux.
+This patch should also be applied to stable kernel 2.6.32 and later.
 
-Acked-by: Chun-Yi Lee <jlee@novell.com>
-Signed-off-by: Chien-Chia Chen <machen@novell.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rt2860/chips/rt3090.c |    3 ++-
- drivers/staging/rt2860/chips/rt30xx.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/hv/netvsc_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/rt2860/chips/rt3090.c
-+++ b/drivers/staging/rt2860/chips/rt3090.c
-@@ -51,7 +51,8 @@ void NICInitRT3090RFRegisters(struct rt_
- 	if (IS_RT3090(pAd)) {
- 		/* Init RF calibration */
- 		/* Driver should toggle RF R30 bit7 before init RF registers */
--		u32 RfReg = 0, data;
-+		u8 RfReg;
-+		u32 data;
- 
- 		RT30xxReadRFRegister(pAd, RF_R30, (u8 *)&RfReg);
- 		RfReg |= 0x80;
---- a/drivers/staging/rt2860/chips/rt30xx.c
-+++ b/drivers/staging/rt2860/chips/rt30xx.c
-@@ -53,7 +53,7 @@ struct rt_reg_pair RT30xx_RFRegTable[] =
- 	,
- 	{RF_R06, 0x02}
- 	,
--	{RF_R07, 0x70}
-+	{RF_R07, 0x60}
- 	,
- 	{RF_R09, 0x0F}
- 	,
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -233,6 +233,7 @@ static void netvsc_linkstatus_callback(s
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
++		netif_notify_peers(net);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
 
 
