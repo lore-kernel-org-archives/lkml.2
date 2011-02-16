@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab1BPAvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:51:33 -0500
-Received: from kroah.org ([198.145.64.141]:46137 "EHLO coco.kroah.org"
+	id S933583Ab1BPAwb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:52:31 -0500
+Received: from kroah.org ([198.145.64.141]:52686 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933375Ab1BPAvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:13 2011
-Message-Id: <20110216002113.535935005@clark.kroah.org>
+	id S933499Ab1BPAwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:52:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:16 2011
+Message-Id: <20110216002116.629729353@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:53 -0800
+Date: Tue, 15 Feb 2011 16:22:24 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com,
-        avi@redhat.com, mtosatti@redhat.com
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [patch 145/176] KVM: i8259: initialize isr_ack
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [patch 176/176] xhci: Use GFP_NOIO during device reset.
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-From: Avi Kivity <avi@redhat.com>
+commit a6d940dd759bf240d28624198660ed34582a327b upstream.
 
-commit a0272630bb594b4eac03a79e77957df7dad8eade upstream.
+When xhci_discover_or_reset_device() is called after a host controller
+power loss, the virtual device may need to be reallocated.  Make sure
+xhci_alloc_dev() uses GFP_NOIO.  This avoid causing a deadlock by allowing
+the kernel to flush pending I/O while reallocating memory for a virtual
+device for a USB mass storage device that's holding the backing store for
+dirty memory buffers.
 
-isr_ack is never initialized.  So, until the first PIC reset, interrupts
-may fail to be injected.  This can cause Windows XP to fail to boot, as
-reported in the fallout from the fix to
-https://bugzilla.kernel.org/show_bug.cgi?id=21962.
+This patch should be queued for the 2.6.37 stable tree.
 
-Reported-and-tested-by: Nicolas Prochazka <prochazka.nicolas@gmail.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kvm/i8259.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kvm/i8259.c
-+++ b/arch/x86/kvm/i8259.c
-@@ -570,6 +570,8 @@ struct kvm_pic *kvm_create_pic(struct kv
- 	s->pics[1].elcr_mask = 0xde;
- 	s->pics[0].pics_state = s;
- 	s->pics[1].pics_state = s;
-+	s->pics[0].isr_ack = 0xff;
-+	s->pics[1].isr_ack = 0xff;
- 
- 	/*
- 	 * Initialize PIO device
+---
+ drivers/usb/host/xhci.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2168,8 +2168,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 		xhci_err(xhci, "Error while assigning device slot ID\n");
+ 		return 0;
+ 	}
+-	/* xhci_alloc_virt_device() does not touch rings; no need to lock */
+-	if (!xhci_alloc_virt_device(xhci, xhci->slot_id, udev, GFP_KERNEL)) {
++	/* xhci_alloc_virt_device() does not touch rings; no need to lock.
++	 * Use GFP_NOIO, since this function can be called from
++	 * xhci_discover_or_reset_device(), which may be called as part of
++	 * mass storage driver error handling.
++	 */
++	if (!xhci_alloc_virt_device(xhci, xhci->slot_id, udev, GFP_NOIO)) {
+ 		/* Disable slot, if we can do it without mem alloc */
+ 		xhci_warn(xhci, "Could not allocate xHCI USB device data structures\n");
+ 		spin_lock_irqsave(&xhci->lock, flags);
 
 
