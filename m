@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab1BPOSK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 09:18:10 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43236 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab1BPOSH (ORCPT
+	id S1755801Ab1BPOaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 09:30:30 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:59585 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755721Ab1BPOa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 09:18:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dqocpbMoAXLeQHoEfPUtGahAOmRxoxDjWbo1a80Nqv8KHPvbMknN87mF3jOnAN69Z6
-         3QCq00pE1DFhw+fIkQwAL5+QZDibhzSAo5GwkC/3k7tf6wdR1DYZYrVMqlEYAkEJ6d5T
-         u4cZnbM7jK4N77TAXgVvss3bAQ1m8Y5C70G/M=
-Date: Wed, 16 Feb 2011 15:17:57 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
-        rientjes@google.com, hpa@linux.intel.com, ankita@in.ibm.com
-Subject: Re: [PATCHSET x86/numa] x86-64, NUMA: bring sanity to NUMA
- config/emulation
-Message-ID: <20110216141757.GG19830@htj.dyndns.org>
-References: <1297858867-25981-1-git-send-email-tj@kernel.org>
- <20110216125249.GA18113@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110216125249.GA18113@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 16 Feb 2011 09:30:28 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 16 Feb 2011 15:29:06 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, gregkh@suse.de,
+        srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl,
+        ghaskins@novell.com, stable@kernel.org, stable-commits@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been
+ added to the 2.6.32-longterm tree
+Message-ID: <20110216152906.75d4000c@stein>
+In-Reply-To: <1297849553.5275.29.camel@marge.simson.net>
+References: <12978046423644@kroah.org>
+	<1297810967.23343.122.camel@gandalf.stny.rr.com>
+	<1297821667.5126.11.camel@marge.simson.net>
+	<20110216082559.GA16529@elte.hu>
+	<4D5B90E8.6080605@gmail.com>
+	<1297849553.5275.29.camel@marge.simson.net>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo.
-
-On Wed, Feb 16, 2011 at 01:52:49PM +0100, Ingo Molnar wrote:
-> allyes64config fails with:
+On Feb 16 Mike Galbraith wrote:
+> On Wed, 2011-02-16 at 09:55 +0100, Jiri Slaby wrote:
+> > On 02/16/2011 09:25 AM, Ingo Molnar wrote:
+> > > We try to concentrate on regression fixes though.
+> > 
+> > Hi, I cannot fully agree with this. The question is who are "we" here?
+> > If every packager using this stable tree is forced by users/customers to
+> > take it anyway, it's better to have it in stable.
+> > 
+> > It has several reasons:
+> > * It will have an eye of experts on them. Not that at distro providers
+> > there are no experts, but the authors who are cced here know definitely
+> > the code better.
+> > * Not every packager has to duplicate others work.
+> > * The stable tree changes constantly. Managing hundreds of patches
+> > applied to a stable tree before kernels are being packaged is thus
+> > sometimes a hell. Reducing this number is a good thing(TM).
 > 
-> arch/x86/mm/numa_64.c:1045: error: 'physnid' undeclared (first use in this function)
-> arch/x86/mm/numa_64.c:1045: error: (Each undeclared identifier is reported only once
-> arch/x86/mm/numa_64.c:1045: error: for each function it appears in.)
+> Fully agree on all fronts, but it's a hard call.  When I start auditing,
+> I sweat bullets.  I see piles of bug fixes, and piles of performance
+> enhancements, all of which are ever so tempting, all of which are worthy
+> of backport.. but humans _are_ buggy, so there is risk involved.
 
-Dang, sorry about that.  Updated patch posted and git tree updated.
-One patch in the emulation series is affected.  x86_64-numa-unify
-branch remains the same.  x86_64-numa-emu-unify updated.
+Jiri,
+if the desire is to improve performance of existing features (and maybe
+add this and that little feature that looks attractive), while at the same
+time you want
+  - experts to have looked at these improvements,
+  - packagers to avoid duplicate work,
+  - keep the number of local patches in check,
+then the solution is to /stay close enough to the mainline/.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_64-numa-emu-unify
+Unstable -longterm trees (unstable as in having a high rate of changes,
+possibly as in having frequent regressions) are for sure an alternative
+solution that those who use these trees apparently do consider.  But if
+regressions avoidance is not their top priority, what other reason do they
+have to follow -longterm instead of the mainline?
 
-The new HEAD is 6e3019a9bf55000694b0d7058b39a1eebdf9877a.
-
-Thanks.
-
+(Says a mainline user, and a driver maintainer who has pushed his share of
+occasional regressions to -stable branches but hopes to constantly get
+better at regression avoidance.)
 -- 
-tejun
+Stefan Richter
+-=====-==-== --=- =----
+http://arcgraph.de/sr/
