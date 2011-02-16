@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab1BPAjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:39:13 -0500
-Received: from kroah.org ([198.145.64.141]:49506 "EHLO coco.kroah.org"
+	id S932266Ab1BPAj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:39:29 -0500
+Received: from kroah.org ([198.145.64.141]:49493 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173Ab1BPAXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:49 -0500
+	id S1757720Ab1BPAXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:45 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:45 2011
-Message-Id: <20110216001445.343326634@clark.kroah.org>
+Message-Id: <20110216001445.142884257@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:19 -0800
+Date: Tue, 15 Feb 2011 16:14:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [202/272] watchdog: Dont change watchdog state on read of sysctl
+        Guy Martin <gmsoft@tuxicoman.be>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [200/272] parisc : Remove broken line wrapping handling pdc_iodc_print()
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,41 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Guy Martin <gmsoft@tuxicoman.be>
 
-commit 9ffdc6c37df131f89d52001e0ef03091b158826f upstream.
+commit fbea668498e93bb38ac9226c7af9120a25957375 upstream.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-[ add {}'s to fix a warning ]
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <1296230433-6261-3-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Remove the broken line wrapping handling in pdc_iodc_print().
+It is broken in 3 ways :
+  - It doesn't keep track of the current screen position, it just
+    assumes that the new buffer will be printed at the begining of the
+    screen.
+  - It doesn't take in account that non printable characters won't
+    increase the current position on the screen.
+  - And last but not least, it triggers a kernel panic if a backspace
+    is the first char in the provided buffer :
+
+ Backtrace:
+  [<0000000040128ec4>] pdc_console_write+0x44/0x78
+  [<0000000040128f18>] pdc_console_tty_write+0x20/0x38
+  [<000000004032f1ac>] n_tty_write+0x2a4/0x550
+  [<000000004032b158>] tty_write+0x1e0/0x2d8
+  [<00000000401bb420>] vfs_write+0xb8/0x188
+  [<00000000401bb630>] sys_write+0x68/0xb8
+  [<0000000040104eb8>] syscall_exit+0x0/0x14
+
+Most terminals handle the line wrapping just fine. I've confirmed that
+it works correctly on a C8000 with both vga and serial output.
+
+Signed-off-by: Guy Martin <gmsoft@tuxicoman.be>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/watchdog.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/parisc/kernel/firmware.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -497,10 +497,12 @@ int proc_dowatchdog_enabled(struct ctl_t
- {
- 	proc_dointvec(table, write, buffer, length, ppos);
+--- a/arch/parisc/kernel/firmware.c
++++ b/arch/parisc/kernel/firmware.c
+@@ -1126,15 +1126,13 @@ int pdc_iodc_print(const unsigned char *
+ 	unsigned int i;
+ 	unsigned long flags;
  
--	if (watchdog_enabled)
--		watchdog_enable_all_cpus();
--	else
--		watchdog_disable_all_cpus();
-+	if (write) {
-+		if (watchdog_enabled)
-+			watchdog_enable_all_cpus();
-+		else
-+			watchdog_disable_all_cpus();
-+	}
- 	return 0;
- }
+-	for (i = 0; i < count && i < 79;) {
++	for (i = 0; i < count;) {
+ 		switch(str[i]) {
+ 		case '\n':
+ 			iodc_dbuf[i+0] = '\r';
+ 			iodc_dbuf[i+1] = '\n';
+ 			i += 2;
+ 			goto print;
+-		case '\b':	/* BS */
+-			i--; /* overwrite last */
+ 		default:
+ 			iodc_dbuf[i] = str[i];
+ 			i++;
+@@ -1142,15 +1140,6 @@ int pdc_iodc_print(const unsigned char *
+ 		}
+ 	}
  
+-	/* if we're at the end of line, and not already inserting a newline,
+-	 * insert one anyway. iodc console doesn't claim to support >79 char
+-	 * lines. don't account for this in the return value.
+-	 */
+-	if (i == 79 && iodc_dbuf[i-1] != '\n') {
+-		iodc_dbuf[i+0] = '\r';
+-		iodc_dbuf[i+1] = '\n';
+-	}
+-
+ print:
+         spin_lock_irqsave(&pdc_lock, flags);
+         real32_call(PAGE0->mem_cons.iodc_io,
 
 
