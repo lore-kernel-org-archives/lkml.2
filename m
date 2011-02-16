@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab1BPAsf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:48:35 -0500
-Received: from kroah.org ([198.145.64.141]:45424 "EHLO coco.kroah.org"
+	id S933117Ab1BPAtg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:49:36 -0500
+Received: from kroah.org ([198.145.64.141]:45681 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932913Ab1BPAsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:03 2011
-Message-Id: <20110216002103.219765744@clark.kroah.org>
+	id S932956Ab1BPAtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:07 2011
+Message-Id: <20110216002107.119730565@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:09 -0800
+Date: Tue, 15 Feb 2011 16:20:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chun-Yi Lee <jlee@novell.com>, Chien-Chia Chen <machen@novell.com>
-Subject: [patch 041/176] Staging: rt3090: Fix RT3090 scan AP function
+        Takashi Iwai <tiwai@suse.de>
+Subject: [patch 080/176] ALSA: hda - Fix memory leaks in conexant jack arrays
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chien-Chia Chen <machen@novell.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1226056d9608d241db4b558a0d88a347ad5c66ae upstream.
+commit 70f7db11c45a313b23922cacf248c613c3b2144c upstream.
 
-Fix RT3090 scan AP function.
+The Conexant codec driver adds the jack arrays in init callback which
+may be called also in each PM resume.  This results in the addition of
+new jack element at each time.
 
-This patch fixes the rt3090 wireless module failed
-to scan AP around due to  Windows driver causing
-rt3090 module unable to scan AP in Linux.
+The fix is to check whether the requested jack is already present in
+the array.
 
-Acked-by: Chun-Yi Lee <jlee@novell.com>
-Signed-off-by: Chien-Chia Chen <machen@novell.com>
+Reference: Novell bug 668929
+	https://bugzilla.novell.com/show_bug.cgi?id=668929
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rt2860/chips/rt3090.c |    3 ++-
- drivers/staging/rt2860/chips/rt30xx.c |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_conexant.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/rt2860/chips/rt3090.c
-+++ b/drivers/staging/rt2860/chips/rt3090.c
-@@ -51,7 +51,8 @@ void NICInitRT3090RFRegisters(struct rt_
- 	if (IS_RT3090(pAd)) {
- 		/* Init RF calibration */
- 		/* Driver should toggle RF R30 bit7 before init RF registers */
--		u32 RfReg = 0, data;
-+		u8 RfReg;
-+		u32 data;
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -393,10 +393,16 @@ static int conexant_add_jack(struct hda_
+ 	struct conexant_spec *spec;
+ 	struct conexant_jack *jack;
+ 	const char *name;
+-	int err;
++	int i, err;
  
- 		RT30xxReadRFRegister(pAd, RF_R30, (u8 *)&RfReg);
- 		RfReg |= 0x80;
---- a/drivers/staging/rt2860/chips/rt30xx.c
-+++ b/drivers/staging/rt2860/chips/rt30xx.c
-@@ -53,7 +53,7 @@ struct rt_reg_pair RT30xx_RFRegTable[] =
- 	,
- 	{RF_R06, 0x02}
- 	,
--	{RF_R07, 0x70}
-+	{RF_R07, 0x60}
- 	,
- 	{RF_R09, 0x0F}
- 	,
+ 	spec = codec->spec;
+ 	snd_array_init(&spec->jacks, sizeof(*jack), 32);
++
++	jack = spec->jacks.list;
++	for (i = 0; i < spec->jacks.used; i++, jack++)
++		if (jack->nid == nid)
++			return 0 ; /* already present */
++
+ 	jack = snd_array_new(&spec->jacks);
+ 	name = (type == SND_JACK_HEADPHONE) ? "Headphone" : "Mic" ;
+ 
 
 
