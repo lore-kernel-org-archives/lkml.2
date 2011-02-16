@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1BPTq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 14:46:28 -0500
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:39056 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754014Ab1BPTqY (ORCPT
+	id S1754132Ab1BPTqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 14:46:48 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63032 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab1BPTqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 14:46:24 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Y22dO6MsR7nETlD+tsugvKUDjII/w/bAEp/MTlrxL7qdYKsrqRhrDOb/8NjvvaNLeh3YxScMvWhIKF43m+FTu2XUD9tO6il+YDX0cS6nbw6uu8JxVmND+xOC7UMsCOaj;
-Date: Wed, 16 Feb 2011 11:46:19 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-pci@vger.kernel.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: Re: [PATCH -next] PCI: fix tlan build when CONFIG_PCI is not
- enabled
-Message-ID: <20110216114619.7fbfb3cf@jbarnes-desktop>
-In-Reply-To: <20110214122750.e1e03bc8.randy.dunlap@oracle.com>
-References: <20110214181137.ee8d4c08.sfr@canb.auug.org.au>
-	<20110214122750.e1e03bc8.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	Wed, 16 Feb 2011 14:46:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=sTAb1fYCZpujM5TRKBmJDrZHTbjQaaptx5EkRkcaRwXDenpf43Ix5shZpdOdkLlPRf
+         BAyM3s15NoE1MtZ/p05Y2esEIH1x93cLsQNpcx7uFay93k5mkndYsT65Ta5n84rBN7Kk
+         3vE8wRGidJuprr0Q5YaA9KFzymsCXIv+3FMa4=
+MIME-Version: 1.0
+In-Reply-To: <20110216192658.GA7225@blimp.localdomain>
+References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
+	<20110216192658.GA7225@blimp.localdomain>
+Date: Wed, 16 Feb 2011 20:46:45 +0100
+Message-ID: <AANLkTinuF0na0zLOFOjFWapoNNXCUay88BdrxH0-_ybM@mail.gmail.com>
+Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after
+ reopening lid
+From: Alex Riesen <raa.lkml@gmail.com>
+To: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Feb 2011 12:27:50 -0800
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
+On Wed, Feb 16, 2011 at 20:26, Alex Riesen <raa.lkml@gmail.com> wrote:
+> Linus Torvalds, Wed, Feb 16, 2011 05:16:01 +0100:
+>> Most of the changes are pretty spread out and small, with drivers/gpu
+>> (radeon and i915) somewhat standing out from the pack. ...
+>
+> The backlight level on this Dell XPS M1330 reduces every time I reopen
+> the lid, and BIOS does not seem to know anything about that (the
+> keyboard shortcuts to set backlight brightness cause it to jump to the
+> level next to the one set before closing the lid).
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> When CONFIG_PCI is not enabled, tlan.c has a build error:
-> drivers/net/tlan.c:503: error: implicit declaration of function 'pci_wake_from_d3'
-> 
-> so add an inline function stub for this function to pci.h when
-> PCI is not enabled, similar to other stubbed PCI functions.
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> ---
->  include/linux/pci.h |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> --- linux-next-20110214.orig/include/linux/pci.h
-> +++ linux-next-20110214/include/linux/pci.h
-> @@ -1191,6 +1191,11 @@ static inline int pci_set_power_state(st
->  	return 0;
->  }
->  
-> +static inline int pci_wake_from_d3(struct pci_dev *dev, bool enable)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline pci_power_t pci_choose_state(struct pci_dev *dev,
->  					   pm_message_t state)
->  {
-> 
+It is this bug, I believe:
 
-Applied to linux-next, thanks guys.
+https://bugzilla.kernel.org/show_bug.cgi?id=25072
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+I somehow missed it at first, and only noticed after sending the patch.
