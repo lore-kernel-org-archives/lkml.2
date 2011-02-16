@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab1BPAjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:39:47 -0500
-Received: from kroah.org ([198.145.64.141]:49486 "EHLO coco.kroah.org"
+	id S932442Ab1BPAjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:39:49 -0500
+Received: from kroah.org ([198.145.64.141]:49476 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757704Ab1BPAXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:43 -0500
+	id S1757697Ab1BPAXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:42 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:45 2011
-Message-Id: <20110216001445.042135387@clark.kroah.org>
+Message-Id: <20110216001444.940457054@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:16 -0800
+Date: Tue, 15 Feb 2011 16:14:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
+        Pavel Shilovsky <piastryyy@gmail.com>,
         Steve French <sfrench@us.ibm.com>
-Subject: [199/272] cifs: Fix regression during share-level security mounts (Repost)
+Subject: [198/272] CIFS: Fix oplock break handling (try #2)
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,44 +26,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+From: Pavel Shilovsky <piastryyy@gmail.com>
 
-commit 540b2e377797d8715469d408b887baa9310c5f3e upstream.
+commit 12fed00de963433128b5366a21a55808fab2f756 upstream.
 
-NTLM response length was changed to 16 bytes instead of 24 bytes
-that are sent in Tree Connection Request during share-level security
-share mounts.  Revert it back to 24 bytes.
+When we get oplock break notification we should set the appropriate
+value of OplockLevel field in oplock break acknowledge according to
+the oplock level held by the client in this time. As we only can have
+level II oplock or no oplock in the case of oplock break, we should be
+aware only about clientCanCacheRead field in cifsInodeInfo structure.
 
-Reported-and-Tested-by: Grzegorz Ozanski <grzegorz.ozanski@intel.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Acked-by: Suresh Jayaraman <sjayaraman@suse.de>
+Also fix bug connected with wrong interpretation of OplockLevel field
+during oplock break notification processing.
+
+Signed-off-by: Pavel Shilovsky <piastryyy@gmail.com>
 Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/connect.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/cifs/cifsproto.h |    2 +-
+ fs/cifs/cifssmb.c   |    4 +++-
+ fs/cifs/file.c      |   21 +++++++++++----------
+ fs/cifs/misc.c      |    2 +-
+ 4 files changed, 16 insertions(+), 13 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2999,7 +2999,7 @@ CIFSTCon(unsigned int xid, struct cifsSe
- 		bcc_ptr++;              /* skip password */
- 		/* already aligned so no need to do it below */
- 	} else {
--		pSMB->PasswordLength = cpu_to_le16(CIFS_SESS_KEY_SIZE);
-+		pSMB->PasswordLength = cpu_to_le16(CIFS_AUTH_RESP_SIZE);
- 		/* BB FIXME add code to fail this if NTLMv2 or Kerberos
- 		   specified as required (when that support is added to
- 		   the vfs in the future) as only NTLM or the much
-@@ -3017,7 +3017,7 @@ CIFSTCon(unsigned int xid, struct cifsSe
- #endif /* CIFS_WEAK_PW_HASH */
- 		SMBNTencrypt(tcon->password, ses->server->cryptkey, bcc_ptr);
+--- a/fs/cifs/cifsproto.h
++++ b/fs/cifs/cifsproto.h
+@@ -347,7 +347,7 @@ extern int CIFSSMBLock(const int xid, st
+ 			const __u16 netfid, const __u64 len,
+ 			const __u64 offset, const __u32 numUnlock,
+ 			const __u32 numLock, const __u8 lockType,
+-			const bool waitFlag);
++			const bool waitFlag, const __u8 oplock_level);
+ extern int CIFSSMBPosixLock(const int xid, struct cifsTconInfo *tcon,
+ 			const __u16 smb_file_id, const int get_flag,
+ 			const __u64 len, struct file_lock *,
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -1666,7 +1666,8 @@ int
+ CIFSSMBLock(const int xid, struct cifsTconInfo *tcon,
+ 	    const __u16 smb_file_id, const __u64 len,
+ 	    const __u64 offset, const __u32 numUnlock,
+-	    const __u32 numLock, const __u8 lockType, const bool waitFlag)
++	    const __u32 numLock, const __u8 lockType,
++	    const bool waitFlag, const __u8 oplock_level)
+ {
+ 	int rc = 0;
+ 	LOCK_REQ *pSMB = NULL;
+@@ -1694,6 +1695,7 @@ CIFSSMBLock(const int xid, struct cifsTc
+ 	pSMB->NumberOfLocks = cpu_to_le16(numLock);
+ 	pSMB->NumberOfUnlocks = cpu_to_le16(numUnlock);
+ 	pSMB->LockType = lockType;
++	pSMB->OplockLevel = oplock_level;
+ 	pSMB->AndXCommand = 0xFF;	/* none */
+ 	pSMB->Fid = smb_file_id; /* netfid stays le */
  
--		bcc_ptr += CIFS_SESS_KEY_SIZE;
-+		bcc_ptr += CIFS_AUTH_RESP_SIZE;
- 		if (ses->capabilities & CAP_UNICODE) {
- 			/* must align unicode strings */
- 			*bcc_ptr = 0; /* null byte password */
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -779,12 +779,12 @@ int cifs_lock(struct file *file, int cmd
+ 
+ 		/* BB we could chain these into one lock request BB */
+ 		rc = CIFSSMBLock(xid, tcon, netfid, length, pfLock->fl_start,
+-				 0, 1, lockType, 0 /* wait flag */ );
++				 0, 1, lockType, 0 /* wait flag */, 0);
+ 		if (rc == 0) {
+ 			rc = CIFSSMBLock(xid, tcon, netfid, length,
+ 					 pfLock->fl_start, 1 /* numUnlock */ ,
+ 					 0 /* numLock */ , lockType,
+-					 0 /* wait flag */ );
++					 0 /* wait flag */, 0);
+ 			pfLock->fl_type = F_UNLCK;
+ 			if (rc != 0)
+ 				cERROR(1, "Error unlocking previously locked "
+@@ -801,13 +801,13 @@ int cifs_lock(struct file *file, int cmd
+ 				rc = CIFSSMBLock(xid, tcon, netfid, length,
+ 					pfLock->fl_start, 0, 1,
+ 					lockType | LOCKING_ANDX_SHARED_LOCK,
+-					0 /* wait flag */);
++					0 /* wait flag */, 0);
+ 				if (rc == 0) {
+ 					rc = CIFSSMBLock(xid, tcon, netfid,
+ 						length, pfLock->fl_start, 1, 0,
+ 						lockType |
+ 						LOCKING_ANDX_SHARED_LOCK,
+-						0 /* wait flag */);
++						0 /* wait flag */, 0);
+ 					pfLock->fl_type = F_RDLCK;
+ 					if (rc != 0)
+ 						cERROR(1, "Error unlocking "
+@@ -850,8 +850,8 @@ int cifs_lock(struct file *file, int cmd
+ 
+ 		if (numLock) {
+ 			rc = CIFSSMBLock(xid, tcon, netfid, length,
+-					pfLock->fl_start,
+-					0, numLock, lockType, wait_flag);
++					 pfLock->fl_start, 0, numLock, lockType,
++					 wait_flag, 0);
+ 
+ 			if (rc == 0) {
+ 				/* For Windows locks we must store them. */
+@@ -871,9 +871,9 @@ int cifs_lock(struct file *file, int cmd
+ 						(pfLock->fl_start + length) >=
+ 						(li->offset + li->length)) {
+ 					stored_rc = CIFSSMBLock(xid, tcon,
+-							netfid,
+-							li->length, li->offset,
+-							1, 0, li->type, false);
++							netfid, li->length,
++							li->offset, 1, 0,
++							li->type, false, 0);
+ 					if (stored_rc)
+ 						rc = stored_rc;
+ 					else {
+@@ -2245,7 +2245,8 @@ void cifs_oplock_break(struct work_struc
+ 	 */
+ 	if (!cfile->oplock_break_cancelled) {
+ 		rc = CIFSSMBLock(0, tlink_tcon(cfile->tlink), cfile->netfid, 0,
+-				 0, 0, 0, LOCKING_ANDX_OPLOCK_RELEASE, false);
++				 0, 0, 0, LOCKING_ANDX_OPLOCK_RELEASE, false,
++				 cinode->clientCanCacheRead ? 1 : 0);
+ 		cFYI(1, "Oplock release rc = %d", rc);
+ 	}
+ 
+--- a/fs/cifs/misc.c
++++ b/fs/cifs/misc.c
+@@ -571,7 +571,7 @@ is_valid_oplock_break(struct smb_hdr *bu
+ 				pCifsInode = CIFS_I(netfile->dentry->d_inode);
+ 
+ 				cifs_set_oplock_level(pCifsInode,
+-						      pSMB->OplockLevel);
++					pSMB->OplockLevel ? OPLOCK_READ : 0);
+ 				/*
+ 				 * cifs_oplock_break_put() can't be called
+ 				 * from here.  Get reference after queueing
 
 
