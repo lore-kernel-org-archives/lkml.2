@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab1BPMmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:42:07 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53707 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab1BPMmF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:42:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=P2ltIzJU/z6DbXIcSdvC8XH5tD1WAdk4IGueu2FkwFZlgBG/zx5oVB0QkdoPplp2VJ
-         5L3sJI0z9rNXtxxVHMHCd5hlORNi0mdus2/xeNx4zcz2JH0YKnCtJ2et6ogXx+0FCTkl
-         +PJ3LPVzUOjORJESFLEGxaABD0FCABWq4C0NY=
+	id S1756547Ab1BPMmZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:42:25 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:18228
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754045Ab1BPMmX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 07:42:23 -0500
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Feb 2011 07:42:23 EST
+X-SpamScore: -23
+X-BigFish: VS-23(zzbb2dK1432N98dN9371Pzz1202hzzz2dh2a8h637h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
+Message-ID: <4D5BC291.1010906@freescale.com>
+Date: Wed, 16 Feb 2011 10:26:57 -0200
+From: Fabio Estevam <fabio.estevam@freescale.com>
+Organization: Freescale Semiconductor
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1297858734.23343.138.camel@gandalf.stny.rr.com>
-References: <4D59B891.8010300@zytor.com>
-	<AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
-	<20110215211123.GA3094@ele.uri.edu>
-	<20110215.132702.39199169.davem@davemloft.net>
-	<20110215215604.GA3177@ele.uri.edu>
-	<AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com>
-	<1297858734.23343.138.camel@gandalf.stny.rr.com>
-Date: Wed, 16 Feb 2011 12:41:59 +0000
-Message-ID: <AANLkTinzr6rb=WwFs7QApsvdy5f7PHZ1qS9ZVrncEzZD@mail.gmail.com>
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Will Newton <will.newton@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Will Simoneau <simoneau@ele.uri.edu>, David Miller <davem@davemloft.net>,
-        hpa@zytor.com, matt@console-pimps.org, peterz@infradead.org,
-        jbaron@redhat.com, mathieu.desnoyers@polymtl.ca, mingo@elte.hu,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        avi@redhat.com, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, linux-kernel@vger.kernel.org,
-        vapier@gentoo.org, cmetcalf@tilera.com, dhowells@redhat.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        benh@kernel.crashing.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Andres Salomon <dilinger@queued.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 16/17] mc13xxx: mfd_cell is now implicitly available to
+ drivers
+References: <20110211181921.3d561568@queued.net> <20110216094154.GV13279@pengutronix.de>
+In-Reply-To: <20110216094154.GV13279@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 12:18 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2011-02-16 at 10:15 +0000, Will Newton wrote:
->
->> > That's some really crippled hardware... it does seem like *any* loads
->> > from *any* address updated by an sc would have to be done with ll as
->> > well, else they may load stale values. One could work this into
->> > atomic_read(), but surely there are other places that are problems.
->>
->> I think it's actually ok, atomics have arch implemented accessors, as
->> do spinlocks and atomic bitops. Those are the only place we do sc so
->> we can make sure we always ll or invalidate manually.
->
-> I'm curious, how is cmpxchg() implemented on this architecture? As there
-> are several places in the kernel that uses this on regular variables
-> without any "accessor" functions.
+Hi Uwe,
 
-We can invalidate the cache manually. The current cpu will see the new
-value (post-cache invalidate) and the other cpus will see either the
-old value or the new value depending on whether they read before or
-after the invalidate, which is racy but I don't think it is
-problematic. Unless I'm missing something...
+On 2/16/2011 7:41 AM, Uwe Kleine-König wrote:
+...
+>>  
+>>  /* MC13783 */
+>> -static struct mc13783_platform_data mc13783_pdata __initdata = {
+> isn't using __initdata here broken already before your patch?  Was
+> introduced in c67a3e09.  Fabio?
+
+I followed the same approach as in the mx31_3ds.c file.
+
+> But in general I'd prefer to keep as much __initdata as possible because
+> this occupies less memory when using a multi-machine kernel.
+
+So keeping __initdata is OK then? Let me know and I can fix it needed.
+
+Regards,
+
+Fabio Estevam
+
+
