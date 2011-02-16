@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab1BPBtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:49:31 -0500
-Received: from kroah.org ([198.145.64.141]:48763 "EHLO coco.kroah.org"
+	id S932419Ab1BPBt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:49:26 -0500
+Received: from kroah.org ([198.145.64.141]:48748 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932347Ab1BPBtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:24 -0500
+	id S932088Ab1BPBtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:19 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:56 2011
-Message-Id: <20110216014656.295767333@clark.kroah.org>
+Message-Id: <20110216014656.009937718@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:46 -0800
+Date: Tue, 15 Feb 2011 17:44:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nick Holloway <Nick.Holloway@pyrites.org.uk>
-Subject: [020/115] USB: Storage: Add unusual_devs entry for VTech Kidizoom
+        Alan Stern <stern@rowland.harvard.edu>,
+        Roland Kletzing <devzero@web.de>, "Craig W. Nadler" <craig@nadler.us>
+Subject: [017/115] USB: g_printer: fix bug in module parameter definitions
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nick Holloway <Nick.Holloway@pyrites.org.uk>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit c25f6b1591b158f7ae3b9132367d0fa6d632e70e upstream.
+commit ad84e4a9efb7c8ed322bafb6ebdb9c3a49a3d3a8 upstream.
 
-This device suffers from the off-by-one error when reporting the capacity,
-so add entry with US_FL_FIX_CAPACITY.
+This patch (as1442) fixes a bug in g_printer: Module parameters should
+not be marked "__initdata" if they are accessible in sysfs (i.e., if
+the mode value in the module_param() macro is nonzero).  Otherwise
+attempts to access the parameters will cause addressing violations.
 
-Signed-off-by: Nick Holloway <Nick.Holloway@pyrites.org.uk>
+Character-string module parameters must not be marked "__initdata"
+if the module can be unloaded, because the kernel needs to access the
+parameter variable at unload time in order to free the
+dynamically-allocated string.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Roland Kletzing <devzero@web.de>
+CC: Craig W. Nadler <craig@nadler.us>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/gadget/printer.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1410,6 +1410,13 @@ UNUSUAL_DEV(  0x0fca, 0x0006, 0x0001, 0x
- 		US_FL_IGNORE_DEVICE ),
- #endif
+--- a/drivers/usb/gadget/printer.c
++++ b/drivers/usb/gadget/printer.c
+@@ -130,31 +130,31 @@ static struct printer_dev usb_printer_ga
+  * parameters are in UTF-8 (superset of ASCII's 7 bit characters).
+  */
  
-+/* Submitted by Nick Holloway */
-+UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0100,
-+		"VTech",
-+		"Kidizoom",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_FIX_CAPACITY ),
-+
- /* Reported by Michael Stattmann <michael@stattmann.com> */
- UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
- 		"Sony Ericsson",
+-static ushort __initdata idVendor;
++static ushort idVendor;
+ module_param(idVendor, ushort, S_IRUGO);
+ MODULE_PARM_DESC(idVendor, "USB Vendor ID");
+ 
+-static ushort __initdata idProduct;
++static ushort idProduct;
+ module_param(idProduct, ushort, S_IRUGO);
+ MODULE_PARM_DESC(idProduct, "USB Product ID");
+ 
+-static ushort __initdata bcdDevice;
++static ushort bcdDevice;
+ module_param(bcdDevice, ushort, S_IRUGO);
+ MODULE_PARM_DESC(bcdDevice, "USB Device version (BCD)");
+ 
+-static char *__initdata iManufacturer;
++static char *iManufacturer;
+ module_param(iManufacturer, charp, S_IRUGO);
+ MODULE_PARM_DESC(iManufacturer, "USB Manufacturer string");
+ 
+-static char *__initdata iProduct;
++static char *iProduct;
+ module_param(iProduct, charp, S_IRUGO);
+ MODULE_PARM_DESC(iProduct, "USB Product string");
+ 
+-static char *__initdata iSerialNum;
++static char *iSerialNum;
+ module_param(iSerialNum, charp, S_IRUGO);
+ MODULE_PARM_DESC(iSerialNum, "1");
+ 
+-static char *__initdata iPNPstring;
++static char *iPNPstring;
+ module_param(iPNPstring, charp, S_IRUGO);
+ MODULE_PARM_DESC(iPNPstring, "MFG:linux;MDL:g_printer;CLS:PRINTER;SN:1;");
+ 
 
 
