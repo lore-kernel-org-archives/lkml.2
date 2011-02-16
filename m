@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071Ab1BPBtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:49:03 -0500
-Received: from kroah.org ([198.145.64.141]:48684 "EHLO coco.kroah.org"
+	id S933003Ab1BPCOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:14:30 -0500
+Received: from kroah.org ([198.145.64.141]:48710 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756871Ab1BPBs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:48:57 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:54 2011
-Message-Id: <20110216014654.602020978@clark.kroah.org>
+	id S1756766Ab1BPBtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:04 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:55 2011
+Message-Id: <20110216014655.005375572@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:29 -0800
+Date: Tue, 15 Feb 2011 17:44:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [003/115] rt2x00: add device id for windy31 usb device
+        Craig Shelley <craig@microtron.org.uk>
+Subject: [007/115] USB: CP210x Add two device IDs
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+From: Craig Shelley <craig@microtron.org.uk>
 
-commit 9c4cf6d94fb362c27a24df5223ed6e327eb7279a upstream.
+commit faea63f7ccfddfb8fc19798799fcd38c58415172 upstream.
 
-This patch adds the device id for the windy31 USB device to the rt73usb
-driver.
+Device Ids added for IRZ Automation Teleport SG-10 GSM/GPRS Modem and
+DekTec DTA Plus VHF/UHF Booster/Attenuator.
 
-Thanks to Ralf Flaxa for reporting this and providing testing and a
-sample device.
-
-Reported-by: Ralf Flaxa <rf@suse.de>
-Tested-by: Ralf Flaxa <rf@suse.de>
+Signed-off-by: Craig Shelley <craig@microtron.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-diff --git a/drivers/net/wireless/rt2x00/rt73usb.c b/drivers/net/wireless/rt2x00/rt73usb.c
-index 0b4e859..029be3c 100644
---- a/drivers/net/wireless/rt2x00/rt73usb.c
-+++ b/drivers/net/wireless/rt2x00/rt73usb.c
-@@ -2446,6 +2446,7 @@ static struct usb_device_id rt73usb_device_table[] = {
- 	{ USB_DEVICE(0x04bb, 0x093d), USB_DEVICE_DATA(&rt73usb_ops) },
- 	{ USB_DEVICE(0x148f, 0x2573), USB_DEVICE_DATA(&rt73usb_ops) },
- 	{ USB_DEVICE(0x148f, 0x2671), USB_DEVICE_DATA(&rt73usb_ops) },
-+	{ USB_DEVICE(0x0812, 0x3101), USB_DEVICE_DATA(&rt73usb_ops) },
- 	/* Qcom */
- 	{ USB_DEVICE(0x18e8, 0x6196), USB_DEVICE_DATA(&rt73usb_ops) },
- 	{ USB_DEVICE(0x18e8, 0x6229), USB_DEVICE_DATA(&rt73usb_ops) },
+---
+ drivers/usb/serial/cp210x.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -110,7 +110,9 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
+ 	{ USB_DEVICE(0x10C4, 0x8382) }, /* Cygnal Integrated Products, Inc. */
+ 	{ USB_DEVICE(0x10C4, 0x83A8) }, /* Amber Wireless AMB2560 */
++	{ USB_DEVICE(0x10C4, 0x83D8) }, /* DekTec DTA Plus VHF/UHF Booster/Attenuator */
+ 	{ USB_DEVICE(0x10C4, 0x8411) }, /* Kyocera GPS Module */
++	{ USB_DEVICE(0x10C4, 0x8418) }, /* IRZ Automation Teleport SG-10 GSM/GPRS Modem */
+ 	{ USB_DEVICE(0x10C4, 0x846E) }, /* BEI USB Sensor Interface (VCP) */
+ 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
 
 
