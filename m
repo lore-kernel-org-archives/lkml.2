@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918Ab1BPCEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:04:46 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:47728 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932871Ab1BPCEc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 21:04:32 -0500
-Date: Wed, 16 Feb 2011 13:04:21 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>, tadeusz.struk@intel.com,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
-        "Hoban, Adrian" <adrian.hoban@intel.com>
-Subject: Re: [PATCH](updated) rfc4106, Intel, AES-NI: Don't leak memory in
-	rfc4106_set_hash_subkey()..
-Message-ID: <20110216020421.GA8201@gondor.apana.org.au>
-References: <4d502ccb.p+rKcuFjWCnBlXY9%tadeusz.struk@intel.com> <alpine.LNX.2.00.1102071922220.27796@swampdragon.chaosbits.net> <20110211142647.GA3920@ucw.cz> <DF7BB929B28FCF479E888E3D9F8D9E88F3E2E668@irsmsx502.ger.corp.intel.com> <alpine.LNX.2.00.1102111546310.13370@swampdragon.chaosbits.net> <alpine.LNX.2.00.1102112204020.16994@swampdragon.chaosbits.net> <alpine.LNX.2.00.1102112211230.16994@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1102112211230.16994@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932921Ab1BPCFA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:05:00 -0500
+Received: from kroah.org ([198.145.64.141]:49022 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758325Ab1BPBuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:50:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:00 2011
+Message-Id: <20110216014700.083208697@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 15 Feb 2011 17:45:24 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [058/115] ptrace: use safer wake up on ptrace_detach()
+In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 10:14:44PM +0100, Jesper Juhl wrote:
-> 
-> And of course I just had to screw up and send the wrong diff. The one I 
-> sent does not compile and was a temporary file I imported into the mail by 
-> accident :-(
-> Below is the real patch - changelog above still applies - sorry about 
-> that.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Patch applied.  Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+------------------
+
+From: Tejun Heo <tj@kernel.org>
+
+commit 01e05e9a90b8f4c3997ae0537e87720eb475e532 upstream.
+
+The wake_up_process() call in ptrace_detach() is spurious and not
+interlocked with the tracee state.  IOW, the tracee could be running or
+sleeping in any place in the kernel by the time wake_up_process() is
+called.  This can lead to the tracee waking up unexpectedly which can be
+dangerous.
+
+The wake_up is spurious and should be removed but for now reduce its
+toxicity by only waking up if the tracee is in TRACED or STOPPED state.
+
+This bug can possibly be used as an attack vector.  I don't think it
+will take too much effort to come up with an attack which triggers oops
+somewhere.  Most sleeps are wrapped in condition test loops and should
+be safe but we have quite a number of places where sleep and wakeup
+conditions are expected to be interlocked.  Although the window of
+opportunity is tiny, ptrace can be used by non-privileged users and with
+some loading the window can definitely be extended and exploited.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Roland McGrath <roland@redhat.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/ptrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -314,7 +314,7 @@ int ptrace_detach(struct task_struct *ch
+ 		child->exit_code = data;
+ 		dead = __ptrace_detach(current, child);
+ 		if (!child->exit_state)
+-			wake_up_process(child);
++			wake_up_state(child, TASK_TRACED | TASK_STOPPED);
+ 	}
+ 	write_unlock_irq(&tasklist_lock);
+ 
+
+
