@@ -1,193 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1BPHn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 02:43:28 -0500
-Received: from symlink.to.noone.org ([85.10.207.172]:48512 "EHLO sym.noone.org"
+	id S1754746Ab1BPHpD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 02:45:03 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:36224 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196Ab1BPHnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 02:43:25 -0500
-Date: Wed, 16 Feb 2011 08:43:21 +0100
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] tty: serial: altera_uart: Add devicetree support
-Message-ID: <20110216074321.GB4076@distanz.ch>
-References: <cover.1297245277.git.tklauser@distanz.ch> <c7a7085602687d2f1b6ac505c030f19bafda04e3.1297245277.git.tklauser@distanz.ch> <20110216043201.GA11684@angua.secretlab.ca>
+	id S1751346Ab1BPHpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 02:45:00 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>
+Subject: [PATCH 00/12] unicore32 subsystem: additional architecture files and machine related files
+Date: Wed, 16 Feb 2011 15:44:48 +0800
+Message-ID: <014101cbcdad$64295de0$2c7c19a0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110216043201.GA11684@angua.secretlab.ca>
-X-Editor: Vi IMproved 7.1
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcvNrVOaoPQpEzAORjuJEQiaxkO0xg==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-02-16 at 05:32:01 +0100, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Wed, Feb 09, 2011 at 10:58:13AM +0100, Tobias Klauser wrote:
-> > With the recent switch of the (currently still out-of-tree) Nios2 Linux
-> > port to devicetree we want to be able to retreive the resources and
-> > properties from dts.
-> > 
-> > The old method to retreive resources and properties from platform data
-> > is still supported.
-> > 
-> > Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
-> > ---
-> >  .../devicetree/bindings/serial/altera_uart.txt     |    7 +++
-> >  drivers/tty/serial/altera_uart.c                   |   47 ++++++++++++++++++--
-> >  2 files changed, 50 insertions(+), 4 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/serial/altera_uart.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/serial/altera_uart.txt b/Documentation/devicetree/bindings/serial/altera_uart.txt
-> > new file mode 100644
-> > index 0000000..2ab151c
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/serial/altera_uart.txt
-> > @@ -0,0 +1,7 @@
-> > +Altera UART
-> > +
-> > +Required properties:
-> > +- compatible : should be "ALTR,uart-1.0"
-> > + 
-> > +Optional properties:
-> > +- clock-frequency : frequency of the clock input to the UART
-> > diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
-> > index 3a57352..5b46ca7 100644
-> > --- a/drivers/tty/serial/altera_uart.c
-> > +++ b/drivers/tty/serial/altera_uart.c
-> > @@ -24,6 +24,7 @@
-> >  #include <linux/serial.h>
-> >  #include <linux/serial_core.h>
-> >  #include <linux/platform_device.h>
-> > +#include <linux/of.h>
-> >  #include <linux/io.h>
-> >  #include <linux/altera_uart.h>
-> >  
-> > @@ -507,6 +508,34 @@ static struct uart_driver altera_uart_driver = {
-> >  	.cons		= ALTERA_UART_CONSOLE,
-> >  };
-> >  
-> > +#ifdef CONFIG_OF
-> > +static int altera_uart_get_uartclk(struct platform_device *pdev,
-> > +				   struct uart_port *port)
-> > +{
-> > +	const __be32 *clk = of_get_property(pdev->dev.of_node, "clock-frequency", NULL);
-> > +
-> > +	if (!clk)
-> > +		return -ENODEV;
-> > +
-> > +	port->uartclk = be32_to_cpup(clk);
-> > +
-> > +	return 0;
-> > +}
-> > +#else
-> > +static int altera_uart_get_uartclk(struct platform_device *pdev,
-> > +				   struct uart_port *port)
-> > +{
-> > +	struct altera_uart_platform_uart *platp = pdev->dev.platform_data;
-> > +
-> > +	if (!platp)
-> > +		return -ENODEV;
-> > +
-> > +	port->uartclk = platp->uartclk;
-> > +
-> > +	return 0;
-> > +}
-> > +#endif /* CONFIG_OF */
-> 
-> This either/or situation isn't really desirable.  The driver should be
-> written so that platform_data works regardless of whether or not
-> CONFIG_OF is set.  So, if the of_node pointer is set, use it to get
-> the configuration, but fall back to platform data if it is NULL.
+Message-Id: <cover.1297842537.git.gxt@mprc.pku.edu.cn>
+From: GuanXuetao <gxt@mprc.pku.edu.cn>
+Date: Wed, 16 Feb 2011 15:48:57 +0800
 
-Agreed, I'll fix this. Though that case will most probably never happen,
-we either use device tree data or platform data.
+The whole subsystem code could be fetched from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
+  with branch name: unicore32.
 
-> > +
-> >  static int __devinit altera_uart_probe(struct platform_device *pdev)
-> >  {
-> >  	struct altera_uart_platform_uart *platp = pdev->dev.platform_data;
-> > @@ -514,6 +543,7 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
-> >  	struct resource *res_mem;
-> >  	struct resource *res_irq;
-> >  	int i = pdev->id;
-> > +	int ret;
-> >  
-> >  	/* -1 emphasizes that the platform must have one port, no .N suffix */
-> >  	if (i == -1)
-> > @@ -538,6 +568,10 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
-> >  	else if (platp->irq)
-> >  		port->irq = platp->irq;
-> >  
-> > +	ret = altera_uart_get_uartclk(pdev, port);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> >  	port->membase = ioremap(port->mapbase, ALTERA_UART_SIZE);
-> >  	if (!port->membase)
-> >  		return -ENOMEM;
-> > @@ -550,7 +584,6 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
-> >  	port->line = i;
-> >  	port->type = PORT_ALTERA_UART;
-> >  	port->iotype = SERIAL_IO_MEM;
-> > -	port->uartclk = platp->uartclk;
-> >  	port->ops = &altera_uart_ops;
-> >  	port->flags = UPF_BOOT_AUTOCONF;
-> >  
-> > @@ -573,13 +606,19 @@ static int __devexit altera_uart_remove(struct platform_device *pdev)
-> >  	return 0;
-> >  }
-> >  
-> > +static struct of_device_id altera_uart_match[] = {
-> > +	{ .compatible = "altr,uart-1.0", },
-> > +	{},
-> > +};
-> > +MODULE_DEVICE_TABLE(of, altera_uart_match);
-> 
-> Need to protect the MODULE_DEVICE_TABLE with #ifdef/#endif.  You don't
-> want to advertise device tree support when CONFIG_OF isn't selected.
+Previous patch set adds the core architecture support for UniCore32 ISA, 
+and this patch set add  additional architecture files and machine related files. 
 
-Shall I put the #ifdef around the whole table and define it as NULL if
-CONFIG_OF is not defined - like this:
+Patch 1 adds pm related files, including hibernate and sleep supports.
+Patch 2 implements support for float point unit, which using UniCore-F64 FPU hardware in UniCore32 ISA.
+Patch 3 adds ptrace support.
+Patch 4 implements low-level debug libraries with On-Chip-Debugger hardware support.
+Patch 5 implements low-level uaccess libraries.
+Patch 6 implements the rest low-level libraries.
+Patch 7 implements booting process, including uncompression process.
 
-	#ifdef CONFIG_OF
-	static struct of_device_id altera_uart_match[] = {
-		{ .compatible = "altr,uart-1.0", },
-		{},
-	};
-	MODULE_DEVICE_TABLE(of, altera_uart_match);
-	#else
-	#define altera_uart_match NULL
-	#endif /* CONFIG_OF */
+Patch 8 adds machine related core files, also including build infrastructure.
+Patch 9 adds all hardware registers definitions.
+Patch 10 implements arch-specific pci bus driver.
+Patch 11 implements arch-specific ps2 driver.
+Patch 12 adds MAINTAINER list for unicore32 architecture and pkunity soc drivers.
 
-or will it be sufficient to just #ifdef the MODULE_DEVICE_TABLE:
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-	static struct of_device_id altera_uart_match[] = {
-		{ .compatible = "altr,uart-1.0", },
-		{},
-	};
-	#ifdef CONFIG_OF
-	MODULE_DEVICE_TABLE(of, altera_uart_match);
-	#endif
+GuanXuetao (12):
+  unicore32 additional architecture files: pm related files
+  unicore32 additional architecture files: float point handling
+  unicore32 additional architecture files: ptrace handling
+  unicore32 additional architecture files: low-level lib: ocd debug
+  unicore32 additional architecture files: low-level lib: uaccess
+  unicore32 additional architecture files: low-level lib: misc
+  unicore32 additional architecture files: boot process
+  unicore32 machine related files: core files
+  unicore32 machine related files: hardware registers
+  unicore32 machine related files: pci bus handling
+  unicore32 machine related files: ps2 driver
+  unicore32: ADD MAINTAINER for unicore32 architecture
 
-> > +
-> >  static struct platform_driver altera_uart_platform_driver = {
-> >  	.probe	= altera_uart_probe,
-> >  	.remove	= __devexit_p(altera_uart_remove),
-> >  	.driver	= {
-> > -		.name	= DRV_NAME,
-> > -		.owner	= THIS_MODULE,
-> > -		.pm	= NULL,
-> > +		.name		= DRV_NAME,
-> > +		.owner		= THIS_MODULE,
-> > +		.of_match_table	= altera_uart_match,
-> >  	},
-> >  };
-> >  
-> > -- 
-> > 1.7.0.4
-> > 
-> 
+ MAINTAINERS                                   |   14 +
+ arch/unicore32/Kconfig.puv3                   |  125 ++++++++
+ arch/unicore32/boot/Makefile                  |   47 +++
+ arch/unicore32/boot/compressed/Makefile       |   68 ++++
+ arch/unicore32/boot/compressed/head.S         |  204 +++++++++++++
+ arch/unicore32/boot/compressed/misc.c         |  126 ++++++++
+ arch/unicore32/boot/compressed/piggy.S.in     |    6 +
+ arch/unicore32/boot/compressed/vmlinux.lds.in |   61 ++++
+ arch/unicore32/include/asm/assembler.h        |  131 ++++++++
+ arch/unicore32/include/asm/bitops.h           |   47 +++
+ arch/unicore32/include/asm/checksum.h         |   41 +++
+ arch/unicore32/include/asm/delay.h            |   52 ++++
+ arch/unicore32/include/asm/fpstate.h          |   26 ++
+ arch/unicore32/include/asm/fpu-ucf64.h        |   53 ++++
+ arch/unicore32/include/asm/futex.h            |  143 +++++++++
+ arch/unicore32/include/asm/io.h               |   52 ++++
+ arch/unicore32/include/asm/mutex.h            |   20 ++
+ arch/unicore32/include/asm/pci.h              |   46 +++
+ arch/unicore32/include/asm/ptrace.h           |  133 ++++++++
+ arch/unicore32/include/asm/suspend.h          |   30 ++
+ arch/unicore32/include/asm/uaccess.h          |   47 +++
+ arch/unicore32/include/mach/PKUnity.h         |  104 +++++++
+ arch/unicore32/include/mach/bitfield.h        |   24 ++
+ arch/unicore32/include/mach/hardware.h        |   45 +++
+ arch/unicore32/include/mach/ocd.h             |   36 +++
+ arch/unicore32/include/mach/pm.h              |   43 +++
+ arch/unicore32/include/mach/regs-ac97.h       |   32 ++
+ arch/unicore32/include/mach/regs-dmac.h       |   81 +++++
+ arch/unicore32/include/mach/regs-gpio.h       |   70 +++++
+ arch/unicore32/include/mach/regs-i2c.h        |   63 ++++
+ arch/unicore32/include/mach/regs-intc.h       |   28 ++
+ arch/unicore32/include/mach/regs-nand.h       |   79 +++++
+ arch/unicore32/include/mach/regs-ost.h        |   92 ++++++
+ arch/unicore32/include/mach/regs-pci.h        |   94 ++++++
+ arch/unicore32/include/mach/regs-pm.h         |  126 ++++++++
+ arch/unicore32/include/mach/regs-ps2.h        |   20 ++
+ arch/unicore32/include/mach/regs-resetc.h     |   34 ++
+ arch/unicore32/include/mach/regs-rtc.h        |   37 +++
+ arch/unicore32/include/mach/regs-sdc.h        |  156 ++++++++++
+ arch/unicore32/include/mach/regs-spi.h        |   98 ++++++
+ arch/unicore32/include/mach/regs-uart.h       |    3 +
+ arch/unicore32/include/mach/regs-umal.h       |  229 ++++++++++++++
+ arch/unicore32/include/mach/regs-unigfx.h     |  200 ++++++++++++
+ arch/unicore32/include/mach/uncompress.h      |   34 ++
+ arch/unicore32/kernel/clock.c                 |  388 ++++++++++++++++++++++++
+ arch/unicore32/kernel/cpu-ucv2.c              |   93 ++++++
+ arch/unicore32/kernel/debug-macro.S           |   89 ++++++
+ arch/unicore32/kernel/debug.S                 |   85 ++++++
+ arch/unicore32/kernel/early_printk.c          |   59 ++++
+ arch/unicore32/kernel/fpu-ucf64.c             |  126 ++++++++
+ arch/unicore32/kernel/hibernate.c             |  160 ++++++++++
+ arch/unicore32/kernel/hibernate_asm.S         |  117 +++++++
+ arch/unicore32/kernel/pci.c                   |  404 +++++++++++++++++++++++++
+ arch/unicore32/kernel/pm.c                    |  123 ++++++++
+ arch/unicore32/kernel/ptrace.c                |  149 +++++++++
+ arch/unicore32/kernel/puv3-core.c             |  270 +++++++++++++++++
+ arch/unicore32/kernel/puv3-nb0916.c           |  175 +++++++++++
+ arch/unicore32/kernel/puv3-smw0919.c          |  115 +++++++
+ arch/unicore32/kernel/sleep.S                 |  202 ++++++++++++
+ arch/unicore32/lib/Makefile                   |   27 ++
+ arch/unicore32/lib/clear_user.S               |   57 ++++
+ arch/unicore32/lib/copy_from_user.S           |  108 +++++++
+ arch/unicore32/lib/copy_page.S                |   39 +++
+ arch/unicore32/lib/copy_template.S            |  214 +++++++++++++
+ arch/unicore32/lib/copy_to_user.S             |   96 ++++++
+ arch/unicore32/lib/delay.S                    |   51 +++
+ arch/unicore32/lib/findbit.S                  |   98 ++++++
+ arch/unicore32/lib/strncpy_from_user.S        |   45 +++
+ arch/unicore32/lib/strnlen_user.S             |   42 +++
+ drivers/input/serio/i8042-unicore32io.h       |   70 +++++
+ drivers/input/serio/i8042.h                   |    2 +
+ drivers/pci/Makefile                          |    1 +
+ 72 files changed, 6605 insertions(+), 0 deletions(-)
+ create mode 100644 arch/unicore32/Kconfig.puv3
+ create mode 100644 arch/unicore32/boot/Makefile
+ create mode 100644 arch/unicore32/boot/compressed/Makefile
+ create mode 100644 arch/unicore32/boot/compressed/head.S
+ create mode 100644 arch/unicore32/boot/compressed/misc.c
+ create mode 100644 arch/unicore32/boot/compressed/piggy.S.in
+ create mode 100644 arch/unicore32/boot/compressed/vmlinux.lds.in
+ create mode 100644 arch/unicore32/include/asm/assembler.h
+ create mode 100644 arch/unicore32/include/asm/bitops.h
+ create mode 100644 arch/unicore32/include/asm/checksum.h
+ create mode 100644 arch/unicore32/include/asm/delay.h
+ create mode 100644 arch/unicore32/include/asm/fpstate.h
+ create mode 100644 arch/unicore32/include/asm/fpu-ucf64.h
+ create mode 100644 arch/unicore32/include/asm/futex.h
+ create mode 100644 arch/unicore32/include/asm/io.h
+ create mode 100644 arch/unicore32/include/asm/mutex.h
+ create mode 100644 arch/unicore32/include/asm/pci.h
+ create mode 100644 arch/unicore32/include/asm/ptrace.h
+ create mode 100644 arch/unicore32/include/asm/suspend.h
+ create mode 100644 arch/unicore32/include/asm/uaccess.h
+ create mode 100644 arch/unicore32/include/mach/PKUnity.h
+ create mode 100644 arch/unicore32/include/mach/bitfield.h
+ create mode 100644 arch/unicore32/include/mach/hardware.h
+ create mode 100644 arch/unicore32/include/mach/ocd.h
+ create mode 100644 arch/unicore32/include/mach/pm.h
+ create mode 100644 arch/unicore32/include/mach/regs-ac97.h
+ create mode 100644 arch/unicore32/include/mach/regs-dmac.h
+ create mode 100644 arch/unicore32/include/mach/regs-gpio.h
+ create mode 100644 arch/unicore32/include/mach/regs-i2c.h
+ create mode 100644 arch/unicore32/include/mach/regs-intc.h
+ create mode 100644 arch/unicore32/include/mach/regs-nand.h
+ create mode 100644 arch/unicore32/include/mach/regs-ost.h
+ create mode 100644 arch/unicore32/include/mach/regs-pci.h
+ create mode 100644 arch/unicore32/include/mach/regs-pm.h
+ create mode 100644 arch/unicore32/include/mach/regs-ps2.h
+ create mode 100644 arch/unicore32/include/mach/regs-resetc.h
+ create mode 100644 arch/unicore32/include/mach/regs-rtc.h
+ create mode 100644 arch/unicore32/include/mach/regs-sdc.h
+ create mode 100644 arch/unicore32/include/mach/regs-spi.h
+ create mode 100644 arch/unicore32/include/mach/regs-uart.h
+ create mode 100644 arch/unicore32/include/mach/regs-umal.h
+ create mode 100644 arch/unicore32/include/mach/regs-unigfx.h
+ create mode 100644 arch/unicore32/include/mach/uncompress.h
+ create mode 100644 arch/unicore32/kernel/clock.c
+ create mode 100644 arch/unicore32/kernel/cpu-ucv2.c
+ create mode 100644 arch/unicore32/kernel/debug-macro.S
+ create mode 100644 arch/unicore32/kernel/debug.S
+ create mode 100644 arch/unicore32/kernel/early_printk.c
+ create mode 100644 arch/unicore32/kernel/fpu-ucf64.c
+ create mode 100644 arch/unicore32/kernel/hibernate.c
+ create mode 100644 arch/unicore32/kernel/hibernate_asm.S
+ create mode 100644 arch/unicore32/kernel/pci.c
+ create mode 100644 arch/unicore32/kernel/pm.c
+ create mode 100644 arch/unicore32/kernel/ptrace.c
+ create mode 100644 arch/unicore32/kernel/puv3-core.c
+ create mode 100644 arch/unicore32/kernel/puv3-nb0916.c
+ create mode 100644 arch/unicore32/kernel/puv3-smw0919.c
+ create mode 100644 arch/unicore32/kernel/sleep.S
+ create mode 100644 arch/unicore32/lib/Makefile
+ create mode 100644 arch/unicore32/lib/clear_user.S
+ create mode 100644 arch/unicore32/lib/copy_from_user.S
+ create mode 100644 arch/unicore32/lib/copy_page.S
+ create mode 100644 arch/unicore32/lib/copy_template.S
+ create mode 100644 arch/unicore32/lib/copy_to_user.S
+ create mode 100644 arch/unicore32/lib/delay.S
+ create mode 100644 arch/unicore32/lib/findbit.S
+ create mode 100644 arch/unicore32/lib/strncpy_from_user.S
+ create mode 100644 arch/unicore32/lib/strnlen_user.S
+ create mode 100644 drivers/input/serio/i8042-unicore32io.h
+
+
