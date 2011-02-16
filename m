@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab1BPAT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:19:28 -0500
-Received: from kroah.org ([198.145.64.141]:38829 "EHLO coco.kroah.org"
+	id S1757985Ab1BPBn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:43:58 -0500
+Received: from kroah.org ([198.145.64.141]:38858 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756848Ab1BPATX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:23 -0500
+	id S1756848Ab1BPAT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:30 2011
-Message-Id: <20110216001430.195331271@clark.kroah.org>
+Message-Id: <20110216001430.636935930@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:48 -0800
+Date: Tue, 15 Feb 2011 16:11:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [051/272] mac80211: add missing synchronize_rcu
+Subject: [055/272] iwlagn: enable only rfkill interrupt when device is down
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit d2460f4b2fa6dbdeec800414f9cf5b1fc8b71197 upstream.
+commit 554d1d027b19265c4aa3f718b3126d2b86e09a08 upstream.
 
-commit ad0e2b5a00dbec303e4682b403bb6703d11dcdb2
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Tue Jun 1 10:19:19 2010 +0200
+Since commit 6cd0b1cb872b3bf9fc5de4536404206ab74bafdd "iwlagn: fix
+hw-rfkill while the interface is down", we enable interrupts when
+device is not ready to receive them. However hardware, when it is in
+some inconsistent state, can generate other than rfkill interrupts
+and crash the system. I can reproduce crash with "kernel BUG at
+drivers/net/wireless/iwlwifi/iwl-agn.c:1010!" message, when forcing
+firmware restarts.
 
-    mac80211: simplify key locking
+To fix only enable rfkill interrupt when down device and after probe.
+I checked patch on laptop with 5100 device, rfkill change is still
+passed to user space when device is down.
 
-removed the synchronization against RCU and thus
-opened a race window where we can use a key for
-TX while it is already freed. Put a synchronisation
-into the right place to close that window.
-
-Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/key.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-agn.c     |    9 +++++----
+ drivers/net/wireless/iwlwifi/iwl-helpers.h |    6 ++++++
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
---- a/net/mac80211/key.c
-+++ b/net/mac80211/key.c
-@@ -366,6 +366,12 @@ static void __ieee80211_key_destroy(stru
- 	if (!key)
- 		return;
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -3530,9 +3530,10 @@ static void iwl_mac_stop(struct ieee8021
  
-+	/*
-+	 * Synchronize so the TX path can no longer be using
-+	 * this key before we free/remove it.
-+	 */
-+	synchronize_rcu();
+ 	flush_workqueue(priv->workqueue);
+ 
+-	/* enable interrupts again in order to receive rfkill changes */
++	/* User space software may expect getting rfkill changes
++	 * even if interface is down */
+ 	iwl_write32(priv, CSR_INT, 0xFFFFFFFF);
+-	iwl_enable_interrupts(priv);
++	iwl_enable_rfkill_int(priv);
+ 
+ 	IWL_DEBUG_MAC80211(priv, "leave\n");
+ }
+@@ -4515,14 +4516,14 @@ static int iwl_pci_probe(struct pci_dev
+ 	 * 8. Enable interrupts and read RFKILL state
+ 	 *********************************************/
+ 
+-	/* enable interrupts if needed: hw bug w/a */
++	/* enable rfkill interrupt: hw bug w/a */
+ 	pci_read_config_word(priv->pci_dev, PCI_COMMAND, &pci_cmd);
+ 	if (pci_cmd & PCI_COMMAND_INTX_DISABLE) {
+ 		pci_cmd &= ~PCI_COMMAND_INTX_DISABLE;
+ 		pci_write_config_word(priv->pci_dev, PCI_COMMAND, pci_cmd);
+ 	}
+ 
+-	iwl_enable_interrupts(priv);
++	iwl_enable_rfkill_int(priv);
+ 
+ 	/* If platform's RF_KILL switch is NOT set to KILL */
+ 	if (iwl_read32(priv, CSR_GP_CNTRL) & CSR_GP_CNTRL_REG_FLAG_HW_RF_KILL_SW)
+--- a/drivers/net/wireless/iwlwifi/iwl-helpers.h
++++ b/drivers/net/wireless/iwlwifi/iwl-helpers.h
+@@ -163,6 +163,12 @@ static inline void iwl_disable_interrupt
+ 	IWL_DEBUG_ISR(priv, "Disabled interrupts\n");
+ }
+ 
++static inline void iwl_enable_rfkill_int(struct iwl_priv *priv)
++{
++	IWL_DEBUG_ISR(priv, "Enabling rfkill interrupt\n");
++	iwl_write32(priv, CSR_INT_MASK, CSR_INT_BIT_RF_KILL);
++}
 +
- 	if (key->local)
- 		ieee80211_key_disable_hw_accel(key);
- 
+ static inline void iwl_enable_interrupts(struct iwl_priv *priv)
+ {
+ 	IWL_DEBUG_ISR(priv, "Enabling interrupts\n");
 
 
