@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933246Ab1BPAua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:50:30 -0500
-Received: from kroah.org ([198.145.64.141]:45934 "EHLO coco.kroah.org"
+	id S933282Ab1BPAur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:50:47 -0500
+Received: from kroah.org ([198.145.64.141]:45963 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933229Ab1BPAuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:50:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:10 2011
-Message-Id: <20110216002110.663869491@clark.kroah.org>
+	id S933249Ab1BPAud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:33 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:11 2011
+Message-Id: <20110216002111.053004926@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:24 -0800
+Date: Tue, 15 Feb 2011 16:21:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Renninger <trenn@novell.com>, Rafael Wysocki <rjw@novell.com>,
-        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [patch 116/176] x86, mtrr: Avoid MTRR reprogramming on BP during boot on UP platforms
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [patch 120/176] ARM: initrd: disable initrd if passed address overlaps reserved region
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,107 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit f7448548a9f32db38f243ccd4271617758ddfe2c upstream.
+commit b0a2679d27408d97ce31e5f800b44227d3388b84 upstream.
 
-Markus Kohn ran into a hard hang regression on an acer aspire
-1310, when acpi is enabled. git bisect showed the following
-commit as the bad one that introduced the boot regression.
+Disable the initrd if the passed address already overlaps the reserved
+region.  This avoids oopses on Netwinders when NeTTrom tells the kernel
+that an initrd is located at mem+4MB, but this overlaps the BSS,
+resulting in the kernels in-use BSS being freed.
 
-	commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3
-	Author: Suresh Siddha <suresh.b.siddha@intel.com>
-	Date:   Wed Aug 19 18:05:36 2009 -0700
+This should be applied to v2.6.37-stable.
 
-	    x86, pat/mtrr: Rendezvous all the cpus for MTRR/PAT init
-
-Because of the UP configuration of that platform,
-native_smp_prepare_cpus() bailed out (in smp_sanity_check())
-before doing the set_mtrr_aps_delayed_init()
-
-Further down the boot path, native_smp_cpus_done() will call the
-delayed MTRR initialization for the AP's (mtrr_aps_init()) with
-mtrr_aps_delayed_init not set. This resulted in the boot
-processor reprogramming its MTRR's to the values seen during the
-start of the OS boot. While this is not needed ideally, this
-shouldn't have caused any side-effects. This is because the
-reprogramming of MTRR's (set_mtrr_state() that gets called via
-set_mtrr()) will check if the live register contents are
-different from what is being asked to write and will do the actual
-write only if they are different.
-
-BP's mtrr state is read during the start of the OS boot and
-typically nothing would have changed when we ask to reprogram it
-on BP again because of the above scenario on an UP platform. So
-on a normal UP platform no reprogramming of BP MTRR MSR's
-happens and all is well.
-
-However, on this platform, bios seems to be modifying the fixed
-mtrr range registers between the start of OS boot and when we
-double check the live registers for reprogramming BP MTRR
-registers. And as the live registers are modified, we end up
-reprogramming the MTRR's to the state seen during the start of
-the OS boot.
-
-During ACPI initialization, something in the bios (probably smi
-handler?) don't like this fact and results in a hard lockup.
-
-We didn't see this boot hang issue on this platform before the
-commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3, because only
-the AP's (if any) will program its MTRR's to the value that BP
-had at the start of the OS boot.
-
-Fix this issue by checking mtrr_aps_delayed_init before
-continuing further in the mtrr_aps_init(). Now, only AP's (if
-any) will program its MTRR's to the BP values during boot.
-
-Addresses https://bugzilla.novell.com/show_bug.cgi?id=623393
-
-  [ By the way, this behavior of the bios modifying MTRR's after the start
-    of the OS boot is not common and the kernel is not prepared to
-    handle this situation well. Irrespective of this issue, during
-    suspend/resume, linux kernel will try to reprogram the BP's MTRR values
-    to the values seen during the start of the OS boot. So suspend/resume might
-    be already broken on this platform for all linux kernel versions. ]
-
-Reported-and-bisected-by: Markus Kohn <jabber@gmx.org>
-Tested-by: Markus Kohn <jabber@gmx.org>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Thomas Renninger <trenn@novell.com>
-Cc: Rafael Wysocki <rjw@novell.com>
-Cc: Venkatesh Pallipadi <venki@google.com>
-LKML-Reference: <1296694975.4418.402.camel@sbsiddha-MOBL3.sc.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/mtrr/main.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/arm/mm/init.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -793,13 +793,21 @@ void set_mtrr_aps_delayed_init(void)
- }
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -282,6 +282,12 @@ void __init arm_memblock_init(struct mem
+ 	memblock_reserve(__pa(_stext), _end - _stext);
+ #endif
+ #ifdef CONFIG_BLK_DEV_INITRD
++	if (phys_initrd_size &&
++	    memblock_is_region_reserved(phys_initrd_start, phys_initrd_size)) {
++		pr_err("INITRD: 0x%08lx+0x%08lx overlaps in-use memory region - disabling initrd\n",
++		       phys_initrd_start, phys_initrd_size);
++		phys_initrd_start = phys_initrd_size = 0;
++	}
+ 	if (phys_initrd_size) {
+ 		memblock_reserve(phys_initrd_start, phys_initrd_size);
  
- /*
-- * MTRR initialization for all AP's
-+ * Delayed MTRR initialization for all AP's
-  */
- void mtrr_aps_init(void)
- {
- 	if (!use_intel())
- 		return;
- 
-+	/*
-+	 * Check if someone has requested the delay of AP MTRR initialization,
-+	 * by doing set_mtrr_aps_delayed_init(), prior to this point. If not,
-+	 * then we are done.
-+	 */
-+	if (!mtrr_aps_delayed_init)
-+		return;
-+
- 	set_mtrr(~0U, 0, 0, 0);
- 	mtrr_aps_delayed_init = false;
- }
 
 
