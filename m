@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab1BPRyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 12:54:19 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:37402 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab1BPRxP (ORCPT
+	id S1754050Ab1BPRy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 12:54:59 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58871 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab1BPRy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 12:53:15 -0500
-X-IronPort-AV: E=Sophos;i="4.60,480,1291611600"; 
-   d="scan'208";a="136190311"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
-        konrad.wilk@oracle.com, Stefano.Stabellini@eu.citrix.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 2/7] xen: do not use xen_info on HVM, set pv_info name to "Xen HVM"
-Date: Wed, 16 Feb 2011 17:53:02 +0000
-Message-Id: <1297878787-378-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1102161739370.2826@kaball-desktop>
-References: <alpine.DEB.2.00.1102161739370.2826@kaball-desktop>
-X-OriginalArrivalTime: 16 Feb 2011 17:53:14.0026 (UTC) FILETIME=[6209D8A0:01CBCE02]
+	Wed, 16 Feb 2011 12:54:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=UhQe0GFg/sM/dKlWMWtDtojSFq/pQI7nnovNrm6SOM5Fal9n/F6YZNAaM4WtbE9A3i
+         ZrTiSAE6IBIsE2z96POYDdlfotOSVAtXT6YtKg+OtlLaK21EaO4NKT84+Q4BvDisrnTc
+         he6avyouylmoZpAG8iInjC1SqPoOt6kdEvQ3E=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1102161837140.2160@pobox.suse.cz>
+References: <1297780428-3805-1-git-send-email-benjamin.tissoires@enac.fr>
+	<alpine.LNX.2.00.1102160003420.2160@pobox.suse.cz>
+	<AANLkTi=QF-9QtGK8V795R9ZO4-c6sQ8MSTW+JMxwd2+d@mail.gmail.com>
+	<alpine.LNX.2.00.1102161837140.2160@pobox.suse.cz>
+Date: Wed, 16 Feb 2011 18:54:54 +0100
+X-Google-Sender-Auth: HSPs75uzfR4Wr461zEIjWjCQrI4
+Message-ID: <AANLkTinbHq7yusE1nk-FCmf76foUcpUeU37wpHg-tsUN@mail.gmail.com>
+Subject: Re: [PATCH] HID: add IRTOUCH infrared USB to hid_have_special_driver
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On Wed, Feb 16, 2011 at 18:38, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Wed, 16 Feb 2011, Benjamin Tissoires wrote:
+>
+>> Thanks for applying those two patches.
+>> BTW I'm a little worried: apparently you applied this patch in the
+>> branch upstream-fixes but you didn't applied "HID: hid-multitouch:
+>> introduce IrTouch Infrared USB..." and it's parents in this branch....
+>> I'm afraid this will broke compilation of the upstream branch
+>> (USB_VENDOR_ID_IRTOUCHSYSTEMS and USB_DEVICE_ID_IRTOUCH_INFRARED_USB
+>> are not defined).
+>
+> Hi,
+>
+> yes, I pushed the patch to wrong remote branch yesterday, but apparently
+> sync to git.kernel.org in which I fixed it hasn't made it yet for some
+> reason.
+>
+> Sorry for the noise,
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
----
- arch/x86/xen/enlighten.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+No problem, and after all it was my fault at the beginning ;)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 50542ef..2f67e2e 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1284,8 +1284,7 @@ static int init_hvm_pv_info(int *major, int *minor)
- 
- 	xen_setup_features();
- 
--	pv_info = xen_info;
--	pv_info.kernel_rpl = 0;
-+	pv_info.name = "Xen HVM";
- 
- 	xen_domain_type = XEN_HVM_DOMAIN;
- 
--- 
-1.5.6.5
+Thanks for taking care of this.
 
+Cheers,
+Benjamin
