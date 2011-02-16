@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791Ab1BPEJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 23:09:50 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:43159 "EHLO smtps.tip.net.au"
+	id S1758487Ab1BPELL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 23:11:11 -0500
+Received: from core.signal11.us ([64.251.29.136]:35646 "EHLO core.signal11.us"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756518Ab1BPEJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 23:09:48 -0500
-Date: Wed, 16 Feb 2011 15:09:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: linux-next: manual merge of the devicetree tree with the
- spi-current tree
-Message-Id: <20110216150943.b4969ddf.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755797Ab1BPELI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 23:11:08 -0500
+Message-ID: <4D5B4E5D.5060101@signal11.us>
+Date: Tue, 15 Feb 2011 23:11:09 -0500
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Lightning/1.0b1 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Alan Ott <alan@signal11.us>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, greg@kroah.com, stern@rowland.harvard.edu,
+        Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: [PATCH v4 0/1] HID: Report Descriptor in Sysfs
+References: <20110123225935.GB12488@kroah.com> <1295841018-8561-1-git-send-email-alan@signal11.us>
+In-Reply-To: <1295841018-8561-1-git-send-email-alan@signal11.us>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Feb 15 23:11:07 2011
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4d5b4e5b145072019838155
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On 01/23/2011 10:50 PM, Alan Ott wrote:
+> So I'd like to have access to the HID report descriptor in a sysfs entry, so
+> I can read it without opening the device.  hid-core seemed like the place to
+> put it.
+>
+> Using the /sys/class links, for hidraw devices, this puts a new file,
+> report_descriptor in the directory:
+> 	/sys/class/hidraw/hidraw0/device/
+>
+> For my USB device (for example), the new file is in:
+> 	/sys/bus/usb/devices/1-5.3:1.0/0003:046D:C216.0001/
+>
+> For my Bluetooth device, the new file is in:
+> 	/sys/class/bluetooth/hci0/hci0:11/0005:054C:0268.0002/
+>
+> I'm not super confident that these file locations are the best place, but I
+> made a best guess so that it could be discussed.  The current location is
+> where the hid-core stuff lives.  Is there a reason these directories are
+> named bus:vendor:product:id (instead of hid-core or something similar)?  Is
+> there a better way to do this?
+>
+> Alan.
+>
+> Alan Ott (1):
+>    hid: Add HID Report Descriptor to sysfs.
+>
+>   Documentation/ABI/testing/sysfs-driver-hid |   10 ++++++++
+>   drivers/hid/hid-core.c                     |   33 ++++++++++++++++++++++++++++
+>   2 files changed, 43 insertions(+), 0 deletions(-)
+>   create mode 100644 Documentation/ABI/testing/sysfs-driver-hid
+>
+>    
 
-Today's linux-next merge of the devicetree tree got a conflict in
-drivers/spi/pxa2xx_spi_pci.c between commit
-0f3e1d27a7e3f98d996d707d649128e229b65deb ("spi/pxa2xx pci: fix the
-release - remove race") from the spi-current tree and commit
-c9e358dfc4a8cb2227172ef77908c2e0ee17bcb9 ("driver-core: remove
-conditionals around devicetree pointers") from the devicetree tree.
+I Didn't get any responses on the fixed-up patch. Does anyone have any 
+issue with this?
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Alan.
 
-diff --cc drivers/spi/pxa2xx_spi_pci.c
-index 19752b0,b6589bb..0000000
---- a/drivers/spi/pxa2xx_spi_pci.c
-+++ b/drivers/spi/pxa2xx_spi_pci.c
-@@@ -75,24 -84,25 +75,22 @@@ static int __devinit ce4100_spi_probe(s
-  		return ret;
-  	}
-  
- +	pdev = platform_device_alloc("pxa2xx-spi", dev->devfn);
-  	spi_info = kzalloc(sizeof(*spi_info), GFP_KERNEL);
- -	if (!spi_info) {
- +	if (!pdev || !spi_info ) {
-  		ret = -ENOMEM;
- -		goto err_kz;
- +		goto err_nomem;
-  	}
- -	ssp = &spi_info->ssp;
- -	pdev = &spi_info->spi_pdev;
- -	spi_pdata =  &spi_info->spi_pdata;
- +	memset(&spi_pdata, 0, sizeof(spi_pdata));
- +	spi_pdata.num_chipselect = dev->devfn;
-  
- -	pdev->name = "pxa2xx-spi";
- -	pdev->id = dev->devfn;
- -	pdev->dev.parent = &dev->dev;
- -	pdev->dev.platform_data = &spi_info->spi_pdata;
- +	ret = platform_device_add_data(pdev, &spi_pdata, sizeof(spi_pdata));
- +	if (ret)
- +		goto err_nomem;
-  
- +	pdev->dev.parent = &dev->dev;
-- #ifdef CONFIG_OF
-  	pdev->dev.of_node = dev->dev.of_node;
-- #endif
- -	pdev->dev.release = plat_dev_release;
- -
- -	spi_pdata->num_chipselect = dev->devfn;
- -
- +	ssp = &spi_info->ssp;
-  	ssp->phys_base = pci_resource_start(dev, 0);
-  	ssp->mmio_base = ioremap(phys_beg, phys_len);
-  	if (!ssp->mmio_base) {
+
