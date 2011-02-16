@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab1BPATZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:19:25 -0500
-Received: from kroah.org ([198.145.64.141]:38820 "EHLO coco.kroah.org"
+	id S1758013Ab1BPBoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:44:13 -0500
+Received: from kroah.org ([198.145.64.141]:38849 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab1BPATV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:21 -0500
+	id S1756870Ab1BPAT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:28 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:30 2011
-Message-Id: <20110216001430.097622818@clark.kroah.org>
+Message-Id: <20110216001430.530062636@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:47 -0800
+Date: Tue, 15 Feb 2011 16:11:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Milton Miller <miltonm@bga.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [050/272] mac80211: fix mesh forwarding when ratelimited too
+Subject: [054/272] mac80211: fix initialization of skb->cb in ieee80211_subif_start_xmit
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milton Miller <miltonm@bga.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 919bbad580445801c22ef6ccbe624551fee652bd upstream.
+commit 489ee9195a7de9e6bc833d639ff6b553ffdad90e upstream.
 
-Commit b51aff057c9d0ef6c529dc25fd9f775faf7b6c63 said:
+The change 'mac80211: Fix BUG in pskb_expand_head when transmitting shared skbs'
+added a check for copying the skb if it's shared, however the tx info variable
+still points at the cb of the old skb
 
-    Under memory pressure, the mac80211 mesh code
-    may helpfully print a message that it failed
-    to clone a mesh frame and then will proceed
-    to crash trying to use it anyway. Fix that.
-
-Avoid the reference whenever the frame copy is unsuccessful
-regardless of the debug message being suppressed or printed.
-
-Signed-off-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/rx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/tx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1788,11 +1788,11 @@ ieee80211_rx_h_mesh_fwding(struct ieee80
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1726,7 +1726,7 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ {
+ 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
+ 	struct ieee80211_local *local = sdata->local;
+-	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
++	struct ieee80211_tx_info *info;
+ 	int ret = NETDEV_TX_BUSY, head_need;
+ 	u16 ethertype, hdrlen,  meshhdrlen = 0;
+ 	__le16 fc;
+@@ -2017,6 +2017,7 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 	skb_set_network_header(skb, nh_pos);
+ 	skb_set_transport_header(skb, h_pos);
  
- 			fwd_skb = skb_copy(skb, GFP_ATOMIC);
++	info = IEEE80211_SKB_CB(skb);
+ 	memset(info, 0, sizeof(*info));
  
--			if (!fwd_skb && net_ratelimit()) {
-+			if (!fwd_skb && net_ratelimit())
- 				printk(KERN_DEBUG "%s: failed to clone mesh frame\n",
- 						   sdata->name);
-+			if (!fwd_skb)
- 				goto out;
--			}
- 
- 			fwd_hdr =  (struct ieee80211_hdr *) fwd_skb->data;
- 			memcpy(fwd_hdr->addr2, sdata->vif.addr, ETH_ALEN);
+ 	dev->trans_start = jiffies;
 
 
