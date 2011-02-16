@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab1BPASC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:18:02 -0500
-Received: from kroah.org ([198.145.64.141]:38554 "EHLO coco.kroah.org"
+	id S1756432Ab1BPASE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:18:04 -0500
+Received: from kroah.org ([198.145.64.141]:38577 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755151Ab1BPAR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:17:56 -0500
+	id S1756334Ab1BPASC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:25 2011
-Message-Id: <20110216001425.367971238@clark.kroah.org>
+Message-Id: <20110216001425.763150498@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:00 -0800
+Date: Tue, 15 Feb 2011 16:11:04 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex He <alex.he@amd.com>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: [003/272] USB: EHCI: ASPM quirk of ISOC on AMD SB800
+        Karsten Wiese <fzu@wemgehoertderstaat.de>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [007/272] ALSA: snd-usb-us122l: Fix missing NULL checks
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,228 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex He <alex.he@amd.com>
+From: Karsten Wiese <fzu@wemgehoertderstaat.de>
 
-commit 05570297ecbe834b1756b522412b68eaffb9ab11 upstream.
+commit cdce2db74e156fbd9a2dc3c7b246166f8b70955b upstream.
 
-When ASPM PM Feature is enabled on UMI link, devices that use ISOC stream of
-data transfer may be exposed to longer latency causing less than optimal per-
-formance of the device. The longer latencies are normal and are due to link
-wake time coming out of low power state which happens frequently to save
-power when the link is not active.
-The following code will make exception for certain features of ASPM to be by
-passed and keep the logic normal state only when the ISOC device is connected
-and active. This change will allow the device to run at optimal performance
-yet minimize the impact on overall power savings.
+Fix missing NULL checks in usb_stream_hwdep_poll() and usb_stream_hwdep_ioctl().
+Wake up poll waiters before returning from usb_stream_hwdep_ioctl().
 
-Signed-off-by: Alex He <alex.he@amd.com>
-Acked-by: David Brownell <dbrownell@users.sourceforge.net>
+Signed-off-by: Karsten Wiese <fzu@wemgehoertderstaat.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hcd.c   |    8 ++++
- drivers/usb/host/ehci-pci.c   |   32 +++++++++++++++++
- drivers/usb/host/ehci-sched.c |   79 ++++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/ehci.h       |    1 
- 4 files changed, 120 insertions(+)
+ sound/usb/usx2y/us122l.c |   41 ++++++++++++++++++++---------------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -114,6 +114,9 @@ MODULE_PARM_DESC(hird, "host initiated r
- 
- #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
- 
-+/* for ASPM quirk of ISOC on AMD SB800 */
-+static struct pci_dev *amd_nb_dev;
-+
- /*-------------------------------------------------------------------------*/
- 
- #include "ehci.h"
-@@ -529,6 +532,11 @@ static void ehci_stop (struct usb_hcd *h
- 	spin_unlock_irq (&ehci->lock);
- 	ehci_mem_cleanup (ehci);
- 
-+	if (amd_nb_dev) {
-+		pci_dev_put(amd_nb_dev);
-+		amd_nb_dev = NULL;
-+	}
-+
- #ifdef	EHCI_STATS
- 	ehci_dbg (ehci, "irq normal %ld err %ld reclaim %ld (lost %ld)\n",
- 		ehci->stats.normal, ehci->stats.error, ehci->stats.reclaim,
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -41,6 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
- 	return 0;
- }
- 
-+static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
-+{
-+	struct pci_dev *amd_smbus_dev;
-+	u8 rev = 0;
-+
-+	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
-+	if (!amd_smbus_dev)
-+		return 0;
-+
-+	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+	if (rev < 0x40) {
-+		pci_dev_put(amd_smbus_dev);
-+		amd_smbus_dev = NULL;
-+		return 0;
-+	}
-+
-+	if (!amd_nb_dev)
-+		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
-+	if (!amd_nb_dev)
-+		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
-+
-+	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
-+
-+	pci_dev_put(amd_smbus_dev);
-+	amd_smbus_dev = NULL;
-+
-+	return 1;
-+}
-+
- /* called during probe() after chip reset completes */
- static int ehci_pci_setup(struct usb_hcd *hcd)
+--- a/sound/usb/usx2y/us122l.c
++++ b/sound/usb/usx2y/us122l.c
+@@ -273,29 +273,26 @@ static unsigned int usb_stream_hwdep_pol
+ 					  struct file *file, poll_table *wait)
  {
-@@ -99,6 +128,9 @@ static int ehci_pci_setup(struct usb_hcd
- 	/* cache this readonly data; minimize chip reads */
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+ 	struct us122l	*us122l = hw->private_data;
+-	struct usb_stream *s = us122l->sk.s;
+ 	unsigned	*polled;
+ 	unsigned int	mask;
  
-+	if (ehci_quirk_amd_SB800(ehci))
-+		ehci->amd_l1_fix = 1;
-+
- 	retval = ehci_halt(ehci);
- 	if (retval)
- 		return retval;
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1590,6 +1590,63 @@ itd_link (struct ehci_hcd *ehci, unsigne
- 	*hw_p = cpu_to_hc32(ehci, itd->itd_dma | Q_TYPE_ITD);
+ 	poll_wait(file, &us122l->sk.sleep, wait);
+ 
+-	switch (s->state) {
+-	case usb_stream_ready:
+-		if (us122l->first == file)
+-			polled = &s->periods_polled;
+-		else
+-			polled = &us122l->second_periods_polled;
+-		if (*polled != s->periods_done) {
+-			*polled = s->periods_done;
+-			mask = POLLIN | POLLOUT | POLLWRNORM;
+-			break;
++	mask = POLLIN | POLLOUT | POLLWRNORM | POLLERR;
++	if (mutex_trylock(&us122l->mutex)) {
++		struct usb_stream *s = us122l->sk.s;
++		if (s && s->state == usb_stream_ready) {
++			if (us122l->first == file)
++				polled = &s->periods_polled;
++			else
++				polled = &us122l->second_periods_polled;
++			if (*polled != s->periods_done) {
++				*polled = s->periods_done;
++				mask = POLLIN | POLLOUT | POLLWRNORM;
++			} else
++				mask = 0;
+ 		}
+-		/* Fall through */
+-		mask = 0;
+-		break;
+-	default:
+-		mask = POLLIN | POLLOUT | POLLWRNORM | POLLERR;
+-		break;
++		mutex_unlock(&us122l->mutex);
+ 	}
+ 	return mask;
  }
+@@ -381,6 +378,7 @@ static int usb_stream_hwdep_ioctl(struct
+ {
+ 	struct usb_stream_config *cfg;
+ 	struct us122l *us122l = hw->private_data;
++	struct usb_stream *s;
+ 	unsigned min_period_frames;
+ 	int err = 0;
+ 	bool high_speed;
+@@ -426,18 +424,18 @@ static int usb_stream_hwdep_ioctl(struct
+ 	snd_power_wait(hw->card, SNDRV_CTL_POWER_D0);
  
-+#define AB_REG_BAR_LOW 0xe0
-+#define AB_REG_BAR_HIGH 0xe1
-+#define AB_INDX(addr) ((addr) + 0x00)
-+#define AB_DATA(addr) ((addr) + 0x04)
-+#define NB_PCIE_INDX_ADDR 0xe0
-+#define NB_PCIE_INDX_DATA 0xe4
-+#define NB_PIF0_PWRDOWN_0 0x01100012
-+#define NB_PIF0_PWRDOWN_1 0x01100013
-+
-+static void ehci_quirk_amd_L1(struct ehci_hcd *ehci, int disable)
-+{
-+	u32 addr, addr_low, addr_high, val;
-+
-+	outb_p(AB_REG_BAR_LOW, 0xcd6);
-+	addr_low = inb_p(0xcd7);
-+	outb_p(AB_REG_BAR_HIGH, 0xcd6);
-+	addr_high = inb_p(0xcd7);
-+	addr = addr_high << 8 | addr_low;
-+	outl_p(0x30, AB_INDX(addr));
-+	outl_p(0x40, AB_DATA(addr));
-+	outl_p(0x34, AB_INDX(addr));
-+	val = inl_p(AB_DATA(addr));
-+
-+	if (disable) {
-+		val &= ~0x8;
-+		val |= (1 << 4) | (1 << 9);
-+	} else {
-+		val |= 0x8;
-+		val &= ~((1 << 4) | (1 << 9));
-+	}
-+	outl_p(val, AB_DATA(addr));
-+
-+	if (amd_nb_dev) {
-+		addr = NB_PIF0_PWRDOWN_0;
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
-+		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
-+		if (disable)
-+			val &= ~(0x3f << 7);
-+		else
-+			val |= 0x3f << 7;
-+
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
-+
-+		addr = NB_PIF0_PWRDOWN_1;
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
-+		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
-+		if (disable)
-+			val &= ~(0x3f << 7);
-+		else
-+			val |= 0x3f << 7;
-+
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
-+	}
-+
-+	return;
-+}
-+
- /* fit urb's itds into the selected schedule slot; activate as needed */
- static int
- itd_link_urb (
-@@ -1616,6 +1673,12 @@ itd_link_urb (
- 			urb->interval,
- 			next_uframe >> 3, next_uframe & 0x7);
+ 	mutex_lock(&us122l->mutex);
++	s = us122l->sk.s;
+ 	if (!us122l->master)
+ 		us122l->master = file;
+ 	else if (us122l->master != file) {
+-		if (memcmp(cfg, &us122l->sk.s->cfg, sizeof(*cfg))) {
++		if (!s || memcmp(cfg, &s->cfg, sizeof(*cfg))) {
+ 			err = -EIO;
+ 			goto unlock;
+ 		}
+ 		us122l->slave = file;
  	}
-+
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 1);
-+	}
-+
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
- 
- 	/* fill iTDs uframe by uframe */
-@@ -1740,6 +1803,11 @@ itd_complete (
- 	(void) disable_periodic(ehci);
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
- 
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 0);
-+	}
-+
- 	if (unlikely(list_is_singular(&stream->td_list))) {
- 		ehci_to_hcd(ehci)->self.bandwidth_allocated
- 				-= stream->bandwidth;
-@@ -2025,6 +2093,12 @@ sitd_link_urb (
- 			(next_uframe >> 3) & (ehci->periodic_size - 1),
- 			stream->interval, hc32_to_cpu(ehci, stream->splits));
- 	}
-+
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 1);
-+	}
-+
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
- 
- 	/* fill sITDs frame by frame */
-@@ -2125,6 +2199,11 @@ sitd_complete (
- 	(void) disable_periodic(ehci);
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
- 
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 0);
-+	}
-+
- 	if (list_is_singular(&stream->td_list)) {
- 		ehci_to_hcd(ehci)->self.bandwidth_allocated
- 				-= stream->bandwidth;
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -131,6 +131,7 @@ struct ehci_hcd {			/* one per controlle
- 	unsigned		has_amcc_usb23:1;
- 	unsigned		need_io_watchdog:1;
- 	unsigned		broken_periodic:1;
-+	unsigned		amd_l1_fix:1;
- 	unsigned		fs_i_thresh:1;	/* Intel iso scheduling */
- 	unsigned		use_dummy_qh:1;	/* AMD Frame List table quirk*/
+-	if (!us122l->sk.s ||
+-	    memcmp(cfg, &us122l->sk.s->cfg, sizeof(*cfg)) ||
+-	    us122l->sk.s->state == usb_stream_xrun) {
++	if (!s || memcmp(cfg, &s->cfg, sizeof(*cfg)) ||
++	    s->state == usb_stream_xrun) {
+ 		us122l_stop(us122l);
+ 		if (!us122l_start(us122l, cfg->sample_rate, cfg->period_frames))
+ 			err = -EIO;
+@@ -448,6 +446,7 @@ unlock:
+ 	mutex_unlock(&us122l->mutex);
+ free:
+ 	kfree(cfg);
++	wake_up_all(&us122l->sk.sleep);
+ 	return err;
+ }
  
 
 
