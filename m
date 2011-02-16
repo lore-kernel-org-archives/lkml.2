@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab1BPBMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:12:34 -0500
-Received: from kroah.org ([198.145.64.141]:45615 "EHLO coco.kroah.org"
+	id S1752956Ab1BPBMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:12:52 -0500
+Received: from kroah.org ([198.145.64.141]:45604 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933044Ab1BPAtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:09 -0500
+	id S933004Ab1BPAtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:06 2011
-Message-Id: <20110216002106.147444972@clark.kroah.org>
+Message-Id: <20110216002105.940420785@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:38 -0800
+Date: Tue, 15 Feb 2011 16:20:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Kashyap Desai <kashyap.desai@lsi.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [patch 070/176] [SCSI] mpt2sas: Correct resizing calculation for max_queue_depth
+Subject: [patch 068/176] [SCSI] mpt2sas: fix internal device reset for older firmware prior to MPI Rev K
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,37 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kashyap, Desai <kashyap.desai@lsi.com>
 
-commit 11e1b961ab067ee3acaf723531da4d3f23e1d6f7 upstream.
+commit efe82a16bc0f9f9e1fc8fa706eb0309fcd57770a upstream.
 
-The ioc->hba_queue_depth is not properly resized when the controller
-firmware reports that it supports more outstanding IO than what can be fit
-inside the reply descriptor pool depth. This is reproduced by setting the
-controller global credits larger than 30,000. The bug results in an
-incorrect sizing of the queues. The fix is to resize the queue_size by
-dividing queue_diff by two.
+The "internal device reset complete" event is not supported
+for older firmware prior to MPI Rev K We added
+a check in the driver so the "internal device reset" event is
+ignored for older firmware.  When ignored, the tm_busy flag doesn't
+get set nor cleared.  Without this fix, IO queues would be froozen
+indefinetly after the "internal device reset" event, as the "complete" event
+never sent to clear the flag.
 
 Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -2057,9 +2057,9 @@ _base_allocate_memory_pools(struct MPT2S
- 		/* adjust hba_queue_depth, reply_free_queue_depth,
- 		 * and queue_size
- 		 */
--		ioc->hba_queue_depth -= queue_diff;
--		ioc->reply_free_queue_depth -= queue_diff;
--		queue_size -= queue_diff;
-+		ioc->hba_queue_depth -= (queue_diff / 2);
-+		ioc->reply_free_queue_depth -= (queue_diff / 2);
-+		queue_size = facts->MaxReplyDescriptorPostQueueDepth;
- 	}
- 	ioc->reply_post_queue_depth = queue_size;
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -4937,6 +4937,12 @@ _scsih_sas_device_status_change_event(st
+ 		     event_data);
+ #endif
  
++	/* In MPI Revision K (0xC), the internal device reset complete was
++	 * implemented, so avoid setting tm_busy flag for older firmware.
++	 */
++	if ((ioc->facts.HeaderVersion >> 8) < 0xC)
++		return;
++
+ 	if (event_data->ReasonCode !=
+ 	    MPI2_EVENT_SAS_DEV_STAT_RC_INTERNAL_DEVICE_RESET &&
+ 	   event_data->ReasonCode !=
 
 
