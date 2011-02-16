@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab1BPAwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:52:04 -0500
-Received: from kroah.org ([198.145.64.141]:46251 "EHLO coco.kroah.org"
+	id S933458Ab1BPAvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:51:49 -0500
+Received: from kroah.org ([198.145.64.141]:46204 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933381Ab1BPAv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:56 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:15 2011
-Message-Id: <20110216002115.201549981@clark.kroah.org>
+	id S933388Ab1BPAvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:43 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:14 2011
+Message-Id: <20110216002114.497059121@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:10 -0800
+Date: Tue, 15 Feb 2011 16:22:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@gmail.com>
-Subject: [patch 162/176] radeon/kms: fix dp displayport mode validation
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 155/176] ieee80211: correct IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK macro
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 6bba2e116808ca12e30c8d88dfedabf8b8d67390 upstream.
+commit 8d661f1e462d50bd83de87ee628aaf820ce3c66c upstream.
 
-Check if there is a big enough dp clock & enough dp lane to
-drive the video mode provided.
+It is defined in include/linux/ieee80211.h. As per IEEE spec.
+bit6 to bit15 in block ack parameter represents buffer size.
+So the bitmask should be 0xFFC0.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-By: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/ieee80211.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -187,9 +187,9 @@ static int dp_link_clock_for_mode_clock(
- int dp_mode_valid(u8 dpcd[DP_DPCD_SIZE], int mode_clock)
- {
- 	int lanes = dp_lanes_for_mode_clock(dpcd, mode_clock);
--	int bw = dp_lanes_for_mode_clock(dpcd, mode_clock);
-+	int dp_clock = dp_link_clock_for_mode_clock(dpcd, mode_clock);
+--- a/include/linux/ieee80211.h
++++ b/include/linux/ieee80211.h
+@@ -959,7 +959,7 @@ struct ieee80211_ht_info {
+ /* block-ack parameters */
+ #define IEEE80211_ADDBA_PARAM_POLICY_MASK 0x0002
+ #define IEEE80211_ADDBA_PARAM_TID_MASK 0x003C
+-#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFA0
++#define IEEE80211_ADDBA_PARAM_BUF_SIZE_MASK 0xFFC0
+ #define IEEE80211_DELBA_PARAM_TID_MASK 0xF000
+ #define IEEE80211_DELBA_PARAM_INITIATOR_MASK 0x0800
  
--	if ((lanes == 0) || (bw == 0))
-+	if ((lanes == 0) || (dp_clock == 0))
- 		return MODE_CLOCK_HIGH;
- 
- 	return MODE_OK;
 
 
