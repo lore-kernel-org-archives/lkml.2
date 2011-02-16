@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757658Ab1BPA1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:27:33 -0500
-Received: from kroah.org ([198.145.64.141]:49963 "EHLO coco.kroah.org"
+	id S932530Ab1BPA2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:28:05 -0500
+Received: from kroah.org ([198.145.64.141]:49946 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932500Ab1BPAZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:41 -0500
+	id S932486Ab1BPAZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:36 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:51 2011
-Message-Id: <20110216001451.778435571@clark.kroah.org>
+Message-Id: <20110216001451.576800857@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:24 -0800
+Date: Tue, 15 Feb 2011 16:15:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [267/272] drm/i915: Only bind to function 0 of the PCI device
+        Keith Packard <keithp@keithp.com>
+Subject: [265/272] drm: Only set DPMS ON when actually configuring a mode
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Keith Packard <keithp@keithp.com>
 
-commit 5fe49d86f9d01044abf687a8cd21edef636d58aa upstream.
+commit 811aaa55ba21ab37407018cfc01770d6b037d3fb upstream.
 
-Early chipsets (gen2/3) used function 1 as a placeholder for multi-head.
-We used to ignore these since they were not assigned to
-PCI_CLASS_DISPLAY_VGA. However with 934f992c7 we attempt to bind to all
-Intel PCI_CLASS_DISPLAY devices (and functions) to work in multi-gpu
-systems. This fails hard on gen2/3.
+In drm_crtc_helper_set_config, instead of always forcing all outputs
+to DRM_MODE_DPMS_ON, only set them if the CRTC is actually getting a
+mode set, as any mode set will turn all outputs on.
 
-Reported-by: Ferenc Wágner <wferi@niif.hu>
-Tested-by: Ferenc Wágner <wferi@niif.hu>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=28012
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+This fixes https://lkml.org/lkml/2011/1/24/457
+
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Reported-and-tested-by: Carlos R. Mafra <crmafra2@gmail.com>
+Tested-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/drm_crtc_helper.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -501,6 +501,14 @@ int i915_reset(struct drm_device *dev, u
- static int __devinit
- i915_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
-+	/* Only bind to function 0 of the device. Early generations
-+	 * used function 1 as a placeholder for multi-head. This causes
-+	 * us confusion instead, especially on the systems where both
-+	 * functions have the same PCI-ID!
-+	 */
-+	if (PCI_FUNC(pdev->devfn))
-+		return -ENODEV;
-+
- 	return drm_get_pci_dev(pdev, ent, &driver);
- }
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -654,6 +654,12 @@ int drm_crtc_helper_set_config(struct dr
+ 				ret = -EINVAL;
+ 				goto fail;
+ 			}
++			DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
++			for (i = 0; i < set->num_connectors; i++) {
++				DRM_DEBUG_KMS("\t[CONNECTOR:%d:%s] set DPMS on\n", set->connectors[i]->base.id,
++					      drm_get_connector_name(set->connectors[i]));
++				set->connectors[i]->dpms = DRM_MODE_DPMS_ON;
++			}
+ 		}
+ 		drm_helper_disable_unused_functions(dev);
+ 	} else if (fb_changed) {
+@@ -670,12 +676,6 @@ int drm_crtc_helper_set_config(struct dr
+ 			goto fail;
+ 		}
+ 	}
+-	DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
+-	for (i = 0; i < set->num_connectors; i++) {
+-		DRM_DEBUG_KMS("\t[CONNECTOR:%d:%s] set DPMS on\n", set->connectors[i]->base.id,
+-			      drm_get_connector_name(set->connectors[i]));
+-		set->connectors[i]->dpms = DRM_MODE_DPMS_ON;
+-	}
  
+ 	kfree(save_connectors);
+ 	kfree(save_encoders);
 
 
