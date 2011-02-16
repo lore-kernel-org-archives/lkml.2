@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab1BPAdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:33:46 -0500
-Received: from kroah.org ([198.145.64.141]:49734 "EHLO coco.kroah.org"
+	id S932626Ab1BPAef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:34:35 -0500
+Received: from kroah.org ([198.145.64.141]:49700 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932394Ab1BPAYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:40 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:48 2011
-Message-Id: <20110216001448.386039250@clark.kroah.org>
+	id S932157Ab1BPAYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:47 2011
+Message-Id: <20110216001447.917339872@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:50 -0800
+Date: Tue, 15 Feb 2011 16:14:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ari Kauppi <kauppi@papupata.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [233/272] oprofile: Fix usage of CONFIG_HW_PERF_EVENTS for oprofile_perf_init and friends
+        Eric Paris <eparis@redhat.com>
+Subject: [228/272] SELinux: do not compute transition labels on mountpoint labeled filesystems
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ari Kauppi <kauppi@papupata.org>
+From: Eric Paris <eparis@redhat.com>
 
-commit 1ea1bdf7faa4d0b5293e605f2e1ef1c2c59f6b53 upstream.
+commit 415103f9932d45f7927f4b17e3a9a13834cdb9a1 upstream.
 
-The implementations are flagged in Makefile with CONFIG_HW_PERF_EVENTS
-instead of CONFIG_PERF_EVENTS.
+selinux_inode_init_security computes transitions sids even for filesystems
+that use mount point labeling.  It shouldn't do that.  It should just use
+the mount point label always and no matter what.
 
-Signed-off-by: Ari Kauppi <kauppi@papupata.org>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+This causes 2 problems.  1) it makes file creation slower than it needs to be
+since we calculate the transition sid and 2) it allows files to be created
+with a different label than the mount point!
+
+# id -Z
+staff_u:sysadm_r:sysadm_t:s0-s0:c0.c1023
+# sesearch --type --class file --source sysadm_t --target tmp_t
+Found 1 semantic te rules:
+   type_transition sysadm_t tmp_t : file user_tmp_t;
+
+# mount -o loop,context="system_u:object_r:tmp_t:s0"  /tmp/fs /mnt/tmp
+
+# ls -lZ /mnt/tmp
+drwx------. root root system_u:object_r:tmp_t:s0       lost+found
+# touch /mnt/tmp/file1
+# ls -lZ /mnt/tmp
+-rw-r--r--. root root staff_u:object_r:user_tmp_t:s0   file1
+drwx------. root root system_u:object_r:tmp_t:s0       lost+found
+
+Whoops, we have a mount point labeled filesystem tmp_t with a user_tmp_t
+labeled file!
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Reviewed-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/oprofile.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ security/selinux/hooks.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/include/linux/oprofile.h
-+++ b/include/linux/oprofile.h
-@@ -186,10 +186,10 @@ int oprofile_add_data(struct op_entry *e
- int oprofile_add_data64(struct op_entry *entry, u64 val);
- int oprofile_write_commit(struct op_entry *entry);
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -2525,7 +2525,10 @@ static int selinux_inode_init_security(s
+ 	sid = tsec->sid;
+ 	newsid = tsec->create_sid;
  
--#ifdef CONFIG_PERF_EVENTS
-+#ifdef CONFIG_HW_PERF_EVENTS
- int __init oprofile_perf_init(struct oprofile_operations *ops);
- void oprofile_perf_exit(void);
- char *op_name_from_perf_id(void);
--#endif /* CONFIG_PERF_EVENTS */
-+#endif /* CONFIG_HW_PERF_EVENTS */
- 
- #endif /* OPROFILE_H */
+-	if (!newsid || !(sbsec->flags & SE_SBLABELSUPP)) {
++	if ((sbsec->flags & SE_SBINITIALIZED) &&
++	    (sbsec->behavior == SECURITY_FS_USE_MNTPOINT))
++		newsid = sbsec->mntpoint_sid;
++	else if (!newsid || !(sbsec->flags & SE_SBLABELSUPP)) {
+ 		rc = security_transition_sid(sid, dsec->sid,
+ 					     inode_mode_to_security_class(inode->i_mode),
+ 					     &newsid);
 
 
