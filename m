@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab1BPBWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:22:39 -0500
-Received: from kroah.org ([198.145.64.141]:45181 "EHLO coco.kroah.org"
+	id S932751Ab1BPArf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:47:35 -0500
+Received: from kroah.org ([198.145.64.141]:45148 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932757Ab1BPAri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:38 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:00 2011
-Message-Id: <20110216002100.689994541@clark.kroah.org>
+	id S932711Ab1BPArZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:20:59 2011
+Message-Id: <20110216002059.843799653@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:44 -0800
+Date: Tue, 15 Feb 2011 16:19:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>
-Subject: [patch 016/176] USB: usb-storage: unusual_devs update for TrekStor DataStation maxi g.u external hard drive enclosure
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [patch 008/176] hwmon: (via686a) Initialize fan_div values
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 7e1e7bd9dbd469267b6e6de1bf8d71a7d65ce86a upstream.
+commit f790674d3f87df6390828ac21a7d1530f71b59c8 upstream.
 
-The TrekStor DataStation maxi g.u external hard drive enclosure uses a
-JMicron USB to SATA chip which needs the US_FL_IGNORE_RESIDUE flag to work
-properly.
+Functions set_fan_min() and set_fan_div() assume that the fan_div
+values have already been read from the register. The driver currently
+doesn't initialize them at load time, they are only set when function
+via686a_update_device() is called. This means that set_fan_min() and
+set_fan_div() misbehave if, for example, "sensors -s" is called
+before any monitoring application (e.g. "sensors") is has been run.
 
-Signed-off-by: Richard SchÃ¼tz <r.schtz@t-online.de>
+Fix the problem by always initializing the fan_div values at device
+bind time.
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/hwmon/via686a.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1866,6 +1866,15 @@ UNUSUAL_DEV( 0x1908, 0x1320, 0x0000, 0x0
- 		US_SC_DEVICE, US_PR_DEVICE, NULL,
- 		US_FL_BAD_SENSE ),
+--- a/drivers/hwmon/via686a.c
++++ b/drivers/hwmon/via686a.c
+@@ -687,6 +687,13 @@ static int __devexit via686a_remove(stru
+ 	return 0;
+ }
  
-+/* Patch by Richard Schütz <r.schtz@t-online.de>
-+ * This external hard drive enclosure uses a JMicron chip which
-+ * needs the US_FL_IGNORE_RESIDUE flag to work properly. */
-+UNUSUAL_DEV(  0x1e68, 0x001b, 0x0000, 0x0000,
-+		"TrekStor GmbH & Co. KG",
-+		"DataStation maxi g.u",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
++static void via686a_update_fan_div(struct via686a_data *data)
++{
++	int reg = via686a_read_value(data, VIA686A_REG_FANDIV);
++	data->fan_div[0] = (reg >> 4) & 0x03;
++	data->fan_div[1] = reg >> 6;
++}
 +
- UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
- 		"ST",
- 		"2A",
+ static void __devinit via686a_init_device(struct via686a_data *data)
+ {
+ 	u8 reg;
+@@ -700,6 +707,9 @@ static void __devinit via686a_init_devic
+ 	via686a_write_value(data, VIA686A_REG_TEMP_MODE,
+ 			    (reg & ~VIA686A_TEMP_MODE_MASK)
+ 			    | VIA686A_TEMP_MODE_CONTINUOUS);
++
++	/* Pre-read fan clock divisor values */
++	via686a_update_fan_div(data);
+ }
+ 
+ static struct via686a_data *via686a_update_device(struct device *dev)
+@@ -751,9 +761,7 @@ static struct via686a_data *via686a_upda
+ 		    (via686a_read_value(data, VIA686A_REG_TEMP_LOW23) &
+ 		     0xc0) >> 6;
+ 
+-		i = via686a_read_value(data, VIA686A_REG_FANDIV);
+-		data->fan_div[0] = (i >> 4) & 0x03;
+-		data->fan_div[1] = i >> 6;
++		via686a_update_fan_div(data);
+ 		data->alarms =
+ 		    via686a_read_value(data,
+ 				       VIA686A_REG_ALARM1) |
 
 
