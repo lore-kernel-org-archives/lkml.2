@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab1BPAsC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:48:02 -0500
-Received: from kroah.org ([198.145.64.141]:45219 "EHLO coco.kroah.org"
+	id S932826Ab1BPAr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:47:58 -0500
+Received: from kroah.org ([198.145.64.141]:45213 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932803Ab1BPArw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:52 -0500
+	id S932800Ab1BPArv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:51 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:01 2011
-Message-Id: <20110216002101.292409452@clark.kroah.org>
+Message-Id: <20110216002101.190603695@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:50 -0800
+Date: Tue, 15 Feb 2011 16:19:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex He <alex.he@amd.com>
-Subject: [patch 022/176] USB: EHCI: ASPM quirk of ISOC on AMD Hudson
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [patch 021/176] USB serial: add missing .usb_driver field in serial drivers
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +25,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex He <alex.he@amd.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit baab93afc2844b68d57b0dcca5e1d34c5d7cf411 upstream.
+commit 5620b5f7f19e9ee3fcf6ecf493fed7821b7b495b upstream.
 
-AMD Hudson also needs the same ASPM quirk as SB800
+This patch (as1443) fixes a bug found in many of the USB serial
+drivers: They don't set the .usb_driver field in their
+usb_serial_driver structure.  This field is needed for assigning
+dynamic IDs for device matching.
 
-Signed-off-by: Alex He <alex.he@amd.com>
+In addition, starting with the 2.6.37 kernel, the .usb_driver field is
+needed for proper autosuspend operation.  Without it, attempts to open
+the device file will fail.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-pci.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ drivers/usb/serial/io_tables.h   |    1 +
+ drivers/usb/serial/iuu_phoenix.c |    1 +
+ drivers/usb/serial/keyspan.h     |    4 ++++
+ drivers/usb/serial/moto_modem.c  |    1 +
+ drivers/usb/serial/oti6858.c     |    1 +
+ drivers/usb/serial/qcaux.c       |    1 +
+ drivers/usb/serial/siemens_mpi.c |    1 +
+ drivers/usb/serial/spcp8x5.c     |    1 +
+ drivers/usb/serial/usb-serial.c  |    8 ++++++--
+ drivers/usb/serial/usb_debug.c   |    1 +
+ 10 files changed, 18 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -41,28 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
- 	return 0;
- }
+--- a/drivers/usb/serial/io_tables.h
++++ b/drivers/usb/serial/io_tables.h
+@@ -196,6 +196,7 @@ static struct usb_serial_driver epic_dev
+ 		.name		= "epic",
+ 	},
+ 	.description		= "EPiC device",
++	.usb_driver		= &io_driver,
+ 	.id_table		= Epic_port_id_table,
+ 	.num_ports		= 1,
+ 	.open			= edge_open,
+--- a/drivers/usb/serial/iuu_phoenix.c
++++ b/drivers/usb/serial/iuu_phoenix.c
+@@ -1276,6 +1276,7 @@ static struct usb_serial_driver iuu_devi
+ 		   .name = "iuu_phoenix",
+ 		   },
+ 	.id_table = id_table,
++	.usb_driver = &iuu_driver,
+ 	.num_ports = 1,
+ 	.bulk_in_size = 512,
+ 	.bulk_out_size = 512,
+--- a/drivers/usb/serial/keyspan.h
++++ b/drivers/usb/serial/keyspan.h
+@@ -546,6 +546,7 @@ static struct usb_serial_driver keyspan_
+ 		.name		= "keyspan_no_firm",
+ 	},
+ 	.description		= "Keyspan - (without firmware)",
++	.usb_driver		= &keyspan_driver,
+ 	.id_table		= keyspan_pre_ids,
+ 	.num_ports		= 1,
+ 	.attach			= keyspan_fake_startup,
+@@ -557,6 +558,7 @@ static struct usb_serial_driver keyspan_
+ 		.name		= "keyspan_1",
+ 	},
+ 	.description		= "Keyspan 1 port adapter",
++	.usb_driver		= &keyspan_driver,
+ 	.id_table		= keyspan_1port_ids,
+ 	.num_ports		= 1,
+ 	.open			= keyspan_open,
+@@ -579,6 +581,7 @@ static struct usb_serial_driver keyspan_
+ 		.name		= "keyspan_2",
+ 	},
+ 	.description		= "Keyspan 2 port adapter",
++	.usb_driver		= &keyspan_driver,
+ 	.id_table		= keyspan_2port_ids,
+ 	.num_ports		= 2,
+ 	.open			= keyspan_open,
+@@ -601,6 +604,7 @@ static struct usb_serial_driver keyspan_
+ 		.name		= "keyspan_4",
+ 	},
+ 	.description		= "Keyspan 4 port adapter",
++	.usb_driver		= &keyspan_driver,
+ 	.id_table		= keyspan_4port_ids,
+ 	.num_ports		= 4,
+ 	.open			= keyspan_open,
+--- a/drivers/usb/serial/moto_modem.c
++++ b/drivers/usb/serial/moto_modem.c
+@@ -44,6 +44,7 @@ static struct usb_serial_driver moto_dev
+ 		.name =		"moto-modem",
+ 	},
+ 	.id_table =		id_table,
++	.usb_driver =		&moto_driver,
+ 	.num_ports =		1,
+ };
  
--static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
-+static int ehci_quirk_amd_hudson(struct ehci_hcd *ehci)
- {
- 	struct pci_dev *amd_smbus_dev;
- 	u8 rev = 0;
+--- a/drivers/usb/serial/oti6858.c
++++ b/drivers/usb/serial/oti6858.c
+@@ -157,6 +157,7 @@ static struct usb_serial_driver oti6858_
+ 		.name =		"oti6858",
+ 	},
+ 	.id_table =		id_table,
++	.usb_driver =		&oti6858_driver,
+ 	.num_ports =		1,
+ 	.open =			oti6858_open,
+ 	.close =		oti6858_close,
+--- a/drivers/usb/serial/qcaux.c
++++ b/drivers/usb/serial/qcaux.c
+@@ -86,6 +86,7 @@ static struct usb_serial_driver qcaux_de
+ 		.name =		"qcaux",
+ 	},
+ 	.id_table =		id_table,
++	.usb_driver =		&qcaux_driver,
+ 	.num_ports =		1,
+ };
  
- 	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
--	if (!amd_smbus_dev)
--		return 0;
--
--	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
--	if (rev < 0x40) {
--		pci_dev_put(amd_smbus_dev);
--		amd_smbus_dev = NULL;
--		return 0;
-+	if (amd_smbus_dev) {
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x40) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
-+	} else {
-+		amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
-+		if (!amd_smbus_dev)
-+			return 0;
-+		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+		if (rev < 0x11 || rev > 0x18) {
-+			pci_dev_put(amd_smbus_dev);
-+			amd_smbus_dev = NULL;
-+			return 0;
-+		}
- 	}
+--- a/drivers/usb/serial/siemens_mpi.c
++++ b/drivers/usb/serial/siemens_mpi.c
+@@ -42,6 +42,7 @@ static struct usb_serial_driver siemens_
+ 		.name =		"siemens_mpi",
+ 	},
+ 	.id_table =		id_table,
++	.usb_driver =		&siemens_usb_mpi_driver,
+ 	.num_ports =		1,
+ };
  
- 	if (!amd_nb_dev)
- 		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
--	if (!amd_nb_dev)
--		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
+--- a/drivers/usb/serial/spcp8x5.c
++++ b/drivers/usb/serial/spcp8x5.c
+@@ -650,6 +650,7 @@ static struct usb_serial_driver spcp8x5_
+ 		.name =		"SPCP8x5",
+ 	},
+ 	.id_table		= id_table,
++	.usb_driver		= &spcp8x5_driver,
+ 	.num_ports		= 1,
+ 	.open 			= spcp8x5_open,
+ 	.dtr_rts		= spcp8x5_dtr_rts,
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -1332,11 +1332,15 @@ int usb_serial_register(struct usb_seria
+ 		return -ENODEV;
  
--	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
-+	ehci_info(ehci, "QUIRK: Enable exception for AMD Hudson ASPM\n");
+ 	fixup_generic(driver);
+-	if (driver->usb_driver)
+-		driver->usb_driver->supports_autosuspend = 1;
  
- 	pci_dev_put(amd_smbus_dev);
- 	amd_smbus_dev = NULL;
-@@ -128,7 +135,7 @@ static int ehci_pci_setup(struct usb_hcd
- 	/* cache this readonly data; minimize chip reads */
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+ 	if (!driver->description)
+ 		driver->description = driver->driver.name;
++	if (!driver->usb_driver) {
++		WARN(1, "Serial driver %s has no usb_driver\n",
++				driver->description);
++		return -EINVAL;
++	}
++	driver->usb_driver->supports_autosuspend = 1;
  
--	if (ehci_quirk_amd_SB800(ehci))
-+	if (ehci_quirk_amd_hudson(ehci))
- 		ehci->amd_l1_fix = 1;
- 
- 	retval = ehci_halt(ehci);
+ 	/* Add this device to our list of devices */
+ 	mutex_lock(&table_lock);
+--- a/drivers/usb/serial/usb_debug.c
++++ b/drivers/usb/serial/usb_debug.c
+@@ -75,6 +75,7 @@ static struct usb_serial_driver debug_de
+ 		.name =		"debug",
+ 	},
+ 	.id_table =		id_table,
++	.usb_driver =		&debug_driver,
+ 	.num_ports =		1,
+ 	.bulk_out_size =	USB_DEBUG_MAX_PACKET_SIZE,
+ 	.break_ctl =		usb_debug_break_ctl,
 
 
