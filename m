@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab1BPQMk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 11:12:40 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:55766
+	id S1752977Ab1BPQNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 11:13:00 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54906
 	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752927Ab1BPQMg (ORCPT
+	by vger.kernel.org with ESMTP id S1752720Ab1BPQMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 11:12:36 -0500
-X-SpamScore: -1
-X-BigFish: VPS-1(zz1fa4Lc8kzz1202hzz8275bh8275dhz2dh95h668h62h)
-X-Spam-TCS-SCL: 1:0
+	Wed, 16 Feb 2011 11:12:10 -0500
+X-SpamScore: -2
+X-BigFish: VPS-2(zz1803Mc8kzz1202hzz8275bhz2dh95h668h63h)
+X-Spam-TCS-SCL: 2:0
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
 From: John Linn <john.linn@xilinx.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
         <glikely@secretlab.ca>, <arnd@arndb.de>
-CC: John Linn <john.linn@xilinx.com>
-Subject: [PATCH V3 3/4] ARM: Xilinx: base header files and assembly macros
-Date: Wed, 16 Feb 2011 09:11:55 -0700
+CC: John Linn <john.linn@xilinx.com>,
+        Kiran Sutariya <kiran.sutariya@einfochips.com>
+Subject: [PATCH V3 2/4] ARM: Xilinx: Adding timer support to the platform
+Date: Wed, 16 Feb 2011 09:11:54 -0700
 X-Mailer: git-send-email 1.5.6.6
-In-Reply-To: <1297872716-13353-3-git-send-email-john.linn@xilinx.com>
+In-Reply-To: <1297872716-13353-2-git-send-email-john.linn@xilinx.com>
 References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com>
  <1297872716-13353-2-git-send-email-john.linn@xilinx.com>
- <1297872716-13353-3-git-send-email-john.linn@xilinx.com>
 X-RCIS-Action: ALLOW
 MIME-Version: 1.0
 Content-Type: text/plain
-Message-ID: <e58673f5-2881-4820-b5cd-99e8ef294ed5@VA3EHSMHS024.ehs.local>
+Message-ID: <28346a1e-ec89-4c09-8fda-f020b58d1fa4@VA3EHSMHS024.ehs.local>
 X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the minimum needed to build the kernel for the new platform.
+The timer driver supports the Xilinx PS Timer Counter IP.
 
+Signed-off-by: Kiran Sutariya <kiran.sutariya@einfochips.com>
 Signed-off-by: John Linn <john.linn@xilinx.com>
 ---
 
@@ -43,56 +44,54 @@ Updates based on Russell Kings' comments
 	Changed headers to update the license info and remove
 	the address
 
-	Updated the constant to use UL in vmalloc.h
-
 V2 Changes
 
+The timer code was changed quite a bit based on review inputs. It
+got much smaller and cleaner I think.
+
 Updates based on Russell King's comments	
-	moved to using entry-macro-gic.S
-	moved stuff from hardware.h to xilinx_soc.h 
-	added IOMEM() in io.h to help with typing
-	Minor updates to IO_SPACE_LIMIT and __io()
-	Updated addresses to be clear with seperate virtual
-		and physical addresses
+	minor cleanups for documentation comments
+	removed the name from the timer structure
+	removed interrupt for clock source 
+	moved to using clock functions provided in the kernel
+		for calculating shift/mult values
+	removed PM code as generic handles it
 
- arch/arm/mach-xilinx/include/mach/clkdev.h      |   33 ++++++++++++++++
- arch/arm/mach-xilinx/include/mach/debug-macro.S |   36 +++++++++++++++++
- arch/arm/mach-xilinx/include/mach/entry-macro.S |   30 ++++++++++++++
- arch/arm/mach-xilinx/include/mach/hardware.h    |   18 +++++++++
- arch/arm/mach-xilinx/include/mach/io.h          |   33 ++++++++++++++++
- arch/arm/mach-xilinx/include/mach/irqs.h        |   29 ++++++++++++++
- arch/arm/mach-xilinx/include/mach/memory.h      |   23 +++++++++++
- arch/arm/mach-xilinx/include/mach/system.h      |   28 +++++++++++++
- arch/arm/mach-xilinx/include/mach/timex.h       |   24 ++++++++++++
- arch/arm/mach-xilinx/include/mach/uart.h        |   31 +++++++++++++++
- arch/arm/mach-xilinx/include/mach/uncompress.h  |   47 +++++++++++++++++++++++
- arch/arm/mach-xilinx/include/mach/vmalloc.h     |   20 ++++++++++
- arch/arm/mach-xilinx/include/mach/xilinx_soc.h  |   46 ++++++++++++++++++++++
- 13 files changed, 398 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-xilinx/include/mach/clkdev.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/debug-macro.S
- create mode 100644 arch/arm/mach-xilinx/include/mach/entry-macro.S
- create mode 100644 arch/arm/mach-xilinx/include/mach/hardware.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/io.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/irqs.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/memory.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/system.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/timex.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/uart.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/uncompress.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/vmalloc.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/xilinx_soc.h
+Updated based on Jamie Iles's comment
+	cleaned up ENABLE_MASK which was confusing
+	now using platform_add_devices() from platform code
+	moved base_addr to void __iomem pointer
+	removed stop of the event timer in one shot mode
 
-diff --git a/arch/arm/mach-xilinx/include/mach/clkdev.h b/arch/arm/mach-xilinx/include/mach/clkdev.h
+ arch/arm/mach-xilinx/Makefile |    2 +-
+ arch/arm/mach-xilinx/timer.c  |  301 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 302 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-xilinx/timer.c
+
+diff --git a/arch/arm/mach-xilinx/Makefile b/arch/arm/mach-xilinx/Makefile
+index 76e9e55..660fb19 100644
+--- a/arch/arm/mach-xilinx/Makefile
++++ b/arch/arm/mach-xilinx/Makefile
+@@ -3,5 +3,5 @@
+ #
+ 
+ # Common support
+-obj-y 				:= common.o
++obj-y 				:= common.o timer.o
+ obj-$(CONFIG_MACH_XILINX)	+= board_ep107.o
+diff --git a/arch/arm/mach-xilinx/timer.c b/arch/arm/mach-xilinx/timer.c
 new file mode 100644
-index 0000000..5dd1453
+index 0000000..f08a2f1
 --- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/clkdev.h
-@@ -0,0 +1,33 @@
-+/*
-+ * arch/arm/mach-xilinx/include/mach/clkdev.h
++++ b/arch/arm/mach-xilinx/timer.c
+@@ -0,0 +1,301 @@
++/* arch/arm/mach-xilinx/timer.c
 + *
-+ *  Copyright (C) 2011 Xilinx, Inc.
++ * This file contains driver for the Xilinx PS Timer Counter IP.
++ *
++ *  Copyright (C) 2011 Xilinx
++ *
++ * based on arch/mips/kernel/time.c timer driver
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -102,463 +101,291 @@ index 0000000..5dd1453
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
 + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
-+ *
 + */
 +
-+#ifndef __MACH_CLKDEV_H__
-+#define __MACH_CLKDEV_H__
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/types.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/io.h>
 +
-+struct clk {
-+	unsigned long rate;
++#include <asm/mach/time.h>
++#include <mach/xilinx_soc.h>
++
++/*
++ * This driver configures the 2 16-bit count-up timers as follows:
++ *
++ * T1: Timer 1, clocksource for generic timekeeping
++ * T2: Timer 2, clockevent source for hrtimers
++ * T3: Timer 3, <unused>
++ *
++ * The input frequency to the timer module for emulation is 2.5MHz which is
++ * common to all the timer channels (T1, T2, and T3). With a pre-scaler of 32,
++ * the timers are clocked at 78.125KHz (12.8 us resolution).
++ *
++ * The input frequency to the timer module in silicon will be 200MHz. With the
++ * pre-scaler of 32, the timers are clocked at 6.25MHz (160ns resolution).
++ */
++#define XTTCPSS_CLOCKSOURCE	0	/* Timer 1 as a generic timekeeping */
++#define XTTCPSS_CLOCKEVENT	1	/* Timer 2 as a clock event */
++
++#define XTTCPSS_TIMER_BASE		TTC0_BASE
++#define XTTCPCC_EVENT_TIMER_IRQ		(IRQ_TIMERCOUNTER0 + 1)
++/*
++ * Timer Register Offset Definitions of Timer 1, Increment base address by 4
++ * and use same offsets for Timer 2
++ */
++#define XTTCPSS_CLK_CNTRL_OFFSET	0x00 /* Clock Control Reg, RW */
++#define XTTCPSS_CNT_CNTRL_OFFSET	0x0C /* Counter Control Reg, RW */
++#define XTTCPSS_COUNT_VAL_OFFSET	0x18 /* Counter Value Reg, RO */
++#define XTTCPSS_INTR_VAL_OFFSET		0x24 /* Interval Count Reg, RW */
++#define XTTCPSS_MATCH_1_OFFSET		0x30 /* Match 1 Value Reg, RW */
++#define XTTCPSS_MATCH_2_OFFSET		0x3C /* Match 2 Value Reg, RW */
++#define XTTCPSS_MATCH_3_OFFSET		0x48 /* Match 3 Value Reg, RW */
++#define XTTCPSS_ISR_OFFSET		0x54 /* Interrupt Status Reg, RO */
++#define XTTCPSS_IER_OFFSET		0x60 /* Interrupt Enable Reg, RW */
++
++#define XTTCPSS_CNT_CNTRL_DISABLE_MASK	0x1
++
++/**
++ * struct xttcpss_timer - This definition defines local timer structure
++ *
++ * @base_addr:	Base address of timer
++ * @timer_irq:	irqaction structure for the timer device
++ * @mode:       only valid for an clock event, periodic or one-shot
++ **/
++struct xttcpss_timer {
++	void __iomem *base_addr;
++	enum clock_event_mode mode;
 +};
 +
-+static inline int __clk_get(struct clk *clk)
++static struct xttcpss_timer timers[2];
++static struct clock_event_device xttcpss_clockevent;
++
++/**
++ * xttcpss_set_interval - Set the timer interval value
++ *
++ * @timer:	Pointer to the timer instance
++ * @cycles:	Timer interval ticks
++ **/
++static void xttcpss_set_interval(struct xttcpss_timer *timer,
++					unsigned long cycles)
 +{
-+	return 1;
++	u32 ctrl_reg;
++
++	/* Disable the counter, set the counter value  and re-enable counter */
++	ctrl_reg = __raw_readl(timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++	ctrl_reg |= XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++	__raw_writel(ctrl_reg, timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++
++	__raw_writel(cycles, timer->base_addr + XTTCPSS_INTR_VAL_OFFSET);
++
++	/* Reset the counter (0x10) so that it starts from 0, one-shot
++	   mode makes this needed for timing to be right. */
++	ctrl_reg |= 0x10;
++	ctrl_reg &= ~XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++	__raw_writel(ctrl_reg, timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
 +}
 +
-+static inline void __clk_put(struct clk *clk)
++/**
++ * xttcpss_clock_event_interrupt - Clock event timer interrupt handler
++ *
++ * @irq:	IRQ number of the Timer
++ * @dev_id:	void pointer to the xttcpss_timer instance
++ *
++ * returns: Always IRQ_HANDLED - success
++ **/
++static irqreturn_t xttcpss_clock_event_interrupt(int irq, void *dev_id)
 +{
++	struct clock_event_device *evt = &xttcpss_clockevent;
++	struct xttcpss_timer *timer = dev_id;
++
++	/* Acknowledge the interrupt and call event handler */
++	__raw_writel(__raw_readl(timer->base_addr + XTTCPSS_ISR_OFFSET),
++			timer->base_addr + XTTCPSS_ISR_OFFSET);
++
++	evt->event_handler(evt);
++
++	return IRQ_HANDLED;
 +}
 +
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/debug-macro.S b/arch/arm/mach-xilinx/include/mach/debug-macro.S
-new file mode 100644
-index 0000000..30d3d3d
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/debug-macro.S
-@@ -0,0 +1,36 @@
-+/* arch/arm/mach-xilinx/include/mach/debug-macro.S
++static struct irqaction event_timer_irq = {
++	.name	= "xttcpss clockevent",
++	.flags	= IRQF_DISABLED | IRQF_TIMER,
++	.handler = xttcpss_clock_event_interrupt,
++};
++
++/**
++ * xttcpss_timer_hardware_init - Initialize the timer hardware
 + *
-+ * Debugging macro include header
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <mach/xilinx_soc.h>
-+#include <mach/uart.h>
-+
-+		.macro	addruart, rp, rv
-+		ldr	\rp, =LL_UART_PADDR	@ physical
-+		ldr	\rv, =LL_UART_VADDR	@ virtual
-+		.endm
-+
-+		.macro	senduart,rd,rx
-+		str	\rd, [\rx, #UART_FIFO_OFFSET]	@ TXDATA
-+		.endm
-+
-+		.macro	waituart,rd,rx
-+		.endm
-+
-+		.macro	busyuart,rd,rx
-+1002:		ldr	\rd, [\rx, #UART_SR_OFFSET]	@ get status register
-+		tst	\rd, #UART_SR_TXFULL		@
-+		bne	1002b			@ wait if FIFO is full
-+		.endm
-diff --git a/arch/arm/mach-xilinx/include/mach/entry-macro.S b/arch/arm/mach-xilinx/include/mach/entry-macro.S
-new file mode 100644
-index 0000000..11a2866
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/entry-macro.S
-@@ -0,0 +1,30 @@
-+/*
-+ * arch/arm/mach-xilinx/include/mach/entry-macro.S
-+ *
-+ * Low-level IRQ helper macros
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * based on arch/plat-mxc/include/mach/entry-macro.S
-+ *
-+ *  Copyright (C) 2007 Lennert Buytenhek <buytenh@wantstofly.org>
-+ *  Copyright 2004-2007 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <mach/hardware.h>
-+#include <asm/hardware/entry-macro-gic.S>
-+
-+                .macro  disable_fiq
-+                .endm
-+
-+                .macro  arch_ret_to_user, tmp1, tmp2
-+                .endm
-diff --git a/arch/arm/mach-xilinx/include/mach/hardware.h b/arch/arm/mach-xilinx/include/mach/hardware.h
-new file mode 100644
-index 0000000..f9685c4
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/hardware.h
-@@ -0,0 +1,18 @@
-+/* arch/arm/mach-xilinx/include/mach/hardware.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_HARDWARE_H__
-+#define __MACH_HARDWARE_H__
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/io.h b/arch/arm/mach-xilinx/include/mach/io.h
-new file mode 100644
-index 0000000..ef69e65
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/io.h
-@@ -0,0 +1,33 @@
-+/* arch/arm/mach-xilinx/include/mach/io.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_IO_H__
-+#define __MACH_IO_H__
-+
-+/* Allow IO space to be anywhere in the memory */
-+
-+#define IO_SPACE_LIMIT 0xffff
-+
-+/* IO address mapping macros, nothing special at this time but required */
-+
-+#ifdef __ASSEMBLER__
-+#define IOMEM(x)		(x)
-+#else
-+#define IOMEM(x)		((void __force __iomem *)(x))
-+#endif
-+
-+#define __io(a)			__typesafe_io(a)
-+#define __mem_pci(a)		(a)
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/irqs.h b/arch/arm/mach-xilinx/include/mach/irqs.h
-new file mode 100644
-index 0000000..47a8162
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/irqs.h
-@@ -0,0 +1,29 @@
-+/* arch/arm/mach-xilinx/include/mach/irqs.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_IRQS_H
-+#define __MACH_IRQS_H
-+
-+#define ARCH_NR_GPIOS	118
-+#define NR_IRQS		(128 + ARCH_NR_GPIOS)
-+
-+/*
-+ * GIC Interrupts
-+ */
-+
-+#define IRQ_GIC_SPI_START	32
-+#define IRQ_TIMERCOUNTER0	42
-+#define IRQ_UART0		59
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/memory.h b/arch/arm/mach-xilinx/include/mach/memory.h
-new file mode 100644
-index 0000000..c200486
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/memory.h
-@@ -0,0 +1,23 @@
-+/* arch/arm/mach-xilinx/include/mach/memory.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_MEMORY_H__
-+#define __MACH_MEMORY_H__
-+
-+#include <mach/hardware.h>
-+
-+#define PHYS_OFFSET             0x0
-+#define MEM_SIZE		SZ_256M
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/system.h b/arch/arm/mach-xilinx/include/mach/system.h
-new file mode 100644
-index 0000000..e8514a0
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/system.h
-@@ -0,0 +1,28 @@
-+/* arch/arm/mach-xilinx/include/mach/system.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_SYSTEM_H__
-+#define __MACH_SYSTEM_H__
-+
-+static inline void arch_idle(void)
++ * Initialize the hardware to start the clock source, get the clock
++ * event timer ready to use, and hook up the interrupt.
++ **/
++static void __init xttcpss_timer_hardware_init(void)
 +{
-+	cpu_do_idle();
-+}
-+
-+static inline void arch_reset(char mode, const char *cmd)
-+{
-+	/* Add architecture specific reset processing here */
-+}
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/timex.h b/arch/arm/mach-xilinx/include/mach/timex.h
-new file mode 100644
-index 0000000..6765e15
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/timex.h
-@@ -0,0 +1,24 @@
-+/* arch/arm/mach-xilinx/include/mach/timex.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_TIMEX_H__
-+#define __MACH_TIMEX_H__
-+
-+#include <mach/hardware.h>
-+
-+#define PERIPHERAL_CLOCK_RATE	2500000
-+
-+#define CLOCK_TICK_RATE	(PERIPHERAL_CLOCK_RATE / 32)
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/uart.h b/arch/arm/mach-xilinx/include/mach/uart.h
-new file mode 100644
-index 0000000..20a10d7
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/uart.h
-@@ -0,0 +1,31 @@
-+/* arch/arm/mach-xilinx/include/mach/uart.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_UART_H__
-+#define __MACH_UART_H__
-+
-+#define UART_CR_OFFSET          0x00  /* Control Register [8:0] */
-+#define UART_SR_OFFSET          0x2C  /* Channel Status [11:0] */
-+#define UART_FIFO_OFFSET        0x30  /* FIFO [15:0] or [7:0] */
-+
-+#define UART_SR_TXFULL		0x00000010	/* TX FIFO full */
-+#define UART_SR_TXEMPTY		0x00000008	/* TX FIFO empty */
-+
-+#define UART_FIFO_WRITE(base, value) \
-+	(*(volatile unsigned int *)((base) + UART_FIFO_OFFSET) = (value))
-+
-+#define UART_STATUS(base) \
-+	(*(volatile unsigned int *)((base) + UART_SR_OFFSET))
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/uncompress.h b/arch/arm/mach-xilinx/include/mach/uncompress.h
-new file mode 100644
-index 0000000..b7a5110
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/uncompress.h
-@@ -0,0 +1,47 @@
-+/* arch/arm/mach-xilinx/include/mach/uncompress.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_UNCOMPRESS_H__
-+#define __MACH_UNCOMPRESS_H__
-+
-+#include <mach/xilinx_soc.h>
-+#include <mach/uart.h>
-+
-+void arch_decomp_setup(void)
-+{
-+}
-+
-+static inline void flush(void)
-+{
-+	/*
-+	 * Wait while the FIFO is not empty
++	/* Setup the clock source counter to be an incrementing counter
++	 * with no interrupt and it rolls over at 0xFFFF. Pre-scale
++	   it by 32 also. Let it start running now.
 +	 */
-+	while (!(UART_STATUS(LL_UART_PADDR) & UART_SR_TXEMPTY))
-+		;
-+}
++	timers[XTTCPSS_CLOCKSOURCE].base_addr = XTTCPSS_TIMER_BASE;
 +
-+#define arch_decomp_wdog()
++	__raw_writel(0x0, timers[XTTCPSS_CLOCKSOURCE].base_addr +
++				XTTCPSS_IER_OFFSET);
++	__raw_writel(0x9, timers[XTTCPSS_CLOCKSOURCE].base_addr +
++				XTTCPSS_CLK_CNTRL_OFFSET);
++	__raw_writel(0x10, timers[XTTCPSS_CLOCKSOURCE].base_addr +
++				XTTCPSS_CNT_CNTRL_OFFSET);
 +
-+static void putc(char ch)
-+{
-+	/*
-+	 * Wait for room in the FIFO, then write the char into the FIFO
++	/* Setup the clock event timer to be an interval timer which
++	 * is prescaled by 32 using the interval interrupt. Leave it
++	 * disabled for now.
 +	 */
-+	while (UART_STATUS(LL_UART_PADDR) & UART_SR_TXFULL)
-+		;
 +
-+	UART_FIFO_WRITE(LL_UART_PADDR, ch);
++	timers[XTTCPSS_CLOCKEVENT].base_addr = XTTCPSS_TIMER_BASE + 4;
++
++	__raw_writel(0x23, timers[XTTCPSS_CLOCKEVENT].base_addr +
++			XTTCPSS_CNT_CNTRL_OFFSET);
++	__raw_writel(0x9, timers[XTTCPSS_CLOCKEVENT].base_addr +
++			XTTCPSS_CLK_CNTRL_OFFSET);
++	__raw_writel(0x1, timers[XTTCPSS_CLOCKEVENT].base_addr +
++			XTTCPSS_IER_OFFSET);
++
++	/* Setup IRQ the clock event timer */
++	event_timer_irq.dev_id = &timers[XTTCPSS_CLOCKEVENT];
++
++	if (event_timer_irq.handler != NULL)
++		setup_irq(XTTCPCC_EVENT_TIMER_IRQ, &event_timer_irq);
 +}
 +
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/vmalloc.h b/arch/arm/mach-xilinx/include/mach/vmalloc.h
-new file mode 100644
-index 0000000..aba20a3
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/vmalloc.h
-@@ -0,0 +1,20 @@
-+/* arch/arm/mach-xilinx/include/mach/vmalloc.h
++/**
++ * __raw_readl_cycles - Reads the timer counter register
 + *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++ * returns: Current timer counter register value
++ **/
++static cycle_t __raw_readl_cycles(struct clocksource *cs)
++{
++	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKSOURCE];
 +
-+#ifndef __MACH_VMALLOC_H__
-+#define __MACH_VMALLOC_H__
++	return (cycle_t)__raw_readl(timer->base_addr +
++				XTTCPSS_COUNT_VAL_OFFSET);
++}
 +
-+#define VMALLOC_END       0xE0000000UL
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/xilinx_soc.h b/arch/arm/mach-xilinx/include/mach/xilinx_soc.h
-new file mode 100644
-index 0000000..d01cde1
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/xilinx_soc.h
-@@ -0,0 +1,46 @@
-+/* arch/arm/mach-xilinx/include/mach/xilinx_soc.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_XILINX_SOC_H__
-+#define __MACH_XILINX_SOC_H__
-+
-+/* For now, all mappings are flat (physical = virtual)
-+ */
-+#define UART0_PHYS			0xE0000000
-+#define UART0_VIRT			UART0_PHYS
-+
-+#define TTC0_PHYS			0xF8001000
-+#define TTC0_VIRT			TTC0_PHYS
-+
-+#define PL310_L2CC_PHYS			0xF8F02000
-+#define PL310_L2CC_VIRT			PL310_L2CC_PHYS
-+
-+#define SCU_PERIPH_PHYS			0xF8F00000
-+#define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
-+
-+/* The following are intended for the devices that are mapped early */
-+
-+#define TTC0_BASE			IOMEM(TTC0_VIRT)
-+#define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
-+#define SCU_GIC_CPU_BASE		(SCU_PERIPH_BASE + 0x100)
-+#define SCU_GIC_DIST_BASE		(SCU_PERIPH_BASE + 0x1000)
-+#define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
 +
 +/*
-+ * Mandatory for CONFIG_LL_DEBUG, UART is mapped virtual = physical
++ * Instantiate and initialize the clock source structure
 + */
-+#define LL_UART_PADDR	UART0_PHYS
-+#define LL_UART_VADDR	UART0_VIRT
++static struct clocksource clocksource_xttcpss = {
++	.name		= "xttcpss_timer1",
++	.rating		= 200,			/* Reasonable clock source */
++	.read		= __raw_readl_cycles,
++	.mask		= CLOCKSOURCE_MASK(16),
++	.shift		= 0,			/* Initialized to zero */
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
 +
-+#endif
++
++/**
++ * xttcpss_set_next_event - Sets the time interval for next event
++ *
++ * @cycles:	Timer interval ticks
++ * @evt:	Address of clock event instance
++ *
++ * returns: Always 0 - success
++ **/
++static int xttcpss_set_next_event(unsigned long cycles,
++					struct clock_event_device *evt)
++{
++	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
++
++	xttcpss_set_interval(timer, cycles);
++	return 0;
++}
++
++/**
++ * xttcpss_set_mode - Sets the mode of timer
++ *
++ * @mode:	Mode to be set
++ * @evt:	Address of clock event instance
++ **/
++static void xttcpss_set_mode(enum clock_event_mode mode,
++					struct clock_event_device *evt)
++{
++	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
++	u32 ctrl_reg;
++
++	timer->mode = mode;
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		xttcpss_set_interval(timer, CLOCK_TICK_RATE / HZ);
++		break;
++	case CLOCK_EVT_MODE_ONESHOT:
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		ctrl_reg = __raw_readl(timer->base_addr +
++					XTTCPSS_CNT_CNTRL_OFFSET);
++		ctrl_reg |= XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++		__raw_writel(ctrl_reg,
++				timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++		break;
++	case CLOCK_EVT_MODE_RESUME:
++		ctrl_reg = __raw_readl(timer->base_addr +
++					XTTCPSS_CNT_CNTRL_OFFSET);
++		ctrl_reg &= ~XTTCPSS_CNT_CNTRL_DISABLE_MASK;
++		__raw_writel(ctrl_reg,
++				timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
++		break;
++	}
++}
++
++/*
++ * Instantiate and initialize the clock event structure
++ */
++static struct clock_event_device xttcpss_clockevent = {
++	.name		= "xttcpss_timer2",
++	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
++	.shift		= 0,		/* Initialized to zero */
++	.set_next_event	= xttcpss_set_next_event,
++	.set_mode	= xttcpss_set_mode,
++	.rating		= 200,
++};
++
++/**
++ * xttcpss_timer_init - Initialize the timer
++ *
++ * Initializes the timer hardware and register the clock source and clock event
++ * timers with Linux kernal timer framework
++ **/
++static void __init xttcpss_timer_init(void)
++{
++	xttcpss_timer_hardware_init();
++	clocksource_register_hz(&clocksource_xttcpss, CLOCK_TICK_RATE);
++
++	/* Calculate the parameters to allow the clockevent to operate using
++	   integer math
++	*/
++	clockevents_calc_mult_shift(&xttcpss_clockevent, CLOCK_TICK_RATE, 4);
++
++	xttcpss_clockevent.max_delta_ns =
++		clockevent_delta2ns(0xfffe, &xttcpss_clockevent);
++	xttcpss_clockevent.min_delta_ns =
++		clockevent_delta2ns(1, &xttcpss_clockevent);
++
++	/* Indicate that clock event can be used on any of the CPUs */
++
++	xttcpss_clockevent.cpumask = cpu_all_mask;
++	clockevents_register_device(&xttcpss_clockevent);
++}
++
++/*
++ * Instantiate and initialize the system timer structure
++ */
++struct sys_timer xttcpss_sys_timer = {
++	.init		= xttcpss_timer_init,
++};
 -- 
 1.6.2.1
 
