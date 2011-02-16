@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab1BPATo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:19:44 -0500
-Received: from kroah.org ([198.145.64.141]:38878 "EHLO coco.kroah.org"
+	id S1757024Ab1BPAUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:20:01 -0500
+Received: from kroah.org ([198.145.64.141]:38956 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab1BPATe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:34 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:31 2011
-Message-Id: <20110216001430.930646310@clark.kroah.org>
+	id S1756967Ab1BPATw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:52 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:32 2011
+Message-Id: <20110216001432.030727835@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:55 -0800
+Date: Tue, 15 Feb 2011 16:12:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [058/272] ath9k_hw: Fix XPABIAS level configuration for AR9003
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [069/272] [SCSI] fix medium error problems with some arrays which can cause data corruption
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit 52a0e2477dac2106bc1688cbe9615cdafc9deb7d upstream.
+commit a8733c7baf457b071528e385a0b7d4aaec79287c upstream.
 
-Improper configuration of 0x16288 and 0x16290 would affect transmission.
+Our current handling of medium error assumes that data is returned up
+to the bad sector.  This assumption holds good for all disk devices,
+all DIF arrays and most ordinary arrays.  However, an LSI array engine
+was recently discovered which reports a medium error without returning
+any data.  This means that when we report good data up to the medium
+error, we've reported junk originally in the buffer as good.  Worse,
+if the read consists of requested data plus a readahead, and the error
+occurs in readahead, we'll just strip off the readahead and report
+junk up to userspace as good data with no error.
 
-Signed-off-by: Vasanthakumar Thiagarajan <vasanth@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The fix for this is to have the error position computation take into
+account the amount of data returned by the driver using the scsi
+residual data.  Unfortunately, not every driver fills in this data,
+but for those who don't, it's set to zero, which means we'll think a
+full set of data was transferred and the behaviour will be identical
+to the prior behaviour of the code (believe the buffer up to the error
+sector).  All modern drivers seem to set the residual, so that should
+fix up the LSI failure/corruption case.
+
+Reported-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/scsi/sd.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -22,12 +22,14 @@
- #define COMP_CKSUM_LEN 2
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1175,6 +1175,12 @@ static unsigned int sd_completed_bytes(s
+ 	u64 end_lba = blk_rq_pos(scmd->request) + (scsi_bufflen(scmd) / 512);
+ 	u64 bad_lba;
+ 	int info_valid;
++	/*
++	 * resid is optional but mostly filled in.  When it's unused,
++	 * its value is zero, so we assume the whole buffer transferred
++	 */
++	unsigned int transferred = scsi_bufflen(scmd) - scsi_get_resid(scmd);
++	unsigned int good_bytes;
  
- #define AR_CH0_TOP (0x00016288)
--#define AR_CH0_TOP_XPABIASLVL (0x3)
-+#define AR_CH0_TOP_XPABIASLVL (0x300)
- #define AR_CH0_TOP_XPABIASLVL_S (8)
- 
- #define AR_CH0_THERM (0x00016290)
--#define AR_CH0_THERM_SPARE (0x3f)
--#define AR_CH0_THERM_SPARE_S (0)
-+#define AR_CH0_THERM_XPABIASLVL_MSB 0x3
-+#define AR_CH0_THERM_XPABIASLVL_MSB_S 0
-+#define AR_CH0_THERM_XPASHORT2GND 0x4
-+#define AR_CH0_THERM_XPASHORT2GND_S 2
- 
- #define AR_SWITCH_TABLE_COM_ALL (0xffff)
- #define AR_SWITCH_TABLE_COM_ALL_S (0)
-@@ -995,9 +997,9 @@ static s32 ar9003_hw_xpa_bias_level_get(
- static void ar9003_hw_xpa_bias_level_apply(struct ath_hw *ah, bool is2ghz)
- {
- 	int bias = ar9003_hw_xpa_bias_level_get(ah, is2ghz);
--	REG_RMW_FIELD(ah, AR_CH0_TOP, AR_CH0_TOP_XPABIASLVL, (bias & 0x3));
--	REG_RMW_FIELD(ah, AR_CH0_THERM, AR_CH0_THERM_SPARE,
--		      ((bias >> 2) & 0x3));
-+	REG_RMW_FIELD(ah, AR_CH0_TOP, AR_CH0_TOP_XPABIASLVL, bias);
-+	REG_RMW_FIELD(ah, AR_CH0_THERM, AR_CH0_THERM_XPABIASLVL_MSB, bias >> 2);
-+	REG_RMW_FIELD(ah, AR_CH0_THERM, AR_CH0_THERM_XPASHORT2GND, 1);
+ 	if (scmd->request->cmd_type != REQ_TYPE_FS)
+ 		return 0;
+@@ -1208,7 +1214,8 @@ static unsigned int sd_completed_bytes(s
+ 	/* This computation should always be done in terms of
+ 	 * the resolution of the device's medium.
+ 	 */
+-	return (bad_lba - start_lba) * scmd->device->sector_size;
++	good_bytes = (bad_lba - start_lba) * scmd->device->sector_size;
++	return min(good_bytes, transferred);
  }
  
- static u32 ar9003_hw_ant_ctrl_common_get(struct ath_hw *ah, bool is2ghz)
+ /**
 
 
