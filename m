@@ -1,149 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1BPTXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 14:23:13 -0500
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:55566 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab1BPTXK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 14:23:10 -0500
-Date: Wed, 16 Feb 2011 14:22:00 -0500
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-        matthltc@us.ibm.com, menage@google.com, oleg@redhat.com,
-        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: [PATCH v8 4/3] cgroups: use flex_array in attach_proc
-Message-ID: <20110216192200.GA11980@ghc17.ghc.andrew.cmu.edu>
-References: <20110208013542.GC31569@ghc17.ghc.andrew.cmu.edu>
- <20110208013950.GF31569@ghc17.ghc.andrew.cmu.edu>
+	id S1754076Ab1BPT1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 14:27:17 -0500
+Received: from mout7.freenet.de ([195.4.92.97]:40867 "EHLO mout7.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038Ab1BPT1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 14:27:14 -0500
+Date: Wed, 16 Feb 2011 20:26:58 +0100
+From: Alex Riesen <raa.lkml@gmail.com>
+To: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fix backlight brightness on intel LVDS panel after
+	reopening lid
+Message-ID: <20110216192658.GA7225@blimp.localdomain>
+Reply-To: Alex Riesen <raa.lkml@gmail.com>
+References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110208013950.GF31569@ghc17.ghc.andrew.cmu.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.2.16.190023
-X-SMTP-Spam-Clean: 8% (
- FROM_SAME_AS_TO 0.05, BODY_SIZE_4000_4999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __FROM_SAME_AS_TO2 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+In-Reply-To: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert cgroup_attach_proc to use flex_array.
+Signed-off-by: Alex Riesen <raa.lkml@gmail.com>
 
-From: Ben Blum <bblum@andrew.cmu.edu>
-
-The cgroup_attach_proc implementation requires a pre-allocated array to store
-task pointers to atomically move a thread-group, but asking for a monolithic
-array with kmalloc() may be unreliable for very large groups. Using flex_array
-provides the same functionality with less risk of failure.
-
-This is a post-patch for cgroup-procs-write.patch.
-
-Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
 ---
- kernel/cgroup.c |   37 ++++++++++++++++++++++++++++---------
- 1 files changed, 28 insertions(+), 9 deletions(-)
+Linus Torvalds, Wed, Feb 16, 2011 05:16:01 +0100:
+> Most of the changes are pretty spread out and small, with drivers/gpu
+> (radeon and i915) somewhat standing out from the pack. ... 
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 58b364a..feba784 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -57,6 +57,7 @@
- #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
- #include <linux/eventfd.h>
- #include <linux/poll.h>
-+#include <linux/flex_array.h> /* used in cgroup_attach_proc */
- 
- #include <asm/atomic.h>
- 
-@@ -1985,7 +1986,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	struct cgroupfs_root *root = cgrp->root;
- 	/* threadgroup list cursor and array */
- 	struct task_struct *tsk;
--	struct task_struct **group;
-+	struct flex_array *group;
- 	/*
- 	 * we need to make sure we have css_sets for all the tasks we're
- 	 * going to move -before- we actually start moving them, so that in
-@@ -2002,9 +2003,15 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 * and if threads exit, this will just be an over-estimate.
- 	 */
- 	group_size = get_nr_threads(leader);
--	group = kmalloc(group_size * sizeof(*group), GFP_KERNEL);
-+	/* flex_array supports very large thread-groups better than kmalloc. */
-+	group = flex_array_alloc(sizeof(struct task_struct *), group_size,
-+				 GFP_KERNEL);
- 	if (!group)
- 		return -ENOMEM;
-+	/* pre-allocate to guarantee space while iterating in rcu read-side. */
-+	retval = flex_array_prealloc(group, 0, group_size - 1, GFP_KERNEL);
-+	if (retval)
-+		goto out_free_group_list;
- 
- 	/* prevent changes to the threadgroup list while we take a snapshot. */
- 	rcu_read_lock();
-@@ -2027,7 +2034,12 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		/* as per above, nr_threads may decrease, but not increase. */
- 		BUG_ON(i >= group_size);
- 		get_task_struct(tsk);
--		group[i] = tsk;
-+		/*
-+		 * saying GFP_ATOMIC has no effect here because we did prealloc
-+		 * earlier, but it's good form to communicate our expectations.
-+		 */
-+		retval = flex_array_put_ptr(group, i, tsk, GFP_ATOMIC);
-+		BUG_ON(retval != 0);
- 		i++;
- 	} while_each_thread(leader, tsk);
- 	/* remember the number of threads in the array for later. */
-@@ -2050,7 +2062,9 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		if (ss->can_attach_task) {
- 			/* run on each task in the threadgroup. */
- 			for (i = 0; i < group_size; i++) {
--				retval = ss->can_attach_task(cgrp, group[i]);
-+				tsk = flex_array_get_ptr(group, i);
-+				BUG_ON(tsk == NULL);
-+				retval = ss->can_attach_task(cgrp, tsk);
- 				if (retval) {
- 					failed_ss = ss;
- 					goto out_cancel_attach;
-@@ -2065,7 +2079,8 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 */
- 	INIT_LIST_HEAD(&newcg_list);
- 	for (i = 0; i < group_size; i++) {
--		tsk = group[i];
-+		tsk = flex_array_get_ptr(group, i);
-+		BUG_ON(tsk == NULL);
- 		/* nothing to do if this task is already in the cgroup */
- 		oldcgrp = task_cgroup_from_root(tsk, root);
- 		if (cgrp == oldcgrp)
-@@ -2104,7 +2119,8 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 			ss->pre_attach(cgrp);
- 	}
- 	for (i = 0; i < group_size; i++) {
--		tsk = group[i];
-+		tsk = flex_array_get_ptr(group, i);
-+		BUG_ON(tsk == NULL);
- 		/* leave current thread as it is if it's already there */
- 		oldcgrp = task_cgroup_from_root(tsk, root);
- 		if (cgrp == oldcgrp)
-@@ -2154,10 +2170,13 @@ out_cancel_attach:
- 		}
- 	}
- 	/* clean up the array of referenced threads in the group. */
--	for (i = 0; i < group_size; i++)
--		put_task_struct(group[i]);
-+	for (i = 0; i < group_size; i++) {
-+		tsk = flex_array_get_ptr(group, i);
-+		BUG_ON(tsk == NULL);
-+		put_task_struct(tsk);
-+	}
- out_free_group_list:
--	kfree(group);
-+	flex_array_free(group);
- 	return retval;
+The backlight level on this Dell XPS M1330 reduces every time I reopen the
+lid, and BIOS does not seem to know anything about that (the keyboard
+shortcuts to set backlight brightness cause it to jump to the level next to
+the one set before closing the lid).
+
+Maybe i915 code for LVDS panels have lost some parts of the backlight
+enable/disable balancing patch by Chris Wilson? Or maybe it just got broken
+along the way...
+
+This part of the patch by Chris helped here, but I afraid it might be not
+complete or just wrong (for instance, the original patch didn't have to remove
+the i915_read_blc_pwm_ctl function).
+
+ drivers/gpu/drm/i915/intel_panel.c |   65 ++++++++++--------------------------
+ 1 files changed, 18 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
+index c65992d..c4b1ca4 100644
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -125,55 +125,15 @@ static int is_backlight_combination_mode(struct drm_device *dev)
+ 	return 0;
  }
  
+-static u32 i915_read_blc_pwm_ctl(struct drm_i915_private *dev_priv)
+-{
+-	u32 val;
+-
+-	/* Restore the CTL value if it lost, e.g. GPU reset */
+-
+-	if (HAS_PCH_SPLIT(dev_priv->dev)) {
+-		val = I915_READ(BLC_PWM_PCH_CTL2);
+-		if (dev_priv->saveBLC_PWM_CTL2 == 0) {
+-			dev_priv->saveBLC_PWM_CTL2 = val;
+-		} else if (val == 0) {
+-			I915_WRITE(BLC_PWM_PCH_CTL2,
+-				   dev_priv->saveBLC_PWM_CTL);
+-			val = dev_priv->saveBLC_PWM_CTL;
+-		}
+-	} else {
+-		val = I915_READ(BLC_PWM_CTL);
+-		if (dev_priv->saveBLC_PWM_CTL == 0) {
+-			dev_priv->saveBLC_PWM_CTL = val;
+-			dev_priv->saveBLC_PWM_CTL2 = I915_READ(BLC_PWM_CTL2);
+-		} else if (val == 0) {
+-			I915_WRITE(BLC_PWM_CTL,
+-				   dev_priv->saveBLC_PWM_CTL);
+-			I915_WRITE(BLC_PWM_CTL2,
+-				   dev_priv->saveBLC_PWM_CTL2);
+-			val = dev_priv->saveBLC_PWM_CTL;
+-		}
+-	}
+-
+-	return val;
+-}
+-
+ u32 intel_panel_get_max_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 max;
+ 
+-	max = i915_read_blc_pwm_ctl(dev_priv);
+-	if (max == 0) {
+-		/* XXX add code here to query mode clock or hardware clock
+-		 * and program max PWM appropriately.
+-		 */
+-		printk_once(KERN_WARNING "fixme: max PWM is zero.\n");
+-		return 1;
+-	}
+-
+ 	if (HAS_PCH_SPLIT(dev)) {
+-		max >>= 16;
++		max = I915_READ(BLC_PWM_PCH_CTL2) >> 16;
+ 	} else {
++		max = I915_READ(BLC_PWM_CTL);
+ 		if (IS_PINEVIEW(dev)) {
+ 			max >>= 17;
+ 		} else {
+@@ -186,6 +146,14 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
+ 			max *= 0xff;
+ 	}
+ 
++	if (max == 0) {
++		/* XXX add code here to query mode clock or hardware clock
++		 * and program max PWM appropriately.
++		 */
++		DRM_ERROR("fixme: max PWM is zero.\n");
++		max = 1;
++	}
++
+ 	DRM_DEBUG_DRIVER("max backlight PWM = %d\n", max);
+ 	return max;
+ }
+@@ -255,11 +223,11 @@ void intel_panel_disable_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+-	if (dev_priv->backlight_enabled) {
+-		dev_priv->backlight_level = intel_panel_get_backlight(dev);
+-		dev_priv->backlight_enabled = false;
+-	}
++	if (!dev_priv->backlight_enabled)
++		return;
+ 
++	dev_priv->backlight_enabled = false;
++	dev_priv->backlight_level = intel_panel_get_backlight(dev);
+ 	intel_panel_set_backlight(dev, 0);
+ }
+ 
+@@ -267,6 +235,9 @@ void intel_panel_enable_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
++	if (dev_priv->backlight_enabled)
++		return;
++
+ 	if (dev_priv->backlight_level == 0)
+ 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+ 
+@@ -278,6 +249,6 @@ void intel_panel_setup_backlight(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+-	dev_priv->backlight_level = intel_panel_get_backlight(dev);
++	dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+ 	dev_priv->backlight_enabled = dev_priv->backlight_level != 0;
+ }
+-- 
+1.7.4.27.gf5729
