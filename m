@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab1BPBfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:35:23 -0500
-Received: from kroah.org ([198.145.64.141]:39166 "EHLO coco.kroah.org"
+	id S1757205Ab1BPAUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:20:45 -0500
+Received: from kroah.org ([198.145.64.141]:39112 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932089Ab1BPAUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:20:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:35 2011
-Message-Id: <20110216001435.199181831@clark.kroah.org>
+	id S1757018Ab1BPAUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:20:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:34 2011
+Message-Id: <20110216001434.406760686@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:38 -0800
+Date: Tue, 15 Feb 2011 16:12:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [101/272] tracing: Fix preempt count leak
+        Raymond Yau <superquad.vortex2@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [093/272] ALSA : au88x0 - Limit number of channels to fix Oops via OSS emu
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Raymond Yau <superquad.vortex2@gmail.com>
 
-commit 1dbd1951f39e13da579ffe879cce19586d0462de upstream.
+commit d9ab344336f74c012f6643ed3d1ad8ca0136de3b upstream.
 
-While running my ftrace stress test, this showed up:
+Fix playback/capture channels patch to change supported playback
+channels of au8830 to 1,2,4 and capture channels to 1,2.
+This prevent oops when oss emulation use SNDCTL_DSP_CHANNELS to
+set 3 Channels
 
-BUG: sleeping function called from invalid context at mm/mmap.c:233
-...
-note: cat[3293] exited with preempt_count 1
-
-The bug was introduced by commit 91e86e560d0b3ce4c5fc64fd2bbb99f856a30a4e
-("tracing: Fix recursive user stack trace")
-
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4D0089AC.1020802@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Raymond Yau <superquad.vortex2@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ sound/pci/au88x0/au88x0_pcm.c |   24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1313,12 +1313,10 @@ ftrace_trace_userstack(struct ring_buffe
- 
- 	__this_cpu_inc(user_stack_count);
- 
--
--
- 	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
- 					  sizeof(*entry), flags, pc);
- 	if (!event)
--		return;
-+		goto out_drop_count;
- 	entry	= ring_buffer_event_data(event);
- 
- 	entry->tgid		= current->tgid;
-@@ -1333,8 +1331,8 @@ ftrace_trace_userstack(struct ring_buffe
- 	if (!filter_check_discard(call, entry, buffer, event))
- 		ring_buffer_unlock_commit(buffer, event);
- 
-+ out_drop_count:
- 	__this_cpu_dec(user_stack_count);
--
-  out:
- 	preempt_enable();
- }
+--- a/sound/pci/au88x0/au88x0_pcm.c
++++ b/sound/pci/au88x0/au88x0_pcm.c
+@@ -42,11 +42,7 @@ static struct snd_pcm_hardware snd_vorte
+ 	.rate_min = 5000,
+ 	.rate_max = 48000,
+ 	.channels_min = 1,
+-#ifdef CHIP_AU8830
+-	.channels_max = 4,
+-#else
+ 	.channels_max = 2,
+-#endif
+ 	.buffer_bytes_max = 0x10000,
+ 	.period_bytes_min = 0x1,
+ 	.period_bytes_max = 0x1000,
+@@ -115,6 +111,17 @@ static struct snd_pcm_hardware snd_vorte
+ 	.periods_max = 64,
+ };
+ #endif
++#ifdef CHIP_AU8830
++static unsigned int au8830_channels[3] = {
++	1, 2, 4,
++};
++
++static struct snd_pcm_hw_constraint_list hw_constraints_au8830_channels = {
++	.count = ARRAY_SIZE(au8830_channels),
++	.list = au8830_channels,
++	.mask = 0,
++};
++#endif
+ /* open callback */
+ static int snd_vortex_pcm_open(struct snd_pcm_substream *substream)
+ {
+@@ -156,6 +163,15 @@ static int snd_vortex_pcm_open(struct sn
+ 		if (VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_ADB
+ 		    || VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_I2S)
+ 			runtime->hw = snd_vortex_playback_hw_adb;
++#ifdef CHIP_AU8830
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
++			VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_ADB) {
++			runtime->hw.channels_max = 4;
++			snd_pcm_hw_constraint_list(runtime, 0,
++				SNDRV_PCM_HW_PARAM_CHANNELS,
++				&hw_constraints_au8830_channels);
++		}
++#endif
+ 		substream->runtime->private_data = NULL;
+ 	}
+ #ifndef CHIP_AU8810
 
 
