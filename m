@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab1BPRlr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 12:41:47 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:52233 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab1BPRlo (ORCPT
+	id S1753938Ab1BPRod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 12:44:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33486 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab1BPRob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 12:41:44 -0500
-Date: Wed, 16 Feb 2011 19:41:40 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-X-X-Sender: aaro@loser
-To: linux-fbdev@vger.kernel.org
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] sisfb: XGI Z9 POST
-In-Reply-To: <1297635088-13224-1-git-send-email-aaro.koskinen@iki.fi>
-Message-ID: <alpine.DEB.1.10.1102161916510.479@loser>
-References: <1297635088-13224-1-git-send-email-aaro.koskinen@iki.fi>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	Wed, 16 Feb 2011 12:44:31 -0500
+Message-ID: <4D5C0CDD.3060403@infradead.org>
+Date: Wed, 16 Feb 2011 15:43:57 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: VDR User <user.vdr@gmail.com>
+CC: Jarod Wilson <jarod@redhat.com>, Stephen Wilson <wilsons@start.ca>,
+        Andy Walls <awalls@md.metrocast.net>,
+        =?UTF-8?B?RGF2aWQgSMOkcmRlbWFu?= <david@hardeman.nu>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] rc: do not enable remote controller adapters
+ by default.
+References: <m3aahwa4ib.fsf@fibrous.localdomain>	<1297862209.2086.18.camel@morgan.silverblock.net>	<m3ei78j9s7.fsf@fibrous.localdomain>	<20110216152026.GA17102@redhat.com> <AANLkTikNKpo6aDVQVWC3FEiKFLv4JGFr=xPTC8Tu_2Sx@mail.gmail.com>
+In-Reply-To: <AANLkTikNKpo6aDVQVWC3FEiKFLv4JGFr=xPTC8Tu_2Sx@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em 16-02-2011 15:25, VDR User escreveu:
+> On Wed, Feb 16, 2011 at 7:20 AM, Jarod Wilson <jarod@redhat.com> wrote:
+>>> It is not a need.  I simply observed that after the IR_ to RC_ rename
+>>> there was another set of drivers being built which I did not ask for.
+>>
+>> So disable them. I think most people would rather have this support
+>> enabled so that remotes Just Work if a DTV card or stand-alone IR receiver
+>> is plugged in without having to hunt back through Kconfig options to
+>> figure out why it doesn't...
+> 
+> Unfortunately _ALL_ the usb DVB devices are unavailable if you do not
+> enable IR_CORE "Infrared remote controller adapters" in v4l.  This is
+> a little annoying as the usb device I use doesn't even have IR
+> capabilities.  It doesn't seem like something that should be forced on
+> the user -- enable IR or you can't even compile the driver you need,
+> which doesn't even use IR.
+> 
+> It's not the end of the world but I don't particularly appreciate the
+> enable-everything approach.  It would be nice to at least have the
+> option to trim the fat if you want.. Isn't that partially what Linux
+> is supposed to be about in the first place?
 
-On Mon, 14 Feb 2011, Aaro Koskinen wrote:
-> Here's some patches to get POST working with XGI Z9. I have tested them
-> with the following card:
->
-> 	http://www.roboard.com/Files/RB-100/MiniPCI-VGA-Z9s_UM_v1r1A.pdf
->
-> I'm using the card on an ARM board where the bootloader knows nothing
-> about VGA or VGA BIOS, so having POST support in the kernel driver
-> is mandatory. With these patches the memory size is correct detected,
-> R/W test passes and it's possible to use e.g. framebuffer console.
->
-> Aaro Koskinen (6):
->  sisfb: POST should fail if R/W test fails
->  sisfb: move XGI POST RAM type detection into a subroutine
->  sisfb: add subroutine for detecting XGI Z9
->  sisfb: add RAM type detection for XGI Z9
->  sisfb: move XGI POST DDR2 bootup code into subroutines
->  sisfb: add support for XGI Z9 DDR2 POST
+Unfortunately, the way almost all drivers/media/[video|dvb] was made,
+the IR (and input support on webcams) are tighted to the driver.
 
-Hmm, I think these patches can be ignored, at least for a while.
+It would be possible to change it (and it is not that hard), but it requires 
+people with enough time and skills to go into each driver that can support IR, 
+split the IR code into a separate module and be sure that the driver will 
+compile and work with or without IR support.
 
-I realized that xgifb driver is now in staging, and it has much wider
-support for XGI chips. So, we should work on getting that driver into
-an acceptable form. And after that, it should be even possible to drop
-XGI support from sisfb.
-
-A.
+Cheers,
+Mauro
