@@ -1,112 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab1BPUtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 15:49:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49994 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab1BPUtL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 15:49:11 -0500
+	id S1754577Ab1BPUvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 15:51:43 -0500
+Received: from ka.mail.enyo.de ([87.106.162.201]:38241 "EHLO ka.mail.enyo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754388Ab1BPUvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 15:51:41 -0500
+From: Florian Weimer <fw@deneb.enyo.de>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, martin capitanio <m@capitanio.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: mmap, the language go, problems with the linux kernel
+References: <1297168678.2190.21.camel@marvin>
+	<20110208132657.1cf55782@lxorguk.ukuu.org.uk>
+	<87sjvtba3u.fsf@mid.deneb.enyo.de> <20110213012227.GC2598@thunk.org>
+Date: Wed, 16 Feb 2011 21:51:32 +0100
+In-Reply-To: <20110213012227.GC2598@thunk.org> (Ted Ts'o's message of "Sat, 12
+	Feb 2011 20:22:27 -0500")
+Message-ID: <87mxlvsnxn.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin2xfDBk5n5ch=EYNauyPZEBq2SozQM6by6EY+G@mail.gmail.com>
-References: <20110216150943.b4969ddf.sfr@canb.auug.org.au> <AANLkTin2xfDBk5n5ch=EYNauyPZEBq2SozQM6by6EY+G@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 16 Feb 2011 13:48:50 -0700
-X-Google-Sender-Auth: 6UirvE17uEen2aTJ31qOrqFZwlA
-Message-ID: <AANLkTikFgV52v6syO4f9GNFTYsRP0xSt=Yk5TbiCuFZd@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the devicetree tree with the
- spi-current tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 9:41 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Tue, Feb 15, 2011 at 9:09 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi Grant,
->>
->> Today's linux-next merge of the devicetree tree got a conflict in
->> drivers/spi/pxa2xx_spi_pci.c between commit
->> 0f3e1d27a7e3f98d996d707d649128e229b65deb ("spi/pxa2xx pci: fix the
->> release - remove race") from the spi-current tree and commit
->> c9e358dfc4a8cb2227172ef77908c2e0ee17bcb9 ("driver-core: remove
->> conditionals around devicetree pointers") from the devicetree tree.
->>
->> I fixed it up (see below) and can carry the fix as necessary.
->
-> Heh, seeing as those are *both* my trees, I'll take care of merging
-> appropriately to sort this out.  :-)
+* Ted Ts'o:
 
-I've just asked Linus to pull the spi-current branch.  When 2.6.38-rc6
-is released I'll merge it into the devicetree branch which will take
-care of the merge conflict.
+>> The odd thing is that prot==0 does *not* count against the
+>> vm.overcommit_memory=2 limit, only against ulimit -v.  The limit is
+>> only enforced for the parts on which mprotect is called.  I think this
+>> should really be part of the public API (I'm not sure if it is right
+>> now, it could well be an accident), to avoid the problems you
+>> describe.
+>
+> The overcommit_memory logic does not include any pages which are
+> mapped read-only.
 
-g.
+A colleague tells me that according to his tests, this depends on the
+history of the page, as expected.
 
->
-> g.
->
->> --
->> Cheers,
->> Stephen Rothwell                    sfr@canb.auug.org.au
->>
->> diff --cc drivers/spi/pxa2xx_spi_pci.c
->> index 19752b0,b6589bb..0000000
->> --- a/drivers/spi/pxa2xx_spi_pci.c
->> +++ b/drivers/spi/pxa2xx_spi_pci.c
->> @@@ -75,24 -84,25 +75,22 @@@ static int __devinit ce4100_spi_probe(s
->>                return ret;
->>        }
->>
->>  +      pdev = platform_device_alloc("pxa2xx-spi", dev->devfn);
->>        spi_info = kzalloc(sizeof(*spi_info), GFP_KERNEL);
->>  -      if (!spi_info) {
->>  +      if (!pdev || !spi_info ) {
->>                ret = -ENOMEM;
->>  -              goto err_kz;
->>  +              goto err_nomem;
->>        }
->>  -      ssp = &spi_info->ssp;
->>  -      pdev = &spi_info->spi_pdev;
->>  -      spi_pdata =  &spi_info->spi_pdata;
->>  +      memset(&spi_pdata, 0, sizeof(spi_pdata));
->>  +      spi_pdata.num_chipselect = dev->devfn;
->>
->>  -      pdev->name = "pxa2xx-spi";
->>  -      pdev->id = dev->devfn;
->>  -      pdev->dev.parent = &dev->dev;
->>  -      pdev->dev.platform_data = &spi_info->spi_pdata;
->>  +      ret = platform_device_add_data(pdev, &spi_pdata, sizeof(spi_pdata));
->>  +      if (ret)
->>  +              goto err_nomem;
->>
->>  +      pdev->dev.parent = &dev->dev;
->> - #ifdef CONFIG_OF
->>        pdev->dev.of_node = dev->dev.of_node;
->> - #endif
->>  -      pdev->dev.release = plat_dev_release;
->>  -
->>  -      spi_pdata->num_chipselect = dev->devfn;
->>  -
->>  +      ssp = &spi_info->ssp;
->>        ssp->phys_base = pci_resource_start(dev, 0);
->>        ssp->mmio_base = ioremap(phys_beg, phys_len);
->>        if (!ssp->mmio_base) {
->>
->
->
->
-> --
-> Grant Likely, B.Sc., P.Eng.
-> Secret Lab Technologies Ltd.
->
+> Technically that's not quite enough --- in theory you could have a
+> debugging attach to every single read-only text page and set
+> breakpoints on every single page.
 
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Those cases do not matter because setting a breakpoint can fail with
+ENOMEM.  You only have to take into account possibly future operations
+which cannot fail with ENOMEM.
