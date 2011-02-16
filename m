@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483Ab1BPAv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:51:59 -0500
-Received: from kroah.org ([198.145.64.141]:46245 "EHLO coco.kroah.org"
+	id S933479Ab1BPAyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:54:20 -0500
+Received: from kroah.org ([198.145.64.141]:46284 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933375Ab1BPAvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:54 -0500
+	id S933373Ab1BPAwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:52:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:15 2011
-Message-Id: <20110216002115.091541263@clark.kroah.org>
+Message-Id: <20110216002115.685012030@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:09 -0800
+Date: Tue, 15 Feb 2011 16:22:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>
-Subject: [patch 161/176] drm/radeon/kms: make the mac rv630 quirk generic
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [patch 167/176] drm/i915: fix calculation of eDP signal levels on Sandybridge
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
 
-commit be23da8ad219650517cbbb7acbeaeb235667113a upstream.
+commit 3c5a62b5226ca5db993660281e9c2a7275d9fb02 upstream.
 
-Seems some other boards do this as well.
+Some voltage swing/pre-emphasis level use the same value on eDP
+Sandybridge, like 400mv_0db and 600mv_0db are with the same value
+of (0x0 << 22). So, fix them, and point out the value if it isn't
+a supported voltage swing/pre-emphasis level.
 
-Reported-by: Andrea Merello <andrea.merello@gmail.com>
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h |    9 +++++----
+ drivers/gpu/drm/i915/intel_dp.c |   23 ++++++++++++++++-------
+ 2 files changed, 21 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -387,15 +387,11 @@ static bool radeon_atom_apply_quirks(str
- 			*line_mux = 0x90;
- 	}
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2967,10 +2967,11 @@
+ #define  EDP_LINK_TRAIN_600MV_3_5DB_SNB_A	(0x01<<22)
+ #define  EDP_LINK_TRAIN_800MV_0DB_SNB_A		(0x0<<22)
+ /* SNB B-stepping */
+-#define  EDP_LINK_TRAIN_400MV_0DB_SNB_B		(0x0<<22)
+-#define  EDP_LINK_TRAIN_400MV_6DB_SNB_B		(0x3a<<22)
+-#define  EDP_LINK_TRAIN_600MV_3_5DB_SNB_B	(0x39<<22)
+-#define  EDP_LINK_TRAIN_800MV_0DB_SNB_B		(0x38<<22)
++#define  EDP_LINK_TRAIN_400_600MV_0DB_SNB_B	(0x0<<22)
++#define  EDP_LINK_TRAIN_400MV_3_5DB_SNB_B	(0x1<<22)
++#define  EDP_LINK_TRAIN_400_600MV_6DB_SNB_B	(0x3a<<22)
++#define  EDP_LINK_TRAIN_600_800MV_3_5DB_SNB_B	(0x39<<22)
++#define  EDP_LINK_TRAIN_800_1200MV_0DB_SNB_B	(0x38<<22)
+ #define  EDP_LINK_TRAIN_VOL_EMP_MASK_SNB	(0x3f<<22)
  
--	/* mac rv630 */
--	if ((dev->pdev->device == 0x9588) &&
--	    (dev->pdev->subsystem_vendor == 0x106b) &&
--	    (dev->pdev->subsystem_device == 0x00a6)) {
--		if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
--		    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
--			*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
--			*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
--		}
-+	/* mac rv630, rv730, others */
-+	if ((supported_device == ATOM_DEVICE_TV1_SUPPORT) &&
-+	    (*connector_type == DRM_MODE_CONNECTOR_DVII)) {
-+		*connector_type = DRM_MODE_CONNECTOR_9PinDIN;
-+		*line_mux = CONNECTOR_7PIN_DIN_ENUM_ID1;
+ #endif /* _I915_REG_H_ */
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1093,18 +1093,27 @@ intel_dp_signal_levels(uint8_t train_set
+ static uint32_t
+ intel_gen6_edp_signal_levels(uint8_t train_set)
+ {
+-	switch (train_set & (DP_TRAIN_VOLTAGE_SWING_MASK|DP_TRAIN_PRE_EMPHASIS_MASK)) {
++	int signal_levels = train_set & (DP_TRAIN_VOLTAGE_SWING_MASK |
++					 DP_TRAIN_PRE_EMPHASIS_MASK);
++	switch (signal_levels) {
+ 	case DP_TRAIN_VOLTAGE_SWING_400 | DP_TRAIN_PRE_EMPHASIS_0:
+-		return EDP_LINK_TRAIN_400MV_0DB_SNB_B;
++	case DP_TRAIN_VOLTAGE_SWING_600 | DP_TRAIN_PRE_EMPHASIS_0:
++		return EDP_LINK_TRAIN_400_600MV_0DB_SNB_B;
++	case DP_TRAIN_VOLTAGE_SWING_400 | DP_TRAIN_PRE_EMPHASIS_3_5:
++		return EDP_LINK_TRAIN_400MV_3_5DB_SNB_B;
+ 	case DP_TRAIN_VOLTAGE_SWING_400 | DP_TRAIN_PRE_EMPHASIS_6:
+-		return EDP_LINK_TRAIN_400MV_6DB_SNB_B;
++	case DP_TRAIN_VOLTAGE_SWING_600 | DP_TRAIN_PRE_EMPHASIS_6:
++		return EDP_LINK_TRAIN_400_600MV_6DB_SNB_B;
+ 	case DP_TRAIN_VOLTAGE_SWING_600 | DP_TRAIN_PRE_EMPHASIS_3_5:
+-		return EDP_LINK_TRAIN_600MV_3_5DB_SNB_B;
++	case DP_TRAIN_VOLTAGE_SWING_800 | DP_TRAIN_PRE_EMPHASIS_3_5:
++		return EDP_LINK_TRAIN_600_800MV_3_5DB_SNB_B;
+ 	case DP_TRAIN_VOLTAGE_SWING_800 | DP_TRAIN_PRE_EMPHASIS_0:
+-		return EDP_LINK_TRAIN_800MV_0DB_SNB_B;
++	case DP_TRAIN_VOLTAGE_SWING_1200 | DP_TRAIN_PRE_EMPHASIS_0:
++		return EDP_LINK_TRAIN_800_1200MV_0DB_SNB_B;
+ 	default:
+-		DRM_DEBUG_KMS("Unsupported voltage swing/pre-emphasis level\n");
+-		return EDP_LINK_TRAIN_400MV_0DB_SNB_B;
++		DRM_DEBUG_KMS("Unsupported voltage swing/pre-emphasis level:"
++			      "0x%x\n", signal_levels);
++		return EDP_LINK_TRAIN_400_600MV_0DB_SNB_B;
  	}
+ }
  
- 	/* ASUS HD 3600 XT board lists the DVI port as HDMI */
 
 
