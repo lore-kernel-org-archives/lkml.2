@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab1BPAYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:24:48 -0500
-Received: from kroah.org ([198.145.64.141]:49666 "EHLO coco.kroah.org"
+	id S1757651Ab1BPAZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:25:07 -0500
+Received: from kroah.org ([198.145.64.141]:49816 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932324Ab1BPAYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:24 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:47 2011
-Message-Id: <20110216001447.420334221@clark.kroah.org>
+	id S932465Ab1BPAZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:00 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:49 2011
+Message-Id: <20110216001449.572952128@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:40 -0800
+Date: Tue, 15 Feb 2011 16:15:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Subject: [223/272] nilfs2: fix crash after one superblock became unavailable
+        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@gmail.com>
+Subject: [245/272] radeon/kms: fix dp displayport mode validation
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit 0ca7a5b9ac5d301845dd6382ff25a699b6263a81 upstream.
+commit 6bba2e116808ca12e30c8d88dfedabf8b8d67390 upstream.
 
-Fixes the following kernel oops in nilfs_setup_super() which could
-arise if one of two super-blocks is unavailable.
+Check if there is a big enough dp clock & enough dp lane to
+drive the video mode provided.
 
-> BUG: unable to handle kernel NULL pointer dereference at   (null)
-> Pid: 3529, comm: mount.nilfs2 Not tainted 2.6.37 #1 /
-> EIP: 0060:[<c03196bc>] EFLAGS: 00010202 CPU: 3
-> EIP is at memcpy+0xc/0x1b
-> Call Trace:
->  [<f953720e>] ? nilfs_setup_super+0x6c/0xa5 [nilfs2]
->  [<f95369e9>] ? nilfs_get_root_dentry+0x81/0xcb [nilfs2]
->  [<f9537a08>] ? nilfs_mount+0x4f9/0x62c [nilfs2]
->  [<c02745cf>] ? kstrdup+0x36/0x3f
->  [<f953750f>] ? nilfs_mount+0x0/0x62c [nilfs2]
->  [<c0293940>] ? vfs_kern_mount+0x4d/0x12c
->  [<c02a5100>] ? get_fs_type+0x76/0x8f
->  [<c0293a68>] ? do_kern_mount+0x33/0xbf
->  [<c02a784a>] ? do_mount+0x2ed/0x714
->  [<c02a6171>] ? copy_mount_options+0x28/0xfc
->  [<c02a7ce3>] ? sys_mount+0x72/0xaf
->  [<c0473085>] ? syscall_call+0x7/0xb
-
-Reported-by: Wakko Warner <wakko@animx.eu.org>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Wakko Warner <wakko@animx.eu.org>
-LKML-Reference: <20110121024918.GA29598@animx.eu.org>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Reviewed-By: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nilfs2/super.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_dp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nilfs2/super.c
-+++ b/fs/nilfs2/super.c
-@@ -688,7 +688,8 @@ skip_mount_setup:
- 	sbp[0]->s_state =
- 		cpu_to_le16(le16_to_cpu(sbp[0]->s_state) & ~NILFS_VALID_FS);
- 	/* synchronize sbp[1] with sbp[0] */
--	memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
-+	if (sbp[1])
-+		memcpy(sbp[1], sbp[0], nilfs->ns_sbsize);
- 	return nilfs_commit_super(sbi, NILFS_SB_COMMIT_ALL);
- }
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -187,9 +187,9 @@ static int dp_link_clock_for_mode_clock(
+ int dp_mode_valid(u8 dpcd[DP_DPCD_SIZE], int mode_clock)
+ {
+ 	int lanes = dp_lanes_for_mode_clock(dpcd, mode_clock);
+-	int bw = dp_lanes_for_mode_clock(dpcd, mode_clock);
++	int dp_clock = dp_link_clock_for_mode_clock(dpcd, mode_clock);
  
+-	if ((lanes == 0) || (bw == 0))
++	if ((lanes == 0) || (dp_clock == 0))
+ 		return MODE_CLOCK_HIGH;
+ 
+ 	return MODE_OK;
 
 
