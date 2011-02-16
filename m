@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab1BPMYx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:24:53 -0500
+	id S1759215Ab1BPMZg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:25:36 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:36104 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461Ab1BPMVu (ORCPT
+	with ESMTP id S932218Ab1BPMVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:21:50 -0500
+	Wed, 16 Feb 2011 07:21:48 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=quKL8hoJdkZA8pEeOdnglqMVAvRphdtj7c17OgLP8shPoIuQGRdbo2Rq6iXJy7ypVp
-         ndihoqdPirJg0VbXklHq9SXgYWRtfbNVommbqcrrbZ7LlBvu8A68cTS7CEaaFBI8xVt6
-         0Uf1kR07Gc/foSsB5xH9xwR/swjy0ncH+r3n4=
+        b=UA77ZdEZlKtw4xmwb9klJ6EeAvZrdwKKNl2MqZY6NfEkZT9fM+TKDNQ8z066S8F1gw
+         guDGycyu98K5uXUTKS9cl4GOI4VYCEJRY0f/uSzYCn3ud6U/8u1GgQC+TdzOxwi9VYGM
+         nz5FSLbPSSBbghvSNwV4j9q4g/AtpSdy8BGDI=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 23/33] x86-64, NUMA: Kill numa_nodes[]
-Date: Wed, 16 Feb 2011 13:20:57 +0100
-Message-Id: <1297858867-25981-24-git-send-email-tj@kernel.org>
+Subject: [PATCH 21/33] x86-64, NUMA: consolidate and improve memblk sanity checks
+Date: Wed, 16 Feb 2011 13:20:55 +0100
+Message-Id: <1297858867-25981-22-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297858867-25981-1-git-send-email-tj@kernel.org>
 References: <1297858867-25981-1-git-send-email-tj@kernel.org>
@@ -30,32 +30,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-numa_nodes[] doesn't carry any information which isn't present in
-numa_meminfo.  Each entry is simply min/max range of all the memblks
-for the node.  This is not only redundant but also inaccurate when
-memblks for different nodes interleave - for example,
-find_node_by_addr() can return the wrong nodeid.
+memblk sanity check was scattered around and incomplete.  Consolidate
+and improve.
 
-Kill numa_nodes[] and always use numa_meminfo instead.
+* Confliction detection and cutoff_node() logic are moved to
+  numa_cleanup_meminfo().
 
-* nodes_cover_memory() is renamed to numa_meminfo_cover_memory() and
-  now operations on numa_meminfo and returns bool.
+* numa_cleanup_meminfo() clears the unused memblks before returning.
 
-* setup_node_bootmem() needs min/max range.  Compute the range on the
-  fly.  setup_node_bootmem() invocation is restructured to use outer
-  loop instead of hardcoding the double invocations.
+* Check and warn about invalid input parameters in numa_add_memblk().
 
-* find_node_by_addr() now operates on numa_meminfo.
+* Check the maximum number of memblk isn't exceeded in
+  numa_add_memblk().
 
-* setup_physnodes() builds physnodes[] from memblks.  This will go
-  away when emulation code is updated to use struct numa_meminfo.
-
-This patch also makes the following misc changes.
-
-* Clearing of nodes_add[] clearing is converted to memset().
-
-* numa_add_memblk() in amd_numa_init() is moved down a bit for
-  consistency.
+* numa_cleanup_meminfo() is now called before numa_emulation() so that
+  the emulation code also uses the cleaned up version.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -66,259 +55,175 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/numa_64.h |    1 -
- arch/x86/mm/amdtopology_64.c   |    6 +--
- arch/x86/mm/numa_64.c          |   82 +++++++++++++++++++++++----------------
- arch/x86/mm/srat_64.c          |   22 ++---------
- 4 files changed, 53 insertions(+), 58 deletions(-)
+ arch/x86/mm/numa_64.c |   99 ++++++++++++++++++++++++-------------------------
+ 1 files changed, 49 insertions(+), 50 deletions(-)
 
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 867d41b..da5c501 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -27,7 +27,6 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
- 
- extern nodemask_t cpu_nodes_parsed __initdata;
- extern nodemask_t mem_nodes_parsed __initdata;
--extern struct bootnode numa_nodes[MAX_NUMNODES] __initdata;
- 
- extern int __cpuinit numa_cpu_node(int cpu);
- extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
-diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
-index 8f7a5eb..0cb59e5 100644
---- a/arch/x86/mm/amdtopology_64.c
-+++ b/arch/x86/mm/amdtopology_64.c
-@@ -165,12 +165,8 @@ int __init amd_numa_init(void)
- 		pr_info("Node %d MemBase %016lx Limit %016lx\n",
- 			nodeid, base, limit);
- 
--		numa_nodes[nodeid].start = base;
--		numa_nodes[nodeid].end = limit;
--		numa_add_memblk(nodeid, base, limit);
--
- 		prevbase = base;
--
-+		numa_add_memblk(nodeid, base, limit);
- 		node_set(nodeid, mem_nodes_parsed);
- 		node_set(nodeid, cpu_nodes_parsed);
- 	}
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 681bc0d..c490448 100644
+index 4fd3368..20aa1d3 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -46,8 +46,6 @@ static unsigned long __initdata nodemap_size;
- 
- static struct numa_meminfo numa_meminfo __initdata;
- 
--struct bootnode numa_nodes[MAX_NUMNODES] __initdata;
--
- /*
-  * Given a shift value, try to populate memnodemap[]
-  * Returns :
-@@ -349,17 +347,17 @@ static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
-  * Sanity check to catch more bad NUMA configurations (they are amazingly
-  * common).  Make sure the nodes cover all memory.
-  */
--static int __init nodes_cover_memory(const struct bootnode *nodes)
-+static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- {
- 	unsigned long numaram, e820ram;
- 	int i;
- 
- 	numaram = 0;
--	for_each_node_mask(i, mem_nodes_parsed) {
--		unsigned long s = nodes[i].start >> PAGE_SHIFT;
--		unsigned long e = nodes[i].end >> PAGE_SHIFT;
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		unsigned long s = mi->blk[i].start >> PAGE_SHIFT;
-+		unsigned long e = mi->blk[i].end >> PAGE_SHIFT;
- 		numaram += e - s;
--		numaram -= __absent_pages_in_range(i, s, e);
-+		numaram -= __absent_pages_in_range(mi->blk[i].nid, s, e);
- 		if ((long)numaram < 0)
- 			numaram = 0;
- 	}
-@@ -371,14 +369,14 @@ static int __init nodes_cover_memory(const struct bootnode *nodes)
- 		printk(KERN_ERR "NUMA: nodes only cover %luMB of your %luMB e820 RAM. Not used.\n",
- 		       (numaram << PAGE_SHIFT) >> 20,
- 		       (e820ram << PAGE_SHIFT) >> 20);
--		return 0;
-+		return false;
- 	}
--	return 1;
-+	return true;
+@@ -189,37 +189,23 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
+ 	return NULL;
  }
  
- static int __init numa_register_memblks(struct numa_meminfo *mi)
+-static __init int conflicting_memblks(unsigned long start, unsigned long end)
++int __init numa_add_memblk(int nid, u64 start, u64 end)
  {
+ 	struct numa_meminfo *mi = &numa_meminfo;
 -	int i;
-+	int i, j, nid;
  
- 	/* Account for nodes with cpus and no memory */
- 	nodes_or(node_possible_map, mem_nodes_parsed, cpu_nodes_parsed);
-@@ -398,23 +396,34 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+-	for (i = 0; i < mi->nr_blks; i++) {
+-		struct numa_memblk *blk = &mi->blk[i];
++	/* ignore zero length blks */
++	if (start == end)
++		return 0;
  
- 	/* for out of order entries */
- 	sort_node_map();
--	if (!nodes_cover_memory(numa_nodes))
-+	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
- 	init_memory_mapping_high();
- 
--	/* Finally register nodes. */
--	for_each_node_mask(i, node_possible_map)
--		setup_node_bootmem(i, numa_nodes[i].start, numa_nodes[i].end);
+-		if (blk->start == blk->end)
+-			continue;
+-		if (blk->end > start && blk->start < end)
+-			return blk->nid;
+-		if (blk->end == end && blk->start == start)
+-			return blk->nid;
++	/* whine about and ignore invalid blks */
++	if (start > end || nid < 0 || nid >= MAX_NUMNODES) {
++		pr_warning("NUMA: Warning: invalid memblk node %d (%Lx-%Lx)\n",
++			   nid, start, end);
++		return 0;
+ 	}
+-	return -1;
+-}
 -
- 	/*
--	 * Try again in case setup_node_bootmem missed one due to missing
--	 * bootmem.
-+	 * Finally register nodes.  Do it twice in case setup_node_bootmem
-+	 * missed one due to missing bootmem.
- 	 */
--	for_each_node_mask(i, node_possible_map)
--		if (!node_online(i))
--			setup_node_bootmem(i, numa_nodes[i].start,
--					   numa_nodes[i].end);
-+	for (i = 0; i < 2; i++) {
-+		for_each_node_mask(nid, node_possible_map) {
-+			u64 start = (u64)max_pfn << PAGE_SHIFT;
-+			u64 end = 0;
+-int __init numa_add_memblk(int nid, u64 start, u64 end)
+-{
+-	struct numa_meminfo *mi = &numa_meminfo;
+-	int i;
+ 
+-	i = conflicting_memblks(start, end);
+-	if (i == nid) {
+-		printk(KERN_WARNING "NUMA: Warning: node %d (%Lx-%Lx) overlaps with itself (%Lx-%Lx)\n",
+-		       nid, start, end, numa_nodes[i].start, numa_nodes[i].end);
+-	} else if (i >= 0) {
+-		printk(KERN_ERR "NUMA: node %d (%Lx-%Lx) overlaps with node %d (%Lx-%Lx)\n",
+-		       nid, start, end, i,
+-		       numa_nodes[i].start, numa_nodes[i].end);
++	if (mi->nr_blks >= NR_NODE_MEMBLKS) {
++		pr_err("NUMA: too many memblk ranges\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -237,22 +223,6 @@ static void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
+ 		(mi->nr_blks - idx) * sizeof(mi->blk[0]));
+ }
+ 
+-static __init void cutoff_node(int i, unsigned long start, unsigned long end)
+-{
+-	struct bootnode *nd = &numa_nodes[i];
+-
+-	if (nd->start < start) {
+-		nd->start = start;
+-		if (nd->end < nd->start)
+-			nd->start = nd->end;
+-	}
+-	if (nd->end > end) {
+-		nd->end = end;
+-		if (nd->start > nd->end)
+-			nd->start = nd->end;
+-	}
+-}
+-
+ /* Initialize bootmem allocator for a node */
+ void __init
+ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
+@@ -301,24 +271,53 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
+ 
+ static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
+ {
++	const u64 low = 0;
++	const u64 high = (u64)max_pfn << PAGE_SHIFT;
+ 	int i, j, k;
+ 
+ 	for (i = 0; i < mi->nr_blks; i++) {
+ 		struct numa_memblk *bi = &mi->blk[i];
+ 
++		/* make sure all blocks are inside the limits */
++		bi->start = max(bi->start, low);
++		bi->end = min(bi->end, high);
 +
-+			if (node_online(nid))
-+				continue;
++		/* and there's no empty block */
++		if (bi->start == bi->end) {
++			numa_remove_memblk_from(i--, mi);
++			continue;
++		}
 +
-+			for (j = 0; j < mi->nr_blks; j++) {
-+				if (nid != mi->blk[j].nid)
-+					continue;
-+				start = min(mi->blk[j].start, start);
-+				end = max(mi->blk[j].end, end);
+ 		for (j = i + 1; j < mi->nr_blks; j++) {
+ 			struct numa_memblk *bj = &mi->blk[j];
+ 			unsigned long start, end;
+ 
+ 			/*
++			 * See whether there are overlapping blocks.  Whine
++			 * about but allow overlaps of the same nid.  They
++			 * will be merged below.
++			 */
++			if (bi->end > bj->start && bi->start < bj->end) {
++				if (bi->nid != bj->nid) {
++					pr_err("NUMA: node %d (%Lx-%Lx) overlaps with node %d (%Lx-%Lx)\n",
++					       bi->nid, bi->start, bi->end,
++					       bj->nid, bj->start, bj->end);
++					return -EINVAL;
++				}
++				pr_warning("NUMA: Warning: node %d (%Lx-%Lx) overlaps with itself (%Lx-%Lx)\n",
++					   bi->nid, bi->start, bi->end,
++					   bj->start, bj->end);
 +			}
 +
-+			if (start < end)
-+				setup_node_bootmem(nid, start, end);
-+		}
++			/*
+ 			 * Join together blocks on the same node, holes
+ 			 * between which don't overlap with memory on other
+ 			 * nodes.
+ 			 */
+ 			if (bi->nid != bj->nid)
+ 				continue;
+-			start = min(bi->start, bj->start);
+-			end = max(bi->end, bj->end);
++			start = max(min(bi->start, bj->start), low);
++			end = min(max(bi->end, bj->end), high);
+ 			for (k = 0; k < mi->nr_blks; k++) {
+ 				struct numa_memblk *bk = &mi->blk[k];
+ 
+@@ -338,6 +337,11 @@ static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
+ 		}
+ 	}
+ 
++	for (i = mi->nr_blks; i < ARRAY_SIZE(mi->blk); i++) {
++		mi->blk[i].start = mi->blk[i].end = 0;
++		mi->blk[i].nid = NUMA_NO_NODE;
 +	}
- 
- 	return 0;
- }
-@@ -432,33 +441,41 @@ void __init numa_emu_cmdline(char *str)
- 
- int __init find_node_by_addr(unsigned long addr)
- {
--	int ret = NUMA_NO_NODE;
-+	const struct numa_meminfo *mi = &numa_meminfo;
- 	int i;
- 
--	for_each_node_mask(i, mem_nodes_parsed) {
-+	for (i = 0; i < mi->nr_blks; i++) {
- 		/*
- 		 * Find the real node that this emulated node appears on.  For
- 		 * the sake of simplicity, we only use a real node's starting
- 		 * address to determine which emulated node it appears on.
- 		 */
--		if (addr >= numa_nodes[i].start && addr < numa_nodes[i].end) {
--			ret = i;
--			break;
--		}
-+		if (addr >= mi->blk[i].start && addr < mi->blk[i].end)
-+			return mi->blk[i].nid;
- 	}
--	return ret;
-+	return NUMA_NO_NODE;
- }
- 
- static int __init setup_physnodes(unsigned long start, unsigned long end)
- {
-+	const struct numa_meminfo *mi = &numa_meminfo;
- 	int ret = 0;
- 	int i;
- 
- 	memset(physnodes, 0, sizeof(physnodes));
- 
--	for_each_node_mask(i, mem_nodes_parsed) {
--		physnodes[i].start = numa_nodes[i].start;
--		physnodes[i].end = numa_nodes[i].end;
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		int nid = mi->blk[i].nid;
 +
-+		if (physnodes[nid].start == physnodes[nid].end) {
-+			physnodes[nid].start = mi->blk[i].start;
-+			physnodes[nid].end = mi->blk[i].end;
-+		} else {
-+			physnodes[nid].start = min(physnodes[nid].start,
-+						   mi->blk[i].start);
-+			physnodes[nid].end = max(physnodes[nid].end,
-+						 mi->blk[i].end);
-+		}
- 	}
- 
- 	/*
-@@ -809,8 +826,6 @@ static int dummy_numa_init(void)
- 	node_set(0, cpu_nodes_parsed);
- 	node_set(0, mem_nodes_parsed);
- 	numa_add_memblk(0, 0, (u64)max_pfn << PAGE_SHIFT);
--	numa_nodes[0].start = 0;
--	numa_nodes[0].end = (u64)max_pfn << PAGE_SHIFT;
- 
  	return 0;
  }
-@@ -841,7 +856,6 @@ void __init initmem_init(void)
+ 
+@@ -824,10 +828,8 @@ void __init initmem_init(void)
+ 		if (numa_init[i]() < 0)
+ 			continue;
+ 
+-		/* clean up the node list */
+-		for (j = 0; j < MAX_NUMNODES; j++)
+-			cutoff_node(j, 0, max_pfn << PAGE_SHIFT);
+-
++		if (numa_cleanup_meminfo(&numa_meminfo) < 0)
++			continue;
+ #ifdef CONFIG_NUMA_EMU
+ 		setup_physnodes(0, max_pfn << PAGE_SHIFT);
+ 		if (cmdline && !numa_emulation(0, max_pfn, i == 0, i == 1))
+@@ -836,9 +838,6 @@ void __init initmem_init(void)
  		nodes_clear(node_possible_map);
  		nodes_clear(node_online_map);
- 		memset(&numa_meminfo, 0, sizeof(numa_meminfo));
--		memset(numa_nodes, 0, sizeof(numa_nodes));
- 		remove_all_active_ranges();
- 
- 		if (numa_init[i]() < 0)
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 51d0733..e8b3b3c 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -37,13 +37,9 @@ static __init int setup_node(int pxm)
- 
- static __init void bad_srat(void)
- {
--	int i;
- 	printk(KERN_ERR "SRAT: SRAT not used.\n");
- 	acpi_numa = -1;
--	for (i = 0; i < MAX_NUMNODES; i++) {
--		numa_nodes[i].start = numa_nodes[i].end = 0;
--		nodes_add[i].start = nodes_add[i].end = 0;
--	}
-+	memset(nodes_add, 0, sizeof(nodes_add));
- }
- 
- static __init inline int srat_disabled(void)
-@@ -210,7 +206,6 @@ update_nodes_add(int node, unsigned long start, unsigned long end)
- void __init
- acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- {
--	struct bootnode *nd;
- 	unsigned long start, end;
- 	int node, pxm;
- 
-@@ -243,18 +238,9 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 	printk(KERN_INFO "SRAT: Node %u PXM %u %lx-%lx\n", node, pxm,
- 	       start, end);
- 
--	if (!(ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)) {
--		nd = &numa_nodes[node];
--		if (!node_test_and_set(node, mem_nodes_parsed)) {
--			nd->start = start;
--			nd->end = end;
--		} else {
--			if (start < nd->start)
--				nd->start = start;
--			if (nd->end < end)
--				nd->end = end;
--		}
--	} else
-+	if (!(ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE))
-+		node_set(node, mem_nodes_parsed);
-+	else
- 		update_nodes_add(node, start, end);
- }
+ #endif
+-		if (numa_cleanup_meminfo(&numa_meminfo) < 0)
+-			continue;
+-
+ 		if (numa_register_memblks(&numa_meminfo) < 0)
+ 			continue;
  
 -- 
 1.7.1
