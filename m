@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758123Ab1BPBth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:49:37 -0500
-Received: from kroah.org ([198.145.64.141]:48778 "EHLO coco.kroah.org"
+	id S1758335Ab1BPCKL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:10:11 -0500
+Received: from kroah.org ([198.145.64.141]:48808 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932462Ab1BPBt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:29 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:56 2011
-Message-Id: <20110216014656.598942610@clark.kroah.org>
+	id S1756821Ab1BPBti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:38 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:57 2011
+Message-Id: <20110216014657.215719247@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:49 -0800
+Date: Tue, 15 Feb 2011 17:44:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael H Williamson <michael.h.williamson@gmail.com>
-Subject: [023/115] USB: ftdi_sio: Add VID=0x0647, PID=0x0100 for Acton Research spectrograph
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        maximilian attems <max@stro.at>
+Subject: [029/115] [S390] hvc_iucv: allocate memory buffers for IUCV in zone DMA
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Williamson <michael.h.williamson@gmail.com>
+From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
 
-commit 28fe2eb0162a1d23370dd99ff7d0e35632b1ee91 upstream.
+commit 91a970d9889c7d6f451ee91ed361d0f0119d3778 upstream.
 
-Add the USB Vendor ID and Product ID for a Acton Research Corp.
-spectrograph device with a FTDI chip for serial I/O.
+The device driver must allocate memory for IUCV buffers with GFP_DMA,
+because IUCV cannot address memory above 2GB (31bit addresses only).
 
-Signed-off-by: Michael H Williamson <michael.h.williamson@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Because the IUCV ignores the higher bits of the address, sending and
+receiving IUCV data with this driver might cause memory corruptions.
+
+Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: maximilian attems <max@stro.at>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/char/hvc_iucv.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -625,6 +625,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_OCEANIC_PID) },
- 	{ USB_DEVICE(TTI_VID, TTI_QL355P_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
-+	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
- 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -518,6 +518,12 @@
- #define RATOC_PRODUCT_ID_USB60F	0xb020
+--- a/drivers/char/hvc_iucv.c
++++ b/drivers/char/hvc_iucv.c
+@@ -139,6 +139,8 @@ struct hvc_iucv_private *hvc_iucv_get_pr
+  *
+  * This function allocates a new struct iucv_tty_buffer element and, optionally,
+  * allocates an internal data buffer with the specified size @size.
++ * The internal data buffer is always allocated with GFP_DMA which is
++ * required for receiving and sending data with IUCV.
+  * Note: The total message size arises from the internal buffer size and the
+  *	 members of the iucv_tty_msg structure.
+  * The function returns NULL if memory allocation has failed.
+@@ -154,7 +156,7 @@ static struct iucv_tty_buffer *alloc_tty
  
- /*
-+ * Acton Research Corp.
-+ */
-+#define ACTON_VID		0x0647	/* Vendor ID */
-+#define ACTON_SPECTRAPRO_PID	0x0100
-+
-+/*
-  * Contec products (http://www.contec.com)
-  * Submitted by Daniel Sangorrin
-  */
+ 	if (size > 0) {
+ 		bufp->msg.length = MSG_SIZE(size);
+-		bufp->mbuf = kmalloc(bufp->msg.length, flags);
++		bufp->mbuf = kmalloc(bufp->msg.length, flags | GFP_DMA);
+ 		if (!bufp->mbuf) {
+ 			mempool_free(bufp, hvc_iucv_mempool);
+ 			return NULL;
+@@ -237,7 +239,7 @@ static int hvc_iucv_write(struct hvc_iuc
+ 	if (!rb->mbuf) { /* message not yet received ... */
+ 		/* allocate mem to store msg data; if no memory is available
+ 		 * then leave the buffer on the list and re-try later */
+-		rb->mbuf = kmalloc(rb->msg.length, GFP_ATOMIC);
++		rb->mbuf = kmalloc(rb->msg.length, GFP_ATOMIC | GFP_DMA);
+ 		if (!rb->mbuf)
+ 			return -ENOMEM;
+ 
 
 
