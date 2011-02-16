@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab1BPAZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:25:59 -0500
-Received: from kroah.org ([198.145.64.141]:49938 "EHLO coco.kroah.org"
+	id S932560Ab1BPA1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:27:00 -0500
+Received: from kroah.org ([198.145.64.141]:49983 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932483Ab1BPAZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:51 2011
-Message-Id: <20110216001451.473222737@clark.kroah.org>
+	id S1757782Ab1BPAZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:52 2011
+Message-Id: <20110216001452.100964924@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:21 -0800
+Date: Tue, 15 Feb 2011 16:15:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [264/272] x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm
+        Zhang Rui <rui.zhang@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [270/272] xhci: Do not run xhci_cleanup_msix with irq disabled
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,75 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 831d52bc153971b70e64eccfbed2b232394f22f8 upstream.
+commit 40a9fb17f32dbe54de3d636142a59288544deed7 upstream.
 
-Clearing the cpu in prev's mm_cpumask early will avoid the flush tlb
-IPI's while the cr3 is still pointing to the prev mm.  And this window
-can lead to the possibility of bogus TLB fills resulting in strange
-failures.  One such problematic scenario is mentioned below.
+when unloading xhci_hcd, I got:
+[  134.856813] xhci_hcd 0000:02:00.0: remove, state 4
+[  134.858140] usb usb3: USB disconnect, address 1
+[  134.874956] xhci_hcd 0000:02:00.0: Host controller not halted, aborting reset.
+[  134.876351] BUG: sleeping function called from invalid context at kernel/mutex.c:85
+[  134.877657] in_atomic(): 0, irqs_disabled(): 1, pid: 1451, name: modprobe
+[  134.878975] Pid: 1451, comm: modprobe Not tainted 2.6.37-rc5+ #162
+[  134.880298] Call Trace:
+[  134.881602]  [<ffffffff8104156a>] __might_sleep+0xeb/0xf0
+[  134.882921]  [<ffffffff814763dc>] mutex_lock+0x24/0x50
+[  134.884229]  [<ffffffff810a745c>] free_desc+0x2e/0x5f
+[  134.885538]  [<ffffffff810a74c8>] irq_free_descs+0x3b/0x71
+[  134.886853]  [<ffffffff8102584d>] free_irq_at+0x31/0x36
+[  134.888167]  [<ffffffff8102723f>] destroy_irq+0x69/0x71
+[  134.889486]  [<ffffffff8102747a>] native_teardown_msi_irq+0xe/0x10
+[  134.890820]  [<ffffffff8124c382>] default_teardown_msi_irqs+0x57/0x80
+[  134.892158]  [<ffffffff8124be46>] free_msi_irqs+0x8b/0xe9
+[  134.893504]  [<ffffffff8124cd46>] pci_disable_msix+0x35/0x39
+[  134.894844]  [<ffffffffa01b444a>] xhci_cleanup_msix+0x31/0x51 [xhci_hcd]
+[  134.896186]  [<ffffffffa01b4b3a>] xhci_stop+0x3a/0x80 [xhci_hcd]
+[  134.897521]  [<ffffffff81341dd4>] usb_remove_hcd+0xfd/0x14a
+[  134.898859]  [<ffffffff813500ae>] usb_hcd_pci_remove+0x5c/0xc6
+[  134.900193]  [<ffffffff8123c606>] pci_device_remove+0x3f/0x91
+[  134.901535]  [<ffffffff812e7ea4>] __device_release_driver+0x83/0xd9
+[  134.902899]  [<ffffffff812e8571>] driver_detach+0x86/0xad
+[  134.904222]  [<ffffffff812e7d56>] bus_remove_driver+0xb2/0xd8
+[  134.905540]  [<ffffffff812e8633>] driver_unregister+0x6c/0x74
+[  134.906839]  [<ffffffff8123c8e4>] pci_unregister_driver+0x44/0x89
+[  134.908121]  [<ffffffffa01b940e>] xhci_unregister_pci+0x15/0x17 [xhci_hcd]
+[  134.909396]  [<ffffffffa01bd7d2>] xhci_hcd_cleanup+0xe/0x10 [xhci_hcd]
+[  134.910652]  [<ffffffff8107fcd1>] sys_delete_module+0x1ca/0x23b
+[  134.911882]  [<ffffffff81123932>] ? path_put+0x22/0x26
+[  134.913104]  [<ffffffff8109a800>] ? audit_syscall_entry+0x2c/0x148
+[  134.914333]  [<ffffffff8100ac82>] system_call_fastpath+0x16/0x1b
+[  134.915658] xhci_hcd 0000:02:00.0: USB bus 3 deregistered
+[  134.916465] xhci_hcd 0000:02:00.0: PCI INT A disabled
 
- T1. CPU-1 is context switching from mm1 to mm2 context and got a NMI
-     etc between the point of clearing the cpu from the mm_cpumask(mm1)
-     and before reloading the cr3 with the new mm2.
+and the same issue when xhci_suspend is invoked.  (Note from Sarah: That's
+fixed by Andiry's patch before this, by synchronizing the irqs rather than
+freeing them on suspend.)
 
- T2. CPU-2 is tearing down a specific vma for mm1 and will proceed with
-     flushing the TLB for mm1.  It doesn't send the flush TLB to CPU-1
-     as it doesn't see that cpu listed in the mm_cpumask(mm1).
+Do not run xhci_cleanup_msix with irq disabled.
 
- T3. After the TLB flush is complete, CPU-2 goes ahead and frees the
-     page-table pages associated with the removed vma mapping.
+This patch should be queued for the 2.6.37 stable tree.
 
- T4. CPU-2 now allocates those freed page-table pages for something
-     else.
-
- T5. As the CR3 and TLB caches for mm1 is still active on CPU-1, CPU-1
-     can potentially speculate and walk through the page-table caches
-     and can insert new TLB entries.  As the page-table pages are
-     already freed and being used on CPU-2, this page walk can
-     potentially insert a bogus global TLB entry depending on the
-     (random) contents of the page that is being used on CPU-2.
-
- T6. This bogus TLB entry being global will be active across future CR3
-     changes and can result in weird memory corruption etc.
-
-To avoid this issue, for the prev mm that is handing over the cpu to
-another mm, clear the cpu from the mm_cpumask(prev) after the cr3 is
-changed.
-
-Marking it for -stable, though we haven't seen any reported failure that
-can be attributed to this.
-
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/mmu_context.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -36,8 +36,6 @@ static inline void switch_mm(struct mm_s
- 	unsigned cpu = smp_processor_id();
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -512,9 +512,10 @@ void xhci_stop(struct usb_hcd *hcd)
+ 	spin_lock_irq(&xhci->lock);
+ 	xhci_halt(xhci);
+ 	xhci_reset(xhci);
+-	xhci_cleanup_msix(xhci);
+ 	spin_unlock_irq(&xhci->lock);
  
- 	if (likely(prev != next)) {
--		/* stop flush ipis for the previous mm */
--		cpumask_clear_cpu(cpu, mm_cpumask(prev));
- #ifdef CONFIG_SMP
- 		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
- 		percpu_write(cpu_tlbstate.active_mm, next);
-@@ -47,6 +45,9 @@ static inline void switch_mm(struct mm_s
- 		/* Re-load page tables */
- 		load_cr3(next->pgd);
- 
-+		/* stop flush ipis for the previous mm */
-+		cpumask_clear_cpu(cpu, mm_cpumask(prev));
++	xhci_cleanup_msix(xhci);
 +
- 		/*
- 		 * load the LDT, if the LDT is different:
- 		 */
+ #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
+ 	/* Tell the event ring poll function not to reschedule */
+ 	xhci->zombie = 1;
+@@ -548,9 +549,10 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ 
+ 	spin_lock_irq(&xhci->lock);
+ 	xhci_halt(xhci);
+-	xhci_cleanup_msix(xhci);
+ 	spin_unlock_irq(&xhci->lock);
+ 
++	xhci_cleanup_msix(xhci);
++
+ 	xhci_dbg(xhci, "xhci_shutdown completed - status = %x\n",
+ 		    xhci_readl(xhci, &xhci->op_regs->status));
+ }
 
 
