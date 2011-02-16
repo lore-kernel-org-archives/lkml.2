@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab1BPASU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:18:20 -0500
-Received: from kroah.org ([198.145.64.141]:38621 "EHLO coco.kroah.org"
+	id S1756695Ab1BPASi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:18:38 -0500
+Received: from kroah.org ([198.145.64.141]:38675 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab1BPASR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:17 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:26 2011
-Message-Id: <20110216001426.533746117@clark.kroah.org>
+	id S1756672Ab1BPASf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:35 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:27 2011
+Message-Id: <20110216001427.541190183@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:12 -0800
+Date: Tue, 15 Feb 2011 16:11:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Craig Shelley <craig@microtron.org.uk>
-Subject: [015/272] USB: CP210x Removed incorrect device ID
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Subject: [025/272] USB: EHCI: fix DMA deallocation bug
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Craig Shelley <craig@microtron.org.uk>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 9926c0df7b31b2128eebe92e0e2b052f380ea464 upstream.
+commit f75593ceaa08e6d27aec1a5de31cded19e850dd1 upstream.
 
-Device ID removed 0x10C4/0x8149 for West Mountain Radio Computerized
-Battery Analyzer.  This device is actually based on a SiLabs C8051Fxxx,
-see http://www.etheus.net/SiUSBXp_Linux_Driver for further info.
+This patch (as1440) fixes a bug in ehci-hcd.  ehci->periodic_size is
+used to compute the size in a dma_alloc_coherent() call, but then it
+gets changed later on.  As a result, the corresponding call to
+dma_free_coherent() passes a different size from the original
+allocation.  Fix the problem by adjusting ehci->periodic_size before
+carrying out any of the memory allocations.
 
-Signed-off-by: Craig Shelley <craig@microtron.org.uk>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+CC: David Brownell <david-b@pacbell.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/host/ehci-hcd.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -86,7 +86,6 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x8115) }, /* Arygon NFC/Mifare Reader */
- 	{ USB_DEVICE(0x10C4, 0x813D) }, /* Burnside Telecom Deskmobile */
- 	{ USB_DEVICE(0x10C4, 0x813F) }, /* Tams Master Easy Control */
--	{ USB_DEVICE(0x10C4, 0x8149) }, /* West Mountain Radio Computerized Battery Analyzer */
- 	{ USB_DEVICE(0x10C4, 0x814A) }, /* West Mountain Radio RIGblaster P&P */
- 	{ USB_DEVICE(0x10C4, 0x814B) }, /* West Mountain Radio RIGtalk */
- 	{ USB_DEVICE(0x10C4, 0x8156) }, /* B&G H3000 link cable */
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -572,6 +572,8 @@ static int ehci_init(struct usb_hcd *hcd
+ 	ehci->iaa_watchdog.function = ehci_iaa_watchdog;
+ 	ehci->iaa_watchdog.data = (unsigned long) ehci;
+ 
++	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
++
+ 	/*
+ 	 * hw default: 1K periodic list heads, one per frame.
+ 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
+@@ -579,11 +581,20 @@ static int ehci_init(struct usb_hcd *hcd
+ 	ehci->periodic_size = DEFAULT_I_TDPS;
+ 	INIT_LIST_HEAD(&ehci->cached_itd_list);
+ 	INIT_LIST_HEAD(&ehci->cached_sitd_list);
++
++	if (HCC_PGM_FRAMELISTLEN(hcc_params)) {
++		/* periodic schedule size can be smaller than default */
++		switch (EHCI_TUNE_FLS) {
++		case 0: ehci->periodic_size = 1024; break;
++		case 1: ehci->periodic_size = 512; break;
++		case 2: ehci->periodic_size = 256; break;
++		default:	BUG();
++		}
++	}
+ 	if ((retval = ehci_mem_init(ehci, GFP_KERNEL)) < 0)
+ 		return retval;
+ 
+ 	/* controllers may cache some of the periodic schedule ... */
+-	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+ 	if (HCC_ISOC_CACHE(hcc_params))		// full frame cache
+ 		ehci->i_thresh = 2 + 8;
+ 	else					// N microframes cached
+@@ -637,12 +648,6 @@ static int ehci_init(struct usb_hcd *hcd
+ 		/* periodic schedule size can be smaller than default */
+ 		temp &= ~(3 << 2);
+ 		temp |= (EHCI_TUNE_FLS << 2);
+-		switch (EHCI_TUNE_FLS) {
+-		case 0: ehci->periodic_size = 1024; break;
+-		case 1: ehci->periodic_size = 512; break;
+-		case 2: ehci->periodic_size = 256; break;
+-		default:	BUG();
+-		}
+ 	}
+ 	if (HCC_LPM(hcc_params)) {
+ 		/* support link power management EHCI 1.1 addendum */
 
 
