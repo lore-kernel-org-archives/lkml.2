@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab1BPCIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:08:01 -0500
-Received: from kroah.org ([198.145.64.141]:48853 "EHLO coco.kroah.org"
+	id S1758251Ab1BPCIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:08:15 -0500
+Received: from kroah.org ([198.145.64.141]:48849 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758114Ab1BPBtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:52 -0500
+	id S1758199Ab1BPBtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:51 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:58 2011
-Message-Id: <20110216014658.123013800@clark.kroah.org>
+Message-Id: <20110216014658.017789042@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:04 -0800
+Date: Tue, 15 Feb 2011 17:45:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [038/115] [media] radio-aimslab.c: Fix gcc 4.5+ bug
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [037/115] [SCSI] mpt2sas: Kernel Panic during Large Topology discovery
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,98 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Kashyap, Desai <kashyap.desai@lsi.com>
 
-commit e3c92215198cb6aa00ad38db2780faa6b72e0a3f upstream.
+commit 4224489f45b503f0a1f1cf310f76dc108f45689a upstream.
 
-gcc 4.5+ doesn't properly evaluate some inlined expressions.
-A previous patch were proposed by Andrew Morton using noinline.
-However, the entire inlined function is bogus, so let's just
-remove it and be happy.
+There was a configuration page timing out during the initial port
+enable at driver load time. The port enable would fail, and this would
+result in the driver unloading itself, meanwhile the driver was accessing
+freed memory in another context resulting in the panic.  The fix is to
+prevent access to freed memory once the driver had issued the diag reset
+which woke up the sleeping port enable process.  The routine
+_base_reset_handler was reorganized so the last sleeping process woken up was
+the port_enable.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/radio/radio-aimslab.c |   23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/media/radio/radio-aimslab.c
-+++ b/drivers/media/radio/radio-aimslab.c
-@@ -31,7 +31,6 @@
- #include <linux/module.h>	/* Modules 			*/
- #include <linux/init.h>		/* Initdata			*/
- #include <linux/ioport.h>	/* request_region		*/
--#include <linux/delay.h>	/* udelay			*/
- #include <linux/videodev2.h>	/* kernel radio structs		*/
- #include <linux/version.h>	/* for KERNEL_VERSION MACRO	*/
- #include <linux/io.h>		/* outb, outb_p			*/
-@@ -71,27 +70,17 @@ static struct rtrack rtrack_card;
- 
- /* local things */
- 
--static void sleep_delay(long n)
--{
--	/* Sleep nicely for 'n' uS */
--	int d = n / msecs_to_jiffies(1000);
--	if (!d)
--		udelay(n);
--	else
--		msleep(jiffies_to_msecs(d));
--}
--
- static void rt_decvol(struct rtrack *rt)
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -3595,6 +3595,8 @@ mpt2sas_base_detach(struct MPT2SAS_ADAPT
+ static void
+ _base_reset_handler(struct MPT2SAS_ADAPTER *ioc, int reset_phase)
  {
- 	outb(0x58, rt->io);		/* volume down + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
++	mpt2sas_scsih_reset_handler(ioc, reset_phase);
++	mpt2sas_ctl_reset_handler(ioc, reset_phase);
+ 	switch (reset_phase) {
+ 	case MPT2_IOC_PRE_RESET:
+ 		dtmprintk(ioc, printk(MPT2SAS_DEBUG_FMT "%s: "
+@@ -3625,8 +3627,6 @@ _base_reset_handler(struct MPT2SAS_ADAPT
+ 		    "MPT2_IOC_DONE_RESET\n", ioc->name, __func__));
+ 		break;
+ 	}
+-	mpt2sas_scsih_reset_handler(ioc, reset_phase);
+-	mpt2sas_ctl_reset_handler(ioc, reset_phase);
  }
  
- static void rt_incvol(struct rtrack *rt)
+ /**
+@@ -3680,6 +3680,7 @@ mpt2sas_base_hard_reset_handler(struct M
  {
- 	outb(0x98, rt->io);		/* volume up + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
- }
+ 	int r;
+ 	unsigned long flags;
++	u8 pe_complete = ioc->wait_for_port_enable_to_complete;
  
-@@ -120,7 +109,7 @@ static int rt_setvol(struct rtrack *rt,
- 
- 	if (vol == 0) {			/* volume = 0 means mute the card */
- 		outb(0x48, rt->io);	/* volume down but still "on"	*/
--		sleep_delay(2000000);	/* make sure it's totally down	*/
-+		msleep(2000);	/* make sure it's totally down	*/
- 		outb(0xd0, rt->io);	/* volume steady, off		*/
- 		rt->curvol = 0;		/* track the volume state!	*/
- 		mutex_unlock(&rt->lock);
-@@ -155,7 +144,7 @@ static void send_0_byte(struct rtrack *r
- 		outb_p(128+64+16+8+  1, rt->io);  /* on + wr-enable + data low */
- 		outb_p(128+64+16+8+2+1, rt->io);  /* clock */
- 	}
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static void send_1_byte(struct rtrack *rt)
-@@ -169,7 +158,7 @@ static void send_1_byte(struct rtrack *r
- 		outb_p(128+64+16+8+4+2+1, rt->io); /* clock */
- 	}
- 
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static int rt_setfreq(struct rtrack *rt, unsigned long freq)
-@@ -423,7 +412,7 @@ static int __init rtrack_init(void)
- 
- 	/* this ensures that the volume is all the way down  */
- 	outb(0x48, rt->io);		/* volume down but still "on"	*/
--	sleep_delay(2000000);	/* make sure it's totally down	*/
-+	msleep(2000);	/* make sure it's totally down	*/
- 	outb(0xc0, rt->io);		/* steady volume, mute card	*/
- 
- 	return 0;
+ 	dtmprintk(ioc, printk(MPT2SAS_DEBUG_FMT "%s: enter\n", ioc->name,
+ 	    __func__));
+@@ -3701,6 +3702,14 @@ mpt2sas_base_hard_reset_handler(struct M
+ 	if (r)
+ 		goto out;
+ 	_base_reset_handler(ioc, MPT2_IOC_AFTER_RESET);
++
++	/* If this hard reset is called while port enable is active, then
++	 * there is no reason to call make_ioc_operational
++	 */
++	if (pe_complete) {
++		r = -EFAULT;
++		goto out;
++	}
+ 	r = _base_make_ioc_operational(ioc, sleep_flag);
+ 	if (!r)
+ 		_base_reset_handler(ioc, MPT2_IOC_DONE_RESET);
 
 
