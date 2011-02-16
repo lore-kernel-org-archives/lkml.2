@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932742Ab1BPBz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:55:27 -0500
-Received: from kroah.org ([198.145.64.141]:49330 "EHLO coco.kroah.org"
+	id S932613Ab1BPBzX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:55:23 -0500
+Received: from kroah.org ([198.145.64.141]:49337 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758598Ab1BPBvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:50 -0500
+	id S1758560Ab1BPBvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:51:52 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:04 2011
-Message-Id: <20110216014704.266921574@clark.kroah.org>
+Message-Id: <20110216014704.355002624@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:46:06 -0800
+Date: Tue, 15 Feb 2011 17:46:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Young <hidave.darkstar@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>
-Subject: [100/115] sched: Remove unused PF_ALIGNWARN flag
+Subject: [101/115] sched: Add a PF flag for ksoftirqd identification
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Commit: 637bbdc5b83615ef9f45f50399d1c7f27473c713 upstream
+Commit: 6cdd5199daf0cb7b0fcc8dca941af08492612887 upstream
 
-PF_ALIGNWARN is not implemented and it is for 486 as the
-comment.
+To account softirq time cleanly in scheduler, we need to identify whether
+softirq is invoked in ksoftirqd context or softirq at hardirq tail context.
+Add PF_KSOFTIRQD for that purpose.
 
-It is not likely someone will implement this flag feature.
-So here remove this flag and leave the valuable 0x00000001 for
-future use.
+As all PF flag bits are currently taken, create space by moving one of the
+infrequently used bits (PF_THREAD_BOUND) down in task_struct to be along
+with some other state fields.
 
-Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <20100913121903.GB22238@darkstar>
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1286237003-12406-4-git-send-email-venki@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/sched.h |    2 --
- 1 file changed, 2 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/softirq.c      |    1 +
+ 2 files changed, 2 insertions(+)
 
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1728,8 +1728,6 @@ extern void thread_group_times(struct ta
+@@ -1728,6 +1728,7 @@ extern void thread_group_times(struct ta
  /*
   * Per process flags
   */
--#define PF_ALIGNWARN	0x00000001	/* Print alignment warning msgs */
--					/* Not implemented yet, only for 486*/
++#define PF_KSOFTIRQD	0x00000001	/* I am ksoftirqd */
  #define PF_STARTING	0x00000002	/* being created */
  #define PF_EXITING	0x00000004	/* getting shut down */
  #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -718,6 +718,7 @@ static int ksoftirqd(void * __bind_cpu)
+ {
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
++	current->flags |= PF_KSOFTIRQD;
+ 	while (!kthread_should_stop()) {
+ 		preempt_disable();
+ 		if (!local_softirq_pending()) {
 
 
