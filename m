@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369Ab1BPBA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:00:27 -0500
-Received: from kroah.org ([198.145.64.141]:46064 "EHLO coco.kroah.org"
+	id S933305Ab1BPAu5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:50:57 -0500
+Received: from kroah.org ([198.145.64.141]:46014 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933312Ab1BPAvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:01 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:12 2011
-Message-Id: <20110216002112.442086481@clark.kroah.org>
+	id S933279Ab1BPAur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:11 2011
+Message-Id: <20110216002111.736669183@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:42 -0800
+Date: Tue, 15 Feb 2011 16:21:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        openipmi-developer@lists.sourceforge.net,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Corey Minyard <cminyard@mvista.com>
-Subject: [patch 134/176] char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
+        Anton Blanchard <anton@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [patch 127/176] powerpc: Fix hcall tracepoint recursion
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,58 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <minyard@acm.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit d2478521afc20227658a10a8c5c2bf1a2aa615b3 upstream.
+commit 57cdfdf829a850a317425ed93c6a576c9ee6329c upstream.
 
-This patch fixes an OOPS triggered when calling modprobe ipmi_si a
-second time after the first modprobe returned without finding any ipmi
-devices.  This can happen if you reload the module after having the
-first module load fail.  The driver was not deregistering from PNP in
-that case.
+Spinlocks on shared processor partitions use H_YIELD to notify the
+hypervisor we are waiting on another virtual CPU. Unfortunately this means
+the hcall tracepoints can recurse.
 
-Peter Huewe originally reported this patch and supplied a fix, I have a
-different patch based on Linus' suggestion that cleans things up a bit
-more.
+The patch below adds a percpu depth and checks it on both the entry and
+exit hcall tracepoints.
 
-Cc: openipmi-developer@lists.sourceforge.net
-Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ arch/powerpc/platforms/pseries/lpar.c |   37 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -320,6 +320,7 @@ static int unload_when_empty = 1;
- static int add_smi(struct smi_info *smi);
- static int try_smi_init(struct smi_info *smi);
- static void cleanup_one_si(struct smi_info *to_clean);
-+static void cleanup_ipmi_si(void);
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -680,6 +680,13 @@ EXPORT_SYMBOL(arch_free_page);
+ /* NB: reg/unreg are called while guarded with the tracepoints_mutex */
+ extern long hcall_tracepoint_refcount;
  
- static ATOMIC_NOTIFIER_HEAD(xaction_notifier_list);
- static int register_xaction_notifier(struct notifier_block *nb)
-@@ -3436,16 +3437,7 @@ static __devinit int init_ipmi_si(void)
- 	mutex_lock(&smi_infos_lock);
- 	if (unload_when_empty && list_empty(&smi_infos)) {
- 		mutex_unlock(&smi_infos_lock);
--#ifdef CONFIG_PCI
--		if (pci_registered)
--			pci_unregister_driver(&ipmi_pci_driver);
--#endif
--
--#ifdef CONFIG_PPC_OF
--		if (of_registered)
--			of_unregister_platform_driver(&ipmi_of_platform_driver);
--#endif
--		driver_unregister(&ipmi_driver.driver);
-+		cleanup_ipmi_si();
- 		printk(KERN_WARNING PFX
- 		       "Unable to find any System Interface(s)\n");
- 		return -ENODEV;
++/*
++ * Since the tracing code might execute hcalls we need to guard against
++ * recursion. One example of this are spinlocks calling H_YIELD on
++ * shared processor partitions.
++ */
++static DEFINE_PER_CPU(unsigned int, hcall_trace_depth);
++
+ void hcall_tracepoint_regfunc(void)
+ {
+ 	hcall_tracepoint_refcount++;
+@@ -692,12 +699,42 @@ void hcall_tracepoint_unregfunc(void)
+ 
+ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
+ {
++	unsigned long flags;
++	unsigned int *depth;
++
++	local_irq_save(flags);
++
++	depth = &__get_cpu_var(hcall_trace_depth);
++
++	if (*depth)
++		goto out;
++
++	(*depth)++;
+ 	trace_hcall_entry(opcode, args);
++	(*depth)--;
++
++out:
++	local_irq_restore(flags);
+ }
+ 
+ void __trace_hcall_exit(long opcode, unsigned long retval,
+ 			unsigned long *retbuf)
+ {
++	unsigned long flags;
++	unsigned int *depth;
++
++	local_irq_save(flags);
++
++	depth = &__get_cpu_var(hcall_trace_depth);
++
++	if (*depth)
++		goto out;
++
++	(*depth)++;
+ 	trace_hcall_exit(opcode, retval, retbuf);
++	(*depth)--;
++
++out:
++	local_irq_restore(flags);
+ }
+ #endif
 
 
