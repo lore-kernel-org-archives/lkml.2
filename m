@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab1BPCTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 21:19:01 -0500
-Received: from kroah.org ([198.145.64.141]:38592 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756488Ab1BPASI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:08 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:26 2011
-Message-Id: <20110216001426.065881969@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:07 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [010/272] hwmon: (via686a) Initialize fan_div values
-In-Reply-To: <20110216001559.GA31413@kroah.com>
+	id S1756671Ab1BPCTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:19:16 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59324 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756596Ab1BPCTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 21:19:09 -0500
+Date: Tue, 15 Feb 2011 18:19:26 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Cc: dilinger@queued.net, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: platform data and mfd design question
+Message-ID: <20110216021925.GC3021@opensource.wolfsonmicro.com>
+References: <4D5AF554.2030208@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5AF554.2030208@codeaurora.org>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Tue, Feb 15, 2011 at 01:51:16PM -0800, Abhijeet Dharmapurikar wrote:
 
-------------------
+> This code can be found here (sorry for the long url - it is convinient to
+> click on it),
 
-From: Jean Delvare <khali@linux-fr.org>
+I can't actually render this URL on a single line without fiddling with
+the font size for my terminal...  When pasting gitweb URLs you almost
+always want to edit out the head ID and just rely on the branch.
 
-commit f790674d3f87df6390828ac21a7d1530f71b59c8 upstream.
+> This gives one the convenience of changing the mfd_cells and their
+> platform data in the board file itself. There are boards where the
+> platform data of some cells changes and in some cases we dont even
+> add a particular cell.
 
-Functions set_fan_min() and set_fan_div() assume that the fan_div
-values have already been read from the register. The driver currently
-doesn't initialize them at load time, they are only set when function
-via686a_update_device() is called. This means that set_fan_min() and
-set_fan_div() misbehave if, for example, "sensors -s" is called
-before any monitoring application (e.g. "sensors") is has been run.
+My main question is why you're trying to do this.  Even if some features
+aren't used on a given board one would strongly expect that the silicon
+will be the same anyway - what's the goal in changing the devices?
 
-Fix the problem by always initializing the fan_div values at device
-bind time.
+> This design makes the core driver very light weight. All it does is
+> calls mfd_add_devices on the cell array passed from its platform
+> data.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/hwmon/via686a.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
---- a/drivers/hwmon/via686a.c
-+++ b/drivers/hwmon/via686a.c
-@@ -687,6 +687,13 @@ static int __devexit via686a_remove(stru
- 	return 0;
- }
- 
-+static void via686a_update_fan_div(struct via686a_data *data)
-+{
-+	int reg = via686a_read_value(data, VIA686A_REG_FANDIV);
-+	data->fan_div[0] = (reg >> 4) & 0x03;
-+	data->fan_div[1] = reg >> 6;
-+}
-+
- static void __devinit via686a_init_device(struct via686a_data *data)
- {
- 	u8 reg;
-@@ -700,6 +707,9 @@ static void __devinit via686a_init_devic
- 	via686a_write_value(data, VIA686A_REG_TEMP_MODE,
- 			    (reg & ~VIA686A_TEMP_MODE_MASK)
- 			    | VIA686A_TEMP_MODE_CONTINUOUS);
-+
-+	/* Pre-read fan clock divisor values */
-+	via686a_update_fan_div(data);
- }
- 
- static struct via686a_data *via686a_update_device(struct device *dev)
-@@ -751,9 +761,7 @@ static struct via686a_data *via686a_upda
- 		    (via686a_read_value(data, VIA686A_REG_TEMP_LOW23) &
- 		     0xc0) >> 6;
- 
--		i = via686a_read_value(data, VIA686A_REG_FANDIV);
--		data->fan_div[0] = (i >> 4) & 0x03;
--		data->fan_div[1] = i >> 6;
-+		via686a_update_fan_div(data);
- 		data->alarms =
- 		    via686a_read_value(data,
- 				       VIA686A_REG_ALARM1) |
-
-
+The downside is that it then becomes impossible for the MFD to pass in
+resources to the devices (IRQs being the most obvious example) and every
+single board needs to replicate the definitions of all the subdevices
+which gets tedious, especially if you want to change them for some
+reason (eg, an IP becomes used in a wider range of chips so a rename is
+appropriate).
