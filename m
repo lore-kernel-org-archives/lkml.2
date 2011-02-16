@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab1BPATB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:19:01 -0500
-Received: from kroah.org ([198.145.64.141]:38729 "EHLO coco.kroah.org"
+	id S1756831Ab1BPBrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:47:36 -0500
+Received: from kroah.org ([198.145.64.141]:38757 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756739Ab1BPASv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:51 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:28 2011
-Message-Id: <20110216001428.474025391@clark.kroah.org>
+	id S1756770Ab1BPATA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:00 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:29 2011
+Message-Id: <20110216001428.977793830@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:31 -0800
+Date: Tue, 15 Feb 2011 16:11:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yin Kangkai <kangkai.yin@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: [034/272] USB: EHCI: fix scheduling while atomic during suspend
+        Ruben Smits <ruben.smits@mech.kuleuven.be>
+Subject: [039/272] staging: comedi: add support for newer jr3 1-channel pci board
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,126 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yin Kangkai <kangkai.yin@intel.com>
+From: Ruben Smits <ruben.smits@mech.kuleuven.be>
 
-commit 148fc55fd0449683a1d15bf219ad8d8b6fa17545 upstream.
+commit 6292817d58637f85dd623cfe563c7f5ec4f4c470 upstream.
 
-There is a msleep with spin lock held during ehci pci suspend, which will
-cause kernel BUG: scheduling while atomic. Fix that.
+add DEVICE_ID to table
 
-[  184.139620] BUG: scheduling while atomic: kworker/u:11/416/0x00000002
-[  184.139632] 4 locks held by kworker/u:11/416:
-[  184.139640]  #0:  (events_unbound){+.+.+.}, at: [<c104ddd4>] process_one_work+0x1b3/0x4cb
-[  184.139669]  #1:  ((&entry->work)){+.+.+.}, at: [<c104ddd4>] process_one_work+0x1b3/0x4cb
-[  184.139686]  #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<c127cde3>] __device_suspend+0x2c/0x154
-[  184.139706]  #3:  (&(&ehci->lock)->rlock){-.-...}, at: [<c132f3d8>] ehci_pci_suspend+0x35/0x7b
-[  184.139725] Modules linked in: serio_raw pegasus joydev mrst_gfx(C) battery
-[  184.139748] irq event stamp: 52
-[  184.139753] hardirqs last  enabled at (51): [<c14fdaac>] mutex_lock_nested+0x258/0x293
-[  184.139766] hardirqs last disabled at (52): [<c14fe7b4>] _raw_spin_lock_irqsave+0xf/0x3e
-[  184.139777] softirqs last  enabled at (0): [<c10371c1>] copy_process+0x3d2/0x109d
-[  184.139789] softirqs last disabled at (0): [<  (null)>]   (null)
-[  184.139802] Pid: 416, comm: kworker/u:11 Tainted: G         C  2.6.37-6.3-adaptation-oaktrail #37
-[  184.139809] Call Trace:
-[  184.139820]  [<c102eeff>] __schedule_bug+0x5e/0x65
-[  184.139829]  [<c14fbca5>] schedule+0xac/0xc4c
-[  184.139840]  [<c11d4845>] ? string+0x37/0x8b
-[  184.139853]  [<c1044f21>] ? lock_timer_base+0x1f/0x3e
-[  184.139863]  [<c14fe7da>] ? _raw_spin_lock_irqsave+0x35/0x3e
-[  184.139876]  [<c1061590>] ? trace_hardirqs_off+0xb/0xd
-[  184.139885]  [<c14fccdc>] schedule_timeout+0x283/0x2d9
-[  184.139896]  [<c104516f>] ? process_timeout+0x0/0xa
-[  184.139906]  [<c14fcd47>] schedule_timeout_uninterruptible+0x15/0x17
-[  184.139916]  [<c104566a>] msleep+0x10/0x16
-[  184.139926]  [<c132f316>] ehci_adjust_port_wakeup_flags+0x69/0xf6
-[  184.139937]  [<c132f3eb>] ehci_pci_suspend+0x48/0x7b
-[  184.139946]  [<c1326587>] suspend_common+0x52/0xbb
-[  184.139956]  [<c1326625>] hcd_pci_suspend+0x26/0x28
-[  184.139967]  [<c11e7182>] pci_pm_suspend+0x5f/0xd0
-[  184.139976]  [<c127ca3a>] pm_op+0x5d/0xf0
-[  184.139986]  [<c127ceac>] __device_suspend+0xf5/0x154
-[  184.139996]  [<c127d2c8>] async_suspend+0x16/0x3a
-[  184.140006]  [<c1058f54>] async_run_entry_fn+0x89/0x111
-[  184.140016]  [<c104deb6>] process_one_work+0x295/0x4cb
-[  184.140026]  [<c1058ecb>] ? async_run_entry_fn+0x0/0x111
-[  184.140036]  [<c104e3d0>] worker_thread+0x17f/0x298
-[  184.140045]  [<c104e251>] ? worker_thread+0x0/0x298
-[  184.140055]  [<c105277f>] kthread+0x64/0x69
-[  184.140064]  [<c105271b>] ? kthread+0x0/0x69
-[  184.140075]  [<c1002efa>] kernel_thread_helper+0x6/0x1a
-
-Signed-off-by: Yin Kangkai <kangkai.yin@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-CC: David Brownell <dbrownell@users.sourceforge.net>
+Signed-off-by: Ruben Smits <ruben.smits@mech.kuleuven.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-au1xxx.c |    2 +-
- drivers/usb/host/ehci-hub.c    |    7 +++++++
- drivers/usb/host/ehci-pci.c    |    2 +-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/jr3_pci.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/host/ehci-au1xxx.c
-+++ b/drivers/usb/host/ehci-au1xxx.c
-@@ -227,8 +227,8 @@ static int ehci_hcd_au1xxx_drv_suspend(s
- 	 * mark HW unaccessible.  The PM and USB cores make sure that
- 	 * the root hub is either suspended or stopped.
- 	 */
--	spin_lock_irqsave(&ehci->lock, flags);
- 	ehci_prepare_ports_for_controller_suspend(ehci, device_may_wakeup(dev));
-+	spin_lock_irqsave(&ehci->lock, flags);
- 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
- 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -54,6 +54,7 @@ Devices: [JR3] PCI force sensor board (j
  
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -111,6 +111,7 @@ static void ehci_adjust_port_wakeup_flag
- {
- 	int		port;
- 	u32		temp;
-+	unsigned long	flags;
- 
- 	/* If remote wakeup is enabled for the root hub but disabled
- 	 * for the controller, we must adjust all the port wakeup flags
-@@ -120,6 +121,8 @@ static void ehci_adjust_port_wakeup_flag
- 	if (!ehci_to_hcd(ehci)->self.root_hub->do_remote_wakeup || do_wakeup)
- 		return;
- 
-+	spin_lock_irqsave(&ehci->lock, flags);
-+
- 	/* clear phy low-power mode before changing wakeup flags */
- 	if (ehci->has_hostpc) {
- 		port = HCS_N_PORTS(ehci->hcs_params);
-@@ -131,7 +134,9 @@ static void ehci_adjust_port_wakeup_flag
- 			temp = ehci_readl(ehci, hostpc_reg);
- 			ehci_writel(ehci, temp & ~HOSTPC_PHCD, hostpc_reg);
- 		}
-+		spin_unlock_irqrestore(&ehci->lock, flags);
- 		msleep(5);
-+		spin_lock_irqsave(&ehci->lock, flags);
- 	}
- 
- 	port = HCS_N_PORTS(ehci->hcs_params);
-@@ -170,6 +175,8 @@ static void ehci_adjust_port_wakeup_flag
- 	/* Does the root hub have a port wakeup pending? */
- 	if (!suspending && (ehci_readl(ehci, &ehci->regs->status) & STS_PCD))
- 		usb_hcd_resume_root_hub(ehci_to_hcd(ehci));
-+
-+	spin_unlock_irqrestore(&ehci->lock, flags);
- }
- 
- static int ehci_bus_suspend (struct usb_hcd *hcd)
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -360,8 +360,8 @@ static int ehci_pci_suspend(struct usb_h
- 	 * mark HW unaccessible.  The PM and USB cores make sure that
- 	 * the root hub is either suspended or stopped.
- 	 */
--	spin_lock_irqsave (&ehci->lock, flags);
- 	ehci_prepare_ports_for_controller_suspend(ehci, do_wakeup);
-+	spin_lock_irqsave (&ehci->lock, flags);
- 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
- 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
- 
+ #define PCI_VENDOR_ID_JR3 0x1762
+ #define PCI_DEVICE_ID_JR3_1_CHANNEL 0x3111
++#define PCI_DEVICE_ID_JR3_1_CHANNEL_NEW 0x1111
+ #define PCI_DEVICE_ID_JR3_2_CHANNEL 0x3112
+ #define PCI_DEVICE_ID_JR3_3_CHANNEL 0x3113
+ #define PCI_DEVICE_ID_JR3_4_CHANNEL 0x3114
+@@ -73,6 +74,8 @@ static DEFINE_PCI_DEVICE_TABLE(jr3_pci_p
+ 	{
+ 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL,
+ 		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
++	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL_NEW,
++		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
+ 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_2_CHANNEL,
+ 		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
+ 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_3_CHANNEL,
+@@ -807,6 +810,10 @@ static int jr3_pci_attach(struct comedi_
+ 					devpriv->n_channels = 1;
+ 				}
+ 				break;
++			case PCI_DEVICE_ID_JR3_1_CHANNEL_NEW:{
++					devpriv->n_channels = 1;
++				}
++				break;
+ 			case PCI_DEVICE_ID_JR3_2_CHANNEL:{
+ 					devpriv->n_channels = 2;
+ 				}
 
 
