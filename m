@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744Ab1BPBz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:55:58 -0500
-Received: from kroah.org ([198.145.64.141]:49323 "EHLO coco.kroah.org"
+	id S1758504Ab1BPBvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:51:44 -0500
+Received: from kroah.org ([198.145.64.141]:49134 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758594Ab1BPBvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:48 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:04 2011
-Message-Id: <20110216014704.162331701@clark.kroah.org>
+	id S1758496Ab1BPBu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:50:59 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:01 2011
+Message-Id: <20110216014701.752175538@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:46:05 -0800
+Date: Tue, 15 Feb 2011 17:45:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [099/115] sched: Consolidate account_system_vtime extern declaration
+        Mike Snitzer <snitzer@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [075/115] dm: dont take i_mutex to change device size
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Commit: e1e10a265d28273ab8c70be19d43dcbdeead6c5a upstream
+From: Mike Snitzer <snitzer@redhat.com>
 
-Just a minor cleanup patch that makes things easier to the following patches.
-No functionality change in this patch.
+commit c217649bf2d60ac119afd71d938278cffd55962b upstream.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286237003-12406-3-git-send-email-venki@google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+No longer needlessly hold md->bdev->bd_inode->i_mutex when changing the
+size of a DM device.  This additional locking is unnecessary because
+i_size_write() is already protected by the existing critical section in
+dm_swap_table().  DM already has a reference on md->bdev so the
+associated bd_inode may be changed without lifetime concerns.
+
+A negative side-effect of having held md->bdev->bd_inode->i_mutex was
+that a concurrent DM device resize and flush (via fsync) would deadlock.
+Dropping md->bdev->bd_inode->i_mutex eliminates this potential for
+deadlock.  The following reproducer no longer deadlocks:
+  https://www.redhat.com/archives/dm-devel/2009-July/msg00284.html
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/ia64/include/asm/system.h    |    4 ----
- arch/powerpc/include/asm/system.h |    4 ----
- arch/s390/include/asm/system.h    |    1 -
- include/linux/hardirq.h           |    2 ++
- 4 files changed, 2 insertions(+), 9 deletions(-)
 
---- a/arch/ia64/include/asm/system.h
-+++ b/arch/ia64/include/asm/system.h
-@@ -281,10 +281,6 @@ void cpu_idle_wait(void);
- 
- void default_idle(void);
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
--extern void account_system_vtime(struct task_struct *);
--#endif
--
- #endif /* __KERNEL__ */
- 
- #endif /* __ASSEMBLY__ */
---- a/arch/powerpc/include/asm/system.h
-+++ b/arch/powerpc/include/asm/system.h
-@@ -540,10 +540,6 @@ extern void reloc_got2(unsigned long);
- 
- #define PTRRELOC(x)	((typeof(x)) add_reloc_offset((unsigned long)(x)))
- 
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
--extern void account_system_vtime(struct task_struct *);
--#endif
--
- extern struct dentry *powerpc_debugfs_root;
- 
- #endif /* __KERNEL__ */
---- a/arch/s390/include/asm/system.h
-+++ b/arch/s390/include/asm/system.h
-@@ -97,7 +97,6 @@ static inline void restore_access_regs(u
- 
- extern void account_vtime(struct task_struct *, struct task_struct *);
- extern void account_tick_vtime(struct task_struct *);
--extern void account_system_vtime(struct task_struct *);
- 
- #ifdef CONFIG_PFAULT
- extern void pfault_irq_init(void);
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -141,6 +141,8 @@ struct task_struct;
- static inline void account_system_vtime(struct task_struct *tsk)
- {
+---
+ drivers/md/dm.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1925,13 +1925,14 @@ static void event_callback(void *context
+ 	wake_up(&md->eventq);
  }
-+#else
-+extern void account_system_vtime(struct task_struct *tsk);
- #endif
  
- #if defined(CONFIG_NO_HZ)
++/*
++ * Protected by md->suspend_lock obtained by dm_swap_table().
++ */
+ static void __set_size(struct mapped_device *md, sector_t size)
+ {
+ 	set_capacity(md->disk, size);
+ 
+-	mutex_lock(&md->bdev->bd_inode->i_mutex);
+ 	i_size_write(md->bdev->bd_inode, (loff_t)size << SECTOR_SHIFT);
+-	mutex_unlock(&md->bdev->bd_inode->i_mutex);
+ }
+ 
+ static int __bind(struct mapped_device *md, struct dm_table *t,
 
 
