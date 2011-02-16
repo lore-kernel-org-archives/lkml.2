@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab1BPA1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:27:00 -0500
-Received: from kroah.org ([198.145.64.141]:49983 "EHLO coco.kroah.org"
+	id S932570Ab1BPA1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:27:06 -0500
+Received: from kroah.org ([198.145.64.141]:49974 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757782Ab1BPAZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:47 -0500
+	id S1755947Ab1BPAZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:45 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:52 2011
-Message-Id: <20110216001452.100964924@clark.kroah.org>
+Message-Id: <20110216001451.993105178@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:27 -0800
+Date: Tue, 15 Feb 2011 16:15:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zhang Rui <rui.zhang@intel.com>,
+        Andiry Xu <andiry.xu@amd.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [270/272] xhci: Do not run xhci_cleanup_msix with irq disabled
+Subject: [269/272] xHCI: synchronize irq in xhci_suspend()
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +26,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit 40a9fb17f32dbe54de3d636142a59288544deed7 upstream.
+commit 0029227f1bc30b6c809ae751f9e7af6cef900997 upstream.
 
-when unloading xhci_hcd, I got:
-[  134.856813] xhci_hcd 0000:02:00.0: remove, state 4
-[  134.858140] usb usb3: USB disconnect, address 1
-[  134.874956] xhci_hcd 0000:02:00.0: Host controller not halted, aborting reset.
-[  134.876351] BUG: sleeping function called from invalid context at kernel/mutex.c:85
-[  134.877657] in_atomic(): 0, irqs_disabled(): 1, pid: 1451, name: modprobe
-[  134.878975] Pid: 1451, comm: modprobe Not tainted 2.6.37-rc5+ #162
-[  134.880298] Call Trace:
-[  134.881602]  [<ffffffff8104156a>] __might_sleep+0xeb/0xf0
-[  134.882921]  [<ffffffff814763dc>] mutex_lock+0x24/0x50
-[  134.884229]  [<ffffffff810a745c>] free_desc+0x2e/0x5f
-[  134.885538]  [<ffffffff810a74c8>] irq_free_descs+0x3b/0x71
-[  134.886853]  [<ffffffff8102584d>] free_irq_at+0x31/0x36
-[  134.888167]  [<ffffffff8102723f>] destroy_irq+0x69/0x71
-[  134.889486]  [<ffffffff8102747a>] native_teardown_msi_irq+0xe/0x10
-[  134.890820]  [<ffffffff8124c382>] default_teardown_msi_irqs+0x57/0x80
-[  134.892158]  [<ffffffff8124be46>] free_msi_irqs+0x8b/0xe9
-[  134.893504]  [<ffffffff8124cd46>] pci_disable_msix+0x35/0x39
-[  134.894844]  [<ffffffffa01b444a>] xhci_cleanup_msix+0x31/0x51 [xhci_hcd]
-[  134.896186]  [<ffffffffa01b4b3a>] xhci_stop+0x3a/0x80 [xhci_hcd]
-[  134.897521]  [<ffffffff81341dd4>] usb_remove_hcd+0xfd/0x14a
-[  134.898859]  [<ffffffff813500ae>] usb_hcd_pci_remove+0x5c/0xc6
-[  134.900193]  [<ffffffff8123c606>] pci_device_remove+0x3f/0x91
-[  134.901535]  [<ffffffff812e7ea4>] __device_release_driver+0x83/0xd9
-[  134.902899]  [<ffffffff812e8571>] driver_detach+0x86/0xad
-[  134.904222]  [<ffffffff812e7d56>] bus_remove_driver+0xb2/0xd8
-[  134.905540]  [<ffffffff812e8633>] driver_unregister+0x6c/0x74
-[  134.906839]  [<ffffffff8123c8e4>] pci_unregister_driver+0x44/0x89
-[  134.908121]  [<ffffffffa01b940e>] xhci_unregister_pci+0x15/0x17 [xhci_hcd]
-[  134.909396]  [<ffffffffa01bd7d2>] xhci_hcd_cleanup+0xe/0x10 [xhci_hcd]
-[  134.910652]  [<ffffffff8107fcd1>] sys_delete_module+0x1ca/0x23b
-[  134.911882]  [<ffffffff81123932>] ? path_put+0x22/0x26
-[  134.913104]  [<ffffffff8109a800>] ? audit_syscall_entry+0x2c/0x148
-[  134.914333]  [<ffffffff8100ac82>] system_call_fastpath+0x16/0x1b
-[  134.915658] xhci_hcd 0000:02:00.0: USB bus 3 deregistered
-[  134.916465] xhci_hcd 0000:02:00.0: PCI INT A disabled
+Synchronize the interrupts instead of free them in xhci_suspend(). This will
+prevent a double free when the host is suspended and then the card removed.
 
-and the same issue when xhci_suspend is invoked.  (Note from Sarah: That's
-fixed by Andiry's patch before this, by synchronizing the irqs rather than
-freeing them on suspend.)
-
-Do not run xhci_cleanup_msix with irq disabled.
+Set the flag hcd->msix_enabled when using MSI-X, and check the flag in
+suspend_common(). MSI-X synchronization will be handled by xhci_suspend(),
+and MSI/INTx will be synchronized in suspend_common().
 
 This patch should be queued for the 2.6.37 stable tree.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Reported-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd-pci.c |    7 +++++-
+ drivers/usb/host/xhci.c    |   46 ++++++++++++++-------------------------------
+ include/linux/usb/hcd.h    |    1 
+ 3 files changed, 22 insertions(+), 32 deletions(-)
 
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -406,7 +406,12 @@ static int suspend_common(struct device
+ 			return retval;
+ 	}
+ 
+-	synchronize_irq(pci_dev->irq);
++	/* If MSI-X is enabled, the driver will have synchronized all vectors
++	 * in pci_suspend(). If MSI or legacy PCI is enabled, that will be
++	 * synchronized here.
++	 */
++	if (!hcd->msix_enabled)
++		synchronize_irq(pci_dev->irq);
+ 
+ 	/* Downstream ports from this root hub should already be quiesced, so
+ 	 * there will be no DMA activity.  Now we can shut down the upstream
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
-@@ -512,9 +512,10 @@ void xhci_stop(struct usb_hcd *hcd)
- 	spin_lock_irq(&xhci->lock);
- 	xhci_halt(xhci);
- 	xhci_reset(xhci);
--	xhci_cleanup_msix(xhci);
- 	spin_unlock_irq(&xhci->lock);
+@@ -226,7 +226,8 @@ static int xhci_setup_msi(struct xhci_hc
+ static int xhci_setup_msix(struct xhci_hcd *xhci)
+ {
+ 	int i, ret = 0;
+-	struct pci_dev *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
++	struct usb_hcd *hcd = xhci_to_hcd(xhci);
++	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
  
-+	xhci_cleanup_msix(xhci);
-+
- #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
- 	/* Tell the event ring poll function not to reschedule */
- 	xhci->zombie = 1;
-@@ -548,9 +549,10 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ 	/*
+ 	 * calculate number of msi-x vectors supported.
+@@ -265,6 +266,7 @@ static int xhci_setup_msix(struct xhci_h
+ 			goto disable_msix;
+ 	}
  
- 	spin_lock_irq(&xhci->lock);
- 	xhci_halt(xhci);
--	xhci_cleanup_msix(xhci);
- 	spin_unlock_irq(&xhci->lock);
++	hcd->msix_enabled = 1;
+ 	return ret;
  
-+	xhci_cleanup_msix(xhci);
-+
- 	xhci_dbg(xhci, "xhci_shutdown completed - status = %x\n",
- 		    xhci_readl(xhci, &xhci->op_regs->status));
+ disable_msix:
+@@ -280,7 +282,8 @@ free_entries:
+ /* Free any IRQs and disable MSI-X */
+ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
+ {
+-	struct pci_dev *pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
++	struct usb_hcd *hcd = xhci_to_hcd(xhci);
++	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+ 
+ 	xhci_free_irq(xhci);
+ 
+@@ -292,6 +295,7 @@ static void xhci_cleanup_msix(struct xhc
+ 		pci_disable_msi(pdev);
+ 	}
+ 
++	hcd->msix_enabled = 0;
+ 	return;
  }
+ 
+@@ -647,6 +651,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 	int			rc = 0;
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	u32			command;
++	int			i;
+ 
+ 	spin_lock_irq(&xhci->lock);
+ 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+@@ -677,10 +682,15 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 		spin_unlock_irq(&xhci->lock);
+ 		return -ETIMEDOUT;
+ 	}
+-	/* step 5: remove core well power */
+-	xhci_cleanup_msix(xhci);
+ 	spin_unlock_irq(&xhci->lock);
+ 
++	/* step 5: remove core well power */
++	/* synchronize irq when using MSI-X */
++	if (xhci->msix_entries) {
++		for (i = 0; i < xhci->msix_count; i++)
++			synchronize_irq(xhci->msix_entries[i].vector);
++	}
++
+ 	return rc;
+ }
+ 
+@@ -694,7 +704,6 @@ int xhci_resume(struct xhci_hcd *xhci, b
+ {
+ 	u32			command, temp = 0;
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+-	struct pci_dev		*pdev = to_pci_dev(hcd->self.controller);
+ 	int	old_state, retval;
+ 
+ 	old_state = hcd->state;
+@@ -729,9 +738,8 @@ int xhci_resume(struct xhci_hcd *xhci, b
+ 		xhci_dbg(xhci, "Stop HCD\n");
+ 		xhci_halt(xhci);
+ 		xhci_reset(xhci);
+-		if (hibernated)
+-			xhci_cleanup_msix(xhci);
+ 		spin_unlock_irq(&xhci->lock);
++		xhci_cleanup_msix(xhci);
+ 
+ #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
+ 		/* Tell the event ring poll function not to reschedule */
+@@ -765,30 +773,6 @@ int xhci_resume(struct xhci_hcd *xhci, b
+ 		return retval;
+ 	}
+ 
+-	spin_unlock_irq(&xhci->lock);
+-	/* Re-setup MSI-X */
+-	if (hcd->irq)
+-		free_irq(hcd->irq, hcd);
+-	hcd->irq = -1;
+-
+-	retval = xhci_setup_msix(xhci);
+-	if (retval)
+-		/* fall back to msi*/
+-		retval = xhci_setup_msi(xhci);
+-
+-	if (retval) {
+-		/* fall back to legacy interrupt*/
+-		retval = request_irq(pdev->irq, &usb_hcd_irq, IRQF_SHARED,
+-					hcd->irq_descr, hcd);
+-		if (retval) {
+-			xhci_err(xhci, "request interrupt %d failed\n",
+-					pdev->irq);
+-			return retval;
+-		}
+-		hcd->irq = pdev->irq;
+-	}
+-
+-	spin_lock_irq(&xhci->lock);
+ 	/* step 4: set Run/Stop bit */
+ 	command = xhci_readl(xhci, &xhci->op_regs->command);
+ 	command |= CMD_RUN;
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -112,6 +112,7 @@ struct usb_hcd {
+ 	/* Flags that get set only during HCD registration or removal. */
+ 	unsigned		rh_registered:1;/* is root hub registered? */
+ 	unsigned		rh_pollable:1;	/* may we poll the root hub? */
++	unsigned		msix_enabled:1;	/* driver has MSI-X enabled? */
+ 
+ 	/* The next flag is a stopgap, to be removed when all the HCDs
+ 	 * support the new root-hub polling mechanism. */
 
 
