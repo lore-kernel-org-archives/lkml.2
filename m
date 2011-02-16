@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933355Ab1BPAvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:51:17 -0500
-Received: from kroah.org ([198.145.64.141]:46073 "EHLO coco.kroah.org"
+	id S933441Ab1BPA6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:58:55 -0500
+Received: from kroah.org ([198.145.64.141]:46124 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933174Ab1BPAvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:12 2011
-Message-Id: <20110216002112.550136370@clark.kroah.org>
+	id S933360Ab1BPAvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:13 2011
+Message-Id: <20110216002113.329058322@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:43 -0800
+Date: Tue, 15 Feb 2011 16:21:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Buesch <mb@bu3sch.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 135/176] ssb-pcmcia: Fix parsing of invariants tuples
+        Tejun Heo <tj@kernel.org>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [patch 143/176] pata_mpc52xx: inherit from ata_bmdma_port_ops
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michael=20B=C3=BCsch?= <mb@bu3sch.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit dd3cb633078fb12e06ce6cebbdfbf55a7562e929 upstream.
+commit 77c5fd19075d299fe820bb59bb21b0b113676e20 upstream.
 
-This fixes parsing of the device invariants (MAC address)
-for PCMCIA SSB devices.
+pata_mpc52xx supports BMDMA but inherits ata_sff_port_ops which
+triggers BUG_ON() when a DMA command is issued.  Fix it.
 
-ssb_pcmcia_do_get_invariants expects an iv pointer as data
-argument.
-
-Tested-by: dylan cristiani <d.cristiani@idem-tech.it>
-Signed-off-by: Michael Buesch <mb@bu3sch.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Roman Fietze <roman.fietze@telemotive.de>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ssb/pcmcia.c |    2 +-
+ drivers/ata/pata_mpc52xx.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ssb/pcmcia.c
-+++ b/drivers/ssb/pcmcia.c
-@@ -734,7 +734,7 @@ int ssb_pcmcia_get_invariants(struct ssb
+--- a/drivers/ata/pata_mpc52xx.c
++++ b/drivers/ata/pata_mpc52xx.c
+@@ -610,7 +610,7 @@ static struct scsi_host_template mpc52xx
+ };
  
- 	/* Fetch the vendor specific tuples. */
- 	res = pcmcia_loop_tuple(bus->host_pcmcia, SSB_PCMCIA_CIS,
--				ssb_pcmcia_do_get_invariants, sprom);
-+				ssb_pcmcia_do_get_invariants, iv);
- 	if ((res == 0) || (res == -ENOSPC))
- 		return 0;
- 
+ static struct ata_port_operations mpc52xx_ata_port_ops = {
+-	.inherits		= &ata_sff_port_ops,
++	.inherits		= &ata_bmdma_port_ops,
+ 	.sff_dev_select		= mpc52xx_ata_dev_select,
+ 	.set_piomode		= mpc52xx_ata_set_piomode,
+ 	.set_dmamode		= mpc52xx_ata_set_dmamode,
 
 
