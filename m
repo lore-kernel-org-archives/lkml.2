@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1BPWXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 17:23:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10732 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622Ab1BPWX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 17:23:29 -0500
-Date: Wed, 16 Feb 2011 17:19:38 -0500
-From: Chuck Ebbert <cebbert@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Milan Broz <mbroz@redhat.com>
-Subject: [Patch] Revert block_dev read-only check
-Message-ID: <20110216171938.78fd4a2f@katamari>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755337Ab1BPWXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 17:23:41 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54437 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab1BPWXi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 17:23:38 -0500
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: kernel@pengutronix.de, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH v2] Driver core: convert platform_{get,set}_drvdata to static inline functions
+Date: Wed, 16 Feb 2011 23:23:27 +0100
+Message-Id: <1297895007-2104-1-git-send-email-mkl@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 75f1dc0d076d1c1168f2115f1941ea627d38bd5a. The revert
-could not be done automatically because changes after that commit
-altered the code too much.
+This patch converts the macros for platform_{get,set}_drvdata to
+static inline functions to add typechecking.
 
-Signed-off-by: Chuck Ebbert <cebbert@redhat.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+---
+Changes since v1:
+- remove ugly macro magic, use static inline functions instead
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1215,12 +1215,6 @@ int blkdev_get(struct block_device *bdev
+ include/linux/platform_device.h |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index 2e700ec..d96db98 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -130,8 +130,15 @@ extern void platform_driver_unregister(struct platform_driver *);
+ extern int platform_driver_probe(struct platform_driver *driver,
+ 		int (*probe)(struct platform_device *));
  
- 	res = __blkdev_get(bdev, mode, 0);
- 
--	/* __blkdev_get() may alter read only status, check it afterwards */
--	if (!res && (mode & FMODE_WRITE) && bdev_read_only(bdev)) {
--		__blkdev_put(bdev, mode, 0);
--		res = -EACCES;
--	}
--
- 	if (whole) {
- 		/* finish claiming */
- 		mutex_lock(&bdev->bd_mutex);
-@@ -1298,6 +1292,11 @@ struct block_device *blkdev_get_by_path(
- 	if (err)
- 		return ERR_PTR(err);
- 
-+	if ((mode & FMODE_WRITE) && bdev_read_only(bdev)) {
-+		blkdev_put(bdev, mode);
-+		return ERR_PTR(-EACCES);
-+	}
+-#define platform_get_drvdata(_dev)	dev_get_drvdata(&(_dev)->dev)
+-#define platform_set_drvdata(_dev,data)	dev_set_drvdata(&(_dev)->dev, (data))
++static inline void *platform_get_drvdata(const struct platform_device *pdev)
++{
++	return dev_get_drvdata(&pdev->dev);
++}
 +
- 	return bdev;
- }
- EXPORT_SYMBOL(blkdev_get_by_path);
++static inline void platform_set_drvdata(struct platform_device *pdev, void *data)
++{
++	dev_set_drvdata(&pdev->dev, data);
++}
+ 
+ extern struct platform_device *platform_create_bundle(struct platform_driver *driver,
+ 					int (*probe)(struct platform_device *),
+-- 
+1.7.2.3
+
