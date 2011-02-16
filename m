@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab1BPP4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 10:56:08 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16462 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab1BPP4G (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 16 Feb 2011 10:56:06 -0500
-Date: Wed, 16 Feb 2011 10:54:22 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
-        linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
-        Jerome Glisse <jglisse@redhat.com>, konrad@darnok.org
-Subject: Re: [PATCH 4/5] radeon/ttm/PCIe: Use dma_addr if TTM has set it.
-Message-ID: <20110216155422.GA4056@dumpdata.com>
-References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
- <1294420304-24811-5-git-send-email-konrad.wilk@oracle.com>
- <20110127212001.GC4542@dumpdata.com>
- <AANLkTimKgfKwtWpXBvTGmJbW-2uGhV+7nMahsScUM0pr@mail.gmail.com>
+	id S1752564Ab1BPP5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 10:57:17 -0500
+Received: from www.tglx.de ([62.245.132.106]:42217 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751795Ab1BPP5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 10:57:13 -0500
+Date: Wed, 16 Feb 2011 16:56:51 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+cc: xen-devel <xen-devel@lists.xensource.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: Xen and incorporating event channels in to nr_irqs
+In-Reply-To: <1297868399.16356.180.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.LFD.2.00.1102161638320.2701@localhost6.localdomain6>
+References: <1297868399.16356.180.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimKgfKwtWpXBvTGmJbW-2uGhV+7nMahsScUM0pr@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D5BF333.01CE:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Code looks good but GART stuff can be picky, i will try to do a full
-> scale testing in next couple week.
+Ian,
 
-ping?
+On Wed, 16 Feb 2011, Ian Campbell wrote:
+> I'd very much like to remove this workaround (better described as a hack
+> I think) but in order to do so I need to make sure there are plenty of
+> IRQs between nr_irqs_gsi and nr_irqs. Effectively what we would like to
+> do is:
+> 	nr_irqs += NR_EVENT_CHANNELS;
+> somewhere, except obviously we don't want to just drop that into generic
+> code!
+> 
+> Do you have any hints as to an appropriate existing interface which
+> could Xen use here?
+> 
+> If not any suggestions for what sort of interface might be acceptable to
+> add?
+> 
+> For example I was wondering about adding x86_info.irqs.probe_nr_irqs,
+> which returns a platform specific additional number of IRQs, and having
+> arch_probe_nr_irqs += that value into its calculations.
+
+I'm about to remove the nr_irqs NR_IRQS limitation. It's silly when we
+deal with sparse irqs. So the idea is to have the initial nr_irqs set
+in early boot to have a sensible size for allocating stuff. Later on
+we can expand nr_irqs when the need arises.
+
+It's not only Xen which wants to eliminate the limitation. Think about
+irq expanders which are detected late in the boot. We have no sensible
+way to reserve enough numbers for them at early boot as we dont know
+whether that hardware is there or not.
+
+So my plan for .39 is to ignore the NR_IRQS limitation in the sparse
+case and make nr_irqs expandable of course with a sensible upper limit
+in the core code itself. It's basically the allocation bitmap which
+limits it, but I doubt we'll hit 1 Million irq numbers in the
+forseeable future.
+
+Thanks,
+
+	tglx
