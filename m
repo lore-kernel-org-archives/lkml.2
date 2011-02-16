@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab1BPAZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:25:07 -0500
-Received: from kroah.org ([198.145.64.141]:49816 "EHLO coco.kroah.org"
+	id S932484Ab1BPAZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:25:35 -0500
+Received: from kroah.org ([198.145.64.141]:49879 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932465Ab1BPAZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:00 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:49 2011
-Message-Id: <20110216001449.572952128@clark.kroah.org>
+	id S1757547Ab1BPAZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:15 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:50 2011
+Message-Id: <20110216001450.488127211@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:02 -0800
+Date: Tue, 15 Feb 2011 16:15:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jerome Glisse <jglisse@redhat.com>, Dave Airlie <airlied@gmail.com>
-Subject: [245/272] radeon/kms: fix dp displayport mode validation
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [254/272] drm: Restore the old_fb upon modeset failure
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 6bba2e116808ca12e30c8d88dfedabf8b8d67390 upstream.
+commit 0ba41e449fd0f45f5b29c1009020ab1b298bedda upstream.
 
-Check if there is a big enough dp clock & enough dp lane to
-drive the video mode provided.
+... or else we may end up disabling the wrong framebuffer, leading to an
+OOPS, e.g:
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-By: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+[ 6033.229012] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3271!
+[ 6033.229012] invalid opcode: 0000 [#1] SMP
+[ 6033.229012] last sysfs file:
+/sys/devices/virtual/backlight/acpi_video0/uevent
+[ 6033.229012] Modules linked in: sunrpc cpufreq_ondemand acpi_cpufreq
+mperf snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep snd_seq
+snd_seq_device snd_pcm snd_timer thinkpad_acpi ppdev snd r852 sm_common
+iTCO_wdt uvcvideo i2c_i801 iTCO_vendor_support microcode wmi nand
+videodev nand_ids nand_ecc snd_page_alloc parport_pc parport mtd
+soundcore joydev v4l1_compat pcspkr uinput ipv6 sdhci_pci sdhci mmc_core
+yenta_socket i915 drm_kms_helper drm i2c_algo_bit i2c_core video output
+[last unloaded: scsi_wait_scan]
+[ 6033.229012]
+[ 6033.229012] Pid: 4834, comm: Xorg Not tainted 2.6.37-rc8+ #25 7661BL5/7661BL5
+[ 6033.229012] EIP: 0060:[<f86fda5e>] EFLAGS: 00013246 CPU: 0
+[ 6033.229012] EIP is at i915_gem_object_unpin+0x23/0x76 [i915]
+[ 6033.229012] EAX: f68a4000 EBX: f6831f00 ECX: 000600fa EDX: f68a8000
+[ 6033.229012] ESI: f68a4014 EDI: f68a42b8 EBP: f2169c44 ESP: f2169c3c
+[ 6033.229012]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[ 6033.229012] Process Xorg (pid: 4834, ti=f2168000 task=f21c8000 task.ti=f2168000)
+[ 6033.229012] Stack:
+[ 6033.229012]  f3a84800 f68a4014 f2169c54 f87045d8 f3a84800 f872d9a8 f2169c68 f7fd8091
+[ 6033.229012]  f3b952a4 00000000 f68a414c f2169cf0 f7fd9377 00000000 00000000 f7fd98b0
+[ 6033.229012]  f7fd9f4e 0000000f f7f328a0 00000000 00000000 00000000 f2169ca4 f68a414c
+[ 6033.229012] Call Trace:
+[ 6033.229012]  [<f87045d8>] ? intel_crtc_disable+0x36/0x41 [i915]
+[ 6033.229012]  [<f7fd8091>] ?  drm_helper_disable_unused_functions+0xcd/0xf9 [drm_kms_helper]
+[ 6033.229012]  [<f7fd9377>] ? drm_crtc_helper_set_config+0x62a/0x7f7 [drm_kms_helper]
+[ 6033.229012]  [<c04daa10>] ? __slab_free+0x1b/0xa4
+[ 6033.229012]  [<f7fd7e62>] ? drm_fb_helper_initial_config+0x466/0x497 [drm_kms_helper]
+[ 6033.229012]  [<f7fd7ea3>] ? drm_fb_helper_restore+0x10/0x2a [drm_kms_helper]
+[ 6033.229012]  [<f86f2577>] ? i915_driver_lastclose+0x2a/0x57 [i915]
+[ 6033.229012]  [<f7f1989f>] ? drm_lastclose+0x45/0x23e [drm]
+[ 6033.229012]  [<f7f1a0b4>] ? drm_release+0x462/0x4d7 [drm]
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/drm_crtc_helper.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -187,9 +187,9 @@ static int dp_link_clock_for_mode_clock(
- int dp_mode_valid(u8 dpcd[DP_DPCD_SIZE], int mode_clock)
- {
- 	int lanes = dp_lanes_for_mode_clock(dpcd, mode_clock);
--	int bw = dp_lanes_for_mode_clock(dpcd, mode_clock);
-+	int dp_clock = dp_link_clock_for_mode_clock(dpcd, mode_clock);
- 
--	if ((lanes == 0) || (bw == 0))
-+	if ((lanes == 0) || (dp_clock == 0))
- 		return MODE_CLOCK_HIGH;
- 
- 	return MODE_OK;
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -650,6 +650,7 @@ int drm_crtc_helper_set_config(struct dr
+ 						      old_fb)) {
+ 				DRM_ERROR("failed to set mode on [CRTC:%d]\n",
+ 					  set->crtc->base.id);
++				set->crtc->fb = old_fb;
+ 				ret = -EINVAL;
+ 				goto fail;
+ 			}
+@@ -664,8 +665,10 @@ int drm_crtc_helper_set_config(struct dr
+ 			set->crtc->fb = set->fb;
+ 		ret = crtc_funcs->mode_set_base(set->crtc,
+ 						set->x, set->y, old_fb);
+-		if (ret != 0)
++		if (ret != 0) {
++			set->crtc->fb = old_fb;
+ 			goto fail;
++		}
+ 	}
+ 	DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
+ 	for (i = 0; i < set->num_connectors; i++) {
 
 
