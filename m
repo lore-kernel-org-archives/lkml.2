@@ -1,299 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab1BPLTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 06:19:33 -0500
-Received: from mtagate4.uk.ibm.com ([194.196.100.164]:48259 "EHLO
-	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab1BPLT2 (ORCPT
+	id S1758902Ab1BPLT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 06:19:29 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:48409 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756014Ab1BPLT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 06:19:28 -0500
-Message-Id: <20110216111923.544389637@linux.vnet.ibm.com>
+	Wed, 16 Feb 2011 06:19:27 -0500
+Message-Id: <20110216111923.853921231@linux.vnet.ibm.com>
 User-Agent: quilt/0.47-1
-Date: Wed, 16 Feb 2011 12:01:19 +0100
+Date: Wed, 16 Feb 2011 12:01:21 +0100
 From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
 To: robert.richter@amd.com
 Cc: mingo@elte.hu, oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, borntraeger@de.ibm.com,
         schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
-Subject: [patch v2 1/3] Put parameters in a structure and pass the pointer to the struct instead
+Subject: [patch v2 3/3] This patch changes the signature of oprofile_add_ext_sample() 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Robert,
 References: <20110216110118.316927092@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=oprofile_parms_struct.patch
+Content-Disposition: inline; filename=oprofile_add_ext_sample.patch
 
 From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
 
-To reduce the number of parameters in various functions use a struct to host specific sample input data.
- 
-Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
----
- drivers/oprofile/cpu_buffer.c |  105 +++++++++++++++++++++++++-----------------
- drivers/oprofile/cpu_buffer.h |    9 +++
- 2 files changed, 73 insertions(+), 41 deletions(-)
+This patch merges oprofile_add_ext_sample() and oprofile_add_ext_hw_sample().
+It changes the signature of oprofile_add_ext_sample() and changes also 
+all references.
 
-Index: s390/drivers/oprofile/cpu_buffer.c
+---
+ arch/powerpc/oprofile/op_model_7450.c    |    9 ++++++++-
+ arch/powerpc/oprofile/op_model_cell.c    |    9 ++++++++-
+ arch/powerpc/oprofile/op_model_fsl_emb.c |    9 ++++++++-
+ arch/powerpc/oprofile/op_model_pa6t.c    |   12 ++++++++++--
+ arch/powerpc/oprofile/op_model_power4.c  |    9 ++++++++-
+ arch/powerpc/oprofile/op_model_rs64.c    |    9 ++++++++-
+ arch/s390/oprofile/hwsampler.c           |    9 +++++++--
+ drivers/oprofile/cpu_buffer.c            |   22 ++--------------------
+ drivers/oprofile/cpu_buffer.h            |    9 ---------
+ include/linux/oprofile.h                 |   18 ++++++++++--------
+ 10 files changed, 69 insertions(+), 46 deletions(-)
+
+Index: s390/include/linux/oprofile.h
 ===================================================================
---- s390.orig/drivers/oprofile/cpu_buffer.c
-+++ s390/drivers/oprofile/cpu_buffer.c
-@@ -1,12 +1,13 @@
- /**
-  * @file cpu_buffer.c
-  *
-- * @remark Copyright 2002-2009 OProfile authors
-+ * @remark Copyright 2002-2011 OProfile authors
-  * @remark Read the file COPYING
-  *
-  * @author John Levon <levon@movementarian.org>
-  * @author Barry Kasindorf <barry.kasindorf@amd.com>
-  * @author Robert Richter <robert.richter@amd.com>
-+ * @author Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-  *
-  * Each CPU has a local buffer that stores PC value/event
-  * pairs. We also log context switches when we notice them.
-@@ -179,8 +180,8 @@ unsigned long op_cpu_buffer_entries(int
- }
- 
- static int
--op_add_code(struct oprofile_cpu_buffer *cpu_buf, unsigned long backtrace,
--	    int is_kernel, struct task_struct *task)
-+op_add_code(struct oprofile_cpu_buffer *cpu_buf,
-+		    struct oprofile_sample_parms *parms)
- {
- 	struct op_entry entry;
- 	struct op_sample *sample;
-@@ -189,21 +190,21 @@ op_add_code(struct oprofile_cpu_buffer *
- 
- 	flags = 0;
- 
--	if (backtrace)
-+	if (parms->backtrace)
- 		flags |= TRACE_BEGIN;
- 
- 	/* notice a switch from user->kernel or vice versa */
--	is_kernel = !!is_kernel;
--	if (cpu_buf->last_is_kernel != is_kernel) {
--		cpu_buf->last_is_kernel = is_kernel;
-+	parms->is_kernel = !!parms->is_kernel;
-+	if (cpu_buf->last_is_kernel != parms->is_kernel) {
-+		cpu_buf->last_is_kernel = parms->is_kernel;
- 		flags |= KERNEL_CTX_SWITCH;
--		if (is_kernel)
-+		if (parms->is_kernel)
- 			flags |= IS_KERNEL;
- 	}
- 
- 	/* notice a task switch */
--	if (cpu_buf->last_task != task) {
--		cpu_buf->last_task = task;
-+	if (cpu_buf->last_task != parms->task) {
-+		cpu_buf->last_task = parms->task;
- 		flags |= USER_CTX_SWITCH;
- 	}
- 
-@@ -224,7 +225,7 @@ op_add_code(struct oprofile_cpu_buffer *
- 	sample->event = flags;
- 
- 	if (size)
--		op_cpu_buffer_add_data(&entry, (unsigned long)task);
-+		op_cpu_buffer_add_data(&entry, (unsigned long)parms->task);
- 
- 	op_cpu_buffer_write_commit(&entry);
- 
-@@ -233,7 +234,7 @@ op_add_code(struct oprofile_cpu_buffer *
- 
- static inline int
- op_add_sample(struct oprofile_cpu_buffer *cpu_buf,
--	      unsigned long pc, unsigned long event)
-+		      struct oprofile_sample_parms *parms)
- {
- 	struct op_entry entry;
- 	struct op_sample *sample;
-@@ -242,8 +243,8 @@ op_add_sample(struct oprofile_cpu_buffer
- 	if (!sample)
- 		return -ENOMEM;
- 
--	sample->eip = pc;
--	sample->event = event;
-+	sample->eip = parms->pc;
-+	sample->event = parms->event;
- 
- 	return op_cpu_buffer_write_commit(&entry);
- }
-@@ -256,23 +257,23 @@ op_add_sample(struct oprofile_cpu_buffer
-  * pc. We tag this in the buffer by generating kernel enter/exit
-  * events whenever is_kernel changes
+--- s390.orig/include/linux/oprofile.h
++++ s390/include/linux/oprofile.h
+@@ -96,6 +96,15 @@ void oprofile_arch_exit(void);
   */
-+
- static int
--log_sample(struct oprofile_cpu_buffer *cpu_buf, unsigned long pc,
--	   unsigned long backtrace, int is_kernel, unsigned long event,
--	   struct task_struct *task)
-+log_sample(struct oprofile_cpu_buffer *cpu_buf,
-+	   struct oprofile_sample_parms *parms)
- {
--	struct task_struct *tsk = task ? task : current;
-+	parms->task = parms->task ? parms->task : current;
- 	cpu_buf->sample_received++;
- 
--	if (pc == ESCAPE_CODE) {
-+	if (parms->pc == ESCAPE_CODE) {
- 		cpu_buf->sample_invalid_eip++;
- 		return 0;
- 	}
- 
--	if (op_add_code(cpu_buf, backtrace, is_kernel, tsk))
-+	if (op_add_code(cpu_buf, parms))
- 		goto fail;
- 
--	if (op_add_sample(cpu_buf, pc, event))
-+	if (op_add_sample(cpu_buf, parms))
- 		goto fail;
- 
- 	return 1;
-@@ -293,26 +294,24 @@ static inline void oprofile_end_trace(st
- }
- 
- static inline void
--__oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
--			  unsigned long event, int is_kernel,
--			  struct task_struct *task)
-+__oprofile_add_ext_sample(struct oprofile_sample_parms *parms)
- {
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
--	unsigned long backtrace = oprofile_backtrace_depth;
-+	parms->backtrace = oprofile_backtrace_depth;
- 
- 	/*
- 	 * if log_sample() fail we can't backtrace since we lost the
- 	 * source of this event
- 	 */
--	if (!log_sample(cpu_buf, pc, backtrace, is_kernel, event, task))
-+	if (!log_sample(cpu_buf, parms))
- 		/* failed */
- 		return;
- 
--	if (!backtrace)
-+	if (!parms->backtrace)
- 		return;
- 
- 	oprofile_begin_trace(cpu_buf);
--	oprofile_ops.backtrace(regs, backtrace);
-+	oprofile_ops.backtrace(parms->regs, parms->backtrace);
- 	oprofile_end_trace(cpu_buf);
- }
- 
-@@ -320,29 +319,41 @@ void oprofile_add_ext_hw_sample(unsigned
- 				unsigned long event, int is_kernel,
- 				struct task_struct *task)
- {
--	__oprofile_add_ext_sample(pc, regs, event, is_kernel, task);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = event,
-+		.is_kernel = is_kernel, .regs = regs,
-+		.task = task ? task : current
-+	};
-+
-+	__oprofile_add_ext_sample(&parms);
- }
- 
- void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
- 			     unsigned long event, int is_kernel)
- {
--	__oprofile_add_ext_sample(pc, regs, event, is_kernel, NULL);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = event,
-+		.is_kernel = is_kernel, .regs = regs, .task = NULL
-+	};
-+	__oprofile_add_ext_sample(&parms);
- }
- 
- void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
- {
--	int is_kernel;
--	unsigned long pc;
-+	struct oprofile_sample_parms parms = {
-+		.pc = 0, .backtrace = 0, .event = event,
-+		.is_kernel = 0, .regs = regs, .task = NULL
-+	};
- 
- 	if (likely(regs)) {
--		is_kernel = !user_mode(regs);
--		pc = profile_pc(regs);
-+		parms.is_kernel = !user_mode(regs);
-+		parms.pc = profile_pc(regs);
- 	} else {
--		is_kernel = 0;    /* This value will not be used */
--		pc = ESCAPE_CODE; /* as this causes an early return. */
-+		parms.is_kernel = 0;    /* This value will not be used */
-+		parms.pc = ESCAPE_CODE; /* as this causes an early return. */
- 	}
- 
--	__oprofile_add_ext_sample(pc, regs, event, is_kernel, NULL);
-+	__oprofile_add_ext_sample(&parms);
- }
- 
- /*
-@@ -356,13 +367,17 @@ oprofile_write_reserve(struct op_entry *
- 		       unsigned long pc, int code, int size)
- {
- 	struct op_sample *sample;
--	int is_kernel = !user_mode(regs);
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = 0,
-+		.is_kernel = !user_mode(regs), .task = current,
-+		.regs = regs
-+	};
- 
- 	cpu_buf->sample_received++;
- 
- 	/* no backtraces for samples with data */
--	if (op_add_code(cpu_buf, 0, is_kernel, current))
-+	if (op_add_code(cpu_buf, &parms))
- 		goto fail;
- 
- 	sample = op_cpu_buffer_write_reserve(entry, size + 2);
-@@ -413,12 +428,20 @@ int oprofile_write_commit(struct op_entr
- void oprofile_add_pc(unsigned long pc, int is_kernel, unsigned long event)
- {
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
--	log_sample(cpu_buf, pc, 0, is_kernel, event, NULL);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = event,
-+		.is_kernel = is_kernel, .task = NULL, .regs = NULL
-+	};
-+	log_sample(cpu_buf, &parms);
- }
- 
- void oprofile_add_trace(unsigned long pc)
- {
- 	struct oprofile_cpu_buffer *cpu_buf = &__get_cpu_var(op_cpu_buffer);
-+	struct oprofile_sample_parms parms = {
-+		.pc = pc, .backtrace = 0, .event = 0,
-+		.is_kernel = 0, .task = NULL, .regs = NULL
-+	};
- 
- 	if (!cpu_buf->tracing)
- 		return;
-@@ -430,7 +453,7 @@ void oprofile_add_trace(unsigned long pc
- 	if (pc == ESCAPE_CODE)
- 		goto fail;
- 
--	if (op_add_sample(cpu_buf, pc, 0))
-+	if (op_add_sample(cpu_buf, &parms))
- 		goto fail;
- 
- 	return;
-Index: s390/drivers/oprofile/cpu_buffer.h
-===================================================================
---- s390.orig/drivers/oprofile/cpu_buffer.h
-+++ s390/drivers/oprofile/cpu_buffer.h
-@@ -51,6 +51,15 @@ struct oprofile_cpu_buffer {
- 	struct delayed_work work;
- };
+ void oprofile_add_sample(struct pt_regs * const regs, unsigned long event);
  
 +struct oprofile_sample_parms {
 +	int is_kernel;
@@ -304,7 +60,285 @@ Index: s390/drivers/oprofile/cpu_buffer.h
 +	struct pt_regs *regs;
 +};
 +
+ /**
+  * Add an extended sample.  Use this when the PC is not from the regs, and
+  * we cannot determine if we're in kernel mode from the regs.
+@@ -103,15 +112,8 @@ void oprofile_add_sample(struct pt_regs
+  * This function does perform a backtrace.
+  *
+  */
+-void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
+-				unsigned long event, int is_kernel);
+ 
+-/**
+- * Add an hardware sample.
+- */
+-void oprofile_add_ext_hw_sample(unsigned long pc, struct pt_regs * const regs,
+-	unsigned long event, int is_kernel,
+-	struct task_struct *task);
++void oprofile_add_ext_sample(struct oprofile_sample_parms *sample_parms);
+ 
+ /* Use this instead when the PC value is not from the regs. Doesn't
+  * backtrace. */
+Index: s390/drivers/oprofile/cpu_buffer.h
+===================================================================
+--- s390.orig/drivers/oprofile/cpu_buffer.h
++++ s390/drivers/oprofile/cpu_buffer.h
+@@ -51,15 +51,6 @@ struct oprofile_cpu_buffer {
+ 	struct delayed_work work;
+ };
+ 
+-struct oprofile_sample_parms {
+-	int is_kernel;
+-	unsigned long pc;
+-	unsigned long backtrace;
+-	unsigned long event;
+-	struct task_struct *task;
+-	struct pt_regs *regs;
+-};
+-
  DECLARE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
  
  /*
+Index: s390/arch/powerpc/oprofile/op_model_7450.c
+===================================================================
+--- s390.orig/arch/powerpc/oprofile/op_model_7450.c
++++ s390/arch/powerpc/oprofile/op_model_7450.c
+@@ -178,6 +178,7 @@ static void fsl7450_handle_interrupt(str
+ 	int is_kernel;
+ 	int val;
+ 	int i;
++        struct oprofile_sample_parms parms;
+ 
+ 	/* set the PMM bit (see comment below) */
+ 	mtmsr(mfmsr() | MSR_PMM);
+@@ -186,10 +187,16 @@ static void fsl7450_handle_interrupt(str
+ 	is_kernel = is_kernel_addr(pc);
+ 
+ 	for (i = 0; i < num_pmcs; ++i) {
++		parms.backtrace = 0;
++		parms.task = NULL;
+ 		val = classic_ctr_read(i);
+ 		if (val < 0) {
+ 			if (oprofile_running && ctr[i].enabled) {
+-				oprofile_add_ext_sample(pc, regs, i, is_kernel);
++				parms.pc = pc;
++				parms.event = i;
++				parms.is_kernel = is_kernel;
++				parms.regs = regs;
++				oprofile_add_ext_sample(&parms);
+ 				classic_ctr_write(i, reset_value[i]);
+ 			} else {
+ 				classic_ctr_write(i, 0);
+Index: s390/arch/powerpc/oprofile/op_model_cell.c
+===================================================================
+--- s390.orig/arch/powerpc/oprofile/op_model_cell.c
++++ s390/arch/powerpc/oprofile/op_model_cell.c
+@@ -1613,6 +1613,7 @@ static void cell_handle_interrupt_ppu(st
+ 	unsigned long flags = 0;
+ 	u32 interrupt_mask;
+ 	int i;
++	struct oprofile_sample_parms parms;
+ 
+ 	cpu = smp_processor_id();
+ 
+@@ -1645,9 +1646,15 @@ static void cell_handle_interrupt_ppu(st
+ 		is_kernel = is_kernel_addr(pc);
+ 
+ 		for (i = 0; i < num_counters; ++i) {
++			parms.backtrace = 0;
++			parms.task = NULL;
+ 			if ((interrupt_mask & CBE_PM_CTR_OVERFLOW_INTR(i))
+ 			    && ctr[i].enabled) {
+-				oprofile_add_ext_sample(pc, regs, i, is_kernel);
++				parms.pc = pc;
++				parms.event = i;
++				parms.is_kernel = is_kernel;
++				parms.regs = regs;
++				oprofile_add_ext_sample(&parms);
+ 				cbe_write_ctr(cpu, i, reset_value[i]);
+ 			}
+ 		}
+Index: s390/arch/powerpc/oprofile/op_model_fsl_emb.c
+===================================================================
+--- s390.orig/arch/powerpc/oprofile/op_model_fsl_emb.c
++++ s390/arch/powerpc/oprofile/op_model_fsl_emb.c
+@@ -320,15 +320,22 @@ static void fsl_emb_handle_interrupt(str
+ 	int is_kernel;
+ 	int val;
+ 	int i;
++	struct oprofile_sample_parms parms;
+ 
+ 	pc = regs->nip;
+ 	is_kernel = is_kernel_addr(pc);
+ 
+ 	for (i = 0; i < num_counters; ++i) {
++		parms.backtrace = 0;
++		parms.task = NULL;
+ 		val = ctr_read(i);
+ 		if (val < 0) {
+ 			if (oprofile_running && ctr[i].enabled) {
+-				oprofile_add_ext_sample(pc, regs, i, is_kernel);
++				parms.pc = pc;
++				parms.event = i;
++				parms.is_kernel = is_kernel;
++				parms.regs = regs;
++				oprofile_add_ext_sample(&parms);
+ 				ctr_write(i, reset_value[i]);
+ 			} else {
+ 				ctr_write(i, 0);
+Index: s390/arch/powerpc/oprofile/op_model_pa6t.c
+===================================================================
+--- s390.orig/arch/powerpc/oprofile/op_model_pa6t.c
++++ s390/arch/powerpc/oprofile/op_model_pa6t.c
+@@ -205,6 +205,7 @@ static void pa6t_handle_interrupt(struct
+ 	u64 val;
+ 	int i;
+ 	u64 mmcr0;
++	struct oprofile_sample_parms parms;
+ 
+ 	/* disable perfmon counting until rfid */
+ 	mmcr0 = mfspr(SPRN_PA6T_MMCR0);
+@@ -214,11 +215,18 @@ static void pa6t_handle_interrupt(struct
+ 	 * was taken, so add it for any counter that triggered overflow.
+ 	 */
+ 	for (i = 0; i < cur_cpu_spec->num_pmcs; i++) {
++		parms.backtrace = 0;
++		parms.task = NULL;
+ 		val = ctr_read(i);
+ 		if (val & (0x1UL << 39)) { /* Overflow bit set */
+ 			if (oprofile_running && ctr[i].enabled) {
+-				if (mmcr0 & PA6T_MMCR0_SIARLOG)
+-					oprofile_add_ext_sample(pc, regs, i, is_kernel);
++				if (mmcr0 & PA6T_MMCR0_SIARLOG) {
++					parms.pc = pc;
++					parms.event = i;
++					parms.is_kernel = is_kernel;
++					parms.regs = regs;
++					oprofile_add_ext_sample(&parms);
++				}
+ 				ctr_write(i, reset_value[i]);
+ 			} else {
+ 				ctr_write(i, 0UL);
+Index: s390/arch/powerpc/oprofile/op_model_power4.c
+===================================================================
+--- s390.orig/arch/powerpc/oprofile/op_model_power4.c
++++ s390/arch/powerpc/oprofile/op_model_power4.c
+@@ -270,6 +270,7 @@ static void power4_handle_interrupt(stru
+ 	int i;
+ 	unsigned int mmcr0;
+ 	unsigned long mmcra;
++	struct oprofile_sample_parms parms;
+ 
+ 	mmcra = mfspr(SPRN_MMCRA);
+ 
+@@ -280,10 +281,16 @@ static void power4_handle_interrupt(stru
+ 	mtmsrd(mfmsr() | MSR_PMM);
+ 
+ 	for (i = 0; i < cur_cpu_spec->num_pmcs; ++i) {
++		parms.backtrace = 0;
++		parms.task = NULL;
+ 		val = classic_ctr_read(i);
+ 		if (val < 0) {
+ 			if (oprofile_running && ctr[i].enabled) {
+-				oprofile_add_ext_sample(pc, regs, i, is_kernel);
++				parms.pc = pc;
++				parms.event = i;
++				parms.is_kernel = is_kernel;
++				parms.regs = regs;
++				oprofile_add_ext_sample(&parms);
+ 				classic_ctr_write(i, reset_value[i]);
+ 			} else {
+ 				classic_ctr_write(i, 0);
+Index: s390/arch/powerpc/oprofile/op_model_rs64.c
+===================================================================
+--- s390.orig/arch/powerpc/oprofile/op_model_rs64.c
++++ s390/arch/powerpc/oprofile/op_model_rs64.c
+@@ -183,6 +183,7 @@ static void rs64_handle_interrupt(struct
+ 	int val;
+ 	int i;
+ 	unsigned long pc = mfspr(SPRN_SIAR);
++	struct oprofile_sample_parms parms;
+ 
+ 	is_kernel = is_kernel_addr(pc);
+ 
+@@ -190,10 +191,16 @@ static void rs64_handle_interrupt(struct
+ 	mtmsrd(mfmsr() | MSR_PMM);
+ 
+ 	for (i = 0; i < num_counters; ++i) {
++		parms.backtrace = 0;
++		parms.task = NULL;
+ 		val = classic_ctr_read(i);
+ 		if (val < 0) {
+ 			if (ctr[i].enabled) {
+-				oprofile_add_ext_sample(pc, regs, i, is_kernel);
++				parms.pc = pc;
++				parms.event = i;
++				parms.is_kernel = is_kernel;
++				parms.regs = regs;
++				oprofile_add_ext_sample(&parms);
+ 				classic_ctr_write(i, reset_value[i]);
+ 			} else {
+ 				classic_ctr_write(i, 0);
+Index: s390/drivers/oprofile/cpu_buffer.c
+===================================================================
+--- s390.orig/drivers/oprofile/cpu_buffer.c
++++ s390/drivers/oprofile/cpu_buffer.c
+@@ -315,27 +315,9 @@ __oprofile_add_ext_sample(struct oprofil
+ 	oprofile_end_trace(cpu_buf);
+ }
+ 
+-void oprofile_add_ext_hw_sample(unsigned long pc, struct pt_regs * const regs,
+-				unsigned long event, int is_kernel,
+-				struct task_struct *task)
++void oprofile_add_ext_sample( struct oprofile_sample_parms *parms)
+ {
+-	struct oprofile_sample_parms parms = {
+-		.pc = pc, .backtrace = 0, .event = event,
+-		.is_kernel = is_kernel, .regs = regs,
+-		.task = task ? task : current
+-	};
+-
+-	__oprofile_add_ext_sample(&parms);
+-}
+-
+-void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
+-			     unsigned long event, int is_kernel)
+-{
+-	struct oprofile_sample_parms parms = {
+-		.pc = pc, .backtrace = 0, .event = event,
+-		.is_kernel = is_kernel, .regs = regs, .task = NULL
+-	};
+-	__oprofile_add_ext_sample(&parms);
++	__oprofile_add_ext_sample(parms);
+ }
+ 
+ void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
+Index: s390/arch/s390/oprofile/hwsampler.c
+===================================================================
+--- s390.orig/arch/s390/oprofile/hwsampler.c
++++ s390/arch/s390/oprofile/hwsampler.c
+@@ -887,6 +887,8 @@ static void add_samples_to_oprofile(unsi
+ 	while ((unsigned long *)sample_data_ptr < trailer) {
+ 		struct pt_regs *regs = NULL;
+ 		struct task_struct *tsk = NULL;
++		struct oprofile_sample_parms parms = {
++				.backtrace = 0, .event = 0 };
+ 
+ 		/*
+ 		 * Check sampling mode, 1 indicates basic (=customer) sampling
+@@ -916,8 +918,11 @@ static void add_samples_to_oprofile(unsi
+ 		}
+ 
+ 		mutex_lock(&hws_sem);
+-		oprofile_add_ext_hw_sample(sample_data_ptr->ia, regs, 0,
+-				!sample_data_ptr->P, tsk);
++		parms.pc = sample_data_ptr->ia;
++		parms.regs = regs;
++		parms.task = tsk;
++		parms.is_kernel = !sample_data_ptr->P;
++		oprofile_add_ext_sample(&parms);
+ 		mutex_unlock(&hws_sem);
+ 
+ 		sample_data_ptr++;
 
