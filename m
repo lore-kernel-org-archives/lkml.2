@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab1BPBa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:30:56 -0500
-Received: from kroah.org ([198.145.64.141]:39340 "EHLO coco.kroah.org"
+	id S1757410Ab1BPBa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:30:59 -0500
+Received: from kroah.org ([198.145.64.141]:39336 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757322Ab1BPAVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:39 -0500
+	id S1757315Ab1BPAVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:37 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:37 2011
-Message-Id: <20110216001437.634791184@clark.kroah.org>
+Message-Id: <20110216001437.531975804@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:03 -0800
+Date: Tue, 15 Feb 2011 16:13:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
-        Jan Engelhardt <jengelh@medozas.de>, Jens Axboe <axboe@kernel.dk>
-Subject: [126/272] writeback: integrated background writeback work
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [125/272] genirq: Prevent irq storm on migration
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,168 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6585027a5e8cb490e3a761b2f3f3c3acf722aff2 upstream.
+commit f1a06390d013244e721372b3f9b66e39b6429c71 upstream.
 
-Check whether background writeback is needed after finishing each work.
+move_native_irq() masks and unmasks the interrupt line
+unconditionally, but the interrupt line might be masked due to a
+threaded oneshot handler in progress. Unmasking the line in that case
+can lead to interrupt storms. Observed on PREEMPT_RT.
 
-When bdi flusher thread finishes doing some work check whether any kind of
-background writeback needs to be done (either because
-dirty_background_ratio is exceeded or because we need to start flushing
-old inodes).  If so, just do background write back.
-
-This way, bdi_start_background_writeback() just needs to wake up the
-flusher thread.  It will do background writeback as soon as there is no
-other work.
-
-This is a preparatory patch for the next patch which stops background
-writeback as soon as there is other work to do.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Jan Engelhardt <jengelh@medozas.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Originally-from: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/fs-writeback.c |   61 ++++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 46 insertions(+), 15 deletions(-)
+ kernel/irq/migration.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -84,13 +84,9 @@ static inline struct inode *wb_inode(str
- 	return list_entry(head, struct inode, i_wb_list);
- }
- 
--static void bdi_queue_work(struct backing_dev_info *bdi,
--		struct wb_writeback_work *work)
-+/* Wakeup flusher thread or forker thread to fork it. Requires bdi->wb_lock. */
-+static void bdi_wakeup_flusher(struct backing_dev_info *bdi)
+--- a/kernel/irq/migration.c
++++ b/kernel/irq/migration.c
+@@ -56,6 +56,7 @@ void move_masked_irq(int irq)
+ void move_native_irq(int irq)
  {
--	trace_writeback_queue(bdi, work);
--
--	spin_lock_bh(&bdi->wb_lock);
--	list_add_tail(&work->list, &bdi->work_list);
- 	if (bdi->wb.task) {
- 		wake_up_process(bdi->wb.task);
- 	} else {
-@@ -98,15 +94,26 @@ static void bdi_queue_work(struct backin
- 		 * The bdi thread isn't there, wake up the forker thread which
- 		 * will create and run it.
- 		 */
--		trace_writeback_nothread(bdi, work);
- 		wake_up_process(default_backing_dev_info.wb.task);
- 	}
-+}
-+
-+static void bdi_queue_work(struct backing_dev_info *bdi,
-+			   struct wb_writeback_work *work)
-+{
-+	trace_writeback_queue(bdi, work);
-+
-+	spin_lock_bh(&bdi->wb_lock);
-+	list_add_tail(&work->list, &bdi->work_list);
-+	if (!bdi->wb.task)
-+		trace_writeback_nothread(bdi, work);
-+	bdi_wakeup_flusher(bdi);
- 	spin_unlock_bh(&bdi->wb_lock);
- }
+ 	struct irq_desc *desc = irq_to_desc(irq);
++	bool masked;
  
- static void
- __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
--		bool range_cyclic, bool for_background)
-+		      bool range_cyclic)
- {
- 	struct wb_writeback_work *work;
+ 	if (likely(!(desc->status & IRQ_MOVE_PENDING)))
+ 		return;
+@@ -63,8 +64,15 @@ void move_native_irq(int irq)
+ 	if (unlikely(desc->status & IRQ_DISABLED))
+ 		return;
  
-@@ -126,7 +133,6 @@ __bdi_start_writeback(struct backing_dev
- 	work->sync_mode	= WB_SYNC_NONE;
- 	work->nr_pages	= nr_pages;
- 	work->range_cyclic = range_cyclic;
--	work->for_background = for_background;
- 
- 	bdi_queue_work(bdi, work);
- }
-@@ -144,7 +150,7 @@ __bdi_start_writeback(struct backing_dev
-  */
- void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages)
- {
--	__bdi_start_writeback(bdi, nr_pages, true, false);
-+	__bdi_start_writeback(bdi, nr_pages, true);
- }
- 
- /**
-@@ -152,13 +158,20 @@ void bdi_start_writeback(struct backing_
-  * @bdi: the backing device to write from
-  *
-  * Description:
-- *   This does WB_SYNC_NONE background writeback. The IO is only
-- *   started when this function returns, we make no guarentees on
-- *   completion. Caller need not hold sb s_umount semaphore.
-+ *   This makes sure WB_SYNC_NONE background writeback happens. When
-+ *   this function returns, it is only guaranteed that for given BDI
-+ *   some IO is happening if we are over background dirty threshold.
-+ *   Caller need not hold sb s_umount semaphore.
-  */
- void bdi_start_background_writeback(struct backing_dev_info *bdi)
- {
--	__bdi_start_writeback(bdi, LONG_MAX, true, true);
+-	desc->irq_data.chip->irq_mask(&desc->irq_data);
 +	/*
-+	 * We just wake up the flusher thread. It will perform background
-+	 * writeback as soon as there is no other work to do.
++	 * Be careful vs. already masked interrupts. If this is a
++	 * threaded interrupt with ONESHOT set, we can end up with an
++	 * interrupt storm.
 +	 */
-+	spin_lock_bh(&bdi->wb_lock);
-+	bdi_wakeup_flusher(bdi);
-+	spin_unlock_bh(&bdi->wb_lock);
++	masked = desc->status & IRQ_MASKED;
++	if (!masked)
++		desc->irq_data.chip->irq_mask(&desc->irq_data);
+ 	move_masked_irq(irq);
+-	desc->irq_data.chip->irq_unmask(&desc->irq_data);
++	if (!masked)
++		desc->irq_data.chip->irq_unmask(&desc->irq_data);
  }
- 
- /*
-@@ -718,6 +731,23 @@ static unsigned long get_nr_dirty_pages(
- 		get_nr_dirty_inodes();
- }
- 
-+static long wb_check_background_flush(struct bdi_writeback *wb)
-+{
-+	if (over_bground_thresh()) {
-+
-+		struct wb_writeback_work work = {
-+			.nr_pages	= LONG_MAX,
-+			.sync_mode	= WB_SYNC_NONE,
-+			.for_background	= 1,
-+			.range_cyclic	= 1,
-+		};
-+
-+		return wb_writeback(wb, &work);
-+	}
-+
-+	return 0;
-+}
-+
- static long wb_check_old_data_flush(struct bdi_writeback *wb)
- {
- 	unsigned long expired;
-@@ -787,6 +817,7 @@ long wb_do_writeback(struct bdi_writebac
- 	 * Check for periodic writeback, kupdated() style
- 	 */
- 	wrote += wb_check_old_data_flush(wb);
-+	wrote += wb_check_background_flush(wb);
- 	clear_bit(BDI_writeback_running, &wb->bdi->state);
- 
- 	return wrote;
-@@ -873,7 +904,7 @@ void wakeup_flusher_threads(long nr_page
- 	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list) {
- 		if (!bdi_has_dirty_io(bdi))
- 			continue;
--		__bdi_start_writeback(bdi, nr_pages, false, false);
-+		__bdi_start_writeback(bdi, nr_pages, false);
- 	}
- 	rcu_read_unlock();
- }
+-
 
 
