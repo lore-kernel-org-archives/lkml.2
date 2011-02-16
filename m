@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab1BPAh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:37:57 -0500
-Received: from kroah.org ([198.145.64.141]:49573 "EHLO coco.kroah.org"
+	id S932251Ab1BPAiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:38:12 -0500
+Received: from kroah.org ([198.145.64.141]:49558 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932238Ab1BPAYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:00 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:46 2011
-Message-Id: <20110216001446.045610704@clark.kroah.org>
+	id S932222Ab1BPAX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:57 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:45 2011
+Message-Id: <20110216001445.848172974@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:26 -0800
+Date: Tue, 15 Feb 2011 16:14:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Soren Hansen <soren@linux2go.dk>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Paul Clements <paul.clements@steeleye.com>,
-        Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>
-Subject: [209/272] nbd: remove module-level ioctl mutex
+        openipmi-developer@lists.sourceforge.net,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Corey Minyard <cminyard@mvista.com>
+Subject: [207/272] char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,75 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Soren Hansen <soren@linux2go.dk>
+From: Corey Minyard <minyard@acm.org>
 
-commit de1f016f882e52facc3c8609599f827bcdd14af9 upstream.
+commit d2478521afc20227658a10a8c5c2bf1a2aa615b3 upstream.
 
-Commit 2a48fc0ab242417 ("block: autoconvert trivial BKL users to private
-mutex") replaced uses of the BKL in the nbd driver with mutex
-operations.  Since then, I've been been seeing these lock ups:
+This patch fixes an OOPS triggered when calling modprobe ipmi_si a
+second time after the first modprobe returned without finding any ipmi
+devices.  This can happen if you reload the module after having the
+first module load fail.  The driver was not deregistering from PNP in
+that case.
 
- INFO: task qemu-nbd:16115 blocked for more than 120 seconds.
- "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
- qemu-nbd      D 0000000000000001     0 16115  16114 0x00000004
-  ffff88007d775d98 0000000000000082 ffff88007d775fd8 ffff88007d774000
-  0000000000013a80 ffff8800020347e0 ffff88007d775fd8 0000000000013a80
-  ffff880133730000 ffff880002034440 ffffea0004333db8 ffffffffa071c020
- Call Trace:
-  [<ffffffff815b9997>] __mutex_lock_slowpath+0xf7/0x180
-  [<ffffffff815b93eb>] mutex_lock+0x2b/0x50
-  [<ffffffffa071a21c>] nbd_ioctl+0x6c/0x1c0 [nbd]
-  [<ffffffff812cb970>] blkdev_ioctl+0x230/0x730
-  [<ffffffff811967a1>] block_ioctl+0x41/0x50
-  [<ffffffff81175c03>] do_vfs_ioctl+0x93/0x370
-  [<ffffffff81175f61>] sys_ioctl+0x81/0xa0
-  [<ffffffff8100c0c2>] system_call_fastpath+0x16/0x1b
+Peter Huewe originally reported this patch and supplied a fix, I have a
+different patch based on Linus' suggestion that cleans things up a bit
+more.
 
-Instrumenting the nbd module's ioctl handler with some extra logging
-clearly shows the NBD_DO_IT ioctl being invoked which is a long-lived
-ioctl in the sense that it doesn't return until another ioctl asks the
-driver to disconnect.  However, that other ioctl blocks, waiting for the
-module-level mutex that replaced the BKL, and then we're stuck.
-
-This patch removes the module-level mutex altogether.  It's clearly
-wrong, and as far as I can see, it's entirely unnecessary, since the nbd
-driver maintains per-device mutexes, and I don't see anything that would
-require a module-level (or kernel-level, for that matter) mutex.
-
-Signed-off-by: Soren Hansen <soren@linux2go.dk>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Acked-by: Paul Clements <paul.clements@steeleye.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: openipmi-developer@lists.sourceforge.net
+Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/nbd.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -53,7 +53,6 @@
- #define DBG_BLKDEV      0x0100
- #define DBG_RX          0x0200
- #define DBG_TX          0x0400
--static DEFINE_MUTEX(nbd_mutex);
- static unsigned int debugflags;
- #endif /* NDEBUG */
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -320,6 +320,7 @@ static int unload_when_empty = 1;
+ static int add_smi(struct smi_info *smi);
+ static int try_smi_init(struct smi_info *smi);
+ static void cleanup_one_si(struct smi_info *to_clean);
++static void cleanup_ipmi_si(void);
  
-@@ -718,11 +717,9 @@ static int nbd_ioctl(struct block_device
- 	dprintk(DBG_IOCTL, "%s: nbd_ioctl cmd=%s(0x%x) arg=%lu\n",
- 			lo->disk->disk_name, ioctl_cmd_to_ascii(cmd), cmd, arg);
- 
--	mutex_lock(&nbd_mutex);
- 	mutex_lock(&lo->tx_lock);
- 	error = __nbd_ioctl(bdev, lo, cmd, arg);
- 	mutex_unlock(&lo->tx_lock);
--	mutex_unlock(&nbd_mutex);
- 
- 	return error;
- }
+ static ATOMIC_NOTIFIER_HEAD(xaction_notifier_list);
+ static int register_xaction_notifier(struct notifier_block *nb)
+@@ -3435,16 +3436,7 @@ static int __devinit init_ipmi_si(void)
+ 	mutex_lock(&smi_infos_lock);
+ 	if (unload_when_empty && list_empty(&smi_infos)) {
+ 		mutex_unlock(&smi_infos_lock);
+-#ifdef CONFIG_PCI
+-		if (pci_registered)
+-			pci_unregister_driver(&ipmi_pci_driver);
+-#endif
+-
+-#ifdef CONFIG_PPC_OF
+-		if (of_registered)
+-			of_unregister_platform_driver(&ipmi_of_platform_driver);
+-#endif
+-		driver_unregister(&ipmi_driver.driver);
++		cleanup_ipmi_si();
+ 		printk(KERN_WARNING PFX
+ 		       "Unable to find any System Interface(s)\n");
+ 		return -ENODEV;
 
 
