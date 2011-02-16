@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab1BPAw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:52:27 -0500
-Received: from kroah.org ([198.145.64.141]:52668 "EHLO coco.kroah.org"
+	id S933571Ab1BPAw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:52:29 -0500
+Received: from kroah.org ([198.145.64.141]:52675 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933516Ab1BPAwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:52:14 -0500
+	id S933381Ab1BPAwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:52:15 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:16 2011
-Message-Id: <20110216002116.319283887@clark.kroah.org>
+Message-Id: <20110216002116.419338119@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:21 -0800
+Date: Tue, 15 Feb 2011 16:22:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [patch 173/176] drm/i915: Only bind to function 0 of the PCI device
+        Zhang Rui <rui.zhang@intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [patch 174/176] xhci: Do not run xhci_cleanup_msix with irq disabled
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 5fe49d86f9d01044abf687a8cd21edef636d58aa upstream.
+commit 40a9fb17f32dbe54de3d636142a59288544deed7 upstream.
 
-Early chipsets (gen2/3) used function 1 as a placeholder for multi-head.
-We used to ignore these since they were not assigned to
-PCI_CLASS_DISPLAY_VGA. However with 934f992c7 we attempt to bind to all
-Intel PCI_CLASS_DISPLAY devices (and functions) to work in multi-gpu
-systems. This fails hard on gen2/3.
+when unloading xhci_hcd, I got:
+[  134.856813] xhci_hcd 0000:02:00.0: remove, state 4
+[  134.858140] usb usb3: USB disconnect, address 1
+[  134.874956] xhci_hcd 0000:02:00.0: Host controller not halted, aborting reset.
+[  134.876351] BUG: sleeping function called from invalid context at kernel/mutex.c:85
+[  134.877657] in_atomic(): 0, irqs_disabled(): 1, pid: 1451, name: modprobe
+[  134.878975] Pid: 1451, comm: modprobe Not tainted 2.6.37-rc5+ #162
+[  134.880298] Call Trace:
+[  134.881602]  [<ffffffff8104156a>] __might_sleep+0xeb/0xf0
+[  134.882921]  [<ffffffff814763dc>] mutex_lock+0x24/0x50
+[  134.884229]  [<ffffffff810a745c>] free_desc+0x2e/0x5f
+[  134.885538]  [<ffffffff810a74c8>] irq_free_descs+0x3b/0x71
+[  134.886853]  [<ffffffff8102584d>] free_irq_at+0x31/0x36
+[  134.888167]  [<ffffffff8102723f>] destroy_irq+0x69/0x71
+[  134.889486]  [<ffffffff8102747a>] native_teardown_msi_irq+0xe/0x10
+[  134.890820]  [<ffffffff8124c382>] default_teardown_msi_irqs+0x57/0x80
+[  134.892158]  [<ffffffff8124be46>] free_msi_irqs+0x8b/0xe9
+[  134.893504]  [<ffffffff8124cd46>] pci_disable_msix+0x35/0x39
+[  134.894844]  [<ffffffffa01b444a>] xhci_cleanup_msix+0x31/0x51 [xhci_hcd]
+[  134.896186]  [<ffffffffa01b4b3a>] xhci_stop+0x3a/0x80 [xhci_hcd]
+[  134.897521]  [<ffffffff81341dd4>] usb_remove_hcd+0xfd/0x14a
+[  134.898859]  [<ffffffff813500ae>] usb_hcd_pci_remove+0x5c/0xc6
+[  134.900193]  [<ffffffff8123c606>] pci_device_remove+0x3f/0x91
+[  134.901535]  [<ffffffff812e7ea4>] __device_release_driver+0x83/0xd9
+[  134.902899]  [<ffffffff812e8571>] driver_detach+0x86/0xad
+[  134.904222]  [<ffffffff812e7d56>] bus_remove_driver+0xb2/0xd8
+[  134.905540]  [<ffffffff812e8633>] driver_unregister+0x6c/0x74
+[  134.906839]  [<ffffffff8123c8e4>] pci_unregister_driver+0x44/0x89
+[  134.908121]  [<ffffffffa01b940e>] xhci_unregister_pci+0x15/0x17 [xhci_hcd]
+[  134.909396]  [<ffffffffa01bd7d2>] xhci_hcd_cleanup+0xe/0x10 [xhci_hcd]
+[  134.910652]  [<ffffffff8107fcd1>] sys_delete_module+0x1ca/0x23b
+[  134.911882]  [<ffffffff81123932>] ? path_put+0x22/0x26
+[  134.913104]  [<ffffffff8109a800>] ? audit_syscall_entry+0x2c/0x148
+[  134.914333]  [<ffffffff8100ac82>] system_call_fastpath+0x16/0x1b
+[  134.915658] xhci_hcd 0000:02:00.0: USB bus 3 deregistered
+[  134.916465] xhci_hcd 0000:02:00.0: PCI INT A disabled
 
-Reported-by: Ferenc Wágner <wferi@niif.hu>
-Tested-by: Ferenc Wágner <wferi@niif.hu>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=28012
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+and the same issue when xhci_suspend is invoked.  (Note from Sarah: That's
+fixed by Andiry's patch before this, by synchronizing the irqs rather than
+freeing them on suspend.)
+
+Do not run xhci_cleanup_msix with irq disabled.
+
+This patch should be queued for the 2.6.37 stable tree.
+
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/xhci.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -414,6 +414,14 @@ int i965_reset(struct drm_device *dev, u
- static int __devinit
- i915_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
-+	/* Only bind to function 0 of the device. Early generations
-+	 * used function 1 as a placeholder for multi-head. This causes
-+	 * us confusion instead, especially on the systems where both
-+	 * functions have the same PCI-ID!
-+	 */
-+	if (PCI_FUNC(pdev->devfn))
-+		return -ENODEV;
-+
- 	return drm_get_pci_dev(pdev, ent, &driver);
- }
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -508,9 +508,10 @@ void xhci_stop(struct usb_hcd *hcd)
+ 	spin_lock_irq(&xhci->lock);
+ 	xhci_halt(xhci);
+ 	xhci_reset(xhci);
+-	xhci_cleanup_msix(xhci);
+ 	spin_unlock_irq(&xhci->lock);
  
++	xhci_cleanup_msix(xhci);
++
+ #ifdef CONFIG_USB_XHCI_HCD_DEBUGGING
+ 	/* Tell the event ring poll function not to reschedule */
+ 	xhci->zombie = 1;
+@@ -544,9 +545,10 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ 
+ 	spin_lock_irq(&xhci->lock);
+ 	xhci_halt(xhci);
+-	xhci_cleanup_msix(xhci);
+ 	spin_unlock_irq(&xhci->lock);
+ 
++	xhci_cleanup_msix(xhci);
++
+ 	xhci_dbg(xhci, "xhci_shutdown completed - status = %x\n",
+ 		    xhci_readl(xhci, &xhci->op_regs->status));
+ }
 
 
