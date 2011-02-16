@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757629Ab1BPIiD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 03:38:03 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41522 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925Ab1BPIh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 03:37:59 -0500
-Date: Wed, 16 Feb 2011 09:37:47 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Dave Airlie <airlied@gmail.com>, George Spelvin <linux@horizon.com>,
-        a.p.zijlstra@chello.nl, dzickus@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Subject: Re: 2.6.38-rc2: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Message-ID: <20110216083747.GF16529@elte.hu>
-References: <4D484853.9020409@gmail.com>
- <20110202023610.3799.qmail@science.horizon.com>
- <AANLkTi=X8vCuVOCMBJiCOB-8GZRF4-5RVx59QchecLz4@mail.gmail.com>
- <AANLkTikLVMNQzmugH-ORc89_ZouX6zWvG-tHSf1QoVf3@mail.gmail.com>
- <AANLkTikx-7zJZaV2tgP=D=vZ12Brp9qrnyxLv_mVXQT3@mail.gmail.com>
+	id S1752860Ab1BPIj7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 03:39:59 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:60855 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750934Ab1BPIj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 03:39:57 -0500
+Message-ID: <4D5B8D47.2010809@stericsson.com>
+Date: Wed, 16 Feb 2011 09:39:35 +0100
+From: Linus Walleij <linus.walleij@stericsson.com>
+Organization: ST-Ericsson SA
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikx-7zJZaV2tgP=D=vZ12Brp9qrnyxLv_mVXQT3@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/9] mfd-core: rename platform_data field of mfd_cell
+ to mfd_data
+References: <1297808729-21110-1-git-send-email-dilinger@queued.net> <1297808729-21110-2-git-send-email-dilinger@queued.net>
+In-Reply-To: <1297808729-21110-2-git-send-email-dilinger@queued.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/15/2011 11:25 PM, Andres Salomon wrote:
+> Rename the platform_data variable to imply a distinction between
+> common platform_data driver usage (typically accessed via
+> pdev->dev.platform_data) and the way MFD passes data down to
+> clients (using a wrapper named mfd_get_data).
+>
+> All clients have already been changed to use the wrapper function,
+> so this can be a quick single-commit change that only touches things
+> in drivers/mfd.
+>
+> Signed-off-by: Andres Salomon<dilinger@queued.net>
+>    
 
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+Thanks, I like easy-to-read code.
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 
-> On 2/16/11, Dave Airlie <airlied@gmail.com> wrote:
-> > On Wed, Feb 2, 2011 at 2:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> >> On 2/2/11, George Spelvin <linux@horizon.com> wrote:
-> >>>>  But if you have a will or would like to help debug the problem -- mind
-> >>>> to
-> >>>> try the patch below? Note the patch is ugly at moment and must *not* be
-> >>>> running on non-P4 system (and I only compile-tested it so no guarantees
-> >>>> at all, and I've CC'ed a couple of people as well)
-> >>>
-> >>> Promising...  After 32 minute of uptime, no NMI complaints so far.
-> >>>
-> >>> I'll let it run overnight and see what happens.
-> >>>
-> >>
-> >> Great, thanks. Though the patch didn't help for Don, ie there is still
-> >> an issue which needs to be resolved as well.
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >
-> > Ping on this problem, still seeing
-> >
-> > Uhhuh. NMI received for unknown reason 3c on CPU 0.
-> > Do you have a strange power saving mode enabled?
-> > Dazed and confused, but trying to continue
-> >
-> > on my Pentium-D system here with latest Linus head.
-> >
-> > its sometimes 3c, sometimes 3d, I'm going to bisect and push for
-> > reverts if nobody still has any clue about how to fix this.
-> >
-> > Dave.
-> >
-> 
-> We still trying to resolve it but without success yet. There is no
-> easy way to revert it. One of the option might be to disable perf on
-> p4 for a while. If this is acceptable -- i'll cook such patch and send
-> it to Ingo. Hm?
-
-That's not really acceptable - need to fix it or revert it to the last working 
-state. Which commit broke it?
-
-Thanks,
-
-	Ingo
+Yours,
+Linus Walleij
