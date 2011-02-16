@@ -1,276 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab1BPH5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 02:57:25 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:36884 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757751Ab1BPH5V (ORCPT
+	id S1757755Ab1BPIE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 03:04:26 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:45492 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab1BPIEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 02:57:21 -0500
-From: <wei_wang@realsil.com.cn>
-To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: wwang <wei_wang@realsil.com.cn>
-Subject: [PATCH 2/2] staging: rts_pstor: fix sparse warning
-Date: Wed, 16 Feb 2011 15:56:11 +0800
-X-BOX-Message-Id: p1G7v9AM009190
-Message-ID: <1297842971-2861-2-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1297842971-2861-1-git-send-email-wei_wang@realsil.com.cn>
-References: <1297842971-2861-1-git-send-email-wei_wang@realsil.com.cn>
+	Wed, 16 Feb 2011 03:04:23 -0500
+Date: Wed, 16 Feb 2011 03:04:20 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Charles Manning <manningc2@actrix.gen.nz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Charles Manning <cdhmanning@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, ryan@bluewatersys.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
+Message-ID: <20110216080419.GA21261@infradead.org>
+References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com>
+ <20110209045221.GB29650@infradead.org>
+ <201102100722.47854.manningc2@actrix.gen.nz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102100722.47854.manningc2@actrix.gen.nz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wwang <wei_wang@realsil.com.cn>
+On Thu, Feb 10, 2011 at 07:22:47AM +1300, Charles Manning wrote:
+> Can you be a bit more specific?
 
-Add static modifier before some functions and global variables.
+Just compare the mes in yaffs_linux.c with a normal linux filesystem.
+All that gross magic nfsd detection in readdir could have been removed
+long ago.  ->readlink should not be implemented by a normal filesystem
+but use generic_readlink, the fs-specific inode should embedd the vfs
+inode instead of requiring two allocations, tons of useless function
+pointer indirections like sb_dirty_fn and the put_super_fn really must
+go away.  The procfs interfaces should be replaced by something saner,
+the insane amount of ad-hoc tracing crap should be replaced by much
+less strategically placed trace events, and all those stupid compile
+time options have absolutely no business at all beeing there for a
+filesystem - remember you can get media from all over the place.
+If you can't encode these difference in your on-disk format it has
+absolutely no business going into mainline with this format.
 
-Signed-off-by: wwang <wei_wang@realsil.com.cn>
----
- drivers/staging/rts_pstor/ms.c             |    2 +-
- drivers/staging/rts_pstor/rtsx.c           |    4 +-
- drivers/staging/rts_pstor/rtsx_card.c      |    2 +-
- drivers/staging/rts_pstor/rtsx_chip.c      |    8 ++--
- drivers/staging/rts_pstor/rtsx_scsi.c      |    8 ++--
- drivers/staging/rts_pstor/rtsx_transport.c |    6 ++--
- drivers/staging/rts_pstor/sd.c             |   48 ++++++++++++++--------------
- drivers/staging/rts_pstor/spi.c            |    2 +-
- 8 files changed, 40 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/staging/rts_pstor/ms.c b/drivers/staging/rts_pstor/ms.c
-index 28d17c7..c88ce64 100644
---- a/drivers/staging/rts_pstor/ms.c
-+++ b/drivers/staging/rts_pstor/ms.c
-@@ -3594,7 +3594,7 @@ void ms_free_l2p_tbl(struct rtsx_chip *chip)
- #ifdef SUPPORT_MAGIC_GATE
- 
- #ifdef READ_BYTES_WAIT_INT
--int ms_poll_int(struct rtsx_chip *chip)
-+static int ms_poll_int(struct rtsx_chip *chip)
- {
- 	int retval;
- 	u8 val;
-diff --git a/drivers/staging/rts_pstor/rtsx.c b/drivers/staging/rts_pstor/rtsx.c
-index 9864b1a..3a728c8 100644
---- a/drivers/staging/rts_pstor/rtsx.c
-+++ b/drivers/staging/rts_pstor/rtsx.c
-@@ -257,7 +257,7 @@ static int bus_reset(struct scsi_cmnd *srb)
-  * this defines our host template, with which we'll allocate hosts
-  */
- 
--struct scsi_host_template rtsx_host_template = {
-+static struct scsi_host_template rtsx_host_template = {
- 	/* basic userland interface stuff */
- 	.name =				CR_DRIVER_NAME,
- 	.proc_name =			CR_DRIVER_NAME,
-@@ -436,7 +436,7 @@ static int rtsx_resume(struct pci_dev *pci)
- }
- #endif /* CONFIG_PM */
- 
--void rtsx_shutdown(struct pci_dev *pci)
-+static void rtsx_shutdown(struct pci_dev *pci)
- {
- 	struct rtsx_dev *dev = (struct rtsx_dev *)pci_get_drvdata(pci);
- 	struct rtsx_chip *chip;
-diff --git a/drivers/staging/rts_pstor/rtsx_card.c b/drivers/staging/rts_pstor/rtsx_card.c
-index fe4cce0..4f971f2 100644
---- a/drivers/staging/rts_pstor/rtsx_card.c
-+++ b/drivers/staging/rts_pstor/rtsx_card.c
-@@ -300,7 +300,7 @@ void do_reset_ms_card(struct rtsx_chip *chip)
- 	}
- }
- 
--void release_sdio(struct rtsx_chip *chip)
-+static void release_sdio(struct rtsx_chip *chip)
- {
- 	if (chip->sd_io) {
- 		rtsx_write_register(chip, CARD_STOP, SD_STOP | SD_CLR_ERR,
-diff --git a/drivers/staging/rts_pstor/rtsx_chip.c b/drivers/staging/rts_pstor/rtsx_chip.c
-index a4d8eb2..f443d97 100644
---- a/drivers/staging/rts_pstor/rtsx_chip.c
-+++ b/drivers/staging/rts_pstor/rtsx_chip.c
-@@ -657,7 +657,7 @@ static inline int check_sd_current_prior(u32 sd_current_prior)
- 	return !fake_para;
- }
- 
--int rts5209_init(struct rtsx_chip *chip)
-+static int rts5209_init(struct rtsx_chip *chip)
- {
- 	int retval;
- 	u32 lval = 0;
-@@ -805,7 +805,7 @@ int rts5209_init(struct rtsx_chip *chip)
- 	return STATUS_SUCCESS;
- }
- 
--int rts5208_init(struct rtsx_chip *chip)
-+static int rts5208_init(struct rtsx_chip *chip)
- {
- 	int retval;
- 	u16 reg = 0;
-@@ -871,7 +871,7 @@ int rts5208_init(struct rtsx_chip *chip)
- 	return STATUS_SUCCESS;
- }
- 
--int rts5288_init(struct rtsx_chip *chip)
-+static int rts5288_init(struct rtsx_chip *chip)
- {
- 	int retval;
- 	u8 val = 0, max_func;
-@@ -1097,7 +1097,7 @@ static inline void rtsx_blink_led(struct rtsx_chip *chip)
- }
- #endif
- 
--void rtsx_monitor_aspm_config(struct rtsx_chip *chip)
-+static void rtsx_monitor_aspm_config(struct rtsx_chip *chip)
- {
- 	int maybe_support_aspm, reg_changed;
- 	u32 tmp = 0;
-diff --git a/drivers/staging/rts_pstor/rtsx_scsi.c b/drivers/staging/rts_pstor/rtsx_scsi.c
-index ce9fc16..20c2464 100644
---- a/drivers/staging/rts_pstor/rtsx_scsi.c
-+++ b/drivers/staging/rts_pstor/rtsx_scsi.c
-@@ -274,7 +274,7 @@ static int test_unit_ready(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- 	return TRANSPORT_GOOD;
- }
- 
--unsigned char formatter_inquiry_str[20] = {
-+static unsigned char formatter_inquiry_str[20] = {
- 	'M', 'E', 'M', 'O', 'R', 'Y', 'S', 'T', 'I', 'C', 'K',
- #ifdef SUPPORT_MAGIC_GATE
- 	'-', 'M', 'G', /* Byte[47:49] */
-@@ -2690,7 +2690,7 @@ static int ms_format_cmnd(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- }
- 
- #ifdef SUPPORT_PCGL_1P18
--int get_ms_information(struct scsi_cmnd *srb, struct rtsx_chip *chip)
-+static int get_ms_information(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- {
- 	struct ms_info *ms_card = &(chip->ms_card);
- 	unsigned int lun = SCSI_LUN(srb);
-@@ -2864,7 +2864,7 @@ static int sd_extention_cmnd(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- #endif
- 
- #ifdef SUPPORT_MAGIC_GATE
--int mg_report_key(struct scsi_cmnd *srb, struct rtsx_chip *chip)
-+static int mg_report_key(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- {
- 	struct ms_info *ms_card = &(chip->ms_card);
- 	unsigned int lun = SCSI_LUN(srb);
-@@ -2962,7 +2962,7 @@ int mg_report_key(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- 	return TRANSPORT_GOOD;
- }
- 
--int mg_send_key(struct scsi_cmnd *srb, struct rtsx_chip *chip)
-+static int mg_send_key(struct scsi_cmnd *srb, struct rtsx_chip *chip)
- {
- 	struct ms_info *ms_card = &(chip->ms_card);
- 	unsigned int lun = SCSI_LUN(srb);
-diff --git a/drivers/staging/rts_pstor/rtsx_transport.c b/drivers/staging/rts_pstor/rtsx_transport.c
-index 3b160dc..4e3d2c1 100644
---- a/drivers/staging/rts_pstor/rtsx_transport.c
-+++ b/drivers/staging/rts_pstor/rtsx_transport.c
-@@ -324,7 +324,7 @@ static inline void rtsx_add_sg_tbl(
- 	} while (len);
- }
- 
--int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
-+static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
- 		struct scatterlist *sg, int num_sg, unsigned int *index,
- 		unsigned int *offset, int size,
- 		enum dma_data_direction dma_dir, int timeout)
-@@ -485,7 +485,7 @@ out:
- 	return err;
- }
- 
--int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
-+static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
- 		struct scatterlist *sg, int num_sg,
- 		enum dma_data_direction dma_dir, int timeout)
- {
-@@ -632,7 +632,7 @@ out:
- 	return err;
- }
- 
--int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf, size_t len,
-+static int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf, size_t len,
- 		enum dma_data_direction dma_dir, int timeout)
- {
- 	struct rtsx_dev *rtsx = chip->rtsx;
-diff --git a/drivers/staging/rts_pstor/sd.c b/drivers/staging/rts_pstor/sd.c
-index 945c95f..80b61e6 100644
---- a/drivers/staging/rts_pstor/sd.c
-+++ b/drivers/staging/rts_pstor/sd.c
-@@ -32,30 +32,30 @@
- 
- #define SD_MAX_RETRY_COUNT	3
- 
--u16 REG_SD_CFG1;
--u16 REG_SD_CFG2;
--u16 REG_SD_CFG3;
--u16 REG_SD_STAT1;
--u16 REG_SD_STAT2;
--u16 REG_SD_BUS_STAT;
--u16 REG_SD_PAD_CTL;
--u16 REG_SD_SAMPLE_POINT_CTL;
--u16 REG_SD_PUSH_POINT_CTL;
--u16 REG_SD_CMD0;
--u16 REG_SD_CMD1;
--u16 REG_SD_CMD2;
--u16 REG_SD_CMD3;
--u16 REG_SD_CMD4;
--u16 REG_SD_CMD5;
--u16 REG_SD_BYTE_CNT_L;
--u16 REG_SD_BYTE_CNT_H;
--u16 REG_SD_BLOCK_CNT_L;
--u16 REG_SD_BLOCK_CNT_H;
--u16 REG_SD_TRANSFER;
--u16 REG_SD_VPCLK0_CTL;
--u16 REG_SD_VPCLK1_CTL;
--u16 REG_SD_DCMPS0_CTL;
--u16 REG_SD_DCMPS1_CTL;
-+static u16 REG_SD_CFG1;
-+static u16 REG_SD_CFG2;
-+static u16 REG_SD_CFG3;
-+static u16 REG_SD_STAT1;
-+static u16 REG_SD_STAT2;
-+static u16 REG_SD_BUS_STAT;
-+static u16 REG_SD_PAD_CTL;
-+static u16 REG_SD_SAMPLE_POINT_CTL;
-+static u16 REG_SD_PUSH_POINT_CTL;
-+static u16 REG_SD_CMD0;
-+static u16 REG_SD_CMD1;
-+static u16 REG_SD_CMD2;
-+static u16 REG_SD_CMD3;
-+static u16 REG_SD_CMD4;
-+static u16 REG_SD_CMD5;
-+static u16 REG_SD_BYTE_CNT_L;
-+static u16 REG_SD_BYTE_CNT_H;
-+static u16 REG_SD_BLOCK_CNT_L;
-+static u16 REG_SD_BLOCK_CNT_H;
-+static u16 REG_SD_TRANSFER;
-+static u16 REG_SD_VPCLK0_CTL;
-+static u16 REG_SD_VPCLK1_CTL;
-+static u16 REG_SD_DCMPS0_CTL;
-+static u16 REG_SD_DCMPS1_CTL;
- 
- static inline void sd_set_err_code(struct rtsx_chip *chip, u8 err_code)
- {
-diff --git a/drivers/staging/rts_pstor/spi.c b/drivers/staging/rts_pstor/spi.c
-index 84e0af4..9081836 100644
---- a/drivers/staging/rts_pstor/spi.c
-+++ b/drivers/staging/rts_pstor/spi.c
-@@ -227,7 +227,7 @@ static int spi_init_eeprom(struct rtsx_chip *chip)
- 	return STATUS_SUCCESS;
- }
- 
--int spi_eeprom_program_enable(struct rtsx_chip *chip)
-+static int spi_eeprom_program_enable(struct rtsx_chip *chip)
- {
- 	int retval;
- 
--- 
-1.7.4
+And last but not least there's no way we'll merge a filesystem with a
+global mutex and all kinds of hacky release and reaquire semantics
+these days.  I really think you need to get back to the drawing board.
 
