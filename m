@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933059Ab1BPAtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:49:13 -0500
-Received: from kroah.org ([198.145.64.141]:45609 "EHLO coco.kroah.org"
+	id S933101Ab1BPAtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:49:31 -0500
+Received: from kroah.org ([198.145.64.141]:45676 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933040Ab1BPAtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:08 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:06 2011
-Message-Id: <20110216002106.032445595@clark.kroah.org>
+	id S933086Ab1BPAtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:23 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:07 2011
+Message-Id: <20110216002107.012384481@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:37 -0800
+Date: Tue, 15 Feb 2011 16:20:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kashyap Desai <kashyap.desai@lsi.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [patch 069/176] [SCSI] mpt2sas: Fix the race between broadcast asyn event and scsi command completion
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [patch 079/176] ALSA: HDA: Fix dmesg output of HDMI supported bits
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,160 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kashyap, Desai <kashyap.desai@lsi.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit ec07a053597bdab51cbd23619f9f9f392712508a upstream.
+commit d757534ed15387202e322854cd72dc58bbb975de upstream.
 
-False timeout after hard resets, there were two issues which leads
-to timeout.
-(1) Panic because of invalid memory access in the broadcast asyn
-event processing routine due to a race between accessing the scsi command
-pointer from broadcast asyn event processing thread and completing
-the same scsi command from the interrupt context.
-(2)  Broadcast asyn event notifcations are not handled due to events
-ignored while the broadcast asyn event is activity being processed
-from the event process kernel thread.
+This typo caused the dmesg output of the supported bits of HDMI
+to be cut off early.
 
-In addition, changed the ABRT_TASK_SET to ABORT_TASK in the
-broadcast async event processing routine.   This is less disruptive to other
-request that generate Broadcast Asyn Primitives besides target
-reset. e.g clear reservations, microcode download,and mode select.
-
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |   54 +++++++++++++++++++++++++++++------
- 1 file changed, 45 insertions(+), 9 deletions(-)
+ sound/pci/hda/hda_eld.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -819,7 +819,7 @@ _scsih_is_end_device(u32 device_info)
- }
+--- a/sound/pci/hda/hda_eld.c
++++ b/sound/pci/hda/hda_eld.c
+@@ -381,7 +381,7 @@ static void hdmi_show_short_audio_desc(s
+ 	snd_print_pcm_rates(a->rates, buf, sizeof(buf));
  
- /**
-- * mptscsih_get_scsi_lookup - returns scmd entry
-+ * _scsih_scsi_lookup_get - returns scmd entry
-  * @ioc: per adapter object
-  * @smid: system request message index
-  *
-@@ -832,6 +832,28 @@ _scsih_scsi_lookup_get(struct MPT2SAS_AD
- }
- 
- /**
-+ * _scsih_scsi_lookup_get_clear - returns scmd entry
-+ * @ioc: per adapter object
-+ * @smid: system request message index
-+ *
-+ * Returns the smid stored scmd pointer.
-+ * Then will derefrence the stored scmd pointer.
-+ */
-+static inline struct scsi_cmnd *
-+_scsih_scsi_lookup_get_clear(struct MPT2SAS_ADAPTER *ioc, u16 smid)
-+{
-+	unsigned long flags;
-+	struct scsi_cmnd *scmd;
-+
-+	spin_lock_irqsave(&ioc->scsi_lookup_lock, flags);
-+	scmd = ioc->scsi_lookup[smid - 1].scmd;
-+	ioc->scsi_lookup[smid - 1].scmd = NULL;
-+	spin_unlock_irqrestore(&ioc->scsi_lookup_lock, flags);
-+
-+	return scmd;
-+}
-+
-+/**
-  * _scsih_scsi_lookup_find_by_scmd - scmd lookup
-  * @ioc: per adapter object
-  * @smid: system request message index
-@@ -3183,7 +3205,7 @@ _scsih_flush_running_cmds(struct MPT2SAS
- 	u16 count = 0;
- 
- 	for (smid = 1; smid <= ioc->scsiio_depth; smid++) {
--		scmd = _scsih_scsi_lookup_get(ioc, smid);
-+		scmd = _scsih_scsi_lookup_get_clear(ioc, smid);
- 		if (!scmd)
- 			continue;
- 		count++;
-@@ -3775,7 +3797,7 @@ _scsih_io_done(struct MPT2SAS_ADAPTER *i
- 	u32 response_code = 0;
- 
- 	mpi_reply = mpt2sas_base_get_reply_virt_addr(ioc, reply);
--	scmd = _scsih_scsi_lookup_get(ioc, smid);
-+	scmd = _scsih_scsi_lookup_get_clear(ioc, smid);
- 	if (scmd == NULL)
- 		return 1;
- 
-@@ -5037,6 +5059,7 @@ _scsih_sas_broadcast_primative_event(str
-     struct fw_event_work *fw_event)
- {
- 	struct scsi_cmnd *scmd;
-+	struct scsi_device *sdev;
- 	u16 smid, handle;
- 	u32 lun;
- 	struct MPT2SAS_DEVICE *sas_device_priv_data;
-@@ -5047,12 +5070,17 @@ _scsih_sas_broadcast_primative_event(str
- 	Mpi2EventDataSasBroadcastPrimitive_t *event_data = fw_event->event_data;
- #endif
- 	u16 ioc_status;
-+	unsigned long flags;
-+	int r;
-+
- 	dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "broadcast primative: "
- 	    "phy number(%d), width(%d)\n", ioc->name, event_data->PhyNum,
- 	    event_data->PortWidth));
- 	dtmprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: enter\n", ioc->name,
- 	    __func__));
- 
-+	spin_lock_irqsave(&ioc->scsi_lookup_lock, flags);
-+	ioc->broadcast_aen_busy = 0;
- 	termination_count = 0;
- 	query_count = 0;
- 	mpi_reply = ioc->tm_cmds.reply;
-@@ -5060,7 +5088,8 @@ _scsih_sas_broadcast_primative_event(str
- 		scmd = _scsih_scsi_lookup_get(ioc, smid);
- 		if (!scmd)
- 			continue;
--		sas_device_priv_data = scmd->device->hostdata;
-+		sdev = scmd->device;
-+		sas_device_priv_data = sdev->hostdata;
- 		if (!sas_device_priv_data || !sas_device_priv_data->sas_target)
- 			continue;
- 		 /* skip hidden raid components */
-@@ -5076,6 +5105,7 @@ _scsih_sas_broadcast_primative_event(str
- 		lun = sas_device_priv_data->lun;
- 		query_count++;
- 
-+		spin_unlock_irqrestore(&ioc->scsi_lookup_lock, flags);
- 		mpt2sas_scsih_issue_tm(ioc, handle, 0, 0, lun,
- 		    MPI2_SCSITASKMGMT_TASKTYPE_QUERY_TASK, smid, 30, NULL);
- 		ioc->tm_cmds.status = MPT2_CMD_NOT_USED;
-@@ -5085,14 +5115,20 @@ _scsih_sas_broadcast_primative_event(str
- 		    (mpi_reply->ResponseCode ==
- 		     MPI2_SCSITASKMGMT_RSP_TM_SUCCEEDED ||
- 		     mpi_reply->ResponseCode ==
--		     MPI2_SCSITASKMGMT_RSP_IO_QUEUED_ON_IOC))
-+		     MPI2_SCSITASKMGMT_RSP_IO_QUEUED_ON_IOC)) {
-+			spin_lock_irqsave(&ioc->scsi_lookup_lock, flags);
- 			continue;
--
--		mpt2sas_scsih_issue_tm(ioc, handle, 0, 0, lun,
--		    MPI2_SCSITASKMGMT_TASKTYPE_ABRT_TASK_SET, 0, 30, NULL);
-+		}
-+		r = mpt2sas_scsih_issue_tm(ioc, handle, sdev->channel, sdev->id,
-+		    sdev->lun, MPI2_SCSITASKMGMT_TASKTYPE_ABORT_TASK, smid, 30,
-+		    scmd);
-+		if (r == FAILED)
-+			sdev_printk(KERN_WARNING, sdev, "task abort: FAILED "
-+			    "scmd(%p)\n", scmd);
- 		termination_count += le32_to_cpu(mpi_reply->TerminationCount);
-+		spin_lock_irqsave(&ioc->scsi_lookup_lock, flags);
- 	}
--	ioc->broadcast_aen_busy = 0;
-+	spin_unlock_irqrestore(&ioc->scsi_lookup_lock, flags);
- 
- 	dtmprintk(ioc, printk(MPT2SAS_INFO_FMT
- 	    "%s - exit, query_count = %d termination_count = %d\n",
+ 	if (a->format == AUDIO_CODING_TYPE_LPCM)
+-		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2 - 8));
++		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2) - 8);
+ 	else if (a->max_bitrate)
+ 		snprintf(buf2, sizeof(buf2),
+ 				", max bitrate = %d", a->max_bitrate);
 
 
