@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab1BPAWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:22:49 -0500
-Received: from kroah.org ([198.145.64.141]:49225 "EHLO coco.kroah.org"
+	id S932695Ab1BPAqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:46:07 -0500
+Received: from kroah.org ([198.145.64.141]:49250 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757467Ab1BPAWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:41 -0500
+	id S1757492Ab1BPAWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:48 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:41 2011
-Message-Id: <20110216001441.201470786@clark.kroah.org>
+Message-Id: <20110216001441.604873012@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:38 -0800
+Date: Tue, 15 Feb 2011 16:13:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans de Goede <hdegoede@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [161/272] virtio: console: Wake up outvq on host notifications
+        Pavel Machek <pavel@ucw.cz>
+Subject: [165/272] serial: unbreak billionton CF card
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Pavel Machek <pavel@ucw.cz>
 
-commit 2770c5ea501be69989a7acf54ec4cb3554c47191 upstream.
+commit d0694e2aeb815042aa0f3e5036728b3db4446f1d upstream.
 
-The outvq needs to be woken up on host notifications so that buffers
-consumed by the host can be reclaimed, outvq freed, and application
-writes may proceed again.
+Unbreak Billionton CF bluetooth card. This actually fixes a regression
+on zaurus.
 
-The need for this is now finally noticed when I have qemu patches ready
-to use nonblocking IO and flow control.
-
-CC: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/virtio_console.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/serial/8250.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1462,6 +1462,17 @@ static void control_work_handler(struct
- 	spin_unlock(&portdev->cvq_lock);
- }
- 
-+static void out_intr(struct virtqueue *vq)
-+{
-+	struct port *port;
-+
-+	port = find_port_by_vq(vq->vdev->priv, vq);
-+	if (!port)
-+		return;
-+
-+	wake_up_interruptible(&port->waitqueue);
-+}
-+
- static void in_intr(struct virtqueue *vq)
- {
- 	struct port *port;
-@@ -1566,7 +1577,7 @@ static int init_vqs(struct ports_device
- 	 */
- 	j = 0;
- 	io_callbacks[j] = in_intr;
--	io_callbacks[j + 1] = NULL;
-+	io_callbacks[j + 1] = out_intr;
- 	io_names[j] = "input";
- 	io_names[j + 1] = "output";
- 	j += 2;
-@@ -1580,7 +1591,7 @@ static int init_vqs(struct ports_device
- 		for (i = 1; i < nr_ports; i++) {
- 			j += 2;
- 			io_callbacks[j] = in_intr;
--			io_callbacks[j + 1] = NULL;
-+			io_callbacks[j + 1] = out_intr;
- 			io_names[j] = "input";
- 			io_names[j + 1] = "output";
- 		}
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -236,7 +236,8 @@ static const struct serial8250_config ua
+ 		.fifo_size	= 128,
+ 		.tx_loadsz	= 128,
+ 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+-		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
++		/* UART_CAP_EFR breaks billionon CF bluetooth card. */
++		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP,
+ 	},
+ 	[PORT_16654] = {
+ 		.name		= "ST16654",
 
 
