@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab1BPB3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:29:37 -0500
-Received: from kroah.org ([198.145.64.141]:39391 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757351Ab1BPAVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:38 2011
-Message-Id: <20110216001438.123953068@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:08 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [131/272] ext4: fix memory leak in ext4_free_branches
-In-Reply-To: <20110216001559.GA31413@kroah.com>
+	id S1757595Ab1BPB3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:29:41 -0500
+Received: from ns3.baby-dragons.com ([64.62.236.141]:50136 "EHLO
+	ns3.baby-dragons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757273Ab1BPB3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:29:32 -0500
+Date: Tue, 15 Feb 2011 16:29:20 -0900 (AKST)
+From: "Mr. James W. Laferriere" <babydr@baby-dragons.com>
+To: Lukasz Trabinski <lukasz@trabinski.net>
+cc: Linux Kernel Maillist <linux-kernel@vger.kernel.org>,
+        NetDev <netdev@vger.kernel.org>
+Subject: Re: [kernel] net.ipv6.route.max_size
+In-Reply-To: <alpine.LFD.2.00.1102142024460.6561@oceanic.wsisiz.edu.pl>
+Message-ID: <alpine.LNX.2.01.1102151627260.23788@filesrv1.baby-dragons.com>
+References: <alpine.LFD.2.00.1102142024460.6561@oceanic.wsisiz.edu.pl>
+User-Agent: Alpine 2.01 (LNX 1184 2008-12-16)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (ns3.baby-dragons.com [64.62.236.141]); Wed, 16 Feb 2011 01:29:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+ 	Hello Lukasz ,
+ 	Since I have not seen anyone else suggest this or to do so I'll forward 
+this onto the NetDev <netdev@vger.kernel.org> list for their perusal as well .
 
-------------------
+ 		Hth ,  JimL
 
-From: Theodore Ts'o <tytso@mit.edu>
+On Mon, 14 Feb 2011, Lukasz Trabinski wrote:
+> Hello
+>
+> IPv6 route table size is still growing. In stanard linux box configuration
+> with IPv6 BGP session (with ipv6 world table) and BGP application like 
+> Quagga,
+> we have problem like this:
+>
+> 2011/02/12 18:43:52 ZEBRA: netlink-cmd error: Cannot allocate memory,
+> type=RTM_NEWROUTE(24), seq=11124600, pid=0
+>
+> This problem shows us that's all prefixes comes from BGP can't be install 
+> into FIB
+>
+> IN BGP application we can see, that's we recive 4484 prefixes from ipv6 
+> neighbor:
+>
+> cosmos> show bgp summary
+> Neighbor        V    AS MsgRcvd MsgSent   TblVer  InQ OutQ Up/Down 
+> State/PfxRcd
+> 2001:1a68:0:c::1
+>                4 24724  431945   70172        0    0    0 2d01h18m     4484
+>
+>
+> I suggest that net->ipv6.sysctl.ip6_rt_max_size should be increase.
+> Below _simple_ patch for this problem. I don't understand why in ipv4/route 
+> we have different method to count ip4_rt_max_size? My value 65536 in near 
+> future will be also wrong. I know also, that we can change it by sysctl, but 
+> I thing that it's not good way to fix it.
+>
+>
+> --- route.c~    2011-02-14 20:26:12.000000000 +0100
+> +++ route.c     2011-02-14 20:30:04.000000000 +0100
+> @@ -2708,7 +2708,7 @@
+> #endif
+>
+>        net->ipv6.sysctl.flush_delay = 0;
+> -       net->ipv6.sysctl.ip6_rt_max_size = 4096;
+> +       net->ipv6.sysctl.ip6_rt_max_size = 65536;
+>        net->ipv6.sysctl.ip6_rt_gc_min_interval = HZ / 2;
+>        net->ipv6.sysctl.ip6_rt_gc_timeout = 60*HZ;
+>        net->ipv6.sysctl.ip6_rt_gc_interval = 30*HZ;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-commit 1c5b9e9065567876c2d4a7a16d78f0fed154a5bf upstream.
-
-Commit 40389687 moved a call to ext4_forget() out of
-ext4_free_branches and let ext4_free_blocks() handle calling
-bforget().  But that change unfortunately did not replace the call to
-ext4_forget() with brelse(), which was needed to drop the in-use count
-of the indirect block's buffer head, which lead to a memory leak when
-deleting files that used indirect blocks.  Fix this.
-
-Thanks to Hugh Dickins for pointing this out.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ext4/inode.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4349,6 +4349,7 @@ static void ext4_free_branches(handle_t
- 					(__le32 *) bh->b_data,
- 					(__le32 *) bh->b_data + addr_per_block,
- 					depth);
-+			brelse(bh);
- 
- 			/*
- 			 * Everything below this this pointer has been
-
-
+-- 
++------------------------------------------------------------------+
+| James   W.   Laferriere | System    Techniques | Give me VMS     |
+| Network&System Engineer | 3237     Holden Road |  Give me Linux  |
+| babydr@baby-dragons.com | Fairbanks, AK. 99709 |   only  on  AXP |
++------------------------------------------------------------------+
