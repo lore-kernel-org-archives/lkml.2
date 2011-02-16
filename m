@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab1BPAgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:36:09 -0500
-Received: from kroah.org ([198.145.64.141]:49643 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932295Ab1BPAYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:17 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:47 2011
-Message-Id: <20110216001447.034345881@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:36 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [219/272] pata_mpc52xx: inherit from ata_bmdma_port_ops
-In-Reply-To: <20110216001559.GA31413@kroah.com>
+	id S932490Ab1BPAgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:36:40 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:53498 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab1BPAgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:36:37 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6258"; a="74421638"
+Subject: Re: [PATCH 1/3] msm: iommu: Create a Kconfig item for the IOMMU
+ driver
+From: Daniel Walker <dwalker@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <8yar5b9850l.fsf@huya.qualcomm.com>
+References: <1297456098-3241-1-git-send-email-stepanm@codeaurora.org>
+	 <1297456729.4852.9.camel@m0nster>  <8yar5b9850l.fsf@huya.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Feb 2011 16:36:03 -0800
+Message-ID: <1297816563.7088.23.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Tue, 2011-02-15 at 11:35 -0800, David Brown wrote:
+> On Fri, Feb 11 2011, Daniel Walker wrote:
+> 
+> > On Fri, 2011-02-11 at 12:28 -0800, Stepan Moskovchenko wrote:
+> >> +config MSM_IOMMU
+> >> +       bool "MSM IOMMU Support"
+> >> +       depends on ARCH_MSM8X60
+> >> +       select IOMMU_API
+> >> +       default n
+> >> +       help
+> >> +         Support for the IOMMUs found on certain Qualcomm SOCs.
+> >> +         These IOMMUs allow virtualization of the address space used by most
+> >> +         cores within the multimedia subsystem.
+> >> +
+> >> +         If unsure, say N here. 
+> >
+> > I think you should just make this a hidden option, unless there is a
+> > good reason why any given users might want to turn this off.
+> 
+> In this particular case, the driver is optional, even devices that use
+> it will be able to work both with and without it.  It makes sense to be
+> able to decide whether to have it or not.
 
-------------------
+This driver doesn't belong under mach-msm.
 
-From: Tejun Heo <tj@kernel.org>
+Daniel
 
-commit 77c5fd19075d299fe820bb59bb21b0b113676e20 upstream.
+-- 
 
-pata_mpc52xx supports BMDMA but inherits ata_sff_port_ops which
-triggers BUG_ON() when a DMA command is issued.  Fix it.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Roman Fietze <roman.fietze@telemotive.de>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/ata/pata_mpc52xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/ata/pata_mpc52xx.c
-+++ b/drivers/ata/pata_mpc52xx.c
-@@ -610,7 +610,7 @@ static struct scsi_host_template mpc52xx
- };
- 
- static struct ata_port_operations mpc52xx_ata_port_ops = {
--	.inherits		= &ata_sff_port_ops,
-+	.inherits		= &ata_bmdma_port_ops,
- 	.sff_dev_select		= mpc52xx_ata_dev_select,
- 	.set_piomode		= mpc52xx_ata_set_piomode,
- 	.set_dmamode		= mpc52xx_ata_set_dmamode,
-
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
