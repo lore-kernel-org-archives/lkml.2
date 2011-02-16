@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab1BPEkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 23:40:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43664 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756349Ab1BPEkT (ORCPT
+	id S1758697Ab1BPEmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 23:42:05 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46628 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756349Ab1BPEmC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 23:40:19 -0500
-Date: Tue, 15 Feb 2011 21:40:16 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, linux-input@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Walter Goossens <waltergoossens@home.nl>
-Subject: Re: [PATCH v4] altera_ps2: Add devicetree support
-Message-ID: <20110216044016.GC11684@angua.secretlab.ca>
-References: <20110212092600.GE17755@angua.secretlab.ca>
- <1297649202-11200-1-git-send-email-thomas@wytron.com.tw>
+	Tue, 15 Feb 2011 23:42:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297649202-11200-1-git-send-email-thomas@wytron.com.tw>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110216150943.b4969ddf.sfr@canb.auug.org.au>
+References: <20110216150943.b4969ddf.sfr@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 15 Feb 2011 21:41:41 -0700
+X-Google-Sender-Auth: 3pU77ptvkZMDwkNUum--o_wOxLM
+Message-ID: <AANLkTin2xfDBk5n5ch=EYNauyPZEBq2SozQM6by6EY+G@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the devicetree tree with the
+ spi-current tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 10:06:42AM +0800, Thomas Chou wrote:
-> From: Walter Goossens <waltergoossens@home.nl>
-> 
-> Signed-off-by: Walter Goossens <waltergoossens@home.nl>
-> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+On Tue, Feb 15, 2011 at 9:09 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> Today's linux-next merge of the devicetree tree got a conflict in
+> drivers/spi/pxa2xx_spi_pci.c between commit
+> 0f3e1d27a7e3f98d996d707d649128e229b65deb ("spi/pxa2xx pci: fix the
+> release - remove race") from the spi-current tree and commit
+> c9e358dfc4a8cb2227172ef77908c2e0ee17bcb9 ("driver-core: remove
+> conditionals around devicetree pointers") from the devicetree tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Merged, thanks,
+Heh, seeing as those are *both* my trees, I'll take care of merging
+appropriately to sort this out.  :-)
+
 g.
 
-> ---
-> v2 use const and add compat version.
-> v3 change compatible vendor to ALTR.
->     add dts binding doc.
-> v4 condition module device table export for of.
-> 
-> Grant, please take it through your tree as Dmitry agreed.
-> 
->  .../devicetree/bindings/serio/altera_ps2.txt       |    4 ++++
->  drivers/input/serio/altera_ps2.c                   |   15 +++++++++++++--
->  2 files changed, 17 insertions(+), 2 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/serio/altera_ps2.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/serio/altera_ps2.txt b/Documentation/devicetree/bindings/serio/altera_ps2.txt
-> new file mode 100644
-> index 0000000..4d9eecc
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/serio/altera_ps2.txt
-> @@ -0,0 +1,4 @@
-> +Altera UP PS/2 controller
-> +
-> +Required properties:
-> +- compatible : should be "ALTR,ps2-1.0".
-> diff --git a/drivers/input/serio/altera_ps2.c b/drivers/input/serio/altera_ps2.c
-> index 7998560..3fee88b 100644
-> --- a/drivers/input/serio/altera_ps2.c
-> +++ b/drivers/input/serio/altera_ps2.c
-> @@ -19,6 +19,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> +#include <linux/of.h>
->  
->  #define DRV_NAME "altera_ps2"
->  
-> @@ -173,6 +174,16 @@ static int __devexit altera_ps2_remove(struct platform_device *pdev)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id altera_ps2_match[] = {
-> +	{ .compatible = "ALTR,ps2-1.0", },
-> +	{},
-> +}
-> +MODULE_DEVICE_TABLE(of, altera_ps2_match);
-> +#else /* CONFIG_OF */
-> +#define altera_ps2_match NULL
-> +#endif /* CONFIG_OF */
-> +
->  /*
->   * Our device driver structure
->   */
-> @@ -182,6 +193,7 @@ static struct platform_driver altera_ps2_driver = {
->  	.driver	= {
->  		.name	= DRV_NAME,
->  		.owner	= THIS_MODULE,
-> +		.of_match_table = altera_ps2_match,
->  	},
->  };
->  
-> @@ -189,13 +201,12 @@ static int __init altera_ps2_init(void)
->  {
->  	return platform_driver_register(&altera_ps2_driver);
->  }
-> +module_init(altera_ps2_init);
->  
->  static void __exit altera_ps2_exit(void)
->  {
->  	platform_driver_unregister(&altera_ps2_driver);
->  }
-> -
-> -module_init(altera_ps2_init);
->  module_exit(altera_ps2_exit);
->  
->  MODULE_DESCRIPTION("Altera University Program PS2 controller driver");
-> -- 
-> 1.7.4
-> 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/spi/pxa2xx_spi_pci.c
+> index 19752b0,b6589bb..0000000
+> --- a/drivers/spi/pxa2xx_spi_pci.c
+> +++ b/drivers/spi/pxa2xx_spi_pci.c
+> @@@ -75,24 -84,25 +75,22 @@@ static int __devinit ce4100_spi_probe(s
+>                return ret;
+>        }
+>
+>  +      pdev = platform_device_alloc("pxa2xx-spi", dev->devfn);
+>        spi_info = kzalloc(sizeof(*spi_info), GFP_KERNEL);
+>  -      if (!spi_info) {
+>  +      if (!pdev || !spi_info ) {
+>                ret = -ENOMEM;
+>  -              goto err_kz;
+>  +              goto err_nomem;
+>        }
+>  -      ssp = &spi_info->ssp;
+>  -      pdev = &spi_info->spi_pdev;
+>  -      spi_pdata =  &spi_info->spi_pdata;
+>  +      memset(&spi_pdata, 0, sizeof(spi_pdata));
+>  +      spi_pdata.num_chipselect = dev->devfn;
+>
+>  -      pdev->name = "pxa2xx-spi";
+>  -      pdev->id = dev->devfn;
+>  -      pdev->dev.parent = &dev->dev;
+>  -      pdev->dev.platform_data = &spi_info->spi_pdata;
+>  +      ret = platform_device_add_data(pdev, &spi_pdata, sizeof(spi_pdata));
+>  +      if (ret)
+>  +              goto err_nomem;
+>
+>  +      pdev->dev.parent = &dev->dev;
+> - #ifdef CONFIG_OF
+>        pdev->dev.of_node = dev->dev.of_node;
+> - #endif
+>  -      pdev->dev.release = plat_dev_release;
+>  -
+>  -      spi_pdata->num_chipselect = dev->devfn;
+>  -
+>  +      ssp = &spi_info->ssp;
+>        ssp->phys_base = pci_resource_start(dev, 0);
+>        ssp->mmio_base = ioremap(phys_beg, phys_len);
+>        if (!ssp->mmio_base) {
+>
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
