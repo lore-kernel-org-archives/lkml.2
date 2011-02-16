@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab1BPAWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:22:20 -0500
-Received: from kroah.org ([198.145.64.141]:49112 "EHLO coco.kroah.org"
+	id S1757440Ab1BPB0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:26:30 -0500
+Received: from kroah.org ([198.145.64.141]:49132 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757383Ab1BPAWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:14 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:39 2011
-Message-Id: <20110216001439.647443541@clark.kroah.org>
+	id S1757407Ab1BPAWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:40 2011
+Message-Id: <20110216001439.950870543@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:23 -0800
+Date: Tue, 15 Feb 2011 16:13:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: [146/272] jz4740-battery: Protect against concurrent battery readings
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
+Subject: [149/272] cpuidle: Make cpuidle_enable_device() call poll_idle_init()
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +25,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit 8ec98fe0b4ffdedce4c1caa9fb3d550f52ad1c6b upstream.
+commit d8c216cfa57e8a579f41729cbb88c97835d9ac8d upstream.
 
-We can not handle more then one ADC request at a time to the battery.
-The patch adds a mutex around the ADC read code to ensure this.
+The following scenario is possible with the current cpuidle code and
+the ACPI cpuidle driver:
+(1) acpi_processor_cst_has_changed() is called,
+(2) cpuidle_disable_device() is called,
+(3) cpuidle_remove_state_sysfs() is called to remove the (presumably
+    outdated) states info from sysfs,
+(3) acpi_processor_get_power_info() is called, the first entry in the
+    pr->power.states[] table is filled with zeros,
+(4) acpi_processor_setup_cpuidle() is called and it doesn't fill the
+    first entry in pr->power.states[],
+(5) cpuidle_enable_device() is called,
+(6) __cpuidle_register_device() is _not_ called, since the device has
+    already been registered,
+(7) Consequently, poll_idle_init() is _not_ called either,
+(8) cpuidle_add_state_sysfs() is called to create the sysfs attributes
+    for the new states and it uses the bogus first table entry from
+    acpi_processor_get_power_info() for creating state0.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+This problem is avoided if cpuidle_enable_device()
+unconditionally calls poll_idle_init().
+
+Reported-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/power/jz4740-battery.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/cpuidle/cpuidle.c |   82 +++++++++++++++++++++++-----------------------
+ 1 file changed, 41 insertions(+), 41 deletions(-)
 
---- a/drivers/power/jz4740-battery.c
-+++ b/drivers/power/jz4740-battery.c
-@@ -47,6 +47,8 @@ struct jz_battery {
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -154,6 +154,45 @@ void cpuidle_resume_and_unlock(void)
  
- 	struct power_supply battery;
- 	struct delayed_work work;
+ EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
+ 
++#ifdef CONFIG_ARCH_HAS_CPU_RELAX
++static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
++{
++	ktime_t	t1, t2;
++	s64 diff;
++	int ret;
 +
-+	struct mutex lock;
- };
- 
- static inline struct jz_battery *psy_to_jz_battery(struct power_supply *psy)
-@@ -68,6 +70,8 @@ static long jz_battery_read_voltage(stru
- 	unsigned long val;
- 	long voltage;
- 
-+	mutex_lock(&battery->lock);
++	t1 = ktime_get();
++	local_irq_enable();
++	while (!need_resched())
++		cpu_relax();
 +
- 	INIT_COMPLETION(battery->read_completion);
- 
- 	enable_irq(battery->irq);
-@@ -91,6 +95,8 @@ static long jz_battery_read_voltage(stru
- 	battery->cell->disable(battery->pdev);
- 	disable_irq(battery->irq);
- 
-+	mutex_unlock(&battery->lock);
++	t2 = ktime_get();
++	diff = ktime_to_us(ktime_sub(t2, t1));
++	if (diff > INT_MAX)
++		diff = INT_MAX;
 +
- 	return voltage;
- }
++	ret = (int) diff;
++	return ret;
++}
++
++static void poll_idle_init(struct cpuidle_device *dev)
++{
++	struct cpuidle_state *state = &dev->states[0];
++
++	cpuidle_set_statedata(state, NULL);
++
++	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
++	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
++	state->exit_latency = 0;
++	state->target_residency = 0;
++	state->power_usage = -1;
++	state->flags = CPUIDLE_FLAG_POLL;
++	state->enter = poll_idle;
++}
++#else
++static void poll_idle_init(struct cpuidle_device *dev) {}
++#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
++
+ /**
+  * cpuidle_enable_device - enables idle PM for a CPU
+  * @dev: the CPU
+@@ -178,6 +217,8 @@ int cpuidle_enable_device(struct cpuidle
+ 			return ret;
+ 	}
  
-@@ -291,6 +297,7 @@ static int __devinit jz_battery_probe(st
- 	jz_battery->pdev = pdev;
++	poll_idle_init(dev);
++
+ 	if ((ret = cpuidle_add_state_sysfs(dev)))
+ 		return ret;
  
- 	init_completion(&jz_battery->read_completion);
-+	mutex_init(&jz_battery->lock);
+@@ -232,45 +273,6 @@ void cpuidle_disable_device(struct cpuid
  
- 	INIT_DELAYED_WORK(&jz_battery->work, jz_battery_work);
+ EXPORT_SYMBOL_GPL(cpuidle_disable_device);
  
+-#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+-static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
+-{
+-	ktime_t	t1, t2;
+-	s64 diff;
+-	int ret;
+-
+-	t1 = ktime_get();
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
+-
+-	t2 = ktime_get();
+-	diff = ktime_to_us(ktime_sub(t2, t1));
+-	if (diff > INT_MAX)
+-		diff = INT_MAX;
+-
+-	ret = (int) diff;
+-	return ret;
+-}
+-
+-static void poll_idle_init(struct cpuidle_device *dev)
+-{
+-	struct cpuidle_state *state = &dev->states[0];
+-
+-	cpuidle_set_statedata(state, NULL);
+-
+-	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
+-	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+-	state->exit_latency = 0;
+-	state->target_residency = 0;
+-	state->power_usage = -1;
+-	state->flags = CPUIDLE_FLAG_POLL;
+-	state->enter = poll_idle;
+-}
+-#else
+-static void poll_idle_init(struct cpuidle_device *dev) {}
+-#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
+-
+ /**
+  * __cpuidle_register_device - internal register function called before register
+  * and enable routines
+@@ -291,8 +293,6 @@ static int __cpuidle_register_device(str
+ 
+ 	init_completion(&dev->kobj_unregister);
+ 
+-	poll_idle_init(dev);
+-
+ 	/*
+ 	 * cpuidle driver should set the dev->power_specified bit
+ 	 * before registering the device if the driver provides
 
 
