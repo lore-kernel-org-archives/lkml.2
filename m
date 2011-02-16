@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933020Ab1BPAtA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:49:00 -0500
-Received: from kroah.org ([198.145.64.141]:45551 "EHLO coco.kroah.org"
+	id S1752395Ab1BPBNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:13:38 -0500
+Received: from kroah.org ([198.145.64.141]:45582 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933000Ab1BPAsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:53 -0500
+	id S933000Ab1BPAtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:01 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:05 2011
-Message-Id: <20110216002105.109687955@clark.kroah.org>
+Message-Id: <20110216002105.648401566@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:28 -0800
+Date: Tue, 15 Feb 2011 16:20:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Shaw <paul.shaw@atheros.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 060/176] ath9k_hw: disabled PAPRD for AR9003
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [patch 065/176] [SCSI] mpt2sas: fix Integrated Raid unsynced on shutdown problem
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,57 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Kashyap, Desai <kashyap.desai@lsi.com>
 
-commit 6f4810101a629b31b5427872a09ea092cfc5c4bd upstream.
+commit 3a9c913a3e57b170887d39456e04c18f2305ec67 upstream.
 
-AR9003's PAPRD was enabled prematurely, and is causing some
-large discrepancies on throughput and network connectivity.
-For example downlink (RX) throughput against an AR9280 AP
-can vary widlely from 43-73 Mbit/s while disabling this
-gets AR9382 (2x2) up to around 93 Mbit/s in a 2.4 GHz HT20 setup.
+Issue:
+IR shutdown(sending) and IR shutdown(complete) messages not
+listed in /var/log/messages when driver is removed.
 
-Cc: Paul Shaw <paul.shaw@atheros.com>
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The driver needs to issue a MPI2_RAID_ACTION_SYSTEM_SHUTDOWN_INITIATED
+request when the driver is unloaded so the IR metadata journal is updated.
+If this request is not sent, then the volume would need a "check
+consistency" issued on the next bootup if the volume was roamed from one
+initiator to another. The current driver supports this feature only when the
+system is rebooted, however this also need to be supported if the driver is
+unloaded
+
+Fix:
+To fix this issue, the driver is going
+to need to call the _scsih_ir_shutdown prior to reporting
+the volumes missing from the OS, hence the device handles
+are still present.
+
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    6 +++++-
- drivers/net/wireless/ath/ath9k/hw.h |    1 +
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -387,6 +387,9 @@ static void ath9k_hw_init_config(struct
- 	else
- 		ah->config.ht_enable = 0;
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -6685,6 +6685,7 @@ _scsih_remove(struct pci_dev *pdev)
+ 		destroy_workqueue(wq);
  
-+	/* PAPRD needs some more work to be enabled */
-+	ah->config.paprd_disable = 1;
-+
- 	ah->config.rx_intr_mitigation = true;
- 	ah->config.pcieSerDesWrite = true;
- 
-@@ -2264,7 +2267,8 @@ int ath9k_hw_fill_cap_info(struct ath_hw
- 		pCap->rx_status_len = sizeof(struct ar9003_rxs);
- 		pCap->tx_desc_len = sizeof(struct ar9003_txc);
- 		pCap->txs_len = sizeof(struct ar9003_txs);
--		if (ah->eep_ops->get_eeprom(ah, EEP_PAPRD))
-+		if (!ah->config.paprd_disable &&
-+		    ah->eep_ops->get_eeprom(ah, EEP_PAPRD))
- 			pCap->hw_caps |= ATH9K_HW_CAP_PAPRD;
- 	} else {
- 		pCap->tx_desc_len = sizeof(struct ath_desc);
---- a/drivers/net/wireless/ath/ath9k/hw.h
-+++ b/drivers/net/wireless/ath/ath9k/hw.h
-@@ -240,6 +240,7 @@ struct ath9k_ops_config {
- 	u32 pcie_waen;
- 	u8 analog_shiftreg;
- 	u8 ht_enable;
-+	u8 paprd_disable;
- 	u32 ofdm_trig_low;
- 	u32 ofdm_trig_high;
- 	u32 cck_trig_high;
+ 	/* release all the volumes */
++	_scsih_ir_shutdown(ioc);
+ 	list_for_each_entry_safe(raid_device, next, &ioc->raid_device_list,
+ 	    list) {
+ 		if (raid_device->starget) {
 
 
