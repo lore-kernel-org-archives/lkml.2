@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1BPR2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 12:28:33 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:56545 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab1BPR2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 12:28:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=b8jDAjTAmFMX7wyCwPHpAmB/GXA5LoAq1Zw65Pu12S+qRD63ytemtplPmEo9g3qxfe
-         1MNcsNtm7r1SJrAlEKCw==
+	id S1753614Ab1BPRaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 12:30:13 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53377 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752627Ab1BPRaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 12:30:10 -0500
+Date: Wed, 16 Feb 2011 18:29:54 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
+        brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
+        rientjes@google.com, hpa@linux.intel.com, ankita@in.ibm.com
+Subject: Re: [PATCHSET x86/numa] x86-64, NUMA: bring sanity to NUMA
+ config/emulation
+Message-ID: <20110216172954.GA28054@elte.hu>
+References: <1297858867-25981-1-git-send-email-tj@kernel.org>
+ <20110216125249.GA18113@elte.hu>
+ <20110216141757.GG19830@htj.dyndns.org>
+ <20110216155314.GA22855@elte.hu>
+ <20110216162329.GI19830@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=Lrb+CLo_dn9L+RhWUf7SAaTepFrdpje+PgqMX@mail.gmail.com>
-References: <4D51ED26.8050809@cn.fujitsu.com> <4D539821.1090703@cn.fujitsu.com>
- <20110210205722.GB2600@redhat.com> <4D55EEBB.8060304@cn.fujitsu.com>
- <20110214180428.GF13097@redhat.com> <4D59E728.3030209@cn.fujitsu.com>
- <20110215142752.GC27296@redhat.com> <4D5B2C07.9050909@cn.fujitsu.com> <AANLkTi=Lrb+CLo_dn9L+RhWUf7SAaTepFrdpje+PgqMX@mail.gmail.com>
-From: Divyesh Shah <dpshah@google.com>
-Date: Wed, 16 Feb 2011 09:28:07 -0800
-Message-ID: <AANLkTinUcSxJZ24NeUwQ_6W4=+atRWX-7G9K5iymuOsz@mail.gmail.com>
-Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling and
- use_hierarchy interface
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216162329.GI19830@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 9:22 AM, Divyesh Shah <dpshah@google.com> wrote:
-> On Tue, Feb 15, 2011 at 5:44 PM, Gui Jianfeng
-> <guijianfeng@cn.fujitsu.com> wrote:
->> Hmm, it seems memcg aggregating stats in parent group.
->> But do we really need to do that in kernel? I think it's easier to do it in
->> userland, and it makes kernel much simpler.
->>
->
-> I would prefer having stats aggregated up the hierarchy. One trick we
-> used at Google earlier was to do lazy updates for most stats. So we
 
-Note that this was on ancient version of the blkio controller :). As
-Vivek mentioned,
-it may be ok to add the hierarchical accounting later.
+* Tejun Heo <tj@kernel.org> wrote:
 
-> would accumulate stats for a given timeslice and at the end of that
-> timeslice propagate those counts all the way up to the parent. For
-> device info like this, the update can be instantaneous since its not a
-> very frequent event. It would also be very useful to distinguish
-> between stats for the cgroup itself vs total values accumulated from
-> the subtree rooted at that cgroup like memcg does.
->
-> --
-> Thanks,
-> Divyesh
->
+> On Wed, Feb 16, 2011 at 04:53:14PM +0100, Ingo Molnar wrote:
+> > >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_64-numa-emu-unify
+> > > 
+> > > The new HEAD is 6e3019a9bf55000694b0d7058b39a1eebdf9877a.
+> > 
+> > Now the build fails on allyes32config:
+> > 
+> > drivers/acpi/numa.c:293: error: 'NR_NODE_MEMBLKS' undeclared (first use in this function)
+> > drivers/acpi/numa.c:293: error: (Each undeclared identifier is reported only once
+> > drivers/acpi/numa.c:293: error: for each function it appears in.)
+> 
+> Okay, updated again.  I'm trying to build all combinations of the
+> several affected configurations now.  I'll let you know how it turns
+> out.
 
+It's looking good here now.
 
-
--- 
 Thanks,
-Divyesh
+
+	Ingo
