@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab1BPB0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:26:30 -0500
-Received: from kroah.org ([198.145.64.141]:49132 "EHLO coco.kroah.org"
+	id S1757398Ab1BPAWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:22:16 -0500
+Received: from kroah.org ([198.145.64.141]:39470 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757407Ab1BPAWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:22:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:40 2011
-Message-Id: <20110216001439.950870543@clark.kroah.org>
+	id S932168Ab1BPAWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:07 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:39 2011
+Message-Id: <20110216001439.241165282@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:13:26 -0800
+Date: Tue, 15 Feb 2011 16:13:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Subject: [149/272] cpuidle: Make cpuidle_enable_device() call poll_idle_init()
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [142/272] net_sched: pfifo_head_drop problem
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,151 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit d8c216cfa57e8a579f41729cbb88c97835d9ac8d upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-The following scenario is possible with the current cpuidle code and
-the ACPI cpuidle driver:
-(1) acpi_processor_cst_has_changed() is called,
-(2) cpuidle_disable_device() is called,
-(3) cpuidle_remove_state_sysfs() is called to remove the (presumably
-    outdated) states info from sysfs,
-(3) acpi_processor_get_power_info() is called, the first entry in the
-    pr->power.states[] table is filled with zeros,
-(4) acpi_processor_setup_cpuidle() is called and it doesn't fill the
-    first entry in pr->power.states[],
-(5) cpuidle_enable_device() is called,
-(6) __cpuidle_register_device() is _not_ called, since the device has
-    already been registered,
-(7) Consequently, poll_idle_init() is _not_ called either,
-(8) cpuidle_add_state_sysfs() is called to create the sysfs attributes
-    for the new states and it uses the bogus first table entry from
-    acpi_processor_get_power_info() for creating state0.
+[ Upstream commit 44b8288308ac9da27eab7d7bdbf1375a568805c3 ]
 
-This problem is avoided if cpuidle_enable_device()
-unconditionally calls poll_idle_init().
+commit 57dbb2d83d100ea (sched: add head drop fifo queue)
+introduced pfifo_head_drop, and broke the invariant that
+sch->bstats.bytes and sch->bstats.packets are COUNTER (increasing
+counters only)
 
-Reported-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Len Brown <len.brown@intel.com>
+This can break estimators because est_timer() handles unsigned deltas
+only. A decreasing counter can then give a huge unsigned delta.
+
+My mid term suggestion would be to change things so that
+sch->bstats.bytes and sch->bstats.packets are incremented in dequeue()
+only, not at enqueue() time. We also could add drop_bytes/drop_packets
+and provide estimations of drop rates.
+
+It would be more sensible anyway for very low speeds, and big bursts.
+Right now, if we drop packets, they still are accounted in byte/packets
+abolute counters and rate estimators.
+
+Before this mid term change, this patch makes pfifo_head_drop behavior
+similar to other qdiscs in case of drops :
+Dont decrement sch->bstats.bytes and sch->bstats.packets
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Hagen Paul Pfeifer <hagen@jauu.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/cpuidle/cpuidle.c |   82 +++++++++++++++++++++++-----------------------
- 1 file changed, 41 insertions(+), 41 deletions(-)
+ net/sched/sch_fifo.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -154,6 +154,45 @@ void cpuidle_resume_and_unlock(void)
+--- a/net/sched/sch_fifo.c
++++ b/net/sched/sch_fifo.c
+@@ -54,8 +54,6 @@ static int pfifo_tail_enqueue(struct sk_
  
- EXPORT_SYMBOL_GPL(cpuidle_resume_and_unlock);
+ 	/* queue full, remove one skb to fulfill the limit */
+ 	skb_head = qdisc_dequeue_head(sch);
+-	sch->bstats.bytes -= qdisc_pkt_len(skb_head);
+-	sch->bstats.packets--;
+ 	sch->qstats.drops++;
+ 	kfree_skb(skb_head);
  
-+#ifdef CONFIG_ARCH_HAS_CPU_RELAX
-+static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
-+{
-+	ktime_t	t1, t2;
-+	s64 diff;
-+	int ret;
-+
-+	t1 = ktime_get();
-+	local_irq_enable();
-+	while (!need_resched())
-+		cpu_relax();
-+
-+	t2 = ktime_get();
-+	diff = ktime_to_us(ktime_sub(t2, t1));
-+	if (diff > INT_MAX)
-+		diff = INT_MAX;
-+
-+	ret = (int) diff;
-+	return ret;
-+}
-+
-+static void poll_idle_init(struct cpuidle_device *dev)
-+{
-+	struct cpuidle_state *state = &dev->states[0];
-+
-+	cpuidle_set_statedata(state, NULL);
-+
-+	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
-+	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
-+	state->exit_latency = 0;
-+	state->target_residency = 0;
-+	state->power_usage = -1;
-+	state->flags = CPUIDLE_FLAG_POLL;
-+	state->enter = poll_idle;
-+}
-+#else
-+static void poll_idle_init(struct cpuidle_device *dev) {}
-+#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
-+
- /**
-  * cpuidle_enable_device - enables idle PM for a CPU
-  * @dev: the CPU
-@@ -178,6 +217,8 @@ int cpuidle_enable_device(struct cpuidle
- 			return ret;
- 	}
- 
-+	poll_idle_init(dev);
-+
- 	if ((ret = cpuidle_add_state_sysfs(dev)))
- 		return ret;
- 
-@@ -232,45 +273,6 @@ void cpuidle_disable_device(struct cpuid
- 
- EXPORT_SYMBOL_GPL(cpuidle_disable_device);
- 
--#ifdef CONFIG_ARCH_HAS_CPU_RELAX
--static int poll_idle(struct cpuidle_device *dev, struct cpuidle_state *st)
--{
--	ktime_t	t1, t2;
--	s64 diff;
--	int ret;
--
--	t1 = ktime_get();
--	local_irq_enable();
--	while (!need_resched())
--		cpu_relax();
--
--	t2 = ktime_get();
--	diff = ktime_to_us(ktime_sub(t2, t1));
--	if (diff > INT_MAX)
--		diff = INT_MAX;
--
--	ret = (int) diff;
--	return ret;
--}
--
--static void poll_idle_init(struct cpuidle_device *dev)
--{
--	struct cpuidle_state *state = &dev->states[0];
--
--	cpuidle_set_statedata(state, NULL);
--
--	snprintf(state->name, CPUIDLE_NAME_LEN, "C0");
--	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
--	state->exit_latency = 0;
--	state->target_residency = 0;
--	state->power_usage = -1;
--	state->flags = CPUIDLE_FLAG_POLL;
--	state->enter = poll_idle;
--}
--#else
--static void poll_idle_init(struct cpuidle_device *dev) {}
--#endif /* CONFIG_ARCH_HAS_CPU_RELAX */
--
- /**
-  * __cpuidle_register_device - internal register function called before register
-  * and enable routines
-@@ -291,8 +293,6 @@ static int __cpuidle_register_device(str
- 
- 	init_completion(&dev->kobj_unregister);
- 
--	poll_idle_init(dev);
--
- 	/*
- 	 * cpuidle driver should set the dev->power_specified bit
- 	 * before registering the device if the driver provides
 
 
