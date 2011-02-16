@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab1BPR0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 12:26:08 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33721 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab1BPR0F convert rfc822-to-8bit (ORCPT
+	id S1753606Ab1BPR2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 12:28:33 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:56545 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab1BPR2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 12:26:05 -0500
+	Wed, 16 Feb 2011 12:28:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=l4IX/VT7J8UusnzPbKiiMFVKWU4Ewf6uyRPn9PcRPBCwfyc39P2hE0kBBZbM969XA4
-         AmlMxfzvCh1sVHjS3f5gwq6pP0G0YqIKS/UY5ey8YnfKjufVWPpxkMQ24tlTsj1xH3i4
-         dVGi8z8XW2r2pNcJGdXviL1DqlX3CH6ZQ8VVg=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=b8jDAjTAmFMX7wyCwPHpAmB/GXA5LoAq1Zw65Pu12S+qRD63ytemtplPmEo9g3qxfe
+         1MNcsNtm7r1SJrAlEKCw==
 MIME-Version: 1.0
-In-Reply-To: <20110216152026.GA17102@redhat.com>
-References: <m3aahwa4ib.fsf@fibrous.localdomain>
-	<1297862209.2086.18.camel@morgan.silverblock.net>
-	<m3ei78j9s7.fsf@fibrous.localdomain>
-	<20110216152026.GA17102@redhat.com>
-Date: Wed, 16 Feb 2011 09:25:57 -0800
-Message-ID: <AANLkTikNKpo6aDVQVWC3FEiKFLv4JGFr=xPTC8Tu_2Sx@mail.gmail.com>
-Subject: Re: [PATCH] [media] rc: do not enable remote controller adapters by default.
-From: VDR User <user.vdr@gmail.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: Stephen Wilson <wilsons@start.ca>, Andy Walls <awalls@md.metrocast.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        =?UTF-8?Q?David_H=C3=A4rdeman?= <david@hardeman.nu>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTi=Lrb+CLo_dn9L+RhWUf7SAaTepFrdpje+PgqMX@mail.gmail.com>
+References: <4D51ED26.8050809@cn.fujitsu.com> <4D539821.1090703@cn.fujitsu.com>
+ <20110210205722.GB2600@redhat.com> <4D55EEBB.8060304@cn.fujitsu.com>
+ <20110214180428.GF13097@redhat.com> <4D59E728.3030209@cn.fujitsu.com>
+ <20110215142752.GC27296@redhat.com> <4D5B2C07.9050909@cn.fujitsu.com> <AANLkTi=Lrb+CLo_dn9L+RhWUf7SAaTepFrdpje+PgqMX@mail.gmail.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Wed, 16 Feb 2011 09:28:07 -0800
+Message-ID: <AANLkTinUcSxJZ24NeUwQ_6W4=+atRWX-7G9K5iymuOsz@mail.gmail.com>
+Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling and
+ use_hierarchy interface
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 7:20 AM, Jarod Wilson <jarod@redhat.com> wrote:
->> It is not a need.  I simply observed that after the IR_ to RC_ rename
->> there was another set of drivers being built which I did not ask for.
+On Wed, Feb 16, 2011 at 9:22 AM, Divyesh Shah <dpshah@google.com> wrote:
+> On Tue, Feb 15, 2011 at 5:44 PM, Gui Jianfeng
+> <guijianfeng@cn.fujitsu.com> wrote:
+>> Hmm, it seems memcg aggregating stats in parent group.
+>> But do we really need to do that in kernel? I think it's easier to do it in
+>> userland, and it makes kernel much simpler.
+>>
 >
-> So disable them. I think most people would rather have this support
-> enabled so that remotes Just Work if a DTV card or stand-alone IR receiver
-> is plugged in without having to hunt back through Kconfig options to
-> figure out why it doesn't...
+> I would prefer having stats aggregated up the hierarchy. One trick we
+> used at Google earlier was to do lazy updates for most stats. So we
 
-Unfortunately _ALL_ the usb DVB devices are unavailable if you do not
-enable IR_CORE "Infrared remote controller adapters" in v4l.  This is
-a little annoying as the usb device I use doesn't even have IR
-capabilities.  It doesn't seem like something that should be forced on
-the user -- enable IR or you can't even compile the driver you need,
-which doesn't even use IR.
+Note that this was on ancient version of the blkio controller :). As
+Vivek mentioned,
+it may be ok to add the hierarchical accounting later.
 
-It's not the end of the world but I don't particularly appreciate the
-enable-everything approach.  It would be nice to at least have the
-option to trim the fat if you want.. Isn't that partially what Linux
-is supposed to be about in the first place?
+> would accumulate stats for a given timeslice and at the end of that
+> timeslice propagate those counts all the way up to the parent. For
+> device info like this, the update can be instantaneous since its not a
+> very frequent event. It would also be very useful to distinguish
+> between stats for the cgroup itself vs total values accumulated from
+> the subtree rooted at that cgroup like memcg does.
+>
+> --
+> Thanks,
+> Divyesh
+>
 
-Just my two cents...
+
+
+-- 
+Thanks,
+Divyesh
