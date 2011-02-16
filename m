@@ -1,253 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab1BPBYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:24:52 -0500
-Received: from kroah.org ([198.145.64.141]:45115 "EHLO coco.kroah.org"
+	id S1753481Ab1BPBZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:25:01 -0500
+Received: from kroah.org ([198.145.64.141]:49180 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757336Ab1BPArP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:20:59 2011
-Message-Id: <20110216002059.290891329@clark.kroah.org>
+	id S1757452Ab1BPAWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:22:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:40 2011
+Message-Id: <20110216001440.573978809@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:30 -0800
+Date: Tue, 15 Feb 2011 16:13:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex He <alex.he@amd.com>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: [patch 002/176] USB: EHCI: ASPM quirk of ISOC on AMD SB800
-In-Reply-To: <20110216002212.GA9246@kroah.com>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: [155/272] ASoC: Fix AC97 registration unwind
+In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Alex He <alex.he@amd.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 05570297ecbe834b1756b522412b68eaffb9ab11 upstream.
+commit 7d8316df44053687625eef792d53b3ac62e82248 upstream.
 
-When ASPM PM Feature is enabled on UMI link, devices that use ISOC stream of
-data transfer may be exposed to longer latency causing less than optimal per-
-formance of the device. The longer latencies are normal and are due to link
-wake time coming out of low power state which happens frequently to save
-power when the link is not active.
-The following code will make exception for certain features of ASPM to be by
-passed and keep the logic normal state only when the ISOC device is connected
-and active. This change will allow the device to run at optimal performance
-yet minimize the impact on overall power savings.
+soc_unregister_ac97_dai_link() takes a CODEC as an argument, not a
+rtd like the registration function, so give it what it's looking for.
 
-Signed-off-by: Alex He <alex.he@amd.com>
-Acked-by: David Brownell <dbrownell@users.sourceforge.net>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Reported-by: Mike Frysinger <vapier.adi@gmail.com>
+Acked-by: Mike Frysinger <vapier@gentoo.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hcd.c   |    8 ++++
- drivers/usb/host/ehci-pci.c   |   32 +++++++++++++++++
- drivers/usb/host/ehci-sched.c |   79 ++++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/ehci.h       |    1 
- 4 files changed, 120 insertions(+)
+ sound/soc/soc-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -114,6 +114,9 @@ MODULE_PARM_DESC(hird, "host initiated r
- 
- #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
- 
-+/* for ASPM quirk of ISOC on AMD SB800 */
-+static struct pci_dev *amd_nb_dev;
-+
- /*-------------------------------------------------------------------------*/
- 
- #include "ehci.h"
-@@ -514,6 +517,11 @@ static void ehci_stop (struct usb_hcd *h
- 	spin_unlock_irq (&ehci->lock);
- 	ehci_mem_cleanup (ehci);
- 
-+	if (amd_nb_dev) {
-+		pci_dev_put(amd_nb_dev);
-+		amd_nb_dev = NULL;
-+	}
-+
- #ifdef	EHCI_STATS
- 	ehci_dbg (ehci, "irq normal %ld err %ld reclaim %ld (lost %ld)\n",
- 		ehci->stats.normal, ehci->stats.error, ehci->stats.reclaim,
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -41,6 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
- 	return 0;
- }
- 
-+static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
-+{
-+	struct pci_dev *amd_smbus_dev;
-+	u8 rev = 0;
-+
-+	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
-+	if (!amd_smbus_dev)
-+		return 0;
-+
-+	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+	if (rev < 0x40) {
-+		pci_dev_put(amd_smbus_dev);
-+		amd_smbus_dev = NULL;
-+		return 0;
-+	}
-+
-+	if (!amd_nb_dev)
-+		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
-+	if (!amd_nb_dev)
-+		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
-+
-+	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
-+
-+	pci_dev_put(amd_smbus_dev);
-+	amd_smbus_dev = NULL;
-+
-+	return 1;
-+}
-+
- /* called during probe() after chip reset completes */
- static int ehci_pci_setup(struct usb_hcd *hcd)
- {
-@@ -99,6 +128,9 @@ static int ehci_pci_setup(struct usb_hcd
- 	/* cache this readonly data; minimize chip reads */
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
- 
-+	if (ehci_quirk_amd_SB800(ehci))
-+		ehci->amd_l1_fix = 1;
-+
- 	retval = ehci_halt(ehci);
- 	if (retval)
- 		return retval;
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1583,6 +1583,63 @@ itd_link (struct ehci_hcd *ehci, unsigne
- 	*hw_p = cpu_to_hc32(ehci, itd->itd_dma | Q_TYPE_ITD);
- }
- 
-+#define AB_REG_BAR_LOW 0xe0
-+#define AB_REG_BAR_HIGH 0xe1
-+#define AB_INDX(addr) ((addr) + 0x00)
-+#define AB_DATA(addr) ((addr) + 0x04)
-+#define NB_PCIE_INDX_ADDR 0xe0
-+#define NB_PCIE_INDX_DATA 0xe4
-+#define NB_PIF0_PWRDOWN_0 0x01100012
-+#define NB_PIF0_PWRDOWN_1 0x01100013
-+
-+static void ehci_quirk_amd_L1(struct ehci_hcd *ehci, int disable)
-+{
-+	u32 addr, addr_low, addr_high, val;
-+
-+	outb_p(AB_REG_BAR_LOW, 0xcd6);
-+	addr_low = inb_p(0xcd7);
-+	outb_p(AB_REG_BAR_HIGH, 0xcd6);
-+	addr_high = inb_p(0xcd7);
-+	addr = addr_high << 8 | addr_low;
-+	outl_p(0x30, AB_INDX(addr));
-+	outl_p(0x40, AB_DATA(addr));
-+	outl_p(0x34, AB_INDX(addr));
-+	val = inl_p(AB_DATA(addr));
-+
-+	if (disable) {
-+		val &= ~0x8;
-+		val |= (1 << 4) | (1 << 9);
-+	} else {
-+		val |= 0x8;
-+		val &= ~((1 << 4) | (1 << 9));
-+	}
-+	outl_p(val, AB_DATA(addr));
-+
-+	if (amd_nb_dev) {
-+		addr = NB_PIF0_PWRDOWN_0;
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
-+		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
-+		if (disable)
-+			val &= ~(0x3f << 7);
-+		else
-+			val |= 0x3f << 7;
-+
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
-+
-+		addr = NB_PIF0_PWRDOWN_1;
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
-+		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
-+		if (disable)
-+			val &= ~(0x3f << 7);
-+		else
-+			val |= 0x3f << 7;
-+
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
-+	}
-+
-+	return;
-+}
-+
- /* fit urb's itds into the selected schedule slot; activate as needed */
- static int
- itd_link_urb (
-@@ -1609,6 +1666,12 @@ itd_link_urb (
- 			urb->interval,
- 			next_uframe >> 3, next_uframe & 0x7);
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -1623,7 +1623,7 @@ static void snd_soc_instantiate_card(str
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
+ 			while (--i >= 0)
+-				soc_unregister_ac97_dai_link(&card->rtd[i]);
++				soc_unregister_ac97_dai_link(card->rtd[i].codec);
+ 			goto probe_dai_err;
+ 		}
  	}
-+
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 1);
-+	}
-+
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
- 
- 	/* fill iTDs uframe by uframe */
-@@ -1733,6 +1796,11 @@ itd_complete (
- 	(void) disable_periodic(ehci);
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
- 
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 0);
-+	}
-+
- 	if (unlikely(list_is_singular(&stream->td_list))) {
- 		ehci_to_hcd(ehci)->self.bandwidth_allocated
- 				-= stream->bandwidth;
-@@ -2018,6 +2086,12 @@ sitd_link_urb (
- 			(next_uframe >> 3) & (ehci->periodic_size - 1),
- 			stream->interval, hc32_to_cpu(ehci, stream->splits));
- 	}
-+
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 1);
-+	}
-+
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
- 
- 	/* fill sITDs frame by frame */
-@@ -2118,6 +2192,11 @@ sitd_complete (
- 	(void) disable_periodic(ehci);
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
- 
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 0);
-+	}
-+
- 	if (list_is_singular(&stream->td_list)) {
- 		ehci_to_hcd(ehci)->self.bandwidth_allocated
- 				-= stream->bandwidth;
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -130,6 +130,7 @@ struct ehci_hcd {			/* one per controlle
- 	unsigned		has_amcc_usb23:1;
- 	unsigned		need_io_watchdog:1;
- 	unsigned		broken_periodic:1;
-+	unsigned		amd_l1_fix:1;
- 	unsigned		fs_i_thresh:1;	/* Intel iso scheduling */
- 
- 	/* required for usb32 quirk */
 
 
