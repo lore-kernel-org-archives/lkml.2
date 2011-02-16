@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab1BPU2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 15:28:54 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63230 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab1BPU2u convert rfc822-to-8bit (ORCPT
+	id S1754319Ab1BPUeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 15:34:44 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:16851 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab1BPUel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 15:28:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AgBFQa2mNj7avU4v8ggVIVI5eLCra4OirU6613GDQT+Wje5LEByUpsbIv1FjQqAi3I
-         eVxV+Ipu+AtlCTQM192qFVqvSa85LXdRRW7U/RynxtkbbEDeJ/Ta7f9uktZ4uH/CtT0p
-         X2Ql+U1mVgJXQyYr5RDJhlrJIOtquhrL0bznM=
+	Wed, 16 Feb 2011 15:34:41 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6259"; a="74833283"
+Message-ID: <4D5C34E0.5000209@codeaurora.org>
+Date: Wed, 16 Feb 2011 12:34:40 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110216120518.66dcedff@jbarnes-desktop>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-	<20110216192658.GA7225@blimp.localdomain>
-	<AANLkTinuF0na0zLOFOjFWapoNNXCUay88BdrxH0-_ybM@mail.gmail.com>
-	<20110216115406.631ada72@jbarnes-desktop>
-	<AANLkTik+t1A1omh6fh6o_U6mnk6Y3=K+OjnozSmr44Hv@mail.gmail.com>
-	<20110216120518.66dcedff@jbarnes-desktop>
-Date: Wed, 16 Feb 2011 21:28:49 +0100
-Message-ID: <AANLkTin=RmwByxK0Q_w_O3fpqW8BUTW+LdsfjGbq3CNy@mail.gmail.com>
-Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after
- reopening lid
-From: Alex Riesen <raa.lkml@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Colin Cross <ccross@android.com>
+CC: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        konkers@android.com, linux-kernel@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 12/21] ARM: tegra: clock: Add shared bus clock type
+References: <1297590033-15035-1-git-send-email-ccross@android.com> <1297590033-15035-13-git-send-email-ccross@android.com>
+In-Reply-To: <1297590033-15035-13-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 21:05, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> On Wed, 16 Feb 2011 20:59:35 +0100
-> Alex Riesen <raa.lkml@gmail.com> wrote:
->>
->> I don't think it is related. I don't have problems switching
->> the outputs (frankly, didn't try) and I do have problems
->> restoring backlight, very similar to what I had earlier in
->> 2.6.37.
->
-> Right, but it affects the registration of the backlight and ACPI video
-> interface as well, so can affect backlight restore on resume.  In my
-> case, without the above patch my backlight wouldn't be restored on
-> resume, so I'd have to manually echo a value
-> into /sys/class/backlight/<foo> to get my display back.
+On 02/13/2011 01:40 AM, Colin Cross wrote:
+> +/* shared bus ops */
+> +/*
+> + * Some clocks may have multiple downstream users that need to request a
+> + * higher clock rate.  Shared bus clocks provide a unique shared_bus_user
+> + * clock to each user.  The frequency of the bus is set to the highest
+> + * enabled shared_bus_user clock, with a minimum value set by the
+> + * shared bus.
+> + */
+> +static void tegra_clk_shared_bus_update(struct clk *bus)
+> +{
+> +	struct clk *c;
+> +	unsigned long rate = bus->min_rate;
+> +
+> +	list_for_each_entry(c, &bus->shared_bus_list, u.shared_bus_user.node)
+> +		if (c->u.shared_bus_user.enabled)
+> +			rate = max(c->u.shared_bus_user.rate, rate);
+> +
+> +	if (rate != clk_get_rate(bus))
+> +		clk_set_rate(bus, rate);
 
-Ok, I tried, but only to find out that my tree already has the
-patch (it is in mainline since today). So it definitely
-does not help.
+What do you do if clk_set_rate() fails? Should you unwind all the state
+such as the rate and if it's enabled/disabled? Or is it safe to say
+clk_set_rate() can't fail unless the kernel is buggy in which case why
+aren't all those return -E* in the set rate functions just BUG_ONs?
 
-Thanks anyway
+> +};
+> +
+> +static void tegra_clk_shared_bus_init(struct clk *c)
+> +{
+> +	c->max_rate = c->parent->max_rate;
+> +	c->u.shared_bus_user.rate = c->parent->max_rate;
+> +	c->state = OFF;
+> +#ifdef CONFIG_DEBUG_FS
+> +	c->set = 1;
+> +#endif
+> +
+> +	list_add_tail(&c->u.shared_bus_user.node,
+> +		&c->parent->shared_bus_list);
+> +}
+> +
+> +static int tegra_clk_shared_bus_set_rate(struct clk *c, unsigned long rate)
+> +{
+> +	c->u.shared_bus_user.rate = rate;
+> +	tegra_clk_shared_bus_update(c->parent);
+> +	return 0;
+> +}
+> +
+> +static long tegra_clk_shared_bus_round_rate(struct clk *c, unsigned long rate)
+> +{
+> +	return clk_round_rate(c->parent, rate);
+> +}
+> +
+> +static int tegra_clk_shared_bus_enable(struct clk *c)
+> +{
+> +	c->u.shared_bus_user.enabled = true;
+> +	tegra_clk_shared_bus_update(c->parent);
+> +	return 0;
+> +}
+
+Shouldn't you call clk_enable(c->parent)? And do you need to check for
+errors from clk_enable()?
+
+> +
+> +static void tegra_clk_shared_bus_disable(struct clk *c)
+> +{
+> +	c->u.shared_bus_user.enabled = false;
+> +	tegra_clk_shared_bus_update(c->parent);
+> +}
+
+And a similar clk_disable(c->parent) here.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
