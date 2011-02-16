@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab1BPASQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:18:16 -0500
-Received: from kroah.org ([198.145.64.141]:38606 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab1BPASL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756576Ab1BPASL (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 15 Feb 2011 19:18:11 -0500
+Received: from kroah.org ([198.145.64.141]:38587 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756057Ab1BPASG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:26 2011
-Message-Id: <20110216001426.256367339@clark.kroah.org>
+Message-Id: <20110216001425.970393397@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:09 -0800
+Date: Tue, 15 Feb 2011 16:11:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [012/272] hwmon: (applesmc) Relax the severity of device init failure
+        Cliff Wickman <cpw@sgi.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [009/272] x86, UV, BAU: Extend for more than 16 cpus per socket
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,102 +25,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Cliff Wickman <cpw@sgi.com>
 
-commit 2344cd0c2e9ea8f3037be11fb997ddbeda0237ca upstream.
+commit cfa60917f0ba6eca83f41aef3cb4a7dd7736ac9f upstream.
 
-The device init is used to reset the accelerometer. Failure to reset
-is not severe enough to stop loading the module or to resume from
-hibernation.  This patch relaxes failure to a warning and drops
-output in case of success.
+Fix a hard-coded limit of a maximum of 16 cpu's per socket.
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+The UV Broadcast Assist Unit code initializes by scanning the
+cpu topology of the system and assigning a master cpu for each
+socket and UV hub. That scan had an assumption of a limit of 16
+cpus per socket. With Westmere we are going over that limit.
+The UV hub hardware will allow up to 32.
+
+If the scan finds the system has gone over that limit it returns
+an error and we print a warning and fall back to doing TLB
+shootdowns without the BAU.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+LKML-Reference: <E1PZol7-0000mM-77@eag09.americas.sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/applesmc.c |   38 +++++++-------------------------------
- 1 file changed, 7 insertions(+), 31 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |    9 +++++----
+ arch/x86/platform/uv/tlb_uv.c    |   22 ++++++++++++++++++----
+ 2 files changed, 23 insertions(+), 8 deletions(-)
 
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -448,38 +448,22 @@ static int applesmc_read_motion_sensor(i
- }
- 
- /*
-- * applesmc_device_init - initialize the accelerometer.  Returns zero on success
-- * and negative error code on failure.  Can sleep.
-+ * applesmc_device_init - initialize the accelerometer.  Can sleep.
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -26,20 +26,22 @@
+  * BAU_SB_DESCRIPTOR_BASE register, set 1 is located at BASE + 512,
+  * set 2 is at BASE + 2*512, set 3 at BASE + 3*512, and so on.
+  *
+- * We will use 31 sets, one for sending BAU messages from each of the 32
++ * We will use one set for sending BAU messages from each of the
+  * cpu's on the uvhub.
+  *
+  * TLB shootdown will use the first of the 8 descriptors of each set.
+  * Each of the descriptors is 64 bytes in size (8*64 = 512 bytes in a set).
   */
--static int applesmc_device_init(void)
-+static void applesmc_device_init(void)
+ 
++#define MAX_CPUS_PER_UVHUB		64
++#define MAX_CPUS_PER_SOCKET		32
++#define UV_ADP_SIZE			64 /* hardware-provided max. */
++#define UV_CPUS_PER_ACT_STATUS		32 /* hardware-provided max. */
+ #define UV_ITEMS_PER_DESCRIPTOR		8
+ /* the 'throttle' to prevent the hardware stay-busy bug */
+ #define MAX_BAU_CONCURRENT		3
+-#define UV_CPUS_PER_ACT_STATUS		32
+ #define UV_ACT_STATUS_MASK		0x3
+ #define UV_ACT_STATUS_SIZE		2
+-#define UV_ADP_SIZE			32
+ #define UV_DISTRIBUTION_SIZE		256
+ #define UV_SW_ACK_NPENDING		8
+ #define UV_NET_ENDPOINT_INTD		0x38
+@@ -100,7 +102,6 @@
+  * number of destination side software ack resources
+  */
+ #define DEST_NUM_RESOURCES		8
+-#define MAX_CPUS_PER_NODE		32
+ /*
+  * completion statuses for sending a TLB flush message
+  */
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -1341,7 +1341,7 @@ uv_activation_descriptor_init(int node,
+ 
+ 	/*
+ 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
+-	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
++	 * per cpu; and one per cpu on the uvhub (UV_ADP_SIZE)
+ 	 */
+ 	bau_desc = kmalloc_node(sizeof(struct bau_desc) * UV_ADP_SIZE
+ 				* UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
+@@ -1490,7 +1490,7 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static void __init uv_init_per_cpu(int nuvhubs)
++static int __init uv_init_per_cpu(int nuvhubs)
  {
--	int total, ret = -ENXIO;
-+	int total;
- 	u8 buffer[2];
- 
- 	if (!applesmc_accelerometer)
--		return 0;
-+		return;
- 
- 	mutex_lock(&applesmc_lock);
- 
- 	for (total = INIT_TIMEOUT_MSECS; total > 0; total -= INIT_WAIT_MSECS) {
--		if (debug)
--			printk(KERN_DEBUG "applesmc try %d\n", total);
- 		if (!applesmc_read_key(MOTION_SENSOR_KEY, buffer, 2) &&
--				(buffer[0] != 0x00 || buffer[1] != 0x00)) {
--			if (total == INIT_TIMEOUT_MSECS) {
--				printk(KERN_DEBUG "applesmc: device has"
--						" already been initialized"
--						" (0x%02x, 0x%02x).\n",
--						buffer[0], buffer[1]);
--			} else {
--				printk(KERN_DEBUG "applesmc: device"
--						" successfully initialized"
--						" (0x%02x, 0x%02x).\n",
--						buffer[0], buffer[1]);
--			}
--			ret = 0;
-+				(buffer[0] != 0x00 || buffer[1] != 0x00))
- 			goto out;
--		}
- 		buffer[0] = 0xe0;
- 		buffer[1] = 0x00;
- 		applesmc_write_key(MOTION_SENSOR_KEY, buffer, 2);
-@@ -490,7 +474,6 @@ static int applesmc_device_init(void)
- 
- out:
- 	mutex_unlock(&applesmc_lock);
--	return ret;
+ 	int i;
+ 	int cpu;
+@@ -1507,7 +1507,7 @@ static void __init uv_init_per_cpu(int n
+ 	struct bau_control *smaster = NULL;
+ 	struct socket_desc {
+ 		short num_cpus;
+-		short cpu_number[16];
++		short cpu_number[MAX_CPUS_PER_SOCKET];
+ 	};
+ 	struct uvhub_desc {
+ 		unsigned short socket_mask;
+@@ -1540,6 +1540,10 @@ static void __init uv_init_per_cpu(int n
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+ 		sdp->num_cpus++;
++		if (sdp->num_cpus > MAX_CPUS_PER_SOCKET) {
++			printk(KERN_EMERG "%d cpus per socket invalid\n", sdp->num_cpus);
++			return 1;
++		}
+ 	}
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
+ 		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
+@@ -1570,6 +1574,12 @@ static void __init uv_init_per_cpu(int n
+ 				bcp->uvhub_master = hmaster;
+ 				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
+ 						blade_processor_id;
++				if (bcp->uvhub_cpu >= MAX_CPUS_PER_UVHUB) {
++					printk(KERN_EMERG
++						"%d cpus per uvhub invalid\n",
++						bcp->uvhub_cpu);
++					return 1;
++				}
+ 			}
+ nextsocket:
+ 			socket++;
+@@ -1595,6 +1605,7 @@ nextsocket:
+ 		bcp->congested_reps = congested_reps;
+ 		bcp->congested_period = congested_period;
+ 	}
++	return 0;
  }
  
  /*
-@@ -516,13 +499,8 @@ static int applesmc_get_fan_count(void)
- /* Device model stuff */
- static int applesmc_probe(struct platform_device *dev)
- {
--	int ret;
--
--	ret = applesmc_device_init();
--	if (ret)
--		return ret;
-+	applesmc_device_init();
+@@ -1625,7 +1636,10 @@ static int __init uv_bau_init(void)
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = microsec_2_cycles(congested_response_us);
  
--	printk(KERN_INFO "applesmc: device successfully initialized.\n");
- 	return 0;
- }
+-	uv_init_per_cpu(nuvhubs);
++	if (uv_init_per_cpu(nuvhubs)) {
++		nobau = 1;
++		return 0;
++	}
  
-@@ -539,9 +517,7 @@ static int applesmc_pm_resume(struct dev
- /* Reinitialize device on resume from hibernation */
- static int applesmc_pm_restore(struct device *dev)
- {
--	int ret = applesmc_device_init();
--	if (ret)
--		return ret;
-+	applesmc_device_init();
- 	return applesmc_pm_resume(dev);
- }
- 
+ 	uv_partition_base_pnode = 0x7fffffff;
+ 	for (uvhub = 0; uvhub < nuvhubs; uvhub++)
 
 
