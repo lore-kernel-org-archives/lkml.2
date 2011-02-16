@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938Ab1BPAsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:48:31 -0500
-Received: from kroah.org ([198.145.64.141]:45283 "EHLO coco.kroah.org"
+	id S1751418Ab1BPBQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:16:56 -0500
+Received: from kroah.org ([198.145.64.141]:45452 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932888Ab1BPAsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:02 2011
-Message-Id: <20110216002102.727220799@clark.kroah.org>
+	id S932935Ab1BPAsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:30 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:03 2011
+Message-Id: <20110216002103.713265913@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:04 -0800
+Date: Tue, 15 Feb 2011 16:20:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ruben Smits <ruben.smits@mech.kuleuven.be>
-Subject: [patch 036/176] staging: comedi: add support for newer jr3 1-channel pci board
+        Johannes Berg <johannes@sipsolutions.net>,
+        Luciano Coelho <coelho@ti.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 046/176] mac80211: use maximum number of AMPDU frames as default in BA RX
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ruben Smits <ruben.smits@mech.kuleuven.be>
+From: Luciano Coelho <coelho@ti.com>
 
-commit 6292817d58637f85dd623cfe563c7f5ec4f4c470 upstream.
+commit 82694f764dad783a123394e2220b92b9be721b43 upstream.
 
-add DEVICE_ID to table
+When the buffer size is set to zero in the block ack parameter set
+field, we should use the maximum supported number of subframes.  The
+existing code was bogus and was doing some unnecessary calculations
+that lead to wrong values.
 
-Signed-off-by: Ruben Smits <ruben.smits@mech.kuleuven.be>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Thanks Johannes for helping me figure this one out.
+
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Luciano Coelho <coelho@ti.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/mac80211/agg-rx.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -54,6 +54,7 @@ Devices: [JR3] PCI force sensor board (j
+--- a/net/mac80211/agg-rx.c
++++ b/net/mac80211/agg-rx.c
+@@ -172,8 +172,6 @@ void ieee80211_process_addba_request(str
+ 				     struct ieee80211_mgmt *mgmt,
+ 				     size_t len)
+ {
+-	struct ieee80211_hw *hw = &local->hw;
+-	struct ieee80211_conf *conf = &hw->conf;
+ 	struct tid_ampdu_rx *tid_agg_rx;
+ 	u16 capab, tid, timeout, ba_policy, buf_size, start_seq_num, status;
+ 	u8 dialog_token;
+@@ -218,13 +216,8 @@ void ieee80211_process_addba_request(str
+ 		goto end_no_lock;
+ 	}
+ 	/* determine default buffer size */
+-	if (buf_size == 0) {
+-		struct ieee80211_supported_band *sband;
+-
+-		sband = local->hw.wiphy->bands[conf->channel->band];
+-		buf_size = IEEE80211_MIN_AMPDU_BUF;
+-		buf_size = buf_size << sband->ht_cap.ampdu_factor;
+-	}
++	if (buf_size == 0)
++		buf_size = IEEE80211_MAX_AMPDU_BUF;
  
- #define PCI_VENDOR_ID_JR3 0x1762
- #define PCI_DEVICE_ID_JR3_1_CHANNEL 0x3111
-+#define PCI_DEVICE_ID_JR3_1_CHANNEL_NEW 0x1111
- #define PCI_DEVICE_ID_JR3_2_CHANNEL 0x3112
- #define PCI_DEVICE_ID_JR3_3_CHANNEL 0x3113
- #define PCI_DEVICE_ID_JR3_4_CHANNEL 0x3114
-@@ -73,6 +74,8 @@ static DEFINE_PCI_DEVICE_TABLE(jr3_pci_p
- 	{
- 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL,
- 		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
-+	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_1_CHANNEL_NEW,
-+		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
- 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_2_CHANNEL,
- 		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
- 	PCI_VENDOR_ID_JR3, PCI_DEVICE_ID_JR3_3_CHANNEL,
-@@ -807,6 +810,10 @@ static int jr3_pci_attach(struct comedi_
- 					devpriv->n_channels = 1;
- 				}
- 				break;
-+			case PCI_DEVICE_ID_JR3_1_CHANNEL_NEW:{
-+					devpriv->n_channels = 1;
-+				}
-+				break;
- 			case PCI_DEVICE_ID_JR3_2_CHANNEL:{
- 					devpriv->n_channels = 2;
- 				}
+ 
+ 	/* examine state machine */
 
 
