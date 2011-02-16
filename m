@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab1BPArY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:47:24 -0500
-Received: from kroah.org ([198.145.64.141]:45132 "EHLO coco.kroah.org"
+	id S1757558Ab1BPBYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:24:22 -0500
+Received: from kroah.org ([198.145.64.141]:45121 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757478Ab1BPArU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:20 -0500
+	id S1757492Ab1BPArR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:47:17 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:20:59 2011
-Message-Id: <20110216002059.568355401@clark.kroah.org>
+Message-Id: <20110216002059.387898399@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:33 -0800
+Date: Tue, 15 Feb 2011 16:19:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Karsten Wiese <fzu@wemgehoertderstaat.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [patch 005/176] ALSA: snd-usb-us122l: Fix MIDI output
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [patch 003/176] rt2x00: add device id for windy31 usb device
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karsten Wiese <fzu@wemgehoertderstaat.de>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-commit 921eebdc18c82268eab446592191b39e35d031d6 upstream.
+commit 9c4cf6d94fb362c27a24df5223ed6e327eb7279a upstream.
 
-The US-122L always reads 9 bytes per urb unless they are set to 0xFD.
+This patch adds the device id for the windy31 USB device to the rt73usb
+driver.
 
-Signed-off-by: Karsten Wiese <fzu@wemgehoertderstaat.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Thanks to Ralf Flaxa for reporting this and providing testing and a
+sample device.
+
+Reported-by: Ralf Flaxa <rf@suse.de>
+Tested-by: Ralf Flaxa <rf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
 ---
- sound/usb/midi.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt73usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -843,8 +843,8 @@ static void snd_usbmidi_us122l_output(st
- 		return;
- 	}
- 
--	memset(urb->transfer_buffer + count, 0xFD, 9 - count);
--	urb->transfer_buffer_length = count;
-+	memset(urb->transfer_buffer + count, 0xFD, ep->max_transfer - count);
-+	urb->transfer_buffer_length = ep->max_transfer;
- }
- 
- static struct usb_protocol_ops snd_usbmidi_122l_ops = {
-@@ -1288,6 +1288,13 @@ static int snd_usbmidi_out_endpoint_crea
- 	case USB_ID(0x1a86, 0x752d): /* QinHeng CH345 "USB2.0-MIDI" */
- 		ep->max_transfer = 4;
- 		break;
-+		/*
-+		 * Some devices only work with 9 bytes packet size:
-+		 */
-+	case USB_ID(0x0644, 0x800E): /* Tascam US-122L */
-+	case USB_ID(0x0644, 0x800F): /* Tascam US-144 */
-+		ep->max_transfer = 9;
-+		break;
- 	}
- 	for (i = 0; i < OUTPUT_URBS; ++i) {
- 		buffer = usb_alloc_coherent(umidi->dev,
+--- a/drivers/net/wireless/rt2x00/rt73usb.c
++++ b/drivers/net/wireless/rt2x00/rt73usb.c
+@@ -2395,6 +2395,7 @@ static struct usb_device_id rt73usb_devi
+ 	{ USB_DEVICE(0x04bb, 0x093d), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	{ USB_DEVICE(0x148f, 0x2573), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	{ USB_DEVICE(0x148f, 0x2671), USB_DEVICE_DATA(&rt73usb_ops) },
++	{ USB_DEVICE(0x0812, 0x3101), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	/* Qcom */
+ 	{ USB_DEVICE(0x18e8, 0x6196), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	{ USB_DEVICE(0x18e8, 0x6229), USB_DEVICE_DATA(&rt73usb_ops) },
 
 
