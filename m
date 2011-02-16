@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab1BPQxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 11:53:04 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38471 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab1BPQxB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753318Ab1BPQxB (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Feb 2011 11:53:01 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45824 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab1BPQw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 11:52:59 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+        h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=RFTnhwU3kzt6c6ntiZBCwwYmplEJLcqRQdlIfVsyT/wTvHNyb2VmSJl4pT8i500rvH
-         FChYpRyn/Mq/B6CkBxoGgqFfYinBBpR0rngoYAzTc/FUwotizwU1pdb/DD4NaqIDlE2b
-         /NV6gkg5tKLzjwNAZTcKpV8spWS0sfOf/tKk8=
-Date: Wed, 16 Feb 2011 17:52:55 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ray Jui <rjui@broadcom.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Questions about Linux workqueue in 2.6.36
-Message-ID: <20110216165255.GJ19830@htj.dyndns.org>
-References: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C2EAC@SJEXCHCCR02.corp.ad.broadcom.com>
- <20110209102847.GE3770@htj.dyndns.org>
- <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C3163@SJEXCHCCR02.corp.ad.broadcom.com>
- <20110214130300.GH18742@htj.dyndns.org>
- <8628FE4E7912BF47A96AE7DD7BAC0AADDDF03CDD8A@SJEXCHCCR02.corp.ad.broadcom.com>
+        b=JlLfWft5pTMeK7BXacTWP+Z0+b5HE9Y/eSPPyNa5+Jubb0sDfSEdU00VhxGgCDN7Wa
+         HgNghpiAzgP5tGh686h725MgeLmxgMSYNSfryfu5LaU1SOtcJasCFPIqf/iwNbIIYrD7
+         ofJzqQd9ZZRvQLD+EfnqXsg3j05yjLyEK01V4=
+Date: Wed, 16 Feb 2011 08:52:48 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        dilinger@queued.net
+Subject: Re: [PATCH v2] olpc_battery: convert to platform device
+Message-ID: <20110216165247.GC29796@core.coreip.homeip.net>
+References: <20110216142931.694DE9D401C@zog.reactivated.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF03CDD8A@SJEXCHCCR02.corp.ad.broadcom.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110216142931.694DE9D401C@zog.reactivated.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Feb 16, 2011 at 02:29:31PM +0000, Daniel Drake wrote:
+>  
+> -static void __exit olpc_bat_exit(void)
+> +static int __exit olpc_battery_remove(struct platform_device *pdev)
+...
+> +	.remove = __devexit_p(olpc_battery_remove),
 
-On Tue, Feb 15, 2011 at 09:57:21AM -0800, Ray Jui wrote:
-> Regarding your second patch, which changes the initial mayday timeout to
-> MAYDAY_INITIAL_TIMEOUT	= HZ / 100 >= 2 ? HZ / 100 : 2,
-> 
-> That's a minimum of 2 timer ticks, which is 20 ms in our
-> system. Since the timer resolution in our system is 10 ms and it
-> takes 15 ~ 20 ms to create a new kworker during kernel startup in
-> our system, I verified that I need to change the minimum timer tick
-> to 3 for the rescuer NOT to kick in our system during startup.
+olpc_battery_remove should be annotated as __devexit. Sorry for not
+noticing this before. Otherwise:
 
-I think calling rescuers in that case is not perfect but okay.  It'll
-only happen while the level of workers is below stable level.  It
-would still be better to avoid calling in rescuers almost immediately
-with 0 or 1 jiffy timeout.
+Reviewed-by: Dmitry Torokhov <dtor@mail.ru>
 
 Thanks.
 
 -- 
-tejun
+Dmitry
