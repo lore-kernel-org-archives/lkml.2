@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab1BPAUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:20:45 -0500
-Received: from kroah.org ([198.145.64.141]:39112 "EHLO coco.kroah.org"
+	id S1757715Ab1BPBf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:35:56 -0500
+Received: from kroah.org ([198.145.64.141]:39155 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757018Ab1BPAUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:20:34 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:34 2011
-Message-Id: <20110216001434.406760686@clark.kroah.org>
+	id S1757018Ab1BPAUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:20:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:35 2011
+Message-Id: <20110216001435.006490685@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:30 -0800
+Date: Tue, 15 Feb 2011 16:12:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Raymond Yau <superquad.vortex2@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [093/272] ALSA : au88x0 - Limit number of channels to fix Oops via OSS emu
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [099/272] Input: rc-keymap - return KEY_RESERVED for unknown mappings
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Raymond Yau <superquad.vortex2@gmail.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit d9ab344336f74c012f6643ed3d1ad8ca0136de3b upstream.
+commit 54e74b87e2a9941c6fa82189f270b47cceeba714 upstream.
 
-Fix playback/capture channels patch to change supported playback
-channels of au8830 to 1,2,4 and capture channels to 1,2.
-This prevent oops when oss emulation use SNDCTL_DSP_CHANNELS to
-set 3 Channels
+Do not respond with -EINVAL to EVIOCGKEYCODE for not-yet-mapped
+scancodes, but rather return KEY_RESERVED.
 
-Signed-off-by: Raymond Yau <superquad.vortex2@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This fixes breakage with Ubuntu's input-kbd utility that stopped
+returning full keymaps for remote controls.
+
+Tested-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Tested-by: Mark Lord <kernel@teksavvy.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- sound/pci/au88x0/au88x0_pcm.c |   24 ++++++++++++++++++++----
- 1 file changed, 20 insertions(+), 4 deletions(-)
 
---- a/sound/pci/au88x0/au88x0_pcm.c
-+++ b/sound/pci/au88x0/au88x0_pcm.c
-@@ -42,11 +42,7 @@ static struct snd_pcm_hardware snd_vorte
- 	.rate_min = 5000,
- 	.rate_max = 48000,
- 	.channels_min = 1,
--#ifdef CHIP_AU8830
--	.channels_max = 4,
--#else
- 	.channels_max = 2,
--#endif
- 	.buffer_bytes_max = 0x10000,
- 	.period_bytes_min = 0x1,
- 	.period_bytes_max = 0x1000,
-@@ -115,6 +111,17 @@ static struct snd_pcm_hardware snd_vorte
- 	.periods_max = 64,
- };
- #endif
-+#ifdef CHIP_AU8830
-+static unsigned int au8830_channels[3] = {
-+	1, 2, 4,
-+};
-+
-+static struct snd_pcm_hw_constraint_list hw_constraints_au8830_channels = {
-+	.count = ARRAY_SIZE(au8830_channels),
-+	.list = au8830_channels,
-+	.mask = 0,
-+};
-+#endif
- /* open callback */
- static int snd_vortex_pcm_open(struct snd_pcm_substream *substream)
- {
-@@ -156,6 +163,15 @@ static int snd_vortex_pcm_open(struct sn
- 		if (VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_ADB
- 		    || VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_I2S)
- 			runtime->hw = snd_vortex_playback_hw_adb;
-+#ifdef CHIP_AU8830
-+		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
-+			VORTEX_PCM_TYPE(substream->pcm) == VORTEX_PCM_ADB) {
-+			runtime->hw.channels_max = 4;
-+			snd_pcm_hw_constraint_list(runtime, 0,
-+				SNDRV_PCM_HW_PARAM_CHANNELS,
-+				&hw_constraints_au8830_channels);
-+		}
-+#endif
- 		substream->runtime->private_data = NULL;
+---
+ drivers/media/IR/ir-keytable.c |   28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
+
+--- a/drivers/media/IR/ir-keytable.c
++++ b/drivers/media/IR/ir-keytable.c
+@@ -374,21 +374,27 @@ static int ir_getkeycode(struct input_de
+ 		index = ir_lookup_by_scancode(rc_tab, scancode);
  	}
- #ifndef CHIP_AU8810
+ 
+-	if (index >= rc_tab->len) {
+-		if (!(ke->flags & INPUT_KEYMAP_BY_INDEX))
+-			IR_dprintk(1, "unknown key for scancode 0x%04x\n",
+-				   scancode);
++	if (index < rc_tab->len) {
++		entry = &rc_tab->scan[index];
++
++		ke->index = index;
++		ke->keycode = entry->keycode;
++		ke->len = sizeof(entry->scancode);
++		memcpy(ke->scancode, &entry->scancode, sizeof(entry->scancode));
++
++	} else if (!(ke->flags & INPUT_KEYMAP_BY_INDEX)) {
++		/*
++		 * We do not really know the valid range of scancodes
++		 * so let's respond with KEY_RESERVED to anything we
++		 * do not have mapping for [yet].
++		 */
++		ke->index = index;
++		ke->keycode = KEY_RESERVED;
++	} else {
+ 		retval = -EINVAL;
+ 		goto out;
+ 	}
+ 
+-	entry = &rc_tab->scan[index];
+-
+-	ke->index = index;
+-	ke->keycode = entry->keycode;
+-	ke->len = sizeof(entry->scancode);
+-	memcpy(ke->scancode, &entry->scancode, sizeof(entry->scancode));
+-
+ 	retval = 0;
+ 
+ out:
 
 
