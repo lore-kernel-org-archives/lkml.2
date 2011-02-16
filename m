@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab1BPAYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:24:55 -0500
-Received: from kroah.org ([198.145.64.141]:49706 "EHLO coco.kroah.org"
+	id S932515Ab1BPAZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:25:44 -0500
+Received: from kroah.org ([198.145.64.141]:49897 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932367Ab1BPAYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:33 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:48 2011
-Message-Id: <20110216001448.004953483@clark.kroah.org>
+	id S1757800Ab1BPAZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:50 2011
+Message-Id: <20110216001450.771212148@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:46 -0800
+Date: Tue, 15 Feb 2011 16:15:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [229/272] watchdog: Fix broken nowatchdog logic
+        =?ISO-8859-15?q?David=20M=C3=BCller?= <d.mueller@elsoft.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [257/272] drm/i915/crt: Check for a analog monitor in case of DVI-I
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,104 +26,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: =?UTF-8?q?David=20M=C3=BCller?= <d.mueller@elsoft.ch>
 
-commit 4135038a582c20ffdadfcf6564852e0b72a20968 upstream.
+commit f5afcd3dd0dca7fe869311c51da54d5a889191ba upstream.
 
-Passing nowatchdog to kernel disables 2 things: creation of
-watchdog threads AND initialization of percpu watchdog_hrtimer.
-As hrtimers are initialized only at boot it's not possible to
-enable watchdog later - for me all watchdog threads started to
-eat 100% of CPU time, but they could just crash.
+Since Linux 2.6.36 the digital output on my system (855GME + DVI-I) is
+not working any longer. The analog output is always activated
+regardless of the type of monitor attached.
 
-Additionally, even if these threads would start properly,
-watchdog_disable_all_cpus was guarded by no_watchdog check, so
-you couldn't disable watchdog.
+The culprit seems to be intel_crt_detect_ddc(), which returns true as
+soon as an ACK from the EDID device is received. Obviously this
+approach does not work with DVI-I where the analog and digital outputs
+share a common DDC bus.
 
-To fix this, remove no_watchdog variable and use already
-existing watchdog_enabled variable.
+In a similar manner to the shared DDC wire, ala the "Mac Mini Hack", we
+need an additional check to make sure that there really is an analog
+device attached to the DDC.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-[ removed another no_watchdog instance ]
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <1296230433-6261-1-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: David Müller <d.mueller@elsoft.ch>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/watchdog.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/i915/intel_crt.c |   30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
 
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -27,7 +27,7 @@
- #include <asm/irq_regs.h>
- #include <linux/perf_event.h>
- 
--int watchdog_enabled;
-+int watchdog_enabled = 1;
- int __read_mostly softlockup_thresh = 60;
- 
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
-@@ -43,9 +43,6 @@ static DEFINE_PER_CPU(unsigned long, hrt
- static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
- #endif
- 
--static int no_watchdog;
--
--
- /* boot commands */
- /*
-  * Should we panic when a soft-lockup or hard-lockup occurs:
-@@ -75,7 +72,7 @@ __setup("softlockup_panic=", softlockup_
- 
- static int __init nowatchdog_setup(char *str)
- {
--	no_watchdog = 1;
-+	watchdog_enabled = 0;
- 	return 1;
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -30,6 +30,7 @@
+ #include "drm.h"
+ #include "drm_crtc.h"
+ #include "drm_crtc_helper.h"
++#include "drm_edid.h"
+ #include "intel_drv.h"
+ #include "i915_drm.h"
+ #include "i915_drv.h"
+@@ -287,8 +288,9 @@ static bool intel_crt_ddc_probe(struct d
+ 	return i2c_transfer(&dev_priv->gmbus[ddc_bus].adapter, msgs, 1) == 1;
  }
- __setup("nowatchdog", nowatchdog_setup);
-@@ -83,7 +80,7 @@ __setup("nowatchdog", nowatchdog_setup);
- /* deprecated */
- static int __init nosoftlockup_setup(char *str)
+ 
+-static bool intel_crt_detect_ddc(struct intel_crt *crt)
++static bool intel_crt_detect_ddc(struct drm_connector *connector)
  {
--	no_watchdog = 1;
-+	watchdog_enabled = 0;
- 	return 1;
- }
- __setup("nosoftlockup", nosoftlockup_setup);
-@@ -475,9 +472,6 @@ static void watchdog_disable_all_cpus(vo
- {
- 	int cpu;
++	struct intel_crt *crt = intel_attached_crt(connector);
+ 	struct drm_i915_private *dev_priv = crt->base.base.dev->dev_private;
  
--	if (no_watchdog)
--		return;
--
- 	for_each_online_cpu(cpu)
- 		watchdog_disable(cpu);
+ 	/* CRT should always be at 0, but check anyway */
+@@ -301,8 +303,26 @@ static bool intel_crt_detect_ddc(struct
+ 	}
  
-@@ -531,7 +525,8 @@ cpu_callback(struct notifier_block *nfb,
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
--		err = watchdog_enable(hotcpu);
-+		if (watchdog_enabled)
-+			err = watchdog_enable(hotcpu);
- 		break;
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_UP_CANCELED:
-@@ -556,9 +551,6 @@ static int __init spawn_watchdog_task(vo
- 	void *cpu = (void *)(long)smp_processor_id();
- 	int err;
+ 	if (intel_ddc_probe(&crt->base, dev_priv->crt_ddc_pin)) {
+-		DRM_DEBUG_KMS("CRT detected via DDC:0x50 [EDID]\n");
+-		return true;
++		struct edid *edid;
++		bool is_digital = false;
++
++		edid = drm_get_edid(connector,
++			&dev_priv->gmbus[dev_priv->crt_ddc_pin].adapter);
++		/*
++		 * This may be a DVI-I connector with a shared DDC
++		 * link between analog and digital outputs, so we
++		 * have to check the EDID input spec of the attached device.
++		 */
++		if (edid != NULL) {
++			is_digital = edid->input & DRM_EDID_INPUT_DIGITAL;
++			connector->display_info.raw_edid = NULL;
++			kfree(edid);
++		}
++
++		if (!is_digital) {
++			DRM_DEBUG_KMS("CRT detected via DDC:0x50 [EDID]\n");
++			return true;
++		}
+ 	}
  
--	if (no_watchdog)
--		return 0;
--
- 	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
- 	WARN_ON(notifier_to_errno(err));
+ 	return false;
+@@ -458,7 +478,7 @@ intel_crt_detect(struct drm_connector *c
+ 		}
+ 	}
  
+-	if (intel_crt_detect_ddc(crt))
++	if (intel_crt_detect_ddc(connector))
+ 		return connector_status_connected;
+ 
+ 	if (!force)
+@@ -472,7 +492,7 @@ intel_crt_detect(struct drm_connector *c
+ 		crtc = intel_get_load_detect_pipe(&crt->base, connector,
+ 						  NULL, &dpms_mode);
+ 		if (crtc) {
+-			if (intel_crt_detect_ddc(crt))
++			if (intel_crt_detect_ddc(connector))
+ 				status = connector_status_connected;
+ 			else
+ 				status = intel_crt_load_detect(crtc, crt);
 
 
