@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141Ab1BPAU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:20:29 -0500
-Received: from kroah.org ([198.145.64.141]:39052 "EHLO coco.kroah.org"
+	id S1757508Ab1BPBht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:37:49 -0500
+Received: from kroah.org ([198.145.64.141]:39088 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757086Ab1BPAUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:20:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:33 2011
-Message-Id: <20110216001433.404478412@clark.kroah.org>
+	id S1756991Ab1BPAU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:20:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:34 2011
+Message-Id: <20110216001434.012952346@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:20 -0800
+Date: Tue, 15 Feb 2011 16:12:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [083/272] [media] radio-aimslab.c: Fix gcc 4.5+ bug
+        Takashi Iwai <tiwai@suse.de>
+Subject: [089/272] ALSA: hda - Fix multi-headphone handling for Realtek codecs
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,98 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit e3c92215198cb6aa00ad38db2780faa6b72e0a3f upstream.
+commit b2d0576055bd1cafcd91a23cf85064815f1396cd upstream.
 
-gcc 4.5+ doesn't properly evaluate some inlined expressions.
-A previous patch were proposed by Andrew Morton using noinline.
-However, the entire inlined function is bogus, so let's just
-remove it and be happy.
+When multiple headphone pins are defined without line-out pins, the
+driver takes them as primary outputs.  But it forgot to set line_out_type
+to HP by assuming there is some rest of HP pins.  This results in some
+mis-handling of these pins for Realtek codec parser.  It takes as if
+these are pure line-out jacks.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/radio/radio-aimslab.c |   23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
+ sound/pci/hda/hda_codec.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/media/radio/radio-aimslab.c
-+++ b/drivers/media/radio/radio-aimslab.c
-@@ -31,7 +31,6 @@
- #include <linux/module.h>	/* Modules 			*/
- #include <linux/init.h>		/* Initdata			*/
- #include <linux/ioport.h>	/* request_region		*/
--#include <linux/delay.h>	/* udelay			*/
- #include <linux/videodev2.h>	/* kernel radio structs		*/
- #include <linux/version.h>	/* for KERNEL_VERSION MACRO	*/
- #include <linux/io.h>		/* outb, outb_p			*/
-@@ -71,27 +70,17 @@ static struct rtrack rtrack_card;
- 
- /* local things */
- 
--static void sleep_delay(long n)
--{
--	/* Sleep nicely for 'n' uS */
--	int d = n / msecs_to_jiffies(1000);
--	if (!d)
--		udelay(n);
--	else
--		msleep(jiffies_to_msecs(d));
--}
--
- static void rt_decvol(struct rtrack *rt)
- {
- 	outb(0x58, rt->io);		/* volume down + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
- }
- 
- static void rt_incvol(struct rtrack *rt)
- {
- 	outb(0x98, rt->io);		/* volume up + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
- }
- 
-@@ -120,7 +109,7 @@ static int rt_setvol(struct rtrack *rt,
- 
- 	if (vol == 0) {			/* volume = 0 means mute the card */
- 		outb(0x48, rt->io);	/* volume down but still "on"	*/
--		sleep_delay(2000000);	/* make sure it's totally down	*/
-+		msleep(2000);	/* make sure it's totally down	*/
- 		outb(0xd0, rt->io);	/* volume steady, off		*/
- 		rt->curvol = 0;		/* track the volume state!	*/
- 		mutex_unlock(&rt->lock);
-@@ -155,7 +144,7 @@ static void send_0_byte(struct rtrack *r
- 		outb_p(128+64+16+8+  1, rt->io);  /* on + wr-enable + data low */
- 		outb_p(128+64+16+8+2+1, rt->io);  /* clock */
- 	}
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static void send_1_byte(struct rtrack *rt)
-@@ -169,7 +158,7 @@ static void send_1_byte(struct rtrack *r
- 		outb_p(128+64+16+8+4+2+1, rt->io); /* clock */
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -4571,6 +4571,9 @@ int snd_hda_parse_pin_def_config(struct
+ 		}
+ 		memset(cfg->hp_pins + cfg->hp_outs, 0,
+ 		       sizeof(hda_nid_t) * (AUTO_CFG_MAX_OUTS - cfg->hp_outs));
++		if (!cfg->hp_outs)
++			cfg->line_out_type = AUTO_PIN_HP_OUT;
++
  	}
  
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static int rt_setfreq(struct rtrack *rt, unsigned long freq)
-@@ -420,7 +409,7 @@ static int __init rtrack_init(void)
- 
- 	/* this ensures that the volume is all the way down  */
- 	outb(0x48, rt->io);		/* volume down but still "on"	*/
--	sleep_delay(2000000);	/* make sure it's totally down	*/
-+	msleep(2000);	/* make sure it's totally down	*/
- 	outb(0xc0, rt->io);		/* steady volume, mute card	*/
- 
- 	if (video_register_device(&rt->vdev, VFL_TYPE_RADIO, radio_nr) < 0) {
+ 	/* sort by sequence */
 
 
