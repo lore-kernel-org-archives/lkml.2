@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab1BPWat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 17:30:49 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60135 "EHLO
+	id S1755377Ab1BPWbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 17:31:33 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60782 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab1BPWap (ORCPT
+	with ESMTP id S1752211Ab1BPWbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 17:30:45 -0500
-Message-ID: <4D5C4FD7.5070603@kernel.org>
-Date: Wed, 16 Feb 2011 14:29:43 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, numa: seperate alloc_numa_distance from numa_reset_distance.
-References: <4D5C3A0F.3080107@kernel.org> <4D5C3A40.1060106@kernel.org> <4D5C4538.7060403@gmail.com>
-In-Reply-To: <4D5C4538.7060403@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Feb 2011 17:31:31 -0500
+Date: Wed, 16 Feb 2011 14:31:02 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Hong Liu <hong.liu@intel.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
+Subject: [PATCH -next] platform/x86: intel_mid_powerbutton needs INPUT
+Message-Id: <20110216143102.04bc6754.randy.dunlap@oracle.com>
+In-Reply-To: <20110216165321.c8238ed5.sfr@canb.auug.org.au>
+References: <20110216165321.c8238ed5.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0202.4D5C4FFD.0059,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4D5C5033.0004:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2011 01:44 PM, Cyrill Gorcunov wrote:
-> On 02/16/2011 11:57 PM, Yinghai Lu wrote:
->>
->> alloc code is much bigger the setting self.
->>
-> ...
->> +
->> +    numa_distance = __va(phys);
->> +    numa_distance_cnt = cnt;
->> +
->> +    /* fill with the default distances */
->> +    for (i = 0; i<  cnt; i++)
->> +        for (j = 0; j<  cnt; j++)
->> +            numa_distance[i * cnt + j] = i == j ?
->> +                LOCAL_DISTANCE : REMOTE_DISTANCE;
->> +    printk(KERN_DEBUG "NUMA: Initialized distance table, cnt=%d\n",
->> cnt);
->> +}
->> +
-> 
->   Hi Yinghai, btw would it be convenient to use node_distance() helper here
-> (since this snippet is touched anyway and there is a big merging of numa
->  code), ie
-> 
->     /* fill with the default distances */
->     for (i = 0; i < cnt; i++)
->         for (j = 0; j <  cnt; j++)
->             numa_distance[i * cnt + j] = node_distance(i, j);
->     
-> though it should be patch on top of yours to not mix with plain code move
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-do you mean
+intel_mid_powerbtn.c uses input interfaces, so it should depend
+on INPUT to fix build errors when CONFIG_INPUT is not enabled:
 
-int __node_distance(int from, int to)
-{
-        if (from >= numa_distance_cnt || to >= numa_distance_cnt)
-                return from == to ? LOCAL_DISTANCE : REMOTE_DISTANCE;
-        return numa_distance[from * numa_distance_cnt + to];
-}
-EXPORT_SYMBOL(__node_distance);
+intel_mid_powerbtn.c:(.text+0x56ca8f): undefined reference to `input_event'
+intel_mid_powerbtn.c:(.devinit.text+0x2e7b4): undefined reference to `input_allocate_device'
+intel_mid_powerbtn.c:(.devinit.text+0x2e7ff): undefined reference to `input_set_capability'
+intel_mid_powerbtn.c:(.devinit.text+0x2e84a): undefined reference to `input_register_device'
+intel_mid_powerbtn.c:(.devinit.text+0x2e88b): undefined reference to `input_free_device'
+intel_mid_powerbtn.c:(.devexit.text+0x42f0): undefined reference to `input_unregister_device'
 
-or node_distance()?
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Hong Liu <hong.liu@intel.com>
+---
+ drivers/platform/x86/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-then you will have 
-
- numa_distance[i * cnt + j] =  numa_distance[i * cnt + j];
-
-...
+--- linux-next-20110216.orig/drivers/platform/x86/Kconfig
++++ linux-next-20110216/drivers/platform/x86/Kconfig
+@@ -607,7 +607,7 @@ config INTEL_MFLD_THERMAL
+ 
+ config INTEL_MID_POWER_BUTTON
+ 	tristate "power button driver for Intel MID platforms"
+-	depends on INTEL_SCU_IPC
++	depends on INTEL_SCU_IPC && INPUT
+ 	help
+ 	  This driver handles the power button on the Intel MID platforms.
+ 
