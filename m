@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab1BPQsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 11:48:43 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48760 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab1BPQsl (ORCPT
+	id S1753347Ab1BPQxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 11:53:04 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38471 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab1BPQxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 11:48:41 -0500
+	Wed, 16 Feb 2011 11:53:01 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=lvf+zJobf7Js79o586VIReezhAtS/lwokA/2W7cxUls/5ibfsy0sozuv9XB41C21Sr
-         sGC2Hyy3dTo6gdwdyW/nWyqLjnUvK4w4jpf2sJlymh8VFZsbuMJda27nuSH8Auq/y0Ij
-         3aDvm/qSWYG1VKM8VzJKHycz3JSILGEONH6pk=
-Date: Wed, 16 Feb 2011 08:48:31 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        David Woodhouse <dwmw2@infradead.org>, Alex Dubov <oakad@yahoo.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: Re: [PATCH] workqueue, freezer: unify spelling of 'freeze' + 'able'
- to 'freezable'
-Message-ID: <20110216164830.GB29796@core.coreip.homeip.net>
-References: <20110216083442.GB19830@htj.dyndns.org>
- <20110216151829.GC3550@suse.de>
+        b=RFTnhwU3kzt6c6ntiZBCwwYmplEJLcqRQdlIfVsyT/wTvHNyb2VmSJl4pT8i500rvH
+         FChYpRyn/Mq/B6CkBxoGgqFfYinBBpR0rngoYAzTc/FUwotizwU1pdb/DD4NaqIDlE2b
+         /NV6gkg5tKLzjwNAZTcKpV8spWS0sfOf/tKk8=
+Date: Wed, 16 Feb 2011 17:52:55 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ray Jui <rjui@broadcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Questions about Linux workqueue in 2.6.36
+Message-ID: <20110216165255.GJ19830@htj.dyndns.org>
+References: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C2EAC@SJEXCHCCR02.corp.ad.broadcom.com>
+ <20110209102847.GE3770@htj.dyndns.org>
+ <8628FE4E7912BF47A96AE7DD7BAC0AADDDF02C3163@SJEXCHCCR02.corp.ad.broadcom.com>
+ <20110214130300.GH18742@htj.dyndns.org>
+ <8628FE4E7912BF47A96AE7DD7BAC0AADDDF03CDD8A@SJEXCHCCR02.corp.ad.broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110216151829.GC3550@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <8628FE4E7912BF47A96AE7DD7BAC0AADDDF03CDD8A@SJEXCHCCR02.corp.ad.broadcom.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 07:18:29AM -0800, Greg KH wrote:
-> On Wed, Feb 16, 2011 at 09:34:42AM +0100, Tejun Heo wrote:
-> > There are two spellings in use for 'freeze' + 'able' - 'freezable' and
-> > 'freezeable'.  The former is the more prominent one.  The latter is
-> > mostly used by workqueue and in a few other odd places.  Unify the
-> > spelling to 'freezable'.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Reported-by: Alan Stern <stern@rowland.harvard.edu>
-> > Cc: Dmitry Torokhov <dtor@mail.ru>
-> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Cc: David Woodhouse <dwmw2@infradead.org>
-> > Cc: Alex Dubov <oakad@yahoo.com>
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
+Hello,
 
-Thanks for doing this Tejun.
+On Tue, Feb 15, 2011 at 09:57:21AM -0800, Ray Jui wrote:
+> Regarding your second patch, which changes the initial mayday timeout to
+> MAYDAY_INITIAL_TIMEOUT	= HZ / 100 >= 2 ? HZ / 100 : 2,
+> 
+> That's a minimum of 2 timer ticks, which is 20 ms in our
+> system. Since the timer resolution in our system is 10 ms and it
+> takes 15 ~ 20 ms to create a new kworker during kernel startup in
+> our system, I verified that I need to change the minimum timer tick
+> to 3 for the rescuer NOT to kick in our system during startup.
 
-Acked-by: Dmitry Torokhov <dtor@mail.ru>
+I think calling rescuers in that case is not perfect but okay.  It'll
+only happen while the level of workers is below stable level.  It
+would still be better to avoid calling in rescuers almost immediately
+with 0 or 1 jiffy timeout.
+
+Thanks.
 
 -- 
-Dmitry
+tejun
