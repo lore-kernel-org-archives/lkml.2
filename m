@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab1BPAgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:36:40 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:53498 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab1BPAgh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:36:37 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6258"; a="74421638"
-Subject: Re: [PATCH 1/3] msm: iommu: Create a Kconfig item for the IOMMU
- driver
-From: Daniel Walker <dwalker@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <8yar5b9850l.fsf@huya.qualcomm.com>
-References: <1297456098-3241-1-git-send-email-stepanm@codeaurora.org>
-	 <1297456729.4852.9.camel@m0nster>  <8yar5b9850l.fsf@huya.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Feb 2011 16:36:03 -0800
-Message-ID: <1297816563.7088.23.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932643Ab1BPAhC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:37:02 -0500
+Received: from kroah.org ([198.145.64.141]:49625 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932288Ab1BPAYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:13 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:46 2011
+Message-Id: <20110216001446.744428072@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 15 Feb 2011 16:14:33 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        NeilBrown <neilb@suse.de>
+Subject: [216/272] md: fix regression resulting in delays in clearing bits in a bitmap
+In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-15 at 11:35 -0800, David Brown wrote:
-> On Fri, Feb 11 2011, Daniel Walker wrote:
-> 
-> > On Fri, 2011-02-11 at 12:28 -0800, Stepan Moskovchenko wrote:
-> >> +config MSM_IOMMU
-> >> +       bool "MSM IOMMU Support"
-> >> +       depends on ARCH_MSM8X60
-> >> +       select IOMMU_API
-> >> +       default n
-> >> +       help
-> >> +         Support for the IOMMUs found on certain Qualcomm SOCs.
-> >> +         These IOMMUs allow virtualization of the address space used by most
-> >> +         cores within the multimedia subsystem.
-> >> +
-> >> +         If unsure, say N here. 
-> >
-> > I think you should just make this a hidden option, unless there is a
-> > good reason why any given users might want to turn this off.
-> 
-> In this particular case, the driver is optional, even devices that use
-> it will be able to work both with and without it.  It makes sense to be
-> able to decide whether to have it or not.
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-This driver doesn't belong under mach-msm.
+------------------
 
-Daniel
+From: NeilBrown <neilb@suse.de>
 
--- 
+commit 6c9879101442b08581e8a0e3ae6b7f643a78fd63 upstream.
 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+commit 589a594be1fb (2.6.37-rc4) fixed a problem were md_thread would
+sometimes call the ->run function at a bad time.
+
+If an error is detected during array start up after the md_thread has
+been started, the md_thread is killed.  This resulted in the ->run
+function being called once.  However the array may not be in a state
+that it is safe to call ->run.
+
+However the fix imposed meant that  ->run was not called on a timeout.
+This means that when an array goes idle, bitmap bits do not get
+cleared promptly.  While the array is busy the bits will still be
+cleared when appropriate so this is not very serious.  There is no
+risk to data.
+
+Change the test so that we only avoid calling ->run when the thread
+is being stopped.  This more explicitly addresses the problem situation.
+
+This is suitable for 2.6.37-stable and any -stable kernel to which
+589a594be1fb was applied.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/md/md.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -6042,7 +6042,8 @@ static int md_thread(void * arg)
+ 			 || kthread_should_stop(),
+ 			 thread->timeout);
+ 
+-		if (test_and_clear_bit(THREAD_WAKEUP, &thread->flags))
++		clear_bit(THREAD_WAKEUP, &thread->flags);
++		if (!kthread_should_stop())
+ 			thread->run(thread->mddev);
+ 	}
+ 
+
 
