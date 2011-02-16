@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933534Ab1BPAx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:53:29 -0500
-Received: from kroah.org ([198.145.64.141]:52682 "EHLO coco.kroah.org"
+	id S933476Ab1BPAwY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:52:24 -0500
+Received: from kroah.org ([198.145.64.141]:46308 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933523Ab1BPAwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:52:17 -0500
+	id S933333Ab1BPAwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:52:10 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:16 2011
-Message-Id: <20110216002116.552778222@clark.kroah.org>
+Message-Id: <20110216002116.107174583@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:22:23 -0800
+Date: Tue, 15 Feb 2011 16:22:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [patch 175/176] usb: Realloc xHCI structures after a hub is verified.
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [patch 171/176] x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,73 +25,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-commit 653a39d1f61bdc9f277766736d21d2e9be0391cb upstream.
+commit 831d52bc153971b70e64eccfbed2b232394f22f8 upstream.
 
-When there's an xHCI host power loss after a suspend from memory, the USB
-core attempts to reset and verify the USB devices that are attached to the
-system.  The xHCI driver has to reallocate those devices, since the
-hardware lost all knowledge of them during the power loss.
+Clearing the cpu in prev's mm_cpumask early will avoid the flush tlb
+IPI's while the cr3 is still pointing to the prev mm.  And this window
+can lead to the possibility of bogus TLB fills resulting in strange
+failures.  One such problematic scenario is mentioned below.
 
-When a hub is plugged in, and the host loses power, the xHCI hardware
-structures are not updated to say the device is a hub.  This is usually
-done in hub_configure() when the USB hub is detected.  That function is
-skipped during a reset and verify by the USB core, since the core restores
-the old configuration and alternate settings, and the hub driver has no
-idea this happened.  This bug makes the xHCI host controller reject the
-enumeration of low speed devices under the resumed hub.
+ T1. CPU-1 is context switching from mm1 to mm2 context and got a NMI
+     etc between the point of clearing the cpu from the mm_cpumask(mm1)
+     and before reloading the cr3 with the new mm2.
 
-Therefore, make the USB core re-setup the internal xHCI hub device
-information by calling update_hub_device() when hub_activate() is called
-for a hub reset resume.  After a host power loss, all devices under the
-roothub get a reset-resume or a disconnect.
+ T2. CPU-2 is tearing down a specific vma for mm1 and will proceed with
+     flushing the TLB for mm1.  It doesn't send the flush TLB to CPU-1
+     as it doesn't see that cpu listed in the mm_cpumask(mm1).
 
-This patch should be queued for the 2.6.37 stable tree.
+ T3. After the TLB flush is complete, CPU-2 goes ahead and frees the
+     page-table pages associated with the removed vma mapping.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+ T4. CPU-2 now allocates those freed page-table pages for something
+     else.
+
+ T5. As the CR3 and TLB caches for mm1 is still active on CPU-1, CPU-1
+     can potentially speculate and walk through the page-table caches
+     and can insert new TLB entries.  As the page-table pages are
+     already freed and being used on CPU-2, this page walk can
+     potentially insert a bogus global TLB entry depending on the
+     (random) contents of the page that is being used on CPU-2.
+
+ T6. This bogus TLB entry being global will be active across future CR3
+     changes and can result in weird memory corruption etc.
+
+To avoid this issue, for the prev mm that is handing over the cpu to
+another mm, clear the cpu from the mm_cpumask(prev) after the cr3 is
+changed.
+
+Marking it for -stable, though we haven't seen any reported failure that
+can be attributed to this.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ arch/x86/include/asm/mmu_context.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -677,6 +677,8 @@ static void hub_init_func3(struct work_s
- static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
- {
- 	struct usb_device *hdev = hub->hdev;
-+	struct usb_hcd *hcd;
-+	int ret;
- 	int port1;
- 	int status;
- 	bool need_debounce_delay = false;
-@@ -715,6 +717,25 @@ static void hub_activate(struct usb_hub
- 			usb_autopm_get_interface_no_resume(
- 					to_usb_interface(hub->intfdev));
- 			return;		/* Continues at init2: below */
-+		} else if (type == HUB_RESET_RESUME) {
-+			/* The internal host controller state for the hub device
-+			 * may be gone after a host power loss on system resume.
-+			 * Update the device's info so the HW knows it's a hub.
-+			 */
-+			hcd = bus_to_hcd(hdev->bus);
-+			if (hcd->driver->update_hub_device) {
-+				ret = hcd->driver->update_hub_device(hcd, hdev,
-+						&hub->tt, GFP_NOIO);
-+				if (ret < 0) {
-+					dev_err(hub->intfdev, "Host not "
-+							"accepting hub info "
-+							"update.\n");
-+					dev_err(hub->intfdev, "LS/FS devices "
-+							"and hubs may not work "
-+							"under this hub\n.");
-+				}
-+			}
-+			hub_power_on(hub, true);
- 		} else {
- 			hub_power_on(hub, true);
- 		}
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -36,8 +36,6 @@ static inline void switch_mm(struct mm_s
+ 	unsigned cpu = smp_processor_id();
+ 
+ 	if (likely(prev != next)) {
+-		/* stop flush ipis for the previous mm */
+-		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+ #ifdef CONFIG_SMP
+ 		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+ 		percpu_write(cpu_tlbstate.active_mm, next);
+@@ -47,6 +45,9 @@ static inline void switch_mm(struct mm_s
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
+ 
++		/* stop flush ipis for the previous mm */
++		cpumask_clear_cpu(cpu, mm_cpumask(prev));
++
+ 		/*
+ 		 * load the LDT, if the LDT is different:
+ 		 */
 
 
