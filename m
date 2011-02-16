@@ -1,391 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab1BPQPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 11:15:37 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51991 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab1BPQPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 11:15:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=L/BELR2q4NQBNWRB+bHksg7bhhnxJkZyT314sg0NXGw1+GelXcbTSdggCzRIuMq2W/
-         WrwDTI53CsPm8lI/1A+zhCz8f032SVeVH8F2Ibj6Rs4HVzHwPX8B6Cazog8PG/29aAAt
-         NykVp/ykuoD2Z/LbmQReojiO592REpZ4XW+rk=
-Date: Wed, 16 Feb 2011 17:15:29 +0100
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
-        rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
-        ankita@in.ibm.com
-Subject: [PATCH UPDATED 13/33] x86-64, NUMA: Factor out memblk handling
- into numa_{add|register}_memblk()
-Message-ID: <20110216161529.GH19830@htj.dyndns.org>
-References: <1297858867-25981-1-git-send-email-tj@kernel.org>
- <1297858867-25981-14-git-send-email-tj@kernel.org>
+	id S1752861Ab1BPQQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 11:16:09 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:33062 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752665Ab1BPQQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 11:16:06 -0500
+Date: Wed, 16 Feb 2011 08:15:19 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 3/3] hwmon: (jc42) do not allow writing to
+ locked registers
+Message-ID: <20110216161519.GA14458@ericsson.com>
+References: <4D5BCA87.7010204@ladisch.de>
+ <4D5BCAEE.6030502@ladisch.de>
+ <20110216145049.GC13872@ericsson.com>
+ <4D5BE927.7000306@ladisch.de>
+ <20110216152028.GA14199@ericsson.com>
+ <4D5BEF7E.4010409@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1297858867-25981-14-git-send-email-tj@kernel.org>
+In-Reply-To: <4D5BEF7E.4010409@ladisch.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out memblk handling from srat_64.c into two functions in
-numa_64.c.  This patch doesn't introduce any behavior change.  The
-next patch will make all init methods use these functions.
+On Wed, Feb 16, 2011 at 10:38:38AM -0500, Clemens Ladisch wrote:
+> Guenter Roeck wrote:
+> > On Wed, Feb 16, 2011 at 10:11:35AM -0500, Clemens Ladisch wrote:
+> > > Guenter Roeck wrote:
+> > > > On Wed, Feb 16, 2011 at 08:02:38AM -0500, Clemens Ladisch wrote:
+> > > > > +		readonly = config & JC42_CFG_TCRIT_LOCK;
+> > > > 
+> > > > You are assigning a non-bool to a bool. I can see that recent C compilers
+> > > > do the right thing, but I am not sure if that is always the case.
+> > > > So I would prefer
+> > > > 		readonly = !!(config & JC42_CFG_TCRIT_LOCK);
+> > > > 
+> > > > Same for the assignments below. I can make that change if you are ok with it.
+> > > 
+> > > I cannot imagine how a compiler could get this wrong even if it tried
+> > > to, but if you think so, go ahead.  :)
+> > 
+> > I don't know. Maybe I am just paranoid. Using !! is how I usually see it done.
+> 
+> Usually, !! is used to convert non-zero to the _integer_ 1.  With
+> a compiler that implements bool, this conversion is already implied.
+> On older compilers, someone might be tempted to do "#define bool int",
+> but this is not an issue with the compilers required by Linux.
+> 
+I looked up other drivers, and they do the same, so I'll declare it safe 
+and apply your patch without modification.
 
-- v2: Fixed build failure on 32bit due to misplaced NR_NODE_MEMBLKS.
-      Reported by Ingo.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Brian Gerst <brgerst@gmail.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Shaohui Zheng <shaohui.zheng@intel.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
----
-NR_NODE_MEMBLKS move from numa_64.h to numa.h.  Git tree updated
-accordingly.
-
-Thanks.
-
- arch/x86/include/asm/acpi.h    |    1 -
- arch/x86/include/asm/numa.h    |    3 +
- arch/x86/include/asm/numa_64.h |    2 +
- arch/x86/mm/numa_64.c          |  109 ++++++++++++++++++++++++++++++++++++++++
- arch/x86/mm/srat_64.c          |   96 +----------------------------------
- 5 files changed, 117 insertions(+), 94 deletions(-)
-
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index 446a5b9..12bd1fd 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -187,7 +187,6 @@ struct bootnode;
- extern int acpi_numa;
- extern int x86_acpi_numa_init(void);
- extern int acpi_scan_nodes(void);
--#define NR_NODE_MEMBLKS (MAX_NUMNODES*2)
- 
- #ifdef CONFIG_NUMA_EMU
- extern void acpi_fake_nodes(const struct bootnode *fake_nodes,
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 26fc6e2..3d4dab4 100644
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -5,6 +5,9 @@
- #include <asm/apicdef.h>
- 
- #ifdef CONFIG_NUMA
-+
-+#define NR_NODE_MEMBLKS		(MAX_NUMNODES*2)
-+
- /*
-  * __apicid_to_node[] stores the raw mapping between physical apicid and
-  * node and is used to initialize cpu_to_node mapping.
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index d3a4514..3306a2b 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -32,6 +32,8 @@ extern nodemask_t mem_nodes_parsed __initdata;
- extern struct bootnode numa_nodes[MAX_NUMNODES] __initdata;
- 
- extern int __cpuinit numa_cpu_node(int cpu);
-+extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
-+extern int __init numa_register_memblks(void);
- 
- #ifdef CONFIG_NUMA_EMU
- #define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 82ee308..a1d702d 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -33,6 +33,10 @@ struct memnode memnode;
- static unsigned long __initdata nodemap_addr;
- static unsigned long __initdata nodemap_size;
- 
-+static int num_node_memblks __initdata;
-+static struct bootnode node_memblk_range[NR_NODE_MEMBLKS] __initdata;
-+static int memblk_nodeid[NR_NODE_MEMBLKS] __initdata;
-+
- struct bootnode numa_nodes[MAX_NUMNODES] __initdata;
- 
- /*
-@@ -184,6 +188,43 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
- 	return NULL;
- }
- 
-+static __init int conflicting_memblks(unsigned long start, unsigned long end)
-+{
-+	int i;
-+	for (i = 0; i < num_node_memblks; i++) {
-+		struct bootnode *nd = &node_memblk_range[i];
-+		if (nd->start == nd->end)
-+			continue;
-+		if (nd->end > start && nd->start < end)
-+			return memblk_nodeid[i];
-+		if (nd->end == end && nd->start == start)
-+			return memblk_nodeid[i];
-+	}
-+	return -1;
-+}
-+
-+int __init numa_add_memblk(int nid, u64 start, u64 end)
-+{
-+	int i;
-+
-+	i = conflicting_memblks(start, end);
-+	if (i == nid) {
-+		printk(KERN_WARNING "NUMA: Warning: node %d (%Lx-%Lx) overlaps with itself (%Lx-%Lx)\n",
-+		       nid, start, end, numa_nodes[i].start, numa_nodes[i].end);
-+	} else if (i >= 0) {
-+		printk(KERN_ERR "NUMA: node %d (%Lx-%Lx) overlaps with node %d (%Lx-%Lx)\n",
-+		       nid, start, end, i,
-+		       numa_nodes[i].start, numa_nodes[i].end);
-+		return -EINVAL;
-+	}
-+
-+	node_memblk_range[num_node_memblks].start = start;
-+	node_memblk_range[num_node_memblks].end = end;
-+	memblk_nodeid[num_node_memblks] = nid;
-+	num_node_memblks++;
-+	return 0;
-+}
-+
- static __init void cutoff_node(int i, unsigned long start, unsigned long end)
- {
- 	struct bootnode *nd = &numa_nodes[i];
-@@ -246,6 +287,71 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
- 	node_set_online(nodeid);
- }
- 
-+int __init numa_register_memblks(void)
-+{
-+	int i;
-+
-+	/*
-+	 * Join together blocks on the same node, holes between
-+	 * which don't overlap with memory on other nodes.
-+	 */
-+	for (i = 0; i < num_node_memblks; ++i) {
-+		int j, k;
-+
-+		for (j = i + 1; j < num_node_memblks; ++j) {
-+			unsigned long start, end;
-+
-+			if (memblk_nodeid[i] != memblk_nodeid[j])
-+				continue;
-+			start = min(node_memblk_range[i].end,
-+			            node_memblk_range[j].end);
-+			end = max(node_memblk_range[i].start,
-+			          node_memblk_range[j].start);
-+			for (k = 0; k < num_node_memblks; ++k) {
-+				if (memblk_nodeid[i] == memblk_nodeid[k])
-+					continue;
-+				if (start < node_memblk_range[k].end &&
-+				    end > node_memblk_range[k].start)
-+					break;
-+			}
-+			if (k < num_node_memblks)
-+				continue;
-+			start = min(node_memblk_range[i].start,
-+			            node_memblk_range[j].start);
-+			end = max(node_memblk_range[i].end,
-+			          node_memblk_range[j].end);
-+			printk(KERN_INFO "NUMA: Node %d [%Lx,%Lx) + [%Lx,%Lx) -> [%lx,%lx)\n",
-+			       memblk_nodeid[i],
-+			       node_memblk_range[i].start,
-+			       node_memblk_range[i].end,
-+			       node_memblk_range[j].start,
-+			       node_memblk_range[j].end,
-+			       start, end);
-+			node_memblk_range[i].start = start;
-+			node_memblk_range[i].end = end;
-+			k = --num_node_memblks - j;
-+			memmove(memblk_nodeid + j, memblk_nodeid + j+1,
-+				k * sizeof(*memblk_nodeid));
-+			memmove(node_memblk_range + j, node_memblk_range + j+1,
-+				k * sizeof(*node_memblk_range));
-+			--j;
-+		}
-+	}
-+
-+	memnode_shift = compute_hash_shift(node_memblk_range, num_node_memblks,
-+					   memblk_nodeid);
-+	if (memnode_shift < 0) {
-+		printk(KERN_ERR "NUMA: No NUMA node hash function found. Contact maintainer\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < num_node_memblks; i++)
-+		memblock_x86_register_active_regions(memblk_nodeid[i],
-+				node_memblk_range[i].start >> PAGE_SHIFT,
-+				node_memblk_range[i].end >> PAGE_SHIFT);
-+	return 0;
-+}
-+
- #ifdef CONFIG_NUMA_EMU
- /* Numa emulation */
- static struct bootnode nodes[MAX_NUMNODES] __initdata;
-@@ -653,6 +759,9 @@ void __init initmem_init(void)
- 		nodes_clear(mem_nodes_parsed);
- 		nodes_clear(node_possible_map);
- 		nodes_clear(node_online_map);
-+		num_node_memblks = 0;
-+		memset(node_memblk_range, 0, sizeof(node_memblk_range));
-+		memset(memblk_nodeid, 0, sizeof(memblk_nodeid));
- 		memset(numa_nodes, 0, sizeof(numa_nodes));
- 
- 		if (numa_init[i]() < 0)
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 82b1087..341b371 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -30,30 +30,11 @@ static struct acpi_table_slit *acpi_slit;
- 
- static struct bootnode nodes_add[MAX_NUMNODES];
- 
--static int num_node_memblks __initdata;
--static struct bootnode node_memblk_range[NR_NODE_MEMBLKS] __initdata;
--static int memblk_nodeid[NR_NODE_MEMBLKS] __initdata;
--
- static __init int setup_node(int pxm)
- {
- 	return acpi_map_pxm_to_node(pxm);
- }
- 
--static __init int conflicting_memblks(unsigned long start, unsigned long end)
--{
--	int i;
--	for (i = 0; i < num_node_memblks; i++) {
--		struct bootnode *nd = &node_memblk_range[i];
--		if (nd->start == nd->end)
--			continue;
--		if (nd->end > start && nd->start < end)
--			return memblk_nodeid[i];
--		if (nd->end == end && nd->start == start)
--			return memblk_nodeid[i];
--	}
--	return -1;
--}
--
- static __init void bad_srat(void)
- {
- 	int i;
-@@ -233,7 +214,6 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 	struct bootnode *nd;
- 	unsigned long start, end;
- 	int node, pxm;
--	int i;
- 
- 	if (srat_disabled())
- 		return;
-@@ -255,16 +235,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		bad_srat();
- 		return;
- 	}
--	i = conflicting_memblks(start, end);
--	if (i == node) {
--		printk(KERN_WARNING
--		"SRAT: Warning: PXM %d (%lx-%lx) overlaps with itself (%Lx-%Lx)\n",
--		       pxm, start, end, numa_nodes[i].start, numa_nodes[i].end);
--	} else if (i >= 0) {
--		printk(KERN_ERR
--		       "SRAT: PXM %d (%lx-%lx) overlaps with PXM %d (%Lx-%Lx)\n",
--		       pxm, start, end, node_to_pxm(i),
--		       numa_nodes[i].start, numa_nodes[i].end);
-+
-+	if (numa_add_memblk(node, start, end) < 0) {
- 		bad_srat();
- 		return;
- 	}
-@@ -285,11 +257,6 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		}
- 	} else
- 		update_nodes_add(node, start, end);
--
--	node_memblk_range[num_node_memblks].start = start;
--	node_memblk_range[num_node_memblks].end = end;
--	memblk_nodeid[num_node_memblks] = node;
--	num_node_memblks++;
- }
- 
- /* Sanity check to catch more bad SRATs (they are amazingly common).
-@@ -341,68 +308,11 @@ int __init acpi_scan_nodes(void)
- 	if (acpi_numa <= 0)
- 		return -1;
- 
--	/*
--	 * Join together blocks on the same node, holes between
--	 * which don't overlap with memory on other nodes.
--	 */
--	for (i = 0; i < num_node_memblks; ++i) {
--		int j, k;
--
--		for (j = i + 1; j < num_node_memblks; ++j) {
--			unsigned long start, end;
--
--			if (memblk_nodeid[i] != memblk_nodeid[j])
--				continue;
--			start = min(node_memblk_range[i].end,
--			            node_memblk_range[j].end);
--			end = max(node_memblk_range[i].start,
--			          node_memblk_range[j].start);
--			for (k = 0; k < num_node_memblks; ++k) {
--				if (memblk_nodeid[i] == memblk_nodeid[k])
--					continue;
--				if (start < node_memblk_range[k].end &&
--				    end > node_memblk_range[k].start)
--					break;
--			}
--			if (k < num_node_memblks)
--				continue;
--			start = min(node_memblk_range[i].start,
--			            node_memblk_range[j].start);
--			end = max(node_memblk_range[i].end,
--			          node_memblk_range[j].end);
--			printk(KERN_INFO "SRAT: Node %d "
--			       "[%Lx,%Lx) + [%Lx,%Lx) -> [%lx,%lx)\n",
--			       memblk_nodeid[i],
--			       node_memblk_range[i].start,
--			       node_memblk_range[i].end,
--			       node_memblk_range[j].start,
--			       node_memblk_range[j].end,
--			       start, end);
--			node_memblk_range[i].start = start;
--			node_memblk_range[i].end = end;
--			k = --num_node_memblks - j;
--			memmove(memblk_nodeid + j, memblk_nodeid + j+1,
--				k * sizeof(*memblk_nodeid));
--			memmove(node_memblk_range + j, node_memblk_range + j+1,
--				k * sizeof(*node_memblk_range));
--			--j;
--		}
--	}
--
--	memnode_shift = compute_hash_shift(node_memblk_range, num_node_memblks,
--					   memblk_nodeid);
--	if (memnode_shift < 0) {
--		printk(KERN_ERR
--		     "SRAT: No NUMA node hash function found. Contact maintainer\n");
-+	if (numa_register_memblks() < 0) {
- 		bad_srat();
- 		return -1;
- 	}
- 
--	for (i = 0; i < num_node_memblks; i++)
--		memblock_x86_register_active_regions(memblk_nodeid[i],
--				node_memblk_range[i].start >> PAGE_SHIFT,
--				node_memblk_range[i].end >> PAGE_SHIFT);
--
- 	/* for out of order entries in SRAT */
- 	sort_node_map();
- 	if (!nodes_cover_memory(numa_nodes)) {
--- 
-1.7.1
-
+Thanks,
+Guenter
