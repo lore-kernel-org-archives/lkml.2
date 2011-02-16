@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab1BPAlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:41:37 -0500
-Received: from kroah.org ([198.145.64.141]:49447 "EHLO coco.kroah.org"
+	id S932634Ab1BPAlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:41:50 -0500
+Received: from kroah.org ([198.145.64.141]:49441 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757335Ab1BPAXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:34 -0500
+	id S1757642Ab1BPAXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:32 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:44 2011
-Message-Id: <20110216001444.433367698@clark.kroah.org>
+Message-Id: <20110216001444.322618913@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:10 -0800
+Date: Tue, 15 Feb 2011 16:14:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ken Mills <ken.k.mills@intel.com>, Alan Cox <alan@linux.intel.com>
-Subject: [193/272] n_gsm: copy mtu over when configuring via ioctl interface
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [192/272] powerpc: Fix some 6xx/7xxx CPU setup functions
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +25,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ken Mills <ken.k.mills@intel.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 91f78f36694b8748fda855b1f9e3614b027a744f upstream.
+commit 1f1936ff3febf38d582177ea319eaa278f32c91f upstream.
 
-This field is settable but did not get copied.
+Some of those functions try to adjust the CPU features, for example
+to remove NAP support on some revisions. However, they seem to use
+r5 as an index into the CPU table entry, which might have been right
+a long time ago but no longer is. r4 is the right register to use.
 
-Signed-off-by: Ken Mills <ken.k.mills@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+This probably caused some off behaviours on some PowerMac variants
+using 750cx or 7455 processor revisions.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/n_gsm.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kernel/cpu_setup_6xx.S |   40 ++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -2375,6 +2375,7 @@ static int gsmld_config(struct tty_struc
+--- a/arch/powerpc/kernel/cpu_setup_6xx.S
++++ b/arch/powerpc/kernel/cpu_setup_6xx.S
+@@ -18,7 +18,7 @@
+ #include <asm/mmu.h>
  
- 	gsm->initiator = c->initiator;
- 	gsm->mru = c->mru;
-+	gsm->mtu = c->mtu;
- 	gsm->encoding = c->encapsulation;
- 	gsm->adaption = c->adaption;
- 	gsm->n2 = c->n2;
+ _GLOBAL(__setup_cpu_603)
+-	mflr	r4
++	mflr	r5
+ BEGIN_MMU_FTR_SECTION
+ 	li	r10,0
+ 	mtspr	SPRN_SPRG_603_LRU,r10		/* init SW LRU tracking */
+@@ -27,60 +27,60 @@ BEGIN_FTR_SECTION
+ 	bl	__init_fpu_registers
+ END_FTR_SECTION_IFCLR(CPU_FTR_FPU_UNAVAILABLE)
+ 	bl	setup_common_caches
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_604)
+-	mflr	r4
++	mflr	r5
+ 	bl	setup_common_caches
+ 	bl	setup_604_hid0
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_750)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_750cx)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+ 	bl	setup_750cx
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_750fx)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+ 	bl	setup_750fx
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_7400)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_7400_workarounds
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_7410)
+-	mflr	r4
++	mflr	r5
+ 	bl	__init_fpu_registers
+ 	bl	setup_7410_workarounds
+ 	bl	setup_common_caches
+ 	bl	setup_750_7400_hid0
+ 	li	r3,0
+ 	mtspr	SPRN_L2CR2,r3
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ _GLOBAL(__setup_cpu_745x)
+-	mflr	r4
++	mflr	r5
+ 	bl	setup_common_caches
+ 	bl	setup_745x_specifics
+-	mtlr	r4
++	mtlr	r5
+ 	blr
+ 
+ /* Enable caches for 603's, 604, 750 & 7400 */
+@@ -194,10 +194,10 @@ setup_750cx:
+ 	cror	4*cr0+eq,4*cr0+eq,4*cr1+eq
+ 	cror	4*cr0+eq,4*cr0+eq,4*cr2+eq
+ 	bnelr
+-	lwz	r6,CPU_SPEC_FEATURES(r5)
++	lwz	r6,CPU_SPEC_FEATURES(r4)
+ 	li	r7,CPU_FTR_CAN_NAP
+ 	andc	r6,r6,r7
+-	stw	r6,CPU_SPEC_FEATURES(r5)
++	stw	r6,CPU_SPEC_FEATURES(r4)
+ 	blr
+ 
+ /* 750fx specific
+@@ -225,12 +225,12 @@ BEGIN_FTR_SECTION
+ 	andis.	r11,r11,L3CR_L3E@h
+ 	beq	1f
+ END_FTR_SECTION_IFSET(CPU_FTR_L3CR)
+-	lwz	r6,CPU_SPEC_FEATURES(r5)
++	lwz	r6,CPU_SPEC_FEATURES(r4)
+ 	andi.	r0,r6,CPU_FTR_L3_DISABLE_NAP
+ 	beq	1f
+ 	li	r7,CPU_FTR_CAN_NAP
+ 	andc	r6,r6,r7
+-	stw	r6,CPU_SPEC_FEATURES(r5)
++	stw	r6,CPU_SPEC_FEATURES(r4)
+ 1:
+ 	mfspr	r11,SPRN_HID0
+ 
 
 
