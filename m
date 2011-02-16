@@ -1,178 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab1BPVsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 16:48:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55733 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754807Ab1BPVsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 16:48:08 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH 2/2] PM: Make system-wide PM and runtime PM handle subsystems consistently
-Date: Wed, 16 Feb 2011 22:47:49 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Len Brown <lenb@kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <Pine.LNX.4.44L0.1102160955210.2108-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1102160955210.2108-100000@iolanthe.rowland.org>
+	id S1754969Ab1BPVvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 16:51:23 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19153 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab1BPVvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 16:51:20 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6259"; a="74850976"
+Message-ID: <4D5C46D7.1040903@codeaurora.org>
+Date: Wed, 16 Feb 2011 13:51:19 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Colin Cross <ccross@android.com>
+CC: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        konkers@android.com, linux-kernel@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 12/21] ARM: tegra: clock: Add shared bus clock type
+References: <1297590033-15035-1-git-send-email-ccross@android.com>	<1297590033-15035-13-git-send-email-ccross@android.com>	<4D5C34E0.5000209@codeaurora.org> <AANLkTi=knKY65xaOT85jFidy6Be8K8RT0L1XtGqq_v2V@mail.gmail.com>
+In-Reply-To: <AANLkTi=knKY65xaOT85jFidy6Be8K8RT0L1XtGqq_v2V@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102162247.49924.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 16, 2011, Alan Stern wrote:
-> On Wed, 16 Feb 2011, Rafael J. Wysocki wrote:
-> 
-> > Unfortunately, it doesn't work on my Acer Ferrari One.  The problem is that
-> > hcd_pci_suspend() fails for the EHCI controller, apparently because the root
-> > hub is not suspended.  Do root hubs need both class suspend and bus type
-> > suspend to work at the same time?
-> 
-> No, only the bus type suspend method is needed.
+On 02/16/2011 01:01 PM, Colin Cross wrote:
+> On Wed, Feb 16, 2011 at 12:34 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>
+>> What do you do if clk_set_rate() fails? Should you unwind all the state
+>> such as the rate and if it's enabled/disabled? Or is it safe to say
+>> clk_set_rate() can't fail unless the kernel is buggy in which case why
+>> aren't all those return -E* in the set rate functions just BUG_ONs?
+>
+> In general, clk_set_rate can fail and return an error, but in this
+> case the failure may not be directly related to the driver that called
+> into tegra_clk_shared_bus_update.  For example, if clk_disable is
+> called on a shared clock handle, the rate may drop to the rate
+> requested by another shared clock handle.  clk_disable cannot fail, so
+> there's nothing that could be done with the return code, and the
+> problem was not caused by the driver that called clk_disable, so an
+> error would be meaningless.
+>
+>
+> I will modify tegra_clk_shared_bus_update to BUG on a failed
+> clk_set_rate,
 
-Bus type or device type?  It appears to be the latter from reading the code
-(although admittedly not too thorough).
+Yes, currently if there are any errors we can't determine which clock's
+vote is causing the error since the rate only takes effect when the
+clock is enabled and another clock could have updated their rate while
+the list is being iterated over.
 
-> Can you provide the dmesg log using a kernel built with CONFIG_USB_DEBUG?
+The code could be written so that we only call clk_set_rate() on the
+parent when the calling clock affects the aggregate rate. That would
+allow us to catch errors for the clk_enable() path and the
+clk_set_rate() path when the clock is already on. In the clk_disable()
+path we could just ignore the errors since we can't do anything anyways
+like you say. The only path that doesn't seem possible is clk_set_rate()
+when the clock is off which presumably doesn't actually matter since
+when you turn the clock on it will fail the same way (delayed
+clk_set_rate?).
 
-Well, I know what the problem is.
+BTW, is there a race there in the rate updating code? Say clock 1 is
+enabled with rate 2 on cpu1 and clock 2 is enabled at the same time with
+rate 3 (currently the greatest rate) on cpu2. clock 1 is iterating over
+the list and sees that clock 2 is enabled so it calculates 3 as the max.
+clock 2 then returns from the enable call and then a call to disable
+clock 2 comes in. clock 1 is still iterating over the list and clock 2's
+call to disable runs to completion. clock 1 finally stops iterating over
+the list and has an aggregated rate of 3 (since it saw that clock 2 was
+on which is no longer true). It then calls set_rate() with 3 even though
+the only clock that is on is clock 1 with a rate of 2.
 
-USB defines usb_device_type pointing to usb_device_pm_ops that provides
-system-wide PM callbacks only and usb_bus_type pointing to
-usb_bus_pm_ops that provides runtime PM callbacks only.  So it looks like
-we should move either the system-wide PM callbacks to usb_bus_pm_ops,
-or the runtime PM callbacks to usb_device_pm_ops.
+c1 and c2 are off initially
 
-FWIW, the appended patch helps on my test machine, but I'm not sure if it
-is the right thing to do.
+CPU1                    CPU2
+----                    -----
+clk_set_rate(c1, 2)     clk_set_rate(c2, 3)
+clk_enable(c1)          clk_enable(c2)
+max == 3                max == 3; clk_set_rate(parent, 3)
+...                     clk_disable(c2)
+                        max == 2; clk_set_rate(parent, 2)
+clk_set_rate(parent, 3)
 
-Apart from this I think the order of checks introduced by the $subject patch
-should be:
-(1) If dev->class != NULL and dev->class->pm != NULL, use dev->class,
-    or otherwise
-(2) if dev->type != NULL and dev->type->pm != NULL, use dev->type,
-    or otherwise
-(3) use dev->bus (if present).
-as that would allow classes and device types to override bus type PM
-callbacks if they wish to.
+I think you need some kind of lock while iterating to stop the shared
+clocks from changing underneath you.
 
-Thanks,
-Rafael
+> and modify tegra_clk_shared_bus_set_rate to
+> call clk_round_rate on the parent to ensure that the requested rate is valid.
+>
 
----
- drivers/usb/core/driver.c |   15 +++------------
- drivers/usb/core/usb.c    |    5 +++++
- drivers/usb/core/usb.h    |   18 ++++++++++++++++++
- 3 files changed, 26 insertions(+), 12 deletions(-)
+I would hope clk_round_rate() isn't necessary to get a valid rate.
+clk_set_rate() shouldn't require exact/valid rates. clk_round_rate() is
+there to help drivers determine if calling clk_set_rate() with a certain
+rate is going to give them something they want. It's like saying "If I
+call clk_set_rate() with 500Hz what would the clock's rate actually be
+after the call returns?" If the set_rate implementation needs to round
+internally to find a divider or something, it should be done in the
+set_rate code and not in each driver.
 
-Index: linux-2.6/drivers/usb/core/driver.c
-===================================================================
---- linux-2.6.orig/drivers/usb/core/driver.c
-+++ linux-2.6/drivers/usb/core/driver.c
-@@ -1646,7 +1646,7 @@ static int autosuspend_check(struct usb_
- 	return 0;
- }
- 
--static int usb_runtime_suspend(struct device *dev)
-+int usb_runtime_suspend(struct device *dev)
- {
- 	struct usb_device	*udev = to_usb_device(dev);
- 	int			status;
-@@ -1662,7 +1662,7 @@ static int usb_runtime_suspend(struct de
- 	return status;
- }
- 
--static int usb_runtime_resume(struct device *dev)
-+int usb_runtime_resume(struct device *dev)
- {
- 	struct usb_device	*udev = to_usb_device(dev);
- 	int			status;
-@@ -1674,7 +1674,7 @@ static int usb_runtime_resume(struct dev
- 	return status;
- }
- 
--static int usb_runtime_idle(struct device *dev)
-+int usb_runtime_idle(struct device *dev)
- {
- 	struct usb_device	*udev = to_usb_device(dev);
- 
-@@ -1686,19 +1686,10 @@ static int usb_runtime_idle(struct devic
- 	return 0;
- }
- 
--static const struct dev_pm_ops usb_bus_pm_ops = {
--	.runtime_suspend =	usb_runtime_suspend,
--	.runtime_resume =	usb_runtime_resume,
--	.runtime_idle =		usb_runtime_idle,
--};
--
- #endif /* CONFIG_USB_SUSPEND */
- 
- struct bus_type usb_bus_type = {
- 	.name =		"usb",
- 	.match =	usb_device_match,
- 	.uevent =	usb_uevent,
--#ifdef CONFIG_USB_SUSPEND
--	.pm =		&usb_bus_pm_ops,
--#endif
- };
-Index: linux-2.6/drivers/usb/core/usb.h
-===================================================================
---- linux-2.6.orig/drivers/usb/core/usb.h
-+++ linux-2.6/drivers/usb/core/usb.h
-@@ -77,6 +77,9 @@ static inline int usb_port_resume(struct
- extern void usb_autosuspend_device(struct usb_device *udev);
- extern int usb_autoresume_device(struct usb_device *udev);
- extern int usb_remote_wakeup(struct usb_device *dev);
-+extern int usb_runtime_suspend(struct device *dev);
-+extern int usb_runtime_resume(struct device *dev);
-+extern int usb_runtime_idle(struct device *dev);
- 
- #else
- 
-@@ -90,6 +93,21 @@ static inline int usb_remote_wakeup(stru
- {
- 	return 0;
- }
-+
-+static inline int usb_runtime_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static inline int usb_runtime_resume(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static inline int usb_runtime_idle(struct device *dev)
-+{
-+	return 0;
-+}
- 
- #endif
- 
-Index: linux-2.6/drivers/usb/core/usb.c
-===================================================================
---- linux-2.6.orig/drivers/usb/core/usb.c
-+++ linux-2.6/drivers/usb/core/usb.c
-@@ -315,6 +315,11 @@ static const struct dev_pm_ops usb_devic
- 	.thaw =		usb_dev_thaw,
- 	.poweroff =	usb_dev_poweroff,
- 	.restore =	usb_dev_restore,
-+#ifdef CONFIG_USB_SUSPEND
-+	.runtime_suspend =	usb_runtime_suspend,
-+	.runtime_resume =	usb_runtime_resume,
-+	.runtime_idle =		usb_runtime_idle,
-+#endif
- };
- 
- #endif	/* CONFIG_PM */
+>>
+>> Shouldn't you call clk_enable(c->parent)? And do you need to check for
+>> errors from clk_enable()?
+>
+> clk_enable on the parent is handled by the clock op implementation in
+> mach-tegra/clock.c
+>
+
+Oops, thanks. Time to visit the optometrist.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
