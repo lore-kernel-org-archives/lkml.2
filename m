@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab1BPUNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 15:13:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8642 "EHLO mx1.redhat.com"
+	id S1753967Ab1BPUNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 15:13:54 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39049 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab1BPUNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 15:13:34 -0500
+	id S1752194Ab1BPUNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 15:13:52 -0500
+Date: Wed, 16 Feb 2011 21:13:42 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+Message-ID: <20110216201342.GA7766@elte.hu>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+ <20110216193700.GA6377@elte.hu>
+ <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-X-Fcc: ~/Mail/linus
-Cc: Mark Wielaard <mjw@redhat.com>, Stefan Hajnoczi <stefanha@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Julien Desfossez <julien.desfossez@polymtl.ca>,
-        dominique.toupin@ericsson.com, ltt-dev@lists.casi.polymtl.ca,
-        systemtap@sources.redhat.com, linux-kernel@vger.kernel.org,
-        Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
-        mingo@elte.hu, tglx@linutronix.de, andi@firstfloor.org, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        davem@davemloft.net, sam@ravnborg.org, ddaney@caviumnetworks.com,
-        michael@ellerman.id.au, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Porting "jump labels" to userspace (was: Re: [ltt-dev] LTTng-UST
-	vs SystemTap userspace tracing benchmarks)
-In-Reply-To: Mathieu Desnoyers's message of  Wednesday, 16 February 2011 15:00:34 -0500 <20110216200034.GA6066@Krystal>
-References: <4D5AA164.1050607@polymtl.ca>
-	<y0mvd0ltgba.fsf@fche.csb>
-	<AANLkTi=Nsy6fXE9=Njxs9LPHuohHzf=q5kD+fK765Rht@mail.gmail.com>
-	<1297853778.3224.90.camel@springer.wildebeest.org>
-	<20110216185056.CAD7B1806E0@magilla.sf.frob.com>
-	<20110216200034.GA6066@Krystal>
-X-Windows: it could be worse, but it'll take time.
-Message-Id: <20110216200449.1EB9618020E@magilla.sf.frob.com>
-Date: Wed, 16 Feb 2011 12:04:49 -0800 (PST)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IMHO there is not really so much to the in-kernel implementation that it's
-worth attempting to reuse the code in userland.  Pretty much all the work
-is in the details of the implementation that would naturally differ a lot
-in a different context.  If you understand the mechanism and the machine
-details, then implementing it well for a userland context is not a big deal
-and is cleaner to do from scratch than shoe-horning kernel-centric code
-into a wildly different context.
 
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Wed, Feb 16, 2011 at 11:37 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > ( Cc:-ed Linus - he was analyzing a similar looking bug a few days ago on lkml.
+> >  Mail repeated below. )
+> 
+> Yup, goodie. It does look like it might be exactly the same thing,
+> except now the offset seems to be 0x1e68 instead of 0x1768.
+> 
+> I'll compile a x86-32 kernel with that config and try to see if I can
+> find that offset in there..
+
+Michal, you might also want to try to find it - in case Linus's different compiler 
+somehow hides that offset.
 
 Thanks,
-Roland
+
+	Ingo
