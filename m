@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1BPBRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:17:55 -0500
-Received: from kroah.org ([198.145.64.141]:45431 "EHLO coco.kroah.org"
+	id S1753926Ab1BPBSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:18:10 -0500
+Received: from kroah.org ([198.145.64.141]:45419 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932915Ab1BPAsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:24 -0500
+	id S932911Ab1BPAsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:21 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:03 2011
-Message-Id: <20110216002103.312549923@clark.kroah.org>
+Message-Id: <20110216002103.131717392@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:10 -0800
+Date: Tue, 15 Feb 2011 16:20:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chun-Yi Lee <jlee@novell.com>, Chien-Chia Chen <machen@novell.com>
-Subject: [patch 042/176] Staging: rt2860: fix previous patch error
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: [patch 040/176] staging: hv: Enable sending GARP packet after live migration
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chien-Chia Chen <machen@novell.com>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit 1f0613158ea14b399fd7a16470630a729ba9d0c3 upstream.
+commit 7c161d0b900ea9bd9fc5ea5d3fa9916e9eb0dd88 upstream.
 
-Somehow Greg messed up the last patch and missed a chunk.  This patch
-contains the missing chunk.
+The hv_netvsc gets RNDIS_STATUS_MEDIA_CONNECT event after the VM
+is live migrated. Adding call to netif_notify_peers() for this event
+to send GARP (Gratuitous ARP) to notify network peers. Otherwise,
+the VM's network connection may stop after a live migration.
 
-Acked-by: Chun-Yi Lee <jlee@novell.com>
-Signed-off-by: Chien-Chia Chen <machen@novell.com>
+This patch should also be applied to stable kernel 2.6.32 and later.
+
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rt2860/chips/rt30xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/hv/netvsc_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/rt2860/chips/rt30xx.c
-+++ b/drivers/staging/rt2860/chips/rt30xx.c
-@@ -441,7 +441,7 @@ void RT30xxReverseRFSleepModeSetup(struc
- 
- 		/* VCO_IC, RF R7 register Bit 4 & Bit 5 to 1 */
- 		RT30xxReadRFRegister(pAd, RF_R07, &RFValue);
--		RFValue |= 0x30;
-+		RFValue |= 0x20;
- 		RT30xxWriteRFRegister(pAd, RF_R07, RFValue);
- 
- 		/* Idoh, RF R9 register Bit 1, Bit 2 & Bit 3 to 1 */
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -233,6 +233,7 @@ static void netvsc_linkstatus_callback(s
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
++		netif_notify_peers(net);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
 
 
