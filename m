@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759001Ab1BPMWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:22:14 -0500
+	id S932522Ab1BPMV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:21:59 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:36104 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932525Ab1BPMV7 (ORCPT
+	with ESMTP id S932342Ab1BPMVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:21:59 -0500
+	Wed, 16 Feb 2011 07:21:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=Qjo4CfjGC7w/HTYh+Jr8sZgWMUXW5Y0ds58gUNLFgCbAeQNvPQwD69JvciYIVaXPRd
-         aGX+GrDpxGvRUvVPF7Zwjjy/DMDtJ8Gc9fFgLyj6FxyYzRyL545tAr1y5iX3DL8PQqUB
-         i4Sho2/09Ahp0IvEzhKOIcdJfERbpNSjBsYKM=
+        b=u/7ETM23fFAtqn0je1wZcum+/O6EYk5xdYghXFIwzD5guu/J+Q3Cy3DWk+eyvFGo+K
+         RBWVbCawihIaF7XlcMZHqoLu6Xry8ndg0p5ODL7xjBWEP0Fjdf6M7mmXhWEYM6BRfffb
+         fxqgcMcG2h+w7L0GNy6+AGoZQXoYbiLUeyyF4=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 29/33] x86-64, NUMA: Make emulation code build numa_meminfo and share the registration path
-Date: Wed, 16 Feb 2011 13:21:03 +0100
-Message-Id: <1297858867-25981-30-git-send-email-tj@kernel.org>
+Subject: [PATCH 19/33] x86-64, NUMA: Separate out numa_cleanup_meminfo()
+Date: Wed, 16 Feb 2011 13:20:53 +0100
+Message-Id: <1297858867-25981-20-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297858867-25981-1-git-send-email-tj@kernel.org>
 References: <1297858867-25981-1-git-send-email-tj@kernel.org>
@@ -30,14 +30,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA emulation code built nodes[] array and had its own registration
-path to set up the emulated nodes.  Update it such that it generates
-emulated numa_meminfo and returns control to initmem_init() and shares
-the same registration path with non-emulated cases.
+Separate out numa_cleanup_meminfo() from numa_register_memblks().
+node_possible_map initialization is moved to the top of the split
+numa_register_memblks().
 
-Because {acpi|amd}_fake_nodes() expect nodes[] parameter,
-fake_physnodes() now generates nodes[] from numa_meminfo.  This will
-go away with further updates.
+This patch doesn't cause behavior change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -48,301 +45,120 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/numa_64.c |  173 ++++++++++++++++++++++++-------------------------
- 1 files changed, 86 insertions(+), 87 deletions(-)
+ arch/x86/mm/numa_64.c |   83 +++++++++++++++++++++++++++----------------------
+ 1 files changed, 46 insertions(+), 37 deletions(-)
 
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 98bf8ba..30c087d 100644
+index c3496e2..f2721de 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -541,7 +541,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 
- #ifdef CONFIG_NUMA_EMU
- /* Numa emulation */
--static struct bootnode nodes[MAX_NUMNODES] __initdata;
- static struct bootnode physnodes[MAX_NUMNODES] __initdata;
- 
- static int emu_nid_to_phys[MAX_NUMNODES] __cpuinitdata;
-@@ -626,9 +625,24 @@ static int __init setup_physnodes(unsigned long start, unsigned long end)
- 	return ret;
+@@ -292,40 +292,8 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
+ 	node_set_online(nodeid);
  }
  
--static void __init fake_physnodes(int acpi, int amd, int nr_nodes)
-+static void __init fake_physnodes(int acpi, int amd,
-+				  const struct numa_meminfo *ei)
+-/*
+- * Sanity check to catch more bad NUMA configurations (they are amazingly
+- * common).  Make sure the nodes cover all memory.
+- */
+-static int __init nodes_cover_memory(const struct bootnode *nodes)
++static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
  {
+-	unsigned long numaram, e820ram;
 -	int i;
-+	static struct bootnode nodes[MAX_NUMNODES] __initdata;
-+	int i, nr_nodes = 0;
+-
+-	numaram = 0;
+-	for_each_node_mask(i, mem_nodes_parsed) {
+-		unsigned long s = nodes[i].start >> PAGE_SHIFT;
+-		unsigned long e = nodes[i].end >> PAGE_SHIFT;
+-		numaram += e - s;
+-		numaram -= __absent_pages_in_range(i, s, e);
+-		if ((long)numaram < 0)
+-			numaram = 0;
+-	}
+-
+-	e820ram = max_pfn -
+-		(memblock_x86_hole_size(0, max_pfn<<PAGE_SHIFT) >> PAGE_SHIFT);
+-	/* We seem to lose 3 pages somewhere. Allow 1M of slack. */
+-	if ((long)(e820ram - numaram) >= (1<<(20 - PAGE_SHIFT))) {
+-		printk(KERN_ERR "NUMA: nodes only cover %luMB of your %luMB e820 RAM. Not used.\n",
+-			(numaram << PAGE_SHIFT) >> 20,
+-			(e820ram << PAGE_SHIFT) >> 20);
+-		return 0;
+-	}
+-	return 1;
+-}
+-
+-static int __init numa_register_memblks(void)
+-{
+-	struct numa_meminfo *mi = &numa_meminfo;
+ 	int i;
+ 
+ 	/*
+@@ -368,6 +336,49 @@ static int __init numa_register_memblks(void)
+ 		}
+ 	}
+ 
++	return 0;
++}
 +
-+	for (i = 0; i < ei->nr_blks; i++) {
-+		int nid = ei->blk[i].nid;
++/*
++ * Sanity check to catch more bad NUMA configurations (they are amazingly
++ * common).  Make sure the nodes cover all memory.
++ */
++static int __init nodes_cover_memory(const struct bootnode *nodes)
++{
++	unsigned long numaram, e820ram;
++	int i;
 +
-+		if (nodes[nid].start == nodes[nid].end) {
-+			nodes[nid].start = ei->blk[i].start;
-+			nodes[nid].end = ei->blk[i].end;
-+			nr_nodes++;
-+		} else {
-+			nodes[nid].start = min(ei->blk[i].start, nodes[nid].start);
-+			nodes[nid].end = max(ei->blk[i].end, nodes[nid].end);
-+		}
++	numaram = 0;
++	for_each_node_mask(i, mem_nodes_parsed) {
++		unsigned long s = nodes[i].start >> PAGE_SHIFT;
++		unsigned long e = nodes[i].end >> PAGE_SHIFT;
++		numaram += e - s;
++		numaram -= __absent_pages_in_range(i, s, e);
++		if ((long)numaram < 0)
++			numaram = 0;
 +	}
- 
- 	BUG_ON(acpi && amd);
- #ifdef CONFIG_ACPI_NUMA
-@@ -645,45 +659,44 @@ static void __init fake_physnodes(int acpi, int amd, int nr_nodes)
- }
- 
- /*
-- * Setups up nid to range from addr to addr + size.  If the end
-- * boundary is greater than max_addr, then max_addr is used instead.
-- * The return value is 0 if there is additional memory left for
-- * allocation past addr and -1 otherwise.  addr is adjusted to be at
-- * the end of the node.
-+ * Sets up nid to range from @start to @end.  The return value is -errno if
-+ * something went wrong, 0 otherwise.
-  */
--static int __init setup_node_range(int nid, int physnid,
--				   u64 *addr, u64 size, u64 max_addr)
-+static int __init emu_setup_memblk(struct numa_meminfo *ei,
-+				   int nid, int physnid, u64 start, u64 end)
- {
--	int ret = 0;
--	nodes[nid].start = *addr;
--	*addr += size;
--	if (*addr >= max_addr) {
--		*addr = max_addr;
--		ret = -1;
-+	struct numa_memblk *eb = &ei->blk[ei->nr_blks];
 +
-+	if (ei->nr_blks >= NR_NODE_MEMBLKS) {
-+		pr_err("NUMA: Too many emulated memblks, failing emulation\n");
++	e820ram = max_pfn - (memblock_x86_hole_size(0,
++					max_pfn << PAGE_SHIFT) >> PAGE_SHIFT);
++	/* We seem to lose 3 pages somewhere. Allow 1M of slack. */
++	if ((long)(e820ram - numaram) >= (1 << (20 - PAGE_SHIFT))) {
++		printk(KERN_ERR "NUMA: nodes only cover %luMB of your %luMB e820 RAM. Not used.\n",
++		       (numaram << PAGE_SHIFT) >> 20,
++		       (e820ram << PAGE_SHIFT) >> 20);
++		return 0;
++	}
++	return 1;
++}
++
++static int __init numa_register_memblks(struct numa_meminfo *mi)
++{
++	int i;
++
++	/* Account for nodes with cpus and no memory */
++	nodes_or(node_possible_map, mem_nodes_parsed, cpu_nodes_parsed);
++	if (WARN_ON(nodes_empty(node_possible_map)))
 +		return -EINVAL;
- 	}
--	nodes[nid].end = *addr;
--	node_set(nid, node_possible_map);
 +
-+	ei->nr_blks++;
-+	eb->start = start;
-+	eb->end = end;
-+	eb->nid = nid;
- 
- 	if (emu_nid_to_phys[nid] == NUMA_NO_NODE)
- 		emu_nid_to_phys[nid] = physnid;
- 
- 	printk(KERN_INFO "Faking node %d at %016Lx-%016Lx (%LuMB)\n", nid,
--	       nodes[nid].start, nodes[nid].end,
--	       (nodes[nid].end - nodes[nid].start) >> 20);
--	return ret;
-+	       eb->start, eb->end, (eb->end - eb->start) >> 20);
-+	return 0;
- }
- 
- /*
-  * Sets up nr_nodes fake nodes interleaved over physical nodes ranging from addr
-  * to max_addr.  The return value is the number of nodes allocated.
-  */
--static int __init split_nodes_interleave(u64 addr, u64 max_addr, int nr_nodes)
-+static int __init split_nodes_interleave(struct numa_meminfo *ei,
-+					 u64 addr, u64 max_addr, int nr_nodes)
- {
- 	nodemask_t physnode_mask = NODE_MASK_NONE;
- 	u64 size;
- 	int big;
--	int ret = 0;
--	int i;
-+	int nid = 0;
-+	int i, ret;
- 
- 	if (nr_nodes <= 0)
- 		return -1;
-@@ -721,7 +734,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr, int nr_nodes)
- 			u64 end = physnodes[i].start + size;
- 			u64 dma32_end = PFN_PHYS(MAX_DMA32_PFN);
- 
--			if (ret < big)
-+			if (nid < big)
- 				end += FAKE_NODE_MIN_SIZE;
- 
- 			/*
-@@ -760,16 +773,21 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr, int nr_nodes)
- 			 * happen as a result of rounding down each node's size
- 			 * to FAKE_NODE_MIN_SIZE.
- 			 */
--			if (nodes_weight(physnode_mask) + ret >= nr_nodes)
-+			if (nodes_weight(physnode_mask) + nid >= nr_nodes)
- 				end = physnodes[i].end;
- 
--			if (setup_node_range(ret++, i, &physnodes[i].start,
--						end - physnodes[i].start,
--						physnodes[i].end) < 0)
-+			ret = emu_setup_memblk(ei, nid++, i,
-+					       physnodes[i].start,
-+					       min(end, physnodes[i].end));
-+			if (ret < 0)
-+				return ret;
-+
-+			physnodes[i].start = min(end, physnodes[i].end);
-+			if (physnodes[i].start == physnodes[i].end)
- 				node_clear(i, physnode_mask);
- 		}
- 	}
--	return ret;
-+	return 0;
- }
- 
- /*
-@@ -794,12 +812,13 @@ static u64 __init find_end_of_node(u64 start, u64 max_addr, u64 size)
-  * Sets up fake nodes of `size' interleaved over physical nodes ranging from
-  * `addr' to `max_addr'.  The return value is the number of nodes allocated.
-  */
--static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
-+static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
-+					      u64 addr, u64 max_addr, u64 size)
- {
- 	nodemask_t physnode_mask = NODE_MASK_NONE;
- 	u64 min_size;
--	int ret = 0;
--	int i;
-+	int nid = 0;
-+	int i, ret;
- 
- 	if (!size)
- 		return -1;
-@@ -854,30 +873,31 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
- 			    memblock_x86_hole_size(end, physnodes[i].end) < size)
- 				end = physnodes[i].end;
- 
--			/*
--			 * Setup the fake node that will be allocated as bootmem
--			 * later.  If setup_node_range() returns non-zero, there
--			 * is no more memory available on this physical node.
--			 */
--			if (setup_node_range(ret++, i, &physnodes[i].start,
--						end - physnodes[i].start,
--						physnodes[i].end) < 0)
-+			ret = emu_setup_memblk(ei, nid++, i,
-+					       physnodes[i].start,
-+					       min(end, physnodes[i].end));
-+			if (ret < 0)
-+				return ret;
-+
-+			physnodes[i].start = min(end, physnodes[i].end);
-+			if (physnodes[i].start == physnodes[i].end)
- 				node_clear(i, physnode_mask);
- 		}
- 	}
--	return ret;
-+	return 0;
- }
- 
- /*
-  * Sets up the system RAM area from start_pfn to last_pfn according to the
-  * numa=fake command-line option.
-  */
--static int __init numa_emulation(int acpi, int amd)
-+static bool __init numa_emulation(int acpi, int amd)
- {
- 	static struct numa_meminfo ei __initdata;
- 	const u64 max_addr = max_pfn << PAGE_SHIFT;
--	int num_nodes;
--	int i;
-+	int i, ret;
-+
-+	memset(&ei, 0, sizeof(ei));
- 
- 	for (i = 0; i < MAX_NUMNODES; i++)
- 		emu_nid_to_phys[i] = NUMA_NO_NODE;
-@@ -891,52 +911,33 @@ static int __init numa_emulation(int acpi, int amd)
- 		u64 size;
- 
- 		size = memparse(emu_cmdline, &emu_cmdline);
--		num_nodes = split_nodes_size_interleave(0, max_addr, size);
-+		ret = split_nodes_size_interleave(&ei, 0, max_addr, size);
- 	} else {
- 		unsigned long n;
- 
- 		n = simple_strtoul(emu_cmdline, NULL, 0);
--		num_nodes = split_nodes_interleave(0, max_addr, n);
-+		ret = split_nodes_interleave(&ei, 0, max_addr, n);
-+	}
-+
-+	if (ret < 0)
-+		return false;
-+
-+	if (numa_cleanup_meminfo(&ei) < 0) {
-+		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
-+		return false;
- 	}
- 
--	if (num_nodes < 0)
--		return num_nodes;
-+	/* commit */
-+	numa_meminfo = ei;
- 
- 	/* make sure all emulated nodes are mapped to a physical node */
- 	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
- 		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
- 			emu_nid_to_phys[i] = 0;
- 
--	ei.nr_blks = num_nodes;
--	for (i = 0; i < ei.nr_blks; i++) {
--		ei.blk[i].start = nodes[i].start;
--		ei.blk[i].end = nodes[i].end;
--		ei.blk[i].nid = i;
--	}
--
--	memnode_shift = compute_hash_shift(&ei);
--	if (memnode_shift < 0) {
--		memnode_shift = 0;
--		printk(KERN_ERR "No NUMA hash function found.  NUMA emulation "
--		       "disabled.\n");
--		return -1;
--	}
--
--	/*
--	 * We need to vacate all active ranges that may have been registered for
--	 * the e820 memory map.
--	 */
--	remove_all_active_ranges();
--	for_each_node_mask(i, node_possible_map)
--		memblock_x86_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
--						nodes[i].end >> PAGE_SHIFT);
--	init_memory_mapping_high();
--	for_each_node_mask(i, node_possible_map)
--		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
--	fake_physnodes(acpi, amd, num_nodes);
--	numa_init_array();
-+	fake_physnodes(acpi, amd, &ei);
- 	numa_emu_dist = true;
--	return 0;
-+	return true;
- }
- #endif /* CONFIG_NUMA_EMU */
- 
-@@ -988,15 +989,13 @@ void __init initmem_init(void)
- 			continue;
- #ifdef CONFIG_NUMA_EMU
- 		setup_physnodes(0, max_pfn << PAGE_SHIFT);
--		if (emu_cmdline && !numa_emulation(i == 0, i == 1))
--			return;
--
--		/* not emulating, build identity mapping for numa_add_cpu() */
--		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
--			emu_nid_to_phys[j] = j;
--
--		nodes_clear(node_possible_map);
--		nodes_clear(node_online_map);
-+		/*
-+		 * If requested, try emulation.  If emulation is not used,
-+		 * build identity emu_nid_to_phys[] for numa_add_cpu()
-+		 */
-+		if (!emu_cmdline || !numa_emulation(i == 0, i == 1))
-+			for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
-+				emu_nid_to_phys[j] = j;
+ 	memnode_shift = compute_hash_shift(mi);
+ 	if (memnode_shift < 0) {
+ 		printk(KERN_ERR "NUMA: No NUMA node hash function found. Contact maintainer\n");
+@@ -823,12 +834,10 @@ void __init initmem_init(void)
+ 		nodes_clear(node_possible_map);
+ 		nodes_clear(node_online_map);
  #endif
- 		if (numa_register_memblks(&numa_meminfo) < 0)
+-		/* Account for nodes with cpus and no memory */
+-		nodes_or(node_possible_map, mem_nodes_parsed, cpu_nodes_parsed);
+-		if (WARN_ON(nodes_empty(node_possible_map)))
++		if (numa_cleanup_meminfo(&numa_meminfo) < 0)
  			continue;
+ 
+-		if (numa_register_memblks() < 0)
++		if (numa_register_memblks(&numa_meminfo) < 0)
+ 			continue;
+ 
+ 		for (j = 0; j < nr_cpu_ids; j++) {
 -- 
 1.7.1
 
