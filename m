@@ -1,129 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab1BPXpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 18:45:15 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54530 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab1BPXpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 18:45:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=nJL1qIRje4nrkb77RuP9Gj19fbhLdeee7wce3l6I0LyRLXdkwfrXublVcxHivwKbYA
-         j2cIYyYdds9YHjyPm7oRHjJsHiNoWxRk/oZUWgR9kXUBhdb5qKyQEN616i42R895v4Uy
-         B/9S9t1KdP5w1xCQ9eGKZ44oCP4c/lRnVw1o8=
+	id S1754721Ab1BPXqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 18:46:11 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:55949 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753357Ab1BPXqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 18:46:07 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC][PATCH 2/2] PM: Make system-wide PM and runtime PM handle subsystems consistently
+Date: Thu, 17 Feb 2011 00:45:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Len Brown <lenb@kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <Pine.LNX.4.44L0.1102161710090.1626-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1102161710090.1626-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20110213173336.GC23919@balbir.in.ibm.com>
-References: <20110125051003.13762.35120.stgit@localhost6.localdomain6>
-	<20110125051015.13762.13429.stgit@localhost6.localdomain6>
-	<AANLkTikHLw0Qg+odOB-bDtBSB-5UbTJ5ZOM-ZAdMqXgh@mail.gmail.com>
-	<AANLkTi=qXsDjN5Jp4m3QMgVnckoAM7uE9_Hzn6CajP+c@mail.gmail.com>
-	<AANLkTinfxXc04S9VwQcJ9thFff=cP=icroaiVLkN-GeH@mail.gmail.com>
-	<20110128064851.GB5054@balbir.in.ibm.com>
-	<AANLkTikw_j0JJVqEsj1xThoashiOARg+8BgcLKrvkV3U@mail.gmail.com>
-	<20110128111833.GD5054@balbir.in.ibm.com>
-	<AANLkTin4JM6phwy0wuV6fV-i-3UwP_GGmXh1vN=Wz2u=@mail.gmail.com>
-	<AANLkTi=hhKJGXwe1OyFsGF9StLJnYFX+QqUpNLXmfVc=@mail.gmail.com>
-	<20110213173336.GC23919@balbir.in.ibm.com>
-Date: Thu, 17 Feb 2011 08:45:11 +0900
-Message-ID: <AANLkTik4pXr_3hY3QoivMHHA6zq-k35f4HPNLZZC8bge@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Provide control over unmapped pages (v4)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: balbir@linux.vnet.ibm.com
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102170045.48975.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 2:33 AM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> * MinChan Kim <minchan.kim@gmail.com> [2011-02-10 14:41:44]:
->
->> I don't know why the part of message is deleted only when I send you.
->> Maybe it's gmail bug.
->>
->> I hope mail sending is successful in this turn. :)
->>
->> On Thu, Feb 10, 2011 at 2:33 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
->> > Sorry for late response.
->> >
->> > On Fri, Jan 28, 2011 at 8:18 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
->> >> * MinChan Kim <minchan.kim@gmail.com> [2011-01-28 16:24:19]:
->> >>
->> >>> >
->> >>> > But the assumption for LRU order to change happens only if the page
->> >>> > cannot be successfully freed, which means it is in some way active..
->> >>> > and needs to be moved no?
->> >>>
->> >>> 1. holded page by someone
->> >>> 2. mapped pages
->> >>> 3. active pages
->> >>>
->> >>> 1 is rare so it isn't the problem.
->> >>> Of course, in case of 3, we have to activate it so no problem.
->> >>> The problem is 2.
->> >>>
->> >>
->> >> 2 is a problem, but due to the size aspects not a big one. Like you
->> >> said even lumpy reclaim affects it. May be the reclaim code could
->> >> honour may_unmap much earlier.
->> >
->> > Even if it is, it's a trade-off to get a big contiguous memory. I
->> > don't want to add new mess. (In addition, lumpy is weak by compaction
->> > as time goes by)
->> > What I have in mind for preventing LRU ignore is that put the page
->> > into original position instead of head of lru. Maybe it can help the
->> > situation both lumpy and your case. But it's another story.
->> >
->> > How about the idea?
->> >
->> > I borrow the idea from CFLRU[1]
->> > - PCFLRU(Page-Cache First LRU)
->> >
->> > When we allocates new page for page cache, we adds the page into LRU's tail.
->> > When we map the page cache into page table, we rotate the page into LRU's head.
->> >
->> > So, inactive list's result is following as.
->> >
->> > M.P : mapped page
->> > N.P : none-mapped page
->> >
->> > HEAD-M.P-M.P-M.P-M.P-N.P-N.P-N.P-N.P-N.P-TAIL
->> >
->> > Admin can set threshold window size which determines stop reclaiming
->> > none-mapped page contiguously.
->> >
->> > I think it needs some tweak of page cache/page mapping functions but
->> > we can use kswapd/direct reclaim without change.
->> >
->> > Also, it can change page reclaim policy totally but it's just what you
->> > want, I think.
->> >
->
-> I am not sure how this would work, moreover the idea behind
-> min_unmapped_pages is to keep sufficient unmapped pages around for the
-> FS metadata and has been working with the existing code for zone
-> reclaim. What you propose is more drastic re-org of the LRU and I am
-> not sure I have the apetite for it.
+On Wednesday, February 16, 2011, Alan Stern wrote:
+> On Wed, 16 Feb 2011, Rafael J. Wysocki wrote:
+> 
+> > On Wednesday, February 16, 2011, Alan Stern wrote:
+> > > On Wed, 16 Feb 2011, Rafael J. Wysocki wrote:
+> > > 
+> > > > Unfortunately, it doesn't work on my Acer Ferrari One.  The problem is that
+> > > > hcd_pci_suspend() fails for the EHCI controller, apparently because the root
+> > > > hub is not suspended.  Do root hubs need both class suspend and bus type
+> > > > suspend to work at the same time?
+> > > 
+> > > No, only the bus type suspend method is needed.
+> > 
+> > Bus type or device type?  It appears to be the latter from reading the code
+> > (although admittedly not too thorough).
+> 
+> You're right.  I forgot about how the PM methods were split up.  :-(
+> 
+> > > Can you provide the dmesg log using a kernel built with CONFIG_USB_DEBUG?
+> > 
+> > Well, I know what the problem is.
+> > 
+> > USB defines usb_device_type pointing to usb_device_pm_ops that provides
+> > system-wide PM callbacks only and usb_bus_type pointing to
+> > usb_bus_pm_ops that provides runtime PM callbacks only.  So it looks like
+> > we should move either the system-wide PM callbacks to usb_bus_pm_ops,
+> > or the runtime PM callbacks to usb_device_pm_ops.
+> 
+> Yes.  IIRC, I did it that way so that the runtime PM routines could be 
+> static.  Making them non-static isn't a big deal, though.
+> 
+> > FWIW, the appended patch helps on my test machine, but I'm not sure if it
+> > is the right thing to do.
+> 
+> It is.  Except that the inline stubs aren't needed for anything; they 
+> don't have to be added to usb.h.
 
-Yes. My suggestion can change LRU order totally but it can't meet your
-goal so it was a bad idea. Sorry for bothering you.
+OK, I'll remove them, add a changelog and repost.
 
-I can add reviewed-by [1/3],[2/3], but still doubt [3/3].
-LRU ordering problem as I mentioned is not only your problem but it's
-general problem these day(ex, more aggressive compaction/lumpy
-reclaim). So we may need general solution if it is real problem.
-Okay. I don't oppose your approach from now on until I can prove how
-much LRU-reordering makes bad effect. (But still I  raise my eyebrow
-on implementation [3/3] but I don't oppose it until I suggest better
-approach)
+> > Apart from this I think the order of checks introduced by the $subject patch
+> > should be:
+> > (1) If dev->class != NULL and dev->class->pm != NULL, use dev->class,
+> >     or otherwise
+> > (2) if dev->type != NULL and dev->type->pm != NULL, use dev->type,
+> >     or otherwise
+> > (3) use dev->bus (if present).
+> > as that would allow classes and device types to override bus type PM
+> > callbacks if they wish to.
+> 
+> I haven't heard of any device types being present on more than one kind
+> of bus, so it makes sense for device types to override bus types.
 
-Thanks.
--- 
-Kind regards,
-Minchan Kim
+OK
+
+> But I'm not so sure about the priority we should give to classes.  On the
+> other hand, if no classes define a dev_pm_ops then of course it doesn't
+> matter.
+
+The change will also affect classes that provide "legacy" suspend-resume
+(if there are any, which I'm totally unsure of).
+
+Anyway, I think we need to choose one ordering. :-)
+
+What about type / bus / class , then?
+
+Rafael
