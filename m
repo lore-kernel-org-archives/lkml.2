@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759169Ab1BPMYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 07:24:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36104 "EHLO
+	id S1759182Ab1BPMYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 07:24:34 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37715 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476Ab1BPMVz (ORCPT
+	with ESMTP id S932474Ab1BPMVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 07:21:55 -0500
+	Wed, 16 Feb 2011 07:21:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=ved6J5NFvrIlLE/9v3DXoeirZ07YexAV79SvVNytlpQKG7Ldr0dWQYqcNjgjfUWXRP
-         uWDJR75lpDU18RfQSpALrh37of9m9d8Gj7xGOuUsH2+zmj0gdMCc+e/9ZlOIhAW03WfL
-         qv+BW7Zxsi3ooXukNLuvcIcqQn7CB4sLlcwUc=
+        b=W37DP3U5093kCVJ+97IF4DebcegoCXGsv9aH4U/mLkEFxGYS2Qgyr82dQZeuSXxYcp
+         MAJI/0D71MeW1S9c41eDFYPUzGBOweTquoNeJ0l1Z6XgtFMRy8OEu9pvzuhO75F5oRDN
+         lbEKC/Y/M5Q663eVHvJ7ZhVqt71rpm9C0N+rA=
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
         brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
         rientjes@google.com, mingo@elte.hu, hpa@linux.intel.com,
         ankita@in.ibm.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 26/33] x86-64, NUMA: Implement generic node distance handling
-Date: Wed, 16 Feb 2011 13:21:00 +0100
-Message-Id: <1297858867-25981-27-git-send-email-tj@kernel.org>
+Subject: [PATCH 25/33] x86-64, NUMA: Kill mem_nodes_parsed
+Date: Wed, 16 Feb 2011 13:20:59 +0100
+Message-Id: <1297858867-25981-26-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297858867-25981-1-git-send-email-tj@kernel.org>
 References: <1297858867-25981-1-git-send-email-tj@kernel.org>
@@ -30,16 +30,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Node distance either used direct node comparison, ACPI PXM comparison
-or ACPI SLIT table lookup.  This patch implements generic node
-distance handling.  NUMA init methods can call numa_set_distance() to
-set distance between nodes and the common __node_distance()
-implementation will report the set distance.
+With all memory configuration information now carried in numa_meminfo,
+there's no need to keep mem_nodes_parsed separate.  Drop it and use
+numa_nodes_parsed for CPU / memory-less nodes.
 
-Due to the way NUMA emulation is implemented, the generic node
-distance handling is used only when emulation is not used.  Later
-patches will update NUMA emulation to use the generic distance
-mechanism.
+A new helper numa_nodemask_from_meminfo() is added to calculate
+memnode mask on the fly which is currently used to set
+node_possible_map.
+
+This simplifies NUMA init methods a bit and removes a source of
+possible inconsistencies.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
@@ -50,232 +50,136 @@ Cc: David Rientjes <rientjes@google.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/acpi.h     |    1 +
- arch/x86/include/asm/numa_64.h  |    1 +
- arch/x86/include/asm/topology.h |    2 +-
- arch/x86/mm/numa_64.c           |   95 +++++++++++++++++++++++++++++++++++++++
- arch/x86/mm/srat_64.c           |   27 +++++-------
- 5 files changed, 109 insertions(+), 17 deletions(-)
+ arch/x86/include/asm/numa_64.h |    1 -
+ arch/x86/mm/amdtopology_64.c   |    5 ++---
+ arch/x86/mm/numa_64.c          |   20 ++++++++++++++++----
+ arch/x86/mm/srat_64.c          |    7 ++-----
+ 4 files changed, 20 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index cfa3d5c..9c9fe1b 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -190,6 +190,7 @@ extern int x86_acpi_numa_init(void);
- #ifdef CONFIG_NUMA_EMU
- extern void acpi_fake_nodes(const struct bootnode *fake_nodes,
- 				   int num_nodes);
-+extern int acpi_emu_node_distance(int a, int b);
- #endif
- #endif /* CONFIG_ACPI_NUMA */
- 
 diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 04e74d8..972af9d 100644
+index da57c70..04e74d8 100644
 --- a/arch/x86/include/asm/numa_64.h
 +++ b/arch/x86/include/asm/numa_64.h
-@@ -29,6 +29,7 @@ extern nodemask_t numa_nodes_parsed __initdata;
+@@ -26,7 +26,6 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
+ #define NR_NODE_MEMBLKS		(MAX_NUMNODES*2)
+ 
+ extern nodemask_t numa_nodes_parsed __initdata;
+-extern nodemask_t mem_nodes_parsed __initdata;
  
  extern int __cpuinit numa_cpu_node(int cpu);
  extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
-+extern void __init numa_set_distance(int from, int to, int distance);
+diff --git a/arch/x86/mm/amdtopology_64.c b/arch/x86/mm/amdtopology_64.c
+index e76bffa..fd7b609 100644
+--- a/arch/x86/mm/amdtopology_64.c
++++ b/arch/x86/mm/amdtopology_64.c
+@@ -122,7 +122,7 @@ int __init amd_numa_init(void)
+ 			       nodeid, (base >> 8) & 3, (limit >> 8) & 3);
+ 			return -EINVAL;
+ 		}
+-		if (node_isset(nodeid, mem_nodes_parsed)) {
++		if (node_isset(nodeid, numa_nodes_parsed)) {
+ 			pr_info("Node %d already present, skipping\n",
+ 				nodeid);
+ 			continue;
+@@ -167,11 +167,10 @@ int __init amd_numa_init(void)
  
- #ifdef CONFIG_NUMA_EMU
- #define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index b101c17..910a708 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -138,7 +138,7 @@ extern unsigned long node_remap_size[];
- 	.balance_interval	= 1,					\
- }
+ 		prevbase = base;
+ 		numa_add_memblk(nodeid, base, limit);
+-		node_set(nodeid, mem_nodes_parsed);
+ 		node_set(nodeid, numa_nodes_parsed);
+ 	}
  
--#ifdef CONFIG_X86_64_ACPI_NUMA
-+#ifdef CONFIG_X86_64
- extern int __node_distance(int, int);
- #define node_distance(a, b) __node_distance(a, b)
- #endif
+-	if (!nodes_weight(mem_nodes_parsed))
++	if (!nodes_weight(numa_nodes_parsed))
+ 		return -ENOENT;
+ 
+ 	/*
 diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 8b1f178..a3621f2 100644
+index 6e4fbd7..8b1f178 100644
 --- a/arch/x86/mm/numa_64.c
 +++ b/arch/x86/mm/numa_64.c
-@@ -45,6 +45,13 @@ static unsigned long __initdata nodemap_size;
+@@ -37,7 +37,6 @@ struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
+ EXPORT_SYMBOL(node_data);
  
- static struct numa_meminfo numa_meminfo __initdata;
+ nodemask_t numa_nodes_parsed __initdata;
+-nodemask_t mem_nodes_parsed __initdata;
  
-+static int numa_distance_cnt;
-+static u8 *numa_distance;
-+
-+#ifdef CONFIG_NUMA_EMU
-+static bool numa_emu_dist;
-+#endif
-+
- /*
-  * Given a shift value, try to populate memnodemap[]
-  * Returns :
-@@ -357,6 +364,92 @@ static void __init numa_nodemask_from_meminfo(nodemask_t *nodemask,
+ struct memnode memnode;
+ 
+@@ -344,6 +343,20 @@ static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
  }
  
  /*
-+ * Reset distance table.  The current table is freed.  The next
-+ * numa_set_distance() call will create a new one.
++ * Set nodes, which have memory in @mi, in *@nodemask.
 + */
-+static void __init numa_reset_distance(void)
++static void __init numa_nodemask_from_meminfo(nodemask_t *nodemask,
++					      const struct numa_meminfo *mi)
 +{
-+	size_t size;
++	int i;
 +
-+	size = numa_distance_cnt * sizeof(numa_distance[0]);
-+	memblock_x86_free_range(__pa(numa_distance),
-+				__pa(numa_distance) + size);
-+	numa_distance = NULL;
-+	numa_distance_cnt = 0;
++	for (i = 0; i < ARRAY_SIZE(mi->blk); i++)
++		if (mi->blk[i].start != mi->blk[i].end &&
++		    mi->blk[i].nid != NUMA_NO_NODE)
++			node_set(mi->blk[i].nid, *nodemask);
 +}
-+
-+/*
-+ * Set the distance between node @from to @to to @distance.  If distance
-+ * table doesn't exist, one which is large enough to accomodate all the
-+ * currently known nodes will be created.
-+ */
-+void __init numa_set_distance(int from, int to, int distance)
-+{
-+	if (!numa_distance) {
-+		nodemask_t nodes_parsed;
-+		size_t size;
-+		int i, j, cnt = 0;
-+		u64 phys;
-+
-+		/* size the new table and allocate it */
-+		nodes_parsed = numa_nodes_parsed;
-+		numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
-+
-+		for_each_node_mask(i, nodes_parsed)
-+			cnt = i;
-+		size = ++cnt * sizeof(numa_distance[0]);
-+
-+		phys = memblock_find_in_range(0,
-+					      (u64)max_pfn_mapped << PAGE_SHIFT,
-+					      size, PAGE_SIZE);
-+		if (phys == MEMBLOCK_ERROR) {
-+			pr_warning("NUMA: Warning: can't allocate distance table!\n");
-+			/* don't retry until explicitly reset */
-+			numa_distance = (void *)1LU;
-+			return;
-+		}
-+		memblock_x86_reserve_range(phys, phys + size, "NUMA DIST");
-+
-+		numa_distance = __va(phys);
-+		numa_distance_cnt = cnt;
-+
-+		/* fill with the default distances */
-+		for (i = 0; i < cnt; i++)
-+			for (j = 0; j < cnt; j++)
-+				numa_distance[i * cnt + j] = i == j ?
-+					LOCAL_DISTANCE : REMOTE_DISTANCE;
-+		printk(KERN_DEBUG "NUMA: Initialized distance table, cnt=%d\n", cnt);
-+	}
-+
-+	if (from >= numa_distance_cnt || to >= numa_distance_cnt) {
-+		printk_once(KERN_DEBUG "NUMA: Debug: distance out of bound, from=%d to=%d distance=%d\n",
-+			    from, to, distance);
-+		return;
-+	}
-+
-+	if ((u8)distance != distance ||
-+	    (from == to && distance != LOCAL_DISTANCE)) {
-+		pr_warn_once("NUMA: Warning: invalid distance parameter, from=%d to=%d distance=%d\n",
-+			     from, to, distance);
-+		return;
-+	}
-+
-+	numa_distance[from * numa_distance_cnt + to] = distance;
-+}
-+
-+int __node_distance(int from, int to)
-+{
-+#if defined(CONFIG_ACPI_NUMA) && defined(CONFIG_NUMA_EMU)
-+	if (numa_emu_dist)
-+		return acpi_emu_node_distance(from, to);
-+#endif
-+	if (from >= numa_distance_cnt || to >= numa_distance_cnt)
-+		return from == to ? LOCAL_DISTANCE : REMOTE_DISTANCE;
-+	return numa_distance[from * numa_distance_cnt + to];
-+}
-+EXPORT_SYMBOL(__node_distance);
 +
 +/*
   * Sanity check to catch more bad NUMA configurations (they are amazingly
   * common).  Make sure the nodes cover all memory.
   */
-@@ -826,6 +919,7 @@ static int __init numa_emulation(unsigned long start_pfn,
- 	setup_physnodes(addr, max_addr);
- 	fake_physnodes(acpi, amd, num_nodes);
- 	numa_init_array();
-+	numa_emu_dist = true;
+@@ -379,7 +392,8 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	int i, j, nid;
+ 
+ 	/* Account for nodes with cpus and no memory */
+-	nodes_or(node_possible_map, mem_nodes_parsed, numa_nodes_parsed);
++	node_possible_map = numa_nodes_parsed;
++	numa_nodemask_from_meminfo(&node_possible_map, mi);
+ 	if (WARN_ON(nodes_empty(node_possible_map)))
+ 		return -EINVAL;
+ 
+@@ -824,7 +838,6 @@ static int dummy_numa_init(void)
+ 	       0LU, max_pfn << PAGE_SHIFT);
+ 
+ 	node_set(0, numa_nodes_parsed);
+-	node_set(0, mem_nodes_parsed);
+ 	numa_add_memblk(0, 0, (u64)max_pfn << PAGE_SHIFT);
+ 
  	return 0;
- }
- #endif /* CONFIG_NUMA_EMU */
-@@ -869,6 +963,7 @@ void __init initmem_init(void)
+@@ -852,7 +865,6 @@ void __init initmem_init(void)
+ 			set_apicid_to_node(j, NUMA_NO_NODE);
+ 
+ 		nodes_clear(numa_nodes_parsed);
+-		nodes_clear(mem_nodes_parsed);
+ 		nodes_clear(node_possible_map);
  		nodes_clear(node_online_map);
  		memset(&numa_meminfo, 0, sizeof(numa_meminfo));
- 		remove_all_active_ranges();
-+		numa_reset_distance();
- 
- 		if (numa_init[i]() < 0)
- 			continue;
 diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 4f8e6cd..d2f53f3 100644
+index 8185189..4f8e6cd 100644
 --- a/arch/x86/mm/srat_64.c
 +++ b/arch/x86/mm/srat_64.c
-@@ -50,9 +50,16 @@ static __init inline int srat_disabled(void)
- /* Callback for SLIT parsing */
- void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
- {
-+	int i, j;
- 	unsigned length;
- 	unsigned long phys;
+@@ -238,9 +238,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 	printk(KERN_INFO "SRAT: Node %u PXM %u %lx-%lx\n", node, pxm,
+ 	       start, end);
  
-+	for (i = 0; i < slit->locality_count; i++)
-+		for (j = 0; j < slit->locality_count; j++)
-+			numa_set_distance(pxm_to_node(i), pxm_to_node(j),
-+				slit->entry[slit->locality_count * i + j]);
-+
-+	/* acpi_slit is used only by emulation */
- 	length = slit->header.length;
- 	phys = memblock_find_in_range(0, max_pfn_mapped<<PAGE_SHIFT, length,
- 		 PAGE_SIZE);
-@@ -313,29 +320,17 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
- 			node_set(i, numa_nodes_parsed);
+-	if (!(ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE))
+-		node_set(node, mem_nodes_parsed);
+-	else
++	if (ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)
+ 		update_nodes_add(node, start, end);
  }
  
--static int null_slit_node_compare(int a, int b)
--{
--	return node_to_pxm(a) == node_to_pxm(b);
--}
--#else
--static int null_slit_node_compare(int a, int b)
--{
--	return a == b;
--}
--#endif /* CONFIG_NUMA_EMU */
--
--int __node_distance(int a, int b)
-+int acpi_emu_node_distance(int a, int b)
- {
- 	int index;
+@@ -310,10 +308,9 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
+ 		__acpi_map_pxm_to_node(fake_node_to_pxm_map[i], i);
+ 	memcpy(__apicid_to_node, fake_apicid_to_node, sizeof(__apicid_to_node));
  
- 	if (!acpi_slit)
--		return null_slit_node_compare(a, b) ? LOCAL_DISTANCE :
--						      REMOTE_DISTANCE;
-+		return node_to_pxm(a) == node_to_pxm(b) ?
-+			LOCAL_DISTANCE : REMOTE_DISTANCE;
- 	index = acpi_slit->locality_count * node_to_pxm(a);
- 	return acpi_slit->entry[index + node_to_pxm(b)];
+-	nodes_clear(mem_nodes_parsed);
+ 	for (i = 0; i < num_nodes; i++)
+ 		if (fake_nodes[i].start != fake_nodes[i].end)
+-			node_set(i, mem_nodes_parsed);
++			node_set(i, numa_nodes_parsed);
  }
--
--EXPORT_SYMBOL(__node_distance);
-+#endif /* CONFIG_NUMA_EMU */
  
- #if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) || defined(CONFIG_ACPI_HOTPLUG_MEMORY)
- int memory_add_physaddr_to_nid(u64 start)
+ static int null_slit_node_compare(int a, int b)
 -- 
 1.7.1
 
