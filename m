@@ -1,130 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab1BPIvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 03:51:52 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53800 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378Ab1BPIvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 03:51:48 -0500
-Date: Wed, 16 Feb 2011 08:51:33 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <4D1933E0.7090305@kernel.org>
-References: <4D1933E0.7090305@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86-64: Move out cleanup higmap [_brk_end, _end) out of init_memory_mapping()
-Message-ID: <tip-f005fe12b90c5b9fe180a09209a893e09affa8aa@git.kernel.org>
-Git-Commit-ID: f005fe12b90c5b9fe180a09209a893e09affa8aa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1757503Ab1BPIyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 03:54:17 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:60063 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab1BPIyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 03:54:14 -0500
+Date: Wed, 16 Feb 2011 14:23:03 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@gmail.com>,
+        Tim Chen <tim.c.chen@intel.com>, Alex Shi <alex.shi@intel.com>
+Subject: Re: [PATCH] sched: Wholesale removal of sd_idle logic
+Message-ID: <20110216085303.GH11868@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <1297473616.2806.16.camel@sbsiddha-MOBL3.sc.intel.com>
+ <1297723130-693-1-git-send-email-venki@google.com>
+ <20110215170127.GA28865@dirshya.in.ibm.com>
+ <AANLkTi=ENtUtgHYaCJqvDGYVFKyXYFcVVOOFf8-dfW=+@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Feb 2011 08:51:34 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=ENtUtgHYaCJqvDGYVFKyXYFcVVOOFf8-dfW=+@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f005fe12b90c5b9fe180a09209a893e09affa8aa
-Gitweb:     http://git.kernel.org/tip/f005fe12b90c5b9fe180a09209a893e09affa8aa
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 27 Dec 2010 16:48:32 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 5 Jan 2011 14:03:45 +0100
+* Venkatesh Pallipadi <venki@google.com> [2011-02-15 10:26:01]:
 
-x86-64: Move out cleanup higmap [_brk_end, _end) out of init_memory_mapping()
+<snip>
 
-It is not related to init_memory_mapping(),  and init_memory_mapping() is
-getting more bigger.
+> >> @@ -3386,10 +3363,6 @@ redo:
+> >>                       sd->balance_interval *= 2;
+> >>       }
+> >>
+> >> -     if (!ld_moved && !sd_idle && sd->flags & SD_SHARE_CPUPOWER &&
+> >> -         !test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
+> >> -             ld_moved = -1;
+> >
+> > I have not figured out where ld_moved is checked for -1 and why we
+> > need to treat this as a special case.
+> >
+> 
+> Return value of -1 was being consumed in rebalance domains() call
+> to load_balance(). Returning -1 (instead of 0 in this case) makes
+> rebalance_domains() to call higher domain load balancing
+> with CPU_NOT_IDLE, when sibling is busy and even when there
+> was no load pulled in.
 
-So make it as seperated function and call it from reserve_brk() and that is
-point when _brk_end is concluded.
+Ok, so in rebalance_domain() we need not distinguish between 1 or -1
+return code.  We can set idle = CPU_NOT_IDLE as long as we pull
+a task.  With removal of sd_idle logic, the value of idle will remain
+same for all domains.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4D1933E0.7090305@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/setup.c |   24 ++++++++++++++++++++++++
- arch/x86/mm/init.c      |   19 -------------------
- 2 files changed, 24 insertions(+), 19 deletions(-)
+Now in idle_balance() you have to check for return code > 0 in order
+to reset this_rq->idle_stamp = 0.  But in the next check:
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index fc0fe74..635185b 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -293,10 +293,32 @@ static void __init init_gbpages(void)
- 	else
- 		direct_gbpages = 0;
- }
-+
-+static void __init cleanup_highmap_brk_end(void)
-+{
-+	pud_t *pud;
-+	pmd_t *pmd;
-+
-+	mmu_cr4_features = read_cr4();
-+
-+	/*
-+	 * _brk_end cannot change anymore, but it and _end may be
-+	 * located on different 2M pages. cleanup_highmap(), however,
-+	 * can only consider _end when it runs, so destroy any
-+	 * mappings beyond _brk_end here.
-+	 */
-+	pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
-+	pmd = pmd_offset(pud, _brk_end - 1);
-+	while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
-+		pmd_clear(pmd);
-+}
- #else
- static inline void init_gbpages(void)
- {
- }
-+static inline void cleanup_highmap_brk_end(void)
-+{
-+}
- #endif
- 
- static void __init reserve_brk(void)
-@@ -307,6 +329,8 @@ static void __init reserve_brk(void)
- 	/* Mark brk area as locked down and no longer taking any
- 	   new allocations */
- 	_brk_start = 0;
-+
-+	cleanup_highmap_brk_end();
- }
- 
- #ifdef CONFIG_BLK_DEV_INITRD
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index fa6fe75..35ee75d 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -270,25 +270,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	load_cr3(swapper_pg_dir);
- #endif
- 
--#ifdef CONFIG_X86_64
--	if (!after_bootmem && !start) {
--		pud_t *pud;
--		pmd_t *pmd;
--
--		mmu_cr4_features = read_cr4();
--
--		/*
--		 * _brk_end cannot change anymore, but it and _end may be
--		 * located on different 2M pages. cleanup_highmap(), however,
--		 * can only consider _end when it runs, so destroy any
--		 * mappings beyond _brk_end here.
--		 */
--		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
--		pmd = pmd_offset(pud, _brk_end - 1);
--		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
--			pmd_clear(pmd);
--	}
--#endif
- 	__flush_tlb_all();
- 
- 	if (!after_bootmem && e820_table_end > e820_table_start)
+	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+		/*
+		 * We are going idle. next_balance may be set based on
+		 * a busy processor. So reset next_balance.
+		 */
+		this_rq->next_balance = next_balance;
+	}
+
+Earlier, we would push the next_balance interval for busy sibling case
+since pulled_task will be set to -1.  But now, with the removal of
+sd_idle logic, the this_rq->next_balance will not be touched leading
+to sooner rebalance.
+
+In summary, the load_balance() will return 0 or 1, and the special
+case of -1 is completely removed in the new code.  Thanks for the
+clarification.
+
+--Vaidy
+
