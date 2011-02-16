@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab1BPBkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:40:47 -0500
-Received: from kroah.org ([198.145.64.141]:38981 "EHLO coco.kroah.org"
+	id S1757000Ab1BPAT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:19:56 -0500
+Received: from kroah.org ([198.145.64.141]:38921 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757012Ab1BPAT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:58 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:32 2011
-Message-Id: <20110216001432.443000954@clark.kroah.org>
+	id S1756923Ab1BPATo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:44 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:31 2011
+Message-Id: <20110216001431.533742793@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:10 -0800
+Date: Tue, 15 Feb 2011 16:12:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kashyap Desai <kashyap.desai@lsi.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [073/272] [SCSI] mpt2sas: Fix device removal handshake for zoned devices
+        Paul Shaw <paul.shaw@atheros.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [064/272] ath9k_hw: disabled PAPRD for AR9003
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kashyap, Desai <kashyap.desai@lsi.com>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 4dc2757a2e9a9d1f2faee4fc6119276fc0061c16 upstream.
+commit 6f4810101a629b31b5427872a09ea092cfc5c4bd upstream.
 
-When zoning end devices, the driver is not sending device
-removal handshake alogrithm to firmware. This results in controller
-firmware not sending sas topology add events the next time the device is
-added. The fix is the driver should be doing the device removal handshake
-even though the PHYSTATUS_VACANT bit is set in the PhyStatus of the
-event data. The current design is avoiding the handshake when the
-VACANT bit is set in the phy status.
+AR9003's PAPRD was enabled prematurely, and is causing some
+large discrepancies on throughput and network connectivity.
+For example downlink (RX) throughput against an AR9280 AP
+can vary widlely from 43-73 Mbit/s while disabling this
+gets AR9382 (2x2) up to around 93 Mbit/s in a 2.4 GHz HT20 setup.
 
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Cc: Paul Shaw <paul.shaw@atheros.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.c |    6 +++++-
+ drivers/net/wireless/ath/ath9k/hw.h |    1 +
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -2957,9 +2957,6 @@ _scsih_check_topo_delete_events(struct M
- 	u16 handle;
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -385,6 +385,9 @@ static void ath9k_hw_init_config(struct
+ 	else
+ 		ah->config.ht_enable = 0;
  
- 	for (i = 0 ; i < event_data->NumEntries; i++) {
--		if (event_data->PHY[i].PhyStatus &
--		    MPI2_EVENT_SAS_TOPO_PHYSTATUS_VACANT)
--			continue;
- 		handle = le16_to_cpu(event_data->PHY[i].AttachedDevHandle);
- 		if (!handle)
- 			continue;
++	/* PAPRD needs some more work to be enabled */
++	ah->config.paprd_disable = 1;
++
+ 	ah->config.rx_intr_mitigation = true;
+ 	ah->config.pcieSerDesWrite = true;
+ 
+@@ -1949,7 +1952,8 @@ int ath9k_hw_fill_cap_info(struct ath_hw
+ 		pCap->rx_status_len = sizeof(struct ar9003_rxs);
+ 		pCap->tx_desc_len = sizeof(struct ar9003_txc);
+ 		pCap->txs_len = sizeof(struct ar9003_txs);
+-		if (ah->eep_ops->get_eeprom(ah, EEP_PAPRD))
++		if (!ah->config.paprd_disable &&
++		    ah->eep_ops->get_eeprom(ah, EEP_PAPRD))
+ 			pCap->hw_caps |= ATH9K_HW_CAP_PAPRD;
+ 	} else {
+ 		pCap->tx_desc_len = sizeof(struct ath_desc);
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -215,6 +215,7 @@ struct ath9k_ops_config {
+ 	u32 pcie_waen;
+ 	u8 analog_shiftreg;
+ 	u8 ht_enable;
++	u8 paprd_disable;
+ 	u32 ofdm_trig_low;
+ 	u32 ofdm_trig_high;
+ 	u32 cck_trig_high;
 
 
