@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab1BPI0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 03:26:24 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50627 "EHLO mx3.mail.elte.hu"
+	id S1757301Ab1BPIar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 03:30:47 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41256 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840Ab1BPI0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 03:26:19 -0500
-Date: Wed, 16 Feb 2011 09:25:59 +0100
+	id S1751816Ab1BPIap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 03:30:45 -0500
+Date: Wed, 16 Feb 2011 09:30:25 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Mike Galbraith <efault@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, gregkh@suse.de,
-        srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl,
-        ghaskins@novell.com, stable@kernel.org, stable-commits@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been added
- to the 2.6.32-longterm tree
-Message-ID: <20110216082559.GA16529@elte.hu>
-References: <12978046423644@kroah.org>
- <1297810967.23343.122.camel@gandalf.stny.rr.com>
- <1297821667.5126.11.camel@marge.simson.net>
+Cc: Dan Carpenter <error27@gmail.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [114/115] sched: Remove  some dead code
+Message-ID: <20110216083025.GB16529@elte.hu>
+References: <20110216014741.GA24678@kroah.com>
+ <20110216014705.654816731@clark.kroah.org>
+ <20110216073701.GS4384@bicker>
+ <1297843004.8874.1.camel@marge.simson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297821667.5126.11.camel@marge.simson.net>
+In-Reply-To: <1297843004.8874.1.camel@marge.simson.net>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,40 +39,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Mike Galbraith <efault@gmx.de> wrote:
 
-> On Tue, 2011-02-15 at 18:02 -0500, Steven Rostedt wrote:
-> > [ Added LKML ]
+> On Wed, 2011-02-16 at 10:37 +0300, Dan Carpenter wrote:
+> > On Tue, Feb 15, 2011 at 05:46:20PM -0800, Greg KH wrote:
+> > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > > 
+> > > ------------------
+> > > 
+> > > 
+> > > From: Dan Carpenter <error27@gmail.com>
+> > > 
+> > > commit 618765801ebc271fe0ba3eca99fcfd62a1f786e1 upstream.
+> > > 
+> > > This was left over from "7c9414385e sched: Remove USER_SCHED"
+> > > 
+> > > Signed-off-by: Dan Carpenter <error27@gmail.com>
 > > 
-> > On Tue, 2011-02-15 at 13:17 -0800, gregkh@suse.de wrote:
-> > > This is a note to let you know that I've just added the patch titled
-> > > 
-> > >     sched: Give CPU bound RT tasks preference
-> > > 
-> > > to the 2.6.32-longterm tree which can be found at:
-> > >     http://www.kernel.org/git/?p=linux/kernel/git/longterm/longterm-queue-2.6.32.git;a=summary
-> > > 
-> > > The filename of the patch is:
-> > >      0006-sched-Give-CPU-bound-RT-tasks-preference.patch
-> > > and it can be found in the queue-2.6.32 subdirectory.
-> > > 
-> > > If you, or anyone else, feels it should not be added to the 2.6.32 longterm tree,
-> > > please let <stable@kernel.org> know about it.
-> > > 
-> > > 
-> > 
-> > I don't mind this patch being added to the long term tree. But I'm
-> > curious about what is the criteria for adding changes to it? This is a
-> > performance improvement and not a critical bug fix.
+> > This is just a cleanup patch.  It doesn't really warrant backporting.
 > 
-> Yes, I added it for the performance.  .32-stable is enterprise beans and
-> biscuits.  Same reason I added the load balancing fixes, boxen won't
-> explode without them, but load balancing performs better with them.
+> There's no reason to leave the dirt lying about though.
 
-We try to concentrate on regression fixes though. So performance enhancements
-should only be queued up if they fix problems bad enough that could rightfully
-be sent to Linus in an -rc5+ timeframe as well.
+That's not the threshold for -stable backporting though.
 
-This patch is borderline i guess so i have no problems with it - but we should be 
-somewhat more conservative about this in the future.
+A patch is eligible for -stable if and only if it's eligible for sending it to Linus 
+via tip:sched/urgent as well: i.e. important bugfix or fresh regression.
+
+Now, a cleanup patch might still be eligible to be sent to Linus if for some reason 
+it's absolutely required for a fix - but in general we do not backport them.
+
+The risk to -stable is obvious: instead of having a well-known .32 scheduler we have 
+this morphing code that no-one has really tested in that form.
+
+So while i dont mind the series you sent, please lets be *much* more careful with 
+-stable backports in the future. Rule #1: if you ever have to ask yourself whether a 
+patch is -stable eligible it probably isnt.
 
 Thanks,
 
