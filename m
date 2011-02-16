@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998Ab1BPAsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:48:53 -0500
-Received: from kroah.org ([198.145.64.141]:45490 "EHLO coco.kroah.org"
+	id S1752593Ab1BPBOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:14:41 -0500
+Received: from kroah.org ([198.145.64.141]:45539 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932954Ab1BPAsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:39 -0500
+	id S932948Ab1BPAsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:50 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:04 2011
-Message-Id: <20110216002104.213655895@clark.kroah.org>
+Message-Id: <20110216002104.907337321@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:19 -0800
+Date: Tue, 15 Feb 2011 16:20:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sujith Manoharan <Sujith.Manoharan@atheros.com>,
+        Rajkumar Manoharan <rmanoharan@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 051/176] ath9k_htc: Handle pending URBs properly
+Subject: [patch 058/176] ath9k: fix beacon restart on channel change
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,117 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <Sujith.Manoharan@atheros.com>
+From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-commit ff8f59b5bbdf1527235b8c88d859c7d23691324f upstream.
+commit 1186488b4a4d4871e40cb1604ba3ede3d4b7cc90 upstream.
 
-When doing a channel change, the pending URBs have to be killed
-properly on calling htc_stop().
+Restart the beacon timers only if the beacon
+was already configured. Otherwise beacons timers
+are restarted unnecessarily in unassociated state too.
 
-This fixes the probe response timeout seen when sending UDP traffic at
-a high rate and running background scan at the same time.
-
-Signed-off-by: Sujith Manoharan <Sujith.Manoharan@atheros.com>
+Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c |   40 +++++++++++++++++++++++++++----
- drivers/net/wireless/ath/ath9k/hif_usb.h |    1 
- 2 files changed, 37 insertions(+), 4 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -144,16 +144,36 @@ static void hif_usb_tx_cb(struct urb *ur
- 	case -ENODEV:
- 	case -ESHUTDOWN:
- 		/*
--		 * The URB has been killed, free the SKBs
--		 * and return.
-+		 * The URB has been killed, free the SKBs.
- 		 */
- 		ath9k_skb_queue_purge(hif_dev, &tx_buf->skb_queue);
--		return;
-+
-+		/*
-+		 * If the URBs are being flushed, no need to add this
-+		 * URB to the free list.
-+		 */
-+		spin_lock(&hif_dev->tx.tx_lock);
-+		if (hif_dev->tx.flags & HIF_USB_TX_FLUSH) {
-+			spin_unlock(&hif_dev->tx.tx_lock);
-+			return;
-+		}
-+		spin_unlock(&hif_dev->tx.tx_lock);
-+
-+		/*
-+		 * In the stop() case, this URB has to be added to
-+		 * the free list.
-+		 */
-+		goto add_free;
- 	default:
- 		break;
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -258,7 +258,8 @@ int ath_set_channel(struct ath_softc *sc
+ 	ath9k_hw_set_interrupts(ah, ah->imask);
+ 
+ 	if (!(sc->sc_flags & (SC_OP_OFFCHANNEL))) {
+-		ath_beacon_config(sc, NULL);
++		if (sc->sc_flags & SC_OP_BEACONS)
++			ath_beacon_config(sc, NULL);
+ 		ieee80211_queue_delayed_work(sc->hw, &sc->tx_complete_work, 0);
+ 		ath_start_ani(common);
  	}
- 
--	/* Check if TX has been stopped */
-+	/*
-+	 * Check if TX has been stopped, this is needed because
-+	 * this CB could have been invoked just after the TX lock
-+	 * was released in hif_stop() and kill_urb() hasn't been
-+	 * called yet.
-+	 */
- 	spin_lock(&hif_dev->tx.tx_lock);
- 	if (hif_dev->tx.flags & HIF_USB_TX_STOP) {
- 		spin_unlock(&hif_dev->tx.tx_lock);
-@@ -305,6 +325,7 @@ static void hif_usb_start(void *hif_hand
- static void hif_usb_stop(void *hif_handle, u8 pipe_id)
- {
- 	struct hif_device_usb *hif_dev = (struct hif_device_usb *)hif_handle;
-+	struct tx_buf *tx_buf = NULL, *tx_buf_tmp = NULL;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&hif_dev->tx.tx_lock, flags);
-@@ -312,6 +333,12 @@ static void hif_usb_stop(void *hif_handl
- 	hif_dev->tx.tx_skb_cnt = 0;
- 	hif_dev->tx.flags |= HIF_USB_TX_STOP;
- 	spin_unlock_irqrestore(&hif_dev->tx.tx_lock, flags);
-+
-+	/* The pending URBs have to be canceled. */
-+	list_for_each_entry_safe(tx_buf, tx_buf_tmp,
-+				 &hif_dev->tx.tx_pending, list) {
-+		usb_kill_urb(tx_buf->urb);
-+	}
- }
- 
- static int hif_usb_send(void *hif_handle, u8 pipe_id, struct sk_buff *skb,
-@@ -577,6 +604,7 @@ free:
- static void ath9k_hif_usb_dealloc_tx_urbs(struct hif_device_usb *hif_dev)
- {
- 	struct tx_buf *tx_buf = NULL, *tx_buf_tmp = NULL;
-+	unsigned long flags;
- 
- 	list_for_each_entry_safe(tx_buf, tx_buf_tmp,
- 				 &hif_dev->tx.tx_buf, list) {
-@@ -587,6 +615,10 @@ static void ath9k_hif_usb_dealloc_tx_urb
- 		kfree(tx_buf);
- 	}
- 
-+	spin_lock_irqsave(&hif_dev->tx.tx_lock, flags);
-+	hif_dev->tx.flags |= HIF_USB_TX_FLUSH;
-+	spin_unlock_irqrestore(&hif_dev->tx.tx_lock, flags);
-+
- 	list_for_each_entry_safe(tx_buf, tx_buf_tmp,
- 				 &hif_dev->tx.tx_pending, list) {
- 		usb_kill_urb(tx_buf->urb);
---- a/drivers/net/wireless/ath/ath9k/hif_usb.h
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.h
-@@ -62,6 +62,7 @@ struct tx_buf {
- };
- 
- #define HIF_USB_TX_STOP  BIT(0)
-+#define HIF_USB_TX_FLUSH BIT(1)
- 
- struct hif_usb_tx {
- 	u8 flags;
 
 
