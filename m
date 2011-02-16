@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab1BPBOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:14:50 -0500
-Received: from kroah.org ([198.145.64.141]:45532 "EHLO coco.kroah.org"
+	id S1752840Ab1BPBOw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:14:52 -0500
+Received: from kroah.org ([198.145.64.141]:45524 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932781Ab1BPAss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:48:48 -0500
+	id S932982Ab1BPAsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:47 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:04 2011
-Message-Id: <20110216002104.806102889@clark.kroah.org>
+Message-Id: <20110216002104.706911605@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:25 -0800
+Date: Tue, 15 Feb 2011 16:20:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,7 +17,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Paul Stewart <pstew@google.com>, Amod Bodas <amod.bodas@atheros.com>,
         "Luis R. Rodriguez" <lrodriguez@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [patch 057/176] ath9k: fix aphy / wiphy idle mismatch
+Subject: [patch 056/176] ath9k: fix assumptions for idle calls on suspend/resume
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,17 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit afe68d0a8f5961652e26cea39d74e2cc820de841 upstream.
+commit a08e7ade9ddf4fe79576f953cc5c1725e944d26c upstream.
 
-ath9k supports its own set of virtual wiphys, and it uses
-the mac80211 idle notifications to know when a device needs
-to be idle or not. We recently changed ath9k to force idle
-on driver stop() and on resume but forgot to take into account
-ath9k's own virtual wiphy idle states. These are used internally
-by ath9k to check if the device's radio should be powered down
-on each idle call. Without this change its possible that the
-device could have been forced off but the virtual wiphy idle
-was left on.
+mac80211 will notify drivers when to go idle and ath9k
+assumed that it would get further notifications for idle
+states after a device stop() config call but as per agreed
+semantics the idle state of the radio is left up to driver
+after mac80211 issues the stop() callback. The driver is
+resposnbile for ensuring the device remains idle after
+that even between suspend / resume calls.
+
+This fixes suspend/resume when you issue suspend and resume
+twice on ath9k when ath9k_stop() was already called. We need
+to put the radio to full sleep in order for resume to work
+correctly.
+
+What might seem fishy is we are turning the radio off
+after resume. The reason why we do this is because we know
+we should not have anything enabled after a mac80211 tells
+us to stop(), if we resume and never get a start() we won't
+get another stop() by mac80211 so to be safe always bring
+the 802.11 device with the radio disabled after resume,
+this ensures that if we suspend we already have the radio
+disabled and only a start() will ever trigger it on.
 
 Cc: Paul Stewart <pstew@google.com>
 Cc: Amod Bodas <amod.bodas@atheros.com>
@@ -48,29 +60,34 @@ Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    1 +
- drivers/net/wireless/ath/ath9k/pci.c  |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/net/wireless/ath/ath9k/main.c |    4 ++--
+ drivers/net/wireless/ath/ath9k/pci.c  |    3 +++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
 --- a/drivers/net/wireless/ath/ath9k/main.c
 +++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1370,6 +1370,7 @@ static void ath9k_stop(struct ieee80211_
+@@ -1369,8 +1369,8 @@ static void ath9k_stop(struct ieee80211_
+ 	ath9k_hw_configpcipowersave(ah, 1, 1);
  	ath9k_ps_restore(sc);
  
- 	sc->ps_idle = true;
-+	ath9k_set_wiphy_idle(aphy, true);
- 	ath_radio_disable(sc, hw);
+-	/* Finally, put the chip in FULL SLEEP mode */
+-	ath9k_setpower(sc, ATH9K_PM_FULL_SLEEP);
++	sc->ps_idle = true;
++	ath_radio_disable(sc, hw);
  
  	sc->sc_flags |= SC_OP_INVALID;
+ 
 --- a/drivers/net/wireless/ath/ath9k/pci.c
 +++ b/drivers/net/wireless/ath/ath9k/pci.c
-@@ -291,6 +291,7 @@ static int ath_pci_resume(struct pci_dev
+@@ -290,6 +290,9 @@ static int ath_pci_resume(struct pci_dev
+ 			    AR_GPIO_OUTPUT_MUX_AS_OUTPUT);
  	ath9k_hw_set_gpio(sc->sc_ah, sc->sc_ah->led_pin, 1);
  
- 	sc->ps_idle = true;
-+	ath9k_set_wiphy_idle(aphy, true);
- 	ath_radio_disable(sc, hw);
- 
++	sc->ps_idle = true;
++	ath_radio_disable(sc, hw);
++
  	return 0;
+ }
+ 
 
 
