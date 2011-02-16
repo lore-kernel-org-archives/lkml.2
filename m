@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab1BPAnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:43:19 -0500
-Received: from kroah.org ([198.145.64.141]:49391 "EHLO coco.kroah.org"
+	id S1756243Ab1BPAnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:43:39 -0500
+Received: from kroah.org ([198.145.64.141]:49376 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757598Ab1BPAXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:23:21 -0500
+	id S1757589Ab1BPAXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:18 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:43 2011
-Message-Id: <20110216001443.610757076@clark.kroah.org>
+Message-Id: <20110216001443.405334566@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:02 -0800
+Date: Tue, 15 Feb 2011 16:14:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [185/272] sched: Change wait_for_completion_*_timeout() to return a signed long
+        "David S. Miller" <davem@davemloft.net>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: [183/272] klist: Fix object alignment on 64-bit.
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,75 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: David Miller <davem@davemloft.net>
 
-commit 6bf4123760a5aece6e4829ce90b70b6ffd751d65 upstream.
+commit 795abaf1e4e188c4171e3cd3dbb11a9fcacaf505 upstream.
 
-wait_for_completion_*_timeout() can return:
+Commit c0e69a5bbc6f ("klist.c: bit 0 in pointer can't be used as flag")
+intended to make sure that all klist objects were at least pointer size
+aligned, but used the constant "4" which only works on 32-bit.
 
-   0: if the wait timed out
- -ve: if the wait was interrupted
- +ve: if the completion was completed.
+Use "sizeof(void *)" which is correct in all cases.
 
-As they currently return an 'unsigned long', the last two cases
-are not easily distinguished which can easily result in buggy
-code, as is the case for the recently added
-wait_for_completion_interruptible_timeout() call in
-net/sunrpc/cache.c
-
-So change them both to return 'long'.  As MAX_SCHEDULE_TIMEOUT
-is LONG_MAX, a large +ve return value should never overflow.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: J.  Bruce Fields <bfields@fieldses.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <20110105125016.64ccab0e@notabene.brown>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/completion.h |    8 ++++----
- kernel/sched.c             |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ include/linux/klist.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/completion.h
-+++ b/include/linux/completion.h
-@@ -81,10 +81,10 @@ extern int wait_for_completion_interrupt
- extern int wait_for_completion_killable(struct completion *x);
- extern unsigned long wait_for_completion_timeout(struct completion *x,
- 						   unsigned long timeout);
--extern unsigned long wait_for_completion_interruptible_timeout(
--			struct completion *x, unsigned long timeout);
--extern unsigned long wait_for_completion_killable_timeout(
--			struct completion *x, unsigned long timeout);
-+extern long wait_for_completion_interruptible_timeout(
-+	struct completion *x, unsigned long timeout);
-+extern long wait_for_completion_killable_timeout(
-+	struct completion *x, unsigned long timeout);
- extern bool try_wait_for_completion(struct completion *x);
- extern bool completion_done(struct completion *x);
+--- a/include/linux/klist.h
++++ b/include/linux/klist.h
+@@ -22,7 +22,7 @@ struct klist {
+ 	struct list_head	k_list;
+ 	void			(*get)(struct klist_node *);
+ 	void			(*put)(struct klist_node *);
+-} __attribute__ ((aligned (4)));
++} __attribute__ ((aligned (sizeof(void *))));
  
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4526,7 +4526,7 @@ EXPORT_SYMBOL(wait_for_completion_interr
-  * This waits for either a completion of a specific task to be signaled or for a
-  * specified timeout to expire. It is interruptible. The timeout is in jiffies.
-  */
--unsigned long __sched
-+long __sched
- wait_for_completion_interruptible_timeout(struct completion *x,
- 					  unsigned long timeout)
- {
-@@ -4559,7 +4559,7 @@ EXPORT_SYMBOL(wait_for_completion_killab
-  * signaled or for a specified timeout to expire. It can be
-  * interrupted by a kill signal. The timeout is in jiffies.
-  */
--unsigned long __sched
-+long __sched
- wait_for_completion_killable_timeout(struct completion *x,
- 				     unsigned long timeout)
- {
+ #define KLIST_INIT(_name, _get, _put)					\
+ 	{ .k_lock	= __SPIN_LOCK_UNLOCKED(_name.k_lock),		\
 
 
