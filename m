@@ -1,204 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab1BPXY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 18:24:58 -0500
-Received: from mss-uk.mssgmbh.com ([217.174.251.109]:46202 "EHLO
-	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab1BPXYz (ORCPT
+	id S1753241Ab1BPX0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 18:26:23 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62527 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab1BPX0U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 18:24:55 -0500
-X-Greylist: delayed 699 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Feb 2011 18:24:54 EST
-To: davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] net: fix multithreaded signal handling in unix recv routines
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-Date: Wed, 16 Feb 2011 23:13:00 +0000
-Message-ID: <874o83bmkj.fsf@sapphire.mobileactivedefense.com>
+	Wed, 16 Feb 2011 18:26:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HkDGOvY8Z6fLyDgyEgORutYjfyDMCwKv6O+xwWfe6ET9IAV5eslKBwZlt+iO0GICnI
+         AA7oq5+vYIcTV8E9xJiiF4KYst/OwF8oGoE0eE8JXUz6yGW9g8xoUBSXTWoVF3KZfB4y
+         VoqC4S5R+cNovb74vqPmW4K+h+aIpFIq/XSGA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110216095048.GA4473@csn.ul.ie>
+References: <20110209154606.GJ27110@cmpxchg.org>
+	<20110209164656.GA1063@csn.ul.ie>
+	<20110209182846.GN3347@random.random>
+	<20110210102109.GB17873@csn.ul.ie>
+	<20110210124838.GU3347@random.random>
+	<20110210133323.GH17873@csn.ul.ie>
+	<20110210141447.GW3347@random.random>
+	<20110210145813.GK17873@csn.ul.ie>
+	<20110216095048.GA4473@csn.ul.ie>
+Date: Thu, 17 Feb 2011 08:26:19 +0900
+Message-ID: <AANLkTik2iiqqOUoHGyq+QWPNZ_V=2DAJvFGG4u=QPOqT@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscan: Stop reclaim/compaction earlier due to
+ insufficient progress if !__GFP_REPEAT
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kent Overstreet <kent.overstreet@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+On Wed, Feb 16, 2011 at 6:50 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> should_continue_reclaim() for reclaim/compaction allows scanning to continue
+> even if pages are not being reclaimed until the full list is scanned. In
+> terms of allocation success, this makes sense but potentially it introduces
+> unwanted latency for high-order allocations such as transparent hugepages
+> and network jumbo frames that would prefer to fail the allocation attempt
+> and fallback to order-0 pages.  Worse, there is a potential that the full
+> LRU scan will clear all the young bits, distort page aging information and
+> potentially push pages into swap that would have otherwise remained resident.
+>
+> This patch will stop reclaim/compaction if no pages were reclaimed in the
+> last SWAP_CLUSTER_MAX pages that were considered. For allocations such as
+> hugetlbfs that use GFP_REPEAT and have fewer fallback options, the full LRU
+> list may still be scanned.
+>
+> To test this, a tool was developed based on ftrace that tracked the latency of
+> high-order allocations while transparent hugepage support was enabled and three
+> benchmarks were run. The "fix-infinite" figures are 2.6.38-rc4 with Johannes's
+> patch "vmscan: fix zone shrinking exit when scan work is done" applied.
+>
+> STREAM Highorder Allocation Latency Statistics
+>               fix-infinite     break-early
+> 1 :: Count            10298           10229
+> 1 :: Min             0.4560          0.4640
+> 1 :: Mean            1.0589          1.0183
+> 1 :: Max            14.5990         11.7510
+> 1 :: Stddev          0.5208          0.4719
+> 2 :: Count                2               1
+> 2 :: Min             1.8610          3.7240
+> 2 :: Mean            3.4325          3.7240
+> 2 :: Max             5.0040          3.7240
+> 2 :: Stddev          1.5715          0.0000
+> 9 :: Count           111696          111694
+> 9 :: Min             0.5230          0.4110
+> 9 :: Mean           10.5831         10.5718
+> 9 :: Max            38.4480         43.2900
+> 9 :: Stddev          1.1147          1.1325
+>
+> Mean time for order-1 allocations is reduced. order-2 looks increased
+> but with so few allocations, it's not particularly significant. THP mean
+> allocation latency is also reduced. That said, allocation time varies so
+> significantly that the reductions are within noise.
+>
+> Max allocation time is reduced by a significant amount for low-order
+> allocations but reduced for THP allocations which presumably are now
+> breaking before reclaim has done enough work.
+>
+> SysBench Highorder Allocation Latency Statistics
+>               fix-infinite     break-early
+> 1 :: Count            15745           15677
+> 1 :: Min             0.4250          0.4550
+> 1 :: Mean            1.1023          1.0810
+> 1 :: Max            14.4590         10.8220
+> 1 :: Stddev          0.5117          0.5100
+> 2 :: Count                1               1
+> 2 :: Min             3.0040          2.1530
+> 2 :: Mean            3.0040          2.1530
+> 2 :: Max             3.0040          2.1530
+> 2 :: Stddev          0.0000          0.0000
+> 9 :: Count             2017            1931
+> 9 :: Min             0.4980          0.7480
+> 9 :: Mean           10.4717         10.3840
+> 9 :: Max            24.9460         26.2500
+> 9 :: Stddev          1.1726          1.1966
+>
+> Again, mean time for order-1 allocations is reduced while order-2 allocations
+> are too few to draw conclusions from. The mean time for THP allocations is
+> also slightly reduced albeit the reductions are within varianes.
+>
+> Once again, our maximum allocation time is significantly reduced for
+> low-order allocations and slightly increased for THP allocations.
+>
+> Anon stream mmap reference Highorder Allocation Latency Statistics
+> 1 :: Count             1376            1790
+> 1 :: Min             0.4940          0.5010
+> 1 :: Mean            1.0289          0.9732
+> 1 :: Max             6.2670          4.2540
+> 1 :: Stddev          0.4142          0.2785
+> 2 :: Count                1               -
+> 2 :: Min             1.9060               -
+> 2 :: Mean            1.9060               -
+> 2 :: Max             1.9060               -
+> 2 :: Stddev          0.0000               -
+> 9 :: Count            11266           11257
+> 9 :: Min             0.4990          0.4940
+> 9 :: Mean        27250.4669      24256.1919
+> 9 :: Max      11439211.0000    6008885.0000
+> 9 :: Stddev     226427.4624     186298.1430
+>
+> This benchmark creates one thread per CPU which references an amount of
+> anonymous memory 1.5 times the size of physical RAM. This pounds swap quite
+> heavily and is intended to exercise THP a bit.
+>
+> Mean allocation time for order-1 is reduced as before. It's also reduced
+> for THP allocations but the variations here are pretty massive due to swap.
+> As before, maximum allocation times are significantly reduced.
+>
+> Overall, the patch reduces the mean and maximum allocation latencies for
+> the smaller high-order allocations. This was with Slab configured so it
+> would be expected to be more significant with Slub which uses these size
+> allocations more aggressively.
+>
+> The mean allocation times for THP allocations are also slightly reduced.
+> The maximum latency was slightly increased as predicted by the comments due
+> to reclaim/compaction breaking early. However, workloads care more about the
+> latency of lower-order allocations than THP so it's an acceptable trade-off.
+> Please consider merging for 2.6.38.
+>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
-The unix_dgram_recvmsg and unix_stream_recvmsg routines in
-net/af_unix.c utilize mutex_lock(&u->readlock) calls in order to
-serialize read operations of multiple threads on a single socket. This
-implies that, if all n threads of a process block in an AF_UNIX recv
-call trying to read data from the same socket, one of these threads
-will be sleeping in state TASK_INTERRUPTIBLE and all others in state
-TASK_UNINTERRUPTIBLE. Provided that a particular signal is supposed to
-be handled by a signal handler defined by the process and that none of
-this threads is blocking the signal, the complete_signal routine in
-kernel/signal.c will select the 'first' such thread it happens to
-encounter when deciding which thread to notify that a signal is
-supposed to be handled and if this is one of the TASK_UNINTERRUPTIBLE
-threads, the signal won't be handled until the one thread not blocking
-on the u->readlock mutex is woken up because some data to process has
-arrived (if this ever happens). The included patch fixes this by
-changing mutex_lock to mutex_lock_interruptible and handling possible
-error returns in the same way interruptions are handled by the actual
-receive-code.
+> ---
+>  mm/vmscan.c |   32 ++++++++++++++++++++++----------
+>  1 files changed, 22 insertions(+), 10 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 148c6e6..591b907 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1841,16 +1841,28 @@ static inline bool should_continue_reclaim(struct zone *zone,
+>        if (!(sc->reclaim_mode & RECLAIM_MODE_COMPACTION))
+>                return false;
+>
+> -       /*
+> -        * If we failed to reclaim and have scanned the full list, stop.
+> -        * NOTE: Checking just nr_reclaimed would exit reclaim/compaction far
+> -        *       faster but obviously would be less likely to succeed
+> -        *       allocation. If this is desirable, use GFP_REPEAT to decide
 
-Signed-off-by: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+Typo. __GFP_REPEAT
 
----
-I noticed this because the termination cleanup code of some program I
-wrote on behalf of my employer didn't work anymore once the program
-was run in 'production mode' (reading from an AF_UNIX SOCK_SEQPACKET
-socket) as opposed to 'testing mode' (with input from a terminal). The
-program included below demonstrates this effect: For the 'usual' case,
-the second thread will block in the actual receive routine and the
-first will block on the mutex and consequently, terminating the
-program with C-c after the 'interrupt me if you can' message was
-printed won't work.
+Otherwise, looks good to me.
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-/*
-  demonstrate 'signal not being handled'
-  problem
-*/
 
-#include <errno.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
 
-static int fd;
 
-static void create_socket(void)
-{
-    struct sockaddr_un sun;
-    int rc;
 
-    fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (fd == -1) {
-	perror("socket");
-	exit(1);
-    }
 
-    sun.sun_family = AF_UNIX;
-    strncpy(sun.sun_path, "sk", sizeof(sun.sun_path));
-    /*
-      'blind idempotence measure' -- don't run in directories where
-      files named 'sk' whose content happens to be 'valuable' reside.
-    */    
-    unlink("sk");		
-    rc = bind(fd, (struct sockaddr *)&sun, sizeof(sun));
-    if (rc == -1) {
-	perror("bind");
-	exit(1);
-    }
-}
-
-static void sigint_handler(int unused)
-{
-    exit(0);
-}
-
-static void setup_sighandler(void)
-{
-    struct sigaction sa;
-
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sa.sa_handler = sigint_handler;
-    sigaction(SIGINT, &sa, NULL);
-}
-
-static void *block_in_read(void *unused)
-{
-    char buf[16];
-    ssize_t rc;
-
-    rc = read(fd, buf, sizeof(buf));
-    if (rc == -1) {
-	perror("read");
-	exit(1);
-    }
-
-    return NULL;
-}
-
-int main(void)
-{
-    pthread_t tid;
-    int rc;
-    
-    create_socket();
-    setup_sighandler();
-    
-    rc = pthread_create(&tid, NULL, block_in_read, NULL);
-    if (rc) {
-	errno = rc;
-	perror("pthread_create");
-	exit(1);
-    }
-
-    /*
-      The complete_signal routine in kernel/signal.c will chose the
-      'initial thread' when deciding which thread should be woken up
-      because of new signal if possible.  The sleep below makes it
-      very probable that the second thread will sleep interruptibly in
-      unix_dgram_recvmsg by the time this thread calls
-      mutex_lock(&u->readlock) and consequently, the state of the
-      initial thread will most likely be TASK_UNINTERRUPTIBLE by the
-      time the signal occurs.
-    */
-    sleep(3);
-    fputs("Now interrupt me if you can!\n", stderr);
-    block_in_read(NULL);
-
-    return 0;
-}
-
-diff -urp net-2.6/net/unix/af_unix.c net-2.6-patched//net/unix/af_unix.c
---- net-2.6/net/unix/af_unix.c	2011-02-16 22:19:43.338358559 +0000
-+++ net-2.6-patched//net/unix/af_unix.c	2011-02-16 22:38:39.483543598 +0000
-@@ -1724,7 +1724,11 @@ static int unix_dgram_recvmsg(struct kio
- 
- 	msg->msg_namelen = 0;
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err) {
-+		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
-+		goto out;
-+	}
- 
- 	skb = skb_recv_datagram(sk, flags, noblock, &err);
- 	if (!skb) {
-@@ -1864,7 +1868,11 @@ static int unix_stream_recvmsg(struct ki
- 		memset(&tmp_scm, 0, sizeof(tmp_scm));
- 	}
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err) {
-+		err = sock_intr_errno(timeo);
-+		goto out;
-+	}
- 
- 	do {
- 		int chunk;
-@@ -1895,11 +1903,12 @@ static int unix_stream_recvmsg(struct ki
- 
- 			timeo = unix_stream_data_wait(sk, timeo);
- 
--			if (signal_pending(current)) {
-+			if (signal_pending(current)
-+			    ||  mutex_lock_interruptible(&u->readlock)) {
- 				err = sock_intr_errno(timeo);
- 				goto out;
- 			}
--			mutex_lock(&u->readlock);
-+
- 			continue;
-  unlock:
- 			unix_state_unlock(sk);
+-- 
+Kind regards,
+Minchan Kim
