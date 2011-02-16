@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758850Ab1BPJdh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 04:33:37 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53047 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758829Ab1BPJde (ORCPT
+	id S1758847Ab1BPJmH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 04:42:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52094 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374Ab1BPJmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 04:33:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=TfQrlrB2YD2RiXsCpHcw2o9V5D5t2hdUxv832adfiNgbKi+TDWCkpQSvQ/fMciT7gJ
-         Ux65HpM4cVazO0lHs3TAErd7y9esyAP4SgwnowsCHn1DdtxHybjeA3lXoIBz8lhGYzbX
-         yxE11tM/Yhr48n935QqQD6POacFsE/2eBjkEM=
+	Wed, 16 Feb 2011 04:42:03 -0500
+Date: Wed, 16 Feb 2011 10:41:54 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH 16/17] mc13xxx: mfd_cell is now implicitly available to
+ drivers
+Message-ID: <20110216094154.GV13279@pengutronix.de>
+References: <20110211181921.3d561568@queued.net>
 MIME-Version: 1.0
-In-Reply-To: <20110216085605.GA18842@elte.hu>
-References: <4D484853.9020409@gmail.com>
-	<20110202023610.3799.qmail@science.horizon.com>
-	<AANLkTi=X8vCuVOCMBJiCOB-8GZRF4-5RVx59QchecLz4@mail.gmail.com>
-	<AANLkTikLVMNQzmugH-ORc89_ZouX6zWvG-tHSf1QoVf3@mail.gmail.com>
-	<AANLkTikx-7zJZaV2tgP=D=vZ12Brp9qrnyxLv_mVXQT3@mail.gmail.com>
-	<20110216083747.GF16529@elte.hu>
-	<AANLkTimXDquQV7c5yOM+1h-F08Lxti7Z5JJbbL7q7hNd@mail.gmail.com>
-	<20110216085605.GA18842@elte.hu>
-Date: Wed, 16 Feb 2011 12:33:32 +0300
-Message-ID: <AANLkTi=JDw=BNg1ys5ifkPwY7XpapMz-1hn5bAXmYYfg@mail.gmail.com>
-Subject: Re: 2.6.38-rc2: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Dave Airlie <airlied@gmail.com>, George Spelvin <linux@horizon.com>,
-        a.p.zijlstra@chello.nl, dzickus@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, ming.m.lin@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110211181921.3d561568@queued.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/16/11, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->
->> On Wed, Feb 16, 2011 at 11:37 AM, Ingo Molnar <mingo@elte.hu> wrote:
->> ...
->> >> >>
->> >> >
->> >> > Ping on this problem, still seeing
->> >> >
->> >> > Uhhuh. NMI received for unknown reason 3c on CPU 0.
->> >> > Do you have a strange power saving mode enabled?
->> >> > Dazed and confused, but trying to continue
->> >> >
->> >> > on my Pentium-D system here with latest Linus head.
->> >> >
->> >> > its sometimes 3c, sometimes 3d, I'm going to bisect and push for
->> >> > reverts if nobody still has any clue about how to fix this.
->> >> >
->> >> > Dave.
->> >> >
->> >>
->> >> We still trying to resolve it but without success yet. There is no
->> >> easy way to revert it. One of the option might be to disable perf on
->> >> p4 for a while. If this is acceptable -- i'll cook such patch and send
->> >> it to Ingo. Hm?
->> >
->> > That's not really acceptable - need to fix it or revert it to the last
->> > working
->> > state. Which commit broke it?
->> >
->> > Thanks,
->> >
->> >        Ingo
->> >
->>
->> I can't say you the commit id after which unknown-nmi start happening
->> (i'm out of git tree
->> at moment) but even then this commit should not be reverted since the
->> problem is in
->> p4 code not in the rest of perf system.
->>
->> I have two patches here (attached) and would really appreciate of
->> their testing on HT machine
->> together with kgdb bootup tests enabled. Dave could you please?
->
-> Could these patches fix Dave's non-kgdb problem? Dave isnt using kgdb but is
-> probably using perf which triggers NMIs? Dave, can you confirm that?
->
-> And it's a spurious NMI message, not actual lockup or other misbehavior,
-> right?
->
-> Thanks,
->
-> 	Ingo
->
-For nonkgdb case 'unflagged nmi fix' patch should be enough. i've
-tested it on non-ht machine by self. without it there is no lockup
-but only a message about unknown nmi.
+On Fri, Feb 11, 2011 at 06:19:21PM -0800, Andres Salomon wrote:
+> 
+> The cell's platform_data is now accessed with a helper function;
+> change clients to use that, and remove the now-unused data_size.
+> 
+> Note that mfd-core no longer makes a copy of platform_data, but the
+why was this changed and where?  I'm not able to find your complete
+series via gmane.
 
-for hr-machine with kgdb the things go harder, Don reported lockup on
-boot. The second patch might help but i cant test it (here i need help
-in testing)
+> mc13xxx-core driver creates the pdata structures on the stack.  In
+> order to get around that, the various ARM mach types that set the
+> pdata have been changed to hold the variable in static (global) memory.
+> Also note that __initdata references in aforementioned pdata structs
+> have been dropped.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  arch/arm/mach-imx/mach-mx27_3ds.c     |    6 +++++-
+>  arch/arm/mach-imx/mach-pcm038.c       |    6 +++++-
+>  arch/arm/mach-mx3/mach-mx31_3ds.c     |    6 +++++-
+>  arch/arm/mach-mx3/mach-mx31moboard.c  |    6 +++++-
+>  drivers/leds/leds-mc13783.c           |    6 +++---
+>  drivers/mfd/mc13xxx-core.c            |   18 +++++-------------
+>  drivers/regulator/mc13783-regulator.c |    6 ++----
+>  drivers/regulator/mc13892-regulator.c |    6 ++----
+>  include/linux/mfd/mc13xxx.h           |    3 +--
+>  9 files changed, 33 insertions(+), 30 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mach-mx27_3ds.c b/arch/arm/mach-imx/mach-mx27_3ds.c
+> index 1643315..f223371 100644
+> --- a/arch/arm/mach-imx/mach-mx27_3ds.c
+> +++ b/arch/arm/mach-imx/mach-mx27_3ds.c
+> @@ -227,9 +227,13 @@ static struct mc13783_regulator_init_data mx27_3ds_regulators[] = {
+>  };
+>  
+>  /* MC13783 */
+> -static struct mc13783_platform_data mc13783_pdata __initdata = {
+isn't using __initdata here broken already before your patch?  Was
+introduced in c67a3e09.  Fabio?
+
+But in general I'd prefer to keep as much __initdata as possible because
+this occupies less memory when using a multi-machine kernel.
+
+> diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
+> index a1d391b..052b133 100644
+> --- a/include/linux/mfd/mc13xxx.h
+> +++ b/include/linux/mfd/mc13xxx.h
+> @@ -146,8 +146,7 @@ struct mc13xxx_platform_data {
+>  #define MC13XXX_USE_LED		(1 << 5)
+>  	unsigned int flags;
+>  
+> -	int num_regulators;
+> -	struct mc13xxx_regulator_init_data *regulators;
+> +	struct mc13xxx_regulator_platform_data *regulators;
+>  	struct mc13xxx_leds_platform_data *leds;
+>  };
+... so I'd prefer to embed a struct mc13xxx_regulator_platform_data into
+mc13xxx_platform_data, not a pointer to it.  This makes initialisation a
+bit easier, too.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
