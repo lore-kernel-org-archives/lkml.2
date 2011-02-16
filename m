@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab1BPB5C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:57:02 -0500
-Received: from kroah.org ([198.145.64.141]:49247 "EHLO coco.kroah.org"
+	id S932779Ab1BPB4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:56:42 -0500
+Received: from kroah.org ([198.145.64.141]:49296 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758579Ab1BPBvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:39 -0500
+	id S1758497Ab1BPBvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:51:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:03 2011
-Message-Id: <20110216014703.742949985@clark.kroah.org>
+Message-Id: <20110216014703.850241714@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:46:01 -0800
+Date: Tue, 15 Feb 2011 17:46:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Nikhil Rao <ncrao@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>
-Subject: [095/115] sched: Set group_imb only a task can be pulled from the busiest cpu
+Subject: [096/115] sched: Force balancing on newidle balance if local group has capacity
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,71 +26,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Commit: 2582f0eba54066b5e98ff2b27ef0cfa833b59f54 upstream
+Commit: fab476228ba37907ad75216d0fd9732ada9c119e upstream
 
-When cycling through sched groups to determine the busiest group, set
-group_imb only if the busiest cpu has more than 1 runnable task. This patch
-fixes the case where two cpus in a group have one runnable task each, but there
-is a large weight differential between these two tasks. The load balancer is
-unable to migrate any task from this group, and hence do not consider this
-group to be imbalanced.
+This patch forces a load balance on a newly idle cpu when the local group has
+extra capacity and the busiest group does not have any. It improves system
+utilization when balancing tasks with a large weight differential.
+
+Under certain situations, such as a niced down task (i.e. nice = -15) in the
+presence of nr_cpus NICE0 tasks, the niced task lands on a sched group and
+kicks away other tasks because of its large weight. This leads to sub-optimal
+utilization of the machine. Even though the sched group has capacity, it does
+not pull tasks because sds.this_load >> sds.max_load, and f_b_g() returns NULL.
+
+With this patch, if the local group has extra capacity, we shortcut the checks
+in f_b_g() and try to pull a task over. A sched group has extra capacity if the
+group capacity is greater than the number of running tasks in that group.
+
+Thanks to Mike Galbraith for discussions leading to this patch and for the
+insight to reuse SD_NEWIDLE_BALANCE.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286996978-7007-3-git-send-email-ncrao@google.com>
-[ small code readability edits ]
+LKML-Reference: <1287173550-30365-4-git-send-email-ncrao@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ kernel/sched.c |   28 +++++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -3745,7 +3745,7 @@ static inline void update_sg_lb_stats(st
- 			int local_group, const struct cpumask *cpus,
- 			int *balance, struct sg_lb_stats *sgs)
- {
--	unsigned long load, max_cpu_load, min_cpu_load;
-+	unsigned long load, max_cpu_load, min_cpu_load, max_nr_running;
- 	int i;
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
- 	unsigned long avg_load_per_task = 0;
-@@ -3759,6 +3759,7 @@ static inline void update_sg_lb_stats(st
- 	/* Tally up the load of all CPUs in the group */
- 	max_cpu_load = 0;
- 	min_cpu_load = ~0UL;
-+	max_nr_running = 0;
+@@ -3208,6 +3208,10 @@ static void pull_task(struct rq *src_rq,
+ 	set_task_cpu(p, this_cpu);
+ 	activate_task(this_rq, p, 0);
+ 	check_preempt_curr(this_rq, p, 0);
++
++	/* re-arm NEWIDLE balancing when moving tasks */
++	src_rq->avg_idle = this_rq->avg_idle = 2*sysctl_sched_migration_cost;
++	this_rq->idle_stamp = 0;
+ }
  
- 	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
- 		struct rq *rq = cpu_rq(i);
-@@ -3776,8 +3777,10 @@ static inline void update_sg_lb_stats(st
- 			load = target_load(i, load_idx);
- 		} else {
- 			load = source_load(i, load_idx);
--			if (load > max_cpu_load)
-+			if (load > max_cpu_load) {
- 				max_cpu_load = load;
-+				max_nr_running = rq->nr_running;
-+			}
- 			if (min_cpu_load > load)
- 				min_cpu_load = load;
- 		}
-@@ -3815,11 +3818,10 @@ static inline void update_sg_lb_stats(st
- 	if (sgs->sum_nr_running)
- 		avg_load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
+ /*
+@@ -3425,12 +3429,14 @@ struct sd_lb_stats {
+ 	unsigned long this_load;
+ 	unsigned long this_load_per_task;
+ 	unsigned long this_nr_running;
++	unsigned long this_has_capacity;
  
--	if ((max_cpu_load - min_cpu_load) > 2*avg_load_per_task)
-+	if ((max_cpu_load - min_cpu_load) > 2*avg_load_per_task && max_nr_running > 1)
+ 	/* Statistics of the busiest group */
+ 	unsigned long max_load;
+ 	unsigned long busiest_load_per_task;
+ 	unsigned long busiest_nr_running;
+ 	unsigned long busiest_group_capacity;
++	unsigned long busiest_has_capacity;
+ 
+ 	int group_imb; /* Is there imbalance in this sd */
+ #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
+@@ -3453,6 +3459,7 @@ struct sg_lb_stats {
+ 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+ 	unsigned long group_capacity;
+ 	int group_imb; /* Is there an imbalance in the group ? */
++	int group_has_capacity; /* Is there extra capacity in the group? */
+ };
+ 
+ /**
+@@ -3822,6 +3829,9 @@ static inline void update_sg_lb_stats(st
  		sgs->group_imb = 1;
  
--	sgs->group_capacity =
--		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
-+	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
+ 	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
++
++	if (sgs->group_capacity > sgs->sum_nr_running)
++		sgs->group_has_capacity = 1;
  }
  
  /**
+@@ -3878,6 +3888,7 @@ static inline void update_sd_lb_stats(st
+ 			sds->this = group;
+ 			sds->this_nr_running = sgs.sum_nr_running;
+ 			sds->this_load_per_task = sgs.sum_weighted_load;
++			sds->this_has_capacity = sgs.group_has_capacity;
+ 		} else if (sgs.avg_load > sds->max_load &&
+ 			   (sgs.sum_nr_running > sgs.group_capacity ||
+ 				sgs.group_imb)) {
+@@ -3886,6 +3897,7 @@ static inline void update_sd_lb_stats(st
+ 			sds->busiest_nr_running = sgs.sum_nr_running;
+ 			sds->busiest_group_capacity = sgs.group_capacity;
+ 			sds->busiest_load_per_task = sgs.sum_weighted_load;
++			sds->busiest_has_capacity = sgs.group_has_capacity;
+ 			sds->group_imb = sgs.group_imb;
+ 		}
+ 
+@@ -4031,6 +4043,7 @@ static inline void calculate_imbalance(s
+ 		return fix_small_imbalance(sds, this_cpu, imbalance);
+ 
+ }
++
+ /******* find_busiest_group() helpers end here *********************/
+ 
+ /**
+@@ -4082,6 +4095,11 @@ find_busiest_group(struct sched_domain *
+ 	 * 4) This group is more busy than the avg busieness at this
+ 	 *    sched_domain.
+ 	 * 5) The imbalance is within the specified limit.
++	 *
++	 * Note: when doing newidle balance, if the local group has excess
++	 * capacity (i.e. nr_running < group_capacity) and the busiest group
++	 * does not have any capacity, we force a load balance to pull tasks
++	 * to the local group. In this case, we skip past checks 3, 4 and 5.
+ 	 */
+ 	if (balance && !(*balance))
+ 		goto ret;
+@@ -4089,6 +4107,11 @@ find_busiest_group(struct sched_domain *
+ 	if (!sds.busiest || sds.busiest_nr_running == 0)
+ 		goto out_balanced;
+ 
++	/*  SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
++	if (idle == CPU_NEWLY_IDLE && sds.this_has_capacity &&
++			!sds.busiest_has_capacity)
++		goto force_balance;
++
+ 	if (sds.this_load >= sds.max_load)
+ 		goto out_balanced;
+ 
+@@ -4100,6 +4123,7 @@ find_busiest_group(struct sched_domain *
+ 	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
+ 		goto out_balanced;
+ 
++force_balance:
+ 	/* Looks like there is an imbalance. Compute it */
+ 	calculate_imbalance(&sds, this_cpu, imbalance);
+ 	return sds.busiest;
+@@ -4515,10 +4539,8 @@ static void idle_balance(int this_cpu, s
+ 		interval = msecs_to_jiffies(sd->balance_interval);
+ 		if (time_after(next_balance, sd->last_balance + interval))
+ 			next_balance = sd->last_balance + interval;
+-		if (pulled_task) {
+-			this_rq->idle_stamp = 0;
++		if (pulled_task)
+ 			break;
+-		}
+ 	}
+ 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+ 		/*
 
 
