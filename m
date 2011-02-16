@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab1BPBtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:49:14 -0500
-Received: from kroah.org ([198.145.64.141]:48706 "EHLO coco.kroah.org"
+	id S933012Ab1BPCMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:12:39 -0500
+Received: from kroah.org ([198.145.64.141]:48733 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758070Ab1BPBtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:54 2011
-Message-Id: <20110216014654.897421275@clark.kroah.org>
+	id S932153Ab1BPBtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:15 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:55 2011
+Message-Id: <20110216014655.710420343@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:32 -0800
+Date: Tue, 15 Feb 2011 17:44:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Libor Pechacek <lpechacek@suse.cz>
-Subject: [006/115] USB: serial: handle Data Carrier Detect changes
+        Nicolaus Colberg <nicolaus.colberg@cinterion.com>
+Subject: [014/115] USB: adding USB support for Cinterions HC2x, EU3 and PH8 products
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,259 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Libor Pechacek <lpechacek@suse.cz>
+From: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 
-commit d14fc1a74e846d7851f24fc9519fe87dc12a1231 upstream.
+commit aa52b3a92918039b273fc9d1994bd34227c40269 upstream.
 
-Alan's commit 335f8514f200e63d689113d29cb7253a5c282967 introduced
-.carrier_raised function in several drivers.  That also means
-tty_port_block_til_ready can now suspend the process trying to open the serial
-port when Carrier Detect is low and put it into tty_port.open_wait queue.  We
-need to wake up the process when Carrier Detect goes high and trigger TTY
-hangup when CD goes low.
+/drivers/usb/serial/option.c: Adding support for Cinterion's HC25, HC28,
+HC28J, EU3-E, EU3-P and PH8 by correcting/adding Cinterion's and
+Siemens' Vendor IDs as well as Product IDs and USB_DEVICE tuples
 
-Some of the devices do not report modem status line changes, or at least we
-don't understand the status message, so for those we remove .carrier_raised
-again.
-
-Signed-off-by: Libor Pechacek <lpechacek@suse.cz>
+Signed-off-by: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ch341.c           |   10 ++++++++++
- drivers/usb/serial/cp210x.c          |   13 +------------
- drivers/usb/serial/digi_acceleport.c |   10 ----------
- drivers/usb/serial/generic.c         |   20 ++++++++++++++++++++
- drivers/usb/serial/keyspan_pda.c     |   17 -----------------
- drivers/usb/serial/pl2303.c          |   11 +++++++++++
- drivers/usb/serial/spcp8x5.c         |    6 +++++-
- include/linux/usb/serial.h           |    3 +++
- 8 files changed, 50 insertions(+), 40 deletions(-)
+ drivers/usb/serial/option.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -479,12 +479,22 @@ static void ch341_read_int_callback(stru
- 	if (actual_length >= 4) {
- 		struct ch341_private *priv = usb_get_serial_port_data(port);
- 		unsigned long flags;
-+		u8 prev_line_status = priv->line_status;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -369,7 +369,16 @@ static int  option_resume(struct usb_ser
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
  
- 		spin_lock_irqsave(&priv->lock, flags);
- 		priv->line_status = (~(data[2])) & CH341_BITS_MODEM_STAT;
- 		if ((data[1] & CH341_MULT_STAT))
- 			priv->multi_status_change = 1;
- 		spin_unlock_irqrestore(&priv->lock, flags);
+-#define CINTERION_VENDOR_ID			0x0681
++/* Cinterion (formerly Siemens) products */
++#define SIEMENS_VENDOR_ID				0x0681
++#define CINTERION_VENDOR_ID				0x1e2d
++#define CINTERION_PRODUCT_HC25_MDM		0x0047
++#define CINTERION_PRODUCT_HC25_MDMNET	0x0040
++#define CINTERION_PRODUCT_HC28_MDM		0x004C
++#define CINTERION_PRODUCT_HC28_MDMNET	0x004A /* same for HC28J */
++#define CINTERION_PRODUCT_EU3_E			0x0051
++#define CINTERION_PRODUCT_EU3_P			0x0052
++#define CINTERION_PRODUCT_PH8			0x0053
+ 
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -895,7 +904,17 @@ static struct usb_device_id option_ids[]
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
++	/* Cinterion */
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
 +
-+		if ((priv->line_status ^ prev_line_status) & CH341_BIT_DCD) {
-+			struct tty_struct *tty = tty_port_tty_get(&port->port);
-+			if (tty)
-+				usb_serial_handle_dcd_change(port, tty,
-+					    priv->line_status & CH341_BIT_DCD);
-+			tty_kref_put(tty);
-+		}
-+
- 		wake_up_interruptible(&priv->delta_msr_wait);
- 	}
- 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -51,7 +51,6 @@ static void cp210x_break_ctl(struct tty_
- static int cp210x_startup(struct usb_serial *);
- static void cp210x_disconnect(struct usb_serial *);
- static void cp210x_dtr_rts(struct usb_serial_port *p, int on);
--static int cp210x_carrier_raised(struct usb_serial_port *p);
- 
- static int debug;
- 
-@@ -165,8 +164,7 @@ static struct usb_serial_driver cp210x_d
- 	.tiocmset		= cp210x_tiocmset,
- 	.attach			= cp210x_startup,
- 	.disconnect		= cp210x_disconnect,
--	.dtr_rts		= cp210x_dtr_rts,
--	.carrier_raised		= cp210x_carrier_raised
-+	.dtr_rts		= cp210x_dtr_rts
- };
- 
- /* Config request types */
-@@ -800,15 +798,6 @@ static int cp210x_tiocmget (struct tty_s
- 	return result;
- }
- 
--static int cp210x_carrier_raised(struct usb_serial_port *p)
--{
--	unsigned int control;
--	cp210x_get_config(p, CP210X_GET_MDMSTS, &control, 1);
--	if (control & CONTROL_DCD)
--		return 1;
--	return 0;
--}
--
- static void cp210x_break_ctl (struct tty_struct *tty, int break_state)
- {
- 	struct usb_serial_port *port = tty->driver_data;
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -455,7 +455,6 @@ static int digi_write_room(struct tty_st
- static int digi_chars_in_buffer(struct tty_struct *tty);
- static int digi_open(struct tty_struct *tty, struct usb_serial_port *port);
- static void digi_close(struct usb_serial_port *port);
--static int digi_carrier_raised(struct usb_serial_port *port);
- static void digi_dtr_rts(struct usb_serial_port *port, int on);
- static int digi_startup_device(struct usb_serial *serial);
- static int digi_startup(struct usb_serial *serial);
-@@ -511,7 +510,6 @@ static struct usb_serial_driver digi_acc
- 	.open =				digi_open,
- 	.close =			digi_close,
- 	.dtr_rts =			digi_dtr_rts,
--	.carrier_raised =		digi_carrier_raised,
- 	.write =			digi_write,
- 	.write_room =			digi_write_room,
- 	.write_bulk_callback = 		digi_write_bulk_callback,
-@@ -1338,14 +1336,6 @@ static void digi_dtr_rts(struct usb_seri
- 	digi_set_modem_signals(port, on * (TIOCM_DTR|TIOCM_RTS), 1);
- }
- 
--static int digi_carrier_raised(struct usb_serial_port *port)
--{
--	struct digi_port *priv = usb_get_serial_port_data(port);
--	if (priv->dp_modem_signals & TIOCM_CD)
--		return 1;
--	return 0;
--}
--
- static int digi_open(struct tty_struct *tty, struct usb_serial_port *port)
- {
- 	int ret;
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -578,6 +578,26 @@ int usb_serial_handle_break(struct usb_s
- }
- EXPORT_SYMBOL_GPL(usb_serial_handle_break);
- 
-+/**
-+ *	usb_serial_handle_dcd_change - handle a change of carrier detect state
-+ *	@port: usb_serial_port structure for the open port
-+ *	@tty: tty_struct structure for the port
-+ *	@status: new carrier detect status, nonzero if active
-+ */
-+void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
-+				struct tty_struct *tty, unsigned int status)
-+{
-+	struct tty_port *port = &usb_port->port;
-+
-+	dbg("%s - port %d, status %d", __func__, usb_port->number, status);
-+
-+	if (status)
-+		wake_up_interruptible(&port->open_wait);
-+	else if (tty && !C_CLOCAL(tty))
-+		tty_hangup(tty);
-+}
-+EXPORT_SYMBOL_GPL(usb_serial_handle_dcd_change);
-+
- int usb_serial_generic_resume(struct usb_serial *serial)
- {
- 	struct usb_serial_port *port;
---- a/drivers/usb/serial/keyspan_pda.c
-+++ b/drivers/usb/serial/keyspan_pda.c
-@@ -663,22 +663,6 @@ static void keyspan_pda_dtr_rts(struct u
- 	}
- }
- 
--static int keyspan_pda_carrier_raised(struct usb_serial_port *port)
--{
--	struct usb_serial *serial = port->serial;
--	unsigned char modembits;
--
--	/* If we can read the modem status and the DCD is low then
--	   carrier is not raised yet */
--	if (keyspan_pda_get_modem_info(serial, &modembits) >= 0) {
--		if (!(modembits & (1>>6)))
--			return 0;
--	}
--	/* Carrier raised, or we failed (eg disconnected) so
--	   progress accordingly */
--	return 1;
--}
--
- 
- static int keyspan_pda_open(struct tty_struct *tty,
- 					struct usb_serial_port *port)
-@@ -854,7 +838,6 @@ static struct usb_serial_driver keyspan_
- 	.id_table =		id_table_std,
- 	.num_ports =		1,
- 	.dtr_rts =		keyspan_pda_dtr_rts,
--	.carrier_raised	=	keyspan_pda_carrier_raised,
- 	.open =			keyspan_pda_open,
- 	.close =		keyspan_pda_close,
- 	.write =		keyspan_pda_write,
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -955,9 +955,11 @@ static void pl2303_update_line_status(st
- {
- 
- 	struct pl2303_private *priv = usb_get_serial_port_data(port);
-+	struct tty_struct *tty;
- 	unsigned long flags;
- 	u8 status_idx = UART_STATE;
- 	u8 length = UART_STATE + 1;
-+	u8 prev_line_status;
- 	u16 idv, idp;
- 
- 	idv = le16_to_cpu(port->serial->dev->descriptor.idVendor);
-@@ -979,11 +981,20 @@ static void pl2303_update_line_status(st
- 
- 	/* Save off the uart status for others to look at */
- 	spin_lock_irqsave(&priv->lock, flags);
-+	prev_line_status = priv->line_status;
- 	priv->line_status = data[status_idx];
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	if (priv->line_status & UART_BREAK_ERROR)
- 		usb_serial_handle_break(port);
- 	wake_up_interruptible(&priv->delta_msr_wait);
-+
-+	tty = tty_port_tty_get(&port->port);
-+	if (!tty)
-+		return;
-+	if ((priv->line_status ^ prev_line_status) & UART_DCD)
-+		usb_serial_handle_dcd_change(port, tty,
-+				priv->line_status & UART_DCD);
-+	tty_kref_put(tty);
- }
- 
- static void pl2303_read_int_callback(struct urb *urb)
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -137,7 +137,7 @@ struct spcp8x5_usb_ctrl_arg {
- 
- /* how come ??? */
- #define UART_STATE			0x08
--#define UART_STATE_TRANSIENT_MASK	0x74
-+#define UART_STATE_TRANSIENT_MASK	0x75
- #define UART_DCD			0x01
- #define UART_DSR			0x02
- #define UART_BREAK_ERROR		0x04
-@@ -734,6 +734,10 @@ static void spcp8x5_read_bulk_callback(s
- 			tty_insert_flip_char(tty, data[i], tty_flag);
- 		tty_flip_buffer_push(tty);
- 	}
-+
-+	if (status & UART_DCD)
-+		usb_serial_handle_dcd_change(port, tty,
-+			   priv->line_status & MSR_STATUS_LINE_DCD);
- 	tty_kref_put(tty);
- 
- 	/* Schedule the next read _if_ we are still open */
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -326,6 +326,9 @@ extern int usb_serial_handle_sysrq_char(
- 					struct usb_serial_port *port,
- 					unsigned int ch);
- extern int usb_serial_handle_break(struct usb_serial_port *port);
-+extern void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
-+					 struct tty_struct *tty,
-+					 unsigned int status);
- 
- 
- extern int usb_serial_bus_register(struct usb_serial_driver *device);
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ } /* Terminating entry */
 
 
