@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab1BPBtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:49:22 -0500
-Received: from kroah.org ([198.145.64.141]:48743 "EHLO coco.kroah.org"
+	id S932928Ab1BPCLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:11:55 -0500
+Received: from kroah.org ([198.145.64.141]:48758 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932227Ab1BPBtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:18 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:55 2011
-Message-Id: <20110216014655.905826813@clark.kroah.org>
+	id S932319Ab1BPBtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:56 2011
+Message-Id: <20110216014656.190952435@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:42 -0800
+Date: Tue, 15 Feb 2011 17:44:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <david-b@pacbell.net>
-Subject: [016/115] USB: EHCI: fix DMA deallocation bug
+        Ionut Nicu <ionut.nicu@mindbit.ro>
+Subject: [019/115] USB: ti_usb: fix module removal
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,71 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Ionut Nicu <ionut.nicu@gmail.com>
 
-commit f75593ceaa08e6d27aec1a5de31cded19e850dd1 upstream.
+commit b14de3857227cd978f515247853fd15cc2425d3e upstream.
 
-This patch (as1440) fixes a bug in ehci-hcd.  ehci->periodic_size is
-used to compute the size in a dma_alloc_coherent() call, but then it
-gets changed later on.  As a result, the corresponding call to
-dma_free_coherent() passes a different size from the original
-allocation.  Fix the problem by adjusting ehci->periodic_size before
-carrying out any of the memory allocations.
+If usb_deregister() is called after usb_serial_deregister() when
+the device is plugged in, the following Oops occurs:
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
-CC: David Brownell <david-b@pacbell.net>
+[   95.337377] BUG: unable to handle kernel NULL pointer dereference at 00000010
+[   95.338236] IP: [<c0776b2d>] klist_put+0x12/0x62
+[   95.338356] *pdpt = 000000003001a001 *pde = 0000000000000000
+[   95.338356] Oops: 0000 [#1] SMP
+[   95.340499] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.2/usb8/idVendor
+[   95.340499] Modules linked in: ti_usb_3410_5052(-) usbserial cpufreq_ondemand acpi_cpufreq mperf iptable_nat nf_nat iptable_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 uinput arc4 ecb iwlagn iwlcore mac80211 cfg80211 microcode pcspkr acer_wmi joydev wmi sky2 [last unloaded: scsi_wait_scan]
+[   95.341908]
+[   95.341908] Pid: 1532, comm: modprobe Not tainted 2.6.37-rc7+ #6 Eiger                          /Aspire 5930
+[   95.341908] EIP: 0060:[<c0776b2d>] EFLAGS: 00010246 CPU: 0
+[   95.341908] EIP is at klist_put+0x12/0x62
+[   95.341908] EAX: 00000000 EBX: eedc0c84 ECX: c09c21b4 EDX: 00000001
+[   95.341908] ESI: 00000000 EDI: efaa0c1c EBP: f214fe2c ESP: f214fe1c
+[   95.341908]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   95.341908] Process modprobe (pid: 1532, ti=f214e000 task=efaaf080 task.ti=f214e000)
+[   95.341908] Stack:
+[   95.341908]  f214fe24 eedc0c84 efaaf080 efaa0c1c f214fe34 c0776ba8 f214fe5c c0776c76
+[   95.341908]  c09c21b4 c09c21b4 eedc0c84 efaaf080 00000000 c0634398 eafe2d1c f7b515f0
+[   95.341908]  f214fe6c c0631b5c eafe2d50 eafe2d1c f214fe7c c0631ba2 eafe2d1c eafe2c00
+[   95.341908] Call Trace:
+[   95.341908]  [<c0776ba8>] ? klist_del+0xd/0xf
+[   95.341908]  [<c0776c76>] ? klist_remove+0x48/0x74
+[   95.341908]  [<c0634398>] ? devres_release_all+0x49/0x51
+[   95.341908]  [<c0631b5c>] ? __device_release_driver+0x7b/0xa4
+[   95.341908]  [<c0631ba2>] ? device_release_driver+0x1d/0x28
+[   95.341908]  [<c06317c4>] ? bus_remove_device+0x92/0xa1
+[   95.341908]  [<c062f3d8>] ? device_del+0xf9/0x13e
+[   95.341908]  [<f7b06146>] ? usb_serial_disconnect+0xd9/0x116 [usbserial]
+[   95.341908]  [<c0681e3f>] ? usb_disable_interface+0x32/0x40
+[   95.341908]  [<c0683972>] ? usb_unbind_interface+0x48/0xfd
+[   95.341908]  [<c0631b43>] ? __device_release_driver+0x62/0xa4
+[   95.341908]  [<c06320b9>] ? driver_detach+0x62/0x81
+[   95.341908]  [<c0631a41>] ? bus_remove_driver+0x8f/0xae
+[   95.341908]  [<c063214c>] ? driver_unregister+0x50/0x57
+[   95.341908]  [<c0682f95>] ? usb_deregister+0x77/0x84
+[   95.341908]  [<f7b505b6>] ? ti_exit+0x26/0x28 [ti_usb_3410_5052]
+[   95.341908]  [<c046a307>] ? sys_delete_module+0x181/0x1de
+[   95.341908]  [<c04e2727>] ? path_put+0x1a/0x1d
+[   95.341908]  [<c047f4c5>] ? audit_syscall_entry+0x116/0x138
+[   95.341908]  [<c04094df>] ? sysenter_do_call+0x12/0x28
+[   95.341908] Code: 00 83 7d f0 00 74 09 85 f6 74 05 89 f0 ff 55 f0 8b 43 04 5a 5b 5e 5f 5d c3 55 89 e5 57 56 53 89 c3 83 ec 04 8b 30 83 e6 fe 89 f0 <8b> 7e 10 88 55 f0 e8 47 26 01 00 8a 55 f0 84 d2 74 17 f6 03 01
+[   95.341908] EIP: [<c0776b2d>] klist_put+0x12/0x62 SS:ESP 0068:f214fe1c
+[   95.341908] CR2: 0000000000000010
+[   95.342357] ---[ end trace 8124d00ad871ad18 ]---
+
+Signed-off-by: Ionut Nicu <ionut.nicu@mindbit.ro>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hcd.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -545,6 +545,8 @@ static int ehci_init(struct usb_hcd *hcd
- 	ehci->iaa_watchdog.function = ehci_iaa_watchdog;
- 	ehci->iaa_watchdog.data = (unsigned long) ehci;
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -366,9 +366,9 @@ failed_1port:
  
-+	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
-+
- 	/*
- 	 * hw default: 1K periodic list heads, one per frame.
- 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
-@@ -552,11 +554,20 @@ static int ehci_init(struct usb_hcd *hcd
- 	ehci->periodic_size = DEFAULT_I_TDPS;
- 	INIT_LIST_HEAD(&ehci->cached_itd_list);
- 	INIT_LIST_HEAD(&ehci->cached_sitd_list);
-+
-+	if (HCC_PGM_FRAMELISTLEN(hcc_params)) {
-+		/* periodic schedule size can be smaller than default */
-+		switch (EHCI_TUNE_FLS) {
-+		case 0: ehci->periodic_size = 1024; break;
-+		case 1: ehci->periodic_size = 512; break;
-+		case 2: ehci->periodic_size = 256; break;
-+		default:	BUG();
-+		}
-+	}
- 	if ((retval = ehci_mem_init(ehci, GFP_KERNEL)) < 0)
- 		return retval;
+ static void __exit ti_exit(void)
+ {
++	usb_deregister(&ti_usb_driver);
+ 	usb_serial_deregister(&ti_1port_device);
+ 	usb_serial_deregister(&ti_2port_device);
+-	usb_deregister(&ti_usb_driver);
+ }
  
- 	/* controllers may cache some of the periodic schedule ... */
--	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
- 	if (HCC_ISOC_CACHE(hcc_params))		// full frame cache
- 		ehci->i_thresh = 8;
- 	else					// N microframes cached
-@@ -605,12 +616,6 @@ static int ehci_init(struct usb_hcd *hcd
- 		/* periodic schedule size can be smaller than default */
- 		temp &= ~(3 << 2);
- 		temp |= (EHCI_TUNE_FLS << 2);
--		switch (EHCI_TUNE_FLS) {
--		case 0: ehci->periodic_size = 1024; break;
--		case 1: ehci->periodic_size = 512; break;
--		case 2: ehci->periodic_size = 256; break;
--		default:	BUG();
--		}
- 	}
- 	ehci->command = temp;
  
 
 
