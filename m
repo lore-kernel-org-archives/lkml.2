@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178Ab1BPAuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:50:02 -0500
-Received: from kroah.org ([198.145.64.141]:45769 "EHLO coco.kroah.org"
+	id S933131Ab1BPAuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:50:10 -0500
+Received: from kroah.org ([198.145.64.141]:45845 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933116Ab1BPAtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:46 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:08 2011
-Message-Id: <20110216002108.396908052@clark.kroah.org>
+	id S933180Ab1BPAuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:02 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:09 2011
+Message-Id: <20110216002109.398245646@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:01 -0800
+Date: Tue, 15 Feb 2011 16:21:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Anderson <anderson@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [patch 093/176] /proc/kcore: fix seeking
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Subject: [patch 103/176] avr32: use syscall prototypes from asm-generic instead of arch
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Anderson <anderson@redhat.com>
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
 
-commit ceff1a770933e2ca2bf995b453dade4ec47a9878 upstream.
+commit 664cb7142ced8b827e92e1851d1ed2cae922f225 upstream.
 
-Commit 34aacb2920 ("procfs: Use generic_file_llseek in /proc/kcore") broke
-seeking on /proc/kcore.  This changes it back to use default_llseek in
-order to restore the original behavior.
+This patch removes the redundant syscalls prototypes in the architecture
+specific syscalls.h header file. These were identical with the ones in
+asm-generic/syscalls.h.
 
-The problem with generic_file_llseek is that it only allows seeks up to
-inode->i_sb->s_maxbytes, which is 2GB-1 on procfs, where the memory file
-offset values in the /proc/kcore PT_LOAD segments may exceed or start
-beyond that offset value.
-
-A similar revert was made for /proc/vmcore.
-
-Signed-off-by: Dave Anderson <anderson@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Reported-by: Peter Huewe <PeterHuewe@gmx.de>
+Reported-by: Sven Schnelle <svens@stackframe.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/kcore.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/avr32/include/asm/syscalls.h |    9 ---------
+ 1 file changed, 9 deletions(-)
 
---- a/fs/proc/kcore.c
-+++ b/fs/proc/kcore.c
-@@ -558,7 +558,7 @@ static int open_kcore(struct inode *inod
- static const struct file_operations proc_kcore_operations = {
- 	.read		= read_kcore,
- 	.open		= open_kcore,
--	.llseek		= generic_file_llseek,
-+	.llseek		= default_llseek,
- };
+--- a/arch/avr32/include/asm/syscalls.h
++++ b/arch/avr32/include/asm/syscalls.h
+@@ -16,18 +16,9 @@
+ #include <linux/signal.h>
  
- #ifdef CONFIG_MEMORY_HOTPLUG
+ /* kernel/process.c */
+-asmlinkage int sys_fork(struct pt_regs *);
+ asmlinkage int sys_clone(unsigned long, unsigned long,
+ 			 unsigned long, unsigned long,
+ 			 struct pt_regs *);
+-asmlinkage int sys_vfork(struct pt_regs *);
+-asmlinkage int sys_execve(const char __user *, char __user *__user *,
+-			  char __user *__user *, struct pt_regs *);
+-
+-/* kernel/signal.c */
+-asmlinkage int sys_sigaltstack(const stack_t __user *, stack_t __user *,
+-			       struct pt_regs *);
+-asmlinkage int sys_rt_sigreturn(struct pt_regs *);
+ 
+ /* mm/cache.c */
+ asmlinkage int sys_cacheflush(int, void __user *, size_t);
 
 
