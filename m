@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab1BPAYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:24:12 -0500
-Received: from kroah.org ([198.145.64.141]:49590 "EHLO coco.kroah.org"
+	id S1757613Ab1BPAX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:23:26 -0500
+Received: from kroah.org ([198.145.64.141]:49327 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932245Ab1BPAYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:46 2011
-Message-Id: <20110216001446.250560998@clark.kroah.org>
+	id S1757552Ab1BPAXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:42 2011
+Message-Id: <20110216001442.728386041@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:28 -0800
+Date: Tue, 15 Feb 2011 16:13:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: [211/272] backlight: fix 88pm860x_bl macro collision
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Mike Frysinger <vapier@gentoo.org>, Chris Ball <cjb@laptop.org>
+Subject: [176/272] mmc: bfin_sdh: fix alloc size for private data
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-commit 2550326ac7a062fdfc204f9a3b98bdb9179638fc upstream.
+commit a34650f0f1ca589cda09c48cb62baf15e680a247 upstream.
 
-Fix collision with kernel-supplied #define:
+The bfin_sdh driver allocates the wrong size for the private data
+in the mmc_host.  The first parameter of mmc_alloc_host should be
+the size of the local driver struct rather than the common mmc_host.
 
-  drivers/video/backlight/88pm860x_bl.c:24:1: warning: "CURRENT_MASK" redefined
-  arch/x86/include/asm/page_64_types.h:6:1: warning: this is the location of the previous definition
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/backlight/88pm860x_bl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/bfin_sdh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/video/backlight/88pm860x_bl.c
-+++ b/drivers/video/backlight/88pm860x_bl.c
-@@ -21,7 +21,7 @@
- #define MAX_BRIGHTNESS		(0xFF)
- #define MIN_BRIGHTNESS		(0)
+--- a/drivers/mmc/host/bfin_sdh.c
++++ b/drivers/mmc/host/bfin_sdh.c
+@@ -462,7 +462,7 @@ static int __devinit sdh_probe(struct pl
+ 		goto out;
+ 	}
  
--#define CURRENT_MASK		(0x1F << 1)
-+#define CURRENT_BITMASK		(0x1F << 1)
- 
- struct pm860x_backlight_data {
- 	struct pm860x_chip *chip;
-@@ -85,7 +85,7 @@ static int pm860x_backlight_set(struct b
- 	if ((data->current_brightness == 0) && brightness) {
- 		if (data->iset) {
- 			ret = pm860x_set_bits(data->i2c, wled_idc(data->port),
--					      CURRENT_MASK, data->iset);
-+					      CURRENT_BITMASK, data->iset);
- 			if (ret < 0)
- 				goto out;
- 		}
+-	mmc = mmc_alloc_host(sizeof(*mmc), &pdev->dev);
++	mmc = mmc_alloc_host(sizeof(struct sdh_host), &pdev->dev);
+ 	if (!mmc) {
+ 		ret = -ENOMEM;
+ 		goto out;
 
 
