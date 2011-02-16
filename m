@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab1BPOR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 09:17:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23252 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755272Ab1BPOR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 09:17:56 -0500
-Date: Wed, 16 Feb 2011 09:17:46 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 5/6 v4] cfq-iosched: CFQ group hierarchical scheduling
- and use_hierarchy interface
-Message-ID: <20110216141746.GA14653@redhat.com>
-References: <4D51ED26.8050809@cn.fujitsu.com>
- <4D539821.1090703@cn.fujitsu.com>
- <20110210205722.GB2600@redhat.com>
- <4D55EEBB.8060304@cn.fujitsu.com>
- <20110214180428.GF13097@redhat.com>
- <4D59E728.3030209@cn.fujitsu.com>
- <20110215142752.GC27296@redhat.com>
- <4D5B2C07.9050909@cn.fujitsu.com>
+	id S1755675Ab1BPOSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 09:18:10 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43236 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755638Ab1BPOSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 09:18:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dqocpbMoAXLeQHoEfPUtGahAOmRxoxDjWbo1a80Nqv8KHPvbMknN87mF3jOnAN69Z6
+         3QCq00pE1DFhw+fIkQwAL5+QZDibhzSAo5GwkC/3k7tf6wdR1DYZYrVMqlEYAkEJ6d5T
+         u4cZnbM7jK4N77TAXgVvss3bAQ1m8Y5C70G/M=
+Date: Wed, 16 Feb 2011 15:17:57 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
+        brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
+        rientjes@google.com, hpa@linux.intel.com, ankita@in.ibm.com
+Subject: Re: [PATCHSET x86/numa] x86-64, NUMA: bring sanity to NUMA
+ config/emulation
+Message-ID: <20110216141757.GG19830@htj.dyndns.org>
+References: <1297858867-25981-1-git-send-email-tj@kernel.org>
+ <20110216125249.GA18113@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D5B2C07.9050909@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110216125249.GA18113@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 09:44:39AM +0800, Gui Jianfeng wrote:
-> Vivek Goyal wrote:
-> > On Tue, Feb 15, 2011 at 10:38:32AM +0800, Gui Jianfeng wrote:
-> >> Vivek Goyal wrote:
-> >>> On Sat, Feb 12, 2011 at 10:21:47AM +0800, Gui Jianfeng wrote:
-> >>> [..]
-> >>>>>> +static struct cfq_group *
-> >>>>>> +cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
-> >>>>>> +{
-> >>>>>> +	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
-> >>>>>> +	struct cfq_group *cfqg = NULL;
-> >>>>>> +	void *key = cfqd;
-> >>>>>> +	struct backing_dev_info *bdi = &cfqd->queue->backing_dev_info;
-> >>>>>> +	unsigned int major, minor;
-> >>>>>> +
-> >>>>>> +	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
-> >>>>>> +	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
-> >>>>>> +		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
-> >>>>>> +		cfqg->blkg.dev = MKDEV(major, minor);
-> >>>>>> +		goto done;
-> >>>>>> +	}
-> >>>>> Should we make this updation of this info hierarhical?
-> >>>> IMHO, it's fine to defer the updation when we really get the cfqg.
-> >>> But if cfqg is alrady present, we will never hit the allocation path 
-> >>> again. So if somebody creates 2-3 level deep hierarchy and does IO
-> >>> only in the children cgroup, parent cgroups will potentially not get
-> >>> device info updated hence no visible stats?
-> >> Ahh, I see your concern. But do we really need to show the stats even if
-> >> a cgroup doesn't issue any IO on a given device? 
-> > 
-> > I am assuming that once use_hierarchy=1, you are aggregating the stats
-> > in parent cgroups? So if a child services 5 IOs, these are accounted
-> > to parent group also when user_hier=1?
-> > 
-> > What happens in case of  memoy cgroup controller?
+Hello, Ingo.
+
+On Wed, Feb 16, 2011 at 01:52:49PM +0100, Ingo Molnar wrote:
+> allyes64config fails with:
 > 
-> Hmm, it seems memcg aggregating stats in parent group.
-> But do we really need to do that in kernel? I think it's easier to do it in
-> userland, and it makes kernel much simpler.
+> arch/x86/mm/numa_64.c:1045: error: 'physnid' undeclared (first use in this function)
+> arch/x86/mm/numa_64.c:1045: error: (Each undeclared identifier is reported only once
+> arch/x86/mm/numa_64.c:1045: error: for each function it appears in.)
 
-I think at some point of time hierarchical aggregated stats will also be
-required. I am also looking at "memory.stat" file of meomory controller
-and they seem to be reporting both aggregated as well as individual group
-stats.
+Dang, sorry about that.  Updated patch posted and git tree updated.
+One patch in the emulation series is affected.  x86_64-numa-unify
+branch remains the same.  x86_64-numa-emu-unify updated.
 
-So we can probably skip implementing hierarhical stats in this patchset
-and implement it on a need basis in future.
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_64-numa-emu-unify
 
-Thanks
-Vivek
+The new HEAD is 6e3019a9bf55000694b0d7058b39a1eebdf9877a.
+
+Thanks.
+
+-- 
+tejun
