@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab1BPBtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:49:18 -0500
-Received: from kroah.org ([198.145.64.141]:48721 "EHLO coco.kroah.org"
+	id S932979Ab1BPCMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 21:12:37 -0500
+Received: from kroah.org ([198.145.64.141]:48737 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab1BPBtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:49:09 -0500
+	id S932159Ab1BPBtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:49:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:46:55 2011
-Message-Id: <20110216014655.311937606@clark.kroah.org>
+Message-Id: <20110216014655.811156448@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:44:36 -0800
+Date: Tue, 15 Feb 2011 17:44:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>
-Subject: [010/115] USB: usb-storage: unusual_devs update for TrekStor DataStation maxi g.u external hard drive enclosure
+        Alex He <alex.he@amd.com>
+Subject: [015/115] USB: EHCI: ASPM quirk of ISOC on AMD Hudson
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>
+From: Alex He <alex.he@amd.com>
 
-commit 7e1e7bd9dbd469267b6e6de1bf8d71a7d65ce86a upstream.
+commit baab93afc2844b68d57b0dcca5e1d34c5d7cf411 upstream.
 
-The TrekStor DataStation maxi g.u external hard drive enclosure uses a
-JMicron USB to SATA chip which needs the US_FL_IGNORE_RESIDUE flag to work
-properly.
+AMD Hudson also needs the same ASPM quirk as SB800
 
-Signed-off-by: Richard SchÃ¼tz <r.schtz@t-online.de>
+Signed-off-by: Alex He <alex.he@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/usb/host/ehci-pci.c |   33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1880,6 +1880,15 @@ UNUSUAL_DEV( 0x1908, 0x1320, 0x0000, 0x0
- 		US_SC_DEVICE, US_PR_DEVICE, NULL,
- 		US_FL_BAD_SENSE ),
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -41,28 +41,35 @@ static int ehci_pci_reinit(struct ehci_h
+ 	return 0;
+ }
  
-+/* Patch by Richard Schütz <r.schtz@t-online.de>
-+ * This external hard drive enclosure uses a JMicron chip which
-+ * needs the US_FL_IGNORE_RESIDUE flag to work properly. */
-+UNUSUAL_DEV(  0x1e68, 0x001b, 0x0000, 0x0000,
-+		"TrekStor GmbH & Co. KG",
-+		"DataStation maxi g.u",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
-+
- UNUSUAL_DEV( 0x2116, 0x0320, 0x0001, 0x0001,
- 		"ST",
- 		"2A",
+-static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
++static int ehci_quirk_amd_hudson(struct ehci_hcd *ehci)
+ {
+ 	struct pci_dev *amd_smbus_dev;
+ 	u8 rev = 0;
+ 
+ 	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
+-	if (!amd_smbus_dev)
+-		return 0;
+-
+-	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
+-	if (rev < 0x40) {
+-		pci_dev_put(amd_smbus_dev);
+-		amd_smbus_dev = NULL;
+-		return 0;
++	if (amd_smbus_dev) {
++		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
++		if (rev < 0x40) {
++			pci_dev_put(amd_smbus_dev);
++			amd_smbus_dev = NULL;
++			return 0;
++		}
++	} else {
++		amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x780b, NULL);
++		if (!amd_smbus_dev)
++			return 0;
++		pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
++		if (rev < 0x11 || rev > 0x18) {
++			pci_dev_put(amd_smbus_dev);
++			amd_smbus_dev = NULL;
++			return 0;
++		}
+ 	}
+ 
+ 	if (!amd_nb_dev)
+ 		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
+-	if (!amd_nb_dev)
+-		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
+ 
+-	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
++	ehci_info(ehci, "QUIRK: Enable exception for AMD Hudson ASPM\n");
+ 
+ 	pci_dev_put(amd_smbus_dev);
+ 	amd_smbus_dev = NULL;
+@@ -128,7 +135,7 @@ static int ehci_pci_setup(struct usb_hcd
+ 	/* cache this readonly data; minimize chip reads */
+ 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
+ 
+-	if (ehci_quirk_amd_SB800(ehci))
++	if (ehci_quirk_amd_hudson(ehci))
+ 		ehci->amd_l1_fix = 1;
+ 
+ 	retval = ehci_halt(ehci);
 
 
