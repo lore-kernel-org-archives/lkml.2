@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab1BPBNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:13:38 -0500
-Received: from kroah.org ([198.145.64.141]:45582 "EHLO coco.kroah.org"
+	id S1752964Ab1BPBNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:13:40 -0500
+Received: from kroah.org ([198.145.64.141]:45575 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933000Ab1BPAtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:01 -0500
+	id S933015Ab1BPAtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:05 2011
-Message-Id: <20110216002105.648401566@clark.kroah.org>
+Message-Id: <20110216002105.525281623@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:33 -0800
+Date: Tue, 15 Feb 2011 16:20:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kashyap Desai <kashyap.desai@lsi.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [patch 065/176] [SCSI] mpt2sas: fix Integrated Raid unsynced on shutdown problem
+Subject: [patch 064/176] [SCSI] libsas: fix runaway error handler problem
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kashyap, Desai <kashyap.desai@lsi.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit 3a9c913a3e57b170887d39456e04c18f2305ec67 upstream.
+commit 9ee91f7fb550a4c82f82d9818e42493484c754af upstream.
 
-Issue:
-IR shutdown(sending) and IR shutdown(complete) messages not
-listed in /var/log/messages when driver is removed.
+libsas makes use of scsi_schedule_eh() but forgets to clear the
+host_eh_scheduled flag in its error handling routine.  Because of this,
+the error handler thread never gets to sleep; it's constantly awake and
+trying to run the error routine leading to console spew and inability to
+run anything else (at least on a UP system).  The fix is to clear the
+flag as we splice the work queue.
 
-The driver needs to issue a MPI2_RAID_ACTION_SYSTEM_SHUTDOWN_INITIATED
-request when the driver is unloaded so the IR metadata journal is updated.
-If this request is not sent, then the volume would need a "check
-consistency" issued on the next bootup if the volume was roamed from one
-initiator to another. The current driver supports this feature only when the
-system is rebooted, however this also need to be supported if the driver is
-unloaded
-
-Fix:
-To fix this issue, the driver is going
-to need to call the _scsih_ir_shutdown prior to reporting
-the volumes missing from the OS, hence the device handles
-are still present.
-
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    1 +
+ drivers/scsi/libsas/sas_scsi_host.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -6685,6 +6685,7 @@ _scsih_remove(struct pci_dev *pdev)
- 		destroy_workqueue(wq);
+--- a/drivers/scsi/libsas/sas_scsi_host.c
++++ b/drivers/scsi/libsas/sas_scsi_host.c
+@@ -649,6 +649,7 @@ void sas_scsi_recover_host(struct Scsi_H
  
- 	/* release all the volumes */
-+	_scsih_ir_shutdown(ioc);
- 	list_for_each_entry_safe(raid_device, next, &ioc->raid_device_list,
- 	    list) {
- 		if (raid_device->starget) {
+ 	spin_lock_irqsave(shost->host_lock, flags);
+ 	list_splice_init(&shost->eh_cmd_q, &eh_work_q);
++	shost->host_eh_scheduled = 0;
+ 	spin_unlock_irqrestore(shost->host_lock, flags);
+ 
+ 	SAS_DPRINTK("Enter %s\n", __func__);
 
 
