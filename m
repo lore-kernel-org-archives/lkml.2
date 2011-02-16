@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab1BPASz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:18:55 -0500
-Received: from kroah.org ([198.145.64.141]:38718 "EHLO coco.kroah.org"
+	id S1756865Ab1BPBsC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:48:02 -0500
+Received: from kroah.org ([198.145.64.141]:38745 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756710Ab1BPASr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:47 -0500
+	id S1756749Ab1BPAS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:28 2011
-Message-Id: <20110216001428.262636803@clark.kroah.org>
+Message-Id: <20110216001428.781172984@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:29 -0800
+Date: Tue, 15 Feb 2011 16:11:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arvid Ephraim Picciani <arvid.picciani@nokia.com>
-Subject: [032/272] USB: cdc-acm: Adding second ACM channel support for Nokia N8
+        Nitin Gupta <ngupta@vflare.org>
+Subject: [037/272] staging: zram: fix data corruption issue
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
+From: Nitin Gupta <ngupta@vflare.org>
 
-commit 721d92fc6373dee15846216f9d178ec240ec0fd7 upstream.
+commit 5414e557fca545614ceedc3d3496f747457e2e3b upstream.
 
-This adds the N8 to the list of devices in cdc-acm, in order to get the
-secondary ACM device exposed.
+In zram_read() and zram_write() we were not incrementing the
+index number and thus were reading/writing values from/to
+incorrect sectors on zram disk, resulting in data corruption.
 
-In the spirit of:
-http://kerneltrap.org/mailarchive/linux-usb/2010/9/4/6264554
-
-Signed-off-by: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/zram/zram_drv.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1607,6 +1607,7 @@ static const struct usb_device_id acm_id
- 	{ NOKIA_PCSUITE_ACM_INFO(0x0154), }, /* Nokia 5800 XpressMusic */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x04ce), }, /* Nokia E90 */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x01d4), }, /* Nokia E55 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0302), }, /* Nokia N8 */
- 	{ SAMSUNG_PCSUITE_ACM_INFO(0x6651), }, /* Samsung GTi8510 (INNOV8) */
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -227,6 +227,7 @@ static int zram_read(struct zram *zram,
  
- 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
+ 		if (zram_test_flag(zram, index, ZRAM_ZERO)) {
+ 			handle_zero_page(page);
++			index++;
+ 			continue;
+ 		}
+ 
+@@ -235,12 +236,14 @@ static int zram_read(struct zram *zram,
+ 			pr_debug("Read before write: sector=%lu, size=%u",
+ 				(ulong)(bio->bi_sector), bio->bi_size);
+ 			/* Do nothing */
++			index++;
+ 			continue;
+ 		}
+ 
+ 		/* Page is stored uncompressed since it's incompressible */
+ 		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+ 			handle_uncompressed_page(zram, page, index);
++			index++;
+ 			continue;
+ 		}
+ 
+@@ -320,6 +323,7 @@ static int zram_write(struct zram *zram,
+ 			mutex_unlock(&zram->lock);
+ 			zram_stat_inc(&zram->stats.pages_zero);
+ 			zram_set_flag(zram, index, ZRAM_ZERO);
++			index++;
+ 			continue;
+ 		}
+ 
 
 
