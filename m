@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab1BPASY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:18:24 -0500
-Received: from kroah.org ([198.145.64.141]:38633 "EHLO coco.kroah.org"
+	id S1756589Ab1BPASQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:18:16 -0500
+Received: from kroah.org ([198.145.64.141]:38606 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756609Ab1BPASV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:18:21 -0500
+	id S1756574Ab1BPASL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:18:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:26 2011
-Message-Id: <20110216001426.736559108@clark.kroah.org>
+Message-Id: <20110216001426.256367339@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:14 -0800
+Date: Tue, 15 Feb 2011 16:11:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Richard=20Sch=C3=BCtz?= <r.schtz@t-online.de>
-Subject: [017/272] USB: usb-storage: unusual_devs update for Cypress ATACB
+        Henrik Rydberg <rydberg@euromail.se>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [012/272] hwmon: (applesmc) Relax the severity of device init failure
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +26,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Schütz <r.schtz@t-online.de>
+From: Henrik Rydberg <rydberg@euromail.se>
 
-commit cae41118f50ef0c431e13159df6d7dd8bbd54004 upstream.
+commit 2344cd0c2e9ea8f3037be11fb997ddbeda0237ca upstream.
 
-New device ID added for unusual Cypress ATACB device.
+The device init is used to reset the accelerometer. Failure to reset
+is not severe enough to stop loading the module or to resume from
+hibernation.  This patch relaxes failure to a warning and drops
+output in case of success.
 
-Signed-off-by: Richard Schütz <r.schtz@t-online.de>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_cypress.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/hwmon/applesmc.c |   38 +++++++-------------------------------
+ 1 file changed, 7 insertions(+), 31 deletions(-)
 
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,4 +31,9 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -448,38 +448,22 @@ static int applesmc_read_motion_sensor(i
+ }
  
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x9999,
-+		"Super Top",
-+		"USB 2.0  SATA BRIDGE",
-+		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
-+
- #endif /* defined(CONFIG_USB_STORAGE_CYPRESS_ATACB) || ... */
+ /*
+- * applesmc_device_init - initialize the accelerometer.  Returns zero on success
+- * and negative error code on failure.  Can sleep.
++ * applesmc_device_init - initialize the accelerometer.  Can sleep.
+  */
+-static int applesmc_device_init(void)
++static void applesmc_device_init(void)
+ {
+-	int total, ret = -ENXIO;
++	int total;
+ 	u8 buffer[2];
+ 
+ 	if (!applesmc_accelerometer)
+-		return 0;
++		return;
+ 
+ 	mutex_lock(&applesmc_lock);
+ 
+ 	for (total = INIT_TIMEOUT_MSECS; total > 0; total -= INIT_WAIT_MSECS) {
+-		if (debug)
+-			printk(KERN_DEBUG "applesmc try %d\n", total);
+ 		if (!applesmc_read_key(MOTION_SENSOR_KEY, buffer, 2) &&
+-				(buffer[0] != 0x00 || buffer[1] != 0x00)) {
+-			if (total == INIT_TIMEOUT_MSECS) {
+-				printk(KERN_DEBUG "applesmc: device has"
+-						" already been initialized"
+-						" (0x%02x, 0x%02x).\n",
+-						buffer[0], buffer[1]);
+-			} else {
+-				printk(KERN_DEBUG "applesmc: device"
+-						" successfully initialized"
+-						" (0x%02x, 0x%02x).\n",
+-						buffer[0], buffer[1]);
+-			}
+-			ret = 0;
++				(buffer[0] != 0x00 || buffer[1] != 0x00))
+ 			goto out;
+-		}
+ 		buffer[0] = 0xe0;
+ 		buffer[1] = 0x00;
+ 		applesmc_write_key(MOTION_SENSOR_KEY, buffer, 2);
+@@ -490,7 +474,6 @@ static int applesmc_device_init(void)
+ 
+ out:
+ 	mutex_unlock(&applesmc_lock);
+-	return ret;
+ }
+ 
+ /*
+@@ -516,13 +499,8 @@ static int applesmc_get_fan_count(void)
+ /* Device model stuff */
+ static int applesmc_probe(struct platform_device *dev)
+ {
+-	int ret;
+-
+-	ret = applesmc_device_init();
+-	if (ret)
+-		return ret;
++	applesmc_device_init();
+ 
+-	printk(KERN_INFO "applesmc: device successfully initialized.\n");
+ 	return 0;
+ }
+ 
+@@ -539,9 +517,7 @@ static int applesmc_pm_resume(struct dev
+ /* Reinitialize device on resume from hibernation */
+ static int applesmc_pm_restore(struct device *dev)
+ {
+-	int ret = applesmc_device_init();
+-	if (ret)
+-		return ret;
++	applesmc_device_init();
+ 	return applesmc_pm_resume(dev);
+ }
+ 
 
 
