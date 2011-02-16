@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758783Ab1BPJEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 04:04:51 -0500
-Received: from nm10-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.198]:39359 "HELO
-	nm10-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752579Ab1BPJEo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 04:04:44 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 557714.48364.bm@omp1041.mail.sp2.yahoo.com
-Message-ID: <184726.92527.qm@web80003.mail.sp1.yahoo.com>
-X-YMail-OSG: D0C.q0oVM1lBq.BCU0dOU9Xo3B5VKLLm1UhqGqEmHFQM3z7
- mhUNLe13Je0QdY_DOqCbwSyzn9_X95K3eBBKocd_y1iOGlBCZke44sXSqlKm
- GvkeS5urxTxKmjGK2ZU24cMjAIPwGkn28du0T7_gWKTG5FpLUpTUkW6K2T1L
- bEE7HE7rePdmGDPSScHMAct8Gc9Z4q9oNzaZqFRv0s8ZpTsAzxfE8lOaEUxc
- 39b3KT4yVMR57ReYOf735UhHebSEeVf3RoRo-
-X-RocketYMMF: 789alex@att.net
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
-Date: Wed, 16 Feb 2011 01:04:43 -0800 (PST)
-From: Mr Kasimy Ricky <kasimy.ricky@gmail.com>
-Reply-To: kricky300@voila.fr
-Subject: Urgent Respond
-To: undisclosed recipients:;
+	id S1758793Ab1BPJKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 04:10:35 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36858 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167Ab1BPJKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 04:10:31 -0500
+Date: Wed, 16 Feb 2011 10:10:07 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/14] [GIT PULL][v2.6.39] tracing/filter: More robust
+ filtering
+Message-ID: <20110216091007.GC18842@elte.hu>
+References: <20110208015617.902200587@goodmis.org>
+ <20110215044425.GA9994@elte.hu>
+ <1297776787.23343.104.camel@gandalf.stny.rr.com>
+ <20110215184200.GA7335@elte.hu>
+ <1297796375.23343.118.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297796375.23343.118.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Urgent Respond
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-I know that this message will come as a surprise to you, since we don’t know each other, but pay attention and understand my reason of contacting you through this via email,for the purpose of introduction i am(Mr.KasimyRicky)I have a business proposal in the tune of($5.5m) we shall share in ratio of 40% for you and 60% for me.Finally, should you be interested to operate this project with me,reply me urgently and i will give you the full details for us to move forward.
+> Let me apologize again. [...]
 
-Your earliest response to this letter will be appreciated and also Your Full Name And Phone Number 
-is needed for Easy communication also you can call me for more information +226-76-58-73-54.
+No need to apologize - you raised valid questions that have come up in the past and 
+i am pretty good at ignoring early-in-the-morning aspect of mails ;-)
 
-Yours faithfully,
+> > Anyway, there's certainly encouraging responses in this thread so i'm hopeful 
+> > that it's getting fixed and improved and we can push the generic bits upstream.
+> 
+> Yes, I'm hopeful too ;)
 
-Mr.KasimyRicky
+Great! :-)
+
+If someone wants to dust off the 'trace' utility patches that are still in 
+tip:tmp.perf/trace that would be fantastic. Thomas and Peter prototyped an 
+ftrace-esque buffering model there, to have all events associated with a
+single fd (and hence a single [per cpu] buffer).
+
+Warning, they conflict left and right with the current code:
+
+ kernel/sched.c
+ kernel/trace/trace.c
+ tools/perf/Makefile
+ tools/perf/builtin-record.c
+ tools/perf/util/event.c
+ tools/perf/util/header.c
+ tools/perf/util/parse-events.c
+ tools/perf/util/session.c
+ tools/perf/util/session.h
+
+So it's quite a bit of work - and of course it was all very unfinished, not even 
+reaching prototype stage really.
+
+Thanks,
+
+	Ingo
