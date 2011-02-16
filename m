@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab1BPAYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:24:33 -0500
-Received: from kroah.org ([198.145.64.141]:49619 "EHLO coco.kroah.org"
+	id S932465Ab1BPAdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:33:46 -0500
+Received: from kroah.org ([198.145.64.141]:49734 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932172Ab1BPAYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:11 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:46 2011
-Message-Id: <20110216001446.642755775@clark.kroah.org>
+	id S932394Ab1BPAYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:40 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:48 2011
+Message-Id: <20110216001448.386039250@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:32 -0800
+Date: Tue, 15 Feb 2011 16:14:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [215/272] md: fix regression with re-adding devices to arrays with no metadata
+        Ari Kauppi <kauppi@papupata.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [233/272] oprofile: Fix usage of CONFIG_HW_PERF_EVENTS for oprofile_perf_init and friends
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Ari Kauppi <kauppi@papupata.org>
 
-commit bf572541ab44240163eaa2d486b06f306a31d45a upstream.
+commit 1ea1bdf7faa4d0b5293e605f2e1ef1c2c59f6b53 upstream.
 
-Commit 1a855a0606 (2.6.37-rc4) fixed a problem where devices were
-re-added when they shouldn't be but caused a regression in a less
-common case that means sometimes devices cannot be re-added when they
-should be.
+The implementations are flagged in Makefile with CONFIG_HW_PERF_EVENTS
+instead of CONFIG_PERF_EVENTS.
 
-In particular, when re-adding a device to an array without metadata
-we should always access the device, but after the above commit we
-didn't.
-
-This patch sets the In_sync flag in that case so that the re-add
-succeeds.
-
-This patch is suitable for any -stable kernel to which 1a855a0606 was
-applied.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Ari Kauppi <kauppi@papupata.org>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/oprofile.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -5159,9 +5159,10 @@ static int add_new_disk(mddev_t * mddev,
- 		/* set saved_raid_disk if appropriate */
- 		if (!mddev->persistent) {
- 			if (info->state & (1<<MD_DISK_SYNC)  &&
--			    info->raid_disk < mddev->raid_disks)
-+			    info->raid_disk < mddev->raid_disks) {
- 				rdev->raid_disk = info->raid_disk;
--			else
-+				set_bit(In_sync, &rdev->flags);
-+			} else
- 				rdev->raid_disk = -1;
- 		} else
- 			super_types[mddev->major_version].
+--- a/include/linux/oprofile.h
++++ b/include/linux/oprofile.h
+@@ -186,10 +186,10 @@ int oprofile_add_data(struct op_entry *e
+ int oprofile_add_data64(struct op_entry *entry, u64 val);
+ int oprofile_write_commit(struct op_entry *entry);
+ 
+-#ifdef CONFIG_PERF_EVENTS
++#ifdef CONFIG_HW_PERF_EVENTS
+ int __init oprofile_perf_init(struct oprofile_operations *ops);
+ void oprofile_perf_exit(void);
+ char *op_name_from_perf_id(void);
+-#endif /* CONFIG_PERF_EVENTS */
++#endif /* CONFIG_HW_PERF_EVENTS */
+ 
+ #endif /* OPROFILE_H */
 
 
