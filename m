@@ -1,108 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab1BPDBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 22:01:47 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:22600 "EHLO
+	id S1756397Ab1BPDUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 22:20:10 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:52380 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932218Ab1BPDBo (ORCPT
+	with ESMTP id S1755035Ab1BPDUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 22:01:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type:content-id;
-        b=qoynwvEpAmoWMePir9NKe14IJ8RHXcXZ+3dWzVP9T/Tnc3d5BM1x86y/QcuW+k/M7T
-         tyuD+llfM/QkjIzTl56w==
-Date: Tue, 15 Feb 2011 19:01:34 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Jack Steiner <steiner@sgi.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] - Improve drain pages performance on large systems
-In-Reply-To: <AANLkTim+rjN8GMwOV5MLeVjXaevHmCciAc5DwQXgiO62@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1102151858580.19953@chino.kir.corp.google.com>
-References: <20110215223840.GA27420@sgi.com> <AANLkTim+rjN8GMwOV5MLeVjXaevHmCciAc5DwQXgiO62@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531368966-1485521709-1297825218=:19953"
-Content-ID: <alpine.DEB.2.00.1102151900250.19953@chino.kir.corp.google.com>
-X-System-Of-Record: true
+	Tue, 15 Feb 2011 22:20:07 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
+	b=JJXMY7WDJyyg+wtLuqEhBBir044KGGLHMIX0rcsNse/yQYjWzAXfmJF8C2kwT2cmJ
+	bgpitsezYZyf8dfMJwlyg==
+Message-Id: <20110216031840.979831163@google.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 15 Feb 2011 19:18:33 -0800
+From: Paul Turner <pjt@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
+Subject: [CFS Bandwidth Control v4 2/7] sched: accumulate per-cfs_rq cpu usage
+References: <20110216031831.571628191@google.com>
+Content-Disposition: inline; filename=sched-bwc-accumulate_cfs_rq_usage.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Introduce account_cfs_rq_quota() to account bandwidth usage on the cfs_rq
+level versus task_groups for which bandwidth has been assigned.  This is
+tracked by whether the local cfs_rq->quota_assigned is finite or infinite
+(RUNTIME_INF).
 
---531368966-1485521709-1297825218=:19953
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.00.1102151900251.19953@chino.kir.corp.google.com>
+For cfs_rq's that belong to a bandwidth constrained task_group we introduce
+tg_request_cfs_quota() which attempts to allocate quota from the global pool
+for use locally.  Updates involving the global pool are currently protected
+under cfs_bandwidth->lock, local pools are protected by rq->lock.
 
-On Wed, 16 Feb 2011, Minchan Kim wrote:
+This patch only attempts to assign and track quota, no action is taken in the
+case that cfs_rq->quota_used exceeds cfs_rq->quota_assigned.
 
-> > Index: linux/mm/page_alloc.c
-> > ===================================================================
-> > --- linux.orig/mm/page_alloc.c  2011-02-15 16:28:36.165921713 -0600
-> > +++ linux/mm/page_alloc.c       2011-02-15 16:29:43.085502487 -0600
-> > @@ -592,10 +592,24 @@ static void free_pcppages_bulk(struct zo
-> >        int batch_free = 0;
-> >        int to_free = count;
-> >
-> > +       /*
-> > +        * Quick scan of zones. If all are empty, there is nothing to do.
-> > +        */
-> > +       for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++) {
-> > +               struct list_head *list;
-> > +
-> > +               list = &pcp->lists[migratetype];
-> > +               if (!list_empty(list))
-> > +                       break;
-> > +       }
-> > +       if (migratetype == MIGRATE_PCPTYPES)
-> > +               return;
-> > +
-> >        spin_lock(&zone->lock);
-> >        zone->all_unreclaimable = 0;
-> >        zone->pages_scanned = 0;
-> >
-> > +       migratetype = 0;
-> >        while (to_free) {
-> >                struct page *page;
-> >                struct list_head *list;
-> 
-> It does make sense to me.
-> Although new code looks to be rather costly in small box, anyway we
-> use the same logic  in while loop so cache would be hot. so cost would
-> be little.
-> 
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+---
+ include/linux/sched.h |    4 +++
+ kernel/sched_fair.c   |   62 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sysctl.c       |   10 ++++++++
+ 3 files changed, 76 insertions(+)
 
-I was going to mention the implications for small machines as well, this 
-doesn't look good for callers that know free_pcppages_bulk() will do 
-something.
+Index: tip/kernel/sched_fair.c
+===================================================================
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -95,6 +95,13 @@ unsigned int __read_mostly sysctl_sched_
+  * default: 0.5s, units: nanoseconds
+  */
+ static u64 sched_cfs_bandwidth_period = 500000000ULL;
++
++/*
++ * default slice of quota to allocate from global tg to local cfs_rq pool on
++ * each refresh
++ * default: 10ms, units: microseconds
++ */
++unsigned int sysctl_sched_cfs_bandwidth_slice = 10000UL;
+ #endif
+ 
+ static const struct sched_class fair_sched_class;
+@@ -313,6 +320,21 @@ find_matching_se(struct sched_entity **s
+ 
+ #endif	/* CONFIG_FAIR_GROUP_SCHED */
+ 
++#ifdef CONFIG_CFS_BANDWIDTH
++static inline u64 sched_cfs_bandwidth_slice(void)
++{
++	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
++}
++
++static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
++{
++	return &tg->cfs_bandwidth;
++}
++
++static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
++		unsigned long delta_exec);
++#endif
++
+ 
+ /**************************************************************
+  * Scheduling class tree data structure manipulation methods:
+@@ -609,6 +631,9 @@ static void update_curr(struct cfs_rq *c
+ 		cpuacct_charge(curtask, delta_exec);
+ 		account_group_exec_runtime(curtask, delta_exec);
+ 	}
++#ifdef CONFIG_CFS_BANDWIDTH
++	account_cfs_rq_quota(cfs_rq, delta_exec);
++#endif
+ }
+ 
+ static inline void
+@@ -1382,6 +1407,43 @@ static void dequeue_task_fair(struct rq 
+ }
+ 
+ #ifdef CONFIG_CFS_BANDWIDTH
++static u64 tg_request_cfs_quota(struct task_group *tg)
++{
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
++	u64 delta = 0;
++
++	if (cfs_b->runtime > 0 || cfs_b->quota == RUNTIME_INF) {
++		raw_spin_lock(&cfs_b->lock);
++		/*
++		 * it's possible a bandwidth update has changed the global
++		 * pool.
++		 */
++		if (cfs_b->quota == RUNTIME_INF)
++			delta = sched_cfs_bandwidth_slice();
++		else {
++			delta = min(cfs_b->runtime,
++					sched_cfs_bandwidth_slice());
++			cfs_b->runtime -= delta;
++		}
++		raw_spin_unlock(&cfs_b->lock);
++	}
++	return delta;
++}
++
++static void account_cfs_rq_quota(struct cfs_rq *cfs_rq,
++		unsigned long delta_exec)
++{
++	if (cfs_rq->quota_assigned == RUNTIME_INF)
++		return;
++
++	cfs_rq->quota_used += delta_exec;
++
++	if (cfs_rq->quota_used < cfs_rq->quota_assigned)
++		return;
++
++	cfs_rq->quota_assigned += tg_request_cfs_quota(cfs_rq->tg);
++}
++
+ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ {
+ 	return 1;
+Index: tip/kernel/sysctl.c
+===================================================================
+--- tip.orig/kernel/sysctl.c
++++ tip/kernel/sysctl.c
+@@ -361,6 +361,16 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= sched_rt_handler,
+ 	},
++#ifdef CONFIG_CFS_BANDWIDTH
++	{
++		.procname	= "sched_cfs_bandwidth_slice_us",
++		.data		= &sysctl_sched_cfs_bandwidth_slice,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
++	},
++#endif
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ 	{
+ 		.procname	= "sched_autogroup_enabled",
+Index: tip/include/linux/sched.h
+===================================================================
+--- tip.orig/include/linux/sched.h
++++ tip/include/linux/sched.h
+@@ -1943,6 +1943,10 @@ int sched_rt_handler(struct ctl_table *t
+ 		void __user *buffer, size_t *lenp,
+ 		loff_t *ppos);
+ 
++#ifdef CONFIG_CFS_BANDWIDTH
++extern unsigned int sysctl_sched_cfs_bandwidth_slice;
++#endif
++
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ extern unsigned int sysctl_sched_autogroup_enabled;
+ 
 
-> But how about this? This one never affect fast-critical path.
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index ff7e158..2dfb61a 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1095,8 +1095,10 @@ static void drain_pages(unsigned int cpu)
->                 pset = per_cpu_ptr(zone->pageset, cpu);
-> 
->                 pcp = &pset->pcp;
-> -               free_pcppages_bulk(zone, pcp->count, pcp);
-> -               pcp->count = 0;
-> +               if (pcp->count > 0) {
-> +                       free_pcppages_bulk(zone, pcp->count, pcp);
-> +                       pcp->count = 0;
-> +               }
->                 local_irq_restore(flags);
->         }
->  }
 
-Right, this is 2ff754fa upstream.  I'm wondering if Jack still sees the 
-same problem since 2.6.38-rc3.
---531368966-1485521709-1297825218=:19953--
