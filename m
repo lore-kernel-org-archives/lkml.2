@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab1BPBme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:42:34 -0500
-Received: from kroah.org ([198.145.64.141]:38925 "EHLO coco.kroah.org"
+	id S1758028Ab1BPBmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:42:51 -0500
+Received: from kroah.org ([198.145.64.141]:38915 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756927Ab1BPATq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:46 -0500
+	id S1756917Ab1BPATm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:42 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:31 2011
-Message-Id: <20110216001431.632671786@clark.kroah.org>
+Message-Id: <20110216001431.433842637@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:02 -0800
+Date: Tue, 15 Feb 2011 16:12:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jack Lee <jlee@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
         Rajkumar Manoharan <rmanoharan@atheros.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [065/272] ath9k_hw: Fix system hang when resuming from S3/S4
+Subject: [063/272] ath9k_hw: do PA offset calibration only on longcal interval
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,36 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rajkumar Manoharan <rmanoharan@atheros.com>
 
-commit 5b64aa72ead6f8be488d2be7af579f0d69fb7a6e upstream.
+commit 811ea256b30b37091b5bbf41517404cf98ab56c1 upstream.
 
-The bit 6 & 7 of AR_WA (0x4004) should be enabled only
-for the chips that are supporting L0s functionality
-while resuming back from S3/S4.
+The power detector adc offset calibration has to be done
+on 4 minutes interval (longcal * pa_skip_count). But the commit
+"ath9k_hw: fix a noise floor calibration related race condition"
+makes the PA calibration executed more frequently beased on
+nfcal_pending value. Running PAOffset calibration lesser than
+longcal interval doesn't help anything and the worse part is that
+it causes NF load timeouts and RX deaf conditions.
 
-Enabling these bits for AR9280 is causing system hang
-within a few S3/S4-resume cycles.
+In a very noisy environment, where the distance b/w AP & station
+is ~10 meter and running a downlink udp traffic with frequent
+background scan causes "Timeout while waiting for nf to load:
+AR_PHY_AGC_CONTROL=0x40d1a" and moves the chip into deaf state.
+This issue was originaly reported in Android platform where
+the network-manager application does bgscan more frequently
+on AR9271 chips. (AR9285 family usb device).
 
-Cc: Jack Lee <jlee@atheros.com>
+Signed-off-by: Vasanthakumar Thiagarajan <vasanth@atheros.com>
 Signed-off-by: Rajkumar Manoharan <rmanoharan@atheros.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9002_hw.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9002_calib.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9002_hw.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9002_hw.c
-@@ -444,9 +444,8 @@ static void ar9002_hw_configpcipowersave
+--- a/drivers/net/wireless/ath/ath9k/ar9002_calib.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
+@@ -681,10 +681,6 @@ static bool ar9002_hw_calibrate(struct a
+ 
+ 	/* Do NF cal only at longer intervals */
+ 	if (longcal || nfcal_pending) {
+-		/* Do periodic PAOffset Cal */
+-		ar9002_hw_pa_cal(ah, false);
+-		ar9002_hw_olc_temp_compensation(ah);
+-
+ 		/*
+ 		 * Get the value from the previous NF cal and update
+ 		 * history buffer.
+@@ -699,8 +695,12 @@ static bool ar9002_hw_calibrate(struct a
+ 			ath9k_hw_loadnf(ah, ah->curchan);
  		}
  
- 		/* WAR for ASPM system hang */
--		if (AR_SREV_9280(ah) || AR_SREV_9285(ah) || AR_SREV_9287(ah)) {
-+		if (AR_SREV_9285(ah) || AR_SREV_9287(ah))
- 			val |= (AR_WA_BIT6 | AR_WA_BIT7);
--		}
+-		if (longcal)
++		if (longcal) {
+ 			ath9k_hw_start_nfcal(ah, false);
++			/* Do periodic PAOffset Cal */
++			ar9002_hw_pa_cal(ah, false);
++			ar9002_hw_olc_temp_compensation(ah);
++		}
+ 	}
  
- 		if (AR_SREV_9285E_20(ah))
- 			val |= AR_WA_BIT23;
+ 	return iscaldone;
 
 
