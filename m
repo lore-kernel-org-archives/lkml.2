@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab1BPA7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:59:47 -0500
-Received: from kroah.org ([198.145.64.141]:46086 "EHLO coco.kroah.org"
+	id S933318Ab1BPAvC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:51:02 -0500
+Received: from kroah.org ([198.145.64.141]:46034 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933299Ab1BPAvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:07 -0500
+	id S933174Ab1BPAux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:50:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:12 2011
-Message-Id: <20110216002112.759367994@clark.kroah.org>
+Message-Id: <20110216002112.051600919@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:45 -0800
+Date: Tue, 15 Feb 2011 16:21:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Dillow <dillowda@ornl.gov>
-Subject: [patch 137/176] fs/direct-io.c: dont try to allocate more than BIO_MAX_PAGES in a bio
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [patch 130/176] firewire: core: fix unstable I/O with Canon camcorder
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +25,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Dillow <dillowda@ornl.gov>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 20d9600cb407b0b55fef6ee814b60345c6f58264 upstream.
+commit 6044565af458e7fa6e748bff437ecc49dea88d79 upstream.
 
-When using devices that support max_segments > BIO_MAX_PAGES (256), direct
-IO tries to allocate a bio with more pages than allowed, which leads to an
-oops in dio_bio_alloc().  Clamp the request to the supported maximum, and
-change dio_bio_alloc() to reflect that bio_alloc() will always return a
-bio when called with __GFP_WAIT and a valid number of vectors.
+Regression since commit 10389536742c, "firewire: core: check for 1394a
+compliant IRM, fix inaccessibility of Sony camcorder":
 
-[akpm@linux-foundation.org: remove redundant BUG_ON()]
-Signed-off-by: David Dillow <dillowda@ornl.gov>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The camcorder Canon MV5i generates lots of bus resets when asynchronous
+requests are sent to it (e.g. Config ROM read requests or FCP Command
+write requests) if the camcorder is not root node.  This causes drop-
+outs in videos or makes the camcorder entirely inaccessible.
+https://bugzilla.redhat.com/show_bug.cgi?id=633260
+
+Fix this by allowing any Canon device, even if it is a pre-1394a IRM
+like MV5i are, to remain root node (if it is at least Cycle Master
+capable).  With the FireWire controller cards that I tested, MV5i always
+becomes root node when plugged in and left to its own devices.
+
+Reported-by: Ralf Lange
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/direct-io.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/firewire/core-card.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -325,12 +325,16 @@ void dio_end_io(struct bio *bio, int err
- }
- EXPORT_SYMBOL_GPL(dio_end_io);
+--- a/drivers/firewire/core-card.c
++++ b/drivers/firewire/core-card.c
+@@ -75,6 +75,8 @@ static size_t config_rom_length = 1 + 4
+ #define BIB_IRMC		((1) << 31)
+ #define NODE_CAPABILITIES	0x0c0083c0 /* per IEEE 1394 clause 8.3.2.6.5.2 */
  
--static int
-+static void
- dio_bio_alloc(struct dio *dio, struct block_device *bdev,
- 		sector_t first_sector, int nr_vecs)
++#define CANON_OUI		0x000085
++
+ static void generate_config_rom(struct fw_card *card, __be32 *config_rom)
  {
- 	struct bio *bio;
+ 	struct fw_descriptor *desc;
+@@ -284,6 +286,7 @@ static void bm_work(struct work_struct *
+ 	bool root_device_is_running;
+ 	bool root_device_is_cmc;
+ 	bool irm_is_1394_1995_only;
++	bool keep_this_irm;
  
-+	/*
-+	 * bio_alloc() is guaranteed to return a bio when called with
-+	 * __GFP_WAIT and we request a valid number of vectors.
-+	 */
- 	bio = bio_alloc(GFP_KERNEL, nr_vecs);
+ 	spin_lock_irq(&card->lock);
  
- 	bio->bi_bdev = bdev;
-@@ -342,7 +346,6 @@ dio_bio_alloc(struct dio *dio, struct bl
+@@ -305,6 +308,10 @@ static void bm_work(struct work_struct *
+ 	irm_is_1394_1995_only = irm_device && irm_device->config_rom &&
+ 			(irm_device->config_rom[2] & 0x000000f0) == 0;
  
- 	dio->bio = bio;
- 	dio->logical_offset_in_bio = dio->cur_page_fs_offset;
--	return 0;
- }
++	/* Canon MV5i works unreliably if it is not root node. */
++	keep_this_irm = irm_device && irm_device->config_rom &&
++			irm_device->config_rom[3] >> 8 == CANON_OUI;
++
+ 	root_id  = root_node->node_id;
+ 	irm_id   = card->irm_node->node_id;
+ 	local_id = card->local_node->node_id;
+@@ -333,7 +340,7 @@ static void bm_work(struct work_struct *
+ 			goto pick_me;
+ 		}
  
- /*
-@@ -583,8 +586,9 @@ static int dio_new_bio(struct dio *dio,
- 		goto out;
- 	sector = start_sector << (dio->blkbits - 9);
- 	nr_pages = min(dio->pages_in_io, bio_get_nr_vecs(dio->map_bh.b_bdev));
-+	nr_pages = min(nr_pages, BIO_MAX_PAGES);
- 	BUG_ON(nr_pages <= 0);
--	ret = dio_bio_alloc(dio, dio->map_bh.b_bdev, sector, nr_pages);
-+	dio_bio_alloc(dio, dio->map_bh.b_bdev, sector, nr_pages);
- 	dio->boundary = 0;
- out:
- 	return ret;
+-		if (irm_is_1394_1995_only) {
++		if (irm_is_1394_1995_only && !keep_this_irm) {
+ 			new_root_id = local_id;
+ 			fw_notify("%s, making local node (%02x) root.\n",
+ 				  "IRM is not 1394a compliant", new_root_id);
+@@ -382,7 +389,7 @@ static void bm_work(struct work_struct *
+ 
+ 		spin_lock_irq(&card->lock);
+ 
+-		if (rcode != RCODE_COMPLETE) {
++		if (rcode != RCODE_COMPLETE && !keep_this_irm) {
+ 			/*
+ 			 * The lock request failed, maybe the IRM
+ 			 * isn't really IRM capable after all. Let's
 
 
