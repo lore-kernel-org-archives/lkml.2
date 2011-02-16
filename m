@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab1BPAsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:48:08 -0500
-Received: from kroah.org ([198.145.64.141]:45236 "EHLO coco.kroah.org"
+	id S1754319Ab1BPBU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:20:26 -0500
+Received: from kroah.org ([198.145.64.141]:45260 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932821Ab1BPAr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:47:57 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:01 2011
-Message-Id: <20110216002101.586133047@clark.kroah.org>
+	id S932855Ab1BPAsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:48:07 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:02 2011
+Message-Id: <20110216002102.216079348@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:19:53 -0800
+Date: Tue, 15 Feb 2011 16:19:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Roland Kletzing <devzero@web.de>, "Craig W. Nadler" <craig@nadler.us>
-Subject: [patch 025/176] USB: g_printer: fix bug in module parameter definitions
+        Michael H Williamson <michael.h.williamson@gmail.com>
+Subject: [patch 031/176] USB: ftdi_sio: Add VID=0x0647, PID=0x0100 for Acton Research spectrograph
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Michael Williamson <michael.h.williamson@gmail.com>
 
-commit ad84e4a9efb7c8ed322bafb6ebdb9c3a49a3d3a8 upstream.
+commit 28fe2eb0162a1d23370dd99ff7d0e35632b1ee91 upstream.
 
-This patch (as1442) fixes a bug in g_printer: Module parameters should
-not be marked "__initdata" if they are accessible in sysfs (i.e., if
-the mode value in the module_param() macro is nonzero).  Otherwise
-attempts to access the parameters will cause addressing violations.
+Add the USB Vendor ID and Product ID for a Acton Research Corp.
+spectrograph device with a FTDI chip for serial I/O.
 
-Character-string module parameters must not be marked "__initdata"
-if the module can be unloaded, because the kernel needs to access the
-parameter variable at unload time in order to free the
-dynamically-allocated string.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Roland Kletzing <devzero@web.de>
-CC: Craig W. Nadler <craig@nadler.us>
+Signed-off-by: Michael H Williamson <michael.h.williamson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/printer.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/gadget/printer.c
-+++ b/drivers/usb/gadget/printer.c
-@@ -131,31 +131,31 @@ static struct printer_dev usb_printer_ga
-  * parameters are in UTF-8 (superset of ASCII's 7 bit characters).
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -620,6 +620,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OCEANIC_PID) },
+ 	{ USB_DEVICE(TTI_VID, TTI_QL355P_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
++	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
+ 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -518,6 +518,12 @@
+ #define RATOC_PRODUCT_ID_USB60F	0xb020
+ 
+ /*
++ * Acton Research Corp.
++ */
++#define ACTON_VID		0x0647	/* Vendor ID */
++#define ACTON_SPECTRAPRO_PID	0x0100
++
++/*
+  * Contec products (http://www.contec.com)
+  * Submitted by Daniel Sangorrin
   */
- 
--static ushort __initdata idVendor;
-+static ushort idVendor;
- module_param(idVendor, ushort, S_IRUGO);
- MODULE_PARM_DESC(idVendor, "USB Vendor ID");
- 
--static ushort __initdata idProduct;
-+static ushort idProduct;
- module_param(idProduct, ushort, S_IRUGO);
- MODULE_PARM_DESC(idProduct, "USB Product ID");
- 
--static ushort __initdata bcdDevice;
-+static ushort bcdDevice;
- module_param(bcdDevice, ushort, S_IRUGO);
- MODULE_PARM_DESC(bcdDevice, "USB Device version (BCD)");
- 
--static char *__initdata iManufacturer;
-+static char *iManufacturer;
- module_param(iManufacturer, charp, S_IRUGO);
- MODULE_PARM_DESC(iManufacturer, "USB Manufacturer string");
- 
--static char *__initdata iProduct;
-+static char *iProduct;
- module_param(iProduct, charp, S_IRUGO);
- MODULE_PARM_DESC(iProduct, "USB Product string");
- 
--static char *__initdata iSerialNum;
-+static char *iSerialNum;
- module_param(iSerialNum, charp, S_IRUGO);
- MODULE_PARM_DESC(iSerialNum, "1");
- 
--static char *__initdata iPNPstring;
-+static char *iPNPstring;
- module_param(iPNPstring, charp, S_IRUGO);
- MODULE_PARM_DESC(iPNPstring, "MFG:linux;MDL:g_printer;CLS:PRINTER;SN:1;");
- 
 
 
