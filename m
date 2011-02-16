@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab1BPUwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 15:52:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56878 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754388Ab1BPUwM (ORCPT
+	id S1753537Ab1BPU5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 15:57:47 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31556 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab1BPU5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 15:52:12 -0500
+	Wed, 16 Feb 2011 15:57:45 -0500
+Message-ID: <4D5C3A0F.3080107@kernel.org>
+Date: Wed, 16 Feb 2011 12:56:47 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
-References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
- <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com> <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Feb 2011 12:51:21 -0800
-Message-ID: <AANLkTikgTsktn3DBEweQd1bH=NKoSsXwNai92F_zM_H1@mail.gmail.com>
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, numa: exit early on numa_reset_distance()
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B020B.4D5C3A39.01DC,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 12:09 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> That said, neither 0x1e68 nor 0xe68 seems to be in the main vmlinux
-> file. But I haven't checked modules yet.
 
-There's no obvious clues in modules either. Sad. I was really hoping
-for some "oh, there's a list_head at offset 0x1e68 of structure 'xyz',
-that's obviously it".
+Do not call __pa(numa_distance), if it is not allocated before.
 
-So maybe it really is something like a pointer to some on-stack data,
-and the 0x1e68 offset is just a random offset off the beginning of the
-stack (it's in the right range). The stack is still one of the few
-obvious 8kB allocations we have...
+it will get BUG_ON if VIRTUAL_DEBUG is on.
 
-CONFIG_DEBUG_PAGEALLOC really should catch it in that case, though.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-                            Linus
+---
+ arch/x86/mm/numa_64.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+Index: linux-2.6/arch/x86/mm/numa_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/numa_64.c
++++ linux-2.6/arch/x86/mm/numa_64.c
+@@ -371,6 +371,12 @@ static void __init numa_reset_distance(v
+ {
+ 	size_t size;
+ 
++	if (!numa_distance_cnt) {
++		numa_distance = NULL;
++
++		return;
++	}
++
+ 	size = numa_distance_cnt * sizeof(numa_distance[0]);
+ 	memblock_x86_free_range(__pa(numa_distance),
+ 				__pa(numa_distance) + size);
