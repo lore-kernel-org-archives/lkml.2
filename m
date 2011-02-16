@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab1BPQxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 11:53:01 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45824 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab1BPQw7 (ORCPT
+	id S1753375Ab1BPQxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 11:53:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36086 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753296Ab1BPQxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 11:52:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JlLfWft5pTMeK7BXacTWP+Z0+b5HE9Y/eSPPyNa5+Jubb0sDfSEdU00VhxGgCDN7Wa
-         HgNghpiAzgP5tGh686h725MgeLmxgMSYNSfryfu5LaU1SOtcJasCFPIqf/iwNbIIYrD7
-         ofJzqQd9ZZRvQLD+EfnqXsg3j05yjLyEK01V4=
-Date: Wed, 16 Feb 2011 08:52:48 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Drake <dsd@laptop.org>
-Cc: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        dilinger@queued.net
-Subject: Re: [PATCH v2] olpc_battery: convert to platform device
-Message-ID: <20110216165247.GC29796@core.coreip.homeip.net>
-References: <20110216142931.694DE9D401C@zog.reactivated.net>
+	Wed, 16 Feb 2011 11:53:32 -0500
+Date: Wed, 16 Feb 2011 08:53:49 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        "dilinger@queued.net" <dilinger@queued.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: platform data and mfd design question
+Message-ID: <20110216165348.GB4390@opensource.wolfsonmicro.com>
+References: <4D5AF554.2030208@codeaurora.org>
+ <4D5B8F61.3090105@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110216142931.694DE9D401C@zog.reactivated.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D5B8F61.3090105@stericsson.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 02:29:31PM +0000, Daniel Drake wrote:
->  
-> -static void __exit olpc_bat_exit(void)
-> +static int __exit olpc_battery_remove(struct platform_device *pdev)
-...
-> +	.remove = __devexit_p(olpc_battery_remove),
+On Wed, Feb 16, 2011 at 09:48:33AM +0100, Linus Walleij wrote:
+> On 02/15/2011 10:51 PM, Abhijeet Dharmapurikar wrote:
+> >Msm on the other hand declares the struct mfd_cell subdevice[] array in
+> >the board file and passes this on to the core driver via platfom data.
 
-olpc_battery_remove should be annotated as __devexit. Sorry for not
-noticing this before. Otherwise:
+> This way the platform data tells the core driver what kind of
+> silicon it has "hey, PM8058, guess what, you have an RTC!"
+> which looks backwards to me, especially given that it does
+> not need any fancy platform data at all, just two IRQ numbers
+> which the core driver can very well handle.
 
-Reviewed-by: Dmitry Torokhov <dtor@mail.ru>
-
-Thanks.
-
--- 
-Dmitry
+Indeed, and the RTC would still be useful even without IRQ support I
+imagine (it should still be able to tell you the time).
