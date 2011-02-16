@@ -1,739 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab1BPAMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:12:31 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50814 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab1BPAM1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:12:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ld8leGLQs9ZoIpS00EfLOvIRwWMasseNp/Vg0Q72dUOQBRrcJadCiQk6t0ea8OGKfW
-         eOhki5Dbcs5zEXsil7M+0+TeNXkhEN+JcKLsL+eqXC5lmeIPYTetPn5LnlGGMCNVIi09
-         5yb1BJoK+Pj2luZf5iWufjUWEo4WQuD9O1Sfk=
+	id S1755768Ab1BPARY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:17:24 -0500
+Received: from kroah.org ([198.145.64.141]:38535 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754998Ab1BPARW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:17:22 -0500
+Date: Tue, 15 Feb 2011 16:15:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [000/272] 2.6.37.1-stable review
+Message-ID: <20110216001559.GA31413@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim6n9QqEYr32RPS1Ne0aKpDEf1ZNiNGz2ZvS-EO@mail.gmail.com>
-References: <20110207032407.GA27404@ca-server1.us.oracle.com>
-	<1ddd01a8-591a-42bc-8bb3-561843b31acb@default>
-	<AANLkTimFATx-gYVgY_pVdZsySSBmXvKFkhTJUeVFBcop@mail.gmail.com>
-	<AANLkTimqSSxHrLhL9t4DOmDeuAA41B9e-qnr+vnUsucL@mail.gmail.com>
-	<AANLkTi=4QkV4wtMmDd6+XXhvkva+fq9m5PVYGC0qBUc3@mail.gmail.com>
-	<AANLkTim6n9QqEYr32RPS1Ne0aKpDEf1ZNiNGz2ZvS-EO@mail.gmail.com>
-Date: Wed, 16 Feb 2011 00:12:21 +0000
-Message-ID: <AANLkTimOssgM7JYSpwB=5zmF_JJ2ByH+PWO7N+YZNB_y@mail.gmail.com>
-Subject: Re: [PATCH V2 0/3] drivers/staging: zcache: dynamic page cache/swap compression
-From: Matt <jackdachef@gmail.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, gregkh@suse.de,
-        Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, ngupta@vflare.org, linux-btrfs@vger.kernel.org,
-        Josef Bacik <josef@redhat.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Yan Zheng <zheng.z.yan@intel.com>, miaox@cn.fujitsu.com,
-        Li Zefan <lizf@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 4:35 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Mon, Feb 14, 2011 at 10:29 AM, Matt <jackdachef@gmail.com> wrote:
->> On Mon, Feb 14, 2011 at 1:24 AM, Matt <jackdachef@gmail.com> wrote:
->>> On Mon, Feb 14, 2011 at 12:08 AM, Matt <jackdachef@gmail.com> wrote:
->>>> On Wed, Feb 9, 2011 at 1:03 AM, Dan Magenheimer
->>>> <dan.magenheimer@oracle.com> wrote:
->>>> [snip]
->>>>>
->>>>> If I've missed anything important, please let me know!
->>>>>
->>>>> Thanks again!
->>>>> Dan
->>>>>
->>>>
->>>> Hi Dan,
->>>>
->>>> thank you so much for answering my email in such detail !
->>>>
->>>> I shall pick up on that mail in my next email sending to the mailing list :)
->>>>
->>>>
->>>> currently I've got a problem with btrfs which seems to get triggered
->>>> by cleancache get-operations:
->>>>
->>>>
->>>> Feb 14 00:37:19 lupus kernel: [ 2831.297377] device fsid
->>>> 354120c992a00761-5fa07d400126a895 devid 1 transid 7
->>>> /dev/mapper/portage
->>>> Feb 14 00:37:19 lupus kernel: [ 2831.297698] btrfs: enabling disk space caching
->>>> Feb 14 00:37:19 lupus kernel: [ 2831.297700] btrfs: force lzo compression
->>>> Feb 14 00:37:19 lupus kernel: [ 2831.315844] zcache: created ephemeral
->>>> tmem pool, id=3
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853188] BUG: unable to handle
->>>> kernel paging request at 0000000001400050
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853219] IP: [<ffffffff8133ef1b>]
->>>> btrfs_encode_fh+0x2b/0x120
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853242] PGD 0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853251] Oops: 0000 [#1] PREEMPT SMP
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853275] last sysfs file:
->>>> /sys/devices/platform/coretemp.3/temp1_input
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853295] CPU 4
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853303] Modules linked in: radeon
->>>> ttm drm_kms_helper cfbcopyarea cfbimgblt cfbfillrect ipt_REJECT
->>>> ipt_LOG xt_limit xt_tcpudp xt_state nf_nat_irc nf_conntrack_irc
->>>> nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp
->>>> iptable_filter ipt_addrtype xt_DSCP xt_dscp xt_iprange ip_tables
->>>> ip6table_filter xt_NFQUEUE xt_owner xt_hashlimit xt_conntrack xt_mark
->>>> xt_multiport xt_connmark nf_conntrack xt_string ip6_tables x_tables
->>>> it87 hwmon_vid coretemp snd_seq_dummy snd_seq_oss snd_seq_midi_event
->>>> snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss snd_hda_codec_hdmi
->>>> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
->>>> snd_timer snd soundcore i2c_i801 wmi e1000e shpchp snd_page_alloc
->>>> libphy e1000 scsi_wait_scan sl811_hcd ohci_hcd ssb usb_storage
->>>> ehci_hcd [last unloaded: tg3]
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853682]
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853690] Pid: 11394, comm:
->>>> btrfs-transacti Not tainted 2.6.37-plus_v16_zcache #4 FMP55/ipower
->>>> G3710
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853725] RIP:
->>>> 0010:[<ffffffff8133ef1b>]  [<ffffffff8133ef1b>]
->>>> btrfs_encode_fh+0x2b/0x120
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853751] RSP:
->>>> 0018:ffff880129a11b00  EFLAGS: 00010246
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853767] RAX: 00000000000000ff
->>>> RBX: ffff88014a1ce628 RCX: 0000000000000000
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853788] RDX: ffff880129a11b3c
->>>> RSI: ffff880129a11b70 RDI: 0000000000000006
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853808] RBP: 0000000001400000
->>>> R08: ffffffff8133eef0 R09: ffff880129a11c68
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853829] R10: 0000000000000001
->>>> R11: 0000000000000001 R12: ffff88014a1ce780
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853849] R13: ffff88021fefc000
->>>> R14: ffff88021fef9000 R15: 0000000000000000
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853870] FS:
->>>> 0000000000000000(0000) GS:ffff8800bf500000(0000)
->>>> knlGS:0000000000000000
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853894] CS:  0010 DS: 0000 ES:
->>>> 0000 CR0: 000000008005003b
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853911] CR2: 0000000001400050
->>>> CR3: 0000000001c27000 CR4: 00000000000006e0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853932] DR0: 0000000000000000
->>>> DR1: 0000000000000000 DR2: 0000000000000000
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853952] DR3: 0000000000000000
->>>> DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853973] Process btrfs-transacti
->>>> (pid: 11394, threadinfo ffff880129a10000, task ffff880202e4ac40)
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.853999] Stack:
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854006]  ffff880129a11b50
->>>> ffff880000000003 ffff88003c60a098 0000000000000003
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854035]  ffffffffffffffff
->>>> ffffffff810e6aaa 0000000000000000 0000000602e4ac40
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854063]  ffffffff8133e3f0
->>>> ffffffff810e6cee 0000000000001000 0000000000000000
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854092] Call Trace:
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854103]  [<ffffffff810e6aaa>] ?
->>>> cleancache_get_key+0x4a/0x60
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854122]  [<ffffffff8133e3f0>] ?
->>>> btrfs_wake_function+0x0/0x20
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854140]  [<ffffffff810e6cee>] ?
->>>> __cleancache_flush_inode+0x3e/0x70
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854161]  [<ffffffff810b34d2>] ?
->>>> truncate_inode_pages_range+0x42/0x440
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854182]  [<ffffffff812f115e>] ?
->>>> btrfs_search_slot+0x89e/0xa00
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854201]  [<ffffffff810c3a45>] ?
->>>> unmap_mapping_range+0xc5/0x2a0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854220]  [<ffffffff810b3930>] ?
->>>> truncate_pagecache+0x40/0x70
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854240]  [<ffffffff813458b1>] ?
->>>> btrfs_truncate_free_space_cache+0x81/0xe0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854261]  [<ffffffff812fce15>] ?
->>>> btrfs_write_dirty_block_groups+0x245/0x500
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854283]  [<ffffffff812fcb6a>] ?
->>>> btrfs_run_delayed_refs+0x1ba/0x220
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854304]  [<ffffffff8130afff>] ?
->>>> commit_cowonly_roots+0xff/0x1d0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854323]  [<ffffffff8130c583>] ?
->>>> btrfs_commit_transaction+0x363/0x760
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854344]  [<ffffffff81067ea0>] ?
->>>> autoremove_wake_function+0x0/0x30
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854364]  [<ffffffff81305bc3>] ?
->>>> transaction_kthread+0x283/0x2a0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854383]  [<ffffffff81305940>] ?
->>>> transaction_kthread+0x0/0x2a0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854401]  [<ffffffff81305940>] ?
->>>> transaction_kthread+0x0/0x2a0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854420]  [<ffffffff81067a16>] ?
->>>> kthread+0x96/0xa0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854437]  [<ffffffff81003514>] ?
->>>> kernel_thread_helper+0x4/0x10
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854455]  [<ffffffff81067980>] ?
->>>> kthread+0x0/0xa0
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854471]  [<ffffffff81003510>] ?
->>>> kernel_thread_helper+0x0/0x10
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854488] Code: 55 b8 ff 00 00 00
->>>> 53 48 89 fb 48 83 ec 18 48 8b 6f 10 8b 3a 83 ff 04 0f 86 d5 00 00 00
->>>> 85 c9 0f 95 c1 83 ff 07 0f 86 d5 00 00 00 <48> 8b 45 50 bf 05 00 00 00
->>>> 48 89 06 84 c9 48 8b 85 68 fe ff ff
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854742] RIP  [<ffffffff8133ef1b>]
->>>> btrfs_encode_fh+0x2b/0x120
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854762]  RSP <ffff880129a11b00>
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.854773] CR2: 0000000001400050
->>>> Feb 14 00:39:20 lupus kernel: [ 2951.860906] ---[ end trace
->>>> f831c5ceeaa49287 ]---
->>>>
->>>> in my case I had compress-force with lzo and disk_cache enabled
->>>>
->>>>
->>>> another user of the kernel I'm currently running has had the same
->>>> problem with zcache
->>>> (http://forums.gentoo.org/viewtopic-p-6571799.html#6571799)
->>>>
->>>> (looks like in his case compression and any other fancy additional
->>>> features weren't enabled)
->>>>
->>>>
->>>> changes made by this kernel or patchset to btrfs are from
->>>> * io-less dirty throttling patchset (44 patches)
->>>> * zcache V2 ("[PATCH] staging: zcache: fix memory leak" should be
->>>> applied in both cases)
->>>> * PATCH] fix (latent?) memory corruption in btrfs_encode_fh()
->>>> * btrfs-unstable changes to state of
->>>> 3a90983dbdcb2f4f48c0d771d8e5b4d88f27fae6 (so practically equals btrfs
->>>> from 2.6.38-rc4+)
->>>>
->>>> I haven't tried downgrading to vanilla 2.6.37 with zcache only, yet,
->>>>
->>>> but kind of upgraded btrfs to the latest state of the btrfs-unstable
->>>> repository (http://git.eu.kernel.org/?p=linux/kernel/git/mason/btrfs-unstable.git;a=summary)
->>>> namely 3a90983dbdcb2f4f48c0d771d8e5b4d88f27fae6
->>>>
->>>> this also didn't help and seemed to produce the same error-message
->>>>
->>>> so to summarize:
->>>>
->>>> 1) error message appearing with all 4 patchsets applied changing
->>>> btrfs-code and compress-force=lzo and disk_cache enabled
->>>>
->>>> 2) error message appearing with default mount-options and btrfs from
->>>> 2.6.37 and changes for zcache & io-less dirty throttling patchset
->>>> applied (first 2 patch(sets)) from list)
->>>>
->>>>
->>>> in my case I tried to extract / play back a 1.7 GiB tarball of my
->>>> portage-directory (lots of small files and some tar.bzip2 archives)
->>>> via pbzip2 or 7z when the error happened and the message was shown
->>>>
->>>> Due to KMS sound (webradio streaming) was still running but I couldn't
->>>> continue work (X switching to kernel output) so I did the magic sysrq
->>>> combo (reisub)
->>>>
->>>>
->>>> Does that BUG message ring a bell for anyone ?
->>>>
->>>> (if I should leave out anyone from the CC in the next emails or
->>>> future, please holler - I don't want to spam your inboxes)
->>>>
->>>> Thanks
->>>>
->>>> Matt
->>>>
->>>
->>>
->>> OK,
->>>
->>> here's the output of a kernel -
->>>
->>> staying as close to vanilla (2.6.37) as the current situation allows
->>> (only including some corruption or leak fixes for zram & zcache and
->>> "zram_xvmalloc: 64K page fixes and optimizations" (and 2 reiserfs
->>> fixes)):
->>>
->>> so in total the following patches are included in this new kernel
->>> (2.6.37-zcache):
->>>
->>> zram changes:
->>> 1 zram: Fix sparse warning 'Using plain integer as NULL pointer'
->>> 2 [PATCH] zram: fix data corruption issue
->>> 3 [PATCH 0/7][v2] zram_xvmalloc: 64K page fixes and optimizations
->>>
->>> zcache:
->>> 1 zcache-linux-2.6.37-110205
->>> 2 [PATCH] staging: zcache: fix memory leak
->>> 3 [PATCH] zcache: Fix build error when sysfs is not defined
->>>
->>> reiserfs:
->>> 1 [PATCH] reiserfs: Make sure va_end() is always called after
->>> 2 [patch] reiserfs: potential ERR_PTR dereference
->>>
->>>
->>> the same procedure:
->>>
->>> trying to extract the mentioned portage-tarball:
->>>
->>> time (7z e -so -tbzip2 -mmt=5 /system/portage_backup_022011.tbz2 | tar
->>> -xp -C /usr/gentoo/)
->>>
->>>
->>> this hopefully should make it easier to track down the problem:
->>>
->>>
->>> Feb 14 01:59:59 lupus kernel: [  364.777143] device fsid
->>> 684a4213565dd3fe-ca991821badc2aac devid 1 transid 7
->>> /dev/mapper/portage
->>> Feb 14 01:59:59 lupus kernel: [  364.844994] zcache: created ephemeral
->>> tmem pool, id=2
->>> Feb 14 02:02:49 lupus kernel: [  534.577573] BUG: unable to handle
->>> kernel paging request at 0000000037610050
->>> Feb 14 02:02:49 lupus kernel: [  534.577605] IP: [<ffffffff81338cbb>]
->>> btrfs_encode_fh+0x2b/0x110
->>> Feb 14 02:02:49 lupus kernel: [  534.577630] PGD 0
->>> Feb 14 02:02:49 lupus kernel: [  534.577640] Oops: 0000 [#1] PREEMPT SMP
->>> Feb 14 02:02:49 lupus kernel: [  534.577665] last sysfs file:
->>> /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
->>> Feb 14 02:02:49 lupus kernel: [  534.577693] CPU 5
->>> Feb 14 02:02:49 lupus kernel: [  534.577701] Modules linked in: radeon
->>> ttm drm_kms_helper cfbcopyarea cfbimgblt cfbfillrect ipt_REJECT
->>> ipt_LOG xt_limit xt_tcpudp xt_state nf_nat_irc nf_conntrack_irc
->>> nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp
->>> iptable_filter ipt_addrtype xt_DSCP xt_dscp xt_iprange ip_tables
->>> ip6table_filter xt_NFQUEUE xt_owner xt_hashlimit xt_conntrack xt_mark
->>> xt_multiport xt_connmark nf_conntrack xt_string ip6_tables x_tables
->>> it87 hwmon_vid coretemp snd_seq_dummy snd_seq_oss snd_seq_midi_event
->>> snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss snd_hda_codec_hdmi
->>> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm
->>> snd_timer snd e1000e soundcore i2c_i801 shpchp snd_page_alloc wmi
->>> libphy e1000 scsi_wait_scan sl811_hcd ohci_hcd ssb usb_storage
->>> ehci_hcd [last unloaded: tg3]
->>> Feb 14 02:02:49 lupus kernel: [  534.578114]
->>> Feb 14 02:02:49 lupus kernel: [  534.578124] Pid: 8285, comm: tar Not
->>> tainted 2.6.37-zcache #2 FMP55/ipower G3710
->>> Feb 14 02:02:49 lupus kernel: [  534.578146] RIP:
->>> 0010:[<ffffffff81338cbb>]  [<ffffffff81338cbb>]
->>> btrfs_encode_fh+0x2b/0x110
->>> Feb 14 02:02:49 lupus kernel: [  534.578172] RSP:
->>> 0018:ffff88023ea9dcc8  EFLAGS: 00010246
->>> Feb 14 02:02:49 lupus kernel: [  534.578189] RAX: 00000000000000ff
->>> RBX: ffff8800b8643228 RCX: 0000000000000000
->>> Feb 14 02:02:49 lupus kernel: [  534.578210] RDX: ffff88023ea9dd04
->>> RSI: ffff88023ea9dd38 RDI: 0000000000000006
->>> Feb 14 02:02:49 lupus kernel: [  534.578230] RBP: 0000000037610000
->>> R08: ffffffff81338c90 R09: 0000000000000000
->>> Feb 14 02:02:49 lupus kernel: [  534.578251] R10: 0000000000000019
->>> R11: 0000000000000001 R12: ffff8800b8643380
->>> Feb 14 02:02:49 lupus kernel: [  534.578272] R13: ffff8800b8643258
->>> R14: 00007fff806f1f00 R15: 0000000000000000
->>> Feb 14 02:02:49 lupus kernel: [  534.578293] FS:
->>> 00007f823d7ed700(0000) GS:ffff8800bf540000(0000)
->>> knlGS:0000000000000000
->>> Feb 14 02:02:49 lupus kernel: [  534.578317] CS:  0010 DS: 0000 ES:
->>> 0000 CR0: 0000000080050033
->>> Feb 14 02:02:49 lupus kernel: [  534.578334] CR2: 0000000037610050
->>> CR3: 000000023dcef000 CR4: 00000000000006e0
->>> Feb 14 02:02:49 lupus kernel: [  534.578356] DR0: 0000000000000000
->>> DR1: 0000000000000000 DR2: 0000000000000000
->>> Feb 14 02:02:49 lupus kernel: [  534.578377] DR3: 0000000000000000
->>> DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>> Feb 14 02:02:49 lupus kernel: [  534.578398] Process tar (pid: 8285,
->>> threadinfo ffff88023ea9c000, task ffff88023e8b9d40)
->>> Feb 14 02:02:49 lupus kernel: [  534.578421] Stack:
->>> Feb 14 02:02:49 lupus kernel: [  534.578428]  000000013d096000
->>> ffff88023ed84800 ffff88023ea9c000 0000000000000002
->>> Feb 14 02:02:49 lupus kernel: [  534.578458]  ffffffffffffffff
->>> ffffffff810e3b1a 0000000000000001 000000061e1d5240
->>> Feb 14 02:02:49 lupus kernel: [  534.578486]  fffffffffffffffb
->>> ffffffff810e3d5e ffff88010f383000 0000001ab86cb908
->>> Feb 14 02:02:49 lupus kernel: [  534.578514] Call Trace:
->>> Feb 14 02:02:49 lupus kernel: [  534.578525]  [<ffffffff810e3b1a>] ?
->>> cleancache_get_key+0x4a/0x60
->>> Feb 14 02:02:49 lupus kernel: [  534.578544]  [<ffffffff810e3d5e>] ?
->>> __cleancache_flush_inode+0x3e/0x70
->>> Feb 14 02:02:49 lupus kernel: [  534.578565]  [<ffffffff810b0ed2>] ?
->>> truncate_inode_pages_range+0x42/0x440
->>> Feb 14 02:02:49 lupus kernel: [  534.578586]  [<ffffffff81338451>] ?
->>> btrfs_tree_unlock+0x41/0x50
->>> Feb 14 02:02:49 lupus kernel: [  534.578605]  [<ffffffff812e4ed5>] ?
->>> btrfs_release_path+0x15/0x70
->>> Feb 14 02:02:49 lupus kernel: [  534.578624]  [<ffffffff8130bf29>] ?
->>> btrfs_run_delayed_iputs+0x49/0x120
->>> Feb 14 02:02:49 lupus kernel: [  534.578644]  [<ffffffff813107e7>] ?
->>> btrfs_evict_inode+0x27/0x1e0
->>> Feb 14 02:02:49 lupus kernel: [  534.578663]  [<ffffffff810fc3aa>] ?
->>> evict+0x1a/0xa0
->>> Feb 14 02:02:49 lupus kernel: [  534.578678]  [<ffffffff810fc6bd>] ?
->>> iput+0x1cd/0x2b0
->>> Feb 14 02:02:49 lupus kernel: [  534.578694]  [<ffffffff810f266f>] ?
->>> do_unlinkat+0x12f/0x1d0
->>> Feb 14 02:02:49 lupus kernel: [  534.578712]  [<ffffffff810027bb>] ?
->>> system_call_fastpath+0x16/0x1b
->>> Feb 14 02:02:49 lupus kernel: [  534.578730] Code: 55 b8 ff 00 00 00
->>> 53 48 89 fb 48 83 ec 18 48 8b 6f 10 8b 3a 83 ff 04 0f 86 d5 00 00 00
->>> 85 c9 0f 95 c1 83 ff 07 0f 86 d5 00 00 00 <48> 8b 45 50 bf 05 00 00 00
->>> 48 89 06 84 c9 48 8b 85 68 fe ff ff
->>> Feb 14 02:02:49 lupus kernel: [  534.578986] RIP  [<ffffffff81338cbb>]
->>> btrfs_encode_fh+0x2b/0x110
->>> Feb 14 02:02:49 lupus kernel: [  534.579081]  RSP <ffff88023ea9dcc8>
->>> Feb 14 02:02:49 lupus kernel: [  534.579093] CR2: 0000000037610050
->>> Feb 14 02:02:49 lupus kernel: [  534.587513] ---[ end trace
->>> c596b12e66c0b360 ]---
->>>
->>>
->>> for reference I've pasted it to pastebin.com:
->>>
->>> "2.6.37_zcache_V2.patch"
->>> http://pastebin.com/cVSkwQ6M
->>>
->>>
->>>
->>>
->>>
->>> after the reboot I had forgotten to not mount the btrfs volume and it
->>> threw a similar error-message again and remounted several partitions
->>> read-only (including the system partition)
->>> the partition with btrfs (/usr/gentoo) couldn't be unmounted since the
->>> umount process kind of hang
->>>
->>> so here's the error message after a reboot (might not be accurate or
->>> kind of "skewed" since other patches are included (io-less dirty
->>> throttling, PATCH] fix (latent?) memory corruption in
->>> btrfs_encode_fh() and latest changes for btrfs)) but might help to get
->>> some more evidence:
->>>
->>>
->>> Feb 14 02:05:46 lupus kernel: [   63.922648] device fsid
->>> 684a4213565dd3fe-ca991821badc2aac devid 1 transid 13
->>> /dev/mapper/portage
->>> Feb 14 02:05:46 lupus kernel: [   64.047118] btrfs: unlinked 1 orphans
->>> Feb 14 02:05:46 lupus kernel: [   64.051956] zcache: created ephemeral
->>> tmem pool, id=3
->>> Feb 14 02:05:48 lupus kernel: [   65.801364] hub 2-1:1.0: hub_suspend
->>> Feb 14 02:05:48 lupus kernel: [   65.801376] usb 2-1: unlink
->>> qh256-0001/ffff88023fefd180 start 1 [1/0 us]
->>> Feb 14 02:05:48 lupus kernel: [   65.801559] usb 2-1: usb auto-suspend
->>> Feb 14 02:05:50 lupus kernel: [   67.797929] hub 2-0:1.0: hub_suspend
->>> Feb 14 02:05:50 lupus kernel: [   67.797939] usb usb2: bus auto-suspend
->>> Feb 14 02:05:50 lupus kernel: [   67.797942] ehci_hcd 0000:00:1d.0:
->>> suspend root hub
->>> Feb 14 02:05:52 lupus kernel: [   70.050493] BUG: unable to handle
->>> kernel paging request at 0000030341ed0050
->>> Feb 14 02:05:52 lupus kernel: [   70.050670] IP: [<ffffffff8133ef1b>]
->>> btrfs_encode_fh+0x2b/0x120
->>> Feb 14 02:05:52 lupus kernel: [   70.050807] PGD 0
->>> Feb 14 02:05:52 lupus kernel: [   70.050929] Oops: 0000 [#1] PREEMPT SMP
->>> Feb 14 02:05:52 lupus kernel: [   70.051223] last sysfs file:
->>> /sys/module/pcie_aspm/parameters/policy
->>> Feb 14 02:05:52 lupus kernel: [   70.051365] CPU 6
->>> Feb 14 02:05:52 lupus kernel: [   70.051411] Modules linked in:
->>> ipt_REJECT ipt_LOG xt_limit xt_tcpudp xt_state nf_nat_irc
->>> nf_conntrack_irc nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
->>> nf_conntrack_ftp iptable_filter ipt_addrtype xt_DSCP xt_dscp
->>> xt_iprange ip_tables ip6table_filter xt_NFQUEUE xt_owner xt_hashlimit
->>> xt_conntrack xt_mark xt_multiport xt_connmark nf_conntrack xt_string
->>> ip6_tables x_tables it87 hwmon_vid coretemp snd_seq_dummy snd_seq_oss
->>> snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss
->>> snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec
->>> snd_hwdep snd_pcm snd_timer snd i2c_i801 soundcore wmi shpchp e1000e
->>> snd_page_alloc libphy e1000 scsi_wait_scan sl811_hcd ohci_hcd ssb
->>> usb_storage ehci_hcd [last unloaded: tg3]
->>> Feb 14 02:05:52 lupus kernel: [   70.054694]
->>> Feb 14 02:05:52 lupus kernel: [   70.054776] Pid: 7962, comm: umount
->>> Not tainted 2.6.37-plus_v16_zcache #4 FMP55/ipower G3710
->>> Feb 14 02:05:52 lupus kernel: [   70.054912] RIP:
->>> 0010:[<ffffffff8133ef1b>]  [<ffffffff8133ef1b>]
->>> btrfs_encode_fh+0x2b/0x120
->>> Feb 14 02:05:52 lupus kernel: [   70.055084] RSP:
->>> 0018:ffff88023c77d6f8  EFLAGS: 00010246
->>> Feb 14 02:05:52 lupus kernel: [   70.055173] RAX: 00000000000000ff
->>> RBX: ffff88023cde0168 RCX: 0000000000000000
->>> Feb 14 02:05:52 lupus kernel: [   70.055265] RDX: ffff88023c77d734
->>> RSI: ffff88023c77d768 RDI: 0000000000000006
->>> Feb 14 02:05:52 lupus kernel: [   70.055357] RBP: 0000030341ed0000
->>> R08: ffffffff8133eef0 R09: ffff88023c77d8d8
->>> Feb 14 02:05:52 lupus kernel: [   70.055448] R10: 0000000000000003
->>> R11: 0000000000000001 R12: 00000000ffffffff
->>> Feb 14 02:05:52 lupus kernel: [   70.055540] R13: ffff88023cde0030
->>> R14: ffffea0007dd39f0 R15: 0000000000000001
->>> Feb 14 02:05:52 lupus kernel: [   70.055633] FS:
->>> 00007fb1cad04760(0000) GS:ffff8800bf580000(0000)
->>> knlGS:0000000000000000
->>> Feb 14 02:05:52 lupus kernel: [   70.055762] CS:  0010 DS: 0000 ES:
->>> 0000 CR0: 000000008005003b
->>> Feb 14 02:05:52 lupus kernel: [   70.055851] CR2: 0000030341ed0050
->>> CR3: 000000023c7d5000 CR4: 00000000000006e0
->>> Feb 14 02:05:52 lupus kernel: [   70.055943] DR0: 0000000000000000
->>> DR1: 0000000000000000 DR2: 0000000000000000
->>> Feb 14 02:05:52 lupus kernel: [   70.056035] DR3: 0000000000000000
->>> DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>> Feb 14 02:05:52 lupus kernel: [   70.056128] Process umount (pid:
->>> 7962, threadinfo ffff88023c77c000, task ffff88023c7a4260)
->>> Feb 14 02:05:52 lupus kernel: [   70.056257] Stack:
->>> Feb 14 02:05:52 lupus kernel: [   70.056338]  0000000000000000
->>> 0000000000000002 ffff880200000000 0000000000000003
->>> Feb 14 02:05:52 lupus kernel: [   70.056630]  ffffea0007dd39f0
->>> ffffffff810e6aaa ffff880200000041 0000000600000246
->>> Feb 14 02:05:52 lupus kernel: [   70.056922]  ffff88023cdcd300
->>> ffffffff810e6b3a 0000000000000001 ffffffff8132bb7c
->>> Feb 14 02:05:52 lupus kernel: [   70.057213] Call Trace:
->>> Feb 14 02:05:52 lupus kernel: [   70.057301]  [<ffffffff810e6aaa>] ?
->>> cleancache_get_key+0x4a/0x60
->>> Feb 14 02:05:52 lupus kernel: [   70.057393]  [<ffffffff810e6b3a>] ?
->>> __cleancache_get_page+0x7a/0xd0
->>> Feb 14 02:05:52 lupus kernel: [   70.057487]  [<ffffffff8132bb7c>] ?
->>> merge_state+0x7c/0x150
->>> Feb 14 02:05:52 lupus kernel: [   70.057579]  [<ffffffff8132e4de>] ?
->>> __extent_read_full_page+0x52e/0x710
->>> Feb 14 02:05:52 lupus kernel: [   70.057673]  [<ffffffff813bdea4>] ?
->>> rb_insert_color+0xa4/0x140
->>> Feb 14 02:05:52 lupus kernel: [   70.057766]  [<ffffffff8134b0b6>] ?
->>> tree_insert+0x86/0x1e0
->>> Feb 14 02:05:52 lupus kernel: [   70.057859]  [<ffffffff81058c73>] ?
->>> lock_timer_base.clone.22+0x33/0x70
->>> Feb 14 02:05:52 lupus kernel: [   70.058004]  [<ffffffff81305060>] ?
->>> btree_get_extent+0x0/0x1c0
->>> Feb 14 02:05:52 lupus kernel: [   70.058097]  [<ffffffff81330b21>] ?
->>> read_extent_buffer_pages+0x2d1/0x470
->>> Feb 14 02:05:52 lupus kernel: [   70.058191]  [<ffffffff81305060>] ?
->>> btree_get_extent+0x0/0x1c0
->>> Feb 14 02:05:52 lupus kernel: [   70.058283]  [<ffffffff8130674d>] ?
->>> btree_read_extent_buffer_pages.clone.65+0x4d/0xa0
->>> Feb 14 02:05:52 lupus kernel: [   70.058415]  [<ffffffff813076f9>] ?
->>> read_tree_block+0x39/0x60
->>> Feb 14 02:05:52 lupus kernel: [   70.058508]  [<ffffffff812ed5e6>] ?
->>> read_block_for_search.clone.40+0x116/0x410
->>> Feb 14 02:05:52 lupus kernel: [   70.058638]  [<ffffffff812eb228>] ?
->>> btrfs_cow_block+0x118/0x2b0
->>> Feb 14 02:05:52 lupus kernel: [   70.058731]  [<ffffffff812f0bc7>] ?
->>> btrfs_search_slot+0x307/0xa00
->>> Feb 14 02:05:52 lupus kernel: [   70.058823]  [<ffffffff812f6b18>] ?
->>> lookup_inline_extent_backref+0x98/0x4a0
->>> Feb 14 02:05:52 lupus kernel: [   70.058919]  [<ffffffff810e33d7>] ?
->>> kmem_cache_alloc+0x87/0xa0
->>> Feb 14 02:05:52 lupus kernel: [   70.059032]  [<ffffffff812f891c>] ?
->>> __btrfs_free_extent+0xcc/0x6f0
->>> Feb 14 02:05:52 lupus kernel: [   70.059125]  [<ffffffff812fc4cf>] ?
->>> run_clustered_refs+0x39f/0x880
->>> Feb 14 02:05:52 lupus kernel: [   70.059220]  [<ffffffff810b1f98>] ?
->>> pagevec_lookup_tag+0x18/0x20
->>> Feb 14 02:05:52 lupus kernel: [   70.059312]  [<ffffffff810a7c81>] ?
->>> filemap_fdatawait_range+0x91/0x180
->>> Feb 14 02:05:52 lupus kernel: [   70.059405]  [<ffffffff812fca77>] ?
->>> btrfs_run_delayed_refs+0xc7/0x220
->>> Feb 14 02:05:52 lupus kernel: [   70.059498]  [<ffffffff8130c29c>] ?
->>> btrfs_commit_transaction+0x7c/0x760
->>> Feb 14 02:05:52 lupus kernel: [   70.059591]  [<ffffffff81067ea0>] ?
->>> autoremove_wake_function+0x0/0x30
->>> Feb 14 02:05:52 lupus kernel: [   70.059683]  [<ffffffff8130cdef>] ?
->>> start_transaction+0x1bf/0x270
->>> Feb 14 02:05:52 lupus kernel: [   70.059775]  [<ffffffff8110e96a>] ?
->>> __sync_filesystem+0x5a/0x90
->>> Feb 14 02:05:52 lupus kernel: [   70.059867]  [<ffffffff810eae8d>] ?
->>> generic_shutdown_super+0x2d/0x100
->>> Feb 14 02:05:52 lupus kernel: [   70.059960]  [<ffffffff810eafb9>] ?
->>> kill_anon_super+0x9/0x50
->>> Feb 14 02:05:52 lupus kernel: [   70.060051]  [<ffffffff810eb266>] ?
->>> deactivate_locked_super+0x26/0x80
->>> Feb 14 02:05:52 lupus kernel: [   70.060144]  [<ffffffff811043ea>] ?
->>> sys_umount+0x7a/0x390
->>> Feb 14 02:05:52 lupus kernel: [   70.060235]  [<ffffffff810027bb>] ?
->>> system_call_fastpath+0x16/0x1b
->>> Feb 14 02:05:52 lupus kernel: [   70.060325] Code: 55 b8 ff 00 00 00
->>> 53 48 89 fb 48 83 ec 18 48 8b 6f 10 8b 3a 83 ff 04 0f 86 d5 00 00 00
->>> 85 c9 0f 95 c1 83 ff 07 0f 86 d5 00 00 00 <48> 8b 45 50 bf 05 00 00 00
->>> 48 89 06 84 c9 48 8b 85 68 fe ff ff
->>> Feb 14 02:05:52 lupus kernel: [   70.063170] RIP  [<ffffffff8133ef1b>]
->>> btrfs_encode_fh+0x2b/0x120
->>> Feb 14 02:05:52 lupus kernel: [   70.063302]  RSP <ffff88023c77d6f8>
->>> Feb 14 02:05:52 lupus kernel: [   70.063386] CR2: 0000030341ed0050
->>> Feb 14 02:05:52 lupus kernel: [   70.063528] ---[ end trace
->>> 3313552d105b1535 ]---
->>> Feb 14 02:06:16 lupus kernel: [   93.961960] BUG: unable to handle
->>> kernel paging request at 0000030341ed0050
->>> Feb 14 02:06:16 lupus kernel: [   93.962171] IP: [<ffffffff8133ef1b>]
->>> btrfs_encode_fh+0x2b/0x120
->>> Feb 14 02:06:16 lupus kernel: [   93.962307] PGD 0
->>> Feb 14 02:06:16 lupus kernel: [   93.962430] Oops: 0000 [#2] PREEMPT SMP
->>> Feb 14 02:06:16 lupus kernel: [   93.962637] last sysfs file:
->>> /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
->>> Feb 14 02:06:16 lupus kernel: [   93.962766] CPU 5
->>> Feb 14 02:06:16 lupus kernel: [   93.962812] Modules linked in:
->>> ipt_REJECT ipt_LOG xt_limit xt_tcpudp xt_state nf_nat_irc
->>> nf_conntrack_irc nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
->>> nf_conntrack_ftp iptable_filter ipt_addrtype xt_DSCP xt_dscp
->>> xt_iprange ip_tables ip6table_filter xt_NFQUEUE xt_owner xt_hashlimit
->>> xt_conntrack xt_mark xt_multiport xt_connmark nf_conntrack xt_string
->>> ip6_tables x_tables it87 hwmon_vid coretemp snd_seq_dummy snd_seq_oss
->>> snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss
->>> snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec
->>> snd_hwdep snd_pcm snd_timer snd i2c_i801 soundcore wmi shpchp e1000e
->>> snd_page_alloc libphy e1000 scsi_wait_scan sl811_hcd ohci_hcd ssb
->>> usb_storage ehci_hcd [last unloaded: tg3]
->>> Feb 14 02:06:16 lupus kernel: [   93.966044]
->>> Feb 14 02:06:16 lupus kernel: [   93.966127] Pid: 7915, comm:
->>> btrfs-transacti Tainted: G      D     2.6.37-plus_v16_zcache #4
->>> FMP55/ipower G3710
->>> Feb 14 02:06:16 lupus kernel: [   93.966266] RIP:
->>> 0010:[<ffffffff8133ef1b>]  [<ffffffff8133ef1b>]
->>> btrfs_encode_fh+0x2b/0x120
->>> Feb 14 02:06:16 lupus kernel: [   93.966440] RSP:
->>> 0018:ffff88023c63b6e0  EFLAGS: 00010246
->>> Feb 14 02:06:16 lupus kernel: [   93.966528] RAX: 00000000000000ff
->>> RBX: ffff88023cde0168 RCX: 0000000000000000
->>> Feb 14 02:06:16 lupus kernel: [   93.966620] RDX: ffff88023c63b71c
->>> RSI: ffff88023c63b750 RDI: 0000000000000006
->>> Feb 14 02:06:16 lupus kernel: [   93.966713] RBP: 0000030341ed0000
->>> R08: ffffffff8133eef0 R09: ffff88023c63b8c0
->>> Feb 14 02:06:16 lupus kernel: [   93.966805] R10: 0000000000000003
->>> R11: 0000000000000001 R12: 00000000ffffffff
->>> Feb 14 02:06:16 lupus kernel: [   93.966897] R13: ffff88023cde0030
->>> R14: ffffea0007d59bc8 R15: 0000000000000001
->>> Feb 14 02:06:16 lupus kernel: [   93.966990] FS:
->>> 0000000000000000(0000) GS:ffff8800bf540000(0000)
->>> knlGS:0000000000000000
->>> Feb 14 02:06:16 lupus kernel: [   93.967120] CS:  0010 DS: 0000 ES:
->>> 0000 CR0: 000000008005003b
->>> Feb 14 02:06:16 lupus kernel: [   93.967209] CR2: 0000030341ed0050
->>> CR3: 0000000001c27000 CR4: 00000000000006e0
->>> Feb 14 02:06:16 lupus kernel: [   93.967302] DR0: 0000000000000000
->>> DR1: 0000000000000000 DR2: 0000000000000000
->>> Feb 14 02:06:16 lupus kernel: [   93.967394] DR3: 0000000000000000
->>> DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>> Feb 14 02:06:16 lupus kernel: [   93.967500] Process btrfs-transacti
->>> (pid: 7915, threadinfo ffff88023c63a000, task ffff88023c7a1620)
->>> Feb 14 02:06:16 lupus kernel: [   93.967630] Stack:
->>> Feb 14 02:06:16 lupus kernel: [   93.967711]  0000000000000000
->>> 0000000000000002 0000000000000000 0000000000000003
->>> Feb 14 02:06:16 lupus kernel: [   93.968057]  ffffea0007d59bc8
->>> ffffffff810e6aaa 0000000000000041 0000000600000002
->>> Feb 14 02:06:16 lupus kernel: [   93.968348]  0000000000000000
->>> ffffffff810e6b3a 0000000000000001 ffffffff00000001
->>> Feb 14 02:06:16 lupus kernel: [   93.968639] Call Trace:
->>> Feb 14 02:06:16 lupus kernel: [   93.968728]  [<ffffffff810e6aaa>] ?
->>> cleancache_get_key+0x4a/0x60
->>> Feb 14 02:06:16 lupus kernel: [   93.968820]  [<ffffffff810e6b3a>] ?
->>> __cleancache_get_page+0x7a/0xd0
->>> Feb 14 02:06:16 lupus kernel: [   93.968914]  [<ffffffff8132e4de>] ?
->>> __extent_read_full_page+0x52e/0x710
->>> Feb 14 02:06:16 lupus kernel: [   93.969008]  [<ffffffff812f3f93>] ?
->>> update_reserved_bytes+0xb3/0x140
->>> Feb 14 02:06:16 lupus kernel: [   93.969102]  [<ffffffff81305060>] ?
->>> btree_get_extent+0x0/0x1c0
->>> Feb 14 02:06:16 lupus kernel: [   93.969193]  [<ffffffff8132bb7c>] ?
->>> merge_state+0x7c/0x150
->>> Feb 14 02:06:16 lupus kernel: [   93.969285]  [<ffffffff81330b21>] ?
->>> read_extent_buffer_pages+0x2d1/0x470
->>> Feb 14 02:06:16 lupus kernel: [   93.969378]  [<ffffffff81305060>] ?
->>> btree_get_extent+0x0/0x1c0
->>> Feb 14 02:06:16 lupus kernel: [   93.969470]  [<ffffffff8130674d>] ?
->>> btree_read_extent_buffer_pages.clone.65+0x4d/0xa0
->>> Feb 14 02:06:16 lupus kernel: [   93.969602]  [<ffffffff813076f9>] ?
->>> read_tree_block+0x39/0x60
->>> Feb 14 02:06:16 lupus kernel: [   93.969694]  [<ffffffff812ed5e6>] ?
->>> read_block_for_search.clone.40+0x116/0x410
->>> Feb 14 02:06:16 lupus kernel: [   93.969878]  [<ffffffff812f0bc7>] ?
->>> btrfs_search_slot+0x307/0xa00
->>> Feb 14 02:06:16 lupus kernel: [   93.969970]  [<ffffffff812f6b18>] ?
->>> lookup_inline_extent_backref+0x98/0x4a0
->>> Feb 14 02:06:16 lupus kernel: [   93.970065]  [<ffffffff810e33d7>] ?
->>> kmem_cache_alloc+0x87/0xa0
->>> Feb 14 02:06:16 lupus kernel: [   93.970157]  [<ffffffff812f891c>] ?
->>> __btrfs_free_extent+0xcc/0x6f0
->>> Feb 14 02:06:16 lupus kernel: [   93.970249]  [<ffffffff812f8434>] ?
->>> update_block_group.clone.62+0xc4/0x280
->>> Feb 14 02:06:16 lupus kernel: [   93.970343]  [<ffffffff812fc4cf>] ?
->>> run_clustered_refs+0x39f/0x880
->>> Feb 14 02:06:16 lupus kernel: [   93.970436]  [<ffffffff812fca77>] ?
->>> btrfs_run_delayed_refs+0xc7/0x220
->>> Feb 14 02:06:16 lupus kernel: [   93.970529]  [<ffffffff810e15f9>] ?
->>> new_slab+0x169/0x1f0
->>> Feb 14 02:06:16 lupus kernel: [   93.970619]  [<ffffffff8130c29c>] ?
->>> btrfs_commit_transaction+0x7c/0x760
->>> Feb 14 02:06:16 lupus kernel: [   93.970713]  [<ffffffff81067ea0>] ?
->>> autoremove_wake_function+0x0/0x30
->>> Feb 14 02:06:16 lupus kernel: [   93.970806]  [<ffffffff81305bc3>] ?
->>> transaction_kthread+0x283/0x2a0
->>> Feb 14 02:06:16 lupus kernel: [   93.970898]  [<ffffffff81305940>] ?
->>> transaction_kthread+0x0/0x2a0
->>> Feb 14 02:06:16 lupus kernel: [   93.970990]  [<ffffffff81305940>] ?
->>> transaction_kthread+0x0/0x2a0
->>> Feb 14 02:06:16 lupus kernel: [   93.971083]  [<ffffffff81067a16>] ?
->>> kthread+0x96/0xa0
->>> Feb 14 02:06:16 lupus kernel: [   93.971174]  [<ffffffff81003514>] ?
->>> kernel_thread_helper+0x4/0x10
->>> Feb 14 02:06:16 lupus kernel: [   93.971266]  [<ffffffff81067980>] ?
->>> kthread+0x0/0xa0
->>> Feb 14 02:06:16 lupus kernel: [   93.971355]  [<ffffffff81003510>] ?
->>> kernel_thread_helper+0x0/0x10
->>> Feb 14 02:06:16 lupus kernel: [   93.971444] Code: 55 b8 ff 00 00 00
->>> 53 48 89 fb 48 83 ec 18 48 8b 6f 10 8b 3a 83 ff 04 0f 86 d5 00 00 00
->>> 85 c9 0f 95 c1 83 ff 07 0f 86 d5 00 00 00 <48> 8b 45 50 bf 05 00 00 00
->>> 48 89 06 84 c9 48 8b 85 68 fe ff ff
->>> Feb 14 02:06:16 lupus kernel: [   93.974280] RIP  [<ffffffff8133ef1b>]
->>> btrfs_encode_fh+0x2b/0x120
->>> Feb 14 02:06:16 lupus kernel: [   93.974412]  RSP <ffff88023c63b6e0>
->>> Feb 14 02:06:16 lupus kernel: [   93.974497] CR2: 0000030341ed0050
->>> Feb 14 02:06:16 lupus kernel: [   93.974599] ---[ end trace
->>> 3313552d105b1536 ]---
->>> Feb 14 02:07:04 lupus kernel: [  141.906124] zcache: destroyed pool id=2
->>> Feb 14 02:07:17 lupus kernel: [  154.783358] SysRq : Keyboard mode set
->>> to system default
->>> Feb 14 02:07:18 lupus kernel: [  155.486147] SysRq : Terminate All Tasks
->>>
->>>
->>> That's all for now
->>>
->>> Thanks & Regards
->>>
->>> Matt
->>>
->>
->> (leaving out several folks from the CC to avoid spamming - if I left
->> out someone wrongfully please re-add)
->>
->> running an addr2line reveals:
->>
->>
->> addr2line -e /usr/src/linux-2.6.37_vanilla/vmlinux -i ffffffff81338cbb
->> export.c:0
->>
->>
->> hope that helps
->>
->>
->> Regards
->>
->> Matt
->>
->
-> Just my guessing. I might be wrong.
->
-> __cleancache_flush_inode calls cleancache_get_key with cleancache_filekey.
-> cleancache_file_key's size is just 6 * u32.
-> cleancache_get_key calls btrfs_encode_fh with the key.
-> but btrfs_encode_fh does typecasting the key to btrfs_fid which is
-> bigger size than cleancache_filekey's one so it should not access
-> fields beyond cleancache_get_key.
->
-> I think some file systems use extend fid so in there, this problem can
-> happen. I don't know why we can't find it earlier. Maybe Dan and
-> others test it for a long time.
->
-> Am I missing something?
->
->
->
-> --
-> Kind regards,
-> Minchan Kim
->
+Note, there are still some patches that people have sent me that did not
+make it to this release.  They will show up in the next one, this one is
+big enough, as I'm sure you will agree.
 
-reposting Minchan's message for reference to the btrfs mailing list
-while also adding
+This is the start of the stable review cycle for the 2.6.37.1 release.
+There are 272 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-Li Zefan, Miao Xie, Yan Zheng, Dan Rosenberg and Josef Bacik to CC
+Responses should be made by Friday, Feb 18, 2011 00:00:00 UTC.
+Anything received after that time might be too late.
 
-Regards
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.37.1-rc1.gz
+and the diffstat can be found below.
 
-Matt
+thanks,
+
+greg k-h
+
+ Documentation/kernel-parameters.txt            |    1 +
+ Makefile                                       |    2 +-
+ arch/arm/kernel/head.S                         |   41 ++++---
+ arch/arm/mach-s5pv310/cpu.c                    |    2 +-
+ arch/arm/mm/init.c                             |    6 +
+ arch/arm/oprofile/common.c                     |   12 +--
+ arch/avr32/include/asm/syscalls.h              |    9 --
+ arch/parisc/kernel/firmware.c                  |   13 +--
+ arch/powerpc/boot/dts/p1022ds.dts              |    4 +-
+ arch/powerpc/kernel/cpu_setup_6xx.S            |   40 +++---
+ arch/powerpc/mm/numa.c                         |    2 +-
+ arch/powerpc/platforms/pseries/lpar.c          |   37 ++++++
+ arch/powerpc/sysdev/fsl_rio.c                  |    1 -
+ arch/sh/include/asm/io.h                       |   10 ++-
+ arch/sh/include/asm/pgtable_32.h               |    7 +-
+ arch/x86/Kconfig                               |    1 +
+ arch/x86/include/asm/mmu_context.h             |    5 +-
+ arch/x86/include/asm/uv/uv_bau.h               |    9 +-
+ arch/x86/kernel/cpu/mtrr/main.c                |   10 ++-
+ arch/x86/kernel/irq.c                          |    3 +-
+ arch/x86/kernel/process.c                      |   22 +++-
+ arch/x86/platform/uv/tlb_uv.c                  |   22 +++-
+ block/blk-core.c                               |   26 +++-
+ block/blk-merge.c                              |    3 +-
+ block/cfq-iosched.c                            |    4 +
+ block/genhd.c                                  |    1 +
+ drivers/ata/libata-scsi.c                      |   24 +++-
+ drivers/ata/pata_mpc52xx.c                     |    2 +-
+ drivers/base/power/runtime.c                   |    9 +-
+ drivers/block/nbd.c                            |    3 -
+ drivers/char/agp/intel-agp.c                   |   27 +++--
+ drivers/char/ipmi/ipmi_si_intf.c               |   12 +--
+ drivers/char/tpm/tpm.c                         |   28 ++++-
+ drivers/char/tpm/tpm.h                         |    2 +
+ drivers/char/tpm/tpm_tis.c                     |   10 +-
+ drivers/char/virtio_console.c                  |   15 ++-
+ drivers/cpuidle/cpuidle.c                      |   82 ++++++------
+ drivers/firewire/core-card.c                   |   11 ++-
+ drivers/firmware/dmi_scan.c                    |   11 ++-
+ drivers/gpu/drm/Kconfig                        |    3 +
+ drivers/gpu/drm/drm_crtc_helper.c              |   17 ++-
+ drivers/gpu/drm/i915/i915_dma.c                |   10 ++-
+ drivers/gpu/drm/i915/i915_drv.c                |   10 ++-
+ drivers/gpu/drm/i915/i915_drv.h                |    1 +
+ drivers/gpu/drm/i915/i915_reg.h                |    9 +-
+ drivers/gpu/drm/i915/intel_crt.c               |   30 ++++-
+ drivers/gpu/drm/i915/intel_display.c           |    4 +-
+ drivers/gpu/drm/i915/intel_dp.c                |   23 +++-
+ drivers/gpu/drm/i915/intel_drv.h               |    3 +
+ drivers/gpu/drm/i915/intel_lvds.c              |   18 ++--
+ drivers/gpu/drm/i915/intel_panel.c             |   31 +++++
+ drivers/gpu/drm/i915/intel_sdvo.c              |   33 ++----
+ drivers/gpu/drm/radeon/atombios_crtc.c         |   18 +++-
+ drivers/gpu/drm/radeon/atombios_dp.c           |    4 +-
+ drivers/gpu/drm/radeon/evergreen.c             |    7 +-
+ drivers/gpu/drm/radeon/evergreen_blit_kms.c    |   39 +++++-
+ drivers/gpu/drm/radeon/radeon_atombios.c       |   47 ++++----
+ drivers/gpu/drm/radeon/radeon_display.c        |  132 +++++++++++++++++++--
+ drivers/gpu/drm/radeon/radeon_legacy_crtc.c    |    6 +-
+ drivers/gpu/drm/radeon/radeon_mode.h           |   23 +++-
+ drivers/gpu/vga/vgaarb.c                       |    2 +-
+ drivers/hwmon/applesmc.c                       |   48 +++-----
+ drivers/hwmon/lm63.c                           |   59 +++++++--
+ drivers/hwmon/via686a.c                        |   14 ++-
+ drivers/i2c/i2c-core.c                         |   14 ++-
+ drivers/idle/intel_idle.c                      |   43 +++++++-
+ drivers/infiniband/hw/cxgb4/cm.c               |    2 +-
+ drivers/infiniband/hw/cxgb4/qp.c               |    6 +-
+ drivers/input/input.c                          |   37 ++----
+ drivers/input/mouse/bcm5974.c                  |   40 ++++++
+ drivers/input/serio/i8042-x86ia64io.h          |   21 +++
+ drivers/input/serio/i8042.c                    |    6 +-
+ drivers/md/dm-mpath.c                          |   12 --
+ drivers/md/dm.c                                |    5 +-
+ drivers/md/md.c                                |   27 +++--
+ drivers/md/md.h                                |    3 +-
+ drivers/media/IR/ir-keytable.c                 |   28 +++--
+ drivers/media/dvb/frontends/ix2505v.c          |    2 +-
+ drivers/media/radio/radio-aimslab.c            |   23 +---
+ drivers/media/video/em28xx/em28xx-cards.c      |    4 +-
+ drivers/mmc/host/bfin_sdh.c                    |    2 +-
+ drivers/mtd/nand/pxa3xx_nand.c                 |    2 +-
+ drivers/net/e1000/e1000_main.c                 |   10 +-
+ drivers/net/fec.c                              |    4 +-
+ drivers/net/ixgbe/ixgbe_main.c                 |   11 ++-
+ drivers/net/virtio_net.c                       |   27 +++--
+ drivers/net/wireless/ath/ath9k/ar9002_calib.c  |   10 +-
+ drivers/net/wireless/ath/ath9k/ar9002_hw.c     |    3 +-
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   14 ++-
+ drivers/net/wireless/ath/ath9k/ath9k.h         |    4 +-
+ drivers/net/wireless/ath/ath9k/hif_usb.c       |   40 ++++++-
+ drivers/net/wireless/ath/ath9k/hif_usb.h       |    1 +
+ drivers/net/wireless/ath/ath9k/hw.c            |    6 +-
+ drivers/net/wireless/ath/ath9k/hw.h            |    1 +
+ drivers/net/wireless/ath/ath9k/main.c          |    8 +-
+ drivers/net/wireless/ath/ath9k/pci.c           |    4 +
+ drivers/net/wireless/ath/carl9170/rx.c         |    2 +-
+ drivers/net/wireless/ath/key.c                 |    2 +
+ drivers/net/wireless/hostap/hostap_cs.c        |   15 +--
+ drivers/net/wireless/iwlwifi/iwl-agn.c         |   15 ++-
+ drivers/net/wireless/iwlwifi/iwl-helpers.h     |    6 +
+ drivers/net/wireless/p54/txrx.c                |    2 +-
+ drivers/net/wireless/rt2x00/rt73usb.c          |    1 +
+ drivers/pci/pci-stub.c                         |    3 +
+ drivers/power/ds2760_battery.c                 |    2 +-
+ drivers/power/jz4740-battery.c                 |    7 +
+ drivers/rtc/rtc-cmos.c                         |   16 ++-
+ drivers/s390/cio/qdio.h                        |    6 +
+ drivers/s390/cio/qdio_main.c                   |   43 +++++---
+ drivers/s390/crypto/ap_bus.c                   |    2 +-
+ drivers/scsi/libsas/sas_scsi_host.c            |    1 +
+ drivers/scsi/mpt2sas/mpt2sas_base.c            |   24 +++-
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c           |   64 ++++++++--
+ drivers/scsi/sd.c                              |    9 ++-
+ drivers/serial/68360serial.c                   |    1 +
+ drivers/serial/8250.c                          |    3 +-
+ drivers/ssb/pcmcia.c                           |    2 +-
+ drivers/staging/bcm/InterfaceInit.c            |    1 +
+ drivers/staging/bcm/InterfaceInit.h            |    1 +
+ drivers/staging/brcm80211/sys/wl_mac80211.c    |   45 ++++----
+ drivers/staging/comedi/drivers/jr3_pci.c       |    7 +
+ drivers/staging/comedi/drivers/ni_labpc.c      |    3 +-
+ drivers/staging/hv/blkvsc_drv.c                |    1 +
+ drivers/staging/hv/netvsc.c                    |    2 +-
+ drivers/staging/hv/netvsc_drv.c                |    2 +-
+ drivers/staging/iio/adc/ad7476_core.c          |    2 +-
+ drivers/staging/iio/adc/ad799x_core.c          |    2 +-
+ drivers/staging/rt2860/chips/rt3090.c          |    3 +-
+ drivers/staging/rt2860/chips/rt30xx.c          |    4 +-
+ drivers/staging/rt2860/rt_main_dev.c           |    2 -
+ drivers/staging/rt2860/usb_main_dev.c          |    1 +
+ drivers/staging/rtl8712/usb_intf.c             |  145 +++++++++++++++++-----
+ drivers/staging/speakup/kobjects.c             |    2 +-
+ drivers/staging/usbip/vhci_hcd.c               |   14 --
+ drivers/staging/zram/zram_drv.c                |    4 +
+ drivers/tty/n_gsm.c                            |    1 +
+ drivers/tty/sysrq.c                            |   19 +++-
+ drivers/usb/class/cdc-acm.c                    |    1 +
+ drivers/usb/core/hcd-pci.c                     |    7 +-
+ drivers/usb/core/hcd.c                         |    2 +-
+ drivers/usb/core/hub.c                         |   26 ++++
+ drivers/usb/gadget/printer.c                   |   19 ++--
+ drivers/usb/host/ehci-au1xxx.c                 |    2 +-
+ drivers/usb/host/ehci-hcd.c                    |   27 +++-
+ drivers/usb/host/ehci-hub.c                    |    7 +
+ drivers/usb/host/ehci-pci.c                    |   41 ++++++-
+ drivers/usb/host/ehci-sched.c                  |   79 ++++++++++++
+ drivers/usb/host/ehci.h                        |    1 +
+ drivers/usb/host/xhci-ring.c                   |    2 +-
+ drivers/usb/host/xhci.c                        |   60 ++++------
+ drivers/usb/serial/ch341.c                     |   10 ++
+ drivers/usb/serial/cp210x.c                    |   16 +--
+ drivers/usb/serial/digi_acceleport.c           |   10 --
+ drivers/usb/serial/ftdi_sio.c                  |   39 ++++++-
+ drivers/usb/serial/ftdi_sio_ids.h              |   32 +++++-
+ drivers/usb/serial/generic.c                   |   20 +++
+ drivers/usb/serial/io_edgeport.c               |    4 +-
+ drivers/usb/serial/io_tables.h                 |    1 +
+ drivers/usb/serial/iuu_phoenix.c               |    1 +
+ drivers/usb/serial/keyspan.h                   |    4 +
+ drivers/usb/serial/keyspan_pda.c               |   17 ---
+ drivers/usb/serial/moto_modem.c                |    1 +
+ drivers/usb/serial/option.c                    |   23 +++-
+ drivers/usb/serial/oti6858.c                   |    1 +
+ drivers/usb/serial/pl2303.c                    |   12 ++
+ drivers/usb/serial/pl2303.h                    |    1 +
+ drivers/usb/serial/qcaux.c                     |    3 +
+ drivers/usb/serial/siemens_mpi.c               |    1 +
+ drivers/usb/serial/spcp8x5.c                   |    7 +-
+ drivers/usb/serial/ti_usb_3410_5052.c          |    2 +-
+ drivers/usb/serial/usb-serial.c                |    8 +-
+ drivers/usb/serial/usb_debug.c                 |    1 +
+ drivers/usb/storage/unusual_cypress.h          |    5 +
+ drivers/usb/storage/unusual_devs.h             |   32 +++++
+ drivers/video/aty/atyfb_base.c                 |   27 +----
+ drivers/video/backlight/88pm860x_bl.c          |    4 +-
+ drivers/virtio/virtio_pci.c                    |   20 +---
+ drivers/xen/platform-pci.c                     |   21 +--
+ fs/cifs/cifsproto.h                            |    2 +-
+ fs/cifs/cifssmb.c                              |    4 +-
+ fs/cifs/connect.c                              |    4 +-
+ fs/cifs/file.c                                 |   21 ++--
+ fs/cifs/misc.c                                 |    2 +-
+ fs/direct-io.c                                 |   10 +-
+ fs/eventpoll.c                                 |   16 ++-
+ fs/exofs/inode.c                               |    2 -
+ fs/ext4/inode.c                                |    1 +
+ fs/ext4/mballoc.c                              |  102 +++++++++------
+ fs/ext4/page-io.c                              |   11 +-
+ fs/ext4/super.c                                |   41 ++++---
+ fs/fs-writeback.c                              |   98 ++++++++++++---
+ fs/nfs/delegation.c                            |    6 +-
+ fs/nfs/dir.c                                   |   50 ++++----
+ fs/nfs/direct.c                                |   34 +++--
+ fs/nfs/nfs2xdr.c                               |    6 -
+ fs/nfs/nfs3xdr.c                               |    6 -
+ fs/nfs/nfs4xdr.c                               |    6 -
+ fs/nfsd/nfs4idmap.c                            |    4 +-
+ fs/nfsd/nfsd.h                                 |    1 +
+ fs/nfsd/nfsproc.c                              |    2 +-
+ fs/nilfs2/super.c                              |    3 +-
+ fs/partitions/check.c                          |   10 ++-
+ fs/proc/kcore.c                                |    2 +-
+ include/drm/drm_pciids.h                       |    1 -
+ include/linux/blkdev.h                         |    1 +
+ include/linux/completion.h                     |    8 +-
+ include/linux/dynamic_debug.h                  |   18 +--
+ include/linux/genhd.h                          |    2 +
+ include/linux/ieee80211.h                      |    2 +-
+ include/linux/klist.h                          |    2 +-
+ include/linux/kref.h                           |    1 +
+ include/linux/lockdep.h                        |    3 +
+ include/linux/memory_hotplug.h                 |    6 +
+ include/linux/mmzone.h                         |   10 +-
+ include/linux/nl80211.h                        |    6 +-
+ include/linux/oprofile.h                       |   13 ++-
+ include/linux/radix-tree.h                     |   16 +++
+ include/linux/security.h                       |   15 +--
+ include/linux/sunrpc/xdr.h                     |    4 +-
+ include/linux/sysrq.h                          |    3 +
+ include/linux/usb/hcd.h                        |    1 +
+ include/linux/usb/serial.h                     |    3 +
+ include/linux/vmstat.h                         |    5 +
+ include/net/cfg80211.h                         |   15 ++-
+ include/scsi/scsi.h                            |    1 +
+ init/calibrate.c                               |    6 +-
+ kernel/irq/migration.c                         |   14 ++-
+ kernel/perf_event.c                            |   15 ++-
+ kernel/ptrace.c                                |    2 +-
+ kernel/sched.c                                 |   22 +++-
+ kernel/sched_rt.c                              |    2 +-
+ kernel/smp.c                                   |   30 +++++
+ kernel/sys.c                                   |    3 +-
+ kernel/sysctl.c                                |    3 +-
+ kernel/trace/trace.c                           |    6 +-
+ kernel/watchdog.c                              |   41 +++----
+ kernel/workqueue.c                             |   14 ++-
+ lib/dynamic_debug.c                            |    9 +-
+ lib/kref.c                                     |   12 ++
+ mm/memcontrol.c                                |    7 +-
+ mm/memory_hotplug.c                            |    4 +
+ mm/migrate.c                                   |   75 ++++--------
+ mm/mmzone.c                                    |   21 ---
+ mm/page_alloc.c                                |   35 ++++--
+ mm/slub.c                                      |    4 +-
+ mm/vmscan.c                                    |   23 ++--
+ mm/vmstat.c                                    |   68 ++++++++++-
+ net/ax25/af_ax25.c                             |    2 +-
+ net/core/ethtool.c                             |    2 +-
+ net/core/rtnetlink.c                           |    3 +
+ net/core/sock.c                                |    2 +-
+ net/ipv4/ip_fragment.c                         |   34 +++++
+ net/ipv6/ip6_output.c                          |    3 +
+ net/mac80211/agg-rx.c                          |   11 +--
+ net/mac80211/key.c                             |    6 +
+ net/mac80211/rx.c                              |    4 +-
+ net/mac80211/tx.c                              |    6 +-
+ net/sched/sch_fifo.c                           |    2 -
+ net/sunrpc/xdr.c                               |  155 +++++++++++++++++++-----
+ net/unix/af_unix.c                             |    2 +-
+ net/wireless/reg.c                             |   33 +++++-
+ security/capability.c                          |    2 +-
+ security/security.c                            |    3 +-
+ security/selinux/hooks.c                       |   15 ++-
+ security/selinux/nlmsgtab.c                    |    2 +
+ security/smack/smack_lsm.c                     |   14 +-
+ sound/atmel/ac97c.c                            |    5 +-
+ sound/core/hrtimer.c                           |    5 +-
+ sound/pci/au88x0/au88x0_pcm.c                  |   24 +++-
+ sound/pci/hda/hda_codec.c                      |    3 +
+ sound/pci/hda/hda_eld.c                        |    2 +-
+ sound/pci/hda/patch_conexant.c                 |    9 ++-
+ sound/pci/hda/patch_hdmi.c                     |   51 ++++++++-
+ sound/pci/hda/patch_realtek.c                  |    2 +
+ sound/pci/hda/patch_sigmatel.c                 |    2 +-
+ sound/soc/blackfin/bf5xx-ac97.c                |    4 +-
+ sound/soc/blackfin/bf5xx-tdm.c                 |    2 +-
+ sound/soc/codecs/wm8990.c                      |   10 +-
+ sound/soc/codecs/wm8994.c                      |   17 ++-
+ sound/soc/codecs/wm_hubs.c                     |   15 +--
+ sound/soc/davinci/davinci-evm.c                |    2 +-
+ sound/soc/pxa/corgi.c                          |    4 +-
+ sound/soc/pxa/poodle.c                         |    2 +-
+ sound/soc/pxa/spitz.c                          |    4 +-
+ sound/soc/soc-core.c                           |    2 +-
+ sound/usb/midi.c                               |   11 ++-
+ sound/usb/usx2y/us122l.c                       |   41 +++---
+ 287 files changed, 2858 insertions(+), 1280 deletions(-)
