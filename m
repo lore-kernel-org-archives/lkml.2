@@ -1,245 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab1BPGfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 01:35:30 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43447 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab1BPGfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 01:35:01 -0500
+	id S1754057Ab1BPGfF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 01:35:05 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38178 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751283Ab1BPGe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 01:34:59 -0500
 From: John Stultz <johnstul@us.ibm.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, jacob.jun.pan@intel.com,
-        Glauber Costa <glommer@redhat.com>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris McDermott <lcm@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/6] x86: Convert untested clocksources to clocksource_register_hz/khz
-Date: Tue, 15 Feb 2011 22:34:47 -0800
-Message-Id: <1297838092-22989-2-git-send-email-johnstul@us.ibm.com>
+Cc: John Stultz <johnstul@us.ibm.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 5/6] mips: convert to clocksource_register_hz/khz
+Date: Tue, 15 Feb 2011 22:34:51 -0800
+Message-Id: <1297838092-22989-6-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1297838092-22989-1-git-send-email-johnstul@us.ibm.com>
 References: <1297838092-22989-1-git-send-email-johnstul@us.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This converts the remaining x86 clocksources to use
-clocksource_register_hz/khz. I was not able to test them, so
-any extra assistance to make sure time functions properly with
-the clocksources changeed here would be appreciated!
+This converts the mips clocksources to use clocksource_register_hz/khz
 
-CC: jacob.jun.pan@intel.com
-CC: Glauber Costa <glommer@redhat.com>
-CC: Dimitri Sivanich <sivanich@sgi.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>
-CC: Jeremy Fitzhardinge <jeremy@xensource.com>
-CC: Chris McDermott <lcm@us.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
+This is untested, so any assistance in testing would be appreciated!
+
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
+CC: Ralf Baechle <ralf@linux-mips.org>
+CC: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/apb_timer.c    |   10 +---------
- arch/x86/kernel/i8253.c        |    6 +-----
- arch/x86/kernel/kvmclock.c     |    6 +-----
- arch/x86/lguest/boot.c         |    4 +---
- arch/x86/platform/uv/uv_time.c |    6 +-----
- arch/x86/xen/time.c            |    6 +-----
- drivers/clocksource/cyclone.c  |   10 ++--------
- 7 files changed, 8 insertions(+), 40 deletions(-)
+ arch/mips/alchemy/common/time.c                 |    3 +-
+ arch/mips/cavium-octeon/csrc-octeon.c           |    3 +-
+ arch/mips/include/asm/time.h                    |    6 ----
+ arch/mips/jz4740/time.c                         |    3 +-
+ arch/mips/kernel/cevt-txx9.c                    |    3 +-
+ arch/mips/kernel/csrc-bcm1480.c                 |    3 +-
+ arch/mips/kernel/csrc-ioasic.c                  |    4 +--
+ arch/mips/kernel/csrc-powertv.c                 |   35 ++---------------------
+ arch/mips/kernel/csrc-r4k.c                     |    4 +--
+ arch/mips/kernel/csrc-sb1250.c                  |    3 +-
+ arch/mips/kernel/i8253.c                        |    5 +--
+ arch/mips/loongson/common/cs5536/cs5536_mfgpt.c |    5 +--
+ arch/mips/sgi-ip27/ip27-timer.c                 |    3 +-
+ 13 files changed, 14 insertions(+), 66 deletions(-)
 
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index 51ef31a..29ebf5a 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -177,7 +177,6 @@ static struct clocksource clocksource_apbt = {
- 	.rating		= APBT_CLOCKSOURCE_RATING,
- 	.read		= apbt_read_clocksource,
- 	.mask		= APBT_MASK,
--	.shift		= APBT_SHIFT,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- 	.resume		= apbt_restart_clocksource,
- };
-@@ -595,14 +594,7 @@ static int apbt_clocksource_register(void)
- 	if (t1 == apbt_read_clocksource(&clocksource_apbt))
- 		panic("APBT counter not counting. APBT disabled\n");
+diff --git a/arch/mips/alchemy/common/time.c b/arch/mips/alchemy/common/time.c
+index 2aecb2f..d5da6ad 100644
+--- a/arch/mips/alchemy/common/time.c
++++ b/arch/mips/alchemy/common/time.c
+@@ -141,8 +141,7 @@ static int __init alchemy_time_init(unsigned int m2int)
+ 		goto cntr_err;
  
--	/*
--	 * initialize and register APBT clocksource
--	 * convert that to ns/clock cycle
--	 * mult = (ns/c) * 2^APBT_SHIFT
--	 */
--	clocksource_apbt.mult = div_sc(MSEC_PER_SEC,
--				       (unsigned long) apbt_freq, APBT_SHIFT);
--	clocksource_register(&clocksource_apbt);
-+	clocksource_register_khz(&clocksource_apbt, (u32)apbt_freq*1000);
+ 	/* register counter1 clocksource and event device */
+-	clocksource_set_clock(&au1x_counter1_clocksource, 32768);
+-	clocksource_register(&au1x_counter1_clocksource);
++	clocksource_register_hz(&au1x_counter1_clocksource, 32768);
+ 
+ 	cd->shift = 32;
+ 	cd->mult = div_sc(32768, NSEC_PER_SEC, cd->shift);
+diff --git a/arch/mips/cavium-octeon/csrc-octeon.c b/arch/mips/cavium-octeon/csrc-octeon.c
+index 26bf711..29d56af 100644
+--- a/arch/mips/cavium-octeon/csrc-octeon.c
++++ b/arch/mips/cavium-octeon/csrc-octeon.c
+@@ -105,8 +105,7 @@ unsigned long long notrace sched_clock(void)
+ void __init plat_time_init(void)
+ {
+ 	clocksource_mips.rating = 300;
+-	clocksource_set_clock(&clocksource_mips, octeon_get_clock_rate());
+-	clocksource_register(&clocksource_mips);
++	clocksource_register_hz(&clocksource_mips, octeon_get_clock_rate());
+ }
+ 
+ static u64 octeon_udelay_factor;
+diff --git a/arch/mips/include/asm/time.h b/arch/mips/include/asm/time.h
+index c7f1bfe..bc14447 100644
+--- a/arch/mips/include/asm/time.h
++++ b/arch/mips/include/asm/time.h
+@@ -84,12 +84,6 @@ static inline int init_mips_clocksource(void)
+ #endif
+ }
+ 
+-static inline void clocksource_set_clock(struct clocksource *cs,
+-					 unsigned int clock)
+-{
+-	clocksource_calc_mult_shift(cs, clock, 4);
+-}
+-
+ static inline void clockevent_set_clock(struct clock_event_device *cd,
+ 					unsigned int clock)
+ {
+diff --git a/arch/mips/jz4740/time.c b/arch/mips/jz4740/time.c
+index fe01678..03dfd4e 100644
+--- a/arch/mips/jz4740/time.c
++++ b/arch/mips/jz4740/time.c
+@@ -121,8 +121,7 @@ void __init plat_time_init(void)
+ 
+ 	clockevents_register_device(&jz4740_clockevent);
+ 
+-	clocksource_set_clock(&jz4740_clocksource, clk_rate);
+-	ret = clocksource_register(&jz4740_clocksource);
++	ret = clocksource_register_hz(&jz4740_clocksource, clk_rate);
+ 
+ 	if (ret)
+ 		printk(KERN_ERR "Failed to register clocksource: %d\n", ret);
+diff --git a/arch/mips/kernel/cevt-txx9.c b/arch/mips/kernel/cevt-txx9.c
+index 0b73773..f0ab92a 100644
+--- a/arch/mips/kernel/cevt-txx9.c
++++ b/arch/mips/kernel/cevt-txx9.c
+@@ -51,8 +51,7 @@ void __init txx9_clocksource_init(unsigned long baseaddr,
+ {
+ 	struct txx9_tmr_reg __iomem *tmrptr;
+ 
+-	clocksource_set_clock(&txx9_clocksource.cs, TIMER_CLK(imbusclk));
+-	clocksource_register(&txx9_clocksource.cs);
++	clocksource_register_hz(&txx9_clocksource.cs, TIMER_CLK(imbusclk));
+ 
+ 	tmrptr = ioremap(baseaddr, sizeof(struct txx9_tmr_reg));
+ 	__raw_writel(TCR_BASE, &tmrptr->tcr);
+diff --git a/arch/mips/kernel/csrc-bcm1480.c b/arch/mips/kernel/csrc-bcm1480.c
+index 51489f8..f96f99c 100644
+--- a/arch/mips/kernel/csrc-bcm1480.c
++++ b/arch/mips/kernel/csrc-bcm1480.c
+@@ -49,6 +49,5 @@ void __init sb1480_clocksource_init(void)
+ 
+ 	plldiv = G_BCM1480_SYS_PLL_DIV(__raw_readq(IOADDR(A_SCD_SYSTEM_CFG)));
+ 	zbbus = ((plldiv >> 1) * 50000000) + ((plldiv & 1) * 25000000);
+-	clocksource_set_clock(cs, zbbus);
+-	clocksource_register(cs);
++	clocksource_register_hz(cs, zbbus);
+ }
+diff --git a/arch/mips/kernel/csrc-ioasic.c b/arch/mips/kernel/csrc-ioasic.c
+index 23da108..46bd7fa 100644
+--- a/arch/mips/kernel/csrc-ioasic.c
++++ b/arch/mips/kernel/csrc-ioasic.c
+@@ -59,7 +59,5 @@ void __init dec_ioasic_clocksource_init(void)
+ 	printk(KERN_INFO "I/O ASIC clock frequency %dHz\n", freq);
+ 
+ 	clocksource_dec.rating = 200 + freq / 10000000;
+-	clocksource_set_clock(&clocksource_dec, freq);
+-
+-	clocksource_register(&clocksource_dec);
++	clocksource_register_hz(&clocksource_dec, freq);
+ }
+diff --git a/arch/mips/kernel/csrc-powertv.c b/arch/mips/kernel/csrc-powertv.c
+index a27c16c..2e7c523 100644
+--- a/arch/mips/kernel/csrc-powertv.c
++++ b/arch/mips/kernel/csrc-powertv.c
+@@ -78,9 +78,7 @@ static void __init powertv_c0_hpt_clocksource_init(void)
+ 
+ 	clocksource_mips.rating = 200 + mips_hpt_frequency / 10000000;
+ 
+-	clocksource_set_clock(&clocksource_mips, mips_hpt_frequency);
+-
+-	clocksource_register(&clocksource_mips);
++	clocksource_register_hz(&clocksource_mips, mips_hpt_frequency);
+ }
+ 
+ /**
+@@ -130,43 +128,16 @@ static struct clocksource clocksource_tim_c = {
+ /**
+  * powertv_tim_c_clocksource_init - set up a clock source for the TIM_C clock
+  *
+- * The hard part here is coming up with a constant k and shift s such that
+- * the 48-bit TIM_C value multiplied by k doesn't overflow and that value,
+- * when shifted right by s, yields the corresponding number of nanoseconds.
+  * We know that TIM_C counts at 27 MHz/8, so each cycle corresponds to
+- * 1 / (27,000,000/8) seconds. Multiply that by a billion and you get the
+- * number of nanoseconds. Since the TIM_C value has 48 bits and the math is
+- * done in 64 bits, avoiding an overflow means that k must be less than
+- * 64 - 48 = 16 bits.
++ * 1 / (27,000,000/8) seconds.
+  */
+ static void __init powertv_tim_c_clocksource_init(void)
+ {
+-	int			prescale;
+-	unsigned long		dividend;
+-	unsigned long		k;
+-	int			s;
+-	const int		max_k_bits = (64 - 48) - 1;
+-	const unsigned long	billion = 1000000000;
+ 	const unsigned long	counts_per_second = 27000000 / 8;
+ 
+-	prescale = BITS_PER_LONG - ilog2(billion) - 1;
+-	dividend = billion << prescale;
+-	k = dividend / counts_per_second;
+-	s = ilog2(k) - max_k_bits;
+-
+-	if (s < 0)
+-		s = prescale;
+-
+-	else {
+-		k >>= s;
+-		s += prescale;
+-	}
+-
+-	clocksource_tim_c.mult = k;
+-	clocksource_tim_c.shift = s;
+ 	clocksource_tim_c.rating = 200;
+ 
+-	clocksource_register(&clocksource_tim_c);
++	clocksource_register_hz(&clocksource_tim_c, counts_per_second);
+ 	tim_c = (struct tim_c *) asic_reg_addr(tim_ch);
+ }
+ 
+diff --git a/arch/mips/kernel/csrc-r4k.c b/arch/mips/kernel/csrc-r4k.c
+index e95a3cd..decd1fa 100644
+--- a/arch/mips/kernel/csrc-r4k.c
++++ b/arch/mips/kernel/csrc-r4k.c
+@@ -30,9 +30,7 @@ int __init init_r4k_clocksource(void)
+ 	/* Calculate a somewhat reasonable rating value */
+ 	clocksource_mips.rating = 200 + mips_hpt_frequency / 10000000;
+ 
+-	clocksource_set_clock(&clocksource_mips, mips_hpt_frequency);
+-
+-	clocksource_register(&clocksource_mips);
++	clocksource_register_hz(&clocksource_mips, mips_hpt_frequency);
  
  	return 0;
  }
-diff --git a/arch/x86/kernel/i8253.c b/arch/x86/kernel/i8253.c
-index 2dfd315..212fe65 100644
---- a/arch/x86/kernel/i8253.c
-+++ b/arch/x86/kernel/i8253.c
-@@ -188,8 +188,6 @@ static struct clocksource pit_cs = {
- 	.rating		= 110,
- 	.read		= pit_read,
- 	.mask		= CLOCKSOURCE_MASK(32),
--	.mult		= 0,
--	.shift		= 20,
+diff --git a/arch/mips/kernel/csrc-sb1250.c b/arch/mips/kernel/csrc-sb1250.c
+index d14d3d1..e9606d9 100644
+--- a/arch/mips/kernel/csrc-sb1250.c
++++ b/arch/mips/kernel/csrc-sb1250.c
+@@ -65,6 +65,5 @@ void __init sb1250_clocksource_init(void)
+ 		     IOADDR(A_SCD_TIMER_REGISTER(SB1250_HPT_NUM,
+ 						 R_SCD_TIMER_CFG)));
+ 
+-	clocksource_set_clock(cs, V_SCD_TIMER_FREQ);
+-	clocksource_register(cs);
++	clocksource_register_hz(cs, V_SCD_TIMER_FREQ);
+ }
+diff --git a/arch/mips/kernel/i8253.c b/arch/mips/kernel/i8253.c
+index 2392a7a2..9fadd17 100644
+--- a/arch/mips/kernel/i8253.c
++++ b/arch/mips/kernel/i8253.c
+@@ -196,8 +196,6 @@ static struct clocksource clocksource_pit = {
+ 	.rating = 110,
+ 	.read	= pit_read,
+ 	.mask	= CLOCKSOURCE_MASK(32),
+-	.mult	= 0,
+-	.shift	= 20,
  };
  
  static int __init init_pit_clocksource(void)
-@@ -205,9 +203,7 @@ static int __init init_pit_clocksource(void)
- 	    pit_ce.mode != CLOCK_EVT_MODE_PERIODIC)
+@@ -205,7 +203,6 @@ static int __init init_pit_clocksource(void)
+ 	if (num_possible_cpus() > 1) /* PIT does not scale! */
  		return 0;
  
--	pit_cs.mult = clocksource_hz2mult(CLOCK_TICK_RATE, pit_cs.shift);
--
--	return clocksource_register(&pit_cs);
-+	return clocksource_register_hz(&pit_cs, CLOCK_TICK_RATE);
+-	clocksource_pit.mult = clocksource_hz2mult(CLOCK_TICK_RATE, 20);
+-	return clocksource_register(&clocksource_pit);
++	return clocksource_register_hz(&clocksource_pit, CLOCK_TICK_RATE);
  }
  arch_initcall(init_pit_clocksource);
- 
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index f98d3ea..6389a6b 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -26,8 +26,6 @@
- #include <asm/x86_init.h>
- #include <asm/reboot.h>
- 
--#define KVM_SCALE 22
--
- static int kvmclock = 1;
- static int msr_kvm_system_time = MSR_KVM_SYSTEM_TIME;
- static int msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK;
-@@ -120,8 +118,6 @@ static struct clocksource kvm_clock = {
- 	.read = kvm_clock_get_cycles,
- 	.rating = 400,
- 	.mask = CLOCKSOURCE_MASK(64),
--	.mult = 1 << KVM_SCALE,
--	.shift = KVM_SCALE,
- 	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
+diff --git a/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c b/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c
+index 8c807c9..0cb1b97 100644
+--- a/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c
++++ b/arch/mips/loongson/common/cs5536/cs5536_mfgpt.c
+@@ -201,8 +201,6 @@ static struct clocksource clocksource_mfgpt = {
+ 	.rating = 120, /* Functional for real use, but not desired */
+ 	.read = mfgpt_read,
+ 	.mask = CLOCKSOURCE_MASK(32),
+-	.mult = 0,
+-	.shift = 22,
  };
  
-@@ -203,7 +199,7 @@ void __init kvmclock_init(void)
- 	machine_ops.crash_shutdown  = kvm_crash_shutdown;
- #endif
- 	kvm_get_preset_lpj();
--	clocksource_register(&kvm_clock);
-+	clocksource_register_hz(&kvm_clock, NSEC_PER_SEC);
- 	pv_info.paravirt_enabled = 1;
- 	pv_info.name = "KVM";
+ int __init init_mfgpt_clocksource(void)
+@@ -210,8 +208,7 @@ int __init init_mfgpt_clocksource(void)
+ 	if (num_possible_cpus() > 1)	/* MFGPT does not scale! */
+ 		return 0;
  
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index eba687f0..5b96fd9 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -913,8 +913,6 @@ static struct clocksource lguest_clock = {
- 	.rating		= 200,
- 	.read		= lguest_clock_read,
- 	.mask		= CLOCKSOURCE_MASK(64),
--	.mult		= 1 << 22,
--	.shift		= 22,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
-@@ -997,7 +995,7 @@ static void lguest_time_init(void)
- 	/* Set up the timer interrupt (0) to go to our simple timer routine */
- 	set_irq_handler(0, lguest_time_irq);
- 
--	clocksource_register(&lguest_clock);
-+	clocksource_register_hz(&lguest_clock, NSEC_PER_SEC);
- 
- 	/* We can't set cpumask in the initializer: damn C limitations!  Set it
- 	 * here and register our timer device. */
-diff --git a/arch/x86/platform/uv/uv_time.c b/arch/x86/platform/uv/uv_time.c
-index 9daf5d1..0eb9018 100644
---- a/arch/x86/platform/uv/uv_time.c
-+++ b/arch/x86/platform/uv/uv_time.c
-@@ -40,7 +40,6 @@ static struct clocksource clocksource_uv = {
- 	.rating		= 400,
- 	.read		= uv_read_rtc,
- 	.mask		= (cycle_t)UVH_RTC_REAL_TIME_CLOCK_MASK,
--	.shift		= 10,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
-@@ -372,14 +371,11 @@ static __init int uv_rtc_setup_clock(void)
- 	if (!is_uv_system())
- 		return -ENODEV;
- 
--	clocksource_uv.mult = clocksource_hz2mult(sn_rtc_cycles_per_second,
--				clocksource_uv.shift);
--
- 	/* If single blade, prefer tsc */
- 	if (uv_num_possible_blades() == 1)
- 		clocksource_uv.rating = 250;
- 
--	rc = clocksource_register(&clocksource_uv);
-+	rc = clocksource_register_hz(&clocksource_uv, sn_rtc_cycles_per_second);
- 	if (rc)
- 		printk(KERN_INFO "UV RTC clocksource failed rc %d\n", rc);
- 	else
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 067759e..04e1159 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -26,8 +26,6 @@
- 
- #include "xen-ops.h"
- 
--#define XEN_SHIFT 22
--
- /* Xen may fire a timer up to this many ns early */
- #define TIMER_SLOP	100000
- #define NS_PER_TICK	(1000000000LL / HZ)
-@@ -211,8 +209,6 @@ static struct clocksource xen_clocksource __read_mostly = {
- 	.rating = 400,
- 	.read = xen_clocksource_get_cycles,
- 	.mask = ~0,
--	.mult = 1<<XEN_SHIFT,		/* time directly in nanoseconds */
--	.shift = XEN_SHIFT,
- 	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
-@@ -446,7 +442,7 @@ static __init void xen_time_init(void)
- 	int cpu = smp_processor_id();
- 	struct timespec tp;
- 
--	clocksource_register(&xen_clocksource);
-+	clocksource_register_hz(&xen_clocksource, NSEC_PER_SEC);
- 
- 	if (HYPERVISOR_vcpu_op(VCPUOP_stop_periodic_timer, cpu, NULL) == 0) {
- 		/* Successfully turned off 100Hz tick, so we have the
-diff --git a/drivers/clocksource/cyclone.c b/drivers/clocksource/cyclone.c
-index 64e528e..72f811f 100644
---- a/drivers/clocksource/cyclone.c
-+++ b/drivers/clocksource/cyclone.c
-@@ -29,8 +29,6 @@ static struct clocksource clocksource_cyclone = {
- 	.rating		= 250,
- 	.read		= read_cyclone,
- 	.mask		= CYCLONE_TIMER_MASK,
--	.mult		= 10,
--	.shift		= 0,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
-@@ -108,12 +106,8 @@ static int __init init_cyclone_clocksource(void)
- 	}
- 	cyclone_ptr = cyclone_timer;
- 
--	/* sort out mult/shift values: */
--	clocksource_cyclone.shift = 22;
--	clocksource_cyclone.mult = clocksource_hz2mult(CYCLONE_TIMER_FREQ,
--						clocksource_cyclone.shift);
--
--	return clocksource_register(&clocksource_cyclone);
-+	return clocksource_register_hz(&clocksource_cyclone,
-+					CYCLONE_TIMER_FREQ);
+-	clocksource_mfgpt.mult = clocksource_hz2mult(MFGPT_TICK_RATE, 22);
+-	return clocksource_register(&clocksource_mfgpt);
++	return clocksource_register_hz(&clocksource_mfgpt, MFGPT_TICK_RATE);
  }
  
- arch_initcall(init_cyclone_clocksource);
+ arch_initcall(init_mfgpt_clocksource);
+diff --git a/arch/mips/sgi-ip27/ip27-timer.c b/arch/mips/sgi-ip27/ip27-timer.c
+index d6802d6..3cac883 100644
+--- a/arch/mips/sgi-ip27/ip27-timer.c
++++ b/arch/mips/sgi-ip27/ip27-timer.c
+@@ -177,8 +177,7 @@ static void __init hub_rt_clocksource_init(void)
+ {
+ 	struct clocksource *cs = &hub_rt_clocksource;
+ 
+-	clocksource_set_clock(cs, CYCLES_PER_SEC);
+-	clocksource_register(cs);
++	clocksource_register_hz(cs, CYCLES_PER_SEC);
+ }
+ 
+ void __init plat_time_init(void)
 -- 
 1.7.3.2.146.gca209
 
