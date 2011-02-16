@@ -1,116 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab1BPVvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 16:51:23 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19153 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab1BPVvU (ORCPT
+	id S1754984Ab1BPVwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 16:52:22 -0500
+Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:55839 "EHLO
+	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752041Ab1BPVwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 16:51:20 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6259"; a="74850976"
-Message-ID: <4D5C46D7.1040903@codeaurora.org>
-Date: Wed, 16 Feb 2011 13:51:19 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 16 Feb 2011 16:52:18 -0500
+Date: Wed, 16 Feb 2011 22:51:57 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110216215157.GA6054@host1.dyn.jankratochvil.net>
+References: <20110204105343.GA12133@htj.dyndns.org>
+ <20110207174821.GA1237@redhat.com>
+ <20110209141803.GH3770@htj.dyndns.org>
+ <201102132325.55353.vda.linux@googlemail.com>
+ <20110214151340.GP18742@htj.dyndns.org>
+ <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        konkers@android.com, linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 12/21] ARM: tegra: clock: Add shared bus clock type
-References: <1297590033-15035-1-git-send-email-ccross@android.com>	<1297590033-15035-13-git-send-email-ccross@android.com>	<4D5C34E0.5000209@codeaurora.org> <AANLkTi=knKY65xaOT85jFidy6Be8K8RT0L1XtGqq_v2V@mail.gmail.com>
-In-Reply-To: <AANLkTi=knKY65xaOT85jFidy6Be8K8RT0L1XtGqq_v2V@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2011 01:01 PM, Colin Cross wrote:
-> On Wed, Feb 16, 2011 at 12:34 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>
->> What do you do if clk_set_rate() fails? Should you unwind all the state
->> such as the rate and if it's enabled/disabled? Or is it safe to say
->> clk_set_rate() can't fail unless the kernel is buggy in which case why
->> aren't all those return -E* in the set rate functions just BUG_ONs?
->
-> In general, clk_set_rate can fail and return an error, but in this
-> case the failure may not be directly related to the driver that called
-> into tegra_clk_shared_bus_update.  For example, if clk_disable is
-> called on a shared clock handle, the rate may drop to the rate
-> requested by another shared clock handle.  clk_disable cannot fail, so
-> there's nothing that could be done with the return code, and the
-> problem was not caused by the driver that called clk_disable, so an
-> error would be meaningless.
->
->
-> I will modify tegra_clk_shared_bus_update to BUG on a failed
-> clk_set_rate,
+On Mon, 14 Feb 2011 18:20:52 +0100, Denys Vlasenko wrote:
+> Jan, please put on your gdb maintainer's hat, we need your opinion here.
+> Is it a problem from gdb's POV?
 
-Yes, currently if there are any errors we can't determine which clock's
-vote is causing the error since the rate only takes effect when the
-clock is enabled and another clock could have updated their rate while
-the list is being iterated over.
+Here is a summary of current and my wished behavior:
 
-The code could be written so that we only call clk_set_rate() on the
-parent when the calling clock affects the aggregate rate. That would
-allow us to catch errors for the clk_enable() path and the
-clk_set_rate() path when the clock is already on. In the clk_disable()
-path we could just ignore the errors since we can't do anything anyways
-like you say. The only path that doesn't seem possible is clk_set_rate()
-when the clock is off which presumably doesn't actually matter since
-when you turn the clock on it will fail the same way (delayed
-clk_set_rate?).
+Make PTRACE_DETACH (data=SIGSTOP) working - that is to leave the process in
+`T (stopped)' without any single PC step.  This works in some kernels and
+does not work in other kernels, it is "detach-stopped" test in:
+cvs -d :pserver:anoncvs:anoncvs@sourceware.org:/cvs/systemtap co ptrace-tests 
 
-BTW, is there a race there in the rate updating code? Say clock 1 is
-enabled with rate 2 on cpu1 and clock 2 is enabled at the same time with
-rate 3 (currently the greatest rate) on cpu2. clock 1 is iterating over
-the list and sees that clock 2 is enabled so it calculates 3 as the max.
-clock 2 then returns from the enable call and then a call to disable
-clock 2 comes in. clock 1 is still iterating over the list and clock 2's
-call to disable runs to completion. clock 1 finally stops iterating over
-the list and has an aggregated rate of 3 (since it saw that clock 2 was
-on which is no longer true). It then calls set_rate() with 3 even though
-the only clock that is on is clock 1 with a rate of 2.
+The current upstream GDB trick of
+  PTRACE_ATTACH
+  if /proc/PID/status->State: == `T (stopped)'
+    tgkill(SIGSTOP)
+    PTRACE_CONT(0)
+  waitpid->SIGSTOP (or preceded by some other signal but 1x SIGSTOP will come)
+should remain compatible, as is implemented in:
+http://sourceware.org/cgi-bin/cvsweb.cgi/src/gdb/linux-nat.c.diff?r1=1.80&r2=1.81&cvsroot=src
 
-c1 and c2 are off initially
+Make the GDB trick above no longer needed, so that in the case it was invented
+for a simple PTRACE_ATTACH, wait->SIGSTOP, PTRACE_DETACH(0) also works:
+  foreign process: kill(child process, SIGSTOP)
+  parent process:  wait() -> SIGSTOP (the notification is now eaten-out)
+  child process is now in `T (stopped)'
+  debugger: PTRACE_ATTACH(child process)
+  debugger: waitpid -> should get SIGSTOP, even despite it was eaten-out above
+This works in some kernels and does not work in other kernels.
 
-CPU1                    CPU2
-----                    -----
-clk_set_rate(c1, 2)     clk_set_rate(c2, 3)
-clk_enable(c1)          clk_enable(c2)
-max == 3                max == 3; clk_set_rate(parent, 3)
-...                     clk_disable(c2)
-                        max == 2; clk_set_rate(parent, 2)
-clk_set_rate(parent, 3)
+A new proposal is to preserve the process's `T (stopped)' for
+a naive/legacy debugger / ptrace tool doing PTRACE_ATTACH, wait->SIGSTOP,
+PTRACE_DETACH(0), incl. GDB doing the "GDB trick" above.
+That is after PTRACE_DETACH(0) the process should remain `T (stopped)'
+iff the process was `T (stopped)' before PTRACE_ATTACH.
+ - PTRACE_DETACH(0)       should preserve `T (stopped)'.
+but also:
+ - PTRACE_DETACH(SIGSTOP) should force `T (stopped)'.
+ - PTRACE_DETACH(SIGCONT) should force freely running process.
 
-I think you need some kind of lock while iterating to stop the shared
-clocks from changing underneath you.
 
-> and modify tegra_clk_shared_bus_set_rate to
-> call clk_round_rate on the parent to ensure that the requested rate is valid.
->
+The behavior of SIGSTOP and SIGCONT received during active ptrace session
+I find as a new feature without having much to keep backward compatibibility.
++
+You have concluded a plan how to do a real `T (stopped)' on received SIGSTOP
+using PTRACE_GETSIGINFO, OK, go with that.
++
+Personally I would keep it completely hidden from the debugger and only
+remember the last SIGCONT vs. SIGSTOP for the case the session ends with
+PTRACE_DETACH(0).  Debugger/strace would not be able to display any externally
+received SIGSTOP/SIGCONT.  PTRACE_CONT(SIGSTOP) and PTRACE_CONT(SIGCONT)
+should behave as PTRACE_CONT(0) to clean up compatibility with existing tools.
+For a general transparent tracing there is at least systemtap.
 
-I would hope clk_round_rate() isn't necessary to get a valid rate.
-clk_set_rate() shouldn't require exact/valid rates. clk_round_rate() is
-there to help drivers determine if calling clk_set_rate() with a certain
-rate is going to give them something they want. It's like saying "If I
-call clk_set_rate() with 500Hz what would the clock's rate actually be
-after the call returns?" If the set_rate implementation needs to round
-internally to find a divider or something, it should be done in the
-set_rate code and not in each driver.
 
->>
->> Shouldn't you call clk_enable(c->parent)? And do you need to check for
->> errors from clk_enable()?
->
-> clk_enable on the parent is handled by the clock op implementation in
-> mach-tegra/clock.c
->
-
-Oops, thanks. Time to visit the optometrist.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Thanks,
+Jan
