@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab1BPSPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 13:15:33 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:57713 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857Ab1BPSP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 13:15:29 -0500
-Date: Wed, 16 Feb 2011 19:15:26 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Greg KH <gregkh@suse.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        "Benenati, Chris J" <chris.j.benenati@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: uio: power management of user-space drivers
-Message-ID: <20110216181526.GA2800@local>
-References: <0635488208022A4F82521A04A4772E15C555EC7E@orsmsx503.amr.corp.intel.com>
- <20110215231236.GE2785@local>
- <0635488208022A4F82521A04A4772E15C555EE4E@orsmsx503.amr.corp.intel.com>
- <20110216001847.GF2785@local>
- <20110216011754.GA11181@suse.de>
+	id S1753869Ab1BPSQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 13:16:27 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:61269 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857Ab1BPSQY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 13:16:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110216011754.GA11181@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [141.3.215.46]
+In-Reply-To: <20110209191755.GE9533@thunk.org>
+References: <1297168678.2190.21.camel@marvin>
+	<AANLkTim7YVg1BTEjyhYShgZNL3oKu+zFywC7+NgFvT3z@mail.gmail.com>
+	<1297269019.4888.91.camel@marvin>
+	<20110209191755.GE9533@thunk.org>
+Date: Wed, 16 Feb 2011 19:16:22 +0100
+Message-ID: <AANLkTik2m5L-92Gp1OwE3GU6Qu-07QjGio-x2YqfVN8Y@mail.gmail.com>
+Subject: Re: mmap, the language go, problems with the linux kernel
+From: Hannes Frederic Sowa <hannes@mailcolloid.de>
+To: "Ted Ts'o" <tytso@mit.edu>, Martin Capitanio <m@capitanio.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, golang-dev <golang-dev@googlegroups.com>,
+        Russ Cox <rsc@golang.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Albert Strasheim <fullung@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 05:17:54PM -0800, Greg KH wrote:
-> On Wed, Feb 16, 2011 at 01:21:04AM +0100, Hans J. Koch wrote:
-> > Let me guess: suspend/resume functions are supposed to leave your hardware in
-> > a consistent state and you don't know the state if the suspend() catches you
-> > in the middle of your userspace processing?
-> > I remember the Android guys had problems like that and invented some
-> > "suspend blockers". However, I don't remember what the final answer in that
-> > discussion was. Greg?
-> 
-> It's all in the kernel today.  See:
-> 	http://lwn.net/Articles/416690/
-> for all of the details you will ever need.
+On Wed, Feb 9, 2011 at 8:17 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> AIX and the BSD's don't implement RLIMIT_AS at all.  Solaris does, but
+> the man page just says "total available memory", again without
+> specifying what that means.  Solaris also has a RLIMIT_VMEM, which is
+> the total amount of virtual address space, so apparently Solaris seems
+> to think that RLIMIT_VMEM and RLIMIT_AS are different things.
 
-Interesting. After reading that, I've got the impression that this could be
-used by UIO drivers and maybe solve Chris' problem. Or did I miss something?
+Actually, no:
+| ./uts/common/sys/resource.h:#define RLIMIT_AS RLIMIT_VMEM
 
-Thanks,
-Hans
+They have a userland daemon called rcapd which enforces rss-limits on
+process-groups by paging out their data.
