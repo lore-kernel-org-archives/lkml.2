@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754Ab1BPB54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:57:56 -0500
-Received: from kroah.org ([198.145.64.141]:49257 "EHLO coco.kroah.org"
+	id S1758568Ab1BPB6y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:58:54 -0500
+Received: from kroah.org ([198.145.64.141]:49238 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758390Ab1BPBvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 20:51:31 -0500
+	id S1758553Ab1BPBv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 20:51:27 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 17:47:03 2011
-Message-Id: <20110216014703.347831921@clark.kroah.org>
+Message-Id: <20110216014703.161248782@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 17:45:57 -0800
+Date: Tue, 15 Feb 2011 17:45:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Gregory Haskins <ghaskins@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>
-Subject: [091/115] sched: Give CPU bound RT tasks preference
+Subject: [089/115] sched: Increment cache_nice_tries only on periodic lb
 In-Reply-To: <20110216014741.GA24678@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,52 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From:: Steven Rostedt <srostedt@redhat.com>
+Commit: 58b26c4c025778c09c7a1438ff185080e11b7d0a upstream
 
-Commit: b3bc211cfe7d5fe94b310480d78e00bea96fbf2a upstream
+scheduler uses cache_nice_tries as an indicator to do cache_hot and
+active load balance, when normal load balance fails. Currently,
+this value is changed on any failed load balance attempt. That ends
+up being not so nice to workloads that enter/exit idle often, as
+they do more frequent new_idle balance and that pretty soon results
+in cache hot tasks being pulled in.
 
-If a high priority task is waking up on a CPU that is running a
-lower priority task that is bound to a CPU, see if we can move the
-high RT task to another CPU first. Note, if all other CPUs are
-running higher priority tasks than the CPU bounded current task,
-then it will be preempted regardless.
+Making the cache_nice_tries ignore failed new_idle balance seems to
+make better sense. With that only the failed load balance in
+periodic load balance gets accounted and the rate of accumulation
+of cache_nice_tries will not depend on idle entry/exit (short
+running sleep-wakeup kind of tasks). This reduces movement of
+cache_hot tasks.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+schedstat diff (after-before) excerpt from a workload that has
+frequent and short wakeup-idle pattern (:2 in cpu col below refers
+to NEWIDLE idx) This snapshot was across ~400 seconds.
+
+Without this change:
+domainstats:  domain0
+ cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
+ 0:2  306487   219575    73167  110069413    44583    19070     1172   218403
+ 1:2  292139   194853    81421  120893383    50745    21902     1259   193594
+ 2:2  283166   174607    91359  129699642    54931    23688     1287   173320
+ 3:2  273998   161788    93991  132757146    57122    24351     1366   160422
+ 4:2  289851   215692    62190  83398383    36377    13680      851   214841
+ 5:2  316312   222146    77605  117582154    49948    20281      988   221158
+ 6:2  297172   195596    83623  122133390    52801    21301      929   194667
+ 7:2  283391   178078    86378  126622761    55122    22239      928   177150
+ 8:2  297655   210359    72995  110246694    45798    19777     1125   209234
+ 9:2  297357   202011    79363  119753474    50953    22088     1089   200922
+10:2  278797   178703    83180  122514385    52969    22726     1128   177575
+11:2  272661   167669    86978  127342327    55857    24342     1195   166474
+12:2  293039   204031    73211  110282059    47285    19651      948   203083
+13:2  289502   196762    76803  114712942    49339    20547     1016   195746
+14:2  264446   169609    78292  115715605    50459    21017      982   168627
+15:2  260968   163660    80142  116811793    51483    21281     1064   162596
+
+With this change:
+domainstats:  domain0
+ cpu     cnt      bln      fld      imb     gain    hgain  nobusyq  nobusyg
+ 0:2  272347   187380    77455  105420270    24975        1      953   186427
+ 1:2  267276   172360    86234  116242264    28087        6     1028   171332
+ 2:2  259769   156777    93281  123243134    30555        1     1043   155734
+ 3:2  250870   143129    97627  127370868    32026        6     1188   141941
+ 4:2  248422   177116    64096  78261112    22202        2      757   176359
+ 5:2  275595   180683    84950  116075022    29400        6      778   179905
+ 6:2  262418   162609    88944  119256898    31056        4      817   161792
+ 7:2  252204   147946    92646  122388300    32879        4      824   147122
+ 8:2  262335   172239    81631  110477214    26599        4      864   171375
+ 9:2  261563   164775    88016  117203621    28331        3      849   163926
+10:2  243389   140949    93379  121353071    29585        2      909   140040
+11:2  242795   134651    98310  124768957    30895        2     1016   133635
+12:2  255234   166622    79843  104696912    26483        4      746   165876
+13:2  244944   151595    83855  109808099    27787        3      801   150794
+14:2  241301   140982    89935  116954383    30403        6      845   140137
+15:2  232271   128564    92821  119185207    31207        4     1416   127148
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Gregory Haskins <ghaskins@novell.com>
-LKML-Reference: <20100921024138.888922071@goodmis.org>
+LKML-Reference: <1284167957-3675-1-git-send-email-venki@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Mike Galbraith <efault@gmx.de>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched_rt.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ kernel/sched.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -965,7 +965,8 @@ select_task_rq_rt(struct rq *rq, struct
- 	 * For equal prio tasks, we just let the scheduler sort it out.
- 	 */
- 	if (unlikely(rt_task(rq->curr)) &&
--	    rq->curr->prio < p->prio &&
-+	    (rq->curr->rt.nr_cpus_allowed < 2 ||
-+	     rq->curr->prio < p->prio) &&
- 	    (p->rt.nr_cpus_allowed > 1)) {
- 		int cpu = find_lowest_rq(p);
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4250,7 +4250,14 @@ redo:
  
-@@ -1493,9 +1494,10 @@ static void task_woken_rt(struct rq *rq,
- 	if (!task_running(rq, p) &&
- 	    !test_tsk_need_resched(rq->curr) &&
- 	    has_pushable_tasks(rq) &&
-+	    p->rt.nr_cpus_allowed > 1 &&
- 	    rt_task(rq->curr) &&
--	    rq->curr->prio < p->prio &&
--	    p->rt.nr_cpus_allowed > 1)
-+	    (rq->curr->rt.nr_cpus_allowed < 2 ||
-+	     rq->curr->prio < p->prio))
- 		push_rt_tasks(rq);
- }
+ 	if (!ld_moved) {
+ 		schedstat_inc(sd, lb_failed[idle]);
+-		sd->nr_balance_failed++;
++		/*
++		 * Increment the failure counter only on periodic balance.
++		 * We do not want newidle balance, which can be very
++		 * frequent, pollute the failure counter causing
++		 * excessive cache_hot migrations and active balances.
++		 */
++		if (idle != CPU_NEWLY_IDLE)
++			sd->nr_balance_failed++;
+ 
+ 		if (unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2)) {
  
 
 
