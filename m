@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab1BPHxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 02:53:25 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:42716 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754205Ab1BPHxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 02:53:21 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Cc: "Arnd Bergmann" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>
-Subject: [PATCH 12/12] unicore32: ADD MAINTAINER for unicore32 architecture
-Date: Wed, 16 Feb 2011 15:53:15 +0800
-Message-ID: <015901cbcdae$91249b10$b36dd130$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	id S1757026Ab1BPH4y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 02:56:54 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:54922 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751631Ab1BPH4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 02:56:50 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19aZ0dXH/Rao2HJa/sFeT+pdftUO7lpVH17hsvjFG
+	PegUQMTAXQWd02
+Subject: Re: [114/115] sched: Remove  some dead code
+From: Mike Galbraith <efault@gmx.de>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Kay Sievers <kay.sievers@vrfy.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110216073701.GS4384@bicker>
+References: <20110216014741.GA24678@kroah.com>
+	 <20110216014705.654816731@clark.kroah.org>  <20110216073701.GS4384@bicker>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Feb 2011 08:56:44 +0100
+Message-ID: <1297843004.8874.1.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AcvNro3HCMrtnLmwQnWB7Xl+gR1xcw==
-Content-Language: zh-cn
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Message-Id: <2a84029a9974372448e55cc9e556f97acab2e438.1297842537.git.gxt@mprc.pku.edu.cn>
-In-Reply-To: <cover.1297842537.git.gxt@mprc.pku.edu.cn>
-References: <cover.1297842537.git.gxt@mprc.pku.edu.cn>
-From: GuanXuetao <gxt@mprc.pku.edu.cn>
-Date: Sun, 16 Jan 2011 00:35:49 +0800
+On Wed, 2011-02-16 at 10:37 +0300, Dan Carpenter wrote:
+> On Tue, Feb 15, 2011 at 05:46:20PM -0800, Greg KH wrote:
+> > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > 
+> > 
+> > From: Dan Carpenter <error27@gmail.com>
+> > 
+> > commit 618765801ebc271fe0ba3eca99fcfd62a1f786e1 upstream.
+> > 
+> > This was left over from "7c9414385e sched: Remove USER_SCHED"
+> > 
+> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
+> This is just a cleanup patch.  It doesn't really warrant backporting.
 
-Add MAINTAINER list for unicore32 architecture and pkunity soc drivers.
+There's no reason to leave the dirt lying about though.
 
-Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
----
- MAINTAINERS |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7585e9d..b87a39b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4665,6 +4665,13 @@ S:	Maintained
- F:	drivers/block/pktcdvd.c
- F:	include/linux/pktcdvd.h
- 
-+PKUNITY SOC DRIVERS
-+M:	Guan Xuetao <gxt@mprc.pku.edu.cn>
-+W:	http://mprc.pku.edu.cn/~guanxuetao/linux
-+S:	Maintained
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
-+F:	drivers/input/serio/i8042-unicore32io.h
-+
- PMC SIERRA MaxRAID DRIVER
- M:	Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
- L:	linux-scsi@vger.kernel.org
-@@ -6016,6 +6023,13 @@ F:	drivers/uwb/
- F:	include/linux/uwb.h
- F:	include/linux/uwb/
- 
-+UNICORE32 ARCHITECTURE:
-+M:	Guan Xuetao <gxt@mprc.pku.edu.cn>
-+W:	http://mprc.pku.edu.cn/~guanxuetao/linux
-+S:	Maintained
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
-+F:	arch/unicore32/
-+
- UNIFDEF
- M:	Tony Finch <dot@dotat.at>
- W:	http://dotat.at/prog/unifdef
--- 
-1.6.2.2
-
+	-Mike
 
