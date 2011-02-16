@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab1BPAhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:37:00 -0500
-Received: from kroah.org ([198.145.64.141]:49629 "EHLO coco.kroah.org"
+	id S932259Ab1BPAYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:24:05 -0500
+Received: from kroah.org ([198.145.64.141]:49568 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932282Ab1BPAYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:14 -0500
+	id S932224Ab1BPAX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:23:59 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:46 2011
-Message-Id: <20110216001446.838262276@clark.kroah.org>
+Message-Id: <20110216001445.951235660@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:34 -0800
+Date: Tue, 15 Feb 2011 16:14:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [217/272] md: Ensure no IO request to get md device before it is properly initialised.
+        Michael Buesch <mb@bu3sch.de>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [208/272] ssb-pcmcia: Fix parsing of invariants tuples
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: =?UTF-8?q?Michael=20B=C3=BCsch?= <mb@bu3sch.de>
 
-commit 0ca69886a8273ac1350143d562280bfcbe4760dc upstream.
+commit dd3cb633078fb12e06ce6cebbdfbf55a7562e929 upstream.
 
-When an md device is in the process of coming on line it is possible
-for an IO request (typically a partition table probe) to get through
-before the array is fully initialised, which can cause unexpected
-behaviour (e.g. a crash).
+This fixes parsing of the device invariants (MAC address)
+for PCMCIA SSB devices.
 
-So explicitly record when the array is ready for IO and don't allow IO
-through until then.
+ssb_pcmcia_do_get_invariants expects an iv pointer as data
+argument.
 
-There is no possibility for a similar problem when the array is going
-off-line as there must only be one 'open' at that time, and it is busy
-off-lining the array and so cannot send IO requests.  So no memory
-barrier is needed in md_stop()
-
-This has been a bug since commit 409c57f3801 in 2.6.30 which
-introduced md_make_request.  Before then, each personality would
-register its own make_request_fn when it was ready.
-This is suitable for any stable kernel from 2.6.30.y onwards.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Reported-by:  "Hawrylewicz Czarnowski, Przemyslaw" <przemyslaw.hawrylewicz.czarnowski@intel.com>
+Tested-by: dylan cristiani <d.cristiani@idem-tech.it>
+Signed-off-by: Michael Buesch <mb@bu3sch.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    8 ++++++--
- drivers/md/md.h |    3 ++-
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/ssb/pcmcia.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -288,10 +288,12 @@ static int md_make_request(struct reques
- 	int rv;
- 	int cpu;
+--- a/drivers/ssb/pcmcia.c
++++ b/drivers/ssb/pcmcia.c
+@@ -733,7 +733,7 @@ int ssb_pcmcia_get_invariants(struct ssb
  
--	if (mddev == NULL || mddev->pers == NULL) {
-+	if (mddev == NULL || mddev->pers == NULL
-+	    || !mddev->ready) {
- 		bio_io_error(bio);
+ 	/* Fetch the vendor specific tuples. */
+ 	res = pcmcia_loop_tuple(bus->host_pcmcia, SSB_PCMCIA_CIS,
+-				ssb_pcmcia_do_get_invariants, sprom);
++				ssb_pcmcia_do_get_invariants, iv);
+ 	if ((res == 0) || (res == -ENOSPC))
  		return 0;
- 	}
-+	smp_rmb(); /* Ensure implications of  'active' are visible */
- 	rcu_read_lock();
- 	if (mddev->suspended) {
- 		DEFINE_WAIT(__wait);
-@@ -4564,7 +4566,8 @@ int md_run(mddev_t *mddev)
- 	mddev->safemode_timer.data = (unsigned long) mddev;
- 	mddev->safemode_delay = (200 * HZ)/1000 +1; /* 200 msec delay */
- 	mddev->in_sync = 1;
--
-+	smp_wmb();
-+	mddev->ready = 1;
- 	list_for_each_entry(rdev, &mddev->disks, same_set)
- 		if (rdev->raid_disk >= 0) {
- 			char nm[20];
-@@ -4725,6 +4728,7 @@ EXPORT_SYMBOL_GPL(md_stop_writes);
  
- void md_stop(mddev_t *mddev)
- {
-+	mddev->ready = 0;
- 	mddev->pers->stop(mddev);
- 	if (mddev->pers->sync_request && mddev->to_remove == NULL)
- 		mddev->to_remove = &md_redundancy_group;
---- a/drivers/md/md.h
-+++ b/drivers/md/md.h
-@@ -148,7 +148,8 @@ struct mddev_s
- 						       * are happening, so run/
- 						       * takeover/stop are not safe
- 						       */
--
-+	int				ready; /* See when safe to pass
-+						* IO requests down */
- 	struct gendisk			*gendisk;
- 
- 	struct kobject			kobj;
 
 
