@@ -1,399 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758943Ab1BPLTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 06:19:54 -0500
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:47977 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758753Ab1BPLT2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 06:19:28 -0500
-Message-Id: <20110216111923.699465217@linux.vnet.ibm.com>
-User-Agent: quilt/0.47-1
-Date: Wed, 16 Feb 2011 12:01:20 +0100
-From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-To: robert.richter@amd.com
-Cc: mingo@elte.hu, oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, borntraeger@de.ibm.com,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Subject: [patch v2 2/3] Remove hwsampler_files.c and merge its contents into init.c 
+	id S1758829Ab1BPLXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 06:23:04 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:47404 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754761Ab1BPLXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 06:23:00 -0500
+Date: Wed, 16 Feb 2011 11:22:32 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kent Overstreet <kent.overstreet@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: vmscan: Stop reclaim/compaction earlier due to
+	insufficient progress if !__GFP_REPEAT
+Message-ID: <20110216112232.GC4473@csn.ul.ie>
+References: <20110209154606.GJ27110@cmpxchg.org> <20110209164656.GA1063@csn.ul.ie> <20110209182846.GN3347@random.random> <20110210102109.GB17873@csn.ul.ie> <20110210124838.GU3347@random.random> <20110210133323.GH17873@csn.ul.ie> <20110210141447.GW3347@random.random> <20110210145813.GK17873@csn.ul.ie> <20110216095048.GA4473@csn.ul.ie> <20110216101301.GT5935@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110216101301.GT5935@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert,
-References: <20110216110118.316927092@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=oprofile_merge_init.patch
+On Wed, Feb 16, 2011 at 11:13:01AM +0100, Andrea Arcangeli wrote:
+> On Wed, Feb 16, 2011 at 09:50:49AM +0000, Mel Gorman wrote:
+> > The mean allocation times for THP allocations are also slightly reduced.
+> > The maximum latency was slightly increased as predicted by the comments due
+> > to reclaim/compaction breaking early. However, workloads care more about the
+> > latency of lower-order allocations than THP so it's an acceptable trade-off.
+> > Please consider merging for 2.6.38.
+> 
+> Full agreement. I'm currently dealing with latency issues (nothing
+> major! but still not nice to see a reproducible regression, even if a
+> small one only visible in the benchmark) with compaction and jumbo
+> frames.
 
-From: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Out of curiousity, what are you measuring the latency of and how? I used
+a combination of the function_graph ftrace analyser and the mm_page_alloc
+tracepoint myself to avoid any additional patching and it was easier than
+cobbling together something with kprobes. A perl script configures ftrace
+and then parses the contents of trace_pipe - crude but does the job without
+patching the kernel.
 
-I've merged the contents of hwsampler_files.c into according to Robert Richter's comment.
- 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Signed-off-by: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
----
- arch/s390/oprofile/Makefile          |    2 
- arch/s390/oprofile/hwsampler_files.c |  162 -----------------------------------
- arch/s390/oprofile/init.c            |  161 ++++++++++++++++++++++++++++++++++
- 3 files changed, 159 insertions(+), 166 deletions(-)
+> This won't be enough to close them completely though because I
+> didn't backport the change to vmscan.c and should_continue_reclaim (I
+> backported all the other compaction improvements though, so this
+> practically is the only missing bit).
 
-Index: s390/arch/s390/oprofile/init.c
-===================================================================
---- s390.orig/arch/s390/oprofile/init.c
-+++ s390/arch/s390/oprofile/init.c
-@@ -4,19 +4,174 @@
-  * S390 Version
-  *   Copyright (C) 2003 IBM Deutschland Entwicklung GmbH, IBM Corporation
-  *   Author(s): Thomas Spatzier (tspat@de.ibm.com)
-+ *   Author(s): Mahesh Salgaonkar (mahesh@linux.vnet.ibm.com)
-+ *   Author(s): Heinz Graalfs (graalfs@linux.vnet.ibm.com)
-  *
-- * @remark Copyright 2002 OProfile authors
-+ * @remark Copyright 2002-2011 OProfile authors
-  */
- 
- #include <linux/oprofile.h>
- #include <linux/init.h>
- #include <linux/errno.h>
-+#include <linux/oprofile.h>
-+#include <linux/errno.h>
-+#include <linux/fs.h>
-+
-+#include "../../../drivers/oprofile/oprof.h"
-+#include "hwsampler.h"
-+
-+#define DEFAULT_INTERVAL	4096
-+
-+#define DEFAULT_SDBT_BLOCKS	1
-+#define DEFAULT_SDB_BLOCKS	511
-+
-+static unsigned long oprofile_hw_interval = DEFAULT_INTERVAL;
-+static unsigned long oprofile_min_interval;
-+static unsigned long oprofile_max_interval;
- 
--extern int oprofile_hwsampler_init(struct oprofile_operations* ops);
--extern void oprofile_hwsampler_exit(void);
-+static unsigned long oprofile_sdbt_blocks = DEFAULT_SDBT_BLOCKS;
-+static unsigned long oprofile_sdb_blocks = DEFAULT_SDB_BLOCKS;
-+
-+static int hwsampler_file;
-+static int hwsampler_running;	/* start_mutex must be held to change */
-+
-+static struct oprofile_operations timer_ops;
- 
- extern void s390_backtrace(struct pt_regs * const regs, unsigned int depth);
- 
-+static int oprofile_hwsampler_start(void)
-+{
-+	int retval;
-+
-+	hwsampler_running = hwsampler_file;
-+
-+	if (!hwsampler_running)
-+		return timer_ops.start();
-+
-+	retval = hwsampler_allocate(oprofile_sdbt_blocks, oprofile_sdb_blocks);
-+	if (retval)
-+		return retval;
-+
-+	retval = hwsampler_start_all(oprofile_hw_interval);
-+	if (retval)
-+		hwsampler_deallocate();
-+
-+	return retval;
-+}
-+
-+static void oprofile_hwsampler_stop(void)
-+{
-+	if (!hwsampler_running) {
-+		timer_ops.stop();
-+		return;
-+	}
-+
-+	hwsampler_stop_all();
-+	hwsampler_deallocate();
-+	return;
-+}
-+
-+static ssize_t hwsampler_read(struct file *file, char __user *buf,
-+		size_t count, loff_t *offset)
-+{
-+	return oprofilefs_ulong_to_user(hwsampler_file, buf, count, offset);
-+}
-+
-+static ssize_t hwsampler_write(struct file *file, char const __user *buf,
-+		size_t count, loff_t *offset)
-+{
-+	unsigned long val;
-+	int retval;
-+
-+	if (*offset)
-+		return -EINVAL;
-+
-+	retval = oprofilefs_ulong_from_user(&val, buf, count);
-+	if (retval)
-+		return retval;
-+
-+	if (oprofile_started)
-+		/*
-+		 * save to do without locking as we set
-+		 * hwsampler_running in start() when start_mutex is
-+		 * held
-+		 */
-+		return -EBUSY;
-+
-+	hwsampler_file = val;
-+
-+	return count;
-+}
-+
-+static const struct file_operations hwsampler_fops = {
-+	.read		= hwsampler_read,
-+	.write		= hwsampler_write,
-+};
-+
-+static int oprofile_create_hwsampling_files(struct super_block *sb,
-+						struct dentry *root)
-+{
-+	struct dentry *hw_dir;
-+
-+	/* reinitialize default values */
-+	hwsampler_file = 1;
-+
-+	hw_dir = oprofilefs_mkdir(sb, root, "hwsampling");
-+	if (!hw_dir)
-+		return -EINVAL;
-+
-+	oprofilefs_create_file(sb, hw_dir, "hwsampler", &hwsampler_fops);
-+	oprofilefs_create_ulong(sb, hw_dir, "hw_interval",
-+				&oprofile_hw_interval);
-+	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_min_interval",
-+				&oprofile_min_interval);
-+	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_max_interval",
-+				&oprofile_max_interval);
-+	oprofilefs_create_ulong(sb, hw_dir, "hw_sdbt_blocks",
-+				&oprofile_sdbt_blocks);
-+
-+	return 0;
-+}
-+
-+int oprofile_hwsampler_init(struct oprofile_operations* ops)
-+{
-+	if (hwsampler_setup())
-+		return -ENODEV;
-+
-+	/*
-+	 * create hwsampler files only if hwsampler_setup() succeeds.
-+	 */
-+	oprofile_min_interval = hwsampler_query_min_interval();
-+	if (oprofile_min_interval < 0) {
-+		oprofile_min_interval = 0;
-+		return -ENODEV;
-+	}
-+	oprofile_max_interval = hwsampler_query_max_interval();
-+	if (oprofile_max_interval < 0) {
-+		oprofile_max_interval = 0;
-+		return -ENODEV;
-+	}
-+
-+	if (oprofile_timer_init(ops))
-+		return -ENODEV;
-+
-+	printk(KERN_INFO "oprofile: using hardware sampling\n");
-+
-+	memcpy(&timer_ops, ops, sizeof(timer_ops));
-+
-+	ops->start = oprofile_hwsampler_start;
-+	ops->stop = oprofile_hwsampler_stop;
-+	ops->create_files = oprofile_create_hwsampling_files;
-+
-+	return 0;
-+}
-+
-+void oprofile_hwsampler_exit(void)
-+{
-+	oprofile_timer_exit();
-+	hwsampler_shutdown();
-+}
-+
- int __init oprofile_arch_init(struct oprofile_operations* ops)
- {
- 	ops->backtrace = s390_backtrace;
-Index: s390/arch/s390/oprofile/Makefile
-===================================================================
---- s390.orig/arch/s390/oprofile/Makefile
-+++ s390/arch/s390/oprofile/Makefile
-@@ -6,4 +6,4 @@ DRIVER_OBJS = $(addprefix ../../../drive
- 		oprofilefs.o oprofile_stats.o  \
- 		timer_int.o )
- 
--oprofile-y :=	$(DRIVER_OBJS) init.o backtrace.o hwsampler.o hwsampler_files.o
-+oprofile-y :=	$(DRIVER_OBJS) init.o backtrace.o hwsampler.o
-Index: s390/arch/s390/oprofile/hwsampler_files.c
-===================================================================
---- s390.orig/arch/s390/oprofile/hwsampler_files.c
-+++ /dev/null
-@@ -1,162 +0,0 @@
--/**
-- * arch/s390/oprofile/hwsampler_files.c
-- *
-- * Copyright IBM Corp. 2010
-- * Author: Mahesh Salgaonkar (mahesh@linux.vnet.ibm.com)
-- */
--#include <linux/oprofile.h>
--#include <linux/errno.h>
--#include <linux/fs.h>
--
--#include "../../../drivers/oprofile/oprof.h"
--#include "hwsampler.h"
--
--#define DEFAULT_INTERVAL	4096
--
--#define DEFAULT_SDBT_BLOCKS	1
--#define DEFAULT_SDB_BLOCKS	511
--
--static unsigned long oprofile_hw_interval = DEFAULT_INTERVAL;
--static unsigned long oprofile_min_interval;
--static unsigned long oprofile_max_interval;
--
--static unsigned long oprofile_sdbt_blocks = DEFAULT_SDBT_BLOCKS;
--static unsigned long oprofile_sdb_blocks = DEFAULT_SDB_BLOCKS;
--
--static int hwsampler_file;
--static int hwsampler_running;	/* start_mutex must be held to change */
--
--static struct oprofile_operations timer_ops;
--
--static int oprofile_hwsampler_start(void)
--{
--	int retval;
--
--	hwsampler_running = hwsampler_file;
--
--	if (!hwsampler_running)
--		return timer_ops.start();
--
--	retval = hwsampler_allocate(oprofile_sdbt_blocks, oprofile_sdb_blocks);
--	if (retval)
--		return retval;
--
--	retval = hwsampler_start_all(oprofile_hw_interval);
--	if (retval)
--		hwsampler_deallocate();
--
--	return retval;
--}
--
--static void oprofile_hwsampler_stop(void)
--{
--	if (!hwsampler_running) {
--		timer_ops.stop();
--		return;
--	}
--
--	hwsampler_stop_all();
--	hwsampler_deallocate();
--	return;
--}
--
--static ssize_t hwsampler_read(struct file *file, char __user *buf,
--		size_t count, loff_t *offset)
--{
--	return oprofilefs_ulong_to_user(hwsampler_file, buf, count, offset);
--}
--
--static ssize_t hwsampler_write(struct file *file, char const __user *buf,
--		size_t count, loff_t *offset)
--{
--	unsigned long val;
--	int retval;
--
--	if (*offset)
--		return -EINVAL;
--
--	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
--		return retval;
--
--	if (oprofile_started)
--		/*
--		 * save to do without locking as we set
--		 * hwsampler_running in start() when start_mutex is
--		 * held
--		 */
--		return -EBUSY;
--
--	hwsampler_file = val;
--
--	return count;
--}
--
--static const struct file_operations hwsampler_fops = {
--	.read		= hwsampler_read,
--	.write		= hwsampler_write,
--};
--
--static int oprofile_create_hwsampling_files(struct super_block *sb,
--						struct dentry *root)
--{
--	struct dentry *hw_dir;
--
--	/* reinitialize default values */
--	hwsampler_file = 1;
--
--	hw_dir = oprofilefs_mkdir(sb, root, "hwsampling");
--	if (!hw_dir)
--		return -EINVAL;
--
--	oprofilefs_create_file(sb, hw_dir, "hwsampler", &hwsampler_fops);
--	oprofilefs_create_ulong(sb, hw_dir, "hw_interval",
--				&oprofile_hw_interval);
--	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_min_interval",
--				&oprofile_min_interval);
--	oprofilefs_create_ro_ulong(sb, hw_dir, "hw_max_interval",
--				&oprofile_max_interval);
--	oprofilefs_create_ulong(sb, hw_dir, "hw_sdbt_blocks",
--				&oprofile_sdbt_blocks);
--
--	return 0;
--}
--
--int oprofile_hwsampler_init(struct oprofile_operations* ops)
--{
--	if (hwsampler_setup())
--		return -ENODEV;
--
--	/*
--	 * create hwsampler files only if hwsampler_setup() succeeds.
--	 */
--	oprofile_min_interval = hwsampler_query_min_interval();
--	if (oprofile_min_interval < 0) {
--		oprofile_min_interval = 0;
--		return -ENODEV;
--	}
--	oprofile_max_interval = hwsampler_query_max_interval();
--	if (oprofile_max_interval < 0) {
--		oprofile_max_interval = 0;
--		return -ENODEV;
--	}
--
--	if (oprofile_timer_init(ops))
--		return -ENODEV;
--
--	printk(KERN_INFO "oprofile: using hardware sampling\n");
--
--	memcpy(&timer_ops, ops, sizeof(timer_ops));
--
--	ops->start = oprofile_hwsampler_start;
--	ops->stop = oprofile_hwsampler_stop;
--	ops->create_files = oprofile_create_hwsampling_files;
--
--	return 0;
--}
--
--void oprofile_hwsampler_exit(void)
--{
--	oprofile_timer_exit();
--	hwsampler_shutdown();
--}
+How big are the discrepancies?
 
+> I also suspected the e1000
+> driver, that sets the NAPI latency to bulk_latency when it uses jumbo
+> frames, so I wonder if it could be that with compaction we get more
+> jumbo frames and the latency then gets reduced by the driver as side
+> effect. Not sure yet.
+> 
+
+No idea.
+
+> I like the above because it's less likely to give us compaction issues
+> with jumbo frames when I add should_continue_reclaim on top. It seems
+> anonymous memory allocation are orders of magnitude more long lived
+> than jumbo frames could ever be, so at this point I'm not even
+> entirely certain it's ok to enable compaction at all for jumbo
+> frames. But I still like the above regardless of my current issue
+> (just because of the young bits going nuked in one go the lumpy hammer
+> way, even if it actually increases latency a bit for THP allocations).
+> 
+
+Can I have your ack on the patch then? Even if it doesn't resolve the
+jumbo frame problems, it's in the right direction. Measuring how it
+currently behaves and what direction should be taken may be something
+still worth discussing at LSF/MM.
+
+> One issue with compaction for jumbo frames, is the potentially very
+> long loop, for the scan in isolated_migratepages.
+
+Yes, the scanner is poor. The scanner for free pages is potentially just
+as bad. I prototyped some designs that should have been faster but they
+didn't make any significant difference so they got discarded.
+
+> I added a counter to
+> break the loop after 1024 pages scanned. This is extreme but this is a
+> debug patch for now, I also did if (retval == bulk_latency) reval =
+> low_latency in the e1000* drivers to see if it makes a difference. If
+> any of the two will help I will track down how much each change
+> contributes to lowering the network latency to pre-compaction
+> levels. It may very well be only a compaction issue, or only a driver
+> issue, I don't know yet (the latter less likely because this very
+> compaction loop spikes at the top of oprofile output, but maybe that
+> only affects throughput and the driver is to blame for the latency
+> reduction... this is what I'm going to find pretty soon). Also this
+> isolate_migratepages loop I think needs a cond_resched()
+
+This surprises me. In my own tests at least, the compaction stuff was
+way down in the profile and I wouldn't have expected scanning to take so
+long as to require a cond_resched. I was depending on the cond_resched()
+in migrate_pages() to yield the processor as necessary.
+
+> (I didn't add
+> that yet ;). 1024 pages scanned is too few, I just want to see how it
+> behaves with an extremely permissive setting. I'll let you know when I
+> come to some more reliable conclusion.
+> 
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
