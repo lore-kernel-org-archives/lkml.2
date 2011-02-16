@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab1BPBLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:11:45 -0500
-Received: from kroah.org ([198.145.64.141]:45648 "EHLO coco.kroah.org"
+	id S1752378Ab1BPBMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:12:00 -0500
+Received: from kroah.org ([198.145.64.141]:45625 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933019Ab1BPAtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:49:17 -0500
+	id S933055Ab1BPAtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:49:12 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:06 2011
-Message-Id: <20110216002106.649729162@clark.kroah.org>
+Message-Id: <20110216002106.349570903@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:20:43 -0800
+Date: Tue, 15 Feb 2011 16:20:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [patch 075/176] [media] radio-aimslab.c: Fix gcc 4.5+ bug
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [patch 072/176] [SCSI] mpt2sas: add missing initialization of scsih_cmds
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,98 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Kashyap, Desai <kashyap.desai@lsi.com>
 
-commit e3c92215198cb6aa00ad38db2780faa6b72e0a3f upstream.
+commit d685c262083dcd5fd98b7499b22a377a3225229c upstream.
 
-gcc 4.5+ doesn't properly evaluate some inlined expressions.
-A previous patch were proposed by Andrew Morton using noinline.
-However, the entire inlined function is bogus, so let's just
-remove it and be happy.
+Internal command scsih_cmds init is included in mpt2sas_base_attach.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/radio/radio-aimslab.c |   23 ++++++-----------------
- 1 file changed, 6 insertions(+), 17 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/media/radio/radio-aimslab.c
-+++ b/drivers/media/radio/radio-aimslab.c
-@@ -31,7 +31,6 @@
- #include <linux/module.h>	/* Modules 			*/
- #include <linux/init.h>		/* Initdata			*/
- #include <linux/ioport.h>	/* request_region		*/
--#include <linux/delay.h>	/* udelay			*/
- #include <linux/videodev2.h>	/* kernel radio structs		*/
- #include <linux/version.h>	/* for KERNEL_VERSION MACRO	*/
- #include <linux/io.h>		/* outb, outb_p			*/
-@@ -71,27 +70,17 @@ static struct rtrack rtrack_card;
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -3662,6 +3662,11 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPT
+ 	ioc->scsih_cmds.status = MPT2_CMD_NOT_USED;
+ 	mutex_init(&ioc->scsih_cmds.mutex);
  
- /* local things */
- 
--static void sleep_delay(long n)
--{
--	/* Sleep nicely for 'n' uS */
--	int d = n / msecs_to_jiffies(1000);
--	if (!d)
--		udelay(n);
--	else
--		msleep(jiffies_to_msecs(d));
--}
--
- static void rt_decvol(struct rtrack *rt)
- {
- 	outb(0x58, rt->io);		/* volume down + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
- }
- 
- static void rt_incvol(struct rtrack *rt)
- {
- 	outb(0x98, rt->io);		/* volume up + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
- }
- 
-@@ -120,7 +109,7 @@ static int rt_setvol(struct rtrack *rt,
- 
- 	if (vol == 0) {			/* volume = 0 means mute the card */
- 		outb(0x48, rt->io);	/* volume down but still "on"	*/
--		sleep_delay(2000000);	/* make sure it's totally down	*/
-+		msleep(2000);	/* make sure it's totally down	*/
- 		outb(0xd0, rt->io);	/* volume steady, off		*/
- 		rt->curvol = 0;		/* track the volume state!	*/
- 		mutex_unlock(&rt->lock);
-@@ -155,7 +144,7 @@ static void send_0_byte(struct rtrack *r
- 		outb_p(128+64+16+8+  1, rt->io);  /* on + wr-enable + data low */
- 		outb_p(128+64+16+8+2+1, rt->io);  /* clock */
- 	}
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static void send_1_byte(struct rtrack *rt)
-@@ -169,7 +158,7 @@ static void send_1_byte(struct rtrack *r
- 		outb_p(128+64+16+8+4+2+1, rt->io); /* clock */
- 	}
- 
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static int rt_setfreq(struct rtrack *rt, unsigned long freq)
-@@ -427,7 +416,7 @@ static int __init rtrack_init(void)
- 
- 	/* this ensures that the volume is all the way down  */
- 	outb(0x48, rt->io);		/* volume down but still "on"	*/
--	sleep_delay(2000000);	/* make sure it's totally down	*/
-+	msleep(2000);	/* make sure it's totally down	*/
- 	outb(0xc0, rt->io);		/* steady volume, mute card	*/
- 
- 	return 0;
++	/* scsih internal command bits */
++	ioc->scsih_cmds.reply = kzalloc(ioc->reply_sz, GFP_KERNEL);
++	ioc->scsih_cmds.status = MPT2_CMD_NOT_USED;
++	mutex_init(&ioc->scsih_cmds.mutex);
++
+ 	/* task management internal command bits */
+ 	ioc->tm_cmds.reply = kzalloc(ioc->reply_sz, GFP_KERNEL);
+ 	ioc->tm_cmds.status = MPT2_CMD_NOT_USED;
 
 
