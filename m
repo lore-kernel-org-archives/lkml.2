@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab1BPBca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 20:32:30 -0500
-Received: from kroah.org ([198.145.64.141]:39262 "EHLO coco.kroah.org"
+	id S1757303Ab1BPBct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 20:32:49 -0500
+Received: from kroah.org ([198.145.64.141]:39248 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757266Ab1BPAVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:21:20 -0500
+	id S1757255Ab1BPAVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:21:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:36 2011
-Message-Id: <20110216001436.678974580@clark.kroah.org>
+Message-Id: <20110216001436.497393634@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:12:53 -0800
+Date: Tue, 15 Feb 2011 16:12:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [116/272] RDMA/cxgb4: Set the correct device physical function for iWARP connections
+        Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [114/272] dynamic debug: Fix build issue with older gcc
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +25,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Jason Baron <jbaron@redhat.com>
 
-commit 94788657c94169171971968c9d4b6222c5e704aa upstream.
+commit 2d75af2f2a7a6103a6d539a492fe81deacabde44 upstream.
 
-The PF passed to FW was 0, causing PCI failures in an SR-IOV environment.
+On older gcc (3.3) dynamic debug fails to compile:
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+include/net/inet_connection_sock.h: In function `inet_csk_reset_xmit_timer':
+include/net/inet_connection_sock.h:236: error: duplicate label declaration `do_printk'
+include/net/inet_connection_sock.h:219: error: this is a previous declaration
+include/net/inet_connection_sock.h:236: error: duplicate label declaration `out'
+include/net/inet_connection_sock.h:219: error: this is a previous declaration
+include/net/inet_connection_sock.h:236: error: duplicate label `do_printk'
+include/net/inet_connection_sock.h:236: error: duplicate label `out'
+
+Fix, by reverting the usage of JUMP_LABEL() in dynamic debug for now.
+
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Tested-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/hw/cxgb4/cm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/dynamic_debug.h |   18 ++++--------------
+ lib/dynamic_debug.c           |    9 ++++-----
+ 2 files changed, 8 insertions(+), 19 deletions(-)
 
---- a/drivers/infiniband/hw/cxgb4/cm.c
-+++ b/drivers/infiniband/hw/cxgb4/cm.c
-@@ -380,7 +380,7 @@ static void send_flowc(struct c4iw_ep *e
- 					  16)) | FW_WR_FLOWID(ep->hwtid));
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -44,34 +44,24 @@ int ddebug_add_module(struct _ddebug *ta
+ extern int ddebug_remove_module(const char *mod_name);
  
- 	flowc->mnemval[0].mnemonic = FW_FLOWC_MNEM_PFNVFN;
--	flowc->mnemval[0].val = cpu_to_be32(0);
-+	flowc->mnemval[0].val = cpu_to_be32(PCI_FUNC(ep->com.dev->rdev.lldi.pdev->devfn) << 8);
- 	flowc->mnemval[1].mnemonic = FW_FLOWC_MNEM_CH;
- 	flowc->mnemval[1].val = cpu_to_be32(ep->tx_chan);
- 	flowc->mnemval[2].mnemonic = FW_FLOWC_MNEM_PORT;
+ #define dynamic_pr_debug(fmt, ...) do {					\
+-	__label__ do_printk;						\
+-	__label__ out;							\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+ 	__attribute__((section("__verbose"), aligned(8))) =		\
+ 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+ 		_DPRINTK_FLAGS_DEFAULT };				\
+-	JUMP_LABEL(&descriptor.enabled, do_printk);			\
+-	goto out;							\
+-do_printk:								\
+-	printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);			\
+-out:	;								\
++	if (unlikely(descriptor.enabled))				\
++		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
+ 	} while (0)
+ 
+ 
+ #define dynamic_dev_dbg(dev, fmt, ...) do {				\
+-	__label__ do_printk;						\
+-	__label__ out;							\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+ 	__attribute__((section("__verbose"), aligned(8))) =		\
+ 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+ 		_DPRINTK_FLAGS_DEFAULT };				\
+-	JUMP_LABEL(&descriptor.enabled, do_printk);			\
+-	goto out;							\
+-do_printk:								\
+-	dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);		\
+-out:	;								\
++	if (unlikely(descriptor.enabled))				\
++		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
+ 	} while (0)
+ 
+ #else
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -141,11 +141,10 @@ static void ddebug_change(const struct d
+ 			else if (!dp->flags)
+ 				dt->num_enabled++;
+ 			dp->flags = newflags;
+-			if (newflags) {
+-				jump_label_enable(&dp->enabled);
+-			} else {
+-				jump_label_disable(&dp->enabled);
+-			}
++			if (newflags)
++				dp->enabled = 1;
++			else
++				dp->enabled = 0;
+ 			if (verbose)
+ 				printk(KERN_INFO
+ 					"ddebug: changed %s:%d [%s]%s %s\n",
 
 
