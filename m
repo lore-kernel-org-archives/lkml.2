@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab1BPATU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:19:20 -0500
-Received: from kroah.org ([198.145.64.141]:38801 "EHLO coco.kroah.org"
+	id S1756924Ab1BPATo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:19:44 -0500
+Received: from kroah.org ([198.145.64.141]:38878 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab1BPATN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:19:13 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:29 2011
-Message-Id: <20110216001429.674917388@clark.kroah.org>
+	id S1756807Ab1BPATe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:19:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:31 2011
+Message-Id: <20110216001430.930646310@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:11:43 -0800
+Date: Tue, 15 Feb 2011 16:11:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chun-Yi Lee <jlee@novell.com>, Chien-Chia Chen <machen@novell.com>
-Subject: [046/272] Staging: rt2860: fix previous patch error
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [058/272] ath9k_hw: Fix XPABIAS level configuration for AR9003
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chien-Chia Chen <machen@novell.com>
+From: Vasanthakumar Thiagarajan <vasanth@atheros.com>
 
-commit 1f0613158ea14b399fd7a16470630a729ba9d0c3 upstream.
+commit 52a0e2477dac2106bc1688cbe9615cdafc9deb7d upstream.
 
-Somehow Greg messed up the last patch and missed a chunk.  This patch
-contains the missing chunk.
+Improper configuration of 0x16288 and 0x16290 would affect transmission.
 
-Acked-by: Chun-Yi Lee <jlee@novell.com>
-Signed-off-by: Chien-Chia Chen <machen@novell.com>
+Signed-off-by: Vasanthakumar Thiagarajan <vasanth@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rt2860/chips/rt30xx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/staging/rt2860/chips/rt30xx.c
-+++ b/drivers/staging/rt2860/chips/rt30xx.c
-@@ -441,7 +441,7 @@ void RT30xxReverseRFSleepModeSetup(struc
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -22,12 +22,14 @@
+ #define COMP_CKSUM_LEN 2
  
- 		/* VCO_IC, RF R7 register Bit 4 & Bit 5 to 1 */
- 		RT30xxReadRFRegister(pAd, RF_R07, &RFValue);
--		RFValue |= 0x30;
-+		RFValue |= 0x20;
- 		RT30xxWriteRFRegister(pAd, RF_R07, RFValue);
+ #define AR_CH0_TOP (0x00016288)
+-#define AR_CH0_TOP_XPABIASLVL (0x3)
++#define AR_CH0_TOP_XPABIASLVL (0x300)
+ #define AR_CH0_TOP_XPABIASLVL_S (8)
  
- 		/* Idoh, RF R9 register Bit 1, Bit 2 & Bit 3 to 1 */
+ #define AR_CH0_THERM (0x00016290)
+-#define AR_CH0_THERM_SPARE (0x3f)
+-#define AR_CH0_THERM_SPARE_S (0)
++#define AR_CH0_THERM_XPABIASLVL_MSB 0x3
++#define AR_CH0_THERM_XPABIASLVL_MSB_S 0
++#define AR_CH0_THERM_XPASHORT2GND 0x4
++#define AR_CH0_THERM_XPASHORT2GND_S 2
+ 
+ #define AR_SWITCH_TABLE_COM_ALL (0xffff)
+ #define AR_SWITCH_TABLE_COM_ALL_S (0)
+@@ -995,9 +997,9 @@ static s32 ar9003_hw_xpa_bias_level_get(
+ static void ar9003_hw_xpa_bias_level_apply(struct ath_hw *ah, bool is2ghz)
+ {
+ 	int bias = ar9003_hw_xpa_bias_level_get(ah, is2ghz);
+-	REG_RMW_FIELD(ah, AR_CH0_TOP, AR_CH0_TOP_XPABIASLVL, (bias & 0x3));
+-	REG_RMW_FIELD(ah, AR_CH0_THERM, AR_CH0_THERM_SPARE,
+-		      ((bias >> 2) & 0x3));
++	REG_RMW_FIELD(ah, AR_CH0_TOP, AR_CH0_TOP_XPABIASLVL, bias);
++	REG_RMW_FIELD(ah, AR_CH0_THERM, AR_CH0_THERM_XPABIASLVL_MSB, bias >> 2);
++	REG_RMW_FIELD(ah, AR_CH0_THERM, AR_CH0_THERM_XPASHORT2GND, 1);
+ }
+ 
+ static u32 ar9003_hw_ant_ctrl_common_get(struct ath_hw *ah, bool is2ghz)
 
 
