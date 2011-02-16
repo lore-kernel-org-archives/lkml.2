@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932643Ab1BPAhC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:37:02 -0500
-Received: from kroah.org ([198.145.64.141]:49625 "EHLO coco.kroah.org"
+	id S932433Ab1BPAhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:37:00 -0500
+Received: from kroah.org ([198.145.64.141]:49629 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab1BPAYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:24:13 -0500
+	id S932282Ab1BPAYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:24:14 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:46 2011
-Message-Id: <20110216001446.744428072@clark.kroah.org>
+Message-Id: <20110216001446.838262276@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:14:33 -0800
+Date: Tue, 15 Feb 2011 16:14:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         NeilBrown <neilb@suse.de>
-Subject: [216/272] md: fix regression resulting in delays in clearing bits in a bitmap
+Subject: [217/272] md: Ensure no IO request to get md device before it is properly initialised.
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit 6c9879101442b08581e8a0e3ae6b7f643a78fd63 upstream.
+commit 0ca69886a8273ac1350143d562280bfcbe4760dc upstream.
 
-commit 589a594be1fb (2.6.37-rc4) fixed a problem were md_thread would
-sometimes call the ->run function at a bad time.
+When an md device is in the process of coming on line it is possible
+for an IO request (typically a partition table probe) to get through
+before the array is fully initialised, which can cause unexpected
+behaviour (e.g. a crash).
 
-If an error is detected during array start up after the md_thread has
-been started, the md_thread is killed.  This resulted in the ->run
-function being called once.  However the array may not be in a state
-that it is safe to call ->run.
+So explicitly record when the array is ready for IO and don't allow IO
+through until then.
 
-However the fix imposed meant that  ->run was not called on a timeout.
-This means that when an array goes idle, bitmap bits do not get
-cleared promptly.  While the array is busy the bits will still be
-cleared when appropriate so this is not very serious.  There is no
-risk to data.
+There is no possibility for a similar problem when the array is going
+off-line as there must only be one 'open' at that time, and it is busy
+off-lining the array and so cannot send IO requests.  So no memory
+barrier is needed in md_stop()
 
-Change the test so that we only avoid calling ->run when the thread
-is being stopped.  This more explicitly addresses the problem situation.
-
-This is suitable for 2.6.37-stable and any -stable kernel to which
-589a594be1fb was applied.
+This has been a bug since commit 409c57f3801 in 2.6.30 which
+introduced md_make_request.  Before then, each personality would
+register its own make_request_fn when it was ready.
+This is suitable for any stable kernel from 2.6.30.y onwards.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by:  "Hawrylewicz Czarnowski, Przemyslaw" <przemyslaw.hawrylewicz.czarnowski@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/md.c |    8 ++++++--
+ drivers/md/md.h |    3 ++-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
 --- a/drivers/md/md.c
 +++ b/drivers/md/md.c
-@@ -6042,7 +6042,8 @@ static int md_thread(void * arg)
- 			 || kthread_should_stop(),
- 			 thread->timeout);
+@@ -288,10 +288,12 @@ static int md_make_request(struct reques
+ 	int rv;
+ 	int cpu;
  
--		if (test_and_clear_bit(THREAD_WAKEUP, &thread->flags))
-+		clear_bit(THREAD_WAKEUP, &thread->flags);
-+		if (!kthread_should_stop())
- 			thread->run(thread->mddev);
+-	if (mddev == NULL || mddev->pers == NULL) {
++	if (mddev == NULL || mddev->pers == NULL
++	    || !mddev->ready) {
+ 		bio_io_error(bio);
+ 		return 0;
  	}
++	smp_rmb(); /* Ensure implications of  'active' are visible */
+ 	rcu_read_lock();
+ 	if (mddev->suspended) {
+ 		DEFINE_WAIT(__wait);
+@@ -4564,7 +4566,8 @@ int md_run(mddev_t *mddev)
+ 	mddev->safemode_timer.data = (unsigned long) mddev;
+ 	mddev->safemode_delay = (200 * HZ)/1000 +1; /* 200 msec delay */
+ 	mddev->in_sync = 1;
+-
++	smp_wmb();
++	mddev->ready = 1;
+ 	list_for_each_entry(rdev, &mddev->disks, same_set)
+ 		if (rdev->raid_disk >= 0) {
+ 			char nm[20];
+@@ -4725,6 +4728,7 @@ EXPORT_SYMBOL_GPL(md_stop_writes);
  
+ void md_stop(mddev_t *mddev)
+ {
++	mddev->ready = 0;
+ 	mddev->pers->stop(mddev);
+ 	if (mddev->pers->sync_request && mddev->to_remove == NULL)
+ 		mddev->to_remove = &md_redundancy_group;
+--- a/drivers/md/md.h
++++ b/drivers/md/md.h
+@@ -148,7 +148,8 @@ struct mddev_s
+ 						       * are happening, so run/
+ 						       * takeover/stop are not safe
+ 						       */
+-
++	int				ready; /* See when safe to pass
++						* IO requests down */
+ 	struct gendisk			*gendisk;
+ 
+ 	struct kobject			kobj;
 
 
