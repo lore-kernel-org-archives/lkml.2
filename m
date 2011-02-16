@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab1BPA2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:28:05 -0500
-Received: from kroah.org ([198.145.64.141]:49946 "EHLO coco.kroah.org"
+	id S932538Ab1BPA2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:28:40 -0500
+Received: from kroah.org ([198.145.64.141]:49921 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932486Ab1BPAZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:25:36 -0500
+	id S1757834Ab1BPAZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:25:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:14:51 2011
-Message-Id: <20110216001451.576800857@clark.kroah.org>
+Message-Id: <20110216001451.163035595@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:15:22 -0800
+Date: Tue, 15 Feb 2011 16:15:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Keith Packard <keithp@keithp.com>
-Subject: [265/272] drm: Only set DPMS ON when actually configuring a mode
+        Knut Petersen <knut_petersen@t-online.de>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [261/272] drm/i915/lvds: Add AOpen i915GMm-HFS to the list of false-positive LVDS
 In-Reply-To: <20110216001559.GA31413@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keith Packard <keithp@keithp.com>
+From: Knut Petersen <knut_petersen@t-online.de>
 
-commit 811aaa55ba21ab37407018cfc01770d6b037d3fb upstream.
+commit 22ab70d3262ddb6e69b3c246a34e2967ba5eb1e8 upstream.
 
-In drm_crtc_helper_set_config, instead of always forcing all outputs
-to DRM_MODE_DPMS_ON, only set them if the CRTC is actually getting a
-mode set, as any mode set will turn all outputs on.
-
-This fixes https://lkml.org/lkml/2011/1/24/457
-
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Reported-and-tested-by: Carlos R. Mafra <crmafra2@gmail.com>
-Tested-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Knut Petersen <knut_petersen@t-online.de>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/drm_crtc_helper.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -654,6 +654,12 @@ int drm_crtc_helper_set_config(struct dr
- 				ret = -EINVAL;
- 				goto fail;
- 			}
-+			DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
-+			for (i = 0; i < set->num_connectors; i++) {
-+				DRM_DEBUG_KMS("\t[CONNECTOR:%d:%s] set DPMS on\n", set->connectors[i]->base.id,
-+					      drm_get_connector_name(set->connectors[i]));
-+				set->connectors[i]->dpms = DRM_MODE_DPMS_ON;
-+			}
- 		}
- 		drm_helper_disable_unused_functions(dev);
- 	} else if (fb_changed) {
-@@ -670,12 +676,6 @@ int drm_crtc_helper_set_config(struct dr
- 			goto fail;
- 		}
- 	}
--	DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
--	for (i = 0; i < set->num_connectors; i++) {
--		DRM_DEBUG_KMS("\t[CONNECTOR:%d:%s] set DPMS on\n", set->connectors[i]->base.id,
--			      drm_get_connector_name(set->connectors[i]));
--		set->connectors[i]->dpms = DRM_MODE_DPMS_ON;
--	}
- 
- 	kfree(save_connectors);
- 	kfree(save_encoders);
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -697,6 +697,14 @@ static const struct dmi_system_id intel_
+ 	},
+ 	{
+ 		.callback = intel_no_lvds_dmi_callback,
++		.ident = "AOpen i915GMm-HFS",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
++			DMI_MATCH(DMI_BOARD_NAME, "i915GMm-HFS"),
++		},
++	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
+ 		.ident = "Aopen i945GTt-VFA",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_VERSION, "AO00001JW"),
 
 
