@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab1BPQrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 11:47:52 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56093 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab1BPQru (ORCPT
+	id S1753292Ab1BPQsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 11:48:43 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48760 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab1BPQsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 11:47:50 -0500
+	Wed, 16 Feb 2011 11:48:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=kCTrzXnI0aI8flUKWPXr9PqAsB1gAXpLklQ6EBlnOPBrahRs2ln5dHbyfsvXeWiSMb
-         CiIlHNm558NvqG2nLo3l09qvIfa1j0A2le5q3OZXbitwOaCgwI7RJ3dKh58fwu8RpVZ9
-         clMllZIpfhhOafm0TwYGbvKhOW6tX9cgGeRK4=
-Subject: Re: Linux 2.6.38-rc5
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        npiggin@kernel.dk
-In-Reply-To: <20110216163951.GG22723@ZenIV.linux.org.uk>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-	 <1297854842.3201.197.camel@edumazet-laptop>
-	 <AANLkTimnLPF0wz+ya-Wj1U1hQjPJpUhmL893OxBWqZYM@mail.gmail.com>
-	 <20110216160643.GE22723@ZenIV.linux.org.uk>
-	 <20110216161929.GF22723@ZenIV.linux.org.uk>
-	 <AANLkTi=8O1ZJZ2dWWwmcdV3G8LtrxSHWp=GgLxAYQE3A@mail.gmail.com>
-	 <20110216163951.GG22723@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Feb 2011 17:47:44 +0100
-Message-ID: <1297874864.30541.40.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lvf+zJobf7Js79o586VIReezhAtS/lwokA/2W7cxUls/5ibfsy0sozuv9XB41C21Sr
+         sGC2Hyy3dTo6gdwdyW/nWyqLjnUvK4w4jpf2sJlymh8VFZsbuMJda27nuSH8Auq/y0Ij
+         3aDvm/qSWYG1VKM8VzJKHycz3JSILGEONH6pk=
+Date: Wed, 16 Feb 2011 08:48:31 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        David Woodhouse <dwmw2@infradead.org>, Alex Dubov <oakad@yahoo.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: Re: [PATCH] workqueue, freezer: unify spelling of 'freeze' + 'able'
+ to 'freezable'
+Message-ID: <20110216164830.GB29796@core.coreip.homeip.net>
+References: <20110216083442.GB19830@htj.dyndns.org>
+ <20110216151829.GC3550@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216151829.GC3550@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 16 février 2011 à 16:39 +0000, Al Viro a écrit :
-> On Wed, Feb 16, 2011 at 08:33:32AM -0800, Linus Torvalds wrote:
-> > Does it make tons of conceptual sense to pass in 'inode' to
-> > do_follow_link? No, it's clearly redundant information, which is the
-> > whole point of the BUG_ON(). But it does allow that extra shared
-> > sanity test, and we _could_ also then do
+On Wed, Feb 16, 2011 at 07:18:29AM -0800, Greg KH wrote:
+> On Wed, Feb 16, 2011 at 09:34:42AM +0100, Tejun Heo wrote:
+> > There are two spellings in use for 'freeze' + 'able' - 'freezable' and
+> > 'freezeable'.  The former is the more prominent one.  The latter is
+> > mostly used by workqueue and in a few other odd places.  Unify the
+> > spelling to 'freezable'.
 > > 
-> >   -       if (!IS_ERR(cookie) && path->dentry->d_inode->i_op->put_link)
-> >   -               path->dentry->d_inode->i_op->put_link(path->dentry,
-> > nd, cookie);
-> >   +       if (!IS_ERR(cookie) && inode->i_op->put_link)
-> >   +               inode->i_op->put_link(path->dentry, nd, cookie);
-> > 
-> > since we've verified that 'inode' is 'path->dentry->d_inode', and all
-> > of those should be stable over all the calls (in the non-RCU case,
-> > which we are in).
-> > 
-> > I dunno. I don't care _deeply_, but I do have to say that I much liked
-> > how you moved the
-> > 
-> >     if (nameidata_dentry_drop_rcu_maybe(nd, path->dentry))
-> >       ..
-> > 
-> > into do_follow_link(). I think it made it clearer that do_follow_link
-> > (and __do_follow_link()) aren't done with RCU.
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Reported-by: Alan Stern <stern@rowland.harvard.edu>
+> > Cc: Dmitry Torokhov <dtor@mail.ru>
+> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > Cc: David Woodhouse <dwmw2@infradead.org>
+> > Cc: Alex Dubov <oakad@yahoo.com>
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> OK, I can live with that.  Consider me convinced, let's go with your variant.
-> Speaking of ugliness: Nick, why the _fuck_ have you reverted non-create case
-> in do_filp_open() to do_path_lookup()?
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
 
-I tested both (Linus/Al) versions, please feel free to add
+Thanks for doing this Tejun.
 
-Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 
-
-
+-- 
+Dmitry
