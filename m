@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab1BPA5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Feb 2011 19:57:46 -0500
-Received: from kroah.org ([198.145.64.141]:46166 "EHLO coco.kroah.org"
+	id S933349Ab1BPAv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Feb 2011 19:51:29 -0500
+Received: from kroah.org ([198.145.64.141]:46119 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933394Ab1BPAvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Feb 2011 19:51:31 -0500
+	id S933174Ab1BPAvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Feb 2011 19:51:17 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 15 16:21:13 2011
-Message-Id: <20110216002113.913386077@clark.kroah.org>
+Message-Id: <20110216002113.238710710@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 15 Feb 2011 16:21:57 -0800
+Date: Tue, 15 Feb 2011 16:21:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [patch 149/176] TPM: Long default timeout fix
+        NeilBrown <neilb@suse.de>
+Subject: [patch 142/176] md: Fix removal of extra drives when converting RAID6 to RAID5
 In-Reply-To: <20110216002212.GA9246@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+From: NeilBrown <neilb@suse.de>
 
-commit c4ff4b829ef9e6353c0b133b7adb564a68054979 upstream.
+commit bf2cb0dab8c97f00a71875d9b13dbac17a2f47ca upstream.
 
-If duration variable value is 0 at this point, it's because
-chip->vendor.duration wasn't filled by tpm_get_timeouts() yet.
-This patch sets then the lowest timeout just to give enough
-time for tpm_get_timeouts() to further succeed.
+When a RAID6 is converted to a RAID5, the extra drive should
+be discarded.  However it isn't due to a typo in a comparison.
 
-This fix avoids long boot times in case another entity attempts
-to send commands to the TPM when the TPM isn't accessible.
+This bug was introduced in commit e93f68a1fc6 in 2.6.35-rc4
+and is suitable for any -stable since than.
 
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+As the extra drive is not removed, the 'degraded' counter is wrong and
+so the RAID5 will not respond correctly to a subsequent failure.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/md/md.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -354,12 +354,14 @@ unsigned long tpm_calc_ordinal_duration(
- 		    tpm_protected_ordinal_duration[ordinal &
- 						   TPM_PROTECTED_ORDINAL_MASK];
- 
--	if (duration_idx != TPM_UNDEFINED)
-+	if (duration_idx != TPM_UNDEFINED) {
- 		duration = chip->vendor.duration[duration_idx];
--	if (duration <= 0)
-+		/* if duration is 0, it's because chip->vendor.duration wasn't */
-+		/* filled yet, so we set the lowest timeout just to give enough */
-+		/* time for tpm_get_timeouts() to succeed */
-+		return (duration <= 0 ? HZ : duration);
-+	} else
- 		return 2 * 60 * HZ;
--	else
--		return duration;
- }
- EXPORT_SYMBOL_GPL(tpm_calc_ordinal_duration);
- 
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -3111,7 +3111,7 @@ level_store(mddev_t *mddev, const char *
+ 		char nm[20];
+ 		if (rdev->raid_disk < 0)
+ 			continue;
+-		if (rdev->new_raid_disk > mddev->raid_disks)
++		if (rdev->new_raid_disk >= mddev->raid_disks)
+ 			rdev->new_raid_disk = -1;
+ 		if (rdev->new_raid_disk == rdev->raid_disk)
+ 			continue;
 
 
