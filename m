@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909Ab1BQUAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:00:06 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:58256 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab1BQUAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:00:03 -0500
-To: "Yann Droneaud" <yann@droneaud.fr>
-CC: miklos@szeredi.hu, miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, fuse-sshfs@lists.sourceforge.net,
-        git@vger.kernel.org
-In-reply-to: <ac00e83c1b57e2eeda1c6631ec611e75.squirrel@webmail.ocsa-data.net>
-	(yann@droneaud.fr)
-Subject: Re: [sshfs] inode problem when using git on a sshfs filesystem
-References: <1297893854.4097.43.camel@dworkin.quest-ce.net>
-	<E1Pq1LW-0005rc-Qy@pomaz-ex.szeredi.hu>
-	<7f02c4cb5ca13dae6de7caa1b6f90cfe.squirrel@webmail.ocsa-data.net>
-	<E1Pq3aa-0006Nn-Cv@pomaz-ex.szeredi.hu> <ac00e83c1b57e2eeda1c6631ec611e75.squirrel@webmail.ocsa-data.net>
-Message-Id: <E1PqA19-00080P-Dy@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 17 Feb 2011 20:59:59 +0100
+	id S1757932Ab1BQUAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:00:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30973 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757915Ab1BQUAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:00:17 -0500
+Date: Thu, 17 Feb 2011 15:00:11 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
+Subject: Re: blk_throtl_exit  taking q->queue_lock is problematic
+Message-ID: <20110217200010.GF9075@redhat.com>
+References: <20110216183114.26a3613b@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216183114.26a3613b@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Feb 2011, Yann Droneaud wrote:
-> > The VFS (part of the linux kernel that implements the generic
-> > filesystem logic) clears the directory entry from the cache prior to
-> > actually trying to remove the directory.  This has the effect that any
-> > children of the directory are also cleared from the cache, hence the
-> > behavior you see in rmdir.
-> >
+On Wed, Feb 16, 2011 at 06:31:14PM +1100, NeilBrown wrote:
 > 
-> I tried to check that behavor: if the VFS is dropping dentry before doing
-> a rmdir(), them lookup files under this directory should be slower than
-> before rmdir().
 > 
-> On a ext4 filesystem, directory with 338 sub directories and 1992 files, 
-> i've tried the following commands:
+> Hi,
 > 
-> /* drop all */
-> # echo 3 > /proc/sys/vm/drop_caches
-> # time ls -alR directory > /dev/null
-> real	0m0.140s
-> user	0m0.000s
-> sys	0m0.080s
+>  I recently discovered that blk_throtl_exit takes ->queue_lock when a blockdev
+> is finally released.
 > 
-> /* drop cache */
-> # echo 1 > /proc/sys/vm/drop_caches
-> # time ls -alR directory > /dev/null
-> real	0m0.119s
-> user	0m0.000s
-> sys	0m0.072s
-> 
-> /* drop dentry and inode */
-> # echo 2 > /proc/sys/vm/drop_caches
-> # time ls -alR directory > /dev/null
-> real	0m0.089s
-> user	0m0.016s
-> sys	0m0.040s
-> 
-> /* read from cache */
-> # time ls -alR directory > /dev/null
-> real	0m0.063s
-> user	0m0.004s
-> sys	0m0.036s
-> 
-> $ rmdir directory
-> rmdir: failed to remove `directory': Directory not empty
-> 
-> /* re read from cache */
-> $ time ls -alR directory > /dev/null
-> real	0m0.065s
-> user	0m0.012s
-> sys	0m0.036s
-> 
-> As you can see, after doing rmdir(), the time taken to walk trough the
-> directories is the same than before calling it, so the dentry seems not
-> flushed out of the cache after the rmdir().
+> This is a problem for because by that time the queue_lock doesn't exist any
+> more.  It is in a separate data structure controlled by the RAID personality
+> and by the time that the block device is being destroyed the raid personality
+> has shutdown and the data structure containing the lock has been freed.
 
-tucsk:~ # time find /usr -ls > /dev/null
+Hi Neil,
 
-real    0m1.922s
-user    0m1.104s
-sys     0m0.800s
-tucsk:~ # rmdir /usr
-rmdir: failed to remove `/usr': Directory not empty
-tucsk:~ # time find /usr -ls > /dev/null
+I am having a look at queue allocation in md and had few queries.
 
-real    0m2.637s
-user    0m1.172s
-sys     0m1.448s
-tucsk:~ # time find /usr -ls > /dev/null
+I was looking at md_alloc(), where we do
 
-real    0m1.943s
-user    0m1.068s
-sys     0m0.848s
-tucsk:~ # 
+mddev->queue = blk_alloc_queue(GFP_KERNEL);
+blk_queue_make_request(mddev->queue, md_make_request);
 
-As you can see it does get significantly slower after the rmdir.
+call to blk_queue_make_request() will make sure queue_lock is initiliazed
+to internal __queue_lock.
 
-> I really prefer this behavior. The one you explained would be a real pain:
-> if one user call rmdir on / inside a loop, the full dentry cache will be
-> dropped each time: this would affect performance for the whole system.
+Then I looked at raid0_run(), which is again setting the queue lock.
 
-Yes.  But in practice this doesn't really matter, removing non-empty
-directories happens rarely.
+mddev->queue->queue_lock = &mddev->queue->__queue_lock;
 
-Thanks,
-Miklos
+I think this is redundant now as during md_alloc() we already did it.
+
+Similar seems to be the case for linear.c and multipath.c
+
+Following seem to be the cases where we overide the default lock.
+
+raid1.c, raid5.c, raid10.c
+
+I was going through the raid1.c, and I see that q->queue_lock has
+been initialized to &conf->deivce_lock. Can we do the reverse. Introduce
+spinlock pointer in conf and point it at queue->queue_lock? Anyway you
+mentioned that personality's data structure are freed before request
+queue is cleaned up, so there should not be any lifetime issues.
+
+Also  I was wondering how does it help sharing the lock between request
+queue and some other data structures in driver.
+
+Thanks
+Vivek
