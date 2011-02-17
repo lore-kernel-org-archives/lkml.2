@@ -1,131 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab1BQL6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 06:58:17 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53210 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab1BQL6P convert rfc822-to-8bit (ORCPT
+	id S1755767Ab1BQMEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 07:04:16 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:44973 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753542Ab1BQMEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 06:58:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kWqKxcpt9QPucEApw5ik0qtRGuBL561AYItrhdfKuacGhvxVtckwXJbgRT5qsFDt+X
-         IPjs8rfgPj/jF3FnhMIYU20FNAVKtC+jJ6QKIHPyw9JTGvO3dik2jwOZBkb7Z/pkYQoj
-         I66X+oqH381QATgo9NATojBq2Al4h0MJ24wyY=
+	Thu, 17 Feb 2011 07:04:15 -0500
+Message-ID: <4D5D0EAA.9030807@metafoo.de>
+Date: Thu, 17 Feb 2011 13:03:54 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=2Dk0Ewz472VyytJGbxui0jtnJHa_phB8eREEm@mail.gmail.com>
-References: <AANLkTim1wWi_sguqfo4t7V-RDT1tT41fkFtTVksoJGw5@mail.gmail.com>
-	<AANLkTi=2Dk0Ewz472VyytJGbxui0jtnJHa_phB8eREEm@mail.gmail.com>
-Date: Thu, 17 Feb 2011 19:58:14 +0800
-Message-ID: <AANLkTinfwNWkr05p5d1ji_qfdSZo1sn-X5FtnjF37dTa@mail.gmail.com>
-Subject: Re: [PATCH] code cleanup on include/linux/fs.h
-From: Steven Liu <lingjiujianke@gmail.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: torvalds <torvalds@linux-foundation.org>, viro <viro@zeniv.linux.org.uk>,
-        dchinner <dchinner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Eric Miao <eric.y.miao@gmail.com>
+CC: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
+        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
+References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com> <AANLkTi=yZZgh0v+-_Cw0JudAxxTZuBWeVCEZ-dBtENPw@mail.gmail.com>
+In-Reply-To: <AANLkTi=yZZgh0v+-_Cw0JudAxxTZuBWeVCEZ-dBtENPw@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  Alexey Dobriyan,
+On 02/17/2011 08:33 AM, Eric Miao wrote:
+> On Thu, Feb 17, 2011 at 8:56 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
+>> Previously, gpiolib would unconditionally flag all GPIO pins as inputs,
+>> regardless of their true state.  This resulted in all GPIO output pins
+>> initially being incorrectly identified as "input" in the GPIO sysfs.
+>>
+>> Since the direction of GPIOs is not known prior to having their
+>> direction set, instead set the default direction to "unknown" to prevent
+>> user confusion.  A pin with an "unknown" direction can not be written or
+>> read via sysfs; it must first be configured as an input or output before
+>> it can be used.
+>>
+> 
+> Hrm... that's why I don't like the original definition of gpio_request()
+> which is vague on the pin configurations.
+Actually it doesn't say anything at all about the current configuration at all.
+Requesting a pin grants you exclusive access to that pin, if it succeeds. So it
+is solely about ownership and not about configuration.
+Once you own a pin you are allowed to modify its configuration, otherwise you
+should never touch it. And you shouldn't make any assumptions about its
+previous configuration, if you want to use it as input you should explicitly
+configure it as an input pin.
 
-Signed-off-by: LiuQi <lingjiujianke@gmail.com>
----
- fs/super.c |   31 -------------------------------
- 1 files changed, 0 insertions(+), 31 deletions(-)
+> The pin configuration should be clear upon requesting, otherwise it's a
+> potential issue.
+How so?
 
-diff --git a/fs/super.c b/fs/super.c
-index 7e9dd4c..8272f26 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -843,22 +843,6 @@ error:
- }
- EXPORT_SYMBOL(mount_bdev);
+> 
+> Anyway, this unknown state looks to be a good mitigation to this
+> underlying problem. I'm good with it.
+> 
 
--int get_sb_bdev(struct file_system_type *fs_type,
--       int flags, const char *dev_name, void *data,
--       int (*fill_super)(struct super_block *, void *, int),
--       struct vfsmount *mnt)
--{
--       struct dentry *root;
--
--       root = mount_bdev(fs_type, flags, dev_name, data, fill_super);
--       if (IS_ERR(root))
--               return PTR_ERR(root);
--       mnt->mnt_root = root;
--       mnt->mnt_sb = root->d_sb;
--       return 0;
--}
--
--EXPORT_SYMBOL(get_sb_bdev);
-
- void kill_block_super(struct super_block *sb)
- {
-@@ -897,21 +881,6 @@ struct dentry *mount_nodev(struct
-file_system_type *fs_type,
- }
- EXPORT_SYMBOL(mount_nodev);
-
--int get_sb_nodev(struct file_system_type *fs_type,
--       int flags, void *data,
--       int (*fill_super)(struct super_block *, void *, int),
--       struct vfsmount *mnt)
--{
--       struct dentry *root;
--
--       root = mount_nodev(fs_type, flags, data, fill_super);
--       if (IS_ERR(root))
--               return PTR_ERR(root);
--       mnt->mnt_root = root;
--       mnt->mnt_sb = root->d_sb;
--       return 0;
--}
--EXPORT_SYMBOL(get_sb_nodev);
-
- static int compare_single(struct super_block *s, void *p)
- {
---
-1.6.5.2
-
-
-
-
-Best Regards
-
-
-Steven Liu
-
-2011/2/17 Alexey Dobriyan <adobriyan@gmail.com>:
-> On Thu, Feb 17, 2011 at 11:37 AM, Steven Liu <lingjiujianke@gmail.com> wrote:
->>     Cleanup the unsed code on  include/linux/fs.h.
->>     All filesystem using mount_bdev and mount_nodev
->>     to replace get_sb_bdev and get_sb_nodev.
->>     So rmmove the unused code.
->
->> -extern int get_sb_bdev(struct file_system_type *fs_type,
->> -       int flags, const char *dev_name, void *data,
->> -       int (*fill_super)(struct super_block *, void *, int),
->> -       struct vfsmount *mnt);
->>  extern struct dentry *mount_single(struct file_system_type *fs_type,
->>        int flags, void *data,
->>        int (*fill_super)(struct super_block *, void *, int));
->> @@ -1821,10 +1817,6 @@ extern int get_sb_single(struct
->> file_system_type *fs_type,
->>  extern struct dentry *mount_nodev(struct file_system_type *fs_type,
->>        int flags, void *data,
->>        int (*fill_super)(struct super_block *, void *, int));
->> -extern int get_sb_nodev(struct file_system_type *fs_type,
->> -       int flags, void *data,
->> -       int (*fill_super)(struct super_block *, void *, int),
->> -       struct vfsmount *mnt);
->
-> The functions themselves are still in place, what's up?
->
-> fs/super.c:846:int get_sb_bdev(struct file_system_type *fs_type,
-> fs/super.c:861:EXPORT_SYMBOL(get_sb_bdev);
->
+- Lars
