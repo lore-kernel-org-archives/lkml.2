@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951Ab1BQULh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:11:37 -0500
-Received: from mga11.intel.com ([192.55.52.93]:61471 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755429Ab1BQULf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:11:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,182,1297065600"; 
-   d="scan'208";a="888598787"
-Subject: Re: [PATCH 07/12] n_tracerouter and n_tracesink additions.
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: Greg KH <greg@kroah.com>
-Cc: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
-In-Reply-To: <20110217195421.GC12172@kroah.com>
-References: <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
-	 <20110217192154.GC29448@kroah.com> <1297971806.3038.30.camel@localhost>
-	 <20110217195421.GC12172@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 17 Feb 2011 12:11:34 -0800
-Message-ID: <1297973494.3038.37.camel@localhost>
+	id S932457Ab1BQULq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:11:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44112 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757922Ab1BQULo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:11:44 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=JGpTz_e83PYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=N3ZPZhDW9-CjWhLS7bIA:9 a=fhtVCNF29TFJSaNUoBh9vVkg-lgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
+ for x86_64 right now)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>, 2nddept-manager@sdl.hitachi.co.jp
+In-Reply-To: <4D5D47C0.9020206@hitachi.com>
+References: <20110209200249.111932716@goodmis.org>
+	 <4D5D1672.6070206@hitachi.com>
+	 <1297948703.23343.907.camel@gandalf.stny.rr.com>
+	 <4D5D4013.4070602@hitachi.com>
+	 <1297957591.23343.921.camel@gandalf.stny.rr.com>
+	 <4D5D47C0.9020206@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Feb 2011 15:11:41 -0500
+Message-ID: <1297973501.23343.953.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 11:54 -0800, Greg KH wrote:
-> On Thu, Feb 17, 2011 at 11:43:26AM -0800, J Freyensee wrote:
-> > On Thu, 2011-02-17 at 11:21 -0800, Greg KH wrote:
-> > > On Tue, Feb 08, 2011 at 11:34:52AM -0800, james_p_freyensee@linux.intel.com wrote:
-> > > > From: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > > 
-> > > > This patch adds line discipline numbers to n_tracerouter and
-> > > > n_tracesink line disciplines for the Intel-Atom PTI implementation
-> > > > for mobile devices.
-> > > > 
-> > > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > > ---
-> > > >  include/linux/tty.h |    2 ++
-> > > >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/include/linux/tty.h b/include/linux/tty.h
-> > > > index 54e4eaa..c507f53 100644
-> > > > --- a/include/linux/tty.h
-> > > > +++ b/include/linux/tty.h
-> > > > @@ -50,6 +50,8 @@
-> > > >  #define N_CAIF		20      /* CAIF protocol for talking to modems */
-> > > >  #define N_GSM0710	21	/* GSM 0710 Mux */
-> > > >  #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
-> > > > +#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
-> > > > +#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
-> > > 
-> > > Two new ones?  Really?  Alan, no objection from you on this?
-> > 
-> > I'll let Alan chime in, but I did have Alan review this code before I
-> > submitted here.
-> 
-> Hm, I don't see a "Reviewed-by:" line on the patch...
+On Fri, 2011-02-18 at 01:07 +0900, Masami Hiramatsu wrote:
 
-Good point...I can add this to all patches as Alan reviewed all this
-code before-hand.
+> I just thought that frequent stop-machine is not so good from the user's
+> POV. I agree that disabled probe ignoring the call is enough.
+> Maybe, it could be done with the similar mechanism of jump optimization.
 
-> 
-> thanks,
-> 
-> greg k-h
+I thought jump optimization still calls stop_machine too?
+
+-- Steve
 
 
