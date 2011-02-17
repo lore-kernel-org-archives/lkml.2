@@ -1,117 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab1BQV6b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 16:58:31 -0500
-Received: from kroah.org ([198.145.64.141]:51740 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755965Ab1BQV62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 16:58:28 -0500
-Date: Thu, 17 Feb 2011 13:56:08 -0800
-From: Greg KH <greg@kroah.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Olof Johansson <olofj@chromium.org>, Andi Kleen <andi@firstfloor.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>, Jon Mayer <jonmayer@google.com>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
-        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
-Subject: Re: [PATCH v1 2/5] firmware: Basic dmi-sysfs support
-Message-ID: <20110217215608.GA2451@kroah.com>
-References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com>
- <20110217212805.3967.47547.stgit@mike.mtv.corp.google.com>
+	id S1756372Ab1BQV63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 16:58:29 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:62209 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab1BQV60 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 16:58:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6260"; a="74886911"
+Message-ID: <4D5D9A00.7060609@codeaurora.org>
+Date: Thu, 17 Feb 2011 13:58:24 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110217212805.3967.47547.stgit@mike.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jamie Iles <jamie@jamieiles.com>
+CC: John Linn <john.linn@xilinx.com>, linux@arm.linux.org.uk, arnd@arndb.de,
+        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
+        glikely@secretlab.ca, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 3/4] ARM: Xilinx: base header files and assembly macros
+References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com>	<1297872716-13353-2-git-send-email-john.linn@xilinx.com>	<1297872716-13353-3-git-send-email-john.linn@xilinx.com>	<e58673f5-2881-4820-b5cd-99e8ef294ed5@VA3EHSMHS024.ehs.local> <20110217100126.GD22961@pulham.picochip.com>
+In-Reply-To: <20110217100126.GD22961@pulham.picochip.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Overall, this looks great, just a few minor comments below:
+On 02/17/2011 02:01 AM, Jamie Iles wrote:
+>> +
+>> +static void putc(char ch)
+>> +{
+>> +	/*
+>> +	 * Wait for room in the FIFO, then write the char into the FIFO
+>> +	 */
+>> +	while (UART_STATUS(LL_UART_PADDR) & UART_SR_TXFULL)
+>> +		;
+>
+> It might be worth adding a barrier() call to these loops to be explicit 
+> about the volatility.
 
-On Thu, Feb 17, 2011 at 01:28:05PM -0800, Mike Waychison wrote:
-> +config DMI_SYSFS
-> +	tristate "DMI table support in sysfs"
-> +	depends on SYSFS && DMI
-> +	default X86
+I think you want cpu_relax() then.
 
-Huh?  Default should be 'N' for any new feature, unless it keeps your
-machine from booting.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-I think you want this option to depend on X86 though, right?
-
-> +	help
-> +	  Say Y or M here to enable the exporting of the raw DMI table
-> +	  data via sysfs.  This is useful for consuming the data without
-> +	  requiring any access to /dev/mem at all.  Tables are found
-> +	  under /sys/firmware/dmi when this option is enabled and
-> +	  loaded.
-
-I just realized (due to other work I'm doing on a laptop) that we have a
-bunch of entries today in /sys/class/dmi/id which is a pointer to the
-dmi "device".
-
-Now I think this really is different (these are the raw DMI tables), but
-this doesn't have anything to do with that code, right?
-
-> + *
-> + * Copyright 2010 Google, Inc.
-
-It's 2011 :)
-
-> +static int __init dmi_sysfs_init(void)
-> +{
-> +	int error = -ENOMEM;
-> +	int val;
-> +
-> +	/* Set up our directory */
-> +	dmi_kobj = kobject_create_and_add("dmi", firmware_kobj);
-> +	if (!dmi_kobj)
-> +		goto err;
-> +
-> +	dmi_kset = kset_create_and_add("entries", NULL, dmi_kobj);
-> +	if (!dmi_kset)
-> +		goto err;
-> +
-> +	val = 0;
-> +	error = dmi_walk(dmi_sysfs_register_handle, &val);
-> +	if (error)
-> +		goto err;
-> +	if (val) {
-> +		error = val;
-> +		goto err;
-> +	}
-> +
-> +	pr_info("dmi-sysfs: loaded.\n");
-
-Is this really needed?  pr_dbg() instead please?
-
-> +
-> +	return 0;
-> +err:
-> +	cleanup_entry_list();
-> +	kset_unregister(dmi_kset);
-> +	kobject_put(dmi_kobj);
-> +	return error;
-> +}
-> +
-> +/* clean up everything. */
-> +static void __exit dmi_sysfs_exit(void)
-> +{
-> +	pr_info("dmi-sysfs: unloading.\n");
-> +	cleanup_entry_list();
-> +	kset_unregister(dmi_kset);
-> +	kobject_put(dmi_kobj);
-> +}
-> +
-> +module_init(dmi_sysfs_init);
-> +module_exit(dmi_sysfs_exit);
-> +
-> +MODULE_AUTHOR("Google, Inc.");
-
-You don't want your name here?
-
-thanks,
-
-greg k-h
