@@ -1,197 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab1BQHcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 02:32:16 -0500
-Received: from ns2.q-leap.de ([88.79.172.217]:60160 "EHLO mail.q-leap.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910Ab1BQHcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 02:32:14 -0500
-Message-ID: <4D5CCEED.3010501@q-leap.com>
-Date: Thu, 17 Feb 2011 08:31:57 +0100
-From: Peter Kruse <pk@q-leap.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1752591Ab1BQHeG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 02:34:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63142 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab1BQHeD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 02:34:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=FiSJyjIJk/fbcxsFWAKLNSszgijqXQ2IFREC2d0rziuVnJofWeZ/nTFlf3GxSQBbO1
+         pvXLXuIAulTdtypRjuWc+iRixnjv799mbMHg5lUWSVf8DBh1+PY++tBFUUOe1v+6jMAF
+         Bl+/hZhOsO5lx7wgOV4yggP2rCCsyiq0XJSM0=
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: I have a blaze of 353 page allocation failures, all alike
-References: <4D53FE43.8030106@q-leap.com> <alpine.DEB.2.00.1102141046170.26158@router.home> <4D5A2EDB.8060603@q-leap.com> <alpine.DEB.2.00.1102151040560.10511@router.home> <4D5BC16A.2090205@q-leap.com> <alpine.DEB.2.00.1102160956250.27814@router.home> <4D5BF56F.1000504@q-leap.com> <alpine.DEB.2.00.1102161010330.27814@router.home>
-In-Reply-To: <alpine.DEB.2.00.1102161010330.27814@router.home>
-Content-Type: multipart/mixed;
- boundary="------------040208060009090005040307"
+In-Reply-To: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com>
+References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 17 Feb 2011 15:33:42 +0800
+Message-ID: <AANLkTi=yZZgh0v+-_Cw0JudAxxTZuBWeVCEZ-dBtENPw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        "Uwe Kleine-K?nig" <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1H7YGYp007980
 
-This is a multi-part message in MIME format.
---------------040208060009090005040307
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Thu, Feb 17, 2011 at 8:56 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
+> Previously, gpiolib would unconditionally flag all GPIO pins as inputs,
+> regardless of their true state.  This resulted in all GPIO output pins
+> initially being incorrectly identified as "input" in the GPIO sysfs.
+>
+> Since the direction of GPIOs is not known prior to having their
+> direction set, instead set the default direction to "unknown" to prevent
+> user confusion.  A pin with an "unknown" direction can not be written or
+> read via sysfs; it must first be configured as an input or output before
+> it can be used.
+>
 
-Hi Christoph,
+Hrm... that's why I don't like the original definition of gpio_request()
+which is vague on the pin configurations. The pin configuration should
+be clear upon requesting, otherwise it's a potential issue.
 
-Christoph Lameter wrote:
-> Oww. A large number of additional higher order allocations from iptables.
-> Order 6. But still only partial boot message. I need to see the memory
-> layout discovered by the kernel and for that I need the early boot 
-> messages.
+Anyway, this unknown state looks to be a good mitigation to this
+underlying problem. I'm good with it.
 
-ok, I attach the early dmesg I hope this contains the information
-you need.
-
-> Also since this is 2.6.32: Could you upgrade to the latest which is
-> 2.6.32.28? There may be a fix in there for your problem.
-
-we can try, which problem/patch do you have in mind?
-
-Thanks,
-
-   Peter
-
---------------040208060009090005040307
-Content-Type: application/x-gzip;
- name="dmesg.gz"
-Content-Transfer-Encoding: base64
-Content-Disposition: inline;
- filename="dmesg.gz"
-
-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
---------------040208060009090005040307--
+> While we're playing with the direction flag in/out defines, rename them to
+> a more descriptive FLAG_DIR_* format.
+>
+> Cc: Alek Du <alek.du@intel.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: David Brownell <dbrownell@users.sourceforge.net>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> ---
+> Change since V1:
+> - This patch is new and is based on feedback from Alan to support a new
+>  "unknown" direction.
+> - Rename FLAG_IS_OUT to FLAG_DIR_OUT, and add FLAG_DIR_IN
+>
+>  drivers/gpio/gpiolib.c |   82 +++++++++++++++++++++++++++--------------------
+>  1 files changed, 47 insertions(+), 35 deletions(-)
+>
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 649550e..0113c10 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -49,13 +49,14 @@ struct gpio_desc {
+>        unsigned long           flags;
+>  /* flag symbols are bit numbers */
+>  #define FLAG_REQUESTED 0
+> -#define FLAG_IS_OUT    1
+> -#define FLAG_RESERVED  2
+> -#define FLAG_EXPORT    3       /* protected by sysfs_lock */
+> -#define FLAG_SYSFS     4       /* exported via /sys/class/gpio/control */
+> -#define FLAG_TRIG_FALL 5       /* trigger on falling edge */
+> -#define FLAG_TRIG_RISE 6       /* trigger on rising edge */
+> -#define FLAG_ACTIVE_LOW        7       /* sysfs value has active low */
+> +#define FLAG_DIR_OUT   1       /* pin is an output */
+> +#define FLAG_DIR_IN    2       /* pin is an input */
+> +#define FLAG_RESERVED  3
+> +#define FLAG_EXPORT    4       /* protected by sysfs_lock */
+> +#define FLAG_SYSFS     5       /* exported via /sys/class/gpio/control */
+> +#define FLAG_TRIG_FALL 6       /* trigger on falling edge */
+> +#define FLAG_TRIG_RISE 7       /* trigger on rising edge */
+> +#define FLAG_ACTIVE_LOW        8       /* sysfs value has active low */
+>
+>  #define ID_SHIFT       16      /* add new flags before this one */
+>
+> @@ -220,15 +221,22 @@ static ssize_t gpio_direction_show(struct device *dev,
+>  {
+>        const struct gpio_desc  *desc = dev_get_drvdata(dev);
+>        ssize_t                 status;
+> +       const char              *dir_str;
+>
+>        mutex_lock(&sysfs_lock);
+>
+> -       if (!test_bit(FLAG_EXPORT, &desc->flags))
+> +       if (!test_bit(FLAG_EXPORT, &desc->flags)) {
+>                status = -EIO;
+> -       else
+> -               status = sprintf(buf, "%s\n",
+> -                       test_bit(FLAG_IS_OUT, &desc->flags)
+> -                               ? "out" : "in");
+> +       } else {
+> +               if (test_bit(FLAG_DIR_OUT, &desc->flags))
+> +                       dir_str = "out";
+> +               else if (test_bit(FLAG_DIR_IN, &desc->flags))
+> +                       dir_str = "in";
+> +               else
+> +                       dir_str = "unknown";
+> +
+> +               status = sprintf(buf, "%s\n", dir_str);
+> +       }
+>
+>        mutex_unlock(&sysfs_lock);
+>        return status;
+> @@ -272,6 +280,9 @@ static ssize_t gpio_value_show(struct device *dev,
+>
+>        if (!test_bit(FLAG_EXPORT, &desc->flags)) {
+>                status = -EIO;
+> +       } else if ((!test_bit(FLAG_DIR_OUT, &desc->flags)) &&
+> +                       (!test_bit(FLAG_DIR_IN, &desc->flags))) {
+> +               status = -EPERM;
+>        } else {
+>                int value;
+>
+> @@ -297,7 +308,7 @@ static ssize_t gpio_value_store(struct device *dev,
+>
+>        if (!test_bit(FLAG_EXPORT, &desc->flags))
+>                status = -EIO;
+> -       else if (!test_bit(FLAG_IS_OUT, &desc->flags))
+> +       else if (!test_bit(FLAG_DIR_OUT, &desc->flags))
+>                status = -EPERM;
+>        else {
+>                long            value;
+> @@ -741,7 +752,7 @@ int gpio_export(unsigned gpio, bool direction_may_change)
+>
+>                        if (!status && gpio_to_irq(gpio) >= 0
+>                                        && (direction_may_change
+> -                                               || !test_bit(FLAG_IS_OUT,
+> +                                               || test_bit(FLAG_DIR_IN,
+>                                                        &desc->flags)))
+>                                status = device_create_file(dev,
+>                                                &dev_attr_edge);
+> @@ -1059,22 +1070,10 @@ int gpiochip_add(struct gpio_chip *chip)
+>                        break;
+>                }
+>        }
+> -       if (status == 0) {
+> -               for (id = base; id < base + chip->ngpio; id++) {
+> +       if (status == 0)
+> +               for (id = base; id < base + chip->ngpio; id++)
+>                        gpio_desc[id].chip = chip;
+>
+> -                       /* REVISIT:  most hardware initializes GPIOs as
+> -                        * inputs (often with pullups enabled) so power
+> -                        * usage is minimized.  Linux code should set the
+> -                        * gpio direction first thing; but until it does,
+> -                        * we may expose the wrong direction in sysfs.
+> -                        */
+> -                       gpio_desc[id].flags = !chip->direction_input
+> -                               ? (1 << FLAG_IS_OUT)
+> -                               : 0;
+> -               }
+> -       }
+> -
+>        of_gpiochip_add(chip);
+>
+>  unlock:
+> @@ -1402,8 +1401,10 @@ int gpio_direction_input(unsigned gpio)
+>        }
+>
+>        status = chip->direction_input(chip, gpio);
+> -       if (status == 0)
+> -               clear_bit(FLAG_IS_OUT, &desc->flags);
+> +       if (status == 0) {
+> +               clear_bit(FLAG_DIR_OUT, &desc->flags);
+> +               set_bit(FLAG_DIR_IN, &desc->flags);
+> +       }
+>  lose:
+>        return status;
+>  fail:
+> @@ -1455,8 +1456,10 @@ int gpio_direction_output(unsigned gpio, int value)
+>        }
+>
+>        status = chip->direction_output(chip, gpio, value);
+> -       if (status == 0)
+> -               set_bit(FLAG_IS_OUT, &desc->flags);
+> +       if (status == 0) {
+> +               clear_bit(FLAG_DIR_IN, &desc->flags);
+> +               set_bit(FLAG_DIR_OUT, &desc->flags);
+> +       }
+>  lose:
+>        return status;
+>  fail:
+> @@ -1643,21 +1646,27 @@ static void gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+>        unsigned                i;
+>        unsigned                gpio = chip->base;
+>        struct gpio_desc        *gdesc = &gpio_desc[gpio];
+> -       int                     is_out;
+> +       const char              *dir_str;
+> +       int                     unknown = 0;
+>
+>        for (i = 0; i < chip->ngpio; i++, gpio++, gdesc++) {
+>                if (!test_bit(FLAG_REQUESTED, &gdesc->flags))
+>                        continue;
+>
+> -               is_out = test_bit(FLAG_IS_OUT, &gdesc->flags);
+> -               seq_printf(s, " gpio-%-3d (%-20.20s) %s %s",
+> -                       gpio, gdesc->label,
+> -                       is_out ? "out" : "in ",
+> -                       chip->get
+> -                               ? (chip->get(chip, i) ? "hi" : "lo")
+> -                               : "?  ");
+> +               if (test_bit(FLAG_DIR_IN, &gdesc->flags)) {
+> +                       dir_str = "in ";
+> +               } else if (test_bit(FLAG_DIR_OUT, &gdesc->flags)) {
+> +                       dir_str = "out";
+> +               } else {
+> +                       dir_str = "?  ";
+> +                       unknown = 1;
+> +               }
+> +
+> +               seq_printf(s, " gpio-%-3d (%-20.20s) %s %s", gpio, gdesc->label,
+> +                       dir_str, (chip->get && !unknown) ?
+> +                       (chip->get(chip, i) ? "hi" : "lo") : "?");
+>
+> -               if (!is_out) {
+> +               if (test_bit(FLAG_DIR_IN, &gdesc->flags)) {
+>                        int             irq = gpio_to_irq(gpio);
+>                        struct irq_desc *desc = irq_to_desc(irq);
+>
+> --
+> 1.7.0.4
+>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
