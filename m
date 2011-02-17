@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab1BQWtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 17:49:10 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34310 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752643Ab1BQWtF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 17:49:05 -0500
+	id S1754335Ab1BQWtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:49:50 -0500
+Received: from usmamail.tilera.com ([206.83.70.70]:57868 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643Ab1BQWtt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 17:49:49 -0500
+Message-ID: <4D5DA60A.8080201@tilera.com>
+Date: Thu, 17 Feb 2011 17:49:46 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110217.142320.102554706.davem@davemloft.net>
-References: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
- <20110217.140119.39175251.davem@davemloft.net> <20110217221957.GA11244@dtor-ws.eng.vmware.com>
- <20110217.142320.102554706.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Feb 2011 14:48:15 -0800
-Message-ID: <AANLkTinMfTss+9K7fPQbxoMD7d-U_AyCc29_RRPRija3@mail.gmail.com>
-Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
 To: David Miller <davem@davemloft.net>
-Cc: dtor@vmware.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
-        rusty@rustcorp.com.au, linux-m68k@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+CC: <xiyou.wangcong@gmail.com>, <cypher.w@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <eric.dumazet@gmail.com>,
+        <netdev@vger.kernel.org>
+Subject: Re: IGMP and rwlock: Dead ocurred again on TILEPro
+References: <20110217044917.GA2653@cr0.nay.redhat.com>	<AANLkTikkro-_9pv5uJ4+SqYh9Fr480_96Wh1Pv6Pvtez@mail.gmail.com>	<20110217054237.GB2653@cr0.nay.redhat.com> <20110216.214625.189707123.davem@davemloft.net>
+In-Reply-To: <20110216.214625.189707123.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 2:23 PM, David Miller <davem@davemloft.net> wrote:
+On 2/17/2011 12:46 AM, David Miller wrote:
+> From: Américo Wang <xiyou.wangcong@gmail.com>
+> Date: Thu, 17 Feb 2011 13:42:37 +0800
 >
-> You have to also pick .word vs. .xword, or whatever the appropriate
-> sized pointer mnenomic is for a given architecture.  I know .word
-> works for 32-bit sparc, and .xword works for 64-bit sparc.
+>> On Thu, Feb 17, 2011 at 01:04:14PM +0800, Cypher Wu wrote:
+>>>> Have you turned CONFIG_LOCKDEP on?
+>>>>
+>>>> I think Eric already converted that rwlock into RCU lock, thus
+>>>> this problem should disappear. Could you try a new kernel?
+>>>>
+>>>> Thanks.
+>>>>
+>>> I haven't turned CONFIG_LOCKDEP on for test since I didn't get too
+>>> much information when we tried to figured out the former deadlock.
+>>>
+>>> IGMP used read_lock() instead of read_lock_bh() since usually
+>>> read_lock() can be called recursively, and today I've read the
+>>> implementation of MIPS, it's should also works fine in that situation.
+>>> The implementation of TILEPro cause problem since after it use TNS set
+>>> the lock-val to 1 and hold the original value and before it re-set
+>>> lock-val a new value, it a race condition window.
+>>>
+>> I see no reason why you can't call read_lock_bh() recursively,
+>> read_lock_bh() is roughly equalent to local_bh_disable() + read_lock(),
+>> both can be recursive.
+>>
+>> But I may miss something here. :-/
+> IGMP is doing this so that taking the read lock does not stop packet
+> processing.
+>
+> TILEPro's rwlock implementation is simply buggy and needs to be fixed.
 
-Gaah, I didn't realize that we've never had to do anything like this
-before, and that the exception table is all arch-specific code. So we
-don't have any way to "output that damned pointer and stop whining
-about it" model at all.
+Cypher, thanks for tracking this down with a good bug report.
 
-I really detest gcc sometimes. All these "clever" things that just
-make things harder to do. If the user explicitly tells it the section
-and the alignment, it should damn well not think that it knows better
-and change it. Damn.
+The fix is to disable interrupts for the arch_read_lock family of methods. 
+In my fix I'm using the "hard" disable that locks out NMIs as well, so that
+in the event the NMI handler needs to share an rwlock with regular code it
+would be possible (plus, it's more efficient).  I believe it's not
+necessary to worry about similar protection for the arch_write_lock
+methods, since they aren't guaranteed to be re-entrant anyway (you'd have
+to use write_lock_irqsave or equivalent).
 
-Maybe we have to take the "just confuse gcc enough and pray" approach
-on those pointers after all.
+I'll send the patch to LKML after letting it bake internally for a little
+while.
 
-                      Linus
+Thanks again!
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
