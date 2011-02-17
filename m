@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab1BQV2e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 16:28:34 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:17454 "EHLO
+	id S1758117Ab1BQV2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 16:28:37 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:17460 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758049Ab1BQV2a (ORCPT
+	with ESMTP id S1758058Ab1BQV2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 16:28:30 -0500
+	Thu, 17 Feb 2011 16:28:31 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=subject:to:from:cc:date:message-id:in-reply-to:references:
 	user-agent:mime-version:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=YWcXZos9iGaKKU9VE5rbfzHCv6AC2r+e4C02IfRpHIUSPlLDhBJOQ+6krpeu7RW3+
-	Uic1Y+w1e+HFbdYj5JuCA==
-Subject: [PATCH v1 1/5] firmware: Add DMI entry types to the headers
+	b=lqkyIS5TZ3IKCf6YMCnupLrTsNbPTpHlF2J6VC0Ou4qQeamJzLZK78ipvb1rM+DUS
+	UTFz4sykRaHwVnJVgIoQg==
+Subject: [PATCH v1 3/5] firmware: Break out system_event_log in dmi-sysfs
 To: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
         Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Robert Lippert <rlippert@google.com>
@@ -22,8 +22,8 @@ Cc: Jon Mayer <jonmayer@google.com>, Duncan Laurie <dlaurie@google.com>,
         Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org,
         Tim Hockin <thockin@google.com>, David Hendrix <dhendrix@chromium.org>,
         linux-api@vger.kernel.org
-Date: Thu, 17 Feb 2011 13:28:00 -0800
-Message-ID: <20110217212800.3967.35961.stgit@mike.mtv.corp.google.com>
+Date: Thu, 17 Feb 2011 13:28:11 -0800
+Message-ID: <20110217212810.3967.6357.stgit@mike.mtv.corp.google.com>
 In-Reply-To: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com>
 References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com>
 User-Agent: StGit/0.15
@@ -35,71 +35,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for the upcoming commits, introduce the DMI entry types to
-the headers.  These type names are based on those specified in the DMTF
-SMBIOS specification version 2.7.1.
+The optional type 15 entry of the DMI table describes a non-volatile
+storage-backed system event log.
+
+In preparation for the next commit which exposes the raw bits of the
+event log to userland, create a new sub-directory within the dmi entry
+called "system_event_log" and expose attribute files that describe the
+event log itself.
+
+Currently, only a single child object is permitted within a
+dmi_sysfs_entry.  We simply point at this child from the dmi_sysfs_entry
+if it exists.
 
 Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- include/linux/dmi.h |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+ drivers/firmware/dmi-sysfs.c |  159 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 159 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/dmi.h b/include/linux/dmi.h
-index 90e087f..f156cca 100644
---- a/include/linux/dmi.h
-+++ b/include/linux/dmi.h
-@@ -23,6 +23,53 @@ enum dmi_device_type {
- 	DMI_DEV_TYPE_DEV_ONBOARD = -3,
+diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+index adcd604..3f49042 100644
+--- a/drivers/firmware/dmi-sysfs.c
++++ b/drivers/firmware/dmi-sysfs.c
+@@ -34,6 +34,7 @@ struct dmi_sysfs_entry {
+ 	struct kobject kobj;
+ 	int instance;
+ 	struct list_head list;
++	struct kobject *child;
  };
  
-+enum dmi_entry_type {
-+	DMI_ENTRY_BIOS = 0,
-+	DMI_ENTRY_SYSTEM,
-+	DMI_ENTRY_BASEBOARD,
-+	DMI_ENTRY_CHASSIS,
-+	DMI_ENTRY_PROCESSOR,
-+	DMI_ENTRY_MEM_CONTROLLER,
-+	DMI_ENTRY_MEM_MODULE,
-+	DMI_ENTRY_CACHE,
-+	DMI_ENTRY_PORT_CONNECTOR,
-+	DMI_ENTRY_SYSTEM_SLOT,
-+	DMI_ENTRY_ONBOARD_DEVICE,
-+	DMI_ENTRY_OEMSTRINGS,
-+	DMI_ENTRY_SYSCONF,
-+	DMI_ENTRY_BIOS_LANG,
-+	DMI_ENTRY_GROUP_ASSOC,
-+	DMI_ENTRY_SYSTEM_EVENT_LOG,
-+	DMI_ENTRY_PHYS_MEM_ARRAY,
-+	DMI_ENTRY_MEM_DEVICE,
-+	DMI_ENTRY_32_MEM_ERROR,
-+	DMI_ENTRY_MEM_ARRAY_MAPPED_ADDR,
-+	DMI_ENTRY_MEM_DEV_MAPPED_ADDR,
-+	DMI_ENTRY_BUILTIN_POINTING_DEV,
-+	DMI_ENTRY_PORTABLE_BATTERY,
-+	DMI_ENTRY_SYSTEM_RESET,
-+	DMI_ENTRY_HW_SECURITY,
-+	DMI_ENTRY_SYSTEM_POWER_CONTROLS,
-+	DMI_ENTRY_VOLTAGE_PROBE,
-+	DMI_ENTRY_COOLING_DEV,
-+	DMI_ENTRY_TEMP_PROBE,
-+	DMI_ENTRY_ELECTRICAL_CURRENT_PROBE,
-+	DMI_ENTRY_OOB_REMOTE_ACCESS,
-+	DMI_ENTRY_BIS_ENTRY,
-+	DMI_ENTRY_SYSTEM_BOOT,
-+	DMI_ENTRY_MGMT_DEV,
-+	DMI_ENTRY_MGMT_DEV_COMPONENT,
-+	DMI_ENTRY_MGMT_DEV_THRES,
-+	DMI_ENTRY_MEM_CHANNEL,
-+	DMI_ENTRY_IPMI_DEV,
-+	DMI_ENTRY_SYS_POWER_SUPPLY,
-+	DMI_ENTRY_ADDITIONAL,
-+	DMI_ENTRY_ONBOARD_DEV_EXT,
-+	DMI_ENTRY_MGMT_CONTROLLER_HOST,
-+	DMI_ENTRY_INACTIVE = 126,
-+	DMI_ENTRY_END_OF_TABLE = 127,
+ /*
+@@ -76,6 +77,10 @@ struct dmi_sysfs_mapped_attribute dmi_sysfs_attr_##_entry##_##_name = { \
+ /*************************************************
+  * Generic DMI entry support.
+  *************************************************/
++static void dmi_entry_free(struct kobject *kobj)
++{
++	kfree(kobj);
++}
+ 
+ static struct dmi_sysfs_entry *to_entry(struct kobject *kobj)
+ {
+@@ -179,6 +184,146 @@ static size_t dmi_entry_length(const struct dmi_header *dh)
+ }
+ 
+ /*************************************************
++ * Support bits for specialized DMI entry support
++ *************************************************/
++struct dmi_entry_attr_show_data {
++	struct attribute *attr;
++	char *buf;
 +};
 +
- struct dmi_header {
- 	u8 type;
- 	u8 length;
++static ssize_t dmi_entry_attr_show_helper(struct dmi_sysfs_entry *entry,
++					  const struct dmi_header *dh,
++					  void *_data)
++{
++	struct dmi_entry_attr_show_data *data = _data;
++	struct dmi_sysfs_mapped_attribute *attr;
++
++	attr = container_of(data->attr,
++			    struct dmi_sysfs_mapped_attribute, attr);
++	return attr->show(entry, dh, data->buf);
++}
++
++static ssize_t dmi_entry_attr_show(struct kobject *kobj,
++				   struct attribute *attr,
++				   char *buf)
++{
++	struct dmi_entry_attr_show_data data = {
++		.attr = attr,
++		.buf  = buf,
++	};
++	/* Find the entry according to our parent and call the
++	 * normalized show method hanging off of the attribute */
++	return find_dmi_entry(to_entry(kobj->parent),
++			      dmi_entry_attr_show_helper, &data);
++}
++
++static const struct sysfs_ops dmi_sysfs_specialize_attr_ops = {
++	.show = dmi_entry_attr_show,
++};
++
++/*************************************************
++ * Specialized DMI entry support.
++ *************************************************/
++
++/*** Type 15 - System Event Table ***/
++
++#define DMI_SEL_ACCESS_METHOD_IO8	0x00
++#define DMI_SEL_ACCESS_METHOD_IO2x8	0x01
++#define DMI_SEL_ACCESS_METHOD_IO16	0x02
++#define DMI_SEL_ACCESS_METHOD_PHYS32	0x03
++#define DMI_SEL_ACCESS_METHOD_GPNV	0x04
++
++struct dmi_system_event_log {
++	struct dmi_header header;
++	u16	area_length;
++	u16	header_start_offset;
++	u16	data_start_offset;
++	u8	access_method;
++	u8	status;
++	u32	change_token;
++	union {
++		struct {
++			u16 index_addr;
++			u16 data_addr;
++		} io;
++		u32	phys_addr32;
++		u16	gpnv_handle;
++		u32	access_method_address;
++	};
++	u8	header_format;
++	u8	type_descriptors_supported_count;
++	u8	per_log_type_descriptor_length;
++	u8	supported_log_type_descriptos[0];
++} __packed;
++
++static const struct dmi_system_event_log *to_sel(const struct dmi_header *dh)
++{
++	return (const struct dmi_system_event_log *)dh;
++}
++
++#define DMI_SYSFS_SEL_FIELD(_field) \
++static ssize_t dmi_sysfs_sel_##_field(struct dmi_sysfs_entry *entry, \
++				      const struct dmi_header *dh, \
++				      char *buf) \
++{ \
++	const struct dmi_system_event_log *sel = to_sel(dh); \
++	if (sizeof(*sel) > dmi_entry_length(dh)) \
++		return -EIO; \
++	return sprintf(buf, "%u\n", sel->_field); \
++} \
++static DMI_SYSFS_MAPPED_ATTR(sel, _field)
++
++DMI_SYSFS_SEL_FIELD(area_length);
++DMI_SYSFS_SEL_FIELD(header_start_offset);
++DMI_SYSFS_SEL_FIELD(data_start_offset);
++DMI_SYSFS_SEL_FIELD(access_method);
++DMI_SYSFS_SEL_FIELD(status);
++DMI_SYSFS_SEL_FIELD(change_token);
++DMI_SYSFS_SEL_FIELD(access_method_address);
++DMI_SYSFS_SEL_FIELD(header_format);
++DMI_SYSFS_SEL_FIELD(type_descriptors_supported_count);
++DMI_SYSFS_SEL_FIELD(per_log_type_descriptor_length);
++
++static struct attribute *dmi_sysfs_sel_attrs[] = {
++	&dmi_sysfs_attr_sel_area_length.attr,
++	&dmi_sysfs_attr_sel_header_start_offset.attr,
++	&dmi_sysfs_attr_sel_data_start_offset.attr,
++	&dmi_sysfs_attr_sel_access_method.attr,
++	&dmi_sysfs_attr_sel_status.attr,
++	&dmi_sysfs_attr_sel_change_token.attr,
++	&dmi_sysfs_attr_sel_access_method_address.attr,
++	&dmi_sysfs_attr_sel_header_format.attr,
++	&dmi_sysfs_attr_sel_type_descriptors_supported_count.attr,
++	&dmi_sysfs_attr_sel_per_log_type_descriptor_length.attr,
++	NULL,
++};
++
++
++static struct kobj_type dmi_system_event_log_ktype = {
++	.release = dmi_entry_free,
++	.sysfs_ops = &dmi_sysfs_specialize_attr_ops,
++	.default_attrs = dmi_sysfs_sel_attrs,
++};
++
++static int dmi_system_event_log(struct dmi_sysfs_entry *entry)
++{
++	int ret;
++
++	entry->child = kzalloc(sizeof(*entry->child), GFP_KERNEL);
++	if (!entry->child)
++		return -ENOMEM;
++	ret = kobject_init_and_add(entry->child,
++				   &dmi_system_event_log_ktype,
++				   &entry->kobj,
++				   "system_event_log");
++	if (ret)
++		goto out_free;
++out_free:
++	kfree(entry->child);
++	return ret;
++}
++
++/*************************************************
+  * Generic DMI entry support.
+  *************************************************/
+ 
+@@ -291,6 +436,18 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
+ 	list_add_tail(&entry->list, &entry_list);
+ 	spin_unlock(&entry_list_lock);
+ 
++	/* Handle specializations by type */
++	switch (dh->type) {
++	case DMI_ENTRY_SYSTEM_EVENT_LOG:
++		*ret = dmi_system_event_log(entry);
++		break;
++	default:
++		/* No specialization */
++		break;
++	}
++	if (*ret)
++		goto out_err;
++
+ 	/* Create the raw binary file to access the entry */
+ 	*ret = sysfs_create_bin_file(&entry->kobj, &dmi_entry_raw_attr);
+ 	if (*ret)
+@@ -298,6 +455,7 @@ static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
+ 
+ 	return;
+ out_err:
++	kobject_put(entry->child);
+ 	kobject_put(&entry->kobj);
+ 	return;
+ }
+@@ -308,6 +466,7 @@ static void cleanup_entry_list(void)
+ 
+ 	/* No locks, we are on our way out */
+ 	list_for_each_entry_safe(entry, next, &entry_list, list) {
++		kobject_put(entry->child);
+ 		kobject_put(&entry->kobj);
+ 	}
+ }
 
