@@ -1,184 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab1BQMmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 07:42:16 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:12714 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab1BQMmN (ORCPT
+	id S1756298Ab1BQMnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 07:43:10 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36757 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab1BQMnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 07:42:13 -0500
-Date: Thu, 17 Feb 2011 13:42:03 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Dirk Eibach <eibach@gdsys.de>
-Cc: linux-kernel@vger.kernel.org, guenter.roeck@ericsson.com,
-        lm-sensors@lm-sensors.org, rdunlap@xenotime.net,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2] hwmon: Add support for Texas Instruments ADS1015
-Message-ID: <20110217134203.0556a7ab@endymion.delvare>
-In-Reply-To: <1297689710-17840-1-git-send-email-eibach@gdsys.de>
-References: <20110214112228.59269651@endymion.delvare>
-	<1297689710-17840-1-git-send-email-eibach@gdsys.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Feb 2011 07:43:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bZshuaDanclvJrr2i3KhU4X3mSa4A4/Gbeft9cI8cMMhHJCS+W0NuuHoA5JmuniBq5
+         5JoozC6hUK6a0Kg474JipIy5Iw/Dhh6x2i7po+IuetVM4TAb1uKOOE1pl87Ody/23h+j
+         zb37ONL+0ljUOoVIeLuH3JYEgdyTEzLIGWtyU=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=pmWAvsp_3c4NgQYFw_ydfkOMgjDBDKgeFGf=E@mail.gmail.com>
+References: <1297123347-2170-1-git-send-email-dtor@vmware.com>
+	<AANLkTi=pmWAvsp_3c4NgQYFw_ydfkOMgjDBDKgeFGf=E@mail.gmail.com>
+Date: Thu, 17 Feb 2011 13:43:02 +0100
+X-Google-Sender-Auth: 4CkeQ8DUK8ETVN0-48UJ4ZCIRaI
+Message-ID: <AANLkTi=cMwbb2Pyv5KhGdfSuR3OwG_mpkFKNd+WrLc-_@mail.gmail.com>
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1HChQ3b009031
 
-Hi Dirk,
+On Tue, Feb 8, 2011 at 22:12, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Tue, Feb 8, 2011 at 01:02, Dmitry Torokhov <dtor@vmware.com> wrote:
+>> On m68k natural alignment is 2-byte boundary but we are trying to
+>> align structures in __modver section on sizeof(void *) boundary.
+>> This causes trouble when we try to access elements in this section
+>> in array-like fashion when create "version" attributes for built-in
+>> modules.
+>>
+>> Moreover, as DaveM said, we can't reliably put structures into
+>> independent objects, put them into a special section, and then expect
+>> array access over them (via the section boundaries) after linking the
+>> objects together to just "work" due to variable alignment choices in
+>> different situations. The only solution that seems to work reliably
+>> is to make an array of plain pointers to the objects in question and
+>> put those pointers in the special section.
+>>
+>> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+>
+> Thanks!
+>
+> Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-On Mon, 14 Feb 2011 14:21:50 +0100, Dirk Eibach wrote:
-> Signed-off-by: Dirk Eibach <eibach@gdsys.de>
-> ---
-> Changes since v1:
-> - fixed/extended Documentation
-> - removed unused register definitions
-> - hardcoded PGA fullscale table size
-> - made sure patch applies against v2.6.38-rc4
-> - reordered functions to avoid forward declaration
-> - results from i2c_smbus_read_word_data() are handled correctly
-> - moved locking into ads1015_read_value()
-> - removed unnecessray clearing of bit
-> - proper error handling in ads1015_read_value()
-> - use DIV_ROUND_CLOSEST for scaling result
-> - removed detect()
+Can we please get this in? 2.6.38-rc5 still crashes on m68k.
 
-Thanks for the quick update. Second review:
+Thx!
 
-> (...)
-> --- /dev/null
-> +++ b/Documentation/hwmon/ads1015
-> @@ -0,0 +1,33 @@
-> +Kernel driver ads1015
-> +=====================
-> +
-> +Supported chips:
-> +  * Texas Instruments ADS1015
-> +    Prefix: 'ads1015'
-> +    Addresses scanned: I2C 0x48, 0x49, 0x4a, 0x4b
+>> ---
+>>  include/linux/module.h |   10 +++++-----
+>>  kernel/params.c        |    9 ++++++---
+>>  2 files changed, 11 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/include/linux/module.h b/include/linux/module.h
+>> index 9bdf27c..9b7081a 100644
+>> --- a/include/linux/module.h
+>> +++ b/include/linux/module.h
+>> @@ -174,10 +174,7 @@ extern struct module __this_module;
+>>  #define MODULE_VERSION(_version)                                       \
+>>        extern ssize_t __modver_version_show(struct module_attribute *, \
+>>                                             struct module *, char *);  \
+>> -       static struct module_version_attribute __modver_version_attr    \
+>> -       __used                                                          \
+>> -    __attribute__ ((__section__ ("__modver"),aligned(sizeof(void *)))) \
+>> -       = {                                                             \
+>> +       static struct module_version_attribute ___modver_attr = {       \
+>>                .mattr  = {                                             \
+>>                        .attr   = {                                     \
+>>                                .name   = "version",                    \
+>> @@ -187,7 +184,10 @@ extern struct module __this_module;
+>>                },                                                      \
+>>                .module_name    = KBUILD_MODNAME,                       \
+>>                .version        = _version,                             \
+>> -       }
+>> +       };                                                              \
+>> +       static const struct module_version_attribute                    \
+>> +       __used __attribute__ ((__section__ ("__modver")))               \
+>> +       * __moduleparam_const __modver_attr = &___modver_attr
+>>  #endif
+>>
+>>  /* Optional firmware file (or files) needed by the module
+>> diff --git a/kernel/params.c b/kernel/params.c
+>> index 0da1411..09a08cb 100644
+>> --- a/kernel/params.c
+>> +++ b/kernel/params.c
+>> @@ -821,15 +821,18 @@ ssize_t __modver_version_show(struct module_attribute *mattr,
+>>        return sprintf(buf, "%s\n", vattr->version);
+>>  }
+>>
+>> -extern struct module_version_attribute __start___modver[], __stop___modver[];
+>> +extern const struct module_version_attribute *__start___modver[];
+>> +extern const struct module_version_attribute *__stop___modver[];
+>>
+>>  static void __init version_sysfs_builtin(void)
+>>  {
+>> -       const struct module_version_attribute *vattr;
+>> +       const struct module_version_attribute **p;
+>>        struct module_kobject *mk;
+>>        int err;
+>>
+>> -       for (vattr = __start___modver; vattr < __stop___modver; vattr++) {
+>> +       for (p = __start___modver; p < __stop___modver; p++) {
+>> +               const struct module_version_attribute *vattr = *p;
+>> +
+>>                mk = locate_module_kobject(vattr->module_name);
+>>                if (mk) {
+>>                        err = sysfs_create_file(&mk->kobj, &vattr->mattr.attr);
+>> --
+>> 1.7.3.2
 
-With the detect function being gone, this is no longer true.
+Gr{oetje,eeting}s,
 
-> +    Datasheet: Publicly available at the Texas Instruments website :
-> +               http://focus.ti.com/lit/ds/symlink/ads1015.pdf
-> +
-> +Authors:
-> +        Dirk Eibach, Guntermann & Drunck GmbH <eibach@gdsys.de>
-> +
-> +Description
-> +-----------
-> +
-> +This driver implements support for the Texas Instruments ADS1015.
-> +
-> +This device is a 12-bit A-D converter with 4 inputs.
-> +
-> +The inputs can be used single ended or in certain differential combinations.
-> +
-> +On certain systems it makes sense to access absolute voltage values as well
-> +as voltage differences. So all available combinations are made available by
-> +8 "virtual" inputs:
-> +in0: Voltage over AIN0 and AIN1.
-> +in1: Voltage over AIN0 and AIN3.
-> +in2: Voltage over AIN1 and AIN3.
-> +in3: Voltage over AIN2 and AIN3.
-> +in4: Voltage over AIN0 and GND.
-> +in5: Voltage over AIN1 and GND.
-> +in6: Voltage over AIN2 and GND.
-> +in7: Voltage over AIN3 and GND.
+                        Geert
 
-I see you've updated the comment, presumably this is how you addressed
-my concern about exposing all 8 input settings. I am really curious how
-it can make sense to expose both direct and differential values
-involving the same pins. The pcf8591 driver, which has to handle a
-smiliar case, only exposes channels which make physical sense together
-(it does so using a module parameter for historical reason, nowadays we
-would use platform data for this.)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-So I am still convinced that this part should be reworked. That being
-said, you obviously know more than I do with regards to how you intend
-to use the driver, so I'll leave you the last work on this.
-
-> (...)
-> --- /dev/null
-> +++ b/drivers/hwmon/ads1015.c
-> (...)
-> +static int ads1015_read_value(struct i2c_client *client, unsigned int channel,
-> +			      int *value)
-> +{
-> +	u16 config;
-> +	s16 conversion;
-> +	unsigned int pga;
-> +	int fullscale;
-> +	unsigned int k;
-> +	struct ads1015_data *data = i2c_get_clientdata(client);
-> +	int res;
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	/* get fullscale voltage */
-> +	res = ads1015_read_reg(client, ADS1015_CONFIG);
-> +	if (res < 0)
-> +		goto err_unlock;
-> +	config = res;
-> +	pga = (config >> 9) & 0x0007;
-> +	fullscale = fullscale_table[pga];
-> +
-> +	/* set channel and start single conversion */
-> +	config &= ~(0x0007 << 12);
-> +	config |= (1 << 15) | (1 << 8) | (channel & 0x0007) << 12;
-> +
-> +	/* wait until conversion finished */
-> +	res = ads1015_write_reg(client, ADS1015_CONFIG, config);
-> +	if (res < 0)
-> +		goto err_unlock;
-> +	for (k = 0; k < 5; ++k) {
-> +		schedule_timeout(msecs_to_jiffies(1));
-> +		res = ads1015_read_reg(client, ADS1015_CONFIG);
-> +		if (res < 0)
-> +			goto err_unlock;
-> +		config = res;
-> +		if (config & (1 << 15))
-> +			break;
-> +	}
-> +	if (k == 5)
-> +		return -EIO;
-
-You return with data->update_lock held.
-
-> +
-> +	res = ads1015_read_reg(client, ADS1015_CONVERSION);
-> +	if (res < 0)
-> +		goto err_unlock;
-> +	conversion = res;
-> +
-> +	mutex_unlock(&data->update_lock);
-> +
-> +	*value = DIV_ROUND_CLOSEST(conversion * fullscale, 0x7ff0);
-> +
-> +	return 0;
-> +
-> +err_unlock:
-> +	mutex_unlock(&data->update_lock);
-> +	return res;
-> +}
-
-> (...)
-> +/* This is the driver that will be inserted */
-> +static struct i2c_driver ads1015_driver = {
-> +	.class = I2C_CLASS_HWMON,
-> +	.driver = {
-> +		.name = "ads1015",
-> +	},
-> +	.probe = ads1015_probe,
-> +	.remove = ads1015_remove,
-> +	.id_table = ads1015_id,
-> +	.address_list = normal_i2c,
-> +};
-
-The only purpose of the address list is for the detect function, which
-you just dropped. So you can remove the address list too. Same goes for
-the class.
-
--- 
-Jean Delvare
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
