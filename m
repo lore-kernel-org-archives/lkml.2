@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932Ab1BQUAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:00:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757915Ab1BQUAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:00:17 -0500
-Date: Thu, 17 Feb 2011 15:00:11 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
-Subject: Re: blk_throtl_exit  taking q->queue_lock is problematic
-Message-ID: <20110217200010.GF9075@redhat.com>
-References: <20110216183114.26a3613b@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110216183114.26a3613b@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757920Ab1BQUCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:02:09 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:35329 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab1BQUCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:02:06 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=ctxceuTV3N8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=V3qLwo6i9-Oo1h7wbRcA:9 a=8l2IuvACx5PbhtWKhUwA:7 a=sgWVnwcATYQnGqQAcrFYwmHRIV4A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=XNN-oNMjSfgA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] fix Steven's Copyright typos
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1102171642100.2160@pobox.suse.cz>
+References: <1295899921-11333-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	 <alpine.LNX.2.00.1102171642100.2160@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Feb 2011 15:02:02 -0500
+Message-ID: <1297972922.23343.945.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 06:31:14PM +1100, NeilBrown wrote:
+On Thu, 2011-02-17 at 16:42 +0100, Jiri Kosina wrote:
+> On Mon, 24 Jan 2011, Uwe Kleine-König wrote:
 > 
+> > OK, the copyright allows you to write a copy, still I think the lawyers
+> > prefer the correct spelling.
+> > 
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > ---
+> >  scripts/kconfig/streamline_config.pl |    2 +-
+> >  tools/testing/ktest/ktest.pl         |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
+> > index fd81fc3..a4fe923 100644
+> > --- a/scripts/kconfig/streamline_config.pl
+> > +++ b/scripts/kconfig/streamline_config.pl
+> > @@ -1,6 +1,6 @@
+> >  #!/usr/bin/perl -w
+> >  #
+> > -# Copywrite 2005-2009 - Steven Rostedt
+> > +# Copyright 2005-2009 - Steven Rostedt
+> >  # Licensed under the terms of the GNU GPL License version 2
+> >  #
+> >  #  It's simple enough to figure out how this works.
+> > diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+> > index e1c62ee..ba7c63a 100755
+> > --- a/tools/testing/ktest/ktest.pl
+> > +++ b/tools/testing/ktest/ktest.pl
+> > @@ -1,6 +1,6 @@
+> >  #!/usr/bin/perl -w
+> >  #
+> > -# Copywrite 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
+> > +# Copyright 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
+> >  # Licensed under the terms of the GNU GPL License version 2
+> >  #
 > 
-> Hi,
+> I prefer not to fiddle with anything surrounding the Copyright lines 
+> without explicit permission of the copyright holder.
 > 
->  I recently discovered that blk_throtl_exit takes ->queue_lock when a blockdev
-> is finally released.
-> 
-> This is a problem for because by that time the queue_lock doesn't exist any
-> more.  It is in a separate data structure controlled by the RAID personality
-> and by the time that the block device is being destroyed the raid personality
-> has shutdown and the data structure containing the lock has been freed.
+> Steven? :)
 
-Hi Neil,
+Hi Jiri,
 
-I am having a look at queue allocation in md and had few queries.
+Thanks for the concern, but I'm the one that pulled them in. And I
+talked with Uwe about this on IRC before hand.
 
-I was looking at md_alloc(), where we do
+-- Steve
 
-mddev->queue = blk_alloc_queue(GFP_KERNEL);
-blk_queue_make_request(mddev->queue, md_make_request);
 
-call to blk_queue_make_request() will make sure queue_lock is initiliazed
-to internal __queue_lock.
-
-Then I looked at raid0_run(), which is again setting the queue lock.
-
-mddev->queue->queue_lock = &mddev->queue->__queue_lock;
-
-I think this is redundant now as during md_alloc() we already did it.
-
-Similar seems to be the case for linear.c and multipath.c
-
-Following seem to be the cases where we overide the default lock.
-
-raid1.c, raid5.c, raid10.c
-
-I was going through the raid1.c, and I see that q->queue_lock has
-been initialized to &conf->deivce_lock. Can we do the reverse. Introduce
-spinlock pointer in conf and point it at queue->queue_lock? Anyway you
-mentioned that personality's data structure are freed before request
-queue is cleaned up, so there should not be any lifetime issues.
-
-Also  I was wondering how does it help sharing the lock between request
-queue and some other data structures in driver.
-
-Thanks
-Vivek
