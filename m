@@ -1,196 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1BQPC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:02:56 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58363
-	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756676Ab1BQPCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:02:46 -0500
-Date: Thu, 17 Feb 2011 15:03:56 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-Subject: [PATCH 8/9] user namespaces: convert several capable() calls
-Message-ID: <20110217150356.GH26395@mail.hallyn.com>
-References: <20110217150224.GA26334@mail.hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110217150224.GA26334@mail.hallyn.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756711Ab1BQPDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:03:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:59377 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753995Ab1BQPD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:03:26 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=dmEBd0-V5HIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=QWdmx-PVuGpnauCHs-0A:9 a=yY1OcCWNK6JvUvy6HkdywXyBqQ8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 00/10] [GIT PULL][v2.6.39] tracing: updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <20110217140442.GA8326@elte.hu>
+References: <20110208221612.084294240@goodmis.org>
+	 <20110217135023.GA5235@elte.hu>  <20110217140442.GA8326@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Feb 2011 10:03:00 -0500
+Message-ID: <1297954980.23343.912.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CAP_IPC_OWNER and CAP_IPC_LOCK can be checked against current_user_ns(),
-because the resource comes from current's own ipc namespace.
+On Thu, 2011-02-17 at 15:04 +0100, Ingo Molnar wrote:
+> > > Please pull the latest tip/perf/core tree, which can be found at:
+> > > 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> > > tip/perf/core
+> 
+> Note that these changes caused a new build failure on arch/m32r:
+> 
+> /home/mingo/tip/drivers/net/smc91x.h:199:1: warning: this is the location of the previous definition
+> /home/mingo/tip/kernel/trace/ring_buffer.c: In function 'rb_reserve_next_event':
+> /home/mingo/tip/kernel/trace/ring_buffer.c:2165: error: 'sched_clock_stable' undeclared (first use in this function)
+> /home/mingo/tip/kernel/trace/ring_buffer.c:2165: error: (Each undeclared identifier is reported only once
+> /home/mingo/tip/kernel/trace/ring_buffer.c:2165: error: for each function it appears in.)
+> make[3]: *** [kernel/trace/ring_buffer.o] Error 1
+> make[2]: *** [kernel/trace] Error 2
 
-setuid/setgid are to uids in own namespace, so again checks can be
-against current_user_ns().
+Ah, patch "tracing: Add unstable sched clock note to the warning"
+referenced sched_clock_stable without encompassing it with:
 
-Changelog:
-	Jan 11: Use task_ns_capable() in place of sched_capable().
-	Jan 11: Use nsown_capable() as suggested by Bastian Blank.
-	Jan 11: Clarify (hopefully) some logic in futex and sched.c
-	Feb 15: use ns_capable for ipc, not nsown_capable
+#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
----
- ipc/shm.c             |    2 +-
- ipc/util.c            |    5 +++--
- kernel/futex.c        |   11 ++++++++++-
- kernel/futex_compat.c |   11 ++++++++++-
- kernel/groups.c       |    2 +-
- kernel/sched.c        |    9 ++++++---
- kernel/uid16.c        |    2 +-
- 7 files changed, 32 insertions(+), 10 deletions(-)
+I wonder if we could instead in linux/sched.h add in the ifndef part:
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 7d3bb22..e91e2e9 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -773,7 +773,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
- 
- 		audit_ipc_obj(&(shp->shm_perm));
- 
--		if (!capable(CAP_IPC_LOCK)) {
-+		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
- 			uid_t euid = current_euid();
- 			err = -EPERM;
- 			if (euid != shp->shm_perm.uid &&
-diff --git a/ipc/util.c b/ipc/util.c
-index 69a0cc1..8e7ec6a 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -627,7 +627,7 @@ int ipcperms (struct kern_ipc_perm *ipcp, short flag)
- 		granted_mode >>= 3;
- 	/* is there some bit set in requested_mode but not in granted_mode? */
- 	if ((requested_mode & ~granted_mode & 0007) && 
--	    !capable(CAP_IPC_OWNER))
-+	    !ns_capable(current->nsproxy->ipc_ns->user_ns, CAP_IPC_OWNER))
- 		return -1;
- 
- 	return security_ipc_permission(ipcp, flag);
-@@ -800,7 +800,8 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_ids *ids, int id, int cmd,
- 
- 	euid = current_euid();
- 	if (euid == ipcp->cuid ||
--	    euid == ipcp->uid  || capable(CAP_SYS_ADMIN))
-+	    euid == ipcp->uid  ||
-+	    ns_capable(current->nsproxy->ipc_ns->user_ns, CAP_SYS_ADMIN))
- 		return ipcp;
- 
- 	err = -EPERM;
-diff --git a/kernel/futex.c b/kernel/futex.c
-index b766d28..1e876f1 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2421,10 +2421,19 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
- 			goto err_unlock;
- 		ret = -EPERM;
- 		pcred = __task_cred(p);
-+		/* If victim is in different user_ns, then uids are not
-+		   comparable, so we must have CAP_SYS_PTRACE */
-+		if (cred->user->user_ns != pcred->user->user_ns) {
-+			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-+				goto err_unlock;
-+			goto ok;
-+		}
-+		/* If victim is in same user_ns, then uids are comparable */
- 		if (cred->euid != pcred->euid &&
- 		    cred->euid != pcred->uid &&
--		    !capable(CAP_SYS_PTRACE))
-+		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
- 			goto err_unlock;
-+ok:
- 		head = p->robust_list;
- 		rcu_read_unlock();
- 	}
-diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-index a7934ac..5f9e689 100644
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -153,10 +153,19 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
- 			goto err_unlock;
- 		ret = -EPERM;
- 		pcred = __task_cred(p);
-+		/* If victim is in different user_ns, then uids are not
-+		   comparable, so we must have CAP_SYS_PTRACE */
-+		if (cred->user->user_ns != pcred->user->user_ns) {
-+			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-+				goto err_unlock;
-+			goto ok;
-+		}
-+		/* If victim is in same user_ns, then uids are comparable */
- 		if (cred->euid != pcred->euid &&
- 		    cred->euid != pcred->uid &&
--		    !capable(CAP_SYS_PTRACE))
-+		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
- 			goto err_unlock;
-+ok:
- 		head = p->compat_robust_list;
- 		rcu_read_unlock();
- 	}
-diff --git a/kernel/groups.c b/kernel/groups.c
-index 253dc0f..1cc476d 100644
---- a/kernel/groups.c
-+++ b/kernel/groups.c
-@@ -233,7 +233,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
- 	struct group_info *group_info;
- 	int retval;
- 
--	if (!capable(CAP_SETGID))
-+	if (!nsown_capable(CAP_SETGID))
- 		return -EPERM;
- 	if ((unsigned)gidsetsize > NGROUPS_MAX)
- 		return -EINVAL;
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 18d38e4..dc12bc2 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4761,8 +4761,11 @@ static bool check_same_owner(struct task_struct *p)
- 
- 	rcu_read_lock();
- 	pcred = __task_cred(p);
--	match = (cred->euid == pcred->euid ||
--		 cred->euid == pcred->uid);
-+	if (cred->user->user_ns == pcred->user->user_ns)
-+		match = (cred->euid == pcred->euid ||
-+			 cred->euid == pcred->uid);
-+	else
-+		match = false;
- 	rcu_read_unlock();
- 	return match;
- }
-@@ -5088,7 +5091,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
- 		goto out_free_cpus_allowed;
- 	}
- 	retval = -EPERM;
--	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
-+	if (!check_same_owner(p) && !task_ns_capable(p, CAP_SYS_NICE))
- 		goto out_unlock;
- 
- 	retval = security_task_setscheduler(p);
-diff --git a/kernel/uid16.c b/kernel/uid16.c
-index 4192098..51c6e89 100644
---- a/kernel/uid16.c
-+++ b/kernel/uid16.c
-@@ -189,7 +189,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
- 	struct group_info *group_info;
- 	int retval;
- 
--	if (!capable(CAP_SETGID))
-+	if (!nsown_capable(CAP_SETGID))
- 		return -EPERM;
- 	if ((unsigned)gidsetsize > NGROUPS_MAX)
- 		return -EINVAL;
--- 
-1.7.0.4
+#define sched_clock_stable 1
+
+That way generic code can still reference this variable without having
+to litter the code with #ifdef's.
+
+Thoughts?
+
+-- Steve
+
 
