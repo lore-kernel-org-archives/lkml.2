@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab1BQV63 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 16:58:29 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:62209 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab1BQV60 (ORCPT
+	id S1756651Ab1BQWAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:00:45 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39686
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751634Ab1BQWAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 16:58:26 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6260"; a="74886911"
-Message-ID: <4D5D9A00.7060609@codeaurora.org>
-Date: Thu, 17 Feb 2011 13:58:24 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Jamie Iles <jamie@jamieiles.com>
-CC: John Linn <john.linn@xilinx.com>, linux@arm.linux.org.uk, arnd@arndb.de,
-        catalin.marinas@arm.com, linux-kernel@vger.kernel.org,
-        glikely@secretlab.ca, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 3/4] ARM: Xilinx: base header files and assembly macros
-References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com>	<1297872716-13353-2-git-send-email-john.linn@xilinx.com>	<1297872716-13353-3-git-send-email-john.linn@xilinx.com>	<e58673f5-2881-4820-b5cd-99e8ef294ed5@VA3EHSMHS024.ehs.local> <20110217100126.GD22961@pulham.picochip.com>
-In-Reply-To: <20110217100126.GD22961@pulham.picochip.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Feb 2011 17:00:43 -0500
+Date: Thu, 17 Feb 2011 14:01:19 -0800 (PST)
+Message-Id: <20110217.140119.39175251.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: dtor@vmware.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
+        rusty@rustcorp.com.au, linux-m68k@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in
+ module versions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
+References: <AANLkTinA-OP69fqf5jLfedk=dL2vmwdUyzn5E6FHR=Zw@mail.gmail.com>
+	<20110217.131702.112601300.davem@davemloft.net>
+	<AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2011 02:01 AM, Jamie Iles wrote:
->> +
->> +static void putc(char ch)
->> +{
->> +	/*
->> +	 * Wait for room in the FIFO, then write the char into the FIFO
->> +	 */
->> +	while (UART_STATUS(LL_UART_PADDR) & UART_SR_TXFULL)
->> +		;
->
-> It might be worth adding a barrier() call to these loops to be explicit 
-> about the volatility.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 13:54:57 -0800
 
-I think you want cpu_relax() then.
+> Is there a -fdata-align or something? Or would __attribute__((packed))
+> help? Something that explicitly tells gcc "don't do this", instead of
+> "let's add indirection and hope gcc doesn't add alignment for _that_".
+> Especially as the extra pointer makes the code even uglier.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+The tracing folks went down the path of trying to use packed in
+various ways, to no avail, because no matter what they tried it broke
+other things.
 
+> And if we do have to use the pointer thing, let's at least then do the
+> pointer with asms, so that gcc _really_ can't screw it up. Rather than
+> just move the potential bug around.
+
+That's fine with me.
