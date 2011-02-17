@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab1BQJXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 04:23:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37796 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1BQJXb (ORCPT
+	id S1754335Ab1BQJek (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 04:34:40 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48425 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab1BQJei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 04:23:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ocWddVqdU7Il9/X0T9tEB792mIHq/XDJFrder2caBkvuGQsimXrRPzj6mVJOZLuQj/
-         6oSCQVvRA/Jt1bZ2iEjNyuKR55BoZZMCcZ34S11jAmYijBv0jTkAfuQn6ivUVgtrbh4y
-         99Ik9x3jVlqON6UNS/pNtg8zBm3EGACSYm5ek=
-Date: Thu, 17 Feb 2011 10:23:26 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the workqueues tree
-Message-ID: <20110217092326.GM19830@htj.dyndns.org>
-References: <20110217143321.78f52ec5.sfr@canb.auug.org.au>
+	Thu, 17 Feb 2011 04:34:38 -0500
+Date: Thu, 17 Feb 2011 09:34:33 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: John Linn <john.linn@xilinx.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, catalin.marinas@arm.com, glikely@secretlab.ca,
+        arnd@arndb.de
+Subject: Re: [PATCH V3 1/4] ARM: Xilinx: Adding Xilinx board support
+Message-ID: <20110217093433.GB22961@pulham.picochip.com>
+References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com>
+ <ad969bd6-87bb-4910-a04a-d680e90d69af@VA3EHSMHS009.ehs.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110217143321.78f52ec5.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <ad969bd6-87bb-4910-a04a-d680e90d69af@VA3EHSMHS009.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi John,
 
-On Thu, Feb 17, 2011 at 02:33:21PM +1100, Stephen Rothwell wrote:
-> Caused by commit 58a69cb47ec6991bf006a3e5d202e8571b0327a4 ("workqueue,
-> freezer: unify spelling of 'freeze' + 'able' to 'freezable'") being
-> mismerged with commit 4149efb22da66e326fc48baf80d628834509f7f0
-> ("workqueue: add system_freezeable_wq") which added another use of
-> WQ_FREEZEABLE.
-> 
-> Please do at least simple build testing before submitting to
-> linux-next ...
+One nitpick, otherwise looks nice.
 
-Yeap, please feel free to call me an idiot.  After verifying the
-original branch, I completely forgot merge could introduce this type
-of silent conflicts.  I apologize for the late screwups.
+Jamie
 
-Thank you.
+On Wed, Feb 16, 2011 at 09:11:53AM -0700, John Linn wrote:
+> diff --git a/arch/arm/mach-xilinx/common.h b/arch/arm/mach-xilinx/common.h
+> new file mode 100644
+> index 0000000..9a7cf65
+> --- /dev/null
+> +++ b/arch/arm/mach-xilinx/common.h
+> @@ -0,0 +1,30 @@
+> +/* arch/arm/mach-xilinx/common.h
+> + *
+> + * This file contains common function prototypes to avoid externs
+> + * in the c files.
+> + *
+> + *  Copyright (C) 2011 Xilinx
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#ifndef __MACH_XILINX_COMMON_H__
+> +#define __MACH_XILINX_COMMON_H__
+> +
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
 
--- 
-tejun
+You don't appear to use the contents of platform_device.h in here so you 
+could probably drop this include.
