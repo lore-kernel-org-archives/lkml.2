@@ -1,125 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab1BQXER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 18:04:17 -0500
-Received: from xes-mad.com ([216.165.139.218]:9571 "EHLO xes-mad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab1BQXEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 18:04:04 -0500
-From: Peter Tyser <ptyser@xes-inc.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Tyser <ptyser@xes-inc.com>, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH v3 2/4] gpiolib: Add ability to get GPIO pin direction
-Date: Thu, 17 Feb 2011 17:03:17 -0600
-Message-Id: <1297983799-4747-2-git-send-email-ptyser@xes-inc.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1297983799-4747-1-git-send-email-ptyser@xes-inc.com>
-References: <1297983799-4747-1-git-send-email-ptyser@xes-inc.com>
+	id S1756159Ab1BQXEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 18:04:34 -0500
+Received: from usmamail.tilera.com ([206.83.70.70]:22422 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032Ab1BQXEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 18:04:16 -0500
+Message-ID: <4D5DA96D.5060200@tilera.com>
+Date: Thu, 17 Feb 2011 18:04:13 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: <xiyou.wangcong@gmail.com>, <cypher.w@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <eric.dumazet@gmail.com>,
+        <netdev@vger.kernel.org>
+Subject: Re: IGMP and rwlock: Dead ocurred again on TILEPro
+References: <20110217054237.GB2653@cr0.nay.redhat.com>	<20110216.214625.189707123.davem@davemloft.net>	<4D5DA60A.8080201@tilera.com> <20110217.145333.232751283.davem@davemloft.net>
+In-Reply-To: <20110217.145333.232751283.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new get_direction() function to the gpio_chip structure.  This is
-useful so that the direction of a pin can be determined when its
-initially exported.  Previously, the direction defaulted to "unknown"
-regardless of the actual configuration of the GPIO pin.
+On 2/17/2011 5:53 PM, David Miller wrote:
+> From: Chris Metcalf <cmetcalf@tilera.com>
+> Date: Thu, 17 Feb 2011 17:49:46 -0500
+>
+>> The fix is to disable interrupts for the arch_read_lock family of methods. 
+> How does that help handle the race when it happens between different
+> cpus, instead of between IRQ and non-IRQ context on the same CPU?
 
-If a GPIO driver implements get_direction(), it is called in
-gpio_request() to set the initial direction of the pin accurately.
+There's no race in that case, since the lock code properly backs off and
+retries until the other cpu frees it.  The distinction here is that the
+non-IRQ context is "wedged" by the IRQ context.
 
-Cc: Alek Du <alek.du@intel.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Joe Perches <joe@perches.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
----
-Changes since v1:
-- Add support for "unknown" direction
+> Why don't you just use the generic spinlock based rwlock code on Tile,
+> since that is all that your atomic instructions can handle
+> sufficiently?
 
-Changes since v2:
-  Based on Wolfram's feedback:
-- Use GPIOF_DIR_* flags as returns from get_direction()
-- Call spin_lock_irqsave() to before setting flags
+The tile-specific code encodes reader/writer information in the same 32-bit
+word that the test-and-set instruction manipulates, so it's more efficient
+both in space and time.  This may not really matter for rwlocks, since no
+one cares much about them any more, but that was the motivation.
 
- drivers/gpio/gpiolib.c     |   23 +++++++++++++++++++++++
- include/asm-generic/gpio.h |    4 ++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index eb74311..a656a2c 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1174,6 +1174,7 @@ int gpio_request(unsigned gpio, const char *label)
- 	struct gpio_desc	*desc;
- 	struct gpio_chip	*chip;
- 	int			status = -EINVAL;
-+	int			dir;
- 	unsigned long		flags;
- 
- 	spin_lock_irqsave(&gpio_lock, flags);
-@@ -1214,6 +1215,28 @@ int gpio_request(unsigned gpio, const char *label)
- 		}
- 	}
- 
-+	if (chip->get_direction) {
-+		/* chip->get_direction may sleep */
-+		spin_unlock_irqrestore(&gpio_lock, flags);
-+		dir = chip->get_direction(chip, gpio - chip->base);
-+		spin_lock_irqsave(&gpio_lock, flags);
-+		switch (dir) {
-+		case GPIOF_DIR_OUT:
-+			set_bit(FLAG_DIR_OUT, &desc->flags);
-+			clear_bit(FLAG_DIR_IN, &desc->flags);
-+			break;
-+		case GPIOF_DIR_IN:
-+			set_bit(FLAG_DIR_IN, &desc->flags);
-+			clear_bit(FLAG_DIR_OUT, &desc->flags);
-+			break;
-+		default:
-+			/* Direction isn't known */
-+			clear_bit(FLAG_DIR_OUT, &desc->flags);
-+			clear_bit(FLAG_DIR_IN, &desc->flags);
-+			break;
-+		}
-+	}
-+
- done:
- 	if (status)
- 		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index ff5c660..6af5a3e 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -57,6 +57,8 @@ struct device_node;
-  * @direction_input: configures signal "offset" as input, or returns error
-  * @get: returns value for signal "offset"; for output signals this
-  *	returns either the value actually sensed, or zero
-+ * @get_direction: optional hook to determine if a GPIO signal is configured
-+ *	as an input, output, or unknown
-  * @direction_output: configures signal "offset" as output, or returns error
-  * @set: assigns output value for signal "offset"
-  * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
-@@ -101,6 +103,8 @@ struct gpio_chip {
- 						unsigned offset);
- 	int			(*get)(struct gpio_chip *chip,
- 						unsigned offset);
-+	int			(*get_direction)(struct gpio_chip *chip,
-+						unsigned offset);
- 	int			(*direction_output)(struct gpio_chip *chip,
- 						unsigned offset, int value);
- 	int			(*set_debounce)(struct gpio_chip *chip,
 -- 
-1.7.0.4
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
