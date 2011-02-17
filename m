@@ -1,153 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab1BQV2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 16:28:48 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:37870 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab1BQV2e (ORCPT
+	id S1758120Ab1BQV3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 16:29:20 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:56520 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758125Ab1BQV3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 16:28:34 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=OeVuBq3f1NXwKsqCOeLWqOqUm/gVyDjuNrQbEg/wIiHi0u11OIo1z5GYnR56WzgOf
-	AvnlocqPTZcZsBqTGjbEw==
-Subject: [PATCH v1 5/5] firmware: Add documentation for /sys/firmware/dmi
-To: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>
-From: Mike Waychison <mikew@google.com>
-Cc: Jon Mayer <jonmayer@google.com>, Duncan Laurie <dlaurie@google.com>,
-        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>, David Hendrix <dhendrix@chromium.org>,
-        linux-api@vger.kernel.org
-Date: Thu, 17 Feb 2011 13:28:21 -0800
-Message-ID: <20110217212821.3967.22439.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com>
-References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+	Thu, 17 Feb 2011 16:29:17 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: arnaud.patard@rtp-net.org, gregkh@suse.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/7] staging: xgifb: replace XGINew_LCD_Wait_Time() with mdelay()
+Date: Thu, 17 Feb 2011 23:29:14 +0200
+Message-Id: <1297978157-14927-4-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1297978157-14927-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1297978157-14927-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the new ABI added by the dmi-sysfs module.
+XGINew_LCD_Wait_Time() is implemented using the I/O port 0x61, which is
+X86-specific and will fail on other platforms. The code did not make any
+sense, but I guess the intention has been to provide a function where
+the unit for the delay is milliseconds.
 
-Signed-off-by: Mike Waychison <mikew@google.com>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- Documentation/ABI/testing/sysfs-firmware-dmi |  101 ++++++++++++++++++++++++++
- 1 files changed, 101 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-dmi
+ drivers/staging/xgifb/vb_setmode.c |   47 +++++++----------------------------
+ 1 files changed, 10 insertions(+), 37 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
-new file mode 100644
-index 0000000..c6526b0
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-firmware-dmi
-@@ -0,0 +1,101 @@
-+What:		/sys/firmware/dmi/
-+Date:		February 2011
-+Contact:	Mike Waychison <mikew@google.com>
-+Description:
-+		Many machine's firmware (x86 and ia64) export DMI /
-+		SMBIOS tables to the operating system.  Getting at this
-+		information is often valuable to userland, especially in
-+		cases where there are OEM extensions used.
-+
-+		The kernel itself does not rely on the majority of the
-+		information in these tables being correct.  It equally
-+		cannot ensure that the data as exported to userland is
-+		without error either.
-+
-+		DMI is structured as a large table of entries, where
-+		each entry has a common header indicating the type and
-+		length of the entry, as well as 'handle' that is
-+		supposed to be unique amongst all entries.
-+
-+		Some entries are required by the specification, but many
-+		others are optional.  In general though, user's should
-+		never expect to find a specific entry type on their
-+		system unless they know for certain what their firmware
-+		is doing.  Machine to machine will vary.
-+
-+		Multiple entries of the same type are allowed.  In order
-+		to handle these duplicate entry types, each entry is
-+		assigned by the operating system an 'instance', which is
-+		derived from an entry type's ordinal position.  That is
-+		to say, if there are 'N' multiple entries with the same type
-+		'T' in the DMI tables (adjacent or spread apart, it
-+		doesn't matter), they will be represented in sysfs as
-+		entries "T-0" through "T-(N-1)":
-+
-+		Example entry directories:
-+
-+			/sys/firmware/dmi/entries/17-0
-+			/sys/firmware/dmi/entries/17-1
-+			/sys/firmware/dmi/entries/17-2
-+			/sys/firmware/dmi/entries/17-3
-+			...
-+
-+		Instance numbers are used in lieu of the firmware
-+		assigned entry handles as there is kernel itself makes
-+		no guarantees that handles as exported are unique, and
-+		there are likely firmware images that get this wrong in
-+		the wild.
-+
-+		Each DMI entry in sysfs has the common header values
-+		exported as attributes:
-+
-+		handle	: The 16bit 'handle' that is assigned to this
-+			  entry by the firmware.  This handle may be
-+			  referred to by other entries.
-+		length	: The length of the entry, as presented in the
-+			  entry itself.  Note that this is _not the
-+			  total count of bytes associated with the
-+			  entry_.  This value represents the length of
-+			  the "formatted" portion of the entry.  This
-+			  "formatted" region is sometimes followed by
-+			  the "unformatted" region composed of nul
-+			  terminated strings, with termination signalled
-+			  by a two nul characters in series.
-+		raw	: The raw bytes of the entry. This includes the
-+			  "formatted" portion of the entry, the
-+			  "unformatted" strings portion of the entry,
-+			  and the two terminating nul characters.
-+
-+		=== Entry Specialization ===
-+
-+		Some entry types may have other information available in
-+		sysfs.
-+
-+		--- Type 15 - System Event Log ---
-+
-+		This entry allows the firmware to export a log of
-+		events the system has taken.  This information is
-+		typically backed by nvram, but the implementation
-+		details are abstracted by this table.  This entries data
-+		is exported in the directory:
-+
-+		/sys/firmware/dmi/entries/15-0/system_event_log
-+
-+		and has the following attributes (documented in the
-+		SMBIOS / DMI specification under "System Event Log (Type 15)":
-+
-+		area_length
-+		header_start_offset
-+		data_start_offset
-+		access_method
-+		status
-+		change_token
-+		access_method_address
-+		header_format
-+		per_log_type_descriptor_length
-+		type_descriptors_supported_count
-+
-+		As well, the kernel exports the binary attribute:
-+
-+		raw_event_log	: The raw binary bits of the event log
-+				  as described by the DMI entry.
+diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
+index e19b932..fa2cf96 100644
+--- a/drivers/staging/xgifb/vb_setmode.c
++++ b/drivers/staging/xgifb/vb_setmode.c
+@@ -1,5 +1,6 @@
+ 
+ #include <asm/io.h>
++#include <linux/delay.h>
+ #include <linux/types.h>
+ #include <linux/version.h>
+ #include "XGIfb.h"
+@@ -161,7 +162,6 @@ void     XGI_GetRAMDAC2DATA(unsigned short ModeNo, unsigned short ModeIdIndex, u
+ void     XGI_UnLockCRT2(struct xgi_hw_device_info *, struct vb_device_info *pVBInfo);
+ void     XGI_LockCRT2(struct xgi_hw_device_info *, struct vb_device_info *pVBInfo);
+ void     XGINew_EnableCRT2(struct vb_device_info *pVBInfo);
+-void     XGINew_LCD_Wait_Time(unsigned char DelayTime, struct vb_device_info *pVBInfo);
+ void     XGI_LongWait(struct vb_device_info *pVBInfo);
+ void     XGI_SetCRT1Offset(unsigned short ModeNo, unsigned short ModeIdIndex, unsigned short RefreshRateTableIndex, struct xgi_hw_device_info *HwDeviceExtension, struct vb_device_info *pVBInfo);
+ void     XGI_GetLCDVCLKPtr(unsigned char *di_0, unsigned char *di_1,
+@@ -3788,7 +3788,7 @@ void XGI_SenseCRT1(struct vb_device_info *pVBInfo)
+ 	XGI_VBLongWait(pVBInfo);
+ 	XGI_VBLongWait(pVBInfo);
+ 
+-	XGINew_LCD_Wait_Time(0x01, pVBInfo);
++	mdelay(1);
+ 
+ 	XGI_WaitDisply(pVBInfo);
+ 	temp = XGINew_GetReg2(pVBInfo->P3c2);
+@@ -6716,16 +6716,16 @@ void XGI_SetPanelDelay(unsigned short tempbl, struct vb_device_info *pVBInfo)
+ 	index = XGI_GetLCDCapPtr(pVBInfo);
+ 
+ 	if (tempbl == 1)
+-		XGINew_LCD_Wait_Time(pVBInfo->LCDCapList[index].PSC_S1, pVBInfo);
++		mdelay(pVBInfo->LCDCapList[index].PSC_S1);
+ 
+ 	if (tempbl == 2)
+-		XGINew_LCD_Wait_Time(pVBInfo->LCDCapList[index].PSC_S2, pVBInfo);
++		mdelay(pVBInfo->LCDCapList[index].PSC_S2);
+ 
+ 	if (tempbl == 3)
+-		XGINew_LCD_Wait_Time(pVBInfo->LCDCapList[index].PSC_S3, pVBInfo);
++		mdelay(pVBInfo->LCDCapList[index].PSC_S3);
+ 
+ 	if (tempbl == 4)
+-		XGINew_LCD_Wait_Time(pVBInfo->LCDCapList[index].PSC_S4, pVBInfo);
++		mdelay(pVBInfo->LCDCapList[index].PSC_S4);
+ }
+ 
+ /* --------------------------------------------------------------------- */
+@@ -6897,20 +6897,16 @@ void XGI_XG21SetPanelDelay(unsigned short tempbl,
+ 
+ 	index = XGI_GetLVDSOEMTableIndex(pVBInfo);
+ 	if (tempbl == 1)
+-		XGINew_LCD_Wait_Time(pVBInfo->XG21_LVDSCapList[index].PSC_S1,
+-				pVBInfo);
++		mdelay(pVBInfo->XG21_LVDSCapList[index].PSC_S1);
+ 
+ 	if (tempbl == 2)
+-		XGINew_LCD_Wait_Time(pVBInfo->XG21_LVDSCapList[index].PSC_S2,
+-				pVBInfo);
++		mdelay(pVBInfo->XG21_LVDSCapList[index].PSC_S2);
+ 
+ 	if (tempbl == 3)
+-		XGINew_LCD_Wait_Time(pVBInfo->XG21_LVDSCapList[index].PSC_S3,
+-				pVBInfo);
++		mdelay(pVBInfo->XG21_LVDSCapList[index].PSC_S3);
+ 
+ 	if (tempbl == 4)
+-		XGINew_LCD_Wait_Time(pVBInfo->XG21_LVDSCapList[index].PSC_S4,
+-				pVBInfo);
++		mdelay(pVBInfo->XG21_LVDSCapList[index].PSC_S4);
+ }
+ 
+ unsigned char XGI_XG21CheckLVDSMode(unsigned short ModeNo,
+@@ -8637,29 +8633,6 @@ void XGINew_EnableCRT2(struct vb_device_info *pVBInfo)
+ 	XGINew_SetRegANDOR(pVBInfo->P3c4, 0x1E, 0xFF, 0x20);
+ }
+ 
+-void XGINew_LCD_Wait_Time(unsigned char DelayTime,
+-		struct vb_device_info *pVBInfo)
+-{
+-	unsigned short i, j;
+-
+-	unsigned long temp, flag;
+-
+-	flag = 0;
+-	/* printk("XGINew_LCD_Wait_Time"); */
+-	/* return; */
+-	for (i = 0; i < DelayTime; i++) {
+-		for (j = 0; j < 66; j++) {
+-			temp = XGINew_GetReg3(0x61);
+-			/* temp &= 0x10000000; */
+-			temp &= 0x10;
+-			if (temp == flag)
+-				continue;
+-
+-			flag = temp;
+-		}
+-	}
+-}
+-
+ unsigned char XGI_BridgeIsOn(struct vb_device_info *pVBInfo)
+ {
+ 	unsigned short flag;
+-- 
+1.5.6.5
 
