@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab1BQPCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:02:48 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58355
+	id S1756697Ab1BQPC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:02:56 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58363
 	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932179Ab1BQPCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:02:39 -0500
-Date: Thu, 17 Feb 2011 15:03:49 +0000
+	id S1756676Ab1BQPCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:02:46 -0500
+Date: Thu, 17 Feb 2011 15:03:56 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
@@ -17,8 +17,8 @@ Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
         dhowells@redhat.com
-Subject: [PATCH 7/9] add a user namespace owner of ipc ns
-Message-ID: <20110217150349.GG26395@mail.hallyn.com>
+Subject: [PATCH 8/9] user namespaces: convert several capable() calls
+Message-ID: <20110217150356.GH26395@mail.hallyn.com>
 References: <20110217150224.GA26334@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,120 +29,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CAP_IPC_OWNER and CAP_IPC_LOCK can be checked against current_user_ns(),
+because the resource comes from current's own ipc namespace.
+
+setuid/setgid are to uids in own namespace, so again checks can be
+against current_user_ns().
+
 Changelog:
-	Feb 15: Don't set new ipc->user_ns if we didn't create a new
-		ipc_ns.
+	Jan 11: Use task_ns_capable() in place of sched_capable().
+	Jan 11: Use nsown_capable() as suggested by Bastian Blank.
+	Jan 11: Clarify (hopefully) some logic in futex and sched.c
+	Feb 15: use ns_capable for ipc, not nsown_capable
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 ---
- include/linux/ipc_namespace.h |    3 +++
- ipc/msgutil.c                 |    3 +++
- ipc/namespace.c               |    9 +++++++--
- kernel/nsproxy.c              |    5 +++++
- 4 files changed, 18 insertions(+), 2 deletions(-)
+ ipc/shm.c             |    2 +-
+ ipc/util.c            |    5 +++--
+ kernel/futex.c        |   11 ++++++++++-
+ kernel/futex_compat.c |   11 ++++++++++-
+ kernel/groups.c       |    2 +-
+ kernel/sched.c        |    9 ++++++---
+ kernel/uid16.c        |    2 +-
+ 7 files changed, 32 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index 5195298..46d2eb4 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -24,6 +24,7 @@ struct ipc_ids {
- 	struct idr ipcs_idr;
- };
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 7d3bb22..e91e2e9 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -773,7 +773,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
  
-+struct user_namespace;
- struct ipc_namespace {
- 	atomic_t	count;
- 	struct ipc_ids	ids[3];
-@@ -56,6 +57,8 @@ struct ipc_namespace {
- 	unsigned int    mq_msg_max;      /* initialized to DFLT_MSGMAX */
- 	unsigned int    mq_msgsize_max;  /* initialized to DFLT_MSGSIZEMAX */
+ 		audit_ipc_obj(&(shp->shm_perm));
  
-+	/* user_ns which owns the ipc ns */
-+	struct user_namespace *user_ns;
- };
+-		if (!capable(CAP_IPC_LOCK)) {
++		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
+ 			uid_t euid = current_euid();
+ 			err = -EPERM;
+ 			if (euid != shp->shm_perm.uid &&
+diff --git a/ipc/util.c b/ipc/util.c
+index 69a0cc1..8e7ec6a 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -627,7 +627,7 @@ int ipcperms (struct kern_ipc_perm *ipcp, short flag)
+ 		granted_mode >>= 3;
+ 	/* is there some bit set in requested_mode but not in granted_mode? */
+ 	if ((requested_mode & ~granted_mode & 0007) && 
+-	    !capable(CAP_IPC_OWNER))
++	    !ns_capable(current->nsproxy->ipc_ns->user_ns, CAP_IPC_OWNER))
+ 		return -1;
  
- extern struct ipc_namespace init_ipc_ns;
-diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-index f095ee2..d91ff4b 100644
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -20,6 +20,8 @@
+ 	return security_ipc_permission(ipcp, flag);
+@@ -800,7 +800,8 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_ids *ids, int id, int cmd,
  
- DEFINE_SPINLOCK(mq_lock);
+ 	euid = current_euid();
+ 	if (euid == ipcp->cuid ||
+-	    euid == ipcp->uid  || capable(CAP_SYS_ADMIN))
++	    euid == ipcp->uid  ||
++	    ns_capable(current->nsproxy->ipc_ns->user_ns, CAP_SYS_ADMIN))
+ 		return ipcp;
  
-+extern struct user_namespace init_user_ns;
-+
- /*
-  * The next 2 defines are here bc this is the only file
-  * compiled when either CONFIG_SYSVIPC and CONFIG_POSIX_MQUEUE
-@@ -32,6 +34,7 @@ struct ipc_namespace init_ipc_ns = {
- 	.mq_msg_max      = DFLT_MSGMAX,
- 	.mq_msgsize_max  = DFLT_MSGSIZEMAX,
- #endif
-+	.user_ns = &init_user_ns,
- };
- 
- atomic_t nr_ipc_ns = ATOMIC_INIT(1);
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index a1094ff..aa18899 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -11,10 +11,11 @@
- #include <linux/slab.h>
- #include <linux/fs.h>
- #include <linux/mount.h>
-+#include <linux/user_namespace.h>
- 
- #include "util.h"
- 
--static struct ipc_namespace *create_ipc_ns(void)
-+static struct ipc_namespace *create_ipc_ns(struct ipc_namespace *old_ns)
- {
- 	struct ipc_namespace *ns;
- 	int err;
-@@ -43,6 +44,9 @@ static struct ipc_namespace *create_ipc_ns(void)
- 	ipcns_notify(IPCNS_CREATED);
- 	register_ipcns_notifier(ns);
- 
-+	ns->user_ns = old_ns->user_ns;
-+	get_user_ns(ns->user_ns);
-+
- 	return ns;
- }
- 
-@@ -50,7 +54,7 @@ struct ipc_namespace *copy_ipcs(unsigned long flags, struct ipc_namespace *ns)
- {
- 	if (!(flags & CLONE_NEWIPC))
- 		return get_ipc_ns(ns);
--	return create_ipc_ns();
-+	return create_ipc_ns(ns);
- }
- 
- /*
-@@ -105,6 +109,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
- 	 * order to have a correct value when recomputing msgmni.
- 	 */
- 	ipcns_notify(IPCNS_REMOVED);
-+	put_user_ns(ns->user_ns);
- }
- 
- /*
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 034dc2e..b6dbff2 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -85,6 +85,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 		err = PTR_ERR(new_nsp->ipc_ns);
- 		goto out_ipc;
+ 	err = -EPERM;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index b766d28..1e876f1 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2421,10 +2421,19 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+ 			goto err_unlock;
+ 		ret = -EPERM;
+ 		pcred = __task_cred(p);
++		/* If victim is in different user_ns, then uids are not
++		   comparable, so we must have CAP_SYS_PTRACE */
++		if (cred->user->user_ns != pcred->user->user_ns) {
++			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
++				goto err_unlock;
++			goto ok;
++		}
++		/* If victim is in same user_ns, then uids are comparable */
+ 		if (cred->euid != pcred->euid &&
+ 		    cred->euid != pcred->uid &&
+-		    !capable(CAP_SYS_PTRACE))
++		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+ 			goto err_unlock;
++ok:
+ 		head = p->robust_list;
+ 		rcu_read_unlock();
  	}
-+	if (new_nsp->ipc_ns != tsk->nsproxy->ipc_ns) {
-+		put_user_ns(new_nsp->ipc_ns->user_ns);
-+		new_nsp->ipc_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
-+		get_user_ns(new_nsp->ipc_ns->user_ns);
-+	}
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index a7934ac..5f9e689 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -153,10 +153,19 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+ 			goto err_unlock;
+ 		ret = -EPERM;
+ 		pcred = __task_cred(p);
++		/* If victim is in different user_ns, then uids are not
++		   comparable, so we must have CAP_SYS_PTRACE */
++		if (cred->user->user_ns != pcred->user->user_ns) {
++			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
++				goto err_unlock;
++			goto ok;
++		}
++		/* If victim is in same user_ns, then uids are comparable */
+ 		if (cred->euid != pcred->euid &&
+ 		    cred->euid != pcred->uid &&
+-		    !capable(CAP_SYS_PTRACE))
++		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
+ 			goto err_unlock;
++ok:
+ 		head = p->compat_robust_list;
+ 		rcu_read_unlock();
+ 	}
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 253dc0f..1cc476d 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -233,7 +233,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
  
- 	new_nsp->pid_ns = copy_pid_ns(flags, task_active_pid_ns(tsk));
- 	if (IS_ERR(new_nsp->pid_ns)) {
+-	if (!capable(CAP_SETGID))
++	if (!nsown_capable(CAP_SETGID))
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 18d38e4..dc12bc2 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4761,8 +4761,11 @@ static bool check_same_owner(struct task_struct *p)
+ 
+ 	rcu_read_lock();
+ 	pcred = __task_cred(p);
+-	match = (cred->euid == pcred->euid ||
+-		 cred->euid == pcred->uid);
++	if (cred->user->user_ns == pcred->user->user_ns)
++		match = (cred->euid == pcred->euid ||
++			 cred->euid == pcred->uid);
++	else
++		match = false;
+ 	rcu_read_unlock();
+ 	return match;
+ }
+@@ -5088,7 +5091,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ 		goto out_free_cpus_allowed;
+ 	}
+ 	retval = -EPERM;
+-	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
++	if (!check_same_owner(p) && !task_ns_capable(p, CAP_SYS_NICE))
+ 		goto out_unlock;
+ 
+ 	retval = security_task_setscheduler(p);
+diff --git a/kernel/uid16.c b/kernel/uid16.c
+index 4192098..51c6e89 100644
+--- a/kernel/uid16.c
++++ b/kernel/uid16.c
+@@ -189,7 +189,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
+ 
+-	if (!capable(CAP_SETGID))
++	if (!nsown_capable(CAP_SETGID))
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
 -- 
 1.7.0.4
 
