@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab1BQPBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:01:17 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58277
-	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755078Ab1BQPBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:01:14 -0500
-Date: Thu, 17 Feb 2011 15:02:24 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: LSM <linux-security-module@vger.kernel.org>
-Cc: Andrew Morton <akpm@osdl.org>, James Morris <jmorris@namei.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com, serge@hallyn.com
-Subject: userns: targeted capabilities v5
-Message-ID: <20110217150224.GA26334@mail.hallyn.com>
+	id S1756610Ab1BQPB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:01:27 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:55971 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756444Ab1BQPBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:01:24 -0500
+Message-ID: <4D5D383A.6000503@free.fr>
+Date: Thu, 17 Feb 2011 16:01:14 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: Yong Zhang <yong.zhang0@gmail.com>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: WARNING: at kernel/lockdep.c:2323 trace_hardirqs_on_caller+0xb9/0x16c()
+References: <4D5A90D0.9040403@free.fr> <AANLkTimvue3JbYZUMrt0KppE1f_MNSsyyb+Upbputs=5@mail.gmail.com> <20110216.180347.71107177.davem@davemloft.net> <AANLkTim4NnyyFqprBoGpimquLP=6fjAanCrbqX=RXwC9@mail.gmail.com> <20110217112842.GS19830@htj.dyndns.org> <4D5D0FFC.40509@free.fr> <20110217125443.GU19830@htj.dyndns.org>
+In-Reply-To: <20110217125443.GU19830@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a repost of my previous user namespace patch, ported onto
-last night's git head.
+On 02/17/2011 01:54 PM, Tejun Heo wrote:
+> Hello,
+>
+> On Thu, Feb 17, 2011 at 01:09:32PM +0100, Daniel Lezcano wrote:
+>> I applied these patches to linux-next and I blindly fixed some
+>> minors conflicts. AFAICT, the problem does no longer occur and it
+>> seems the patches fix the problem. I am not sure I resolved the
+>> conflict correctly as I know nothing about this subsystem. Shall I
+>> resend these patches for inclusion and you check they are correct ?
+> The posted patches are on top of the mainline and the conflicts
+> against linux-next should be minor.  I'm waiting for Jens to pick up
+> the patches.
 
-It fixes several things I was doing wrong in the last (v4)
-posting, in particular:
+Great ! Thanks Tejun.
 
-	1. don't set uts_ns->user_ns to current's when !CLONE_NEWUTS
-	2. add a ipc_ns->user_ns which owns ipc_ns, and use that to
-	   decide CAP_IPC_OWNER
-	3. fix logic flaw caused by bad parantheses
-	4. allow do_prlimit to current
-	5. don't always give root full privs to init_user_ns
+   -- Daniel
 
-The expected course of development for user namespaces is laid out
-at https://wiki.ubuntu.com/UserNamespace.  Bugs aside, this
-patchset is supposed to not at all affect systems which are not
-actively using user namespaces, and only restrict what tasks in
-child user namespace can do.  They begin to limit privilege to
-a user namespace, so that root in a container cannot kill or
-ptrace tasks in the parent user namespace, and can only get
-world access rights to files.  Since all files currently belong
-to the initila user namespace, that means that child user
-namespaces can only get world access rights to *all* files.
-While this temporarily makes user namespaces bad for system
-containers, it starts to get useful for some sandboxing.
-
-I've run the 'runltplite.sh' with and without this patchset and
-found no difference.  So all in all, this is the first version
-of this patchset for which I feel comfortable asking:  please
-consider applying.
-
-thanks,
--serge
