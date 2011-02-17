@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab1BQL2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 06:28:54 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39982 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab1BQL2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 06:28:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=aCy21eEZXz4Nbt6+ReqoifePgpbl0vuhFVYaJeBfYXmUvwjWjioUsY7i6PlMJqBO0F
-         pb9Oz66fZPvFsvmwcoLosaZByVgSUw/FErwbqDvIZow0jhzWTogR0Wom1qKJT2I4qixd
-         sAoN+0JqtIkVr0BdheaQftcl+IGelQM93gGDI=
-Date: Thu, 17 Feb 2011 12:28:42 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: David Miller <davem@davemloft.net>, daniel.lezcano@free.fr,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: WARNING: at kernel/lockdep.c:2323
- trace_hardirqs_on_caller+0xb9/0x16c()
-Message-ID: <20110217112842.GS19830@htj.dyndns.org>
-References: <4D5A90D0.9040403@free.fr>
- <AANLkTimvue3JbYZUMrt0KppE1f_MNSsyyb+Upbputs=5@mail.gmail.com>
- <20110216.180347.71107177.davem@davemloft.net>
- <AANLkTim4NnyyFqprBoGpimquLP=6fjAanCrbqX=RXwC9@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1755877Ab1BQLbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 06:31:17 -0500
+Received: from www.tglx.de ([62.245.132.106]:60945 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752767Ab1BQLbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 06:31:14 -0500
+Date: Thu, 17 Feb 2011 12:31:02 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, sodaville@linutronix.de,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [sodaville] [PATCH TIP 02/14] x86: Add device tree support
+Message-ID: <20110217113102.GB11260@www.tglx.de>
+References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de> <1295843342-1122-3-git-send-email-bigeasy@linutronix.de> <20110216213126.GC22837@angua.secretlab.ca>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim4NnyyFqprBoGpimquLP=6fjAanCrbqX=RXwC9@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110216213126.GC22837@angua.secretlab.ca>
+User-Agent: Mutt/1.4.2.2i
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+* Grant Likely | 2011-02-16 14:31:26 [-0700]:
 
-On Thu, Feb 17, 2011 at 10:43:57AM +0800, Yong Zhang wrote:
-> On Thu, Feb 17, 2011 at 10:03 AM, David Miller <davem@davemloft.net> wrote:
-> > From: Yong Zhang <yong.zhang0@gmail.com>
-> > Date: Thu, 17 Feb 2011 09:37:30 +0800
-> >
-> >> On Tue, Feb 15, 2011 at 10:42 PM, Daniel Lezcano <daniel.lezcano@free.fr> wrote:
-> >>> Hi All,
-> >>>
-> >>> I am running a 2.6.38-rc4-next-20110215+ kernel on qemu x86_64 and the
-> >>> following traces appear in the console:
-> >>>
-> >>> Feb 15 15:00:24 lucid kernel: ------------[ cut here ]------------
-> >>> Feb 15 15:00:24 lucid kernel: WARNING: at kernel/lockdep.c:2323
-> >>> trace_hardirqs_on_caller+0xb9/0x16c()
-> >>> Feb 15 15:00:24 lucid kernel: Hardware name: Bochs
-> >>> Feb 15 15:00:24 lucid kernel: Pid: 1477, comm: mountall Not tainted
-> >>> 2.6.38-rc4-next-20110215+ #74
-> >>> Feb 15 15:00:24 lucid kernel: Call Trace:
-> >>> Feb 15 15:00:24 lucid kernel: <IRQ>  [<ffffffff8102b8a5>] ?
-> >>> warn_slowpath_common+0x7b/0x93
-> >>> Feb 15 15:00:24 lucid kernel: [<ffffffff8146c097>] ?
-> >>> _raw_spin_unlock_irq+0x2b/0x30
-> >>> Feb 15 15:00:24 lucid kernel: [<ffffffff8102b8d2>] ?
-> >>> warn_slowpath_null+0x15/0x17
-> >>> Feb 15 15:00:24 lucid kernel: [<ffffffff8104f796>] ?
-> >>> trace_hardirqs_on_caller+0xb9/0x16c
-> >>> Feb 15 15:00:24 lucid kernel: [<ffffffff8104f856>] ?
-> >>> trace_hardirqs_on+0xd/0xf
-> >>> Feb 15 15:00:24 lucid kernel: [<ffffffff8146c097>] ?
-> >>> _raw_spin_unlock_irq+0x2b/0x30
-> >>> Feb 15 15:00:24 lucid kernel: [<ffffffff812e167e>] ?
-> >>> do_ide_request+0x32/0x590
-> >>
-> >> Seems related to IDE SUBSYSTEM
-> >
-> > Which hasn't had any changes in the past release.
-> 
-> OK.
-> 
-> Cc'ing Tejun Heo
-> 
-> For the back trace, I think __blk_run_queue() is the ligament.
-> As from the comment of __blk_run_queue(), it must be called
-> with the queue lock and interrupts disabled. And the lock
-> is hold through spin_lock_irqsave(q->queue_lock, flags); at
-> blk_end_bidi_request().
-> 
-> But in do_ide_request(), it realse the lock through
-> spin_unlock_irq(q->queue_lock); which make the state
-> inconsistent.
-> 
-> BTW, do_ide_request() also say it might_sleep(), this warning
-> also trigger in Daniel's log.
+>> +config X86_OF
+>> +	bool "Support for device tree"
+>> +	select OF
+>> +	select OF_EARLY_FLATTREE
+>> +	---help---
+>> +	  Device tree support on X86.
+>> +
+>
+>On ARM and MIPS, this is called 'config USE_OF'.  It would be nice to have
+>some commonality.  Maybe I should move the user-visible option to
+>drivers/of/Kconfig.  Or perhaps I should just make CONFIG_OF itself
+>user visible.
+>
+>thoughts?
 
-This seems to be the same problem Jan reported and fixed by the
-following patches.
+We could make CONFIG_OF depend on CONFIG_HAVE_OF_SUPPORT and let OF
+select OF_EARLY_FLATTREE if ARCH_WANT_EARLY_FLATTREE for instance. So
+that part would work in a generic way.
 
-  http://article.gmane.org/gmane.linux.kernel/1101766/raw
-  http://article.gmane.org/gmane.linux.ide/48819/raw
+For OF-only platforms you would have to go to drivers/of
+before you can enable the specific SoC/board. So it could lead to
+something like "first enable scsi disk before you can enable usb
+storage".
 
-Can you please test whether these two patches fix the problem?
+I like it :) For now I rename to USE_OF.
 
-Thanks.
+>
+>g.
 
--- 
-tejun
+Sebastian
