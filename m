@@ -1,39 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab1BQQZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 11:25:12 -0500
-Received: from web81203.mail.mud.yahoo.com ([68.142.199.107]:36087 "HELO
-	web81203.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752716Ab1BQQZI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 11:25:08 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Feb 2011 11:25:08 EST
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=VliYKd+eSgtaG1/6490pkrbxAukFDer+Ai8r9L2SBr/kEHiE8Wz5xzM33+mtusSIXFb1B8wFwyoxbBMb+REisyc9d5nvCQtdJn83h372Jh+NJoJDPaUhqAECgUHh+u++W1GfaFHwIUaP6gmOJAFc+WzKb2G+88VfHpI9T7HOZf8=;
-Message-ID: <365304.887.qm@web81203.mail.mud.yahoo.com>
-X-YMail-OSG: 2DESTKMVM1nFG7z6xTcw3W73rmLD90hc.CoEwXAN3cPtAQ4
- e2XjvOM7GK2R3pBwy2goscTKDN9Kp0SUpTOjCZOY0HDFtPRCUfsuCt7r.p06
- T42FGVVUWyQjTjm_ENg2_GaWtx00qlIo_v8D7F8wn2Srju4Q89Ch4q.hxTYe
- 4.kSzr1ZDLeXBGPHHKR0DyaNXdEAf.Ok0lg7bgooOI_9ZmjUlqTfgYMxYI2C
- mq3JsKfeDisyLFu3LnmelFpDo5onJNOBG5UraCzdjKU5MjV_KKGIaJSGdHgn
- h8ttcL1BD7DtQqd9A_js_r9RNJfVB2gczqL317_CC5AKrfE7jpd.mUO8NSs9
- GZUVdqVTclVBHrDzDvJmFozipRfByodMgI5TbcL40wG7JM4LTBA9D26kWrvU
- 5LRiVpet_Ww--
-X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.108.291010
-Date: Thu, 17 Feb 2011 08:18:23 -0800 (PST)
-From: "DAVID N, MENDENHALL" <davidmendenhall@sbcglobal.net>
-Subject: =?iso-8859-1?Q?Your_e-mail_has_randomly_won_=A3950=2C000GBP_in_the_Benz_P?=
- =?iso-8859-1?Q?romo=2E_Send_Your_Info?=
-To: undisclosed recipients:;
+	id S1756746Ab1BQQ0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 11:26:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54298 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752716Ab1BQQ0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 11:26:43 -0500
+Date: Thu, 17 Feb 2011 17:26:41 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+Message-ID: <20110217162641.GC3781@tiehlicka.suse.cz>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+ <20110216193700.GA6377@elte.hu>
+ <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+ <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+ <20110217090910.GA3781@tiehlicka.suse.cz>
+ <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Name_____________Address___________
-Country____________Tel_____________
+On Thu 17-02-11 08:13:50, Linus Torvalds wrote:
+> On Thu, Feb 17, 2011 at 1:09 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >
+> > I have seen that thread but I didn't think it is related. I thought
+> > this is an another anon_vma issue. But you seem to be right that the
+> > offset pattern can be related.
+> 
+> Hey, maybe it turns out to be about anon_vma's in the end, but I see
+> no big reason to blame them per se. And we haven't had all that much
+> churn wrt anon_vma's this release window, so I wouldn't expect
+> anything exciting unless you're actively using transparent hugepages.
+> And iirc, Eric was not using them (or memory compaction).
 
+I am using transparent hugepages:
+$ grep -i huge /proc/vmstat 
+nr_anon_transparent_hugepages 24
+
+and this is the usual number that I can see with my day-to-day workload.
+
+> I'd be more likely to blame either the new path lookup (which uses
+> totally new RCU freeing of inodes _and_
+> INIT_LIST_HEAD(&inode->i_dentry)), but I'm not seeing how that could
+> break either (I've gone through that patch many times).
+> 
+> And in addition, I don't see why others wouldn't see it (I've got
+> DEBUG_PAGEALLOC and SLUB_DEBUG_ON turned on myself, and I know others
+> do too).
+> 
+> So I'm wondering what triggers it. Must be something subtle.
+> 
+> > OK. I have just booted with the same kernel and the config turned on.
+> > Let's see if I am able to reproduce.
+> 
+> Thanks. It might have been good to turn on SLUB_DEBUG_ON and
+> DEBUG_LIST too, but PAGEALLOC is the big one.
+
+I can try those later as well. Currently I am not able to trigger the
+issue. I am running rmmod wireless stack + modproble it back in the loop
+because this was the last thing before I saw the bug last time. Let's
+see if it changes later.
+
+> 
+> > Btw.
+> > $ objdump -d ./vmlinux-2.6.38-rc4-00001-g07409af-vmscan-test | grep 0x1e68
+> >
+> > didn't print out anything. Do you have any other way to find out the
+> > structure?
+> 
+> Nope, that's roughly what I did to (in addition to doing all the .ko
+> files and checking for 0xe68 too). 
+
+Ohh, I forgot about modules. Just did it and also nothing found.
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
