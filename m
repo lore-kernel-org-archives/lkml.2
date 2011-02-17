@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab1BQTdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:33:35 -0500
-Received: from kroah.org ([198.145.64.141]:40869 "EHLO coco.kroah.org"
+	id S1757722Ab1BQTeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:34:17 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:36640 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319Ab1BQTdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:33:32 -0500
-Date: Thu, 17 Feb 2011 11:32:55 -0800
-From: Greg KH <greg@kroah.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] tty: serial: Updates for altera_uart driver
-Message-ID: <20110217193255.GA27139@kroah.com>
-References: <cover.1297244810.git.tklauser@distanz.ch>
- <cover.1297245277.git.tklauser@distanz.ch>
+	id S1753374Ab1BQTeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:34:14 -0500
+Date: Thu, 17 Feb 2011 11:33:03 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.38-rc4 (test_nx: BUG)
+Message-ID: <20110217193303.GS4000@outflux.net>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+ <20110209090804.5c1ecf8e.randy.dunlap@oracle.com>
+ <4D52CA98.2050100@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1297245277.git.tklauser@distanz.ch>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D52CA98.2050100@linux.intel.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 10:55:28AM +0100, Tobias Klauser wrote:
-> This patchset adds some updates to the altera_uart taken from the Nios2
-> Linux port (currently out-of-tree) repository, the most important one
-> probably being the added devicetree support.
-> 
-> Tobias Klauser (4):
->   tty: serial: altera_uart: Handle pdev->id == -1 in altera_uart_remove
->   tty: serial: altera_uart: Use port->regshift to store bus shift
->   tty: serial: altera_uart: Add devicetree support
->   MAINTAINERS: Add myself as a maintainer for
->     altera_uart/altera_jtaguart
+Hi Arjan,
 
-I've applied 3 of these patches, skipping the device tree patch, as it
-looks like you are going to rework it.
+On Wed, Feb 09, 2011 at 09:10:48AM -0800, Arjan van de Ven wrote:
+> On 2/9/2011 9:08 AM, Randy Dunlap wrote:
+> >test_nx BUGs.
+> >CONFIG_DEBUG_RODATA=y
+> >(nearly allmodconfig, with a few changes)
+> >
+> >Is that expected?
+> >
+> this test should pass...
+> so something broke it (I'll call that a success for the test ;-)
 
-thanks,
+I would suspect that the code in fudze_exception_table() isn't legal any
+more due to the RO patches. (i.e. I think test_nx.c needs to be updated.)
 
-greg k-h
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
