@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab1BQPCh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:02:37 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58344
+	id S1756623Ab1BQPCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:02:48 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58355
 	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756664Ab1BQPCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:02:32 -0500
-Date: Thu, 17 Feb 2011 15:03:42 +0000
+	id S932179Ab1BQPCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:02:39 -0500
+Date: Thu, 17 Feb 2011 15:03:49 +0000
 From: "Serge E. Hallyn" <serge@hallyn.com>
 To: "Serge E. Hallyn" <serge@hallyn.com>
 Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
@@ -17,9 +17,8 @@ Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
         dhowells@redhat.com
-Subject: [PATCH 6/9] user namespaces: convert all capable checks in
- kernel/sys.c
-Message-ID: <20110217150342.GF26395@mail.hallyn.com>
+Subject: [PATCH 7/9] add a user namespace owner of ipc ns
+Message-ID: <20110217150349.GG26395@mail.hallyn.com>
 References: <20110217150224.GA26334@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,214 +29,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows setuid/setgid in containers.  It also fixes some
-corner cases where kernel logic foregoes capability checks when
-uids are equivalent.  The latter will need to be done throughout
-the whole kernel.
-
 Changelog:
-	Jan 11: Use nsown_capable() as suggested by Bastian Blank.
-	Jan 11: Fix logic errors in uid checks pointed out by Bastian.
-	Feb 15: allow prlimit to current (was regression in previous version)
+	Feb 15: Don't set new ipc->user_ns if we didn't create a new
+		ipc_ns.
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 ---
- kernel/sys.c |   74 ++++++++++++++++++++++++++++++++++++---------------------
- 1 files changed, 47 insertions(+), 27 deletions(-)
+ include/linux/ipc_namespace.h |    3 +++
+ ipc/msgutil.c                 |    3 +++
+ ipc/namespace.c               |    9 +++++++--
+ kernel/nsproxy.c              |    5 +++++
+ 4 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 7a1bbad..075370d 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -118,17 +118,29 @@ EXPORT_SYMBOL(cad_pid);
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index 5195298..46d2eb4 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -24,6 +24,7 @@ struct ipc_ids {
+ 	struct idr ipcs_idr;
+ };
  
- void (*pm_power_off_prepare)(void);
++struct user_namespace;
+ struct ipc_namespace {
+ 	atomic_t	count;
+ 	struct ipc_ids	ids[3];
+@@ -56,6 +57,8 @@ struct ipc_namespace {
+ 	unsigned int    mq_msg_max;      /* initialized to DFLT_MSGMAX */
+ 	unsigned int    mq_msgsize_max;  /* initialized to DFLT_MSGSIZEMAX */
  
-+/* called with rcu_read_lock, creds are safe */
-+static inline int set_one_prio_perm(struct task_struct *p)
-+{
-+	const struct cred *cred = current_cred(), *pcred = __task_cred(p);
-+
-+	if (pcred->user->user_ns == cred->user->user_ns &&
-+	    (pcred->uid  == cred->euid ||
-+	     pcred->euid == cred->euid))
-+		return 1;
-+	if (ns_capable(pcred->user->user_ns, CAP_SYS_NICE))
-+		return 1;
-+	return 0;
-+}
++	/* user_ns which owns the ipc ns */
++	struct user_namespace *user_ns;
+ };
+ 
+ extern struct ipc_namespace init_ipc_ns;
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index f095ee2..d91ff4b 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -20,6 +20,8 @@
+ 
+ DEFINE_SPINLOCK(mq_lock);
+ 
++extern struct user_namespace init_user_ns;
 +
  /*
-  * set the priority of a task
-  * - the caller must hold the RCU read lock
-  */
- static int set_one_prio(struct task_struct *p, int niceval, int error)
+  * The next 2 defines are here bc this is the only file
+  * compiled when either CONFIG_SYSVIPC and CONFIG_POSIX_MQUEUE
+@@ -32,6 +34,7 @@ struct ipc_namespace init_ipc_ns = {
+ 	.mq_msg_max      = DFLT_MSGMAX,
+ 	.mq_msgsize_max  = DFLT_MSGSIZEMAX,
+ #endif
++	.user_ns = &init_user_ns,
+ };
+ 
+ atomic_t nr_ipc_ns = ATOMIC_INIT(1);
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index a1094ff..aa18899 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -11,10 +11,11 @@
+ #include <linux/slab.h>
+ #include <linux/fs.h>
+ #include <linux/mount.h>
++#include <linux/user_namespace.h>
+ 
+ #include "util.h"
+ 
+-static struct ipc_namespace *create_ipc_ns(void)
++static struct ipc_namespace *create_ipc_ns(struct ipc_namespace *old_ns)
  {
--	const struct cred *cred = current_cred(), *pcred = __task_cred(p);
- 	int no_nice;
+ 	struct ipc_namespace *ns;
+ 	int err;
+@@ -43,6 +44,9 @@ static struct ipc_namespace *create_ipc_ns(void)
+ 	ipcns_notify(IPCNS_CREATED);
+ 	register_ipcns_notifier(ns);
  
--	if (pcred->uid  != cred->euid &&
--	    pcred->euid != cred->euid && !capable(CAP_SYS_NICE)) {
-+	if (!set_one_prio_perm(p)) {
- 		error = -EPERM;
- 		goto out;
- 	}
-@@ -502,7 +514,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 	if (rgid != (gid_t) -1) {
- 		if (old->gid == rgid ||
- 		    old->egid == rgid ||
--		    capable(CAP_SETGID))
-+		    nsown_capable(CAP_SETGID))
- 			new->gid = rgid;
- 		else
- 			goto error;
-@@ -511,7 +523,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
- 		if (old->gid == egid ||
- 		    old->egid == egid ||
- 		    old->sgid == egid ||
--		    capable(CAP_SETGID))
-+		    nsown_capable(CAP_SETGID))
- 			new->egid = egid;
- 		else
- 			goto error;
-@@ -546,7 +558,7 @@ SYSCALL_DEFINE1(setgid, gid_t, gid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (capable(CAP_SETGID))
-+	if (nsown_capable(CAP_SETGID))
- 		new->gid = new->egid = new->sgid = new->fsgid = gid;
- 	else if (gid == old->gid || gid == old->sgid)
- 		new->egid = new->fsgid = gid;
-@@ -613,7 +625,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		new->uid = ruid;
- 		if (old->uid != ruid &&
- 		    old->euid != ruid &&
--		    !capable(CAP_SETUID))
-+		    !nsown_capable(CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -622,7 +634,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
- 		if (old->uid != euid &&
- 		    old->euid != euid &&
- 		    old->suid != euid &&
--		    !capable(CAP_SETUID))
-+		    !nsown_capable(CAP_SETUID))
- 			goto error;
- 	}
- 
-@@ -670,7 +682,7 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (capable(CAP_SETUID)) {
-+	if (nsown_capable(CAP_SETUID)) {
- 		new->suid = new->uid = uid;
- 		if (uid != old->uid) {
- 			retval = set_user(new);
-@@ -712,7 +724,7 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!capable(CAP_SETUID)) {
-+	if (!nsown_capable(CAP_SETUID)) {
- 		if (ruid != (uid_t) -1 && ruid != old->uid &&
- 		    ruid != old->euid  && ruid != old->suid)
- 			goto error;
-@@ -776,7 +788,7 @@ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
- 	old = current_cred();
- 
- 	retval = -EPERM;
--	if (!capable(CAP_SETGID)) {
-+	if (!nsown_capable(CAP_SETGID)) {
- 		if (rgid != (gid_t) -1 && rgid != old->gid &&
- 		    rgid != old->egid  && rgid != old->sgid)
- 			goto error;
-@@ -836,7 +848,7 @@ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
- 
- 	if (uid == old->uid  || uid == old->euid  ||
- 	    uid == old->suid || uid == old->fsuid ||
--	    capable(CAP_SETUID)) {
-+	    nsown_capable(CAP_SETUID)) {
- 		if (uid != old_fsuid) {
- 			new->fsuid = uid;
- 			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
-@@ -869,7 +881,7 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
- 
- 	if (gid == old->gid  || gid == old->egid  ||
- 	    gid == old->sgid || gid == old->fsgid ||
--	    capable(CAP_SETGID)) {
-+	    nsown_capable(CAP_SETGID)) {
- 		if (gid != old_fsgid) {
- 			new->fsgid = gid;
- 			goto change_okay;
-@@ -1177,8 +1189,11 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
- 	int errno;
- 	char tmp[__NEW_UTS_LEN];
- 
--	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
-+	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN)) {
-+		printk(KERN_NOTICE "%s: did not have CAP_SYS_ADMIN\n", __func__);
- 		return -EPERM;
-+	}
-+	printk(KERN_NOTICE "%s: did have CAP_SYS_ADMIN\n", __func__);
- 	if (len < 0 || len > __NEW_UTS_LEN)
- 		return -EINVAL;
- 	down_write(&uts_sem);
-@@ -1226,7 +1241,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- 	int errno;
- 	char tmp[__NEW_UTS_LEN];
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
- 		return -EPERM;
- 	if (len < 0 || len > __NEW_UTS_LEN)
- 		return -EINVAL;
-@@ -1341,6 +1356,8 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
- 	rlim = tsk->signal->rlim + resource;
- 	task_lock(tsk->group_leader);
- 	if (new_rlim) {
-+		/* Keep the capable check against init_user_ns until
-+		   cgroups can contain all limits */
- 		if (new_rlim->rlim_max > rlim->rlim_max &&
- 				!capable(CAP_SYS_RESOURCE))
- 			retval = -EPERM;
-@@ -1384,19 +1401,22 @@ static int check_prlimit_permission(struct task_struct *task)
- {
- 	const struct cred *cred = current_cred(), *tcred;
- 
--	tcred = __task_cred(task);
--	if (current != task &&
--	    (cred->uid != tcred->euid ||
--	     cred->uid != tcred->suid ||
--	     cred->uid != tcred->uid  ||
--	     cred->gid != tcred->egid ||
--	     cred->gid != tcred->sgid ||
--	     cred->gid != tcred->gid) &&
--	     !capable(CAP_SYS_RESOURCE)) {
--		return -EPERM;
--	}
-+	if (current == task)
-+		return 0;
- 
--	return 0;
-+	tcred = __task_cred(task);
-+	if (cred->user->user_ns == tcred->user->user_ns &&
-+	    (cred->uid == tcred->euid &&
-+	     cred->uid == tcred->suid &&
-+	     cred->uid == tcred->uid  &&
-+	     cred->gid == tcred->egid &&
-+	     cred->gid == tcred->sgid &&
-+	     cred->gid == tcred->gid))
-+		return 0;
-+	if (ns_capable(tcred->user->user_ns, CAP_SYS_RESOURCE))
-+		return 0;
++	ns->user_ns = old_ns->user_ns;
++	get_user_ns(ns->user_ns);
 +
-+	return -EPERM;
+ 	return ns;
  }
  
- SYSCALL_DEFINE4(prlimit64, pid_t, pid, unsigned int, resource,
+@@ -50,7 +54,7 @@ struct ipc_namespace *copy_ipcs(unsigned long flags, struct ipc_namespace *ns)
+ {
+ 	if (!(flags & CLONE_NEWIPC))
+ 		return get_ipc_ns(ns);
+-	return create_ipc_ns();
++	return create_ipc_ns(ns);
+ }
+ 
+ /*
+@@ -105,6 +109,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
+ 	 * order to have a correct value when recomputing msgmni.
+ 	 */
+ 	ipcns_notify(IPCNS_REMOVED);
++	put_user_ns(ns->user_ns);
+ }
+ 
+ /*
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 034dc2e..b6dbff2 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -85,6 +85,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		err = PTR_ERR(new_nsp->ipc_ns);
+ 		goto out_ipc;
+ 	}
++	if (new_nsp->ipc_ns != tsk->nsproxy->ipc_ns) {
++		put_user_ns(new_nsp->ipc_ns->user_ns);
++		new_nsp->ipc_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
++		get_user_ns(new_nsp->ipc_ns->user_ns);
++	}
+ 
+ 	new_nsp->pid_ns = copy_pid_ns(flags, task_active_pid_ns(tsk));
+ 	if (IS_ERR(new_nsp->pid_ns)) {
 -- 
 1.7.0.4
 
