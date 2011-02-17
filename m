@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab1BQTMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:12:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43833 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754543Ab1BQTMl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:12:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <m1pqqqfpzh.fsf@fess.ebiederm.org>
-References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
- <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
- <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
- <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
- <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Feb 2011 11:11:51 -0800
-Message-ID: <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756849Ab1BQTXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:23:20 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:6724 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab1BQTXT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:23:19 -0500
+Date: Thu, 17 Feb 2011 20:23:07 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, lm-sensors@lm-sensors.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: (k10temp) add support for AMD Family 12h/14h 
+ CPUs
+Message-ID: <20110217202307.7281f403@endymion.delvare>
+In-Reply-To: <20110217183934.GB20387@ericsson.com>
+References: <4D5CDAD0.7030006@ladisch.de>
+	<20110217172639.GA19982@ericsson.com>
+	<20110217190838.381962f6@endymion.delvare>
+	<20110217183934.GB20387@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 10:57 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->
-> fedora 14
-> ext4 on all filesystems
+On Thu, 17 Feb 2011 10:39:34 -0800, Guenter Roeck wrote:
+> On Thu, Feb 17, 2011 at 01:08:38PM -0500, Jean Delvare wrote:
+> > On Thu, 17 Feb 2011 09:26:39 -0800, Guenter Roeck wrote:
+> > > On Thu, Feb 17, 2011 at 03:22:40AM -0500, Clemens Ladisch wrote:
+> > > > Add the PCI ID to support the internal temperature sensor of the
+> > > > AMD "Llano" and "Brazos" processor families.
+> > > > 
+> > > > Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+> > > 
+> > > Applied, thanks.
+> > > 
+> > > Since it meets the requirements for a stable patch, I applied it to the
+> > > patch list for 2.6.38 and added Cc: stable@kernel.org.
+> > 
+> > Can we have a sensors-detect patch too?
+> > 
+> Prepared that, but I am getting the following from the ddr3 patch.
+> 
+> prog/detect/sensors-detect
+> Useless use of private variable in void context at prog/detect/sensors-detect line 5287.
+> 
+> Code is
+> 	} elsif ($device_type => 9 && $device_type <= 11) {
+> 
+> Should that be 
+> 	} elsif ($device_type >= 9 && $device_type <= 11) {
+> instead ?
 
-Your dmesg snippets had ext3 mentioned, though:
+Yes, you're totally right.
 
-  <6>EXT3-fs (sda1): recovery required on readonly filesystem
-  <6>EXT3-fs (sda1): write access will be enabled during recovery
-  <6>EXT3-fs: barriers not enabled
-  ..
-  <6>EXT3-fs (sda1): recovery complete
-  <6>EXT3-fs (sda1): mounted filesystem with ordered data mode
-  <6>dracut: Mounted root filesystem /dev/sda1
+> Odd, I didn't notice that before when I tried the ddr3 patch.
 
-not that I see that it should matter, but there's been some bigger
-ext3 changes too (like the batched discard).
+This is the part I modified from Clemens' original patch. What's really
+odd is that I didn't notice the warning on my end. I see it now...
+Sorry, I've just fixed it.
 
-I don't really think ext3 is the issue, though.
-
-> I was about to say this happens with DEBUG_PAGEALLOC enabled but it
-> appears that options keeps eluding my fingers when I have a few minutes
-> to play with it.  Perhaps this time will be the charm.
-
-Please do. You seem to be much better at triggering it than anybody
-else. And do the DEBUG_LIST and DEBUG_SLUB_ON things too (even if the
-DEBUG_LIST thing won't catch list_move())
-
-                      Linus
+-- 
+Jean Delvare
