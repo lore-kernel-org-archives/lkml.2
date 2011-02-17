@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757900Ab1BQTph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:45:37 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33496 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757887Ab1BQTpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:45:36 -0500
-Date: Thu, 17 Feb 2011 11:45:12 -0800
-From: Greg KH <gregkh@suse.de>
-To: J Freyensee <james_p_freyensee@linux.intel.com>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        suhail.ahmed@intel.com
-Subject: Re: [PATCH 04/12] PTI Kconfig change in misc.
-Message-ID: <20110217194512.GA31725@suse.de>
-References: <james_p_freyensee@linux.intel.com>
- <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
- <20110217192038.GB29448@kroah.com>
- <1297971351.3038.22.camel@localhost>
+	id S1757344Ab1BQTvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:51:20 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35073 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab1BQTvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:51:17 -0500
+Date: Thu, 17 Feb 2011 20:51:15 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] fix Steven's Copyright typos
+Message-ID: <20110217195115.GR22310@pengutronix.de>
+References: <1295899921-11333-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <alpine.LNX.2.00.1102171642100.2160@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1297971351.3038.22.camel@localhost>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LNX.2.00.1102171642100.2160@pobox.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 11:35:51AM -0800, J Freyensee wrote:
-> On Thu, 2011-02-17 at 11:20 -0800, Greg KH wrote:
-> > On Tue, Feb 08, 2011 at 11:34:49AM -0800, james_p_freyensee@linux.intel.com wrote:
-> > > From: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > 
-> > > This adds the Intel PTI Kconfig option.
-> > > 
-> > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > ---
-> > >  drivers/misc/Kconfig |   12 ++++++++++++
-> > >  1 files changed, 12 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> > > index 4d073f1..f8076f1 100644
-> > > --- a/drivers/misc/Kconfig
-> > > +++ b/drivers/misc/Kconfig
-> > > @@ -136,6 +136,18 @@ config PHANTOM
-> > >  	  If you choose to build module, its name will be phantom. If unsure,
-> > >  	  say N here.
-> > >  
-> > > +config INTEL_MID_PTI
-> > 
-> > Don't add new Kconfig options when there is no code for it yet to use
-> > it.  Merge this with the Makefile patch.
-> > 
+Hi Jiri,
+
+On Thu, Feb 17, 2011 at 04:42:56PM +0100, Jiri Kosina wrote:
+> On Mon, 24 Jan 2011, Uwe Kleine-König wrote:
 > 
-> I do not quite understand the problem.  The code for this Kconfig is
-> ~/drivers/misc/pti.c and it was patch 3/12.  I tested that in 'make
-> menuconfig' the kernel turns the compile option on and off fine.
+> > OK, the copyright allows you to write a copy, still I think the lawyers
+> > prefer the correct spelling.
+> > 
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > ---
+> >  scripts/kconfig/streamline_config.pl |    2 +-
+> >  tools/testing/ktest/ktest.pl         |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
+> > index fd81fc3..a4fe923 100644
+> > --- a/scripts/kconfig/streamline_config.pl
+> > +++ b/scripts/kconfig/streamline_config.pl
+> > @@ -1,6 +1,6 @@
+> >  #!/usr/bin/perl -w
+> >  #
+> > -# Copywrite 2005-2009 - Steven Rostedt
+> > +# Copyright 2005-2009 - Steven Rostedt
+> >  # Licensed under the terms of the GNU GPL License version 2
+> >  #
+> >  #  It's simple enough to figure out how this works.
+> > diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+> > index e1c62ee..ba7c63a 100755
+> > --- a/tools/testing/ktest/ktest.pl
+> > +++ b/tools/testing/ktest/ktest.pl
+> > @@ -1,6 +1,6 @@
+> >  #!/usr/bin/perl -w
+> >  #
+> > -# Copywrite 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
+> > +# Copyright 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
+> >  # Licensed under the terms of the GNU GPL License version 2
+> >  #
 > 
-> What needs to be fixed here?
+> I prefer not to fiddle with anything surrounding the Copyright lines 
+> without explicit permission of the copyright holder.
+the patch is already in tip
 
-Merge it with your Makefile patch, it doesn't need to be separate.
+Thanks
+Uwe
 
-thanks,
 
-greg k-h
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
