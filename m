@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab1BQUe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:34:56 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23183 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab1BQUez (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:34:55 -0500
-Date: Thu, 17 Feb 2011 21:33:56 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Matthias Schwarzott <zzam@gentoo.org>
-cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [Patch] Zarlink zl10036 DVB-S: Fix mem leak in zl10036_attach
-In-Reply-To: <201102172054.12773.zzam@gentoo.org>
-Message-ID: <alpine.LNX.2.00.1102172130360.17697@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net> <201102172054.12773.zzam@gentoo.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757648Ab1BQUih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:38:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41558 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067Ab1BQUig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:38:36 -0500
+Date: Thu, 17 Feb 2011 21:29:59 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: akpm@linux-foundation.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, xemul@openvz.org, sukadev@us.ibm.com,
+        ebiederm@xmission.com
+Subject: Re: [PATCH 2/2] pidns: Support unsharing the pid namespace.
+Message-ID: <20110217202959.GA16076@redhat.com>
+References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr> <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr> <20110215190118.GA16707@redhat.com> <4D5C6219.8060207@free.fr>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5C6219.8060207@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Feb 2011, Matthias Schwarzott wrote:
+On 02/17, Daniel Lezcano wrote:
+>
+> On 02/15/2011 08:01 PM, Oleg Nesterov wrote:
+>>
+>> I have to admit, I can't say I like this very much. OK, if we need
+>> this, can't we just put something into, say, signal->flags so that
+>> copy_process can check and create the new namespace.
+>>
+>> Also. I remember, I already saw something like this and google found
+>> my questions. I didn't actually read the new version, perhaps my
+>> concerns were already answered...
+>>
+>> 	But what if the task T does unshare(CLONE_NEWPID) and then, say,
+>> 	pthread_create() ? Unless I missed something, the new thread won't
+>> 	be able to see T ?
+>
+> Right. Is it really a problem ? I mean it is a weird use case where we
+> fall in a weird situation.
 
-> On Sunday 06 February 2011, Jesper Juhl wrote:
-> > If the memory allocation to 'state' succeeds but we jump to the 'error'
-> > label before 'state' is assigned to fe->tuner_priv, then the call to
-> > 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
-> > only what was previously assigned to 'tuner_priv', thus leaking the memory
-> > allocated to 'state'.
-> > There are may ways to fix this, including assigning the allocated memory
-> > directly to 'fe->tuner_priv', but I did not go for that since the
-> > additional pointer derefs are more expensive than the local variable, so I
-> > just added a 'kfree(state)' call. I guess the call to 'zl10036_release'
-> > might not even be needed in this case, but I wasn't sure, so I left it in.
-> > 
-> Yeah, that call to zl10036_release can be completely eleminated.
-> Another thing is: jumping to the error label only makes sense when memory was 
-> already allocated. So the jump in line 471 can be replaced by "return NULL", 
-> as the other error handling before allocation:
->         if (NULL == config) {
->                 printk(KERN_ERR "%s: no config specified", __func__);
->                 goto error;
->         }
-> 
-> I suggest to improve the patch to clean the code up when changing that.
-> 
-> But I am fine with commiting this patch also if you do not want to change it.
-> 
+But this is really weird! How it is possible that the parent can't see
+its own child? No matter which thread did fork(), the new process is
+the child of any sub-thread. More precisely, it is the child of thread
+group.
 
-Thank you for your feedback. It makes a lot of sense.
-Changing it is not a problem :)
-How about the updated patch below?
+> I suppose we can do the same weird combination with clone.
 
+No, or we have the bug. If nothing else, kill() or wait() should work
+equally for any sub-thread. (OK, __WNOTHREAD hack is the only exception).
 
-If the memory allocation to 'state' succeeds but we jump to the 'error' 
-label before 'state' is assigned to fe->tuner_priv, then the call to 
-'zl10036_release(fe)' at the 'error:' label will not free 'state', but 
-only what was previously assigned to 'tuner_priv', thus leaking the memory 
-allocated to 'state'.
-This patch fixes the leak and also does not jump to 'error:' before mem 
-has been allocated but instead just returns. Also some small style 
-cleanups.
+>> 	and, in this case the exiting sub-namespace init also kills its
+>> 	parent?
+>
+> I don't think so because the zap_pid_ns_processes does not hit the
+> parent process when it browses the pidmap.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- zl10036.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+OK... Honestly, right now I can't understand my own question, it was
+written a long ago. Probably I missed something.... but I'll recheck ;)
 
-diff --git a/drivers/media/dvb/frontends/zl10036.c b/drivers/media/dvb/frontends/zl10036.c
-index 4627f49..81aa984 100644
---- a/drivers/media/dvb/frontends/zl10036.c
-+++ b/drivers/media/dvb/frontends/zl10036.c
-@@ -463,16 +463,16 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
- 				    const struct zl10036_config *config,
- 				    struct i2c_adapter *i2c)
- {
--	struct zl10036_state *state = NULL;
-+	struct zl10036_state *state;
- 	int ret;
- 
--	if (NULL == config) {
-+	if (!config) {
- 		printk(KERN_ERR "%s: no config specified", __func__);
--		goto error;
-+		return NULL;
- 	}
- 
- 	state = kzalloc(sizeof(struct zl10036_state), GFP_KERNEL);
--	if (NULL == state)
-+	if (!state)
- 		return NULL;
- 
- 	state->config = config;
-@@ -507,7 +507,7 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
- 	return fe;
- 
- error:
--	zl10036_release(fe);
-+	kfree(state);
- 	return NULL;
- }
- EXPORT_SYMBOL(zl10036_attach);
+>> 	OK, suppose it does fork() after unshare(), then another fork().
+>> 	In this case the second child lives in the same namespace with
+>> 	init created by the 1st fork, but it is not descendant ? This means
+>> 	in particular that if the new init exits, zap_pid_ns_processes()->
+>> 	do_wait() can't work.
+>
+> Hmm, good question. IMO, we should prevent such case for now in the same
+> way we added the flag 'dead', IOW adding a flag 'busy' for example.
 
+I dunno.
 
+As I said, I do not like this approach at all. But please feel free to
+ignore, it is very easy to blaim somebody else's code without suggesting
+the alternative ;)
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Oleg.
 
