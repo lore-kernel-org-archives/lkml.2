@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab1BQRC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:02:57 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35035 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab1BQRCz convert rfc822-to-8bit (ORCPT
+	id S932246Ab1BQRDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:03:23 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:62880 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab1BQRDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:02:55 -0500
+	Thu, 17 Feb 2011 12:03:19 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH 11/12] unicore32 machine related files: ps2 driver
+Date: Thu, 17 Feb 2011 18:03:15 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        "'Greg KH'" <greg@kroah.com>
+References: <015701cbcdae$7d5f43f0$781dcbd0$@mprc.pku.edu.cn>
+In-Reply-To: <015701cbcdae$7d5f43f0$781dcbd0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-In-Reply-To: <20110217113102.GB11260@www.tglx.de>
-References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de>
- <1295843342-1122-3-git-send-email-bigeasy@linutronix.de> <20110216213126.GC22837@angua.secretlab.ca>
- <20110217113102.GB11260@www.tglx.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 17 Feb 2011 10:02:34 -0700
-X-Google-Sender-Auth: R-YUG7WnIz2dM1v1CZxSPhmu_n4
-Message-ID: <AANLkTinh85A_1rJ+JcLVR4fpN5A2iuWv4BfZ0h7FP6Yr@mail.gmail.com>
-Subject: Re: [sodaville] [PATCH TIP 02/14] x86: Add device tree support
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: sodaville@linutronix.de, devicetree-discuss@lists.ozlabs.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102171803.15785.arnd@arndb.de>
+X-Provags-ID: V02:K0:n1Y4Ta/Tb5VcOFMG/pS7Ci8oxoEw63HHQxcpdIuyn1B
+ d6Z/YCmhIMJUM1RYe1ePhNlhJ/X4EiJeWgmuZWHJ8/NC7CcKXL
+ jFM9TB7n8b6ky5+w1f7NxCmwVq9AVwpWgLJdHinhnm755G15XF
+ 1XgPp2UOEaMHzUQQlG3MppDGyukKRA2+Nu07AHQsEaUdXU4vmE
+ QqorHpmR909lDSCsiB5QA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 4:31 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> * Grant Likely | 2011-02-16 14:31:26 [-0700]:
->
->>> +config X86_OF
->>> +    bool "Support for device tree"
->>> +    select OF
->>> +    select OF_EARLY_FLATTREE
->>> +    ---help---
->>> +      Device tree support on X86.
->>> +
->>
->>On ARM and MIPS, this is called 'config USE_OF'.  It would be nice to have
->>some commonality.  Maybe I should move the user-visible option to
->>drivers/of/Kconfig.  Or perhaps I should just make CONFIG_OF itself
->>user visible.
->>
->>thoughts?
->
-> We could make CONFIG_OF depend on CONFIG_HAVE_OF_SUPPORT and let OF
-> select OF_EARLY_FLATTREE if ARCH_WANT_EARLY_FLATTREE for instance. So
-> that part would work in a generic way.
->
-> For OF-only platforms you would have to go to drivers/of
-> before you can enable the specific SoC/board. So it could lead to
-> something like "first enable scsi disk before you can enable usb
-> storage".
+On Wednesday 16 February 2011, Guan Xuetao wrote:
+> +/*
+> + * Register numbers.
+> + */
+> +#define I8042_COMMAND_REG      ((unsigned long)&PS2_COMMAND)
+> +#define I8042_STATUS_REG       ((unsigned long)&PS2_STATUS)
+> +#define I8042_DATA_REG         ((unsigned long)&PS2_DATA)
+> +
+> +static inline int i8042_read_data(void)
+> +{
+> +       return inb(I8042_DATA_REG);
+> +}
+> +
+> +static inline int i8042_read_status(void)
+> +{
+> +       return inb(I8042_STATUS_REG);
+> +}
+> +
 
-That's definitely not desirable.  Currently ARM and MIPS boards that
-need it are force-selecting USE_OF which pretty much solves the
-problem.  The option is always user-
->
-> I like it :) For now I rename to USE_OF.
+This is not a correct way to use inb()/outb(), as far as I can tell:
+PS2_COMMAND is an mmio pointer (or should be, see my other message).
 
-okay.
+inb() however is only defined on PCI/ISA PIO port numbers, which
+are in the range between 0 and 65535, and typically get mapped
+into the memory from the PCI driver.
 
-g.
+	Arnd
