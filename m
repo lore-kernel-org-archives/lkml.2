@@ -1,166 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1BQDuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 22:50:06 -0500
-Received: from smtp.scorch.co.nz ([27.110.127.199]:34167 "HELO scorch.co.nz"
+	id S1754541Ab1BQEWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 23:22:20 -0500
+Received: from smtp.scorch.co.nz ([27.110.127.199]:34278 "HELO scorch.co.nz"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753758Ab1BQDuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 22:50:00 -0500
+	id S1752290Ab1BQEWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 23:22:18 -0500
 X-Virus-Checked: Checked by ClamAV on scorch.co.nz
 From: Charles Manning <manningc2@actrix.gen.nz>
-To: Ryan Mallon <ryan@bluewatersys.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
-Date: Thu, 17 Feb 2011 16:49:57 +1300
+Date: Thu, 17 Feb 2011 17:22:15 +1300
 User-Agent: KMail/1.9.10
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
-References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102171531.03924.manningc2@actrix.gen.nz> <4D5C8D62.4060809@bluewatersys.com>
-In-Reply-To: <4D5C8D62.4060809@bluewatersys.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, ryan@bluewatersys.com,
+        akpm@linux-foundation.org
+References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102171531.03924.manningc2@actrix.gen.nz> <20110217034914.GB5194@opensource.wolfsonmicro.com>
+In-Reply-To: <20110217034914.GB5194@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-Id: <201102171649.57457.manningc2@actrix.gen.nz>
+Message-Id: <201102171722.15683.manningc2@actrix.gen.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 February 2011 15:52:18 Ryan Mallon wrote:
-> On 17/02/11 15:31, Charles Manning wrote:
+On Thursday 17 February 2011 16:49:14 Mark Brown wrote:
+> On Thu, Feb 17, 2011 at 03:31:03PM +1300, Charles Manning wrote:
 > > On Thursday 17 February 2011 14:48:08 Mark Brown wrote:
-> >> On Thu, Feb 17, 2011 at 11:12:06AM +1300, Charles Manning wrote:
-> >>> On Wednesday 16 February 2011 21:04:20 Christoph Hellwig wrote:
-> >>>> The procfs interfaces should be replaced by something saner,
-> >>>> the insane amount of ad-hoc tracing crap should be replaced by much
-> >>>> less strategically placed trace events, and all those stupid compile
-> >>>> time options have absolutely no business at all beeing there for a
-> >>>> filesystem -
-> >>>
-> >>> Why not?
-> >>>
-> >>>> remember you can get media from all over the place.
-> >>>
-> >>> No you can't. This is a flash file system for soldered down flash. I
-> >>> think that is a fundamental place where your understanding of what
-> >>> yaffs is falls down.
-> >
-> > I'm not sure I really understand what Christoph means by "get media from
-> > all over the place". I took that to mean he thinks people will pug in
-> > random flash cards and would need to fiddle with options to make them
-> > work. That would of course suck badly.
-> >
-> > That is obviously not the case for a flash file system used on hard-wired
-> > flash where the system integrator is in control. Users don't get to
-> > fiddle.
-> >
-> >> Even for embedded systems people do end up wanting to do things like
-> >> using the same kernel on multiple systems which may have different
-> >> hardware configurations (distros and reference boards are the obvious
-> >> examples, but I've worked on systems where multiple generations and
-> >> builds of the product were in active use and similar enough to be
-> >> maintained from the same kernel).  Even with single system kernels
-> >> there's still an issue with things like reference boards where users are
-> >> doing things like picking up a new upstream kernel rather than the
-> >> vendor BSP.
+> > > On Thu, Feb 17, 2011 at 11:12:06AM +1300, Charles Manning wrote:
+> > >
+> > > Even for embedded systems people do end up wanting to do things like
+> > > using the same kernel on multiple systems which may have different
+> > > hardware configurations (distros and reference boards are the obvious
+> > > examples, but I've worked on systems where multiple generations and
+> > > builds of the product were in active use and similar enough to be
+> > > maintained from the same kernel).  Even with single system kernels
+> > > there's still an issue with things like reference boards where users
+> > > are doing things like picking up a new upstream kernel rather than the
+> > > vendor BSP.
 > >
 > > Every one of the "stupid compile time options" is there because someone
 > > that actually **uses** yaffs wanted it. None are there just for fun. The
+>
+> The fact that users have asked for something doesn't mean that the
+> particular implementation that was chosen to meet the need makes sense.
+> Having lots of compile time options is terribly common in many embedded
+> systems but that doesn't mean it's a good idea to do things this way.
+>
 > > compile-time switches are very limited - mostly just there to set up
 > > default runtime flags that can be overridden at runtime. Some of them are
 > > there to work around bugs and limitations in the mtd.
 >
-> The Kconfig options which are can be overridden by runtime flags should
-> simply be removed. Pick a default and stick with it. Existing users will
-> either have to modify their mount flags to suit, continuing using an old
-> version, or patch the yaffs code themselves.
->
-> It's also possibly worth removing some of the more esoteric options such
-> as the ECC options at least for the first attempt at getting Yaffs into
-> mainline. It will make it easier to get the code accepted, and if enough
-> users complain that the feature is not there a sensible way to patch it
-> in can be added later.
+> If these are just setting overridable defaults then that sounds like
+> stuff that doesn't need to be in the kernel in the first place, they're
+> just as trivial to tweak in userspace as with in kernel defines..  For the
+> hardware workarounds having this in the kernel seems reasonable, we just
+> need to figure out a way to propagate it from the machine driver to the
+> filesystem.
 
-Ok. It is easy enough to strip out the Kconfigs and some compile time flags to 
-make two versions: one to match the vfs-glue being mainlined and another for 
-the patch-in.sh version.
-
->
-> I think the downside at the moment is that it is getting less and less
-> likely that you can maintain a single yaffs codebase and get it merged
-> into mainline. I really think you are going to need to fork the code.
-
-
-The part I struggle with is that if I fork the code to keep a full featured 
-code base (that real integrators want) in yaffs.net git and a stripped 
-version that is accepted into the kernel (but lacks what real integrators 
-want), then that is a waste of effort. It is pointless putting something into 
-the kernel if anyone really wanting to use yaffs has to do what they do now 
-and patch in a "full fat" out of tree version.
-
-So far the objections can be broadly classified as follows:
-
-(A) Stuff that is clearly wrong or taste issues that should be fixed and is 
-easy to do (eg. some of the odd-ball code you have pointed out). Even some of 
-the configs could be sorted with this too).
-
-(B)  Stuff that is there and is useful and real integrators tell me they want 
-to see kept (eg the tracing stuff) but unfortunately some kernel folk don't 
-like.
-
-(C) Stuff which would potentially improve the performance - but perhaps not as 
-much many think - and is a hell of a lot of work to do (eg. moving away from 
-single locking).
-
-I really have no objections to (A). (C) would just take time, effort and 
-motivation but can be done. 
-
-(B) seems counter productive. It is more important, IMHO, to have yaffs being 
-useful rather than mainlined. Getting a "yaffs-lite" into the kernel seems 
-like a very hollow victory.
+Ok. I have no problems dumping all the compile switches that set up defaults 
+or work around mtd bugs. If it is mainlined then this implies that mtd 
+breakage will be fixed in the mtd - something that was not possible in the 
+out-of-kernel code.
 
 > > Even with BSPs, there will often be some board tuning to, do things like
 > > set up the mtd partitions.
 > >
 > > Picking up an new kernel is easy, so long as the mtd code has not been
 > > broken in the interum.
-> >
-> > Last week I dropped the yaffs code into an omap3 build of 2.6.37 with no
-> > fiddling and with default settings and it "just worked".
 >
-> Mark is talking about the case where you have a single kernel which can
-> be run on multiple boards/platforms. This is becoming increasingly
-> common for development and testing purposes. Because some of the yaffs
-> config options are compile time only selectable, it may not be possible
-> to support yaffs correctly on multiple boards in a single kernel. 
+> You're missing the use case here - I'm talking about the situation where
+> you completely ignore the vendor BSP and go direct to mainline without
+> reference to the vendor provided stuff.  The user may not even have the
+> vendor provided BSP to look at.
 
+I don't understand what problem you are trying to illustrate.
 
-It is certainly possible. No problems at all. Balloon does that and I thought 
-Bluewater do too. Same for running up yaffs in an omap multi-board kernel. I 
-dropped yaffs into am omap build using defaults and everything "just works" 
-on the boards I tested on.
+First off, kernel BSPs should always be available in accordance with the GPL.
 
-Same for running on a PC using nandsim. Just compile with defaults and drop it 
-in and it will work with any nandsim configuration by sniffing the mtd 
-partition info and setting things up accordingly.
+Secondly the defaults work for just about every case. So long as the mtd has 
+been set up then dropping in yaffs using defaults is generally pretty 
+straight forward and there is no tuning required,
 
-> This 
-> is why it is much more ideal for config options to be mount flags.
+Some tuning is required if the mtd does not pass through all the info that is 
+required. In the fullness of time I would expect that this info would be 
+provided by mtd.
 
-It would be better if those were info passed through mtd (or determined from 
-mtd) so that the flags were not needed. I'll have a look at what can be 
-sorted at runtime.
+>
+> > > I'm not sure exactly how you'd do this for a filesystem but this is
+> > > starting to sound a lot like platform data...  Though presumably if the
+> > > data isn't stored on the device currently it'd be a simple matter of
+> > > programming (if wasteful) to add it.
+> >
+> > NB flash file system - not file system! Working via mtd is different to
+> > working via blocks.
+>
+> I do have *some* familiarity with embedded systems. 
 
-The compile flags that set defaults  are there to provide flexibility, but I 
-can get rid of those easy enough.
+My point was that the "platform data" -- well just about all of it -- is 
+exposed via the mtd interface. That tells you the number of blocks, block 
+size, bytes per block etc. Enough to figure out almost all the runtime stuff.
 
-What is the really hard is getting rid of the single locking (estimate the 
-thick end of a month of work). That is the really hard part.
+> The fact that the 
+> device is a flash device doesn't stop you recording metadata on it -
+> obviously you've got some data on there to record the metadata for stuff
+> like directory layout.  If some of this is needed to even read the 
+> device then it can't go on the device, but otherwise it could be
+> included somehow.
 
-Stripping out the tracing is easy enough but pointless if people (ie those 
-actually using yaffs) really want it. Same for the proc interface (though 
-that could be moved to sysfs).
+At this stage yaffs does not really need or use a "superblock" (and it does 
+not store directories). Superblocks are bad in that they provide a single 
+point of failure.
+
+I think I can dump all the config stuff and just set it to the most useful 
+defaults. Many of the settings are really only there for debug etc.
+
+Having looked through the Kconfig I reckon I can cut that and the associated 
+#ifs back to:
+CONFIG_YAFFS_FS
+and add a new one to strip debugging
+CONFIG_YAFFS_DEBUG
 
 -- Charles
+
+
+
+
+
+
 
