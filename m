@@ -1,218 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab1BQLPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 06:15:21 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55803 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015Ab1BQLPQ (ORCPT
+	id S1755593Ab1BQLQO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 06:16:14 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:24148 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab1BQLQL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 06:15:16 -0500
+	Thu, 17 Feb 2011 06:16:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=csVcLvzh3huxfchtYwayR4m2CITK/ontuyyBL9Nm6RACIBedtIP7TPwKDmoxmtLFwy
-         3Qro/E8Fn8RRMYyxPPshAxbMrYHkG1r1MQoI0qlG7JnP/IzqTtAsEgJAqbZUyyMHaZsR
-         /BaILW25RWHUo2T20jRWY4JfivDJga2QRdzbk=
-Date: Thu, 17 Feb 2011 12:15:11 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jan Beulich <JBeulich@novell.com>, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: [PATCH v2.6.38-rc5 1/2] block: add @force_kblockd to
- __blk_run_queue()
-Message-ID: <20110217111511.GQ19830@htj.dyndns.org>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gjj4zLsBxr+hfqZpolZNb0jFm37L+AYFbYC3NqtluNLlYCEpvp4qhpW+irSWld1Lff
+         gUQCQFXoDv2WUh38OgXQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1297875452.2413.453.camel@twins>
+References: <4d590250.114ddf0a.689e.4482@mx.google.com>
+	<tip-e5d1367f17ba6a6fed5fd8b74e4d5720923e0c25@git.kernel.org>
+	<1297875452.2413.453.camel@twins>
+Date: Thu, 17 Feb 2011 12:16:08 +0100
+Message-ID: <AANLkTimM6+gBWGZmbV9VFq76KR-UtsW==HmSEPZmSRyG@mail.gmail.com>
+Subject: Re: [tip:perf/core] perf: Add cgroup support
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__blk_run_queue() automatically either calls q->request_fn() directly
-or schedules kblockd depending on whether the function is recursed.
-blk-flush implementation needs to be able to explicitly choose
-kblockd.  Add @force_kblockd.
+Peter,
 
-All the current users are converted to specify %false for the
-parameter and this patch doesn't introduce any behavior change.
+On Wed, Feb 16, 2011 at 5:57 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2011-02-16 at 13:46 +0000, tip-bot for Stephane Eranian wrote:
+>> +static inline struct perf_cgroup *
+>> +perf_cgroup_from_task(struct task_struct *task)
+>> +{
+>> +       return container_of(task_subsys_state(task, perf_subsys_id),
+>> +                       struct perf_cgroup, css);
+>> +}
+>
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> include/linux/cgroup.h:547 invoked rcu_dereference_check() without protection!
+> other info that might help us debug this:
+> rcu_scheduler_active = 1, debug_locks = 1
+> 1 lock held by perf/1774:
+>  #0:  (&ctx->lock){......}, at: [<ffffffff810afb91>] ctx_sched_in+0x2a/0x37b
+> stack backtrace:
+> Pid: 1774, comm: perf Not tainted 2.6.38-rc5-tip+ #94017
+> Call Trace:
+>  [<ffffffff81070932>] ? lockdep_rcu_dereference+0x9d/0xa5
+>  [<ffffffff810afc4e>] ? ctx_sched_in+0xe7/0x37b
+>  [<ffffffff810aff37>] ? perf_event_context_sched_in+0x55/0xa3
+>  [<ffffffff810b0203>] ? __perf_event_task_sched_in+0x20/0x5b
+>  [<ffffffff81035714>] ? finish_task_switch+0x49/0xf4
+>  [<ffffffff81340d60>] ? schedule+0x9cc/0xa85
+>  [<ffffffff8110a84c>] ? vfsmount_lock_global_unlock_online+0x9e/0xb0
+>  [<ffffffff8110b556>] ? mntput_no_expire+0x4e/0xc1
+>  [<ffffffff8110b5ef>] ? mntput+0x26/0x28
+>  [<ffffffff810f2add>] ? fput+0x1a0/0x1af
+>  [<ffffffff81002eb9>] ? int_careful+0xb/0x2c
+>  [<ffffffff813432bf>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>  [<ffffffff81002ec7>] ? int_careful+0x19/0x2c
+>
+>
+I have lockedp enabled in my kernel and during all my tests
+I never saw this warning. How did you trigger this?
 
-stable: This is prerequisite for fixing ide oops caused by the new
-        blk-flush implementation.
+> The simple fix seemed to be to add:
+>
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index a0a6987..e739e6f 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -204,7 +204,8 @@ __get_cpu_context(struct perf_event_context *ctx)
+>  static inline struct perf_cgroup *
+>  perf_cgroup_from_task(struct task_struct *task)
+>  {
+> -       return container_of(task_subsys_state(task, perf_subsys_id),
+> +       return container_of(task_subsys_state_check(task, perf_subsys_id,
+> +                               lockdep_is_held(&ctx->lock)),
+>                        struct perf_cgroup, css);
+>  }
+>
+> For all callers _should_ hold ctx->lock and ctx->lock is acquired during
+> ->attach/->exit so holding that lock will pin the cgroup.
+>
+I am not sure I follow you here. Are you talking about cgroup_attach()
+and cgroup_exit()? perf_cgroup_switch() does eventually grab ctx->lock
+when it gets to the actual save and restore functions. But
+perf_cgroup_from_task()
+is called outside of those sections in perf_cgroup_switch().
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Beulich <JBeulich@novell.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: stable@kernel.org
----
- block/blk-core.c                 |   11 ++++++-----
- block/blk-flush.c                |    2 +-
- block/cfq-iosched.c              |    6 +++---
- block/elevator.c                 |    4 ++--
- drivers/scsi/scsi_lib.c          |    2 +-
- drivers/scsi/scsi_transport_fc.c |    2 +-
- include/linux/blkdev.h           |    2 +-
- 7 files changed, 15 insertions(+), 14 deletions(-)
+> However, not all update_context_time()/update_cgrp_time_from_event()
+> callers actually hold ctx->lock, which is a bug because that lock also
+> serializes the timestamps.
+>
+> Most notably, task_clock_event_read(), which leads us to:
+>
 
-Index: work/block/blk-core.c
-===================================================================
---- work.orig/block/blk-core.c
-+++ work/block/blk-core.c
-@@ -352,7 +352,7 @@ void blk_start_queue(struct request_queu
- 	WARN_ON(!irqs_disabled());
- 
- 	queue_flag_clear(QUEUE_FLAG_STOPPED, q);
--	__blk_run_queue(q);
-+	__blk_run_queue(q, false);
- }
- EXPORT_SYMBOL(blk_start_queue);
- 
-@@ -403,13 +403,14 @@ EXPORT_SYMBOL(blk_sync_queue);
- /**
-  * __blk_run_queue - run a single device queue
-  * @q:	The queue to run
-+ * @force_kblockd: Don't run @q->request_fn directly.  Use kblockd.
-  *
-  * Description:
-  *    See @blk_run_queue. This variant must be called with the queue lock
-  *    held and interrupts disabled.
-  *
-  */
--void __blk_run_queue(struct request_queue *q)
-+void __blk_run_queue(struct request_queue *q, bool force_kblockd)
- {
- 	blk_remove_plug(q);
- 
-@@ -423,7 +424,7 @@ void __blk_run_queue(struct request_queu
- 	 * Only recurse once to avoid overrunning the stack, let the unplug
- 	 * handling reinvoke the handler shortly if we already got there.
- 	 */
--	if (!queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
-+	if (!force_kblockd && !queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
- 		q->request_fn(q);
- 		queue_flag_clear(QUEUE_FLAG_REENTER, q);
- 	} else {
-@@ -446,7 +447,7 @@ void blk_run_queue(struct request_queue
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(q->queue_lock, flags);
--	__blk_run_queue(q);
-+	__blk_run_queue(q, false);
- 	spin_unlock_irqrestore(q->queue_lock, flags);
- }
- EXPORT_SYMBOL(blk_run_queue);
-@@ -1053,7 +1054,7 @@ void blk_insert_request(struct request_q
- 
- 	drive_stat_acct(rq, 1);
- 	__elv_add_request(q, rq, where, 0);
--	__blk_run_queue(q);
-+	__blk_run_queue(q, false);
- 	spin_unlock_irqrestore(q->queue_lock, flags);
- }
- EXPORT_SYMBOL(blk_insert_request);
-Index: work/block/blk-flush.c
-===================================================================
---- work.orig/block/blk-flush.c
-+++ work/block/blk-flush.c
-@@ -69,7 +69,7 @@ static void blk_flush_complete_seq_end_i
- 	 * queue.  Kick the queue in those cases.
- 	 */
- 	if (was_empty && next_rq)
--		__blk_run_queue(q);
-+		__blk_run_queue(q, false);
- }
- 
- static void pre_flush_end_io(struct request *rq, int error)
-Index: work/block/cfq-iosched.c
-===================================================================
---- work.orig/block/cfq-iosched.c
-+++ work/block/cfq-iosched.c
-@@ -3355,7 +3355,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, s
- 			    cfqd->busy_queues > 1) {
- 				cfq_del_timer(cfqd, cfqq);
- 				cfq_clear_cfqq_wait_request(cfqq);
--				__blk_run_queue(cfqd->queue);
-+				__blk_run_queue(cfqd->queue, false);
- 			} else {
- 				cfq_blkiocg_update_idle_time_stats(
- 						&cfqq->cfqg->blkg);
-@@ -3370,7 +3370,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, s
- 		 * this new queue is RT and the current one is BE
- 		 */
- 		cfq_preempt_queue(cfqd, cfqq);
--		__blk_run_queue(cfqd->queue);
-+		__blk_run_queue(cfqd->queue, false);
- 	}
- }
- 
-@@ -3731,7 +3731,7 @@ static void cfq_kick_queue(struct work_s
- 	struct request_queue *q = cfqd->queue;
- 
- 	spin_lock_irq(q->queue_lock);
--	__blk_run_queue(cfqd->queue);
-+	__blk_run_queue(cfqd->queue, false);
- 	spin_unlock_irq(q->queue_lock);
- }
- 
-Index: work/block/elevator.c
-===================================================================
---- work.orig/block/elevator.c
-+++ work/block/elevator.c
-@@ -602,7 +602,7 @@ void elv_quiesce_start(struct request_qu
- 	 */
- 	elv_drain_elevator(q);
- 	while (q->rq.elvpriv) {
--		__blk_run_queue(q);
-+		__blk_run_queue(q, false);
- 		spin_unlock_irq(q->queue_lock);
- 		msleep(10);
- 		spin_lock_irq(q->queue_lock);
-@@ -651,7 +651,7 @@ void elv_insert(struct request_queue *q,
- 		 *   with anything.  There's no point in delaying queue
- 		 *   processing.
- 		 */
--		__blk_run_queue(q);
-+		__blk_run_queue(q, false);
- 		break;
- 
- 	case ELEVATOR_INSERT_SORT:
-Index: work/drivers/scsi/scsi_lib.c
-===================================================================
---- work.orig/drivers/scsi/scsi_lib.c
-+++ work/drivers/scsi/scsi_lib.c
-@@ -443,7 +443,7 @@ static void scsi_run_queue(struct reques
- 					&sdev->request_queue->queue_flags);
- 		if (flagset)
- 			queue_flag_set(QUEUE_FLAG_REENTER, sdev->request_queue);
--		__blk_run_queue(sdev->request_queue);
-+		__blk_run_queue(sdev->request_queue, false);
- 		if (flagset)
- 			queue_flag_clear(QUEUE_FLAG_REENTER, sdev->request_queue);
- 		spin_unlock(sdev->request_queue->queue_lock);
-Index: work/drivers/scsi/scsi_transport_fc.c
-===================================================================
---- work.orig/drivers/scsi/scsi_transport_fc.c
-+++ work/drivers/scsi/scsi_transport_fc.c
-@@ -3829,7 +3829,7 @@ fc_bsg_goose_queue(struct fc_rport *rpor
- 		  !test_bit(QUEUE_FLAG_REENTER, &rport->rqst_q->queue_flags);
- 	if (flagset)
- 		queue_flag_set(QUEUE_FLAG_REENTER, rport->rqst_q);
--	__blk_run_queue(rport->rqst_q);
-+	__blk_run_queue(rport->rqst_q, false);
- 	if (flagset)
- 		queue_flag_clear(QUEUE_FLAG_REENTER, rport->rqst_q);
- 	spin_unlock_irqrestore(rport->rqst_q->queue_lock, flags);
-Index: work/include/linux/blkdev.h
-===================================================================
---- work.orig/include/linux/blkdev.h
-+++ work/include/linux/blkdev.h
-@@ -699,7 +699,7 @@ extern void blk_start_queue(struct reque
- extern void blk_stop_queue(struct request_queue *q);
- extern void blk_sync_queue(struct request_queue *q);
- extern void __blk_stop_queue(struct request_queue *q);
--extern void __blk_run_queue(struct request_queue *);
-+extern void __blk_run_queue(struct request_queue *q, bool force_kblockd);
- extern void blk_run_queue(struct request_queue *);
- extern int blk_rq_map_user(struct request_queue *, struct request *,
- 			   struct rq_map_data *, void __user *, unsigned long,
+If the warning comes from invoking perf_cgroup_from_task(), then there is also
+perf_cgroup_switch(). that one is not grabbing any ctx->lock either, but maybe
+not on all paths.
+
+> @@ -5794,9 +5795,14 @@ static void task_clock_event_read(struct perf_event *event)
+>        u64 time;
+>
+>        if (!in_nmi()) {
+> -               update_context_time(event->ctx);
+> +               struct perf_event_context *ctx = event->ctx;
+> +               unsigned long flags;
+> +
+> +               spin_lock_irqsave(&ctx->lock, flags);
+> +               update_context_time(ctx);
+>                update_cgrp_time_from_event(event);
+> -               time = event->ctx->time;
+> +               time = ctx->time;
+> +               spin_unlock_irqrestore(&ctx->lock, flags);
+>        } else {
+>                u64 now = perf_clock();
+>                u64 delta = now - event->ctx->timestamp;
+>
+>
+> I then realized that the events themselves pin the cgroup, so its all
+> cosmetic at best, but then I already had the below patch...
+>
+I assume by 'pin the group' you mean the cgroup cannot disappear
+while there is at least one event pointing to it. That's is indeed true
+thanks to refcounting (css_get()).
+
+> Thoughts?
+>
+> ---
+>  kernel/perf_event.c |   30 ++++++++++++++++++------------
+>  1 files changed, 18 insertions(+), 12 deletions(-)
+>
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index a0a6987..810ee49 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -202,9 +202,10 @@ __get_cpu_context(struct perf_event_context *ctx)
+>  #ifdef CONFIG_CGROUP_PERF
+>
+>  static inline struct perf_cgroup *
+> -perf_cgroup_from_task(struct task_struct *task)
+> +perf_cgroup_from_task(struct task_struct *task, struct perf_event_context *ctx)
+>  {
+> -       return container_of(task_subsys_state(task, perf_subsys_id),
+> +       return container_of(task_subsys_state_check(task, perf_subsys_id,
+> +                               lockdep_is_held(&ctx->lock)),
+>                        struct perf_cgroup, css);
+>  }
+>
+> @@ -268,7 +269,7 @@ static inline void update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx)
+>
+>  static inline void update_cgrp_time_from_event(struct perf_event *event)
+>  {
+> -       struct perf_cgroup *cgrp = perf_cgroup_from_task(current);
+> +       struct perf_cgroup *cgrp = perf_cgroup_from_task(current, event->ctx);
+>        /*
+>         * do not update time when cgroup is not active
+>         */
+> @@ -279,7 +280,7 @@ static inline void update_cgrp_time_from_event(struct perf_event *event)
+>  }
+>
+>  static inline void
+> -perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
+> +perf_cgroup_set_timestamp(struct task_struct *task, struct perf_event_context *ctx)
+>  {
+>        struct perf_cgroup *cgrp;
+>        struct perf_cgroup_info *info;
+> @@ -287,9 +288,9 @@ perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
+>        if (!task)
+>                return;
+>
+> -       cgrp = perf_cgroup_from_task(task);
+> +       cgrp = perf_cgroup_from_task(task, ctx);
+>        info = this_cpu_ptr(cgrp->info);
+> -       info->timestamp = now;
+> +       info->timestamp = ctx->timestamp;
+>  }
+>
+>  #define PERF_CGROUP_SWOUT      0x1 /* cgroup switch out every event */
+> @@ -349,7 +350,7 @@ void perf_cgroup_switch(struct task_struct *task, int mode)
+>                                 * allow event_filter_match() to not
+>                                 * have to pass task around
+>                                 */
+> -                               cpuctx->cgrp = perf_cgroup_from_task(task);
+> +                               cpuctx->cgrp = perf_cgroup_from_task(task, &cpuctx->ctx);
+>                                cpu_ctx_sched_in(cpuctx, EVENT_ALL, task);
+>                        }
+>                }
+> @@ -494,7 +495,7 @@ static inline int perf_cgroup_connect(pid_t pid, struct perf_event *event,
+>  }
+>
+>  static inline void
+> -perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
+> +perf_cgroup_set_timestamp(struct task_struct *task, struct perf_event_context *ctx)
+>  {
+>  }
+>
+> @@ -1613,7 +1614,7 @@ static int __perf_event_enable(void *info)
+>        /*
+>         * set current task's cgroup time reference point
+>         */
+> -       perf_cgroup_set_timestamp(current, perf_clock());
+> +       perf_cgroup_set_timestamp(current, ctx);
+>
+>        __perf_event_mark_enabled(event, ctx);
+>
+> @@ -2048,7 +2049,7 @@ ctx_sched_in(struct perf_event_context *ctx,
+>
+>        now = perf_clock();
+>        ctx->timestamp = now;
+> -       perf_cgroup_set_timestamp(task, now);
+> +       perf_cgroup_set_timestamp(task, ctx);
+>        /*
+>         * First go through the list and put on any pinned groups
+>         * in order to give them the best chance of going on.
+> @@ -5794,9 +5795,14 @@ static void task_clock_event_read(struct perf_event *event)
+>        u64 time;
+>
+>        if (!in_nmi()) {
+> -               update_context_time(event->ctx);
+> +               struct perf_event_context *ctx = event->ctx;
+> +               unsigned long flags;
+> +
+> +               spin_lock_irqsave(&ctx->lock, flags);
+> +               update_context_time(ctx);
+>                update_cgrp_time_from_event(event);
+> -               time = event->ctx->time;
+> +               time = ctx->time;
+> +               spin_unlock_irqrestore(&ctx->lock, flags);
+>        } else {
+>                u64 now = perf_clock();
+>                u64 delta = now - event->ctx->timestamp;
+>
+>
