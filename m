@@ -1,254 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab1BQHeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 02:34:06 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63142 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab1BQHeD (ORCPT
+	id S1752821Ab1BQHnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 02:43:10 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43401 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab1BQHnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 02:34:03 -0500
+	Thu, 17 Feb 2011 02:43:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=FiSJyjIJk/fbcxsFWAKLNSszgijqXQ2IFREC2d0rziuVnJofWeZ/nTFlf3GxSQBbO1
-         pvXLXuIAulTdtypRjuWc+iRixnjv799mbMHg5lUWSVf8DBh1+PY++tBFUUOe1v+6jMAF
-         Bl+/hZhOsO5lx7wgOV4yggP2rCCsyiq0XJSM0=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=A9zuuMhLSs6EAE8hvlpqISYNfOn+jp4in3ARK0vEqNGlYbKt0/wNv1b3j5PJLkZDfY
+         45hYe8ke39SUH4B1Rnr1cXS1dyQrU1ddDBk27xzGHnTzTr7Da7NpZLzaTE/MYHcc9rH0
+         yvruFRq0tTj9Y9xnSYh290/n+6LUduZa8TXFI=
+Date: Wed, 16 Feb 2011 23:42:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Frederick van der Wyck <fvanderwyck@gmail.com>
+Cc: mjg@redhat.com, gregkh@suse.de, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Platform: Samsung Q10 backlight driver
+Message-ID: <20110217074258.GA19814@core.coreip.homeip.net>
+References: <20110216233029.GB17288@ntl>
 MIME-Version: 1.0
-In-Reply-To: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com>
-References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 17 Feb 2011 15:33:42 +0800
-Message-ID: <AANLkTi=yZZgh0v+-_Cw0JudAxxTZuBWeVCEZ-dBtENPw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Uwe Kleine-K?nig" <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216233029.GB17288@ntl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1H7YGYp007980
 
-On Thu, Feb 17, 2011 at 8:56 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
-> Previously, gpiolib would unconditionally flag all GPIO pins as inputs,
-> regardless of their true state.  This resulted in all GPIO output pins
-> initially being incorrectly identified as "input" in the GPIO sysfs.
->
-> Since the direction of GPIOs is not known prior to having their
-> direction set, instead set the default direction to "unknown" to prevent
-> user confusion.  A pin with an "unknown" direction can not be written or
-> read via sysfs; it must first be configured as an input or output before
-> it can be used.
->
+Hi Frederick,
 
-Hrm... that's why I don't like the original definition of gpio_request()
-which is vague on the pin configurations. The pin configuration should
-be clear upon requesting, otherwise it's a potential issue.
-
-Anyway, this unknown state looks to be a good mitigation to this
-underlying problem. I'm good with it.
-
-> While we're playing with the direction flag in/out defines, rename them to
-> a more descriptive FLAG_DIR_* format.
->
-> Cc: Alek Du <alek.du@intel.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: David Brownell <dbrownell@users.sourceforge.net>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+On Wed, Feb 16, 2011 at 11:30:29PM +0000, Frederick van der Wyck wrote:
+> This adds backlight control on the Samsung Q10 laptop, which does not support 
+> the SABI interface. Also tested successfully on the Dell Latitude X200.
+> 
+> Signed-off-by: Frederick van der Wyck <fvanderwyck@gmail.com>
 > ---
-> Change since V1:
-> - This patch is new and is based on feedback from Alan to support a new
->  "unknown" direction.
-> - Rename FLAG_IS_OUT to FLAG_DIR_OUT, and add FLAG_DIR_IN
->
->  drivers/gpio/gpiolib.c |   82 +++++++++++++++++++++++++++--------------------
->  1 files changed, 47 insertions(+), 35 deletions(-)
->
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 649550e..0113c10 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -49,13 +49,14 @@ struct gpio_desc {
->        unsigned long           flags;
->  /* flag symbols are bit numbers */
->  #define FLAG_REQUESTED 0
-> -#define FLAG_IS_OUT    1
-> -#define FLAG_RESERVED  2
-> -#define FLAG_EXPORT    3       /* protected by sysfs_lock */
-> -#define FLAG_SYSFS     4       /* exported via /sys/class/gpio/control */
-> -#define FLAG_TRIG_FALL 5       /* trigger on falling edge */
-> -#define FLAG_TRIG_RISE 6       /* trigger on rising edge */
-> -#define FLAG_ACTIVE_LOW        7       /* sysfs value has active low */
-> +#define FLAG_DIR_OUT   1       /* pin is an output */
-> +#define FLAG_DIR_IN    2       /* pin is an input */
-> +#define FLAG_RESERVED  3
-> +#define FLAG_EXPORT    4       /* protected by sysfs_lock */
-> +#define FLAG_SYSFS     5       /* exported via /sys/class/gpio/control */
-> +#define FLAG_TRIG_FALL 6       /* trigger on falling edge */
-> +#define FLAG_TRIG_RISE 7       /* trigger on rising edge */
-> +#define FLAG_ACTIVE_LOW        8       /* sysfs value has active low */
->
->  #define ID_SHIFT       16      /* add new flags before this one */
->
-> @@ -220,15 +221,22 @@ static ssize_t gpio_direction_show(struct device *dev,
->  {
->        const struct gpio_desc  *desc = dev_get_drvdata(dev);
->        ssize_t                 status;
-> +       const char              *dir_str;
->
->        mutex_lock(&sysfs_lock);
->
-> -       if (!test_bit(FLAG_EXPORT, &desc->flags))
-> +       if (!test_bit(FLAG_EXPORT, &desc->flags)) {
->                status = -EIO;
-> -       else
-> -               status = sprintf(buf, "%s\n",
-> -                       test_bit(FLAG_IS_OUT, &desc->flags)
-> -                               ? "out" : "in");
-> +       } else {
-> +               if (test_bit(FLAG_DIR_OUT, &desc->flags))
-> +                       dir_str = "out";
-> +               else if (test_bit(FLAG_DIR_IN, &desc->flags))
-> +                       dir_str = "in";
-> +               else
-> +                       dir_str = "unknown";
+>  drivers/platform/x86/Kconfig       |    8 ++
+>  drivers/platform/x86/Makefile      |    1 +
+>  drivers/platform/x86/samsung-q10.c |  152 ++++++++++++++++++++++++++++++++++++
+>  3 files changed, 161 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/platform/x86/samsung-q10.c
+> 
+> The Samsung Q10 is an old model, which does not support the SABI interface, so
+> the samsung-laptop driver does not work. Backlight control is not exposed via
+> ACPI either. This driver works in the same way as the SMI handler triggered by 
+> pressing the brightness function keys. Please let me know any feedback towards 
+> getting this driver included.
+> 
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index faec777..7432817 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -639,4 +639,12 @@ config XO1_RFKILL
+>  	  Support for enabling/disabling the WLAN interface on the OLPC XO-1
+>  	  laptop.
+>  
+> +config SAMSUNG_Q10
+> +	tristate "Samsung Q10 Extras"
+> +	select BACKLIGHT_CLASS_DEVICE
+> +	default n
+
+You do not need to specify "default n"
+
+
+> +	---help---
+> +          This driver provides support for backlight control on Samsung Q10
+> +          and some other laptops, including Dell Latitude X200.
 > +
-> +               status = sprintf(buf, "%s\n", dir_str);
-> +       }
->
->        mutex_unlock(&sysfs_lock);
->        return status;
-> @@ -272,6 +280,9 @@ static ssize_t gpio_value_show(struct device *dev,
->
->        if (!test_bit(FLAG_EXPORT, &desc->flags)) {
->                status = -EIO;
-> +       } else if ((!test_bit(FLAG_DIR_OUT, &desc->flags)) &&
-> +                       (!test_bit(FLAG_DIR_IN, &desc->flags))) {
-> +               status = -EPERM;
->        } else {
->                int value;
->
-> @@ -297,7 +308,7 @@ static ssize_t gpio_value_store(struct device *dev,
->
->        if (!test_bit(FLAG_EXPORT, &desc->flags))
->                status = -EIO;
-> -       else if (!test_bit(FLAG_IS_OUT, &desc->flags))
-> +       else if (!test_bit(FLAG_DIR_OUT, &desc->flags))
->                status = -EPERM;
->        else {
->                long            value;
-> @@ -741,7 +752,7 @@ int gpio_export(unsigned gpio, bool direction_may_change)
->
->                        if (!status && gpio_to_irq(gpio) >= 0
->                                        && (direction_may_change
-> -                                               || !test_bit(FLAG_IS_OUT,
-> +                                               || test_bit(FLAG_DIR_IN,
->                                                        &desc->flags)))
->                                status = device_create_file(dev,
->                                                &dev_attr_edge);
-> @@ -1059,22 +1070,10 @@ int gpiochip_add(struct gpio_chip *chip)
->                        break;
->                }
->        }
-> -       if (status == 0) {
-> -               for (id = base; id < base + chip->ngpio; id++) {
-> +       if (status == 0)
-> +               for (id = base; id < base + chip->ngpio; id++)
->                        gpio_desc[id].chip = chip;
->
-> -                       /* REVISIT:  most hardware initializes GPIOs as
-> -                        * inputs (often with pullups enabled) so power
-> -                        * usage is minimized.  Linux code should set the
-> -                        * gpio direction first thing; but until it does,
-> -                        * we may expose the wrong direction in sysfs.
-> -                        */
-> -                       gpio_desc[id].flags = !chip->direction_input
-> -                               ? (1 << FLAG_IS_OUT)
-> -                               : 0;
-> -               }
-> -       }
-> -
->        of_gpiochip_add(chip);
->
->  unlock:
-> @@ -1402,8 +1401,10 @@ int gpio_direction_input(unsigned gpio)
->        }
->
->        status = chip->direction_input(chip, gpio);
-> -       if (status == 0)
-> -               clear_bit(FLAG_IS_OUT, &desc->flags);
-> +       if (status == 0) {
-> +               clear_bit(FLAG_DIR_OUT, &desc->flags);
-> +               set_bit(FLAG_DIR_IN, &desc->flags);
-> +       }
->  lose:
->        return status;
->  fail:
-> @@ -1455,8 +1456,10 @@ int gpio_direction_output(unsigned gpio, int value)
->        }
->
->        status = chip->direction_output(chip, gpio, value);
-> -       if (status == 0)
-> -               set_bit(FLAG_IS_OUT, &desc->flags);
-> +       if (status == 0) {
-> +               clear_bit(FLAG_DIR_IN, &desc->flags);
-> +               set_bit(FLAG_DIR_OUT, &desc->flags);
-> +       }
->  lose:
->        return status;
->  fail:
-> @@ -1643,21 +1646,27 @@ static void gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
->        unsigned                i;
->        unsigned                gpio = chip->base;
->        struct gpio_desc        *gdesc = &gpio_desc[gpio];
-> -       int                     is_out;
-> +       const char              *dir_str;
-> +       int                     unknown = 0;
->
->        for (i = 0; i < chip->ngpio; i++, gpio++, gdesc++) {
->                if (!test_bit(FLAG_REQUESTED, &gdesc->flags))
->                        continue;
->
-> -               is_out = test_bit(FLAG_IS_OUT, &gdesc->flags);
-> -               seq_printf(s, " gpio-%-3d (%-20.20s) %s %s",
-> -                       gpio, gdesc->label,
-> -                       is_out ? "out" : "in ",
-> -                       chip->get
-> -                               ? (chip->get(chip, i) ? "hi" : "lo")
-> -                               : "?  ");
-> +               if (test_bit(FLAG_DIR_IN, &gdesc->flags)) {
-> +                       dir_str = "in ";
-> +               } else if (test_bit(FLAG_DIR_OUT, &gdesc->flags)) {
-> +                       dir_str = "out";
-> +               } else {
-> +                       dir_str = "?  ";
-> +                       unknown = 1;
-> +               }
+>  endif # X86_PLATFORM_DEVICES
+> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+> index 9950ccc..2cd3e52 100644
+> --- a/drivers/platform/x86/Makefile
+> +++ b/drivers/platform/x86/Makefile
+> @@ -33,3 +33,4 @@ obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
+>  obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
+>  obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
+>  obj-$(CONFIG_IBM_RTL)		+= ibm_rtl.o
+> +obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+> diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
+> new file mode 100644
+> index 0000000..ec1e004
+> --- /dev/null
+> +++ b/drivers/platform/x86/samsung-q10.c
+> @@ -0,0 +1,152 @@
+> +/*
+> + *  Driver for Samsung Q10: controls the backlight
+> + *
+> + *  Also works on Dell Latitude X200
+> + *
+> + *  Copyright (c) 2011 Frederick van der Wyck <fvanderwyck@gmail.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + *
+> + */
 > +
-> +               seq_printf(s, " gpio-%-3d (%-20.20s) %s %s", gpio, gdesc->label,
-> +                       dir_str, (chip->get && !unknown) ?
-> +                       (chip->get(chip, i) ? "hi" : "lo") : "?");
->
-> -               if (!is_out) {
-> +               if (test_bit(FLAG_DIR_IN, &gdesc->flags)) {
->                        int             irq = gpio_to_irq(gpio);
->                        struct irq_desc *desc = irq_to_desc(irq);
->
-> --
-> 1.7.0.4
->
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/backlight.h>
+> +#include <linux/io.h>
+> +
+> +#define SAMSUNGQ10_BL_MAX_INTENSITY 255
+> +#define SAMSUNGQ10_BL_DEFAULT_INTENSITY 185
+> +
+> +static int samsungq10_suspended;
+
+bool?
+
+> +
+> +static void samsungq10_bl_send_intensity(struct backlight_device *bd)
+> +{
+> +	int brightness = bd->props.brightness;
+> +
+> +	if (!samsungq10_suspended) {
+> +		while (inb(0x64)&2)
+> +			;
+> +		outb_p(0xbe, 0x64);
+> +		while (inb(0x64)&2)
+> +			;
+> +		outb_p(0x89, 0x60);
+> +		while (inb(0x64)&2)
+> +			;
+> +		outb_p(0x91, 0x60);
+> +		while (inb(0x64)&2)
+> +			;
+> +		outb_p((unsigned char)brightness, 0x60);
+
+As I mentioned, these registers are owned by i8042, you should not
+access them directly.
+
+> +	};
+
+Stray semicolon.
+
+
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +static int samsungq10_suspend(struct platform_device *pdev, pm_message_t state)
+> +{
+> +	samsungq10_suspended = 1;
+
+= true
+
+> +	return 0;
+> +}
+> +
+> +static int samsungq10_resume(struct platform_device *pdev)
+> +{
+> +	struct backlight_device *bd = platform_get_drvdata(pdev);
+
+Blank line before variable definition and code please.
+
+> +	samsungq10_suspended = 0;
+
+= false
+
+> +	samsungq10_bl_send_intensity(bd);
+> +	return 0;
+> +}
+> +#else
+> +#define samsungq10_suspend	NULL
+> +#define samsungq10_resume	NULL
+> +#endif
+> +
+> +static int samsungq10_bl_set_intensity(struct backlight_device *bd)
+> +{
+> +	samsungq10_bl_send_intensity(bd);
+
+Why do you need this? Just have samsungq10_bl_send_intensity() always
+return 0 (or result of i8042_command()) and use it directly.
+
+> +	return 0;
+> +}
+> +
+> +static int samsungq10_bl_get_intensity(struct backlight_device *bd)
+> +{
+
+I believe you should either store last brightness and return it or not
+provide this method.
+
+> +	return 0;
+> +}
+> +
+> +static const struct backlight_ops samsungq10_bl_ops = {
+> +	.get_brightness = samsungq10_bl_get_intensity,
+> +	.update_status	= samsungq10_bl_set_intensity,
+> +};
+> +
+> +static int __devinit samsungq10_probe(struct platform_device *pdev)
+> +{
+> +	struct backlight_properties props;
+> +	struct backlight_device *bd;
+> +
+> +	memset(&props, 0, sizeof(struct backlight_properties));
+> +	props.max_brightness = SAMSUNGQ10_BL_MAX_INTENSITY;
+> +	bd = backlight_device_register("samsungq10bl", &pdev->dev, NULL,
+> +				       &samsungq10_bl_ops, &props);
+> +	if (IS_ERR(bd))
+> +		return PTR_ERR(bd);
+> +
+> +	platform_set_drvdata(pdev, bd);
+> +
+> +	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
+> +	samsungq10_bl_send_intensity(bd);
+> +
+> +	return 0;
+> +}
+> +
+> +static int samsungq10_remove(struct platform_device *pdev)
+
+__devexit
+
+> +{
+> +	struct backlight_device *bd = platform_get_drvdata(pdev);
+> +
+> +	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
+> +	samsungq10_bl_send_intensity(bd);
+> +
+> +	backlight_device_unregister(bd);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver samsungq10_driver = {
+> +	.probe		= samsungq10_probe,
+> +	.remove		= samsungq10_remove,
+
+__devexit_p()
+
+> +	.suspend	= samsungq10_suspend,
+> +	.resume		= samsungq10_resume,
+
+Should be converted to dev_pm_ops.
+
+> +	.driver		= {
+> +		.name	= "samsungq10",
+
+		.owner	= THIS_MODULE,
+> +	},
+> +};
+> +
+> +static struct platform_device *samsungq10_device;
+> +
+> +static int __init samsungq10_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = platform_driver_register(&samsungq10_driver);
+> +	if (ret)
+> +		return ret;
+> +	samsungq10_device = platform_device_register_simple("samsungq10", -1,
+> +							    NULL, 0);
+> +	if (IS_ERR(samsungq10_device)) {
+> +		platform_driver_unregister(&samsungq10_driver);
+> +		return PTR_ERR(samsungq10_device);
+> +	}
+
+Consider using platform_create_bundle().
+
+> +	return 0;
+> +}
+> +
+> +static void __exit samsungq10_exit(void)
+> +{
+> +	platform_device_unregister(samsungq10_device);
+> +	platform_driver_unregister(&samsungq10_driver);
+> +}
+> +
+> +module_init(samsungq10_init);
+> +module_exit(samsungq10_exit);
+> +
+> +MODULE_AUTHOR("Frederick van der Wyck <fvanderwyck@gmail.com>");
+> +MODULE_DESCRIPTION("Samsung Q10 Driver");
+> +MODULE_LICENSE("GPL");
+
+Thanks.
+
+-- 
+Dmitry
