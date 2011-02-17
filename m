@@ -1,121 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757970Ab1BQUqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:46:04 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:39429 "EHLO smtp.gentoo.org"
+	id S932494Ab1BQUvo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:51:44 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:33944 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755737Ab1BQUqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:46:02 -0500
-From: Matthias Schwarzott <zzam@gentoo.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Subject: Re: [Patch] Zarlink zl10036 DVB-S: Fix mem leak in zl10036_attach
-Date: Thu, 17 Feb 2011 21:45:51 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-References: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net> <201102172054.12773.zzam@gentoo.org> <alpine.LNX.2.00.1102172130360.17697@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1102172130360.17697@swampdragon.chaosbits.net>
+	id S1754925Ab1BQUvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:51:41 -0500
+Message-ID: <4D5D8A56.4070502@interlog.com>
+Date: Thu, 17 Feb 2011 15:51:34 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: SCSI development list <linux-scsi@vger.kernel.org>,
+        Tomas Fasth <tomfa@debian.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] ddpt, version 0.92 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102172145.55258.zzam@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 February 2011, Jesper Juhl wrote:
-> On Thu, 17 Feb 2011, Matthias Schwarzott wrote:
-> > On Sunday 06 February 2011, Jesper Juhl wrote:
-> > > If the memory allocation to 'state' succeeds but we jump to the 'error'
-> > > label before 'state' is assigned to fe->tuner_priv, then the call to
-> > > 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
-> > > only what was previously assigned to 'tuner_priv', thus leaking the
-> > > memory allocated to 'state'.
-> > > There are may ways to fix this, including assigning the allocated
-> > > memory directly to 'fe->tuner_priv', but I did not go for that since
-> > > the additional pointer derefs are more expensive than the local
-> > > variable, so I just added a 'kfree(state)' call. I guess the call to
-> > > 'zl10036_release' might not even be needed in this case, but I wasn't
-> > > sure, so I left it in.
-> > 
-> > Yeah, that call to zl10036_release can be completely eleminated.
-> > Another thing is: jumping to the error label only makes sense when memory
-> > was already allocated. So the jump in line 471 can be replaced by
-> > "return NULL",
-> > 
-> > as the other error handling before allocation:
-> >         if (NULL == config) {
-> >         
-> >                 printk(KERN_ERR "%s: no config specified", __func__);
-> >                 goto error;
-> >         
-> >         }
-> > 
-> > I suggest to improve the patch to clean the code up when changing that.
-> > 
-> > But I am fine with commiting this patch also if you do not want to change
-> > it.
-> 
-> Thank you for your feedback. It makes a lot of sense.
-> Changing it is not a problem :)
-> How about the updated patch below?
-> 
-Looks good.
+ddpt is yet another variant of the venerable Unix
+dd command line utility. Some features found in
+ddpt which are not found in the current (GNU) dd
+implementation:
 
-@Mauro: Please apply.
+   - sparse writing (i.e. don't write buffer if all zeros)
+   - write sparing (i.e. don't write buffer if already same
+     as destination)
+   - resume (after the copy has been interrupted)
+   - trim on output of copy, self trim (pt interface only)
+   - send output to a second file (see 'of2=' option)
+   - access devices directly via pass-through interface,
+     bypassing file system
+   - accept numeric command line arguments in hexadecimal
+   - explicit controls over how much data is read into the
+     copy buffer and then written to output (separate from
+     the logical block sizes of any device involved)
 
-> 
-> If the memory allocation to 'state' succeeds but we jump to the 'error'
-> label before 'state' is assigned to fe->tuner_priv, then the call to
-> 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
-> only what was previously assigned to 'tuner_priv', thus leaking the memory
-> allocated to 'state'.
-> This patch fixes the leak and also does not jump to 'error:' before mem
-> has been allocated but instead just returns. Also some small style
-> cleanups.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+The initial public release was 0.91 in September 2010.
+This version (0.92) has a few new features, many bug fixes
+and more informative output. For more information and
+downloads see:
+     http://sg.danny.cz/sg/ddpt.html
 
 
-Signed-off-by: Matthias Schwarzott <zzam@gentoo.org>
-> ---
->  zl10036.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/media/dvb/frontends/zl10036.c
-> b/drivers/media/dvb/frontends/zl10036.c index 4627f49..81aa984 100644
-> --- a/drivers/media/dvb/frontends/zl10036.c
-> +++ b/drivers/media/dvb/frontends/zl10036.c
-> @@ -463,16 +463,16 @@ struct dvb_frontend *zl10036_attach(struct
-> dvb_frontend *fe, const struct zl10036_config *config,
->  				    struct i2c_adapter *i2c)
->  {
-> -	struct zl10036_state *state = NULL;
-> +	struct zl10036_state *state;
->  	int ret;
-> 
-> -	if (NULL == config) {
-> +	if (!config) {
->  		printk(KERN_ERR "%s: no config specified", __func__);
-> -		goto error;
-> +		return NULL;
->  	}
-> 
->  	state = kzalloc(sizeof(struct zl10036_state), GFP_KERNEL);
-> -	if (NULL == state)
-> +	if (!state)
->  		return NULL;
-> 
->  	state->config = config;
-> @@ -507,7 +507,7 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend
-> *fe, return fe;
-> 
->  error:
-> -	zl10036_release(fe);
-> +	kfree(state);
->  	return NULL;
->  }
->  EXPORT_SYMBOL(zl10036_attach);
+Changelog for ddpt-0.92 [20110217] [svn: r157]
+   - when pt used on block device and discrepancy between size
+     of block device and read capacity size, require force flag
+   - add coe support for input block devices and regular files
+   - support conv=fdatasync, conv=fsync, oflag=fdatasync and
+     oflag=fsync; called at end of copy
+   - allow partial writes of trailing bytes when output is
+     regular file or fifo (stdout), ignore if block or pt device
+   - fix stdin, stdout and fifo handling problems
+   - if iflag=sparse and of=/dev/null (or not given) warn but
+     set oflag=sparse and continue
+   - treat unrecovered errors as partial (as dd does)
+   - win32: add '--wscan' option to scan for devices and volumes
+     - select SPT direct pt interface
+   - add estimate of remaining time in progress signal handler
+   - accept but ignore cbs= option
+   - error reporting clean up
+   - add AM_MAINTAINER_MODE to configure.ac to lessen build issues
 
+Changelog for ddpt-0.91 [20100920] [svn: r121]
+....
+
+Doug Gilbert
