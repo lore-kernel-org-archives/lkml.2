@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292Ab1BQRDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:03:49 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:33515 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932250Ab1BQRDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:03:46 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: uuYqY4YVM1mctf3HPAIS7ooWQny70weqveGuLvKBiS1N51B
- 7jhu6FUOw0TTdXPuu3lxjen_6dbmCFeoxlWDfMwa8KuA9ln3dhclV5FFeU3X
- g5ZkM8DPhXHGqI.yAa84W0XRI6.6zKXh.4.puRzWFuSdrEtBWSmoiKX8X3g3
- Iwk7miMMKDB2vT9PUYQsW1JZe67Q_sJy3YfIKTM03zu9LDmW9_AfHFHBNUg2
- Yu8fVRZZ_dE9_k7O_afWRF.U8Ixbwztpm5AVT8xn85dBtyOOmM.etc_s7pZ8
- qG7e90y.ENGWMdYB1c9h4eX9nJFPjYxcY3rnMMHxXtnSmvEg-
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 17 Feb 2011 11:03:40 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Kruse <pk@q-leap.com>
-cc: eric.dumazet@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: I have a blaze of 353 page allocation failures, all alike
-In-Reply-To: <4D5CCEED.3010501@q-leap.com>
-Message-ID: <alpine.DEB.2.00.1102171102520.11140@router.home>
-References: <4D53FE43.8030106@q-leap.com> <alpine.DEB.2.00.1102141046170.26158@router.home> <4D5A2EDB.8060603@q-leap.com> <alpine.DEB.2.00.1102151040560.10511@router.home> <4D5BC16A.2090205@q-leap.com> <alpine.DEB.2.00.1102160956250.27814@router.home>
- <4D5BF56F.1000504@q-leap.com> <alpine.DEB.2.00.1102161010330.27814@router.home> <4D5CCEED.3010501@q-leap.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756965Ab1BQRFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:05:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756918Ab1BQRFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 12:05:02 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Andrew Patterson <andrew.patterson@hp.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix over-zealous flush_disk when changing device size.
+References: <20110217165057.5c50e566@notabene.brown>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 17 Feb 2011 12:03:48 -0500
+In-Reply-To: <20110217165057.5c50e566@notabene.brown> (NeilBrown's message of
+	"Thu, 17 Feb 2011 16:50:57 +1100")
+Message-ID: <x494o82wq2z.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII; FORMAT=flowed
-Content-ID: <alpine.DEB.2.00.1102171102522.11140@router.home>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Feb 2011, Peter Kruse wrote:
+NeilBrown <neilb@suse.de> writes:
 
-> Christoph Lameter wrote:
-> > Oww. A large number of additional higher order allocations from iptables.
-> > Order 6. But still only partial boot message. I need to see the memory
-> > layout discovered by the kernel and for that I need the early boot messages.
+> Hi Andrew (and others)
+>  I wonder if you would review the following for me and comment.
 >
-> ok, I attach the early dmesg I hope this contains the information
-> you need.
+> Thanks,
+> NeilBrown
+>
+>
+>
+> From e7f75c2a757108cdd83ce8c808a16bf27686c95f Mon Sep 17 00:00:00 2001
+> From: NeilBrown <neilb@suse.de>
+> Date: Thu, 17 Feb 2011 16:37:30 +1100
+> Subject: [PATCH] Fix over-zealous flush_disk when changing device size.
+>
+> There are two cases when we call flush_disk.
+> In one, the device has disappeared (check_disk_change) so any
+> data will hold becomes irrelevant.
+> In the oter, the device has changed size (check_disk_size_change)
+> so data we hold may be irrelevant.
+>
+> In both cases it makes sense to discard any 'clean' buffers,
+> so they will be read back from the device if needed.
+>
+> In the former case it makes sense to discard 'dirty' buffers
+> as there will never be anywhere safe to write the data.  In the
+> second case it *does*not* make sense to discard dirty buffers
+> as that will lead to file system corruption when you simply enlarge
+> the containing devices.
+>
+> flush_disk calls __invalidate_devices.
+> __invalidate_device calls both invalidate_inodes and invalidate_bdev.
+>
+> invalidate_inodes *does* discard I_DIRTY inodes and this does lead
+> to fs corruption.
+>
+> invalidate_bev *does*not* discard dirty pages, but I don't really care
+> about that at present.
+>
+> So this patch adds a flag to __invalidate_device (calling it
+> __invalidate_device2) to indicate whether dirty buffers should be
+> killed, and this is passed to invalidate_inodes which can choose to
+> skip dirty inodes.
+>
+> flusk_disk then passes true from check_disk_change and false from
+> check_disk_size_change.
+>
+> dm avoids tripping over this problem by calling i_size_write directly
+> rathher than using check_disk_size_change.
+>
+> md does use check_disk_size_change and so is affected.
+>
+> This regression was introduced by commit 608aeef17a
+> which causes check_disk_size_change to call
+> flush_disk.
 
-No it only contains what you sent before. I need the early boot
-messages.
+This makes sense to me.  Nice write-up, Neil.
 
-
-y
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
