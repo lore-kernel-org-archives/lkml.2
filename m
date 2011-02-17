@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab1BQXMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 18:12:50 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63162 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1BQXMr (ORCPT
+	id S1752269Ab1BQXQf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 18:16:35 -0500
+Received: from smtp-cpk.frontbridge.com ([204.231.192.41]:52445 "EHLO
+	WA2EHSNDR003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750832Ab1BQXQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 18:12:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=b9PxWD/gHKwgNadTX2nMod9hOjk9h4XgjxftKX+C1xmtqx47vAWDLxoVNyVZSXWfJL
-         MeN+DdcjUIkCfGvvyazzlKeDQvXUmMMjeQvyrYnsd6tAA70d7t69SCj5eIqjFNgWfzwQ
-         TLHDhKW6EGPPq8viZhlJcQUbxVsFdxTiRxrPo=
+	Thu, 17 Feb 2011 18:16:31 -0500
+X-FB-OUTBOUND-SPAM: yes
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h34h41h42h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:VA3DIAHUB009.RED001.local;RD:smtp801.microsoftonline.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: <ForefrontServerSecurity@VA3DIAHUB009.com>
+To: <broonie@opensource.wolfsonmicro.com>
+CC: <hch@infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, <ryan@bluewatersys.com>,
+        <akpm@linux-foundation.org>
+Subject: Microsoft Forefront Server Security forwarded attachment
 MIME-Version: 1.0
-In-Reply-To: <4D5D6517.5060600@redhat.com>
-References: <4D5D562A0200007800032744@vpn.id2.novell.com>
-	<4D5D6517.5060600@redhat.com>
-Date: Thu, 17 Feb 2011 15:12:45 -0800
-X-Google-Sender-Auth: Z2DcqRw__EIh_JA4xvtecoCDokc
-Message-ID: <AANLkTi=SR-HsBuOA0V6GPtD4wY+s663_6TT9aJVVjjrK@mail.gmail.com>
-Subject: Re: [PATCH, resend] x86/PCI: don't export a __devinit function
-From: Yinghai Lu <yinghai@kernel.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Jan Beulich <JBeulich@novell.com>, mingo@elte.hu, tglx@linutronix.de,
-        hpa@zytor.com, arozansk@redhat.com, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed;
+	boundary="ANTIGEN-8931-3223-7765-4991-12290-13542"
+Message-ID: <569376a4-f70d-4ed5-b9e0-067e02720366@VA3DIAHUB009.RED001.local>
+Date: Thu, 17 Feb 2011 15:16:13 -0800
+Reply-To: <ForefrontServerSecurity@VA3DIAHUB009.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 10:12 AM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Em 17-02-2011 14:08, Jan Beulich escreveu:
->> Exporting a __devinit function (pcibios_scan_specific_bus()) isn't
->> correct. (Michal, any reason why modpost only warns about exported
->> __init functions?) Short of being able to think of a better solution,
->> and short of making the whole call tree (reaching into the arch-
->> independent part of the PCI subsystem) non-__devinit, export the
->> symbol only when HOTPLUG is enabled (which is always the case for non-
->> expert configurations), use section mismatch avoidance annotations for
->> that case (knowing that __devinit functions will not be discarded),
->> and mark the symbol __devinit only in the !HOTPLUG case.
->>
->> Consequently, EDAC_I7CORE (consuming the export) then has to depend on
->> HOTPLUG.
->
-> Having the entire i7core_edac driver depending on HOTPLUG, just because
-> a few BIOSes want to hide the non-core PCI devices doesn't seem nice.
-> One alternative would be to enclose the code that needs this function
-> with #ifdef CONFIG_HOTPLUG.
->
->> A fundamental question of course if whether this driver has
->> to use that function in the first place (i.e. whether it wouldn't be
->> better to just remove the export) - the problem it tries to address
->> happens on other systems too, but the PCI bus the devices in question
->> live on isn't necessarily bus 255. For the affected system I have, the
->> alternative approach is to set pcibios_last_bus from __pci_mmcfg_init()
->> based on the highest bus number on segment 0 being covered by MCFG.
->
-> I received a few days ago a report that some BIOSes that hide those
-> PCI devices also use a different address for the last bus (0x3f, instead
-> of 0xff). So, it seems that the better would be to use an alternative
-> way to retrieve the last bus.
+--ANTIGEN-8931-3223-7765-4991-12290-13542
+Content-Type: text/plain; charset="utf-7"
+Content-Transfer-Encoding: quoted-printable
 
-just append "pci=lastbus=255" will get all those devices.
 
-Yinghai
+The body from the message +ACI-Re: +AFs-PATCH 0/10+AF0- Add yaffs2 file system:  Fifth patchset+ACI-, originally sent to you by linux-kernel-owner+AEA-vger.kernel.org (linux-kernel-owner+AEA-vger.kernel.org), has been forwarded to you from the Microsoft Forefront Server Security Quarantine area.
+This message body may have been re-scanned by Microsoft Forefront Server Security and handled according to the appropriate scan job's settings.
+
+
+
+
+<<Body of Message>>
+
+--ANTIGEN-8931-3223-7765-4991-12290-13542
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Body of Message"
+
+T24gVGh1cnNkYXkgMTcgRmVicnVhcnkgMjAxMSAxNDo0ODowOCBNYXJrIEJyb3duIHdyb3RlOg0K
+PiBPbiBUaHUsIEZlYiAxNywgMjAxMSBhdCAxMToxMjowNkFNICsxMzAwLCBDaGFybGVzIE1hbm5p
+bmcgd3JvdGU6DQo+ID4gT24gV2VkbmVzZGF5IDE2IEZlYnJ1YXJ5IDIwMTEgMjE6MDQ6MjAgQ2hy
+aXN0b3BoIEhlbGx3aWcgd3JvdGU6DQo+ID4gPiBUaGUgcHJvY2ZzIGludGVyZmFjZXMgc2hvdWxk
+IGJlIHJlcGxhY2VkIGJ5IHNvbWV0aGluZyBzYW5lciwNCj4gPiA+IHRoZSBpbnNhbmUgYW1vdW50
+IG9mIGFkLWhvYyB0cmFjaW5nIGNyYXAgc2hvdWxkIGJlIHJlcGxhY2VkIGJ5IG11Y2gNCj4gPiA+
+IGxlc3Mgc3RyYXRlZ2ljYWxseSBwbGFjZWQgdHJhY2UgZXZlbnRzLCBhbmQgYWxsIHRob3NlIHN0
+dXBpZCBjb21waWxlDQo+ID4gPiB0aW1lIG9wdGlvbnMgaGF2ZSBhYnNvbHV0ZWx5IG5vIGJ1c2lu
+ZXNzIGF0IGFsbCBiZWVpbmcgdGhlcmUgZm9yIGENCj4gPiA+IGZpbGVzeXN0ZW0gLQ0KPiA+DQo+
+ID4gV2h5IG5vdD8NCj4gPg0KPiA+ID4gcmVtZW1iZXIgeW91IGNhbiBnZXQgbWVkaWEgZnJvbSBh
+bGwgb3ZlciB0aGUgcGxhY2UuDQo+ID4NCj4gPiBObyB5b3UgY2FuJ3QuIFRoaXMgaXMgYSBmbGFz
+aCBmaWxlIHN5c3RlbSBmb3Igc29sZGVyZWQgZG93biBmbGFzaC4gSQ0KPiA+IHRoaW5rIHRoYXQg
+aXMgYSBmdW5kYW1lbnRhbCBwbGFjZSB3aGVyZSB5b3VyIHVuZGVyc3RhbmRpbmcgb2Ygd2hhdCB5
+YWZmcw0KPiA+IGlzIGZhbGxzIGRvd24uDQoNCkknbSBub3Qgc3VyZSBJIHJlYWxseSB1bmRlcnN0
+YW5kIHdoYXQgQ2hyaXN0b3BoIG1lYW5zIGJ5ICJnZXQgbWVkaWEgZnJvbSBhbGwgDQpvdmVyIHRo
+ZSBwbGFjZSIuIEkgdG9vayB0aGF0IHRvIG1lYW4gaGUgdGhpbmtzIHBlb3BsZSB3aWxsIHB1ZyBp
+biByYW5kb20gDQpmbGFzaCBjYXJkcyBhbmQgd291bGQgbmVlZCB0byBmaWRkbGUgd2l0aCBvcHRp
+b25zIHRvIG1ha2UgdGhlbSB3b3JrLiBUaGF0IA0Kd291bGQgb2YgY291cnNlIHN1Y2sgYmFkbHku
+DQoNClRoYXQgaXMgb2J2aW91c2x5IG5vdCB0aGUgY2FzZSBmb3IgYSBmbGFzaCBmaWxlIHN5c3Rl
+bSB1c2VkIG9uIGhhcmQtd2lyZWQgDQpmbGFzaCB3aGVyZSB0aGUgc3lzdGVtIGludGVncmF0b3Ig
+aXMgaW4gY29udHJvbC4gVXNlcnMgZG9uJ3QgZ2V0IHRvIGZpZGRsZS4NCg0KPg0KPiBFdmVuIGZv
+ciBlbWJlZGRlZCBzeXN0ZW1zIHBlb3BsZSBkbyBlbmQgdXAgd2FudGluZyB0byBkbyB0aGluZ3Mg
+bGlrZQ0KPiB1c2luZyB0aGUgc2FtZSBrZXJuZWwgb24gbXVsdGlwbGUgc3lzdGVtcyB3aGljaCBt
+YXkgaGF2ZSBkaWZmZXJlbnQNCj4gaGFyZHdhcmUgY29uZmlndXJhdGlvbnMgKGRpc3Ryb3MgYW5k
+IHJlZmVyZW5jZSBib2FyZHMgYXJlIHRoZSBvYnZpb3VzDQo+IGV4YW1wbGVzLCBidXQgSSd2ZSB3
+b3JrZWQgb24gc3lzdGVtcyB3aGVyZSBtdWx0aXBsZSBnZW5lcmF0aW9ucyBhbmQNCj4gYnVpbGRz
+IG9mIHRoZSBwcm9kdWN0IHdlcmUgaW4gYWN0aXZlIHVzZSBhbmQgc2ltaWxhciBlbm91Z2ggdG8g
+YmUNCj4gbWFpbnRhaW5lZCBmcm9tIHRoZSBzYW1lIGtlcm5lbCkuICBFdmVuIHdpdGggc2luZ2xl
+IHN5c3RlbSBrZXJuZWxzDQo+IHRoZXJlJ3Mgc3RpbGwgYW4gaXNzdWUgd2l0aCB0aGluZ3MgbGlr
+ZSByZWZlcmVuY2UgYm9hcmRzIHdoZXJlIHVzZXJzIGFyZQ0KPiBkb2luZyB0aGluZ3MgbGlrZSBw
+aWNraW5nIHVwIGEgbmV3IHVwc3RyZWFtIGtlcm5lbCByYXRoZXIgdGhhbiB0aGUNCj4gdmVuZG9y
+IEJTUC4NCg0KRXZlcnkgb25lIG9mIHRoZSAic3R1cGlkIGNvbXBpbGUgdGltZSBvcHRpb25zIiBp
+cyB0aGVyZSBiZWNhdXNlIHNvbWVvbmUgdGhhdCANCmFjdHVhbGx5ICoqdXNlcyoqIHlhZmZzIHdh
+bnRlZCBpdC4gTm9uZSBhcmUgdGhlcmUganVzdCBmb3IgZnVuLiBUaGUgDQpjb21waWxlLXRpbWUg
+c3dpdGNoZXMgYXJlIHZlcnkgbGltaXRlZCAtIG1vc3RseSBqdXN0IHRoZXJlIHRvIHNldCB1cCBk
+ZWZhdWx0IA0KcnVudGltZSBmbGFncyB0aGF0IGNhbiBiZSBvdmVycmlkZGVuIGF0IHJ1bnRpbWUu
+IFNvbWUgb2YgdGhlbSBhcmUgdGhlcmUgdG8gDQp3b3JrIGFyb3VuZCBidWdzIGFuZCBsaW1pdGF0
+aW9ucyBpbiB0aGUgbXRkLg0KDQpFdmVuIHdpdGggQlNQcywgdGhlcmUgd2lsbCBvZnRlbiBiZSBz
+b21lIGJvYXJkIHR1bmluZyB0bywgZG8gdGhpbmdzIGxpa2Ugc2V0IA0KdXAgdGhlIG10ZCBwYXJ0
+aXRpb25zLg0KDQpQaWNraW5nIHVwIGFuIG5ldyBrZXJuZWwgaXMgZWFzeSwgc28gbG9uZyBhcyB0
+aGUgbXRkIGNvZGUgaGFzIG5vdCBiZWVuIGJyb2tlbiANCmluIHRoZSBpbnRlcnVtLiANCg0KTGFz
+dCB3ZWVrIEkgZHJvcHBlZCB0aGUgeWFmZnMgY29kZSBpbnRvIGFuIG9tYXAzIGJ1aWxkIG9mIDIu
+Ni4zNyB3aXRoIG5vIA0KZmlkZGxpbmcgYW5kIHdpdGggZGVmYXVsdCBzZXR0aW5ncyBhbmQgaXQg
+Imp1c3Qgd29ya2VkIi4NCg0KPg0KPiA+ID4gSWYgeW91IGNhbid0IGVuY29kZSB0aGVzZSBkaWZm
+ZXJlbmNlIGluIHlvdXIgb24tZGlzayBmb3JtYXQgaXQgaGFzDQo+ID4gPiBhYnNvbHV0ZWx5IG5v
+IGJ1c2luZXNzIGdvaW5nIGludG8gbWFpbmxpbmUgd2l0aCB0aGlzIGZvcm1hdC4NCj4gPg0KPiA+
+IFlhZmZzIGRvZXMgbm90IHJlYWxseSBoYXZlIGFuIG9uLWRpc2sgZm9ybWF0IGxpa2UgbW9zdCBv
+dGhlciBmcyBkby4NCj4NCj4gSSdtIG5vdCBzdXJlIGV4YWN0bHkgaG93IHlvdSdkIGRvIHRoaXMg
+Zm9yIGEgZmlsZXN5c3RlbSBidXQgdGhpcyBpcw0KPiBzdGFydGluZyB0byBzb3VuZCBhIGxvdCBs
+aWtlIHBsYXRmb3JtIGRhdGEuLi4gIFRob3VnaCBwcmVzdW1hYmx5IGlmIHRoZQ0KPiBkYXRhIGlz
+bid0IHN0b3JlZCBvbiB0aGUgZGV2aWNlIGN1cnJlbnRseSBpdCdkIGJlIGEgc2ltcGxlIG1hdHRl
+ciBvZg0KPiBwcm9ncmFtbWluZyAoaWYgd2FzdGVmdWwpIHRvIGFkZCBpdC4NCg0KTkIgZmxhc2gg
+ZmlsZSBzeXN0ZW0gLSBub3QgZmlsZSBzeXN0ZW0hIFdvcmtpbmcgdmlhIG10ZCBpcyBkaWZmZXJl
+bnQgdG8gDQp3b3JraW5nIHZpYSBibG9ja3MuDQoNCk1vc3Qgb2YgdGhlIHJlcXVpcmVkIGRhdGEg
+aXMgcGFzc2VkIHRocm91Z2ggbXRkIGFuZCB5b3UgZG9uJ3QgbmVlZCBhbnkgc3BlY2lhbCANCnBs
+YXRmb3JtIGRhdGEgYmV5b25kIHRoZSBuYW5kIHNldHVwIGluIHRoZSBib2FyZCB0dW5pbmcgZmls
+ZS4NCg0KDQoNCg0KLS0NClRvIHVuc3Vic2NyaWJlIGZyb20gdGhpcyBsaXN0OiBzZW5kIHRoZSBs
+aW5lICJ1bnN1YnNjcmliZSBsaW51eC1rZXJuZWwiIGluDQp0aGUgYm9keSBvZiBhIG1lc3NhZ2Ug
+dG8gbWFqb3Jkb21vQHZnZXIua2VybmVsLm9yZw0KTW9yZSBtYWpvcmRvbW8gaW5mbyBhdCAgaHR0
+cDovL3ZnZXIua2VybmVsLm9yZy9tYWpvcmRvbW8taW5mby5odG1sDQpQbGVhc2UgcmVhZCB0aGUg
+RkFRIGF0ICBodHRwOi8vd3d3LnR1eC5vcmcvbGttbC8NCg0K
+
+--ANTIGEN-8931-3223-7765-4991-12290-13542--
