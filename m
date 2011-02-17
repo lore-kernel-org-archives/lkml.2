@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab1BQPy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:54:56 -0500
-Received: from cantor.suse.de ([195.135.220.2]:53078 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab1BQPyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:54:55 -0500
-Date: Thu, 17 Feb 2011 16:54:52 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Ryota Ozaki <ozaki.ryota@gmail.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm: Fix out-of-date comments which refers non-existent
- functions
-In-Reply-To: <AANLkTikFEjeVJ2HY_KTv29y63bt_+8SwWm7K3Ywdw570@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1102171654400.2160@pobox.suse.cz>
-References: <1297313788-10905-1-git-send-email-ozaki.ryota@gmail.com> <AANLkTikFEjeVJ2HY_KTv29y63bt_+8SwWm7K3Ywdw570@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756775Ab1BQP4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:56:11 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:57994 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab1BQP4I convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Thu, 17 Feb 2011 10:56:08 -0500
+Message-Id: <4D5D535A0200007800032730@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 17 Feb 2011 15:56:58 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: combine printk()s in show_regs_common()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Feb 2011, Minchan Kim wrote:
+Printing a single character alone when there's an immediately following
+printk() is pretty pointless (and wasteful).
 
-> > From: Ryota Ozaki <ozaki.ryota@gmail.com>
-> >
-> > do_file_page and do_no_page don't exist anymore, but some comments
-> > still refers them. The patch fixes them by replacing them with
-> > existing ones.
-> >
-> > Signed-off-by: Ryota Ozaki <ozaki.ryota@gmail.com>
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Cc: Jiri Kosina <trivial@kernel.org>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-As it's not in linux-next, I have picked it up. Thanks,
+---
+ arch/x86/kernel/process.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+--- 2.6.38-rc5/arch/x86/kernel/process.c
++++ 2.6.38-rc5-x86-show-regs-fold-printks/arch/x86/kernel/process.c
+@@ -110,12 +110,9 @@ void show_regs_common(void)
+ 		init_utsname()->release,
+ 		(int)strcspn(init_utsname()->version, " "),
+ 		init_utsname()->version);
+-	printk(KERN_CONT " ");
+-	printk(KERN_CONT "%s %s", vendor, product);
+-	if (board) {
+-		printk(KERN_CONT "/");
+-		printk(KERN_CONT "%s", board);
+-	}
++	printk(KERN_CONT " %s %s", vendor, product);
++	if (board)
++		printk(KERN_CONT "/%s", board);
+ 	printk(KERN_CONT "\n");
+ }
+ 
+
+
+
