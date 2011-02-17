@@ -1,265 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab1BQRLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:11:41 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:47694 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757207Ab1BQRLe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:11:34 -0500
-Message-Id: <20110217163235.790717562@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Thu, 17 Feb 2011 17:23:43 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 16/17] ia64, mm: Convert ia64 to generic tlb
-References: <20110217162327.434629380@chello.nl>
-Content-Disposition: inline; filename=mm-ia64-tlb-range.patch
+	id S1757264Ab1BQRLx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:11:53 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35031 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757132Ab1BQRLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 12:11:48 -0500
+Date: Thu, 17 Feb 2011 18:11:31 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-ID: <20110217171131.GA17058@elte.hu>
+References: <20110131154259.dca1f7e6.sfr@canb.auug.org.au>
+ <20110217144743.2db26b27.sfr@canb.auug.org.au>
+ <4D5D201A.8090304@suse.cz>
+ <20110217150200.GA32177@sepie.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110217150200.GA32177@sepie.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/ia64/Kconfig           |    1 
- arch/ia64/include/asm/tlb.h |  176 ++------------------------------------------
- 2 files changed, 9 insertions(+), 168 deletions(-)
 
-Index: linux-2.6/arch/ia64/Kconfig
-===================================================================
---- linux-2.6.orig/arch/ia64/Kconfig
-+++ linux-2.6/arch/ia64/Kconfig
-@@ -25,6 +25,7 @@ config IA64
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
-+	select HAVE_MMU_GATHER_RANGE
- 	select IRQ_PER_CPU
- 	default y
- 	help
-Index: linux-2.6/arch/ia64/include/asm/tlb.h
-===================================================================
---- linux-2.6.orig/arch/ia64/include/asm/tlb.h
-+++ linux-2.6/arch/ia64/include/asm/tlb.h
-@@ -46,30 +46,6 @@
- #include <asm/tlbflush.h>
- #include <asm/machvec.h>
- 
--#ifdef CONFIG_SMP
--# define tlb_fast_mode(tlb)	((tlb)->nr == ~0U)
--#else
--# define tlb_fast_mode(tlb)	(1)
--#endif
--
--/*
-- * If we can't allocate a page to make a big batch of page pointers
-- * to work on, then just handle a few from the on-stack structure.
-- */
--#define	IA64_GATHER_BUNDLE	8
--
--struct mmu_gather {
--	struct mm_struct	*mm;
--	unsigned int		nr;		/* == ~0U => fast mode */
--	unsigned int		max;
--	unsigned char		fullmm;		/* non-zero means full mm flush */
--	unsigned char		need_flush;	/* really unmapped some PTEs? */
--	unsigned long		start_addr;
--	unsigned long		end_addr;
--	struct page		**pages;
--	struct page		*local[IA64_GATHER_BUNDLE];
--};
--
- struct ia64_tr_entry {
- 	u64 ifa;
- 	u64 itir;
-@@ -96,6 +72,12 @@ extern struct ia64_tr_entry *ia64_idtrs[
- #define RR_RID_MASK	0x00000000ffffff00L
- #define RR_TO_RID(val) 	((val >> 8) & 0xffffff)
- 
-+static inline void tlb_flush(struct mmu_gather *tlb);
-+
-+#define tlb_migrate_finish(mm)	platform_tlb_migrate_finish(mm)
-+
-+#include <asm-generic/tlb.h>
-+
- /*
-  * Flush the TLB for address range START to END and, if not in fast mode, release the
-  * freed pages that where gathered up to this point.
-@@ -103,12 +85,6 @@ extern struct ia64_tr_entry *ia64_idtrs[
- static inline void
- ia64_tlb_flush_mmu (struct mmu_gather *tlb, unsigned long start, unsigned long end)
- {
--	unsigned int nr;
--
--	if (!tlb->need_flush)
--		return;
--	tlb->need_flush = 0;
--
- 	if (tlb->fullmm) {
- 		/*
- 		 * Tearing down the entire address space.  This happens both as a result
-@@ -138,147 +114,11 @@ ia64_tlb_flush_mmu (struct mmu_gather *t
- 		/* now flush the virt. page-table area mapping the address range: */
- 		flush_tlb_range(&vma, ia64_thash(start), ia64_thash(end));
- 	}
--
--	/* lastly, release the freed pages */
--	nr = tlb->nr;
--	if (!tlb_fast_mode(tlb)) {
--		unsigned long i;
--		tlb->nr = 0;
--		tlb->start_addr = ~0UL;
--		for (i = 0; i < nr; ++i)
--			free_page_and_swap_cache(tlb->pages[i]);
--	}
--}
--
--static inline void __tlb_alloc_page(struct mmu_gather *tlb)
--{
--	unsigned long addr = __get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
--
--	if (addr) {
--		tlb->pages = (void *)addr;
--		tlb->max = PAGE_SIZE / sizeof(void *);
--	}
--}
--
--
--static inline void
--tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
--{
--	tlb->mm = mm;
--	tlb->max = ARRAY_SIZE(tlb->local);
--	tlb->pages = tlb->local;
--	/*
--	 * Use fast mode if only 1 CPU is online.
--	 *
--	 * It would be tempting to turn on fast-mode for full_mm_flush as well.  But this
--	 * doesn't work because of speculative accesses and software prefetching: the page
--	 * table of "mm" may (and usually is) the currently active page table and even
--	 * though the kernel won't do any user-space accesses during the TLB shoot down, a
--	 * compiler might use speculation or lfetch.fault on what happens to be a valid
--	 * user-space address.  This in turn could trigger a TLB miss fault (or a VHPT
--	 * walk) and re-insert a TLB entry we just removed.  Slow mode avoids such
--	 * problems.  (We could make fast-mode work by switching the current task to a
--	 * different "mm" during the shootdown.) --davidm 08/02/2002
--	 */
--	tlb->nr = (num_online_cpus() == 1) ? ~0U : 0;
--	tlb->fullmm = full_mm_flush;
--	tlb->start_addr = ~0UL;
--}
--
--/*
-- * Called at the end of the shootdown operation to free up any resources that were
-- * collected.
-- */
--static inline void
--tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
--{
--	/*
--	 * Note: tlb->nr may be 0 at this point, so we can't rely on tlb->start_addr and
--	 * tlb->end_addr.
--	 */
--	ia64_tlb_flush_mmu(tlb, start, end);
--
--	/* keep the page table cache within bounds */
--	check_pgt_cache();
--
--	if (tlb->pages != tlb->local)
--		free_pages((unsigned long)tlb->pages, 0);
--}
--
--/*
-- * Logically, this routine frees PAGE.  On MP machines, the actual freeing of the page
-- * must be delayed until after the TLB has been flushed (see comments at the beginning of
-- * this file).
-- */
--static inline int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
--{
--	tlb->need_flush = 1;
--
--	if (tlb_fast_mode(tlb)) {
--		free_page_and_swap_cache(page);
--		return 0;
--	}
--
--	if (!tlb->nr && tlb->pages == tlb->local)
--		__tlb_alloc_page(tlb);
--
--	tlb->pages[tlb->nr++] = page;
--	if (tlb->nr >= tlb->max)
--		return 1;
--
--	return 0;
- }
- 
--static inline void tlb_flush_mmu(struct mmu_gather *tlb)
-+static inline void tlb_flush(struct mmu_gather *tlb)
- {
--	ia64_tlb_flush_mmu(tlb, tlb->start_addr, tlb->end_addr);
-+	ia64_tlb_flush_mmu(tlb, tlb->start, tlb->end);
- }
- 
--static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
--{
--	if (__tlb_remove_page(tlb, page))
--		tlb_flush_mmu(tlb);
--}
--
--/*
-- * Remove TLB entry for PTE mapped at virtual address ADDRESS.  This is called for any
-- * PTE, not just those pointing to (normal) physical memory.
-- */
--static inline void
--__tlb_remove_tlb_entry (struct mmu_gather *tlb, pte_t *ptep, unsigned long address)
--{
--	if (tlb->start_addr == ~0UL)
--		tlb->start_addr = address;
--	tlb->end_addr = address + PAGE_SIZE;
--}
--
--#define tlb_migrate_finish(mm)	platform_tlb_migrate_finish(mm)
--
--#define tlb_start_vma(tlb, vma)			do { } while (0)
--#define tlb_end_vma(tlb, vma)			do { } while (0)
--
--#define tlb_remove_tlb_entry(tlb, ptep, addr)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__tlb_remove_tlb_entry(tlb, ptep, addr);	\
--} while (0)
--
--#define pte_free_tlb(tlb, ptep, address)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__pte_free_tlb(tlb, ptep, address);		\
--} while (0)
--
--#define pmd_free_tlb(tlb, ptep, address)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__pmd_free_tlb(tlb, ptep, address);		\
--} while (0)
--
--#define pud_free_tlb(tlb, pudp, address)		\
--do {							\
--	tlb->need_flush = 1;				\
--	__pud_free_tlb(tlb, pudp, address);		\
--} while (0)
--
- #endif /* _ASM_IA64_TLB_H */
+* Michal Marek <mmarek@suse.cz> wrote:
 
+> @@ -340,9 +342,16 @@ static void parse_dep_file(void *map, size_t len)
+>  		if (strrcmp(s, "include/generated/autoconf.h") &&
+>  		    strrcmp(s, "arch/um/include/uml-config.h") &&
+>  		    strrcmp(s, ".ver")) {
+> -			printf("  %s \\\n", s);
+> +			/* Do not output the first dependency (the
+> +			 * source file), so that kbuild is not confused
+> +			 * if a .c file is rewritten into .S or vice
+> +			 * versa.
+> +			 */
 
+Just a really minor nitpick, please use the standard comment style:
+
+  /*
+   * Comment .....
+   * ...... goes here.
+   */
+
+specified in Documentation/CodingStyle.
+
+Thanks,
+
+	Ingo
