@@ -1,434 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab1BQLKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 06:10:19 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:48845 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab1BQLKP (ORCPT
+	id S1755546Ab1BQLPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 06:15:21 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55803 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab1BQLPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 06:10:15 -0500
-Subject: Re: [PATCH] Enable Dell All-In-One volume up/down keys
-From: Colin Ian King <colin.king@canonical.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110217075256.GB19814@core.coreip.homeip.net>
-References: <1297688524-26123-1-git-send-email-colin.king@canonical.com>
-	 <20110217075256.GB19814@core.coreip.homeip.net>
-Content-Type: multipart/mixed; boundary="=-NEv28beqqSx+7cH8W4Tb"
-Date: Thu, 17 Feb 2011 11:10:11 +0000
-Message-ID: <1297941011.2234.32.camel@lenovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 17 Feb 2011 06:15:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=csVcLvzh3huxfchtYwayR4m2CITK/ontuyyBL9Nm6RACIBedtIP7TPwKDmoxmtLFwy
+         3Qro/E8Fn8RRMYyxPPshAxbMrYHkG1r1MQoI0qlG7JnP/IzqTtAsEgJAqbZUyyMHaZsR
+         /BaILW25RWHUo2T20jRWY4JfivDJga2QRdzbk=
+Date: Thu, 17 Feb 2011 12:15:11 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jan Beulich <JBeulich@novell.com>, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [PATCH v2.6.38-rc5 1/2] block: add @force_kblockd to
+ __blk_run_queue()
+Message-ID: <20110217111511.GQ19830@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+__blk_run_queue() automatically either calls q->request_fn() directly
+or schedules kblockd depending on whether the function is recursed.
+blk-flush implementation needs to be able to explicitly choose
+kblockd.  Add @force_kblockd.
 
---=-NEv28beqqSx+7cH8W4Tb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+All the current users are converted to specify %false for the
+parameter and this patch doesn't introduce any behavior change.
 
-Thanks for your feedback Dmitry,
+stable: This is prerequisite for fixing ide oops caused by the new
+        blk-flush implementation.
 
-On Wed, 2011-02-16 at 23:52 -0800, Dmitry Torokhov wrote:
-> Hi Colin,
-> 
-> On Mon, Feb 14, 2011 at 01:02:04PM +0000, Colin King wrote:
-> > From: Colin Ian King <colin.king@canonical.com>
-> > 
-> > Enable volume up and down hotkeys on WMI events
-> > GUID 284A0E6B-380E-472A-921F-E52786257FB and
-> > GUID 02314822-307C-4F66-bf0E-48AEAEB26CC8.
-> > 
-> > Also works around a firmware bug where the _WED method
-> > should return an integer containing the key code and in fact
-> > the method returns the key code in element zero of a buffer.
-> > 
-> > BugLink: http://bugs.launchpad.net/bugs/701530
-> > BugLink: http://bugs.launchpad.net/bugs/676997
-> 
-> Looks generally good, one question though - should't it be part of
-> dell-wmi driver?
-
-Good question.  A couple of points:
-
-1. The Dell All-In-One WMI hotkey mechanism is a little different from
-the
-normal Dell WMI hotkey mechanism, so I didn't really want to clutter up
-the
-Dell WMI driver with exceptions for these particular GUIDs and notifier
-IDs.
-
-2. These keys appear on a very limited subset of Dell machines, so
-keeping
-this code out of the Dell WMI driver for the majority of Dell machines
-will
-keep the original Dell WMI driver smaller. 
-
-3. I expect further additions in functionality for these machines, which
-makes sense to keep it specific to this limited All-In-One driver.
-
-As it stands, this All-In-One interface has already been implemented by
-two different BIOS vendors and already there are two different
-implementations. I'd like to keep this all in one specific driver for
-this class of machine if possible.
-
-> > +config DELL_WMI_AIO
-> > +       tristate "WMI Hotkeys for Dell All-In-One series"
-> > +       depends on ACPI_WMI
-> > +       depends on INPUT
-> 
-> select INPUT_SPARSEKMAP
-> 
-> > +
-> > +#define AIO_PREFIX	"dell-wmi-aio: "
-> 
-> Just use
-> 
-> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> 
-> and drop AIO_PREFIX from messages.
-> 
-> > +
-> > +MODULE_DESCRIPTION("WMI hotkeys driver for Dell All-In-One series");
-> > +MODULE_LICENSE("GPL");
-> > +
-> > +#define EVENT_GUID1 "284A0E6B-380E-472A-921F-E52786257FB4"
-> > +#define EVENT_GUID2 "02314822-307C-4F66-BF0E-48AEAEB26CC8"
-> > +
-> > +static char *dell_wmi_aio_guids[] = {
-> > +	EVENT_GUID1,
-> > +	EVENT_GUID2,
-> > +	NULL
-> > +};
-> > +
-> > +MODULE_ALIAS("wmi:"EVENT_GUID1);
-> > +MODULE_ALIAS("wmi:"EVENT_GUID2);
-> > +
-> > +static struct key_entry dell_wmi_aio_keymap[] = {
-> 
-> const
-> 
-> > +
-> > +static char *dell_wmi_aio_find(void)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; dell_wmi_aio_guids[i] != NULL; i++)
-> > +		if (wmi_has_guid(dell_wmi_aio_guids[i]))
-> > +			return dell_wmi_aio_guids[i];
-> > +
-> > +	return NULL;
-> > +}
-> > +
-> > +static int __init dell_wmi_aio_init(void)
-> > +{
-> > +	int err;
-> > +	char *guid;
-> > +
-> > +	guid = dell_wmi_aio_find();
-> > +	if (guid) {
-> > +		err = dell_wmi_aio_input_setup();
-> > +
-> > +		if (err)
-> > +			return err;
-> > +
-> > +		err = wmi_install_notify_handler(guid,
-> > +			dell_wmi_aio_notify, NULL);
-> > +		if (err) {
-> > +			input_unregister_device(dell_wmi_aio_input_dev);
-> > +			pr_err(AIO_PREFIX "Unable to register"
-> > +			       " notify handler - %d\n", err);
-> 
-> Do not break the strings - 80-columr rule does not apply to messages.
-> 
-> > +			return err;
-> > +		}
-> > +	} else
-> > +		pr_warning(AIO_PREFIX "No known WMI GUID found\n");
-> > +
-> > +	return 0;
-> 
-> If you did not find known guid you shold return -ENXIO so that the
-> driver aborts loading into memory (if it is compiled as a module -
-> likely).
-> 
-> > +}
-> > +
-> > +static void __exit dell_wmi_aio_exit(void)
-> > +{
-> > +	char *guid;
-> > +
-> > +	guid = dell_wmi_aio_find();
-> 
-> And if you fail loading you do not need to check it here.
-> 
-> > +	if (guid) {
-> > +		wmi_remove_notify_handler(guid);
-> > +		input_unregister_device(dell_wmi_aio_input_dev);
-> > +	}
-> > +}
-> > +
-> > +module_init(dell_wmi_aio_init);
-> > +module_exit(dell_wmi_aio_exit);
-> 
-> Thanks,
-> 
-I took your recommendations and attached is the updated patch.
-
-Thanks,
-
-Colin
-
-
-
---=-NEv28beqqSx+7cH8W4Tb
-Content-Disposition: attachment; filename="0001-PATCH-Enable-Dell-All-In-One-volume-up-down-keys.patch"
-Content-Type: text/x-patch; name="0001-PATCH-Enable-Dell-All-In-One-volume-up-down-keys.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From 7a4c2b706317df9be5b7514934e87412fa64eaf4 Mon Sep 17 00:00:00 2001
-From: Colin Ian King <colin.king@canonical.com>
-Date: Thu, 17 Feb 2011 10:49:30 +0000
-Subject: [PATCH] Enable Dell All-In-One volume up/down keys
-
-Enable volume up and down hotkeys on WMI events
-GUID 284A0E6B-380E-472A-921F-E52786257FB4 and
-GUID 02314822-307C-4F66-bf0E-48AEAEB26CC8.
-
-Also works around a firmware bug where the _WED method
-should return an integer containing the key code and in fact
-the method returns the key code in element zero of a buffer.
-
-BugLink: http://bugs.launchpad.net/bugs/701530
-BugLink: http://bugs.launchpad.net/bugs/676997
-
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jan Beulich <JBeulich@novell.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: stable@kernel.org
 ---
- drivers/platform/x86/Kconfig        |   13 +++
- drivers/platform/x86/Makefile       |    1 +
- drivers/platform/x86/dell-wmi-aio.c |  172 +++++++++++++++++++++++++++++++++++
- 3 files changed, 186 insertions(+), 0 deletions(-)
- create mode 100644 drivers/platform/x86/dell-wmi-aio.c
+ block/blk-core.c                 |   11 ++++++-----
+ block/blk-flush.c                |    2 +-
+ block/cfq-iosched.c              |    6 +++---
+ block/elevator.c                 |    4 ++--
+ drivers/scsi/scsi_lib.c          |    2 +-
+ drivers/scsi/scsi_transport_fc.c |    2 +-
+ include/linux/blkdev.h           |    2 +-
+ 7 files changed, 15 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index d163bc2..b2e8ce0 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -101,6 +101,19 @@ config DELL_WMI
- 	  To compile this driver as a module, choose M here: the module will
- 	  be called dell-wmi.
+Index: work/block/blk-core.c
+===================================================================
+--- work.orig/block/blk-core.c
++++ work/block/blk-core.c
+@@ -352,7 +352,7 @@ void blk_start_queue(struct request_queu
+ 	WARN_ON(!irqs_disabled());
  
-+config DELL_WMI_AIO
-+	tristate "WMI Hotkeys for Dell All-In-One series"
-+	depends on ACPI_WMI
-+	depends on INPUT
-+	select INPUT_SPARSEKMAP
-+	---help---
-+	  Say Y here if you want to support WMI-based hotkeys on Dell
-+	  All-In-One machines.
-+
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called dell-wmi.
-+
-+
- config FUJITSU_LAPTOP
- 	tristate "Fujitsu Laptop Extras"
- 	depends on ACPI
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 4ec4ff8..26c6a57 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_ACPI_CMPC)		+= classmate-laptop.o
- obj-$(CONFIG_COMPAL_LAPTOP)	+= compal-laptop.o
- obj-$(CONFIG_DELL_LAPTOP)	+= dell-laptop.o
- obj-$(CONFIG_DELL_WMI)		+= dell-wmi.o
-+obj-$(CONFIG_DELL_WMI_AIO)	+= dell-wmi-aio.o
- obj-$(CONFIG_ACER_WMI)		+= acer-wmi.o
- obj-$(CONFIG_ACERHDF)		+= acerhdf.o
- obj-$(CONFIG_HP_WMI)		+= hp-wmi.o
-diff --git a/drivers/platform/x86/dell-wmi-aio.c b/drivers/platform/x86/dell-wmi-aio.c
-new file mode 100644
-index 0000000..7304640
---- /dev/null
-+++ b/drivers/platform/x86/dell-wmi-aio.c
-@@ -0,0 +1,172 @@
-+/*
-+ *  WMI hotkeys support for Dell All-In-One series
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/input.h>
-+#include <linux/input/sparse-keymap.h>
-+#include <acpi/acpi_drivers.h>
-+#include <linux/acpi.h>
-+#include <linux/string.h>
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+MODULE_DESCRIPTION("WMI hotkeys driver for Dell All-In-One series");
-+MODULE_LICENSE("GPL");
-+
-+#define EVENT_GUID1 "284A0E6B-380E-472A-921F-E52786257FB4"
-+#define EVENT_GUID2 "02314822-307C-4F66-BF0E-48AEAEB26CC8"
-+
-+static const char *dell_wmi_aio_guids[] = {
-+	EVENT_GUID1,
-+	EVENT_GUID2,
-+	NULL
-+};
-+
-+MODULE_ALIAS("wmi:"EVENT_GUID1);
-+MODULE_ALIAS("wmi:"EVENT_GUID2);
-+
-+static const struct key_entry dell_wmi_aio_keymap[] = {
-+	{ KE_KEY, 0xc0, { KEY_VOLUMEUP } },
-+	{ KE_KEY, 0xc1, { KEY_VOLUMEDOWN } },
-+	{ KE_END, 0 }
-+};
-+
-+static struct input_dev *dell_wmi_aio_input_dev;
-+
-+static void dell_wmi_aio_notify(u32 value, void *context)
-+{
-+	struct acpi_buffer response = { ACPI_ALLOCATE_BUFFER, NULL };
-+	union acpi_object *obj;
-+	acpi_status status;
-+
-+	status = wmi_get_event_data(value, &response);
-+	if (status != AE_OK) {
-+		pr_info("bad event status 0x%x\n", status);
-+		return;
-+	}
-+
-+	obj = (union acpi_object *)response.pointer;
-+	if (obj) {
-+		unsigned int scancode;
-+
-+		switch (obj->type) {
-+		case ACPI_TYPE_INTEGER:
-+			/* Most All-In-One correctly return integer scancode */
-+			scancode = obj->integer.value;
-+			sparse_keymap_report_event(dell_wmi_aio_input_dev,
-+				scancode, 1, true);
-+			break;
-+		case ACPI_TYPE_BUFFER:
-+			/* Broken machines return the scancode in a buffer */
-+			if (obj->buffer.pointer && obj->buffer.length > 0) {
-+				scancode = obj->buffer.pointer[0];
-+				sparse_keymap_report_event(
-+					dell_wmi_aio_input_dev,
-+					scancode, 1, true);
-+			}
-+			break;
-+		}
-+	}
-+	kfree(obj);
-+}
-+
-+static int __init dell_wmi_aio_input_setup(void)
-+{
-+	int err;
-+
-+	dell_wmi_aio_input_dev = input_allocate_device();
-+
-+	if (!dell_wmi_aio_input_dev)
-+		return -ENOMEM;
-+
-+	dell_wmi_aio_input_dev->name = "Dell AIO WMI hotkeys";
-+	dell_wmi_aio_input_dev->phys = "wmi/input0";
-+	dell_wmi_aio_input_dev->id.bustype = BUS_HOST;
-+
-+	err = sparse_keymap_setup(dell_wmi_aio_input_dev,
-+			dell_wmi_aio_keymap, NULL);
-+	if (err) {
-+		pr_err("Unable to setup input device keymap\n");
-+		goto err_free_dev;
-+	}
-+	err = input_register_device(dell_wmi_aio_input_dev);
-+	if (err) {
-+		pr_info("Unable to register input device\n");
-+		goto err_free_keymap;
-+	}
-+	return 0;
-+
-+err_free_keymap:
-+	sparse_keymap_free(dell_wmi_aio_input_dev);
-+err_free_dev:
-+	input_free_device(dell_wmi_aio_input_dev);
-+	return err;
-+}
-+
-+static char *dell_wmi_aio_find(void)
-+{
-+	int i;
-+
-+	for (i = 0; dell_wmi_aio_guids[i] != NULL; i++)
-+		if (wmi_has_guid(dell_wmi_aio_guids[i]))
-+			return dell_wmi_aio_guids[i];
-+
-+	return NULL;
-+}
-+
-+static int __init dell_wmi_aio_init(void)
-+{
-+	int err;
-+	char *guid;
-+
-+	guid = dell_wmi_aio_find();
-+	if (guid) {
-+		err = dell_wmi_aio_input_setup();
-+
-+		if (err)
-+			return err;
-+
-+		err = wmi_install_notify_handler(guid,
-+			dell_wmi_aio_notify, NULL);
-+		if (err) {
-+			input_unregister_device(dell_wmi_aio_input_dev);
-+			pr_err("Unable to register notify handler - %d\n", err);
-+			return err;
-+		}
-+	} else {
-+		pr_warning("No known WMI GUID found\n");
-+		return -ENXIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static void __exit dell_wmi_aio_exit(void)
-+{
-+	char *guid;
-+
-+	guid = dell_wmi_aio_find();
-+	wmi_remove_notify_handler(guid);
-+	input_unregister_device(dell_wmi_aio_input_dev);
-+}
-+
-+module_init(dell_wmi_aio_init);
-+module_exit(dell_wmi_aio_exit);
--- 
-1.7.2.3
-
-
---=-NEv28beqqSx+7cH8W4Tb--
-
+ 	queue_flag_clear(QUEUE_FLAG_STOPPED, q);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ }
+ EXPORT_SYMBOL(blk_start_queue);
+ 
+@@ -403,13 +403,14 @@ EXPORT_SYMBOL(blk_sync_queue);
+ /**
+  * __blk_run_queue - run a single device queue
+  * @q:	The queue to run
++ * @force_kblockd: Don't run @q->request_fn directly.  Use kblockd.
+  *
+  * Description:
+  *    See @blk_run_queue. This variant must be called with the queue lock
+  *    held and interrupts disabled.
+  *
+  */
+-void __blk_run_queue(struct request_queue *q)
++void __blk_run_queue(struct request_queue *q, bool force_kblockd)
+ {
+ 	blk_remove_plug(q);
+ 
+@@ -423,7 +424,7 @@ void __blk_run_queue(struct request_queu
+ 	 * Only recurse once to avoid overrunning the stack, let the unplug
+ 	 * handling reinvoke the handler shortly if we already got there.
+ 	 */
+-	if (!queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
++	if (!force_kblockd && !queue_flag_test_and_set(QUEUE_FLAG_REENTER, q)) {
+ 		q->request_fn(q);
+ 		queue_flag_clear(QUEUE_FLAG_REENTER, q);
+ 	} else {
+@@ -446,7 +447,7 @@ void blk_run_queue(struct request_queue
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(q->queue_lock, flags);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ EXPORT_SYMBOL(blk_run_queue);
+@@ -1053,7 +1054,7 @@ void blk_insert_request(struct request_q
+ 
+ 	drive_stat_acct(rq, 1);
+ 	__elv_add_request(q, rq, where, 0);
+-	__blk_run_queue(q);
++	__blk_run_queue(q, false);
+ 	spin_unlock_irqrestore(q->queue_lock, flags);
+ }
+ EXPORT_SYMBOL(blk_insert_request);
+Index: work/block/blk-flush.c
+===================================================================
+--- work.orig/block/blk-flush.c
++++ work/block/blk-flush.c
+@@ -69,7 +69,7 @@ static void blk_flush_complete_seq_end_i
+ 	 * queue.  Kick the queue in those cases.
+ 	 */
+ 	if (was_empty && next_rq)
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ }
+ 
+ static void pre_flush_end_io(struct request *rq, int error)
+Index: work/block/cfq-iosched.c
+===================================================================
+--- work.orig/block/cfq-iosched.c
++++ work/block/cfq-iosched.c
+@@ -3355,7 +3355,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, s
+ 			    cfqd->busy_queues > 1) {
+ 				cfq_del_timer(cfqd, cfqq);
+ 				cfq_clear_cfqq_wait_request(cfqq);
+-				__blk_run_queue(cfqd->queue);
++				__blk_run_queue(cfqd->queue, false);
+ 			} else {
+ 				cfq_blkiocg_update_idle_time_stats(
+ 						&cfqq->cfqg->blkg);
+@@ -3370,7 +3370,7 @@ cfq_rq_enqueued(struct cfq_data *cfqd, s
+ 		 * this new queue is RT and the current one is BE
+ 		 */
+ 		cfq_preempt_queue(cfqd, cfqq);
+-		__blk_run_queue(cfqd->queue);
++		__blk_run_queue(cfqd->queue, false);
+ 	}
+ }
+ 
+@@ -3731,7 +3731,7 @@ static void cfq_kick_queue(struct work_s
+ 	struct request_queue *q = cfqd->queue;
+ 
+ 	spin_lock_irq(q->queue_lock);
+-	__blk_run_queue(cfqd->queue);
++	__blk_run_queue(cfqd->queue, false);
+ 	spin_unlock_irq(q->queue_lock);
+ }
+ 
+Index: work/block/elevator.c
+===================================================================
+--- work.orig/block/elevator.c
++++ work/block/elevator.c
+@@ -602,7 +602,7 @@ void elv_quiesce_start(struct request_qu
+ 	 */
+ 	elv_drain_elevator(q);
+ 	while (q->rq.elvpriv) {
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ 		spin_unlock_irq(q->queue_lock);
+ 		msleep(10);
+ 		spin_lock_irq(q->queue_lock);
+@@ -651,7 +651,7 @@ void elv_insert(struct request_queue *q,
+ 		 *   with anything.  There's no point in delaying queue
+ 		 *   processing.
+ 		 */
+-		__blk_run_queue(q);
++		__blk_run_queue(q, false);
+ 		break;
+ 
+ 	case ELEVATOR_INSERT_SORT:
+Index: work/drivers/scsi/scsi_lib.c
+===================================================================
+--- work.orig/drivers/scsi/scsi_lib.c
++++ work/drivers/scsi/scsi_lib.c
+@@ -443,7 +443,7 @@ static void scsi_run_queue(struct reques
+ 					&sdev->request_queue->queue_flags);
+ 		if (flagset)
+ 			queue_flag_set(QUEUE_FLAG_REENTER, sdev->request_queue);
+-		__blk_run_queue(sdev->request_queue);
++		__blk_run_queue(sdev->request_queue, false);
+ 		if (flagset)
+ 			queue_flag_clear(QUEUE_FLAG_REENTER, sdev->request_queue);
+ 		spin_unlock(sdev->request_queue->queue_lock);
+Index: work/drivers/scsi/scsi_transport_fc.c
+===================================================================
+--- work.orig/drivers/scsi/scsi_transport_fc.c
++++ work/drivers/scsi/scsi_transport_fc.c
+@@ -3829,7 +3829,7 @@ fc_bsg_goose_queue(struct fc_rport *rpor
+ 		  !test_bit(QUEUE_FLAG_REENTER, &rport->rqst_q->queue_flags);
+ 	if (flagset)
+ 		queue_flag_set(QUEUE_FLAG_REENTER, rport->rqst_q);
+-	__blk_run_queue(rport->rqst_q);
++	__blk_run_queue(rport->rqst_q, false);
+ 	if (flagset)
+ 		queue_flag_clear(QUEUE_FLAG_REENTER, rport->rqst_q);
+ 	spin_unlock_irqrestore(rport->rqst_q->queue_lock, flags);
+Index: work/include/linux/blkdev.h
+===================================================================
+--- work.orig/include/linux/blkdev.h
++++ work/include/linux/blkdev.h
+@@ -699,7 +699,7 @@ extern void blk_start_queue(struct reque
+ extern void blk_stop_queue(struct request_queue *q);
+ extern void blk_sync_queue(struct request_queue *q);
+ extern void __blk_stop_queue(struct request_queue *q);
+-extern void __blk_run_queue(struct request_queue *);
++extern void __blk_run_queue(struct request_queue *q, bool force_kblockd);
+ extern void blk_run_queue(struct request_queue *);
+ extern int blk_rq_map_user(struct request_queue *, struct request *,
+ 			   struct rq_map_data *, void __user *, unsigned long,
