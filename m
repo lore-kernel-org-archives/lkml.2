@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab1BQPl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:41:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52208 "EHLO mx2.suse.de"
+	id S1756292Ab1BQPnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:43:01 -0500
+Received: from cantor.suse.de ([195.135.220.2]:52559 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947Ab1BQPlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:41:51 -0500
-Date: Thu, 17 Feb 2011 16:41:48 +0100 (CET)
+	id S1753978Ab1BQPm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:42:58 -0500
+Date: Thu, 17 Feb 2011 16:42:56 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: update comments to point correct document
-In-Reply-To: <1295677892-3767-1-git-send-email-namhyung@gmail.com>
-Message-ID: <alpine.LNX.2.00.1102171641340.2160@pobox.suse.cz>
-References: <1295677892-3767-1-git-send-email-namhyung@gmail.com>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] fix Steven's Copyright typos
+In-Reply-To: <1295899921-11333-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Message-ID: <alpine.LNX.2.00.1102171642100.2160@pobox.suse.cz>
+References: <1295899921-11333-1-git-send-email-u.kleine-koenig@pengutronix.de>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Jan 2011, Namhyung Kim wrote:
+On Mon, 24 Jan 2011, Uwe Kleine-König wrote:
 
-> dcache-locking.txt is not exist any more, and the path was not
-> correct anyway. Fix it.
+> OK, the copyright allows you to write a copy, still I think the lawyers
+> prefer the correct spelling.
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 > ---
->  fs/dcache.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  scripts/kconfig/streamline_config.pl |    2 +-
+>  tools/testing/ktest/ktest.pl         |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 9f493ee4dcba..56be05ef4fe3 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1779,7 +1779,7 @@ struct dentry *__d_lookup_rcu(struct dentry *parent, struct qstr *name,
->  	 * false-negative result. d_lookup() protects against concurrent
->  	 * renames using rename_lock seqlock.
->  	 *
-> -	 * See Documentation/vfs/dcache-locking.txt for more details.
-> +	 * See Documentation/filesystems/path-lookup.txt for more details.
->  	 */
->  	hlist_bl_for_each_entry_rcu(dentry, node, &b->head, d_hash) {
->  		struct inode *i;
-> @@ -1899,7 +1899,7 @@ struct dentry *__d_lookup(struct dentry *parent, struct qstr *name)
->  	 * false-negative result. d_lookup() protects against concurrent
->  	 * renames using rename_lock seqlock.
->  	 *
-> -	 * See Documentation/vfs/dcache-locking.txt for more details.
-> +	 * See Documentation/filesystems/path-lookup.txt for more details.
->  	 */
->  	rcu_read_lock();
+> diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
+> index fd81fc3..a4fe923 100644
+> --- a/scripts/kconfig/streamline_config.pl
+> +++ b/scripts/kconfig/streamline_config.pl
+> @@ -1,6 +1,6 @@
+>  #!/usr/bin/perl -w
+>  #
+> -# Copywrite 2005-2009 - Steven Rostedt
+> +# Copyright 2005-2009 - Steven Rostedt
+>  # Licensed under the terms of the GNU GPL License version 2
+>  #
+>  #  It's simple enough to figure out how this works.
+> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+> index e1c62ee..ba7c63a 100755
+> --- a/tools/testing/ktest/ktest.pl
+> +++ b/tools/testing/ktest/ktest.pl
+> @@ -1,6 +1,6 @@
+>  #!/usr/bin/perl -w
+>  #
+> -# Copywrite 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
+> +# Copyright 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
+>  # Licensed under the terms of the GNU GPL License version 2
+>  #
 
-Doesn't seem to be present in linux-next as of today. I have picked that 
-up.
+I prefer not to fiddle with anything surrounding the Copyright lines 
+without explicit permission of the copyright holder.
+
+Steven? :)
+
+Thanks,
 
 -- 
 Jiri Kosina
