@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab1BQMhP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 07:37:15 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49866 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab1BQMhM (ORCPT
+	id S932115Ab1BQMkP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 07:40:15 -0500
+Received: from webbox687.server-home.net ([195.149.74.151]:56250 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab1BQMkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 07:37:12 -0500
-X-AuditID: b753bd60-a50bbba000004916-f6-4d5d1674b7e2
-X-AuditID: b753bd60-a50bbba000004916-f6-4d5d1674b7e2
-Message-ID: <4D5D1672.6070206@hitachi.com>
-Date: Thu, 17 Feb 2011 21:37:06 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Thu, 17 Feb 2011 07:40:13 -0500
+X-Greylist: delayed 1102 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Feb 2011 07:40:12 EST
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
+Date: Thu, 17 Feb 2011 13:21:46 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; x86_64; ; )
+Cc: Eric Miao <eric.y.miao@gmail.com>, Peter Tyser <ptyser@xes-inc.com>,
+        linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        "Uwe Kleine-K?nig" <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com> <AANLkTi=yZZgh0v+-_Cw0JudAxxTZuBWeVCEZ-dBtENPw@mail.gmail.com> <4D5D0EAA.9030807@metafoo.de>
+In-Reply-To: <4D5D0EAA.9030807@metafoo.de>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
- for x86_64 right now)
-References: <20110209200249.111932716@goodmis.org>
-In-Reply-To: <20110209200249.111932716@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Message-Id: <201102171321.47704.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/02/10 5:02), Steven Rostedt wrote:
-> Thanks to Andi Kleen gcc 4.6.0 now supports -mfentry with the -pg option
-> to place a call to __fentry__ at the very beginning of the function
-> instead of after the fact.
+On Thursday 17 February 2011, 13:03:54 Lars-Peter Clausen wrote:
+> On 02/17/2011 08:33 AM, Eric Miao wrote:
+> > On Thu, Feb 17, 2011 at 8:56 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
+> >> Previously, gpiolib would unconditionally flag all GPIO pins as inputs,
+> >> regardless of their true state.  This resulted in all GPIO output pins
+> >> initially being incorrectly identified as "input" in the GPIO sysfs.
+> >> 
+> >> Since the direction of GPIOs is not known prior to having their
+> >> direction set, instead set the default direction to "unknown" to prevent
+> >> user confusion.  A pin with an "unknown" direction can not be written or
+> >> read via sysfs; it must first be configured as an input or output before
+> >> it can be used.
+> > 
+> > Hrm... that's why I don't like the original definition of gpio_request()
+> > which is vague on the pin configurations.
 > 
-> The old way:
-> 
-> 00000000000000c4 <atomic_long_add>:
->       c4:       55                      push   %rbp
->       c5:       48 89 e5                mov    %rsp,%rbp
->       c8:       e8 00 00 00 00          callq  cd <atomic_long_add+0x9>
->                         c9: R_X86_64_PC32       mcount-0x4
->       cd:       f0 48 01 3e             lock add %rdi,(%rsi)
->       d1:       c9                      leaveq 
->       d2:       c3                      retq   
-> 
-> The new way:
-> 
-> 000000000000009e <atomic_long_add>:
->       9e:       e8 00 00 00 00          callq  a3 <atomic_long_add+0x5>
->                         9f: R_X86_64_PC32       __fentry__-0x4
->       a3:       55                      push   %rbp
->       a4:       48 89 e5                mov    %rsp,%rbp
->       a7:       f0 48 01 3e             lock add %rdi,(%rsi)
->       ab:       5d                      pop    %rbp
->       ac:       c3                      retq   
-> 
-> Note, with -mfentry, frame pointers is no longer required
-> by the function tracer. But this patch series still requires
-> FRAME_POINTER to be set, since I need to figure out a good way to
-> enable FRAME_POINTER only if gcc doesn't support this. But that can
-> come later.
-> 
-> With the new __fentry__, we could possible record the parameters
-> of a function call. This may take some work, and perhaps be
-> a little like kprobes. But it is doable.
-> 
-> This is still just RFC. I only wrote the code to support x86_64
-> even though gcc 4.6.0 also supports i386. I figured I would post
-> this first to get peoples reactions before converting
-> i386 too. Other archs can soon follow.
+> Actually it doesn't say anything at all about the current configuration at
+> all. Requesting a pin grants you exclusive access to that pin, if it
+> succeeds. So it is solely about ownership and not about configuration.
 
-Oops! with this change, current kprobes might not be able to probe
-the entry of functions, because that is always reserved by ftrace!
-I think we need to have some new interface for replacing each other
-safely...
+Well, ownership is a bit misleading here. You must request a GPIO to change 
+its direction. But to set or get a value this isn't required.
+In general one could expect if you requested a GPIO you are the only one to 
+call any function on it. On the other hand, this may be bad in some situations 
+where you want to read a GPIO value from different places.
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Alexander
