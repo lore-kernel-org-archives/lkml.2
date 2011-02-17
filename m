@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab1BQTl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:41:58 -0500
-Received: from mga02.intel.com ([134.134.136.20]:45337 "EHLO mga02.intel.com"
+	id S1757841Ab1BQTna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:43:30 -0500
+Received: from mga02.intel.com ([134.134.136.20]:43445 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753431Ab1BQTl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:41:56 -0500
+	id S1753431Ab1BQTn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:43:27 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,182,1297065600"; 
-   d="scan'208";a="603840389"
-Subject: Re: [PATCH 06/12] PTI header file.
+   d="scan'208";a="709157389"
+Subject: Re: [PATCH 07/12] n_tracerouter and n_tracesink additions.
 From: J Freyensee <james_p_freyensee@linux.intel.com>
 Reply-To: james_p_freyensee@linux.intel.com
 To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
-In-Reply-To: <20110217192006.GA29448@kroah.com>
+Cc: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
+In-Reply-To: <20110217192154.GC29448@kroah.com>
 References: <james_p_freyensee@linux.intel.com>
 	 <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
 	 <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
@@ -23,10 +24,11 @@ References: <james_p_freyensee@linux.intel.com>
 	 <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
 	 <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
 	 <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
-	 <20110217192006.GA29448@kroah.com>
+	 <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
+	 <20110217192154.GC29448@kroah.com>
 Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 17 Feb 2011 11:41:55 -0800
-Message-ID: <1297971715.3038.28.camel@localhost>
+Date: Thu, 17 Feb 2011 11:43:26 -0800
+Message-ID: <1297971806.3038.30.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -34,109 +36,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 11:20 -0800, Greg KH wrote:
-> On Tue, Feb 08, 2011 at 11:34:51AM -0800, james_p_freyensee@linux.intel.com wrote:
+On Thu, 2011-02-17 at 11:21 -0800, Greg KH wrote:
+> On Tue, Feb 08, 2011 at 11:34:52AM -0800, james_p_freyensee@linux.intel.com wrote:
 > > From: J Freyensee <james_p_freyensee@linux.intel.com>
 > > 
-> > This adds PTI header information for the PTI project.
+> > This patch adds line discipline numbers to n_tracerouter and
+> > n_tracesink line disciplines for the Intel-Atom PTI implementation
+> > for mobile devices.
 > > 
 > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
 > > ---
-> >  include/linux/pti.h |   38 ++++++++++++++++++++++++++++++++++++++
-> 
-> Why does this have to be in include/linux/?  What other files use it?
-> 
-> >  1 files changed, 38 insertions(+), 0 deletions(-)
-> >  create mode 100644 include/linux/pti.h
+> >  include/linux/tty.h |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
 > > 
-> > diff --git a/include/linux/pti.h b/include/linux/pti.h
-> > new file mode 100644
-> > index 0000000..4b1c9f6
-> > --- /dev/null
-> > +++ b/include/linux/pti.h
-> > @@ -0,0 +1,38 @@
-> > +/*
-> > + *  Copyright (C) Intel 2010
-> > + *  Ken Mills <ken.k.mills@intel.com>
+> > diff --git a/include/linux/tty.h b/include/linux/tty.h
+> > index 54e4eaa..c507f53 100644
+> > --- a/include/linux/tty.h
+> > +++ b/include/linux/tty.h
+> > @@ -50,6 +50,8 @@
+> >  #define N_CAIF		20      /* CAIF protocol for talking to modems */
+> >  #define N_GSM0710	21	/* GSM 0710 Mux */
+> >  #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
+> > +#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
+> > +#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
 > 
-> That's nice, where is Ken's signed-off-by?  We need that please.
-> 
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, write to the Free Software
-> > + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
-> > + * USA
-> 
-> This paragraph is not needed, please remove it unless you are willing to
-> keep up with the FSF's office moves for the next 40+ years.
-> 
-> Same goes for this paragraph on other files in this patchset, please
-> remove it.
-> 
-> > + *
-> > + */
-> > +
-> > +#ifndef PTI_H_
-> > +#define PTI_H_
-> > +
-> > +/* basic structure used as a write address to the PTI HW */
-> > +struct masterchannel {
-> 
-> Pretty generic structure name, please prefix it with "pti_"
-> 
+> Two new ones?  Really?  Alan, no objection from you on this?
 
-no problem, I'll fix all these.
+I'll let Alan chime in, but I did have Alan review this code before I
+submitted here.
 
-> > +	u8 master;
-> > +	u8 channel;
-> > +};
-> > +
-> > +/* the following functions are defined in misc/pti.c */
-> > +void mipi_pti_writedata(struct masterchannel *mc, u8 *cp, int count);
+Jay
+
+> thanks,
 > 
-> "cp"?
-> 
-
-All of the questions concerning these variables are described in pti.c.
-Should have the function header comments been copied/moved here??
-
-> > +struct masterchannel *mipi_request_masterchannel(u8 kerneluser);
-> 
-> kerneluser?
-> 
-> > +void mipi_release_masterchannel(struct masterchannel *mc);
-> 
-> "Mipi"?  What's that?
-
-'mipi' is the standard body for the PTI standard.  It's an acronymn that
-does not stand for anything other than the Organization controlling the
-standard: http://www.mipi.org/about-mipi/frequently-asked-questions#q2
-
-> 
-> > +
-> > +#define APERTURE_14 0x3800000
-> > +#define APERTURE_LEN 0x400000
-
-> What are these for?
-> 
-
-Write address and write length for the PTI but I can add that.
-
-Thanks,
-jay
-
-> > +
-> > +#endif /*PTI_H_*/
-> > -- 
-> > 1.6.6.1
+> greg k-h
 
 
