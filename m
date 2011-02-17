@@ -1,76 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab1BQRqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:46:33 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46876 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757060Ab1BQRq2 (ORCPT
+	id S1757403Ab1BQRsC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:48:02 -0500
+Received: from RedStar.dorchain.net ([212.88.133.153]:59675 "EHLO
+	Redstar.dorchain.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755357Ab1BQRr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:46:28 -0500
+	Thu, 17 Feb 2011 12:47:58 -0500
+X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Feb 2011 12:47:58 EST
+X-DKIM: OpenDKIM Filter v2.1.3 Redstar.dorchain.net p1HHg22q011842
+Date: Thu, 17 Feb 2011 18:42:01 +0100
+From: Joerg Dorchain <joerg@dorchain.net>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci maillist <linux-pci@atrey.karlin.mff.cuni.cz>
+Subject: Re: [Patch] enable AHCI mode on certain ich chipsets
+Message-ID: <20110217174201.GS5778@Redstar.dorchain.net>
+References: <20110216090548.GQ5778@Redstar.dorchain.net>
+ <4D5C2974.4070608@garzik.org>
 MIME-Version: 1.0
-In-Reply-To: <20110217173136.GA28486@dtor-ws.eng.vmware.com>
-References: <1297123347-2170-1-git-send-email-dtor@vmware.com>
- <AANLkTim_BL_Cw=X0iuatgw1F4n50CyXv0uqx9n=5=Bq+@mail.gmail.com> <20110217173136.GA28486@dtor-ws.eng.vmware.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Feb 2011 09:45:37 -0800
-Message-ID: <AANLkTikGVS9EM=7uhwYfXrGHg9yzes7m0pxAinRxivPC@mail.gmail.com>
-Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=90e6ba4fc23c4e4db2049c7df8da
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6AmSH+YAqnsWd9jO"
+Content-Disposition: inline
+In-Reply-To: <4D5C2974.4070608@garzik.org>
+X-message-flag: Please send messages in plain text only.  Thanks!
+X-Bindford: 6200 (more Power!)
+X-Ray: beware
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba4fc23c4e4db2049c7df8da
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Thu, Feb 17, 2011 at 9:31 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
->
-> From what I understand __attribute__ ((aligned(x))) only guarantees
-> minimum alignment, not exact (gapless) alignment. GCC seems to lay out
-> pointers in the section without gaps on all arches that we have.
+--6AmSH+YAqnsWd9jO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I still don't see the problem.
+On Wed, Feb 16, 2011 at 02:45:56PM -0500, Jeff Garzik wrote:
+> >this patch allows to force ICH7/8/9 into AHCI mode.  This is needed
+> >because some BIOSes do not make AHCI-mode operation available to the
+> >user.
+> >As the Intel documentation states that the OS should not carry
+> >out the operation - the user must force this on the kernel
+> >commandline using quirk_ich_force_ahci
+> >
+> >As this quirk gets called whilst the PCI subsystem is
+> >walking the PCI bus, we declare this quirk against the LPC
+> >(device 00:1f.0), so that we can frob 00:1f.2 before the PCI
+> >code has scanned it.
+> >Note: the pci id might change due to this (e.g. from 27c4 to 27c5)
+> >
+> >For working suspend/resume, the next patch is required, too.
+> >
+> >Bye,
+> >
+> >Joerg
+> >
+> >
+> >Signed-Off-By: joerg Dorchain<joerg@dorchain.net>
+> >
+> >--- linux/drivers/pci/quirks.c.orig	2011-02-04 18:29:03.000000000 +0100
+> >+++ linux/drivers/pci/quirks.c	2011-02-12 07:07:57.000000000 +0100
+> >@@ -2684,6 +2684,74 @@
+> >  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_HINT, 0x0020, quirk_hotplug_bri=
+dge);
+> >
+> >  /*
+> >+ * Force ICH7/8/9 into AHCI mode.  This is needed because some
+> >+ * BIOSes do not make AHCI-mode operation available to the user.
+> >+ * As the Intel documentation states that the OS should not carry
+> >+ * out the operation - the user must force this on the kernel
+> >+ * commandline using quirk_ich_force_ahci
+> >+ *
+> >+ * As this quirk gets called whilst the PCI subsystem is
+> >+ * walking the PCI bus, we declare this quirk against the LPC
+> >+ * (device 00:1f.0), so that we can frob 00:1f.2 before the PCI
+> >+ * code has scanned it.
+> >+ * Note: the pci id might change due to this (e.g. from 27c4 to 27c5)
+> >+ *
+> >+ */
+> >+
+> >+static bool ich_force_ahci_mode; /* defaults to false */
+> >+
+> >+static int __init ich789_force_ahci_mode_setup(char *str)
+> >+{
+> >+	ich_force_ahci_mode =3D true;
+> >+	return 0;
+> >+}
+> >+early_param("quirk_ich_force_ahci", ich789_force_ahci_mode_setup);
+> >+
+> >+static void ich789_force_ahci_mode(struct pci_dev *pdev)
+> >+{
+> >+	u8 amrval;
+> >+	u8 sclkgc;
+> >+	const int ich89_address_map_reg =3D 0x90;
+> >+	const int ich89_sata_clock_gen_config_reg =3D 0x9c;
+> >+
+> >+	if (!ich_force_ahci_mode)
+> >+		return;
+> >+
+> >+	/* ICH8 datasheet section 12.1.33 */
+> >+	if (!pci_bus_read_config_byte(pdev->bus, PCI_DEVFN(PCI_SLOT(pdev->devf=
+n), 2),
+> >+		ich89_address_map_reg,&amrval)) {
+> >+
+> >+		if (amrval&  (BIT(6) | BIT(7))) {
+> >+			dev_printk(KERN_DEBUG,&pdev->dev,
+> >+				"ICH7/8/9 SATA controller not in IDE mode.  Not modifying.\n");
+> >+			return;
+> >+		}
+> >+		if (amrval&  (BIT(0) | BIT(1)))
+> >+			dev_printk(KERN_DEBUG,&pdev->dev,
+> >+				"ICH7/8/9 in SATA/PATA combined mode.  Untested.\n");
+> >+		/* AHCI mode */
+> >+		amrval |=3D BIT(6);
+> >+		amrval&=3D ~BIT(7);
+> >+		pci_bus_read_config_byte(pdev->bus, PCI_DEVFN(PCI_SLOT(pdev->devfn), =
+2),
+> >+			ich89_sata_clock_gen_config_reg,&sclkgc);
+> >+		dev_printk(KERN_DEBUG,&pdev->dev, "sclkgc is %#0x\n", sclkgc);
+> >+		pci_bus_write_config_byte(pdev->bus, PCI_DEVFN(PCI_SLOT(pdev->devfn),=
+ 2),
+> >+			ich89_address_map_reg, amrval);
+> >+		dev_printk(KERN_DEBUG,&pdev->dev, "Forced ICH7/8/9 mode PIIX->AHCI\n"=
+);
+>=20
+> How is the assignment of the AHCI BAR handled?  Does this happen
+> automatically because it's an early fixup?
 
-Have you actually _tried_ just adding the proper alignment to before
-the __modver thing in include/asm-generic/vmlinux.lds.h ?
+For me, it does:
+        Region 0: I/O ports at b400 [size=3D8]
+        Region 1: I/O ports at b080 [size=3D4]
+        Region 2: I/O ports at b000 [size=3D8]
+        Region 3: I/O ports at ac80 [size=3D4]
+        Region 4: I/O ports at ac00 [size=3D16]
+        Region 5: Memory at fe837800 (32-bit, non-prefetchable) [size=3D1K]
 
-As far as I can tell, the bug is really simple:
- - the section is not aligned
- - but we told the compiler that that structure is aligned
+>=20
+> That is traditionally the stumbling block...
 
-End result: there is a gap between the section start and the first structure.
+This quirk relies on the fact the the device on 00:1f.0 is
+scanned earlier than the device at 00:1f.2, so when the scan
+reaches 00:1f.2, the device there is just ok for the ahci driver.
 
-And the fix seems obvious: just make sure that the section is
-sufficiently aligned.
+Bye,
 
-IOW, why isn't the proper fix the obvious trivial one (attached)?
+Joerg
 
-                                    Linus
+--6AmSH+YAqnsWd9jO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
---90e6ba4fc23c4e4db2049c7df8da
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gk9yob6k0
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-IGluY2x1ZGUvYXNtLWdlbmVyaWMvdm1saW51eC5sZHMuaCB8ICAgIDIgKysKIDEgZmlsZXMgY2hh
-bmdlZCwgMiBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2luY2x1
-ZGUvYXNtLWdlbmVyaWMvdm1saW51eC5sZHMuaCBiL2luY2x1ZGUvYXNtLWdlbmVyaWMvdm1saW51
-eC5sZHMuaAppbmRleCBmZTc3ZTMzLi4zMWE0YjFkIDEwMDY0NAotLS0gYS9pbmNsdWRlL2FzbS1n
-ZW5lcmljL3ZtbGludXgubGRzLmgKKysrIGIvaW5jbHVkZS9hc20tZ2VuZXJpYy92bWxpbnV4Lmxk
-cy5oCkBAIC0zNTgsNiArMzU4LDcgQEAKIAl9CQkJCQkJCQlcCiAJCQkJCQkJCQlcCiAJLyogQnVp
-bHQtaW4gbW9kdWxlIHBhcmFtZXRlcnMuICovCQkJCVwKKwlTVFJVQ1RfQUxJR04oKQkJCQkJCQlc
-CiAJX19wYXJhbSA6IEFUKEFERFIoX19wYXJhbSkgLSBMT0FEX09GRlNFVCkgewkJCVwKIAkJVk1M
-SU5VWF9TWU1CT0woX19zdGFydF9fX3BhcmFtKSA9IC47CQkJXAogCQkqKF9fcGFyYW0pCQkJCQkJ
-XApAQCAtMzY1LDYgKzM2Niw3IEBACiAJfQkJCQkJCQkJXAogCQkJCQkJCQkJXAogCS8qIEJ1aWx0
-LWluIG1vZHVsZSB2ZXJzaW9ucy4gKi8JCQkJCVwKKwlTVFJVQ1RfQUxJR04oKQkJCQkJCQlcCiAJ
-X19tb2R2ZXIgOiBBVChBRERSKF9fbW9kdmVyKSAtIExPQURfT0ZGU0VUKSB7CQkJXAogCQlWTUxJ
-TlVYX1NZTUJPTChfX3N0YXJ0X19fbW9kdmVyKSA9IC47CQkJXAogCQkqKF9fbW9kdmVyKQkJCQkJ
-CVwK
---90e6ba4fc23c4e4db2049c7df8da--
+iHcEARECADcFAk1dXekwFIAAAAAAFQAScGthLWFkZHJlc3NAZ251cGcub3Jnam9l
+cmdAZG9yY2hhaW4ubmV0AAoJEI2OPuD3c7zgfu8An3t5qo9ZPzaTJecNX75x12+T
+CQXsAJ4ktbsaTXoRnYQScRRT3kxdVjq15g==
+=vo8E
+-----END PGP SIGNATURE-----
+
+--6AmSH+YAqnsWd9jO--
