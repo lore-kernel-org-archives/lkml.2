@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab1BQWuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 17:50:51 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:44501 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753190Ab1BQWus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 17:50:48 -0500
-Date: Thu, 17 Feb 2011 22:50:20 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1102172249020.5315@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754450Ab1BQWwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:52:40 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:1584 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752169Ab1BQWwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 17:52:37 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAKs0XU1Ld/sX/2dsb2JhbAAMhBPOE5BLgSeDQXYEhQo
+X-IronPort-AV: E=Sophos;i="4.62,182,1297054800"; 
+   d="scan'208";a="92042178"
+Message-ID: <4D5DA6B0.5080902@teksavvy.com>
+Date: Thu, 17 Feb 2011 17:52:32 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-698910368-1297983020=:5315"
+To: Matthew Garrett <mjg@redhat.com>
+CC: Jeff Garzik <jeff@garzik.org>, Joerg Dorchain <joerg@dorchain.net>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci maillist <linux-pci@atrey.karlin.mff.cuni.cz>
+Subject: Re: [Patch] enable AHCI mode on certain ich chipsets
+References: <20110216090548.GQ5778@Redstar.dorchain.net> <4D5C2974.4070608@garzik.org> <20110217163649.GC20662@srcf.ucam.org>
+In-Reply-To: <20110217163649.GC20662@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 11-02-17 11:36 AM, Matthew Garrett wrote:
+> On Wed, Feb 16, 2011 at 02:45:56PM -0500, Jeff Garzik wrote:
+> 
+>> How is the assignment of the AHCI BAR handled?  Does this happen  
+>> automatically because it's an early fixup?
+>>
+>> That is traditionally the stumbling block...
+> 
+> Yes, because it's an early fixup the kernel should allocate it itself. 
+> It's small enough that I'd hope we don't have trouble finding one...
 
---29444707-698910368-1297983020=:5315
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
 
+It works here (the AHCI BAR setup) with this patch,
+though the workaround itself doesn't work because my
+Dell machine requires extra/secret fiddling to switch
+things fully over to AHCI.
 
-Hi Linus,
-
-nothing major, one regression fix for evergreen radeon laptops, and a 
-bunch of nouveau fixes, one for s/r on newer chips.
-
-Dave.
-
-The following changes since commit a2640111d5edb3f4e6dd6089c0dbddc7590110b4:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6 (2011-02-16 09:07:00 -0800)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (1):
-      drm/radeon/kms: add missing frac fb div flag for dce4+
-
-Ben Skeggs (4):
-      drm/nouveau: fix non-EDIDful native mode selection
-      drm/nv40: fix tiling-related setup for a number of chipsets
-      drm/nouveau: flips/flipd need to always set 'evict' for move_accel_cleanup()
-      drm/nouveau: fix suspend/resume on GPUs that don't have PM support
-
-Dave Airlie (1):
-      Merge remote branch 'nouveau/drm-nouveau-next' of /ssd/git/drm-nouveau-next into drm-fixes
-
-Francisco Jerez (3):
-      drm/nv10: Fix crash when allocating a BO larger than half the available VRAM.
-      drm/nv04-nv40: Fix NULL dereference when we fail to find an LVDS native mode.
-      drm/nouveau: Fix detection of DDC-based LVDS on DCB15 boards.
-
-Marek Ol¨ák (1):
-      drm/radeon/kms: do not reject X16 and Y16X16 floating-point formats on r300
-
- drivers/gpu/drm/nouveau/nouveau_bios.c      |    2 +-
- drivers/gpu/drm/nouveau/nouveau_bo.c        |   13 ++++---
- drivers/gpu/drm/nouveau/nouveau_connector.c |    1 +
- drivers/gpu/drm/nouveau/nouveau_pm.c        |    2 +-
- drivers/gpu/drm/nouveau/nv04_dfp.c          |   12 ++-----
- drivers/gpu/drm/nouveau/nv40_graph.c        |   46 ++++++++++++++++-----------
- drivers/gpu/drm/radeon/atombios_crtc.c      |    4 ++-
- drivers/gpu/drm/radeon/r300.c               |    2 +
- 8 files changed, 45 insertions(+), 37 deletions(-)
---29444707-698910368-1297983020=:5315--
+The patch does seem harmless enough to include in the kernel, though.
