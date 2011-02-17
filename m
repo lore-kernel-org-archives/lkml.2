@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1BQDdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 22:33:32 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:47052 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab1BQDdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 22:33:31 -0500
-Date: Thu, 17 Feb 2011 14:33:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the workqueues tree
-Message-Id: <20110217143321.78f52ec5.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754202Ab1BQDgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 22:36:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51400 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab1BQDgU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 22:36:20 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=4UV-9Kl2S54A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=99VrQWRHyRAWe3_n8KEA:9 a=JPB1XeQJwz7gHK4ED-AA:7 a=T-TbmHhHDsNEYj_8di8x2-3F1tAA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Will Newton <will.newton@gmail.com>, Will Simoneau <simoneau@ele.uri.edu>,
+        David Miller <davem@davemloft.net>, hpa@zytor.com,
+        matt@console-pimps.org, peterz@infradead.org, jbaron@redhat.com,
+        mingo@elte.hu, tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org
+In-Reply-To: <BLU0-SMTP71BCB155CBAE79997EE08D96D20@phx.gbl>
+References: <4D59B891.8010300@zytor.com>
+	 <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
+	 <20110215211123.GA3094@ele.uri.edu>
+	 <20110215.132702.39199169.davem@davemloft.net>
+	 <20110215215604.GA3177@ele.uri.edu>
+	 <AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com>
+	 <1297858734.23343.138.camel@gandalf.stny.rr.com>
+	 <AANLkTinzr6rb=WwFs7QApsvdy5f7PHZ1qS9ZVrncEzZD@mail.gmail.com>
+	 <BLU0-SMTP71BCB155CBAE79997EE08D96D20@phx.gbl>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 16 Feb 2011 22:36:14 -0500
+Message-ID: <1297913774.23343.905.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ Removed Andi as I believe this is the mysterious thread he was talking
+about. Anyone else want to be removed? ]
 
-Hi Tejun,
 
-After merging the workqueues tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+On Wed, 2011-02-16 at 08:24 -0500, Mathieu Desnoyers wrote:
+> * Will Newton (will.newton@gmail.com) wrote:
 
-kernel/workqueue.c: In function 'init_workqueues':
-kernel/workqueue.c:3780: error: 'WQ_FREEZEABLE' undeclared (first use in th=
-is function)
+> initially:
+> foo = 0
+> bar = 0
+> 
+> CPU A                            CPU B
+> 
+> xchg(&foo, 1);
+>   ll foo
+>   sc foo
+> 
+>   -> interrupt
+> 
+>   if (foo == 1)
+>     xchg(&bar, 1);
+>       ll bar
+>       sc bar
+>       invalidate bar
+> 
+>                                  lbar = bar;
+>                                  smp_mb()
 
-Caused by commit 58a69cb47ec6991bf006a3e5d202e8571b0327a4 ("workqueue,
-freezer: unify spelling of 'freeze' + 'able' to 'freezable'") being
-mismerged with commit 4149efb22da66e326fc48baf80d628834509f7f0
-("workqueue: add system_freezeable_wq") which added another use of
-WQ_FREEZEABLE.
+Question: Does a mb() flush all cache or does it just make sure that
+read/write operations finish before starting new ones?
 
-Please do at least simple build testing before submitting to
-linux-next ...
+>                                  lfoo = foo;
 
-I have used the version of the workqueues tree from next-20110216 for
-today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+IOW, will that smp_mb() really make lfoo read the new foo in memory? If
+foo happens to still be in cache and no coherency has been performed to
+flush it, would it just simply read foo straight from the cache?
 
---Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D
-Content-Type: application/pgp-signature
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+>                                  BUG_ON(lbar == 1 && lfoo == 0);
+>   invalidate foo
+> 
+> It should be valid to expect that every time "bar" read by CPU B is 1,
+> then "foo" is always worth 1. However, in this case, the lack of
+> invalidate on foo is keeping the cacheline from reaching CPU B. There
+> seems to be a problem with interrupts/NMIs coming right between sc and
+> invalidate, as Ingo pointed out.
+> 
+> Thanks,
+> 
+> Mathieu
+> 
 
-iQEcBAEBAgAGBQJNXJcBAAoJEDMEi1NhKgbs4T4H/Rj7IYmnhkAtlZWjMkYOB+7J
-3rr4lfgKIz8PTKYntZ1V4gvyb0EPNjo46qzGeeAtA3hT4Ec3ZZsR19l41sAwGogC
-FIBZ3sw3JrHLMIcygp7gmzgbgjzWRSfugscmaO+VmdBimpC/2yQlwBbMGsmSUBZl
-YDpAO7K8/rwzvNA2FF9c7IvOTA7NgC1/O7WvxeQ8jYPtk1+88KJgj7IaQEYEMvdS
-2BARuJ1aCjt7T5GSQoTmfHhntEOqo9nNpGLjGf18/aH6JEtbUR2rZH79AklnTuXG
-t+GxreCIaAviQYuPkvZrjYY6eGvLWy69TKWpc3XhrDQKXF29WhfP88HScKWqQD8=
-=m4Le
------END PGP SIGNATURE-----
 
---Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D--
