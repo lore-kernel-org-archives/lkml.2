@@ -1,89 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1BQFFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 00:05:16 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:36742 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750780Ab1BQFFN (ORCPT
+	id S1752883Ab1BQFWX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 00:22:23 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52718 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab1BQFWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 00:05:13 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+qza0qnYqqpRpc6+OUa9WlqB4Qw72NHPTjrMWWkz
-	kgawyqsVv2YbWB
-Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been
- added to the 2.6.32-longterm tree
-From: Mike Galbraith <efault@gmx.de>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, gregkh@suse.de,
-        srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl,
-        ghaskins@novell.com, stable@kernel.org, stable-commits@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110216152906.75d4000c@stein>
-References: <12978046423644@kroah.org>
-	 <1297810967.23343.122.camel@gandalf.stny.rr.com>
-	 <1297821667.5126.11.camel@marge.simson.net>
-	 <20110216082559.GA16529@elte.hu> <4D5B90E8.6080605@gmail.com>
-	 <1297849553.5275.29.camel@marge.simson.net> <20110216152906.75d4000c@stein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Feb 2011 06:05:07 +0100
-Message-ID: <1297919107.6361.59.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Thu, 17 Feb 2011 00:22:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fRb3IjW6lB7Z3dQohRcKukpqwhFSqXnqXCyInJD4lsy4Aq6wJEQFwrlpCAd+rdjvrl
+         3Cau72JYyNwLrBUJlc1KFQbNfHmPJWcwtQHz77c4c/1q/ctHyxZ0dKOzUxo6A0WYlbQV
+         B6b/ry5vALzwoNePUA8bQN8ADvQaDwEQbqfkc=
+From: Johan Wessfeldt <johan.wessfeldt@gmail.com>
+To: mhw@wittsend.com
+Cc: linux-kernel@vger.kernel.org, Johan Wessfeldt <johan.wessfeldt@gmail.com>
+Subject: [PATCH] ip2: Correction to unchecked calls copy_to_user/put_user in ip2 debug code
+Date: Thu, 17 Feb 2011 06:22:15 +0100
+Message-Id: <1297920135-11085-1-git-send-email-johan.wessfeldt@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-16 at 15:29 +0100, Stefan Richter wrote:
-> On Feb 16 Mike Galbraith wrote:
-> > On Wed, 2011-02-16 at 09:55 +0100, Jiri Slaby wrote:
-> > > On 02/16/2011 09:25 AM, Ingo Molnar wrote:
-> > > > We try to concentrate on regression fixes though.
-> > > 
-> > > Hi, I cannot fully agree with this. The question is who are "we" here?
-> > > If every packager using this stable tree is forced by users/customers to
-> > > take it anyway, it's better to have it in stable.
-> > > 
-> > > It has several reasons:
-> > > * It will have an eye of experts on them. Not that at distro providers
-> > > there are no experts, but the authors who are cced here know definitely
-> > > the code better.
-> > > * Not every packager has to duplicate others work.
-> > > * The stable tree changes constantly. Managing hundreds of patches
-> > > applied to a stable tree before kernels are being packaged is thus
-> > > sometimes a hell. Reducing this number is a good thing(TM).
-> > 
-> > Fully agree on all fronts, but it's a hard call.  When I start auditing,
-> > I sweat bullets.  I see piles of bug fixes, and piles of performance
-> > enhancements, all of which are ever so tempting, all of which are worthy
-> > of backport.. but humans _are_ buggy, so there is risk involved.
-> 
-> Jiri,
-> if the desire is to improve performance of existing features (and maybe
-> add this and that little feature that looks attractive), while at the same
-> time you want
->   - experts to have looked at these improvements,
->   - packagers to avoid duplicate work,
->   - keep the number of local patches in check,
-> then the solution is to /stay close enough to the mainline/.
+This patch fixes unchecked calls to copy_to_user() and put_user() in the
+ip2 driver debug code, ie. when IP2DEBUG_TRACE and DEBUG_FIFO are set.
+Minor coding style issues were corrected in corresponding code.
 
-That's the intent of pushing more than _purely_ critical bugfixes, get a
-bit closer.  Enterprise can't move as fast as mainline, not even close,
-that's a given.  Stable problem get griped about though, so there's no
-choice but to take some risk.  The tricky bit is how much, and how you
-go about it.
+Signed-off-by: Johan Wessfeldt <johan.wessfeldt@gmail.com>
+---
+ drivers/char/ip2/ip2main.c |   55 ++++++++++++++++++++++++++++----------------
+ 1 files changed, 35 insertions(+), 20 deletions(-)
 
-People are fixing this and that in their enterprise kernels privately
-every day.  The only difference between that, and pushing baked fixes
-back is that pushing to stable is visible.  I strongly suspect that
-there are just tons of mainline backports sitting in each and every
-enterprise tree in existence.  They could have been pushed to stable,
-with _less_ stability risk, due to the higher visibility.
-
-Just my opinion.  Oh, and critical eye is definitely good, that's why I
-posted to stable after all ;-)
-
-	-Mike
+diff --git a/drivers/char/ip2/ip2main.c b/drivers/char/ip2/ip2main.c
+index fcd02ba..e1d2f47 100644
+--- a/drivers/char/ip2/ip2main.c
++++ b/drivers/char/ip2/ip2main.c
+@@ -2803,13 +2803,12 @@ ip2_ipl_read(struct file *pFile, char __user *pData, size_t count, loff_t *off )
+ }
+ 
+ static int
+-DumpFifoBuffer ( char __user *pData, int count )
++DumpFifoBuffer(char __user *pData, int count)
+ {
+ #ifdef DEBUG_FIFO
+-	int rc;
+-	rc = copy_to_user(pData, DBGBuf, count);
+-
+-	printk(KERN_DEBUG "Last index %d\n", I );
++	if (copy_to_user(pData, DBGBuf, count))
++		return -EFAULT;
++	printk(KERN_DEBUG "Last index %d\n", I);
+ 
+ 	return count;
+ #endif	/* DEBUG_FIFO */
+@@ -2817,21 +2816,28 @@ DumpFifoBuffer ( char __user *pData, int count )
+ }
+ 
+ static int
+-DumpTraceBuffer ( char __user *pData, int count )
++DumpTraceBuffer(char __user *pData, int count)
+ {
+ #ifdef IP2DEBUG_TRACE
+-	int rc;
+ 	int dumpcount;
+ 	int chunk;
+ 	int *pIndex = (int __user *)pData;
+ 
+-	if ( count < (sizeof(int) * 6) ) {
++	if (count < (sizeof(int) * 6))
+ 		return -EIO;
+-	}
+-	rc = put_user(tracewrap, pIndex );
+-	rc = put_user(TRACEMAX, ++pIndex );
+-	rc = put_user(tracestrip, ++pIndex );
+-	rc = put_user(tracestuff, ++pIndex );
++
++	if (put_user(tracewrap, pIndex))
++		return -EFAULT;
++
++	if (put_user(TRACEMAX, ++pIndex))
++		return -EFAULT;
++
++	if (put_user(tracestrip, ++pIndex))
++		return -EFAULT;
++
++	if (put_user(tracestuff, ++pIndex))
++		return -EFAULT;
++
+ 	pData += sizeof(int) * 6;
+ 	count -= sizeof(int) * 6;
+ 
+@@ -2843,22 +2849,31 @@ DumpTraceBuffer ( char __user *pData, int count )
+ 		dumpcount = count;
+ 	}
+ 	chunk = TRACEMAX - tracestrip;
+-	if ( dumpcount > chunk ) {
+-		rc = copy_to_user(pData, &tracebuf[tracestrip],
+-			      chunk * sizeof(tracebuf[0]) );
++	if (dumpcount > chunk) {
++
++		if (copy_to_user(pData, &tracebuf[tracestrip],
++				 chunk * sizeof(tracebuf[0]) ))
++			return -EFAULT;
++
+ 		pData += chunk * sizeof(tracebuf[0]);
+ 		tracestrip = 0;
+ 		chunk = dumpcount - chunk;
+ 	} else {
+ 		chunk = dumpcount;
+ 	}
+-	rc = copy_to_user(pData, &tracebuf[tracestrip],
+-		      chunk * sizeof(tracebuf[0]) );
++
++	if (copy_to_user(pData, &tracebuf[tracestrip],
++			 chunk * sizeof(tracebuf[0]) ))
++		return -EFAULT;
++
+ 	tracestrip += chunk;
+ 	tracewrap = 0;
+ 
+-	rc = put_user(tracestrip, ++pIndex );
+-	rc = put_user(tracestuff, ++pIndex );
++	if (put_user(tracestrip, ++pIndex))
++		return -EFAULT;
++
++	if (put_user(tracestuff, ++pIndex))
++		return -EFAULT;
+ 
+ 	return dumpcount;
+ #else
+-- 
+1.7.1
 
