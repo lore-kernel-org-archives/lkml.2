@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab1BQCoz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 21:44:55 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:34596 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935Ab1BQCov convert rfc822-to-8bit (ORCPT
+	id S1756132Ab1BQCwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 21:52:35 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:20310 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756050Ab1BQCwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 21:44:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wsJRuWD3mWWcAEvSZFAmyiQyajMCfpFFVUhQxarsPSjYLoOLgwIZ3nEaCMee++KTv0
-         BGl79fX+0huK/psnvLwzo1B2PahmaUHwqnZNYxt50esKiBmfXHCeL9hzAVKlHUj/MYco
-         KEak0G3sqO3rrBiH1iGfKt4yIkSQ25ykGB0Zs=
+	Wed, 16 Feb 2011 21:52:33 -0500
+Message-ID: <4D5C8D62.4060809@bluewatersys.com>
+Date: Thu, 17 Feb 2011 15:52:18 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110216.180347.71107177.davem@davemloft.net>
-References: <4D5A90D0.9040403@free.fr>
-	<AANLkTimvue3JbYZUMrt0KppE1f_MNSsyyb+Upbputs=5@mail.gmail.com>
-	<20110216.180347.71107177.davem@davemloft.net>
-Date: Thu, 17 Feb 2011 10:43:57 +0800
-Message-ID: <AANLkTim4NnyyFqprBoGpimquLP=6fjAanCrbqX=RXwC9@mail.gmail.com>
-Subject: Re: WARNING: at kernel/lockdep.c:2323 trace_hardirqs_on_caller+0xb9/0x16c()
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: daniel.lezcano@free.fr, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Charles Manning <manningc2@actrix.gen.nz>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
+References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102171112.07101.manningc2@actrix.gen.nz> <20110217014808.GD5824@sirena.org.uk> <201102171531.03924.manningc2@actrix.gen.nz>
+In-Reply-To: <201102171531.03924.manningc2@actrix.gen.nz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 10:03 AM, David Miller <davem@davemloft.net> wrote:
-> From: Yong Zhang <yong.zhang0@gmail.com>
-> Date: Thu, 17 Feb 2011 09:37:30 +0800
->
->> On Tue, Feb 15, 2011 at 10:42 PM, Daniel Lezcano <daniel.lezcano@free.fr> wrote:
->>> Hi All,
+On 17/02/11 15:31, Charles Manning wrote:
+> On Thursday 17 February 2011 14:48:08 Mark Brown wrote:
+>> On Thu, Feb 17, 2011 at 11:12:06AM +1300, Charles Manning wrote:
+>>> On Wednesday 16 February 2011 21:04:20 Christoph Hellwig wrote:
+>>>> The procfs interfaces should be replaced by something saner,
+>>>> the insane amount of ad-hoc tracing crap should be replaced by much
+>>>> less strategically placed trace events, and all those stupid compile
+>>>> time options have absolutely no business at all beeing there for a
+>>>> filesystem -
 >>>
->>> I am running a 2.6.38-rc4-next-20110215+ kernel on qemu x86_64 and the
->>> following traces appear in the console:
+>>> Why not?
 >>>
->>> Feb 15 15:00:24 lucid kernel: ------------[ cut here ]------------
->>> Feb 15 15:00:24 lucid kernel: WARNING: at kernel/lockdep.c:2323
->>> trace_hardirqs_on_caller+0xb9/0x16c()
->>> Feb 15 15:00:24 lucid kernel: Hardware name: Bochs
->>> Feb 15 15:00:24 lucid kernel: Pid: 1477, comm: mountall Not tainted
->>> 2.6.38-rc4-next-20110215+ #74
->>> Feb 15 15:00:24 lucid kernel: Call Trace:
->>> Feb 15 15:00:24 lucid kernel: <IRQ>  [<ffffffff8102b8a5>] ?
->>> warn_slowpath_common+0x7b/0x93
->>> Feb 15 15:00:24 lucid kernel: [<ffffffff8146c097>] ?
->>> _raw_spin_unlock_irq+0x2b/0x30
->>> Feb 15 15:00:24 lucid kernel: [<ffffffff8102b8d2>] ?
->>> warn_slowpath_null+0x15/0x17
->>> Feb 15 15:00:24 lucid kernel: [<ffffffff8104f796>] ?
->>> trace_hardirqs_on_caller+0xb9/0x16c
->>> Feb 15 15:00:24 lucid kernel: [<ffffffff8104f856>] ?
->>> trace_hardirqs_on+0xd/0xf
->>> Feb 15 15:00:24 lucid kernel: [<ffffffff8146c097>] ?
->>> _raw_spin_unlock_irq+0x2b/0x30
->>> Feb 15 15:00:24 lucid kernel: [<ffffffff812e167e>] ?
->>> do_ide_request+0x32/0x590
+>>>> remember you can get media from all over the place.
+>>>
+>>> No you can't. This is a flash file system for soldered down flash. I
+>>> think that is a fundamental place where your understanding of what yaffs
+>>> is falls down.
+> 
+> I'm not sure I really understand what Christoph means by "get media from all 
+> over the place". I took that to mean he thinks people will pug in random 
+> flash cards and would need to fiddle with options to make them work. That 
+> would of course suck badly.
+> 
+> That is obviously not the case for a flash file system used on hard-wired 
+> flash where the system integrator is in control. Users don't get to fiddle.
+> 
 >>
->> Seems related to IDE SUBSYSTEM
->
-> Which hasn't had any changes in the past release.
+>> Even for embedded systems people do end up wanting to do things like
+>> using the same kernel on multiple systems which may have different
+>> hardware configurations (distros and reference boards are the obvious
+>> examples, but I've worked on systems where multiple generations and
+>> builds of the product were in active use and similar enough to be
+>> maintained from the same kernel).  Even with single system kernels
+>> there's still an issue with things like reference boards where users are
+>> doing things like picking up a new upstream kernel rather than the
+>> vendor BSP.
+> 
+> Every one of the "stupid compile time options" is there because someone that 
+> actually **uses** yaffs wanted it. None are there just for fun. The 
+> compile-time switches are very limited - mostly just there to set up default 
+> runtime flags that can be overridden at runtime. Some of them are there to 
+> work around bugs and limitations in the mtd.
 
-OK.
+The Kconfig options which are can be overridden by runtime flags should
+simply be removed. Pick a default and stick with it. Existing users will
+either have to modify their mount flags to suit, continuing using an old
+version, or patch the yaffs code themselves.
 
-Cc'ing Tejun Heo
+It's also possibly worth removing some of the more esoteric options such
+as the ECC options at least for the first attempt at getting Yaffs into
+mainline. It will make it easier to get the code accepted, and if enough
+users complain that the feature is not there a sensible way to patch it
+in can be added later.
 
-For the back trace, I think __blk_run_queue() is the ligament.
-As from the comment of __blk_run_queue(), it must be called
-with the queue lock and interrupts disabled. And the lock
-is hold through spin_lock_irqsave(q->queue_lock, flags); at
-blk_end_bidi_request().
+I think the downside at the moment is that it is getting less and less
+likely that you can maintain a single yaffs codebase and get it merged
+into mainline. I really think you are going to need to fork the code.
 
-But in do_ide_request(), it realse the lock through
-spin_unlock_irq(q->queue_lock); which make the state
-inconsistent.
+> 
+> Even with BSPs, there will often be some board tuning to, do things like set 
+> up the mtd partitions.
+> 
+> Picking up an new kernel is easy, so long as the mtd code has not been broken 
+> in the interum. 
+> 
+> Last week I dropped the yaffs code into an omap3 build of 2.6.37 with no 
+> fiddling and with default settings and it "just worked".
 
-BTW, do_ide_request() also say it might_sleep(), this warning
-also trigger in Daniel's log.
+Mark is talking about the case where you have a single kernel which can
+be run on multiple boards/platforms. This is becoming increasingly
+common for development and testing purposes. Because some of the yaffs
+config options are compile time only selectable, it may not be possible
+to support yaffs correctly on multiple boards in a single kernel. This
+is why it is much more ideal for config options to be mount flags.
 
-Thanks,
-Yong
-
--- 
-Only stand for myself
+~Ryan
