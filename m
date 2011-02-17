@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab1BQW3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 17:29:20 -0500
-Received: from waste.org ([173.11.57.241]:54920 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118Ab1BQW3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 17:29:18 -0500
-Subject: Re: [PATCH] random: update interface comments to reflect reality
-From: Matt Mackall <mpm@selenic.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>
-In-Reply-To: <20110217222336.GF2621@redhat.com>
-References: <20110217222336.GF2621@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Feb 2011 16:29:14 -0600
-Message-ID: <1297981754.11705.9.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752569Ab1BQWcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:32:10 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:57944 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab1BQWcF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 17:32:05 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: [regression] build failure with staging driver winbond phy
+Date: Thu, 17 Feb 2011 23:31:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
+Cc: Greg KH <gregkh@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart185447526.y2kxyWLQNd";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102172331.59997.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 17:23 -0500, Jarod Wilson wrote:
-> At present, the comment header in random.c makes no mention of
-> add_disk_randomness, and instead, suggests that disk activity adds to the
-> random pool by way of add_interrupt_randomness, which appears to not have
-> been the case since sometime prior to the existence of git, and even prior
-> to bitkeeper. Didn't look any further back. At least, as far as I can
-> tell, there are no storage drivers setting IRQF_SAMPLE_RANDOM, which is a
-> requirement for add_interrupt_randomness to trigger, so the only way for a
-> disk to contribute entropy is by way of add_disk_randomness. Update
-> comments accordingly, complete with special mention about solid state
-> drives being a crappy source of entropy (see e2e1a148bc for reference).
-> 
-> Signed-off-by: Jarod Wilson <jarod@redhat.com>
+--nextPart185447526.y2kxyWLQNd
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Sure. Herbert, let's route this through your crypto tree.
+Hi!
 
-Acked-by: Matt Mackall <mpm@selenic.com>
+linux-2.6 as of ee715087024b91a6ceb85ba2d02f6c35d354a48c.
 
-> ---
->  drivers/char/random.c |   13 ++++++++++---
->  1 files changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/char/random.c b/drivers/char/random.c
-> index 908ac1f..3dba627 100644
-> --- a/drivers/char/random.c
-> +++ b/drivers/char/random.c
-> @@ -128,6 +128,7 @@
->   * 	void add_input_randomness(unsigned int type, unsigned int code,
->   *                                unsigned int value);
->   * 	void add_interrupt_randomness(int irq);
-> + * 	void add_disk_randomness(struct gendisk *disk);
->   *
->   * add_input_randomness() uses the input layer interrupt timing, as well as
->   * the event type information from the hardware.
-> @@ -136,9 +137,15 @@
->   * inputs to the entropy pool.  Note that not all interrupts are good
->   * sources of randomness!  For example, the timer interrupts is not a
->   * good choice, because the periodicity of the interrupts is too
-> - * regular, and hence predictable to an attacker.  Disk interrupts are
-> - * a better measure, since the timing of the disk interrupts are more
-> - * unpredictable.
-> + * regular, and hence predictable to an attacker.  Network Interface
-> + * Controller interrupts are a better measure, since the timing of the
-> + * NIC interrupts are more unpredictable.
-> + *
-> + * add_disk_randomness() uses what amounts to the seek time of block
-> + * layer request events, on a per-disk_devt basis, as input to the
-> + * entropy pool. Note that high-speed solid state drives with very low
-> + * seek times do not make for good sources of entropy, as their seek
-> + * times are usually fairly consistent.
->   *
->   * All of these routines try to estimate how many bits of randomness a
->   * particular randomness source.  They do this by keeping track of the
-> 
-> 
+martin@shambhala:~/Computer/Shambhala/Kernel/2.6.38/linux-2.6> LANG=3DC=20
+make-kpkg --append-to-version -tp42 --revision 1 --initrd --rootcmd=20
+fakeroot linux_{image,doc,headers,source}
+[...]
+Root device is (253, 0)
+Setup is 13724 bytes (padded to 13824 bytes).
+System is 2763 kB
+CRC 115d526c
+Kernel: arch/x86/boot/bzImage is ready  (#3)
+make[1]: Leaving directory=20
+`/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
+/usr/bin/make  EXTRAVERSION=3D-rc5-tp42  ARCH=3Di386 \
+                             modules
+make[1]: Entering directory=20
+`/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CC [M]  drivers/staging/winbond/phy_calibration.o
+drivers/staging/winbond/phy_calibration.c: In function=20
+'_tx_iq_calibration_winbond':
+drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration=
+=20
+of function 'msleep'
+drivers/staging/winbond/phy_calibration.c: In function=20
+'adjust_TXVGA_for_iq_mag':
+drivers/staging/winbond/phy_calibration.c:1555: error: implicit=20
+declaration of function 'udelay'
+make[4]: *** [drivers/staging/winbond/phy_calibration.o] Error 1
+make[3]: *** [drivers/staging/winbond] Error 2
+make[2]: *** [drivers/staging] Error 2
+make[1]: *** [drivers] Error 2
+make[1]: Leaving directory=20
+`/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
+make: *** [debian/stamp/build/kernel] Error 2
 
+I already disabled CONFIG_IR_WINBOND_CIR, but it doesn't seem to help:
 
--- 
-Mathematics is the supreme nostalgia of our time.
+martin@shambhala:~/Computer/Shambhala/Kernel/2.6.38/linux-2.6> grep=20
+"WIN.*BOND" .config
+# CONFIG_PATA_WINBOND is not set
+# CONFIG_PATA_WINBOND_VLB is not set
+# CONFIG_IR_WINBOND_CIR is not set
 
+Any advice on which kernel option to disable in order to build this again?
 
+No problem with 2.6.37, but maybe it didn't have this driver.
+
+Thanks,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart185447526.y2kxyWLQNd
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAk1dodUACgkQmRvqrKWZhMf8oACfRbEsVlMCoAA8h++Pdy2Jc8A1
+gfkAn3qZQFVzSkq6LQyBSyKwMLqJLKOA
+=z1UX
+-----END PGP SIGNATURE-----
+
+--nextPart185447526.y2kxyWLQNd--
