@@ -1,68 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab1BQTXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:23:20 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:6724 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab1BQTXT (ORCPT
+	id S1755319Ab1BQT0C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:26:02 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40902 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab1BQTZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:23:19 -0500
-Date: Thu, 17 Feb 2011 20:23:07 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, lm-sensors@lm-sensors.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: (k10temp) add support for AMD Family 12h/14h 
- CPUs
-Message-ID: <20110217202307.7281f403@endymion.delvare>
-In-Reply-To: <20110217183934.GB20387@ericsson.com>
-References: <4D5CDAD0.7030006@ladisch.de>
-	<20110217172639.GA19982@ericsson.com>
-	<20110217190838.381962f6@endymion.delvare>
-	<20110217183934.GB20387@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Feb 2011 14:25:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=i0K3orWEYd3ew3x5lDXwjgRMdj/h1ACnaJOYKliUyJHkqAuOxea8p91kbLFspEsUFC
+         ODj5zoFYtLjmgE7R0B1jpEa9W0MtXFQxseP9T3JpAAGJpm10uP+9P+FwDlO7jznDUiFR
+         8gA4yF/eHuQ61m6sOovanmI1+kkkjDXJBZ5Mg=
+Date: Thu, 17 Feb 2011 19:30:06 +0000
+From: Frederick van der Wyck <fvanderwyck@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, gregkh@suse.de
+Cc: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Platform: Samsung Q10 backlight driver
+Message-ID: <20110217193006.GA19762@ntl>
+References: <20110216233029.GB17288@ntl>
+ <20110217074258.GA19814@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110217074258.GA19814@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Feb 2011 10:39:34 -0800, Guenter Roeck wrote:
-> On Thu, Feb 17, 2011 at 01:08:38PM -0500, Jean Delvare wrote:
-> > On Thu, 17 Feb 2011 09:26:39 -0800, Guenter Roeck wrote:
-> > > On Thu, Feb 17, 2011 at 03:22:40AM -0500, Clemens Ladisch wrote:
-> > > > Add the PCI ID to support the internal temperature sensor of the
-> > > > AMD "Llano" and "Brazos" processor families.
-> > > > 
-> > > > Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-> > > 
-> > > Applied, thanks.
-> > > 
-> > > Since it meets the requirements for a stable patch, I applied it to the
-> > > patch list for 2.6.38 and added Cc: stable@kernel.org.
-> > 
-> > Can we have a sensors-detect patch too?
-> > 
-> Prepared that, but I am getting the following from the ddr3 patch.
-> 
-> prog/detect/sensors-detect
-> Useless use of private variable in void context at prog/detect/sensors-detect line 5287.
-> 
-> Code is
-> 	} elsif ($device_type => 9 && $device_type <= 11) {
-> 
-> Should that be 
-> 	} elsif ($device_type >= 9 && $device_type <= 11) {
-> instead ?
-
-Yes, you're totally right.
-
-> Odd, I didn't notice that before when I tried the ddr3 patch.
-
-This is the part I modified from Clemens' original patch. What's really
-odd is that I didn't notice the warning on my end. I see it now...
-Sorry, I've just fixed it.
-
--- 
-Jean Delvare
+Greg, Dmitry - thank you both for the detailed feedback. I'll make
+the changes you suggest and submit a new version.
