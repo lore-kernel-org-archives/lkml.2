@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab1BQQeE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 11:34:04 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:51219 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab1BQQeC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 11:34:02 -0500
-Date: Thu, 17 Feb 2011 16:33:51 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Colin King <colin.king@canonical.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Enable Dell All-In-One volume up/down keys
-Message-ID: <20110217163351.GB20662@srcf.ucam.org>
-References: <1297688524-26123-1-git-send-email-colin.king@canonical.com> <20110217075256.GB19814@core.coreip.homeip.net>
+	id S1756853Ab1BQQfu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 11:35:50 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54760 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755373Ab1BQQfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 11:35:47 -0500
+Date: Thu, 17 Feb 2011 17:35:31 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+Message-ID: <20110217163531.GF14168@elte.hu>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+ <20110216193700.GA6377@elte.hu>
+ <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+ <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+ <20110217090910.GA3781@tiehlicka.suse.cz>
+ <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110217075256.GB19814@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 11:52:56PM -0800, Dmitry Torokhov wrote:
 
-> Looks generally good, one question though - should't it be part of
-> dell-wmi driver?
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-It uses a different WMI GUID and has a different behaviour model to dell 
-laptops that dell-wmi drives, so I think it's fair for it to be a 
-separate driver.
+> And in addition, I don't see why others wouldn't see it (I've got
+> DEBUG_PAGEALLOC and SLUB_DEBUG_ON turned on myself, and I know others
+> do too).
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I've done extensive randconfig testing and no crash triggers for typical workloads 
+on a typical dual-core PC. If there's a generic crashes in there my tests tend to 
+trigger them at least 10x as often as regular testers ;-) But the tests are still 
+only statistical so the race could simply be special and missed by the tests.
+
+> So I'm wondering what triggers it. Must be something subtle.
+
+I think what Michal did before he got the corruption seemed somewhat atypical: 
+suspend/resume and udevd wifi twiddling, right?
+
+Now, Eric's crashes look similar - and he does not seem to have done anything 
+special to trigger the crashes.
+
+Eric, could you possibly describe your system in a bit more detail, does it do 
+suspend and does the box use wifi actively? Anything atypical in your setup or usage 
+that doesnt match a bog-standard whitebox PC with LAN? Swap to file? NFS? FUSE? 
+Anything that is even just borderline atypical.
+
+Thanks,
+
+	Ingo
