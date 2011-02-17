@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab1BQUih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:38:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41558 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751067Ab1BQUig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:38:36 -0500
-Date: Thu, 17 Feb 2011 21:29:59 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: akpm@linux-foundation.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, xemul@openvz.org, sukadev@us.ibm.com,
-        ebiederm@xmission.com
-Subject: Re: [PATCH 2/2] pidns: Support unsharing the pid namespace.
-Message-ID: <20110217202959.GA16076@redhat.com>
-References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr> <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr> <20110215190118.GA16707@redhat.com> <4D5C6219.8060207@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5C6219.8060207@free.fr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757974Ab1BQUlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:41:51 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46919 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329Ab1BQUlp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:41:45 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/5] perf python: Add cgroup.c to setup.py to get it building again
+Date: Thu, 17 Feb 2011 18:41:27 -0200
+Message-Id: <1297975291-12792-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1297975291-12792-1-git-send-email-acme@infradead.org>
+References: <1297975291-12792-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17, Daniel Lezcano wrote:
->
-> On 02/15/2011 08:01 PM, Oleg Nesterov wrote:
->>
->> I have to admit, I can't say I like this very much. OK, if we need
->> this, can't we just put something into, say, signal->flags so that
->> copy_process can check and create the new namespace.
->>
->> Also. I remember, I already saw something like this and google found
->> my questions. I didn't actually read the new version, perhaps my
->> concerns were already answered...
->>
->> 	But what if the task T does unshare(CLONE_NEWPID) and then, say,
->> 	pthread_create() ? Unless I missed something, the new thread won't
->> 	be able to see T ?
->
-> Right. Is it really a problem ? I mean it is a weird use case where we
-> fall in a weird situation.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-But this is really weird! How it is possible that the parent can't see
-its own child? No matter which thread did fork(), the new process is
-the child of any sub-thread. More precisely, it is the child of thread
-group.
+The 023695d cset added a new file, util/cgroup.c, that is referenced from
+util/evsel.c, so it needs to be present in util/setup.py so that the python
+shared object binding works, fixing this:
 
-> I suppose we can do the same weird combination with clone.
+[root@emilia linux]# export PYTHONPATH=~acme/git/build/perf/python/
+[root@emilia linux]# ./tools/perf/python/twatch.py
+Traceback (most recent call last):
+  File "./tools/perf/python/twatch.py", line 16, in <module>
+    import perf
+ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: close_cgroup
 
-No, or we have the bug. If nothing else, kill() or wait() should work
-equally for any sub-thread. (OK, __WNOTHREAD hack is the only exception).
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/setup.py |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->> 	and, in this case the exiting sub-namespace init also kills its
->> 	parent?
->
-> I don't think so because the zap_pid_ns_processes does not hit the
-> parent process when it browses the pidmap.
-
-OK... Honestly, right now I can't understand my own question, it was
-written a long ago. Probably I missed something.... but I'll recheck ;)
-
->> 	OK, suppose it does fork() after unshare(), then another fork().
->> 	In this case the second child lives in the same namespace with
->> 	init created by the 1st fork, but it is not descendant ? This means
->> 	in particular that if the new init exits, zap_pid_ns_processes()->
->> 	do_wait() can't work.
->
-> Hmm, good question. IMO, we should prevent such case for now in the same
-> way we added the flag 'dead', IOW adding a flag 'busy' for example.
-
-I dunno.
-
-As I said, I do not like this approach at all. But please feel free to
-ignore, it is very easy to blaim somebody else's code without suggesting
-the alternative ;)
-
-Oleg.
+diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
+index 1947b04..e24ffad 100644
+--- a/tools/perf/util/setup.py
++++ b/tools/perf/util/setup.py
+@@ -5,7 +5,7 @@ from distutils.core import setup, Extension
+ perf = Extension('perf',
+ 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
+ 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
+-			     'util/util.c', 'util/xyarray.c'],
++			     'util/util.c', 'util/xyarray.c', 'util/cgroup.c'],
+ 		  include_dirs = ['util/include'],
+ 		  extra_compile_args = ['-fno-strict-aliasing', '-Wno-write-strings'])
+ 
+-- 
+1.6.2.5
 
