@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1BQJWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 04:22:15 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:32388 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1BQJWL (ORCPT
+	id S1753535Ab1BQJXe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 04:23:34 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37796 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab1BQJXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 04:22:11 -0500
-X-IronPort-AV: E=Sophos;i="4.60,485,1291611600"; 
-   d="scan'208";a="136298834"
-Subject: Re: [000/115] 2.6.32.29-longterm review
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-In-Reply-To: <20110217003526.GA7352@suse.de>
-References: <20110216014741.GA24678@kroah.com>
-	 <1297864282.16356.43.camel@zakaz.uk.xensource.com>
-	 <20110217003526.GA7352@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Thu, 17 Feb 2011 09:22:06 +0000
-Message-ID: <1297934526.16356.1368.camel@zakaz.uk.xensource.com>
+	Thu, 17 Feb 2011 04:23:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ocWddVqdU7Il9/X0T9tEB792mIHq/XDJFrder2caBkvuGQsimXrRPzj6mVJOZLuQj/
+         6oSCQVvRA/Jt1bZ2iEjNyuKR55BoZZMCcZ34S11jAmYijBv0jTkAfuQn6ivUVgtrbh4y
+         99Ik9x3jVlqON6UNS/pNtg8zBm3EGACSYm5ek=
+Date: Thu, 17 Feb 2011 10:23:26 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the workqueues tree
+Message-ID: <20110217092326.GM19830@htj.dyndns.org>
+References: <20110217143321.78f52ec5.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110217143321.78f52ec5.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 00:35 +0000, Greg KH wrote:
-> On Wed, Feb 16, 2011 at 01:51:22PM +0000, Ian Campbell wrote:
-> > On Tue, 2011-02-15 at 17:47 -0800, Greg KH wrote:
-> > > This is the start of the longterm review cycle for the 2.6.32.29 release.
-> > > There are 115 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let us know.  If anyone is a maintainer of the proper subsystem, and
-> > > wants to add a Signed-off-by: line to the patch, please respond with it.
-> > > 
-> > > Responses should be made by Friday, Feb 18, 2011 00:00:00 UTC.
-> > > Anything received after that time might be too late.
-> > > 
-> > > The whole patch series can be found in one patch at:
-> > > 	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.29-rc1.gz
-> > > and the diffstat can be found below.
-> > 
-> > Is it too late to add e7a3481c0246c8e45e79c629efd63b168e91fcda per
-> > http://marc.info/?l=xen-devel&m=129620431305101 ?
+Hello,
+
+On Thu, Feb 17, 2011 at 02:33:21PM +1100, Stephen Rothwell wrote:
+> Caused by commit 58a69cb47ec6991bf006a3e5d202e8571b0327a4 ("workqueue,
+> freezer: unify spelling of 'freeze' + 'able' to 'freezable'") being
+> mismerged with commit 4149efb22da66e326fc48baf80d628834509f7f0
+> ("workqueue: add system_freezeable_wq") which added another use of
+> WQ_FREEZEABLE.
 > 
-> Now queued up for the next .32 release after this one.
+> Please do at least simple build testing before submitting to
+> linux-next ...
+
+Yeap, please feel free to call me an idiot.  After verifying the
+original branch, I completely forgot merge could introduce this type
+of silent conflicts.  I apologize for the late screwups.
 
 Thank you.
 
-Ian.
-
-
+-- 
+tejun
