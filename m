@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab1BQNSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 08:18:22 -0500
-Received: from cantor.suse.de ([195.135.220.2]:47228 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753886Ab1BQNSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 08:18:21 -0500
-Message-ID: <4D5D201A.8090304@suse.cz>
-Date: Thu, 17 Feb 2011 14:18:18 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	id S1756347Ab1BQNS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 08:18:29 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38513 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756320Ab1BQNS1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 08:18:27 -0500
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=JGpTz_e83PYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=CRm9vzU9Un_mMth3MAUA:9 a=nJOFus3cDdOf2obSFA8eYcZ0GrcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
+ for x86_64 right now)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: linux-next: build failure after merge of the tip tree
-References: <20110131154259.dca1f7e6.sfr@canb.auug.org.au> <20110217144743.2db26b27.sfr@canb.auug.org.au>
-In-Reply-To: <20110217144743.2db26b27.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-2
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <4D5D1672.6070206@hitachi.com>
+References: <20110209200249.111932716@goodmis.org>
+	 <4D5D1672.6070206@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 17 Feb 2011 08:18:23 -0500
+Message-ID: <1297948703.23343.907.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.2.2011 04:47, Stephen Rothwell wrote:
-> Hi all,
-> 
-> On Mon, 31 Jan 2011 15:42:59 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
->> failed like this:
->>
->> x86_64-linux-gcc: arch/x86/lib/memmove_64.c: No such file or directory
->>
->> Caused by commit 9599ec0471deae24044241e2173090d2cbc0e899 ("x86-64, mem:
->> Convert memmove() to assembly file and fix return value bug") interacting
->> with our build system.
->>
->> After removing arch/x86/lib/.memmove_64.o.cmd (left over from the build
->> before merging the tip tree) from my object tree, it built correctly.
-> 
-> I am still getting this (of course).
-> 
-> Michal, is there anything that the kbuild system can do for us here?
-> Basically we have changed from using a .c file to generate a .o to using
-> a .S but the build system does not regenerate the .cmd file.
+On Thu, 2011-02-17 at 21:37 +0900, Masami Hiramatsu wrote:
 
-_Maybe_ we could work around it by letting fixdep remove the actual
-source file from the list of dependencies in the .cmd file. The
-dependency on the .c / .S / whatever file is given by the Makefiles, the
-.cmd file is only needed for additional dependencies on headers. Let's
-see what else breaks then ;).
+> Oops! with this change, current kprobes might not be able to probe
+> the entry of functions, because that is always reserved by ftrace!
+> I think we need to have some new interface for replacing each other
+> safely...
 
-Michal
+Good point. I suspect that this wont be ready till .40 anyway. When I
+get a chance to work more an this, I'll also include patches where if
+-mfentry is activated kprobes will just hook to the mcount caller
+instead. Or ftrace itself :)
+
+I'm also working on making the function tracer a bit more flexible. That
+is, to let multiple clients control the dynamic trace instead of just
+one big global one.
+
+-- Steve
+
+
