@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab1BQSbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 13:31:00 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54757 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753742Ab1BQSa6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 13:30:58 -0500
+	id S1757210Ab1BQSk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 13:40:29 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:34572 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754579Ab1BQSk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 13:40:26 -0500
+Date: Thu, 17 Feb 2011 10:39:34 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Clemens Ladisch <clemens@ladisch.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: (k10temp) add support for AMD Family 12h/14h
+ CPUs
+Message-ID: <20110217183934.GB20387@ericsson.com>
+References: <4D5CDAD0.7030006@ladisch.de>
+ <20110217172639.GA19982@ericsson.com>
+ <20110217190838.381962f6@endymion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <20110217162124.457572646@chello.nl>
-References: <20110217161948.045410404@chello.nl> <20110217162124.457572646@chello.nl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Feb 2011 10:30:07 -0800
-Message-ID: <AANLkTimj1d6QpzuNZ6NJvLDVvvC++mPodggFaBziU8Bj@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: Simplify anon_vma refcounts
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110217190838.381962f6@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 8:19 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> +void __put_anon_vma(struct anon_vma *anon_vma)
-> +{
-> +       if (anon_vma->root != anon_vma)
-> +               put_anon_vma(anon_vma->root);
-> +       anon_vma_free(anon_vma);
->  }
+On Thu, Feb 17, 2011 at 01:08:38PM -0500, Jean Delvare wrote:
+> On Thu, 17 Feb 2011 09:26:39 -0800, Guenter Roeck wrote:
+> > On Thu, Feb 17, 2011 at 03:22:40AM -0500, Clemens Ladisch wrote:
+> > > Add the PCI ID to support the internal temperature sensor of the
+> > > AMD "Llano" and "Brazos" processor families.
+> > > 
+> > > Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+> > 
+> > Applied, thanks.
+> > 
+> > Since it meets the requirements for a stable patch, I applied it to the
+> > patch list for 2.6.38 and added Cc: stable@kernel.org.
+> 
+> Can we have a sensors-detect patch too?
+> 
+Prepared that, but I am getting the following from the ddr3 patch.
 
-So this makes me nervous. It looks like recursion.
+prog/detect/sensors-detect
+Useless use of private variable in void context at prog/detect/sensors-detect line 5287.
 
-Now, I don't think we can ever get a chain of these things (because
-the root should be the root of everything), but I still preferred the
-older code that made that "one-level root" case explicit, and didn't
-have recursion.
+Code is
+	} elsif ($device_type => 9 && $device_type <= 11) {
 
-IOW, even though it should be entirely equivalent, I think I'd really
-prefer something like
+Should that be 
+	} elsif ($device_type >= 9 && $device_type <= 11) {
+instead ?
 
-  void __put_anon_vma(struct anon_vma *anon_vma)
-  {
-    struct anon_vma *root = anon_vma->root;
+Odd, I didn't notice that before when I tried the ddr3 patch.
 
-    if (root != anon_vma && atomic_dec_and_test(&root->refcount))
-      anon_vma_free(root);
-    anon_vma_free(anon_vma);
-  }
-
-instead. Exactly because it makes it very clear that the "root" is a
-root, and we're not doing some possibly arbitrarily deep list like the
-dentry tree (which avoids recursion by open-coding its freeing as a
-loop).
-
-Hmm? (The above is obviously untested, maybe it has some stupid bug)
-
-                   Linus
+Guenter
