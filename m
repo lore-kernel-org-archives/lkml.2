@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab1BQKz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 05:55:28 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:33722 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab1BQKz0 convert rfc822-to-8bit (ORCPT
+	id S1752296Ab1BQLAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 06:00:47 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43943 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab1BQLAq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 05:55:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WbQaHBtOWYKVA/QyjggMev0MLWvAvkBu+AgM0jrwxI+AaZJG5WBe2DVRElAEVW28/p
-         BpS5+N0tIOu3T4XileKA/Bkuam20ltDLkV8LV/FYA8BqX3xgWqhyiTgV06TsADrGKAtg
-         DYgIrJ7bLmX9ma+1pTfpoW2yizFw3p28usBZ0=
+	Thu, 17 Feb 2011 06:00:46 -0500
+Date: Thu, 17 Feb 2011 12:00:43 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2 2/4] gpiolib: Add ability to get GPIO pin direction
+Message-ID: <20110217110043.GA30692@pengutronix.de>
+References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com>
+ <1297904216-15219-2-git-send-email-ptyser@xes-inc.com>
 MIME-Version: 1.0
-In-Reply-To: <20110216225151.GA10435@ele.uri.edu>
-References: <4D59B891.8010300@zytor.com>
-	<AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com>
-	<20110215211123.GA3094@ele.uri.edu>
-	<20110215.132702.39199169.davem@davemloft.net>
-	<20110215215604.GA3177@ele.uri.edu>
-	<AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com>
-	<1297858734.23343.138.camel@gandalf.stny.rr.com>
-	<AANLkTinzr6rb=WwFs7QApsvdy5f7PHZ1qS9ZVrncEzZD@mail.gmail.com>
-	<20110216225151.GA10435@ele.uri.edu>
-Date: Thu, 17 Feb 2011 10:55:25 +0000
-Message-ID: <AANLkTinbGYo=mLgseXTR-k1Cns+GFBGPm0VXVgtS02L0@mail.gmail.com>
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-From: Will Newton <will.newton@gmail.com>
-To: Will Simoneau <simoneau@ele.uri.edu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Miller <davem@davemloft.net>,
-        hpa@zytor.com, matt@console-pimps.org, peterz@infradead.org,
-        jbaron@redhat.com, mathieu.desnoyers@polymtl.ca, mingo@elte.hu,
-        tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
-        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
-        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        benh@kernel.crashing.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1297904216-15219-2-git-send-email-ptyser@xes-inc.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 10:51 PM, Will Simoneau <simoneau@ele.uri.edu> wrote:
-> On 12:41 Wed 16 Feb     , Will Newton wrote:
->> On Wed, Feb 16, 2011 at 12:18 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > I'm curious, how is cmpxchg() implemented on this architecture? As there
->> > are several places in the kernel that uses this on regular variables
->> > without any "accessor" functions.
->>
->> We can invalidate the cache manually. The current cpu will see the new
->> value (post-cache invalidate) and the other cpus will see either the
->> old value or the new value depending on whether they read before or
->> after the invalidate, which is racy but I don't think it is
->> problematic. Unless I'm missing something...
->
-> If I understand this correctly, the manual invalidates must propagate to
-> all CPUs that potentially read the value, even if there is no
-> contention. Doesn't this involve IPIs? How does it not suck?
+On Wed, Feb 16, 2011 at 06:56:54PM -0600, Peter Tyser wrote:
+> Add a new get_direction() function to the gpio_chip structure.  This is
+> useful so that the direction of a pin can be determined when its
+> initially exported.  Previously, the direction defaulted to "unknown"
+> regardless of the actual configuration of the GPIO pin.
+> 
+> If a GPIO driver implements get_direction(), it is called in
+> gpio_request() to set the initial direction of the pin accurately.
+> 
+> Cc: Alek Du <alek.du@intel.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: David Brownell <dbrownell@users.sourceforge.net>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> ---
+> Changes since v1:
+> - Add support for "unknown" direction
+> 
+>  drivers/gpio/gpiolib.c     |   20 ++++++++++++++++++++
+>  include/asm-generic/gpio.h |    4 ++++
+>  2 files changed, 24 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 0113c10..7723beb 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1214,6 +1214,26 @@ int gpio_request(unsigned gpio, const char *label)
+>  		}
+>  	}
+>  
+> +	if (chip->get_direction) {
+> +		/* chip->get_direction may sleep */
+> +		spin_unlock_irqrestore(&gpio_lock, flags);
+> +		switch (chip->get_direction(chip, gpio - chip->base)) {
+> +		case -1:
 
-The cache is shared between cores (in that regard it's more like a
-hyper-threaded core than a true multi-core) so is completely coherent,
-so this is the one bit that doesn't really suck! Having spoken to our
-hardware guys I'm confident that we'll only ever build a handful of
-chip designs with the current way of doing ll/sc and hopefully future
-cores will do this the "right" way.
+Use some #defines instead of hardcoded values?
+
+> +			clear_bit(FLAG_DIR_OUT, &desc->flags);
+> +			clear_bit(FLAG_DIR_IN, &desc->flags);
+> +			break;
+> +		case 0:
+> +			set_bit(FLAG_DIR_IN, &desc->flags);
+> +			clear_bit(FLAG_DIR_OUT, &desc->flags);
+> +			break;
+> +		case 1:
+> +			set_bit(FLAG_DIR_OUT, &desc->flags);
+> +			clear_bit(FLAG_DIR_IN, &desc->flags);
+> +			break;
+> +		}
+> +		spin_lock_irqsave(&gpio_lock, flags);
+
+You are changing the flags without the lock. I think it would be good to copy
+the locking-pattern of chip->request for now.
+
+Regards,
+
+   Wolfram
+
+-- 
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
