@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757849Ab1BQTyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:54:25 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:60992 "EHLO smtp.gentoo.org"
+	id S1757894Ab1BQT5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:57:07 -0500
+Received: from kroah.org ([198.145.64.141]:42937 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab1BQTyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:54:22 -0500
-From: Matthias Schwarzott <zzam@gentoo.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Subject: Re: [Patch] Zarlink zl10036 DVB-S: Fix mem leak in zl10036_attach
-Date: Thu, 17 Feb 2011 20:54:06 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-References: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net>
+	id S1754741Ab1BQT5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:57:06 -0500
+Date: Thu, 17 Feb 2011 11:54:00 -0800
+From: Greg KH <greg@kroah.com>
+To: J Freyensee <james_p_freyensee@linux.intel.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
+Subject: Re: [PATCH 09/12] n_tracesink header file.
+Message-ID: <20110217195400.GB12172@kroah.com>
+References: <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-9-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com>
+ <20110217192300.GD29448@kroah.com>
+ <1297971915.3038.32.camel@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102172054.12773.zzam@gentoo.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297971915.3038.32.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 06 February 2011, Jesper Juhl wrote:
-> If the memory allocation to 'state' succeeds but we jump to the 'error'
-> label before 'state' is assigned to fe->tuner_priv, then the call to
-> 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
-> only what was previously assigned to 'tuner_priv', thus leaking the memory
-> allocated to 'state'.
-> There are may ways to fix this, including assigning the allocated memory
-> directly to 'fe->tuner_priv', but I did not go for that since the
-> additional pointer derefs are more expensive than the local variable, so I
-> just added a 'kfree(state)' call. I guess the call to 'zl10036_release'
-> might not even be needed in this case, but I wasn't sure, so I left it in.
+On Thu, Feb 17, 2011 at 11:45:15AM -0800, J Freyensee wrote:
+> On Thu, 2011-02-17 at 11:23 -0800, Greg KH wrote:
+> > On Tue, Feb 08, 2011 at 11:34:54AM -0800, james_p_freyensee@linux.intel.com wrote:
+> > > From: J Freyensee <james_p_freyensee@linux.intel.com>
+> > > 
+> > > This header file allows the n_tracerouter to send it's information
+> > > to the n_tracesink ldisc driver.  It's part of the Intel-Atom
+> > > PTI implementation solution.
+> > > 
+> > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+> > > ---
+> > >  include/linux/n_tracesink.h |   32 ++++++++++++++++++++++++++++++++
+> > 
+> > Why is this in include/linux/ ?
+> > 
 > 
-Yeah, that call to zl10036_release can be completely eleminated.
-Another thing is: jumping to the error label only makes sense when memory was 
-already allocated. So the jump in line 471 can be replaced by "return NULL", 
-as the other error handling before allocation:
-        if (NULL == config) {
-                printk(KERN_ERR "%s: no config specified", __func__);
-                goto error;
-        }
+> I thought this was the best place to stick this .h file.  I'd be happy
+> to change locations based off of your suggestion.
 
-I suggest to improve the patch to clean the code up when changing that.
+Why do you need a .h file at all?  Who is using it?
 
-But I am fine with commiting this patch also if you do not want to change it.
+thanks,
 
-Regards
-Matthias
-
-Signed-off-by: Matthias Schwarzott <zzam@gentoo.org>
-
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  zl10036.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
->  compile tested only.
-> 
-> diff --git a/drivers/media/dvb/frontends/zl10036.c
-> b/drivers/media/dvb/frontends/zl10036.c index 4627f49..b4fb8e8 100644
-> --- a/drivers/media/dvb/frontends/zl10036.c
-> +++ b/drivers/media/dvb/frontends/zl10036.c
-> @@ -508,6 +508,7 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend
-> *fe,
-> 
->  error:
->  	zl10036_release(fe);
-> +	kfree(state);
->  	return NULL;
->  }
->  EXPORT_SYMBOL(zl10036_attach);
-
+greg k-h
