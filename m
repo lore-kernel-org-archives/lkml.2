@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab1BQWcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 17:32:10 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:57944 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab1BQWcF (ORCPT
+	id S1753272Ab1BQWgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:36:19 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:53597 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab1BQWgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 17:32:05 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: linux-kernel@vger.kernel.org
-Subject: [regression] build failure with staging driver winbond phy
-Date: Thu, 17 Feb 2011 23:31:48 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
-Cc: Greg KH <gregkh@suse.de>
+	Thu, 17 Feb 2011 17:36:16 -0500
+Message-ID: <4D5DA2CF.5010200@fr.ibm.com>
+Date: Thu, 17 Feb 2011 23:35:59 +0100
+From: Greg Kurz <gkurz@fr.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart185447526.y2kxyWLQNd";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Daniel Lezcano <daniel.lezcano@free.fr>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, akpm@linux-foundation.org, xemul@openvz.org
+Subject: Re: [PATCH 2/2] pidns: Support unsharing the pid namespace.
+References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr> <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr> <20110215190118.GA16707@redhat.com> <4D5C6219.8060207@free.fr> <20110217202959.GA16076@redhat.com>
+In-Reply-To: <20110217202959.GA16076@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102172331.59997.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart185447526.y2kxyWLQNd
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On 02/17/2011 09:29 PM, Oleg Nesterov wrote:
+> On 02/17, Daniel Lezcano wrote:
+>>
+>> On 02/15/2011 08:01 PM, Oleg Nesterov wrote:
+>>>
+>>> I have to admit, I can't say I like this very much. OK, if we need
+>>> this, can't we just put something into, say, signal->flags so that
+>>> copy_process can check and create the new namespace.
+>>>
+>>> Also. I remember, I already saw something like this and google found
+>>> my questions. I didn't actually read the new version, perhaps my
+>>> concerns were already answered...
+>>>
+>>> 	But what if the task T does unshare(CLONE_NEWPID) and then, say,
+>>> 	pthread_create() ? Unless I missed something, the new thread won't
+>>> 	be able to see T ?
+>>
+>> Right. Is it really a problem ? I mean it is a weird use case where we
+>> fall in a weird situation.
+>
+> But this is really weird! How it is possible that the parent can't see
+> its own child? No matter which thread did fork(), the new process is
 
-Hi!
+Hmmm... I guess you mean the opposite. The way pid namespaces are 
+nested, parents always see their children. But indeed, the child thread 
+can't see its group leader and that's kind of unusual. Unshare a pid 
+namespace at your own risk. :)
 
-linux-2.6 as of ee715087024b91a6ceb85ba2d02f6c35d354a48c.
+> the child of any sub-thread. More precisely, it is the child of thread
+> group.
+>
+>> I suppose we can do the same weird combination with clone.
+>
+> No, or we have the bug. If nothing else, kill() or wait() should work
+> equally for any sub-thread. (OK, __WNOTHREAD hack is the only exception).
+>
+>>> 	and, in this case the exiting sub-namespace init also kills its
+>>> 	parent?
+>>
+>> I don't think so because the zap_pid_ns_processes does not hit the
+>> parent process when it browses the pidmap.
+>
+> OK... Honestly, right now I can't understand my own question, it was
+> written a long ago. Probably I missed something.... but I'll recheck ;)
+>
+>>> 	OK, suppose it does fork() after unshare(), then another fork().
+>>> 	In this case the second child lives in the same namespace with
+>>> 	init created by the 1st fork, but it is not descendant ? This means
+>>> 	in particular that if the new init exits, zap_pid_ns_processes()->
+>>> 	do_wait() can't work.
+>>
+>> Hmm, good question. IMO, we should prevent such case for now in the same
+>> way we added the flag 'dead', IOW adding a flag 'busy' for example.
+>
+> I dunno.
+>
+> As I said, I do not like this approach at all. But please feel free to
+> ignore, it is very easy to blaim somebody else's code without suggesting
+> the alternative ;)
+>
+> Oleg.
+>
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
 
-martin@shambhala:~/Computer/Shambhala/Kernel/2.6.38/linux-2.6> LANG=3DC=20
-make-kpkg --append-to-version -tp42 --revision 1 --initrd --rootcmd=20
-fakeroot linux_{image,doc,headers,source}
-[...]
-Root device is (253, 0)
-Setup is 13724 bytes (padded to 13824 bytes).
-System is 2763 kB
-CRC 115d526c
-Kernel: arch/x86/boot/bzImage is ready  (#3)
-make[1]: Leaving directory=20
-`/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
-/usr/bin/make  EXTRAVERSION=3D-rc5-tp42  ARCH=3Di386 \
-                             modules
-make[1]: Entering directory=20
-`/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CC [M]  drivers/staging/winbond/phy_calibration.o
-drivers/staging/winbond/phy_calibration.c: In function=20
-'_tx_iq_calibration_winbond':
-drivers/staging/winbond/phy_calibration.c:986: error: implicit declaration=
-=20
-of function 'msleep'
-drivers/staging/winbond/phy_calibration.c: In function=20
-'adjust_TXVGA_for_iq_mag':
-drivers/staging/winbond/phy_calibration.c:1555: error: implicit=20
-declaration of function 'udelay'
-make[4]: *** [drivers/staging/winbond/phy_calibration.o] Error 1
-make[3]: *** [drivers/staging/winbond] Error 2
-make[2]: *** [drivers/staging] Error 2
-make[1]: *** [drivers] Error 2
-make[1]: Leaving directory=20
-`/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
-make: *** [debian/stamp/build/kernel] Error 2
 
-I already disabled CONFIG_IR_WINBOND_CIR, but it doesn't seem to help:
+-- 
+Gregory Kurz                                     gkurz@fr.ibm.com
+Software Engineer @ IBM/Meiosys                  http://www.ibm.com
+Tel +33 (0)534 638 479                           Fax +33 (0)561 400 420
 
-martin@shambhala:~/Computer/Shambhala/Kernel/2.6.38/linux-2.6> grep=20
-"WIN.*BOND" .config
-# CONFIG_PATA_WINBOND is not set
-# CONFIG_PATA_WINBOND_VLB is not set
-# CONFIG_IR_WINBOND_CIR is not set
-
-Any advice on which kernel option to disable in order to build this again?
-
-No problem with 2.6.37, but maybe it didn't have this driver.
-
-Thanks,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart185447526.y2kxyWLQNd
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAk1dodUACgkQmRvqrKWZhMf8oACfRbEsVlMCoAA8h++Pdy2Jc8A1
-gfkAn3qZQFVzSkq6LQyBSyKwMLqJLKOA
-=z1UX
------END PGP SIGNATURE-----
-
---nextPart185447526.y2kxyWLQNd--
+"Anarchy is about taking complete responsibility for yourself."
+         Alan Moore.
