@@ -1,114 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab1BQN41 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 08:56:27 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52075 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278Ab1BQN40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 08:56:26 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 17 Feb 2011 22:50:10 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Max Kellermann <mk@cm4all.com>
-Cc: menage@google.com, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] new cgroup controller "fork"
-Message-Id: <20110217225010.7f79b412.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110217133152.4043.94951.stgit@rabbit.intern.cm-ag>
-References: <20110217133152.4043.94951.stgit@rabbit.intern.cm-ag>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756523Ab1BQN65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 08:58:57 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44079 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab1BQN6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 08:58:52 -0500
+Date: Thu, 17 Feb 2011 14:58:16 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Roland McGrath <roland@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Julien Desfossez <julien.desfossez@polymtl.ca>,
+        dominique.toupin@ericsson.com, ltt-dev@lists.casi.polymtl.ca,
+        systemtap@sources.redhat.com, linux-kernel@vger.kernel.org,
+        Jason Baron <jbaron@redhat.com>, hpa@zytor.com, rostedt@goodmis.org,
+        andi@firstfloor.org, rth@redhat.com, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        sam@ravnborg.org, michael@ellerman.id.au
+Subject: Re: Porting "jump labels" to userspace
+Message-ID: <20110217135816.GC7018@elte.hu>
+References: <y0mvd0ltgba.fsf@fche.csb>
+ <AANLkTi=Nsy6fXE9=Njxs9LPHuohHzf=q5kD+fK765Rht@mail.gmail.com>
+ <1297853778.3224.90.camel@springer.wildebeest.org>
+ <20110216185056.CAD7B1806E0@magilla.sf.frob.com>
+ <20110216200034.GA6066@Krystal>
+ <20110216200449.1EB9618020E@magilla.sf.frob.com>
+ <4D5C30D8.8070107@caviumnetworks.com>
+ <20110216203953.GB2015@Krystal>
+ <alpine.LFD.2.00.1102162143430.2701@localhost6.localdomain6>
+ <1297892529.5226.543.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297892529.5226.543.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Feb 2011 14:31:52 +0100
-Max Kellermann <mk@cm4all.com> wrote:
 
-> Can limit the number of fork()/clone() calls in a cgroup.  It is
-> useful as a safeguard against fork bombs.
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, 2011-02-16 at 21:45 +0100, Thomas Gleixner wrote:
 > 
+> > We talk about 500 lines of code, where half of it is modules specific
+> > and the whole thing is full of kernelims. IMNSHO, that's faster
+> > reimplemented from scratch than writing all the mails and get the
+> > authors to sign off on the license change.
+> 
+> That and I'm not going to consent with an LGPL license, I'm an avid
+> GPLv2 fan as various people already know ;-)
 
-brief comments below.
-
-
-> Signed-off-by: Max Kellermann <mk@cm4all.com>
-<snip>
-
-> +static int
-> +cgroup_fork_remaining_write(struct cgroup *cgroup, struct cftype *cft,
-> +			    s64 value)
-> +{
-> +	struct cgroup_fork *t = cgroup_fork_group(cgroup);
-> +
-> +	if (value < -1 || value > (1L << 30))
-> +		return -EINVAL;
-> +
-> +	spin_lock_irq(&t->lock);
-> +	t->remaining = (int)value;
-> +	spin_unlock_irq(&t->lock);
-> +
-> +	return 0;
-> +}
-
-I wonder allowing to set the limit to Root cgroup may imply the system death.
-How about disabling to set value to Root cgroup ?
-
-
-> +
-> +static const struct cftype cgroup_fork_files[] =  {
-> +	{
-> +		.name = "remaining",
-> +		.read_s64 = cgroup_fork_remaining_read,
-> +		.write_s64 = cgroup_fork_remaining_write,
-> +	},
-> +};
-> +
-> +static int
-> +cgroup_fork_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
-> +{
-> +	if (cgroup->parent == NULL)
-> +		/* cannot limit the root cgroup */
-> +		return 0;
-> +
-> +	return cgroup_add_files(cgroup, ss, cgroup_fork_files,
-> +				ARRAY_SIZE(cgroup_fork_files));
-> +}
-> +
-> +struct cgroup_subsys fork_subsys = {
-> +	.name = "fork",
-> +	.create = cgroup_fork_create,
-> +	.destroy = cgroup_fork_destroy,
-> +	.fork = cgroup_fork_fork,
-> +	.populate = cgroup_fork_populate,
-> +	.subsys_id = fork_subsys_id,
-> +};
-> +
-> +int
-> +cgroup_fork_pre_fork(void)
-> +{
-> +	struct cgroup_fork *t;
-> +	int err = 0;
-> +
-> +	rcu_read_lock();
-> +
-> +	t = cgroup_fork_current();
-> +	while (t->css.cgroup->parent != NULL && err == 0) {
-> +		spin_lock_irq(&t->lock);
-> +
-> +		if (t->remaining == 0)
-> +			err = -EPERM;
-
-IIRC, fork()'s error code is EAGAIN or ENOMEM. The exisiting limit of
-rlimit() returns EAGAIN.
-
-How about -EAGAIN here ? I think it's not good to add new error code for
-system calls.
+Ditto for me.
 
 Thanks,
--Kame
 
+	Ingo
