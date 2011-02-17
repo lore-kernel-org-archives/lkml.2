@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab1BQTvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:51:20 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35073 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab1BQTvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:51:17 -0500
-Date: Thu, 17 Feb 2011 20:51:15 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] fix Steven's Copyright typos
-Message-ID: <20110217195115.GR22310@pengutronix.de>
-References: <1295899921-11333-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <alpine.LNX.2.00.1102171642100.2160@pobox.suse.cz>
+	id S1757849Ab1BQTyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:54:25 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:60992 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751506Ab1BQTyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:54:22 -0500
+From: Matthias Schwarzott <zzam@gentoo.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Subject: Re: [Patch] Zarlink zl10036 DVB-S: Fix mem leak in zl10036_attach
+Date: Thu, 17 Feb 2011 20:54:06 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1102171642100.2160@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102172054.12773.zzam@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Thu, Feb 17, 2011 at 04:42:56PM +0100, Jiri Kosina wrote:
-> On Mon, 24 Jan 2011, Uwe Kleine-König wrote:
+On Sunday 06 February 2011, Jesper Juhl wrote:
+> If the memory allocation to 'state' succeeds but we jump to the 'error'
+> label before 'state' is assigned to fe->tuner_priv, then the call to
+> 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
+> only what was previously assigned to 'tuner_priv', thus leaking the memory
+> allocated to 'state'.
+> There are may ways to fix this, including assigning the allocated memory
+> directly to 'fe->tuner_priv', but I did not go for that since the
+> additional pointer derefs are more expensive than the local variable, so I
+> just added a 'kfree(state)' call. I guess the call to 'zl10036_release'
+> might not even be needed in this case, but I wasn't sure, so I left it in.
 > 
-> > OK, the copyright allows you to write a copy, still I think the lawyers
-> > prefer the correct spelling.
-> > 
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> >  scripts/kconfig/streamline_config.pl |    2 +-
-> >  tools/testing/ktest/ktest.pl         |    2 +-
-> >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
-> > index fd81fc3..a4fe923 100644
-> > --- a/scripts/kconfig/streamline_config.pl
-> > +++ b/scripts/kconfig/streamline_config.pl
-> > @@ -1,6 +1,6 @@
-> >  #!/usr/bin/perl -w
-> >  #
-> > -# Copywrite 2005-2009 - Steven Rostedt
-> > +# Copyright 2005-2009 - Steven Rostedt
-> >  # Licensed under the terms of the GNU GPL License version 2
-> >  #
-> >  #  It's simple enough to figure out how this works.
-> > diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-> > index e1c62ee..ba7c63a 100755
-> > --- a/tools/testing/ktest/ktest.pl
-> > +++ b/tools/testing/ktest/ktest.pl
-> > @@ -1,6 +1,6 @@
-> >  #!/usr/bin/perl -w
-> >  #
-> > -# Copywrite 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
-> > +# Copyright 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
-> >  # Licensed under the terms of the GNU GPL License version 2
-> >  #
+Yeah, that call to zl10036_release can be completely eleminated.
+Another thing is: jumping to the error label only makes sense when memory was 
+already allocated. So the jump in line 471 can be replaced by "return NULL", 
+as the other error handling before allocation:
+        if (NULL == config) {
+                printk(KERN_ERR "%s: no config specified", __func__);
+                goto error;
+        }
+
+I suggest to improve the patch to clean the code up when changing that.
+
+But I am fine with commiting this patch also if you do not want to change it.
+
+Regards
+Matthias
+
+Signed-off-by: Matthias Schwarzott <zzam@gentoo.org>
+
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  zl10036.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> I prefer not to fiddle with anything surrounding the Copyright lines 
-> without explicit permission of the copyright holder.
-the patch is already in tip
+>  compile tested only.
+> 
+> diff --git a/drivers/media/dvb/frontends/zl10036.c
+> b/drivers/media/dvb/frontends/zl10036.c index 4627f49..b4fb8e8 100644
+> --- a/drivers/media/dvb/frontends/zl10036.c
+> +++ b/drivers/media/dvb/frontends/zl10036.c
+> @@ -508,6 +508,7 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend
+> *fe,
+> 
+>  error:
+>  	zl10036_release(fe);
+> +	kfree(state);
+>  	return NULL;
+>  }
+>  EXPORT_SYMBOL(zl10036_attach);
 
-Thanks
-Uwe
-
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
