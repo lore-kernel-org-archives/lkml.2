@@ -1,131 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab1BQUSa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:18:30 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39781 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752601Ab1BQUS2 (ORCPT
+	id S1757947Ab1BQUe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:34:56 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:23183 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1BQUez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:18:28 -0500
+	Thu, 17 Feb 2011 15:34:55 -0500
+Date: Thu, 17 Feb 2011 21:33:56 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Matthias Schwarzott <zzam@gentoo.org>
+cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [Patch] Zarlink zl10036 DVB-S: Fix mem leak in zl10036_attach
+In-Reply-To: <201102172054.12773.zzam@gentoo.org>
+Message-ID: <alpine.LNX.2.00.1102172130360.17697@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net> <201102172054.12773.zzam@gentoo.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikUF+gz8H3SkW4NhD8SOT5b4bxnpcJgsVU+G-bC@mail.gmail.com>
-References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
- <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
- <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
- <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
- <1297960574.2769.20.camel@edumazet-laptop> <AANLkTikUF+gz8H3SkW4NhD8SOT5b4bxnpcJgsVU+G-bC@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Feb 2011 12:18:04 -0800
-Message-ID: <AANLkTi=SHY9gF49zyoECNV3favjS8Q6-9eWnQwNKX2EM@mail.gmail.com>
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Octavian Purdila <opurdila@ixiacom.com>,
-        David Miller <davem@davemloft.net>
-Content-Type: multipart/mixed; boundary=90e6ba6e866882822f049c801968
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba6e866882822f049c801968
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, 17 Feb 2011, Matthias Schwarzott wrote:
 
-On Thu, Feb 17, 2011 at 9:07 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> [ Btw, that also shows another problem: "list_move()" doesn't trigger
-> the debugging checks when it does the __list_del(). So
-> CONFIG_DEBUG_LIST would never have caught the fact that the
-> "list_move()" was done on a list-entry that didn't have valid list
-> pointers any more. ]
+> On Sunday 06 February 2011, Jesper Juhl wrote:
+> > If the memory allocation to 'state' succeeds but we jump to the 'error'
+> > label before 'state' is assigned to fe->tuner_priv, then the call to
+> > 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
+> > only what was previously assigned to 'tuner_priv', thus leaking the memory
+> > allocated to 'state'.
+> > There are may ways to fix this, including assigning the allocated memory
+> > directly to 'fe->tuner_priv', but I did not go for that since the
+> > additional pointer derefs are more expensive than the local variable, so I
+> > just added a 'kfree(state)' call. I guess the call to 'zl10036_release'
+> > might not even be needed in this case, but I wasn't sure, so I left it in.
+> > 
+> Yeah, that call to zl10036_release can be completely eleminated.
+> Another thing is: jumping to the error label only makes sense when memory was 
+> already allocated. So the jump in line 471 can be replaced by "return NULL", 
+> as the other error handling before allocation:
+>         if (NULL == config) {
+>                 printk(KERN_ERR "%s: no config specified", __func__);
+>                 goto error;
+>         }
+> 
+> I suggest to improve the patch to clean the code up when changing that.
+> 
+> But I am fine with commiting this patch also if you do not want to change it.
+> 
 
-Ok, so does this patch change things? IOW, if you enable
-CONFIG_DEBUG_LIST, this patch should hopefully make the error case of
-using "list_move()" on a stale and re-used entry trigger an error
-printout.
+Thank you for your feedback. It makes a lot of sense.
+Changing it is not a problem :)
+How about the updated patch below?
 
-NOTE! Even if the list is some stale entry on the stack, if nothing
-has overwritten that stack entry, no amount of list debugging will
-notice this. So you still need to hit the problem. But now the kernel
-should print stuff out even if the page got re-allocated to something
-else than a page table, so _if_ the problem is a list_move() or
-similar, we don't need to hit quite the same very special case. If it
-corrupts user space pages or some other random memory, it will still
-complain (instead of just resulting in a SIGSEGV or whatever)
 
-Of course, there is absolutely no guarantee that it's actually
-"list_move()" at all.
+If the memory allocation to 'state' succeeds but we jump to the 'error' 
+label before 'state' is assigned to fe->tuner_priv, then the call to 
+'zl10036_release(fe)' at the 'error:' label will not free 'state', but 
+only what was previously assigned to 'tuner_priv', thus leaking the memory 
+allocated to 'state'.
+This patch fixes the leak and also does not jump to 'error:' before mem 
+has been allocated but instead just returns. Also some small style 
+cleanups.
 
-And as usual, the patch is TOTALLY UNTESTED.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ zl10036.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-                                 Linus
+diff --git a/drivers/media/dvb/frontends/zl10036.c b/drivers/media/dvb/frontends/zl10036.c
+index 4627f49..81aa984 100644
+--- a/drivers/media/dvb/frontends/zl10036.c
++++ b/drivers/media/dvb/frontends/zl10036.c
+@@ -463,16 +463,16 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
+ 				    const struct zl10036_config *config,
+ 				    struct i2c_adapter *i2c)
+ {
+-	struct zl10036_state *state = NULL;
++	struct zl10036_state *state;
+ 	int ret;
+ 
+-	if (NULL == config) {
++	if (!config) {
+ 		printk(KERN_ERR "%s: no config specified", __func__);
+-		goto error;
++		return NULL;
+ 	}
+ 
+ 	state = kzalloc(sizeof(struct zl10036_state), GFP_KERNEL);
+-	if (NULL == state)
++	if (!state)
+ 		return NULL;
+ 
+ 	state->config = config;
+@@ -507,7 +507,7 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
+ 	return fe;
+ 
+ error:
+-	zl10036_release(fe);
++	kfree(state);
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(zl10036_attach);
 
---90e6ba6e866882822f049c801968
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gka44ntr1
 
-IGluY2x1ZGUvbGludXgvbGlzdC5oIHwgICAxMiArKysrKysrKystLS0KIGxpYi9saXN0X2RlYnVn
-LmMgICAgIHwgICAzOSArKysrKysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0KIDIg
-ZmlsZXMgY2hhbmdlZCwgMzUgaW5zZXJ0aW9ucygrKSwgMTYgZGVsZXRpb25zKC0pCgpkaWZmIC0t
-Z2l0IGEvaW5jbHVkZS9saW51eC9saXN0LmggYi9pbmNsdWRlL2xpbnV4L2xpc3QuaAppbmRleCA5
-YTVmOGE3Li4zYTU0MjY2IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2xpc3QuaAorKysgYi9p
-bmNsdWRlL2xpbnV4L2xpc3QuaApAQCAtOTYsNiArOTYsMTEgQEAgc3RhdGljIGlubGluZSB2b2lk
-IF9fbGlzdF9kZWwoc3RydWN0IGxpc3RfaGVhZCAqIHByZXYsIHN0cnVjdCBsaXN0X2hlYWQgKiBu
-ZXh0KQogICogaW4gYW4gdW5kZWZpbmVkIHN0YXRlLgogICovCiAjaWZuZGVmIENPTkZJR19ERUJV
-R19MSVNUCitzdGF0aWMgaW5saW5lIHZvaWQgX19saXN0X2RlbF9lbnRyeShzdHJ1Y3QgbGlzdF9o
-ZWFkICplbnRyeSkKK3sKKwlfX2xpc3RfZGVsKGVudHJ5LT5wcmV2LCBlbnRyeS0+bmV4dCk7Cit9
-CisKIHN0YXRpYyBpbmxpbmUgdm9pZCBsaXN0X2RlbChzdHJ1Y3QgbGlzdF9oZWFkICplbnRyeSkK
-IHsKIAlfX2xpc3RfZGVsKGVudHJ5LT5wcmV2LCBlbnRyeS0+bmV4dCk7CkBAIC0xMDMsNiArMTA4
-LDcgQEAgc3RhdGljIGlubGluZSB2b2lkIGxpc3RfZGVsKHN0cnVjdCBsaXN0X2hlYWQgKmVudHJ5
-KQogCWVudHJ5LT5wcmV2ID0gTElTVF9QT0lTT04yOwogfQogI2Vsc2UKK2V4dGVybiB2b2lkIF9f
-bGlzdF9kZWxfZW50cnkoc3RydWN0IGxpc3RfaGVhZCAqZW50cnkpOwogZXh0ZXJuIHZvaWQgbGlz
-dF9kZWwoc3RydWN0IGxpc3RfaGVhZCAqZW50cnkpOwogI2VuZGlmCiAKQEAgLTEzNSw3ICsxNDEs
-NyBAQCBzdGF0aWMgaW5saW5lIHZvaWQgbGlzdF9yZXBsYWNlX2luaXQoc3RydWN0IGxpc3RfaGVh
-ZCAqb2xkLAogICovCiBzdGF0aWMgaW5saW5lIHZvaWQgbGlzdF9kZWxfaW5pdChzdHJ1Y3QgbGlz
-dF9oZWFkICplbnRyeSkKIHsKLQlfX2xpc3RfZGVsKGVudHJ5LT5wcmV2LCBlbnRyeS0+bmV4dCk7
-CisJX19saXN0X2RlbF9lbnRyeShlbnRyeSk7CiAJSU5JVF9MSVNUX0hFQUQoZW50cnkpOwogfQog
-CkBAIC0xNDYsNyArMTUyLDcgQEAgc3RhdGljIGlubGluZSB2b2lkIGxpc3RfZGVsX2luaXQoc3Ry
-dWN0IGxpc3RfaGVhZCAqZW50cnkpCiAgKi8KIHN0YXRpYyBpbmxpbmUgdm9pZCBsaXN0X21vdmUo
-c3RydWN0IGxpc3RfaGVhZCAqbGlzdCwgc3RydWN0IGxpc3RfaGVhZCAqaGVhZCkKIHsKLQlfX2xp
-c3RfZGVsKGxpc3QtPnByZXYsIGxpc3QtPm5leHQpOworCV9fbGlzdF9kZWxfZW50cnkobGlzdCk7
-CiAJbGlzdF9hZGQobGlzdCwgaGVhZCk7CiB9CiAKQEAgLTE1OCw3ICsxNjQsNyBAQCBzdGF0aWMg
-aW5saW5lIHZvaWQgbGlzdF9tb3ZlKHN0cnVjdCBsaXN0X2hlYWQgKmxpc3QsIHN0cnVjdCBsaXN0
-X2hlYWQgKmhlYWQpCiBzdGF0aWMgaW5saW5lIHZvaWQgbGlzdF9tb3ZlX3RhaWwoc3RydWN0IGxp
-c3RfaGVhZCAqbGlzdCwKIAkJCQkgIHN0cnVjdCBsaXN0X2hlYWQgKmhlYWQpCiB7Ci0JX19saXN0
-X2RlbChsaXN0LT5wcmV2LCBsaXN0LT5uZXh0KTsKKwlfX2xpc3RfZGVsX2VudHJ5KGxpc3QpOwog
-CWxpc3RfYWRkX3RhaWwobGlzdCwgaGVhZCk7CiB9CiAKZGlmZiAtLWdpdCBhL2xpYi9saXN0X2Rl
-YnVnLmMgYi9saWIvbGlzdF9kZWJ1Zy5jCmluZGV4IDM0NGM3MTAuLmI4MDI5YTUgMTAwNjQ0Ci0t
-LSBhL2xpYi9saXN0X2RlYnVnLmMKKysrIGIvbGliL2xpc3RfZGVidWcuYwpAQCAtMzUsNiArMzUs
-MzEgQEAgdm9pZCBfX2xpc3RfYWRkKHN0cnVjdCBsaXN0X2hlYWQgKm5ldywKIH0KIEVYUE9SVF9T
-WU1CT0woX19saXN0X2FkZCk7CiAKK3ZvaWQgX19saXN0X2RlbF9lbnRyeShzdHJ1Y3QgbGlzdF9o
-ZWFkICplbnRyeSkKK3sKKwlzdHJ1Y3QgbGlzdF9oZWFkICpwcmV2LCAqbmV4dDsKKworCXByZXYg
-PSBlbnRyeS0+cHJldjsKKwluZXh0ID0gZW50cnktPm5leHQ7CisKKwlpZiAoV0FSTihuZXh0ID09
-IExJU1RfUE9JU09OMSwKKwkJImxpc3RfZGVsIGNvcnJ1cHRpb24sICVwLT5uZXh0IGlzIExJU1Rf
-UE9JU09OMSAoJXApXG4iLAorCQllbnRyeSwgTElTVF9QT0lTT04xKSB8fAorCSAgICBXQVJOKHBy
-ZXYgPT0gTElTVF9QT0lTT04yLAorCQkibGlzdF9kZWwgY29ycnVwdGlvbiwgJXAtPnByZXYgaXMg
-TElTVF9QT0lTT04yICglcClcbiIsCisJCWVudHJ5LCBMSVNUX1BPSVNPTjIpIHx8CisJICAgIFdB
-Uk4ocHJldi0+bmV4dCAhPSBlbnRyeSwKKwkJImxpc3RfZGVsIGNvcnJ1cHRpb24uIHByZXYtPm5l
-eHQgc2hvdWxkIGJlICVwLCAiCisJCSJidXQgd2FzICVwXG4iLCBlbnRyeSwgcHJldi0+bmV4dCkg
-fHwKKwkgICAgV0FSTihuZXh0LT5wcmV2ICE9IGVudHJ5LAorCQkibGlzdF9kZWwgY29ycnVwdGlv
-bi4gbmV4dC0+cHJldiBzaG91bGQgYmUgJXAsICIKKwkJImJ1dCB3YXMgJXBcbiIsIGVudHJ5LCBu
-ZXh0LT5wcmV2KSkKKwkJcmV0dXJuOworCisJX19saXN0X2RlbChwcmV2LCBuZXh0KTsKK30KK0VY
-UE9SVF9TWU1CT0woX19saXN0X2RlbF9lbnRyeSk7CisKIC8qKgogICogbGlzdF9kZWwgLSBkZWxl
-dGVzIGVudHJ5IGZyb20gbGlzdC4KICAqIEBlbnRyeTogdGhlIGVsZW1lbnQgdG8gZGVsZXRlIGZy
-b20gdGhlIGxpc3QuCkBAIC00MywxOSArNjgsNyBAQCBFWFBPUlRfU1lNQk9MKF9fbGlzdF9hZGQp
-OwogICovCiB2b2lkIGxpc3RfZGVsKHN0cnVjdCBsaXN0X2hlYWQgKmVudHJ5KQogewotCVdBUk4o
-ZW50cnktPm5leHQgPT0gTElTVF9QT0lTT04xLAotCQkibGlzdF9kZWwgY29ycnVwdGlvbiwgbmV4
-dCBpcyBMSVNUX1BPSVNPTjEgKCVwKVxuIiwKLQkJTElTVF9QT0lTT04xKTsKLQlXQVJOKGVudHJ5
-LT5uZXh0ICE9IExJU1RfUE9JU09OMSAmJiBlbnRyeS0+cHJldiA9PSBMSVNUX1BPSVNPTjIsCi0J
-CSJsaXN0X2RlbCBjb3JydXB0aW9uLCBwcmV2IGlzIExJU1RfUE9JU09OMiAoJXApXG4iLAotCQlM
-SVNUX1BPSVNPTjIpOwotCVdBUk4oZW50cnktPnByZXYtPm5leHQgIT0gZW50cnksCi0JCSJsaXN0
-X2RlbCBjb3JydXB0aW9uLiBwcmV2LT5uZXh0IHNob3VsZCBiZSAlcCwgIgotCQkiYnV0IHdhcyAl
-cFxuIiwgZW50cnksIGVudHJ5LT5wcmV2LT5uZXh0KTsKLQlXQVJOKGVudHJ5LT5uZXh0LT5wcmV2
-ICE9IGVudHJ5LAotCQkibGlzdF9kZWwgY29ycnVwdGlvbi4gbmV4dC0+cHJldiBzaG91bGQgYmUg
-JXAsICIKLQkJImJ1dCB3YXMgJXBcbiIsIGVudHJ5LCBlbnRyeS0+bmV4dC0+cHJldik7Ci0JX19s
-aXN0X2RlbChlbnRyeS0+cHJldiwgZW50cnktPm5leHQpOworCV9fbGlzdF9kZWxfZW50cnkoZW50
-cnkpOwogCWVudHJ5LT5uZXh0ID0gTElTVF9QT0lTT04xOwogCWVudHJ5LT5wcmV2ID0gTElTVF9Q
-T0lTT04yOwogfQo=
---90e6ba6e866882822f049c801968--
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
