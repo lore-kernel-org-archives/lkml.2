@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab1BQRCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:02:07 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:37233 "EHLO
+	id S1756973Ab1BQRCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:02:39 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:33886 "EHLO
 	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756714Ab1BQRCE convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756898Ab1BQRCg convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Thu, 17 Feb 2011 12:02:04 -0500
-Message-Id: <4D5D62CE02000078000327E4@vpn.id2.novell.com>
+	Thu, 17 Feb 2011 12:02:36 -0500
+Message-Id: <4D5D62EE02000078000327E7@vpn.id2.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 17 Feb 2011 17:02:54 +0000
+Date: Thu, 17 Feb 2011 17:03:26 +0000
 From: "Jan Beulich" <JBeulich@novell.com>
 To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
 Cc: <tony.luck@intel.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/3] x86-64: use macros to generate exception table
-	 entries
+Subject: [PATCH 2/3] x86-64: use relative 32-bit pointers in exception
+	 tables
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -23,400 +23,290 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all open coded uses in x86-64 and common x86 code to use the
-macros that are available, thus subsequently allowing to change the
-actual implementation without having to touch dozens of places.
+Convert exception table pointers from absolute 64-bit to relative 32-
+bit ones, thus shrinking the table size by half. Rather than providing
+an x86-64-specific extable implementation, generalize the common one
+to deal with different ways of storing the pointers, which will allow
+ia64's custom implementation to be dropped subsequently.
 
 Signed-off-by: Jan Beulich <jbeulich@novell.com>
 Cc: Tony Luck <tony.luck@intel.com>
 
 ---
- arch/x86/ia32/ia32entry.S           |    9 +----
- arch/x86/include/asm/kvm_host.h     |    4 --
- arch/x86/include/asm/xsave.h        |   10 +-----
- arch/x86/kernel/entry_64.S          |   14 ++------
- arch/x86/kernel/test_rodata.c       |   10 +-----
- arch/x86/lib/copy_user_64.S         |   58 +++++++++++++++---------------------
- arch/x86/lib/copy_user_nocache_64.S |   50 ++++++++++++++-----------------
- arch/x86/lib/csum-copy_64.S         |   16 ++-------
- arch/x86/lib/getuser.S              |    9 ++---
- arch/x86/lib/putuser.S              |   12 +++----
- 10 files changed, 73 insertions(+), 119 deletions(-)
+ arch/Kconfig                   |    3 ++
+ arch/x86/Kconfig               |    1 
+ arch/x86/include/asm/asm.h     |    8 +++---
+ arch/x86/include/asm/uaccess.h |   17 --------------
+ arch/x86/mm/extable.c          |    8 ++++--
+ include/asm-generic/extable.h  |   49 +++++++++++++++++++++++++++++++++++++++++
+ include/asm-generic/uaccess.h  |   21 -----------------
+ lib/extable.c                  |   39 ++++++++++++++++++++++++++------
+ 8 files changed, 96 insertions(+), 50 deletions(-)
 
---- 2.6.38-rc5-extable.orig/arch/x86/ia32/ia32entry.S
-+++ 2.6.38-rc5-extable/arch/x86/ia32/ia32entry.S
-@@ -4,6 +4,7 @@
-  * Copyright 2000-2002 Andi Kleen, SuSE Labs.
-  */		 
+--- 2.6.38-rc5-extable.orig/arch/Kconfig
++++ 2.6.38-rc5-extable/arch/Kconfig
+@@ -61,6 +61,9 @@ config OPTPROBES
+ 	depends on KPROBES && HAVE_OPTPROBES
+ 	depends on !PREEMPT
  
-+#include <asm/asm.h>
- #include <asm/dwarf2.h>
- #include <asm/calling.h>
- #include <asm/asm-offsets.h>
-@@ -151,9 +152,7 @@ ENTRY(ia32_sysenter_target)
-  	/* no need to do an access_ok check here because rbp has been
-  	   32bit zero extended */ 
- 1:	movl	(%rbp),%ebp
-- 	.section __ex_table,"a"
-- 	.quad 1b,ia32_badarg
-- 	.previous	
-+	_ASM_EXTABLE(1b, ia32_badarg)
- 	GET_THREAD_INFO(%r10)
- 	orl    $TS_COMPAT,TI_status(%r10)
- 	testl  $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
-@@ -312,9 +311,7 @@ ENTRY(ia32_cstar_target)
- 	   32bit zero extended */ 
- 	/* hardware stack frame is complete now */	
- 1:	movl	(%r8),%r9d
--	.section __ex_table,"a"
--	.quad 1b,ia32_badarg
--	.previous	
-+	_ASM_EXTABLE(1b, ia32_badarg)
- 	GET_THREAD_INFO(%r10)
- 	orl   $TS_COMPAT,TI_status(%r10)
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
---- 2.6.38-rc5-extable.orig/arch/x86/include/asm/kvm_host.h
-+++ 2.6.38-rc5-extable/arch/x86/include/asm/kvm_host.h
-@@ -814,9 +814,7 @@ extern bool kvm_rebooting;
- 	"jne 668b \n\t"      		      \
- 	__ASM_SIZE(push) " $666b \n\t"	      \
- 	"call kvm_spurious_fault \n\t"	      \
--	".popsection \n\t" \
--	".pushsection __ex_table, \"a\" \n\t" \
--	_ASM_PTR " 666b, 667b \n\t" \
-+	_ASM_EXTABLE(666b, 667b) "\t" \
- 	".popsection"
++config EXTABLE_RELATIVE_POINTERS
++	bool
++
+ config HAVE_EFFICIENT_UNALIGNED_ACCESS
+ 	bool
+ 	help
+--- 2.6.38-rc5-extable.orig/arch/x86/Kconfig
++++ 2.6.38-rc5-extable/arch/x86/Kconfig
+@@ -11,6 +11,7 @@ config X86_32
  
- #define KVM_ARCH_WANT_MMU_NOTIFIER
---- 2.6.38-rc5-extable.orig/arch/x86/include/asm/xsave.h
-+++ 2.6.38-rc5-extable/arch/x86/include/asm/xsave.h
-@@ -80,10 +80,7 @@ static inline int xsave_user(struct xsav
- 			     "3:  movl $-1,%[err]\n"
- 			     "    jmp  2b\n"
- 			     ".previous\n"
--			     ".section __ex_table,\"a\"\n"
--			     _ASM_ALIGN "\n"
--			     _ASM_PTR "1b,3b\n"
--			     ".previous"
-+			     _ASM_EXTABLE(1b,3b)
- 			     : [err] "=r" (err)
- 			     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
- 			     : "memory");
-@@ -106,10 +103,7 @@ static inline int xrestore_user(struct x
- 			     "3:  movl $-1,%[err]\n"
- 			     "    jmp  2b\n"
- 			     ".previous\n"
--			     ".section __ex_table,\"a\"\n"
--			     _ASM_ALIGN "\n"
--			     _ASM_PTR "1b,3b\n"
--			     ".previous"
-+			     _ASM_EXTABLE(1b,3b)
- 			     : [err] "=r" (err)
- 			     : "D" (xstate), "a" (lmask), "d" (hmask), "0" (0)
- 			     : "memory");	/* memory required? */
---- 2.6.38-rc5-extable.orig/arch/x86/kernel/entry_64.S
-+++ 2.6.38-rc5-extable/arch/x86/kernel/entry_64.S
-@@ -43,6 +43,7 @@
- #include <asm/errno.h>
- #include <asm/dwarf2.h>
- #include <asm/calling.h>
-+#include <asm/asm.h>
- #include <asm/asm-offsets.h>
- #include <asm/msr.h>
- #include <asm/unistd.h>
-@@ -861,17 +862,13 @@ restore_args:
- irq_return:
- 	INTERRUPT_RETURN
+ config X86_64
+ 	def_bool 64BIT
++	select EXTABLE_RELATIVE_POINTERS
  
--	.section __ex_table, "a"
--	.quad irq_return, bad_iret
--	.previous
-+	_ASM_EXTABLE(irq_return, bad_iret)
- 
- #ifdef CONFIG_PARAVIRT
- ENTRY(native_iret)
- 	iretq
- 
--	.section __ex_table,"a"
--	.quad native_iret, bad_iret
--	.previous
-+	_ASM_EXTABLE(native_iret, bad_iret)
+ ### Arch settings
+ config X86
+--- 2.6.38-rc5-extable.orig/arch/x86/include/asm/asm.h
++++ 2.6.38-rc5-extable/arch/x86/include/asm/asm.h
+@@ -41,14 +41,14 @@
+ #ifdef __ASSEMBLY__
+ # define _ASM_EXTABLE(from,to)	    \
+ 	__ASM_EX_SEC ;		    \
+-	_ASM_ALIGN ;		    \
+-	_ASM_PTR from , to ;	    \
++	.balign 4 ;		    \
++	.long from __ASM_SEL(,-.), to __ASM_SEL(,-.) ; \
+ 	.previous
+ #else
+ # define _ASM_EXTABLE(from,to) \
+ 	__ASM_EX_SEC	\
+-	_ASM_ALIGN "\n" \
+-	_ASM_PTR #from "," #to "\n" \
++	" .balign 4\n" \
++	" .long " #from __ASM_SEL(,-.) "," #to __ASM_SEL(,-.) "\n" \
+ 	" .previous\n"
  #endif
  
- 	.section .fixup,"ax"
-@@ -1133,10 +1130,7 @@ gs_change:
- 	CFI_ENDPROC
- END(native_load_gs_index)
- 
--	.section __ex_table,"a"
--	.align 8
--	.quad gs_change,bad_gs
--	.previous
-+	_ASM_EXTABLE(gs_change, bad_gs)
- 	.section .fixup,"ax"
- 	/* running with kernelgs */
- bad_gs:
---- 2.6.38-rc5-extable.orig/arch/x86/kernel/test_rodata.c
-+++ 2.6.38-rc5-extable/arch/x86/kernel/test_rodata.c
-@@ -10,6 +10,7 @@
-  * of the License.
+--- 2.6.38-rc5-extable.orig/arch/x86/include/asm/uaccess.h
++++ 2.6.38-rc5-extable/arch/x86/include/asm/uaccess.h
+@@ -79,22 +79,7 @@
   */
- #include <linux/module.h>
-+#include <asm/asm.h>
- #include <asm/cacheflush.h>
- #include <asm/sections.h>
+ #define access_ok(type, addr, size) (likely(__range_not_ok(addr, size) == 0))
  
-@@ -42,14 +43,7 @@ int rodata_test(void)
- 		".section .fixup,\"ax\"\n"
- 		"2:	jmp 1b\n"
- 		".previous\n"
--		".section __ex_table,\"a\"\n"
--		"       .align 16\n"
--#ifdef CONFIG_X86_32
--		"	.long 0b,2b\n"
--#else
--		"	.quad 0b,2b\n"
--#endif
--		".previous"
-+		_ASM_EXTABLE(0b,2b)
- 		: [rslt] "=r" (result)
- 		: [rodata_test] "r" (&rodata_test_data), [zero] "r" (0UL)
- 	);
---- 2.6.38-rc5-extable.orig/arch/x86/lib/copy_user_64.S
-+++ 2.6.38-rc5-extable/arch/x86/lib/copy_user_64.S
-@@ -7,6 +7,7 @@
+-/*
+- * The exception table consists of pairs of addresses: the first is the
+- * address of an instruction that is allowed to fault, and the second is
+- * the address at which the program should continue.  No registers are
+- * modified, so it is entirely up to the continuation code to figure out
+- * what to do.
+- *
+- * All the routines below use bits of fixup code that are out of line
+- * with the main instruction path.  This means when everything is well,
+- * we don't even have to jump over them.  Further, they do not intrude
+- * on our cache or tlb entries.
+- */
+-
+-struct exception_table_entry {
+-	unsigned long insn, fixup;
+-};
++#include <asm-generic/extable.h>
+ 
+ extern int fixup_exception(struct pt_regs *regs);
+ 
+--- 2.6.38-rc5-extable.orig/arch/x86/mm/extable.c
++++ 2.6.38-rc5-extable/arch/x86/mm/extable.c
+@@ -23,13 +23,15 @@ int fixup_exception(struct pt_regs *regs
+ 
+ 	fixup = search_exception_tables(regs->ip);
+ 	if (fixup) {
++		unsigned long addr = ex_fixup(fixup);
++
+ 		/* If fixup is less than 16, it means uaccess error */
+-		if (fixup->fixup < 16) {
++		if (addr < 16) {
+ 			current_thread_info()->uaccess_err = -EFAULT;
+-			regs->ip += fixup->fixup;
++			regs->ip += addr;
+ 			return 1;
+ 		}
+-		regs->ip = fixup->fixup;
++		regs->ip = addr;
+ 		return 1;
+ 	}
+ 
+--- /dev/null
++++ 2.6.38-rc5-extable/include/asm-generic/extable.h
+@@ -0,0 +1,49 @@
++#ifndef __ASM_GENERIC_EXTABLE_H
++#define __ASM_GENERIC_EXTABLE_H
++
++/*
++ * The exception table consists of pairs of addresses: the first is the
++ * address of an instruction that is allowed to fault, and the second is
++ * the address at which the program should continue.  No registers are
++ * modified, so it is entirely up to the continuation code to figure out
++ * what to do.
++ *
++ * All the routines below use bits of fixup code that are out of line
++ * with the main instruction path.  This means when everything is well,
++ * we don't even have to jump over them.  Further, they do not intrude
++ * on our cache or tlb entries.
++ */
++
++struct exception_table_entry
++{
++#ifdef CONFIG_EXTABLE_RELATIVE_POINTERS
++	s32 insn_off, fixup_off;
++#else
++	unsigned long insn, fixup;
++#endif
++};
++
++#ifdef CONFIG_EXTABLE_RELATIVE_POINTERS
++#define EX_FIELD(ptr, field) \
++	((unsigned long)&(ptr)->field##_off + (ptr)->field##_off)
++#else
++#define EX_FIELD(ptr, field) (ptr)->field
++#endif
++
++static inline unsigned long ex_insn(const struct exception_table_entry *x)
++{
++	return EX_FIELD(x, insn);
++}
++#define ex_insn ex_insn /* until all architectures have this accessor */
++
++static inline unsigned long ex_fixup(const struct exception_table_entry *x)
++{
++	return EX_FIELD(x, fixup);
++}
++
++#undef EX_FIELD
++
++/* Returns 0 if exception not found and fixup otherwise.  */
++extern unsigned long search_exception_table(unsigned long);
++
++#endif /* __ASM_GENERIC_EXTABLE_H */
+--- 2.6.38-rc5-extable.orig/include/asm-generic/uaccess.h
++++ 2.6.38-rc5-extable/include/asm-generic/uaccess.h
+@@ -50,26 +50,7 @@ static inline int __access_ok(unsigned l
+ }
+ #endif
+ 
+-/*
+- * The exception table consists of pairs of addresses: the first is the
+- * address of an instruction that is allowed to fault, and the second is
+- * the address at which the program should continue.  No registers are
+- * modified, so it is entirely up to the continuation code to figure out
+- * what to do.
+- *
+- * All the routines below use bits of fixup code that are out of line
+- * with the main instruction path.  This means when everything is well,
+- * we don't even have to jump over them.  Further, they do not intrude
+- * on our cache or tlb entries.
+- */
+-
+-struct exception_table_entry
+-{
+-	unsigned long insn, fixup;
+-};
+-
+-/* Returns 0 if exception not found and fixup otherwise.  */
+-extern unsigned long search_exception_table(unsigned long);
++#include "extable.h"
+ 
+ /*
+  * architectures with an MMU should override these two
+--- 2.6.38-rc5-extable.orig/lib/extable.c
++++ 2.6.38-rc5-extable/lib/extable.c
+@@ -14,6 +14,10 @@
+ #include <linux/sort.h>
+ #include <asm/uaccess.h>
+ 
++#ifndef ex_insn /* until all architectures have this accessor */
++#define ex_insn(x) (x)->insn
++#endif
++
+ #ifndef ARCH_HAS_SORT_EXTABLE
+ /*
+  * The exception table needs to be sorted so that the binary
+@@ -24,20 +28,38 @@
+ static int cmp_ex(const void *a, const void *b)
+ {
+ 	const struct exception_table_entry *x = a, *y = b;
++	unsigned long xinsn = ex_insn(x);
++	unsigned long yinsn = ex_insn(y);
+ 
+ 	/* avoid overflow */
+-	if (x->insn > y->insn)
++	if (xinsn > yinsn)
+ 		return 1;
+-	if (x->insn < y->insn)
++	if (xinsn < yinsn)
+ 		return -1;
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_EXTABLE_RELATIVE_POINTERS
++static void swap_ex(void *a, void *b, int size)
++{
++	struct exception_table_entry *x = a, *y = b, tmp;
++	long delta = b - a;
++
++	tmp = *x;
++	x->insn_off = y->insn_off + delta;
++	x->fixup_off = y->fixup_off + delta;
++	y->insn_off = tmp.insn_off - delta;
++	y->fixup_off = tmp.fixup_off - delta;
++}
++#else
++#define swap_ex NULL
++#endif
++
+ void sort_extable(struct exception_table_entry *start,
+ 		  struct exception_table_entry *finish)
+ {
+ 	sort(start, finish - start, sizeof(struct exception_table_entry),
+-	     cmp_ex, NULL);
++	     cmp_ex, swap_ex);
+ }
+ 
+ #ifdef CONFIG_MODULES
+@@ -48,13 +70,15 @@ void sort_extable(struct exception_table
+ void trim_init_extable(struct module *m)
+ {
+ 	/*trim the beginning*/
+-	while (m->num_exentries && within_module_init(m->extable[0].insn, m)) {
++	while (m->num_exentries &&
++	       within_module_init(ex_insn(m->extable), m)) {
+ 		m->extable++;
+ 		m->num_exentries--;
+ 	}
+ 	/*trim the end*/
+ 	while (m->num_exentries &&
+-		within_module_init(m->extable[m->num_exentries-1].insn, m))
++	       within_module_init(ex_insn(m->extable + m->num_exentries - 1),
++				  m))
+ 		m->num_exentries--;
+ }
+ #endif /* CONFIG_MODULES */
+@@ -68,6 +92,7 @@ void trim_init_extable(struct module *m)
+  * We use a binary search, and thus we assume that the table is
+  * already sorted.
   */
- 
- #include <linux/linkage.h>
-+#include <asm/asm.h>
- #include <asm/dwarf2.h>
- 
- #define FIX_ALIGNMENT 1
-@@ -56,11 +57,8 @@
- 	jmp copy_user_handle_tail
- 	.previous
- 
--	.section __ex_table,"a"
--	.align 8
--	.quad 100b,103b
--	.quad 101b,103b
--	.previous
-+	_ASM_EXTABLE(100b,103b)
-+	_ASM_EXTABLE(101b,103b)
- #endif
- 	.endm
- 
-@@ -180,29 +178,26 @@ ENTRY(copy_user_generic_unrolled)
- 60:	jmp copy_user_handle_tail /* ecx is zerorest also */
- 	.previous
- 
--	.section __ex_table,"a"
--	.align 8
--	.quad 1b,30b
--	.quad 2b,30b
--	.quad 3b,30b
--	.quad 4b,30b
--	.quad 5b,30b
--	.quad 6b,30b
--	.quad 7b,30b
--	.quad 8b,30b
--	.quad 9b,30b
--	.quad 10b,30b
--	.quad 11b,30b
--	.quad 12b,30b
--	.quad 13b,30b
--	.quad 14b,30b
--	.quad 15b,30b
--	.quad 16b,30b
--	.quad 18b,40b
--	.quad 19b,40b
--	.quad 21b,50b
--	.quad 22b,50b
--	.previous
-+	_ASM_EXTABLE(1b,30b)
-+	_ASM_EXTABLE(2b,30b)
-+	_ASM_EXTABLE(3b,30b)
-+	_ASM_EXTABLE(4b,30b)
-+	_ASM_EXTABLE(5b,30b)
-+	_ASM_EXTABLE(6b,30b)
-+	_ASM_EXTABLE(7b,30b)
-+	_ASM_EXTABLE(8b,30b)
-+	_ASM_EXTABLE(9b,30b)
-+	_ASM_EXTABLE(10b,30b)
-+	_ASM_EXTABLE(11b,30b)
-+	_ASM_EXTABLE(12b,30b)
-+	_ASM_EXTABLE(13b,30b)
-+	_ASM_EXTABLE(14b,30b)
-+	_ASM_EXTABLE(15b,30b)
-+	_ASM_EXTABLE(16b,30b)
-+	_ASM_EXTABLE(18b,40b)
-+	_ASM_EXTABLE(19b,40b)
-+	_ASM_EXTABLE(21b,50b)
-+	_ASM_EXTABLE(22b,50b)
- 	CFI_ENDPROC
- ENDPROC(copy_user_generic_unrolled)
- 
-@@ -248,10 +243,7 @@ ENTRY(copy_user_generic_string)
- 	jmp copy_user_handle_tail
- 	.previous
- 
--	.section __ex_table,"a"
--	.align 8
--	.quad 1b,11b
--	.quad 3b,12b
--	.previous
-+	_ASM_EXTABLE(1b,11b)
-+	_ASM_EXTABLE(3b,12b)
- 	CFI_ENDPROC
- ENDPROC(copy_user_generic_string)
---- 2.6.38-rc5-extable.orig/arch/x86/lib/copy_user_nocache_64.S
-+++ 2.6.38-rc5-extable/arch/x86/lib/copy_user_nocache_64.S
-@@ -7,6 +7,7 @@
-  */
- 
- #include <linux/linkage.h>
-+#include <asm/asm.h>
- #include <asm/dwarf2.h>
- 
- #define FIX_ALIGNMENT 1
-@@ -36,11 +37,8 @@
- 	jmp copy_user_handle_tail
- 	.previous
- 
--	.section __ex_table,"a"
--	.align 8
--	.quad 100b,103b
--	.quad 101b,103b
--	.previous
-+	_ASM_EXTABLE(100b,103b)
-+	_ASM_EXTABLE(101b,103b)
- #endif
- 	.endm
- 
-@@ -111,27 +109,25 @@ ENTRY(__copy_user_nocache)
- 	jmp copy_user_handle_tail
- 	.previous
- 
--	.section __ex_table,"a"
--	.quad 1b,30b
--	.quad 2b,30b
--	.quad 3b,30b
--	.quad 4b,30b
--	.quad 5b,30b
--	.quad 6b,30b
--	.quad 7b,30b
--	.quad 8b,30b
--	.quad 9b,30b
--	.quad 10b,30b
--	.quad 11b,30b
--	.quad 12b,30b
--	.quad 13b,30b
--	.quad 14b,30b
--	.quad 15b,30b
--	.quad 16b,30b
--	.quad 18b,40b
--	.quad 19b,40b
--	.quad 21b,50b
--	.quad 22b,50b
--	.previous
-+	_ASM_EXTABLE(1b,30b)
-+	_ASM_EXTABLE(2b,30b)
-+	_ASM_EXTABLE(3b,30b)
-+	_ASM_EXTABLE(4b,30b)
-+	_ASM_EXTABLE(5b,30b)
-+	_ASM_EXTABLE(6b,30b)
-+	_ASM_EXTABLE(7b,30b)
-+	_ASM_EXTABLE(8b,30b)
-+	_ASM_EXTABLE(9b,30b)
-+	_ASM_EXTABLE(10b,30b)
-+	_ASM_EXTABLE(11b,30b)
-+	_ASM_EXTABLE(12b,30b)
-+	_ASM_EXTABLE(13b,30b)
-+	_ASM_EXTABLE(14b,30b)
-+	_ASM_EXTABLE(15b,30b)
-+	_ASM_EXTABLE(16b,30b)
-+	_ASM_EXTABLE(18b,40b)
-+	_ASM_EXTABLE(19b,40b)
-+	_ASM_EXTABLE(21b,50b)
-+	_ASM_EXTABLE(22b,50b)
- 	CFI_ENDPROC
- ENDPROC(__copy_user_nocache)
---- 2.6.38-rc5-extable.orig/arch/x86/lib/csum-copy_64.S
-+++ 2.6.38-rc5-extable/arch/x86/lib/csum-copy_64.S
-@@ -6,6 +6,7 @@
-  * for more details. No warranty for anything given at all.
-  */
- #include <linux/linkage.h>
-+#include <asm/asm.h>
- #include <asm/dwarf2.h>
- #include <asm/errno.h>
- 
-@@ -31,26 +32,17 @@
- 
- 	.macro source
- 10:
--	.section __ex_table,"a"
--	.align 8
--	.quad 10b,.Lbad_source
--	.previous
-+	_ASM_EXTABLE(10b, .Lbad_source)
- 	.endm
- 		
- 	.macro dest
- 20:
--	.section __ex_table,"a"
--	.align 8
--	.quad 20b,.Lbad_dest
--	.previous
-+	_ASM_EXTABLE(20b, .Lbad_dest)
- 	.endm
- 			
- 	.macro ignore L=.Lignore
- 30:
--	.section __ex_table,"a"
--	.align 8
--	.quad 30b,\L
--	.previous
-+	_ASM_EXTABLE(30b, \L)
- 	.endm
- 	
- 				
---- 2.6.38-rc5-extable.orig/arch/x86/lib/getuser.S
-+++ 2.6.38-rc5-extable/arch/x86/lib/getuser.S
-@@ -95,10 +95,9 @@ bad_get_user:
- 	CFI_ENDPROC
- END(bad_get_user)
- 
--.section __ex_table,"a"
--	_ASM_PTR 1b,bad_get_user
--	_ASM_PTR 2b,bad_get_user
--	_ASM_PTR 3b,bad_get_user
-+	_ASM_EXTABLE(1b, bad_get_user)
-+	_ASM_EXTABLE(2b, bad_get_user)
-+	_ASM_EXTABLE(3b, bad_get_user)
- #ifdef CONFIG_X86_64
--	_ASM_PTR 4b,bad_get_user
-+	_ASM_EXTABLE(4b, bad_get_user)
- #endif
---- 2.6.38-rc5-extable.orig/arch/x86/lib/putuser.S
-+++ 2.6.38-rc5-extable/arch/x86/lib/putuser.S
-@@ -86,12 +86,10 @@ bad_put_user:
- 	EXIT
- END(bad_put_user)
- 
--.section __ex_table,"a"
--	_ASM_PTR 1b,bad_put_user
--	_ASM_PTR 2b,bad_put_user
--	_ASM_PTR 3b,bad_put_user
--	_ASM_PTR 4b,bad_put_user
-+	_ASM_EXTABLE(1b, bad_put_user)
-+	_ASM_EXTABLE(2b, bad_put_user)
-+	_ASM_EXTABLE(3b, bad_put_user)
-+	_ASM_EXTABLE(4b, bad_put_user)
- #ifdef CONFIG_X86_32
--	_ASM_PTR 5b,bad_put_user
-+	_ASM_EXTABLE(5b, bad_put_user)
- #endif
--.previous
++#include <linux/kallsyms.h>//temp
+ const struct exception_table_entry *
+ search_extable(const struct exception_table_entry *first,
+ 	       const struct exception_table_entry *last,
+@@ -81,9 +106,9 @@ search_extable(const struct exception_ta
+ 		 * careful, the distance between value and insn
+ 		 * can be larger than MAX_LONG:
+ 		 */
+-		if (mid->insn < value)
++		if (ex_insn(mid) < value)
+ 			first = mid + 1;
+-		else if (mid->insn > value)
++		else if (ex_insn(mid) > value)
+ 			last = mid - 1;
+ 		else
+ 			return mid;
 
 
