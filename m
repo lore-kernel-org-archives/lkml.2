@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1BQQL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 11:11:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932096Ab1BQQLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 11:11:55 -0500
-Message-ID: <4D5D48C5.3090906@redhat.com>
-Date: Thu, 17 Feb 2011 17:11:49 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Staging: zram: initialize device on first read
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932270Ab1BQQMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 11:12:23 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36479 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab1BQQMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 11:12:22 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 18 Feb 2011 01:06:03 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/4] Reclaim invalidated page ASAP
+Message-Id: <20110218010603.46152945.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <973e9f9bf2006923b600be0c28cedce777a2cf2a.1297940291.git.minchan.kim@gmail.com>
+References: <cover.1297940291.git.minchan.kim@gmail.com>
+	<973e9f9bf2006923b600be0c28cedce777a2cf2a.1297940291.git.minchan.kim@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 18 Feb 2011 00:08:21 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Currently the device is initialized when first write is done to the
-device. Any read attempt before the first write would fail, including
-"hidden" read the user may not know about (as for example if he tries
-to write a partial block).
+> invalidate_mapping_pages is very big hint to reclaimer.
+> It means user doesn't want to use the page any more.
+> So in order to prevent working set page eviction, this patch
+> move the page into tail of inactive list by PG_reclaim.
+> 
+> Please, remember that pages in inactive list are working set
+> as well as active list. If we don't move pages into inactive list's
+> tail, pages near by tail of inactive list can be evicted although
+> we have a big clue about useless pages. It's totally bad.
+> 
+> Now PG_readahead/PG_reclaim is shared.
+> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
+> preventing fast reclaiming readahead marker page.
+> 
+> In this series, PG_reclaim is used by invalidated page, too.
+> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
+> to reclaim asap. Then, when the dirty page will be writeback,
+> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
+> It disturbs this serie's goal.
+> 
+> I think it's okay to clear PG_readahead when the page is dirty, not
+> writeback time. So this patch moves ClearPageReadahead.
+> In v4, ClearPageReadahead in set_page_dirty has a problem which is reported
+> by Steven Barrett. It's due to compound page. Some driver(ex, audio) calls 
+> set_page_dirty with compound page which isn't on LRU. but my patch does 
+> ClearPageRelcaim on compound page. In non-CONFIG_PAGEFLAGS_EXTENDED, it breaks
+> PageTail flag.
+> 
+> I think it doesn't affect THP and pass my test with THP enabling 
+> but Cced Andrea for double check.
+> 
+> Reported-by: Steven Barrett <damentz@liquorix.net>
+> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Nick Piggin <npiggin@kernel.dk>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-This patch initializes the device on first request, whether read or
-write.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- zram_drv.c |   19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 5fdf9d2..aab4ec4 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -211,11 +211,6 @@ static void zram_read(struct zram *zram, struct bio *bio)
- 	u32 index;
- 	struct bio_vec *bvec;
- 
--	if (unlikely(!zram->init_done)) {
--		bio_endio(bio, -ENXIO);
--		return;
--	}
--
- 	zram_stat64_inc(zram, &zram->stats.num_reads);
- 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
- 
-@@ -286,20 +281,15 @@ out:
- 
- static void zram_write(struct zram *zram, struct bio *bio)
- {
--	int i, ret;
-+	int i;
- 	u32 index;
- 	struct bio_vec *bvec;
- 
--	if (unlikely(!zram->init_done)) {
--		ret = zram_init_device(zram);
--		if (ret)
--			goto out;
--	}
--
- 	zram_stat64_inc(zram, &zram->stats.num_writes);
- 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
- 
- 	bio_for_each_segment(bvec, bio, i) {
-+		int ret;
- 		u32 offset;
- 		size_t clen;
- 		struct zobj_header *zheader;
-@@ -445,6 +435,11 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
- 		return 0;
- 	}
- 
-+	if (unlikely(!zram->init_done) && zram_init_device(zram)) {
-+		bio_io_error(bio);
-+		return 0;
-+	}
-+
- 	switch (bio_data_dir(bio)) {
- 	case READ:
- 		zram_read(zram, bio);
