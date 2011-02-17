@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab1BQDUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 22:20:39 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44899 "EHLO mail.zytor.com"
+	id S1753876Ab1BQDdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 22:33:32 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:47052 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab1BQDUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 22:20:38 -0500
-Message-ID: <4D5C93B6.5020900@zytor.com>
-Date: Wed, 16 Feb 2011 19:19:18 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Will Newton <will.newton@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Will Simoneau <simoneau@ele.uri.edu>,
-        David Miller <davem@davemloft.net>, matt@console-pimps.org,
-        peterz@infradead.org, jbaron@redhat.com, mingo@elte.hu,
-        tglx@linutronix.de, andi@firstfloor.org, roland@redhat.com,
-        rth@redhat.com, fweisbec@gmail.com, avi@redhat.com, sam@ravnborg.org,
-        ddaney@caviumnetworks.com, michael@ellerman.id.au,
-        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
-        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        benh@kernel.crashing.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
-References: <4D59B891.8010300@zytor.com> <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com> <20110215211123.GA3094@ele.uri.edu> <20110215.132702.39199169.davem@davemloft.net> <20110215215604.GA3177@ele.uri.edu> <AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com> <1297858734.23343.138.camel@gandalf.stny.rr.com> <AANLkTinzr6rb=WwFs7QApsvdy5f7PHZ1qS9ZVrncEzZD@mail.gmail.com> <BLU0-SMTP80F56386E7E060A3B2020B96D20@phx.gbl> <4D5C8019.70301@hitachi.com>
-In-Reply-To: <4D5C8019.70301@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752546Ab1BQDdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 22:33:31 -0500
+Date: Thu, 17 Feb 2011 14:33:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the workqueues tree
+Message-Id: <20110217143321.78f52ec5.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/16/2011 05:55 PM, Masami Hiramatsu wrote:
-> 
-> Hmm, I think that is miss-coding ll/sc.
-> If I understand correctly, usually cache invalidation should be done
-> right before storing value, as MSI protocol does.
-> (or, sc should atomically invalidate the cache line)
-> 
+--Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I suspect in this case one should flush the cache line before ll (a
-cache flush will typically invalidate the ll/sc link.)
+Hi Tejun,
 
-	-hpa
+After merging the workqueues tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+kernel/workqueue.c: In function 'init_workqueues':
+kernel/workqueue.c:3780: error: 'WQ_FREEZEABLE' undeclared (first use in th=
+is function)
 
+Caused by commit 58a69cb47ec6991bf006a3e5d202e8571b0327a4 ("workqueue,
+freezer: unify spelling of 'freeze' + 'able' to 'freezable'") being
+mismerged with commit 4149efb22da66e326fc48baf80d628834509f7f0
+("workqueue: add system_freezeable_wq") which added another use of
+WQ_FREEZEABLE.
+
+Please do at least simple build testing before submitting to
+linux-next ...
+
+I have used the version of the workqueues tree from next-20110216 for
+today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNXJcBAAoJEDMEi1NhKgbs4T4H/Rj7IYmnhkAtlZWjMkYOB+7J
+3rr4lfgKIz8PTKYntZ1V4gvyb0EPNjo46qzGeeAtA3hT4Ec3ZZsR19l41sAwGogC
+FIBZ3sw3JrHLMIcygp7gmzgbgjzWRSfugscmaO+VmdBimpC/2yQlwBbMGsmSUBZl
+YDpAO7K8/rwzvNA2FF9c7IvOTA7NgC1/O7WvxeQ8jYPtk1+88KJgj7IaQEYEMvdS
+2BARuJ1aCjt7T5GSQoTmfHhntEOqo9nNpGLjGf18/aH6JEtbUR2rZH79AklnTuXG
+t+GxreCIaAviQYuPkvZrjYY6eGvLWy69TKWpc3XhrDQKXF29WhfP88HScKWqQD8=
+=m4Le
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Feb_2011_14_33_21_+1100_q_b9UNTnQmuruP5D--
