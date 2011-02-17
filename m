@@ -1,59 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab1BQRDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:03:23 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62880 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab1BQRDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:03:19 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH 11/12] unicore32 machine related files: ps2 driver
-Date: Thu, 17 Feb 2011 18:03:15 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        "'Greg KH'" <greg@kroah.com>
-References: <015701cbcdae$7d5f43f0$781dcbd0$@mprc.pku.edu.cn>
-In-Reply-To: <015701cbcdae$7d5f43f0$781dcbd0$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102171803.15785.arnd@arndb.de>
-X-Provags-ID: V02:K0:n1Y4Ta/Tb5VcOFMG/pS7Ci8oxoEw63HHQxcpdIuyn1B
- d6Z/YCmhIMJUM1RYe1ePhNlhJ/X4EiJeWgmuZWHJ8/NC7CcKXL
- jFM9TB7n8b6ky5+w1f7NxCmwVq9AVwpWgLJdHinhnm755G15XF
- 1XgPp2UOEaMHzUQQlG3MppDGyukKRA2+Nu07AHQsEaUdXU4vmE
- QqorHpmR909lDSCsiB5QA==
+	id S932280Ab1BQRD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:03:29 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:33954 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250Ab1BQRD0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:2>);
+	Thu, 17 Feb 2011 12:03:26 -0500
+Message-Id: <4D5D631F0200007800032802@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 17 Feb 2011 17:04:15 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <tony.luck@intel.com>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-ia64@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: [PATCH 3/3] ia64: drop custom exception table implementation
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 February 2011, Guan Xuetao wrote:
-> +/*
-> + * Register numbers.
-> + */
-> +#define I8042_COMMAND_REG      ((unsigned long)&PS2_COMMAND)
-> +#define I8042_STATUS_REG       ((unsigned long)&PS2_STATUS)
-> +#define I8042_DATA_REG         ((unsigned long)&PS2_DATA)
-> +
-> +static inline int i8042_read_data(void)
-> +{
-> +       return inb(I8042_DATA_REG);
-> +}
-> +
-> +static inline int i8042_read_status(void)
-> +{
-> +       return inb(I8042_STATUS_REG);
-> +}
-> +
+Now that the common extable implementation can deal with the needs
+ia64 has, drop its custom implementation.
 
-This is not a correct way to use inb()/outb(), as far as I can tell:
-PS2_COMMAND is an mmio pointer (or should be, see my other message).
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-inb() however is only defined on PCI/ISA PIO port numbers, which
-are in the range between 0 and 65535, and typically get mapped
-into the memory from the PCI driver.
+---
+ arch/ia64/Kconfig               |    1 
+ arch/ia64/include/asm/uaccess.h |    9 ---
+ arch/ia64/mm/extable.c          |   98 ----------------------------------------
+ 3 files changed, 4 insertions(+), 104 deletions(-)
 
-	Arnd
+--- 2.6.38-rc5-extable.orig/arch/ia64/Kconfig
++++ 2.6.38-rc5-extable/arch/ia64/Kconfig
+@@ -12,6 +12,7 @@ config IA64
+ 	select ARCH_SUPPORTS_MSI
+ 	select HAVE_UNSTABLE_SCHED_CLOCK
+ 	select HAVE_IDE
++	select EXTABLE_RELATIVE_POINTERS
+ 	select HAVE_OPROFILE
+ 	select HAVE_KPROBES
+ 	select HAVE_KRETPROBES
+--- 2.6.38-rc5-extable.orig/arch/ia64/include/asm/uaccess.h
++++ 2.6.38-rc5-extable/arch/ia64/include/asm/uaccess.h
+@@ -340,14 +340,7 @@ extern unsigned long __strnlen_user (con
+ 	__su_ret;						\
+ })
+ 
+-/* Generic code can't deal with the location-relative format that we use for compactness.  */
+-#define ARCH_HAS_SORT_EXTABLE
+-#define ARCH_HAS_SEARCH_EXTABLE
+-
+-struct exception_table_entry {
+-	int addr;	/* location-relative address of insn this fixup is for */
+-	int cont;	/* location-relative continuation addr.; if bit 2 is set, r9 is set to 0 */
+-};
++#include <asm-generic/extable.h>
+ 
+ extern void ia64_handle_exception (struct pt_regs *regs, const struct exception_table_entry *e);
+ extern const struct exception_table_entry *search_exception_tables (unsigned long addr);
+--- 2.6.38-rc5-extable.orig/arch/ia64/mm/extable.c
++++ 2.6.38-rc5-extable/arch/ia64/mm/extable.c
+@@ -5,107 +5,13 @@
+  *	David Mosberger-Tang <davidm@hpl.hp.com>
+  */
+ 
+-#include <linux/sort.h>
+-
++#include <asm/ptrace.h>
+ #include <asm/uaccess.h>
+-#include <linux/module.h>
+-
+-static int cmp_ex(const void *a, const void *b)
+-{
+-	const struct exception_table_entry *l = a, *r = b;
+-	u64 lip = (u64) &l->addr + l->addr;
+-	u64 rip = (u64) &r->addr + r->addr;
+-
+-	/* avoid overflow */
+-	if (lip > rip)
+-		return 1;
+-	if (lip < rip)
+-		return -1;
+-	return 0;
+-}
+-
+-static void swap_ex(void *a, void *b, int size)
+-{
+-	struct exception_table_entry *l = a, *r = b, tmp;
+-	u64 delta = (u64) r - (u64) l;
+-
+-	tmp = *l;
+-	l->addr = r->addr + delta;
+-	l->cont = r->cont + delta;
+-	r->addr = tmp.addr - delta;
+-	r->cont = tmp.cont - delta;
+-}
+-
+-/*
+- * Sort the exception table. It's usually already sorted, but there
+- * may be unordered entries due to multiple text sections (such as the
+- * .init text section). Note that the exception-table-entries contain
+- * location-relative addresses, which requires a bit of care during
+- * sorting to avoid overflows in the offset members (e.g., it would
+- * not be safe to make a temporary copy of an exception-table entry on
+- * the stack, because the stack may be more than 2GB away from the
+- * exception-table).
+- */
+-void sort_extable (struct exception_table_entry *start,
+-		   struct exception_table_entry *finish)
+-{
+-	sort(start, finish - start, sizeof(struct exception_table_entry),
+-	     cmp_ex, swap_ex);
+-}
+-
+-static inline unsigned long ex_to_addr(const struct exception_table_entry *x)
+-{
+-	return (unsigned long)&x->addr + x->addr;
+-}
+-
+-#ifdef CONFIG_MODULES
+-/*
+- * Any entry referring to the module init will be at the beginning or
+- * the end.
+- */
+-void trim_init_extable(struct module *m)
+-{
+-	/*trim the beginning*/
+-	while (m->num_exentries &&
+-	       within_module_init(ex_to_addr(&m->extable[0]), m)) {
+-		m->extable++;
+-		m->num_exentries--;
+-	}
+-	/*trim the end*/
+-	while (m->num_exentries &&
+-	       within_module_init(ex_to_addr(&m->extable[m->num_exentries-1]),
+-				  m))
+-		m->num_exentries--;
+-}
+-#endif /* CONFIG_MODULES */
+-
+-const struct exception_table_entry *
+-search_extable (const struct exception_table_entry *first,
+-		const struct exception_table_entry *last,
+-		unsigned long ip)
+-{
+-	const struct exception_table_entry *mid;
+-	unsigned long mid_ip;
+-	long diff;
+-
+-        while (first <= last) {
+-		mid = &first[(last - first)/2];
+-		mid_ip = (u64) &mid->addr + mid->addr;
+-		diff = mid_ip - ip;
+-                if (diff == 0)
+-                        return mid;
+-                else if (diff < 0)
+-                        first = mid + 1;
+-                else
+-                        last = mid - 1;
+-        }
+-        return NULL;
+-}
+ 
+ void
+ ia64_handle_exception (struct pt_regs *regs, const struct exception_table_entry *e)
+ {
+-	long fix = (u64) &e->cont + e->cont;
++	unsigned long fix = ex_fixup(e);
+ 
+ 	regs->r8 = -EFAULT;
+ 	if (fix & 4)
+
+
