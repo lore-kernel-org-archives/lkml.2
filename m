@@ -1,110 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab1BQIxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 03:53:45 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:34523 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab1BQIxn (ORCPT
+	id S1754681Ab1BQI7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 03:59:05 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34519 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab1BQI7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 03:53:43 -0500
-X-IronPort-AV: E=Sophos;i="4.60,485,1291611600"; 
-   d="scan'208";a="136295808"
-Subject: Re: [Xen-devel] [PATCH 2/3] xen-pcifront: Sanity check the
- MSI/MSI-X values
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>
-In-Reply-To: <1297894638-28007-3-git-send-email-konrad.wilk@oracle.com>
-References: <1297894638-28007-1-git-send-email-konrad.wilk@oracle.com>
-	 <1297894638-28007-3-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Thu, 17 Feb 2011 08:53:40 +0000
-Message-ID: <1297932820.16356.1317.camel@zakaz.uk.xensource.com>
+	Thu, 17 Feb 2011 03:59:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Iv7zon1lQEDEI2Sf6hEyryseRHXooAftlTjSKjJYiy7+qFVnANi1pp11nAkUbFRQEq
+         yKABDXtBp0Htmc/mi1qkBNsNqmEak8sBmahfZ1EGS7dKe1Tz6BoRr/EGtms4wwgpTfgV
+         8t8CfNwV0JxQECln1R028aFqZzfeLdkQFA67E=
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 17 Feb 2011 16:59:02 +0800
+Message-ID: <AANLkTi=50m7xULN+Mob1942b+qBEgMcqUPDWSd3inan6@mail.gmail.com>
+Subject: [PATCH] code cleanup on fs/super.c
+From: Steven Liu <lingjiujianke@gmail.com>
+To: torvalds@linux-foundation.org, viro@zeniv.linux.org.uk,
+        randy.dunlap@oracle.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dchinner@redhat.com, liuqi <liuqi@thunderst.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-16 at 22:17 +0000, Konrad Rzeszutek Wilk wrote:
-> Check the returned vector values for any values that are
-> odd or plain incorrect (say vector value zero), and if so
-> print a warning. Also fixup the return values.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/pci/xen-pcifront.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-> index 3a5a6fc..6acf6ae 100644
-> --- a/drivers/pci/xen-pcifront.c
-> +++ b/drivers/pci/xen-pcifront.c
-> @@ -277,13 +277,20 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
->  	if (likely(!err)) {
->  		if (likely(!op.value)) {
->  			/* we get the result */
-> -			for (i = 0; i < nvec; i++)
-> +			for (i = 0; i < nvec; i++) {
-> +				if (op.msix_entries[i].vector <= 0) {
-> +					dev_warn(&dev->dev, "MSI-X entry %d" \
-> +						" is zero!\n", i);
-
-The test says "<= 0" but the text says "== 0". Perhaps
-					dev_warn(&dev->dev, "MSI-X entry %d has invalid vector %d\n",
-						 i, op.msix_entries[i].vector);
-
-> 
-> +					err = -EINVAL;
-> +					continue;
-
-Do we need / should we set *(*vector+i) to something to indicate its
-invalidness rather than leave it potentially uninitialised?
-
-> +				}
->  				*(*vector+i) = op.msix_entries[i].vector;
-
-BTW does the double indirection of the vector serve a purpose?
-Everywhere I can see just updates *(*vector+i), I can't see any realloc
-of the array itself etc.
-
-Removing the extra level of indirection leads to vector[i] = foo instead
-which is much easier on the eye.
-
-> -			return 0;
-> +			}
-> +			return err;
->  		} else {
->  			printk(KERN_DEBUG "enable msix get value %x\n",
->  				op.value);
-> -			return op.value;
-> +			return err;
-
-I think all of these "return err"s can now be pulled out to the end of
-the function? makes it clearer what the return is.
-
->  		}
->  	} else {
->  		dev_err(&dev->dev, "enable msix get err %x\n", err);
-> @@ -325,6 +332,10 @@ static int pci_frontend_enable_msi(struct pci_dev *dev, int **vector)
->  	err = do_pci_op(pdev, &op);
->  	if (likely(!err)) {
->  		*(*vector) = op.value;
-> +		if (op.value <= 0) {
-> +			dev_warn(&dev->dev, "MSI entry is zero!\n");
-
-Same comment re <= vs == 0.
-
-> +			err = -EINVAL;
-> +		}
->  	} else {
->  		dev_err(&dev->dev, "pci frontend enable msi failed for dev "
->  				    "%x:%x\n", op.bus, op.devfn);
+Hi All,
 
 
+   Can this patch be fixed?
+
+   Clean up the unsed code on fs/super.c, all filesystem using mount_bdev
+   and mount_nodev to replace get_sb_bdev and get_sb_nodev.
+
+Signed-off-by: LiuQi <lingjiujianke@gmail.com>
+---
+ fs/super.c |   31 -------------------------------
+ 1 files changed, 0 insertions(+), 31 deletions(-)
+
+diff --git a/fs/super.c b/fs/super.c
+index 7e9dd4c..8272f26 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -843,22 +843,6 @@ error:
+ }
+ EXPORT_SYMBOL(mount_bdev);
+
+-int get_sb_bdev(struct file_system_type *fs_type,
+-	int flags, const char *dev_name, void *data,
+-	int (*fill_super)(struct super_block *, void *, int),
+-	struct vfsmount *mnt)
+-{
+-	struct dentry *root;
+-
+-	root = mount_bdev(fs_type, flags, dev_name, data, fill_super);
+-	if (IS_ERR(root))
+-		return PTR_ERR(root);
+-	mnt->mnt_root = root;
+-	mnt->mnt_sb = root->d_sb;
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(get_sb_bdev);
+
+ void kill_block_super(struct super_block *sb)
+ {
+@@ -897,21 +881,6 @@ struct dentry *mount_nodev(struct
+file_system_type *fs_type,
+ }
+ EXPORT_SYMBOL(mount_nodev);
+
+-int get_sb_nodev(struct file_system_type *fs_type,
+-	int flags, void *data,
+-	int (*fill_super)(struct super_block *, void *, int),
+-	struct vfsmount *mnt)
+-{
+-	struct dentry *root;
+-
+-	root = mount_nodev(fs_type, flags, data, fill_super);
+-	if (IS_ERR(root))
+-		return PTR_ERR(root);
+-	mnt->mnt_root = root;
+-	mnt->mnt_sb = root->d_sb;
+-	return 0;
+-}
+-EXPORT_SYMBOL(get_sb_nodev);
+
+ static int compare_single(struct super_block *s, void *p)
+ {
+-- 
+1.6.5.2
+
+
+
+
+Best Regards
+
+
+Steven Liu
