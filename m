@@ -1,139 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab1BQPXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:23:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932086Ab1BQPXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:23:40 -0500
-Date: Thu, 17 Feb 2011 13:23:13 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        perfmon2-devel@lists.sf.net
-Subject: Re: [BUG] perf: perf report -n shows bogus number of samples
-Message-ID: <20110217152313.GD10805@ghostprotocols.net>
-References: <AANLkTi=mRvkO-0Lvf4OhnnAg6X0Z-RpeKpCD3JtANJZ8@mail.gmail.com>
+	id S1756145Ab1BQP1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:27:07 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35471 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754012Ab1BQP1D convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:27:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=V9VGK+CsFs6tzRo77pLa3vgnvH+G23cdM5+UFIjNQ0bVKk1gq82IwcRIVBG3sgZ0y9
+         9WGLyesqw5Ufl+daYP/GxrUVdZrjXgl274FPx42i1ybVcBqvT3QFtBf1dBVFbQYXplIn
+         3hWTjsGWR+2FkNlzVKFsc64Znm1iOAw7u4LfI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=mRvkO-0Lvf4OhnnAg6X0Z-RpeKpCD3JtANJZ8@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <201012170109.43137.rjw@sisk.pl>
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <201012170109.43137.rjw@sisk.pl>
+From: Rabin Vincent <rabin@rab.in>
+Date: Thu, 17 Feb 2011 20:55:06 +0530
+X-Google-Sender-Auth: ox9vSedFypaC7h0IiW_6URbOTvc
+Message-ID: <AANLkTikRUZRh0YnP8nYTKFnFeUiJbK5xKvHHjn_S+gZE@mail.gmail.com>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: stern@rowland.harvard.edu, linux-pm@lists.linux-foundation.org,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        khilman@ti.com, magnus.damm@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Feb 09, 2011 at 12:34:44AM +0100, Stephane Eranian escreveu:
-> I think the -n option of perf report shows bogus number of samples.
-> 
-> I believe it does not print the number of samples but rather the
-> number of events if I understand the code in hist_entry__snprintf().
-> I think that's useless, the number of samples is more useful.
+On Fri, Dec 17, 2010 at 05:39, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, December 16, 2010, Rabin Vincent wrote:
+>> There seem to be some differences between the generic ops and the i2c
+>> and platform busses' implementations of the interaction between runtime
+>> PM and system sleep:
+>>
+>>   (1) The platform bus does not implement the
+>>       don't-call-pm->suspend()-if pm_runtime_suspended()-returns-true
+>>       functionality implemented by the generic ops and i2c.
+>>
+>>   (2) Both I2C and platform do not set the device as active when a
+>>       pm->resume callback exists and it succeeds.
+...
+>> Are these divergences from the generic ops to be considered as bugs?
+>
+> I think so.  I'm not sure about (1), because someone may already depend on
+> that behavior, but (2) looks like a bug to me.
 
-<SNIP
+Revisiting these points again.  (2) has since been corrected for i2c,
+but platform does not do (1) and (2).
 
-> $ perf record -e cycles ./repmov
-> $ perf report -D | fgrep RECORD_SAMPLE | wc -l
-> 86346
-> $ ./perf report -n
-> # Events: 86K cycles
-> #
-> # Overhead  Samples    Command      Shared Object                     Symbol
-> # ........ ..........  .......  .................  .........................
-> #
->     98.92%238206388334   repmov  repmov             [.] main
->      0.08%  189506224   repmov  [kernel.kallsyms]  [k] perf_ctx_adjust_freq
->      0.06%  147582706   repmov  [kernel.kallsyms]  [k] perf_event_task_tick
-> 
-> It should be easy to reproduce with any other program.
+I've submitted a patch today to convert the AMBA bus to support pm-ops,
+and it was convenient to just use the GENERIC_SUBSYS_PM_OPS.  But some
+ARM SoCs have a combination of AMBA and platform devices for the on-chip
+devices so having different behaviour between the interaction of
+runtime-pm and system suspend callbacks does not seem like an ideal
+situation, and would only serve to confuse driver writers.  So, should I
+just not use GENERIC_SUBSYS_PM_OPS in the AMBA bus but instead open-code
+the rountines to make it work like platform?
 
-Like this? Can I have your acked-by?
+This will solve the platform vs AMBA bus, but shouldn't we really be
+aiming for consistent behaviour between these and the other busses such
+as I2C and SPI, which are also usually commonly used on the same
+platforms and are using GENERIC_PM_OPS?
 
-commit 58e57f4dd6164bdbd5bc1f7d7c1ba5eb104e9b32
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Thu Feb 17 10:37:23 2011 -0200
+Should we be auditing all platform drivers and then switch platform to
+the GENERIC_PM_OPS?
 
-    perf hists: Print number of samples, not the period sum
-    
-    So that we match the header where we state the number of events with the
-    "Samples" column when using 'perf report -n/--show-nr-samples':
-    
-     [root@emilia ~]# perf record -a sleep 1
-     [ perf record: Woken up 1 times to write data ]
-     [ perf record: Captured and wrote 0.111 MB perf.data (~4860 samples) ]
-     [root@emilia ~]# perf report --stdio --show-nr-samples
-     # Events: 11  cycles
-     #
-     # Overhead  Samples        Command       Shared Object                        Symbol
-     # ........ ..........  ...........  ..................  ............................
-     #
-         16.65%          1        sleep  [kernel.kallsyms]   [k] unmap_vmas
-         16.10%          1         perf  libpthread-2.12.so  [.] __pthread_cleanup_push_defer
-         15.79%          2         perf  [kernel.kallsyms]   [k] format_decode
-         12.88%          1  kworker/1:2  [kernel.kallsyms]   [k] cache_reap
-         10.69%          1      swapper  [kernel.kallsyms]   [k] _raw_spin_lock
-          7.55%          1        sleep  [kernel.kallsyms]   [k] prepare_exec_creds
-          6.00%          1         perf  [jbd2]              [k] start_this_handle
-          5.29%          1         perf  [kernel.kallsyms]   [k] seq_read
-          4.75%          1         perf  [kernel.kallsyms]   [k] get_pid_task
-          4.30%          1         perf  [kernel.kallsyms]   [k] _raw_spin_unlock_irqrestore
-    
-     #
-     # (For a higher level overview, try: perf report --sort comm,dso)
-     #
-     [root@emilia ~]#
-    
-    Reported-by: Stephane Eranian <eranian@google.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Cc: Mike Galbraith <efault@gmx.de>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Stephane Eranian <eranian@google.com>
-    Cc: Tom Zanussi <tzanussi@gmail.com>
-    LKML-Reference: <new-submission>
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 3f43723..da2899e 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -591,6 +591,7 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
- {
- 	struct sort_entry *se;
- 	u64 period, total, period_sys, period_us, period_guest_sys, period_guest_us;
-+	u64 nr_events;
- 	const char *sep = symbol_conf.field_sep;
- 	int ret;
- 
-@@ -599,6 +600,7 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
- 
- 	if (pair_hists) {
- 		period = self->pair ? self->pair->period : 0;
-+		nr_events = self->pair ? self->pair->nr_events : 0;
- 		total = pair_hists->stats.total_period;
- 		period_sys = self->pair ? self->pair->period_sys : 0;
- 		period_us = self->pair ? self->pair->period_us : 0;
-@@ -606,6 +608,7 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
- 		period_guest_us = self->pair ? self->pair->period_guest_us : 0;
- 	} else {
- 		period = self->period;
-+		nr_events = self->nr_events;
- 		total = session_total;
- 		period_sys = self->period_sys;
- 		period_us = self->period_us;
-@@ -646,9 +649,9 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
- 
- 	if (symbol_conf.show_nr_samples) {
- 		if (sep)
--			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
-+			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
- 		else
--			ret += snprintf(s + ret, size - ret, "%11" PRIu64, period);
-+			ret += snprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
- 	}
- 
- 	if (pair_hists) {
+Or should the two points (1) and (2) be not handled in the bus at all
+and be left to individual drivers (in which case we should audit i2c and
+spi and change GENERIC_PM_OPS)?
