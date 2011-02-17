@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab1BQOzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 09:55:38 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40355 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752780Ab1BQOzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 09:55:36 -0500
-Date: Thu, 17 Feb 2011 15:55:09 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 00/10] [GIT PULL][v2.6.39] tracing: updates
-Message-ID: <20110217145509.GA10112@elte.hu>
-References: <20110208221612.084294240@goodmis.org>
- <20110217135023.GA5235@elte.hu>
- <20110217140442.GA8326@elte.hu>
+	id S1756500Ab1BQOzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 09:55:51 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:48238 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756233Ab1BQOzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 09:55:49 -0500
+Date: Thu, 17 Feb 2011 09:55:46 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Len Brown <lenb@kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC][PATCH 2/2] PM: Make system-wide PM and runtime PM handle
+ subsystems consistently
+In-Reply-To: <201102170045.48975.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1102170951330.2153-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110217140442.GA8326@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 17 Feb 2011, Rafael J. Wysocki wrote:
 
-* Ingo Molnar <mingo@elte.hu> wrote:
-
+> > > Apart from this I think the order of checks introduced by the $subject patch
+> > > should be:
+> > > (1) If dev->class != NULL and dev->class->pm != NULL, use dev->class,
+> > >     or otherwise
+> > > (2) if dev->type != NULL and dev->type->pm != NULL, use dev->type,
+> > >     or otherwise
+> > > (3) use dev->bus (if present).
+> > > as that would allow classes and device types to override bus type PM
+> > > callbacks if they wish to.
+> > 
+> > I haven't heard of any device types being present on more than one kind
+> > of bus, so it makes sense for device types to override bus types.
 > 
-> > > Please pull the latest tip/perf/core tree, which can be found at:
-> > > 
-> > >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> > > tip/perf/core
+> OK
 > 
-> Note that these changes caused a new build failure on arch/m32r:
+> > But I'm not so sure about the priority we should give to classes.  On the
+> > other hand, if no classes define a dev_pm_ops then of course it doesn't
+> > matter.
+> 
+> The change will also affect classes that provide "legacy" suspend-resume
+> (if there are any, which I'm totally unsure of).
+> 
+> Anyway, I think we need to choose one ordering. :-)
+> 
+> What about type / bus / class , then?
 
-powerpc and parisc is showing similar build failures. The other architectures are 
-fine.
+I really don't know.  Somebody who has more experience with device 
+class implementations should answer.
 
-So i suspect it relates to !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK architectures and the 
-fact that sched_clock_stable is not uniformly available. The right fix would be to 
-provide that flag in a Kconfig-invariant fashion.
+Greg, any ideas?
 
-Thanks,
+To recap: The issue is how to handle multiple PM callbacks.  Since the
+bus type, device type, and device class may all have their own
+callbacks, Rafael has decided the best approach is to prioritize them
+and invoke only the highest-priority callback.  But what priority order
+should we use?
 
-	Ingo
+Alan Stern
+
