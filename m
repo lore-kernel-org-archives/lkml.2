@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab1BQSDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 13:03:04 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:55137 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932395Ab1BQSC6 (ORCPT
+	id S932440Ab1BQSDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 13:03:30 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53052 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757529Ab1BQSCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 13:02:58 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Chou <thomas@wytron.com.tw>
-Subject: Re: [Nios2-dev] [PATCH 4/4] MAINTAINERS: Add myself as a maintainer for  altera_uart/altera_jtaguart
-Date: Thu, 17 Feb 2011 19:02:41 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Tobias Klauser <tklauser@distanz.ch>, nios2-dev@sopc.et.ntust.edu.tw,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <cover.1297245277.git.tklauser@distanz.ch> <04c107d8032cbaffada91066c1d010b9274aebe1.1297245277.git.tklauser@distanz.ch> <4D5C9314.8030101@wytron.com.tw>
-In-Reply-To: <4D5C9314.8030101@wytron.com.tw>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102171902.41784.arnd@arndb.de>
-X-Provags-ID: V02:K0:YXlc5b4+qVnFogbE3ap5Rpqqh14fka08dU1m1giTLs0
- jvpkCyobr/TzaH92p8A3nIZm57/KoZoD0a9zzExQnghfvDDCL8
- mI+C8saLydv1PXLcNPQygm9kq+gp7QZIlKHkGLpYXiguWiPzYC
- OmJnlS8p0Rpyteu+CZ+AnTnuwbTQHueLUd/5iwuy59vXUTqwKU
- pm4ylaJQi7cNM0T9t7K/Q==
+	Thu, 17 Feb 2011 13:02:40 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 12/14] fs/9p: mark inode attribute invalid on rename and unlink
+Date: Thu, 17 Feb 2011 23:32:03 +0530
+Message-Id: <1297965725-25603-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1297965725-25603-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1297965725-25603-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 February 2011, Thomas Chou wrote:
-> As we get more drivers merged into mainline, we might consider adding a 
-> general entry for all altera related drivers to our mailing list. We 
-> could add "F: arch/nios2" to this entry in the near future.
+Both rename and unlink result in update of inode attribute.
+So mark the cached copy invalid
 
-On a related topic, are there plans to submit the nios2 arch code
-for review any time soon?
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/vfs_inode.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-I'm usually reviewing all architectures that come in, and unicore32
-is almost ready to go in, so there is room to start reviewing the next
-one.
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 27045d9..eaa089c 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -520,7 +520,9 @@ static int v9fs_remove(struct inode *dir, struct dentry *file, int rmdir)
+ 			drop_nlink(dir);
+ 		} else
+ 			drop_nlink(file_inode);
++
+ 		v9fs_invalidate_inode_attr(dir);
++		v9fs_invalidate_inode_attr(file_inode);
+ 	}
+ 	return retval;
+ }
+@@ -901,6 +903,7 @@ clunk_newdir:
+ 		}
+ 		v9fs_invalidate_inode_attr(old_dir);
+ 		v9fs_invalidate_inode_attr(new_dir);
++		v9fs_invalidate_inode_attr(old_inode);
+ 		/* successful rename */
+ 		d_move(old_dentry, new_dentry);
+ 	}
+-- 
+1.7.1
 
-I expect nios2, lm32 and c64x to be submitted this year, but I'll
-probably only be able to review one at time. First come, first
-serve.
-
-	Arnd
