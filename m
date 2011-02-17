@@ -1,254 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab1BQPC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:02:28 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58331
-	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756621Ab1BQPCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:02:23 -0500
-Date: Thu, 17 Feb 2011 15:03:33 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-Subject: [PATCH 5/9] Allow ptrace from non-init user namespaces
-Message-ID: <20110217150333.GE26395@mail.hallyn.com>
-References: <20110217150224.GA26334@mail.hallyn.com>
+	id S1756724Ab1BQPDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:03:54 -0500
+Received: from hera.kernel.org ([140.211.167.34]:38072 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753995Ab1BQPDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:03:49 -0500
+Date: Thu, 17 Feb 2011 15:02:48 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui: Serialize screen updates
+Message-ID: <tip-5c35d69fb60b1dc49595f5b9a2c7158283e9eaf3@git.kernel.org>
+Git-Commit-ID: 5c35d69fb60b1dc49595f5b9a2c7158283e9eaf3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110217150224.GA26334@mail.hallyn.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 17 Feb 2011 15:02:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace is allowed to tasks in the same user namespace according to
-the usual rules (i.e. the same rules as for two tasks in the init
-user namespace).  ptrace is also allowed to a user namespace to
-which the current task the has CAP_SYS_PTRACE capability.
+Commit-ID:  5c35d69fb60b1dc49595f5b9a2c7158283e9eaf3
+Gitweb:     http://git.kernel.org/tip/5c35d69fb60b1dc49595f5b9a2c7158283e9eaf3
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 9 Feb 2011 11:38:43 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 16 Feb 2011 14:47:55 -0200
 
-Changelog:
-	Dec 31: Address feedback by Eric:
-		. Correct ptrace uid check
-		. Rename may_ptrace_ns to ptrace_capable
-		. Also fix the cap_ptrace checks.
-	Jan  1: Use const cred struct
-	Jan 11: use task_ns_capable() in place of ptrace_capable().
+perf ui: Serialize screen updates
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+The ui operations so far were used by just one thread, but 'perf top
+--tui' now has two threads updating the screen, so we need to use a
+mutex to avoid garbling the screen.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- include/linux/capability.h     |    2 +
- include/linux/user_namespace.h |    9 +++++++
- kernel/ptrace.c                |   27 ++++++++++++----------
- kernel/user_namespace.c        |   16 +++++++++++++
- security/commoncap.c           |   48 +++++++++++++++++++++++++++++++++------
- 5 files changed, 82 insertions(+), 20 deletions(-)
+ tools/perf/Makefile           |    1 +
+ tools/perf/util/ui/browser.c  |    7 +++++++
+ tools/perf/util/ui/helpline.c |    5 ++++-
+ tools/perf/util/ui/setup.c    |    3 +++
+ tools/perf/util/ui/ui.h       |    8 ++++++++
+ 5 files changed, 23 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index cb3d2d9..bc0f262 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -546,6 +546,8 @@ extern const kernel_cap_t __cap_init_eff_set;
-  */
- #define has_capability(t, cap) (security_real_capable((t), &init_user_ns, (cap)) == 0)
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index bc4d9bf..ffd1047 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -637,6 +637,7 @@ else
+ 		LIB_H += util/ui/libslang.h
+ 		LIB_H += util/ui/progress.h
+ 		LIB_H += util/ui/util.h
++		LIB_H += util/ui/ui.h
+ 	endif
+ endif
  
-+#define has_ns_capability(t, ns, cap) (security_real_capable((t), (ns), (cap)) == 0)
-+
- /**
-  * has_capability_noaudit - Determine if a task has a superior capability available (unaudited)
-  * @t: The task in question
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index faf4679..862fc59 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -39,6 +39,9 @@ static inline void put_user_ns(struct user_namespace *ns)
- uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t uid);
- gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t gid);
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 8bc010e..60d6c81 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -1,4 +1,5 @@
+ #include "libslang.h"
++#include "ui.h"
+ #include <linux/compiler.h>
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+@@ -178,6 +179,7 @@ int ui_browser__show(struct ui_browser *self, const char *title,
+ 	if (self->sb == NULL)
+ 		return -1;
  
-+int same_or_ancestor_user_ns(struct task_struct *task,
-+	struct task_struct *victim);
-+
- #else
- 
- static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
-@@ -66,6 +69,12 @@ static inline gid_t user_ns_map_gid(struct user_namespace *to,
- 	return gid;
++	pthread_mutex_lock(&ui__lock);
+ 	SLsmg_gotorc(0, 0);
+ 	ui_browser__set_color(self, NEWT_COLORSET_ROOT);
+ 	slsmg_write_nstring(title, self->width);
+@@ -188,25 +190,30 @@ int ui_browser__show(struct ui_browser *self, const char *title,
+ 	va_start(ap, helpline);
+ 	ui_helpline__vpush(helpline, ap);
+ 	va_end(ap);
++	pthread_mutex_unlock(&ui__lock);
+ 	return 0;
  }
  
-+static inline int same_or_ancestor_user_ns(struct task_struct *task,
-+	struct task_struct *victim)
-+{
-+	return 1;
-+}
-+
- #endif
- 
- #endif /* _LINUX_USER_H */
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 1708b1e..cde4655 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -134,21 +134,24 @@ int __ptrace_may_access(struct task_struct *task, unsigned int mode)
- 		return 0;
- 	rcu_read_lock();
- 	tcred = __task_cred(task);
--	if ((cred->uid != tcred->euid ||
--	     cred->uid != tcred->suid ||
--	     cred->uid != tcred->uid  ||
--	     cred->gid != tcred->egid ||
--	     cred->gid != tcred->sgid ||
--	     cred->gid != tcred->gid) &&
--	    !capable(CAP_SYS_PTRACE)) {
--		rcu_read_unlock();
--		return -EPERM;
--	}
-+	if (cred->user->user_ns == tcred->user->user_ns &&
-+	    (cred->uid == tcred->euid &&
-+	     cred->uid == tcred->suid &&
-+	     cred->uid == tcred->uid  &&
-+	     cred->gid == tcred->egid &&
-+	     cred->gid == tcred->sgid &&
-+	     cred->gid == tcred->gid))
-+		goto ok;
-+	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
-+		goto ok;
-+	rcu_read_unlock();
-+	return -EPERM;
-+ok:
- 	rcu_read_unlock();
- 	smp_rmb();
- 	if (task->mm)
- 		dumpable = get_dumpable(task->mm);
--	if (!dumpable && !capable(CAP_SYS_PTRACE))
-+	if (!dumpable && !task_ns_capable(task, CAP_SYS_PTRACE))
- 		return -EPERM;
- 
- 	return security_ptrace_access_check(task, mode);
-@@ -198,7 +201,7 @@ int ptrace_attach(struct task_struct *task)
- 		goto unlock_tasklist;
- 
- 	task->ptrace = PT_PTRACED;
--	if (capable(CAP_SYS_PTRACE))
-+	if (task_ns_capable(task, CAP_SYS_PTRACE))
- 		task->ptrace |= PT_PTRACE_CAP;
- 
- 	__ptrace_link(task, current);
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 9da289c..0ef2258 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -129,6 +129,22 @@ gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t
- 	return overflowgid;
+ void ui_browser__hide(struct ui_browser *self)
+ {
++	pthread_mutex_lock(&ui__lock);
+ 	newtFormDestroy(self->form);
+ 	self->form = NULL;
+ 	ui_helpline__pop();
++	pthread_mutex_unlock(&ui__lock);
  }
  
-+int same_or_ancestor_user_ns(struct task_struct *task,
-+	struct task_struct *victim)
-+{
-+	struct user_namespace *u1 = task_cred_xxx(task, user)->user_ns;
-+	struct user_namespace *u2 = task_cred_xxx(victim, user)->user_ns;
-+	for (;;) {
-+		if (u1 == u2)
-+			return 1;
-+		if (u1 == &init_user_ns)
-+			return 0;
-+		u1 = u1->creator->user_ns;
-+	}
-+	/* We never get here */
-+	return 0;
-+}
-+
- static __init int user_namespaces_init(void)
+ int ui_browser__refresh(struct ui_browser *self)
  {
- 	user_ns_cachep = KMEM_CACHE(user_namespace, SLAB_PANIC);
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 51fa9ec..12ff65c 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -130,18 +130,34 @@ int cap_settime(struct timespec *ts, struct timezone *tz)
-  * @child: The process to be accessed
-  * @mode: The mode of attachment.
-  *
-+ * If we are in the same or an ancestor user_ns and have all the target
-+ * task's capabilities, then ptrace access is allowed.
-+ * If we have the ptrace capability to the target user_ns, then ptrace
-+ * access is allowed.
-+ * Else denied.
-+ *
-  * Determine whether a process may access another, returning 0 if permission
-  * granted, -ve if denied.
-  */
- int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
- {
- 	int ret = 0;
-+	const struct cred *cred, *tcred;
+ 	int row;
  
- 	rcu_read_lock();
--	if (!cap_issubset(__task_cred(child)->cap_permitted,
--			  current_cred()->cap_permitted) &&
--	    !capable(CAP_SYS_PTRACE))
--		ret = -EPERM;
-+	cred = current_cred();
-+	tcred = __task_cred(child);
-+	/*
-+	 * The ancestor user_ns check may be gratuitous, as I think
-+	 * we've already guaranteed that in kernel/ptrace.c.
-+	 */
-+	if (same_or_ancestor_user_ns(current, child) &&
-+	    cap_issubset(tcred->cap_permitted, cred->cap_permitted))
-+		goto out;
-+	if (ns_capable(tcred->user->user_ns, CAP_SYS_PTRACE))
-+		goto out;
-+	ret = -EPERM;
-+out:
- 	rcu_read_unlock();
++	pthread_mutex_lock(&ui__lock);
+ 	newtScrollbarSet(self->sb, self->index, self->nr_entries - 1);
+ 	row = self->refresh(self);
+ 	ui_browser__set_color(self, HE_COLORSET_NORMAL);
+ 	SLsmg_fill_region(self->y + row, self->x,
+ 			  self->height - row, self->width, ' ');
++	pthread_mutex_unlock(&ui__lock);
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+index 8d79daa..f36d2ff 100644
+--- a/tools/perf/util/ui/helpline.c
++++ b/tools/perf/util/ui/helpline.c
+@@ -5,6 +5,7 @@
+ 
+ #include "../debug.h"
+ #include "helpline.h"
++#include "ui.h"
+ 
+ void ui_helpline__pop(void)
+ {
+@@ -55,7 +56,8 @@ int ui_helpline__show_help(const char *format, va_list ap)
+ 	int ret;
+ 	static int backlog;
+ 
+-        ret = vsnprintf(ui_helpline__last_msg + backlog,
++	pthread_mutex_lock(&ui__lock);
++	ret = vsnprintf(ui_helpline__last_msg + backlog,
+ 			sizeof(ui_helpline__last_msg) - backlog, format, ap);
+ 	backlog += ret;
+ 
+@@ -64,6 +66,7 @@ int ui_helpline__show_help(const char *format, va_list ap)
+ 		newtRefresh();
+ 		backlog = 0;
+ 	}
++	pthread_mutex_unlock(&ui__lock);
+ 
  	return ret;
  }
-@@ -150,18 +166,34 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
-  * cap_ptrace_traceme - Determine whether another process may trace the current
-  * @parent: The task proposed to be the tracer
-  *
-+ * If parent is in the same or an ancestor user_ns and has all current's
-+ * capabilities, then ptrace access is allowed.
-+ * If parent has the ptrace capability to current's user_ns, then ptrace
-+ * access is allowed.
-+ * Else denied.
-+ *
-  * Determine whether the nominated task is permitted to trace the current
-  * process, returning 0 if permission is granted, -ve if denied.
-  */
- int cap_ptrace_traceme(struct task_struct *parent)
- {
- 	int ret = 0;
-+	const struct cred *cred, *tcred;
+diff --git a/tools/perf/util/ui/setup.c b/tools/perf/util/ui/setup.c
+index fbf1a14..ee46d67 100644
+--- a/tools/perf/util/ui/setup.c
++++ b/tools/perf/util/ui/setup.c
+@@ -6,6 +6,9 @@
+ #include "../debug.h"
+ #include "browser.h"
+ #include "helpline.h"
++#include "ui.h"
++
++pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
  
- 	rcu_read_lock();
--	if (!cap_issubset(current_cred()->cap_permitted,
--			  __task_cred(parent)->cap_permitted) &&
--	    !has_capability(parent, CAP_SYS_PTRACE))
--		ret = -EPERM;
-+	cred = __task_cred(parent);
-+	tcred = current_cred();
-+	/*
-+	 * The ancestor user_ns check may be gratuitous, as I think
-+	 * we've already guaranteed that in kernel/ptrace.c.
-+	 */
-+	if (same_or_ancestor_user_ns(parent, current) &&
-+	    cap_issubset(tcred->cap_permitted, cred->cap_permitted))
-+		goto out;
-+	if (has_ns_capability(parent, tcred->user->user_ns, CAP_SYS_PTRACE))
-+		goto out;
-+	ret = -EPERM;
-+out:
- 	rcu_read_unlock();
- 	return ret;
- }
--- 
-1.7.0.4
-
+ static void newt_suspend(void *d __used)
+ {
+diff --git a/tools/perf/util/ui/ui.h b/tools/perf/util/ui/ui.h
+new file mode 100644
+index 0000000..d264e05
+--- /dev/null
++++ b/tools/perf/util/ui/ui.h
+@@ -0,0 +1,8 @@
++#ifndef _PERF_UI_H_
++#define _PERF_UI_H_ 1
++
++#include <pthread.h>
++
++extern pthread_mutex_t ui__lock;
++
++#endif /* _PERF_UI_H_ */
