@@ -1,116 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757198Ab1BQROT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:14:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:36121 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757099Ab1BQRLH (ORCPT
+	id S1757202Ab1BQROr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:14:47 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:56075 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab1BQROl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:11:07 -0500
-Message-Id: <20110217163235.658196547@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Thu, 17 Feb 2011 17:23:41 +0100
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
+	Thu, 17 Feb 2011 12:14:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH 06/12] unicore32 additional architecture files: low-level lib: misc
+Date: Thu, 17 Feb 2011 18:14:28 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: [PATCH 14/17] mm: Provide generic range tracking and flushing
-References: <20110217162327.434629380@chello.nl>
-Content-Disposition: inline; filename=mm-generic-tlb-range.patch
+        "'Greg KH'" <greg@kroah.com>
+References: <014d01cbcdae$091bc6d0$1b535470$@mprc.pku.edu.cn>
+In-Reply-To: <014d01cbcdae$091bc6d0$1b535470$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102171814.29081.arnd@arndb.de>
+X-Provags-ID: V02:K0:Rbk1+gVAa9ZIH4uxCx9vtla911T6JaTjpAN8+/n3Mu/
+ HwIYm8zZyjqwVqMdEk7EWSSCjaHN+AGeSXQvGBbUdi7yDjvD8Q
+ yIRMlnYkxuIoOrQ2kLcXAgaMVMVgxvG9zY6GdTC2LCUy47AGq7
+ u2ZlY8TLaVTL61XAOgUQgM+3BBcfRwG490jesdmD8vjI3KTsgJ
+ KuaC/jDekENALVOLVAYfw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to convert ia64, arm and sh to generic tlb we need to provide
-some extra infrastructure to track the range of the flushed page
-tables.
+On Wednesday 16 February 2011, Guan Xuetao wrote:
+> diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
+> new file mode 100644
+> index 0000000..d73457c
+> --- /dev/null
+> +++ b/arch/unicore32/include/asm/io.h
+> @@ -0,0 +1,52 @@
+> +/*
+> + * linux/arch/unicore32/include/asm/io.h
+> + *
+> + * Code specific to PKUnity SoC and UniCore ISA
+> + *
+> + * Copyright (C) 2001-2010 GUAN Xue-tao
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#ifndef __UNICORE_IO_H__
+> +#define __UNICORE_IO_H__
+> +
+> +#ifdef __KERNEL__
+> +
+> +#include <asm/byteorder.h>
+> +#include <asm/memory.h>
+> +#include <asm/system.h>
+> +
+> +#include <asm-generic/io.h>
+> +
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+I just realized that the generic io.h implementation is actually wrong here, because it does
+not offset the PIO port numbers with the PCI I/O range. To get this right, you need
+the patch below, and also need to define PCI_IOBASE appropriately.
+
+	Arnd
+8<-------
+asm-generic: fix inX/outX functions for architectures that have PCI
+
+The definitions for the PC-style PIO functions in asm-generic/io.h were
+meant as dummies so you could compile code on architectures without
+ISA and PCI buses. However, unicore32 actually wants to use them
+with a real PCI bus, so they need to be defined to actually address
+the register window holding the I/O ports.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/Kconfig              |    3 +++
- include/asm-generic/tlb.h |   35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+)
-
-Index: linux-2.6/arch/Kconfig
-===================================================================
---- linux-2.6.orig/arch/Kconfig
-+++ linux-2.6/arch/Kconfig
-@@ -181,4 +181,7 @@ config HAVE_ARCH_MUTEX_CPU_RELAX
- config HAVE_RCU_TABLE_FREE
- 	bool
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 4644c9a..e0ffa3d 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -94,6 +94,10 @@ static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
+ #define writeq(b,addr) __raw_writeq(__cpu_to_le64(b),addr)
+ #endif
  
-+config HAVE_MMU_GATHER_RANGE
-+	bool
-+
- source "kernel/gcov/Kconfig"
-Index: linux-2.6/include/asm-generic/tlb.h
-===================================================================
---- linux-2.6.orig/include/asm-generic/tlb.h
-+++ linux-2.6/include/asm-generic/tlb.h
-@@ -87,6 +87,10 @@ struct mmu_gather {
- 				fast_mode  : 1; /* No batching   */
- 	unsigned int		fullmm;		/* Flush full mm */
- 
-+#ifdef CONFIG_HAVE_MMU_GATHER_RANGE
-+	unsigned long		start, end;
++#ifndef PCI_IOBASE
++#define PCI_IOBASE ((void __iomem *) 0)
 +#endif
 +
- 	struct mmu_gather_batch *active;
- 	struct mmu_gather_batch	local;
- 	struct page		*__pages[MMU_GATHER_BUNDLE];
-@@ -228,6 +232,35 @@ static inline void tlb_remove_page(struc
- 		tlb_flush_mmu(tlb);
+ /*****************************************************************************/
+ /*
+  * traditional input/output functions
+@@ -101,32 +105,32 @@ static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
+ 
+ static inline u8 inb(unsigned long addr)
+ {
+-	return readb((volatile void __iomem *) addr);
++	return readb(addr + PCI_IOBASE);
  }
  
-+#ifdef CONFIG_HAVE_MMU_GATHER_RANGE
-+static inline void
-+__tlb_remove_tlb_entry(struct mmu_gather *tlb, pte_t *ptep, unsigned long address)
-+{
-+	if (!tlb->fullmm) {
-+		tlb->start = min(tlb->start, address);
-+		address += PAGE_SIZE;
-+		tlb->end = max(tlb->end, address);
-+	}
-+}
-+
-+static inline void
-+tlb_start_vma(struct mmu_gather *tlb, struct vm_area_struct *vma)
-+{
-+	if (!tlb->fullmm) {
-+		flush_cache_range(vma, vma->vm_start, vma->vm_end);
-+		tlb->start = TASK_SIZE;
-+		tlb->end = 0;
-+	}
-+}
-+
-+static inline void
-+tlb_end_vma(struct mmu_gather *tlb, struct vm_area_struct *vma)
-+{
-+	if (!tlb->fullmm && tlb->end)
-+		flush_tlb_range(vma, tlb->start, tlb->end);
-+}
-+#endif
-+
- /**
-  * tlb_remove_tlb_entry - remember a pte unmapping for later tlb invalidation.
-  *
-@@ -261,6 +294,8 @@ static inline void tlb_remove_page(struc
- 		__pmd_free_tlb(tlb, pmdp, address);		\
- 	} while (0)
+ static inline u16 inw(unsigned long addr)
+ {
+-	return readw((volatile void __iomem *) addr);
++	return readw(addr + PCI_IOBASE);
+ }
  
-+#ifndef tlb_migrate_finish
- #define tlb_migrate_finish(mm) do {} while (0)
+ static inline u32 inl(unsigned long addr)
+ {
+-	return readl((volatile void __iomem *) addr);
++	return readl(addr + PCI_IOBASE);
+ }
+ 
+ static inline void outb(u8 b, unsigned long addr)
+ {
+-	writeb(b, (volatile void __iomem *) addr);
++	writeb(b, addr + PCI_IOBASE);
+ }
+ 
+ static inline void outw(u16 b, unsigned long addr)
+ {
+-	writew(b, (volatile void __iomem *) addr);
++	writew(b, addr + PCI_IOBASE);
+ }
+ 
+ static inline void outl(u32 b, unsigned long addr)
+ {
+-	writel(b, (volatile void __iomem *) addr);
++	writel(b, addr + PCI_IOBASE);
+ }
+ 
+ #define inb_p(addr)	inb(addr)
+@@ -213,32 +217,32 @@ static inline void outsl(unsigned long addr, const void *buffer, int count)
+ 
+ static inline void readsl(const void __iomem *addr, void *buf, int len)
+ {
+-	insl((unsigned long)addr, buf, len);
++	insl(addr - PCI_IOBASE, buf, len);
+ }
+ 
+ static inline void readsw(const void __iomem *addr, void *buf, int len)
+ {
+-	insw((unsigned long)addr, buf, len);
++	insw(addr - PCI_IOBASE, buf, len);
+ }
+ 
+ static inline void readsb(const void __iomem *addr, void *buf, int len)
+ {
+-	insb((unsigned long)addr, buf, len);
++	insb(addr - PCI_IOBASE, buf, len);
+ }
+ 
+ static inline void writesl(const void __iomem *addr, const void *buf, int len)
+ {
+-	outsl((unsigned long)addr, buf, len);
++	outsl(addr - PCI_IOBASE, buf, len);
+ }
+ 
+ static inline void writesw(const void __iomem *addr, const void *buf, int len)
+ {
+-	outsw((unsigned long)addr, buf, len);
++	outsw(addr - PCI_IOBASE, buf, len);
+ }
+ 
+ static inline void writesb(const void __iomem *addr, const void *buf, int len)
+ {
+-	outsb((unsigned long)addr, buf, len);
++	outsb(addr - PCI_IOBASE, buf, len);
+ }
+ 
+ #ifndef CONFIG_GENERIC_IOMAP
+@@ -269,8 +273,9 @@ static inline void writesb(const void __iomem *addr, const void *buf, int len)
+ 	outsl((unsigned long) (p), (src), (count))
+ #endif /* CONFIG_GENERIC_IOMAP */
+ 
+-
+-#define IO_SPACE_LIMIT 0xffffffff
++#ifndef IO_SPACE_LIMIT
++#define IO_SPACE_LIMIT 0xffff
 +#endif
  
- #endif /* _ASM_GENERIC__TLB_H */
-
-
+ #ifdef __KERNEL__
+ 
