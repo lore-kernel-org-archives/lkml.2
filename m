@@ -1,40 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab1BQPuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:50:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52457 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755534Ab1BQPuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:50:15 -0500
-Date: Thu, 17 Feb 2011 16:50:14 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch:arm:mbox-db5500.c Change initate to initiate.
-In-Reply-To: <AANLkTi=esKDkirbi1TmCzUCJNkP6_x-D5QpLfVnaJrnA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1102171650080.2160@pobox.suse.cz>
-References: <1296244040-3653-1-git-send-email-justinmattock@gmail.com> <AANLkTi=esKDkirbi1TmCzUCJNkP6_x-D5QpLfVnaJrnA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756765Ab1BQPuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:50:52 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:56044 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab1BQPuu convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Thu, 17 Feb 2011 10:50:50 -0500
+Message-Id: <4D5D521C0200007800032702@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 17 Feb 2011 15:51:40 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: remove die_nmi()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011, Linus Walleij wrote:
+With no caller left, the function and the DIE_NMIWATCHDOG enumerator
+can both go away.
 
-> 2011/1/28 Justin P. Mattock <justinmattock@gmail.com>:
-> 
-> > Not sure if this is a typo or not. if it is then feel free to take this.
-> >
-> > Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> Why not,
-> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Applied, thanks.
+---
+ arch/x86/include/asm/kdebug.h |    1 -
+ arch/x86/include/asm/nmi.h    |    1 -
+ arch/x86/kernel/dumpstack.c   |   25 -------------------------
+ arch/x86/kernel/kgdb.c        |    9 ---------
+ 4 files changed, 36 deletions(-)
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+--- 2.6.38-rc5/arch/x86/include/asm/kdebug.h
++++ 2.6.38-rc5-x86-no-die_nmi/arch/x86/include/asm/kdebug.h
+@@ -13,7 +13,6 @@ enum die_val {
+ 	DIE_PANIC,
+ 	DIE_NMI,
+ 	DIE_DIE,
+-	DIE_NMIWATCHDOG,
+ 	DIE_KERNELDEBUG,
+ 	DIE_TRAP,
+ 	DIE_GPF,
+--- 2.6.38-rc5/arch/x86/include/asm/nmi.h
++++ 2.6.38-rc5-x86-no-die_nmi/arch/x86/include/asm/nmi.h
+@@ -7,7 +7,6 @@
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 
+-extern void die_nmi(char *str, struct pt_regs *regs, int do_panic);
+ extern int avail_to_resrv_perfctr_nmi_bit(unsigned int);
+ extern int reserve_perfctr_nmi(unsigned int);
+ extern void release_perfctr_nmi(unsigned int);
+--- 2.6.38-rc5/arch/x86/kernel/dumpstack.c
++++ 2.6.38-rc5-x86-no-die_nmi/arch/x86/kernel/dumpstack.c
+@@ -320,31 +320,6 @@ void die(const char *str, struct pt_regs
+ 	oops_end(flags, regs, sig);
+ }
+ 
+-void notrace __kprobes
+-die_nmi(char *str, struct pt_regs *regs, int do_panic)
+-{
+-	unsigned long flags;
+-
+-	if (notify_die(DIE_NMIWATCHDOG, str, regs, 0, 2, SIGINT) == NOTIFY_STOP)
+-		return;
+-
+-	/*
+-	 * We are in trouble anyway, lets at least try
+-	 * to get a message out.
+-	 */
+-	flags = oops_begin();
+-	printk(KERN_EMERG "%s", str);
+-	printk(" on CPU%d, ip %08lx, registers:\n",
+-		smp_processor_id(), regs->ip);
+-	show_registers(regs);
+-	oops_end(flags, regs, 0);
+-	if (do_panic || panic_on_oops)
+-		panic("Non maskable interrupt");
+-	nmi_exit();
+-	local_irq_enable();
+-	do_exit(SIGBUS);
+-}
+-
+ static int __init oops_setup(char *s)
+ {
+ 	if (!s)
+--- 2.6.38-rc5/arch/x86/kernel/kgdb.c
++++ 2.6.38-rc5-x86-no-die_nmi/arch/x86/kernel/kgdb.c
+@@ -533,15 +533,6 @@ static int __kgdb_notify(struct die_args
+ 		}
+ 		return NOTIFY_DONE;
+ 
+-	case DIE_NMIWATCHDOG:
+-		if (atomic_read(&kgdb_active) != -1) {
+-			/* KGDB CPU roundup: */
+-			kgdb_nmicallback(raw_smp_processor_id(), regs);
+-			return NOTIFY_STOP;
+-		}
+-		/* Enter debugger: */
+-		break;
+-
+ 	case DIE_DEBUG:
+ 		if (atomic_read(&kgdb_cpu_doing_single_step) != -1) {
+ 			if (user_mode(regs))
+
+
+
