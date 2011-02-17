@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab1BQWQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 17:16:41 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60963 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755961Ab1BQWQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 17:16:39 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [RFC][PATCH 2/2] PM: Make system-wide PM and runtime PM handle subsystems consistently
-Date: Thu, 17 Feb 2011 23:16:14 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Len Brown <lenb@kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <201102170045.48975.rjw@sisk.pl> <Pine.LNX.4.44L0.1102170951330.2153-100000@iolanthe.rowland.org> <20110217170441.GA31809@kroah.com>
-In-Reply-To: <20110217170441.GA31809@kroah.com>
+	id S1753499Ab1BQWVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:21:13 -0500
+Received: from [65.115.85.69] ([65.115.85.69]:9755 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753176Ab1BQWVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 17:21:11 -0500
+Date: Thu, 17 Feb 2011 14:19:57 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: David Miller <davem@davemloft.net>
+Cc: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in
+ module versions
+Message-ID: <20110217221957.GA11244@dtor-ws.eng.vmware.com>
+References: <AANLkTinA-OP69fqf5jLfedk=dL2vmwdUyzn5E6FHR=Zw@mail.gmail.com>
+ <20110217.131702.112601300.davem@davemloft.net>
+ <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
+ <20110217.140119.39175251.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102172316.15016.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110217.140119.39175251.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 17, 2011, Greg KH wrote:
-> On Thu, Feb 17, 2011 at 09:55:46AM -0500, Alan Stern wrote:
-> > On Thu, 17 Feb 2011, Rafael J. Wysocki wrote:
-> > 
-> > > > > Apart from this I think the order of checks introduced by the $subject patch
-> > > > > should be:
-> > > > > (1) If dev->class != NULL and dev->class->pm != NULL, use dev->class,
-> > > > >     or otherwise
-> > > > > (2) if dev->type != NULL and dev->type->pm != NULL, use dev->type,
-> > > > >     or otherwise
-> > > > > (3) use dev->bus (if present).
-> > > > > as that would allow classes and device types to override bus type PM
-> > > > > callbacks if they wish to.
-> > > > 
-> > > > I haven't heard of any device types being present on more than one kind
-> > > > of bus, so it makes sense for device types to override bus types.
-> > > 
-> > > OK
-> > > 
-> > > > But I'm not so sure about the priority we should give to classes.  On the
-> > > > other hand, if no classes define a dev_pm_ops then of course it doesn't
-> > > > matter.
-> > > 
-> > > The change will also affect classes that provide "legacy" suspend-resume
-> > > (if there are any, which I'm totally unsure of).
-> > > 
-> > > Anyway, I think we need to choose one ordering. :-)
-> > > 
-> > > What about type / bus / class , then?
-> > 
-> > I really don't know.  Somebody who has more experience with device 
-> > class implementations should answer.
-> > 
-> > Greg, any ideas?
-> > 
-> > To recap: The issue is how to handle multiple PM callbacks.  Since the
-> > bus type, device type, and device class may all have their own
-> > callbacks, Rafael has decided the best approach is to prioritize them
-> > and invoke only the highest-priority callback.  But what priority order
-> > should we use?
+On Thu, Feb 17, 2011 at 02:01:19PM -0800, David Miller wrote:
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Thu, 17 Feb 2011 13:54:57 -0800
 > 
-> I think we should do it in the following order:
-> 	device type
-> 	device class
-> 	device bus
+> > Is there a -fdata-align or something? Or would __attribute__((packed))
+> > help? Something that explicitly tells gcc "don't do this", instead of
+> > "let's add indirection and hope gcc doesn't add alignment for _that_".
+> > Especially as the extra pointer makes the code even uglier.
 > 
-> for the reasons that a device itself could override the default class
-> and bus information if it "knows" it is special.  After that, the class
-> of the device holds a lot of information about what is going on with the
-> logic involved (i.e. network stuff), and lastly, the bus knows some
-> default hardware information.
+> The tracing folks went down the path of trying to use packed in
+> various ways, to no avail, because no matter what they tried it broke
+> other things.
 > 
-> Sound reasonable?
+> > And if we do have to use the pointer thing, let's at least then do the
+> > pointer with asms, so that gcc _really_ can't screw it up. Rather than
+> > just move the potential bug around.
 > 
-> I think that follows the default we have today, right?
+> That's fine with me.
 
-No, right now the class goes first during suspend and last during resume (and
-of course they all can be called during system suspend/resume now).
+Any pointers as to how to emit these pointers with asm?
 
-That said I'm going to follow your suggestion. :-)
-
-Thanks,
-Rafael
+-- 
+Dmitry
