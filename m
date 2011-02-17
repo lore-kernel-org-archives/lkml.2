@@ -1,68 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab1BQVsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 16:48:37 -0500
-Received: from kroah.org ([198.145.64.141]:32827 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab1BQVsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 16:48:31 -0500
-Date: Thu, 17 Feb 2011 13:43:48 -0800
-From: Greg KH <greg@kroah.com>
-To: J Freyensee <james_p_freyensee@linux.intel.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
-Subject: Re: [PATCH 09/12] n_tracesink header file.
-Message-ID: <20110217214348.GA2193@kroah.com>
-References: <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-9-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com>
- <20110217192300.GD29448@kroah.com>
- <1297971915.3038.32.camel@localhost>
- <20110217195400.GB12172@kroah.com>
- <1297973447.3038.36.camel@localhost>
+	id S1758046Ab1BQVul (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 16:50:41 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:29008 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572Ab1BQVuj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 16:50:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=psMinQe2LHqoRTvkSvM1XBXWhbN/X0GrDRekL8SdD0SMl8r080eFcGU5YrwmK+Za2N
+         +O62uezIOq3vY29+CR2g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297973447.3038.36.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110217212821.3967.22439.stgit@mike.mtv.corp.google.com>
+References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com> <20110217212821.3967.22439.stgit@mike.mtv.corp.google.com>
+From: Tim Hockin <thockin@google.com>
+Date: Thu, 17 Feb 2011 13:50:15 -0800
+Message-ID: <AANLkTi=_8iU+QVTo+bDUjDc=md7E=fW6HpNuf_EFW2Nn@mail.gmail.com>
+Subject: Re: [PATCH v1 5/5] firmware: Add documentation for /sys/firmware/dmi
+To: Mike Waychison <mikew@google.com>
+Cc: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Robert Lippert <rlippert@google.com>, Jon Mayer <jonmayer@google.com>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        linux-kernel@vger.kernel.org, David Hendrix <dhendrix@chromium.org>,
+        linux-api@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 12:10:47PM -0800, J Freyensee wrote:
-> On Thu, 2011-02-17 at 11:54 -0800, Greg KH wrote:
-> > On Thu, Feb 17, 2011 at 11:45:15AM -0800, J Freyensee wrote:
-> > > On Thu, 2011-02-17 at 11:23 -0800, Greg KH wrote:
-> > > > On Tue, Feb 08, 2011 at 11:34:54AM -0800, james_p_freyensee@linux.intel.com wrote:
-> > > > > From: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > > > 
-> > > > > This header file allows the n_tracerouter to send it's information
-> > > > > to the n_tracesink ldisc driver.  It's part of the Intel-Atom
-> > > > > PTI implementation solution.
-> > > > > 
-> > > > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > > > ---
-> > > > >  include/linux/n_tracesink.h |   32 ++++++++++++++++++++++++++++++++
-> > > > 
-> > > > Why is this in include/linux/ ?
-> > > > 
-> > > 
-> > > I thought this was the best place to stick this .h file.  I'd be happy
-> > > to change locations based off of your suggestion.
-> > 
-> > Why do you need a .h file at all?  Who is using it?
-> 
-> The only current module that really uses it is n_tracerouter; however, I
-> thought sticking this in a .h file made things slightly more modular and
-> more re-usable, especially for future device driver writers that could
-> want something like this.
-> 
-> If you would like me to remove this though, I can, just let me know.
+On Thu, Feb 17, 2011 at 1:28 PM, Mike Waychison <mikew@google.com> wrote:
+> Document the new ABI added by the dmi-sysfs module.
+>
+> Signed-off-by: Mike Waychison <mikew@google.com>
+> ---
+>  Documentation/ABI/testing/sysfs-firmware-dmi |  101 ++++++++++++++++++++++++++
+>  1 files changed, 101 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-firmware-dmi
+>
+> diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
+> new file mode 100644
+> index 0000000..c6526b0
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-firmware-dmi
+> @@ -0,0 +1,101 @@
+> +What:          /sys/firmware/dmi/
+> +Date:          February 2011
+> +Contact:       Mike Waychison <mikew@google.com>
+> +Description:
+> +               Many machine's firmware (x86 and ia64) export DMI /
 
-Yes, please remove it.
+machines'
 
-thanks,
+> +               SMBIOS tables to the operating system.  Getting at this
+> +               information is often valuable to userland, especially in
+> +               cases where there are OEM extensions used.
+> +
+> +               The kernel itself does not rely on the majority of the
+> +               information in these tables being correct.  It equally
+> +               cannot ensure that the data as exported to userland is
+> +               without error either.
+> +
+> +               DMI is structured as a large table of entries, where
+> +               each entry has a common header indicating the type and
+> +               length of the entry, as well as 'handle' that is
+> +               supposed to be unique amongst all entries.
+> +
+> +               Some entries are required by the specification, but many
+> +               others are optional.  In general though, user's should
 
-greg k-h
+users
+
+> +               never expect to find a specific entry type on their
+> +               system unless they know for certain what their firmware
+> +               is doing.  Machine to machine will vary.
+> +
+> +               Multiple entries of the same type are allowed.  In order
+> +               to handle these duplicate entry types, each entry is
+> +               assigned by the operating system an 'instance', which is
+> +               derived from an entry type's ordinal position.  That is
+> +               to say, if there are 'N' multiple entries with the same type
+> +               'T' in the DMI tables (adjacent or spread apart, it
+> +               doesn't matter), they will be represented in sysfs as
+> +               entries "T-0" through "T-(N-1)":
+> +
+> +               Example entry directories:
+> +
+> +                       /sys/firmware/dmi/entries/17-0
+> +                       /sys/firmware/dmi/entries/17-1
+> +                       /sys/firmware/dmi/entries/17-2
+> +                       /sys/firmware/dmi/entries/17-3
+> +                       ...
+> +
+> +               Instance numbers are used in lieu of the firmware
+> +               assigned entry handles as there is kernel itself makes
+
+s/there is/the/
+
+> +               no guarantees that handles as exported are unique, and
+> +               there are likely firmware images that get this wrong in
+> +               the wild.
+> +
+> +               Each DMI entry in sysfs has the common header values
+> +               exported as attributes:
+> +
+> +               handle  : The 16bit 'handle' that is assigned to this
+> +                         entry by the firmware.  This handle may be
+> +                         referred to by other entries.
+> +               length  : The length of the entry, as presented in the
+> +                         entry itself.  Note that this is _not the
+> +                         total count of bytes associated with the
+> +                         entry_.  This value represents the length of
+> +                         the "formatted" portion of the entry.  This
+> +                         "formatted" region is sometimes followed by
+> +                         the "unformatted" region composed of nul
+> +                         terminated strings, with termination signalled
+> +                         by a two nul characters in series.
+> +               raw     : The raw bytes of the entry. This includes the
+> +                         "formatted" portion of the entry, the
+> +                         "unformatted" strings portion of the entry,
+> +                         and the two terminating nul characters.
+> +
+> +               === Entry Specialization ===
+> +
+> +               Some entry types may have other information available in
+> +               sysfs.
+> +
+> +               --- Type 15 - System Event Log ---
+> +
+> +               This entry allows the firmware to export a log of
+> +               events the system has taken.  This information is
+> +               typically backed by nvram, but the implementation
+> +               details are abstracted by this table.  This entries data
+> +               is exported in the directory:
+> +
+> +               /sys/firmware/dmi/entries/15-0/system_event_log
+> +
+> +               and has the following attributes (documented in the
+> +               SMBIOS / DMI specification under "System Event Log (Type 15)":
+> +
+> +               area_length
+> +               header_start_offset
+> +               data_start_offset
+> +               access_method
+> +               status
+> +               change_token
+> +               access_method_address
+> +               header_format
+> +               per_log_type_descriptor_length
+> +               type_descriptors_supported_count
+> +
+> +               As well, the kernel exports the binary attribute:
+> +
+> +               raw_event_log   : The raw binary bits of the event log
+> +                                 as described by the DMI entry.
+>
+>
