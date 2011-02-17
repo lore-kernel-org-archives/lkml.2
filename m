@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab1BQCwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 21:52:35 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:20310 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756050Ab1BQCwd (ORCPT
+	id S1756142Ab1BQCyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 21:54:12 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47627 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756090Ab1BQCyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 21:52:33 -0500
-Message-ID: <4D5C8D62.4060809@bluewatersys.com>
-Date: Thu, 17 Feb 2011 15:52:18 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 16 Feb 2011 21:54:09 -0500
+Date: Thu, 17 Feb 2011 08:24:26 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
+Subject: Re: [CFS Bandwidth Control v4 1/7] sched: introduce primitives to
+ account for CFS bandwidth tracking
+Message-ID: <20110217025426.GA2775@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <20110216031831.571628191@google.com>
+ <20110216031840.878320737@google.com>
+ <20110216165216.GC3415@balbir.in.ibm.com>
 MIME-Version: 1.0
-To: Charles Manning <manningc2@actrix.gen.nz>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
-References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102171112.07101.manningc2@actrix.gen.nz> <20110217014808.GD5824@sirena.org.uk> <201102171531.03924.manningc2@actrix.gen.nz>
-In-Reply-To: <201102171531.03924.manningc2@actrix.gen.nz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216165216.GC3415@balbir.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/02/11 15:31, Charles Manning wrote:
-> On Thursday 17 February 2011 14:48:08 Mark Brown wrote:
->> On Thu, Feb 17, 2011 at 11:12:06AM +1300, Charles Manning wrote:
->>> On Wednesday 16 February 2011 21:04:20 Christoph Hellwig wrote:
->>>> The procfs interfaces should be replaced by something saner,
->>>> the insane amount of ad-hoc tracing crap should be replaced by much
->>>> less strategically placed trace events, and all those stupid compile
->>>> time options have absolutely no business at all beeing there for a
->>>> filesystem -
->>>
->>> Why not?
->>>
->>>> remember you can get media from all over the place.
->>>
->>> No you can't. This is a flash file system for soldered down flash. I
->>> think that is a fundamental place where your understanding of what yaffs
->>> is falls down.
+On Wed, Feb 16, 2011 at 10:22:16PM +0530, Balbir Singh wrote:
+> * Paul Turner <pjt@google.com> [2011-02-15 19:18:32]:
 > 
-> I'm not sure I really understand what Christoph means by "get media from all 
-> over the place". I took that to mean he thinks people will pug in random 
-> flash cards and would need to fiddle with options to make them work. That 
-> would of course suck badly.
+> > In this patch we introduce the notion of CFS bandwidth, to account for the
+> > realities of SMP this is partitioned into globally unassigned bandwidth, and
+> > locally claimed bandwidth:
+> > - The global bandwidth is per task_group, it represents a pool of unclaimed
+> >   bandwidth that cfs_rq's can allocate from.  It uses the new cfs_bandwidth
+> >   structure.
+> > - The local bandwidth is tracked per-cfs_rq, this represents allotments from
+> >   the global pool
+> >   bandwidth assigned to a task_group, this is tracked using the
+> >   new cfs_bandwidth structure.
+> > 
+> > Bandwidth is managed via cgroupfs via two new files in the cpu subsystem:
+> > - cpu.cfs_period_us : the bandwidth period in usecs
+> > - cpu.cfs_quota_us : the cpu bandwidth (in usecs) that this tg will be allowed
+> >   to consume over period above.
+> > 
+> > A per-cfs_bandwidth timer is also introduced to handle future refresh at
+> > period expiration.  There's some minor refactoring here so that
+> > start_bandwidth_timer() functionality can be shared
+> > 
+> > Signed-off-by: Paul Turner <pjt@google.com>
+> > Signed-off-by: Nikhil Rao <ncrao@google.com>
+> > Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> > ---
 > 
-> That is obviously not the case for a flash file system used on hard-wired 
-> flash where the system integrator is in control. Users don't get to fiddle.
+> Looks good, minor nits below
 > 
->>
->> Even for embedded systems people do end up wanting to do things like
->> using the same kernel on multiple systems which may have different
->> hardware configurations (distros and reference boards are the obvious
->> examples, but I've worked on systems where multiple generations and
->> builds of the product were in active use and similar enough to be
->> maintained from the same kernel).  Even with single system kernels
->> there's still an issue with things like reference boards where users are
->> doing things like picking up a new upstream kernel rather than the
->> vendor BSP.
 > 
-> Every one of the "stupid compile time options" is there because someone that 
-> actually **uses** yaffs wanted it. None are there just for fun. The 
-> compile-time switches are very limited - mostly just there to set up default 
-> runtime flags that can be overridden at runtime. Some of them are there to 
-> work around bugs and limitations in the mtd.
+> Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
 
-The Kconfig options which are can be overridden by runtime flags should
-simply be removed. Pick a default and stick with it. Existing users will
-either have to modify their mount flags to suit, continuing using an old
-version, or patch the yaffs code themselves.
+Thanks Balbir.
 
-It's also possibly worth removing some of the more esoteric options such
-as the ECC options at least for the first attempt at getting Yaffs into
-mainline. It will make it easier to get the code accepted, and if enough
-users complain that the feature is not there a sensible way to patch it
-in can be added later.
-
-I think the downside at the moment is that it is getting less and less
-likely that you can maintain a single yaffs codebase and get it merged
-into mainline. I really think you are going to need to fork the code.
-
+> > +
+> > +static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
+> > +{
+> > +	struct cfs_bandwidth *cfs_b =
+> > +		container_of(timer, struct cfs_bandwidth, period_timer);
+> > +	ktime_t now;
+> > +	int overrun;
+> > +	int idle = 0;
+> > +
+> > +	for (;;) {
+> > +		now = hrtimer_cb_get_time(timer);
+> > +		overrun = hrtimer_forward(timer, now, cfs_b->period);
+> > +
+> > +		if (!overrun)
+> > +			break;
+> > +
+> > +		idle = do_sched_cfs_period_timer(cfs_b, overrun);
 > 
-> Even with BSPs, there will often be some board tuning to, do things like set 
-> up the mtd partitions.
-> 
-> Picking up an new kernel is easy, so long as the mtd code has not been broken 
-> in the interum. 
-> 
-> Last week I dropped the yaffs code into an omap3 build of 2.6.37 with no 
-> fiddling and with default settings and it "just worked".
+> This patch just sets up to return do_sched_cfs_period_timer to return
+> 1. I am afraid I don't understand why this function is introduced
+> here.
 
-Mark is talking about the case where you have a single kernel which can
-be run on multiple boards/platforms. This is becoming increasingly
-common for development and testing purposes. Because some of the yaffs
-config options are compile time only selectable, it may not be possible
-to support yaffs correctly on multiple boards in a single kernel. This
-is why it is much more ideal for config options to be mount flags.
+Answered this during last post: http://lkml.org/lkml/2010/10/14/31
 
-~Ryan
+> > +
+> > +	mutex_lock(&mutex);
+> > +	raw_spin_lock_irq(&tg->cfs_bandwidth.lock);
+> > +	tg->cfs_bandwidth.period = ns_to_ktime(period);
+> > +	tg->cfs_bandwidth.runtime = tg->cfs_bandwidth.quota = quota;
+> > +	raw_spin_unlock_irq(&tg->cfs_bandwidth.lock);
+> > +
+> > +	for_each_possible_cpu(i) {
+> 
+> Why for each possible cpu - to avoid hotplug handling?
+
+Touched upon this during last post: https://lkml.org/lkml/2010/12/6/49
+
+Regards,
+Bharata.
