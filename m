@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab1BQR0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:26:12 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37969 "EHLO mx3.mail.elte.hu"
+	id S1757303Ab1BQR1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:27:32 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:40057 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab1BQR0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:26:10 -0500
-Date: Thu, 17 Feb 2011 18:25:59 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] x86-64: use relative 32-bit pointers in exception
- tables
-Message-ID: <20110217172559.GD17058@elte.hu>
-References: <4D5D62EE02000078000327E7@vpn.id2.novell.com>
+	id S1754325Ab1BQR1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 12:27:30 -0500
+Date: Thu, 17 Feb 2011 09:26:39 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: (k10temp) add support for AMD Family 12h/14h
+ CPUs
+Message-ID: <20110217172639.GA19982@ericsson.com>
+References: <4D5CDAD0.7030006@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4D5D62EE02000078000327E7@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D5CDAD0.7030006@ladisch.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 17, 2011 at 03:22:40AM -0500, Clemens Ladisch wrote:
+> Add the PCI ID to support the internal temperature sensor of the
+> AMD "Llano" and "Brazos" processor families.
+> 
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 
-Nice patch. I've got a really small code readability nitpick:
+Applied, thanks.
 
-> +#ifndef ex_insn /* until all architectures have this accessor */
-> +#define ex_insn(x) (x)->insn
-> +#endif
+Since it meets the requirements for a stable patch, I applied it to the
+patch list for 2.6.38 and added Cc: stable@kernel.org.
 
-> +#else
-> +#define swap_ex NULL
-> +#endif
-
-In the x86 architecture we tend to write this as:
-
-> +#else
-> +# define swap_ex NULL
-> +#endif
-
-So that the conditional structure stands out more, visually. (There might be more 
-such cases in these patches as well.)
-
-Thanks,
-
-	Ingo
+Guenter
