@@ -1,48 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab1BQFzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 00:55:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58938 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753798Ab1BQFzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 00:55:11 -0500
-Date: Thu, 17 Feb 2011 16:55:01 +1100
-From: NeilBrown <neilb@suse.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
-Subject: Re: blk_throtl_exit  taking q->queue_lock is problematic
-Message-ID: <20110217165501.47f3c26f@notabene.brown>
-In-Reply-To: <20110217011029.GA6793@redhat.com>
-References: <20110216183114.26a3613b@notabene.brown>
-	<20110216155305.GC14653@redhat.com>
-	<20110217113536.2bbf308e@notabene.brown>
-	<20110217011029.GA6793@redhat.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754930Ab1BQFzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 00:55:39 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43833 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753798Ab1BQFzg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 00:55:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110217045125.GI14534@fieldses.org>
+References: <20110215185902.GG29420@fieldses.org> <20110217042519.GH14534@fieldses.org>
+ <AANLkTikeK77v7y346-OX9dvufJSjbJ7qQSpJc4C3wLrZ@mail.gmail.com> <20110217045125.GI14534@fieldses.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 16 Feb 2011 21:54:49 -0800
+Message-ID: <AANLkTikjJPfUdknRrFJC2-3Pm57ReMxNXXgZb8C0YyfQ@mail.gmail.com>
+Subject: Re: 2.6.38 nfsd bugfixes
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Feb 2011 20:10:29 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+On Wed, Feb 16, 2011 at 8:51 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+>
+> I already committed it like that, so would rather just do any cleanup as
+> another patch for the next merge window;
 
-> So is it possible to keep the spinlock intact when md is calling up
-> blk_cleanup_queue()?
-> 
+That's fine. I just want to point these out as I see them, and ask
+that when people fix bugs, they also aim to make the code readable at
+the same time.
 
-It would be possible, yes - but messy.  I would probably end up just making
-->queue_lock always point to __queue_lock, and then only take it at the
-places where I call 'block' code which wants to test to see if it is
-currently held (like the plugging routines).
-
-The queue lock (and most of the request queue) is simply irrelevant for md.
-I would prefer to get away from having to touch it at all...
-
-I'll see how messy it would be to stop using it completely and it can just be
-__queue_lock.
-
-Though for me - it would be much easier if you just used __queue_lock .....
-
-
-NeilBrown
+                                    Linus
