@@ -1,150 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab1BQUmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:42:45 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:38627 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755613Ab1BQUlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:41:45 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Arun Sharma <arun@sharma-home.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/5] perf: make perf stat print user provided full event names
-Date: Thu, 17 Feb 2011 18:41:28 -0200
-Message-Id: <1297975291-12792-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1297975291-12792-1-git-send-email-acme@infradead.org>
-References: <1297975291-12792-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757970Ab1BQUqE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:46:04 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:39429 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755737Ab1BQUqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:46:02 -0500
+From: Matthias Schwarzott <zzam@gentoo.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Subject: Re: [Patch] Zarlink zl10036 DVB-S: Fix mem leak in zl10036_attach
+Date: Thu, 17 Feb 2011 21:45:51 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Dan Carpenter <error27@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <alpine.LNX.2.00.1102062128391.13593@swampdragon.chaosbits.net> <201102172054.12773.zzam@gentoo.org> <alpine.LNX.2.00.1102172130360.17697@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1102172130360.17697@swampdragon.chaosbits.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102172145.55258.zzam@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+On Thursday 17 February 2011, Jesper Juhl wrote:
+> On Thu, 17 Feb 2011, Matthias Schwarzott wrote:
+> > On Sunday 06 February 2011, Jesper Juhl wrote:
+> > > If the memory allocation to 'state' succeeds but we jump to the 'error'
+> > > label before 'state' is assigned to fe->tuner_priv, then the call to
+> > > 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
+> > > only what was previously assigned to 'tuner_priv', thus leaking the
+> > > memory allocated to 'state'.
+> > > There are may ways to fix this, including assigning the allocated
+> > > memory directly to 'fe->tuner_priv', but I did not go for that since
+> > > the additional pointer derefs are more expensive than the local
+> > > variable, so I just added a 'kfree(state)' call. I guess the call to
+> > > 'zl10036_release' might not even be needed in this case, but I wasn't
+> > > sure, so I left it in.
+> > 
+> > Yeah, that call to zl10036_release can be completely eleminated.
+> > Another thing is: jumping to the error label only makes sense when memory
+> > was already allocated. So the jump in line 471 can be replaced by
+> > "return NULL",
+> > 
+> > as the other error handling before allocation:
+> >         if (NULL == config) {
+> >         
+> >                 printk(KERN_ERR "%s: no config specified", __func__);
+> >                 goto error;
+> >         
+> >         }
+> > 
+> > I suggest to improve the patch to clean the code up when changing that.
+> > 
+> > But I am fine with commiting this patch also if you do not want to change
+> > it.
+> 
+> Thank you for your feedback. It makes a lot of sense.
+> Changing it is not a problem :)
+> How about the updated patch below?
+> 
+Looks good.
 
-This patch changes the way perf stat prints event names at the end of a
-run. Until now, it was trying to reconstruct the event name from its
-encoding. The problem is that it would only print generic events without
-their modifiers (u, k, pp).
+@Mauro: Please apply.
 
-This patch saves the event name as passed by the user in the evsel
-struct and uses it to print the final event name.
+> 
+> If the memory allocation to 'state' succeeds but we jump to the 'error'
+> label before 'state' is assigned to fe->tuner_priv, then the call to
+> 'zl10036_release(fe)' at the 'error:' label will not free 'state', but
+> only what was previously assigned to 'tuner_priv', thus leaking the memory
+> allocated to 'state'.
+> This patch fixes the leak and also does not jump to 'error:' before mem
+> has been allocated but instead just returns. Also some small style
+> cleanups.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-This would also work in case perf is linked with a library (such as
-libpfm4) which provides full PMU event tables.
 
-$ perf stat -e cycles:u,cycles:k date
-Wed Feb 16 14:58:52 CET 2011
-
- Performance counter stats for 'date':
-
-            568600 cycles:u
-           2779715 cycles:k
-
-        0.001908182  seconds time elapsed
-
-Cc: Arun Sharma <arun@sharma-home.net>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@gmail.com>
-LPU-Reference: <4d5bdc64.98a1df0a.7aa3.06c2@mx.google.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-[ committer note: Fixed a merge problem with 023695d "Add cgroup support" ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.c        |    1 +
- tools/perf/util/evsel.h        |    7 +++++++
- tools/perf/util/parse-events.c |   10 ++++++++++
- 3 files changed, 18 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index c974e08..63cadaf 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -86,6 +86,7 @@ void perf_evsel__delete(struct perf_evsel *evsel)
- {
- 	perf_evsel__exit(evsel);
- 	close_cgroup(evsel->cgrp);
-+	free(evsel->name);
- 	free(evsel);
- }
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 1d3d5a3..f6fc8f6 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -37,6 +37,12 @@ struct perf_sample_id {
- 	struct perf_evsel	*evsel;
- };
- 
-+/** struct perf_evsel - event selector
-+ *
-+ * @name - Can be set to retain the original event name passed by the user,
-+ *         so that when showing results in tools such as 'perf stat', we
-+ *         show the name used, not some alias.
-+ */
- struct perf_evsel {
- 	struct list_head	node;
- 	struct perf_event_attr	attr;
-@@ -45,6 +51,7 @@ struct perf_evsel {
- 	struct xyarray		*id;
- 	struct perf_counts	*counts;
- 	int			idx;
-+	char			*name;
- 	void			*priv;
- 	struct cgroup_sel	*cgrp;
- };
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index cf082da..80a3dd5 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -268,6 +268,9 @@ const char *event_name(struct perf_evsel *evsel)
- 	u64 config = evsel->attr.config;
- 	int type = evsel->attr.type;
- 
-+	if (evsel->name)
-+		return evsel->name;
-+
- 	return __event_name(type, config);
- }
- 
-@@ -782,8 +785,10 @@ int parse_events(const struct option *opt, const char *str, int unset __used)
- 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
- 	struct perf_event_attr attr;
- 	enum event_result ret;
-+	const char *ostr;
- 
- 	for (;;) {
-+		ostr = str;
- 		memset(&attr, 0, sizeof(attr));
- 		ret = parse_event_symbols(opt, &str, &attr);
- 		if (ret == EVT_FAILED)
-@@ -798,6 +803,11 @@ int parse_events(const struct option *opt, const char *str, int unset __used)
- 			if (evsel == NULL)
- 				return -1;
- 			perf_evlist__add(evlist, evsel);
-+
-+			evsel->name = calloc(str - ostr + 1, 1);
-+			if (!evsel->name)
-+				return -1;
-+			strncpy(evsel->name, ostr, str - ostr);
- 		}
- 
- 		if (*str == 0)
--- 
-1.6.2.5
+Signed-off-by: Matthias Schwarzott <zzam@gentoo.org>
+> ---
+>  zl10036.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/media/dvb/frontends/zl10036.c
+> b/drivers/media/dvb/frontends/zl10036.c index 4627f49..81aa984 100644
+> --- a/drivers/media/dvb/frontends/zl10036.c
+> +++ b/drivers/media/dvb/frontends/zl10036.c
+> @@ -463,16 +463,16 @@ struct dvb_frontend *zl10036_attach(struct
+> dvb_frontend *fe, const struct zl10036_config *config,
+>  				    struct i2c_adapter *i2c)
+>  {
+> -	struct zl10036_state *state = NULL;
+> +	struct zl10036_state *state;
+>  	int ret;
+> 
+> -	if (NULL == config) {
+> +	if (!config) {
+>  		printk(KERN_ERR "%s: no config specified", __func__);
+> -		goto error;
+> +		return NULL;
+>  	}
+> 
+>  	state = kzalloc(sizeof(struct zl10036_state), GFP_KERNEL);
+> -	if (NULL == state)
+> +	if (!state)
+>  		return NULL;
+> 
+>  	state->config = config;
+> @@ -507,7 +507,7 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend
+> *fe, return fe;
+> 
+>  error:
+> -	zl10036_release(fe);
+> +	kfree(state);
+>  	return NULL;
+>  }
+>  EXPORT_SYMBOL(zl10036_attach);
 
