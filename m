@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab1BQTG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:06:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59827 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755614Ab1BQTGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:06:25 -0500
-Date: Thu, 17 Feb 2011 11:05:54 -0800
-From: Greg KH <gregkh@suse.de>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: Greg KH <greg@kroah.com>, Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] USB: ffs-test: fix header path
-Message-ID: <20110217190554.GA25833@suse.de>
-References: <1297012413.2039.8.camel@offworld>
- <20110217184257.GA13545@kroah.com>
- <1297969052.21769.0.camel@offworld>
+	id S932404Ab1BQTMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:12:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43833 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754543Ab1BQTMl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:12:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1297969052.21769.0.camel@offworld>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m1pqqqfpzh.fsf@fess.ebiederm.org>
+References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
+ <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+ <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+ <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+ <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 11:11:51 -0800
+Message-ID: <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 03:57:32PM -0300, Davidlohr Bueso wrote:
-> On Thu, 2011-02-17 at 10:42 -0800, Greg KH wrote:
-> > On Sun, Feb 06, 2011 at 02:13:33PM -0300, Davidlohr Bueso wrote:
-> > > From: Davidlohr Bueso <dave@gnu.org>
-> > > 
-> > > When compiling this program the functionfs.h header cannot be found, producing:
-> > > ffs-test.c:40: fatal error: linux/usb/functionfs.h: No such file or directory
-> > > 
-> > > This patch also fixes the following warning:
-> > > ffs-test.c:453: warning: format ‘%4d’ expects type ‘int’, but argument 3 has type ‘size_t’
-> > > 
-> > > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> > > ---
-> > >  tools/usb/ffs-test.c |    4 ++--
-> > >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > This patch doesn't apply properly to the linux-next branch, what did you
-> > make it against?
-> > 
-> 
-> It was against Linus' tree (did a pull right before submitting the
-> patch).
+On Thu, Feb 17, 2011 at 10:57 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> fedora 14
+> ext4 on all filesystems
 
-Ah, so you think this is needed for Linus's tree now?  Care to resend it
-and I'll queue it up to the proper tree, sorry, I missed that.
+Your dmesg snippets had ext3 mentioned, though:
 
-thanks,
+  <6>EXT3-fs (sda1): recovery required on readonly filesystem
+  <6>EXT3-fs (sda1): write access will be enabled during recovery
+  <6>EXT3-fs: barriers not enabled
+  ..
+  <6>EXT3-fs (sda1): recovery complete
+  <6>EXT3-fs (sda1): mounted filesystem with ordered data mode
+  <6>dracut: Mounted root filesystem /dev/sda1
 
-greg k-h
+not that I see that it should matter, but there's been some bigger
+ext3 changes too (like the batched discard).
+
+I don't really think ext3 is the issue, though.
+
+> I was about to say this happens with DEBUG_PAGEALLOC enabled but it
+> appears that options keeps eluding my fingers when I have a few minutes
+> to play with it. �Perhaps this time will be the charm.
+
+Please do. You seem to be much better at triggering it than anybody
+else. And do the DEBUG_LIST and DEBUG_SLUB_ON things too (even if the
+DEBUG_LIST thing won't catch list_move())
+
+                      Linus
