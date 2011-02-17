@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab1BQU67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:58:59 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46312 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1BQU6z (ORCPT
+	id S1758016Ab1BQVAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 16:00:41 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33202
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751781Ab1BQVAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:58:55 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] leds-gpio: minor style fixes
-Date: Thu, 17 Feb 2011 21:58:52 +0100
-Message-Id: <1297976332-12877-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 17 Feb 2011 16:00:39 -0500
+Date: Thu, 17 Feb 2011 13:01:15 -0800 (PST)
+Message-Id: <20110217.130115.71101941.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: dtor@vmware.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
+        rusty@rustcorp.com.au, linux-m68k@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in
+ module versions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTi=bgmRwGXEE_wriYo-5gmyaB43pMUzHf7idiK0k@mail.gmail.com>
+References: <AANLkTikGVS9EM=7uhwYfXrGHg9yzes7m0pxAinRxivPC@mail.gmail.com>
+	<20110217180042.GA30530@dtor-ws.eng.vmware.com>
+	<AANLkTi=bgmRwGXEE_wriYo-5gmyaB43pMUzHf7idiK0k@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reported-by: Lothar Waßmann <LW@KARO-electronics.de>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/leds/leds-gpio.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 10:06:40 -0800
 
-diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
-index 4d9fa38..8cb7936 100644
---- a/drivers/leds/leds-gpio.c
-+++ b/drivers/leds/leds-gpio.c
-@@ -16,8 +16,7 @@
- #include <linux/leds.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
--
--#include <asm/gpio.h>
-+#include <linux/gpio.h>
- 
- struct gpio_led_data {
- 	struct led_classdev cdev;
-@@ -129,7 +128,7 @@ static int __devinit create_gpio_led(const struct gpio_led *template,
- 	ret = gpio_direction_output(led_dat->gpio, led_dat->active_low ^ state);
- 	if (ret < 0)
- 		goto err;
--		
-+
- 	INIT_WORK(&led_dat->work, gpio_led_work);
- 
- 	ret = led_classdev_register(parent, &led_dat->cdev);
-@@ -256,7 +255,7 @@ static int __devinit of_gpio_leds_probe(struct platform_device *ofdev,
- 		if (state) {
- 			if (!strcmp(state, "keep"))
- 				led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
--			else if(!strcmp(state, "on"))
-+			else if (!strcmp(state, "on"))
- 				led.default_state = LEDS_GPIO_DEFSTATE_ON;
- 			else
- 				led.default_state = LEDS_GPIO_DEFSTATE_OFF;
-@@ -318,7 +317,7 @@ static int __init gpio_led_init(void)
- {
- 	int ret = 0;
- 
--#ifdef CONFIG_LEDS_GPIO_PLATFORM	
-+#ifdef CONFIG_LEDS_GPIO_PLATFORM
- 	ret = platform_driver_register(&gpio_led_driver);
- 	if (ret)
- 		return ret;
-@@ -326,7 +325,7 @@ static int __init gpio_led_init(void)
- #ifdef CONFIG_LEDS_GPIO_OF
- 	ret = of_register_platform_driver(&of_gpio_leds_driver);
- #endif
--#ifdef CONFIG_LEDS_GPIO_PLATFORM	
-+#ifdef CONFIG_LEDS_GPIO_PLATFORM
- 	if (ret)
- 		platform_driver_unregister(&gpio_led_driver);
- #endif
--- 
-1.7.2.3
+> David, why are you saying that regular "just mark the structure
+> alignment correctly" doesn't work?
 
+Because it's been proven to not work:
+
+http://marc.info/?l=linux-kernel&m=129674396021733&w=2
+http://marc.info/?l=linux-kernel&m=129674399621795&w=2
+http://marc.info/?l=linux-kernel&m=129674396121739&w=2
+http://marc.info/?l=linux-kernel&m=129674396021735&w=2
+
+GCC is very clever with "static" objects these days.
+
+It thinks that, because you mark something "static", it can align it
+any way it wants because it controls the domain in which the object
+exists.  It "knows" that the object can't be part of an array, and
+therefore no external entity can be concerned about the true "size" of
+the object (specifically wrt. side effects of the alignment of the
+object).
+
+In these cases it takes the explicit alignment attribute as a minimum,
+not as an absolute requirement.
+
+But we lie to the compiler, we mark things static then put them into a
+special a special section, then try to iterate over those objects
+globally as an array and expect the compiler to lay them all out
+with identical alignments and sizes everywhere.
+
+And this doesn't work.
