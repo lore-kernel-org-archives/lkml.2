@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab1BQP1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:27:07 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35471 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754012Ab1BQP1D convert rfc822-to-8bit (ORCPT
+	id S932151Ab1BQPev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:34:51 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:35285 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab1BQPes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:27:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=V9VGK+CsFs6tzRo77pLa3vgnvH+G23cdM5+UFIjNQ0bVKk1gq82IwcRIVBG3sgZ0y9
-         9WGLyesqw5Ufl+daYP/GxrUVdZrjXgl274FPx42i1ybVcBqvT3QFtBf1dBVFbQYXplIn
-         3hWTjsGWR+2FkNlzVKFsc64Znm1iOAw7u4LfI=
+	Thu, 17 Feb 2011 10:34:48 -0500
+X-AuditID: b753bd60-a274aba0000001d0-61-4d5d4015e3c2
+X-AuditID: b753bd60-a274aba0000001d0-61-4d5d4015e3c2
+Message-ID: <4D5D4013.4070602@hitachi.com>
+Date: Fri, 18 Feb 2011 00:34:43 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <201012170109.43137.rjw@sisk.pl>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <201012170109.43137.rjw@sisk.pl>
-From: Rabin Vincent <rabin@rab.in>
-Date: Thu, 17 Feb 2011 20:55:06 +0530
-X-Google-Sender-Auth: ox9vSedFypaC7h0IiW_6URbOTvc
-Message-ID: <AANLkTikRUZRh0YnP8nYTKFnFeUiJbK5xKvHHjn_S+gZE@mail.gmail.com>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: stern@rowland.harvard.edu, linux-pm@lists.linux-foundation.org,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        khilman@ti.com, magnus.damm@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
+ for x86_64 right now)
+References: <20110209200249.111932716@goodmis.org>	 <4D5D1672.6070206@hitachi.com> <1297948703.23343.907.camel@gandalf.stny.rr.com>
+In-Reply-To: <1297948703.23343.907.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 17, 2010 at 05:39, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, December 16, 2010, Rabin Vincent wrote:
->> There seem to be some differences between the generic ops and the i2c
->> and platform busses' implementations of the interaction between runtime
->> PM and system sleep:
->>
->>   (1) The platform bus does not implement the
->>       don't-call-pm->suspend()-if pm_runtime_suspended()-returns-true
->>       functionality implemented by the generic ops and i2c.
->>
->>   (2) Both I2C and platform do not set the device as active when a
->>       pm->resume callback exists and it succeeds.
-...
->> Are these divergences from the generic ops to be considered as bugs?
->
-> I think so.  I'm not sure about (1), because someone may already depend on
-> that behavior, but (2) looks like a bug to me.
+(2011/02/17 22:18), Steven Rostedt wrote:
+> On Thu, 2011-02-17 at 21:37 +0900, Masami Hiramatsu wrote:
+> 
+>> Oops! with this change, current kprobes might not be able to probe
+>> the entry of functions, because that is always reserved by ftrace!
+>> I think we need to have some new interface for replacing each other
+>> safely...
+> 
+> Good point. I suspect that this wont be ready till .40 anyway. When I
+> get a chance to work more an this, I'll also include patches where if
+> -mfentry is activated kprobes will just hook to the mcount caller
+> instead. Or ftrace itself :)
 
-Revisiting these points again.  (2) has since been corrected for i2c,
-but platform does not do (1) and (2).
+Ah, that's a good idea! :) it could be done without -mfentry too.
+But is that possible to modify just one mcount entry? I also worry
+about the latency of enabling/disabling one entry.
 
-I've submitted a patch today to convert the AMBA bus to support pm-ops,
-and it was convenient to just use the GENERIC_SUBSYS_PM_OPS.  But some
-ARM SoCs have a combination of AMBA and platform devices for the on-chip
-devices so having different behaviour between the interaction of
-runtime-pm and system suspend callbacks does not seem like an ideal
-situation, and would only serve to confuse driver writers.  So, should I
-just not use GENERIC_SUBSYS_PM_OPS in the AMBA bus but instead open-code
-the rountines to make it work like platform?
+BTW, without dynamic ftrace (no code modifying), I think we don't
+need to reserve mcount code, because no one modifies it.
 
-This will solve the platform vs AMBA bus, but shouldn't we really be
-aiming for consistent behaviour between these and the other busses such
-as I2C and SPI, which are also usually commonly used on the same
-platforms and are using GENERIC_PM_OPS?
+> 
+> I'm also working on making the function tracer a bit more flexible. That
+> is, to let multiple clients control the dynamic trace instead of just
+> one big global one.
 
-Should we be auditing all platform drivers and then switch platform to
-the GENERIC_PM_OPS?
+Nice!
 
-Or should the two points (1) and (2) be not handled in the bus at all
-and be left to individual drivers (in which case we should audit i2c and
-spi and change GENERIC_PM_OPS)?
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
