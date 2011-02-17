@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab1BQXJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 18:09:21 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:58355 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab1BQXJR (ORCPT
+	id S1753567Ab1BQXJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 18:09:19 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60157 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751373Ab1BQXJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 18:09:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=Yuq+KCvZGAMHrdob/o7/6goZ6e71DUKezFdRwv4OfAjmPd3Z
-	6YyF/TLmUgGecyfvSCrpg5ZC4I+iTx0/EBz0Ohi1HhsOg/sV56Z4fTrABMuI8c1F
-	ETKpQ4snMw+2s7+FU24N3Egy/tDMlKeZLxBH9j96Q5DTNjE2bMpbCnDyZPQ=
-Date: Thu, 17 Feb 2011 15:10:39 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: npiggin@gmail.com
-cc: viro@zeniv.linux.org.uk, Trond.Myklebust@netapp.com,
-        yehuda.sadeh@dreamhost.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: NULL d_parent and ceph, nfs sillyrename regressions
-Message-ID: <Pine.LNX.4.64.1102171121450.18322@cobra.newdream.net>
+	Thu, 17 Feb 2011 18:09:16 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <AANLkTinMfTss+9K7fPQbxoMD7d-U_AyCc29_RRPRija3@mail.gmail.com>
+References: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
+ <20110217.140119.39175251.davem@davemloft.net> <20110217221957.GA11244@dtor-ws.eng.vmware.com>
+ <20110217.142320.102554706.davem@davemloft.net> <AANLkTinMfTss+9K7fPQbxoMD7d-U_AyCc29_RRPRija3@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 15:08:52 -0800
+Message-ID: <AANLkTikd-OBhe6-wK7-Xvv-asNSeVKs+0-a0d3FF2KVu@mail.gmail.com>
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
+To: David Miller <davem@davemloft.net>
+Cc: dtor@vmware.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
+        rusty@rustcorp.com.au, linux-m68k@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nick,
+On Thu, Feb 17, 2011 at 2:48 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Gaah, I didn't realize that we've never had to do anything like this
+> before, and that the exception table is all arch-specific code. So we
+> don't have any way to "output that damned pointer and stop whining
+> about it" model at all.
 
-Any progress of fixing the d_parent behavior that's breaking ceph and 
-sillyrename?  Just a reminder: ceph currently oopses on d_kill, and 
-sillyrename entries don't go away.  Your message from 3 weeks ago 
-suggested the fix was relatively simple and imminent, but it's getting 
-late in the cycle and I'm getting nervous :).
+Actually, I don't think the problem is about ".word" vs ".xword". We
+should be able to just use ".long" everywhere.
 
-We do have an ugly hack[1] that will fix the ceph problem (by making a 
-copy of d_parent in the d_fsdata struct), but I'd obviously rather not 
-push that.
+But the symbol _name_ may have different prefixes, and when we use
+"asm()" at the top level, we can't use the expressions to fix it up.
+So a
 
-FWIW the d_parent clearing in d_kill was introduced by 949854d0.
+  asm(".long %0":'i" (symbol))
 
-Thanks!
-sage
+doesn't work (ignore the lack of section naming, that's not
+important), and neither can we just do something like
 
+  #define output_asm_pointer(section, symbol) \
+       asm(".long " #symbol)
 
-[1] http://ceph.newdream.net/git/?p=ceph-client.git;a=commitdiff;h=9c3db357aa3de6fd5e3ef2865e20848251aa05a4
+portably, because some linker formats want to see prepended underscores etc.
+
+Grr.
+
+Where in gcc is the alignment expansion logic? I'd like to see what
+the rules are, just for my own perverse satisfaction.
+
+                        Linus
