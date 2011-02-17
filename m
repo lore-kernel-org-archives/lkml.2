@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab1BQWsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 17:48:07 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:41493 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753721Ab1BQWsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 17:48:04 -0500
-Date: Fri, 18 Feb 2011 09:47:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-Id: <20110218094754.0436a60a.sfr@canb.auug.org.au>
-In-Reply-To: <20110217150200.GA32177@sepie.suse.cz>
-References: <20110131154259.dca1f7e6.sfr@canb.auug.org.au>
-	<20110217144743.2db26b27.sfr@canb.auug.org.au>
-	<4D5D201A.8090304@suse.cz>
-	<20110217150200.GA32177@sepie.suse.cz>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__18_Feb_2011_09_47_54_+1100_5OXtcYP7aCBQOdat"
+	id S1754025Ab1BQWtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:49:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34310 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752643Ab1BQWtF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 17:49:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110217.142320.102554706.davem@davemloft.net>
+References: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
+ <20110217.140119.39175251.davem@davemloft.net> <20110217221957.GA11244@dtor-ws.eng.vmware.com>
+ <20110217.142320.102554706.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 14:48:15 -0800
+Message-ID: <AANLkTinMfTss+9K7fPQbxoMD7d-U_AyCc29_RRPRija3@mail.gmail.com>
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
+To: David Miller <davem@davemloft.net>
+Cc: dtor@vmware.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
+        rusty@rustcorp.com.au, linux-m68k@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_Feb_2011_09_47_54_+1100_5OXtcYP7aCBQOdat
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Michal,
-
-On Thu, 17 Feb 2011 16:02:00 +0100 Michal Marek <mmarek@suse.cz> wrote:
+On Thu, Feb 17, 2011 at 2:23 PM, David Miller <davem@davemloft.net> wrote:
 >
-> > _Maybe_ we could work around it by letting fixdep remove the actual
-> > source file from the list of dependencies in the .cmd file. The
-> > dependency on the .c / .S / whatever file is given by the Makefiles, the
-> > .cmd file is only needed for additional dependencies on headers. Let's
-> > see what else breaks then ;).
->=20
-> It seems to work for me. Can you try the patch below? It needs to be
-> applied before merging 9599ec0 to have any effect.
+> You have to also pick .word vs. .xword, or whatever the appropriate
+> sized pointer mnenomic is for a given architecture.  I know .word
+> works for 32-bit sparc, and .xword works for 64-bit sparc.
 
-Thanks, I will apply this as a fix on top of Linus' tree before I merge
-anything else.  It looks simple enough that Linus may take it as a fix
-right now.   Better to convince ourselves first, though, right?
+Gaah, I didn't realize that we've never had to do anything like this
+before, and that the exception table is all arch-specific code. So we
+don't have any way to "output that damned pointer and stop whining
+about it" model at all.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I really detest gcc sometimes. All these "clever" things that just
+make things harder to do. If the user explicitly tells it the section
+and the alignment, it should damn well not think that it knows better
+and change it. Damn.
 
---Signature=_Fri__18_Feb_2011_09_47_54_+1100_5OXtcYP7aCBQOdat
-Content-Type: application/pgp-signature
+Maybe we have to take the "just confuse gcc enough and pray" approach
+on those pointers after all.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNXaWaAAoJEDMEi1NhKgbs+58H/2x9q9i49DCV5AAT8YCXwqRS
-IbZKf0GkQ3d2JZiO20k28iJ7leZOMd+7wl4s0ZtYnwIl/pDx7YM5Ba1f4kJdw7j+
-saZ2v/CEbisBYjVjGfxZ0gy1OrG180hFqs1rdSFn2GF2lCkZVIZj0imeYt2WGYTT
-56d4dQ5uywaMfxCK9h2zF1thF1sclsw1evekK/neb6YhAk39wbZOUb/+TpnmyUfT
-bRQaXkA9XC6H2rrDowmBprvLD/ivYJbpkbQPkYMkHeR6lF/EQ8CukIXa+HjFrpFV
-xyn/bxZpR4TS7JkXmdXyjqnk29k4KWi45X9tw1AL3aPBWW/7u/iu/mcIvKtzyVs=
-=OCZC
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_Feb_2011_09_47_54_+1100_5OXtcYP7aCBQOdat--
+                      Linus
