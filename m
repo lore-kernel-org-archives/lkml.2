@@ -1,183 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1BQMz7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 07:55:59 -0500
-Received: from smtp207.alice.it ([82.57.200.103]:48125 "EHLO smtp207.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310Ab1BQMz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 07:55:57 -0500
-Date: Thu, 17 Feb 2011 13:55:40 +0100
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Alan Ott <alan@signal11.us>
-Cc: Marcin Tolysz <tolysz@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Jiri Kosina <jkosina@suse.cz>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        greg@kroah.com, stern@rowland.harvard.edu
-Subject: Re: [PATCH v4 1/1] hid: Add HID Report Descriptor to sysfs.
-Message-Id: <20110217135540.7a54acb8.ospite@studenti.unina.it>
-In-Reply-To: <1295841018-8561-2-git-send-email-alan@signal11.us>
-References: <20110123225935.GB12488@kroah.com>
-	<1295841018-8561-2-git-send-email-alan@signal11.us>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__17_Feb_2011_13_55_40_+0100_D9_Am/5PXnfpH.nr"
+	id S1756190Ab1BQNG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 08:06:29 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:50553 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751545Ab1BQNG0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 08:06:26 -0500
+Message-ID: <4D5D1D3E.2020107@metafoo.de>
+Date: Thu, 17 Feb 2011 14:06:06 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: Eric Miao <eric.y.miao@gmail.com>, Peter Tyser <ptyser@xes-inc.com>,
+        linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
+References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com> <AANLkTi=yZZgh0v+-_Cw0JudAxxTZuBWeVCEZ-dBtENPw@mail.gmail.com> <4D5D0EAA.9030807@metafoo.de> <201102171321.47704.alexander.stein@systec-electronic.com>
+In-Reply-To: <201102171321.47704.alexander.stein@systec-electronic.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Feb_2011_13_55_40_+0100_D9_Am/5PXnfpH.nr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/17/2011 01:21 PM, Alexander Stein wrote:
+> On Thursday 17 February 2011, 13:03:54 Lars-Peter Clausen wrote:
+>> On 02/17/2011 08:33 AM, Eric Miao wrote:
+>>> On Thu, Feb 17, 2011 at 8:56 AM, Peter Tyser <ptyser@xes-inc.com> wrote:
+>>>> Previously, gpiolib would unconditionally flag all GPIO pins as inputs,
+>>>> regardless of their true state.  This resulted in all GPIO output pins
+>>>> initially being incorrectly identified as "input" in the GPIO sysfs.
+>>>>
+>>>> Since the direction of GPIOs is not known prior to having their
+>>>> direction set, instead set the default direction to "unknown" to prevent
+>>>> user confusion.  A pin with an "unknown" direction can not be written or
+>>>> read via sysfs; it must first be configured as an input or output before
+>>>> it can be used.
+>>>
+>>> Hrm... that's why I don't like the original definition of gpio_request()
+>>> which is vague on the pin configurations.
+>>
+>> Actually it doesn't say anything at all about the current configuration at
+>> all. Requesting a pin grants you exclusive access to that pin, if it
+>> succeeds. So it is solely about ownership and not about configuration.
+> 
+> Well, ownership is a bit misleading here. You must request a GPIO to change 
+> its direction. But to set or get a value this isn't required.
 
-On Sun, 23 Jan 2011 22:50:18 -0500
-Alan Ott <alan@signal11.us> wrote:
+Well, it is not enforced in the actual code, but the GPIO API is based on
+convention and I would consider it a misusage of the API to call
+gpio_{set,get}_value without requesting the pin and having configured its
+direction prior to it.
 
-> Add a new binary sysfs entry called report_descriptor which contains
-> the HID report descriptor.
->=20
-> Signed-off-by: Alan Ott <alan@signal11.us>
+> In general one could expect if you requested a GPIO you are the only one to 
+> call any function on it. On the other hand, this may be bad in some situations 
+> where you want to read a GPIO value from different places.
 
-Adding Marcin Tolysz to CC, he is interested in a mechanism to
-override the hid_descriptor from userspace dynamically.
+Sharing GPIOs in read-only mode, is indeed something that is not covered by the
+GPIO API. It might be worth adding a gpio_request_shared, which would only
+permit setting the direction to input. Futher gpio_request_shared calls would
+be allowed but gpio_request calls would fail.
 
-Marcin, now that this 'report_descriptor' sysfs attribute has been
-accepted as read-only in mainline, maybe you could implement the .write
-method for it if your firmware approach to override hid descriptors
-would not be accepted. Just pointing at an alternative option, not sure
-if it is the best one.
-
-Regards,
-   Antonio
-
-> ---
->  Documentation/ABI/testing/sysfs-driver-hid |   10 ++++++++
->  drivers/hid/hid-core.c                     |   33 ++++++++++++++++++++++=
-++++++
->  2 files changed, 43 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-driver-hid
->=20
-> diff --git a/Documentation/ABI/testing/sysfs-driver-hid b/Documentation/A=
-BI/testing/sysfs-driver-hid
-> new file mode 100644
-> index 0000000..b6490e1
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-driver-hid
-> @@ -0,0 +1,10 @@
-> +What:		For USB devices	: /sys/bus/usb/devices/<busnum>-<devnum>:<config =
-num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/report_descri=
-ptor
-> +		For BT devices	: /sys/class/bluetooth/hci<addr>/<hid-bus>:<vendor-id>:=
-<product-id>.<num>/report_descriptor
-> +		Symlink		: /sys/class/hidraw/hidraw<num>/device/report_descriptor
-> +Date:		Jan 2011
-> +KernelVersion:	2.0.39
-> +Contact:	Alan Ott <alan@signal11.us>
-> +Description:	When read, this file returns the device's raw binary HID
-> +		report descriptor.
-> +		This file cannot be written.
-> +Users:		HIDAPI library (http://www.signal11.us/oss/hidapi)
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index d678cf3..32bbd5d 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1159,6 +1159,32 @@ static bool hid_hiddev(struct hid_device *hdev)
->  	return !!hid_match_id(hdev, hid_hiddev_list);
->  }
-> =20
-> +
-> +static ssize_t
-> +read_report_descriptor(struct file *filp, struct kobject *kobj,
-> +		struct bin_attribute *attr,
-> +		char *buf, loff_t off, size_t count)
-> +{
-> +	struct device *dev =3D container_of(kobj, struct device, kobj);
-> +	struct hid_device *hdev =3D container_of(dev, struct hid_device, dev);
-> +
-> +	if (off >=3D hdev->rsize)
-> +		return 0;
-> +
-> +	if (off + count > hdev->rsize)
-> +		count =3D hdev->rsize - off;
-> +
-> +	memcpy(buf, hdev->rdesc + off, count);
-> +
-> +	return count;
-> +}
-> +
-> +static struct bin_attribute dev_bin_attr_report_desc =3D {
-> +	.attr =3D { .name =3D "report_descriptor", .mode =3D 0444 },
-> +	.read =3D read_report_descriptor,
-> +	.size =3D HID_MAX_DESCRIPTOR_SIZE,
-> +};
-> +
->  int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
->  {
->  	static const char *types[] =3D { "Device", "Pointer", "Mouse", "Device",
-> @@ -1169,6 +1195,7 @@ int hid_connect(struct hid_device *hdev, unsigned i=
-nt connect_mask)
->  	char buf[64];
->  	unsigned int i;
->  	int len;
-> +	int ret;
-> =20
->  	if (hdev->quirks & HID_QUIRK_HIDDEV_FORCE)
->  		connect_mask |=3D (HID_CONNECT_HIDDEV_FORCE | HID_CONNECT_HIDDEV);
-> @@ -1230,6 +1257,11 @@ int hid_connect(struct hid_device *hdev, unsigned =
-int connect_mask)
->  		bus =3D "<UNKNOWN>";
->  	}
-> =20
-> +	ret =3D device_create_bin_file(&hdev->dev, &dev_bin_attr_report_desc);
-> +	if (ret)
-> +		hid_warn(hdev,
-> +			 "can't create sysfs report descriptor attribute err: %d\n", ret);
-> +
->  	hid_info(hdev, "%s: %s HID v%x.%02x %s [%s] on %s\n",
->  		 buf, bus, hdev->version >> 8, hdev->version & 0xff,
->  		 type, hdev->name, hdev->phys);
-> @@ -1240,6 +1272,7 @@ EXPORT_SYMBOL_GPL(hid_connect);
-> =20
->  void hid_disconnect(struct hid_device *hdev)
->  {
-> +	device_remove_bin_file(&hdev->dev, &dev_bin_attr_report_desc);
->  	if (hdev->claimed & HID_CLAIMED_INPUT)
->  		hidinput_disconnect(hdev);
->  	if (hdev->claimed & HID_CLAIMED_HIDDEV)
-> --=20
-> 1.7.0.4
->=20
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
-
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Thu__17_Feb_2011_13_55_40_+0100_D9_Am/5PXnfpH.nr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk1dGswACgkQ5xr2akVTsAG1CwCgrDIg269TM9eo4FP9DTLkHEAX
-3ucAn1S/8qDuImX6hmPt9Ct2aTGn7dVP
-=eoXW
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Feb_2011_13_55_40_+0100_D9_Am/5PXnfpH.nr--
+- Lars
