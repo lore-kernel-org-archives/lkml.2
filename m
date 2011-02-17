@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab1BQPqm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:46:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52316 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756528Ab1BQPqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:46:40 -0500
-Date: Thu, 17 Feb 2011 16:46:39 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Arvind R <arvino55@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.37 2/4] edac: correct i82975x mci initialisation
-In-Reply-To: <AANLkTimYvL7yn-X3ahUEt9EL4OVWQ=K-Spfc47qodh9J@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1102171646230.2160@pobox.suse.cz>
-References: <AANLkTimYvL7yn-X3ahUEt9EL4OVWQ=K-Spfc47qodh9J@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756744Ab1BQPqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:46:48 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:35248 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab1BQPqq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Thu, 17 Feb 2011 10:46:46 -0500
+Message-Id: <4D5D512902000078000326EE@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 17 Feb 2011 15:47:37 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: don't call dump_stack() from
+	 arch_trigger_all_cpu_backtrace_handler()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jan 2011, Arvind R wrote:
+show_regs() already prints two(!) stack traces, no need for a third one.
 
-> Subject: [PATCH 2.6.37 2/4] edac: correct i82975x mci initialisation
-> 
-> corrected mtype, and added dev_name,scrubmode initialisers
-> in i82975x struct mem_ctl initialisation
-> 
-> Signed-off-by: Arvind R. <arvino55@gmail.com>
-> ---
->  i82975x_edac.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Applied.
+---
+ arch/x86/kernel/apic/hw_nmi.c |    1 -
+ 1 file changed, 1 deletion(-)
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+--- 2.6.38-rc5/arch/x86/kernel/apic/hw_nmi.c
++++ 2.6.38-rc5-x86-backtrace-all-no-dump_stack/arch/x86/kernel/apic/hw_nmi.c
+@@ -83,7 +83,6 @@ arch_trigger_all_cpu_backtrace_handler(s
+ 		arch_spin_lock(&lock);
+ 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+ 		show_regs(regs);
+-		dump_stack();
+ 		arch_spin_unlock(&lock);
+ 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+ 		return NOTIFY_STOP;
+
+
+
