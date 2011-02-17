@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab1BQS6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 13:58:08 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:55693 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757741Ab1BQS6F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 13:58:05 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20110216185234.GA11636@tiehlicka.suse.cz>
-	<20110216193700.GA6377@elte.hu>
-	<AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
-	<AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
-	<20110217090910.GA3781@tiehlicka.suse.cz>
-	<AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
-	<20110217163531.GF14168@elte.hu>
-Date: Thu, 17 Feb 2011 10:57:54 -0800
-In-Reply-To: <20110217163531.GF14168@elte.hu> (Ingo Molnar's message of "Thu,
-	17 Feb 2011 17:35:31 +0100")
-Message-ID: <m1pqqqfpzh.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1757779Ab1BQS7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 13:59:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757412Ab1BQS7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 13:59:19 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/2xbpyW1E7LNFjR9w7OIROL1za0tXHMq0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Ingo Molnar <mingo@elte.hu>
-X-Spam-Relay-Country: 
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+In-Reply-To: Oleg Nesterov's message of  Thursday, 17 February 2011 17:49:06 +0100 <20110217164906.GA5167@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org>
+	<20110207174821.GA1237@redhat.com>
+	<20110209141803.GH3770@htj.dyndns.org>
+	<201102132325.55353.vda.linux@googlemail.com>
+	<20110214151340.GP18742@htj.dyndns.org>
+	<AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+	<20110216215157.GA6054@host1.dyn.jankratochvil.net>
+	<20110217164906.GA5167@redhat.com>
+X-Zippy-Says: After this, I'm going to BURN some RUBBER!!
+Message-Id: <20110217185847.5E9D31806EE@magilla.sf.frob.com>
+Date: Thu, 17 Feb 2011 10:58:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@elte.hu> writes:
+> OK... Yes, perhaps PTRACE_{DETACH,CONT}(SIGCONT) should override
+> SIGNAL_STOP_STOPPED too. This makes sense, and this connects to
+> the problem with SIGNAL_STOP_DEQUEUED I mentioned above.
 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
->
->> And in addition, I don't see why others wouldn't see it (I've got
->> DEBUG_PAGEALLOC and SLUB_DEBUG_ON turned on myself, and I know others
->> do too).
->
-> I've done extensive randconfig testing and no crash triggers for typical workloads 
-> on a typical dual-core PC. If there's a generic crashes in there my tests tend to 
-> trigger them at least 10x as often as regular testers ;-) But the tests are still 
-> only statistical so the race could simply be special and missed by the tests.
->
->> So I'm wondering what triggers it. Must be something subtle.
->
-> I think what Michal did before he got the corruption seemed somewhat atypical: 
-> suspend/resume and udevd wifi twiddling, right?
->
-> Now, Eric's crashes look similar - and he does not seem to have done anything 
-> special to trigger the crashes.
->
-> Eric, could you possibly describe your system in a bit more detail, does it do 
-> suspend and does the box use wifi actively? Anything atypical in your setup or usage 
-> that doesnt match a bog-standard whitebox PC with LAN? Swap to file? NFS? FUSE? 
-> Anything that is even just borderline atypical.
+It's not at all clear this really does make sense.  I think this may
+reflect a (common) misunderstanding of what the SIGCONT semantics are
+(aside from ptrace).  Resuming the process is not the action of
+delivering SIGCONT.  Rather, *generating* SIGCONT is what resumes the
+process--it does so immediately, and regardless of whether SIGCONT is
+blocked or ignored.  (It's also at generation-time that its other
+magical semantics apply, of clearing all pending stop signals.)  
+By the time SIGCONT is actually delivered, it is no different than
+SIGWINCH.  (Conversely, with stop signals, generation time is when
+the magic semantics of clearing pending SIGCONT occur, but the actual
+stopping is indeed the delivery-time action.)
 
-10G RAM
-2G Swap
-dual socket system
-4 cores per socket
-No hyperthreading.
+In ptrace, the report of a signal to the tracer is that it is about to
+be delivered, not that it was just generated.  e.g., it won't be
+reported immediately if it was blocked, only when it's unblocked and
+being delivered.  Likewise, a signal given to PTRACE_CONT et al is not
+generating a signal, it is continuing the delivery path of a signal.
+So IMHO what makes most sense given what all the normal semantics are
+is that PTRACE_CONT,SIGCONT does nothing magical, and generating a
+fresh SIGCONT (i.e. kill) is the way you resume from job control stop.
+If ptrace is involved, that will mean waking up long enough to dequeue
+the SIGCONT and get a new ptrace stop for that.  (Things are a bit
+more subtle if there are multiple threads.)
 
-fedora 14
-ext4 on all filesystems
 
-The biggest difference is I beat the system to death with automated builds.
-
-I was about to say this happens with DEBUG_PAGEALLOC enabled but it
-appears that options keeps eluding my fingers when I have a few minutes
-to play with it.  Perhaps this time will be the charm.
-
-The biggest difference may be that I am constantly stressing the system
-to the edge of triggering the OOM killer.  My builds and tests are
-greedy when it comes to memory.
-
-I guess also I only see the bad PMD on processes that exit.  So it may
-be that it is a matter of timing to see it.
-
-Eric
+Thanks,
+Roland
