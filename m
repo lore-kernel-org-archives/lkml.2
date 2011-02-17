@@ -1,183 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab1BQROr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:14:47 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56075 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab1BQROl (ORCPT
+	id S1757201Ab1BQRPS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:15:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36106 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757139Ab1BQRLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:14:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH 06/12] unicore32 additional architecture files: low-level lib: misc
-Date: Thu, 17 Feb 2011 18:14:28 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        "'Greg KH'" <greg@kroah.com>
-References: <014d01cbcdae$091bc6d0$1b535470$@mprc.pku.edu.cn>
-In-Reply-To: <014d01cbcdae$091bc6d0$1b535470$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102171814.29081.arnd@arndb.de>
-X-Provags-ID: V02:K0:Rbk1+gVAa9ZIH4uxCx9vtla911T6JaTjpAN8+/n3Mu/
- HwIYm8zZyjqwVqMdEk7EWSSCjaHN+AGeSXQvGBbUdi7yDjvD8Q
- yIRMlnYkxuIoOrQ2kLcXAgaMVMVgxvG9zY6GdTC2LCUy47AGq7
- u2ZlY8TLaVTL61XAOgUQgM+3BBcfRwG490jesdmD8vjI3KTsgJ
- KuaC/jDekENALVOLVAYfw==
+	Thu, 17 Feb 2011 12:11:05 -0500
+Message-Id: <20110217162124.457572646@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Thu, 17 Feb 2011 17:19:51 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH 3/3] mm: Simplify anon_vma refcounts
+References: <20110217161948.045410404@chello.nl>
+Content-Disposition: inline; filename=peter_zijlstra-mm-simplify_anon_vma_refcounts.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 February 2011, Guan Xuetao wrote:
-> diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
-> new file mode 100644
-> index 0000000..d73457c
-> --- /dev/null
-> +++ b/arch/unicore32/include/asm/io.h
-> @@ -0,0 +1,52 @@
-> +/*
-> + * linux/arch/unicore32/include/asm/io.h
-> + *
-> + * Code specific to PKUnity SoC and UniCore ISA
-> + *
-> + * Copyright (C) 2001-2010 GUAN Xue-tao
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef __UNICORE_IO_H__
-> +#define __UNICORE_IO_H__
-> +
-> +#ifdef __KERNEL__
-> +
-> +#include <asm/byteorder.h>
-> +#include <asm/memory.h>
-> +#include <asm/system.h>
-> +
-> +#include <asm-generic/io.h>
-> +
+This patch changes the anon_vma refcount to be 0 when the object is
+free. It does this by adding 1 ref to being in use in the anon_vma
+structure (iow. the anon_vma->head list is not empty).
 
-I just realized that the generic io.h implementation is actually wrong here, because it does
-not offset the PIO port numbers with the PCI I/O range. To get this right, you need
-the patch below, and also need to define PCI_IOBASE appropriately.
+This allows a simpler release scheme without having to check both the
+refcount and the list as well as avoids taking a ref for each entry
+on the list.
 
-	Arnd
-8<-------
-asm-generic: fix inX/outX functions for architectures that have PCI
-
-The definitions for the PC-style PIO functions in asm-generic/io.h were
-meant as dummies so you could compile code on architectures without
-ISA and PCI buses. However, unicore32 actually wants to use them
-with a real PCI bus, so they need to be defined to actually address
-the register window holding the I/O ports.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 4644c9a..e0ffa3d 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -94,6 +94,10 @@ static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
- #define writeq(b,addr) __raw_writeq(__cpu_to_le64(b),addr)
- #endif
+ include/linux/rmap.h |   11 +++++--
+ mm/rmap.c            |   79 ++++++++++++++++++---------------------------------
+ 2 files changed, 37 insertions(+), 53 deletions(-)
+
+Index: linux-2.6/include/linux/rmap.h
+===================================================================
+--- linux-2.6.orig/include/linux/rmap.h
++++ linux-2.6/include/linux/rmap.h
+@@ -73,7 +73,13 @@ static inline void get_anon_vma(struct a
+ 	atomic_inc(&anon_vma->refcount);
+ }
  
-+#ifndef PCI_IOBASE
-+#define PCI_IOBASE ((void __iomem *) 0)
-+#endif
+-void put_anon_vma(struct anon_vma *);
++void __put_anon_vma(struct anon_vma *anon_vma);
 +
- /*****************************************************************************/
++static inline void put_anon_vma(struct anon_vma *anon_vma)
++{
++	if (atomic_dec_and_test(&anon_vma->refcount))
++		__put_anon_vma(anon_vma);
++}
+ 
+ static inline struct anon_vma *page_anon_vma(struct page *page)
+ {
+@@ -116,7 +122,6 @@ void unlink_anon_vmas(struct vm_area_str
+ int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
+ int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
+ void __anon_vma_link(struct vm_area_struct *);
+-void anon_vma_free(struct anon_vma *);
+ 
+ static inline void anon_vma_merge(struct vm_area_struct *vma,
+ 				  struct vm_area_struct *next)
+@@ -125,6 +130,8 @@ static inline void anon_vma_merge(struct
+ 	unlink_anon_vmas(next);
+ }
+ 
++struct anon_vma *page_get_anon_vma(struct page *page);
++
  /*
-  * traditional input/output functions
-@@ -101,32 +105,32 @@ static inline void __raw_writeq(u64 b, volatile void __iomem *addr)
+  * rmap interfaces called when adding or removing pte of page
+  */
+Index: linux-2.6/mm/rmap.c
+===================================================================
+--- linux-2.6.orig/mm/rmap.c
++++ linux-2.6/mm/rmap.c
+@@ -67,11 +67,24 @@ static struct kmem_cache *anon_vma_chain
  
- static inline u8 inb(unsigned long addr)
+ static inline struct anon_vma *anon_vma_alloc(void)
  {
--	return readb((volatile void __iomem *) addr);
-+	return readb(addr + PCI_IOBASE);
+-	return kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
++	struct anon_vma *anon_vma;
++
++	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
++	if (anon_vma) {
++		atomic_set(&anon_vma->refcount, 1);
++		/*
++		 * Initialise the anon_vma root to point to itself. If called
++		 * from fork, the root will be reset to the parents anon_vma.
++		 */
++		anon_vma->root = anon_vma;
++	}
++
++	return anon_vma;
  }
  
- static inline u16 inw(unsigned long addr)
+-void anon_vma_free(struct anon_vma *anon_vma)
++static inline void anon_vma_free(struct anon_vma *anon_vma)
  {
--	return readw((volatile void __iomem *) addr);
-+	return readw(addr + PCI_IOBASE);
++	VM_BUG_ON(atomic_read(&anon_vma->refcount));
+ 	kmem_cache_free(anon_vma_cachep, anon_vma);
  }
  
- static inline u32 inl(unsigned long addr)
- {
--	return readl((volatile void __iomem *) addr);
-+	return readl(addr + PCI_IOBASE);
+@@ -133,11 +146,6 @@ int anon_vma_prepare(struct vm_area_stru
+ 			if (unlikely(!anon_vma))
+ 				goto out_enomem_free_avc;
+ 			allocated = anon_vma;
+-			/*
+-			 * This VMA had no anon_vma yet.  This anon_vma is
+-			 * the root of any anon_vma tree that might form.
+-			 */
+-			anon_vma->root = anon_vma;
+ 		}
+ 
+ 		anon_vma_lock(anon_vma);
+@@ -156,7 +164,7 @@ int anon_vma_prepare(struct vm_area_stru
+ 		anon_vma_unlock(anon_vma);
+ 
+ 		if (unlikely(allocated))
+-			anon_vma_free(allocated);
++			put_anon_vma(allocated);
+ 		if (unlikely(avc))
+ 			anon_vma_chain_free(avc);
+ 	}
+@@ -241,9 +249,9 @@ int anon_vma_fork(struct vm_area_struct 
+ 	 */
+ 	anon_vma->root = pvma->anon_vma->root;
+ 	/*
+-	 * With KSM refcounts, an anon_vma can stay around longer than the
+-	 * process it belongs to.  The root anon_vma needs to be pinned
+-	 * until this anon_vma is freed, because the lock lives in the root.
++	 * With refcounts, an anon_vma can stay around longer than the
++	 * process it belongs to. The root anon_vma needs to be pinned until
++	 * this anon_vma is freed, because the lock lives in the root.
+ 	 */
+ 	get_anon_vma(anon_vma->root);
+ 	/* Mark this anon_vma as the one where our new (COWed) pages go. */
+@@ -253,7 +261,7 @@ int anon_vma_fork(struct vm_area_struct 
+ 	return 0;
+ 
+  out_error_free_anon_vma:
+-	anon_vma_free(anon_vma);
++	put_anon_vma(anon_vma);
+  out_error:
+ 	unlink_anon_vmas(vma);
+ 	return -ENOMEM;
+@@ -272,15 +280,11 @@ static void anon_vma_unlink(struct anon_
+ 	list_del(&anon_vma_chain->same_anon_vma);
+ 
+ 	/* We must garbage collect the anon_vma if it's empty */
+-	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->refcount);
++	empty = list_empty(&anon_vma->head);
+ 	anon_vma_unlock(anon_vma);
+ 
+-	if (empty) {
+-		/* We no longer need the root anon_vma */
+-		if (anon_vma->root != anon_vma)
+-			put_anon_vma(anon_vma->root);
+-		anon_vma_free(anon_vma);
+-	}
++	if (empty)
++		put_anon_vma(anon_vma);
  }
  
- static inline void outb(u8 b, unsigned long addr)
- {
--	writeb(b, (volatile void __iomem *) addr);
-+	writeb(b, addr + PCI_IOBASE);
+ void unlink_anon_vmas(struct vm_area_struct *vma)
+@@ -1482,38 +1486,11 @@ int try_to_munlock(struct page *page)
+ 		return try_to_unmap_file(page, TTU_MUNLOCK);
  }
  
- static inline void outw(u16 b, unsigned long addr)
- {
--	writew(b, (volatile void __iomem *) addr);
-+	writew(b, addr + PCI_IOBASE);
- }
- 
- static inline void outl(u32 b, unsigned long addr)
- {
--	writel(b, (volatile void __iomem *) addr);
-+	writel(b, addr + PCI_IOBASE);
- }
- 
- #define inb_p(addr)	inb(addr)
-@@ -213,32 +217,32 @@ static inline void outsl(unsigned long addr, const void *buffer, int count)
- 
- static inline void readsl(const void __iomem *addr, void *buf, int len)
- {
--	insl((unsigned long)addr, buf, len);
-+	insl(addr - PCI_IOBASE, buf, len);
- }
- 
- static inline void readsw(const void __iomem *addr, void *buf, int len)
- {
--	insw((unsigned long)addr, buf, len);
-+	insw(addr - PCI_IOBASE, buf, len);
- }
- 
- static inline void readsb(const void __iomem *addr, void *buf, int len)
- {
--	insb((unsigned long)addr, buf, len);
-+	insb(addr - PCI_IOBASE, buf, len);
- }
- 
- static inline void writesl(const void __iomem *addr, const void *buf, int len)
- {
--	outsl((unsigned long)addr, buf, len);
-+	outsl(addr - PCI_IOBASE, buf, len);
- }
- 
- static inline void writesw(const void __iomem *addr, const void *buf, int len)
- {
--	outsw((unsigned long)addr, buf, len);
-+	outsw(addr - PCI_IOBASE, buf, len);
- }
- 
- static inline void writesb(const void __iomem *addr, const void *buf, int len)
- {
--	outsb((unsigned long)addr, buf, len);
-+	outsb(addr - PCI_IOBASE, buf, len);
- }
- 
- #ifndef CONFIG_GENERIC_IOMAP
-@@ -269,8 +273,9 @@ static inline void writesb(const void __iomem *addr, const void *buf, int len)
- 	outsl((unsigned long) (p), (src), (count))
- #endif /* CONFIG_GENERIC_IOMAP */
- 
+-/*
+- * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
+- * if necessary.  Be careful to do all the tests under the lock.  Once
+- * we know we are the last user, nobody else can get a reference and we
+- * can do the freeing without the lock.
+- */
+-void put_anon_vma(struct anon_vma *anon_vma)
+-{
+-	BUG_ON(atomic_read(&anon_vma->refcount) <= 0);
+-	if (atomic_dec_and_lock(&anon_vma->refcount, &anon_vma->root->lock)) {
+-		struct anon_vma *root = anon_vma->root;
+-		int empty = list_empty(&anon_vma->head);
+-		int last_root_user = 0;
+-		int root_empty = 0;
 -
--#define IO_SPACE_LIMIT 0xffffffff
-+#ifndef IO_SPACE_LIMIT
-+#define IO_SPACE_LIMIT 0xffff
-+#endif
+-		/*
+-		 * The refcount on a non-root anon_vma got dropped.  Drop
+-		 * the refcount on the root and check if we need to free it.
+-		 */
+-		if (empty && anon_vma != root) {
+-			BUG_ON(atomic_read(&root->refcount) <= 0);
+-			last_root_user = atomic_dec_and_test(&root->refcount);
+-			root_empty = list_empty(&root->head);
+-		}
+-		anon_vma_unlock(anon_vma);
+-
+-		if (empty) {
+-			anon_vma_free(anon_vma);
+-			if (root_empty && last_root_user)
+-				anon_vma_free(root);
+-		}
+-	}
++void __put_anon_vma(struct anon_vma *anon_vma)
++{
++	if (anon_vma->root != anon_vma)
++		put_anon_vma(anon_vma->root);
++	anon_vma_free(anon_vma);
+ }
  
- #ifdef __KERNEL__
- 
+ #ifdef CONFIG_MIGRATION
+
+
