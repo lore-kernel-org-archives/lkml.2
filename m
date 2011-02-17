@@ -1,115 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab1BQIVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 03:21:55 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41606 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751630Ab1BQIVx (ORCPT
+	id S1754124Ab1BQI3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 03:29:11 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:16416 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab1BQI3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 03:21:53 -0500
-X-Sasl-enc: eu2P+ubGtCpIEIDnoaqa4zar7pfvabZ3YveWiojkryyh 1297930911
-Message-ID: <4D5CDAD0.7030006@ladisch.de>
-Date: Thu, 17 Feb 2011 09:22:40 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Thu, 17 Feb 2011 03:29:08 -0500
+X-IronPort-AV: E=Sophos;i="4.60,485,1291611600"; 
+   d="scan'208";a="136293623"
+Subject: Re: [Xen-devel] [PATCH] Xen PCI fronted fixes for 2.6.39
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>
+In-Reply-To: <1297894638-28007-1-git-send-email-konrad.wilk@oracle.com>
+References: <1297894638-28007-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Thu, 17 Feb 2011 08:29:04 +0000
+Message-ID: <1297931344.16356.1268.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-CC: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] hwmon: (k10temp) add support for AMD Family 12h/14h CPUs
-Content-Type: text/plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the PCI ID to support the internal temperature sensor of the
-AMD "Llano" and "Brazos" processor families.
+On Wed, 2011-02-16 at 22:17 +0000, Konrad Rzeszutek Wilk wrote:
+> I am proposing these three patches for 2.6.39.
+> 
+> The first is to take advantage of the new method of requesting
+> a Linux IRQ and providing the Xen PIRQ value. The second
+> makes it possible for a PV guest to bootup if the backend has provided
+> incorrect values. [*2]
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
----
- Documentation/hwmon/k10temp |    8 +++++++-
- drivers/hwmon/Kconfig       |    6 +++---
- drivers/hwmon/k10temp.c     |    5 +++--
- 3 files changed, 13 insertions(+), 6 deletions(-)
+I approve of being liberal in what is accepted but do we also have a
+handle on why the backend is providing incorrect values in the first
+place?
 
---- a/Documentation/hwmon/k10temp
-+++ b/Documentation/hwmon/k10temp
-@@ -9,6 +9,8 @@ Supported chips:
-   Socket S1G3: Athlon II, Sempron, Turion II
- * AMD Family 11h processors:
-   Socket S1G2: Athlon (X2), Sempron (X2), Turion X2 (Ultra)
-+* AMD Family 12h processors: "Llano"
-+* AMD Family 14h processors: "Brazos" (C/E/G-Series)
- 
-   Prefix: 'k10temp'
-   Addresses scanned: PCI space
-@@ -17,10 +19,14 @@ Supported chips:
-     http://support.amd.com/us/Processor_TechDocs/31116.pdf
-   BIOS and Kernel Developer's Guide (BKDG) for AMD Family 11h Processors:
-     http://support.amd.com/us/Processor_TechDocs/41256.pdf
-+  BIOS and Kernel Developer's Guide (BKDG) for AMD Family 14h Models 00h-0Fh Processors:
-+    http://support.amd.com/us/Processor_TechDocs/43170.pdf
-   Revision Guide for AMD Family 10h Processors:
-     http://support.amd.com/us/Processor_TechDocs/41322.pdf
-   Revision Guide for AMD Family 11h Processors:
-     http://support.amd.com/us/Processor_TechDocs/41788.pdf
-+  Revision Guide for AMD Family 14h Models 00h-0Fh Processors:
-+    http://support.amd.com/us/Processor_TechDocs/47534.pdf
-   AMD Family 11h Processor Power and Thermal Data Sheet for Notebooks:
-     http://support.amd.com/us/Processor_TechDocs/43373.pdf
-   AMD Family 10h Server and Workstation Processor Power and Thermal Data Sheet:
-@@ -34,7 +40,7 @@ Description
- -----------
- 
- This driver permits reading of the internal temperature sensor of AMD
--Family 10h and 11h processors.
-+Family 10h/11h/12h/14h processors.
- 
- All these processors have a sensor, but on those for Socket F or AM2+,
- the sensor may return inconsistent values (erratum 319).  The driver
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -238,13 +238,13 @@ config SENSORS_K8TEMP
- 	  will be called k8temp.
- 
- config SENSORS_K10TEMP
--	tristate "AMD Phenom/Sempron/Turion/Opteron temperature sensor"
-+	tristate "AMD Family 10h/11h/12h/14h temperature sensor"
- 	depends on X86 && PCI
- 	help
- 	  If you say yes here you get support for the temperature
- 	  sensor(s) inside your CPU. Supported are later revisions of
--	  the AMD Family 10h and all revisions of the AMD Family 11h
--	  microarchitectures.
-+	  the AMD Family 10h and all revisions of the AMD Family 11h,
-+	  12h (Llano), and 14h (Brazos) microarchitectures.
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called k10temp.
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -1,5 +1,5 @@
- /*
-- * k10temp.c - AMD Family 10h/11h processor hardware monitoring
-+ * k10temp.c - AMD Family 10h/11h/12h/14h processor hardware monitoring
-  *
-  * Copyright (c) 2009 Clemens Ladisch <clemens@ladisch.de>
-  *
-@@ -25,7 +25,7 @@
- #include <linux/pci.h>
- #include <asm/processor.h>
- 
--MODULE_DESCRIPTION("AMD Family 10h/11h CPU core temperature monitor");
-+MODULE_DESCRIPTION("AMD Family 10h/11h/12h/14h CPU core temperature monitor");
- MODULE_AUTHOR("Clemens Ladisch <clemens@ladisch.de>");
- MODULE_LICENSE("GPL");
- 
-@@ -208,6 +208,7 @@ static void __devexit k10temp_remove(str
- static const struct pci_device_id k10temp_id_table[] = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_11H_NB_MISC) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, k10temp_id_table);
+> 
+> Lastly, the third is to remove deprecated code.
+> 
+> Konrad Rzeszutek Wilk (2):
+>       pci/xen: Use xen_allocate_pirq_msi
+>       xen-pcifront: Sanity check the MSI/MSI-X values
+> 
+> Tejun Heo (1):
+>       xen-pcifront: don't use flush_scheduled_work()
+> 
+>  arch/x86/pci/xen.c         |    6 +++---
+>  drivers/pci/xen-pcifront.c |   20 +++++++++++++++-----
+>  2 files changed, 18 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+> index 25cd4a0..6432f75 100644
+> --- a/arch/x86/pci/xen.c
+> +++ b/arch/x86/pci/xen.c
+> @@ -157,14 +157,14 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+>  		goto error;
+>  	i = 0;
+>  	list_for_each_entry(msidesc, &dev->msi_list, list) {
+> -		irq = xen_allocate_pirq(v[i], 0, /* not sharable */
+> +		xen_allocate_pirq_msi(
+>  			(type == PCI_CAP_ID_MSIX) ?
+> -			"pcifront-msi-x" : "pcifront-msi");
+> +			"pcifront-msi-x" : "pcifront-msi",
+> +			&irq, &v[i], XEN_ALLOC_IRQ);
+>  		if (irq < 0) {
+>  			ret = -1;
+>  			goto free;
+>  		}
+> -
+>  		ret = set_irq_msi(irq, msidesc);
+>  		if (ret)
+>  			goto error_while;
+> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+> index 3a5a6fc..dd615d9 100644
+> --- a/drivers/pci/xen-pcifront.c
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -277,13 +277,20 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
+>  	if (likely(!err)) {
+>  		if (likely(!op.value)) {
+>  			/* we get the result */
+> -			for (i = 0; i < nvec; i++)
+> +			for (i = 0; i < nvec; i++) {
+> +				if (op.msix_entries[i].vector <= 0) {
+> +					dev_warn(&dev->dev, "MSI-X entry %d" \
+> +						" is zero!\n", i);
+> +					err = -EINVAL;
+> +					continue;
+> +				}
+>  				*(*vector+i) = op.msix_entries[i].vector;
+> -			return 0;
+> +			}
+> +			return err;
+>  		} else {
+>  			printk(KERN_DEBUG "enable msix get value %x\n",
+>  				op.value);
+> -			return op.value;
+> +			return err;
+>  		}
+>  	} else {
+>  		dev_err(&dev->dev, "enable msix get err %x\n", err);
+> @@ -325,6 +332,10 @@ static int pci_frontend_enable_msi(struct pci_dev *dev, int **vector)
+>  	err = do_pci_op(pdev, &op);
+>  	if (likely(!err)) {
+>  		*(*vector) = op.value;
+> +		if (op.value <= 0) {
+> +			dev_warn(&dev->dev, "MSI entry is zero!\n");
+> +			err = -EINVAL;
+> +		}
+>  	} else {
+>  		dev_err(&dev->dev, "pci frontend enable msi failed for dev "
+>  				    "%x:%x\n", op.bus, op.devfn);
+> @@ -733,8 +744,7 @@ static void free_pdev(struct pcifront_device *pdev)
+>  
+>  	pcifront_free_roots(pdev);
+>  
+> -	/*For PCIE_AER error handling job*/
+> -	flush_scheduled_work();
+> +	cancel_work_sync(&pdev->op_work);
+>  
+>  	if (pdev->irq >= 0)
+>  		unbind_from_irqhandler(pdev->irq, pdev);
+> 
+> 
+> [*2]: as so:
+> 
+>     0.877864] e1000e: Intel(R) PRO/1000 Network Driver - 1.2.20-k2
+> [    0.877874] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
+> [    0.877957] e1000e 0000:00:00.0: enabling device (0000 -> 0002)
+> [    0.878054] e1000e 0000:00:00.0: Xen PCI mapped GSI16 to IRQ27
+> [    0.878056] e1000e 0000:00:00.0: setting latency timer to 64
+> [    0.879924] e1000e 0000:00:00.0: MSI-X entry 0 is zero!
+> [    0.879935] e1000e 0000:00:00.0: MSI-X entry 1 is zero!
+> [    0.879940] e1000e 0000:00:00.0: MSI-X entry 2 is zero!
+> [    0.880207] e1000e 0000:00:00.0: (unregistered net_device): Failed to initialize MSI-X interrupts.  Falling back to MSI interrupts.
+> [    0.880730] e1000e 0000:00:00.0: MSI entry is zero!
+> [    0.880788] e1000e 0000:00:00.0: (unregistered net_device): Failed to initialize MSI interrupts.  Falling back to legacy interrupts.
+> [    0.880945] e1000e 0000:00:00.0: Disabling ASPM L0s 
+> [    0.977188] e1000e 0000:00:00.0: eth0: (PCI Express:2.5GB/s:Width x1) 00:1b:21:61:49:00
+> [    0.977201] e1000e 0000:00:00.0: eth0: Intel(R) PRO/1000 Network Connection
+> [    0.977217] e1000e 0000:00:00.0: eth0: MAC: 3, PHY: 8, PBA No: E46981-003
+> ...
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
+
+
