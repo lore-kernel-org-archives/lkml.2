@@ -1,163 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab1BQVul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 16:50:41 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:29008 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab1BQVuj convert rfc822-to-8bit (ORCPT
+	id S932509Ab1BQVzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 16:55:50 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34990 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755963Ab1BQVzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 16:50:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=psMinQe2LHqoRTvkSvM1XBXWhbN/X0GrDRekL8SdD0SMl8r080eFcGU5YrwmK+Za2N
-         +O62uezIOq3vY29+CR2g==
+	Thu, 17 Feb 2011 16:55:46 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110217212821.3967.22439.stgit@mike.mtv.corp.google.com>
-References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com> <20110217212821.3967.22439.stgit@mike.mtv.corp.google.com>
-From: Tim Hockin <thockin@google.com>
-Date: Thu, 17 Feb 2011 13:50:15 -0800
-Message-ID: <AANLkTi=_8iU+QVTo+bDUjDc=md7E=fW6HpNuf_EFW2Nn@mail.gmail.com>
-Subject: Re: [PATCH v1 5/5] firmware: Add documentation for /sys/firmware/dmi
-To: Mike Waychison <mikew@google.com>
-Cc: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Robert Lippert <rlippert@google.com>, Jon Mayer <jonmayer@google.com>,
-        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
-        linux-kernel@vger.kernel.org, David Hendrix <dhendrix@chromium.org>,
-        linux-api@vger.kernel.org
+In-Reply-To: <20110217.131702.112601300.davem@davemloft.net>
+References: <AANLkTi=bgmRwGXEE_wriYo-5gmyaB43pMUzHf7idiK0k@mail.gmail.com>
+ <20110217.130115.71101941.davem@davemloft.net> <AANLkTinA-OP69fqf5jLfedk=dL2vmwdUyzn5E6FHR=Zw@mail.gmail.com>
+ <20110217.131702.112601300.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 13:54:57 -0800
+Message-ID: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
+To: David Miller <davem@davemloft.net>
+Cc: dtor@vmware.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
+        rusty@rustcorp.com.au, linux-m68k@vger.kernel.org,
+        linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 1:28 PM, Mike Waychison <mikew@google.com> wrote:
-> Document the new ABI added by the dmi-sysfs module.
+On Thu, Feb 17, 2011 at 1:17 PM, David Miller <davem@davemloft.net> wrote:
+>> EVERY SINGLE OF YOUR ARGUMENTS WORK FOR "pointer" TOO!
 >
-> Signed-off-by: Mike Waychison <mikew@google.com>
-> ---
->  Documentation/ABI/testing/sysfs-firmware-dmi |  101 ++++++++++++++++++++++++++
->  1 files changed, 101 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-firmware-dmi
->
-> diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
-> new file mode 100644
-> index 0000000..c6526b0
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-firmware-dmi
-> @@ -0,0 +1,101 @@
-> +What:          /sys/firmware/dmi/
-> +Date:          February 2011
-> +Contact:       Mike Waychison <mikew@google.com>
-> +Description:
-> +               Many machine's firmware (x86 and ia64) export DMI /
+> It at least will not happen at the current time, because GCC only
+> plays these games on aggregates.
 
-machines'
+So? Do they actually promise to never do it for pointers? What makes
+aggregates so special? Rather than just happenstance?
 
-> +               SMBIOS tables to the operating system.  Getting at this
-> +               information is often valuable to userland, especially in
-> +               cases where there are OEM extensions used.
-> +
-> +               The kernel itself does not rely on the majority of the
-> +               information in these tables being correct.  It equally
-> +               cannot ensure that the data as exported to userland is
-> +               without error either.
-> +
-> +               DMI is structured as a large table of entries, where
-> +               each entry has a common header indicating the type and
-> +               length of the entry, as well as 'handle' that is
-> +               supposed to be unique amongst all entries.
-> +
-> +               Some entries are required by the specification, but many
-> +               others are optional.  In general though, user's should
+I wouldn't be surprised if the structure alignment isn't even about
+something even subtler and totally random, like size of structure (ie
+"don't align small structures")
 
-users
+> Also, for exception tables, we've avoided this problem because
+> we emit the exception tables by hand using inline asm and therefore
+> explicitly control all aspects of the alignment and size.
 
-> +               never expect to find a specific entry type on their
-> +               system unless they know for certain what their firmware
-> +               is doing.  Machine to machine will vary.
-> +
-> +               Multiple entries of the same type are allowed.  In order
-> +               to handle these duplicate entry types, each entry is
-> +               assigned by the operating system an 'instance', which is
-> +               derived from an entry type's ordinal position.  That is
-> +               to say, if there are 'N' multiple entries with the same type
-> +               'T' in the DMI tables (adjacent or spread apart, it
-> +               doesn't matter), they will be represented in sysfs as
-> +               entries "T-0" through "T-(N-1)":
-> +
-> +               Example entry directories:
-> +
-> +                       /sys/firmware/dmi/entries/17-0
-> +                       /sys/firmware/dmi/entries/17-1
-> +                       /sys/firmware/dmi/entries/17-2
-> +                       /sys/firmware/dmi/entries/17-3
-> +                       ...
-> +
-> +               Instance numbers are used in lieu of the firmware
-> +               assigned entry handles as there is kernel itself makes
+.. and maybe that's the right thing to do here too.
 
-s/there is/the/
+> The GCC manual even documents the alignment attribute behavior.
 
-> +               no guarantees that handles as exported are unique, and
-> +               there are likely firmware images that get this wrong in
-> +               the wild.
-> +
-> +               Each DMI entry in sysfs has the common header values
-> +               exported as attributes:
-> +
-> +               handle  : The 16bit 'handle' that is assigned to this
-> +                         entry by the firmware.  This handle may be
-> +                         referred to by other entries.
-> +               length  : The length of the entry, as presented in the
-> +                         entry itself.  Note that this is _not the
-> +                         total count of bytes associated with the
-> +                         entry_.  This value represents the length of
-> +                         the "formatted" portion of the entry.  This
-> +                         "formatted" region is sometimes followed by
-> +                         the "unformatted" region composed of nul
-> +                         terminated strings, with termination signalled
-> +                         by a two nul characters in series.
-> +               raw     : The raw bytes of the entry. This includes the
-> +                         "formatted" portion of the entry, the
-> +                         "unformatted" strings portion of the entry,
-> +                         and the two terminating nul characters.
-> +
-> +               === Entry Specialization ===
-> +
-> +               Some entry types may have other information available in
-> +               sysfs.
-> +
-> +               --- Type 15 - System Event Log ---
-> +
-> +               This entry allows the firmware to export a log of
-> +               events the system has taken.  This information is
-> +               typically backed by nvram, but the implementation
-> +               details are abstracted by this table.  This entries data
-> +               is exported in the directory:
-> +
-> +               /sys/firmware/dmi/entries/15-0/system_event_log
-> +
-> +               and has the following attributes (documented in the
-> +               SMBIOS / DMI specification under "System Event Log (Type 15)":
-> +
-> +               area_length
-> +               header_start_offset
-> +               data_start_offset
-> +               access_method
-> +               status
-> +               change_token
-> +               access_method_address
-> +               header_format
-> +               per_log_type_descriptor_length
-> +               type_descriptors_supported_count
-> +
-> +               As well, the kernel exports the binary attribute:
-> +
-> +               raw_event_log   : The raw binary bits of the event log
-> +                                 as described by the DMI entry.
->
->
+The gcc manual is worthless. Every time some gcc person wants to
+change behavior, they just change the manual. So you can't rely on it
+anyway. We've seen that with inline asm before etc.
+
+> Also, please don't shoot the messenger, I didn't make GCC behave this
+> way but I doubt you'll have any luck undoing this behavior in the
+> tools which therefore means as pragmatists we have to handle it one
+> way or another.
+
+I'm shooting not the messenger, but the people who make these kinds of
+really ugly changes with bad changelogs that don't even explain what
+the actual problem is. And apparently any gcc person is free to break
+it in the future _anyway_.
+
+Is there a -fdata-align or something? Or would __attribute__((packed))
+help? Something that explicitly tells gcc "don't do this", instead of
+"let's add indirection and hope gcc doesn't add alignment for _that_".
+Especially as the extra pointer makes the code even uglier.
+
+And if we do have to use the pointer thing, let's at least then do the
+pointer with asms, so that gcc _really_ can't screw it up. Rather than
+just move the potential bug around.
+
+                            Linus
