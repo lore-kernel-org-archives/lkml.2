@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab1BQJek (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 04:34:40 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48425 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab1BQJei (ORCPT
+	id S1754929Ab1BQJhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 04:37:06 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35289 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab1BQJhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 04:34:38 -0500
-Date: Thu, 17 Feb 2011 09:34:33 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: John Linn <john.linn@xilinx.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, catalin.marinas@arm.com, glikely@secretlab.ca,
-        arnd@arndb.de
-Subject: Re: [PATCH V3 1/4] ARM: Xilinx: Adding Xilinx board support
-Message-ID: <20110217093433.GB22961@pulham.picochip.com>
-References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com>
- <ad969bd6-87bb-4910-a04a-d680e90d69af@VA3EHSMHS009.ehs.local>
+	Thu, 17 Feb 2011 04:37:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=N5qnzpUfi71ROZZOj8gzY99Yv4QsGxj6fTNShn1m7wVIPF3ZgG2iZPtoq4THnkQ1Oa
+         vVa8jN/4C+Lv2ULFrAwtM0hcGoP1fF6MDqIDKAP4ahxZG8FCCEzljkjB/+Gbl/fPey1/
+         hKMOAWt4k/iStt2OBxju07N87DH5fchKoEM6I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ad969bd6-87bb-4910-a04a-d680e90d69af@VA3EHSMHS009.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 17 Feb 2011 17:37:02 +0800
+Message-ID: <AANLkTim1wWi_sguqfo4t7V-RDT1tT41fkFtTVksoJGw5@mail.gmail.com>
+Subject: [PATCH] code cleanup on include/linux/fs.h
+From: Steven Liu <lingjiujianke@gmail.com>
+To: torvalds <torvalds@linux-foundation.org>, viro <viro@zeniv.linux.org.uk>,
+        dchinner <dchinner@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+Hi  all,
 
-One nitpick, otherwise looks nice.
+    Can this patch be fixed in,
 
-Jamie
+     Cleanup the unsed code on  include/linux/fs.h.
+     All filesystem using mount_bdev and mount_nodev
+     to replace get_sb_bdev and get_sb_nodev.
+     So rmmove the unused code.
 
-On Wed, Feb 16, 2011 at 09:11:53AM -0700, John Linn wrote:
-> diff --git a/arch/arm/mach-xilinx/common.h b/arch/arm/mach-xilinx/common.h
-> new file mode 100644
-> index 0000000..9a7cf65
-> --- /dev/null
-> +++ b/arch/arm/mach-xilinx/common.h
-> @@ -0,0 +1,30 @@
-> +/* arch/arm/mach-xilinx/common.h
-> + *
-> + * This file contains common function prototypes to avoid externs
-> + * in the c files.
-> + *
-> + *  Copyright (C) 2011 Xilinx
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef __MACH_XILINX_COMMON_H__
-> +#define __MACH_XILINX_COMMON_H__
-> +
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
 
-You don't appear to use the contents of platform_device.h in here so you 
-could probably drop this include.
+ Signed-off-by: LiuQi <lingjiujianke@gmail.com.com>
+---
+ include/linux/fs.h |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index bd32159..53ad8e6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1807,10 +1807,6 @@ extern struct dentry *mount_ns(struct
+file_system_type *fs_type, int flags,
+ extern struct dentry *mount_bdev(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data,
+ 	int (*fill_super)(struct super_block *, void *, int));
+-extern int get_sb_bdev(struct file_system_type *fs_type,
+-	int flags, const char *dev_name, void *data,
+-	int (*fill_super)(struct super_block *, void *, int),
+-	struct vfsmount *mnt);
+ extern struct dentry *mount_single(struct file_system_type *fs_type,
+ 	int flags, void *data,
+ 	int (*fill_super)(struct super_block *, void *, int));
+@@ -1821,10 +1817,6 @@ extern int get_sb_single(struct
+file_system_type *fs_type,
+ extern struct dentry *mount_nodev(struct file_system_type *fs_type,
+ 	int flags, void *data,
+ 	int (*fill_super)(struct super_block *, void *, int));
+-extern int get_sb_nodev(struct file_system_type *fs_type,
+-	int flags, void *data,
+-	int (*fill_super)(struct super_block *, void *, int),
+-	struct vfsmount *mnt);
+ void generic_shutdown_super(struct super_block *sb);
+ void kill_block_super(struct super_block *sb);
+ void kill_anon_super(struct super_block *sb);
+-- 
+1.6.5.2
+
+
+
+
+Best Regards
+
+
+Steven Liu
