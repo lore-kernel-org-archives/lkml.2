@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab1BQOAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 09:00:15 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39897 "EHLO mx2.mail.elte.hu"
+	id S1756539Ab1BQOFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 09:05:09 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42147 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab1BQOAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 09:00:11 -0500
-Date: Thu, 17 Feb 2011 14:59:56 +0100
+	id S1756499Ab1BQOFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 09:05:04 -0500
+Date: Thu, 17 Feb 2011 15:04:42 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86: use bitmap library functions
-Message-ID: <20110217135956.GA8053@elte.hu>
-References: <1297867715-20394-1-git-send-email-akinobu.mita@gmail.com>
- <20110216153825.GA18805@elte.hu>
- <AANLkTi=eS=mdRQ07EvceP0098_=kj96qRNYeQ0oAduo-@mail.gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 00/10] [GIT PULL][v2.6.39] tracing: updates
+Message-ID: <20110217140442.GA8326@elte.hu>
+References: <20110208221612.084294240@goodmis.org>
+ <20110217135023.GA5235@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=eS=mdRQ07EvceP0098_=kj96qRNYeQ0oAduo-@mail.gmail.com>
+In-Reply-To: <20110217135023.GA5235@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,33 +35,20 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> > Please pull the latest tip/perf/core tree, which can be found at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> > tip/perf/core
 
-> 2011/2/17 Ingo Molnar <mingo@elte.hu>:
-> >
-> > * Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> >
-> >> Use bitmap_set()/bitmap_clear() to fill/zero a region of a bitmap
-> >> instead of doing set_bit()/clear_bit() each bit.
-> >>
-> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> >> Cc: Thomas Gleixner <tglx@linutronix.de>
-> >> Cc: Ingo Molnar <mingo@redhat.com>
-> >> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> >> Cc: x86@kernel.org
-> >> ---
-> >>  arch/x86/kernel/ioport.c |   20 +++++---------------
-> >>  1 files changed, 5 insertions(+), 15 deletions(-)
-> >
-> > Before we can merge this it would be nice to tested this using sys_ioperm(), to make
-> > sure port IO still gets denied/allowed as expected. You can check /proc/ioperm to
-> > see which ports are (probably) safe to read: 0x80/0xed is usually safe to
-> > read/write.
-> 
-> I have tested with this program and there is no difference in behavior
-> with this patch.
+Note that these changes caused a new build failure on arch/m32r:
 
-Great - i've queued it up in tip:x86/asm.
+/home/mingo/tip/drivers/net/smc91x.h:199:1: warning: this is the location of the previous definition
+/home/mingo/tip/kernel/trace/ring_buffer.c: In function 'rb_reserve_next_event':
+/home/mingo/tip/kernel/trace/ring_buffer.c:2165: error: 'sched_clock_stable' undeclared (first use in this function)
+/home/mingo/tip/kernel/trace/ring_buffer.c:2165: error: (Each undeclared identifier is reported only once
+/home/mingo/tip/kernel/trace/ring_buffer.c:2165: error: for each function it appears in.)
+make[3]: *** [kernel/trace/ring_buffer.o] Error 1
+make[2]: *** [kernel/trace] Error 2
 
 Thanks,
 
