@@ -1,72 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1BQHw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 02:52:58 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:35635 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab1BQHw4 (ORCPT
+	id S1754185Ab1BQHxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 02:53:08 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44313 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663Ab1BQHxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 02:52:56 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 17 Feb 2011 08:52:19 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, gregkh@suse.de,
-        srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl,
-        ghaskins@novell.com, stable@kernel.org, stable-commits@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been
- added to the 2.6.32-longterm tree
-Message-ID: <20110217085219.417ba829@stein>
-In-Reply-To: <1297919107.6361.59.camel@marge.simson.net>
-References: <12978046423644@kroah.org>
-	<1297810967.23343.122.camel@gandalf.stny.rr.com>
-	<1297821667.5126.11.camel@marge.simson.net>
-	<20110216082559.GA16529@elte.hu>
-	<4D5B90E8.6080605@gmail.com>
-	<1297849553.5275.29.camel@marge.simson.net>
-	<20110216152906.75d4000c@stein>
-	<1297919107.6361.59.camel@marge.simson.net>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Feb 2011 02:53:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=j75mtEtFOiO5pDzMrgPb4r5g6FSPN+/xiStJEh3fyqdz4EGt38DKJXa99zVMj53Qs1
+         K5PiqtNDAjFf+jeDN41AvmKF2a4Qhdi5Me0jDX6kJx7GkYDOlVF6xBlQYZkEr1QeLaeY
+         yyclO/41LHQZRSs87BjMKF9rZRBfzAKdH6uI4=
+Date: Wed, 16 Feb 2011 23:52:56 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Colin King <colin.king@canonical.com>
+Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Enable Dell All-In-One volume up/down keys
+Message-ID: <20110217075256.GB19814@core.coreip.homeip.net>
+References: <1297688524-26123-1-git-send-email-colin.king@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297688524-26123-1-git-send-email-colin.king@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 17 Mike Galbraith wrote:
-> On Wed, 2011-02-16 at 15:29 +0100, Stefan Richter wrote:
-> > Jiri,
-> > if the desire is to improve performance of existing features (and maybe
-> > add this and that little feature that looks attractive), while at the same
-> > time you want
-> >   - experts to have looked at these improvements,
-> >   - packagers to avoid duplicate work,
-> >   - keep the number of local patches in check,
-> > then the solution is to /stay close enough to the mainline/.
+Hi Colin,
 
-[By which I meant updating, not backporting.]
+On Mon, Feb 14, 2011 at 01:02:04PM +0000, Colin King wrote:
+> From: Colin Ian King <colin.king@canonical.com>
+> 
+> Enable volume up and down hotkeys on WMI events
+> GUID 284A0E6B-380E-472A-921F-E52786257FB and
+> GUID 02314822-307C-4F66-bf0E-48AEAEB26CC8.
+> 
+> Also works around a firmware bug where the _WED method
+> should return an integer containing the key code and in fact
+> the method returns the key code in element zero of a buffer.
+> 
+> BugLink: http://bugs.launchpad.net/bugs/701530
+> BugLink: http://bugs.launchpad.net/bugs/676997
 
-> That's the intent of pushing more than _purely_ critical bugfixes, get a
-> bit closer.  Enterprise can't move as fast as mainline, not even close,
-> that's a given.  Stable problem get griped about though, so there's no
-> choice but to take some risk.  The tricky bit is how much, and how you
-> go about it.
+Looks generally good, one question though - should't it be part of
+dell-wmi driver?
 
-Granted.
+> +config DELL_WMI_AIO
+> +       tristate "WMI Hotkeys for Dell All-In-One series"
+> +       depends on ACPI_WMI
+> +       depends on INPUT
 
-> People are fixing this and that in their enterprise kernels privately
-> every day.  The only difference between that, and pushing baked fixes
-> back is that pushing to stable is visible.  I strongly suspect that
-> there are just tons of mainline backports sitting in each and every
-> enterprise tree in existence.
+select INPUT_SPARSEKMAP
 
-'Visible' = the change which was an important performance improvement or
-outright fix at site A (and a nice-to-have improvement on sites B...X)
-eventually exhibits a regression at site Y.
+> +
+> +#define AIO_PREFIX	"dell-wmi-aio: "
+
+Just use
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+and drop AIO_PREFIX from messages.
+
+> +
+> +MODULE_DESCRIPTION("WMI hotkeys driver for Dell All-In-One series");
+> +MODULE_LICENSE("GPL");
+> +
+> +#define EVENT_GUID1 "284A0E6B-380E-472A-921F-E52786257FB4"
+> +#define EVENT_GUID2 "02314822-307C-4F66-BF0E-48AEAEB26CC8"
+> +
+> +static char *dell_wmi_aio_guids[] = {
+> +	EVENT_GUID1,
+> +	EVENT_GUID2,
+> +	NULL
+> +};
+> +
+> +MODULE_ALIAS("wmi:"EVENT_GUID1);
+> +MODULE_ALIAS("wmi:"EVENT_GUID2);
+> +
+> +static struct key_entry dell_wmi_aio_keymap[] = {
+
+const
+
+> +
+> +static char *dell_wmi_aio_find(void)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; dell_wmi_aio_guids[i] != NULL; i++)
+> +		if (wmi_has_guid(dell_wmi_aio_guids[i]))
+> +			return dell_wmi_aio_guids[i];
+> +
+> +	return NULL;
+> +}
+> +
+> +static int __init dell_wmi_aio_init(void)
+> +{
+> +	int err;
+> +	char *guid;
+> +
+> +	guid = dell_wmi_aio_find();
+> +	if (guid) {
+> +		err = dell_wmi_aio_input_setup();
+> +
+> +		if (err)
+> +			return err;
+> +
+> +		err = wmi_install_notify_handler(guid,
+> +			dell_wmi_aio_notify, NULL);
+> +		if (err) {
+> +			input_unregister_device(dell_wmi_aio_input_dev);
+> +			pr_err(AIO_PREFIX "Unable to register"
+> +			       " notify handler - %d\n", err);
+
+Do not break the strings - 80-columr rule does not apply to messages.
+
+> +			return err;
+> +		}
+> +	} else
+> +		pr_warning(AIO_PREFIX "No known WMI GUID found\n");
+> +
+> +	return 0;
+
+If you did not find known guid you shold return -ENXIO so that the
+driver aborts loading into memory (if it is compiled as a module -
+likely).
+
+> +}
+> +
+> +static void __exit dell_wmi_aio_exit(void)
+> +{
+> +	char *guid;
+> +
+> +	guid = dell_wmi_aio_find();
+
+And if you fail loading you do not need to check it here.
+
+> +	if (guid) {
+> +		wmi_remove_notify_handler(guid);
+> +		input_unregister_device(dell_wmi_aio_input_dev);
+> +	}
+> +}
+> +
+> +module_init(dell_wmi_aio_init);
+> +module_exit(dell_wmi_aio_exit);
+
+Thanks,
+
 -- 
-Stefan Richter
--=====-==-== --=- =---=
-http://arcgraph.de/sr/
+Dmitry
