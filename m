@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab1BQX0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 18:26:23 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5699 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab1BQX0U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 18:26:20 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 17 Feb 2011 15:19:41 -0800
-From: Andrew Chew <AChew@nvidia.com>
-To: "'Guennadi Liakhovetski'" <g.liakhovetski@gmx.de>
-CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "hverkuil@xs4all.nl" <hverkuil@xs4all.nl>
-Date: Thu, 17 Feb 2011 15:26:17 -0800
-Subject: RE: [PATCH v4 1/1] [media] ov9740: Initial submit of OV9740 driver.
-Thread-Topic: [PATCH v4 1/1] [media] ov9740: Initial submit of OV9740 driver.
-Thread-Index: AcvO+dGy16jWrGlDRwO4hWHLgAR7ZQAABMcA
-Message-ID: <643E69AA4436674C8F39DCC2C05F763816BD96CFC2@HQMAIL03.nvidia.com>
-References: <1297980873-18022-1-git-send-email-achew@nvidia.com>
- <Pine.LNX.4.64.1102180022080.1841@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1102180022080.1841@axis700.grange>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753561Ab1BQXbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 18:31:11 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:32868 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752050Ab1BQXbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 18:31:10 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Hibernate fix for 2.6.38
+Date: Fri, 18 Feb 2011 00:30:54 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102180030.55000.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This looks good now, thanks, I'll queue it for 2.6.39. Just 
-> one question:
-> 
-> On Thu, 17 Feb 2011, achew@nvidia.com wrote:
-> 
-> > From: Andrew Chew <achew@nvidia.com>
-> > 
-> > This soc_camera driver is for Omnivision's OV9740 sensor.  
-> This initial
-> > submission provides support for YUV422 output at 1280x720 
-> (720p), which is
-> > the sensor's native resolution.  640x480 (VGA) is also 
-> supported, with
-> > cropping and scaling performed by the sensor's ISP.
-> 
-> Didn't you mean to say just "scaling?" You're not 
-> implementing cropping. 
-> You could, certainly, fake scaling with cropping, but are you 
-> really using 
-> both to switch between 720p and VGA? No need for a v5, just 
-> tell me how to 
-> change the comment.
+Hi Linus,
 
-There really is cropping.  The native resolution of the OV9740 sensor is a different aspect ratio than VGA.  To preserve the square pixels, first we crop both the left and right sides, and then scale down.
+Please pull a hibernate fix for 2.6.38 (and stable) from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+
+It fixes an old bug, but such that it can make a later BUG_ON() trigger, so
+it's rather serious.
+
+
+ kernel/power/snapshot.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
+
+---------------
+
+Stanislaw Gruszka (1):
+      PM / Hibernate: Return error code when alloc_image_page() fails
+
