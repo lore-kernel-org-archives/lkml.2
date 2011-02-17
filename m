@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab1BQRLP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:11:15 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:47626 "EHLO
+	id S1757185Ab1BQRLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:11:12 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:47625 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757101Ab1BQRLA (ORCPT
+	with ESMTP id S1757097Ab1BQRLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Feb 2011 12:11:00 -0500
-Message-Id: <20110217163235.176666351@chello.nl>
+Message-Id: <20110217163235.035748969@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 17 Feb 2011 17:23:34 +0100
+Date: Thu, 17 Feb 2011 17:23:32 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -23,86 +23,155 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 07/17] sh: mmu_gather rework
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 05/17] s390: mmu_gather rework
 References: <20110217162327.434629380@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-sh-preemptible_mmu_gather.patch
+Content-Disposition: inline; filename=martin_schwidefsky-s390-preemptible_mmu_gather.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up the sh mmu_gather code to conform to the new API.
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Cc: Paul Mundt <lethal@linux-sh.org>
+Adapt the stand-alone s390 mmu_gather implementation to the new
+preemptible mmu_gather interface.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101126145410.881573395@chello.nl>
 ---
- arch/sh/include/asm/tlb.h |   28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+ arch/s390/include/asm/tlb.h |   60 ++++++++++++++++++++++++++------------------
+ 1 file changed, 36 insertions(+), 24 deletions(-)
 
-Index: linux-2.6/arch/sh/include/asm/tlb.h
+Index: linux-2.6/arch/s390/include/asm/tlb.h
 ===================================================================
---- linux-2.6.orig/arch/sh/include/asm/tlb.h
-+++ linux-2.6/arch/sh/include/asm/tlb.h
-@@ -23,8 +23,6 @@ struct mmu_gather {
- 	unsigned long		start, end;
+--- linux-2.6.orig/arch/s390/include/asm/tlb.h
++++ linux-2.6/arch/s390/include/asm/tlb.h
+@@ -29,58 +29,64 @@
+ #include <asm/smp.h>
+ #include <asm/tlbflush.h>
+ 
+-#ifndef CONFIG_SMP
+-#define TLB_NR_PTRS	1
+-#else
+-#define TLB_NR_PTRS	508
+-#endif
+-
+ struct mmu_gather {
+ 	struct mm_struct *mm;
+ 	unsigned int fullmm;
+ 	unsigned int nr_ptes;
+ 	unsigned int nr_pxds;
+-	void *array[TLB_NR_PTRS];
++	unsigned int max;
++	void **array;
++	void *local[8];
  };
  
 -DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
 -
- static inline void init_tlb_gather(struct mmu_gather *tlb)
- {
- 	tlb->start = TASK_SIZE;
-@@ -36,17 +34,13 @@ static inline void init_tlb_gather(struc
- 	}
- }
- 
--static inline struct mmu_gather *
--tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
-+static inline void
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
+-static inline struct mmu_gather *tlb_gather_mmu(struct mm_struct *mm,
+-						unsigned int full_mm_flush)
++static inline void __tlb_alloc_page(struct mmu_gather *tlb)
  {
 -	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
--
- 	tlb->mm = mm;
- 	tlb->fullmm = full_mm_flush;
++	unsigned long addr = __get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
  
- 	init_tlb_gather(tlb);
--
++	if (addr) {
++		tlb->array = (void *) addr;
++		tlb->max = PAGE_SIZE / sizeof(void *);
++	}
++}
++
++static inline void tlb_gather_mmu(struct mmu_gather *tlb,
++				  struct mm_struct *mm,
++				  unsigned int full_mm_flush)
++{
+ 	tlb->mm = mm;
++	tlb->max = ARRAY_SIZE(tlb->local);
++	tlb->array = tlb->local;
+ 	tlb->fullmm = full_mm_flush;
+-	tlb->nr_ptes = 0;
+-	tlb->nr_pxds = TLB_NR_PTRS;
+ 	if (tlb->fullmm)
+ 		__tlb_flush_mm(mm);
 -	return tlb;
++	else
++		__tlb_alloc_page(tlb);
++	tlb->nr_ptes = 0;
++	tlb->nr_pxds = tlb->max;
  }
  
- static inline void
-@@ -57,8 +51,6 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
+-static inline void tlb_flush_mmu(struct mmu_gather *tlb,
+-				 unsigned long start, unsigned long end)
++static inline void tlb_flush_mmu(struct mmu_gather *tlb)
+ {
+-	if (!tlb->fullmm && (tlb->nr_ptes > 0 || tlb->nr_pxds < TLB_NR_PTRS))
++	if (!tlb->fullmm && (tlb->nr_ptes > 0 || tlb->nr_pxds < tlb->max))
+ 		__tlb_flush_mm(tlb->mm);
+ 	while (tlb->nr_ptes > 0)
+ 		page_table_free_rcu(tlb->mm, tlb->array[--tlb->nr_ptes]);
+-	while (tlb->nr_pxds < TLB_NR_PTRS)
++	while (tlb->nr_pxds < tlb->max)
+ 		crst_table_free_rcu(tlb->mm, tlb->array[tlb->nr_pxds++]);
+ }
+ 
+ static inline void tlb_finish_mmu(struct mmu_gather *tlb,
+ 				  unsigned long start, unsigned long end)
+ {
+-	tlb_flush_mmu(tlb, start, end);
++	tlb_flush_mmu(tlb);
+ 
+ 	rcu_table_freelist_finish();
  
  	/* keep the page table cache within bounds */
  	check_pgt_cache();
--
+ 
 -	put_cpu_var(mmu_gathers);
++	if (tlb->array != tlb->local)
++		free_pages((unsigned long) tlb->array, 0);
  }
  
- static inline void
-@@ -91,7 +83,21 @@ tlb_end_vma(struct mmu_gather *tlb, stru
- 	}
- }
- 
--#define tlb_remove_page(tlb,page)	free_page_and_swap_cache(page)
-+static inline void tlb_flush_mmu(struct mmu_gather *tlb)
-+{
-+}
-+
+ /*
+@@ -88,6 +94,12 @@ static inline void tlb_finish_mmu(struct
+  * tlb_ptep_clear_flush. In both flush modes the tlb fo a page cache page
+  * has already been freed, so just do free_page_and_swap_cache.
+  */
 +static inline int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
 +{
 +	free_page_and_swap_cache(page);
 +	return 0;
 +}
 +
-+static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
-+{
-+	__tlb_remove_page(tlb, page);
-+}
-+
- #define pte_free_tlb(tlb, ptep, addr)	pte_free((tlb)->mm, ptep)
- #define pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
- #define pud_free_tlb(tlb, pudp, addr)	pud_free((tlb)->mm, pudp)
+ static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+ {
+ 	free_page_and_swap_cache(page);
+@@ -103,7 +115,7 @@ static inline void pte_free_tlb(struct m
+ 	if (!tlb->fullmm) {
+ 		tlb->array[tlb->nr_ptes++] = pte;
+ 		if (tlb->nr_ptes >= tlb->nr_pxds)
+-			tlb_flush_mmu(tlb, 0, 0);
++			tlb_flush_mmu(tlb);
+ 	} else
+ 		page_table_free(tlb->mm, (unsigned long *) pte);
+ }
+@@ -124,7 +136,7 @@ static inline void pmd_free_tlb(struct m
+ 	if (!tlb->fullmm) {
+ 		tlb->array[--tlb->nr_pxds] = pmd;
+ 		if (tlb->nr_ptes >= tlb->nr_pxds)
+-			tlb_flush_mmu(tlb, 0, 0);
++			tlb_flush_mmu(tlb);
+ 	} else
+ 		crst_table_free(tlb->mm, (unsigned long *) pmd);
+ #endif
+@@ -146,7 +158,7 @@ static inline void pud_free_tlb(struct m
+ 	if (!tlb->fullmm) {
+ 		tlb->array[--tlb->nr_pxds] = pud;
+ 		if (tlb->nr_ptes >= tlb->nr_pxds)
+-			tlb_flush_mmu(tlb, 0, 0);
++			tlb_flush_mmu(tlb);
+ 	} else
+ 		crst_table_free(tlb->mm, (unsigned long *) pud);
+ #endif
 
 
