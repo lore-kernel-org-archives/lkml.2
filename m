@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641Ab1BQJJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 04:09:15 -0500
-Received: from cantor.suse.de ([195.135.220.2]:36420 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab1BQJJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 04:09:12 -0500
-Date: Thu, 17 Feb 2011 10:09:10 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
- 2.6.38-rc4
-Message-ID: <20110217090910.GA3781@tiehlicka.suse.cz>
-References: <20110216185234.GA11636@tiehlicka.suse.cz>
- <20110216193700.GA6377@elte.hu>
- <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
- <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+	id S1753190Ab1BQJWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 04:22:15 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:32388 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab1BQJWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 04:22:11 -0500
+X-IronPort-AV: E=Sophos;i="4.60,485,1291611600"; 
+   d="scan'208";a="136298834"
+Subject: Re: [000/115] 2.6.32.29-longterm review
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+In-Reply-To: <20110217003526.GA7352@suse.de>
+References: <20110216014741.GA24678@kroah.com>
+	 <1297864282.16356.43.camel@zakaz.uk.xensource.com>
+	 <20110217003526.GA7352@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Thu, 17 Feb 2011 09:22:06 +0000
+Message-ID: <1297934526.16356.1368.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 16-02-11 12:09:35, Linus Torvalds wrote:
-> On Wed, Feb 16, 2011 at 11:50 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Yup, goodie. It does look like it might be exactly the same thing,
-> > except now the offset seems to be 0x1e68 instead of 0x1768.
+On Thu, 2011-02-17 at 00:35 +0000, Greg KH wrote:
+> On Wed, Feb 16, 2011 at 01:51:22PM +0000, Ian Campbell wrote:
+> > On Tue, 2011-02-15 at 17:47 -0800, Greg KH wrote:
+> > > This is the start of the longterm review cycle for the 2.6.32.29 release.
+> > > There are 115 patches in this series, all will be posted as a response
+> > > to this one.  If anyone has any issues with these being applied, please
+> > > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > > wants to add a Signed-off-by: line to the patch, please respond with it.
+> > > 
+> > > Responses should be made by Friday, Feb 18, 2011 00:00:00 UTC.
+> > > Anything received after that time might be too late.
+> > > 
+> > > The whole patch series can be found in one patch at:
+> > > 	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.29-rc1.gz
+> > > and the diffstat can be found below.
+> > 
+> > Is it too late to add e7a3481c0246c8e45e79c629efd63b168e91fcda per
+> > http://marc.info/?l=xen-devel&m=129620431305101 ?
 > 
-> It was 0x1748 in Eric's case. Background for Michal:
-> 
->   http://lkml.org/lkml/2011/2/14/223
+> Now queued up for the next .32 release after this one.
 
-I have seen that thread but I didn't think it is related. I thought
-this is an another anon_vma issue. But you seem to be right that the
-offset pattern can be related.
+Thank you.
 
-> 
-> Michal - if you can re-create this, it would be wonderful if you can
-> enable CONFIG_DEBUG_PAGEALLOC. I didn't find any obvious candidates
-> yet.
+Ian.
 
-OK. I have just booted with the same kernel and the config turned on.
-Let's see if I am able to reproduce.
 
-Btw.
-$ objdump -d ./vmlinux-2.6.38-rc4-00001-g07409af-vmscan-test | grep 0x1e68
-
-didn't print out anything. Do you have any other way to find out the
-structure?
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
