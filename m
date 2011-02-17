@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab1BQRsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:48:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46273 "EHLO mx1.redhat.com"
+	id S1757422Ab1BQRtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:49:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57394 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757416Ab1BQRsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:48:03 -0500
-Message-ID: <4D5D5F4C.2020601@redhat.com>
-Date: Thu, 17 Feb 2011 12:47:56 -0500
+	id S1754105Ab1BQRtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 12:49:35 -0500
+Message-ID: <4D5D5F94.5080205@redhat.com>
+Date: Thu, 17 Feb 2011 12:49:08 -0500
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
@@ -24,9 +24,9 @@ CC: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
         Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 3/3] mm: Simplify anon_vma refcounts
-References: <20110217161948.045410404@chello.nl> <20110217162124.457572646@chello.nl>
-In-Reply-To: <20110217162124.457572646@chello.nl>
+Subject: Re: [PATCH 2/3] mm: Move anon_vma ref out from under CONFIG_foo
+References: <20110217161948.045410404@chello.nl> <20110217162124.388877866@chello.nl>
+In-Reply-To: <20110217162124.388877866@chello.nl>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
