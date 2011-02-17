@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab1BQT22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 14:28:28 -0500
-Received: from kroah.org ([198.145.64.141]:34996 "EHLO coco.kroah.org"
+	id S1757861Ab1BQT2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 14:28:49 -0500
+Received: from kroah.org ([198.145.64.141]:34993 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319Ab1BQT2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 14:28:02 -0500
-Date: Thu, 17 Feb 2011 11:23:00 -0800
+	id S1755872Ab1BQT2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 14:28:00 -0500
+Date: Thu, 17 Feb 2011 11:21:54 -0800
 From: Greg KH <greg@kroah.com>
-To: james_p_freyensee@linux.intel.com
+To: james_p_freyensee@linux.intel.com, Alan Cox <alan@linux.intel.com>
 Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
-Subject: Re: [PATCH 09/12] n_tracesink header file.
-Message-ID: <20110217192300.GD29448@kroah.com>
-References: <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
+Subject: Re: [PATCH 07/12] n_tracerouter and n_tracesink additions.
+Message-ID: <20110217192154.GC29448@kroah.com>
+References: <james_p_freyensee@linux.intel.com>
+ <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com>
@@ -20,29 +21,39 @@ References: <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-9-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com>
+In-Reply-To: <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 11:34:54AM -0800, james_p_freyensee@linux.intel.com wrote:
+On Tue, Feb 08, 2011 at 11:34:52AM -0800, james_p_freyensee@linux.intel.com wrote:
 > From: J Freyensee <james_p_freyensee@linux.intel.com>
 > 
-> This header file allows the n_tracerouter to send it's information
-> to the n_tracesink ldisc driver.  It's part of the Intel-Atom
-> PTI implementation solution.
+> This patch adds line discipline numbers to n_tracerouter and
+> n_tracesink line disciplines for the Intel-Atom PTI implementation
+> for mobile devices.
 > 
 > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
 > ---
->  include/linux/n_tracesink.h |   32 ++++++++++++++++++++++++++++++++
+>  include/linux/tty.h |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/tty.h b/include/linux/tty.h
+> index 54e4eaa..c507f53 100644
+> --- a/include/linux/tty.h
+> +++ b/include/linux/tty.h
+> @@ -50,6 +50,8 @@
+>  #define N_CAIF		20      /* CAIF protocol for talking to modems */
+>  #define N_GSM0710	21	/* GSM 0710 Mux */
+>  #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
+> +#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
+> +#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
 
-Why is this in include/linux/ ?
+Two new ones?  Really?  Alan, no objection from you on this?
 
 thanks,
 
