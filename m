@@ -1,127 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab1BQCRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 21:17:47 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:62113 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055Ab1BQCRp (ORCPT
+	id S1756118Ab1BQCVH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 21:21:07 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:38321 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055Ab1BQCVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 21:17:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=hmh9JMsAlr1aWsyZm4XgJmM62JyLya62vX1jhpU0+bz17sHUhw2GGFKn2wSEJUWSOq
-         mQz3SOT+O1yfRQbMOYEppCsIoYVqpPXpwlw9oQu7mK3rnIfVXGSv4nIkavpCDac3c1fe
-         DsHHCl+v8u3fYRHtjlO5beaNIxT7wemyVleuM=
+	Wed, 16 Feb 2011 21:21:04 -0500
+Message-ID: <4D5C86C1.8070404@wytron.com.tw>
+Date: Thu, 17 Feb 2011 10:24:01 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Date: Thu, 17 Feb 2011 10:17:43 +0800
-Message-ID: <AANLkTimLkOhTdeVLb+4h4Gj4qcgG8hetDr1713ygsux_@mail.gmail.com>
-Subject: Fwd: IGMP and rwlock: Dead ocurred again on TILEPro
-From: Cypher Wu <cypher.w@gmail.com>
-To: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: nios2-dev@sopc.et.ntust.edu.tw
+CC: Tobias Klauser <tklauser@distanz.ch>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-serial@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [Nios2-dev] [PATHV v2] tty: serial: altera_uart: Add devicetree
+  support
+References: <c7a7085602687d2f1b6ac505c030f19bafda04e3.1297245277.git.tklauser@distanz.ch> <1297872732-10207-1-git-send-email-tklauser@distanz.ch>
+In-Reply-To: <1297872732-10207-1-git-send-email-tklauser@distanz.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: Cypher Wu <cypher.w@gmail.com>
-Date: Wed, Feb 16, 2011 at 5:58 PM
-Subject: GMP and rwlock: Dead ocurred again on TILEPro
-To: linux-kernel@vger.kernel.org
+Hi Tobias,
+
+On 02/17/2011 12:12 AM, Tobias Klauser wrote:
+> With the recent switch of the (currently still out-of-tree) Nios2 Linux
+> port to devicetree we want to be able to retreive the resources and
+> properties from dts.
+>
+> The old method to retreive resources and properties from platform data
+> is still supported.
+>
+> Cc: Grant Likely<grant.likely@secretlab.ca>
+> Signed-off-by: Tobias Klauser<tklauser@distanz.ch>
+> ---
+>   Thanks to Grant Likely for the review.
+>
+>   changes in v2:
+>   - fall back to uartclk from platform data if the device tree property
+>     is not available.
+>   - Only include MODULE_DEVICE_TABLE if CONFIG_OF is set so we don't
+>     advertise device tree support if CONFIG_OF isn't active.
+>   - change vendor prefix in match table to be uppercase for consistency
+>     with documentation
+>
+>   .../devicetree/bindings/serial/altera_uart.txt     |    7 +++
+>   drivers/tty/serial/altera_uart.c                   |   50 ++++++++++++++++++--
+>   2 files changed, 53 insertions(+), 4 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/serial/altera_uart.txt
+>
+> diff --git a/Documentation/devicetree/bindings/serial/altera_uart.txt b/Documentation/devicetree/bindings/serial/altera_uart.txt
+> new file mode 100644
+> index 0000000..71cae3f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/serial/altera_uart.txt
+> @@ -0,0 +1,7 @@
+> +Altera UART
+> +
+> +Required properties:
+> +- compatible : should be "ALTR,uart-1.0"
+> +
+> +Optional properties:
+> +- clock-frequency : frequency of the clock input to the UART
+> diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
+> index 5e80977..4f0898c 100644
+> --- a/drivers/tty/serial/altera_uart.c
+> +++ b/drivers/tty/serial/altera_uart.c
+> @@ -24,6 +24,7 @@
+>   #include<linux/serial.h>
+>   #include<linux/serial_core.h>
+>   #include<linux/platform_device.h>
+> +#include<linux/of.h>
+>   #include<linux/io.h>
+>   #include<linux/altera_uart.h>
+>
+> @@ -484,6 +485,29 @@ static struct uart_driver altera_uart_driver = {
+>   	.cons		= ALTERA_UART_CONSOLE,
+>   };
+>
+> +#ifdef CONFIG_OF
+> +static int altera_uart_get_of_uartclk(struct platform_device *pdev,
+> +				      struct uart_port *port)
+> +{
+> +	int len;
+> +	const __be32 *clk;
+> +
+> +	clk = of_get_property(pdev->dev.of_node, "clock-frequency",&len);
+> +	if (!clk || len<  sizeof(__be32))
+> +		return -ENODEV;
+> +
+> +	port->uartclk = be32_to_cpup(clk);
+> +
+> +	return 0;
+> +}
+> +#else
+> +static int altera_uart_get_of_uartclk(struct platform_device *pdev,
+> +				      struct uart_port *port)
+> +{
+> +	return -ENODEV;
+> +}
+> +#endif /* CONFIG_OF */
+> +
+>   static int __devinit altera_uart_probe(struct platform_device *pdev)
+>   {
+>   	struct altera_uart_platform_uart *platp = pdev->dev.platform_data;
+> @@ -491,6 +515,7 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
+>   	struct resource *res_mem;
+>   	struct resource *res_irq;
+>   	int i = pdev->id;
+> +	int ret;
+>
+>   	/* -1 emphasizes that the platform must have one port, no .N suffix */
+>   	if (i == -1)
+> @@ -515,6 +540,14 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
+>   	else if (platp->irq)
+>   		port->irq = platp->irq;
+>
+> +	/* Try to get the uartclk from devicetree, fall back to platform data
+> +	 * otherwise */
+
+Please follow multi-line comment style.
+
+/*
+  * xxxx
+  * xxxx
+  */
+
+> +	ret = altera_uart_get_of_uartclk(pdev, port);
+> +	if (ret&&  platp)
+> +		port->uartclk = platp->uartclk;
+> +	else if (ret)
+> +		return ret;
+> +
+
+Better reverse the priority, with platform data checked first.
+
+	if (platp)
+		port->uartclk = platp->uartclk;
+	else {
+		ret = altera_uart_get_of_uartclk(pdev, port);
+		if (ret)
+			return ret;
+	}
 
 
-The rwlock and spinlock of TILEPro platform use TNS instruction to
-test the value of lock, but if interrupt is not masked, read_lock()
-have another chance to deadlock while read_lock() called in bh of
-interrupt.
+>   	port->membase = ioremap(port->mapbase, ALTERA_UART_SIZE);
+>   	if (!port->membase)
+>   		return -ENOMEM;
+> @@ -527,7 +560,6 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
+>   	port->line = i;
+>   	port->type = PORT_ALTERA_UART;
+>   	port->iotype = SERIAL_IO_MEM;
+> -	port->uartclk = platp->uartclk;
+>   	port->ops =&altera_uart_ops;
+>   	port->flags = UPF_BOOT_AUTOCONF;
+>
+> @@ -550,13 +582,23 @@ static int __devexit altera_uart_remove(struct platform_device *pdev)
+>   	return 0;
+>   }
+>
+> +#ifdef CONFIG_OF
+> +static struct of_device_id altera_uart_match[] = {
+> +	{ .compatible = "ALTR,uart-1.0", },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, altera_uart_match);
+> +#else
+> +#define altera_uart_match NULL
+> +#endif /* CONFIG_OF */
+> +
+>   static struct platform_driver altera_uart_platform_driver = {
+>   	.probe	= altera_uart_probe,
+>   	.remove	= __devexit_p(altera_uart_remove),
+>   	.driver	= {
+> -		.name	= DRV_NAME,
+> -		.owner	= THIS_MODULE,
+> -		.pm	= NULL,
+> +		.name		= DRV_NAME,
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= altera_uart_match,
+>   	},
+>   };
+>
 
-The original code:
-void __raw_read_lock_slow(raw_
-rwlock_t *rwlock, u32 val)
-{
-   u32 iterations = 0;
-   do {
-       if (!(val & 1))
-           rwlock->lock = val;
-       delay_backoff(iterations++);
-       val = __insn_tns((int *)&rwlock->lock);
-   } while ((val << RD_COUNT_WIDTH) != 0);
-   rwlock->lock = val + (1 << RD_COUNT_SHIFT);
-}
+Regards,
+Thomas
 
-I've modified it to get some information:
-void __raw_read_lock_slow(raw_rwlock_t *rwlock, u32 val)
-{
-   u32 iterations = 0;
-   do {
-       if (!(val & 1))
-       {
-           rwlock->lock = val;
-           iterations = 0;
-       }
-       delay_backoff(iterations++);
-       if (iterations > 0x1000000)
-       {
-           dump_stack();
-           iterations = 0;
-       }
-
-       val = __insn_tns((int *)&rwlock->lock);
-   } while ((val << RD_COUNT_WIDTH) != 0);
-   rwlock->lock = val + (1 << RD_COUNT_SHIFT);
-}
-
-And this is the stack info:
-
-Starting stack dump of tid 837, pid 837 (ff0) on cpu 55 at cycle 10180633928773
- frame 0: 0xfd3bfbe0 dump_stack+0x0/0x20 (sp 0xe4b5f9d8)
- frame 1: 0xfd3c0b50 __raw_read_lock_slow.cold+0x50/0x90 (sp 0xe4b5f9d8)
- frame 2: 0xfd184a58 igmpv3_send_cr+0x60/0x440 (sp 0xe4b5f9f0)
- frame 3: 0xfd3bd928 igmp_ifc_timer_expire+0x30/0x90 (sp 0xe4b5fa20)
- frame 4: 0xfd047698 run_timer_softirq+0x258/0x3c8 (sp 0xe4b5fa30)
- frame 5: 0xfd0563f8 __do_softirq+0x138/0x220 (sp 0xe4b5fa70)
- frame 6: 0xfd097d48 do_softirq+0x88/0x110 (sp 0xe4b5fa98)
- frame 7: 0xfd1871f8 irq_exit+0xf8/0x120 (sp 0xe4b5faa8)
- frame 8: 0xfd1afda0 do_timer_interrupt+0xa0/0xf8 (sp 0xe4b5fab0)
- frame 9: 0xfd187b98 handle_interrupt+0x2d8/0x2e0 (sp 0xe4b5fac0)
- <interrupt 25 while in kernel mode>
- frame 10: 0xfd0241c8 _read_lock+0x8/0x40 (sp 0xe4b5fc38)
- frame 11: 0xfd1bb008 ip_mc_del_src+0xc8/0x378 (sp 0xe4b5fc40)
- frame 12: 0xfd2681e8 ip_mc_leave_group+0xf8/0x1e0 (sp 0xe4b5fc70)
- frame 13: 0xfd0a4d70 do_ip_setsockopt+0xe48/0x1560 (sp 0xe4b5fc90)
- frame 14: 0xfd2b4168 sys_setsockopt+0x150/0x170 (sp 0xe4b5fe98)
- frame 15: 0xfd14e550 handle_syscall+0x2d0/0x320 (sp 0xe4b5fec0)
- <syscall while in user mode>
- frame 16: 0x3342a0 (sp 0xbfddfb00)
- frame 17: 0x16130 (sp 0xbfddfb08)
- frame 18: 0x16640 (sp 0xbfddfb38)
- frame 19: 0x16ee8 (sp 0xbfddfc58)
- frame 20: 0x345a08 (sp 0xbfddfc90)
- frame 21: 0x10218 (sp 0xbfddfe48)
-Stack dump complete
-
-I don't know the clear definition of rwlock & spinlock in Linux, but
-the implementation of other platforms
-like x86, PowerPC, ARM don't have that issue. The use of TNS cause a
-race condition between system
-call and interrupt.
-
-Through the call tree of packet sending, there are also some other
-rwlock will be tried, say
-read_lock(&fib_hash_lock) in fn_hash_lookup() which is called in
-ip_route_output_slow(). I've seen deadlock
-on fib_hash_lock, but haven't reproduced with that debug information yet.
-
-Maybe IGMP is not the only one, TCP timer will retransmit data and
-will also call read_lock(&fib_hash_lock).
-
---
-Cyberman Wu
-
-
-
--- 
-Cyberman Wu
