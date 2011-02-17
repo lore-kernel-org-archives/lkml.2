@@ -1,131 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab1BQUPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:15:22 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28673 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755429Ab1BQUPR convert rfc822-to-8bit (ORCPT
+	id S1757940Ab1BQUSa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:18:30 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39781 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752601Ab1BQUS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:15:17 -0500
+	Thu, 17 Feb 2011 15:18:28 -0500
 MIME-Version: 1.0
-Message-ID: <f3e53a0d-0f27-469d-9376-3423e7b93148@default>
-Date: Thu, 17 Feb 2011 12:14:49 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: PING? cleancache for 2.6.39 window?
-References: <ec76a6ed-a1dc-4e8b-a4ac-1e72ab367d0f@default>
- <7b34b3ea-9436-4077-a35e-a5eaabd59813@default
- 20101030120632.40345d0d.akpm@linux-foundation.org
- eaa7e0c3-ab9b-45e7-b396-7c59338e2ae2@default>
-In-Reply-To: <eaa7e0c3-ab9b-45e7-b396-7c59338e2ae2@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6550.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D5D81CF.015C:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <AANLkTikUF+gz8H3SkW4NhD8SOT5b4bxnpcJgsVU+G-bC@mail.gmail.com>
+References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
+ <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+ <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+ <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+ <1297960574.2769.20.camel@edumazet-laptop> <AANLkTikUF+gz8H3SkW4NhD8SOT5b4bxnpcJgsVU+G-bC@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 12:18:04 -0800
+Message-ID: <AANLkTi=SHY9gF49zyoECNV3favjS8Q6-9eWnQwNKX2EM@mail.gmail.com>
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Octavian Purdila <opurdila@ixiacom.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: multipart/mixed; boundary=90e6ba6e866882822f049c801968
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dan Magenheimer
-> Sent: Wednesday, January 19, 2011 9:42 AM
-> To: Andrew Morton
-> Cc: torvalds@linux-foundation.org; linux-kernel@vger.kernel.org;
-> Christoph Hellwig; Jeremy Fitzhardinge
-> Subject: RE: Ping? RE: [GIT PULL] mm/vfs/fs:cleancache for 2.6.37 merge
-> window
-> 
-> > On Wed, 27 Oct 2010 11:37:47 -0700 (PDT) Dan Magenheimer
-> > <dan.magenheimer@oracle.com> wrote:
-> >
-> > > Ping?  I hope you are still considering this.  If not or if
-> > > there are any questions I can answer, please let me know.
-> >
-> > What's happened here is that the patchset has gone through its
-> > iterations and a few people have commented and then after a while,
-> > nobody had anything to say about the code so nobody said anything
-> more.
-> >
-> > But silence doesn't mean acceptance - it just means that nobody had
-> > anything to say.
-> >
-> > I think I looked at the earlier iterations, tried to understand the
-> > point behind it all, made a few code suggestions and eventually tuned
-> > out.  At that time (and hence at this time) I just cannot explain to
-> > myself why we would want to merge this code.
-> >
-> > All new code is a cost/benefit decision.  The costs are pretty well
-> > known: larger codebase, more code for us and our "customers" to
-> > maintain and support, etc.  That the code pokes around in vfs and
-> > various filesystems does increase those costs a little.
-> >
-> > But the extent of the benefits to our users aren't obvious to me.
-> The
-> > coe is still xen-specific, I believe?  If so, that immediately
-> reduces
-> > the benefit side by a large amount simply because of the reduced
-> > audience.
-> >
-> > We did spend some time trying to get this wired up to zram so that
-> the
-> > feature would be potentially useful to *all* users, thereby setting
-> the
-> > usefulness multiplier back to 1.0.  But I don't recall that anything
-> > came of this?
-> >
-> > I also don't know how useful the code is to its intended
-> > micro-audience: xen users!
-> >
-> > So can we please revisit all this from the top level?  Jeremy, your
-> > input would be valuable.  Christoph, I recall that you had technical
-> > objections - can you please repeat those?
-> >
-> > It's the best I can do to kick this along, sorry.
-> 
-> Hi Andrew (and Linus) --
-> 
-> Time to re-open this conversation (for 2.6.39 merge window)?
-> 
-> Assuming GregKH approves kztmem as a staging driver, it should
-> now set "the usefulness multiplier back to 1.0". Kztmem
-> is a superset of Nitin's zcache and zram but more dynamic
-> and is completely independent of Xen and virtualization.
-> 
-> See kztmem overview: https://lkml.org/lkml/2011/1/18/170
-> 
-> And I believe Christoph's technical objections have all been
-> resolved.  See longer version of previous reply here:
-> https://lkml.org/lkml/2010/10/30/226
-> 
-> So please reconsider cleancache!
+--90e6ba6e866882822f049c801968
+Content-Type: text/plain; charset=ISO-8859-1
 
-Hi Andrew (and Linus) --
+On Thu, Feb 17, 2011 at 9:07 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> [ Btw, that also shows another problem: "list_move()" doesn't trigger
+> the debugging checks when it does the __list_del(). So
+> CONFIG_DEBUG_LIST would never have caught the fact that the
+> "list_move()" was done on a list-entry that didn't have valid list
+> pointers any more. ]
 
-As you may have seen, gregkh has taken zcache into drivers/staging
-for merging when the 2.6.39 window opens.  And zcache (which
-works entirely in-kernel, no virtualization required) depends on
-cleancache.
+Ok, so does this patch change things? IOW, if you enable
+CONFIG_DEBUG_LIST, this patch should hopefully make the error case of
+using "list_move()" on a stale and re-used entry trigger an error
+printout.
 
-Cleancache and zcache are both in linux-next and, via linux-next,
-in mmotm.  Last October, Linus said that he preferred cleancache
-to merge via you (Andrew), not pulled from my git tree.  So:
+NOTE! Even if the list is some stale entry on the stack, if nothing
+has overwritten that stack entry, no amount of list debugging will
+notice this. So you still need to hit the problem. But now the kernel
+should print stuff out even if the page got re-allocated to something
+else than a page table, so _if_ the problem is a list_move() or
+similar, we don't need to hit quite the same very special case. If it
+corrupts user space pages or some other random memory, it will still
+complain (instead of just resulting in a SIGSEGV or whatever)
 
-1) Is cleancache finally now acceptable for merging in the
-   upcoming 2.6.39 window? and
-2) If so, is there anything else I need to do to ensure the
-   merging of cleancache happens during the open window or will
-   it all happen automagically (from my point of view) through
-   your (Andrew's) normal open-window processes?
+Of course, there is absolutely no guarantee that it's actually
+"list_move()" at all.
 
-Sorry to be excessively persistent, but I don't want to miss
-the 2.6.39 window due to my newbie-ness.  And I plan to be on
-vacation for some time during March and would also like to ensure
-I don't miss something *I* need to do before or during the
-window.
+And as usual, the patch is TOTALLY UNTESTED.
 
-Thanks,
-Dan Magenheimer
+                                 Linus
+
+--90e6ba6e866882822f049c801968
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gka44ntr1
+
+IGluY2x1ZGUvbGludXgvbGlzdC5oIHwgICAxMiArKysrKysrKystLS0KIGxpYi9saXN0X2RlYnVn
+LmMgICAgIHwgICAzOSArKysrKysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0KIDIg
+ZmlsZXMgY2hhbmdlZCwgMzUgaW5zZXJ0aW9ucygrKSwgMTYgZGVsZXRpb25zKC0pCgpkaWZmIC0t
+Z2l0IGEvaW5jbHVkZS9saW51eC9saXN0LmggYi9pbmNsdWRlL2xpbnV4L2xpc3QuaAppbmRleCA5
+YTVmOGE3Li4zYTU0MjY2IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2xpc3QuaAorKysgYi9p
+bmNsdWRlL2xpbnV4L2xpc3QuaApAQCAtOTYsNiArOTYsMTEgQEAgc3RhdGljIGlubGluZSB2b2lk
+IF9fbGlzdF9kZWwoc3RydWN0IGxpc3RfaGVhZCAqIHByZXYsIHN0cnVjdCBsaXN0X2hlYWQgKiBu
+ZXh0KQogICogaW4gYW4gdW5kZWZpbmVkIHN0YXRlLgogICovCiAjaWZuZGVmIENPTkZJR19ERUJV
+R19MSVNUCitzdGF0aWMgaW5saW5lIHZvaWQgX19saXN0X2RlbF9lbnRyeShzdHJ1Y3QgbGlzdF9o
+ZWFkICplbnRyeSkKK3sKKwlfX2xpc3RfZGVsKGVudHJ5LT5wcmV2LCBlbnRyeS0+bmV4dCk7Cit9
+CisKIHN0YXRpYyBpbmxpbmUgdm9pZCBsaXN0X2RlbChzdHJ1Y3QgbGlzdF9oZWFkICplbnRyeSkK
+IHsKIAlfX2xpc3RfZGVsKGVudHJ5LT5wcmV2LCBlbnRyeS0+bmV4dCk7CkBAIC0xMDMsNiArMTA4
+LDcgQEAgc3RhdGljIGlubGluZSB2b2lkIGxpc3RfZGVsKHN0cnVjdCBsaXN0X2hlYWQgKmVudHJ5
+KQogCWVudHJ5LT5wcmV2ID0gTElTVF9QT0lTT04yOwogfQogI2Vsc2UKK2V4dGVybiB2b2lkIF9f
+bGlzdF9kZWxfZW50cnkoc3RydWN0IGxpc3RfaGVhZCAqZW50cnkpOwogZXh0ZXJuIHZvaWQgbGlz
+dF9kZWwoc3RydWN0IGxpc3RfaGVhZCAqZW50cnkpOwogI2VuZGlmCiAKQEAgLTEzNSw3ICsxNDEs
+NyBAQCBzdGF0aWMgaW5saW5lIHZvaWQgbGlzdF9yZXBsYWNlX2luaXQoc3RydWN0IGxpc3RfaGVh
+ZCAqb2xkLAogICovCiBzdGF0aWMgaW5saW5lIHZvaWQgbGlzdF9kZWxfaW5pdChzdHJ1Y3QgbGlz
+dF9oZWFkICplbnRyeSkKIHsKLQlfX2xpc3RfZGVsKGVudHJ5LT5wcmV2LCBlbnRyeS0+bmV4dCk7
+CisJX19saXN0X2RlbF9lbnRyeShlbnRyeSk7CiAJSU5JVF9MSVNUX0hFQUQoZW50cnkpOwogfQog
+CkBAIC0xNDYsNyArMTUyLDcgQEAgc3RhdGljIGlubGluZSB2b2lkIGxpc3RfZGVsX2luaXQoc3Ry
+dWN0IGxpc3RfaGVhZCAqZW50cnkpCiAgKi8KIHN0YXRpYyBpbmxpbmUgdm9pZCBsaXN0X21vdmUo
+c3RydWN0IGxpc3RfaGVhZCAqbGlzdCwgc3RydWN0IGxpc3RfaGVhZCAqaGVhZCkKIHsKLQlfX2xp
+c3RfZGVsKGxpc3QtPnByZXYsIGxpc3QtPm5leHQpOworCV9fbGlzdF9kZWxfZW50cnkobGlzdCk7
+CiAJbGlzdF9hZGQobGlzdCwgaGVhZCk7CiB9CiAKQEAgLTE1OCw3ICsxNjQsNyBAQCBzdGF0aWMg
+aW5saW5lIHZvaWQgbGlzdF9tb3ZlKHN0cnVjdCBsaXN0X2hlYWQgKmxpc3QsIHN0cnVjdCBsaXN0
+X2hlYWQgKmhlYWQpCiBzdGF0aWMgaW5saW5lIHZvaWQgbGlzdF9tb3ZlX3RhaWwoc3RydWN0IGxp
+c3RfaGVhZCAqbGlzdCwKIAkJCQkgIHN0cnVjdCBsaXN0X2hlYWQgKmhlYWQpCiB7Ci0JX19saXN0
+X2RlbChsaXN0LT5wcmV2LCBsaXN0LT5uZXh0KTsKKwlfX2xpc3RfZGVsX2VudHJ5KGxpc3QpOwog
+CWxpc3RfYWRkX3RhaWwobGlzdCwgaGVhZCk7CiB9CiAKZGlmZiAtLWdpdCBhL2xpYi9saXN0X2Rl
+YnVnLmMgYi9saWIvbGlzdF9kZWJ1Zy5jCmluZGV4IDM0NGM3MTAuLmI4MDI5YTUgMTAwNjQ0Ci0t
+LSBhL2xpYi9saXN0X2RlYnVnLmMKKysrIGIvbGliL2xpc3RfZGVidWcuYwpAQCAtMzUsNiArMzUs
+MzEgQEAgdm9pZCBfX2xpc3RfYWRkKHN0cnVjdCBsaXN0X2hlYWQgKm5ldywKIH0KIEVYUE9SVF9T
+WU1CT0woX19saXN0X2FkZCk7CiAKK3ZvaWQgX19saXN0X2RlbF9lbnRyeShzdHJ1Y3QgbGlzdF9o
+ZWFkICplbnRyeSkKK3sKKwlzdHJ1Y3QgbGlzdF9oZWFkICpwcmV2LCAqbmV4dDsKKworCXByZXYg
+PSBlbnRyeS0+cHJldjsKKwluZXh0ID0gZW50cnktPm5leHQ7CisKKwlpZiAoV0FSTihuZXh0ID09
+IExJU1RfUE9JU09OMSwKKwkJImxpc3RfZGVsIGNvcnJ1cHRpb24sICVwLT5uZXh0IGlzIExJU1Rf
+UE9JU09OMSAoJXApXG4iLAorCQllbnRyeSwgTElTVF9QT0lTT04xKSB8fAorCSAgICBXQVJOKHBy
+ZXYgPT0gTElTVF9QT0lTT04yLAorCQkibGlzdF9kZWwgY29ycnVwdGlvbiwgJXAtPnByZXYgaXMg
+TElTVF9QT0lTT04yICglcClcbiIsCisJCWVudHJ5LCBMSVNUX1BPSVNPTjIpIHx8CisJICAgIFdB
+Uk4ocHJldi0+bmV4dCAhPSBlbnRyeSwKKwkJImxpc3RfZGVsIGNvcnJ1cHRpb24uIHByZXYtPm5l
+eHQgc2hvdWxkIGJlICVwLCAiCisJCSJidXQgd2FzICVwXG4iLCBlbnRyeSwgcHJldi0+bmV4dCkg
+fHwKKwkgICAgV0FSTihuZXh0LT5wcmV2ICE9IGVudHJ5LAorCQkibGlzdF9kZWwgY29ycnVwdGlv
+bi4gbmV4dC0+cHJldiBzaG91bGQgYmUgJXAsICIKKwkJImJ1dCB3YXMgJXBcbiIsIGVudHJ5LCBu
+ZXh0LT5wcmV2KSkKKwkJcmV0dXJuOworCisJX19saXN0X2RlbChwcmV2LCBuZXh0KTsKK30KK0VY
+UE9SVF9TWU1CT0woX19saXN0X2RlbF9lbnRyeSk7CisKIC8qKgogICogbGlzdF9kZWwgLSBkZWxl
+dGVzIGVudHJ5IGZyb20gbGlzdC4KICAqIEBlbnRyeTogdGhlIGVsZW1lbnQgdG8gZGVsZXRlIGZy
+b20gdGhlIGxpc3QuCkBAIC00MywxOSArNjgsNyBAQCBFWFBPUlRfU1lNQk9MKF9fbGlzdF9hZGQp
+OwogICovCiB2b2lkIGxpc3RfZGVsKHN0cnVjdCBsaXN0X2hlYWQgKmVudHJ5KQogewotCVdBUk4o
+ZW50cnktPm5leHQgPT0gTElTVF9QT0lTT04xLAotCQkibGlzdF9kZWwgY29ycnVwdGlvbiwgbmV4
+dCBpcyBMSVNUX1BPSVNPTjEgKCVwKVxuIiwKLQkJTElTVF9QT0lTT04xKTsKLQlXQVJOKGVudHJ5
+LT5uZXh0ICE9IExJU1RfUE9JU09OMSAmJiBlbnRyeS0+cHJldiA9PSBMSVNUX1BPSVNPTjIsCi0J
+CSJsaXN0X2RlbCBjb3JydXB0aW9uLCBwcmV2IGlzIExJU1RfUE9JU09OMiAoJXApXG4iLAotCQlM
+SVNUX1BPSVNPTjIpOwotCVdBUk4oZW50cnktPnByZXYtPm5leHQgIT0gZW50cnksCi0JCSJsaXN0
+X2RlbCBjb3JydXB0aW9uLiBwcmV2LT5uZXh0IHNob3VsZCBiZSAlcCwgIgotCQkiYnV0IHdhcyAl
+cFxuIiwgZW50cnksIGVudHJ5LT5wcmV2LT5uZXh0KTsKLQlXQVJOKGVudHJ5LT5uZXh0LT5wcmV2
+ICE9IGVudHJ5LAotCQkibGlzdF9kZWwgY29ycnVwdGlvbi4gbmV4dC0+cHJldiBzaG91bGQgYmUg
+JXAsICIKLQkJImJ1dCB3YXMgJXBcbiIsIGVudHJ5LCBlbnRyeS0+bmV4dC0+cHJldik7Ci0JX19s
+aXN0X2RlbChlbnRyeS0+cHJldiwgZW50cnktPm5leHQpOworCV9fbGlzdF9kZWxfZW50cnkoZW50
+cnkpOwogCWVudHJ5LT5uZXh0ID0gTElTVF9QT0lTT04xOwogCWVudHJ5LT5wcmV2ID0gTElTVF9Q
+T0lTT04yOwogfQo=
+--90e6ba6e866882822f049c801968--
