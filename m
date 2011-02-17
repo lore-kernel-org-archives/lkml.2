@@ -1,128 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab1BQDj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 22:39:27 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48716 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab1BQDjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 22:39:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=XJFKaKs7+JFZymPA+nDrRcIvwkO+QMY4kKLHbyr9gKwKi17ljHaMgUBVFPhS9JKY/H
-         j164P8ED8QDrTk9H6JhlWhi3YbGCF62Wbm8iSLgbjVTXfFnYovXXfyHaB7K8fwUvDrxY
-         odc41bAANYAzF/da3grhvxbmxtzqAbpA8TZEo=
-MIME-Version: 1.0
-Date: Thu, 17 Feb 2011 11:39:22 +0800
-Message-ID: <AANLkTimj+_8cBz0gcEyF1889xK2HdF4SQDSK8DiY-4Gs@mail.gmail.com>
-Subject: Fwd: IGMP and rwlock: Dead ocurred again on TILEPro
-From: Cypher Wu <cypher.w@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754573Ab1BQDrz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 22:47:55 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:36254 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754254Ab1BQDrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 22:47:53 -0500
+Date: Thu, 17 Feb 2011 14:47:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>, Michal Marek <mmarek@suse.cz>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-Id: <20110217144743.2db26b27.sfr@canb.auug.org.au>
+In-Reply-To: <20110131154259.dca1f7e6.sfr@canb.auug.org.au>
+References: <20110131154259.dca1f7e6.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__17_Feb_2011_14_47_43_+1100_5mj=Ly8IEcbYmQj4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: Cypher Wu <cypher.w@gmail.com>
-Date: Wed, Feb 16, 2011 at 5:58 PM
-Subject: GMP and rwlock: Dead ocurred again on TILEPro
-To: linux-kernel@vger.kernel.org
+--Signature=_Thu__17_Feb_2011_14_47_43_+1100_5mj=Ly8IEcbYmQj4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-The rwlock and spinlock of TILEPro platform use TNS instruction to
-test the value of lock, but if interrupt is not masked, read_lock()
-have another chance to deadlock while read_lock() called in bh of
-interrupt.
+On Mon, 31 Jan 2011 15:42:59 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>=20
+> x86_64-linux-gcc: arch/x86/lib/memmove_64.c: No such file or directory
+>=20
+> Caused by commit 9599ec0471deae24044241e2173090d2cbc0e899 ("x86-64, mem:
+> Convert memmove() to assembly file and fix return value bug") interacting
+> with our build system.
+>=20
+> After removing arch/x86/lib/.memmove_64.o.cmd (left over from the build
+> before merging the tip tree) from my object tree, it built correctly.
 
-The original code:
-void __raw_read_lock_slow(raw_
-rwlock_t *rwlock, u32 val)
-{
-   u32 iterations = 0;
-   do {
-       if (!(val & 1))
-           rwlock->lock = val;
-       delay_backoff(iterations++);
-       val = __insn_tns((int *)&rwlock->lock);
-   } while ((val << RD_COUNT_WIDTH) != 0);
-   rwlock->lock = val + (1 << RD_COUNT_SHIFT);
-}
+I am still getting this (of course).
 
-I've modified it to get some information:
-void __raw_read_lock_slow(raw_rwlock_t *rwlock, u32 val)
-{
-   u32 iterations = 0;
-   do {
-       if (!(val & 1))
-       {
-           rwlock->lock = val;
-           iterations = 0;
-       }
-       delay_backoff(iterations++);
-       if (iterations > 0x1000000)
-       {
-           dump_stack();
-           iterations = 0;
-       }
+Michal, is there anything that the kbuild system can do for us here?
+Basically we have changed from using a .c file to generate a .o to using
+a .S but the build system does not regenerate the .cmd file.
 
-       val = __insn_tns((int *)&rwlock->lock);
-   } while ((val << RD_COUNT_WIDTH) != 0);
-   rwlock->lock = val + (1 << RD_COUNT_SHIFT);
-}
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-And this is the stack info:
+--Signature=_Thu__17_Feb_2011_14_47_43_+1100_5mj=Ly8IEcbYmQj4
+Content-Type: application/pgp-signature
 
-Starting stack dump of tid 837, pid 837 (ff0) on cpu 55 at cycle 10180633928773
- frame 0: 0xfd3bfbe0 dump_stack+0x0/0x20 (sp 0xe4b5f9d8)
- frame 1: 0xfd3c0b50 __raw_read_lock_slow.cold+0x50/0x90 (sp 0xe4b5f9d8)
- frame 2: 0xfd184a58 igmpv3_send_cr+0x60/0x440 (sp 0xe4b5f9f0)
- frame 3: 0xfd3bd928 igmp_ifc_timer_expire+0x30/0x90 (sp 0xe4b5fa20)
- frame 4: 0xfd047698 run_timer_softirq+0x258/0x3c8 (sp 0xe4b5fa30)
- frame 5: 0xfd0563f8 __do_softirq+0x138/0x220 (sp 0xe4b5fa70)
- frame 6: 0xfd097d48 do_softirq+0x88/0x110 (sp 0xe4b5fa98)
- frame 7: 0xfd1871f8 irq_exit+0xf8/0x120 (sp 0xe4b5faa8)
- frame 8: 0xfd1afda0 do_timer_interrupt+0xa0/0xf8 (sp 0xe4b5fab0)
- frame 9: 0xfd187b98 handle_interrupt+0x2d8/0x2e0 (sp 0xe4b5fac0)
- <interrupt 25 while in kernel mode>
- frame 10: 0xfd0241c8 _read_lock+0x8/0x40 (sp 0xe4b5fc38)
- frame 11: 0xfd1bb008 ip_mc_del_src+0xc8/0x378 (sp 0xe4b5fc40)
- frame 12: 0xfd2681e8 ip_mc_leave_group+0xf8/0x1e0 (sp 0xe4b5fc70)
- frame 13: 0xfd0a4d70 do_ip_setsockopt+0xe48/0x1560 (sp 0xe4b5fc90)
- frame 14: 0xfd2b4168 sys_setsockopt+0x150/0x170 (sp 0xe4b5fe98)
- frame 15: 0xfd14e550 handle_syscall+0x2d0/0x320 (sp 0xe4b5fec0)
- <syscall while in user mode>
- frame 16: 0x3342a0 (sp 0xbfddfb00)
- frame 17: 0x16130 (sp 0xbfddfb08)
- frame 18: 0x16640 (sp 0xbfddfb38)
- frame 19: 0x16ee8 (sp 0xbfddfc58)
- frame 20: 0x345a08 (sp 0xbfddfc90)
- frame 21: 0x10218 (sp 0xbfddfe48)
-Stack dump complete
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-I don't know the clear definition of rwlock & spinlock in Linux, but
-the implementation of other platforms
-like x86, PowerPC, ARM don't have that issue. The use of TNS cause a
-race condition between system
-call and interrupt.
+iQEcBAEBAgAGBQJNXJpfAAoJEDMEi1NhKgbsS7MH/1JoyxFEvYcsvb00pNS/4PvC
+rqGX8bkK9caxhyKr7VDlFbv8TOFeC1Udp4IhkCM+9xtiBqmgw3cdO8eTNnjJFsjz
+hHyJF0PwiXKw9C8O6S6rcssyL14zQiFFaPjcoGmSJe4JHM1hqs5JT3exGDjDrewP
+kY7cMNa4B5r2PxBAeJ3tQy1n1zLaLD0wNsO1dI5wBFnUR+k6wBBPqliP+nrGGii1
+9RlpWKuSdnq1tOOf7X+qOYysAKxawBc7o2iPtQUc3PQujWWVMs7bK6mbtYlHOgED
+Isrexy25UAvuvl3aigKycXB2VB0HKk/zjtGl3O8c7zKKnAxQ0bmD/cCUJaEm4EQ=
+=FNcR
+-----END PGP SIGNATURE-----
 
-Through the call tree of packet sending, there are also some other
-rwlock will be tried, say
-read_lock(&fib_hash_lock) in fn_hash_lookup() which is called in
-ip_route_output_slow(). I've seen deadlock
-on fib_hash_lock, but haven't reproduced with that debug information yet.
-
-Maybe IGMP is not the only one, TCP timer will retransmit data and
-will also call read_lock(&fib_hash_lock).
-
---
-Cyberman Wu
-
-
-
--- 
-Cyberman Wu
+--Signature=_Thu__17_Feb_2011_14_47_43_+1100_5mj=Ly8IEcbYmQj4--
