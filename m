@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab1BQGIG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 01:08:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51329 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752124Ab1BQGIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 01:08:04 -0500
-Date: Thu, 17 Feb 2011 06:08:02 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Charles Manning <manningc2@actrix.gen.nz>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, ryan@bluewatersys.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
-Message-ID: <20110217060800.GA9645@opensource.wolfsonmicro.com>
-References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102171531.03924.manningc2@actrix.gen.nz> <20110217034914.GB5194@opensource.wolfsonmicro.com> <201102171722.15683.manningc2@actrix.gen.nz>
-MIME-Version: 1.0
+	id S1754156Ab1BQGXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 01:23:19 -0500
+Received: from 1wt.eu ([62.212.114.60]:60605 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab1BQGXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 01:23:17 -0500
+Date: Thu, 17 Feb 2011 07:22:28 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Jiri Slaby <jirislaby@gmail.com>, gregkh@suse.de,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, srostedt <srostedt@redhat.com>,
+        stable-commits@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        ghaskins@novell.com, stable@kernel.org, a.p.zijlstra@chello.nl
+Subject: Re: [stable] Patch "sched: Give CPU bound RT tasks preference" has been added to the 2.6.32-longterm tree
+Message-ID: <20110217062228.GA5890@1wt.eu>
+References: <12978046423644@kroah.org> <1297810967.23343.122.camel@gandalf.stny.rr.com> <1297821667.5126.11.camel@marge.simson.net> <20110216082559.GA16529@elte.hu> <4D5B90E8.6080605@gmail.com> <1297849553.5275.29.camel@marge.simson.net> <20110216152906.75d4000c@stein> <1297919107.6361.59.camel@marge.simson.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201102171722.15683.manningc2@actrix.gen.nz>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1297919107.6361.59.camel@marge.simson.net>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 05:22:15PM +1300, Charles Manning wrote:
-> On Thursday 17 February 2011 16:49:14 Mark Brown wrote:
+Hi Mike,
 
-> > You're missing the use case here - I'm talking about the situation where
-> > you completely ignore the vendor BSP and go direct to mainline without
-> > reference to the vendor provided stuff.  The user may not even have the
-> > vendor provided BSP to look at.
+On Thu, Feb 17, 2011 at 06:05:07AM +0100, Mike Galbraith wrote:
+> That's the intent of pushing more than _purely_ critical bugfixes, get a
+> bit closer.  Enterprise can't move as fast as mainline, not even close,
+> that's a given.  Stable problem get griped about though, so there's no
+> choice but to take some risk.  The tricky bit is how much, and how you
+> go about it.
+> 
+> People are fixing this and that in their enterprise kernels privately
+> every day.  The only difference between that, and pushing baked fixes
+> back is that pushing to stable is visible.  I strongly suspect that
+> there are just tons of mainline backports sitting in each and every
+> enterprise tree in existence.  They could have been pushed to stable,
+> with _less_ stability risk, due to the higher visibility.
 
-> I don't understand what problem you are trying to illustrate.
+I can confirm that my local 2.6.27 tree has had a quite number of sched
+updates that were posted by Ingo, Peter or You in the last two years,
+and I'll definitely be considering your work for future updates. However
+we must be very careful about what we include in -stable. Its primary
+purpose precisely is to let every user upgrade without checking what was
+merged because we are responsible for ensuring there is no regression. I
+would say it's already a bit late in the 2.6.32 cycle for that but we're
+in the first half of its lifecycle and it has a lot of users, so that
+would still benefit a lot of people. Let's just hope it will not break
+any workload (eg: double the time it takes for a specific task) otherwise
+-stable and -longterm will lose some trust among enterprise users.
 
-> First off, kernel BSPs should always be available in accordance with the GPL.
+Ideally we should just make a stable release with just enhancements
+from time to time, without important fixes so that people can revert
+to the previous one and alert us in case of trouble. But my feeling
+is that the current version more or less matches that goal, I don't
+remember having seen anything really critical in it that can't be
+reverted in case of trouble.
 
-Sure, but the effort involved in obtaining them (especially for older
-boards) often greatly exceeds the value of looking at them - often it's
-much easier to go direct to mainline.
+So let's have it, tell users to report any issue and move on :-)
 
-> Secondly the defaults work for just about every case. So long as the mtd has 
-> been set up then dropping in yaffs using defaults is generally pretty 
-> straight forward and there is no tuning required,
+Regards,
+Willy
 
-> Some tuning is required if the mtd does not pass through all the info that is 
-> required. In the fullness of time I would expect that this info would be 
-> provided by mtd.
-
-Your descriptions made it sound like tthis was higher level information
-that was being provided.  If it's just fixups to the flash description
-then I would expect that the flash driver would handle it as you suggest.
-
-> My point was that the "platform data" -- well just about all of it -- is 
-> exposed via the mtd interface. That tells you the number of blocks, block 
-> size, bytes per block etc. Enough to figure out almost all the runtime stuff.
-
-Right, which is why I'm assuming that this build time configuration
-stuff is things that can't be read directly from the hardware and needs
-to be passed in via some other mechanism.  If it's stuff that can be
-read from the MTD subsystem then clearly it should be read from the MTD
-subsystem.
-
-> I think I can dump all the config stuff and just set it to the most useful 
-> defaults. Many of the settings are really only there for debug etc.
-
-That sounds like a good plan.
