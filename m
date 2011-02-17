@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab1BQQK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 11:10:58 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60871 "EHLO mx2.mail.elte.hu"
+	id S932253Ab1BQQL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 11:11:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6300 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab1BQQK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 11:10:57 -0500
-Date: Thu, 17 Feb 2011 17:10:37 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, yinghai@kernel.org,
-        brgerst@gmail.com, gorcunov@gmail.com, shaohui.zheng@intel.com,
-        rientjes@google.com, hpa@linux.intel.com, ankita@in.ibm.com
-Subject: Re: [boot crash] Re: [PATCHSET x86/numa] x86-64, NUMA: bring sanity
- to NUMA config/emulation
-Message-ID: <20110217161037.GA14168@elte.hu>
-References: <1297858867-25981-1-git-send-email-tj@kernel.org>
- <20110216125249.GA18113@elte.hu>
- <20110216141757.GG19830@htj.dyndns.org>
- <20110216155314.GA22855@elte.hu>
- <20110216162329.GI19830@htj.dyndns.org>
- <20110216172954.GA28054@elte.hu>
- <20110217123511.GA26685@elte.hu>
- <20110217124838.GT19830@htj.dyndns.org>
+	id S932096Ab1BQQLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 11:11:55 -0500
+Message-ID: <4D5D48C5.3090906@redhat.com>
+Date: Thu, 17 Feb 2011 17:11:49 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110217124838.GT19830@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Staging: zram: initialize device on first read
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Tejun Heo <tj@kernel.org> wrote:
+Currently the device is initialized when first write is done to the
+device. Any read attempt before the first write would fail, including
+"hidden" read the user may not know about (as for example if he tries
+to write a partial block).
 
-> On Thu, Feb 17, 2011 at 01:35:11PM +0100, Ingo Molnar wrote:
-> > 
-> > FYI, -tip testing has found the follow boot crash:
-> > 
-> > [    0.000000] init_memory_mapping: 0000000000000000-000000003fff0000
-> > [    0.000000]  0000000000 - 003fff0000 page 4k
-> > [    0.000000] kernel direct mapping tables up to 3fff0000 @ 3fdee000-3fff0000
-> > PANIC: early exception 06 rip 10:ffffffff8102f069 error 0 cr2 f06f53
-> > [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.38-rc5-tip+ #94135
-> > [    0.000000] Call Trace:
-> > [    0.000000]  [<ffffffff8199019e>] ? early_idt_handler+0x5e/0x71
-> > [    0.000000]  [<ffffffff8102f069>] ? __phys_addr+0x69/0x70
-> > [    0.000000]  [<ffffffff8102f009>] ? __phys_addr+0x9/0x70
-> > [    0.000000]  [<ffffffff819a0156>] ? initmem_init+0xf0/0xa0d
-> > [    0.000000]  [<ffffffff819a4cc2>] ? parse_crashkernel+0x40/0x2a1
-> > [    0.000000]  [<ffffffff810303e0>] ? dummy_numa_init+0x0/0x70
-> > [    0.000000]  [<ffffffff810284a9>] ? is_vsmp_box+0x9/0x50
-> > [    0.000000]  [<ffffffff81992f4a>] ? setup_arch+0x9f9/0xaec
-> > [    0.000000]  [<ffffffff813c585c>] ? printk+0x41/0x45
-> > [    0.000000]  [<ffffffff81990999>] ? start_kernel+0x9d/0x3b5
-> > [    0.000000]  [<ffffffff8199032b>] ? x86_64_start_reservations+0x132/0x136
-> > [    0.000000]  [<ffffffff8199047d>] ? x86_64_start_kernel+0x14e/0x15d
-> > 
-> > Full crashlog attached below, config attached as well.
-> > 
-> > Testbox is a standard dual-core Athlon64 whitebox PC, with no particular 
-> > weirdnesses. The box boots fine with x86/mm removed from tip:master.
-> > 
-> > I've excluded x86/mm from tip:master for the time being. This was with the 
-> > e23bba604433 x86/mm tree.
-> 
-> Does the following patch from Yinghai fix the problem?
-> 
->  http://thread.gmane.org/gmane.linux.kernel/1101528/focus=1101598
+This patch initializes the device on first request, whether read or
+write.
 
-Yeah - i pulled your latest bits and the crash is gone.
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ zram_drv.c |   19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
 
-Thanks,
-
-	Ingo
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 5fdf9d2..aab4ec4 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -211,11 +211,6 @@ static void zram_read(struct zram *zram, struct bio *bio)
+ 	u32 index;
+ 	struct bio_vec *bvec;
+ 
+-	if (unlikely(!zram->init_done)) {
+-		bio_endio(bio, -ENXIO);
+-		return;
+-	}
+-
+ 	zram_stat64_inc(zram, &zram->stats.num_reads);
+ 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
+ 
+@@ -286,20 +281,15 @@ out:
+ 
+ static void zram_write(struct zram *zram, struct bio *bio)
+ {
+-	int i, ret;
++	int i;
+ 	u32 index;
+ 	struct bio_vec *bvec;
+ 
+-	if (unlikely(!zram->init_done)) {
+-		ret = zram_init_device(zram);
+-		if (ret)
+-			goto out;
+-	}
+-
+ 	zram_stat64_inc(zram, &zram->stats.num_writes);
+ 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
+ 
+ 	bio_for_each_segment(bvec, bio, i) {
++		int ret;
+ 		u32 offset;
+ 		size_t clen;
+ 		struct zobj_header *zheader;
+@@ -445,6 +435,11 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
+ 		return 0;
+ 	}
+ 
++	if (unlikely(!zram->init_done) && zram_init_device(zram)) {
++		bio_io_error(bio);
++		return 0;
++	}
++
+ 	switch (bio_data_dir(bio)) {
+ 	case READ:
+ 		zram_read(zram, bio);
