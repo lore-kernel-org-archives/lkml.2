@@ -1,172 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab1BQUzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:55:13 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:16752 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757992Ab1BQUzI (ORCPT
+	id S1757994Ab1BQU67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:58:59 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46312 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1BQU6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:55:08 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=OdNO9zbrTnSozxzmJfqkl6Sga4XoZpp9wFOLNPfGgvnsg+M2a28GQKCxj4AHKLiBo
-	fwtQxkn72FkXyGRZ4gr2Q==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH v3 1/2] memcg: break out event counters from other stats
-Date: Thu, 17 Feb 2011 12:52:47 -0800
-Message-Id: <1297975968-19672-2-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1297975968-19672-1-git-send-email-gthelen@google.com>
-References: <1297975968-19672-1-git-send-email-gthelen@google.com>
+	Thu, 17 Feb 2011 15:58:55 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] leds-gpio: minor style fixes
+Date: Thu, 17 Feb 2011 21:58:52 +0100
+Message-Id: <1297976332-12877-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
-
-For increasing and decreasing per-cpu cgroup usage counters it makes
-sense to use signed types, as single per-cpu values might go negative
-during updates.  But this is not the case for only-ever-increasing
-event counters.
-
-All the counters have been signed 64-bit so far, which was enough to
-count events even with the sign bit wasted.
-
-This patch:
-- divides s64 counters into signed usage counters and unsigned
-  monotonically increasing event counters.
-- converts unsigned event counters into 'unsigned long' rather than
-  'u64'.  This matches the type used by the /proc/vmstat event counters.
-
-The next patch narrows the signed usage counters type (on 32-bit CPUs,
-that is).
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Reported-by: Lothar Waßmann <LW@KARO-electronics.de>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
-Changelog since v2:
-- Reworded commit message.
+ drivers/leds/leds-gpio.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
- mm/memcontrol.c |   49 +++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 37 insertions(+), 12 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b7e3379..a11ff1e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -93,19 +93,22 @@ enum mem_cgroup_stat_index {
- 	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
- 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
- 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
--	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
--	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
- 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
--	/* incremented at every  pagein/pageout */
--	MEM_CGROUP_EVENTS = MEM_CGROUP_STAT_DATA,
- 	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
+diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+index 4d9fa38..8cb7936 100644
+--- a/drivers/leds/leds-gpio.c
++++ b/drivers/leds/leds-gpio.c
+@@ -16,8 +16,7 @@
+ #include <linux/leds.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
 -
- 	MEM_CGROUP_STAT_NSTATS,
- };
+-#include <asm/gpio.h>
++#include <linux/gpio.h>
  
-+enum mem_cgroup_events_index {
-+	MEM_CGROUP_EVENTS_PGPGIN,	/* # of pages paged in */
-+	MEM_CGROUP_EVENTS_PGPGOUT,	/* # of pages paged out */
-+	MEM_CGROUP_EVENTS_COUNT,	/* # of pages paged in/out */
-+	MEM_CGROUP_EVENTS_NSTATS,
-+};
+ struct gpio_led_data {
+ 	struct led_classdev cdev;
+@@ -129,7 +128,7 @@ static int __devinit create_gpio_led(const struct gpio_led *template,
+ 	ret = gpio_direction_output(led_dat->gpio, led_dat->active_low ^ state);
+ 	if (ret < 0)
+ 		goto err;
+-		
 +
- struct mem_cgroup_stat_cpu {
- 	s64 count[MEM_CGROUP_STAT_NSTATS];
-+	unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
- };
+ 	INIT_WORK(&led_dat->work, gpio_led_work);
  
- /*
-@@ -577,6 +580,22 @@ static void mem_cgroup_swap_statistics(struct mem_cgroup *mem,
- 	this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_SWAPOUT], val);
- }
- 
-+static unsigned long mem_cgroup_read_events(struct mem_cgroup *mem,
-+					    enum mem_cgroup_events_index idx)
-+{
-+	unsigned long val = 0;
-+	int cpu;
-+
-+	for_each_online_cpu(cpu)
-+		val += per_cpu(mem->stat->events[idx], cpu);
-+#ifdef CONFIG_HOTPLUG_CPU
-+	spin_lock(&mem->pcp_counter_lock);
-+	val += mem->nocpu_base.events[idx];
-+	spin_unlock(&mem->pcp_counter_lock);
-+#endif
-+	return val;
-+}
-+
- static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
- 					 bool file, int nr_pages)
+ 	ret = led_classdev_register(parent, &led_dat->cdev);
+@@ -256,7 +255,7 @@ static int __devinit of_gpio_leds_probe(struct platform_device *ofdev,
+ 		if (state) {
+ 			if (!strcmp(state, "keep"))
+ 				led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+-			else if(!strcmp(state, "on"))
++			else if (!strcmp(state, "on"))
+ 				led.default_state = LEDS_GPIO_DEFSTATE_ON;
+ 			else
+ 				led.default_state = LEDS_GPIO_DEFSTATE_OFF;
+@@ -318,7 +317,7 @@ static int __init gpio_led_init(void)
  {
-@@ -589,13 +608,13 @@ static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
+ 	int ret = 0;
  
- 	/* pagein of a big page is an event. So, ignore page size */
- 	if (nr_pages > 0)
--		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGIN_COUNT]);
-+		__this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGIN]);
- 	else {
--		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_PGPGOUT_COUNT]);
-+		__this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGOUT]);
- 		nr_pages = -nr_pages; /* for event */
- 	}
- 
--	__this_cpu_add(mem->stat->count[MEM_CGROUP_EVENTS], nr_pages);
-+	__this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_COUNT], nr_pages);
- 
- 	preempt_enable();
- }
-@@ -617,9 +636,9 @@ static unsigned long mem_cgroup_get_local_zonestat(struct mem_cgroup *mem,
- 
- static bool __memcg_event_check(struct mem_cgroup *mem, int event_mask_shift)
- {
--	s64 val;
-+	unsigned long val;
- 
--	val = this_cpu_read(mem->stat->count[MEM_CGROUP_EVENTS]);
-+	val = this_cpu_read(mem->stat->events[MEM_CGROUP_EVENTS_COUNT]);
- 
- 	return !(val & ((1 << event_mask_shift) - 1));
- }
-@@ -1747,6 +1766,12 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *mem, int cpu)
- 		per_cpu(mem->stat->count[i], cpu) = 0;
- 		mem->nocpu_base.count[i] += x;
- 	}
-+	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
-+		unsigned long x = per_cpu(mem->stat->events[i], cpu);
-+
-+		per_cpu(mem->stat->events[i], cpu) = 0;
-+		mem->nocpu_base.events[i] += x;
-+	}
- 	/* need to clear ON_MOVE value, works as a kind of lock. */
- 	per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) = 0;
- 	spin_unlock(&mem->pcp_counter_lock);
-@@ -3699,9 +3724,9 @@ mem_cgroup_get_local_stat(struct mem_cgroup *mem, struct mcs_total_stat *s)
- 	s->stat[MCS_RSS] += val * PAGE_SIZE;
- 	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
- 	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
--	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGIN_COUNT);
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGPGIN);
- 	s->stat[MCS_PGPGIN] += val;
--	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGOUT_COUNT);
-+	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGPGOUT);
- 	s->stat[MCS_PGPGOUT] += val;
- 	if (do_swap_account) {
- 		val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
+-#ifdef CONFIG_LEDS_GPIO_PLATFORM	
++#ifdef CONFIG_LEDS_GPIO_PLATFORM
+ 	ret = platform_driver_register(&gpio_led_driver);
+ 	if (ret)
+ 		return ret;
+@@ -326,7 +325,7 @@ static int __init gpio_led_init(void)
+ #ifdef CONFIG_LEDS_GPIO_OF
+ 	ret = of_register_platform_driver(&of_gpio_leds_driver);
+ #endif
+-#ifdef CONFIG_LEDS_GPIO_PLATFORM	
++#ifdef CONFIG_LEDS_GPIO_PLATFORM
+ 	if (ret)
+ 		platform_driver_unregister(&gpio_led_driver);
+ #endif
 -- 
-1.7.3.1
+1.7.2.3
 
