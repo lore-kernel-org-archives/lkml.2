@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab1BQQMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 11:12:23 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36479 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab1BQQMW (ORCPT
+	id S1756491Ab1BQQN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 11:13:59 -0500
+Received: from blu0-omc1-s25.blu0.hotmail.com ([65.55.116.36]:5989 "EHLO
+	blu0-omc1-s25.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752493Ab1BQQNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 11:12:22 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 18 Feb 2011 01:06:03 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 3/4] Reclaim invalidated page ASAP
-Message-Id: <20110218010603.46152945.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <973e9f9bf2006923b600be0c28cedce777a2cf2a.1297940291.git.minchan.kim@gmail.com>
-References: <cover.1297940291.git.minchan.kim@gmail.com>
-	<973e9f9bf2006923b600be0c28cedce777a2cf2a.1297940291.git.minchan.kim@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 17 Feb 2011 11:13:54 -0500
+X-Originating-IP: [174.91.193.52]
+X-Originating-Email: [pdumas9@sympatico.ca]
+Message-ID: <BLU0-SMTP5778CCCE5F4ABA371FFDC796D50@phx.gbl>
+Date: Thu, 17 Feb 2011 11:13:47 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Will Newton <will.newton@gmail.com>, Will Simoneau <simoneau@ele.uri.edu>,
+        David Miller <davem@davemloft.net>, hpa@zytor.com,
+        matt@console-pimps.org, peterz@infradead.org, jbaron@redhat.com,
+        mingo@elte.hu, tglx@linutronix.de, roland@redhat.com, rth@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com, avi@redhat.com,
+        sam@ravnborg.org, ddaney@caviumnetworks.com, michael@ellerman.id.au,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org, cmetcalf@tilera.com,
+        dhowells@redhat.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 0/2] jump label: 2.6.38 updates
+References: <4D59B891.8010300@zytor.com> <AANLkTimp9xKbZdDZpONrxDkfMSAiQre0v=SOsJUnnoWA@mail.gmail.com> <20110215211123.GA3094@ele.uri.edu> <20110215.132702.39199169.davem@davemloft.net> <20110215215604.GA3177@ele.uri.edu> <AANLkTikXy+AJ3tdEkEN--xJPefbXJ4-OVS3cg6R7yXzc@mail.gmail.com> <1297858734.23343.138.camel@gandalf.stny.rr.com> <AANLkTinzr6rb=WwFs7QApsvdy5f7PHZ1qS9ZVrncEzZD@mail.gmail.com> <BLU0-SMTP71BCB155CBAE79997EE08D96D20@phx.gbl> <1297913774.23343.905.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1297913774.23343.905.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 11:05:04 up 316 days,  1:54,  6 users,  load average: 2.06, 1.81,
+	1.65
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 17 Feb 2011 16:13:52.0984 (UTC) FILETIME=[AB64C580:01CBCEBD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011 00:08:21 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> [ Removed Andi as I believe this is the mysterious thread he was talking
+> about. Anyone else want to be removed? ]
+> 
+> 
+> On Wed, 2011-02-16 at 08:24 -0500, Mathieu Desnoyers wrote:
+> > * Will Newton (will.newton@gmail.com) wrote:
+> 
+> > initially:
+> > foo = 0
+> > bar = 0
+> > 
+> > CPU A                            CPU B
+> > 
+> > xchg(&foo, 1);
+> >   ll foo
+> >   sc foo
+> > 
+> >   -> interrupt
+> > 
+> >   if (foo == 1)
+> >     xchg(&bar, 1);
+> >       ll bar
+> >       sc bar
+> >       invalidate bar
+> > 
+> >                                  lbar = bar;
+> >                                  smp_mb()
+> 
+> Question: Does a mb() flush all cache or does it just make sure that
+> read/write operations finish before starting new ones?
 
-> invalidate_mapping_pages is very big hint to reclaimer.
-> It means user doesn't want to use the page any more.
-> So in order to prevent working set page eviction, this patch
-> move the page into tail of inactive list by PG_reclaim.
-> 
-> Please, remember that pages in inactive list are working set
-> as well as active list. If we don't move pages into inactive list's
-> tail, pages near by tail of inactive list can be evicted although
-> we have a big clue about useless pages. It's totally bad.
-> 
-> Now PG_readahead/PG_reclaim is shared.
-> fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
-> preventing fast reclaiming readahead marker page.
-> 
-> In this series, PG_reclaim is used by invalidated page, too.
-> If VM find the page is invalidated and it's dirty, it sets PG_reclaim
-> to reclaim asap. Then, when the dirty page will be writeback,
-> clear_page_dirty_for_io will clear PG_reclaim unconditionally.
-> It disturbs this serie's goal.
-> 
-> I think it's okay to clear PG_readahead when the page is dirty, not
-> writeback time. So this patch moves ClearPageReadahead.
-> In v4, ClearPageReadahead in set_page_dirty has a problem which is reported
-> by Steven Barrett. It's due to compound page. Some driver(ex, audio) calls 
-> set_page_dirty with compound page which isn't on LRU. but my patch does 
-> ClearPageRelcaim on compound page. In non-CONFIG_PAGEFLAGS_EXTENDED, it breaks
-> PageTail flag.
-> 
-> I think it doesn't affect THP and pass my test with THP enabling 
-> but Cced Andrea for double check.
-> 
-> Reported-by: Steven Barrett <damentz@liquorix.net>
-> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+AFAIK, the Linux kernel memory model semantic only cares about coherent
+caches (I'd be interested to learn if I am wrong here). Therefore,
+smp_mb() affects ordering of data memory read/writes only, not cache
+invalidation -- _however_, it apply only in a memory model where the
+underlying accesses are performed on coherent caches.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> >                                  lfoo = foo;
+> 
+> IOW, will that smp_mb() really make lfoo read the new foo in memory? If
+> foo happens to still be in cache and no coherency has been performed to
+> flush it, would it just simply read foo straight from the cache?
 
+If we were to deploy the Linux kernel on an architecture without
+coherent caches, I think smp_mb() should imply a cacheline invalidation,
+otherwise we completely mess up the order of data writes vs their
+observability from each invididual core POV.
+
+This is what I do in liburcu actually. I introduced a "smp_mc() (mc for
+memory commit)" macro to specify that cache invalidation is required on
+non-cache-coherent archs. smp_mb() imply a smp_mc(). (smp_mc() is
+therefore weaker than smp_mb(), because the mb imply ordering of memory
+operations performed by a given core, while smp_mc only ensures that
+the core caches are synchronized with memory)
+
+Thanks,
+
+Mathieu
+
+> 
+> -- Steve
+> 
+> >                                  BUG_ON(lbar == 1 && lfoo == 0);
+> >   invalidate foo
+> > 
+> > It should be valid to expect that every time "bar" read by CPU B is 1,
+> > then "foo" is always worth 1. However, in this case, the lack of
+> > invalidate on foo is keeping the cacheline from reaching CPU B. There
+> > seems to be a problem with interrupts/NMIs coming right between sc and
+> > invalidate, as Ingo pointed out.
+> > 
+> > Thanks,
+> > 
+> > Mathieu
+> > 
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
