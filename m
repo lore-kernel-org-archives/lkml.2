@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab1BQRRP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 12:17:15 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:47618 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757037Ab1BQRK7 (ORCPT
+	id S1757130Ab1BQRR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 12:17:59 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36021 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757036Ab1BQRKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 12:10:59 -0500
-Message-Id: <20110217163234.897116805@chello.nl>
+	Thu, 17 Feb 2011 12:10:50 -0500
+Message-Id: <20110217163234.965977975@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 17 Feb 2011 17:23:30 +0100
+Date: Thu, 17 Feb 2011 17:23:31 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -23,271 +23,360 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: [PATCH 03/17] powerpc: mmu_gather rework
+Subject: [PATCH 04/17] sparc: mmu_gather rework
 References: <20110217162327.434629380@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-powerpc-preemptible_mmu_gather.patch
+Content-Disposition: inline; filename=peter_zijlstra-sparc-preemptible_mmu_gather.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up powerpc to the new mmu_gather stuffs.
+Rework the sparc mmu_gather usage to conform to the new world order :-)
 
-PPC has an extra batching queue to RCU free the actual pagetable
-allocations, use the ARCH extentions for that for now.
+Sparc mmu_gather does two things:
+ - tracks vaddrs to unhash
+ - tracks pages to free
 
-For the ppc64_tlb_batch, which tracks the vaddrs to unhash from the
-hardware hash-table, keep using per-cpu arrays but flush on context
-switch and use a TLF bit to track the lazy_mmu state.
+Split these two things like powerpc has done and keep the vaddrs
+in per-cpu data structures and flush them on context switch.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+The remaining bits can then use the generic mmu_gather.
+
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/powerpc/include/asm/pgalloc.h     |    4 ++--
- arch/powerpc/include/asm/thread_info.h |    2 ++
- arch/powerpc/include/asm/tlb.h         |   10 ++++++++++
- arch/powerpc/kernel/process.c          |   23 ++++++++++++++++++++++-
- arch/powerpc/mm/pgtable.c              |   14 ++++----------
- arch/powerpc/mm/tlb_hash32.c           |    2 +-
- arch/powerpc/mm/tlb_hash64.c           |   12 +++++++-----
- arch/powerpc/mm/tlb_nohash.c           |    2 +-
- 8 files changed, 49 insertions(+), 20 deletions(-)
+ arch/sparc/include/asm/pgalloc_64.h  |    3 +
+ arch/sparc/include/asm/pgtable_64.h  |   15 ++++-
+ arch/sparc/include/asm/tlb_64.h      |   91 ++---------------------------------
+ arch/sparc/include/asm/tlbflush_64.h |   12 +++-
+ arch/sparc/mm/tlb.c                  |   43 +++++++++-------
+ arch/sparc/mm/tsb.c                  |   15 +++--
+ 6 files changed, 63 insertions(+), 116 deletions(-)
 
-Index: linux-2.6/arch/powerpc/include/asm/tlb.h
+Index: linux-2.6/arch/sparc/include/asm/pgalloc_64.h
 ===================================================================
---- linux-2.6.orig/arch/powerpc/include/asm/tlb.h
-+++ linux-2.6/arch/powerpc/include/asm/tlb.h
-@@ -28,6 +28,16 @@
- #define tlb_start_vma(tlb, vma)	do { } while (0)
- #define tlb_end_vma(tlb, vma)	do { } while (0)
+--- linux-2.6.orig/arch/sparc/include/asm/pgalloc_64.h
++++ linux-2.6/arch/sparc/include/asm/pgalloc_64.h
+@@ -78,4 +78,7 @@ static inline void check_pgt_cache(void)
+ 	quicklist_trim(0, NULL, 25, 16);
+ }
  
-+#define HAVE_ARCH_MMU_GATHER 1
++#define __pte_free_tlb(tlb, pte, addr)	pte_free((tlb)->mm, pte)
++#define __pmd_free_tlb(tlb, pmd, addr)	pmd_free((tlb)->mm, pmd)
 +
-+struct pte_freelist_batch;
-+
-+struct arch_mmu_gather {
-+	struct pte_freelist_batch *batch;
-+};
-+
-+#define ARCH_MMU_GATHER_INIT (struct arch_mmu_gather){ .batch = NULL, }
-+
- extern void tlb_flush(struct mmu_gather *tlb);
- 
- /* Get the generic bits... */
-Index: linux-2.6/arch/powerpc/kernel/process.c
+ #endif /* _SPARC64_PGALLOC_H */
+Index: linux-2.6/arch/sparc/include/asm/tlb_64.h
 ===================================================================
---- linux-2.6.orig/arch/powerpc/kernel/process.c
-+++ linux-2.6/arch/powerpc/kernel/process.c
-@@ -393,6 +393,9 @@ struct task_struct *__switch_to(struct t
- 	struct thread_struct *new_thread, *old_thread;
- 	unsigned long flags;
- 	struct task_struct *last;
-+#ifdef CONFIG_PPC_BOOK3S_64
-+	struct ppc64_tlb_batch *batch;
-+#endif
+--- linux-2.6.orig/arch/sparc/include/asm/tlb_64.h
++++ linux-2.6/arch/sparc/include/asm/tlb_64.h
+@@ -7,66 +7,11 @@
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
  
- #ifdef CONFIG_SMP
- 	/* avoid complexity of lazy save/restore of fpu
-@@ -511,7 +514,17 @@ struct task_struct *__switch_to(struct t
- 		old_thread->accum_tb += (current_tb - start_tb);
- 		new_thread->start_tb = current_tb;
- 	}
+-#define TLB_BATCH_NR	192
+-
+-/*
+- * For UP we don't need to worry about TLB flush
+- * and page free order so much..
+- */
+-#ifdef CONFIG_SMP
+-  #define FREE_PTE_NR	506
+-  #define tlb_fast_mode(bp) ((bp)->pages_nr == ~0U)
+-#else
+-  #define FREE_PTE_NR	1
+-  #define tlb_fast_mode(bp) 1
 -#endif
-+#endif /* CONFIG_PPC64 */
-+
-+#ifdef CONFIG_PPC_BOOK3S_64
-+	batch = &__get_cpu_var(ppc64_tlb_batch);
-+	if (batch->active) {
-+		current_thread_info()->local_flags |= _TLF_LAZY_MMU;
-+		if (batch->index)
-+			__flush_tlb_pending(batch);
-+		batch->active = 0;
-+	}
-+#endif /* CONFIG_PPC_BOOK3S_64 */
- 
- 	local_irq_save(flags);
- 
-@@ -526,6 +539,14 @@ struct task_struct *__switch_to(struct t
- 	hard_irq_disable();
- 	last = _switch(old_thread, new_thread);
- 
-+#ifdef CONFIG_PPC_BOOK3S_64
-+	if (current_thread_info()->local_flags & _TLF_LAZY_MMU) {
-+		current_thread_info()->local_flags &= ~_TLF_LAZY_MMU;
-+		batch = &__get_cpu_var(ppc64_tlb_batch);
-+		batch->active = 1;
-+	}
-+#endif /* CONFIG_PPC_BOOK3S_64 */
-+
- 	local_irq_restore(flags);
- 
- 	return last;
-Index: linux-2.6/arch/powerpc/mm/pgtable.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/mm/pgtable.c
-+++ linux-2.6/arch/powerpc/mm/pgtable.c
-@@ -33,8 +33,6 @@
- 
- #include "mmu_decl.h"
- 
--DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+-
+-struct mmu_gather {
+-	struct mm_struct *mm;
+-	unsigned int pages_nr;
+-	unsigned int need_flush;
+-	unsigned int fullmm;
+-	unsigned int tlb_nr;
+-	unsigned long vaddrs[TLB_BATCH_NR];
+-	struct page *pages[FREE_PTE_NR];
+-};
+-
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
 -
  #ifdef CONFIG_SMP
+ extern void smp_flush_tlb_pending(struct mm_struct *,
+ 				  unsigned long, unsigned long *);
+ #endif
  
- /*
-@@ -43,7 +41,6 @@ DEFINE_PER_CPU(struct mmu_gather, mmu_ga
-  * freeing a page table page that is being walked without locks
-  */
- 
--static DEFINE_PER_CPU(struct pte_freelist_batch *, pte_freelist_cur);
- static unsigned long pte_freelist_forced_free;
- 
- struct pte_freelist_batch
-@@ -97,12 +94,10 @@ static void pte_free_submit(struct pte_f
- 
- void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
- {
--	/* This is safe since tlb_gather_mmu has disabled preemption */
--	struct pte_freelist_batch **batchp = &__get_cpu_var(pte_freelist_cur);
-+	struct pte_freelist_batch **batchp = &tlb->arch.batch;
- 	unsigned long pgf;
- 
--	if (atomic_read(&tlb->mm->mm_users) < 2 ||
--	    cpumask_equal(mm_cpumask(tlb->mm), cpumask_of(smp_processor_id()))){
-+	if (atomic_read(&tlb->mm->mm_users) < 2) {
- 		pgtable_free(table, shift);
- 		return;
- 	}
-@@ -124,10 +119,9 @@ void pgtable_free_tlb(struct mmu_gather 
- 	}
- }
- 
--void pte_free_finish(void)
-+void pte_free_finish(struct mmu_gather *tlb)
- {
--	/* This is safe since tlb_gather_mmu has disabled preemption */
--	struct pte_freelist_batch **batchp = &__get_cpu_var(pte_freelist_cur);
-+	struct pte_freelist_batch **batchp = &tlb->arch.batch;
- 
- 	if (*batchp == NULL)
- 		return;
-Index: linux-2.6/arch/powerpc/mm/tlb_hash64.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/mm/tlb_hash64.c
-+++ linux-2.6/arch/powerpc/mm/tlb_hash64.c
-@@ -38,13 +38,11 @@ DEFINE_PER_CPU(struct ppc64_tlb_batch, p
-  * neesd to be flushed. This function will either perform the flush
-  * immediately or will batch it up if the current CPU has an active
-  * batch on it.
-- *
-- * Must be called from within some kind of spinlock/non-preempt region...
-  */
- void hpte_need_flush(struct mm_struct *mm, unsigned long addr,
- 		     pte_t *ptep, unsigned long pte, int huge)
- {
--	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *batch = &get_cpu_var(ppc64_tlb_batch);
- 	unsigned long vsid, vaddr;
- 	unsigned int psize;
- 	int ssize;
-@@ -99,6 +97,7 @@ void hpte_need_flush(struct mm_struct *m
- 	 */
- 	if (!batch->active) {
- 		flush_hash_page(vaddr, rpte, psize, ssize, 0);
-+		put_cpu_var(ppc64_tlb_batch);
- 		return;
- 	}
- 
-@@ -127,6 +126,7 @@ void hpte_need_flush(struct mm_struct *m
- 	batch->index = ++i;
- 	if (i >= PPC64_TLB_BATCH_NR)
- 		__flush_tlb_pending(batch);
-+	put_cpu_var(ppc64_tlb_batch);
- }
- 
- /*
-@@ -155,7 +155,7 @@ void __flush_tlb_pending(struct ppc64_tl
- 
- void tlb_flush(struct mmu_gather *tlb)
- {
--	struct ppc64_tlb_batch *tlbbatch = &__get_cpu_var(ppc64_tlb_batch);
-+	struct ppc64_tlb_batch *tlbbatch = &get_cpu_var(ppc64_tlb_batch);
- 
- 	/* If there's a TLB batch pending, then we must flush it because the
- 	 * pages are going to be freed and we really don't want to have a CPU
-@@ -164,8 +164,10 @@ void tlb_flush(struct mmu_gather *tlb)
- 	if (tlbbatch->index)
- 		__flush_tlb_pending(tlbbatch);
- 
-+	put_cpu_var(ppc64_tlb_batch);
-+
- 	/* Push out batch of freed page tables */
--	pte_free_finish();
-+	pte_free_finish(tlb);
- }
- 
- /**
-Index: linux-2.6/arch/powerpc/include/asm/thread_info.h
-===================================================================
---- linux-2.6.orig/arch/powerpc/include/asm/thread_info.h
-+++ linux-2.6/arch/powerpc/include/asm/thread_info.h
-@@ -139,10 +139,12 @@ static inline struct thread_info *curren
- #define TLF_NAPPING		0	/* idle thread enabled NAP mode */
- #define TLF_SLEEPING		1	/* suspend code enabled SLEEP mode */
- #define TLF_RESTORE_SIGMASK	2	/* Restore signal mask in do_signal */
-+#define TLF_LAZY_MMU		3	/* tlb_batch is active */
- 
- #define _TLF_NAPPING		(1 << TLF_NAPPING)
- #define _TLF_SLEEPING		(1 << TLF_SLEEPING)
- #define _TLF_RESTORE_SIGMASK	(1 << TLF_RESTORE_SIGMASK)
-+#define _TLF_LAZY_MMU		(1 << TLF_LAZY_MMU)
- 
- #ifndef __ASSEMBLY__
- #define HAVE_SET_RESTORE_SIGMASK	1
-Index: linux-2.6/arch/powerpc/include/asm/pgalloc.h
-===================================================================
---- linux-2.6.orig/arch/powerpc/include/asm/pgalloc.h
-+++ linux-2.6/arch/powerpc/include/asm/pgalloc.h
-@@ -32,13 +32,13 @@ static inline void pte_free(struct mm_st
- 
+-extern void __flush_tlb_pending(unsigned long, unsigned long, unsigned long *);
+-extern void flush_tlb_pending(void);
+-
+-static inline struct mmu_gather *tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
+-{
+-	struct mmu_gather *mp = &get_cpu_var(mmu_gathers);
+-
+-	BUG_ON(mp->tlb_nr);
+-
+-	mp->mm = mm;
+-	mp->pages_nr = num_online_cpus() > 1 ? 0U : ~0U;
+-	mp->fullmm = full_mm_flush;
+-
+-	return mp;
+-}
+-
+-
+-static inline void tlb_flush_mmu(struct mmu_gather *mp)
+-{
+-	if (!mp->fullmm)
+-		flush_tlb_pending();
+-	if (mp->need_flush) {
+-		free_pages_and_swap_cache(mp->pages, mp->pages_nr);
+-		mp->pages_nr = 0;
+-		mp->need_flush = 0;
+-	}
+-
+-}
+-
  #ifdef CONFIG_SMP
- extern void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift);
--extern void pte_free_finish(void);
-+extern void pte_free_finish(struct mmu_gather *tlb);
- #else /* CONFIG_SMP */
- static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
- {
- 	pgtable_free(table, shift);
- }
--static inline void pte_free_finish(void) { }
-+static inline void pte_free_finish(struct mmu_gather *tlb) { }
- #endif /* !CONFIG_SMP */
+ extern void smp_flush_tlb_mm(struct mm_struct *mm);
+ #define do_flush_tlb_mm(mm) smp_flush_tlb_mm(mm)
+@@ -74,38 +19,14 @@ extern void smp_flush_tlb_mm(struct mm_s
+ #define do_flush_tlb_mm(mm) __flush_tlb_mm(CTX_HWBITS(mm->context), SECONDARY_CONTEXT)
+ #endif
  
- static inline void __pte_free_tlb(struct mmu_gather *tlb, struct page *ptepage,
-Index: linux-2.6/arch/powerpc/mm/tlb_hash32.c
+-static inline void tlb_finish_mmu(struct mmu_gather *mp, unsigned long start, unsigned long end)
+-{
+-	tlb_flush_mmu(mp);
+-
+-	if (mp->fullmm)
+-		mp->fullmm = 0;
+-
+-	/* keep the page table cache within bounds */
+-	check_pgt_cache();
+-
+-	put_cpu_var(mmu_gathers);
+-}
+-
+-static inline void tlb_remove_page(struct mmu_gather *mp, struct page *page)
+-{
+-	if (tlb_fast_mode(mp)) {
+-		free_page_and_swap_cache(page);
+-		return;
+-	}
+-	mp->need_flush = 1;
+-	mp->pages[mp->pages_nr++] = page;
+-	if (mp->pages_nr >= FREE_PTE_NR)
+-		tlb_flush_mmu(mp);
+-}
+-
+-#define tlb_remove_tlb_entry(mp,ptep,addr) do { } while (0)
+-#define pte_free_tlb(mp, ptepage, addr) pte_free((mp)->mm, ptepage)
+-#define pmd_free_tlb(mp, pmdp, addr) pmd_free((mp)->mm, pmdp)
+-#define pud_free_tlb(tlb,pudp, addr) __pud_free_tlb(tlb,pudp,addr)
++extern void __flush_tlb_pending(unsigned long, unsigned long, unsigned long *);
++extern void flush_tlb_pending(void);
+ 
+-#define tlb_migrate_finish(mm)	do { } while (0)
+ #define tlb_start_vma(tlb, vma) do { } while (0)
+ #define tlb_end_vma(tlb, vma)	do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
++#define tlb_flush(tlb)	flush_tlb_pending()
++
++#include <asm-generic/tlb.h>
+ 
+ #endif /* _SPARC64_TLB_H */
+Index: linux-2.6/arch/sparc/include/asm/tlbflush_64.h
 ===================================================================
---- linux-2.6.orig/arch/powerpc/mm/tlb_hash32.c
-+++ linux-2.6/arch/powerpc/mm/tlb_hash32.c
-@@ -73,7 +73,7 @@ void tlb_flush(struct mmu_gather *tlb)
+--- linux-2.6.orig/arch/sparc/include/asm/tlbflush_64.h
++++ linux-2.6/arch/sparc/include/asm/tlbflush_64.h
+@@ -5,9 +5,17 @@
+ #include <asm/mmu_context.h>
+ 
+ /* TSB flush operations. */
+-struct mmu_gather;
++
++#define TLB_BATCH_NR	192
++
++struct tlb_batch {
++	struct mm_struct *mm;
++	unsigned long tlb_nr;
++	unsigned long vaddrs[TLB_BATCH_NR];
++};
++
+ extern void flush_tsb_kernel_range(unsigned long start, unsigned long end);
+-extern void flush_tsb_user(struct mmu_gather *mp);
++extern void flush_tsb_user(struct tlb_batch *tb);
+ 
+ /* TLB flush operations. */
+ 
+Index: linux-2.6/arch/sparc/mm/tlb.c
+===================================================================
+--- linux-2.6.orig/arch/sparc/mm/tlb.c
++++ linux-2.6/arch/sparc/mm/tlb.c
+@@ -19,33 +19,34 @@
+ 
+ /* Heavily inspired by the ppc64 code.  */
+ 
+-DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
++static DEFINE_PER_CPU(struct tlb_batch, tlb_batch);
+ 
+ void flush_tlb_pending(void)
+ {
+-	struct mmu_gather *mp = &get_cpu_var(mmu_gathers);
++	struct tlb_batch *tb = &get_cpu_var(tlb_batch);
+ 
+-	if (mp->tlb_nr) {
+-		flush_tsb_user(mp);
++	if (tb->tlb_nr) {
++		flush_tsb_user(tb);
+ 
+-		if (CTX_VALID(mp->mm->context)) {
++		if (CTX_VALID(tb->mm->context)) {
+ #ifdef CONFIG_SMP
+-			smp_flush_tlb_pending(mp->mm, mp->tlb_nr,
+-					      &mp->vaddrs[0]);
++			smp_flush_tlb_pending(tb->mm, tb->tlb_nr,
++					      &tb->vaddrs[0]);
+ #else
+-			__flush_tlb_pending(CTX_HWBITS(mp->mm->context),
+-					    mp->tlb_nr, &mp->vaddrs[0]);
++			__flush_tlb_pending(CTX_HWBITS(tb->mm->context),
++					    tb->tlb_nr, &tb->vaddrs[0]);
+ #endif
+ 		}
+-		mp->tlb_nr = 0;
++		tb->tlb_nr = 0;
  	}
  
- 	/* Push out batch of freed page tables */
--	pte_free_finish();
-+	pte_free_finish(tlb);
+-	put_cpu_var(mmu_gathers);
++	put_cpu_var(tlb_batch);
  }
  
- /*
-Index: linux-2.6/arch/powerpc/mm/tlb_nohash.c
+-void tlb_batch_add(struct mm_struct *mm, unsigned long vaddr, pte_t *ptep, pte_t orig)
++void tlb_batch_add(struct mm_struct *mm, unsigned long vaddr,
++		   pte_t *ptep, pte_t orig, int fullmm)
+ {
+-	struct mmu_gather *mp = &__get_cpu_var(mmu_gathers);
++	struct tlb_batch *tb = &get_cpu_var(tlb_batch);
+ 	unsigned long nr;
+ 
+ 	vaddr &= PAGE_MASK;
+@@ -77,21 +78,25 @@ void tlb_batch_add(struct mm_struct *mm,
+ 
+ no_cache_flush:
+ 
+-	if (mp->fullmm)
++	if (fullmm) {
++		put_cpu_var(tlb_batch);
+ 		return;
++	}
+ 
+-	nr = mp->tlb_nr;
++	nr = tb->tlb_nr;
+ 
+-	if (unlikely(nr != 0 && mm != mp->mm)) {
++	if (unlikely(nr != 0 && mm != tb->mm)) {
+ 		flush_tlb_pending();
+ 		nr = 0;
+ 	}
+ 
+ 	if (nr == 0)
+-		mp->mm = mm;
++		tb->mm = mm;
+ 
+-	mp->vaddrs[nr] = vaddr;
+-	mp->tlb_nr = ++nr;
++	tb->vaddrs[nr] = vaddr;
++	tb->tlb_nr = ++nr;
+ 	if (nr >= TLB_BATCH_NR)
+ 		flush_tlb_pending();
++
++	put_cpu_var(tlb_batch);
+ }
+Index: linux-2.6/arch/sparc/mm/tsb.c
 ===================================================================
---- linux-2.6.orig/arch/powerpc/mm/tlb_nohash.c
-+++ linux-2.6/arch/powerpc/mm/tlb_nohash.c
-@@ -301,7 +301,7 @@ void tlb_flush(struct mmu_gather *tlb)
- 	flush_tlb_mm(tlb->mm);
- 
- 	/* Push out batch of freed page tables */
--	pte_free_finish();
-+	pte_free_finish(tlb);
+--- linux-2.6.orig/arch/sparc/mm/tsb.c
++++ linux-2.6/arch/sparc/mm/tsb.c
+@@ -47,12 +47,13 @@ void flush_tsb_kernel_range(unsigned lon
+ 	}
  }
  
- /*
+-static void __flush_tsb_one(struct mmu_gather *mp, unsigned long hash_shift, unsigned long tsb, unsigned long nentries)
++static void __flush_tsb_one(struct tlb_batch *tb, unsigned long hash_shift,
++			    unsigned long tsb, unsigned long nentries)
+ {
+ 	unsigned long i;
+ 
+-	for (i = 0; i < mp->tlb_nr; i++) {
+-		unsigned long v = mp->vaddrs[i];
++	for (i = 0; i < tb->tlb_nr; i++) {
++		unsigned long v = tb->vaddrs[i];
+ 		unsigned long tag, ent, hash;
+ 
+ 		v &= ~0x1UL;
+@@ -65,9 +66,9 @@ static void __flush_tsb_one(struct mmu_g
+ 	}
+ }
+ 
+-void flush_tsb_user(struct mmu_gather *mp)
++void flush_tsb_user(struct tlb_batch *tb)
+ {
+-	struct mm_struct *mm = mp->mm;
++	struct mm_struct *mm = tb->mm;
+ 	unsigned long nentries, base, flags;
+ 
+ 	spin_lock_irqsave(&mm->context.lock, flags);
+@@ -76,7 +77,7 @@ void flush_tsb_user(struct mmu_gather *m
+ 	nentries = mm->context.tsb_block[MM_TSB_BASE].tsb_nentries;
+ 	if (tlb_type == cheetah_plus || tlb_type == hypervisor)
+ 		base = __pa(base);
+-	__flush_tsb_one(mp, PAGE_SHIFT, base, nentries);
++	__flush_tsb_one(tb, PAGE_SHIFT, base, nentries);
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+ 	if (mm->context.tsb_block[MM_TSB_HUGE].tsb) {
+@@ -84,7 +85,7 @@ void flush_tsb_user(struct mmu_gather *m
+ 		nentries = mm->context.tsb_block[MM_TSB_HUGE].tsb_nentries;
+ 		if (tlb_type == cheetah_plus || tlb_type == hypervisor)
+ 			base = __pa(base);
+-		__flush_tsb_one(mp, HPAGE_SHIFT, base, nentries);
++		__flush_tsb_one(tb, HPAGE_SHIFT, base, nentries);
+ 	}
+ #endif
+ 	spin_unlock_irqrestore(&mm->context.lock, flags);
+Index: linux-2.6/arch/sparc/include/asm/pgtable_64.h
+===================================================================
+--- linux-2.6.orig/arch/sparc/include/asm/pgtable_64.h
++++ linux-2.6/arch/sparc/include/asm/pgtable_64.h
+@@ -655,9 +655,11 @@ static inline int pte_special(pte_t pte)
+ #define pte_unmap(pte)			do { } while (0)
+ 
+ /* Actual page table PTE updates.  */
+-extern void tlb_batch_add(struct mm_struct *mm, unsigned long vaddr, pte_t *ptep, pte_t orig);
++extern void tlb_batch_add(struct mm_struct *mm, unsigned long vaddr,
++			  pte_t *ptep, pte_t orig, int fullmm);
+ 
+-static inline void set_pte_at(struct mm_struct *mm, unsigned long addr, pte_t *ptep, pte_t pte)
++static inline void __set_pte_at(struct mm_struct *mm, unsigned long addr,
++			     pte_t *ptep, pte_t pte, int fullmm)
+ {
+ 	pte_t orig = *ptep;
+ 
+@@ -670,12 +672,19 @@ static inline void set_pte_at(struct mm_
+ 	 *             and SUN4V pte layout, so this inline test is fine.
+ 	 */
+ 	if (likely(mm != &init_mm) && (pte_val(orig) & _PAGE_VALID))
+-		tlb_batch_add(mm, addr, ptep, orig);
++		tlb_batch_add(mm, addr, ptep, orig, fullmm);
+ }
+ 
++#define set_pte_at(mm,addr,ptep,pte)	\
++	__set_pte_at((mm), (addr), (ptep), (pte), 0)
++
+ #define pte_clear(mm,addr,ptep)		\
+ 	set_pte_at((mm), (addr), (ptep), __pte(0UL))
+ 
++#define __HAVE_ARCH_PTE_CLEAR_NOT_PRESENT_FULL
++#define pte_clear_not_present_full(mm,addr,ptep,fullmm)	\
++	__set_pte_at((mm), (addr), (ptep), __pte(0UL), (fullmm))
++
+ #ifdef DCACHE_ALIASING_POSSIBLE
+ #define __HAVE_ARCH_MOVE_PTE
+ #define move_pte(pte, prot, old_addr, new_addr)				\
 
 
