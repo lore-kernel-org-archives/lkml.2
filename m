@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab1BQJhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 04:37:06 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:35289 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab1BQJhE (ORCPT
+	id S1754869Ab1BQJl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 04:41:28 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:37805 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752696Ab1BQJlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 04:37:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=N5qnzpUfi71ROZZOj8gzY99Yv4QsGxj6fTNShn1m7wVIPF3ZgG2iZPtoq4THnkQ1Oa
-         vVa8jN/4C+Lv2ULFrAwtM0hcGoP1fF6MDqIDKAP4ahxZG8FCCEzljkjB/+Gbl/fPey1/
-         hKMOAWt4k/iStt2OBxju07N87DH5fchKoEM6I=
-MIME-Version: 1.0
-Date: Thu, 17 Feb 2011 17:37:02 +0800
-Message-ID: <AANLkTim1wWi_sguqfo4t7V-RDT1tT41fkFtTVksoJGw5@mail.gmail.com>
-Subject: [PATCH] code cleanup on include/linux/fs.h
-From: Steven Liu <lingjiujianke@gmail.com>
-To: torvalds <torvalds@linux-foundation.org>, viro <viro@zeniv.linux.org.uk>,
-        dchinner <dchinner@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Feb 2011 04:41:24 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18u3XU+iV8ucfEt5lQ60efGYbqdc/inxqa8un5Lpi
+	pow2jtRFQWo5rI
+Subject: Re: Patch "sched: Give CPU bound RT tasks preference" has been
+ added to the 2.6.32-longterm tree
+From: Mike Galbraith <efault@gmx.de>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>, gregkh@suse.de,
+        srostedt <srostedt@redhat.com>, a.p.zijlstra@chello.nl,
+        ghaskins@novell.com, stable@kernel.org, stable-commits@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110217085219.417ba829@stein>
+References: <12978046423644@kroah.org>
+	 <1297810967.23343.122.camel@gandalf.stny.rr.com>
+	 <1297821667.5126.11.camel@marge.simson.net>
+	 <20110216082559.GA16529@elte.hu> <4D5B90E8.6080605@gmail.com>
+	 <1297849553.5275.29.camel@marge.simson.net> <20110216152906.75d4000c@stein>
+	 <1297919107.6361.59.camel@marge.simson.net> <20110217085219.417ba829@stein>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Feb 2011 10:41:08 +0100
+Message-ID: <1297935668.5411.21.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi  all,
+On Thu, 2011-02-17 at 08:52 +0100, Stefan Richter wrote:
+> On Feb 17 Mike Galbraith wrote:
+> > On Wed, 2011-02-16 at 15:29 +0100, Stefan Richter wrote:
+> > > Jiri,
+> > > if the desire is to improve performance of existing features (and maybe
+> > > add this and that little feature that looks attractive), while at the same
+> > > time you want
+> > >   - experts to have looked at these improvements,
+> > >   - packagers to avoid duplicate work,
+> > >   - keep the number of local patches in check,
+> > > then the solution is to /stay close enough to the mainline/.
+> 
+> [By which I meant updating, not backporting.]
 
-    Can this patch be fixed in,
+[but you know that ain't an option too]
 
-     Cleanup the unsed code on  include/linux/fs.h.
-     All filesystem using mount_bdev and mount_nodev
-     to replace get_sb_bdev and get_sb_nodev.
-     So rmmove the unused code.
+> > People are fixing this and that in their enterprise kernels privately
+> > every day.  The only difference between that, and pushing baked fixes
+> > back is that pushing to stable is visible.  I strongly suspect that
+> > there are just tons of mainline backports sitting in each and every
+> > enterprise tree in existence.
+> 
+> 'Visible' = the change which was an important performance improvement or
+> outright fix at site A (and a nice-to-have improvement on sites B...X)
+> eventually exhibits a regression at site Y.
 
+Known bugs are stable bugs, known performance problems are stable
+performance problems is the only answer to that.  Leaving them as is
+does remove risk of a customer satisfaction delta.. but..  
 
- Signed-off-by: LiuQi <lingjiujianke@gmail.com.com>
----
- include/linux/fs.h |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+But whatever.  Yeah, I understand that it's a sticky wicket.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index bd32159..53ad8e6 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1807,10 +1807,6 @@ extern struct dentry *mount_ns(struct
-file_system_type *fs_type, int flags,
- extern struct dentry *mount_bdev(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data,
- 	int (*fill_super)(struct super_block *, void *, int));
--extern int get_sb_bdev(struct file_system_type *fs_type,
--	int flags, const char *dev_name, void *data,
--	int (*fill_super)(struct super_block *, void *, int),
--	struct vfsmount *mnt);
- extern struct dentry *mount_single(struct file_system_type *fs_type,
- 	int flags, void *data,
- 	int (*fill_super)(struct super_block *, void *, int));
-@@ -1821,10 +1817,6 @@ extern int get_sb_single(struct
-file_system_type *fs_type,
- extern struct dentry *mount_nodev(struct file_system_type *fs_type,
- 	int flags, void *data,
- 	int (*fill_super)(struct super_block *, void *, int));
--extern int get_sb_nodev(struct file_system_type *fs_type,
--	int flags, void *data,
--	int (*fill_super)(struct super_block *, void *, int),
--	struct vfsmount *mnt);
- void generic_shutdown_super(struct super_block *sb);
- void kill_block_super(struct super_block *sb);
- void kill_anon_super(struct super_block *sb);
--- 
-1.6.5.2
+	-Mike
 
-
-
-
-Best Regards
-
-
-Steven Liu
