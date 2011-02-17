@@ -1,206 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1BQFXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 00:23:10 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:36663 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1BQFXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 00:23:08 -0500
-Date: Thu, 17 Feb 2011 14:22:20 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] fat: Batched discard support for fat
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>, linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Message-id: <20110217052220.GA1372@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 17 Feb 2011 05:22:25.0559 (UTC)
- FILETIME=[A9790A70:01CBCE62]
+	id S1753492Ab1BQF1E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 00:27:04 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:48003 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750807Ab1BQF1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 00:27:01 -0500
+Date: Thu, 17 Feb 2011 16:26:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for February 17
+Message-Id: <20110217162650.092e77c3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__17_Feb_2011_16_26_50_+1100_A8VvPucTqCW61xXY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+--Signature=_Thu__17_Feb_2011_16_26_50_+1100_A8VvPucTqCW61xXY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-FAT supports batched discard as ext4.
+Hi all,
 
-Cited from Lukas words.
-"The current solution is not ideal because of its bad performance impact.
-So basic idea to improve things is to avoid discarding every time some
-blocks are freed. and instead batching is together into bigger trims,
-which tends to be more effective."
+Changes since 20110216:
 
-You can find an information in detail at following URLs.
-http://lwn.net/Articles/397538/
-http://lwn.net/Articles/383933/
+Dropped tree: xen
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index f504089..08b53e1 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -299,6 +299,7 @@ extern int fat_alloc_clusters(struct inode *inode, int *cluster,
- 			      int nr_cluster);
- extern int fat_free_clusters(struct inode *inode, int cluster);
- extern int fat_count_free_clusters(struct super_block *sb);
-+extern int fat_trim_fs(struct super_block *sb, struct fstrim_range *range);
- 
- /* fat/file.c */
- extern long fat_generic_ioctl(struct file *filp, unsigned int cmd,
-diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index b47d2c9..777094b 100644
---- a/fs/fat/fatent.c
-+++ b/fs/fat/fatent.c
-@@ -1,6 +1,8 @@
- /*
-  * Copyright (C) 2004, OGAWA Hirofumi
-  * Released under GPL v2.
-+ *
-+ * Batched discard support by Kyungmin Park <kyungmin.park@samsung.com>
-  */
- 
- #include <linux/module.h>
-@@ -541,6 +543,16 @@ out:
- 	return err;
- }
- 
-+static int fat_issue_discard(struct super_block *sb, int cluster, int nr_clus)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+	sector_t block, nr_blocks;
-+
-+        block = fat_clus_to_blknr(sbi, cluster);
-+        nr_blocks = nr_clus * sbi->sec_per_clus;
-+        return sb_issue_discard(sb, block, nr_blocks, GFP_NOFS, 0);
-+}
-+
- int fat_free_clusters(struct inode *inode, int cluster)
- {
- 	struct super_block *sb = inode->i_sb;
-@@ -575,11 +587,7 @@ int fat_free_clusters(struct inode *inode, int cluster)
- 			if (cluster != fatent.entry + 1) {
- 				int nr_clus = fatent.entry - first_cl + 1;
- 
--				sb_issue_discard(sb,
--					fat_clus_to_blknr(sbi, first_cl),
--					nr_clus * sbi->sec_per_clus,
--					GFP_NOFS, 0);
--
-+				fat_issue_discard(sb, first_cl, nr_clus);
- 				first_cl = cluster;
- 			}
- 		}
-@@ -683,3 +691,73 @@ out:
- 	unlock_fat(sbi);
- 	return err;
- }
-+
-+int fat_trim_fs(struct super_block *sb, struct fstrim_range *range)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(sb);
-+	struct fatent_operations *ops = sbi->fatent_ops;
-+	struct fat_entry fatent;
-+	unsigned long reada_blocks, reada_mask, cur_block;
-+	int err = 0, free;
-+	unsigned int start, len, minlen, trimmed;
-+	int entry = 0;
-+
-+	start = range->start >> sb->s_blocksize_bits;
-+	len = range->len >> sb->s_blocksize_bits;
-+	minlen = range->minlen >> sb->s_blocksize_bits;
-+	trimmed = 0;
-+
-+	minlen = minlen / sbi->sec_per_clus;
-+
-+	lock_fat(sbi);
-+	if (sbi->free_clusters != -1 && sbi->free_clus_valid)
-+		goto out;
-+
-+	reada_blocks = FAT_READA_SIZE >> sb->s_blocksize_bits;
-+	reada_mask = reada_blocks - 1;
-+	cur_block = 0;
-+
-+	free = 0;
-+	fatent_init(&fatent);
-+
-+	/*
-+	 * REVISIT: scan from the last free block.
-+	 */
-+	fatent_set_entry(&fatent, FAT_START_ENT);
-+	while (fatent.entry < sbi->max_cluster) {
-+		/* readahead of fat blocks */
-+		if ((cur_block & reada_mask) == 0) {
-+			unsigned long rest = sbi->fat_length - cur_block;
-+			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
-+		}
-+		cur_block++;
-+
-+		err = fat_ent_read_block(sb, &fatent);
-+		if (err)
-+			goto out;
-+
-+		do {
-+			if (ops->ent_get(&fatent) == FAT_ENT_FREE) {
-+				free++;
-+				if (!entry)
-+					entry = fatent.entry;
-+			} else if (entry) {
-+				if (free >= minlen) {
-+					fat_issue_discard(sb, entry, free);
-+					trimmed += free;
-+				}
-+				free = 0;
-+				entry = 0;
-+			}
-+		} while (fat_ent_next(sbi, &fatent));
-+	}
-+	if (free >= minlen) {
-+		fat_issue_discard(sb, entry, free);
-+		trimmed += free;
-+	}
-+	range->len = (trimmed * sbi->sec_per_clus) * sb->s_blocksize;
-+	fatent_brelse(&fatent);
-+out:
-+	unlock_fat(sbi);
-+	return err;
-+}
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index 7257752..bfdd558 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -125,6 +125,30 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return fat_ioctl_get_attributes(inode, user_attr);
- 	case FAT_IOCTL_SET_ATTRIBUTES:
- 		return fat_ioctl_set_attributes(filp, user_attr);
-+	case FITRIM:
-+	{
-+		struct super_block *sb = inode->i_sb;
-+		struct fstrim_range range;
-+		int ret = 0;
-+
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if (copy_from_user(&range, (struct fstrim_range *)arg,
-+					sizeof(range)))
-+			return -EFAULT;
-+
-+		ret = fat_trim_fs(sb, &range);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (copy_to_user((struct fstrim_range *)arg, &range,
-+					sizeof(range)))
-+			return -EFAULT;
-+
-+		return 0;
-+	}
-+
- 	default:
- 		return -ENOTTY;	/* Inappropriate ioctl for device */
- 	}
+The omap_dss2 tree gained conflicts against the omap tree.
+
+The workqueue tree gained a build failure so I used the version from
+next-20110216.
+
+The powerpc allyesconfig build is still broken by some obscure bloating
+of the low memory code.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 188 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
+.h
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_ata.c
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_scsi_host.c
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_2420_d=
+ata.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_2430_d=
+ata.c
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+CONFLICT (content): Merge conflict in drivers/spi/pxa2xx_spi_pci.c
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
+Merging edac-amd/for-next
+CONFLICT (content): Merge conflict in include/linux/pci_ids.h
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in arch/x86/kernel/vmlinux.lds.S
+Merging workqueues/for-next
+$ git reset --hard HEAD^
+Merging refs/next/20110216/workqueues
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Applying: OLPC: fix for removal of run_wake_count
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/tty/serial/68328serial.c
+CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
+CONFLICT (content): Merge conflict in drivers/usb/host/ehci-pci.c
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/zram/zram_drv.c
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (content): Merge conflict in drivers/scsi/pm8001/pm8001_sas.h
+CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
+nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
+ing/stradis/Kconfig left in tree.
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+$ git rm -f drivers/staging/stradis/Kconfig
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Thu__17_Feb_2011_16_26_50_+1100_A8VvPucTqCW61xXY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNXLGaAAoJEDMEi1NhKgbsZ4YH/jAxqg/nXZsDyRll1exaEhp8
+XrFBgfVJZJc46c2KxrKBFsIfF1RLNL07w+ZjokMrCbVSwANyqMAfmkTBiGQbWYgf
+QWHvydUSL8YJUgnHevRFByqft1f6Ay7CDEBUqoUqYth1IXfC61MtLOQyGJaXsAQm
+XpKsmHf+W0NRFxj3DkDyU4kQzwF1y5kr222Hzf2mem733dAc9tmry5hE6lIfMzeI
+RVDu9wA6YogUX8phDF9YIjjUgfd1uUjRbjP7v3D1spomgJPHlqXPlkrde6gNw6+N
+TaxIGLgdyNg9nnYeT8Z+cLP1x00vqwr98shFrfSP7N6jtyIbsjHlCflSZUIu76I=
+=PrVP
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Feb_2011_16_26_50_+1100_A8VvPucTqCW61xXY--
