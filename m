@@ -1,124 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab1BQSJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 13:09:55 -0500
-Received: from lechat.rtp-net.org ([88.191.19.38]:58176 "EHLO
-	lechat.rtp-net.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756797Ab1BQSJw (ORCPT
+	id S1757529Ab1BQSLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 13:11:07 -0500
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:60716 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab1BQSLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 13:09:52 -0500
-From: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/7] Add a mfd IPUv3 driver
-Organization: RtpNet
-References: <1297865452-32181-1-git-send-email-s.hauer@pengutronix.de>
-	<1297865452-32181-2-git-send-email-s.hauer@pengutronix.de>
-Date: Thu, 17 Feb 2011 19:10:24 +0100
-In-Reply-To: <1297865452-32181-2-git-send-email-s.hauer@pengutronix.de>
-	(Sascha Hauer's message of "Wed, 16 Feb 2011 15:10:46 +0100")
-Message-ID: <871v36pm5r.fsf@lechat.rtp-net.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 17 Feb 2011 13:11:03 -0500
+Message-ID: <ac00e83c1b57e2eeda1c6631ec611e75.squirrel@webmail.ocsa-data.net>
+In-Reply-To: <E1Pq3aa-0006Nn-Cv@pomaz-ex.szeredi.hu>
+References: <1297893854.4097.43.camel@dworkin.quest-ce.net>
+    <E1Pq1LW-0005rc-Qy@pomaz-ex.szeredi.hu>
+    <7f02c4cb5ca13dae6de7caa1b6f90cfe.squirrel@webmail.ocsa-data.net>
+    <E1Pq3aa-0006Nn-Cv@pomaz-ex.szeredi.hu>
+Date: Thu, 17 Feb 2011 19:11:14 +0100
+Subject: Re: [sshfs] inode problem when using git on a sshfs filesystem
+From: "Yann Droneaud" <yann@droneaud.fr>
+To: "Miklos Szeredi" <miklos@szeredi.hu>
+Cc: "Yann Droneaud" <yann@droneaud.fr>, miklos@szeredi.hu,
+        fuse-sshfs@lists.sourceforge.net, fuse-devel@lists.sourceforge.net,
+        git@vger.kernel.org, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sascha Hauer <s.hauer@pengutronix.de> writes:
-
-Hi,
-
-> The IPU is the Image Processing Unit found on i.MX51/53 SoCs. It
-> features several units for image processing, this patch adds support
-> for the units needed for Framebuffer support, namely:
+> On Thu, 17 Feb 2011, Yann Droneaud wrote:
+>> > On Wed, 16 Feb 2011, Yann Droneaud wrote:
+>> >> Hi,
+>> >>
+>> >> For some days, my usage of git is not as seamless as before.
+>> >>
+>> >> I'm using git along sshfs/fuse (don't blame me for that), and
+>> >> each time I try to rebase one of my branch, I have a conflict when
+>> >> applying
+>> >> the third commit. Doing the same operation on a local filesystem
+>> works
+>> >> without any problem.
+>> >
+>> > Yann, thanks for looking into this.
+>> >
+>> > Your findings are not surprising: unlike NFS, sshfs doesn't provide
+>> > inode numbers and the fuse library also doesn't guarantee stable inode
+>> > numbers by default.
+>> >
+>>
+>> But why does it have such behavior when trying to rmdir() a non empty
+>> directory ?
 >
-> - Display Controller (dc)
-> - Display Interface (di)
-> - Display Multi Fifo Controller (dmfc)
-> - Display Processor (dp)
-> - Image DMA Controller (idmac)
+> The VFS (part of the linux kernel that implements the generic
+> filesystem logic) clears the directory entry from the cache prior to
+> actually trying to remove the directory.  This has the effect that any
+> children of the directory are also cleared from the cache, hence the
+> behavior you see in rmdir.
 >
-> This patch is based on the Freescale driver, but follows a different
-> approach. The Freescale code implements logical idmac channels and
-> the handling of the subunits is hidden in common idmac code pathes
-> in big switch/case statements. This patch instead just provides code
-> and resource management for the different subunits. The user, in this
-> case the framebuffer driver, decides how the different units play
-> together.
->
-> The IPU has other units missing in this patch:
->
-> - CMOS Sensor Interface (csi)
-> - Video Deinterlacer (vdi)
-> - Sensor Multi FIFO Controler (smfc)
-> - Image Converter (ic)
-> - Image Rotator (irt)
->
-> So expect more files to come in this directory.
->
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-fbdev@vger.kernel.org
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
->  arch/arm/plat-mxc/include/mach/ipu-v3.h |   49 +++
->  drivers/video/Kconfig                   |    2 +
->  drivers/video/Makefile                  |    1 +
->  drivers/video/imx-ipu-v3/Makefile       |    3 +
->  drivers/video/imx-ipu-v3/ipu-common.c   |  708 +++++++++++++++++++++++++++++++
->  drivers/video/imx-ipu-v3/ipu-cpmem.c    |  612 ++++++++++++++++++++++++++
->  drivers/video/imx-ipu-v3/ipu-dc.c       |  364 ++++++++++++++++
->  drivers/video/imx-ipu-v3/ipu-di.c       |  550 ++++++++++++++++++++++++
->  drivers/video/imx-ipu-v3/ipu-dmfc.c     |  355 ++++++++++++++++
->  drivers/video/imx-ipu-v3/ipu-dp.c       |  476 +++++++++++++++++++++
->  drivers/video/imx-ipu-v3/ipu-prv.h      |  216 ++++++++++
->  include/linux/mfd/imx-ipu-v3.h          |  219 ++++++++++
->  12 files changed, 3555 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/plat-mxc/include/mach/ipu-v3.h
->  create mode 100644 drivers/video/imx-ipu-v3/Makefile
->  create mode 100644 drivers/video/imx-ipu-v3/ipu-common.c
->  create mode 100644 drivers/video/imx-ipu-v3/ipu-cpmem.c
->  create mode 100644 drivers/video/imx-ipu-v3/ipu-dc.c
->  create mode 100644 drivers/video/imx-ipu-v3/ipu-di.c
->  create mode 100644 drivers/video/imx-ipu-v3/ipu-dmfc.c
->  create mode 100644 drivers/video/imx-ipu-v3/ipu-dp.c
->  create mode 100644 drivers/video/imx-ipu-v3/ipu-prv.h
->  create mode 100644 include/linux/mfd/imx-ipu-v3.h
 
-[...]
+I tried to check that behavor: if the VFS is dropping dentry before doing
+a rmdir(), them lookup files under this directory should be slower than
+before rmdir().
 
-> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> index 6bafb51b..ffdb37a 100644
-> --- a/drivers/video/Kconfig
-> +++ b/drivers/video/Kconfig
-> @@ -26,6 +26,8 @@ source "drivers/gpu/drm/Kconfig"
->  
->  source "drivers/gpu/stub/Kconfig"
->  
-> +source "drivers/video/imx-ipu-v3/Kconfig"
-> +
+On a ext4 filesystem, directory with 338 sub directories and 1992 files, 
+i've tried the following commands:
 
-I don't see such a Kconfig file in this patch. Got lost while moving
-from mfd to video ?
+/* drop all */
+# echo 3 > /proc/sys/vm/drop_caches
+# time ls -alR directory > /dev/null
+real	0m0.140s
+user	0m0.000s
+sys	0m0.080s
 
- 
->  config VGASTATE
->         tristate
->         default n
-> diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-> index 8c8fabd..f4921ab 100644
-> --- a/drivers/video/Makefile
-> +++ b/drivers/video/Makefile
-> @@ -153,6 +153,7 @@ obj-$(CONFIG_FB_BFIN_T350MCQB)	  += bfin-t350mcqb-fb.o
->  obj-$(CONFIG_FB_BFIN_7393)        += bfin_adv7393fb.o
->  obj-$(CONFIG_FB_MX3)		  += mx3fb.o
->  obj-$(CONFIG_FB_DA8XX)		  += da8xx-fb.o
-> +obj-$(CONFIG_MFD_IMX_IPU_V3)	  += imx-ipu-v3/
+/* drop cache */
+# echo 1 > /proc/sys/vm/drop_caches
+# time ls -alR directory > /dev/null
+real	0m0.119s
+user	0m0.000s
+sys	0m0.072s
 
-Now that files are in drivers/video, do we want to keep MFD in the name ?
+/* drop dentry and inode */
+# echo 2 > /proc/sys/vm/drop_caches
+# time ls -alR directory > /dev/null
+real	0m0.089s
+user	0m0.016s
+sys	0m0.040s
 
-Arnaud
+/* read from cache */
+# time ls -alR directory > /dev/null
+real	0m0.063s
+user	0m0.004s
+sys	0m0.036s
+
+$ rmdir directory
+rmdir: failed to remove `directory': Directory not empty
+
+/* re read from cache */
+$ time ls -alR directory > /dev/null
+real	0m0.065s
+user	0m0.012s
+sys	0m0.036s
+
+As you can see, after doing rmdir(), the time taken to walk trough the
+directories is the same than before calling it, so the dentry seems not
+flushed out of the cache after the rmdir().
+
+I really prefer this behavior. The one you explained would be a real pain:
+if one user call rmdir on / inside a loop, the full dentry cache will be
+dropped each time: this would affect performance for the whole system.
+
+But perhaps I doesn't understand how the VFS is working, which is the most
+probable solution. Please correct me.
+
+Regards.
+
+-- 
+Yann Droneaud
+
+
