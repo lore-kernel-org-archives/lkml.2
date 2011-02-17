@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab1BQSGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 13:06:22 -0500
-Received: from kroah.org ([198.145.64.141]:53449 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757442Ab1BQSGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 13:06:19 -0500
-Date: Thu, 17 Feb 2011 10:04:56 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andiry Xu <andiry.xu@amd.com>, Alex He <alex.he@amd.com>
-Subject: Re: linux-next: manual merge of the usb tree with Linus' tree
-Message-ID: <20110217180456.GA17077@kroah.com>
-References: <20110207150802.4869bd47.sfr@canb.auug.org.au>
+	id S1757574Ab1BQSHf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 13:07:35 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48158 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757444Ab1BQSHb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 13:07:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110207150802.4869bd47.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110217180042.GA30530@dtor-ws.eng.vmware.com>
+References: <1297123347-2170-1-git-send-email-dtor@vmware.com>
+ <AANLkTim_BL_Cw=X0iuatgw1F4n50CyXv0uqx9n=5=Bq+@mail.gmail.com>
+ <20110217173136.GA28486@dtor-ws.eng.vmware.com> <AANLkTikGVS9EM=7uhwYfXrGHg9yzes7m0pxAinRxivPC@mail.gmail.com>
+ <20110217180042.GA30530@dtor-ws.eng.vmware.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 17 Feb 2011 10:06:40 -0800
+Message-ID: <AANLkTi=bgmRwGXEE_wriYo-5gmyaB43pMUzHf7idiK0k@mail.gmail.com>
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 03:08:02PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/host/ehci-pci.c between commit
-> baab93afc2844b68d57b0dcca5e1d34c5d7cf411 ("USB: EHCI: ASPM quirk of ISOC
-> on AMD Hudson") from Linus' tree and commit
-> b7d5b439b7a40dd0a0202fe1c118615a3fcc3b25 ("USB host: Move AMD PLL quirk
-> to pci-quirks.c") from the usb tree.
-> 
-> I just use the version from the usb tree, but this may need fixing up in
-> pci-quirks.c.
+On Thu, Feb 17, 2011 at 10:00 AM, Dmitry Torokhov <dtor@vmware.com> wrote:
+>
+> The problem is that on m68k size of the struct module_version_attribute
+> is not evenly divisible by sizeof(void *), thus when we lay out the
+> __modver section we align on 4 bytes but when we iterate we think that
+> the alignment is 2.
 
-I have reverted the patch in the usb-next tree, and merged with Linus's
-tree, so the usb-next tree should be all good now.
+So mark the struct properly.
 
-Andriy, can you resend me a new version of this patch that I can apply,
-as I couldn't resolve the merge issues, they were just too great.
+> I/Geert tried adding __attribute__ (aligned(sizeof(void *))) to the type
+> definition itself so we have matching alignment everywhere, but DaveM
+> said that this only guarantees minimum alignment and that using
+> structures like we do shown to break from time to time in kprobes and
+> that only pointers worked reliably.
 
-thanks,
+That sounds totally bogus. Minimum alignment is all it needs, and we
+do that in other places too. I really don't see the reason to add some
+broken indirection for totally broken reasons. We don't do that with
+anything else.
 
-greg k-h
+David, why are you saying that regular "just mark the structure
+alignment correctly" doesn't work?
+
+                                Linus
