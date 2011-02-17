@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab1BQQmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 11:42:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55044 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756794Ab1BQQmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 11:42:39 -0500
-Date: Thu, 17 Feb 2011 17:42:37 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]drivers:scsi Change initate to initiate.
-In-Reply-To: <1296244148-3808-1-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1102171742190.2160@pobox.suse.cz>
-References: <1296244148-3808-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756833Ab1BQQqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 11:46:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56677 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab1BQQqw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 11:46:52 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110217132612.GB13500@www.tglx.de>
+References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de>
+ <1295843342-1122-14-git-send-email-bigeasy@linutronix.de> <20110216221108.GJ22837@angua.secretlab.ca>
+ <20110217132612.GB13500@www.tglx.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 17 Feb 2011 09:46:30 -0700
+X-Google-Sender-Auth: m5SgsdrueDk0GunF0ATTnlxxChc
+Message-ID: <AANLkTikqq9iKkZbg642PJq4hPJS493TrxY8Hx0e63rZv@mail.gmail.com>
+Subject: Re: [sodaville] [PATCH OF 13/14] rtc/cmos: add OF bindings
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, sodaville@linutronix.de,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jan 2011, Justin P. Mattock wrote:
+On Thu, Feb 17, 2011 at 6:26 AM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> * Grant Likely | 2011-02-16 15:11:08 [-0700]:
+>
+>>> diff --git a/Documentation/powerpc/dts-bindings/rtc-cmos.txt b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
+>>> new file mode 100644
+>>> index 0000000..7382989
+>>> --- /dev/null
+>>> +++ b/Documentation/powerpc/dts-bindings/rtc-cmos.txt
+>>
+>>Move to Documentation/devicetree/bindings/rtc/
+> moved.
+>
+>>> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+>>> index c7ff8df..2709e00 100644
+>>> --- a/drivers/rtc/rtc-cmos.c
+>>> +++ b/drivers/rtc/rtc-cmos.c
+>>> @@ -1162,6 +1205,9 @@ static struct platform_driver cmos_platform_driver = {
+>>>  #ifdef CONFIG_PM
+>>>              .pm             = &cmos_pm_ops,
+>>>  #endif
+>>> +#if defined(CONFIG_OF)
+>>> +            .of_match_table = of_cmos_match,
+>>> +#endif
+>>
+>>The #if defined(CONFIG_OF) is no longer necessary around
+>>.of_match_table, particularly if you have a #else above that #defines
+>>of_cmos_match to NULL.
+>
+> Kinda does not work. I get here:
+> |drivers/rtc/rtc-cmos.c:1209:3: error: unknown field â  of_match_tableâ   specified in initializer
+>
+> I rebased on top of -rc5. Is this something new you describing?
 
-> Not sure if this is a typo or not. if it is then feel free to take this.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  drivers/scsi/qla4xxx/ql4_isr.c |    2 +-
->  drivers/scsi/qla4xxx/ql4_os.c  |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/qla4xxx/ql4_isr.c b/drivers/scsi/qla4xxx/ql4_isr.c
-> index 6ffbe97..03e028e 100644
-> --- a/drivers/scsi/qla4xxx/ql4_isr.c
-> +++ b/drivers/scsi/qla4xxx/ql4_isr.c
-> @@ -1027,7 +1027,7 @@ void qla4xxx_process_aen(struct scsi_qla_host * ha, uint8_t process_aen)
->  					((ddb_entry->default_time2wait +
->  					  4) * HZ);
->  
-> -				DEBUG2(printk("scsi%ld: ddb [%d] initate"
-> +				DEBUG2(printk("scsi%ld: ddb [%d] initiate"
->  					      " RELOGIN after %d seconds\n",
->  					      ha->host_no,
->  					      ddb_entry->fw_ddb_index,
-> diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
-> index 3fc1d25..967836e 100644
-> --- a/drivers/scsi/qla4xxx/ql4_os.c
-> +++ b/drivers/scsi/qla4xxx/ql4_os.c
-> @@ -812,7 +812,7 @@ static void qla4xxx_timer(struct scsi_qla_host *ha)
->  					);
->  				start_dpc++;
->  				DEBUG(printk("scsi%ld:%d:%d: ddb [%d] "
-> -					     "initate relogin after"
-> +					     "initiate relogin after"
->  					     " %d seconds\n",
->  					     ha->host_no, ddb_entry->bus,
->  					     ddb_entry->target,
+Base your patch on top of my devicetree/next branch.  That's the
+branch that tglx will be applying them on top of them to get your
+changes to generic pci dt support code.
 
-As it's not in linux-next as of today, I'll be picking it up.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+g.
