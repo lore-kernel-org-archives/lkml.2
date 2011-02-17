@@ -1,185 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1BQLDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 06:03:53 -0500
-Received: from www.tglx.de ([62.245.132.106]:47657 "EHLO www.tglx.de"
+	id S1755249Ab1BQLEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 06:04:23 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:56818 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab1BQLDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 06:03:50 -0500
-Message-ID: <4D5D0086.801@linutronix.de>
-Date: Thu, 17 Feb 2011 12:03:34 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1751884Ab1BQLEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 06:04:20 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Thomas Gleixner'" <tglx@linutronix.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>
+References: <02f501cbcb49$015b8fa0$0412aee0$@mprc.pku.edu.cn> <alpine.LFD.2.00.1102161020470.26192@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1102161020470.26192@localhost6.localdomain6>
+Subject: RE: [PATCHv2 10/11] unicore32 core architecture: interrupts ang gpio handling
+Date: Thu, 17 Feb 2011 19:04:00 +0800
+Message-ID: <006c01cbce92$617a1950$246e4bf0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        devicetree-discuss@lists.ozlabs.org, x86@kernel.org
-Subject: Re: [PATCH TIP 02/14] x86: Add device tree support
-References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de> <1295843342-1122-3-git-send-email-bigeasy@linutronix.de> <20110216212623.GA22837@angua.secretlab.ca>
-In-Reply-To: <20110216212623.GA22837@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQI2DfAqyGEgW+M8hGFmT4RhLZ3GhwLwbQPBkxl07AA=
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> Hi Sebastian,
-Hi Grant,
+
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Wednesday, February 16, 2011 5:26 PM
+> To: Guan Xuetao
+> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; Arnd Bergmann; 'Greg KH'
+> Subject: Re: [PATCHv2 10/11] unicore32 core architecture: interrupts ang gpio handling
+> 
+> On Sun, 13 Feb 2011, Guan Xuetao wrote:
+> > +
+> > +#ifndef __ASSEMBLY__
+> > +struct irqaction;
+> 
+> Why do you need that ?
+> 
+> > +struct pt_regs;
+> > +extern void migrate_irqs(void);
+> 
+> What's that for ? Used nowhere AFAICT
+Yes, no used in unicore32, and I removed the lines.
+Please see following patch:
+
+From: GuanXuetao <gxt@mprc.pku.edu.cn>
+Date: Thu, 17 Feb 2011 19:06:59 +0800
+Subject: [PATCH] unicore32: remove unused lines in arch/unicore32/include/asm/irq.h
+
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/include/asm/irq.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/arch/unicore32/include/asm/irq.h b/arch/unicore32/include/asm/irq.h
+index ade8bb8..baea93e 100644
+--- a/arch/unicore32/include/asm/irq.h
++++ b/arch/unicore32/include/asm/irq.h
+@@ -95,9 +95,7 @@
+ #define IRQ_SD_CD               IRQ_GPIO6 /* falling or rising trigger */
+ 
+ #ifndef __ASSEMBLY__
+-struct irqaction;
+ struct pt_regs;
+-extern void migrate_irqs(void);
+ 
+ extern void asm_do_IRQ(unsigned int, struct pt_regs *);
+ 
+-- 
+1.6.2.2
 
 > 
-> Relatively minor comments below.  You can go ahead and add the
-> following when you respin:
+> > +extern void asm_do_IRQ(unsigned int, struct pt_regs *);
+> > +
+> > +#endif
 > 
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-Cool.
-
->> diff --git a/Documentation/x86/boot_with_dtb.txt b/Documentation/x86/boot_with_dtb.txt
->> new file mode 100644
->> index 0000000..6a357aa
->> --- /dev/null
->> +++ b/Documentation/x86/boot_with_dtb.txt
->> @@ -0,0 +1,26 @@
->> +  Booting x86 with device tree
->> +=================================
->> +
->> +1. Introduction
->> +~~~~~~~~~~~~~~~
->> +This document contains device tree information which are specific to
->> +the x86 platform. Generic informations as bindings can be found in
->> +Documentation/powerpc/dts-bindings/
->> +
->> +2. Passing the device tree
->> +~~~~~~~~~~~~~~~~~~~~~~~~~~
->> +The pointer to the device tree block (dtb) is passed via setup_data
->> +(see [0]) which requires at least boot protocol 2.09. The type filed is
->> +defined as
->> +
->> +#define SETUP_DTB                      2
->> +
->> +3. Purpose
->> +~~~~~~~~~~~
->> +The device tree is used as an extension to the "boot page". As such it does not
->> +parse / consider data which are already covered by the boot page. This includes
->> +memory size, command line arguments or initrd address.
->> +It simply holds information which can not be retrieved otherwise like interrupt
->> +routing or a list of devices behind an I2C bus.
->> +
->> +[0] Documentation/x86/boot.txt
+> > +static struct irq_chip puv3_low_gpio_chip = {
+> > +	.name		= "GPIO-low",
+> > +	.ack		= puv3_low_gpio_ack,
 > 
-> Please also add a brief description to section I of
-> Documentation/devicetree/booting-without-of.txt
-
-I assumed this file is powerpc only. Since you added arm there I have no
-problem to move this content there.
-
->> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
->> index b4ec95f..b227ba7 100644
->> --- a/arch/x86/include/asm/prom.h
->> +++ b/arch/x86/include/asm/prom.h
->> @@ -1 +1,59 @@
->> -/* dummy prom.h; here to make linux/of.h's #includes happy */
->> +/*
->> + * Definitions for Device tree / OpenFirmware handling on X86
->> + *
->> + * based on arch/powerpc/include/asm/prom.h which is
->> + *         Copyright (C) 1996-2005 Paul Mackerras.
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License
->> + * as published by the Free Software Foundation; either version
->> + * 2 of the License, or (at your option) any later version.
->> + */
->> +
->> +#ifndef _ASM_X86_PROM_H
->> +#define _ASM_X86_PROM_H
->> +#ifndef __ASSEMBLY__
->> +
->> +#include <linux/of.h>
->> +#include <linux/types.h>
->> +#include <asm/irq.h>
->> +#include <asm/atomic.h>
->> +#include <asm/setup.h>
->> +
->> +#ifdef CONFIG_OF
->> +extern void add_dtb(u64 data);
->> +#else
->> +static inline void add_dtb(u64 data) { }
->> +#endif
->> +
->> +extern char cmd_line[COMMAND_LINE_SIZE];
->> +/* This number is used when no interrupt has been assigned */
->> +#define NO_IRQ		(0)
+> Please use irq_* functions. These are deprecated and going away soon.
 > 
-> This line should no longer be necessary.  drivers/of/irq.c defines
-> NO_IRQ if it isn't already defined by the architecture.  I'm trying to
-> limit the exposure of NO_IRQ in dt code.
-
-okay, I will to remove that.
-
->> +#endif /* __ASSEMBLY__ */
->> +
->> +/*
->> + * These includes are put at the bottom because they may contain things
->> + * that are overridden by this file.  Ideally they shouldn't be included
->> + * by this file, but there are a bunch of .c files that currently depend
->> + * on it.  Eventually they will be cleaned up.
->> + */
->> +#include <linux/of_fdt.h>
->> +#include <linux/of_irq.h>
->> +#include <linux/platform_device.h>
+> > +	.mask		= puv3_low_gpio_mask,
+> > +	.unmask		= puv3_low_gpio_unmask,
+> > +	.set_type	= puv3_gpio_type,
+> > +	.set_wake	= puv3_low_gpio_wake,
+> > +};
+> > +
+> > +static struct irq_chip puv3_normal_chip = {
+> > +	.name		= "PKUnity-v3",
+> > +	.ack		= puv3_mask_irq,
+> > +	.mask		= puv3_mask_irq,
+> > +	.unmask		= puv3_unmask_irq,
+> > +	.set_wake	= puv3_set_wake,
+> > +};
 > 
-> You should be able to remove these includes.  The problems described
-> in the header are mostly with device drivers and architecture code.
-> You shouldn't run into any of those issue, and if you do they should
-> be fixed at the source.
-okay.
+>   Ditto
 
->> index c752e97..149c87f 100644
->> --- a/arch/x86/kernel/irqinit.c
->> +++ b/arch/x86/kernel/irqinit.c
->> @@ -25,6 +25,7 @@
->>  #include <asm/setup.h>
->>  #include <asm/i8259.h>
->>  #include <asm/traps.h>
->> +#include <asm/prom.h>
+Please review following patch, and it works well.
+
+From: GuanXuetao <gxt@mprc.pku.edu.cn>
+Date: Thu, 17 Feb 2011 19:15:36 +0800
+Subject: [PATCH] unicore32: modify function names and parameters for irq_chips
+   -- by advice with Thomas Gleixner
+
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/Kconfig      |    1 +
+ arch/unicore32/kernel/irq.c |   82 +++++++++++++++++++++---------------------
+ 2 files changed, 42 insertions(+), 41 deletions(-)
+
+diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+index c0624e9..b283993 100644
+--- a/arch/unicore32/Kconfig
++++ b/arch/unicore32/Kconfig
+@@ -10,6 +10,7 @@ config UNICORE32
+ 	select HAVE_KERNEL_LZMA
+ 	select GENERIC_FIND_FIRST_BIT
+ 	select GENERIC_IRQ_PROBE
++	select GENERIC_HARDIRQS_NO_DEPRECATED
+ 	select ARCH_WANT_FRAME_POINTERS
+ 	help
+ 	  UniCore-32 is 32-bit Instruction Set Architecture,
+diff --git a/arch/unicore32/kernel/irq.c b/arch/unicore32/kernel/irq.c
+index 7c211f5..38e3089 100644
+--- a/arch/unicore32/kernel/irq.c
++++ b/arch/unicore32/kernel/irq.c
+@@ -42,14 +42,14 @@ static int GPIO_IRQ_mask = 0;
+ 
+ #define GPIO_MASK(irq)		(1 << (irq - IRQ_GPIO0))
+ 
+-static int puv3_gpio_type(unsigned int irq, unsigned int type)
++static int puv3_gpio_type(struct irq_data *d, unsigned int type)
+ {
+ 	unsigned int mask;
+ 
+-	if (irq < IRQ_GPIOHIGH)
+-		mask = 1 << irq;
++	if (d->irq < IRQ_GPIOHIGH)
++		mask = 1 << d->irq;
+ 	else
+-		mask = GPIO_MASK(irq);
++		mask = GPIO_MASK(d->irq);
+ 
+ 	if (type == IRQ_TYPE_PROBE) {
+ 		if ((GPIO_IRQ_rising_edge | GPIO_IRQ_falling_edge) & mask)
+@@ -75,37 +75,37 @@ static int puv3_gpio_type(unsigned int irq, unsigned int type)
+ /*
+  * GPIO IRQs must be acknowledged.  This is for IRQs from 0 to 7.
+  */
+-static void puv3_low_gpio_ack(unsigned int irq)
++static void puv3_low_gpio_ack(struct irq_data *d)
+ {
+-	GPIO_GEDR = (1 << irq);
++	GPIO_GEDR = (1 << d->irq);
+ }
+ 
+-static void puv3_low_gpio_mask(unsigned int irq)
++static void puv3_low_gpio_mask(struct irq_data *d)
+ {
+-	INTC_ICMR &= ~(1 << irq);
++	INTC_ICMR &= ~(1 << d->irq);
+ }
+ 
+-static void puv3_low_gpio_unmask(unsigned int irq)
++static void puv3_low_gpio_unmask(struct irq_data *d)
+ {
+-	INTC_ICMR |= 1 << irq;
++	INTC_ICMR |= 1 << d->irq;
+ }
+ 
+-static int puv3_low_gpio_wake(unsigned int irq, unsigned int on)
++static int puv3_low_gpio_wake(struct irq_data *d, unsigned int on)
+ {
+ 	if (on)
+-		PM_PWER |= 1 << irq;
++		PM_PWER |= 1 << d->irq;
+ 	else
+-		PM_PWER &= ~(1 << irq);
++		PM_PWER &= ~(1 << d->irq);
+ 	return 0;
+ }
+ 
+ static struct irq_chip puv3_low_gpio_chip = {
+ 	.name		= "GPIO-low",
+-	.ack		= puv3_low_gpio_ack,
+-	.mask		= puv3_low_gpio_mask,
+-	.unmask		= puv3_low_gpio_unmask,
+-	.set_type	= puv3_gpio_type,
+-	.set_wake	= puv3_low_gpio_wake,
++	.irq_ack	= puv3_low_gpio_ack,
++	.irq_mask	= puv3_low_gpio_mask,
++	.irq_unmask	= puv3_low_gpio_unmask,
++	.irq_set_type	= puv3_gpio_type,
++	.irq_set_wake	= puv3_low_gpio_wake,
+ };
+ 
+ /*
+@@ -142,16 +142,16 @@ puv3_gpio_handler(unsigned int irq, struct irq_desc *desc)
+  * In addition, the IRQs are all collected up into one bit in the
+  * interrupt controller registers.
+  */
+-static void puv3_high_gpio_ack(unsigned int irq)
++static void puv3_high_gpio_ack(struct irq_data *d)
+ {
+-	unsigned int mask = GPIO_MASK(irq);
++	unsigned int mask = GPIO_MASK(d->irq);
+ 
+ 	GPIO_GEDR = mask;
+ }
+ 
+-static void puv3_high_gpio_mask(unsigned int irq)
++static void puv3_high_gpio_mask(struct irq_data *d)
+ {
+-	unsigned int mask = GPIO_MASK(irq);
++	unsigned int mask = GPIO_MASK(d->irq);
+ 
+ 	GPIO_IRQ_mask &= ~mask;
+ 
+@@ -159,9 +159,9 @@ static void puv3_high_gpio_mask(unsigned int irq)
+ 	GPIO_GFER &= ~mask;
+ }
+ 
+-static void puv3_high_gpio_unmask(unsigned int irq)
++static void puv3_high_gpio_unmask(struct irq_data *d)
+ {
+-	unsigned int mask = GPIO_MASK(irq);
++	unsigned int mask = GPIO_MASK(d->irq);
+ 
+ 	GPIO_IRQ_mask |= mask;
+ 
+@@ -169,7 +169,7 @@ static void puv3_high_gpio_unmask(unsigned int irq)
+ 	GPIO_GFER = GPIO_IRQ_falling_edge & GPIO_IRQ_mask;
+ }
+ 
+-static int puv3_high_gpio_wake(unsigned int irq, unsigned int on)
++static int puv3_high_gpio_wake(struct irq_data *d, unsigned int on)
+ {
+ 	if (on)
+ 		PM_PWER |= PM_PWER_GPIOHIGH;
+@@ -180,33 +180,33 @@ static int puv3_high_gpio_wake(unsigned int irq, unsigned int on)
+ 
+ static struct irq_chip puv3_high_gpio_chip = {
+ 	.name		= "GPIO-high",
+-	.ack		= puv3_high_gpio_ack,
+-	.mask		= puv3_high_gpio_mask,
+-	.unmask		= puv3_high_gpio_unmask,
+-	.set_type	= puv3_gpio_type,
+-	.set_wake	= puv3_high_gpio_wake,
++	.irq_ack	= puv3_high_gpio_ack,
++	.irq_mask	= puv3_high_gpio_mask,
++	.irq_unmask	= puv3_high_gpio_unmask,
++	.irq_set_type	= puv3_gpio_type,
++	.irq_set_wake	= puv3_high_gpio_wake,
+ };
+ 
+ /*
+  * We don't need to ACK IRQs on the PKUnity unless they're GPIOs
+  * this is for internal IRQs i.e. from 8 to 31.
+  */
+-static void puv3_mask_irq(unsigned int irq)
++static void puv3_mask_irq(struct irq_data *d)
+ {
+-	INTC_ICMR &= ~(1 << irq);
++	INTC_ICMR &= ~(1 << d->irq);
+ }
+ 
+-static void puv3_unmask_irq(unsigned int irq)
++static void puv3_unmask_irq(struct irq_data *d)
+ {
+-	INTC_ICMR |= (1 << irq);
++	INTC_ICMR |= (1 << d->irq);
+ }
+ 
+ /*
+  * Apart form GPIOs, only the RTC alarm can be a wakeup event.
+  */
+-static int puv3_set_wake(unsigned int irq, unsigned int on)
++static int puv3_set_wake(struct irq_data *d, unsigned int on)
+ {
+-	if (irq == IRQ_RTCAlarm) {
++	if (d->irq == IRQ_RTCAlarm) {
+ 		if (on)
+ 			PM_PWER |= PM_PWER_RTC;
+ 		else
+@@ -218,10 +218,10 @@ static int puv3_set_wake(unsigned int irq, unsigned int on)
+ 
+ static struct irq_chip puv3_normal_chip = {
+ 	.name		= "PKUnity-v3",
+-	.ack		= puv3_mask_irq,
+-	.mask		= puv3_mask_irq,
+-	.unmask		= puv3_unmask_irq,
+-	.set_wake	= puv3_set_wake,
++	.irq_ack	= puv3_mask_irq,
++	.irq_mask	= puv3_mask_irq,
++	.irq_unmask	= puv3_unmask_irq,
++	.irq_set_wake	= puv3_set_wake,
+ };
+ 
+ static struct resource irq_resource = {
+@@ -383,7 +383,7 @@ int show_interrupts(struct seq_file *p, void *v)
+ 		seq_printf(p, "%3d: ", i);
+ 		for_each_present_cpu(cpu)
+ 			seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
+-		seq_printf(p, " %10s", desc->chip->name ? : "-");
++		seq_printf(p, " %10s", desc->irq_data.chip->name ? : "-");
+ 		seq_printf(p, "  %s", action->name);
+ 		for (action = action->next; action; action = action->next)
+ 			seq_printf(p, ", %s", action->name);
+-- 
+1.6.2.2
+
 > 
-> I'm probably missing something.  I don't see any changes to irqinit.c
-> other than this.  What symbol definition has been moved to prom.h that
-> irqinit.c needs?
-
-This hunk was folded into the wrong patch. It should been folded into
-"x86/ioapic: Add OF bindings for IO-APIC".
-
->>  /*
->>   * ISA PIC or low IO-APIC triggered (INTA-cycle or APIC) interrupts:
->> diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
->> new file mode 100644
->> index 0000000..4969ffa
->> --- /dev/null
->> +++ b/arch/x86/kernel/prom.c
+> Thanks,
 > 
-> You don't need to name this prom.c.  devicetree.c would make more sense.
-> prom is a legacy name from when only Open Firmware systems were using
-> the dt code.
+> 	tglx
 
-okay.
+Thanks & Regards.
 
->> @@ -0,0 +1,51 @@
+Guan Xuetao
 
->> +
->> +void __init add_dtb(u64 data)
->> +{
->> +	initial_boot_params = (struct boot_param_header *)
->> +		phys_to_virt((u64) (u32) data +
->> +				offsetof(struct setup_data, data));
-> 
-> (struct boot_param_header *) cast unnecessary since phys_to_virt
-> should return a void*.
 
-removed.
-
->> +}
-
-Sebastian
