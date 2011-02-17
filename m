@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1BQCyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 21:54:12 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47627 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab1BQCyJ (ORCPT
+	id S1756152Ab1BQC4G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 21:56:06 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61472 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756090Ab1BQC4B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 21:54:09 -0500
-Date: Thu, 17 Feb 2011 08:24:26 +0530
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-Subject: Re: [CFS Bandwidth Control v4 1/7] sched: introduce primitives to
- account for CFS bandwidth tracking
-Message-ID: <20110217025426.GA2775@in.ibm.com>
-Reply-To: bharata@linux.vnet.ibm.com
-References: <20110216031831.571628191@google.com>
- <20110216031840.878320737@google.com>
- <20110216165216.GC3415@balbir.in.ibm.com>
+	Wed, 16 Feb 2011 21:56:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kn6TYEtrFSNKqSIHzI5SU/j74Il8iMFheE4SRI2flowKKBMxpP555vm77Khl88/Jqd
+         3gxqi/mxxyUn3ybr2qqYcusNF+XH81tRgVSJ8ecgGCkGbFpeSBRVEvdLqj0BwJYJClPI
+         ZvbMi/VJcJpykG2w3ze8LnUJUOHgHQ1ydLeE0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110216165216.GC3415@balbir.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110216115701.3956.qmail@science.horizon.com>
+References: <AANLkTikLVMNQzmugH-ORc89_ZouX6zWvG-tHSf1QoVf3@mail.gmail.com>
+	<20110216115701.3956.qmail@science.horizon.com>
+Date: Thu, 17 Feb 2011 12:56:00 +1000
+Message-ID: <AANLkTimh61U2WC1U0uwYmK0U4TvdkCLM6NcYoAju6tp0@mail.gmail.com>
+Subject: Re: 2.6.38-rc2: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+From: Dave Airlie <airlied@gmail.com>
+To: George Spelvin <linux@horizon.com>
+Cc: gorcunov@gmail.com, a.p.zijlstra@chello.nl, dzickus@redhat.com,
+        eranian@google.com, linux-kernel@vger.kernel.org, ming.m.lin@intel.com,
+        mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 10:22:16PM +0530, Balbir Singh wrote:
-> * Paul Turner <pjt@google.com> [2011-02-15 19:18:32]:
-> 
-> > In this patch we introduce the notion of CFS bandwidth, to account for the
-> > realities of SMP this is partitioned into globally unassigned bandwidth, and
-> > locally claimed bandwidth:
-> > - The global bandwidth is per task_group, it represents a pool of unclaimed
-> >   bandwidth that cfs_rq's can allocate from.  It uses the new cfs_bandwidth
-> >   structure.
-> > - The local bandwidth is tracked per-cfs_rq, this represents allotments from
-> >   the global pool
-> >   bandwidth assigned to a task_group, this is tracked using the
-> >   new cfs_bandwidth structure.
-> > 
-> > Bandwidth is managed via cgroupfs via two new files in the cpu subsystem:
-> > - cpu.cfs_period_us : the bandwidth period in usecs
-> > - cpu.cfs_quota_us : the cpu bandwidth (in usecs) that this tg will be allowed
-> >   to consume over period above.
-> > 
-> > A per-cfs_bandwidth timer is also introduced to handle future refresh at
-> > period expiration.  There's some minor refactoring here so that
-> > start_bandwidth_timer() functionality can be shared
-> > 
-> > Signed-off-by: Paul Turner <pjt@google.com>
-> > Signed-off-by: Nikhil Rao <ncrao@google.com>
-> > Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
-> > ---
-> 
-> Looks good, minor nits below
-> 
-> 
-> Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+>
+> It's appended below for your convenience.  Are you using this
+> unsuccessfully?
 
-Thanks Balbir.
+This patch quoted below fixes it for me.
 
-> > +
-> > +static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
-> > +{
-> > +	struct cfs_bandwidth *cfs_b =
-> > +		container_of(timer, struct cfs_bandwidth, period_timer);
-> > +	ktime_t now;
-> > +	int overrun;
-> > +	int idle = 0;
-> > +
-> > +	for (;;) {
-> > +		now = hrtimer_cb_get_time(timer);
-> > +		overrun = hrtimer_forward(timer, now, cfs_b->period);
-> > +
-> > +		if (!overrun)
-> > +			break;
-> > +
-> > +		idle = do_sched_cfs_period_timer(cfs_b, overrun);
-> 
-> This patch just sets up to return do_sched_cfs_period_timer to return
-> 1. I am afraid I don't understand why this function is introduced
-> here.
+No more spurious NMIs on my P4.
 
-Answered this during last post: http://lkml.org/lkml/2010/10/14/31
+Tested-by: Dave Airlie <airlied@redhat.com>
 
-> > +
-> > +	mutex_lock(&mutex);
-> > +	raw_spin_lock_irq(&tg->cfs_bandwidth.lock);
-> > +	tg->cfs_bandwidth.period = ns_to_ktime(period);
-> > +	tg->cfs_bandwidth.runtime = tg->cfs_bandwidth.quota = quota;
-> > +	raw_spin_unlock_irq(&tg->cfs_bandwidth.lock);
-> > +
-> > +	for_each_possible_cpu(i) {
-> 
-> Why for each possible cpu - to avoid hotplug handling?
-
-Touched upon this during last post: https://lkml.org/lkml/2010/12/6/49
-
-Regards,
-Bharata.
+>
+>
+> From: Cyrill Gorcunov <gorcunov@openvz.org>
+> Subject: [PATCH] perf, x86: P4 PMU -- Fix unflagged overflows test
+>
+> A couple of people have reported an unknown NMI issue on p4 pmu.
+> This patch should fix it.
+>
+> Reported-by: George Spelvin <linux@horizon.com>
+> Reported-by: Meelis Roos <mroos@linux.ee>
+> Reported-by: Don Zickus <dzickus@redhat.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Lin Ming <ming.m.lin@intel.com>
+> CC: Don Zickus <dzickus@redhat.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  arch/x86/include/asm/perf_event_p4.h |    1 +
+>  arch/x86/kernel/cpu/perf_event_p4.c  |   11 ++++++++---
+>  2 files changed, 9 insertions(+), 3 deletions(-)
+>
+> Index: linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+> ===================================================================
+> --- linux-2.6.tip.orig/arch/x86/include/asm/perf_event_p4.h
+> +++ linux-2.6.tip/arch/x86/include/asm/perf_event_p4.h
+> @@ -22,6 +22,7 @@
+>
+>  #define ARCH_P4_CNTRVAL_BITS   (40)
+>  #define ARCH_P4_CNTRVAL_MASK   ((1ULL << ARCH_P4_CNTRVAL_BITS) - 1)
+> +#define ARCH_P4_UNFLAGGED_BIT  ((1ULL) << (ARCH_P4_CNTRVAL_BITS - 1))
+>
+>  #define P4_ESCR_EVENT_MASK     0x7e000000U
+>  #define P4_ESCR_EVENT_SHIFT    25
+> Index: linux-2.6.tip/arch/x86/kernel/cpu/perf_event_p4.c
+> ===================================================================
+> --- linux-2.6.tip.orig/arch/x86/kernel/cpu/perf_event_p4.c
+> +++ linux-2.6.tip/arch/x86/kernel/cpu/perf_event_p4.c
+> @@ -770,9 +770,14 @@ static inline int p4_pmu_clear_cccr_ovf(
+>                return 1;
+>        }
+>
+> -       /* it might be unflagged overflow */
+> -       rdmsrl(hwc->event_base + hwc->idx, v);
+> -       if (!(v & ARCH_P4_CNTRVAL_MASK))
+> +       /*
+> +        * at some circumstances the overflow might issue NMI but did
+> +        * not set P4_CCCR_OVF bit so since a counter holds a negative value
+> +        * we simply check for high bit being set, if it's cleared it means
+> +        * the counter has reached zero value and continued counting before
+> +        * real NMI signal was received
+> +        */
+> +       if (!(v & ARCH_P4_UNFLAGGED_BIT))
+>                return 1;
+>
+>        return 0;
+>
