@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab1BQEc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Feb 2011 23:32:58 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39505 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752621Ab1BQEc4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Feb 2011 23:32:56 -0500
+	id S1754820Ab1BQEtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Feb 2011 23:49:35 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:51731 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab1BQEtd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Feb 2011 23:49:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PRRWGbg7hChZWnJiGfkuALpJJf3hNdAb8uEWwe3YRP6k0jPx+qbM8Y4qVWAo0QjDLI
+         23gAPsRhZX3IwK4VmCEbLAAyiXfJ0zr2rfEr4AVvu1Y5ZGRMVFOWs+U6yAlurWSiHBxH
+         YLE/oGhIMZBuWU+i9UAQudY9U8sZVnbAJ/n9k=
+Date: Thu, 17 Feb 2011 12:49:17 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Cypher Wu <cypher.w@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>
+Subject: Re: Fwd: IGMP and rwlock: Dead ocurred again on TILEPro
+Message-ID: <20110217044917.GA2653@cr0.nay.redhat.com>
+References: <AANLkTimj+_8cBz0gcEyF1889xK2HdF4SQDSK8DiY-4Gs@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110217042519.GH14534@fieldses.org>
-References: <20110215185902.GG29420@fieldses.org> <20110217042519.GH14534@fieldses.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 16 Feb 2011 20:32:06 -0800
-Message-ID: <AANLkTikeK77v7y346-OX9dvufJSjbJ7qQSpJc4C3wLrZ@mail.gmail.com>
-Subject: Re: 2.6.38 nfsd bugfixes
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimj+_8cBz0gcEyF1889xK2HdF4SQDSK8DiY-4Gs@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 8:25 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> -               if ((host_err = nfsd_map_name_to_uid(argp->rqstp, buf, dummy32, &iattr->ia_uid)))
-> -                       goto out_nfserr;
-> +               if ((status = nfsd_map_name_to_uid(argp->rqstp, buf, dummy32, &iattr->ia_uid)))
-> +                       return status;
+On Thu, Feb 17, 2011 at 11:39:22AM +0800, Cypher Wu wrote:
+>---------- Forwarded message ----------
+>From: Cypher Wu <cypher.w@gmail.com>
+>Date: Wed, Feb 16, 2011 at 5:58 PM
+>Subject: GMP and rwlock: Dead ocurred again on TILEPro
+>To: linux-kernel@vger.kernel.org
+>
+>
+>The rwlock and spinlock of TILEPro platform use TNS instruction to
+>test the value of lock, but if interrupt is not masked, read_lock()
+>have another chance to deadlock while read_lock() called in bh of
+>interrupt.
+>
 
-Btw, can we please just agree to not doing those idiotic double parenthesis?
 
-There is a really trivial solution to the gcc warning - write your
-code like a sane person, instead of some ex-LISP hacker that has
-withdrawal symptoms. IOW, the above should be written as
+In this case, you should call read_lock_bh() instead of read_lock().
 
-  status = nfsd_map_name_to_uid(argp->rqstp, buf, dummy32, &iattr->ia_uid);
-  if (status)
-    return status;
 
-which is a hell of a lot more readable, no?
+> frame 0: 0xfd3bfbe0 dump_stack+0x0/0x20 (sp 0xe4b5f9d8)
+> frame 1: 0xfd3c0b50 __raw_read_lock_slow.cold+0x50/0x90 (sp 0xe4b5f9d8)
+> frame 2: 0xfd184a58 igmpv3_send_cr+0x60/0x440 (sp 0xe4b5f9f0)
+> frame 3: 0xfd3bd928 igmp_ifc_timer_expire+0x30/0x90 (sp 0xe4b5fa20)
+> frame 4: 0xfd047698 run_timer_softirq+0x258/0x3c8 (sp 0xe4b5fa30)
+> frame 5: 0xfd0563f8 __do_softirq+0x138/0x220 (sp 0xe4b5fa70)
+> frame 6: 0xfd097d48 do_softirq+0x88/0x110 (sp 0xe4b5fa98)
+> frame 7: 0xfd1871f8 irq_exit+0xf8/0x120 (sp 0xe4b5faa8)
+> frame 8: 0xfd1afda0 do_timer_interrupt+0xa0/0xf8 (sp 0xe4b5fab0)
+> frame 9: 0xfd187b98 handle_interrupt+0x2d8/0x2e0 (sp 0xe4b5fac0)
+> <interrupt 25 while in kernel mode>
+> frame 10: 0xfd0241c8 _read_lock+0x8/0x40 (sp 0xe4b5fc38)
+> frame 11: 0xfd1bb008 ip_mc_del_src+0xc8/0x378 (sp 0xe4b5fc40)
+> frame 12: 0xfd2681e8 ip_mc_leave_group+0xf8/0x1e0 (sp 0xe4b5fc70)
+> frame 13: 0xfd0a4d70 do_ip_setsockopt+0xe48/0x1560 (sp 0xe4b5fc90)
+> frame 14: 0xfd2b4168 sys_setsockopt+0x150/0x170 (sp 0xe4b5fe98)
+> frame 15: 0xfd14e550 handle_syscall+0x2d0/0x320 (sp 0xe4b5fec0)
+> <syscall while in user mode>
+> frame 16: 0x3342a0 (sp 0xbfddfb00)
+> frame 17: 0x16130 (sp 0xbfddfb08)
+> frame 18: 0x16640 (sp 0xbfddfb38)
+> frame 19: 0x16ee8 (sp 0xbfddfc58)
+> frame 20: 0x345a08 (sp 0xbfddfc90)
+> frame 21: 0x10218 (sp 0xbfddfe48)
+>Stack dump complete
+>
+>I don't know the clear definition of rwlock & spinlock in Linux, but
+>the implementation of other platforms
+>like x86, PowerPC, ARM don't have that issue. The use of TNS cause a
+>race condition between system
+>call and interrupt.
+>
 
-There is never any real excuse to put an assignment inside a regular
-if-statement.
+Have you turned CONFIG_LOCKDEP on?
 
-Inside a while/for loop? Sure. There are real syntactic reasons for
-doing things like
+I think Eric already converted that rwlock into RCU lock, thus
+this problem should disappear. Could you try a new kernel?
 
-   while ((c = getchar()) != EOF) {
-   }
-
-that actually make the code better and denser and avoid extra control
-flow crap or duplicate code.
-
-Inside a macro expansion? Again, there may be good reasons to try to
-make it a single statement.
-
-But a simple if-statement? There just isn't any reason for it, since
-the obvious thing is to just write it as two separate statements: the
-assignment, and the if-statement. So why do it and make the code
-uglier and harder to parse?
-
-                                   Linus
+Thanks.
