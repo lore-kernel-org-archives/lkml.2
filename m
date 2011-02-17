@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab1BQVzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 16:55:50 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34990 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755963Ab1BQVzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 16:55:46 -0500
+	id S1756836Ab1BQV6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 16:58:31 -0500
+Received: from kroah.org ([198.145.64.141]:51740 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755965Ab1BQV62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 16:58:28 -0500
+Date: Thu, 17 Feb 2011 13:56:08 -0800
+From: Greg KH <greg@kroah.com>
+To: Mike Waychison <mikew@google.com>
+Cc: Olof Johansson <olofj@chromium.org>, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Robert Lippert <rlippert@google.com>, Jon Mayer <jonmayer@google.com>,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>,
+        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>,
+        David Hendrix <dhendrix@chromium.org>, linux-api@vger.kernel.org
+Subject: Re: [PATCH v1 2/5] firmware: Basic dmi-sysfs support
+Message-ID: <20110217215608.GA2451@kroah.com>
+References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com>
+ <20110217212805.3967.47547.stgit@mike.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20110217.131702.112601300.davem@davemloft.net>
-References: <AANLkTi=bgmRwGXEE_wriYo-5gmyaB43pMUzHf7idiK0k@mail.gmail.com>
- <20110217.130115.71101941.davem@davemloft.net> <AANLkTinA-OP69fqf5jLfedk=dL2vmwdUyzn5E6FHR=Zw@mail.gmail.com>
- <20110217.131702.112601300.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 17 Feb 2011 13:54:57 -0800
-Message-ID: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
-Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
-To: David Miller <davem@davemloft.net>
-Cc: dtor@vmware.com, linux-kernel@vger.kernel.org, geert@linux-m68k.org,
-        rusty@rustcorp.com.au, linux-m68k@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110217212805.3967.47547.stgit@mike.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 1:17 PM, David Miller <davem@davemloft.net> wrote:
->> EVERY SINGLE OF YOUR ARGUMENTS WORK FOR "pointer" TOO!
->
-> It at least will not happen at the current time, because GCC only
-> plays these games on aggregates.
+Overall, this looks great, just a few minor comments below:
 
-So? Do they actually promise to never do it for pointers? What makes
-aggregates so special? Rather than just happenstance?
+On Thu, Feb 17, 2011 at 01:28:05PM -0800, Mike Waychison wrote:
+> +config DMI_SYSFS
+> +	tristate "DMI table support in sysfs"
+> +	depends on SYSFS && DMI
+> +	default X86
 
-I wouldn't be surprised if the structure alignment isn't even about
-something even subtler and totally random, like size of structure (ie
-"don't align small structures")
+Huh?  Default should be 'N' for any new feature, unless it keeps your
+machine from booting.
 
-> Also, for exception tables, we've avoided this problem because
-> we emit the exception tables by hand using inline asm and therefore
-> explicitly control all aspects of the alignment and size.
+I think you want this option to depend on X86 though, right?
 
-.. and maybe that's the right thing to do here too.
+> +	help
+> +	  Say Y or M here to enable the exporting of the raw DMI table
+> +	  data via sysfs.  This is useful for consuming the data without
+> +	  requiring any access to /dev/mem at all.  Tables are found
+> +	  under /sys/firmware/dmi when this option is enabled and
+> +	  loaded.
 
-> The GCC manual even documents the alignment attribute behavior.
+I just realized (due to other work I'm doing on a laptop) that we have a
+bunch of entries today in /sys/class/dmi/id which is a pointer to the
+dmi "device".
 
-The gcc manual is worthless. Every time some gcc person wants to
-change behavior, they just change the manual. So you can't rely on it
-anyway. We've seen that with inline asm before etc.
+Now I think this really is different (these are the raw DMI tables), but
+this doesn't have anything to do with that code, right?
 
-> Also, please don't shoot the messenger, I didn't make GCC behave this
-> way but I doubt you'll have any luck undoing this behavior in the
-> tools which therefore means as pragmatists we have to handle it one
-> way or another.
+> + *
+> + * Copyright 2010 Google, Inc.
 
-I'm shooting not the messenger, but the people who make these kinds of
-really ugly changes with bad changelogs that don't even explain what
-the actual problem is. And apparently any gcc person is free to break
-it in the future _anyway_.
+It's 2011 :)
 
-Is there a -fdata-align or something? Or would __attribute__((packed))
-help? Something that explicitly tells gcc "don't do this", instead of
-"let's add indirection and hope gcc doesn't add alignment for _that_".
-Especially as the extra pointer makes the code even uglier.
+> +static int __init dmi_sysfs_init(void)
+> +{
+> +	int error = -ENOMEM;
+> +	int val;
+> +
+> +	/* Set up our directory */
+> +	dmi_kobj = kobject_create_and_add("dmi", firmware_kobj);
+> +	if (!dmi_kobj)
+> +		goto err;
+> +
+> +	dmi_kset = kset_create_and_add("entries", NULL, dmi_kobj);
+> +	if (!dmi_kset)
+> +		goto err;
+> +
+> +	val = 0;
+> +	error = dmi_walk(dmi_sysfs_register_handle, &val);
+> +	if (error)
+> +		goto err;
+> +	if (val) {
+> +		error = val;
+> +		goto err;
+> +	}
+> +
+> +	pr_info("dmi-sysfs: loaded.\n");
 
-And if we do have to use the pointer thing, let's at least then do the
-pointer with asms, so that gcc _really_ can't screw it up. Rather than
-just move the potential bug around.
+Is this really needed?  pr_dbg() instead please?
 
-                            Linus
+> +
+> +	return 0;
+> +err:
+> +	cleanup_entry_list();
+> +	kset_unregister(dmi_kset);
+> +	kobject_put(dmi_kobj);
+> +	return error;
+> +}
+> +
+> +/* clean up everything. */
+> +static void __exit dmi_sysfs_exit(void)
+> +{
+> +	pr_info("dmi-sysfs: unloading.\n");
+> +	cleanup_entry_list();
+> +	kset_unregister(dmi_kset);
+> +	kobject_put(dmi_kobj);
+> +}
+> +
+> +module_init(dmi_sysfs_init);
+> +module_exit(dmi_sysfs_exit);
+> +
+> +MODULE_AUTHOR("Google, Inc.");
+
+You don't want your name here?
+
+thanks,
+
+greg k-h
