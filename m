@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab1BQPCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 10:02:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50570 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932140Ab1BQPCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 10:02:03 -0500
-Date: Thu, 17 Feb 2011 16:02:00 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20110217150200.GA32177@sepie.suse.cz>
-References: <20110131154259.dca1f7e6.sfr@canb.auug.org.au>
- <20110217144743.2db26b27.sfr@canb.auug.org.au>
- <4D5D201A.8090304@suse.cz>
+	id S1756625Ab1BQPCT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 10:02:19 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:58323
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755078Ab1BQPCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 10:02:15 -0500
+Date: Thu, 17 Feb 2011 15:03:25 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
+        dhowells@redhat.com
+Subject: [PATCH 4/9] allow killing tasks in your own or child userns
+Message-ID: <20110217150325.GD26395@mail.hallyn.com>
+References: <20110217150224.GA26334@mail.hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D5D201A.8090304@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110217150224.GA26334@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 02:18:18PM +0100, Michal Marek wrote:
-> On 17.2.2011 04:47, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > On Mon, 31 Jan 2011 15:42:59 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >>
-> >> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-> >> failed like this:
-> >>
-> >> x86_64-linux-gcc: arch/x86/lib/memmove_64.c: No such file or directory
-> >>
-> >> Caused by commit 9599ec0471deae24044241e2173090d2cbc0e899 ("x86-64, mem:
-> >> Convert memmove() to assembly file and fix return value bug") interacting
-> >> with our build system.
-> >>
-> >> After removing arch/x86/lib/.memmove_64.o.cmd (left over from the build
-> >> before merging the tip tree) from my object tree, it built correctly.
-> > 
-> > I am still getting this (of course).
-> > 
-> > Michal, is there anything that the kbuild system can do for us here?
-> > Basically we have changed from using a .c file to generate a .o to using
-> > a .S but the build system does not regenerate the .cmd file.
-> 
-> _Maybe_ we could work around it by letting fixdep remove the actual
-> source file from the list of dependencies in the .cmd file. The
-> dependency on the .c / .S / whatever file is given by the Makefiles, the
-> .cmd file is only needed for additional dependencies on headers. Let's
-> see what else breaks then ;).
+Changelog:
+	Dec  8: Fixed bug in my check_kill_permission pointed out by
+	        Eric Biederman.
+	Dec 13: Apply Eric's suggestion to pass target task into kill_ok_by_cred()
+	        for clarity
+	Dec 31: address comment by Eric Biederman:
+		don't need cred/tcred in check_kill_permission.
+	Jan  1: use const cred struct.
+	Jan 11: Per Bastian Blank's advice, clean up kill_ok_by_cred().
+	Feb 16: kill_ok_by_cred: fix bad parentheses
 
-It seems to work for me. Can you try the patch below? It needs to be
-applied before merging 9599ec0 to have any effect.
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ kernel/signal.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-Michal
-
-From: Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] fixdep: Do not record dependency on the source file itself
-
-The dependency is already expressed by the Makefiles, storing it in the
-.cmd file breaks build if a .c file is replaced by .S or vice versa,
-because the .cmd file contains
-
-foo/bar.o: foo/bar.c ...
-
-foo/bar.c ... :
-
-so the foo/bar.c -> foo/bar.o rule triggers even if there is no
-foo/bar.c anymore.
-
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
-index c9a16ab..9264725 100644
---- a/scripts/basic/fixdep.c
-+++ b/scripts/basic/fixdep.c
-@@ -315,6 +315,7 @@ static void parse_dep_file(void *map, size_t len)
- 	char *end = m + len;
- 	char *p;
- 	char s[PATH_MAX];
-+	int first;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 4e3cff1..ffe4bdf 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -636,13 +636,33 @@ static inline bool si_fromuser(const struct siginfo *info)
+ }
  
- 	p = strchr(m, ':');
- 	if (!p) {
-@@ -327,6 +328,7 @@ static void parse_dep_file(void *map, size_t len)
+ /*
++ * called with RCU read lock from check_kill_permission()
++ */
++static inline int kill_ok_by_cred(struct task_struct *t)
++{
++	const struct cred *cred = current_cred();
++	const struct cred *tcred = __task_cred(t);
++
++	if (cred->user->user_ns == tcred->user->user_ns &&
++	    (cred->euid == tcred->suid ||
++	     cred->euid == tcred->uid ||
++	     cred->uid  == tcred->suid ||
++	     cred->uid  == tcred->uid))
++		return 1;
++
++	if (ns_capable(tcred->user->user_ns, CAP_KILL))
++		return 1;
++
++	return 0;
++}
++
++/*
+  * Bad permissions for sending the signal
+  * - the caller must hold the RCU read lock
+  */
+ static int check_kill_permission(int sig, struct siginfo *info,
+ 				 struct task_struct *t)
+ {
+-	const struct cred *cred, *tcred;
+ 	struct pid *sid;
+ 	int error;
  
- 	clear_config();
+@@ -656,14 +676,8 @@ static int check_kill_permission(int sig, struct siginfo *info,
+ 	if (error)
+ 		return error;
  
-+	first = 1;
- 	while (m < end) {
- 		while (m < end && (*m == ' ' || *m == '\\' || *m == '\n'))
- 			m++;
-@@ -340,9 +342,16 @@ static void parse_dep_file(void *map, size_t len)
- 		if (strrcmp(s, "include/generated/autoconf.h") &&
- 		    strrcmp(s, "arch/um/include/uml-config.h") &&
- 		    strrcmp(s, ".ver")) {
--			printf("  %s \\\n", s);
-+			/* Do not output the first dependency (the
-+			 * source file), so that kbuild is not confused
-+			 * if a .c file is rewritten into .S or vice
-+			 * versa.
-+			 */
-+			if (!first)
-+				printf("  %s \\\n", s);
- 			do_config_file(s);
- 		}
-+		first = 0;
- 		m = p + 1;
- 	}
- 	printf("\n%s: $(deps_%s)\n\n", target, target);
+-	cred = current_cred();
+-	tcred = __task_cred(t);
+ 	if (!same_thread_group(current, t) &&
+-	    (cred->euid ^ tcred->suid) &&
+-	    (cred->euid ^ tcred->uid) &&
+-	    (cred->uid  ^ tcred->suid) &&
+-	    (cred->uid  ^ tcred->uid) &&
+-	    !capable(CAP_KILL)) {
++	    !kill_ok_by_cred(t)) {
+ 		switch (sig) {
+ 		case SIGCONT:
+ 			sid = task_session(t);
+-- 
+1.7.0.4
+
