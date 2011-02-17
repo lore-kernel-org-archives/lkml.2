@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab1BQNul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 08:50:41 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44991 "EHLO mx2.mail.elte.hu"
+	id S1756516Ab1BQNvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 08:51:04 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45217 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756460Ab1BQNuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 08:50:39 -0500
-Date: Thu, 17 Feb 2011 14:50:23 +0100
+	id S1756506Ab1BQNvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 08:51:02 -0500
+Date: Thu, 17 Feb 2011 14:50:40 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Franck Bui-Huu <fbuihuu@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 00/10] [GIT PULL][v2.6.39] tracing: updates
-Message-ID: <20110217135023.GA5235@elte.hu>
-References: <20110208221612.084294240@goodmis.org>
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/6] perf/core improvements and fixes
+Message-ID: <20110217135040.GA5242@elte.hu>
+References: <1297896887-9983-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110208221612.084294240@goodmis.org>
+In-Reply-To: <1297896887-9983-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,49 +39,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
+> Hi Ingo,
 > 
-> Ingo,
+>         Please consider pulling from:
 > 
-> Please pull the latest tip/perf/core tree, which can be found at:
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/core
+> Regards,
 > 
+> - Arnaldo
 > 
-> Ian Munsie (5):
->       tracing/syscalls: Don't add events for unmapped syscalls
->       tracing/syscalls: Convert redundant syscall_nr checks into WARN_ON
->       tracing/syscalls: Make arch_syscall_addr weak
->       tracing/syscalls: Allow arch specific syscall symbol matching
->       tracing/syscalls: Early terminate search for sys_ni_syscall
+> Arnaldo Carvalho de Melo (3):
+>   perf ui: Serialize screen updates
+>   perf annotate: Check if offset is less than symbol size
+>   perf annotate browser: Use the percent color for the whole line
 > 
-> Jiri Olsa (1):
->       tracing: Add unstable sched clock note to the warning
+> Jesse Brandeburg (1):
+>   perf tools: Update Makefile with some help
 > 
-> Lai Jiangshan (1):
->       tracing: Compile time initialization for event flags value
+> Masami Hiramatsu (2):
+>   perf probe: Support function@filename syntax for --line
+>   perf probe: Show filename which contains target function
 > 
-> Steven Rostedt (2):
->       tracing: Remove obsolete sched_switch tracer
->       tracing: Deprecate tracing_enabled for tracing_on
-> 
-> Uwe Kleine-König (1):
->       trivial: Fix Steven's Copyright typos
-> 
-> ----
->  Documentation/trace/ftrace-design.txt |    7 ++
->  Documentation/trace/ftrace.txt        |  148 ++++----------------------------
->  include/linux/syscalls.h              |   10 ++-
->  kernel/trace/ring_buffer.c            |    8 ++-
->  kernel/trace/trace.c                  |    4 +
->  kernel/trace/trace_sched_switch.c     |   48 -----------
->  kernel/trace/trace_syscalls.c         |   42 +++++++---
->  scripts/kconfig/streamline_config.pl  |    2 +-
->  tools/testing/ktest/ktest.pl          |    2 +-
->  9 files changed, 74 insertions(+), 197 deletions(-)
+>  tools/perf/Documentation/Makefile       |   19 ++++++++++---------
+>  tools/perf/Documentation/perf-probe.txt |    7 ++++---
+>  tools/perf/Makefile                     |   31 +++++++++++++++++++++++++++++++
+>  tools/perf/util/annotate.c              |    3 ++-
+>  tools/perf/util/probe-event.c           |   17 +++++++++++++----
+>  tools/perf/util/ui/browser.c            |    7 +++++++
+>  tools/perf/util/ui/browsers/annotate.c  |    5 +++--
+>  tools/perf/util/ui/helpline.c           |    5 ++++-
+>  tools/perf/util/ui/setup.c              |    3 +++
+>  tools/perf/util/ui/ui.h                 |    8 ++++++++
+>  10 files changed, 85 insertions(+), 20 deletions(-)
+>  create mode 100644 tools/perf/util/ui/ui.h
 
-Pulled, thanks a lot Steve!
+Pulled, thanks a lot Arnaldo!
 
 	Ingo
