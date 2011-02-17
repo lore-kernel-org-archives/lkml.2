@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab1BQUvo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 15:51:44 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:33944 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754925Ab1BQUvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 15:51:41 -0500
-Message-ID: <4D5D8A56.4070502@interlog.com>
-Date: Thu, 17 Feb 2011 15:51:34 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>,
-        Tomas Fasth <tomfa@debian.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] ddpt, version 0.92 available
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757982Ab1BQUy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 15:54:58 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:16622 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1BQUyz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 15:54:55 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=DuhuCqy2pZn5k6q0nq6qn6zGebQVv1v3cfQ6/LCnF3fkwFOfiK9LIfE50pWDAn0hY
+	30of+7UebravwrJmaJSBA==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v3 2/2] memcg: use native word page statistics counters
+Date: Thu, 17 Feb 2011 12:52:48 -0800
+Message-Id: <1297975968-19672-3-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1297975968-19672-1-git-send-email-gthelen@google.com>
+References: <1297975968-19672-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ddpt is yet another variant of the venerable Unix
-dd command line utility. Some features found in
-ddpt which are not found in the current (GNU) dd
-implementation:
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-   - sparse writing (i.e. don't write buffer if all zeros)
-   - write sparing (i.e. don't write buffer if already same
-     as destination)
-   - resume (after the copy has been interrupted)
-   - trim on output of copy, self trim (pt interface only)
-   - send output to a second file (see 'of2=' option)
-   - access devices directly via pass-through interface,
-     bypassing file system
-   - accept numeric command line arguments in hexadecimal
-   - explicit controls over how much data is read into the
-     copy buffer and then written to output (separate from
-     the logical block sizes of any device involved)
+The statistic counters are in units of pages, there is no reason to
+make them 64-bit wide on 32-bit machines.
 
-The initial public release was 0.91 in September 2010.
-This version (0.92) has a few new features, many bug fixes
-and more informative output. For more information and
-downloads see:
-     http://sg.danny.cz/sg/ddpt.html
+Make them native words.  Since they are signed, this leaves 31 bit on
+32-bit machines, which can represent roughly 8TB assuming a page size
+of 4k.
 
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+---
+ mm/memcontrol.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-Changelog for ddpt-0.92 [20110217] [svn: r157]
-   - when pt used on block device and discrepancy between size
-     of block device and read capacity size, require force flag
-   - add coe support for input block devices and regular files
-   - support conv=fdatasync, conv=fsync, oflag=fdatasync and
-     oflag=fsync; called at end of copy
-   - allow partial writes of trailing bytes when output is
-     regular file or fifo (stdout), ignore if block or pt device
-   - fix stdin, stdout and fifo handling problems
-   - if iflag=sparse and of=/dev/null (or not given) warn but
-     set oflag=sparse and continue
-   - treat unrecovered errors as partial (as dd does)
-   - win32: add '--wscan' option to scan for devices and volumes
-     - select SPT direct pt interface
-   - add estimate of remaining time in progress signal handler
-   - accept but ignore cbs= option
-   - error reporting clean up
-   - add AM_MAINTAINER_MODE to configure.ac to lessen build issues
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a11ff1e..1c2704a 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -107,7 +107,7 @@ enum mem_cgroup_events_index {
+ };
+ 
+ struct mem_cgroup_stat_cpu {
+-	s64 count[MEM_CGROUP_STAT_NSTATS];
++	long count[MEM_CGROUP_STAT_NSTATS];
+ 	unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
+ };
+ 
+@@ -546,11 +546,11 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
+  * common workload, threashold and synchonization as vmstat[] should be
+  * implemented.
+  */
+-static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
+-		enum mem_cgroup_stat_index idx)
++static long mem_cgroup_read_stat(struct mem_cgroup *mem,
++				 enum mem_cgroup_stat_index idx)
+ {
++	long val = 0;
+ 	int cpu;
+-	s64 val = 0;
+ 
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu)
+@@ -564,9 +564,9 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
+ 	return val;
+ }
+ 
+-static s64 mem_cgroup_local_usage(struct mem_cgroup *mem)
++static long mem_cgroup_local_usage(struct mem_cgroup *mem)
+ {
+-	s64 ret;
++	long ret;
+ 
+ 	ret = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
+ 	ret += mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_CACHE);
+@@ -1761,7 +1761,7 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *mem, int cpu)
+ 
+ 	spin_lock(&mem->pcp_counter_lock);
+ 	for (i = 0; i < MEM_CGROUP_STAT_DATA; i++) {
+-		s64 x = per_cpu(mem->stat->count[i], cpu);
++		long x = per_cpu(mem->stat->count[i], cpu);
+ 
+ 		per_cpu(mem->stat->count[i], cpu) = 0;
+ 		mem->nocpu_base.count[i] += x;
+@@ -3473,13 +3473,13 @@ static int mem_cgroup_hierarchy_write(struct cgroup *cont, struct cftype *cft,
+ }
+ 
+ 
+-static u64 mem_cgroup_get_recursive_idx_stat(struct mem_cgroup *mem,
+-				enum mem_cgroup_stat_index idx)
++static unsigned long mem_cgroup_recursive_stat(struct mem_cgroup *mem,
++					       enum mem_cgroup_stat_index idx)
+ {
+ 	struct mem_cgroup *iter;
+-	s64 val = 0;
++	long val = 0;
+ 
+-	/* each per cpu's value can be minus.Then, use s64 */
++	/* Per-cpu values can be negative, use a signed accumulator */
+ 	for_each_mem_cgroup_tree(iter, mem)
+ 		val += mem_cgroup_read_stat(iter, idx);
+ 
+@@ -3499,12 +3499,11 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *mem, bool swap)
+ 			return res_counter_read_u64(&mem->memsw, RES_USAGE);
+ 	}
+ 
+-	val = mem_cgroup_get_recursive_idx_stat(mem, MEM_CGROUP_STAT_CACHE);
+-	val += mem_cgroup_get_recursive_idx_stat(mem, MEM_CGROUP_STAT_RSS);
++	val = mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_CACHE);
++	val += mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_RSS);
+ 
+ 	if (swap)
+-		val += mem_cgroup_get_recursive_idx_stat(mem,
+-				MEM_CGROUP_STAT_SWAPOUT);
++		val += mem_cgroup_recursive_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
+ 
+ 	return val << PAGE_SHIFT;
+ }
+-- 
+1.7.3.1
 
-Changelog for ddpt-0.91 [20100920] [svn: r121]
-....
-
-Doug Gilbert
