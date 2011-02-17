@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab1BQWtu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 17:49:50 -0500
-Received: from usmamail.tilera.com ([206.83.70.70]:57868 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab1BQWtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 17:49:49 -0500
-Message-ID: <4D5DA60A.8080201@tilera.com>
-Date: Thu, 17 Feb 2011 17:49:46 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1755126Ab1BQWuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 17:50:51 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:44501 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190Ab1BQWus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 17:50:48 -0500
+Date: Thu, 17 Feb 2011 22:50:20 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1102172249020.5315@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <xiyou.wangcong@gmail.com>, <cypher.w@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <eric.dumazet@gmail.com>,
-        <netdev@vger.kernel.org>
-Subject: Re: IGMP and rwlock: Dead ocurred again on TILEPro
-References: <20110217044917.GA2653@cr0.nay.redhat.com>	<AANLkTikkro-_9pv5uJ4+SqYh9Fr480_96Wh1Pv6Pvtez@mail.gmail.com>	<20110217054237.GB2653@cr0.nay.redhat.com> <20110216.214625.189707123.davem@davemloft.net>
-In-Reply-To: <20110216.214625.189707123.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-698910368-1297983020=:5315"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/17/2011 12:46 AM, David Miller wrote:
-> From: Américo Wang <xiyou.wangcong@gmail.com>
-> Date: Thu, 17 Feb 2011 13:42:37 +0800
->
->> On Thu, Feb 17, 2011 at 01:04:14PM +0800, Cypher Wu wrote:
->>>> Have you turned CONFIG_LOCKDEP on?
->>>>
->>>> I think Eric already converted that rwlock into RCU lock, thus
->>>> this problem should disappear. Could you try a new kernel?
->>>>
->>>> Thanks.
->>>>
->>> I haven't turned CONFIG_LOCKDEP on for test since I didn't get too
->>> much information when we tried to figured out the former deadlock.
->>>
->>> IGMP used read_lock() instead of read_lock_bh() since usually
->>> read_lock() can be called recursively, and today I've read the
->>> implementation of MIPS, it's should also works fine in that situation.
->>> The implementation of TILEPro cause problem since after it use TNS set
->>> the lock-val to 1 and hold the original value and before it re-set
->>> lock-val a new value, it a race condition window.
->>>
->> I see no reason why you can't call read_lock_bh() recursively,
->> read_lock_bh() is roughly equalent to local_bh_disable() + read_lock(),
->> both can be recursive.
->>
->> But I may miss something here. :-/
-> IGMP is doing this so that taking the read lock does not stop packet
-> processing.
->
-> TILEPro's rwlock implementation is simply buggy and needs to be fixed.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Cypher, thanks for tracking this down with a good bug report.
+--29444707-698910368-1297983020=:5315
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-The fix is to disable interrupts for the arch_read_lock family of methods. 
-In my fix I'm using the "hard" disable that locks out NMIs as well, so that
-in the event the NMI handler needs to share an rwlock with regular code it
-would be possible (plus, it's more efficient).  I believe it's not
-necessary to worry about similar protection for the arch_write_lock
-methods, since they aren't guaranteed to be re-entrant anyway (you'd have
-to use write_lock_irqsave or equivalent).
 
-I'll send the patch to LKML after letting it bake internally for a little
-while.
+Hi Linus,
 
-Thanks again!
+nothing major, one regression fix for evergreen radeon laptops, and a 
+bunch of nouveau fixes, one for s/r on newer chips.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Dave.
 
+The following changes since commit a2640111d5edb3f4e6dd6089c0dbddc7590110b4:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6 (2011-02-16 09:07:00 -0800)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (1):
+      drm/radeon/kms: add missing frac fb div flag for dce4+
+
+Ben Skeggs (4):
+      drm/nouveau: fix non-EDIDful native mode selection
+      drm/nv40: fix tiling-related setup for a number of chipsets
+      drm/nouveau: flips/flipd need to always set 'evict' for move_accel_cleanup()
+      drm/nouveau: fix suspend/resume on GPUs that don't have PM support
+
+Dave Airlie (1):
+      Merge remote branch 'nouveau/drm-nouveau-next' of /ssd/git/drm-nouveau-next into drm-fixes
+
+Francisco Jerez (3):
+      drm/nv10: Fix crash when allocating a BO larger than half the available VRAM.
+      drm/nv04-nv40: Fix NULL dereference when we fail to find an LVDS native mode.
+      drm/nouveau: Fix detection of DDC-based LVDS on DCB15 boards.
+
+Marek Ol¨ák (1):
+      drm/radeon/kms: do not reject X16 and Y16X16 floating-point formats on r300
+
+ drivers/gpu/drm/nouveau/nouveau_bios.c      |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_bo.c        |   13 ++++---
+ drivers/gpu/drm/nouveau/nouveau_connector.c |    1 +
+ drivers/gpu/drm/nouveau/nouveau_pm.c        |    2 +-
+ drivers/gpu/drm/nouveau/nv04_dfp.c          |   12 ++-----
+ drivers/gpu/drm/nouveau/nv40_graph.c        |   46 ++++++++++++++++-----------
+ drivers/gpu/drm/radeon/atombios_crtc.c      |    4 ++-
+ drivers/gpu/drm/radeon/r300.c               |    2 +
+ 8 files changed, 45 insertions(+), 37 deletions(-)
+--29444707-698910368-1297983020=:5315--
