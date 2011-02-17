@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1BQHKj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 02:10:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60941 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab1BQHKd (ORCPT
+	id S1751757Ab1BQHZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 02:25:20 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:34083 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751028Ab1BQHZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 02:10:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:reply-to:from:to:subject:date:importance:x-priority
-         :mime-version:x-mailer:content-type:content-transfer-encoding;
-        b=KBHbi3f0AWaB7VGvi5xE4QzC4LUqY2YH95bMqe6hgZzSxxIO/4HrY/5+uomuobHdHZ
-         oz+jOM4CacwkAbYL8F7ZnsY8f+m3qwKJSdzG5sKbqZ8f1UdENv6+lMr90EKCKCzRfv41
-         jGLD7LabbJFf5b/X1B1cIvq9NvDFUhmGDkdWE=
-Message-ID: <4d5cc9e7.2af98e0a.3627.28de@mx.google.com>
-Reply-To: "RE:Get Live Stock Advise on ur Mobile" <pureintraday@gmail.com>
-From: "Get Live Stock Advise on ur Mobile" <pureintraday@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Get Live Stock Advise on ur Mobile
-Date: Thu, 17 Feb 2011 12:40:50 +0530
-Importance: Normal
-X-Priority: 3 (Normal)
+	Thu, 17 Feb 2011 02:25:17 -0500
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <dan.j.williams@intel.com>, <linux-kernel@vger.kernel.org>
+Cc: <shiraz.hashim@st.com>, <amit.goel@st.com>, <armando.visconti@st.com>,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH 1/7] dw_dmac: Remove compilation dependency from AVR32
+Date: Thu, 17 Feb 2011 12:54:51 +0530
+Message-ID: <d41145ce4d5e3d870f720709f68d5b1dbf34d6a0.1297926678.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
 MIME-Version: 1.0
-X-Mailer: Mach 5 Mailer version 4 RI{12be1-d4424}
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get Live Stock Advise on your mobile.............
+This will be used in SPEAr, ARM family.
 
-Please write us your mobile number and name and city............
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/dma/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-www.intradaydirect.com
-__________________________________________
-Powered by Mach5 Mailer: http://mach5-mailer.com
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 1c28816..95c7db7 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -82,7 +82,6 @@ config INTEL_IOP_ADMA
+ 
+ config DW_DMAC
+ 	tristate "Synopsys DesignWare AHB DMA support"
+-	depends on AVR32
+ 	select DMA_ENGINE
+ 	default y if CPU_AT32AP7000
+ 	help
+-- 
+1.7.2.2
+
