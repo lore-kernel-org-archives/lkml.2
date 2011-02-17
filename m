@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1BQOx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 09:53:58 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49190 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab1BQOx4 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 17 Feb 2011 09:53:56 -0500
-Date: Thu, 17 Feb 2011 09:52:55 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] [PATCH 1/3] pci/xen: Use xen_allocate_pirq_msi
-Message-ID: <20110217145255.GA32341@dumpdata.com>
-References: <1297894638-28007-1-git-send-email-konrad.wilk@oracle.com>
- <1297894638-28007-2-git-send-email-konrad.wilk@oracle.com>
- <1297932091.16356.1292.camel@zakaz.uk.xensource.com>
+	id S1755697Ab1BQOzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 09:55:38 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40355 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780Ab1BQOzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 09:55:36 -0500
+Date: Thu, 17 Feb 2011 15:55:09 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 00/10] [GIT PULL][v2.6.39] tracing: updates
+Message-ID: <20110217145509.GA10112@elte.hu>
+References: <20110208221612.084294240@goodmis.org>
+ <20110217135023.GA5235@elte.hu>
+ <20110217140442.GA8326@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297932091.16356.1292.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D5D3677.0156:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <20110217140442.GA8326@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> All callers have this (type == MSIX) ? "msi-x" : "msi" construct,
-> differing only in their use of a "pcifront-" prefix. Something which
-> could be hoisted into the function perhaps?
 
-I was thinking to defer this for a cleanup patch.
+* Ingo Molnar <mingo@elte.hu> wrote:
+
 > 
-> Another aside: I think there are other cleanups which could be made to
-> the various pirq allocation/mapping interfaces (of which there seem to
-> be too many, or at least their individual unique qualities are
-> indistinguishable by their names), I made a start on this at one point
-> since I wanted to get rid of the pirq_to_irq[nr_irqs] array, for obvious
-> reasons, but didn't finish it off. I'll hopefully revisit this soon.
+> > > Please pull the latest tip/perf/core tree, which can be found at:
+> > > 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> > > tip/perf/core
+> 
+> Note that these changes caused a new build failure on arch/m32r:
 
-Excellent. Looking forward to it.
+powerpc and parisc is showing similar build failures. The other architectures are 
+fine.
+
+So i suspect it relates to !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK architectures and the 
+fact that sched_clock_stable is not uniformly available. The right fix would be to 
+provide that flag in a Kconfig-invariant fashion.
+
+Thanks,
+
+	Ingo
