@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932392Ab1BQSC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 13:02:56 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:49252 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757547Ab1BQSCo (ORCPT
+	id S932417Ab1BQSDE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 13:03:04 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:55137 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932395Ab1BQSC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 13:02:44 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 14/14] fs/9p: Prevent multiple inclusion of same header
-Date: Thu, 17 Feb 2011 23:32:05 +0530
-Message-Id: <1297965725-25603-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1297965725-25603-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1297965725-25603-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Thu, 17 Feb 2011 13:02:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Chou <thomas@wytron.com.tw>
+Subject: Re: [Nios2-dev] [PATCH 4/4] MAINTAINERS: Add myself as a maintainer for  altera_uart/altera_jtaguart
+Date: Thu, 17 Feb 2011 19:02:41 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Tobias Klauser <tklauser@distanz.ch>, nios2-dev@sopc.et.ntust.edu.tw,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <cover.1297245277.git.tklauser@distanz.ch> <04c107d8032cbaffada91066c1d010b9274aebe1.1297245277.git.tklauser@distanz.ch> <4D5C9314.8030101@wytron.com.tw>
+In-Reply-To: <4D5C9314.8030101@wytron.com.tw>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102171902.41784.arnd@arndb.de>
+X-Provags-ID: V02:K0:YXlc5b4+qVnFogbE3ap5Rpqqh14fka08dU1m1giTLs0
+ jvpkCyobr/TzaH92p8A3nIZm57/KoZoD0a9zzExQnghfvDDCL8
+ mI+C8saLydv1PXLcNPQygm9kq+gp7QZIlKHkGLpYXiguWiPzYC
+ OmJnlS8p0Rpyteu+CZ+AnTnuwbTQHueLUd/5iwuy59vXUTqwKU
+ pm4ylaJQi7cNM0T9t7K/Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add necessary #ifndef #endif blocks to avoid mulitple inclusion of same headers
+On Thursday 17 February 2011, Thomas Chou wrote:
+> As we get more drivers merged into mainline, we might consider adding a 
+> general entry for all altera related drivers to our mailing list. We 
+> could add "F: arch/nios2" to this entry in the near future.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/9p/fid.h      |    4 +++-
- fs/9p/v9fs.h     |    4 ++++
- fs/9p/v9fs_vfs.h |    6 ++++--
- 3 files changed, 11 insertions(+), 3 deletions(-)
+On a related topic, are there plans to submit the nios2 arch code
+for review any time soon?
 
-diff --git a/fs/9p/fid.h b/fs/9p/fid.h
-index c3bbd6a..f610510 100644
---- a/fs/9p/fid.h
-+++ b/fs/9p/fid.h
-@@ -19,7 +19,8 @@
-  *  Boston, MA  02111-1301  USA
-  *
-  */
--
-+#ifndef FS_9P_FID_H
-+#define FS_9P_FID_H
- #include <linux/list.h>
- 
- /**
-@@ -45,3 +46,4 @@ struct v9fs_dentry {
- struct p9_fid *v9fs_fid_lookup(struct dentry *dentry);
- struct p9_fid *v9fs_fid_clone(struct dentry *dentry);
- int v9fs_fid_add(struct dentry *dentry, struct p9_fid *fid);
-+#endif
-diff --git a/fs/9p/v9fs.h b/fs/9p/v9fs.h
-index 64acf72..92fb61b 100644
---- a/fs/9p/v9fs.h
-+++ b/fs/9p/v9fs.h
-@@ -20,6 +20,9 @@
-  *  Boston, MA  02111-1301  USA
-  *
-  */
-+#ifndef FS_9P_V9FS_H
-+#define FS_9P_V9FS_H
-+
- #include <linux/backing-dev.h>
- 
- /**
-@@ -193,3 +196,4 @@ v9fs_get_inode_from_fid(struct v9fs_session_info *v9ses, struct p9_fid *fid,
- 	else
- 		return v9fs_inode_from_fid(v9ses, fid, sb);
- }
-+#endif
-diff --git a/fs/9p/v9fs_vfs.h b/fs/9p/v9fs_vfs.h
-index 3ac13b4..e719282 100644
---- a/fs/9p/v9fs_vfs.h
-+++ b/fs/9p/v9fs_vfs.h
-@@ -20,6 +20,8 @@
-  *  Boston, MA  02111-1301  USA
-  *
-  */
-+#ifndef FS_9P_V9FS_VFS_H
-+#define FS_9P_V9FS_VFS_H
- 
- /* plan9 semantics are that created files are implicitly opened.
-  * But linux semantics are that you call create, then open.
-@@ -36,6 +38,7 @@
-  * unlink calls remove, which is an implicit clunk. So we have to track
-  * that kind of thing so that we don't try to clunk a dead fid.
-  */
-+#define P9_LOCK_TIMEOUT (30*HZ)
- 
- extern struct file_system_type v9fs_fs_type;
- extern const struct address_space_operations v9fs_addr_operations;
-@@ -79,5 +82,4 @@ static inline void v9fs_invalidate_inode_attr(struct inode *inode)
- 	v9inode->cache_validity |= V9FS_INO_INVALID_ATTR;
- 	return;
- }
--
--#define P9_LOCK_TIMEOUT (30*HZ)
-+#endif
--- 
-1.7.1
+I'm usually reviewing all architectures that come in, and unicore32
+is almost ready to go in, so there is room to start reviewing the next
+one.
 
+I expect nios2, lm32 and c64x to be submitted this year, but I'll
+probably only be able to review one at time. First come, first
+serve.
+
+	Arnd
