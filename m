@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab1BRRmR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 12:42:17 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60474 "EHLO mga11.intel.com"
+	id S1754213Ab1BRRte (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 12:49:34 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37736 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752784Ab1BRRmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 12:42:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,188,1297065600"; 
-   d="scan'208";a="888976917"
-Message-ID: <4D5EAF76.6080301@linux.intel.com>
-Date: Fri, 18 Feb 2011 09:42:14 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752596Ab1BRRtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 12:49:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Norbert Preining <preining@logic.at>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: Re: regression 2.6.38-rc4 -> 2.6.38-rc5 suspend fails
+Date: Fri, 18 Feb 2011 18:49:17 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Guillaume Chazarain <guichaz@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+References: <20110217163300.GA7988@gamma.logic.tuwien.ac.at> <201102172309.26106.rwys@fuw.edu.pl> <20110218025601.GA30118@gamma.logic.tuwien.ac.at>
+In-Reply-To: <20110218025601.GA30118@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-To: Brian Gerst <brgerst@gmail.com>
-CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        castet.matthieu@free.fr, sfr@canb.auug.org.au, tglx@linutronix.de,
-        rjw@sisk.pl
-Subject: Re: [tip:x86/trampoline] x86, reboot: Move the real-mode reboot code
- to an assembly file
-References: <4D5DFBE4.7090104@intel.com>	<tip-3d35ac346e981162eeba391e496faceed4753e7b@git.kernel.org> <AANLkTikxqk=HEw9R-Du=v-1ti1HDGAY9vaNUep2XARaz@mail.gmail.com>
-In-Reply-To: <AANLkTikxqk=HEw9R-Du=v-1ti1HDGAY9vaNUep2XARaz@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102181849.17589.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2011 04:31 AM, Brian Gerst wrote:
->> +
->> +       /* Patch post-real-mode segment jump */
->> +       movw    dispatch_table(%ebx,%ecx,2),%cx
->> +       movw    %cx, 101f(%ebx)
->> +       movw    %ax, 102f(%ebx)
+On Friday, February 18, 2011, Norbert Preining wrote:
+> On Do, 17 Feb 2011, R. J. Wysocki wrote:
+> > > [  187.431895] sd 0:0:0:0: [sda] Stopping disk
+> > > [  187.480078] tpm_tis 00:0a: Operation Timed out
+> > > [  187.480095] legacy_suspend(): pnp_bus_suspend+0x0/0x6a returns -62
+> > > [  187.480101] PM: Device 00:0a failed to suspend: error -62
 > 
-> This looks wrong.  The type parameter is in %eax, not %ecx, and this
-> code is expecting %eax to be a segment.
+> > What happens if you revert commit 9b29050 (tpm_tis: Use timeouts returned from TPM)?
 > 
+> Reverting this commit the laptop suspends fine again.
 
-You're quite right.  I decided to make a change, changed all the
-invocations, and forgot to change the actual code.  D'oh!
+Stefan, Rajiv, the above commit causes a suspend regression to appear for
+Norbert.  Care to have a look?
 
-	-hpa
+Rafael
