@@ -1,99 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab1BRTzF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 14:55:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12548 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab1BRTzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 14:55:02 -0500
-Date: Fri, 18 Feb 2011 14:54:55 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
-        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Avoid preferential treatment of groups that aren't
- backlogged
-Message-ID: <20110218195454.GI26654@redhat.com>
-References: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
- <20110210020946.GA27040@redhat.com>
- <AANLkTi=dZDK6VosLX8JH4gJyRQ0KXGKMA5vhJ-7D93s7@mail.gmail.com>
- <20110210035738.GC27040@redhat.com>
- <AANLkTi=J8x3cEhQ_tJJ0=YM6+y_ZNLtK_34PweQfNJL8@mail.gmail.com>
- <AANLkTimdOO2qvafZ9f6csjqhh1e5w1iOEybN+1-3G3ep@mail.gmail.com>
- <20110211181533.GG8773@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110211181533.GG8773@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758439Ab1BRTzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 14:55:48 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43362
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752885Ab1BRTzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 14:55:45 -0500
+Date: Fri, 18 Feb 2011 11:56:21 -0800 (PST)
+Message-Id: <20110218.115621.226793798.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: mhocko@suse.cz, ebiederm@xmission.com, mingo@elte.hu, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com>
+References: <20110218122938.GB26779@tiehlicka.suse.cz>
+	<20110218162623.GD4862@tiehlicka.suse.cz>
+	<AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 11, 2011 at 01:15:33PM -0500, Vivek Goyal wrote:
-> On Thu, Feb 10, 2011 at 04:36:25PM -0800, Chad Talbott wrote:
-> > On Thu, Feb 10, 2011 at 10:57 AM, Chad Talbott <ctalbott@google.com> wrote:
-> > > On Wed, Feb 9, 2011 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > >> If you ran different random readers in different groups of differnet
-> > >> weight with group_isolation=1, then there is a case of having service
-> > >> differentiation. In that case we will idle for 8ms on each group before
-> > >> we expire the group. So in these test cases are low weight groups not
-> > >> submitting IO with-in 8ms? Putting a random reader in separate group
-> > >> with think time > 8, I think is going to hurt a lot because for every
-> > >> single IO dispatched group is going to weight for 8ms before it is
-> > >> expired.
-> > >
-> > > You're right about the behavior of group_idle.  We have more
-> > > experience with earlier kernels (before group_idle).  With this patch
-> > > we are able to achieve isolation without group_idle even with these
-> > > large ratios.  (Without group_idle the random reader workloads will
-> > > get marked seeky, and idling is disabled.  Without group_idle, we have
-> > > to remember the vdisktime to get isolation.)
-> > >
-> > >> Can you run blktrace and verify what's happenig?
-> > >
-> > > I can run a blktrace, and I think it will show what you expect.
-> > 
-> > So, I ran the following two tests and took a blktrace.
-> > 
-> > 950 rdrand, 50 rdrand.delay10
-> > weight 950 random reader with low think time vs weight 50 random
-> > reader with 10ms think time
-> > 
-> > 950 rdrand, 50 rdrand.delay50 # 50ms think time
-> > weight 950 random reader with low think time vs weight 50 random
-> > reader with 50ms think time
-> > 
-> > I find that we are still idling for these random readers, even the one
-> > with 50ms think time.  group_idle is 0 according to blktrace.
-> > 
-> > With this patch, both of these cases have correct isolation.  Without
-> > this patch, the small weight reader is able to get more than its
-> > share.
-> > 
-> > I think that idling for a random reader with a 50ms think time is
-> > likely a bug, but a separate issue.
-> 
-> Thanks for checking this out. I agree that for a low weight random
-> reader/writer which high think time, we need to remember the vdisktime
-> otherwise it will showup as a fresh new candidate and get more done.
-> 
-> Having said that, one can say that random reader/writer doing small
-> amount of IO should be able to get job done really fast and the one
-> who are hogging the disk for long time, should get higher vdisktime.
-> 
-> So with this scheme, a random reader/writer shall have to be of higher
-> weight to get the job done fast. A low weight reader/writer will still
-> get higher vdisktime and get lesser share. I think it is reasonable.
-> 
-> And yes, even with group_idle=0 if we are idling on a 50ms thinktime
-> random reader it sounds like a bug.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 18 Feb 2011 08:39:02 -0800
 
-Thinking more about it, I think it must be happening because of the fact
-that random IO goes on sync-noidle tree of group and there we idle on
-whole tree. I think if you set slice_idle=0 along with group_idle=0, that
-idling should go away.
+> On Fri, Feb 18, 2011 at 8:26 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>>> Now, I will try with the 2 patches patches in this thread. I will also
+>>> turn on DEBUG_LIST and DEBUG_PAGEALLOC.
+>>
+>> I am not able to reproduce with those 2 patches applied.
+> 
+> Thanks for verifying. Davem/EricD - you can add Michal's tested-by to
+> the patches too.
 
-Thanks
-Vivek
+Yep, I added Eric B.'s too, thanks!
