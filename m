@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab1BRSYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 13:24:14 -0500
-Received: from www.tglx.de ([62.245.132.106]:33646 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813Ab1BRSYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 13:24:13 -0500
-Date: Fri, 18 Feb 2011 19:23:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-arm-kernel@lists.infradead.org, m-watkins@ti.com, nsekhar@ti.com,
-        sachi@mistralsolutions.com, Greg Kroah-Hartman <gregkh@suse.de>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
-In-Reply-To: <20110218143500.23b3044b@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LFD.2.00.1102181917520.2701@localhost6.localdomain6>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-14-git-send-email-subhasish@mistralsolutions.com> <20110211162814.6ff274f1@lxorguk.ukuu.org.uk> <90BDE50764124CA8AAD560BB1E92C062@subhasishg>
- <20110218143500.23b3044b@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753323Ab1BRSZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 13:25:44 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:43454 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab1BRSZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 13:25:43 -0500
+Date: Fri, 18 Feb 2011 12:25:02 -0600
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        containers@lists.linux-foundation.org,
+        David Howells <dhowells@redhat.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] Reduce uidhash lock hold time when lookup succeeds
+Message-ID: <20110218182502.GA22238@localhost>
+References: <caebc7ebaa97599ef72b22d1172dfd2ebe770fce.1297986770.git.matthltc@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <caebc7ebaa97599ef72b22d1172dfd2ebe770fce.1297986770.git.matthltc@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011, Alan Cox wrote:
-
-> On Fri, 18 Feb 2011 19:17:38 +0530
-> "Subhasish Ghosh" <subhasish@mistralsolutions.com> wrote:
+Quoting Matt Helsley (matthltc@us.ibm.com):
+> When lookup succeeds we don't need the "new" user struct which hasn't
+> been linked into the uidhash. So we can immediately drop the lock and
+> then free "new" rather than free it with the lock held.
 > 
-> > Hello,
-> > 
-> > Regarding the semaphore to mutex migration.
-> > We are using down_trylock in interrupt context,
-> > mutex_trylock cannot be used in interrupt context, so we cannot use mutex in 
-> > our driver.
+> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Alexey Dobriyan <adobriyan@gmail.com>
+> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+
+Acked-by: Serge E. Hallyn <serge@hallyn.com>
+
+And might I say that the label 'out_unlock' in that function is
+sadly named :)
+
+> Cc: containers@lists.linux-foundation.org
+> ---
+>  kernel/user.c |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
 > 
-> Then you probably need to rework your locking. Best bet might be to fix
-> all the other stuff and report the driver, and people can think about the
-> locking problem.
-
-That semaphore is utterly useless to begin with. There are more
-serious locking problems than this one. Non serialized calls to
-suart_intr_clrmask/suart_intr_setmask are the most obvious ones.
-
-Aside of that the code is complete unreadable.
-
-Thanks,
-
-	tglx
+> diff --git a/kernel/user.c b/kernel/user.c
+> index 5c598ca..4ea8e58 100644
+> --- a/kernel/user.c
+> +++ b/kernel/user.c
+> @@ -157,16 +157,18 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
+>  		 */
+>  		spin_lock_irq(&uidhash_lock);
+>  		up = uid_hash_find(uid, hashent);
+> -		if (up) {
+> +		if (!up) {
+> +			uid_hash_insert(new, hashent);
+> +			up = new;
+> +		}
+> +		spin_unlock_irq(&uidhash_lock);
+> +
+> +		if (up != new) {
+>  			put_user_ns(ns);
+>  			key_put(new->uid_keyring);
+>  			key_put(new->session_keyring);
+>  			kmem_cache_free(uid_cachep, new);
+> -		} else {
+> -			uid_hash_insert(new, hashent);
+> -			up = new;
+>  		}
+> -		spin_unlock_irq(&uidhash_lock);
+>  	}
+>  
+>  	return up;
+> -- 
+> 1.6.3.3
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
