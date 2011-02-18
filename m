@@ -1,226 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758339Ab1BRTZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 14:25:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46521 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab1BRTZ0 (ORCPT
+	id S1758358Ab1BRT0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 14:26:16 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57103 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab1BRT0M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 14:25:26 -0500
+	Fri, 18 Feb 2011 14:26:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=t+pz03r+q5kFuqPxrOnNo1qOHJUQD2zbIte1XDxkJhcF3fMPDYrhaH2jhrISIUstyv
-         9OexZWdcATQogbV3W7F/s3gosx4P2/TMnz0Lu7NHtzgVCKBuPC0cZ33CXTh52yUuRLLd
-         9Q+dXVswXv9WLU88cbKEpBKpZr6i9S8ESUbhY=
-Date: Fri, 18 Feb 2011 20:24:35 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        acme@ghostprotocols.net, paulus@samba.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 3/3] perf events: add timehist option to record and
- report
-Message-ID: <20110218192433.GA5658@nowhere>
-References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
- <1298008433-22911-4-git-send-email-daahern@cisco.com>
- <20110218070657.GA11404@elte.hu>
- <4D5E8204.2090501@cisco.com>
- <20110218175926.GA3445@nowhere>
- <4D5EB564.6030504@cisco.com>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=G8SkRmYv6lhhjpOfqcRKzQg7vYg2uLaHi6gXA6uv9i1Ff5l0o5x8i0BtmVDljZUxz2
+         i/FlIWh/ag74oP0RiOo3O7QBw4MiZ8tp3iAUGCfkvLl9/CVEZrOmiew5OXsHpov/7ruv
+         lPLUpiGyTa76KN5zn8lB2qQsyO0dypJYCcPlk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5EB564.6030504@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201102181928.05911.rjw@sisk.pl>
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
+ <AANLkTikRUZRh0YnP8nYTKFnFeUiJbK5xKvHHjn_S+gZE@mail.gmail.com>
+ <AANLkTinsPqFcodH0w7LQeFEY+amodNH4CneRCRhhbKaz@mail.gmail.com> <201102181928.05911.rjw@sisk.pl>
+From: Rabin Vincent <rabin@rab.in>
+Date: Sat, 19 Feb 2011 00:55:28 +0530
+X-Google-Sender-Auth: -nLmXum4SwoBtbGDmR1MSot0p9g
+Message-ID: <AANLkTi=j9KeX2TSzMaKMWR6GpXjFcsjp0z8Rt+ArLXiV@mail.gmail.com>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: stern@rowland.harvard.edu, linux-pm@lists.linux-foundation.org,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        khilman@ti.com, magnus.damm@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 11:07:32AM -0700, David Ahern wrote:
-> 
-> 
-> On 02/18/11 10:59, Frederic Weisbecker wrote:
-> > On Fri, Feb 18, 2011 at 07:28:20AM -0700, David Ahern wrote:
-> >>
-> >>
-> >> On 02/18/11 00:06, Ingo Molnar wrote:
-> >>>
-> >>> * David Ahern <daahern@cisco.com> wrote:
-> >>>
-> >>>> +--timehist::
-> >>>> +        Generate time history output. This shows each sample with a wall-clock
-> >>>> +        timestamp and address to symbol conversions. The samples are output in
-> >>>> +        the same order they exist in the perf.data file. The --timehist option
-> >>>> +        must be used with the record to get wall-clock timestamps.
-> >>>
-> >>> Displaying samples this way is very useful, but how is this different from trace 
-> >>> output - i.e. 'perf script' output?
-> >>>
-> >>> There's a 'live logging mode' feature:
-> >>>
-> >>>     perf record ./myworkload | perf inject -v -b | perf script -i -
-> >>>
-> >>> ( There's also some work going on to have a separate 'perf trace' utility that will
-> >>>   output a linear trace of whatever events in perf.data are. )
-> >>>
-> >>> So unless i'm missing something it would be more useful to extend 'perf script' (or 
-> >>> the upcoming 'perf trace') to list regular samples in a perf.data (i.e. not rely on 
-> >>> -R raw trace data alone), and of course allow a straightforward utilization of real 
-> >>> timestamps, when available.
-> >>
-> >> To date I have not seen any option to show samples with wall-clock
-> >> timestamps. In a sense it pretty-prints the -R format. This allows perf
-> >> samples to be compared to other log files / sources of data to resolve
-> >> an issue.
-> >>
-> >> For example:
-> >>
-> >>  Time-of-Day   Kernel Timestamp cpu    Event  Command   PID
-> >> IP     Symbol Name (DSO Name)
-> >> 22:40:13.831567     858005051634   1  context-switches  kworker/1:0 8
-> >> ffffffff8103251e perf_event_task_sched_out ([kernel.kallsyms])
-> >>
-> >> 22:40:13.831683     858005168139   1  context-switches  sshd 897
-> >> ffffffff8103251e perf_event_task_sched_out ([kernel.kallsyms])
-> >>
-> >> With the stack callchain option it dumps a line for each address in the
-> >> stack (columns abbreviated here for email):
-> >>
-> >> 07:24:37.527728  1  sshd 819  ffffffff8103251e perf_event_task_sched_out
-> >> ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff81377231 schedule ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff81377f3a
-> >> schedule_hrtimeout_range_clock ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff81378016 schedule_hrtimeout_range
-> >> ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff81103e15 poll_schedule_timeout
-> >> ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff8110463c do_select ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff811047f4 core_sys_select
-> >> ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff81104929 sys_select
-> >> ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819  ffffffff81002bc2 system_call
-> >> ([kernel.kallsyms])
-> >> 07:24:37.527728  1  sshd 819      7f56d4814e93 __GI_select
-> >> (/lib64/libc-2.12.90.so)
-> >> 07:24:37.527728  1  sshd 819            40560b run_builtin
-> >> (/tmp/build-perf/perf)
-> >> 07:24:37.527728  1  sshd 819            40580d handle_internal_command
-> >> (/tmp/build-perf/perf)
-> >> 07:24:37.527728  1  sshd 819            405959 run_argv
-> >> (/tmp/build-perf/perf)
-> >> 07:24:37.527728  1  sshd 819            405b63 main (/tmp/build-perf/perf)
-> >> 07:24:37.527728  1  sshd 819      7fa49de9fe7d __libc_start_main
-> >> (/lib64/libc-2.12.90.so)
-> >>
-> >>
-> >> This format has allowed us to do an in-depth analysis of scheduling
-> >> (record -e cs -c 1): we can see when was process running, for how long
-> >> it ran, why it was kicked off the processor, how long was it off the
-> >> processor, what ran in between schedulings, etc. If a log file shows a
-> >> process missing a heartbeat you can look at the perf data in the time
-> >> range and see if it had a chance to run. If not where was it blocked.
-> > 
-> > Oh, in this case I strongly suggest you to use the tracepoint events.
-> > 
-> > Look at the output of "perf list" and seek the events which name
-> > start with "sched:"
-> > 
-> >   sched:sched_kthread_stop                   [Tracepoint event]
-> >   sched:sched_kthread_stop_ret               [Tracepoint event]
-> >   sched:sched_wait_task                      [Tracepoint event]
-> >   sched:sched_wakeup                         [Tracepoint event]
-> >   sched:sched_wakeup_new                     [Tracepoint event]
-> >   sched:sched_switch                         [Tracepoint event]
-> >   sched:sched_migrate_task                   [Tracepoint event]
-> >   sched:sched_process_free                   [Tracepoint event]
-> >   sched:sched_process_exit                   [Tracepoint event]
-> >   sched:sched_process_wait                   [Tracepoint event]
-> >   sched:sched_process_fork                   [Tracepoint event]
-> >   sched:sched_stat_wait                      [Tracepoint event]
-> >   sched:sched_stat_sleep                     [Tracepoint event]
-> >   sched:sched_stat_iowait                    [Tracepoint event]
-> >   sched:sched_stat_runtime                   [Tracepoint event]
-> > 
-> > 
-> > You have the sched:sched_switch event and many others.
-> > 
-> > Just try:
-> > 
-> > perf record -a -e sched:*
-> > perf script
-> > 
-> >             perf-4128  [000] 19242.870025: sched_stat_runtime: comm=perf pid=4128 runtime=7430405 [ns] vruntime=3530192223488 
-> >             perf-4128  [000] 19242.870042: sched_stat_runtime: comm=perf pid=4128 runtime=23142 [ns] vruntime=3530192246630 [n
-> >             perf-4128  [000] 19242.870045: sched_stat_sleep: comm=kondemand/0 pid=59 delay=9979163 [ns]
-> >             perf-4128  [000] 19242.870048: sched_wakeup: comm=kondemand/0 pid=59 prio=120 success=1 target_cpu=000
-> >             perf-4128  [000] 19242.870063: sched_stat_runtime: comm=perf pid=4128 runtime=21581 [ns] vruntime=3530192268211 [n
-> >             perf-4128  [000] 19242.870066: sched_stat_wait: comm=kondemand/0 pid=59 delay=21581 [ns]
-> >             perf-4128  [000] 19242.870069: sched_switch: prev_comm=perf prev_pid=4128 prev_prio=120 prev_state=R ==> next_comm
-> >      kondemand/0-59    [000] 19242.870091: sched_stat_runtime: comm=kondemand/0 pid=59 runtime=27362 [ns] vruntime=35301862739
-> >      kondemand/0-59    [000] 19242.870094: sched_stat_wait: comm=perf pid=4128 delay=27362 [ns]
-> >      kondemand/0-59    [000] 19242.870095: sched_switch: prev_comm=kondemand/0 prev_pid=59 prev_prio=120 prev_state=S ==> next
-> > 
-> > And you can run your own script on these events:
-> > 
-> > $ sudo ./perf script -g python
-> > generated Python script: perf-script.py
-> > 
-> > Edit perf-script.py and then run it:
-> > 
-> > $ perf script -s ./perf-script.py
-> > 
-> > That also works for perl.
-> > 
-> > The timestamps will be the cpu time and not the walltime, but at least that seems
-> > to be partly what you seek?
-> 
-> Yes, I have looked at that output before -- essentially ftrace output.
-> 
-> We want not only context-switch events, but the stack trace at the
-> switch. For example, with the stack trace you can see preemption -- when
-> a process got booted by another and where the booted process is at the
-> time. You can see not only which system call caused an ap to block
-> (e.g., an ioctl) but the full code path leading to the block.
+On Fri, Feb 18, 2011 at 23:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, February 18, 2011, Rabin Vincent wrote:
+>> On Thu, Feb 17, 2011 at 20:55, Rabin Vincent <rabin@rab.in> wrote:
+>> > This will solve the platform vs AMBA bus, but shouldn't we really be
+>> > aiming for consistent behaviour between these and the other busses such
+>> > as I2C and SPI, which are also usually commonly used on the same
+>> > platforms and are using GENERIC_PM_OPS?
+>> >
+>> > Should we be auditing all platform drivers and then switch platform to
+>> > the GENERIC_PM_OPS?
+>> >
+>> > Or should the two points (1) and (2) be not handled in the bus at all
+>> > and be left to individual drivers (in which case we should audit i2c and
+>> > spi and change GENERIC_PM_OPS)?
+>>
+>> How about something like the below?  If we have something like this, we
+>> can just switch platform to GENERIC_PM_OPS and add the
+>> pm_runtime_want_interaction() (or something better named) call to the
+>> i2c and spi drivers using runtime PM.
+>
+> Why don't we make platform_bus_type behave along the lines of generic ops
+> instead?
 
-You can recognize preemption a the context switch tracepoint: if the state
-of the scheduled out task is R (TASK_RUNNING), which means it doesn't go
-to sleep but gets preempted, with an explicit preemption point like cond_resched(),
-or a more implicit one: spin_unlock(), preempt_enable(), an interrupt, ...
-Or it has been woken up while it was about to sleep, but it doesn't make much
-difference.
+At least drivers/spi/omap2_mcspi.c, drivers/video/sh_mobile_lcdcfb.c and
+drivers/watchdog/omap_wdt.c are some pm_runtime-using drivers which seem
+to do different things in their runtime vs normal suspend/resume
+routines, so forcing platform into the active-on-resume behaviour of the
+generic ops may make some use cases impossible.  Conversion of more OMAP
+drivers to runtime pm appears to be ongoing so I'd imagine we'd be
+seeing more of this.  Perhaps Kevin or Magnus will have a comment here.
+The same thing applies to AMBA drivers.
 
-If you want to know when a process is booted by another you can use the
-fork tracepoint, or sched:wake_up_new, etc...
-
-And you can use syscall tracepoints to get the syscalls you want.
-
-I don't see much the point for you to use stacktraces. But if you
-do, then rather add this support to perf script, in our scripting
-framework.
-
-Because what you've done is basically to add tracing support to
-perf report. But we have perf script for that already. It only focuses
-on tracepoint events but they are those people are interested in
-because they show logical events in the kernel. I guess
-people are not interested in cpu-cycles overflows events or so as
-they don't show a state change in the kernel.
-
-Well, yeah I can understand if one considers the software events,
-that makes meaningful events from the kernel. But these software events
-support have been a mistake in perf. You should rather use the
-tracepoint events instead.
- 
-> That data along with the gettimeofday timestamp has allowed us to
-> resolve performance issues such as a system call taking longer than
-> expected during a specific sequence of events or a process getting
-> preempted and not scheduled for N seconds. etc., etc.
-
-That's about the same here. If you really need this, you need to add
-the support in perf script to handle that on tracepoint events.
+Looking at the i2c drivers using runtime pm in comparison, they all seem
+to be using straightforward UNIVERSAL_PM_OPS-style code with the runtime
+and the system sleep doing the same things.  So maybe we do need to
+treat platform/AMBA different from the I2C/SPI group?
