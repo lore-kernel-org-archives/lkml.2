@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab1BRSZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 13:25:44 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:43454 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab1BRSZn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 13:25:43 -0500
-Date: Fri, 18 Feb 2011 12:25:02 -0600
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        containers@lists.linux-foundation.org,
-        David Howells <dhowells@redhat.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH] Reduce uidhash lock hold time when lookup succeeds
-Message-ID: <20110218182502.GA22238@localhost>
-References: <caebc7ebaa97599ef72b22d1172dfd2ebe770fce.1297986770.git.matthltc@us.ibm.com>
+	id S1754063Ab1BRS2S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 13:28:18 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37840 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752217Ab1BRS2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 13:28:17 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Rabin Vincent <rabin@rab.in>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+Date: Fri, 18 Feb 2011 19:28:05 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: stern@rowland.harvard.edu, linux-pm@lists.linux-foundation.org,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        khilman@ti.com, magnus.damm@gmail.com
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <AANLkTikRUZRh0YnP8nYTKFnFeUiJbK5xKvHHjn_S+gZE@mail.gmail.com> <AANLkTinsPqFcodH0w7LQeFEY+amodNH4CneRCRhhbKaz@mail.gmail.com>
+In-Reply-To: <AANLkTinsPqFcodH0w7LQeFEY+amodNH4CneRCRhhbKaz@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <caebc7ebaa97599ef72b22d1172dfd2ebe770fce.1297986770.git.matthltc@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102181928.05911.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Matt Helsley (matthltc@us.ibm.com):
-> When lookup succeeds we don't need the "new" user struct which hasn't
-> been linked into the uidhash. So we can immediately drop the lock and
-> then free "new" rather than free it with the lock held.
+On Friday, February 18, 2011, Rabin Vincent wrote:
+> On Thu, Feb 17, 2011 at 20:55, Rabin Vincent <rabin@rab.in> wrote:
+> > This will solve the platform vs AMBA bus, but shouldn't we really be
+> > aiming for consistent behaviour between these and the other busses such
+> > as I2C and SPI, which are also usually commonly used on the same
+> > platforms and are using GENERIC_PM_OPS?
+> >
+> > Should we be auditing all platform drivers and then switch platform to
+> > the GENERIC_PM_OPS?
+> >
+> > Or should the two points (1) and (2) be not handled in the bus at all
+> > and be left to individual drivers (in which case we should audit i2c and
+> > spi and change GENERIC_PM_OPS)?
 > 
-> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Alexey Dobriyan <adobriyan@gmail.com>
-> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+> How about something like the below?  If we have something like this, we
+> can just switch platform to GENERIC_PM_OPS and add the
+> pm_runtime_want_interaction() (or something better named) call to the
+> i2c and spi drivers using runtime PM.
 
-Acked-by: Serge E. Hallyn <serge@hallyn.com>
+Why don't we make platform_bus_type behave along the lines of generic ops
+instead?
 
-And might I say that the label 'out_unlock' in that function is
-sadly named :)
-
-> Cc: containers@lists.linux-foundation.org
-> ---
->  kernel/user.c |   12 +++++++-----
->  1 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/user.c b/kernel/user.c
-> index 5c598ca..4ea8e58 100644
-> --- a/kernel/user.c
-> +++ b/kernel/user.c
-> @@ -157,16 +157,18 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
->  		 */
->  		spin_lock_irq(&uidhash_lock);
->  		up = uid_hash_find(uid, hashent);
-> -		if (up) {
-> +		if (!up) {
-> +			uid_hash_insert(new, hashent);
-> +			up = new;
-> +		}
-> +		spin_unlock_irq(&uidhash_lock);
-> +
-> +		if (up != new) {
->  			put_user_ns(ns);
->  			key_put(new->uid_keyring);
->  			key_put(new->session_keyring);
->  			kmem_cache_free(uid_cachep, new);
-> -		} else {
-> -			uid_hash_insert(new, hashent);
-> -			up = new;
->  		}
-> -		spin_unlock_irq(&uidhash_lock);
->  	}
->  
->  	return up;
-> -- 
-> 1.6.3.3
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
+Rafael
