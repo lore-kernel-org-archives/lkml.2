@@ -1,411 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758241Ab1BRJZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 04:25:33 -0500
-Received: from bender.cm4all.net ([87.106.27.49]:39090 "EHLO bender.cm4all.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab1BRJZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 04:25:25 -0500
-Date: Fri, 18 Feb 2011 10:26:52 +0100
-From: Max Kellermann <mk@cm4all.com>
-To: Paul Menage <menage@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: lizf@cn.fujitsu.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] new cgroup controller "fork"
-Message-ID: <20110218092652.GA5408@rabbit.intern.cm-ag>
-References: <20110217133152.4043.94951.stgit@rabbit.intern.cm-ag>
- <AANLkTi=X7rHEy9yOngogs_OQ69FJeZeQRSwvFdgnbWxo@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754038Ab1BRJd6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 04:33:58 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:36893 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab1BRJdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 04:33:55 -0500
+Date: Fri, 18 Feb 2011 10:30:00 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Seblu <seblu@seblu.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Ivan Vecera <ivecera@redhat.com>
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+Message-ID: <20110218093000.GA12106@electric-eye.fr.zoreil.com>
+References: <AANLkTin7GBSTcfZgr_9sNZ8CPMkW7Vstni+fs2v1-ink@mail.gmail.com> <1297581470.2510.18.camel@edumazet-laptop> <20110213135600.GA11382@electric-eye.fr.zoreil.com> <AANLkTikTw71-mv9WsPT8PxC1a1nwEJ=x0UNDhVQGP1A6@mail.gmail.com> <AANLkTikLOJ-XcwfdbWS19DKzh2s91tn5pQjJe0+CeAN-@mail.gmail.com> <20110213203417.GA11442@electric-eye.fr.zoreil.com> <AANLkTi=PrOXMD54hSbEwUtmzXiwsSwiSijE3AJ9n=WDe@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="YZ5djTAD1cGYuMQK"
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=X7rHEy9yOngogs_OQ69FJeZeQRSwvFdgnbWxo@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=PrOXMD54hSbEwUtmzXiwsSwiSijE3AJ9n=WDe@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011/02/18 01:59, Paul Menage <menage@google.com> wrote:
-> I'd be inclined to simplify this a bit - avoid impacting the fork()
-> path twice, with cgroup_fork_pre_fork() and cgroup_fork_fork() and
-> just do the checks and decrements in a single pass. (In the event of
-> hitting a limit, you may need to make another partial pass up the tree
-> to restore the charged fork attempts)
 
-I have implemented it, but I don't like your idea.  It actually
-complicates the code.  It tries to do two things at once, and running
-again until it hits the failed cgroup seems somewhat fragile.  I
-believe the overhead for doing two separate runs in case of success is
-negligible compared to the cost of sys_fork().
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-(Documentation not adjusted yet in the new patch)
+Seblu <seblu@seblu.net> :
+[...]
+> I've applyed your patch on 2.6.38-rc5. Host have rebooted 2mn after udp start.
+> After this reboot, host is still on after 2 hour under a 1Gbit/s udp flow.
 
-> Also, it would be slightly clearer to use fork_cgroup_* rather than
-> cgroup_fork_* - this makes it clearer that it's part of a cgroups
-> subsystem called "fork", rather than part of the cgroups core
-> framework.
+Thanks for testing.
 
-Changed, but I've preserved the file name cgroup_fork.c.  Do you want
-me to change that, too?  (What about cgroup_freezer.c and the config
-option names CONFIG_CGROUP_*?)
+> I attached a dmesg output before reboot. Do you need anything else?
 
-> I don't think that you need to make your spinlock IRQ-safe - AFAICS
-> nothing accesses it from the interrupt path.
+Mostly :
+1. .config
+2. the size of the udp packets and the mtu
 
-Changed.
+As an option :
+3. a few seconds of 'vmstat 1' from the host under test
+4. an 'ethtool -s eth0' from the host under test
+5. /proc/interrupts from the host under test
+6. lspci -tv 
 
-On 2011/02/17 14:50, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> How about -EAGAIN here ? I think it's not good to add new error code
-> for system calls.
+Can you apply the two attached patches on top of the previous ones and
+give it a try ? The debug should not be too verbose if things are stationary
+enough.
 
-Changed that, but that got me a funny quirk while testing:
+Do you have a serial cable and a second computer at hand by chance (don't
+go for netconsole with the r8169 driver) ?
 
- bear:~# ls
- -bash: fork: retry: Resource temporarily unavailable
- -bash: fork: retry: Resource temporarily unavailable
- -bash: fork: retry: Resource temporarily unavailable
- -bash: fork: retry: Resource temporarily unavailable
- -bash: fork: Resource temporarily unavailable
- bear:~# 
+-- 
+Ueimor
 
-Generally, I don't think EAGAIN is a good errno code for
-"adminstrative limit exceeded".  EAGAIN's meaning is "try again
-later".  Usually there is something like poll() to wait until the
-resource is available - but a process cannot wait for the adminstrator
-to raise the configured limits.  You could blame that quirk on bash,
-because it does not consider that divergent definition of EAGAIN for
-fork()..
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-r8169-TX-stop-queue-race-fix.patch"
 
-The changed patch follows for further discussion; I'll repost the
-complete patch with description again once we agree that it's
-finished.
-
-Max
-
-
-diff --git a/Documentation/cgroups/fork.txt b/Documentation/cgroups/fork.txt
-new file mode 100644
-index 0000000..dfbf291
---- /dev/null
-+++ b/Documentation/cgroups/fork.txt
-@@ -0,0 +1,30 @@
-+The "fork" Controller
-+---------------------
-+
-+The "fork" controller limits the number of times a new child process
-+or thread can be created.  It maintains a per-group counter which gets
-+decremented on each fork() / clone().  When the counter reaches zero,
-+no process in the cgroup is allowed to create new child
-+processes/threads, even if existing ones quit.
-+
-+This has been proven useful in a shared hosting environment.  A new
-+temporary cgroup is created for each CGI process, and the maximum fork
-+count is configured to a sensible value.  Since CGIs are expected to
-+run for only a short time with predictable resource usage, this may be
-+an appropriate tool to limit the damage that a freaked CGI can do.
-+
-+Initially, the counter is set to -1, which is a magic value for
-+"disabled" - no limits are imposed on the processes in the group.  To
-+set a new value, type (in the working directory of that control
-+group):
-+
-+ echo 16 > fork.remaining
-+
-+This examples allows 16 forks in the control group.  0 means no
-+further forks are allowed.  The limit may be lowered or increased or
-+even disabled at any time by a process with write permissions to the
-+attribute.
-+
-+To check if a fork is allowed, the controller walks the cgroup
-+hierarchy up, and verifies all ancestors.  The counter of all
-+ancestors is decreased.
-diff --git a/include/linux/cgroup_fork.h b/include/linux/cgroup_fork.h
-new file mode 100644
-index 0000000..aef1dbd
---- /dev/null
-+++ b/include/linux/cgroup_fork.h
-@@ -0,0 +1,26 @@
-+#ifndef _LINUX_CGROUP_FORK_H
-+#define _LINUX_CGROUP_FORK_H
-+
-+#ifdef CONFIG_CGROUP_FORK
-+
-+/**
-+ * Checks if another fork is allowed.  Call this before creating a new
-+ * child process.
-+ *
-+ * @return 0 on success, a negative errno value if forking should be
-+ * denied
-+ */
-+int
-+fork_cgroup_pre_fork(void);
-+
-+#else /* !CONFIG_CGROUP_FORK */
-+
-+static inline int
-+fork_cgroup_pre_fork(void)
-+{
-+	return 0;
-+}
-+
-+#endif /* !CONFIG_CGROUP_FORK */
-+
-+#endif /* !_LINUX_CGROUP_FORK_H */
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index ccefff0..8ead7f9 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -66,3 +66,9 @@ SUBSYS(blkio)
- #endif
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 59ccf0c..712231f 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -4361,13 +4361,13 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
  
- /* */
-+
-+#ifdef CONFIG_CGROUP_FORK
-+SUBSYS(fork)
-+#endif
-+
-+/* */
-diff --git a/init/Kconfig b/init/Kconfig
-index 17e2cfb..ef53a85 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -596,6 +596,12 @@ config CGROUP_FREEZER
- 	  Provides a way to freeze and unfreeze all tasks in a
- 	  cgroup.
+ 	tp->cur_tx += frags + 1;
  
-+config CGROUP_FORK
-+	bool "fork controller for cgroups"
-+	help
-+	  Limits the number of fork() calls in a cgroup.  An application
-+	  for this is to make a cgroup safe against fork bombs.
+-	wmb();
+-
+ 	RTL_W8(TxPoll, NPQ);	/* set polling bit */
+ 
++	mmiowb();
 +
- config CGROUP_DEVICE
- 	bool "Device controller for cgroups"
- 	help
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 353d3fe..b58cc01 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -61,6 +61,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
- obj-$(CONFIG_COMPAT) += compat.o
- obj-$(CONFIG_CGROUPS) += cgroup.o
- obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
-+obj-$(CONFIG_CGROUP_FORK) += cgroup_fork.o
- obj-$(CONFIG_CPUSETS) += cpuset.o
- obj-$(CONFIG_CGROUP_NS) += ns_cgroup.o
- obj-$(CONFIG_UTS_NS) += utsname.o
-diff --git a/kernel/cgroup_fork.c b/kernel/cgroup_fork.c
-new file mode 100644
-index 0000000..e56b2c6
---- /dev/null
-+++ b/kernel/cgroup_fork.c
-@@ -0,0 +1,186 @@
-+/*
-+ *  A cgroup implementation which limits the number of fork() calls.
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ */
+ 	if (TX_BUFFS_AVAIL(tp) < MAX_SKB_FRAGS) {
+ 		netif_stop_queue(dev);
+-		smp_rmb();
++		smp_mb();
+ 		if (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)
+ 			netif_wake_queue(dev);
+ 	}
+@@ -4468,10 +4468,14 @@ static void rtl8169_tx_interrupt(struct net_device *dev,
+ 
+ 	if (tp->dirty_tx != dirty_tx) {
+ 		tp->dirty_tx = dirty_tx;
+-		smp_wmb();
+-		if (netif_queue_stopped(dev) &&
+-		    (TX_BUFFS_AVAIL(tp) >= MAX_SKB_FRAGS)) {
+-			netif_wake_queue(dev);
++		smp_mb();
++		if (unlikely(netif_queue_stopped(dev) &&
++		    (TX_BUFFS_AVAIL(tp) >= (NUM_TX_DESC / 4)))) {
++			netif_tx_lock(dev);
++			if (netif_queue_stopped(dev) &&
++			    (TX_BUFFS_AVAIL(tp) >= (NUM_TX_DESC / 4)))
++				netif_wake_queue(dev);
++			netif_tx_unlock(dev);
+ 		}
+ 		/*
+ 		 * 8168 hack: TxPoll requests are lost when the Tx packets are
+-- 
+1.7.3.4
+
+
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0002-r8169-debuginator.patch"
+
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 712231f..5eaccbb 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -4622,6 +4622,11 @@ static int rtl8169_rx_interrupt(struct net_device *dev,
+ 	return count;
+ }
+ 
++static struct {
++	u16 status[4];
++	u16 idx;
++} x = { { 0 }, 0 };
 +
-+#include <linux/cgroup.h>
-+#include <linux/cgroup_fork.h>
-+#include <linux/slab.h>
-+
-+struct cgroup_fork {
-+	struct cgroup_subsys_state css;
-+
-+	/** protect the "remaining" attribute */
-+	spinlock_t lock;
-+
-+	/**
-+	 * The remaining number of forks allowed.  -1 is the magic
-+	 * value for "unlimited".
-+	 */
-+	int remaining;
-+};
-+
-+/**
-+ * Get the #cgrou_fork instance of the specified #cgroup.
-+ */
-+static inline struct cgroup_fork *
-+fork_cgroup_group(struct cgroup *cgroup)
-+{
-+	return container_of(cgroup_subsys_state(cgroup, fork_subsys_id),
-+			    struct cgroup_fork, css);
-+}
-+
-+/**
-+ * Get the #cgroup_fork instance of the specified task.
-+ */
-+static inline struct cgroup_fork *
-+fork_cgroup_task(struct task_struct *task)
-+{
-+	return container_of(task_subsys_state(current_task, fork_subsys_id),
-+			    struct cgroup_fork, css);
-+}
-+
-+/**
-+ * Get the #cgroup_fork instance of the current task.
-+ */
-+static inline struct cgroup_fork *
-+fork_cgroup_current(void)
-+{
-+	return fork_cgroup_task(current_task);
-+}
-+
-+static struct cgroup_subsys_state *
-+fork_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cgroup)
-+{
-+	struct cgroup_fork *t = kzalloc(sizeof(*t), GFP_KERNEL);
-+	if (!t)
-+		return ERR_PTR(-ENOMEM);
-+
-+	spin_lock_init(&t->lock);
-+
-+	t->remaining = -1;
-+
-+	return &t->css;
-+}
-+
-+static void
-+fork_cgroup_destroy(struct cgroup_subsys *ss, struct cgroup *cgroup)
-+{
-+	struct cgroup_fork *t = fork_cgroup_group(cgroup);
-+
-+	kfree(t);
-+}
-+
-+static s64
-+fork_cgroup_remaining_read(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	struct cgroup_fork *t = fork_cgroup_group(cgroup);
-+	int value;
-+
-+	spin_lock(&t->lock);
-+	value = t->remaining;
-+	spin_unlock(&t->lock);
-+
-+	return value;
-+}
-+
-+static int
-+fork_cgroup_remaining_write(struct cgroup *cgroup, struct cftype *cft,
-+			    s64 value)
-+{
-+	struct cgroup_fork *t = fork_cgroup_group(cgroup);
-+
-+	if (value < -1 || value > (1L << 30))
-+		return -EINVAL;
-+
-+	spin_lock(&t->lock);
-+	t->remaining = (int)value;
-+	spin_unlock(&t->lock);
-+
-+	return 0;
-+}
-+
-+static const struct cftype fork_cgroup_files[] =  {
-+	{
-+		.name = "remaining",
-+		.read_s64 = fork_cgroup_remaining_read,
-+		.write_s64 = fork_cgroup_remaining_write,
-+	},
-+};
-+
-+static int
-+fork_cgroup_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
-+{
-+	if (cgroup->parent == NULL)
-+		/* cannot limit the root cgroup */
-+		return 0;
-+
-+	return cgroup_add_files(cgroup, ss, fork_cgroup_files,
-+				ARRAY_SIZE(fork_cgroup_files));
-+}
-+
-+struct cgroup_subsys fork_subsys = {
-+	.name = "fork",
-+	.create = fork_cgroup_create,
-+	.destroy = fork_cgroup_destroy,
-+	.populate = fork_cgroup_populate,
-+	.subsys_id = fork_subsys_id,
-+};
-+
-+/**
-+ * After a failure, restore the "remaining" counter in all cgroups
-+ * from the task_current's one up to the failed one.
-+ */
-+static void
-+fork_cgroup_restore(struct cgroup_fork *until_excluding)
-+{
-+	struct cgroup_fork *t;
-+
-+	for (t = fork_cgroup_current(); t != until_excluding;
-+	     t = fork_cgroup_group(t->css.cgroup->parent)) {
-+		spin_lock(&t->lock);
-+
-+		if (t->remaining >= 0)
-+			++t->remaining;
-+
-+		spin_unlock(&t->lock);
-+	}
-+}
-+
-+int
-+fork_cgroup_pre_fork(void)
-+{
-+	struct cgroup_fork *t;
-+	int err = 0;
-+
-+	rcu_read_lock();
-+
-+	for (t = fork_cgroup_current(); t->css.cgroup->parent != NULL;
-+	     t = fork_cgroup_group(t->css.cgroup->parent)) {
-+		spin_lock(&t->lock);
-+
-+		if (t->remaining > 0)
-+			/* decrement the counter */
-+			--t->remaining;
-+		else if (t->remaining == 0) {
-+			/* fork manpage: "[...] RLIMIT_NPROC resource
-+			   limit was encountered." - should be close
-+			   enough to this condition */
-+			spin_unlock(&t->lock);
-+			err = -EAGAIN;
-+
-+			/* restore the decremented counters */
-+			fork_cgroup_restore(t);
-+			break;
+ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ {
+ 	struct net_device *dev = dev_instance;
+@@ -4637,6 +4642,12 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 	while (status && status != 0xffff) {
+ 		handled = 1;
+ 
++		x.status[x.idx++ % 4] = status;
++		if (net_ratelimit()) {
++			printk(KERN_INFO "%04x %04x %04x %04x\n",
++				x.status[0], x.status[1],
++				x.status[2], x.status[3]);
 +		}
-+
-+		spin_unlock(&t->lock);
-+	}
-+
-+	rcu_read_unlock();
-+
-+	return err;
-+}
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 25e4291..0f06202 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -32,6 +32,7 @@
- #include <linux/capability.h>
- #include <linux/cpu.h>
- #include <linux/cgroup.h>
-+#include <linux/cgroup_fork.h>
- #include <linux/security.h>
- #include <linux/hugetlb.h>
- #include <linux/swap.h>
-@@ -1024,6 +1025,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 				current->signal->flags & SIGNAL_UNKILLABLE)
- 		return ERR_PTR(-EINVAL);
- 
-+	retval = fork_cgroup_pre_fork();
-+	if (retval)
-+		goto fork_out;
-+
- 	retval = security_task_create(clone_flags);
- 	if (retval)
- 		goto fork_out;
+ 		/* Handle all of the error cases first. These will reset
+ 		 * the chip, so just exit the loop.
+ 		 */
+-- 
+1.7.3.4
+
+
+--YZ5djTAD1cGYuMQK--
