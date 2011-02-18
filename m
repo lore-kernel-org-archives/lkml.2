@@ -1,233 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab1BRNnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 08:43:49 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:35146 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203Ab1BRNnk (ORCPT
+	id S1756924Ab1BRNos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 08:44:48 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34592 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab1BRNom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 08:43:40 -0500
-Subject: Re: [PATCH 3/3] mm: Simplify anon_vma refcounts
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-In-Reply-To: <AANLkTimj1d6QpzuNZ6NJvLDVvvC++mPodggFaBziU8Bj@mail.gmail.com>
-References: <20110217161948.045410404@chello.nl>
-	 <20110217162124.457572646@chello.nl>
-	 <AANLkTimj1d6QpzuNZ6NJvLDVvvC++mPodggFaBziU8Bj@mail.gmail.com>
+	Fri, 18 Feb 2011 08:44:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=R7XJ0/K4/BZZn6We88lAnG+NNz8eB4900kBW6cZXk+C14+0NHz+O7NgNfz5lPcsesA
+         BBeDxvHMPBA83uqqZyeqrGH6H842WPzg87DPTTX5mwO6nir3wLUJuU8XGGvgZYdWMxF6
+         3316n1dhUMJ8sT9pRa8Ww5rNXcdRjkfbOQbXA=
+Subject: [PATCH v2] net: provide default_advmss() methods to blackhole
+ dst_ops
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: George Spelvin <linux@horizon.com>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Daniel Baluta <dbaluta@ixiacom.com>
+In-Reply-To: <1298036005.6201.58.camel@edumazet-laptop>
+References: <20110218050321.10415.qmail@science.horizon.com>
+	 <1298010735.2642.9.camel@edumazet-laptop>
+	 <1298023023.2595.170.camel@edumazet-laptop>
+	 <AANLkTi=GRPWNWZuORx1zoJJURE-drqEoMdTuKB9LZ8Ux@mail.gmail.com>
+	 <1298035443.6201.51.camel@edumazet-laptop>
+	 <AANLkTi=O1LZzSc8=qMX=R3rJpCVL8eWr1eo6NkiZXS0m@mail.gmail.com>
+	 <1298036005.6201.58.camel@edumazet-laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Feb 2011 14:44:43 +0100
-Message-ID: <1298036683.5226.765.camel@laptop>
+Date: Fri, 18 Feb 2011 14:44:32 +0100
+Message-ID: <1298036672.6201.65.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: mm: Simplify anon_vma refcounts
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri, 26 Nov 2010 15:38:49 +0100
+Le vendredi 18 février 2011 à 14:33 +0100, Eric Dumazet a écrit :
 
-This patch changes the anon_vma refcount to be 0 when the object is
-free. It does this by adding 1 ref to being in use in the anon_vma
-structure (iow. the anon_vma->head list is not empty).
+> I had this exact idea but found we need struct net pointer to get this
+> value, not provided in parameters, so I falled back to the 256 value.
+> 
+> 
 
-This allows a simpler release scheme without having to check both the
-refcount and the list as well as avoids taking a ref for each entry
-on the list.
+Hmm, reading again this stuff, maybe we can just use
+ipv4_default_advmss() instead of a custom one.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+dst->dev should be available
+
+[PATCH] net: provide default_advmss() methods to blackhole dst_ops
+
+Commit 0dbaee3b37e118a (net: Abstract default ADVMSS behind an
+accessor.) introduced a possible crash in tcp_connect_init(), when
+dst->default_advmss() is called from dst_metric_advmss()
+
+Reported-by: George Spelvin <linux@horizon.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Roland Dreier <roland@purestorage.com>
+CC: Changli Gao <xiaosuo@gmail.com>
+CC: Daniel Baluta <dbaluta@ixiacom.com>
 ---
- include/linux/rmap.h |   11 +++++--
- mm/rmap.c            |   78 ++++++++++++++++++---------------------------------
- 2 files changed, 38 insertions(+), 51 deletions(-)
+ net/ipv4/route.c |    1 +
+ net/ipv6/route.c |    1 +
+ 2 files changed, 2 insertions(+)
 
-Index: linux-2.6/include/linux/rmap.h
-===================================================================
---- linux-2.6.orig/include/linux/rmap.h
-+++ linux-2.6/include/linux/rmap.h
-@@ -73,7 +73,13 @@ static inline void get_anon_vma(struct a
- 	atomic_inc(&anon_vma->refcount);
- }
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 788a3e7..6ed6603 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -2722,6 +2722,7 @@ static struct dst_ops ipv4_dst_blackhole_ops = {
+ 	.destroy		=	ipv4_dst_destroy,
+ 	.check			=	ipv4_blackhole_dst_check,
+ 	.default_mtu		=	ipv4_blackhole_default_mtu,
++	.default_advmss		=	ipv4_default_advmss,
+ 	.update_pmtu		=	ipv4_rt_blackhole_update_pmtu,
+ };
  
--void put_anon_vma(struct anon_vma *);
-+void __put_anon_vma(struct anon_vma *anon_vma);
-+
-+static inline void put_anon_vma(struct anon_vma *anon_vma)
-+{
-+	if (atomic_dec_and_test(&anon_vma->refcount))
-+		__put_anon_vma(anon_vma);
-+}
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 1c29f95..a998db6 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -128,6 +128,7 @@ static struct dst_ops ip6_dst_blackhole_ops = {
+ 	.destroy		=	ip6_dst_destroy,
+ 	.check			=	ip6_dst_check,
+ 	.default_mtu		=	ip6_blackhole_default_mtu,
++	.default_advmss		=	ip6_default_advmss,
+ 	.update_pmtu		=	ip6_rt_blackhole_update_pmtu,
+ };
  
- static inline struct anon_vma *page_anon_vma(struct page *page)
- {
-@@ -116,7 +122,6 @@ void unlink_anon_vmas(struct vm_area_str
- int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
- int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
- void __anon_vma_link(struct vm_area_struct *);
--void anon_vma_free(struct anon_vma *);
- 
- static inline void anon_vma_merge(struct vm_area_struct *vma,
- 				  struct vm_area_struct *next)
-@@ -125,6 +130,8 @@ static inline void anon_vma_merge(struct
- 	unlink_anon_vmas(next);
- }
- 
-+struct anon_vma *page_get_anon_vma(struct page *page);
-+
- /*
-  * rmap interfaces called when adding or removing pte of page
-  */
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -67,11 +67,24 @@ static struct kmem_cache *anon_vma_chain
- 
- static inline struct anon_vma *anon_vma_alloc(void)
- {
--	return kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-+	struct anon_vma *anon_vma;
-+
-+	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-+	if (anon_vma) {
-+		atomic_set(&anon_vma->refcount, 1);
-+		/*
-+		 * Initialise the anon_vma root to point to itself. If called
-+		 * from fork, the root will be reset to the parents anon_vma.
-+		 */
-+		anon_vma->root = anon_vma;
-+	}
-+
-+	return anon_vma;
- }
- 
--void anon_vma_free(struct anon_vma *anon_vma)
-+static inline void anon_vma_free(struct anon_vma *anon_vma)
- {
-+	VM_BUG_ON(atomic_read(&anon_vma->refcount));
- 	kmem_cache_free(anon_vma_cachep, anon_vma);
- }
- 
-@@ -133,11 +146,6 @@ int anon_vma_prepare(struct vm_area_stru
- 			if (unlikely(!anon_vma))
- 				goto out_enomem_free_avc;
- 			allocated = anon_vma;
--			/*
--			 * This VMA had no anon_vma yet.  This anon_vma is
--			 * the root of any anon_vma tree that might form.
--			 */
--			anon_vma->root = anon_vma;
- 		}
- 
- 		anon_vma_lock(anon_vma);
-@@ -156,7 +164,7 @@ int anon_vma_prepare(struct vm_area_stru
- 		anon_vma_unlock(anon_vma);
- 
- 		if (unlikely(allocated))
--			anon_vma_free(allocated);
-+			put_anon_vma(allocated);
- 		if (unlikely(avc))
- 			anon_vma_chain_free(avc);
- 	}
-@@ -241,9 +249,9 @@ int anon_vma_fork(struct vm_area_struct 
- 	 */
- 	anon_vma->root = pvma->anon_vma->root;
- 	/*
--	 * With KSM refcounts, an anon_vma can stay around longer than the
--	 * process it belongs to.  The root anon_vma needs to be pinned
--	 * until this anon_vma is freed, because the lock lives in the root.
-+	 * With refcounts, an anon_vma can stay around longer than the
-+	 * process it belongs to. The root anon_vma needs to be pinned until
-+	 * this anon_vma is freed, because the lock lives in the root.
- 	 */
- 	get_anon_vma(anon_vma->root);
- 	/* Mark this anon_vma as the one where our new (COWed) pages go. */
-@@ -253,7 +261,7 @@ int anon_vma_fork(struct vm_area_struct 
- 	return 0;
- 
-  out_error_free_anon_vma:
--	anon_vma_free(anon_vma);
-+	put_anon_vma(anon_vma);
-  out_error:
- 	unlink_anon_vmas(vma);
- 	return -ENOMEM;
-@@ -272,15 +280,11 @@ static void anon_vma_unlink(struct anon_
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->refcount);
-+	empty = list_empty(&anon_vma->head);
- 	anon_vma_unlock(anon_vma);
- 
--	if (empty) {
--		/* We no longer need the root anon_vma */
--		if (anon_vma->root != anon_vma)
--			put_anon_vma(anon_vma->root);
--		anon_vma_free(anon_vma);
--	}
-+	if (empty)
-+		put_anon_vma(anon_vma);
- }
- 
- void unlink_anon_vmas(struct vm_area_struct *vma)
-@@ -1470,38 +1474,14 @@ int try_to_munlock(struct page *page)
- 		return try_to_unmap_file(page, TTU_MUNLOCK);
- }
- 
--/*
-- * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
-- * if necessary.  Be careful to do all the tests under the lock.  Once
-- * we know we are the last user, nobody else can get a reference and we
-- * can do the freeing without the lock.
-- */
--void put_anon_vma(struct anon_vma *anon_vma)
--{
--	BUG_ON(atomic_read(&anon_vma->refcount) <= 0);
--	if (atomic_dec_and_lock(&anon_vma->refcount, &anon_vma->root->lock)) {
--		struct anon_vma *root = anon_vma->root;
--		int empty = list_empty(&anon_vma->head);
--		int last_root_user = 0;
--		int root_empty = 0;
-+void __put_anon_vma(struct anon_vma *anon_vma)
-+{
-+	struct anon_vma *root = anon_vma->root;
- 
--		/*
--		 * The refcount on a non-root anon_vma got dropped.  Drop
--		 * the refcount on the root and check if we need to free it.
--		 */
--		if (empty && anon_vma != root) {
--			BUG_ON(atomic_read(&root->refcount) <= 0);
--			last_root_user = atomic_dec_and_test(&root->refcount);
--			root_empty = list_empty(&root->head);
--		}
--		anon_vma_unlock(anon_vma);
-+	if (root != anon_vma && atomic_dec_and_test(&root->refcount))
-+		anon_vma_free(root);
- 
--		if (empty) {
--			anon_vma_free(anon_vma);
--			if (root_empty && last_root_user)
--				anon_vma_free(root);
--		}
--	}
-+	anon_vma_free(anon_vma);
- }
- 
- #ifdef CONFIG_MIGRATION
 
 
