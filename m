@@ -1,84 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab1BRHIk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 02:08:40 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58187 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab1BRHId (ORCPT
+	id S1754996Ab1BRHMb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 02:12:31 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43293 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205Ab1BRHM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 02:08:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Kc0OZG7FbeUQ7ixrCifkbJiylajePT2oAPKHV4uP2OGMFa/zH3JwFbbHNpx6KoMu/k
-         BuNqtWNTd1r7NrcQCNmVXr4XRTjx4ErOACji3odfXMVE505IXhHxEgGfIL0DQoRwlFAr
-         isZ2Cr+VffxnTLuizKRE3vYUxIEjY0hkjKsd8=
+	Fri, 18 Feb 2011 02:12:29 -0500
+Message-ID: <B7287DA9F96B436894703FF6663F1E13@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Michael Williamson" <michael.williamson@criticallink.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Russell King" <linux@arm.linux.org.uk>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>,
+        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-12-git-send-email-subhasish@mistralsolutions.com> <4D555523.7040507@criticallink.com>
+In-Reply-To: <4D555523.7040507@criticallink.com>
+Subject: Re: [PATCH v2 11/13] da850: pruss SUART board specific additions.
+Date: Fri, 18 Feb 2011 12:43:32 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-In-Reply-To: <4D5DACC5.60105@tilera.com>
-References: <4D5DA60A.8080201@tilera.com>
-	<20110217.145333.232751283.davem@davemloft.net>
-	<4D5DA96D.5060200@tilera.com>
-	<20110217.151147.35033921.davem@davemloft.net>
-	<4D5DACC5.60105@tilera.com>
-Date: Fri, 18 Feb 2011 15:08:31 +0800
-Message-ID: <AANLkTim1F679mmnbHnYkvi6ZDojxD-tPGer4F+61C+di@mail.gmail.com>
-Subject: Re: IGMP and rwlock: Dead ocurred again on TILEPro
-From: Cypher Wu <cypher.w@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: David Miller <davem@davemloft.net>, xiyou.wangcong@gmail.com,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 7:18 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> On 2/17/2011 6:11 PM, David Miller wrote:
->> From: Chris Metcalf <cmetcalf@tilera.com>
->> Date: Thu, 17 Feb 2011 18:04:13 -0500
+--------------------------------------------------
+From: "Michael Williamson" <michael.williamson@criticallink.com>
+Sent: Friday, February 11, 2011 8:56 PM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>; 
+<sachi@mistralsolutions.com>; "Russell King" <linux@arm.linux.org.uk>; 
+"Kevin Hilman" <khilman@deeprootsystems.com>; "open list" 
+<linux-kernel@vger.kernel.org>; <m-watkins@ti.com>; 
+<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 11/13] da850: pruss SUART board specific additions.
+
+> Hi Subhasish,
+>
+> On 2/11/2011 9:51 AM, Subhasish Ghosh wrote:
+>
+>> This patch adds the pruss SUART pin mux and registers the device
+>> with the pruss mfd driver.
 >>
->>> On 2/17/2011 5:53 PM, David Miller wrote:
->>>> From: Chris Metcalf <cmetcalf@tilera.com>
->>>> Date: Thu, 17 Feb 2011 17:49:46 -0500
->>>>
->>>>> The fix is to disable interrupts for the arch_read_lock family of methods.
->>>> How does that help handle the race when it happens between different
->>>> cpus, instead of between IRQ and non-IRQ context on the same CPU?
->>> There's no race in that case, since the lock code properly backs off and
->>> retries until the other cpu frees it.  The distinction here is that the
->>> non-IRQ context is "wedged" by the IRQ context.
->>>
->>>> Why don't you just use the generic spinlock based rwlock code on Tile,
->>>> since that is all that your atomic instructions can handle
->>>> sufficiently?
->>> The tile-specific code encodes reader/writer information in the same 32-bit
->>> word that the test-and-set instruction manipulates, so it's more efficient
->>> both in space and time.  This may not really matter for rwlocks, since no
->>> one cares much about them any more, but that was the motivation.
->> Ok, but IRQ disabling is going to be very expensive.
->
-> The interrupt architecture on Tile allows a write to a special-purpose
-> register to put you into a "critical section" where no interrupts or faults
-> are delivered.  So we just need to bracket the read_lock operations with
-> two SPR writes; each takes six machine cycles, so we're only adding 12
-> cycles to the total cost of taking or releasing a read lock on an rwlock.
->
-> --
-> Chris Metcalf, Tilera Corp.
-> http://www.tilera.com
+>> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+>> ---
+>>  arch/arm/mach-davinci/board-da850-evm.c |   36 
+>> +++++++++++++++++++++++++++++++
+>>  1 files changed, 36 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-davinci/board-da850-evm.c 
+>> b/arch/arm/mach-davinci/board-da850-evm.c
+>> index f9c38f8..3858516 100644
+>> --- a/arch/arm/mach-davinci/board-da850-evm.c
+>> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+>> @@ -1060,6 +1060,25 @@ const short da850_evm_pruss_can_pins[] = {
+>>  -1
+>>  };
+>>
+>> +const short da850_evm_pruss_suart_pins[] = {
+>> + DA850_AHCLKX, DA850_ACLKX, DA850_AFSX,
+>> + DA850_AHCLKR, DA850_ACLKR, DA850_AFSR,
+>> + DA850_AXR_13, DA850_AXR_9, DA850_AXR_7,
+>> + DA850_AXR_14, DA850_AXR_10, DA850_AXR_8,
+>> + -1
+>> +};
+>> +
 >
 >
+> Shouldn't this pins select PRU[0,1]_XXX type functions and not McASP 
+> functions?
+> E.G.: PRU0_R31[17] instead of AHCLKX, PRU0_R31[18] instead of AHCLKR, etc.
+>
 
-Adding that to SPR writes should be fine, but it may cause interrupt
-delay a little more that other platform's read_lock()?
+SG - The Soft-UART implementation uses the McASP as shift registers to push 
+out the data sequentially.
+            Hence, we configure the McASP PINS and not the PRU PINS.
 
-Another question: What NMI in the former mail means?
+>> +static int __init da850_evm_setup_pruss_suart(void)
+>> +{
+>> + int ret;
+>> +
+>> + ret = davinci_cfg_reg_list(da850_evm_pruss_suart_pins);
+>> + if (ret)
+>> + pr_warning("%s: da850_evm_pruss_suart_pins "
+>> + "mux setup failed: %d\n", __func__, ret);
+>> + return ret;
+>> +}
+>> +
+>>  static int __init da850_evm_setup_pruss_can(void)
+>>  {
+>>  int ret, val = 0;
+>> @@ -1085,6 +1104,17 @@ static int __init da850_evm_setup_pruss_can(void)
+>>  return ret;
+>>  }
+>>
+>> +static struct da850_evm_pruss_suart_data suart_data = {
+>> + .version = 1,
+>> + .resource = {
+>> + .name = "da8xx_mcasp0_iomem",
+>> + .start = DAVINCI_DA8XX_MCASP0_REG_BASE,
+>> + .end = DAVINCI_DA8XX_MCASP0_REG_BASE +
+>> + (SZ_1K * 12) - 1,
+>> + .flags = IORESOURCE_MEM,
+>> + },
+>> +};
+>> +
+>>  static struct da8xx_pruss_can_data can_data = {
+>>  .version = 1,
+>>  };
+>> @@ -1094,6 +1124,12 @@ static struct da8xx_pruss_devices pruss_devices[] 
+>> = {
+>>  .dev_name = "da8xx_pruss_can",
+>>  .pdata = &can_data,
+>>  .pdata_size = sizeof(can_data),
+>> + .setup = da850_evm_setup_pruss_suart,
+>
+>
+> Should this be da850_evm_setup_pruss_can instead?
 
-Looking forward to your patch.
+SG - This just the way the patch is displayed. In the code the order is 
+correct.
 
-Regards
-
--- 
-Cyberman Wu
+>
+>> + },
+>> + {
+>> + .dev_name = "da8xx_pruss_uart",
+>> + .pdata = &suart_data,
+>> + .pdata_size = sizeof(suart_data),
+>>  .setup = da850_evm_setup_pruss_can,
+>
+>
+> Should this be da850_evm_setup_pruss_suart instead?
+SG - Ditto
+>
+>>  },
+>>  {
+>
+>
+> -Mike
+> 
