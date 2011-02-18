@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1BRDy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:54:26 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57871 "EHLO smtps.tip.net.au"
+	id S1755891Ab1BRD5w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:57:52 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:49594 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641Ab1BRDyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:54:23 -0500
-Date: Fri, 18 Feb 2011 14:54:11 +1100
+	id S1753753Ab1BRD5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 22:57:49 -0500
+Date: Fri, 18 Feb 2011 14:57:47 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-Id: <20110218145411.24bf7ad7.sfr@canb.auug.org.au>
-In-Reply-To: <20110218094754.0436a60a.sfr@canb.auug.org.au>
-References: <20110131154259.dca1f7e6.sfr@canb.auug.org.au>
-	<20110217144743.2db26b27.sfr@canb.auug.org.au>
-	<4D5D201A.8090304@suse.cz>
-	<20110217150200.GA32177@sepie.suse.cz>
-	<20110218094754.0436a60a.sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: linux-next: build failure after merge of the workqueues tree
+Message-Id: <20110218145747.f4b26b91.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Tejun,
 
-Hi Michal,
+After merging the workqueues tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-On Fri, 18 Feb 2011 09:47:54 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Thu, 17 Feb 2011 16:02:00 +0100 Michal Marek <mmarek@suse.cz> wrote:
-> >
-> > > _Maybe_ we could work around it by letting fixdep remove the actual
-> > > source file from the list of dependencies in the .cmd file. The
-> > > dependency on the .c / .S / whatever file is given by the Makefiles, =
-the
-> > > .cmd file is only needed for additional dependencies on headers. Let's
-> > > see what else breaks then ;).
-> >=20
-> > It seems to work for me. Can you try the patch below? It needs to be
-> > applied before merging 9599ec0 to have any effect.
->=20
-> Thanks, I will apply this as a fix on top of Linus' tree before I merge
-> anything else.  It looks simple enough that Linus may take it as a fix
-> right now.   Better to convince ourselves first, though, right?
+drivers/input/input-polldev.c: In function 'input_polldev_init':
+drivers/input/input-polldev.c:259: error: 'WQ_FREEZEABLE' undeclared (first use in this function)
 
-That patch fixed the problem for me and has caused no obvious problems.
+Caused by commit 58a69cb47ec6991bf006a3e5d202e8571b0327a4 ("workqueue,
+freezer: unify spelling of 'freeze' + 'able' to 'freezable'") interacting
+with commit 8fb3f6f6bf6e17e97712d216f230ba05f2e88ed8 ("Input:
+input-polldev - create workqueue upfront") from the input tree.
 
-Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
+I applied the following fix up patch (and can carry it as necessary):
 
---=20
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 18 Feb 2011 14:50:46 +1100
+Subject: [PATCH] input: update for FREEZEABLE -> FREEZABLE change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/input/input-polldev.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/input/input-polldev.c b/drivers/input/input-polldev.c
+index 0a5304c..d89e9a9 100644
+--- a/drivers/input/input-polldev.c
++++ b/drivers/input/input-polldev.c
+@@ -257,7 +257,7 @@ static int __init input_polldev_init(void)
+ 	 * system goes into sleep mode.
+ 	 */
+ 	polldev_wq = alloc_workqueue("ipolldev_wq",
+-				     WQ_FREEZEABLE | WQ_UNBOUND, 0);
++				     WQ_FREEZABLE | WQ_UNBOUND, 0);
+ 	if (!polldev_wq) {
+ 		pr_err("failed to create ipolldev_wq workqueue\n");
+ 		return -ENOMEM;
+-- 
+1.7.2.3
+
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNXe1jAAoJEDMEi1NhKgbsfkYH+wRmp2/MD0HNeOqXddVSF/yw
-zR6hyaovNE/R1kOv2CtaBKVfNRMP15uI816Z8pJKvBXVRXF/bSd/LvsbppjUf3Aq
-65NDhX4OWxiIFWesHcvBjwAumIO58ZRle2qvjT33y8u7SNrxKKQpWDJkoQ9AGR22
-pJdbtce9MpBEaOugr7sRlJm84zqICsRy7UJLtbUOeIKdLc6Mf4jvz/fK71ZDyUEg
-5rIEaQ7GNwQloTs4RkxKhLax8/B0dCGMcZmbC6cK+RPMuSnEiwYJLxSAcaYgeNj/
-+0QJK/zkc2x98t8oaWXMsfPxRWqYI9pWy/mnrX//zBlCJWKR7wTG3YvWP3xjElY=
-=Ky1R
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6--
