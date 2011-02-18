@@ -1,138 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab1BRWTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 17:19:17 -0500
-Received: from hera.kernel.org ([140.211.167.34]:52832 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab1BRWTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 17:19:14 -0500
-Date: Fri, 18 Feb 2011 22:18:58 GMT
-From: "tip-bot for jacob.jun.pan@linux.intel.com" 
-	<jacob.jun.pan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, arjan@linux.intel.com, tglx@linutronix.de,
-        jacob.jun.pan@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, arjan@linux.intel.com,
-        tglx@linutronix.de, jacob.jun.pan@linux.intel.com
-In-Reply-To: <1298065374-25532-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1298065374-25532-1-git-send-email-jacob.jun.pan@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86: mrst: Remove apb timer read workaround
-Message-ID: <tip-5df91509d324d44cfb11e55d9cb02fe18b53b045@git.kernel.org>
-Git-Commit-ID: 5df91509d324d44cfb11e55d9cb02fe18b53b045
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1758635Ab1BRWTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 17:19:42 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:18961 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab1BRWTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 17:19:39 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=CfNG/3ML5xS1lFcCV9zQ2TUs1+VUwWXB7y563zYsgOyMYy3+Myj5IXBtDUeE3tmin
+	sKz1Di2DTwBUm7O1OuEyQ==
+Subject: [PATCH v4] Avoid preferential treatment of groups that aren't
+	backlogged
+To: jaxboe@fusionio.com, vgoyal@redhat.com
+From: Chad Talbott <ctalbott@google.com>
+Cc: guijianfeng@cn.fujitsu.com, mrubin@google.com, teravest@google.com,
+        jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 18 Feb 2011 14:19:16 -0800
+Message-ID: <20110218221916.18235.88420.stgit@neat.mtv.corp.google.com>
+In-Reply-To: <AANLkTi=wM_0cwYDSDcWzA==ZrYxRhumSBw3h-pU-On0Q@mail.gmail.com>
+References: <AANLkTi=wM_0cwYDSDcWzA==ZrYxRhumSBw3h-pU-On0Q@mail.gmail.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Feb 2011 22:18:59 +0000 (UTC)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5df91509d324d44cfb11e55d9cb02fe18b53b045
-Gitweb:     http://git.kernel.org/tip/5df91509d324d44cfb11e55d9cb02fe18b53b045
-Author:     jacob.jun.pan@linux.intel.com <jacob.jun.pan@linux.intel.com>
-AuthorDate: Fri, 18 Feb 2011 13:42:54 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 18 Feb 2011 23:14:54 +0100
+Problem: If a group isn't backlogged, we remove it from the service
+tree. When it becomes active again, it gets either the minimum vtime
+of the tree or gets put at the "back of the line." That is true even
+when the group was idle for a very small time, and it consumed some IO
+time right before it became idle.  If group has very small weight, it
+can end up using more disk time than its fair share. Conversely, if it
+has a very large weight, being put at the back of the vtime line is a
+large penalty which prevents it consuming its share.
 
-x86: mrst: Remove apb timer read workaround
+Solution: We solve the problem by assigning the group its old vtime if
+it has not been idle long enough. Otherise we assign it the service
+tree's min vtime.
 
-APB timer current count was unreliable in the earlier silicon, which
-could result in time going backwards. This problem has been fixed in
-the current silicon stepping. This patch removes the workaround which
-was used to check and prevent timer rolling back when APB timer is
-used as clocksource device.
+Complications: When an entire service tree becomes completely idle, we
+lose the vtime state. All the old vtime values are not relevant any
+more. For example, consider the case when the service tree is idle and
+a brand new group sends IO. That group would have an old vtime value
+of zero, but the service tree's vtime would become closer to zero. In
+such a case, it would be unfair for the older groups to get a much
+higher old vtime stored in them.
 
-The workaround code was also flawed by potential race condition
-around the cached read value last_read. Though a fix can be done
-by assigning last_read to a local variable at the beginning of
-apbt_read_clocksource(), but this is not necessary anymore.
+We solve that issue by keeping a generation number that counts the
+number of instances when the service tree becomes completely
+empty. The generation number is stored in each group too. If a group
+becomes backlogged after a service tree has been empty, we compare its
+stored generation number with the current service tree generation
+number, and discard the old vtime if the group generation number is
+stale.
 
-[ tglx: A sane timer on an Intel chip - I can't believe it ]
+The preemption specific code is taken care of automatically because we
+allow preemption checks after inserting a group back into the service
+tree and assigning it an appropriate vtime.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Alan Cox <alan@linux.intel.com>
-LKML-Reference: <1298065374-25532-1-git-send-email-jacob.jun.pan@linux.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Chad Talbott <ctalbott@google.com>
 ---
- arch/x86/kernel/apb_timer.c |   60 +++----------------------------------------
- 1 files changed, 4 insertions(+), 56 deletions(-)
+ block/cfq-iosched.c |   27 ++++++++++++++-------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index 7c9ab59..afc4064 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -506,64 +506,12 @@ static int apbt_next_event(unsigned long delta,
- 	return 0;
- }
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 501ffdf..8a1b82f 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -178,6 +178,7 @@ struct cfq_group {
  
--/*
-- * APB timer clock is not in sync with pclk on Langwell, which translates to
-- * unreliable read value caused by sampling error. the error does not add up
-- * overtime and only happens when sampling a 0 as a 1 by mistake. so the time
-- * would go backwards. the following code is trying to prevent time traveling
-- * backwards. little bit paranoid.
-- */
- static cycle_t apbt_read_clocksource(struct clocksource *cs)
- {
--	unsigned long t0, t1, t2;
--	static unsigned long last_read;
--
--bad_count:
--	t1 = apbt_readl(phy_cs_timer_id,
--			APBTMR_N_CURRENT_VALUE);
--	t2 = apbt_readl(phy_cs_timer_id,
--			APBTMR_N_CURRENT_VALUE);
--	if (unlikely(t1 < t2)) {
--		pr_debug("APBT: read current count error %lx:%lx:%lx\n",
--			 t1, t2, t2 - t1);
--		goto bad_count;
--	}
--	/*
--	 * check against cached last read, makes sure time does not go back.
--	 * it could be a normal rollover but we will do tripple check anyway
--	 */
--	if (unlikely(t2 > last_read)) {
--		/* check if we have a normal rollover */
--		unsigned long raw_intr_status =
--			apbt_readl_reg(APBTMRS_RAW_INT_STATUS);
--		/*
--		 * cs timer interrupt is masked but raw intr bit is set if
--		 * rollover occurs. then we read EOI reg to clear it.
--		 */
--		if (raw_intr_status & (1 << phy_cs_timer_id)) {
--			apbt_readl(phy_cs_timer_id, APBTMR_N_EOI);
--			goto out;
--		}
--		pr_debug("APB CS going back %lx:%lx:%lx ",
--			 t2, last_read, t2 - last_read);
--bad_count_x3:
--		pr_debug("triple check enforced\n");
--		t0 = apbt_readl(phy_cs_timer_id,
--				APBTMR_N_CURRENT_VALUE);
--		udelay(1);
--		t1 = apbt_readl(phy_cs_timer_id,
--				APBTMR_N_CURRENT_VALUE);
--		udelay(1);
--		t2 = apbt_readl(phy_cs_timer_id,
--				APBTMR_N_CURRENT_VALUE);
--		if ((t2 > t1) || (t1 > t0)) {
--			printk(KERN_ERR "Error: APB CS tripple check failed\n");
--			goto bad_count_x3;
--		}
--	}
--out:
--	last_read = t2;
--	return (cycle_t)~t2;
-+	unsigned long current_count;
+ 	/* group service_tree key */
+ 	u64 vdisktime;
++	u64 generation_num;
+ 	unsigned int weight;
+ 
+ 	/* number of cfqq currently on this group */
+@@ -300,6 +301,9 @@ struct cfq_data {
+ 	/* List of cfq groups being managed on this device*/
+ 	struct hlist_head cfqg_list;
+ 	struct rcu_head rcu;
 +
-+	current_count = apbt_readl(phy_cs_timer_id, APBTMR_N_CURRENT_VALUE);
-+	return (cycle_t)~current_count;
++	/* Generation number, counts service tree empty events */
++	u64 active_generation;
+ };
+ 
+ static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+@@ -866,25 +870,19 @@ static void
+ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ {
+ 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+-	struct cfq_group *__cfqg;
+-	struct rb_node *n;
+ 
+ 	cfqg->nr_cfqq++;
+ 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+ 		return;
+ 
+-	/*
+-	 * Currently put the group at the end. Later implement something
+-	 * so that groups get lesser vtime based on their weights, so that
+-	 * if group does not loose all if it was not continously backlogged.
+-	 */
+-	n = rb_last(&st->rb);
+-	if (n) {
+-		__cfqg = rb_entry_cfqg(n);
+-		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+-	} else
++	if (cfqd->active_generation > cfqg->generation_num)
+ 		cfqg->vdisktime = st->min_vdisktime;
+-
++	else
++		/* We assume that vdisktime was not modified when the task
++		   was off the service tree.
++		 */
++		cfqg->vdisktime = max_vdisktime(st->min_vdisktime,
++						cfqg->vdisktime);
+ 	__cfq_group_service_tree_add(st, cfqg);
+ 	st->total_weight += cfqg->weight;
+ }
+@@ -906,6 +904,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+ 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+ 		cfq_rb_erase(&cfqg->rb_node, st);
+ 	cfqg->saved_workload_slice = 0;
++	cfqg->generation_num = cfqd->active_generation;
++	if (RB_EMPTY_ROOT(&st->rb))
++		cfqd->active_generation++;
+ 	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
  }
  
- static int apbt_clocksource_register(void)
+
