@@ -1,66 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab1BRGwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 01:52:34 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41476 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab1BRGwc (ORCPT
+	id S1754049Ab1BRHGd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 02:06:33 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:34398 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab1BRHGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 01:52:32 -0500
-Date: Fri, 18 Feb 2011 12:22:24 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Gautham R Shenoy <ego@in.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
-Subject: Re: [CFS Bandwidth Control v4 3/7] sched: throttle cfs_rq entities
- which exceed their local quota
-Message-ID: <20110218065224.GD2648@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20110216031831.571628191@google.com>
- <20110216031841.068673650@google.com>
+	Fri, 18 Feb 2011 02:06:31 -0500
+Message-ID: <32A5399EB727427C98185089E5DBFA65@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Kurt Van Dijck" <kurt.van.dijck@eia.be>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
+        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
+        "Wolfgang Grandegger" <wg@grandegger.com>,
+        "open list:CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
+        "open list:CAN NETWORK DRIVERS" <netdev@vger.kernel.org>,
+        "open list" <linux-kernel@vger.kernel.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com> <20110211152026.GC373@e-circ.dyndns.org>
+In-Reply-To: <20110211152026.GC373@e-circ.dyndns.org>
+Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
+Date: Fri, 18 Feb 2011 12:37:31 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110216031841.068673650@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	format=flowed;
+	charset="UTF-8";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Turner <pjt@google.com> [2011-02-15 19:18:34]:
+--------------------------------------------------
+From: "Kurt Van Dijck" <kurt.van.dijck@eia.be>
+Sent: Friday, February 11, 2011 8:50 PM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>; 
+<linux-arm-kernel@lists.infradead.org>; <m-watkins@ti.com>; 
+<nsekhar@ti.com>; <sachi@mistralsolutions.com>; "Wolfgang Grandegger" 
+<wg@grandegger.com>; "open list:CAN NETWORK DRIVERS" 
+<socketcan-core@lists.berlios.de>; "open list:CAN NETWORK DRIVERS" 
+<netdev@vger.kernel.org>; "open list" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
 
-> In account_cfs_rq_quota() (via update_curr()) we track consumption versus a
-> cfs_rq's local quota and whether there is global quota available to continue
-> enabling it in the event we run out.
-> 
-> This patch adds the required support for the latter case, throttling entities
-> until quota is available to run.  Throttling dequeues the entity in question
-> and sends a reschedule to the owning cpu so that it can be evicted.
-> 
-> The following restrictions apply to a throttled cfs_rq:
-> - It is dequeued from sched_entity hierarchy and restricted from being
->   re-enqueued.  This means that new/waking children of this entity will be
->   queued up to it, but not past it.
-> - It does not contribute to weight calculations in tg_shares_up
-> - In the case that the cfs_rq of the cpu we are trying to pull from is throttled
->   it is  is ignored by the loadbalancer in __load_balance_fair() and
->   move_one_task_fair().
-> 
-> Signed-off-by: Paul Turner <pjt@google.com>
-> Signed-off-by: Nikhil Rao <ncrao@google.com>
-> Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> Hi,
+>
+> I looked a bit at the TX path:
+>
+> On Fri, Feb 11, 2011 at 08:21:28PM +0530, Subhasish Ghosh wrote:
+>> +static int omapl_pru_can_set_bittiming(struct net_device *ndev)
+>> +{
+>> + struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+>> + struct can_bittiming *bt = &priv->can.bittiming;
+>> + long bit_error = 0;
+>> +
+>> + if (priv->can.ctrlmode & CAN_CTRLMODE_3_SAMPLES) {
+>> + dev_warn(priv->dev, "WARN: Triple"
+>> + "sampling not set due to h/w limitations");
+> You should not have enabled CAN_CTRLMODE_3_SAMPLES in the first place?
 
+SG - Ok Will remove.
+>> + }
+>> + if (pru_can_calc_timing(priv->dev, priv->can.clock.freq,
+>> + bt->bitrate) != 0)
+>> + return -EINVAL;
+>> + bit_error =
+>> +     (((priv->timer_freq / (priv->timer_freq / bt->bitrate)) -
+>> +       bt->bitrate) * 1000) / bt->bitrate;
+>> + if (bit_error) {
+>> + bit_error =
+>> +     (((priv->timer_freq / (priv->timer_freq / bt->bitrate)) -
+>> +       bt->bitrate) * 1000000) / bt->bitrate;
+>> + printk(KERN_INFO "\nBitrate error %ld.%ld%%\n",
+>> + bit_error / 10000, bit_error % 1000);
+>> + } else
+>> + printk(KERN_INFO "\nBitrate error 0.0%%\n");
+>> +
+>> + return 0;
+>> +}
+> I wonder how much of this code is duplicated from drivers/net/can/dev.c ?
+SG - Well, I just followed ti_hecc.c :-)
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
--- 
-	Three Cheers,
-	Balbir
+>
+>> +static netdev_tx_t omapl_pru_can_start_xmit(struct sk_buff *skb,
+>> +     struct net_device *ndev)
+>> +{
+>> + struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+>> + struct can_frame *cf = (struct can_frame *)skb->data;
+>> + int count;
+>> + u8 *data = cf->data;
+>> + u8 dlc = cf->can_dlc;
+>> + u8 *ptr8data = NULL;
+>> +
+> most drivers start with:
+> if (can_dropped_invalid_skb(dev, skb))
+> return NETDEV_TX_OK;
+
+SG - Will do.
+>
+>> + netif_stop_queue(ndev);
+> why would you stop when you just resumed the queue?
+
+SG - I do not want more than one transmit request at one time. Hence, on 
+entering the transmit
+I am using netif_stop_queue to disable tx.
+
+>> + if (cf->can_id & CAN_EFF_FLAG) /* Extended frame format */
+>> + *((u32 *) &priv->can_tx_hndl.strcanmailbox) =
+>> +     (cf->can_id & CAN_EFF_MASK) | PRU_CANMID_IDE;
+>> + else /* Standard frame format */
+>> + *((u32 *) &priv->can_tx_hndl.strcanmailbox) =
+>> +     (cf->can_id & CAN_SFF_MASK) << 18;
+>> +
+>> + if (cf->can_id & CAN_RTR_FLAG) /* Remote transmission request */
+>> + *((u32 *) &priv->can_tx_hndl.strcanmailbox) |= CAN_RTR_FLAG;
+>> +
+>> + ptr8data = &priv->can_tx_hndl.strcanmailbox.u8data7 + (dlc - 1);
+>> + for (count = 0; count < (u8) dlc; count++) {
+>> + *ptr8data-- = *data++;
+>> + }
+>> + *((u32 *) &priv->can_tx_hndl.strcanmailbox.u16datalength) = (u32) dlc;
+>> +/*
+>> + * search for the next available mbx
+>> + * if the next mbx is busy, then try the next + 1
+>> + * do this until the head is reached.
+>> + * if still unable to tx, stop accepting any packets
+>> + * if able to tx and the head is reached, then reset next to tail, i.e 
+>> mbx0
+>> + * if head is not reached, then just point to the next mbx
+>> + */
+>> + for (; priv->tx_next <= priv->tx_head; priv->tx_next++) {
+>> + priv->can_tx_hndl.ecanmailboxnumber =
+>> +     (can_mailbox_number) priv->tx_next;
+>> + if (-1 == pru_can_write_data_to_mailbox(priv->dev,
+>> + &priv->can_tx_hndl)) {
+>> + if (priv->tx_next == priv->tx_head) {
+>> + priv->tx_next = priv->tx_tail;
+>> + if (!netif_queue_stopped(ndev))
+> If you get here, the queue is not stopped. This test is therefore useless.
+
+SG -Ok, will remove
+>> + netif_stop_queue(ndev); /* IF stalled */
+>> + dev_err(priv->dev,
+>> + "%s: no tx mbx available", __func__);
+>> + return NETDEV_TX_BUSY;
+>> + } else
+>> + continue;
+>> + } else {
+>> + /* set transmit request */
+>> + pru_can_tx(priv->dev, priv->tx_next, CAN_TX_PRU_1);
+>> + pru_can_tx_mode_set(priv->dev, false, ecanreceive);
+>> + pru_can_tx_mode_set(priv->dev, true, ecantransmit);
+>> + pru_can_start_abort_tx(priv->dev, PRU_CAN_START);
+>> + priv->tx_next++;
+>> + can_put_echo_skb(skb, ndev, 0);
+>> + break;
+>> + }
+>> + }
+>> + if (priv->tx_next > priv->tx_head) {
+>> + priv->tx_next = priv->tx_tail;
+>> + }
+>> + return NETDEV_TX_OK;
+>> +}
+>> +
+>> +
+>
+>> +irqreturn_t omapl_tx_can_intr(int irq, void *dev_id)
+>> +{
+>> + struct net_device *ndev = dev_id;
+>> + struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+>> + struct net_device_stats *stats = &ndev->stats;
+>> + u32 bit_set, mbxno;
+>> +
+>> + pru_can_get_intr_status(priv->dev, &priv->can_tx_hndl);
+>> + if ((PRU_CAN_ISR_BIT_CCI & priv->can_tx_hndl.u32interruptstatus)
+>> +     || (PRU_CAN_ISR_BIT_SRDI & priv->can_tx_hndl.u32interruptstatus)) {
+>> + __can_debug("tx_int_status = 0x%X\n",
+>> +     priv->can_tx_hndl.u32interruptstatus);
+>> + can_free_echo_skb(ndev, 0);
+>> + } else {
+>> + for (bit_set = 0; ((priv->can_tx_hndl.u32interruptstatus & 0xFF)
+>> + >> bit_set != 0); bit_set++)
+>> + ;
+>> + if (0 == bit_set) {
+>> + __can_err("%s: invalid mailbox number\n", __func__);
+>> + can_free_echo_skb(ndev, 0);
+>> + } else {
+>> + mbxno = bit_set - 1; /* mail box numbering starts from 0 */
+>> + if (PRU_CAN_ISR_BIT_ESI & priv->can_tx_hndl.
+>> +     u32interruptstatus) {
+>> + /* read gsr and ack pru */
+>> + pru_can_get_global_status(priv->dev, &priv->can_tx_hndl);
+>> + omapl_pru_can_err(ndev,
+>> +   priv->can_tx_hndl.
+>> +   u32interruptstatus,
+>> +   priv->can_tx_hndl.
+>> +   u32globalstatus);
+>> + } else {
+>> + stats->tx_packets++;
+>> + /* stats->tx_bytes += dlc; */
+>> + /*can_get_echo_skb(ndev, 0);*/
+>> + }
+>> + }
+>> + }
+>> + if (netif_queue_stopped(ndev))
+> you can call netif_wake_queue(ndev) multiple times, so there is no need
+> for netif_queue_stopped()
+
+SG -Ok, will remove
+
+>> + netif_wake_queue(ndev);
+>> +
+>> + can_get_echo_skb(ndev, 0);
+>> + pru_can_tx_mode_set(priv->dev, true, ecanreceive);
+>> + return IRQ_HANDLED;
+>> +}
+>> +
+>> +static int omapl_pru_can_open(struct net_device *ndev)
+>> +{
+>> + struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+>> + int err;
+>> +
+>> + /* register interrupt handler */
+>> + err = request_irq(priv->trx_irq, &omapl_rx_can_intr, IRQF_SHARED,
+>> +   "pru_can_irq", ndev);
+> you're doing a lot of work _in_ the irq handler. Maybe threaded irq?
+>
+SG -Ok, will do
+
+>> +static int omapl_pru_can_close(struct net_device *ndev)
+>> +{
+>> + struct omapl_pru_can_priv *priv = netdev_priv(ndev);
+>> +
+>> + if (!netif_queue_stopped(ndev))
+> check is not needed.
+
+SG -Ok, will remove
+
+>> + netif_stop_queue(ndev);
+>> +
+>> + close_candev(ndev);
+>> +
+>> + free_irq(priv->trx_irq, ndev);
+>> + return 0;
+>> +}
+>> +
+>
+> Regards,
+> Kurt 
+
