@@ -1,347 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab1BRFjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 00:39:17 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:43794 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab1BRFjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 00:39:14 -0500
-Date: Fri, 18 Feb 2011 16:39:06 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for February 18
-Message-Id: <20110218163906.8f8ca020.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO"
+	id S1752064Ab1BRFo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 00:44:26 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:55421 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab1BRFoZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 00:44:25 -0500
+From: hayeswang <hayeswang@realtek.com>
+To: "'Alexander Wuerstlein'" <arw@arw.name>
+CC: "'David S. Miller'" <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        "'franois romieu'" <romieu@fr.zoreil.com>
+References: <20110216223438.GZ15516@cip.informatik.uni-erlangen.de>
+Subject: RE: r8169 hangs machine on kernel boot (bisected)
+Date: Fri, 18 Feb 2011 13:44:04 +0800
+X-BOX-Message-Id: p1I5i3Db017489
+Message-ID: <CDC3F2AD9A574AC4B7DDDB7D64329A79@realtek.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcvPDLzK/hHBqZSOSJOAKk14GEN5uQAIGmig
+In-Reply-To: <20110216223438.GZ15516@cip.informatik.uni-erlangen.de>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi all,
+I have try the 8168DP and it wouldn't hang. I think I need more information.
+Could you give the information about the motherboard and the version of BIOS.
+Besides, please use the realtek driver, and dump the MAC information by using
+"ethtool -d eth0". These are helpful to find out what happens. Thanks.
+ 
+Best Regards,
+Hayes
 
-Changes since 20110217:
 
-Dropped tree: xen
+-----Original Message-----
+From: Alexander Wuerstlein [mailto:arw@arw.name] 
+Sent: Thursday, February 17, 2011 6:35 AM
+To: franois romieu
+Cc: Hayeswang; David S. Miller; linux-kernel@vger.kernel.org
+Subject: r8169 hangs machine on kernel boot (bisected)
 
-My fixes tree contains:
-	fixdep: Do not record dependency on the source file itself
+Hello,
 
-The net tree gained a conflict against the net-current tree.
+I've just tried to boot a new computer featuring a Realtek r8168 onboard (lspci
+calls it Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit
+Ethernet controller [10ec:8168] (rev 04), see [1]) network chip with kernel
+2.6.38-rc5 and current git. Both hang on boot just after USB device
+initialization and just before the kernel usually does DHCP. The previous 2.6.37
+didn't hang on boot, but showed strange behaviour (only 10MBit half duplex on
+autonegotiation, tons of errors on the switch interface[2]) which is why I tried
+the newer kernel in hopes that there would be fixes.
 
-The omap_dss2 tree gained conflicts against the omap tree.
+I bisected the hang-before-dhcp bug down to commit 'r8169: magic.'
+(b646d90053f887c1bc243191e693a9b02d09f2c2, also see [1]). Since the commit
+really does its description justice and looks like some weird hardware magic,
+I'd like to ask the wizards on how to proceed with fixing it.
 
-The workqueue tree lost its build failure but gained another for which I
-applied a patc.
 
-The usb tree lost a conflict.
 
-The powerpc allyesconfig build is still broken by some obscure bloating
-of the low memory code.
+Ciao,
 
-----------------------------------------------------------------------------
+Alexander Wuerstlein.
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
+[1] Kernel .config, lspci, bisect log:
+    http://wwwcip.cs.fau.de/~snalwuer/kernel-r8169/
+[2] the Realtek-supplied r8168 doesn't show those problems [3] feel free to
+criticise my Cc:, I wasn't quite sure...
 
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 188 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
-.h
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_ata.c
-CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_scsi_host.c
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in drivers/net/e1000e/netdev.c
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-am3517evm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_2420_d=
-ata.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_2430_d=
-ata.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_44xx_d=
-ata.c
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-CONFLICT (content): Merge conflict in drivers/spi/pxa2xx_spi_pci.c
-Merging spi/spi/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
-Merging edac-amd/for-next
-CONFLICT (content): Merge conflict in include/linux/pci_ids.h
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in arch/x86/kernel/vmlinux.lds.S
-Merging workqueues/for-next
-Applying: input: update for FREEZEABLE -> FREEZABLE change
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Applying: OLPC: fix for removal of run_wake_count
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-CONFLICT (content): Merge conflict in drivers/tty/serial/68328serial.c
-CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
-CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/zram/zram_drv.c
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (content): Merge conflict in drivers/scsi/pm8001/pm8001_sas.h
-CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
-nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
-ing/stradis/Kconfig left in tree.
-CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-$ git rm -f drivers/staging/stradis/Kconfig
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-
---Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNXgX6AAoJEDMEi1NhKgbsreoH+wWpZXV2AW33LPHjGeABEKc6
-yGecJNQNOXcOKg0KdCOyEl01U+172gdkYoQq9YfQ8jJ51tOa81gwdEeYkQ9FUTsd
-D064G78L7gjWhJXv89Iy1nz3hKOg8LLLIYR3Aaue2bdahGQa+5TjBlDPcwj6kXwn
-CgY8ePYBJgFSSihP3mcHIuDnoV1QyN0FUHyFgL0GeKJ4scooJ8CSmYosqGSCusCJ
-OZerPTxo15/VDLFfBRgdx8AYFtfGHQJqFy1DvKgpH9zLwP0lQEJBI+v6Be1Pyyo+
-+adCsOU2qwVdhGUPDlR72ibLbAUoIO0ZDvyvRCjCLqQNo7zG5UCVU+x5Q57cDIc=
-=hSov
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO--
