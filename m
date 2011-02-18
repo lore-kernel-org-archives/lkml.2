@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab1BRHeO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 02:34:14 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54314 "EHLO mx2.mail.elte.hu"
+	id S1755924Ab1BRHkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 02:40:32 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58068 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027Ab1BRHeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 02:34:12 -0500
-Date: Fri, 18 Feb 2011 08:34:02 +0100
+	id S1753352Ab1BRHk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 02:40:29 -0500
+Date: Fri, 18 Feb 2011 08:40:15 +0100
 From: Ingo Molnar <mingo@elte.hu>
 To: Mike Travis <travis@sgi.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -14,14 +14,14 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         Len Brown <len.brown@intel.com>, Yinghai Lu <yhlu.kernel@gmail.com>,
         linux-acpi@vger.kernel.org, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] printk: Minimize time zero output
-Message-ID: <20110218073402.GF11404@elte.hu>
+Subject: Re: [PATCH 5/5] printk: Allocate kernel log buffer earlier
+Message-ID: <20110218074015.GG11404@elte.hu>
 References: <20110217185131.960038922@gulag1.americas.sgi.com>
- <20110217185132.576051720@gulag1.americas.sgi.com>
+ <20110217185132.735139933@gulag1.americas.sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110217185132.576051720@gulag1.americas.sgi.com>
+In-Reply-To: <20110217185132.735139933@gulag1.americas.sgi.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -37,37 +37,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Mike Travis <travis@sgi.com> wrote:
 
-> Reduce the length for time zero messages by only printing "[0] ".
-> 
-> v2: updated to apply to x86-tip
-> 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Reviewed-by: Jack Steiner <steiner@sgi.com>
-> Reviewed-by: Robin Holt <holt@sgi.com>
-> ---
->  kernel/printk.c |    8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> --- linux.orig/kernel/printk.c
 > +++ linux/kernel/printk.c
-> @@ -818,11 +818,13 @@ asmlinkage int vprintk(const char *fmt,
->  				unsigned long nanosec_rem;
+> @@ -162,46 +162,65 @@ void log_buf_kexec_setup(void)
+>  }
+>  #endif
 >  
->  				t = cpu_clock(printk_cpu);
-> -				nanosec_rem = do_div(t, 1000000000);
-> -				tlen = sprintf(tbuf, "[%5lu.%06lu] ",
-> +				if (likely(t)) {
-> +					nanosec_rem = do_div(t, 1000000000);
-> +					tlen = sprintf(tbuf, "[%5lu.%06lu] ",
->  						(unsigned long) t,
->  						nanosec_rem / 1000);
+> +static unsigned long __initdata new_log_buf_len;
+>  static int __init log_buf_len_setup(char *str)
+>  {
 
-The excessive number of very ugly linebreaks in this statement should have told you 
-that the whole printk_time function wants to be broken out of vsprintk(), into a 
-helper function.
+Can you see the readability problem this new line introduces?
 
-Please make it two patches: one cleanup-only patch that factors out the code, the 
-second one that modifies it materially.
+> +	char first_line[64], *first_nl;
+
+The value 64 looks arbitrary. Needs to be symbolized and explained. (That would also 
+make the sizeof(first_line) usage more readable later on.)
+
+> +	pr_info("log_buf_len: %d, first line: %s\n",
+> +		log_buf_len, first_line);
+
+It's not just arbitrarily sized, but i dont see where it's guaranteed that it's a 
+nil delimited string.
+
+> +	pr_debug("bu: %d/%d (%d%%)\n",
+> +		dest_idx, __LOG_BUF_LEN - dest_idx,
+> +		(dest_idx * 100) / __LOG_BUF_LEN);
+
+What's that?
+
+Patch looks pretty ad-hoc. No comments whatsoever what the intention is either, so 
+the reader has to go figure out the code.
 
 Thanks,
 
