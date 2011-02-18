@@ -1,87 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab1BRJuN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 04:50:13 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60686 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753971Ab1BRJuH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 04:50:07 -0500
-Date: Fri, 18 Feb 2011 09:50:48 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] tty: add TIOCVHANGUP: time for revoke() in f_ops ?
-Message-ID: <20110218095048.4e9f1e1a@lxorguk.ukuu.org.uk>
-In-Reply-To: <1297964368.2165.1.camel@yio>
-References: <1297964368.2165.1.camel@yio>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932119Ab1BRJw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 04:52:29 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:57105 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753967Ab1BRJwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 04:52:23 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        "'Greg KH'" <greg@kroah.com>
+References: <015301cbcdae$55cdb7e0$016927a0$@mprc.pku.edu.cn> <201102171759.45365.arnd@arndb.de>
+In-Reply-To: <201102171759.45365.arnd@arndb.de>
+Subject: RE: [PATCH 09/12] unicore32 machine related files: hardware registers
+Date: Fri, 18 Feb 2011 17:52:12 +0800
+Message-ID: <00e901cbcf51$8507c290$8f1747b0$@mprc.pku.edu.cn>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQI7nX5Jqof63rCNDjlwJwGIbqva+gG3KFhgkxl5zWA=
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Without this ioctl it would have to temporarily become the owner of
-> the tty, then call vhangup() and then give it up again.
-
-This is a hack - it's also unfortunately not actually sufficient or
-complete which is why we didn't do it years ago. Sorry but if it was easy
-it would have been in a long time back !
 
 
-> +	case TIOCVHANGUP:
-> +		if (!capable(CAP_SYS_ADMIN))
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Friday, February 18, 2011 1:00 AM
+> To: Guan Xuetao
+> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
+> Subject: Re: [PATCH 09/12] unicore32 machine related files: hardware registers
+> 
+> On Wednesday 16 February 2011, Guan Xuetao wrote:
+> > +#define io_p2v(x)      ((x) - PKUNITY_IOSPACE_BASE)
+> > +#define io_v2p(x)      ((x) + PKUNITY_IOSPACE_BASE)
+> > +
+> > +#ifndef __ASSEMBLY__
+> > +
+> > +# define __REG(x)      (*((volatile unsigned long *)io_p2v(x)))
+> > +# define __PREG(x)     (io_v2p((unsigned long)&(x)))
+> > +
+> > +#else
+> > +
+> > +# define __REG(x)      io_p2v(x)
+> > +# define __PREG(x)     io_v2p(x)
+> 
+> > #define PKUNITY_IOSPACE_BASE            0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
+> 
+> The typecasts look wrong here:
+> 
+> - "volatile unsigned long*" is not the right pointer type to do I/O on. It
+>   should instead be "void __iomem *". Please use the "sparse" tool with "make C=1"
+>   to get warnings about incorrect pointer type accesses.
+__REG() macro could be used in both left and right sides of assignment sentence.
+This idea is borrowed from arm/sa1100.
+When used in left side, __REG is a register port, and when used in right side, 
+__REG is just the value of the register.
+It is a trick, but very useful. I'd like to remain the macros.
 
-Is there any reason for not allowing revocation of a tty that you are
-the owner of (ie one you could anyway take ownership of and hangup ?)
+> 
+> - PKUNITY_IOSPACE_BASE seems to be both a virtual and a physical address, which
+>   is a bad idea, because it prevents a lot of the checks from working correctly.
+PKUNITY_IOSPACE_BASE is only used  for physical-virtual address transformation.
+(void *) prefix will introduce type cast error.
+In addition,  in unicore32, io space and memory space are all in the same 4G address space,
+but only different in address range.
 
+> 
+> - The __REG/__PREG macros seem to have the same purpose as io_p2v/io_v2p, you
+>   should not require both.
+> 
+> - The term IOSPACE is confusing, because it normally refers to the PCI PIO
+>   space, while you mean the SoC's MMIO region
+Ok, renamed to PKUNITY_MMIO_BASE.
+> 
+> I would recommend defining these as
+> 
+> #ifndef __ASSEMBLY__
+> #define PKUNITY_MMIO_VIRT ((void __iomem *)0x80000000)
+> #else
+> #define PKUNITY_MMIO_VIRT 0x80000000
+> #endif
+> 
+> #define io_p2v(x)	((x) - PKUNITY_MMIO_VIRT)
+> #define io_v2p(x)	((x) + PKUNITY_MMIO_VIRT)
+> 
+> /* please remove the two macros below as soon as all users are changed to use io_p2v */
+> #define __REG(x) io_p2v(x)
+> #define __PREG(x) io_v2p(x)
+For the reason above, I can only apply the patch as following:
 
-> +			return -EPERM;
-> +		tty_vhangup(tty);
+From: GuanXuetao <gxt@mprc.pku.edu.cn>
+Date: Fri, 18 Feb 2011 18:05:23 +0800
+Subject: [PATCH] unicore32: rename PKUNITY_IOSPACE_BASE to PKUNITY_MMIO_BASE
+   for the term IOSPACE normally refers to the PCI PIO space,
+   and remove unused __REG/__PREG macros when __ASSEMBLY__ defined
+   -- by advice with Arnd Bergmann
 
-That raises a few locking questions. From a brief review of the code I
-think its directly 1:1 equivalent to allowing a parallel vhangup and
-carrier drop which we already do. The tty locks appear to cover this
-correctly for the basic stuff although I further review of the ldisc
-hangup area from someone with a strong stomache would be good.
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/include/mach/PKUnity.h  |    2 +-
+ arch/unicore32/include/mach/hardware.h |    9 ++-------
+ 2 files changed, 3 insertions(+), 8 deletions(-)
 
-You would still need to be very careful how you used it from the admin
-side because the parallel
+diff --git a/arch/unicore32/include/mach/PKUnity.h b/arch/unicore32/include/mach/PKUnity.h
+index 1e13208..39f27f4 100644
+--- a/arch/unicore32/include/mach/PKUnity.h
++++ b/arch/unicore32/include/mach/PKUnity.h
+@@ -21,7 +21,7 @@
+  * Memory Definitions
+  */
+ #define PKUNITY_SDRAM_BASE		0x00000000 /* 0x00000000 - 0x7FFFFFFF 2GB */
+-#define PKUNITY_IOSPACE_BASE            0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
++#define PKUNITY_MMIO_BASE		0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
+ #define PKUNITY_PCI_BASE		0x80000000 /* 0x80000000 - 0xBFFFFFFF 1GB */
+ #include "regs-pci.h"
+ #define PKUNITY_BOOT_ROM2_BASE		0xF4000000 /* 0xF4000000 - 0xF7FFFFFF 64MB */
+diff --git a/arch/unicore32/include/mach/hardware.h b/arch/unicore32/include/mach/hardware.h
+index 3fb7236..ebce7de 100644
+--- a/arch/unicore32/include/mach/hardware.h
++++ b/arch/unicore32/include/mach/hardware.h
+@@ -17,19 +17,14 @@
+ 
+ #include "PKUnity.h"
+ 
+-#define io_p2v(x)	((x) - PKUNITY_IOSPACE_BASE)
+-#define io_v2p(x)	((x) + PKUNITY_IOSPACE_BASE)
++#define io_p2v(x)	((x) - PKUNITY_MMIO_BASE)
++#define io_v2p(x)	((x) + PKUNITY_MMIO_BASE)
+ 
+ #ifndef __ASSEMBLY__
+ 
+ # define __REG(x)	(*((volatile unsigned long *)io_p2v(x)))
+ # define __PREG(x)	(io_v2p((unsigned long)&(x)))
+ 
+-#else
+-
+-# define __REG(x)	io_p2v(x)
+-# define __PREG(x)	io_v2p(x)
+-
+ #endif
+ 
+ #define PCIBIOS_MIN_IO			0x4000 /* should lower than 64KB */
+-- 
+1.6.2.2
 
-	CPU1					CPU2
-	vhangup()				chmod()
-	process vhangup
-	return
-	chown to user1
-						chmod to 777
-						syscall ends (fd
-						revocation takes effect)
+> 
+> 	Arnd
 
-	Oops, 0wned
+Thanks & Regards.
 
-case is not handled by the paths you are using. So to actually do this
-you need rather more infrastructure work to ensure the existing calls
-have completed before returning.
+Guan Xuetao
 
-At that point you've essentially provided revoke() for the tty layer so
-it might well be implemented to be called as revoke() as well.
-
-So I don't actually think the patch should be applied in this form,
-because it simply adds an interface that will cause problems. Fixed to
-return after the revocation is truely complete would be good though.
-
-I'd guess you need to add a counter to the tty f_ops entry/exit points to
-know when that occurs, and wake_up the revoke path when ready
-(remembering two revokes in parallel shouldn't deadlock! so need
-counting too)
-
-In its current form the proposal isn't secure, so NAK, but I'd love to
-see it resubmitted with the the other bits done to return at the right
-moment.
-
-Alan
