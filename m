@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab1BRW5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 17:57:38 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:41018
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758094Ab1BRW5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 17:57:34 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
-        v-abkane@microsoft.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Subject: [PATCH 1/2] staging: hv: Remove unnecessary ASSERTs in netvsc_initialize()
-Date: Fri, 18 Feb 2011 15:05:52 -0800
-Message-Id: <1298070353-23534-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
+	id S1758710Ab1BRXDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 18:03:03 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:44181 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab1BRXC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 18:02:58 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=JGpTz_e83PYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=eAjd9rQQabvo_yJTZfIA:9 a=uPV0y0LCg7IuzHhBEe8wCPoxQt0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
+ for x86_64 right now)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+In-Reply-To: <4D5EF67F.20007@zytor.com>
+References: <4D5D1672.6070206@hitachi.com>
+	 <1297948703.23343.907.camel@gandalf.stny.rr.com>
+	 <4D5D4013.4070602@hitachi.com>
+	 <1297957591.23343.921.camel@gandalf.stny.rr.com>
+	 <4D5D47C0.9020206@hitachi.com>
+	 <1297973501.23343.953.camel@gandalf.stny.rr.com>
+	 <4D5E5BCF.1040509@hitachi.com>
+	 <1298041659.23343.956.camel@gandalf.stny.rr.com>
+	 <20110218151954.GA27834@Krystal>
+	 <D58A856745AB5A47B1448181D1A8BBFA07673BC266@EUSAACMS0701.eamcs.ericsson.se>
+	 <20110218223902.GR5818@one.firstfloor.org>  <4D5EF67F.20007@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 18 Feb 2011 18:02:54 -0500
+Message-ID: <1298070174.23343.987.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These fields have been assigned in netvsc_drv_init() before calling
-netvsc_initialize(), so there is no need to check them.
-The ASSERTs were already commented out, and this patch removes
-them.
+On Fri, 2011-02-18 at 14:45 -0800, H. Peter Anvin wrote:
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> We should also be able to use the breakpoint hack to avoid holding all
+> the CPUs.  They still need to be interrupted, but that skips the
+> rendezvous operation.
 
----
- drivers/staging/hv/netvsc.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+As this is about the ftrace code, I'm in the process of analyzing and
+updating how the function tracer works. I can look to see if I can
+design it so we don't have to always use stop_machine() if a breakpoint
+method is in place.
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 8c6d4ae..f21a59d 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -188,11 +188,6 @@ int netvsc_initialize(struct hv_driver *drv)
- 	drv->name = driver_name;
- 	memcpy(&drv->dev_type, &netvsc_device_type, sizeof(struct hv_guid));
- 
--	/* Make sure it is set by the caller */
--	/* FIXME: These probably should still be tested in some way */
--	/* ASSERT(driver->OnReceiveCallback); */
--	/* ASSERT(driver->OnLinkStatusChanged); */
--
- 	/* Setup the dispatch table */
- 	driver->base.dev_add	= netvsc_device_add;
- 	driver->base.dev_rm	= netvsc_device_remove;
--- 
-1.6.3.2
+Basically what is needed is to convert a "nop" into a "call" or maybe
+the other way around, safely.
+
+Now is it safe to insert a breakpoint (usually a byte I believe), modify
+the rest of the instruction and then replace the breakpoint to the new
+code? Since the instruction that is being replaced or the instruction
+being added is always a nop, the breakpoint handler needs to do nothing
+but return to the location after the nop/call.
+
+Is there any synchronization that needs to be done when doing this? Or
+can it just be:
+
+	insert_breakpoint();
+	update_instruction();
+	remove_breakpoint();
+
+Because we need to do this for 22,000 calls in a row.
+
+-- Steve
+
 
