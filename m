@@ -1,94 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab1BRTBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 14:01:47 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48281 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab1BRTBn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 14:01:43 -0500
-Message-ID: <4D5EC177.7030101@kernel.org>
-Date: Fri, 18 Feb 2011 10:59:03 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1757608Ab1BRTBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 14:01:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757527Ab1BRTBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 14:01:46 -0500
+Date: Fri, 18 Feb 2011 17:01:28 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Michal Hocko <mhocko@suse.cz>,
+        Ingo Molnar <mingo@elte.hu>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+	2.6.38-rc4
+Message-ID: <20110218190128.GF13211@ghostprotocols.net>
+References: <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com> <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org> <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com> <20110218122938.GB26779@tiehlicka.suse.cz> <20110218162623.GD4862@tiehlicka.suse.cz> <AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com> <m17hcx43m3.fsf@fess.ebiederm.org> <AANLkTikh4oaR6CBK3NBazer7yjhE0VndsUB5FCDRsbJc@mail.gmail.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH 1/4] x86, numa: Do not scan two times for setup_node_bootmem()
-References: <4D5EC05A.60103@kernel.org>
-In-Reply-To: <4D5EC05A.60103@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4D5EC1FE.030E,ss=1,fgs=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikh4oaR6CBK3NBazer7yjhE0VndsUB5FCDRsbJc@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Fri, Feb 18, 2011 at 10:48:18AM -0800, Linus Torvalds escreveu:
+> On Fri, Feb 18, 2011 at 10:08 AM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+> >
+> > I am still getting programs segfaulting but that is happening on other
+> > machines running on older kernels so I am going to chalk that up to a
+> > buggy test and a false positive.
+> 
+> Ok.
+> 
+> > I am have OOM problems getting my tests run to complete.  On a good
+> > day that happens about 1 time in 3 right now.  I'm guess I will have
+> > to turn off DEBUG_PAGEALLOC to get everything to complete.
+> > DEBUG_PAGEALLOC causes us to use more memory doesn't it?
+> 
+> It does use a bit more memory, but it shouldn't be _that_ noticeable.
+> The real cost of DEBUG_PAGEALLOC is all the crazy page table
+> operations and TLB flushes we do for each allocation/deallocation. So
+> DEBUG_PAGEALLOC is very CPU-intensive, but it shouldn't have _that_
+> much of a memory overhead - just some trivial overhead due to not
+> being able to use largepages for the normal kernel identity mappings.
+> 
+> But there might be some other interaction with OOM that I haven't thought about.
+> 
+> > The most interesting thing I have right now is a networking lockdep
+> > issue.  Does anyone know what is going on there?
+> 
+> This seems to be a fairly straightforward bug.
+> 
+> In net/ipv4/inet_timewait_sock.c we have this:
+> 
+>   /* These are always called from BH context.  See callers in
+>    * tcp_input.c to verify this.
+>    */
+> 
+>   /* This is for handling early-kills of TIME_WAIT sockets. */
+>   void inet_twsk_deschedule(struct inet_timewait_sock *tw,
+>                             struct inet_timewait_death_row *twdr)
+>   {
+>           spin_lock(&twdr->death_lock);
+>           ..
+> 
+> and the intention is clearly that that spin_lock is BH-safe because
+> it's called from BH context.
+> 
+> Except that clearly isn't true. It's called from a worker thread:
+> 
+> > stack backtrace:
+> > Pid: 10833, comm: kworker/u:1 Not tainted 2.6.38-rc4-359399.2010AroraKernelBeta.fc14.x86_64 #1
+> > Call Trace:
+> >  [<ffffffff81460e69>] ? inet_twsk_deschedule+0x29/0xa0
+> >  [<ffffffff81460fd6>] ? inet_twsk_purge+0xf6/0x180
+> >  [<ffffffff81460f10>] ? inet_twsk_purge+0x30/0x180
+> >  [<ffffffff814760fc>] ? tcp_sk_exit_batch+0x1c/0x20
+> >  [<ffffffff8141c1d3>] ? ops_exit_list.clone.0+0x53/0x60
+> >  [<ffffffff8141c520>] ? cleanup_net+0x100/0x1b0
+> >  [<ffffffff81068c47>] ? process_one_work+0x187/0x4b0
+> >  [<ffffffff81068be1>] ? process_one_work+0x121/0x4b0
+> >  [<ffffffff8141c420>] ? cleanup_net+0x0/0x1b0
+> >  [<ffffffff8106a65c>] ? worker_thread+0x15c/0x330
+> 
+> so it can deadlock with a BH happening at the same time, afaik.
+> 
+> The code (and comment) is all from 2005, it looks like the BH->worker
+> thread has broken the code. But somebody who knows that code better
+> should take a deeper look at it.
+> 
+> Added acme to the cc, since the code is attributed to him back in 2005
+> ;). Although I don't know how active he's been in networking lately
+> (seems to be all perf-related). Whatever, it can't hurt.
 
-We don't need to scan two times for setup_node_bootmem()
-because We are using mapped memblock for node_data finding already.
+Original code is ANK's, I just made it possible to use with DCCP, and
+yeah, the smiley is appropriate, something 6 years old and the world
+around it changing continually... well, thanks for the git blame ;-)
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/mm/numa_64.c |   31 +++++++++++++------------------
- 1 file changed, 13 insertions(+), 18 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/numa_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/numa_64.c
-+++ linux-2.6/arch/x86/mm/numa_64.c
-@@ -480,7 +480,7 @@ static bool __init numa_meminfo_cover_me
- 
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
--	int i, j, nid;
-+	int i, nid;
- 
- 	/* Account for nodes with cpus and no memory */
- 	node_possible_map = numa_nodes_parsed;
-@@ -507,27 +507,22 @@ static int __init numa_register_memblks(
- 	init_memory_mapping_high();
- 
- 	/*
--	 * Finally register nodes.  Do it twice in case setup_node_bootmem
--	 * missed one due to missing bootmem.
-+	 * Do not do that twice, not needed!
-+	 *   We are using mapped memblock directly for node data
- 	 */
--	for (i = 0; i < 2; i++) {
--		for_each_node_mask(nid, node_possible_map) {
--			u64 start = (u64)max_pfn << PAGE_SHIFT;
--			u64 end = 0;
-+	for_each_node_mask(nid, node_possible_map) {
-+		u64 start = (u64)max_pfn << PAGE_SHIFT;
-+		u64 end = 0;
- 
--			if (node_online(nid))
-+		for (i = 0; i < mi->nr_blks; i++) {
-+			if (nid != mi->blk[i].nid)
- 				continue;
--
--			for (j = 0; j < mi->nr_blks; j++) {
--				if (nid != mi->blk[j].nid)
--					continue;
--				start = min(mi->blk[j].start, start);
--				end = max(mi->blk[j].end, end);
--			}
--
--			if (start < end)
--				setup_node_bootmem(nid, start, end);
-+			start = min(mi->blk[i].start, start);
-+			end = max(mi->blk[i].end, end);
- 		}
-+
-+		if (start < end)
-+			setup_node_bootmem(nid, start, end);
- 	}
- 
- 	return 0;
+- Arnaldo
