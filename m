@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380Ab1BRREp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 12:04:45 -0500
-Received: from cantor.suse.de ([195.135.220.2]:48715 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab1BRREk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 12:04:40 -0500
-Date: Fri, 18 Feb 2011 09:05:38 -0800
-From: Greg KH <gregkh@suse.de>
-To: Pratheesh Gangadhar <pratheesh@ti.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        davinci-linux-open-source@linux.davincidsp.com, amit.chatterjee@ti.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] PRUSS UIO driver support
-Message-ID: <20110218170538.GB11773@suse.de>
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
- <1298041530-26855-2-git-send-email-pratheesh@ti.com>
- <20110218163147.GD4684@local>
+	id S932450Ab1BRRE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 12:04:59 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57377 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932234Ab1BRRE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 12:04:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=Nw+xepojZWg1WAhNJgHUnia+YMhOiCpsjzPT98ksjMQn2YTgVMeZNXDLSEXrhyFYG9
+         /ox7n2vOwXhop3xaFO98oxw6QsrcW5/sVi1cb+2qR+qyZ/sdJj6ytzs55a98mJJF0oqj
+         S0Pwr08J45SiMU4sDdy64rJSKpJd20wDOe2As=
+Date: Fri, 18 Feb 2011 15:04:50 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org
+Subject: Re: [PATCH 1/3] perf events: fix WARN_ON_ONCE for 64-bit raw data,
+ SW events
+Message-ID: <20110218170450.GB302@ghostprotocols.net>
+References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
+ <1298008433-22911-2-git-send-email-daahern@cisco.com>
+ <1298026821.5226.642.camel@laptop>
+ <4D5E8338.8010602@cisco.com>
+ <20110218145348.GA302@ghostprotocols.net>
+ <1298041291.5226.776.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110218163147.GD4684@local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1298041291.5226.776.camel@laptop>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 05:31:47PM +0100, Hans J. Koch wrote:
-> On Fri, Feb 18, 2011 at 08:35:29PM +0530, Pratheesh Gangadhar wrote:
-> > Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
-
-As noted by others, this needs to go at the end of the changelog
-comment.
-
-Also, always run your patches through the scripts/checkpatch.pl script
-and fix the warnings and errors it finds.  To not do so is just rude as
-you are asking us to do the basic review work that you yourself did not
-do in the first place.
-
-> > +static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
-> > +{
-> > +	return IRQ_HANDLED;
-> > +}
+Em Fri, Feb 18, 2011 at 04:01:31PM +0100, Peter Zijlstra escreveu:
+> On Fri, 2011-02-18 at 12:53 -0200, Arnaldo Carvalho de Melo wrote:
+> > > So size should be changed to u64 rather than modifying the
+> > WARN_ON_ONCE?
+> > 
+> > Yeah, I guess so, 32-bit has to die it seems, gets in the way of
+> > testing
+> > :-) 
 > 
-> ROTFL. That reminds me of an old story. The last time I wrote this, and
-> Greg dared to post it, we received this reply:
+> No!
 > 
-> http://marc.info/?l=linux-kernel&m=116604101232144&w=2
-> 
-> So, if you really have a _very_ good reason why this _always_ works on
-> _any_ DA850 board, add a comment that explains why. Otherwise the whole
-> patch set will be doomed.
+> 1) don't use RAW unless you have to
+> 2) you don't have to, goto 1
+> 3) if you do anyway, ensure its properly padded
 
-Nope, this whole patch set is doomed if this isn't fixed, I'm not going
-to accept it no matter how much you want to try to say this is ok on
-this hardware.
+Ok, but using that struct definition on 32-bit land, will lead to non 8 byte
+alignment, right?
 
-thanks,
-
-greg k-h
+- Arnaldo
