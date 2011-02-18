@@ -1,97 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab1BRIyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 03:54:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56829 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab1BRIyo (ORCPT
+	id S1757587Ab1BRI5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 03:57:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35085 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795Ab1BRI5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 03:54:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=SQP6eEmtZqphiwl1VUTHVQ6G21RMguYyHmP0FUife47Lq5pxo1Yfxtx3Yj2goGBfLc
-         C+hPNQxHKH3Y6qxqPHLuo+XWSkUO2KprPr+e92I/4lnmkgBZa4k2AXP0l3vUAR7JrG3a
-         QKS+2r9Z1FoB7kZL1Z8fLK3BXEASkwqdeegSw=
-Subject: [PATCH 1/2] net: dont leave active on stack LIST_HEAD
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, ebiederm@xmission.com, opurdila@ixiacom.com,
-        mingo@elte.hu, mhocko@suse.cz, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <1298014191.2642.11.camel@edumazet-laptop>
-References: <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
-	 <m1sjvm822m.fsf@fess.ebiederm.org>
-	 <AANLkTimzP0UNRXutkt1zJ+OGhmeg6ga87HFyMuZQmpMj@mail.gmail.com>
-	 <20110217.203647.193696765.davem@davemloft.net>
-	 <1298010320.2642.7.camel@edumazet-laptop>
-	 <1298014191.2642.11.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Feb 2011 09:54:38 +0100
-Message-ID: <1298019278.2595.83.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Feb 2011 03:57:37 -0500
+Date: Fri, 18 Feb 2011 09:57:34 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Peter Tyser <ptyser@xes-inc.com>
+Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 2/4] gpiolib: Add ability to get GPIO pin direction
+Message-ID: <20110218085734.GX22310@pengutronix.de>
+References: <1297983799-4747-1-git-send-email-ptyser@xes-inc.com>
+ <1297983799-4747-2-git-send-email-ptyser@xes-inc.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1297983799-4747-2-git-send-email-ptyser@xes-inc.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+On Thu, Feb 17, 2011 at 05:03:17PM -0600, Peter Tyser wrote:
+> Add a new get_direction() function to the gpio_chip structure.  This is
+> useful so that the direction of a pin can be determined when its
+> initially exported.  Previously, the direction defaulted to "unknown"
+> regardless of the actual configuration of the GPIO pin.
+> 
+> If a GPIO driver implements get_direction(), it is called in
+> gpio_request() to set the initial direction of the pin accurately.
+IMHO the commit log is conceptually wrong, because it talks about a
+"pin".  Better use gpio here.
 
-Eric W. Biderman and Michal Hocko reported various memory corruptions
-that we suspected to be related to a LIST head located on stack, that
-was manipulated after thread left function frame (and eventually exited,
-so its stack was freed and reused).
+> Cc: Alek Du <alek.du@intel.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: David Brownell <dbrownell@users.sourceforge.net>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> ---
+> Changes since v1:
+> - Add support for "unknown" direction
+> 
+> Changes since v2:
+>   Based on Wolfram's feedback:
+> - Use GPIOF_DIR_* flags as returns from get_direction()
+> - Call spin_lock_irqsave() to before setting flags
+> 
+>  drivers/gpio/gpiolib.c     |   23 +++++++++++++++++++++++
+>  include/asm-generic/gpio.h |    4 ++++
+>  2 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index eb74311..a656a2c 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1174,6 +1174,7 @@ int gpio_request(unsigned gpio, const char *label)
+>  	struct gpio_desc	*desc;
+>  	struct gpio_chip	*chip;
+>  	int			status = -EINVAL;
+> +	int			dir;
+>  	unsigned long		flags;
+>  
+>  	spin_lock_irqsave(&gpio_lock, flags);
+> @@ -1214,6 +1215,28 @@ int gpio_request(unsigned gpio, const char *label)
+>  		}
+>  	}
+>  
+> +	if (chip->get_direction) {
+> +		/* chip->get_direction may sleep */
+> +		spin_unlock_irqrestore(&gpio_lock, flags);
+might_sleep_if(chip->can_sleep) ?
 
-Eric Dumazet suggested the problem was probably coming from commit
-443457242beb (net: factorize
-sync-rcu call in unregister_netdevice_many)
+> +		dir = chip->get_direction(chip, gpio - chip->base);
+> +		spin_lock_irqsave(&gpio_lock, flags);
+> +		switch (dir) {
+> +		case GPIOF_DIR_OUT:
+> +			set_bit(FLAG_DIR_OUT, &desc->flags);
+> +			clear_bit(FLAG_DIR_IN, &desc->flags);
+> +			break;
+> +		case GPIOF_DIR_IN:
+> +			set_bit(FLAG_DIR_IN, &desc->flags);
+> +			clear_bit(FLAG_DIR_OUT, &desc->flags);
+> +			break;
+> +		default:
+> +			/* Direction isn't known */
+> +			clear_bit(FLAG_DIR_OUT, &desc->flags);
+> +			clear_bit(FLAG_DIR_IN, &desc->flags);
+> +			break;
+> +		}
+Alternatively to my suggestion for patch1:
+	} else {
+		clear_bit(FLAG_DIR_OUT, &desc->flags);
+		clear_bit(FLAG_DIR_IN, &desc->flags);
+> +	}
+> +
+>  done:
+>  	if (status)
+>  		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index ff5c660..6af5a3e 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -57,6 +57,8 @@ struct device_node;
+>   * @direction_input: configures signal "offset" as input, or returns error
+>   * @get: returns value for signal "offset"; for output signals this
+>   *	returns either the value actually sensed, or zero
+> + * @get_direction: optional hook to determine if a GPIO signal is configured
+> + *	as an input, output, or unknown
+>   * @direction_output: configures signal "offset" as output, or returns error
+>   * @set: assigns output value for signal "offset"
+>   * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
+> @@ -101,6 +103,8 @@ struct gpio_chip {
+>  						unsigned offset);
+>  	int			(*get)(struct gpio_chip *chip,
+>  						unsigned offset);
+> +	int			(*get_direction)(struct gpio_chip *chip,
+> +						unsigned offset);
+>  	int			(*direction_output)(struct gpio_chip *chip,
+>  						unsigned offset, int value);
+>  	int			(*set_debounce)(struct gpio_chip *chip,
+> -- 
+> 1.7.0.4
+> 
+> 
 
-This patch fixes __dev_close() and dev_close() to properly deinit their
-respective LIST_HEAD(single) before exiting.
-
-References: https://lkml.org/lkml/2011/2/16/304
-References: https://lkml.org/lkml/2011/2/14/223
-
-Reported-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Eric W. Biderman <ebiderman@xmission.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Octavian Purdila <opurdila@ixiacom.com>
-CC: Eric W. Biderman <ebiderman@xmission.com>
----
- net/core/dev.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 8e726cb..a18c164 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1280,10 +1280,13 @@ static int __dev_close_many(struct list_head *head)
- 
- static int __dev_close(struct net_device *dev)
- {
-+	int retval;
- 	LIST_HEAD(single);
- 
- 	list_add(&dev->unreg_list, &single);
--	return __dev_close_many(&single);
-+	retval = __dev_close_many(&single);
-+	list_del(&single);
-+	return retval;
- }
- 
- int dev_close_many(struct list_head *head)
-@@ -1325,7 +1328,7 @@ int dev_close(struct net_device *dev)
- 
- 	list_add(&dev->unreg_list, &single);
- 	dev_close_many(&single);
--
-+	list_del(&single);
- 	return 0;
- }
- EXPORT_SYMBOL(dev_close);
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
