@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab1BRFo0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 00:44:26 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:55421 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab1BRFoZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 00:44:25 -0500
-From: hayeswang <hayeswang@realtek.com>
-To: "'Alexander Wuerstlein'" <arw@arw.name>
-CC: "'David S. Miller'" <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        "'franois romieu'" <romieu@fr.zoreil.com>
-References: <20110216223438.GZ15516@cip.informatik.uni-erlangen.de>
-Subject: RE: r8169 hangs machine on kernel boot (bisected)
-Date: Fri, 18 Feb 2011 13:44:04 +0800
-X-BOX-Message-Id: p1I5i3Db017489
-Message-ID: <CDC3F2AD9A574AC4B7DDDB7D64329A79@realtek.com.tw>
+	id S1752610Ab1BRFsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 00:48:41 -0500
+Received: from web94707.mail.in2.yahoo.com ([203.104.17.158]:34342 "HELO
+	web94707.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750841Ab1BRFsi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 00:48:38 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Feb 2011 00:48:37 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=ilVjRQrjxfaWeCEt9QdRD7hgZ2pH3P7cd5F2zxLNVoUlDHtg+jIhqiclz6Xy6lh85ulL6NK+W93trWexZjx634iMafkIZh1gLmtuKab1LUJ08yepZs+NgEu3n0oBljexvZpKsqJKa0jkuWbw1lc5JRUNLbqNkkKSVg6GqKe7hmw=;
+Message-ID: <494554.47170.qm@web94707.mail.in2.yahoo.com>
+X-YMail-OSG: euvsESkVM1nZU62wCN_u.YH_iyp_h4YNrxqBZXjyo7eDPOr
+ 3SGGEdRN5hEbr6Er5YCFtYClxH5PoI30GYNFONvGPVL35kMrFym.RFyf6pZY
+ Eo.3yHJ4xN6LlMgAVKi4_eEUEjzCOXJp5agitcZjfv7s9kxcZ0J0N9QK6xgS
+ GggXo8sJpVG3uGKQWCyk2aiYoXTFkfUj4jYmkkbr9ccJdFgAHYiBW6_a_YAL
+ VJUhFcZtr3qnI6fw3PoK.pVc5_aftlfOpHW5C4wALmLsTibxMHb0VFpymR7U
+ AJhTD81Zo8VVyB_8ZozQiXCeOtm2dg3THGNRVcPz_2HJ4pyocJdbdhVXXi0L
+ wwe0-
+X-Mailer: YahooMailWebService/0.8.109.292656
+Date: Fri, 18 Feb 2011 11:11:54 +0530 (IST)
+From: pradeep Annavarapu <asnvpradeep@yahoo.com>
+Subject: Re:2
+To: kkkpatni@freemail.ph, knsumanth@rediff.com, krreddy2u@yahoo.co.in,
+        lavi2905@yahoo.com, leelaratnam@yahoo.com, lillian.gonzalez@njit.edu,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcvPDLzK/hHBqZSOSJOAKk14GEN5uQAIGmig
-In-Reply-To: <20110216223438.GZ15516@cip.informatik.uni-erlangen.de>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+...Rid of all your problems easily!!! http://voinov.org/google.php?ayahooID=949
 
-I have try the 8168DP and it wouldn't hang. I think I need more information.
-Could you give the information about the motherboard and the version of BIOS.
-Besides, please use the realtek driver, and dump the MAC information by using
-"ethtool -d eth0". These are helpful to find out what happens. Thanks.
- 
-Best Regards,
-Hayes
-
-
------Original Message-----
-From: Alexander Wuerstlein [mailto:arw@arw.name] 
-Sent: Thursday, February 17, 2011 6:35 AM
-To: franois romieu
-Cc: Hayeswang; David S. Miller; linux-kernel@vger.kernel.org
-Subject: r8169 hangs machine on kernel boot (bisected)
-
-Hello,
-
-I've just tried to boot a new computer featuring a Realtek r8168 onboard (lspci
-calls it Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit
-Ethernet controller [10ec:8168] (rev 04), see [1]) network chip with kernel
-2.6.38-rc5 and current git. Both hang on boot just after USB device
-initialization and just before the kernel usually does DHCP. The previous 2.6.37
-didn't hang on boot, but showed strange behaviour (only 10MBit half duplex on
-autonegotiation, tons of errors on the switch interface[2]) which is why I tried
-the newer kernel in hopes that there would be fixes.
-
-I bisected the hang-before-dhcp bug down to commit 'r8169: magic.'
-(b646d90053f887c1bc243191e693a9b02d09f2c2, also see [1]). Since the commit
-really does its description justice and looks like some weird hardware magic,
-I'd like to ask the wizards on how to proceed with fixing it.
-
-
-
-Ciao,
-
-Alexander Wuerstlein.
-
-[1] Kernel .config, lspci, bisect log:
-    http://wwwcip.cs.fau.de/~snalwuer/kernel-r8169/
-[2] the Realtek-supplied r8168 doesn't show those problems [3] feel free to
-criticise my Cc:, I wasn't quite sure...
 
