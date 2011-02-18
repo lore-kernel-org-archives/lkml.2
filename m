@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab1BRDLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:11:44 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:51890 "EHLO lunge.queued.net"
+	id S932567Ab1BRDLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:11:46 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:51879 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932461Ab1BRDIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932443Ab1BRDIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Feb 2011 22:08:12 -0500
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
-Subject: [PATCH 20/29] wm8400-codec: use mfd_data instead of driver_data (v2)
-Date: Thu, 17 Feb 2011 19:07:27 -0800
-Message-Id: <1297998456-7615-21-git-send-email-dilinger@queued.net>
+        linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org
+Subject: [PATCH 15/29] janz: mfd_cell is now implicitly available to drivers (v2)
+Date: Thu, 17 Feb 2011 19:07:22 -0800
+Message-Id: <1297998456-7615-16-git-send-email-dilinger@queued.net>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297998456-7615-1-git-send-email-dilinger@queued.net>
 References: <1297998456-7615-1-git-send-email-dilinger@queued.net>
@@ -24,54 +21,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use mfd_data for passing information from mfd drivers to soc
-clients.  The mfd_cell's driver_data field is being phased out.
-
-Clients that were using driver_data now access .mfd_data
-via mfd_get_data().
+The cell's platform_data is now accessed with a helper function;
+change clients to use that, and remove the now-unused data_size.
 
 v2: add some missing mfd/core.h includes.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/mfd/wm8400-core.c |    2 +-
- sound/soc/codecs/wm8400.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpio/janz-ttl.c      |    3 ++-
+ drivers/mfd/janz-cmodio.c    |    1 -
+ drivers/net/can/janz-ican3.c |    3 ++-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/wm8400-core.c b/drivers/mfd/wm8400-core.c
-index 1bfef48..3a6e78c 100644
---- a/drivers/mfd/wm8400-core.c
-+++ b/drivers/mfd/wm8400-core.c
-@@ -245,7 +245,7 @@ static int wm8400_register_codec(struct wm8400 *wm8400)
- {
- 	struct mfd_cell cell = {
- 		.name = "wm8400-codec",
--		.driver_data = wm8400,
-+		.mfd_data = wm8400,
- 	};
- 
- 	return mfd_add_devices(wm8400->dev, -1, &cell, 1, NULL, 0);
-diff --git a/sound/soc/codecs/wm8400.c b/sound/soc/codecs/wm8400.c
-index 3c3bc07..736b785 100644
---- a/sound/soc/codecs/wm8400.c
-+++ b/sound/soc/codecs/wm8400.c
-@@ -22,6 +22,7 @@
- #include <linux/regulator/consumer.h>
- #include <linux/mfd/wm8400-audio.h>
- #include <linux/mfd/wm8400-private.h>
+diff --git a/drivers/gpio/janz-ttl.c b/drivers/gpio/janz-ttl.c
+index 813ac07..2514fb0 100644
+--- a/drivers/gpio/janz-ttl.c
++++ b/drivers/gpio/janz-ttl.c
+@@ -15,6 +15,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
 +#include <linux/mfd/core.h>
- #include <sound/core.h>
- #include <sound/pcm.h>
- #include <sound/pcm_params.h>
-@@ -1377,7 +1378,7 @@ static void wm8400_probe_deferred(struct work_struct *work)
- 
- static int wm8400_codec_probe(struct snd_soc_codec *codec)
- {
--	struct wm8400 *wm8400 = dev_get_platdata(codec->dev);
-+	struct wm8400 *wm8400 = mfd_get_data(to_platform_device(codec->dev));
- 	struct wm8400_priv *priv;
+ #include <linux/io.h>
+ #include <linux/gpio.h>
+ #include <linux/slab.h>
+@@ -149,7 +150,7 @@ static int __devinit ttl_probe(struct platform_device *pdev)
+ 	struct resource *res;
  	int ret;
- 	u16 reg;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = mfd_get_data(pdev);
+ 	if (!pdata) {
+ 		dev_err(dev, "no platform data\n");
+ 		ret = -ENXIO;
+diff --git a/drivers/mfd/janz-cmodio.c b/drivers/mfd/janz-cmodio.c
+index 36a166b..58de1e2 100644
+--- a/drivers/mfd/janz-cmodio.c
++++ b/drivers/mfd/janz-cmodio.c
+@@ -87,7 +87,6 @@ static int __devinit cmodio_setup_subdevice(struct cmodio_device *priv,
+ 	/* Add platform data */
+ 	pdata->modno = modno;
+ 	cell->platform_data = pdata;
+-	cell->data_size = sizeof(*pdata);
+ 
+ 	/* MODULbus registers -- PCI BAR3 is big-endian MODULbus access */
+ 	res->flags = IORESOURCE_MEM;
+diff --git a/drivers/net/can/janz-ican3.c b/drivers/net/can/janz-ican3.c
+index 366f5cc..102b16c 100644
+--- a/drivers/net/can/janz-ican3.c
++++ b/drivers/net/can/janz-ican3.c
+@@ -15,6 +15,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
++#include <linux/mfd/core.h>
+ 
+ #include <linux/netdevice.h>
+ #include <linux/can.h>
+@@ -1643,7 +1644,7 @@ static int __devinit ican3_probe(struct platform_device *pdev)
+ 	struct device *dev;
+ 	int ret;
+ 
+-	pdata = pdev->dev.platform_data;
++	pdata = mfd_get_data(pdev);
+ 	if (!pdata)
+ 		return -ENXIO;
+ 
 -- 
 1.7.2.3
 
