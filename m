@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab1BRRDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 12:03:46 -0500
-Received: from www.tglx.de ([62.245.132.106]:58063 "EHLO www.tglx.de"
+	id S932380Ab1BRREp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 12:04:45 -0500
+Received: from cantor.suse.de ([195.135.220.2]:48715 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab1BRRDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 12:03:44 -0500
-Date: Fri, 18 Feb 2011 18:03:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org,
-        Pratheesh Gangadhar <pratheesh@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com, gregkh@suse.de,
-        amit.chatterjee@ti.com, "Hans J. Koch" <hjk@hansjkoch.de>,
-        LKML <linux-kernel@vger.kernel.org>
+	id S932234Ab1BRREk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 12:04:40 -0500
+Date: Fri, 18 Feb 2011 09:05:38 -0800
+From: Greg KH <gregkh@suse.de>
+To: Pratheesh Gangadhar <pratheesh@ti.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        davinci-linux-open-source@linux.davincidsp.com, amit.chatterjee@ti.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Subject: Re: [PATCH 1/2] PRUSS UIO driver support
-In-Reply-To: <201102181731.05644.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.00.1102181802580.2701@localhost6.localdomain6>
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com> <201102181644.17634.arnd@arndb.de> <alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6> <201102181731.05644.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Message-ID: <20110218170538.GB11773@suse.de>
+References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
+ <1298041530-26855-2-git-send-email-pratheesh@ti.com>
+ <20110218163147.GD4684@local>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110218163147.GD4684@local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011, Arnd Bergmann wrote:
+On Fri, Feb 18, 2011 at 05:31:47PM +0100, Hans J. Koch wrote:
+> On Fri, Feb 18, 2011 at 08:35:29PM +0530, Pratheesh Gangadhar wrote:
+> > Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
 
-> On Friday 18 February 2011, Thomas Gleixner wrote:
-> > On Fri, 18 Feb 2011, Arnd Bergmann wrote:
-> > > On Friday 18 February 2011, Pratheesh Gangadhar wrote:
-> > > > Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
-> > > > +static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
-> > > > +{
-> > > > +   return IRQ_HANDLED;
-> > > > +}
-> > > 
-> > > An empty interrupt handler is rather pointless. I guess you really
-> > > notify user space when the interrupt handler gets called, as this
-> > > is the main point of a UIO driver as far as I understand it.
-> > 
-> > The UIO core code does this for you when the driver handler returns
-> > IRQ_HANDLED
+As noted by others, this needs to go at the end of the changelog
+comment.
+
+Also, always run your patches through the scripts/checkpatch.pl script
+and fix the warnings and errors it finds.  To not do so is just rude as
+you are asking us to do the basic review work that you yourself did not
+do in the first place.
+
+> > +static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
+> > +{
+> > +	return IRQ_HANDLED;
+> > +}
 > 
-> Ah, right.
+> ROTFL. That reminds me of an old story. The last time I wrote this, and
+> Greg dared to post it, we received this reply:
 > 
-> > but the empty handler raises a different questions:
-> > 
-> > Is the interrupt edge triggerd or how do you avoid an irq storm here?
-> > Usually UIO drivers are requested to mask the interrupt in the device
-> > itself.
+> http://marc.info/?l=linux-kernel&m=116604101232144&w=2
 > 
-> If it's edge triggered, it should not advertise IRQF_SHARED, right?
+> So, if you really have a _very_ good reason why this _always_ works on
+> _any_ DA850 board, add a comment that explains why. Otherwise the whole
+> patch set will be doomed.
 
-Nope. And the handler needs a fat comment why this works.
+Nope, this whole patch set is doomed if this isn't fixed, I'm not going
+to accept it no matter how much you want to try to say this is ok on
+this hardware.
 
-Thanks,
+thanks,
 
-	tglx
+greg k-h
