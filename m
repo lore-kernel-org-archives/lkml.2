@@ -1,278 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1BRG3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 01:29:11 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39797 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab1BRG3I (ORCPT
+	id S1754087Ab1BRGcY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 01:32:24 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58507 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab1BRGcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 01:29:08 -0500
-Date: Fri, 18 Feb 2011 11:59:01 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v5 1/4] deactivate invalidated pages
-Message-ID: <20110218062901.GB2648@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <cover.1297940291.git.minchan.kim@gmail.com>
- <5677f3262774f4ddc24044065b7cbd6443ac5e16.1297940291.git.minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <5677f3262774f4ddc24044065b7cbd6443ac5e16.1297940291.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 Feb 2011 01:32:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PzqhKZcr1raZPP/CYq5oVnXhhHeo7Dk3vKtJS3lWYtE5RJq68lusBx+yIRNDVC1skz
+         UMOh1vGCBl3ucycgC/R3h1otWgyQXeEr3JYA07e/mHu2c6rt8au/m8YJi4TKrr8mdQMN
+         m78lHJT6SwUpwZ0TOnDbwjDyxLO8Y8yKCBFRg=
+Subject: Re: 2.6.38-rc5 tcp_connect oops: EIP = 0x0
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <20110218050321.10415.qmail@science.horizon.com>
+References: <20110218050321.10415.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Feb 2011 07:32:15 +0100
+Message-ID: <1298010735.2642.9.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* MinChan Kim <minchan.kim@gmail.com> [2011-02-18 00:08:19]:
+Le vendredi 18 février 2011 à 00:03 -0500, George Spelvin a écrit :
+> But wonder of wonders, kernel mode switching worked so I got to see the
+> oops on the text-mode console.  It happened just as I tried to ssh out.
+> 
 
-> Recently, there are reported problem about thrashing.
-> (http://marc.info/?l=rsync&m=128885034930933&w=2)
-> It happens by backup workloads(ex, nightly rsync).
-> That's because the workload makes just use-once pages
-> and touches pages twice. It promotes the page into
-> active list so that it results in working set page eviction.
-> 
-> Some app developer want to support POSIX_FADV_NOREUSE.
-> But other OSes don't support it, either.
-> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
-> 
-> By other approach, app developers use POSIX_FADV_DONTNEED.
-> But it has a problem. If kernel meets page is writing
-> during invalidate_mapping_pages, it can't work.
-> It makes for application programmer to use it since they always 
-> have to sync data before calling fadivse(..POSIX_FADV_DONTNEED) to 
-> make sure the pages could be discardable. At last, they can't use
-> deferred write of kernel so that they could see performance loss.
-> (http://insights.oetiker.ch/linux/fadvise.html)
-> 
-> In fact, invalidation is very big hint to reclaimer.
-> It means we don't use the page any more. So let's move
-> the writing page into inactive list's head if we can't truncate 
-> it right now.
-> 
-> Why I move page to head of lru on this patch, Dirty/Writeback page 
-> would be flushed sooner or later. It can prevent writeout of pageout 
-> which is less effective than flusher's writeout.
-> 
-> Originally, I reused lru_demote of Peter with some change so added
-> his Signed-off-by.
-> 
-> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
-> Changelog since v4:
->  - Change function comments - suggested by Johannes
->  - Change function name - suggested by Johannes
->  - Drop only dirty/writeback pages to deactive pagevec - suggested by Johannes
->  - Add acked-by
-> 
-> Changelog since v3:
->  - Change function comments - suggested by Johannes
->  - Change function name - suggested by Johannes
->  - add only dirty/writeback pages to deactive pagevec
-> 
-> Changelog since v2:
->  - mapped page leaves alone - suggested by Mel
->  - pass part related PG_reclaim in next patch.
-> 
-> Changelog since v1:
->  - modify description
->  - correct typo
->  - add some comment
-> 
->  include/linux/swap.h |    1 +
->  mm/swap.c            |   78 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  mm/truncate.c        |   17 ++++++++---
->  3 files changed, 91 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 4d55932..c335055 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -215,6 +215,7 @@ extern void mark_page_accessed(struct page *);
->  extern void lru_add_drain(void);
->  extern int lru_add_drain_all(void);
->  extern void rotate_reclaimable_page(struct page *page);
-> +extern void deactivate_page(struct page *page);
->  extern void swap_setup(void);
-> 
->  extern void add_page_to_unevictable_list(struct page *page);
-> diff --git a/mm/swap.c b/mm/swap.c
-> index c02f936..4aea806 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -39,6 +39,7 @@ int page_cluster;
-> 
->  static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
->  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
-> +static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
-> 
->  /*
->   * This path almost never happens for VM activity - pages are normally
-> @@ -347,6 +348,60 @@ void add_page_to_unevictable_list(struct page *page)
->  }
-> 
->  /*
-> + * If the page can not be invalidated, it is moved to the
-> + * inactive list to speed up its reclaim.  It is moved to the
-> + * head of the list, rather than the tail, to give the flusher
-> + * threads some time to write it out, as this is much more
-> + * effective than the single-page writeout from reclaim.
-> + */
-> +static void lru_deactivate(struct page *page, struct zone *zone)
-> +{
-> +	int lru, file;
-> +
-> +	if (!PageLRU(page) || !PageActive(page))
-> +		return;
-> +
-> +	/* Some processes are using the page */
-> +	if (page_mapped(page))
-> +		return;
-> +
-> +	file = page_is_file_cache(page);
-> +	lru = page_lru_base_type(page);
-> +	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
-> +	ClearPageActive(page);
-> +	ClearPageReferenced(page);
-> +	add_page_to_lru_list(zone, page, lru);
-> +	__count_vm_event(PGDEACTIVATE);
-> +
-> +	update_page_reclaim_stat(zone, page, file, 0);
-> +}
-> +
-> +static void ____pagevec_lru_deactivate(struct pagevec *pvec)
-> +{
-> +	int i;
-> +	struct zone *zone = NULL;
-> +
-> +	for (i = 0; i < pagevec_count(pvec); i++) {
-> +		struct page *page = pvec->pages[i];
-> +		struct zone *pagezone = page_zone(page);
-> +
-> +		if (pagezone != zone) {
-> +			if (zone)
-> +				spin_unlock_irq(&zone->lru_lock);
-> +			zone = pagezone;
-> +			spin_lock_irq(&zone->lru_lock);
-> +		}
+CC netdev (removed linux-netdev)
 
-The optimization to avoid taking locks if the zone does not change is
-quite subtle
+I'll take a look this morning, thanks for the report.
 
-> +		lru_deactivate(page, zone);
-> +	}
-> +	if (zone)
-> +		spin_unlock_irq(&zone->lru_lock);
-> +
-> +	release_pages(pvec->pages, pvec->nr, pvec->cold);
-> +	pagevec_reinit(pvec);
-> +}
-> +
-> +
-> +/*
->   * Drain pages out of the cpu's pagevecs.
->   * Either "cpu" is the current CPU, and preemption has already been
->   * disabled; or "cpu" is being hot-unplugged, and is already dead.
-> @@ -372,6 +427,29 @@ static void drain_cpu_pagevecs(int cpu)
->  		pagevec_move_tail(pvec);
->  		local_irq_restore(flags);
->  	}
-> +
-> +	pvec = &per_cpu(lru_deactivate_pvecs, cpu);
-> +	if (pagevec_count(pvec))
-> +		____pagevec_lru_deactivate(pvec);
-> +}
-> +
-> +/**
-> + * deactivate_page - forcefully deactivate a page
-> + * @page: page to deactivate
-> + *
-> + * This function hints the VM that @page is a good reclaim candidate,
-> + * for example if its invalidation fails due to the page being dirty
-> + * or under writeback.
-> + */
-> +void deactivate_page(struct page *page)
-> +{
-> +	if (likely(get_page_unless_zero(page))) {
-> +		struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
-> +
-> +		if (!pagevec_add(pvec, page))
-> +			____pagevec_lru_deactivate(pvec);
-> +		put_cpu_var(lru_deactivate_pvecs);
-> +	}
->  }
+> It's a Core 2 duo laptop (Dell E1405), 2 GB RAM, running a 32-bit kernel.
+> It's worth noting that I was using wired internet (b44 driver) and
+> not wireless.
 > 
->  void lru_add_drain(void)
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index 4d415b3..9ec7bc5 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -328,11 +328,12 @@ EXPORT_SYMBOL(truncate_inode_pages);
->   * pagetables.
->   */
->  unsigned long invalidate_mapping_pages(struct address_space *mapping,
-> -				       pgoff_t start, pgoff_t end)
-> +		pgoff_t start, pgoff_t end)
->  {
->  	struct pagevec pvec;
->  	pgoff_t next = start;
-> -	unsigned long ret = 0;
-> +	unsigned long ret;
-> +	unsigned long count = 0;
->  	int i;
+> I've been having a lot of weird lockups with 2.6.38-rcX, quite a change
+> from the very stable 2.6.36, but this is the first time I booted -rc5.
+> Also, the symptoms are very different; before the lockup did not seen
+> correlated with any particular activity, but the "lockup" was more like
+> something getting wedged in the kernel that more and more tasks would
+> get stuck on until everything stopped responding.
 > 
->  	pagevec_init(&pvec, 0);
-> @@ -359,8 +360,14 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  			if (lock_failed)
->  				continue;
+> I should mention that this is transcribed by hand from the screen.
+> Oh, and also, it is far from the first time I ran ssh this boot.
+> (I re-tested it ater rebooting, just to be sure.  Not a consistent
+> crash.)
 > 
-> -			ret += invalidate_inode_page(page);
-> -
-> +			ret = invalidate_inode_page(page);
-> +			/*
-> +			 * Invalidation is a hint that the page is no longer
-> +			 * of interest and try to speed up its reclaim.
-> +			 */
-> +			if (!ret)
-> +				deactivate_page(page);
+> Anyway, jumping to address 0 looks "interesting", so it seems worth reporting.
+> 
+> BUG: unable to handle kernel NULL pointer dereference at   (null)
+> IP: [<  (null)>]   (null)
+> *pde = 00000000
+> Oops: 0000 [#1] SMP
+> last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/block/sda/uevent
+> Modules linked in: rfcomm btusb sco l2cap crc16 bluetooth b43 mac80211 cfg80211 [last unloaded: sha256_generic]
+> 
+> Pid: 12178, comm: ssh Not tainted 2.6.38-rc5 #227 Dell Inc. MXC061                          /0MG532
+> EIP: 0060:[<00000000>] EFLAGS: 0021246 CPU: 0
+> EIP is at 0x0
+> EAX: f5947e00 EBX: f5982f80 ECX: 00000024 EDX: c148fe00
+> ESI: f5947e00 EDI: ebf29e54 EBP: ebf29ee0 ESP: ebf29dd0
+>  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> Process ssh (pid: 12178, ti=ebf28000 task=ebefc6c0 task.ti = ebef28000)
+> Stack:
+>  c12c83ea 07e2427d 02000000 7b018f79 c117b827 0b996609 7b018f79 5f5f6644
+>  f5982f80 00000000 ebf29e58 ebf29ee0 c12cc0e0 00001600 00000000 00000001
+>  03641600 00000000 00000000 00000000 00000000 036423c0 3e6423c0 00000000
+> Call Trace:
+>  [<c12c83ea>] ? tcp_connect+0xdd/0x3fd
+>  [<c117b827>] ? secure_tcp_sequence_number+0x4f/0x65
+>  [<c12cc0e0>] ? tcp_v4_connect+0x3c1/0x417
+>  [<c12d6726>] ? inet_stream_connect+0x88/0x1fc
+>  [<c1110705>] ? _copy_from_user+0x2b/0x10e
+>  [<c129307d>] ? sys_connect+0x70/0x98
+>  [<c108df0f>] ? get_empty_filp+0x9f/0x121
+>  [<c108dfa0>] ? alloc_file+0xf/0x85
+>  [<c1293287>] ? sock_alloc_file+0x97/0xeb
+>  [<c108b758>] ? fd_install+0x1b/0x38
+>  [<c12932f6>] ? sock_map_fd+0x1b/0x20
+>  [<c1293bdf>] ? sys_socketcall+0x9d/0x291
+>  [<c1002750>] ? sysenter_do_call+0x12/0x26
+> Code:  Bad EIP value
+> EIP: [<00000000>] 0x0 SS:ESP 0068:ebf29dd0
+> CR2: 0000000000000000
 
-Do we need to do this under page_lock? Is there scope for us to reuse
-rotate_reclaimable_page() logic?
 
-> +			count += ret;
->  			unlock_page(page);
->  			if (next > end)
->  				break;
-> @@ -369,7 +376,7 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  		mem_cgroup_uncharge_end();
->  		cond_resched();
->  	}
-> -	return ret;
-> +	return count;
->  }
->  EXPORT_SYMBOL(invalidate_mapping_pages);
-
--- 
-	Three Cheers,
-	Balbir
