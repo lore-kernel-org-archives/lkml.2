@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339Ab1BRRB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 12:01:59 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58796 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234Ab1BRRB4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 12:01:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=bAoAq2zKvSN7Yg+CX4gLNmDJValMlgCK+pk5yZEjvjXu7tnLGXjcgh5gGGrTl9XnsN
-         dxcC7At6DbTKK0dnUGbXNFNHE4W+oM5A/3RUgJ7KTIGjnvfArw2nHb1cKvCG4x3BgrJ/
-         U0CgQQ+4muRe4kHXxDUg63f6lFmtDAbtbzRJA=
+	id S932344Ab1BRRDq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 12:03:46 -0500
+Received: from www.tglx.de ([62.245.132.106]:58063 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752100Ab1BRRDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 12:03:44 -0500
+Date: Fri, 18 Feb 2011 18:03:25 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org,
+        Pratheesh Gangadhar <pratheesh@ti.com>,
+        davinci-linux-open-source@linux.davincidsp.com, gregkh@suse.de,
+        amit.chatterjee@ti.com, "Hans J. Koch" <hjk@hansjkoch.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] PRUSS UIO driver support
+In-Reply-To: <201102181731.05644.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.00.1102181802580.2701@localhost6.localdomain6>
+References: <1298041530-26855-1-git-send-email-pratheesh@ti.com> <201102181644.17634.arnd@arndb.de> <alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6> <201102181731.05644.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <b5dceec3591728e7dfa4d9fb2e978780e55420c5.1296818921.git.segoon@openwall.com>
-References: <cover.1296818921.git.segoon@openwall.com>
-	<b5dceec3591728e7dfa4d9fb2e978780e55420c5.1296818921.git.segoon@openwall.com>
-Date: Fri, 18 Feb 2011 20:01:55 +0300
-Message-ID: <AANLkTinrXQsF_MfHZJbACGnw0=iWQ4otdMUL3GhMDNbf@mail.gmail.com>
-Subject: Re: [PATCH 08/20] mfd: ab3100: world-writable debugfs *_priv files
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/2/4 Vasiliy Kulikov <segoon@openwall.com>:
-> Don't allow everybody to change device hardware registers.
+On Fri, 18 Feb 2011, Arnd Bergmann wrote:
 
-Ping.
+> On Friday 18 February 2011, Thomas Gleixner wrote:
+> > On Fri, 18 Feb 2011, Arnd Bergmann wrote:
+> > > On Friday 18 February 2011, Pratheesh Gangadhar wrote:
+> > > > Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
+> > > > +static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
+> > > > +{
+> > > > +   return IRQ_HANDLED;
+> > > > +}
+> > > 
+> > > An empty interrupt handler is rather pointless. I guess you really
+> > > notify user space when the interrupt handler gets called, as this
+> > > is the main point of a UIO driver as far as I understand it.
+> > 
+> > The UIO core code does this for you when the driver handler returns
+> > IRQ_HANDLED
+> 
+> Ah, right.
+> 
+> > but the empty handler raises a different questions:
+> > 
+> > Is the interrupt edge triggerd or how do you avoid an irq storm here?
+> > Usually UIO drivers are requested to mask the interrupt in the device
+> > itself.
+> 
+> If it's edge triggered, it should not advertise IRQF_SHARED, right?
 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  Compile tested only.
->
->  drivers/mfd/ab3100-core.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-> index 4193af5..1707d22 100644
-> --- a/drivers/mfd/ab3100-core.c
-> +++ b/drivers/mfd/ab3100-core.c
-> @@ -613,7 +613,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
->        ab3100_get_priv.ab3100 = ab3100;
->        ab3100_get_priv.mode = false;
->        ab3100_get_reg_file = debugfs_create_file("get_reg",
-> -                               S_IWUGO, ab3100_dir, &ab3100_get_priv,
-> +                               S_IWUSR, ab3100_dir, &ab3100_get_priv,
->                                &ab3100_get_set_reg_fops);
->        if (!ab3100_get_reg_file) {
->                err = -ENOMEM;
-> @@ -623,7 +623,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
->        ab3100_set_priv.ab3100 = ab3100;
->        ab3100_set_priv.mode = true;
->        ab3100_set_reg_file = debugfs_create_file("set_reg",
-> -                               S_IWUGO, ab3100_dir, &ab3100_set_priv,
-> +                               S_IWUSR, ab3100_dir, &ab3100_set_priv,
->                                &ab3100_get_set_reg_fops);
->        if (!ab3100_set_reg_file) {
->                err = -ENOMEM;
-> --
-> 1.7.0.4
->
->
+Nope. And the handler needs a fat comment why this works.
+
+Thanks,
+
+	tglx
