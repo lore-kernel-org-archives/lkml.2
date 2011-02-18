@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab1BRDxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:53:47 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:53720 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab1BRDxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:53:43 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-References: <20110217150224.GA26334@mail.hallyn.com>
-	<20110217162146.1b8e45e0.akpm@linux-foundation.org>
-Date: Thu, 17 Feb 2011 19:53:37 -0800
-In-Reply-To: <20110217162146.1b8e45e0.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Thu, 17 Feb 2011 16:21:46 -0800")
-Message-ID: <m1vd0i6lry.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19r1ZBBUA7PB4ZOJs1WWm/yNx1W+EmSPsQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: userns: targeted capabilities v5
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S1755728Ab1BRDy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:54:26 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:57871 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641Ab1BRDyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 22:54:23 -0500
+Date: Fri, 18 Feb 2011 14:54:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: linux-next: build failure after merge of the tip tree
+Message-Id: <20110218145411.24bf7ad7.sfr@canb.auug.org.au>
+In-Reply-To: <20110218094754.0436a60a.sfr@canb.auug.org.au>
+References: <20110131154259.dca1f7e6.sfr@canb.auug.org.au>
+	<20110217144743.2db26b27.sfr@canb.auug.org.au>
+	<4D5D201A.8090304@suse.cz>
+	<20110217150200.GA32177@sepie.suse.cz>
+	<20110218094754.0436a60a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+--Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, 17 Feb 2011 15:02:24 +0000
-> "Serge E. Hallyn" <serge@hallyn.com> wrote:
+Hi Michal,
+
+On Fri, 18 Feb 2011 09:47:54 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
->> Here is a repost of my previous user namespace patch, ported onto
->> last night's git head.
->> 
->> It fixes several things I was doing wrong in the last (v4)
->> posting, in particular:
->> 
->> 	1. don't set uts_ns->user_ns to current's when !CLONE_NEWUTS
->> 	2. add a ipc_ns->user_ns which owns ipc_ns, and use that to
->> 	   decide CAP_IPC_OWNER
->> 	3. fix logic flaw caused by bad parantheses
->> 	4. allow do_prlimit to current
->> 	5. don't always give root full privs to init_user_ns
->> 
->> The expected course of development for user namespaces is laid out
->> at https://wiki.ubuntu.com/UserNamespace.
->
-> Seems like a nice feature to be developing.
->
-> I worry about the maturity of it all at this stage.  How far along is
-> it *really*?
->
-> Is anyone else working with you on developing and reviewing this work?
+> On Thu, 17 Feb 2011 16:02:00 +0100 Michal Marek <mmarek@suse.cz> wrote:
+> >
+> > > _Maybe_ we could work around it by letting fixdep remove the actual
+> > > source file from the list of dependencies in the .cmd file. The
+> > > dependency on the .c / .S / whatever file is given by the Makefiles, =
+the
+> > > .cmd file is only needed for additional dependencies on headers. Let's
+> > > see what else breaks then ;).
+> >=20
+> > It seems to work for me. Can you try the patch below? It needs to be
+> > applied before merging 9599ec0 to have any effect.
+>=20
+> Thanks, I will apply this as a fix on top of Linus' tree before I merge
+> anything else.  It looks simple enough that Linus may take it as a fix
+> right now.   Better to convince ourselves first, though, right?
 
-I did a lot of the initial design and I have been reviewing as I have
-time.
+That patch fixed the problem for me and has caused no obvious problems.
 
-Andrew at a practical level we have to merge this incrementally.
-Anything much bigger than Serge's current patchset will be too big to
-review.  The first really bit step is making capabilities local to the
-user namespace, and that is what this patchset does along with using
-that localness in some good places.
+Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-Eric
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNXe1jAAoJEDMEi1NhKgbsfkYH+wRmp2/MD0HNeOqXddVSF/yw
+zR6hyaovNE/R1kOv2CtaBKVfNRMP15uI816Z8pJKvBXVRXF/bSd/LvsbppjUf3Aq
+65NDhX4OWxiIFWesHcvBjwAumIO58ZRle2qvjT33y8u7SNrxKKQpWDJkoQ9AGR22
+pJdbtce9MpBEaOugr7sRlJm84zqICsRy7UJLtbUOeIKdLc6Mf4jvz/fK71ZDyUEg
+5rIEaQ7GNwQloTs4RkxKhLax8/B0dCGMcZmbC6cK+RPMuSnEiwYJLxSAcaYgeNj/
++0QJK/zkc2x98t8oaWXMsfPxRWqYI9pWy/mnrX//zBlCJWKR7wTG3YvWP3xjElY=
+=Ky1R
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__18_Feb_2011_14_54_11_+1100_lcTy8DMOXhEwQz=6--
