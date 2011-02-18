@@ -1,36 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab1BRSMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 13:12:22 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47073 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab1BRSMU (ORCPT
+	id S1756220Ab1BRSOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 13:14:50 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:33346
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755679Ab1BRSOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 13:12:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=R9x3pDdhFybTgvRX8FFweGCEmbrqR0s3pU7vpUjQ4543mZvlUj8wcGDhbmAfomT6a3
-         b/Gqvd6bzWyNbPre+klh6aQCcHs2jyuyn1Zl4cPSZgLoyElFWZd/bAg2/HMiwBYQB64h
-         q+fBqjcwS/V27TpSltPVYY86fPyvGc6shVgLI=
+	Fri, 18 Feb 2011 13:14:48 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh95h668h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+From: John Linn <john.linn@xilinx.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, <jamie@jamieiles.com>, <arnd@arndb.de>
+CC: John Linn <john.linn@xilinx.com>
+Subject: [PATCH V4 4/4] ARM: Xilinx: Adding Xilinx platform infrastructure support
+Date: Fri, 18 Feb 2011 11:14:41 -0700
+X-Mailer: git-send-email 1.5.6.6
+In-Reply-To: <1298052881-14591-4-git-send-email-john.linn@xilinx.com>
+References: <1298052881-14591-1-git-send-email-john.linn@xilinx.com>
+ <1298052881-14591-2-git-send-email-john.linn@xilinx.com>
+ <1298052881-14591-3-git-send-email-john.linn@xilinx.com>
+ <1298052881-14591-4-git-send-email-john.linn@xilinx.com>
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Fri, 18 Feb 2011 10:11:58 -0800
-Message-ID: <AANLkTinwPs1mf7n4JYBsOE+SKZYw2f4+bSVLuSZx19x+@mail.gmail.com>
-Subject: Coccinelle - Semantic Patch IRC Channel
-To: cocci@diku.dk
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+Message-ID: <d83e2113-bfe6-48b9-a278-8fe4e9870e23@VA3EHSMHS029.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey guys, first I want to say I'm in love with Cocci. Second I'm
-wondering if there's an IRC channel and if not what about #cocci on
-irc.freenode.net ? FWIW I'm using Cocci to cleanup crap code from the
-staging area of the Linux kernel specifically for ath6kl. I was hoping
-there would also be a wiki to help with this effort, to provide more
-examples, and stuff like that. The existing documentation is great but
-wikis allow for even more rapid evolution of documentation.
+Minimum infrastructure to add the Xilinx machine and allow it to
+be selected in the build.
 
-  Luis
+Signed-off-by: John Linn <john.linn@xilinx.com>
+---
+
+V4
+
+Updated to apply against linux-next branch.
+
+No updates for V3
+
+V2 Changes
+
+Updates based on Russell King's comments	
+	Cleanup of the Kconfig
+	Moved this patch to be last in the patch series
+
+
+ arch/arm/Kconfig    |   14 ++++++++++++++
+ arch/arm/Makefile   |    1 +
+ arch/arm/mm/Kconfig |    2 +-
+ 3 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 08799af..326f1b5 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -880,6 +880,18 @@ config ARCH_VT8500
+ 	select HAVE_PWM
+ 	help
+ 	  Support for VIA/WonderMedia VT8500/WM85xx System-on-Chip.
++
++config ARCH_XILINX
++	bool "Xilinx ARM Cortex A9 Platform"
++	select CPU_V7
++	select GENERIC_TIME
++	select GENERIC_CLOCKEVENTS
++	select CLKDEV_LOOKUP
++	select ARM_GIC
++	select ARM_AMBA
++	help
++	  Support for Xilinx ARM Cortex A9 Platform
++
+ endchoice
+ 
+ #
+@@ -1013,6 +1025,8 @@ source "arch/arm/mach-vt8500/Kconfig"
+ 
+ source "arch/arm/mach-w90x900/Kconfig"
+ 
++source "arch/arm/mach-xilinx/Kconfig"
++
+ # Definitions to make life easier
+ config ARCH_ACORN
+ 	bool
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 9a0f6a3..bb5fa87 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -197,6 +197,7 @@ machine-$(CONFIG_MACH_SPEAR300)		:= spear3xx
+ machine-$(CONFIG_MACH_SPEAR310)		:= spear3xx
+ machine-$(CONFIG_MACH_SPEAR320)		:= spear3xx
+ machine-$(CONFIG_MACH_SPEAR600)		:= spear6xx
++machine-$(CONFIG_ARCH_XILINX)		:= xilinx
+ 
+ # Platform directory name.  This list is sorted alphanumerically
+ # by CONFIG_* macro name.
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 8926638..34fa4af 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -821,7 +821,7 @@ config CACHE_L2X0
+ 	depends on REALVIEW_EB_ARM11MP || MACH_REALVIEW_PB11MP || MACH_REALVIEW_PB1176 || \
+ 		   REALVIEW_EB_A9MP || ARCH_MX35 || ARCH_MX31 || MACH_REALVIEW_PBX || \
+ 		   ARCH_NOMADIK || ARCH_OMAP4 || ARCH_S5PV310 || ARCH_TEGRA || \
+-		   ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_SHMOBILE
++		   ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_SHMOBILE || ARCH_XILINX
+ 	default y
+ 	select OUTER_CACHE
+ 	select OUTER_CACHE_SYNC
+-- 
+1.6.2.1
+
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
