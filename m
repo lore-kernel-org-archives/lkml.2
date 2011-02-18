@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350Ab1BRIPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 03:15:49 -0500
-Received: from symlink.to.noone.org ([85.10.207.172]:53270 "EHLO sym.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756241Ab1BRIPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 03:15:47 -0500
-Date: Fri, 18 Feb 2011 09:15:46 +0100
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Chou <thomas@wytron.com.tw>, nios2-dev@sopc.et.ntust.edu.tw,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [Nios2-dev] [PATHV v2] tty: serial: altera_uart: Add
-	devicetree support
-Message-ID: <20110218081546.GC759@distanz.ch>
-References: <c7a7085602687d2f1b6ac505c030f19bafda04e3.1297245277.git.tklauser@distanz.ch> <1297872732-10207-1-git-send-email-tklauser@distanz.ch> <4D5C86C1.8070404@wytron.com.tw> <20110217074846.GG4076@distanz.ch> <4D5DCB46.9090506@wytron.com.tw> <AANLkTinDD71YQbYovBSwU8YSCCZ56wQf35X97WFoY6R9@mail.gmail.com>
+	id S1756594Ab1BRIRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 03:17:04 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58509 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608Ab1BRIRC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 03:17:02 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Bugme-new] [Bug 29172] New: releasing loop on top of other loop leads to deadlock
+Date: Fri, 18 Feb 2011 09:16:42 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        linux-kernel@vger.kernel.org
+References: <bug-29172-10286@https.bugzilla.kernel.org/> <20110217131244.bb64711a.akpm@linux-foundation.org>
+In-Reply-To: <20110217131244.bb64711a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinDD71YQbYovBSwU8YSCCZ56wQf35X97WFoY6R9@mail.gmail.com>
-X-Editor: Vi IMproved 7.1
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102180916.42494.arnd@arndb.de>
+X-Provags-ID: V02:K0:HgBPZ1N0hc4q2ns73cjMnpfkX1H9TRxREMfLvP+rU9p
+ c/qEG23RzEOe4V7WZnQv/H7U7VsapfBOF3dR2BdQUblcNscHkD
+ 7xXw4DeAlAY4RjQO9xbl79B5zFgOdAuUMhmmzCWWtA5NrWykNk
+ sxyRbh13A9b+R5l6XKtAMIzIAK5Z4TmeD72/H0l7DieKUq0tBg
+ lOHxYRWek//gMha3yA9JA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-02-18 at 09:08:53 +0100, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Thu, Feb 17, 2011 at 6:28 PM, Thomas Chou <thomas@wytron.com.tw> wrote:
-> > On 02/17/2011 03:48 PM, Tobias Klauser wrote:
-> >>>>
-> >>>> +       ret = altera_uart_get_of_uartclk(pdev, port);
-> >>>> +       if (ret&&   platp)
-> >>>> +               port->uartclk = platp->uartclk;
-> >>>> +       else if (ret)
-> >>>> +               return ret;
-> >>>> +
-> >>>
-> >>> Better reverse the priority, with platform data checked first.
-> >>>
-> >>>        if (platp)
-> >>>                port->uartclk = platp->uartclk;
-> >>>        else {
-> >>>                ret = altera_uart_get_of_uartclk(pdev, port);
-> >>>                if (ret)
-> >>>                        return ret;
-> >>>        }
-> >>
-> >> Do you have a specific reasoning for this? I thought it might make sense
-> >> to do it in the same order as with the resources above, but I have no
-> >> problem changing it to the way you suggest.
-> >
-> > Not quite sure. But I see some drivers follow this order, and I just
-> > followed, too.
+On Thursday 17 February 2011, Andrew Morton wrote:
+> On Tue, 15 Feb 2011 10:00:57 GMT
+> bugzilla-daemon@bugzilla.kernel.org wrote:
 > 
-> The reason to check for platform_data first is that if a device has
-> *both* platform data and a device node pointer, then more than likely
-> the platform_data is indented to override the device node data.
+> > https://bugzilla.kernel.org/show_bug.cgi?id=29172
+> 
+> post-2.6.37 deadlock in loop.  I'd agree with the reporter that Arnd might be involved ;)
 
-Thanks Grant and Thomas for the explanation. I was just wondering. I'll
-send an updated patch including the changes suggested by Thomas.
+Yes, sounds right, we should fix it and get the fix into stable.
 
-Tobias
+This comes from an automated conversion that was done under the assumption that
+it cannot break from making the locking stricter. A related bug happened in the
+nbd driver, and I think the solution here should also be to remove the new
+mutex. Upon closer review of the code, I cannot see any reason why it would
+actually be needed: there is no global data to be protected and all device
+specific data is protected by another mutex.
+
+	Arnd
