@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab1BROsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 09:48:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48430 "EHLO mx1.redhat.com"
+	id S1755330Ab1BROtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 09:49:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2191 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab1BROsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 09:48:43 -0500
-Message-ID: <4D5E86DF.8070805@redhat.com>
-Date: Fri, 18 Feb 2011 09:49:03 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754047Ab1BROtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 09:49:36 -0500
+Date: Fri, 18 Feb 2011 15:40:19 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg Kurz <gkurz@fr.ibm.com>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, akpm@linux-foundation.org, xemul@openvz.org
+Subject: Re: [PATCH 2/2] pidns: Support unsharing the pid namespace.
+Message-ID: <20110218144019.GA29600@redhat.com>
+References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr> <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr> <20110215190118.GA16707@redhat.com> <4D5C6219.8060207@free.fr> <20110217202959.GA16076@redhat.com> <4D5DA2CF.5010200@fr.ibm.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 3/3] mm: Simplify anon_vma refcounts
-References: <20110217161948.045410404@chello.nl>	 <20110217162124.457572646@chello.nl>	 <AANLkTimj1d6QpzuNZ6NJvLDVvvC++mPodggFaBziU8Bj@mail.gmail.com> <1298036683.5226.765.camel@laptop>
-In-Reply-To: <1298036683.5226.765.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5DA2CF.5010200@fr.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2011 08:44 AM, Peter Zijlstra wrote:
-> Subject: mm: Simplify anon_vma refcounts
-> From: Peter Zijlstra<a.p.zijlstra@chello.nl>
-> Date: Fri, 26 Nov 2010 15:38:49 +0100
+On 02/17, Greg Kurz wrote:
 >
-> This patch changes the anon_vma refcount to be 0 when the object is
-> free. It does this by adding 1 ref to being in use in the anon_vma
-> structure (iow. the anon_vma->head list is not empty).
+> On 02/17/2011 09:29 PM, Oleg Nesterov wrote:
+>> On 02/17, Daniel Lezcano wrote:
+>>>
+>>> On 02/15/2011 08:01 PM, Oleg Nesterov wrote:
+>>>>
+>>>> I have to admit, I can't say I like this very much. OK, if we need
+>>>> this, can't we just put something into, say, signal->flags so that
+>>>> copy_process can check and create the new namespace.
+>>>>
+>>>> Also. I remember, I already saw something like this and google found
+>>>> my questions. I didn't actually read the new version, perhaps my
+>>>> concerns were already answered...
+>>>>
+>>>> 	But what if the task T does unshare(CLONE_NEWPID) and then, say,
+>>>> 	pthread_create() ? Unless I missed something, the new thread won't
+>>>> 	be able to see T ?
+>>>
+>>> Right. Is it really a problem ? I mean it is a weird use case where we
+>>> fall in a weird situation.
+>>
+>> But this is really weird! How it is possible that the parent can't see
+>> its own child? No matter which thread did fork(), the new process is
 >
-> This allows a simpler release scheme without having to check both the
-> refcount and the list as well as avoids taking a ref for each entry
-> on the list.
->
-> Reviewed-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Hugh Dickins<hughd@google.com>
-> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> Hmmm... I guess you mean the opposite. The way pid namespaces are
+> nested, parents always see their children.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Well, yes. But it can't see this child using the same pid number,
+unless I missed something.
+
+> But indeed, the child thread
+> can't see its group leader and that's kind of unusual.
+
+This too. And to me this is more "kind of buggy". But yes, I am
+biased because I dislike this approach in general ;)
+
+And, once again, this patch also lacks the necessary s/nsproxy/atcive_pid_ns/
+changes.
+
+Anyway. It is very possible I missed something. As I said, I didn't
+actually read this version and I forgot all I knew about this change
+before.
+
+But afaics this patch is buggy in its current form.
+
+Oleg.
+
