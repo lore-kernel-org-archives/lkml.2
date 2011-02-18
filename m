@@ -1,88 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab1BRIgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 03:36:35 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58913 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab1BRIgd (ORCPT
+	id S1757393Ab1BRIhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 03:37:12 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:59192 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab1BRIhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 03:36:33 -0500
-Message-ID: <4D5E2F86.1020400@pengutronix.de>
-Date: Fri, 18 Feb 2011 09:36:22 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 18 Feb 2011 03:37:07 -0500
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH v2 2/2] r8169: Support RTL8105E
+Date: Fri, 18 Feb 2011 16:34:45 +0800
+X-BOX-Message-Id: p1I8axQs005217
+Message-ID: <1298018085-1370-2-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1298018085-1370-1-git-send-email-hayeswang@realtek.com>
+References: <1298018085-1370-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: Wolfgang Grandegger <wg@grandegger.com>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        CAN NETWORK DRIVERS <netdev@vger.kernel.org>, nsekhar@ti.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        CAN NETWORK DRIVERS <socketcan-core@lists.berlios.de>,
-        m-watkins@ti.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>	<1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>	<20110211152026.GC373@e-circ.dyndns.org>	<32A5399EB727427C98185089E5DBFA65@subhasishg>	<4D5E2570.10108@grandegger.com> <184FA07B783D4F5FAAC09D5C11737A3F@subhasishg>
-In-Reply-To: <184FA07B783D4F5FAAC09D5C11737A3F@subhasishg>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig29289A3F93AD7CE69E97EE56"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig29289A3F93AD7CE69E97EE56
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Support the new chips for RTL8105E
 
-On 02/18/2011 09:15 AM, Subhasish Ghosh wrote:
->> On 02/18/2011 08:07 AM, Subhasish Ghosh wrote:
->>> --------------------------------------------------
->>> From: "Kurt Van Dijck" <kurt.van.dijck@eia.be>
->>
->> ...
->>>>> + /* register interrupt handler */
->>>>> + err =3D request_irq(priv->trx_irq, &omapl_rx_can_intr, IRQF_SHARE=
-D,
->>>>> +   "pru_can_irq", ndev);
->>>> you're doing a lot of work _in_ the irq handler. Maybe threaded irq?=
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/r8169.c |   92 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 90 insertions(+), 2 deletions(-)
 
->>>>
->>> SG -Ok, will do
->>
->> No, please use NAPI instead.
->=20
-> We are using h/w filters, so the number of interrupts coming into the
-> processor are not hogging it.
-> I feel that we may not require an interrupt mitigation.
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 9eaf78f..ffe6b00 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -36,6 +36,7 @@
+ 
+ #define FIRMWARE_8168D_1	"rtl_nic/rtl8168d-1.fw"
+ #define FIRMWARE_8168D_2	"rtl_nic/rtl8168d-2.fw"
++#define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
+ 
+ #ifdef RTL8169_DEBUG
+ #define assert(expr) \
+@@ -123,6 +124,8 @@ enum mac_version {
+ 	RTL_GIGA_MAC_VER_26 = 0x1a, // 8168D
+ 	RTL_GIGA_MAC_VER_27 = 0x1b, // 8168DP
+ 	RTL_GIGA_MAC_VER_28 = 0x1c, // 8168DP
++	RTL_GIGA_MAC_VER_29 = 0x1d, // 8105E
++	RTL_GIGA_MAC_VER_30 = 0x1e, // 8105E
+ };
+ 
+ #define _R(NAME,MAC,MASK) \
+@@ -160,7 +163,9 @@ static const struct {
+ 	_R("RTL8168d/8111d",	RTL_GIGA_MAC_VER_25, 0xff7e1880), // PCI-E
+ 	_R("RTL8168d/8111d",	RTL_GIGA_MAC_VER_26, 0xff7e1880), // PCI-E
+ 	_R("RTL8168dp/8111dp",	RTL_GIGA_MAC_VER_27, 0xff7e1880), // PCI-E
+-	_R("RTL8168dp/8111dp",	RTL_GIGA_MAC_VER_28, 0xff7e1880)  // PCI-E
++	_R("RTL8168dp/8111dp",	RTL_GIGA_MAC_VER_28, 0xff7e1880), // PCI-E
++	_R("RTL8105e",		RTL_GIGA_MAC_VER_29, 0xff7e1880), // PCI-E
++	_R("RTL8105e",		RTL_GIGA_MAC_VER_30, 0xff7e1880)  // PCI-E
+ };
+ #undef _R
+ 
+@@ -267,6 +272,12 @@ enum rtl8168_8101_registers {
+ #define	EPHYAR_REG_MASK			0x1f
+ #define	EPHYAR_REG_SHIFT		16
+ #define	EPHYAR_DATA_MASK		0xffff
++	DLLPR			= 0xd0,
++#define	PM_SWITCH			(1 << 6)
++	TWSI			= 0xd2,
++	MCU			= 0xd3,
++#define	EN_NDP				(1 << 3)
++#define	EN_OOB_RESET			(1 << 2)
+ 	DBG_REG			= 0xd1,
+ #define	FIX_NAK_1			(1 << 4)
+ #define	FIX_NAK_2			(1 << 3)
+@@ -568,6 +579,7 @@ MODULE_LICENSE("GPL");
+ MODULE_VERSION(RTL8169_VERSION);
+ MODULE_FIRMWARE(FIRMWARE_8168D_1);
+ MODULE_FIRMWARE(FIRMWARE_8168D_2);
++MODULE_FIRMWARE(FIRMWARE_8105E_1);
+ 
+ static int rtl8169_open(struct net_device *dev);
+ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
+@@ -1143,7 +1155,9 @@ static int rtl8169_set_speed_xmii(struct net_device *dev,
+ 		    (tp->mac_version != RTL_GIGA_MAC_VER_13) &&
+ 		    (tp->mac_version != RTL_GIGA_MAC_VER_14) &&
+ 		    (tp->mac_version != RTL_GIGA_MAC_VER_15) &&
+-		    (tp->mac_version != RTL_GIGA_MAC_VER_16)) {
++		    (tp->mac_version != RTL_GIGA_MAC_VER_16) &&
++		    (tp->mac_version != RTL_GIGA_MAC_VER_29) &&
++		    (tp->mac_version != RTL_GIGA_MAC_VER_30)) {
+ 			giga_ctrl |= ADVERTISE_1000FULL | ADVERTISE_1000HALF;
+ 		} else {
+ 			netif_info(tp, link, dev,
+@@ -1559,6 +1573,9 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
+ 		{ 0x7c800000, 0x30000000,	RTL_GIGA_MAC_VER_11 },
+ 
+ 		/* 8101 family. */
++		{ 0x7cf00000, 0x40a00000,	RTL_GIGA_MAC_VER_30 },
++		{ 0x7cf00000, 0x40900000,	RTL_GIGA_MAC_VER_29 },
++		{ 0x7c800000, 0x40800000,	RTL_GIGA_MAC_VER_30 },
+ 		{ 0x7cf00000, 0x34a00000,	RTL_GIGA_MAC_VER_09 },
+ 		{ 0x7cf00000, 0x24a00000,	RTL_GIGA_MAC_VER_09 },
+ 		{ 0x7cf00000, 0x34900000,	RTL_GIGA_MAC_VER_08 },
+@@ -2435,6 +2452,33 @@ static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+ }
+ 
++static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
++{
++	static const struct phy_reg phy_reg_init[] = {
++		{0x1f, 0x0005},
++		{0x1a, 0x0000},
++		{0x1f, 0x0000},
++
++		{0x1f, 0x0004},
++		{0x1c, 0x0000},
++		{0x1f, 0x0000},
++
++		{0x1f, 0x0001},
++		{0x15, 0x7701},
++		{0x1f, 0x0000}
++	};
++
++	/* Diable ALDPS before ram code */
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x18, 0x0310);
++	msleep(100);
++
++	if (rtl_apply_firmware(tp, FIRMWARE_8105E_1) < 0)
++		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
++
++	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
++}
++
+ static void rtl_hw_phy_config(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+@@ -2502,6 +2546,10 @@ static void rtl_hw_phy_config(struct net_device *dev)
+ 	case RTL_GIGA_MAC_VER_28:
+ 		rtl8168d_4_hw_phy_config(tp);
+ 		break;
++	case RTL_GIGA_MAC_VER_29:
++	case RTL_GIGA_MAC_VER_30:
++		rtl8105e_hw_phy_config(tp);
++		break;
+ 
+ 	default:
+ 		break;
+@@ -2940,6 +2988,8 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_09:
+ 	case RTL_GIGA_MAC_VER_10:
+ 	case RTL_GIGA_MAC_VER_16:
++	case RTL_GIGA_MAC_VER_29:
++	case RTL_GIGA_MAC_VER_30:
+ 		ops->down	= r810x_pll_power_down;
+ 		ops->up		= r810x_pll_power_up;
+ 		break;
+@@ -3895,6 +3945,37 @@ static void rtl_hw_start_8102e_3(void __iomem *ioaddr, struct pci_dev *pdev)
+ 	rtl_ephy_write(ioaddr, 0x03, 0xc2f9);
+ }
+ 
++static void rtl_hw_start_8105e_1(void __iomem *ioaddr, struct pci_dev *pdev)
++{
++	static const struct ephy_info e_info_8105e_1[] = {
++		{ 0x07,	0, 0x4000 },
++		{ 0x19,	0, 0x0200 },
++		{ 0x19,	0, 0x0020 },
++		{ 0x1e,	0, 0x2000 },
++		{ 0x03,	0, 0x0001 },
++		{ 0x19,	0, 0x0100 },
++		{ 0x19,	0, 0x0004 },
++		{ 0x0a,	0, 0x0020 }
++	};
++
++	/* Force LAN exit from ASPM if Rx/Tx are not idel */
++	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
++
++	/* disable Early Tally Counter */
++	RTL_W32(FuncEvent, RTL_R32(FuncEvent) & ~0x010000);
++
++	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
++	RTL_W8(DLLPR, RTL_R8(DLLPR) | PM_SWITCH);
++
++	rtl_ephy_init(ioaddr, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
++}
++
++static void rtl_hw_start_8105e_2(void __iomem *ioaddr, struct pci_dev *pdev)
++{
++	rtl_hw_start_8105e_1(ioaddr, pdev);
++	rtl_ephy_write(ioaddr, 0x1e, rtl_ephy_read(ioaddr, 0x1e) | 0x8000);
++}
++
+ static void rtl_hw_start_8101(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+@@ -3925,6 +4006,13 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 	case RTL_GIGA_MAC_VER_09:
+ 		rtl_hw_start_8102e_2(ioaddr, pdev);
+ 		break;
++
++	case RTL_GIGA_MAC_VER_29:
++		rtl_hw_start_8105e_1(ioaddr, pdev);
++		break;
++	case RTL_GIGA_MAC_VER_30:
++		rtl_hw_start_8105e_2(ioaddr, pdev);
++		break;
+ 	}
+ 
+ 	RTL_W8(Cfg9346, Cfg9346_Lock);
+-- 
+1.7.3.2
 
-As davem stated the other day, all new drivers should use NAPI.
-
-regards, Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig29289A3F93AD7CE69E97EE56
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk1eL4kACgkQjTAFq1RaXHOVkQCeK+Zl73Wk6m1Xb2aOmDaPynho
-/a0An230G7HFRSAi0jqrt47PEQyCNbGd
-=n3+U
------END PGP SIGNATURE-----
-
---------------enig29289A3F93AD7CE69E97EE56--
