@@ -1,169 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab1BRBw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 20:52:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46181 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab1BRBww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 20:52:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,184,1297065600"; 
-   d="scan'208";a="709283278"
-Date: Fri, 18 Feb 2011 09:52:11 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Jan Kara <jack@suse.cz>
-CC: "op.q.liu@gmail.com" <op.q.liu@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>
-Subject: Re: ext2 write performance regression from 2.6.32
-Message-ID: <20110218095211.556c22ed@feng-i7>
-In-Reply-To: <20110217103214.GA4947@quack.suse.cz>
-References: <AANLkTinES_gU=MxbSnidorsKDsMnAwzHVx+yntOLCf=f@mail.gmail.com>
-	<AANLkTikvpyTPVnP1cxC4rSLARO3thpscyhmB4=BpFW-G@mail.gmail.com>
-	<20110215144641.05318556@feng-i7>
-	<20110215111126.GD17313@quack.suse.cz>
-	<AANLkTikGdud4FX0TcC-Sf_-_V-i8doZ73m63B=JA4kWp@mail.gmail.com>
-	<20110216174031.183180c4@feng-i7>
-	<20110216143530.GA5592@quack.suse.cz>
-	<20110217140846.2196b756@feng-i7>
-	<20110217103214.GA4947@quack.suse.cz>
-Organization: intel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1754419Ab1BRB5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 20:57:23 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:48608 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab1BRB5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 20:57:21 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
+        dhowells@redhat.com
+References: <20110217150224.GA26334@mail.hallyn.com>
+	<20110217150342.GF26395@mail.hallyn.com>
+Date: Thu, 17 Feb 2011 17:57:15 -0800
+In-Reply-To: <20110217150342.GF26395@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Thu, 17 Feb 2011 15:03:42 +0000")
+Message-ID: <m1r5b6ayv8.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/ME1R6Hdj55YbpKwRiXoJ3Iu5xeH1zgtM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 6/9] user namespaces: convert all capable checks in kernel/sys.c
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-On Thu, 17 Feb 2011 18:32:14 +0800
-Jan Kara <jack@suse.cz> wrote:
+> This allows setuid/setgid in containers.  It also fixes some
+> corner cases where kernel logic foregoes capability checks when
+> uids are equivalent.  The latter will need to be done throughout
+> the whole kernel.
 
-> On Thu 17-02-11 14:08:46, Feng Tang wrote:
-> > On Wed, 16 Feb 2011 22:35:30 +0800
-> > Jan Kara <jack@suse.cz> wrote:
-> > > On Wed 16-02-11 17:40:31, Feng Tang wrote:
-> > > > Hi,
-> > > > 
-> > > > I made out a debug patch which try to delay the pure FS metadata
-> > > > writeback (maxim 30 seconds to match current writeback expire
-> > > > time). It works for me on 2.6.32, and the dd performance is
-> > > > restored.
-> > > > 
-> > > > Please help to review it, thanks!
-> > > > 
-> > > > btw, I've sent out the block dump info requested by Jan Kara,
-> > > > but didn't see it on LKML, so attached them again.
-> > > > 
-> > > > - Feng
-> > > > 
-> > > > From c35548c7d0c3a334d24c26adab277ef62b9825db Mon Sep 17
-> > > > 00:00:00 2001 From: Feng Tang <feng.tang@intel.com>
-> > > > Date: Wed, 16 Feb 2011 17:27:36 +0800
-> > > > Subject: [PATCH] writeback: delay the file system metadata
-> > > > writeback in 30 seconds
-> > > > 
-> > > > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > > > ---
-> > > >  fs/fs-writeback.c |   10 ++++++++++
-> > > >  1 files changed, 10 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> > > > index 9d5360c..418fd9e 100644
-> > > > --- a/fs/fs-writeback.c
-> > > > +++ b/fs/fs-writeback.c
-> > > > @@ -635,6 +635,16 @@ static void writeback_inodes_wb(struct
-> > > > bdi_writeback *wb, continue;
-> > > >  		}
-> > > >  
-> > > > +		if ((wbc->sync_mode != WB_SYNC_ALL)
-> > > > +			&& !inode->i_ino
-> > > > +			&& !strcmp(inode->i_sb->s_id, "bdev"))
-> > > > {
-> > > > +			if (inode->dirtied_when + 30 * HZ >
-> > > > jiffies) {
-> > > > +				list_move(&inode->i_list,
-> > > > &wb->b_dirty);
-> > > > +				continue;
-> > > > +			} 
-> > > > +		}
-> > > > +
-> > > > +
-> > >   Doh, this is a crude hack! Nice for debugging but no way to get
-> > > this into the kernel. We have to find a cleaner way to speedup the
-> > > writeback...
-> > 
-> > I just tested you 5 writeback patches, and they don't fix the
-> > problem, the FS metadata are still periodically written back every
-> > one or two seconds. Attached the block dump on 2.6.37 + your
-> > patches.
-> Yes, so I didn't expect the writeout of metadata will disappear, just
-> the IO pattern should be better. So you didn't observe any change in
-> throughput with my patches vs without them?
+Except for the extra printk in sethostname this looks good.
 
-With your patches, it did bring some improvements, like from 7 MB/s to
-7.7 MB/s, but not restore back to 10 MB/s. Kyle Liu, who is the original
-reporter of this issue also see similar results for your patch.
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Anyway, I really hope the IO-less patch either from you or Fengguang
-can be merged, which will significantly improve the writeback.
-
-> 
-> Looking at the block trace, we write about 8 MB of data before doing
-> metadata writeback. That's about the best what I'd expect with current
-> writeback settings so things worked as expected.
-
-Yes, it is
-
-> 
-> Hmm, but probably flash card is simple and does not have any
-> Flash Translation Layer and so each write of one metadata block costs
-> us as a rewrite of the whole erase block which may well be in a MB
-> range? That would explain it. Raising MAX_WRITEBACK_PAGES would help
-> here but given the throughput of the flash card, the fairness of
-> writeback when there are more inodes to write would be already rather
-> bad so that's not a good solution either.
+>
+> Changelog:
+> 	Jan 11: Use nsown_capable() as suggested by Bastian Blank.
+> 	Jan 11: Fix logic errors in uid checks pointed out by Bastian.
+> 	Feb 15: allow prlimit to current (was regression in previous version)
+>
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> ---
+>  kernel/sys.c |   74 ++++++++++++++++++++++++++++++++++++---------------------
+>  1 files changed, 47 insertions(+), 27 deletions(-)
+>
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 7a1bbad..075370d 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -118,17 +118,29 @@ EXPORT_SYMBOL(cad_pid);
 >  
-> > And ye, I agree my patch is kinds of hacky, but its main point is
-> > to delay the file system metadata writeback (no longer than current
-> > writeback expiration limit: 30 seconds) to make the normal data
-> > pages writeback as sequential as possible. Could we go on tuning it
-> > in this direction?
-> Apart from my aesthetical feelings, the patch brings also some
-> technical difficulties. For example if lots of dirtying happens
-> against device inode (metadata heavy workload), we need to push out
-> dirty pages from the device inode to clean dirty memory. Otherwise
-> the processes would just stall in balance_dirty_pages() for 30 s
-> waiting for pages to get cleaned. Another issue is that under heavier
-> load, the inode will get redirtied while you are writing metadata.
-> Thus i_dirtied_when need not change.  Finally, if the load is not so
-> trivial like your single dd write, but there happens also some other
-> activity in the filesystem (like syslog writing to the device once in
-> a while or so), then your large dd write will be mixed with small
-> writes to other files anyway and thus performance will degrade.
-> 
-> That being said I don't see an easy solution to your problem. The
-> fact that 2.6.30 didn't write metadata was more a bug than a feature
-> but happened to work good for your flash card. A solution that comes
-> to my mind is that we could have a "write chunk size" parameter in
-> each BDI (it would make sense not only for flash devices but also for
-> RAID) and writeback would be aware that written amount is always
-> rounded up to "write chunk size". This ignores filesystem
-> fragmentation but that might be dealt with. And if we are doing well
-> with cleaning pages, we may skip writes that have small
-> cleaned_pages / write_chunk_size ratio. But we'd have to be careful
-> not to delay such "inprofitable" writes for too long. So it's not so
-> easy to implement this.
-> 
+>  void (*pm_power_off_prepare)(void);
+>  
+> +/* called with rcu_read_lock, creds are safe */
+> +static inline int set_one_prio_perm(struct task_struct *p)
+> +{
+> +	const struct cred *cred = current_cred(), *pcred = __task_cred(p);
+> +
+> +	if (pcred->user->user_ns == cred->user->user_ns &&
+> +	    (pcred->uid  == cred->euid ||
+> +	     pcred->euid == cred->euid))
+> +		return 1;
+> +	if (ns_capable(pcred->user->user_ns, CAP_SYS_NICE))
+> +		return 1;
+> +	return 0;
+> +}
+> +
+>  /*
+>   * set the priority of a task
+>   * - the caller must hold the RCU read lock
+>   */
+>  static int set_one_prio(struct task_struct *p, int niceval, int error)
+>  {
+> -	const struct cred *cred = current_cred(), *pcred = __task_cred(p);
+>  	int no_nice;
+>  
+> -	if (pcred->uid  != cred->euid &&
+> -	    pcred->euid != cred->euid && !capable(CAP_SYS_NICE)) {
+> +	if (!set_one_prio_perm(p)) {
+>  		error = -EPERM;
+>  		goto out;
+>  	}
+> @@ -502,7 +514,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
+>  	if (rgid != (gid_t) -1) {
+>  		if (old->gid == rgid ||
+>  		    old->egid == rgid ||
+> -		    capable(CAP_SETGID))
+> +		    nsown_capable(CAP_SETGID))
+>  			new->gid = rgid;
+>  		else
+>  			goto error;
+> @@ -511,7 +523,7 @@ SYSCALL_DEFINE2(setregid, gid_t, rgid, gid_t, egid)
+>  		if (old->gid == egid ||
+>  		    old->egid == egid ||
+>  		    old->sgid == egid ||
+> -		    capable(CAP_SETGID))
+> +		    nsown_capable(CAP_SETGID))
+>  			new->egid = egid;
+>  		else
+>  			goto error;
+> @@ -546,7 +558,7 @@ SYSCALL_DEFINE1(setgid, gid_t, gid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (capable(CAP_SETGID))
+> +	if (nsown_capable(CAP_SETGID))
+>  		new->gid = new->egid = new->sgid = new->fsgid = gid;
+>  	else if (gid == old->gid || gid == old->sgid)
+>  		new->egid = new->fsgid = gid;
+> @@ -613,7 +625,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
+>  		new->uid = ruid;
+>  		if (old->uid != ruid &&
+>  		    old->euid != ruid &&
+> -		    !capable(CAP_SETUID))
+> +		    !nsown_capable(CAP_SETUID))
+>  			goto error;
+>  	}
+>  
+> @@ -622,7 +634,7 @@ SYSCALL_DEFINE2(setreuid, uid_t, ruid, uid_t, euid)
+>  		if (old->uid != euid &&
+>  		    old->euid != euid &&
+>  		    old->suid != euid &&
+> -		    !capable(CAP_SETUID))
+> +		    !nsown_capable(CAP_SETUID))
+>  			goto error;
+>  	}
+>  
+> @@ -670,7 +682,7 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (capable(CAP_SETUID)) {
+> +	if (nsown_capable(CAP_SETUID)) {
+>  		new->suid = new->uid = uid;
+>  		if (uid != old->uid) {
+>  			retval = set_user(new);
+> @@ -712,7 +724,7 @@ SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (!capable(CAP_SETUID)) {
+> +	if (!nsown_capable(CAP_SETUID)) {
+>  		if (ruid != (uid_t) -1 && ruid != old->uid &&
+>  		    ruid != old->euid  && ruid != old->suid)
+>  			goto error;
+> @@ -776,7 +788,7 @@ SYSCALL_DEFINE3(setresgid, gid_t, rgid, gid_t, egid, gid_t, sgid)
+>  	old = current_cred();
+>  
+>  	retval = -EPERM;
+> -	if (!capable(CAP_SETGID)) {
+> +	if (!nsown_capable(CAP_SETGID)) {
+>  		if (rgid != (gid_t) -1 && rgid != old->gid &&
+>  		    rgid != old->egid  && rgid != old->sgid)
+>  			goto error;
+> @@ -836,7 +848,7 @@ SYSCALL_DEFINE1(setfsuid, uid_t, uid)
+>  
+>  	if (uid == old->uid  || uid == old->euid  ||
+>  	    uid == old->suid || uid == old->fsuid ||
+> -	    capable(CAP_SETUID)) {
+> +	    nsown_capable(CAP_SETUID)) {
+>  		if (uid != old_fsuid) {
+>  			new->fsuid = uid;
+>  			if (security_task_fix_setuid(new, old, LSM_SETID_FS) == 0)
+> @@ -869,7 +881,7 @@ SYSCALL_DEFINE1(setfsgid, gid_t, gid)
+>  
+>  	if (gid == old->gid  || gid == old->egid  ||
+>  	    gid == old->sgid || gid == old->fsgid ||
+> -	    capable(CAP_SETGID)) {
+> +	    nsown_capable(CAP_SETGID)) {
+>  		if (gid != old_fsgid) {
+>  			new->fsgid = gid;
+>  			goto change_okay;
+> @@ -1177,8 +1189,11 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
+>  	int errno;
+>  	char tmp[__NEW_UTS_LEN];
+>  
+> -	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
+> +	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN)) {
+> +		printk(KERN_NOTICE "%s: did not have CAP_SYS_ADMIN\n", __func__);
+>  		return -EPERM;
+> +	}
+> +	printk(KERN_NOTICE "%s: did have CAP_SYS_ADMIN\n", __func__);
 
-Thanks for the detailed analysis, that patch can't handle heavy metadata
-dirtier case. I'll try to do more check
+Ouch!  This new print statement could be really annoying if an
+unprivileged user calls sethostname.  Could you remove it?
 
-Thanks,
-Feng
-
-> 									Honza
+>  	if (len < 0 || len > __NEW_UTS_LEN)
+>  		return -EINVAL;
+>  	down_write(&uts_sem);
+> @@ -1226,7 +1241,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
+>  	int errno;
+>  	char tmp[__NEW_UTS_LEN];
+>  
+> -	if (!capable(CAP_SYS_ADMIN))
+> +	if (!ns_capable(current->nsproxy->uts_ns->user_ns, CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  	if (len < 0 || len > __NEW_UTS_LEN)
+>  		return -EINVAL;
+> @@ -1341,6 +1356,8 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
+>  	rlim = tsk->signal->rlim + resource;
+>  	task_lock(tsk->group_leader);
+>  	if (new_rlim) {
+> +		/* Keep the capable check against init_user_ns until
+> +		   cgroups can contain all limits */
+>  		if (new_rlim->rlim_max > rlim->rlim_max &&
+>  				!capable(CAP_SYS_RESOURCE))
+>  			retval = -EPERM;
+> @@ -1384,19 +1401,22 @@ static int check_prlimit_permission(struct task_struct *task)
+>  {
+>  	const struct cred *cred = current_cred(), *tcred;
+>  
+> -	tcred = __task_cred(task);
+> -	if (current != task &&
+> -	    (cred->uid != tcred->euid ||
+> -	     cred->uid != tcred->suid ||
+> -	     cred->uid != tcred->uid  ||
+> -	     cred->gid != tcred->egid ||
+> -	     cred->gid != tcred->sgid ||
+> -	     cred->gid != tcred->gid) &&
+> -	     !capable(CAP_SYS_RESOURCE)) {
+> -		return -EPERM;
+> -	}
+> +	if (current == task)
+> +		return 0;
+>  
+> -	return 0;
+> +	tcred = __task_cred(task);
+> +	if (cred->user->user_ns == tcred->user->user_ns &&
+> +	    (cred->uid == tcred->euid &&
+> +	     cred->uid == tcred->suid &&
+> +	     cred->uid == tcred->uid  &&
+> +	     cred->gid == tcred->egid &&
+> +	     cred->gid == tcred->sgid &&
+> +	     cred->gid == tcred->gid))
+> +		return 0;
+> +	if (ns_capable(tcred->user->user_ns, CAP_SYS_RESOURCE))
+> +		return 0;
+> +
+> +	return -EPERM;
+>  }
+>  
+>  SYSCALL_DEFINE4(prlimit64, pid_t, pid, unsigned int, resource,
