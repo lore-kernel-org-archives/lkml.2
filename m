@@ -1,80 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab1BRXDD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 18:03:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:44181 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab1BRXC6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 18:02:58 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=JGpTz_e83PYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=eAjd9rQQabvo_yJTZfIA:9 a=uPV0y0LCg7IuzHhBEe8wCPoxQt0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
- for x86_64 right now)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <4D5EF67F.20007@zytor.com>
-References: <4D5D1672.6070206@hitachi.com>
-	 <1297948703.23343.907.camel@gandalf.stny.rr.com>
-	 <4D5D4013.4070602@hitachi.com>
-	 <1297957591.23343.921.camel@gandalf.stny.rr.com>
-	 <4D5D47C0.9020206@hitachi.com>
-	 <1297973501.23343.953.camel@gandalf.stny.rr.com>
-	 <4D5E5BCF.1040509@hitachi.com>
-	 <1298041659.23343.956.camel@gandalf.stny.rr.com>
-	 <20110218151954.GA27834@Krystal>
-	 <D58A856745AB5A47B1448181D1A8BBFA07673BC266@EUSAACMS0701.eamcs.ericsson.se>
-	 <20110218223902.GR5818@one.firstfloor.org>  <4D5EF67F.20007@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 18 Feb 2011 18:02:54 -0500
-Message-ID: <1298070174.23343.987.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758722Ab1BRXSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 18:18:03 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:55082 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758377Ab1BRXSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 18:18:01 -0500
+Date: Fri, 18 Feb 2011 23:17:33 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v5 4/4] add profile information for invalidated page
+Message-ID: <20110218231732.GC13246@csn.ul.ie>
+References: <cover.1297940291.git.minchan.kim@gmail.com> <7563767d6b6e841a8ac5f8315ee166e0f039723c.1297940291.git.minchan.kim@gmail.com> <20110218165827.GB13246@csn.ul.ie> <AANLkTikom2dZaE4v2fNBaRV+OKT+0ZF3ZcEnvkRH0oJW@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikom2dZaE4v2fNBaRV+OKT+0ZF3ZcEnvkRH0oJW@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-18 at 14:45 -0800, H. Peter Anvin wrote:
+On Sat, Feb 19, 2011 at 07:07:01AM +0900, Minchan Kim wrote:
+> Hi Mel,
+> 
+> On Sat, Feb 19, 2011 at 1:58 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> > On Fri, Feb 18, 2011 at 12:08:22AM +0900, Minchan Kim wrote:
+> >> This patch adds profile information about invalidated page reclaim.
+> >> It's just for profiling for test so it is never for merging.
+> >>
+> >> Acked-by: Rik van Riel <riel@redhat.com>
+> >> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> >> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> >> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> >> Cc: Nick Piggin <npiggin@kernel.dk>
+> >> Cc: Mel Gorman <mel@csn.ul.ie>
+> >> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> >> ---
+> >>  include/linux/vmstat.h |    4 ++--
+> >>  mm/swap.c              |    3 +++
+> >>  mm/vmstat.c            |    3 +++
+> >>  3 files changed, 8 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+> >> index 833e676..c38ad95 100644
+> >> --- a/include/linux/vmstat.h
+> >> +++ b/include/linux/vmstat.h
+> >> @@ -30,8 +30,8 @@
+> >>
+> >>  enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+> >>               FOR_ALL_ZONES(PGALLOC),
+> >> -             PGFREE, PGACTIVATE, PGDEACTIVATE,
+> >> -             PGFAULT, PGMAJFAULT,
+> >> +             PGFREE, PGACTIVATE, PGDEACTIVATE, PGINVALIDATE,
+> >> +             PGRECLAIM, PGFAULT, PGMAJFAULT,
+> >>               FOR_ALL_ZONES(PGREFILL),
+> >>               FOR_ALL_ZONES(PGSTEAL),
+> >>               FOR_ALL_ZONES(PGSCAN_KSWAPD),
+> >> diff --git a/mm/swap.c b/mm/swap.c
+> >> index 0a33714..980c17b 100644
+> >> --- a/mm/swap.c
+> >> +++ b/mm/swap.c
+> >> @@ -397,6 +397,7 @@ static void lru_deactivate(struct page *page, struct zone *zone)
+> >>                * is _really_ small and  it's non-critical problem.
+> >>                */
+> >>               SetPageReclaim(page);
+> >> +             __count_vm_event(PGRECLAIM);
+> >>       } else {
+> >>               /*
+> >>                * The page's writeback ends up during pagevec
+> >
+> > Is this name potentially misleading?
+> >
+> > Pages that are reclaimed are accounted for with _steal. It's not particularly
+> > obvious but that's the name it was given. I'd worry that an administrator that
+> > was not aware of *_steal would read pgreclaim as "pages that were reclaimed"
+> > when this is not necessarily the case.
+> >
+> > Is there a better name for this? pginvalidate_deferred
+> > or pginvalidate_delayed maybe?
+> >
+> 
+> Yep. Your suggestion is fair enough. But as I said in description,
+> It's just for testing for my profiling, not merging so I didn't care
+> about it. I don't think we need new vmstat of pginvalidate.
+> 
 
-> We should also be able to use the breakpoint hack to avoid holding all
-> the CPUs.  They still need to be interrupted, but that skips the
-> rendezvous operation.
+My bad. I was treating this piece of information as something we'd keep
+around and did not read the introduction clearly enough. If it's just for
+evaluation, the name does not matter as long as the reviewers know what it
+is. The figures look good and I have no problem with the series. I didn't
+ack the memcg parts but only because memcg is not an area I'm familiar enough
+for my ack to proper meaning. If there are no other objections, I'd suggest
+resubmitting minus this patch.
 
-As this is about the ftrace code, I'm in the process of analyzing and
-updating how the function tracer works. I can look to see if I can
-design it so we don't have to always use stop_machine() if a breakpoint
-method is in place.
+Thanks.
 
-Basically what is needed is to convert a "nop" into a "call" or maybe
-the other way around, safely.
-
-Now is it safe to insert a breakpoint (usually a byte I believe), modify
-the rest of the instruction and then replace the breakpoint to the new
-code? Since the instruction that is being replaced or the instruction
-being added is always a nop, the breakpoint handler needs to do nothing
-but return to the location after the nop/call.
-
-Is there any synchronization that needs to be done when doing this? Or
-can it just be:
-
-	insert_breakpoint();
-	update_instruction();
-	remove_breakpoint();
-
-Because we need to do this for 22,000 calls in a row.
-
--- Steve
-
-
+-- 
+Mel Gorman
+SUSE Labs
