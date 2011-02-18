@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab1BRUgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 15:36:41 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53267 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757813Ab1BRUgj (ORCPT
+	id S1758567Ab1BRUjC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 15:39:02 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:33789 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752891Ab1BRUi7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 15:36:39 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=JGpTz_e83PYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=eUYy1LW8c5gH8bBhmEQA:9 a=gr28afKmA5NBbnQns8gA:7 a=v9cA-_wkCfoDotK6lS7GlsijQJoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: RE: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
- for x86_64 right now)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dominique Toupin <dominique.toupin@ericsson.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-In-Reply-To: <D58A856745AB5A47B1448181D1A8BBFA07673BC266@EUSAACMS0701.eamcs.ericsson.se>
-References: <20110209200249.111932716@goodmis.org>
-	 <4D5D1672.6070206@hitachi.com>
-	 <1297948703.23343.907.camel@gandalf.stny.rr.com>
-	 <4D5D4013.4070602@hitachi.com>
-	 <1297957591.23343.921.camel@gandalf.stny.rr.com>
-	 <4D5D47C0.9020206@hitachi.com>
-	 <1297973501.23343.953.camel@gandalf.stny.rr.com>
-	 <4D5E5BCF.1040509@hitachi.com>
-	 <1298041659.23343.956.camel@gandalf.stny.rr.com>
-	 <20110218151954.GA27834@Krystal>
-	 <D58A856745AB5A47B1448181D1A8BBFA07673BC266@EUSAACMS0701.eamcs.ericsson.se>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 18 Feb 2011 15:36:35 -0500
-Message-ID: <1298061395.23343.975.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Feb 2011 15:38:59 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>
+References: <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+	<20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+	<AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	<20110218122938.GB26779@tiehlicka.suse.cz>
+	<20110218162623.GD4862@tiehlicka.suse.cz>
+	<AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com>
+	<m17hcx43m3.fsf@fess.ebiederm.org>
+	<AANLkTikh4oaR6CBK3NBazer7yjhE0VndsUB5FCDRsbJc@mail.gmail.com>
+	<20110218190128.GF13211@ghostprotocols.net>
+	<20110218191146.GG13211@ghostprotocols.net>
+Date: Fri, 18 Feb 2011 12:38:49 -0800
+In-Reply-To: <20110218191146.GG13211@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Fri, 18 Feb 2011 17:11:46 -0200")
+Message-ID: <m1sjvl2i3q.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/oGA3b61HaEiatdlxrH2t+JYjFN4zYPV8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Arnaldo Carvalho de Melo <acme@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-18 at 15:10 -0500, Dominique Toupin wrote:
-> My understanding is stop_machine will stop all processors for many ms.
+Arnaldo Carvalho de Melo <acme@redhat.com> writes:
 
-s/ms/us/
+> Em Fri, Feb 18, 2011 at 05:01:28PM -0200, Arnaldo Carvalho de Melo escreveu:
+>> Em Fri, Feb 18, 2011 at 10:48:18AM -0800, Linus Torvalds escreveu:
+>> > This seems to be a fairly straightforward bug.
+>> > 
+>> > In net/ipv4/inet_timewait_sock.c we have this:
+>> > 
+>> >   /* These are always called from BH context.  See callers in
+>> >    * tcp_input.c to verify this.
+>> >    */
+>> > 
+>> >   /* This is for handling early-kills of TIME_WAIT sockets. */
+>> >   void inet_twsk_deschedule(struct inet_timewait_sock *tw,
+>> >                             struct inet_timewait_death_row *twdr)
+>> >   {
+>> >           spin_lock(&twdr->death_lock);
+>> >           ..
+>> > 
+>> > and the intention is clearly that that spin_lock is BH-safe because
+>> > it's called from BH context.
+>> > 
+>> > Except that clearly isn't true. It's called from a worker thread:
+>> > 
+>> > > stack backtrace:
+>> > > Pid: 10833, comm: kworker/u:1 Not tainted 2.6.38-rc4-359399.2010AroraKernelBeta.fc14.x86_64 #1
+>> > > Call Trace:
+>> > >  [<ffffffff81460e69>] ? inet_twsk_deschedule+0x29/0xa0
+>> > >  [<ffffffff81460fd6>] ? inet_twsk_purge+0xf6/0x180
+>> > >  [<ffffffff81460f10>] ? inet_twsk_purge+0x30/0x180
+>> > >  [<ffffffff814760fc>] ? tcp_sk_exit_batch+0x1c/0x20
+>> > >  [<ffffffff8141c1d3>] ? ops_exit_list.clone.0+0x53/0x60
+>> > >  [<ffffffff8141c520>] ? cleanup_net+0x100/0x1b0
+>> > >  [<ffffffff81068c47>] ? process_one_work+0x187/0x4b0
+>> > >  [<ffffffff81068be1>] ? process_one_work+0x121/0x4b0
+>> > >  [<ffffffff8141c420>] ? cleanup_net+0x0/0x1b0
+>> > >  [<ffffffff8106a65c>] ? worker_thread+0x15c/0x330
+>> > 
+>> > so it can deadlock with a BH happening at the same time, afaik.
+>> > 
+>> > The code (and comment) is all from 2005, it looks like the BH->worker
+>> > thread has broken the code. But somebody who knows that code better
+>> > should take a deeper look at it.
+>> > 
+>> > Added acme to the cc, since the code is attributed to him back in 2005
+>> > ;). Although I don't know how active he's been in networking lately
+>> > (seems to be all perf-related). Whatever, it can't hurt.
+>> 
+>> Original code is ANK's, I just made it possible to use with DCCP, and
+>> yeah, the smiley is appropriate, something 6 years old and the world
+>> around it changing continually... well, thanks for the git blame ;-)
+>
+> But yeah, your analisys seems correct, with the bug being introduced by
+> one of these world around it changing continually issues, networking
+> namespaces broke the rules of the game on its cleanup_net() routine,
+> adding Pavel to the CC list since it doesn't hurt ;-)
 
+Which probably gets the bug back around to me.
 
-> Even if most of our systems are not hard real-time they are soft real-time and stopping all cores for a few ms is not allowed.
-> We can stop a few threads while we are jump patching but all processors is too much for us.
+I guess this must be one of those ipv4 cases that where the cleanup
+simply did not exist in the rmmod sense that we had to invent.
 
-I think I could hit a single ms if we enable full function tracing which
-disables ~22,000 functions in one shot. But if you enable full function
-tracing, the kernel can slow down quite drastically, and that would even
-be more problematic than a single ms hic-up. As hackbench showed a %150
-slowdown when function tracer was running.
+I think that was Daniel who did the time wait sockets.  I do remember
+they were a real pain.
 
-Now the last measurements I took was a few years ago and it was on a 4
-CPU box. Perhaps stop_machine() may be a bit more expensive on a 1024
-CPU box.
+Would a bh_disable be sufficient?  I guess I should stop remembering and
+look at the code now.
 
--- Steve
-
-
+Eric
