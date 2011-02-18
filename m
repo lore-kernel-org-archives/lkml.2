@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab1BRWOt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 17:14:49 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49920 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757781Ab1BRWOq (ORCPT
+	id S1757921Ab1BRWQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 17:16:08 -0500
+Received: from mail3.microsoft.com ([131.107.115.214]:24748 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab1BRWQH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 17:14:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PbTu5RgrhXnxUYT/2lkxHDQYQct7+SaH1GCgM7ViAAFyFJMwdu5gBzWLOvmb5Aaozk
-         KZ6FZtLszqesuPA/Q4iynCvhLLMVkTURFMBFuRxkkOT0B1+zVGYC6fod6curs0iI6f+m
-         Z1VkZJMl2PKISCdAMDN8RxWL7OgnJyAjzSNWw=
+	Fri, 18 Feb 2011 17:16:07 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QITSqA//+CNECAAIydAP//es7A
+Date: Fri, 18 Feb 2011 22:16:05 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E04801162F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
+ <20110218211423.GH796@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048011604@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110218220724.GA28986@suse.de>
+In-Reply-To: <20110218220724.GA28986@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=6efAdh76uO5Qeq8FiRWOFQW-MBUWJWxzT1rhf@mail.gmail.com>
-References: <alpine.DEB.2.00.1102172249020.5315@skynet.skynet.ie>
-	<AANLkTi=6efAdh76uO5Qeq8FiRWOFQW-MBUWJWxzT1rhf@mail.gmail.com>
-Date: Fri, 18 Feb 2011 23:14:45 +0100
-Message-ID: <AANLkTikOZu_Bq-y7vLHD6vQXSnJnMWZB7YtFWLxVHeMn@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p1IMEvUm018159
 
-2011/2/18 Anca Emanuel <anca.emanuel@gmail.com>:
-> Nouveau OpenGL regresion
->
-> Tools used: http://packages.ubuntu.com/maverick/misc/glmark2
->
-> With 2.6.38-rc5 latest git:
-> nv50_screen_get_param:162 - Â Unknown PIPE_CAP 11
-> ===================================================
-> Â  Â glmark2 10.07.1
-> ===================================================
-> Â  Â OpenGL Information
-> Â  Â GL_VENDOR: Â  Â  nouveau
-> Â  Â GL_RENDERER: Â  Gallium 0.4 on NV92
-> Â  Â GL_VERSION: Â  Â 2.1 Mesa 7.9-devel
-> ===================================================
-> Precompilation
-> Â  Â Vertex array Â  Â  Â  Â  Â  Â  Â  Â  Â FPS: 105
-> Â  Â Vertex buffer object Â  Â  Â  Â  Â FPS: 267
-> Texture filtering
-> Â  Â Nearest Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  FPS: 295
-> Â  Â Linear Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â FPS: 299
-> Â  Â Mipmapped Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  FPS: 308
-> Shading
-> Â  Â GLSL per vertex lighting Â  Â  Â FPS: 227
-> Â  Â GLSL per pixel lighting Â  Â  Â  FPS: 260
-> ===================================================
-> Your glmark2 Score is 727 Â ^_^
-> ===================================================
->
->
-> With Linux ubuntu 2.6.35-25-generic #44-Ubuntu SMP Fri Jan 21 17:40:44
-> UTC 2011 x86_64 GNU/Linux:
->
-> nv50_screen_get_param:162 - Â Unknown PIPE_CAP 11
-> ===================================================
-> Â  Â glmark2 10.07.1
-> ===================================================
-> Â  Â OpenGL Information
-> Â  Â GL_VENDOR: Â  Â  nouveau
-> Â  Â GL_RENDERER: Â  Gallium 0.4 on NV92
-> Â  Â GL_VERSION: Â  Â 2.1 Mesa 7.9-devel
-> ===================================================
-> Precompilation
-> Â  Â Vertex array Â  Â  Â  Â  Â  Â  Â  Â  Â FPS: 265
-> Â  Â Vertex buffer object Â  Â  Â  Â  Â FPS: 599
-> Texture filtering
-> Â  Â Nearest Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  FPS: 687
-> Â  Â Linear Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â FPS: 683
-> Â  Â Mipmapped Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  FPS: 717
-> Shading
-> Â  Â GLSL per vertex lighting Â  Â  Â FPS: 480
-> Â  Â GLSL per pixel lighting Â  Â  Â  FPS: 524
-> ===================================================
-> Your glmark2 Score is 1628 Â ^_^
-> ===================================================
 
-You're yelling in thread about recent single drm fixes... and you
-compare 2.6.35 with 2.6.38-rc5. What is possibility it's regression
-introduced by one of that few commits?
 
-Please report on bugzilla normally, perform bisecting, but do not
-report such a things in unrelated places!
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, February 18, 2011 5:07 PM
+> To: KY Srinivasan
+> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org
+> Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> 
+> On Fri, Feb 18, 2011 at 10:00:04PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:greg@kroah.com]
+> > > Sent: Friday, February 18, 2011 4:14 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> > >
+> > > On Tue, Feb 15, 2011 at 11:55:35AM -0800, K. Y. Srinivasan wrote:
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > >
+> > > You didn't run this through checkpatch.pl.
+> > >
+> > > Please do so and fix the warning it gives you.
+> > Greg, I did run the checkpatch script against this patch and the only
+> > complaint I got was with regards to the IRQF_SAMPLE_RANDOM flag that I
+> > pass. As a virtual machine, this is the only external event that the
+> > VM is going to see and so I chose to keep this flag.  Is there
+> > something that would replace this flag; looking at the Xen drivers
+> > they do pass this flag.
+> 
+> But that flag is going away, right?  And this really can't be a valid
+> source of entropy as the HV channel is pretty predictable.
 
--- 
-RafaÅ‚
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Is it going away? What would replace this. Is all interrupt sources considered
+predictable? This is the only unpredictable thing happening in the VM and that is the reason
+I chose to keep the flag.
+> 
+> If you are only using this because Xen does/did it, that's not a valid
+> excuse :)
+Surely, you are joking. In any event I am sending you a new patch with that flag removed.
+
+Regards,
+
+K. Y
+
+
+> 
+> thanks,
+> 
+> greg k-h
+
