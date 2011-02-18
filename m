@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560Ab1BRU2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 15:28:17 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65416 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab1BRU17 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 15:27:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=d4553xNfYIPv+JZcGFt/zCLfNRuUqLqI6QmgkmWLLBbcjql2zfieErCMnp/vP7sqsc
-         pT05HHLaukxCNDULiUAGVXEmpOCtRE6d31b0i77FFdBIr35Imy/c5HI5RwKpm82FSSBI
-         2wkKgFe1i91U+AEc6yHVYd3sT4loZAljuRFh4=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimQvysBdu2q4d=nrhsPZeJH+_oj9KpNBEuFMmv-@mail.gmail.com>
-References: <AANLkTinwPs1mf7n4JYBsOE+SKZYw2f4+bSVLuSZx19x+@mail.gmail.com> <AANLkTimQvysBdu2q4d=nrhsPZeJH+_oj9KpNBEuFMmv-@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Fri, 18 Feb 2011 12:27:39 -0800
-Message-ID: <AANLkTiknXaL_AexHpDCnofdPmK1sTrXWe7bQAhdfV1z3@mail.gmail.com>
-Subject: Re: [Cocci] Coccinelle - Semantic Patch IRC Channel
-To: Nicolas Palix <Nicolas.Palix@inria.fr>
-Cc: cocci@diku.dk, Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1758570Ab1BRU3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 15:29:09 -0500
+Received: from xes-mad.com ([216.165.139.218]:33505 "EHLO xes-mad.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757724Ab1BRU3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 15:29:07 -0500
+Subject: Re: [PATCH v3 4/4] gpio: Add support for Intel
+ ICHx/3100/Series[56] GPIO
+From: Peter Tyser <ptyser@xes-inc.com>
+To: Vincent Palatin <vpalatin@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>, Olof <olofj@chromium.org>,
+        vbendeb <vbendeb@chromium.org>
+In-Reply-To: <1298051894-30600-1-git-send-email-vpalatin@chromium.org>
+References: <1297983799-4747-4-git-send-email-ptyser@xes-inc.com>
+	 <1298051894-30600-1-git-send-email-vpalatin@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Feb 2011 14:28:29 -0600
+Message-ID: <1298060909.965.20479.camel@petert>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 10:24 AM, Nicolas Palix <Nicolas.Palix@inria.fr> wrote:
-> Ladybugs are cute, isn't it ?! ;)
+On Fri, 2011-02-18 at 12:58 -0500, Vincent Palatin wrote:
+> Hi,
+> 
+> I have tested it on a Pineview / Tigerpoint based board.
+> It works well given you add the PCI ids for the tigerpoint/NM10 chipset
+> (cf patch below).
+> The Tigerpoint/NM10 is ICH7 based for the GPIO part.
+> 
+> Tested-by: Vincent Palatin <vpalatin@chromium.org>
+> 
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
 
-Very!
+Thanks for testing.  I'll add the Tigerpoint and your tested/signoff
+when I resubmit.
 
-> There is no IRC channel. Feel free to open one on freenode.
-> I will connect to it.
+Peter
 
-Done, see you guys there!
-
-> For the wiki, it is at http://cocci.ekstranet.diku.dk/wiki/doku.php
-> Note that you need to register to contribute.
-
-Thanks!
-
-  Luis
