@@ -1,36 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab1BRAmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 19:42:55 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58327 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab1BRAmu (ORCPT
+	id S1757441Ab1BRAoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 19:44:07 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37749 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752175Ab1BRAn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 19:42:50 -0500
+	Thu, 17 Feb 2011 19:43:57 -0500
+Date: Fri, 18 Feb 2011 00:43:54 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <greg@kroah.com>
+Cc: Charles Manning <manningc2@actrix.gen.nz>,
+        Ryan Mallon <ryan@bluewatersys.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
+Message-ID: <20110218004354.GB27668@opensource.wolfsonmicro.com>
+References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102171531.03924.manningc2@actrix.gen.nz> <4D5C8D62.4060809@bluewatersys.com> <201102171649.57457.manningc2@actrix.gen.nz> <20110217234154.GA1474@kroah.com> <20110218000150.GA27668@opensource.wolfsonmicro.com> <20110218003353.GA25386@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <F5323EE7947C4C1CB0868F843FB4F917@hacdom.okisemi.com>
-References: <F5323EE7947C4C1CB0868F843FB4F917@hacdom.okisemi.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 17 Feb 2011 17:42:30 -0700
-X-Google-Sender-Auth: _BVMcMXhpxFg-M9FZfna46366fM
-Message-ID: <AANLkTim4z7vfyNceLYZhGzpYaECeSfLOYjzEhT9JFvJH@mail.gmail.com>
-Subject: Re: About GPIO interrupt function with sysfs
-To: Tomoya MORINAGA <morinaga526@dsn.okisemi.com>
-Cc: linux-kernel@vger.kernel.org, "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
-        "Lai, Mee Sim" <mee.sim.lai@intel.com>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110218003353.GA25386@kroah.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 5:34 PM, Tomoya MORINAGA
-<morinaga526@dsn.okisemi.com> wrote:
-> Hi,
->
-> I have a question.
-> Can our GPIO driver (pch_gpio) have interrupt function?
+On Thu, Feb 17, 2011 at 04:33:53PM -0800, Greg KH wrote:
+> On Fri, Feb 18, 2011 at 12:01:50AM +0000, Mark Brown wrote:
 
-yes.
+> > For the proc stuff - for tracing stuff then tracepoints are likely to be
+> > a good option if it's useful to people.
 
-g.
+> Then use the in-kernel tracing functionality, don't roll your own.  And
+> that is not in /proc, so it should be there for this filesystem either.
+
+That'd be the tracepoints I was mentioning, then...
