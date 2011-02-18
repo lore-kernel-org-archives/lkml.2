@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab1BRB0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 20:26:51 -0500
-Received: from mga14.intel.com ([143.182.124.37]:10302 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171Ab1BRB0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 20:26:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,183,1297065600"; 
-   d="scan'208";a="390515590"
-Subject: Re: [PATCH] sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
-From: "Alex,Shi" <alex.shi@intel.com>
-To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Nick Piggin <npiggin@gmail.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <1297473616.2806.16.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <1296852688-1665-1-git-send-email-venki@google.com>
-	 <1296854731-25039-1-git-send-email-venki@google.com>
-	 <1297086642.13327.15.camel@laptop>
-	 <AANLkTi=xo8bq6uTjYQ7yxJ69ATry1Xs3q0deE7UN9jPj@mail.gmail.com>
-	 <1297108399.8221.35.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <1297266928.13327.216.camel@laptop>
-	 <1297473616.2806.16.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Feb 2011 09:05:53 +0800
-Message-ID: <1297991153.14712.636.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1758180Ab1BRB2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 20:28:55 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:47254 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab1BRB2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 20:28:53 -0500
+Message-ID: <4D5DCB46.9090506@wytron.com.tw>
+Date: Fri, 18 Feb 2011 09:28:38 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Tobias Klauser <tklauser@distanz.ch>
+CC: nios2-dev@sopc.et.ntust.edu.tw, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-serial@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [Nios2-dev] [PATHV v2] tty: serial: altera_uart: Add  devicetree
+ support
+References: <c7a7085602687d2f1b6ac505c030f19bafda04e3.1297245277.git.tklauser@distanz.ch> <1297872732-10207-1-git-send-email-tklauser@distanz.ch> <4D5C86C1.8070404@wytron.com.tw> <20110217074846.GG4076@distanz.ch>
+In-Reply-To: <20110217074846.GG4076@distanz.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/17/2011 03:48 PM, Tobias Klauser wrote:
+>>> +	ret = altera_uart_get_of_uartclk(pdev, port);
+>>> +	if (ret&&   platp)
+>>> +		port->uartclk = platp->uartclk;
+>>> +	else if (ret)
+>>> +		return ret;
+>>> +
+>>
+>> Better reverse the priority, with platform data checked first.
+>>
+>> 	if (platp)
+>> 		port->uartclk = platp->uartclk;
+>> 	else {
+>> 		ret = altera_uart_get_of_uartclk(pdev, port);
+>> 		if (ret)
+>> 			return ret;
+>> 	}
+>
+> Do you have a specific reasoning for this? I thought it might make sense
+> to do it in the same order as with the resources above, but I have no
+> problem changing it to the way you suggest.
 
-> I am also ok with removing this code. But as Venki mentioned earlier
-> (http://marc.info/?l=linux-kernel&m=129735866732171&w=2), we need to
-> make sure idle core gets priority instead of an idle smt-thread on a
-> busy core while pulling the load from the busiest socket.
-> 
-> I requested Venki to post these 2 patches of removing the propagation of
-> busy sibling status to an idle sibling and prioritizing the idle core
-> while pulling the load. I will request Alex and Tim to run their
-> performance workloads to make sure that this doesn't show any
-> regressions.
+Not quite sure. But I see some drivers follow this order, and I just 
+followed, too.
 
-I have got sd_idle deletion and other patches. So just tested this v1
-patch based on 38-rc4 kernel on WSM-EP NHM-EP, and Core2 machine, didn't
-find clear performance regression or improvement, include on
-hackbench/specjbb/volano etc. 
-
-> 
-> thanks,
-> suresh
-> 
-
-
+- Thomas
