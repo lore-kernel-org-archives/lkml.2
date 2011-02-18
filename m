@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab1BRTCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 14:02:45 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49953 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756314Ab1BRTCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 14:02:43 -0500
-Date: Fri, 18 Feb 2011 22:33:46 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <dada1@cosmosbay.com>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        suzuki@in.ibm.com, vsrivatsa@gmail.com
-Subject: Re: [PATCH 13/14] x86/ticketlock: add slowpath logic
-Message-ID: <20110218170346.GA30264@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <97ed99ae9160bdb6477284b333bd6708fb7a19cb.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <20110117152222.GA19233@linux.vnet.ibm.com>
- <20110119162348.GA29900@linux.vnet.ibm.com>
- <4D3DF5A5.7070301@goop.org>
+	id S1758334Ab1BRTC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 14:02:58 -0500
+Received: from rtp-iport-2.cisco.com ([64.102.122.149]:50822 "EHLO
+	rtp-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757750Ab1BRTCz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 14:02:55 -0500
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Feb 2011 14:02:54 EST
+Authentication-Results: rtp-iport-2.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANxOXk2tJXHB/2dsb2JhbACmJXOfbJs3hV4EhQuHBoM6
+X-IronPort-AV: E=Sophos;i="4.62,188,1297036800"; 
+   d="scan'208";a="217276556"
+Message-ID: <4D5EC01C.1030108@cisco.com>
+Date: Fri, 18 Feb 2011 11:53:16 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3DF5A5.7070301@goop.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, paulus@samba.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 3/3] perf events: add timehist option to record and report
+References: <1298008433-22911-1-git-send-email-daahern@cisco.com> <1298008433-22911-4-git-send-email-daahern@cisco.com> <20110218070657.GA11404@elte.hu> <4D5E8204.2090501@cisco.com> <20110218175926.GA3445@nowhere> <20110218184119.GC302@ghostprotocols.net>
+In-Reply-To: <20110218184119.GC302@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Jan 24, 2011 at 01:56:53PM -0800, Jeremy Fitzhardinge wrote:
 
-For some reason, I seem to be missing emails from your id/domain and hence had
-missed this completely!
 
-> >   * bits.  However, we need to be careful about this because someone
-> >   * may just be entering as we leave, and enter the slowpath.
-> >   */
-> > -void __ticket_unlock_release_slowpath(struct arch_spinlock *lock)
-> > +void __ticket_unlock_slowpath(struct arch_spinlock *lock)
-> >  {
-> >  	struct arch_spinlock old, new;
-> >  
-> >  	BUILD_BUG_ON(((__ticket_t)NR_CPUS) != NR_CPUS);
-> >  
-> >  	old = ACCESS_ONCE(*lock);
-> > -
-> >  	new = old;
-> > -	new.tickets.head += TICKET_LOCK_INC;
-> >  
-> >  	/* Clear the slowpath flag */
-> >  	new.tickets.tail &= ~TICKET_SLOWPATH_FLAG;
-> > +	if (new.tickets.head == new.tickets.tail)
-> > +		cmpxchg(&lock->head_tail, old.head_tail, new.head_tail);
-> >  
-> > -	/*
-> > -	 * If there's currently people waiting or someone snuck in
-> > -	 * since we read the lock above, then do a normal unlock and
-> > -	 * kick.  If we managed to unlock with no queued waiters, then
-> > -	 * we can clear the slowpath flag.
-> > -	 */
-> > -	if (new.tickets.head != new.tickets.tail ||
-> > -	    cmpxchg(&lock->head_tail,
-> > -		    old.head_tail, new.head_tail) != old.head_tail) {
-> > -		/* still people waiting */
-> > -		__ticket_unlock_release(lock);
-> > -	}
-> > -
-> > +	/* Wake up an appropriate waiter */
-> >  	__ticket_unlock_kick(lock, new.tickets.head);
+On 02/18/11 11:41, Arnaldo Carvalho de Melo wrote:
 > 
-> Does the __ticket_unlock_kick need to be unconditional?
+> Think about tcpdump + networking tracepoints or 'perf probe' dynamic
+> events in the network stack, he wants to merge those logs and correlate
+> the tcpdump packet exchange with the tracepoints events in the network
+> stack, etc.
 
-I recall having tried optimizing it to be conditional, something along these
-lines:
+I'm zoned in on ap logs, but tcpdump and network analysis is another
+very good example. packets are tagged with realtime:
 
-	if (new.ticket.head == new.tickets.tail) {
-		cmpxchg();	
-	} else {
-		__ticket_unlock_kick(lock, new.tickets.head);
-	}
+static inline void __net_timestamp(struct sk_buff *skb)
+{
+    skb->tstamp = ktime_get_real();
+}
 
-but it didn't work for some reason. I left the call unconditional as was the
-case previously based on that experiment.
 
-- vatsa
+David
