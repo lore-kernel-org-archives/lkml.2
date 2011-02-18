@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab1BRPYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 10:24:42 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44275 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab1BRPYj convert rfc822-to-8bit (ORCPT
+	id S1755081Ab1BRP22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 10:28:28 -0500
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:27445 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab1BRP2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 10:24:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=GXuxxUPeMMLERJ0ZqgX62fJjrTaqd0O5GM4HwH8l4+4k8Q1HNgg6aRnWWw9VuWIVNq
-         eoiuQGiNqpVbmOCfb0S3Z5qljMReinAHie86dfym2uZbokfvgMFi0YU5PMpDGolaNW/2
-         +Ihh+K6YNP/WU7fwMXzZzMboE0lg7Rx/69XxE=
+	Fri, 18 Feb 2011 10:28:24 -0500
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAAofXk2rRN+J/2dsb2JhbACEH6IEc6BMinuQP4Eng0F2BIULhwaDOoIa
+X-IronPort-AV: E=Sophos;i="4.62,187,1297036800"; 
+   d="scan'208";a="663087940"
+Message-ID: <4D5E9016.4070808@cisco.com>
+Date: Fri, 18 Feb 2011 08:28:22 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin0X-ST=rZqwfCA0i5VGCh5ygYXyZFdndiDgR_2@mail.gmail.com>
-References: <4D5DB83D.80205@snapgear.com>
-	<AANLkTin0X-ST=rZqwfCA0i5VGCh5ygYXyZFdndiDgR_2@mail.gmail.com>
-Date: Fri, 18 Feb 2011 16:24:13 +0100
-X-Google-Sender-Auth: BbUETa8kvN8DYnkBvIbNVX5Vs-g
-Message-ID: <AANLkTim=kQOMyKqOEkw5iQjpGhDf0YGMe1ZTnJZkKfr7@mail.gmail.com>
-Subject: Re: merge of m68knommu and m68k arch branches?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Steven King <sfking00@yahoo.com>,
-        uClinux development list <uclinux-dev@uclinux.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Greg Ungerer <gregungerer@westnet.com.au>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, acme@ghostprotocols.net, paulus@samba.org
+Subject: Re: [PATCH 1/3] perf events: fix WARN_ON_ONCE for 64-bit raw data,
+ SW events
+References: <1298008433-22911-1-git-send-email-daahern@cisco.com>	 <1298008433-22911-2-git-send-email-daahern@cisco.com>	 <1298026821.5226.642.camel@laptop>  <4D5E8338.8010602@cisco.com> <1298040938.5226.771.camel@laptop>
+In-Reply-To: <1298040938.5226.771.camel@laptop>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 12:27, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Fri, Feb 18, 2011 at 01:07, Greg Ungerer <gerg@snapgear.com> wrote:
->> I would like to put up for discussion a merge of the m68knommu and
->> m68k arch branches.
+
+
+On 02/18/11 07:55, Peter Zijlstra wrote:
+>> Another gotcha is in perf_output_sample there is:
+>>             struct {
+>>                 u32 size;
+>>                 u32 data;
+>>             } raw = {
+>>                 .size = sizeof(u32),
+>>                 .data = 0,
+>>             };
 >>
->> Attached is a script and patch that does a kind of brute force
->> simplistic merge of the directories and files. (Thanks to Stephen King
->> <sfking@fdwdc.com> for the initial version of this script, and to
->> Sam Ravnborg for the m68k includes merge script this was based on).
->> Nothing outside of the arch/m68k and arch/m68knommu directories is
->> touched, and in the end there is no more arch/m68knommu. To apply you
->> simply run the script from the top of a current kernel git tree (I used
->> 2.6.38-rc5 for testing) and then apply the patch.
->
-> Building...
+>> While that meets the 8-byte stride I was concerned that changing the
+>> size field to u64 breaks ABI.
+> 
+> It would.
+> 
+> No, what you need to do is provide data that is sized such that it
+> matches the 8b stride adding padding where needed.
 
-Builds fine (all test configs), runs on ARAnyM.
+I want to push a 64-bit counter to userspace. By definition it meets the
+8-byte stride. Now how do I get sizeof(size field) + sizeof(data) to
+meet an 8-byte stride? I can't when sizeof(size field) = 4. Ok, I can
+pad the data with 4 bytes, but then I an api to tell the user to strip
+the 4-byte pad. Seems like an odd way to go.
 
-Let's go ahead?
+Why is an 8-byte stride preferred over a 4-bytes?
 
-Gr{oetje,eeting}s,
+David
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> 
+> Anyway, I don't think you need RAW at all.
+> 
