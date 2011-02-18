@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab1BROvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 09:51:06 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36180 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab1BROvC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 09:51:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IWXqZ+jXkWUStGZ/tB7IVquU6iv8lAQKMKQ9AosF7VqEmUYLwY5w5AORYWNyoe0zzz
-         RjYRVd/IUlzc0w+H6irsM/sqr3/knsAFn+X+2NkXdqR17zOR7prH9rfMf+/oMEWR3cMQ
-         p2PQkyMc7hrjsEmGIxlF4KtmXnI7lH84I+N2Q=
-Date: Fri, 18 Feb 2011 15:50:57 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: Re: Some hints needed how to handle SATA ALPM failures
-Message-ID: <20110218145057.GM21209@htj.dyndns.org>
-References: <4D5E6CE1.9020908@canonical.com>
+	id S1755418Ab1BROwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 09:52:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49416 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752417Ab1BROwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 09:52:37 -0500
+Date: Fri, 18 Feb 2011 15:52:19 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@elte.hu
+Subject: [PATCHv2] trace: adding unstable sched clock note to the warning
+Message-ID: <20110218145219.GD2604@jolsa.brq.redhat.com>
+References: <1296649698-6003-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D5E6CE1.9020908@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1296649698-6003-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+hi,
 
-On Fri, Feb 18, 2011 at 01:58:09PM +0100, Stefan Bader wrote:
-> We are hoping that those working more closely with the SATA code might
-> be aware of this issue.  As the symptoms are so severe (data corruption)
-> we have ALPM disabled globally, but this does make it hard to get more
-> targeted information on affected platforms.
+warning "Delta way too big" warning might appear on a system with
+unstable shed clock right after the system is resumed and tracing
+was enabled during the suspend.
 
-What do you mean by data corruption?  File system ro remount or actual
-fs corruption?  If actual fs corruption is happening, it's highly
-likely that there's an underlying issue with the hardware.  If data
-corruption can be reproduced, can you please run smartctl -a before
-and after such failure and post the outputs?
+Since it's not realy bug, and the unstable sched clock is working
+fast and reliable otherwise, Steven suggested to keep using the
+sched clock in any case and just to make note in the warning itself.
 
-As for ro remounts, I recall applying fixes for that months ago.  I
-don't remember the details but some configurations raised extra PHY
-event afterwards and command was failed without retry.  Anyways, it
-got fixed.  Please dig through the log for details.
+v2 changes:
+- added CONFIG_HAVE_UNSTABLE_SCHED_CLOCK dependency
 
-Also, the whole LPM thing got revamped several releases ago.  Can you
-please test how the recent kernels behave?  There will be failures as
-not all hardware can handle LPM well but those failures shouldn't lead
-to any catastrophic failures like ro remounting of filesystem.
+wbr,
+jirka
 
-Thanks.
 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/trace/ring_buffer.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index bd1c35a..37c4d3e 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2162,11 +2162,19 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 	if (likely(ts >= cpu_buffer->write_stamp)) {
+ 		delta = diff;
+ 		if (unlikely(test_time_stamp(delta))) {
++			int local_clock_stable = 1;
++#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
++			local_clock_stable = sched_clock_stable;
++#endif
+ 			WARN_ONCE(delta > (1ULL << 59),
+-				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n",
++				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n%s",
+ 				  (unsigned long long)delta,
+ 				  (unsigned long long)ts,
+-				  (unsigned long long)cpu_buffer->write_stamp);
++				  (unsigned long long)cpu_buffer->write_stamp,
++				  local_clock_stable ? "" :
++				  "If you just came from a suspend/resume,\n"
++				  "please switch to the trace global clock:\n"
++				  "  echo global > /sys/kernel/debug/tracing/trace_clock\n");
+ 			add_timestamp = 1;
+ 		}
+ 	}
 -- 
-tejun
+1.7.1
