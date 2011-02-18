@@ -1,110 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1BRJof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 04:44:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754834Ab1BRJo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 04:44:29 -0500
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Amerigo Wang <amwang@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Simon Horman <horms@verge.net.au>, Jiri Pirko <jpirko@redhat.com>,
-        Patrick McHardy <kaber@trash.net>, Neil Horman <nhorman@tuxdriver.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org
-Subject: [V4 PATCH 2/3] netpoll: remove IFF_IN_NETPOLL flag
-Date: Fri, 18 Feb 2011 17:43:33 +0800
-Message-Id: <1298022215-21059-2-git-send-email-amwang@redhat.com>
-In-Reply-To: <1298022215-21059-1-git-send-email-amwang@redhat.com>
-References: <1298022215-21059-1-git-send-email-amwang@redhat.com>
+	id S1756095Ab1BRJtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 04:49:19 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33372 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab1BRJtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 04:49:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=LjGKN2Pu6X+GF8QlMdwp4HxiSu+ii2lDcvI1WCnaZnuA6LxrlLE2vswzyONyGgwNkf
+         sV6tNKXbBXOZO0CuXDGj55j+TGEsSmXrd3kOOBEar1QaUKlfIkwL64HQXb6+s8x4l8GA
+         OMVc0e6kNXr2sWxk7eIVcq/AaG5GtIhqHD/Yg=
+Date: Fri, 18 Feb 2011 10:49:03 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Mike Snitzer <snitzer@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Jan Beulich <JBeulich@novell.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2.6.38-rc5 2/2] block: blk-flush shouldn't call
+ directly into q->request_fn() __blk_run_queue()
+Message-ID: <20110218094903.GF21209@htj.dyndns.org>
+References: <20110217111511.GQ19830@htj.dyndns.org>
+ <20110217111619.GR19830@htj.dyndns.org>
+ <AANLkTi=rPKN25yZTziv1dz=Ke0db8ZOwUgKFNzWn9+x7@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=rPKN25yZTziv1dz=Ke0db8ZOwUgKFNzWn9+x7@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V4: rebase to net-next-2.6
+On Thu, Feb 17, 2011 at 10:01:51AM -0500, Mike Snitzer wrote:
+> Hi Tejun,
+> 
+> On Thu, Feb 17, 2011 at 6:16 AM, Tejun Heo <tj@kernel.org> wrote:
+> 
+> > Jens, this is applicable to v2.6.37 and 38.  The new implementation
+> > for 39 would need similar fix but I couldn't find where the tree is.
+> > Which branch is it?
+> 
+> for-2.6.39/core
 
-This patch removes the flag IFF_IN_NETPOLL, we don't need it any more since
-we have netpoll_tx_running() now.
+Right, thanks.  Jens, after you apply the two fixes for 2.6.38, I can
+create a merge branch for for-2.6.39/core which you can pull.  Would
+that work for you?
 
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Neil Horman <nhorman@redhat.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Thanks.
 
----
- drivers/net/bonding/bond_main.c |    6 ++----
- drivers/net/bonding/bonding.h   |    2 +-
- include/linux/if.h              |    9 ++++-----
- net/core/netpoll.c              |    2 --
- 4 files changed, 7 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 2ed6624..c75126d 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -423,11 +423,9 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
- {
- 	skb->dev = slave_dev;
- 	skb->priority = 1;
--	if (unlikely(netpoll_tx_running(slave_dev))) {
--		slave_dev->priv_flags |= IFF_IN_NETPOLL;
-+	if (unlikely(netpoll_tx_running(slave_dev)))
- 		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
--		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
--	} else
-+	else
- 		dev_queue_xmit(skb);
- 
- 	return 0;
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index 0a3e00b..a401b8d 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -133,7 +133,7 @@ static inline void unblock_netpoll_tx(void)
- 
- static inline int is_netpoll_tx_blocked(struct net_device *dev)
- {
--	if (unlikely(dev->priv_flags & IFF_IN_NETPOLL))
-+	if (unlikely(netpoll_tx_running(dev)))
- 		return atomic_read(&netpoll_block_tx);
- 	return 0;
- }
-diff --git a/include/linux/if.h b/include/linux/if.h
-index 1239599..3bc63e6 100644
---- a/include/linux/if.h
-+++ b/include/linux/if.h
-@@ -71,11 +71,10 @@
- 					 * release skb->dst
- 					 */
- #define IFF_DONT_BRIDGE 0x800		/* disallow bridging this ether dev */
--#define IFF_IN_NETPOLL	0x1000		/* whether we are processing netpoll */
--#define IFF_DISABLE_NETPOLL	0x2000	/* disable netpoll at run-time */
--#define IFF_MACVLAN_PORT	0x4000	/* device used as macvlan port */
--#define IFF_BRIDGE_PORT	0x8000		/* device used as bridge port */
--#define IFF_OVS_DATAPATH	0x10000	/* device used as Open vSwitch
-+#define IFF_DISABLE_NETPOLL	0x1000	/* disable netpoll at run-time */
-+#define IFF_MACVLAN_PORT	0x2000	/* device used as macvlan port */
-+#define IFF_BRIDGE_PORT	0x4000		/* device used as bridge port */
-+#define IFF_OVS_DATAPATH	0x8000	/* device used as Open vSwitch
- 					 * datapath port */
- 
- #define IF_GET_IFACE	0x0001		/* for querying only */
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index 02dc2cb..f68e694 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -313,9 +313,7 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
- 		     tries > 0; --tries) {
- 			if (__netif_tx_trylock(txq)) {
- 				if (!netif_tx_queue_stopped(txq)) {
--					dev->priv_flags |= IFF_IN_NETPOLL;
- 					status = ops->ndo_start_xmit(skb, dev);
--					dev->priv_flags &= ~IFF_IN_NETPOLL;
- 					if (status == NETDEV_TX_OK)
- 						txq_trans_update(txq);
- 				}
 -- 
-1.7.1
-
+tejun
