@@ -1,97 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab1BRWaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 17:30:24 -0500
-Received: from cantor.suse.de ([195.135.220.2]:59134 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758640Ab1BRWaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 17:30:20 -0500
-Date: Fri, 18 Feb 2011 14:29:16 -0800
-From: Greg KH <gregkh@suse.de>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Message-ID: <20110218222916.GA14244@suse.de>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <20110218211423.GH796@kroah.com>
- <6E21E5352C11B742B20C142EB499E048011604@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110218220724.GA28986@suse.de>
- <6E21E5352C11B742B20C142EB499E04801162F@TK5EX14MBXC124.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E04801162F@TK5EX14MBXC124.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758664Ab1BRWcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 17:32:54 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43676 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392Ab1BRWcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 17:32:50 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <greg@kroah.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Allow sharing xvmalloc for zram and zcache
+Date: Fri, 18 Feb 2011 17:33:18 -0500
+Message-Id: <1298068398-28711-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 10:16:05PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@suse.de]
-> > Sent: Friday, February 18, 2011 5:07 PM
-> > To: KY Srinivasan
-> > Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > virtualization@lists.osdl.org
-> > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> > 
-> > On Fri, Feb 18, 2011 at 10:00:04PM +0000, KY Srinivasan wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Greg KH [mailto:greg@kroah.com]
-> > > > Sent: Friday, February 18, 2011 4:14 PM
-> > > > To: KY Srinivasan
-> > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> > > > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> > > >
-> > > > On Tue, Feb 15, 2011 at 11:55:35AM -0800, K. Y. Srinivasan wrote:
-> > > > >
-> > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> > > >
-> > > > You didn't run this through checkpatch.pl.
-> > > >
-> > > > Please do so and fix the warning it gives you.
-> > > Greg, I did run the checkpatch script against this patch and the only
-> > > complaint I got was with regards to the IRQF_SAMPLE_RANDOM flag that I
-> > > pass. As a virtual machine, this is the only external event that the
-> > > VM is going to see and so I chose to keep this flag.  Is there
-> > > something that would replace this flag; looking at the Xen drivers
-> > > they do pass this flag.
-> > 
-> > But that flag is going away, right?  And this really can't be a valid
-> > source of entropy as the HV channel is pretty predictable.
-> 
-> Is it going away? What would replace this. Is all interrupt sources considered
-> predictable?
+Both zram and zcache use xvmalloc allocator. If xvmalloc
+is compiled separately for both of them, we will get linker
+error if they are both selected as "built-in". We can also
+get linker error regarding missing xvmalloc symbols if zram
+is not built.
 
-Did you read the file that the checkpatch script told you to about this
-entry?
+So, we now compile xvmalloc separately and export its symbols
+which are then used by both of zram and zcache.
 
-> This is the only unpredictable thing happening in the VM and that is the reason
-> I chose to keep the flag.
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/staging/Makefile        |    1 +
+ drivers/staging/zcache/Makefile |    4 +++-
+ drivers/staging/zram/Kconfig    |    5 +++++
+ drivers/staging/zram/Makefile   |    3 ++-
+ drivers/staging/zram/xvmalloc.c |    8 ++++++++
+ 5 files changed, 19 insertions(+), 2 deletions(-)
 
-If you remove it, do we loose all entropy for the VM?
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index 625bae2..17f23c4 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -45,6 +45,7 @@ obj-$(CONFIG_DX_SEP)            += sep/
+ obj-$(CONFIG_IIO)		+= iio/
+ obj-$(CONFIG_CS5535_GPIO)	+= cs5535_gpio/
+ obj-$(CONFIG_ZRAM)		+= zram/
++obj-$(CONFIG_XVMALLOC)		+= zram/
+ obj-$(CONFIG_ZCACHE)		+= zcache/
+ obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
+ obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
+diff --git a/drivers/staging/zcache/Makefile b/drivers/staging/zcache/Makefile
+index 7f64de4..f5ec64f 100644
+--- a/drivers/staging/zcache/Makefile
++++ b/drivers/staging/zcache/Makefile
+@@ -1 +1,3 @@
+-obj-$(CONFIG_ZCACHE)	+=	zcache.o tmem.o
++zcache-y	:=	tmem.o
++
++obj-$(CONFIG_ZCACHE)	+=	zcache.o
+diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
+index 2f3b484..3bec4db 100644
+--- a/drivers/staging/zram/Kconfig
++++ b/drivers/staging/zram/Kconfig
+@@ -1,6 +1,11 @@
++config XVMALLOC
++	bool
++	default n
++
+ config ZRAM
+ 	tristate "Compressed RAM block device support"
+ 	depends on BLOCK && SYSFS
++	select XVMALLOC
+ 	select LZO_COMPRESS
+ 	select LZO_DECOMPRESS
+ 	default n
+diff --git a/drivers/staging/zram/Makefile b/drivers/staging/zram/Makefile
+index b1709c5..2a6d321 100644
+--- a/drivers/staging/zram/Makefile
++++ b/drivers/staging/zram/Makefile
+@@ -1,3 +1,4 @@
+-zram-y	:=	zram_drv.o zram_sysfs.o xvmalloc.o
++zram-y	:=	zram_drv.o zram_sysfs.o
+ 
+ obj-$(CONFIG_ZRAM)	+=	zram.o
++obj-$(CONFIG_XVMALLOC)	+=	xvmalloc.o
+\ No newline at end of file
+diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+index ae0623a..1f9c508 100644
+--- a/drivers/staging/zram/xvmalloc.c
++++ b/drivers/staging/zram/xvmalloc.c
+@@ -14,6 +14,8 @@
+ #define DEBUG
+ #endif
+ 
++#include <linux/module.h>
++#include <linux/kernel.h>
+ #include <linux/bitops.h>
+ #include <linux/errno.h>
+ #include <linux/highmem.h>
+@@ -315,11 +317,13 @@ struct xv_pool *xv_create_pool(void)
+ 
+ 	return pool;
+ }
++EXPORT_SYMBOL_GPL(xv_create_pool);
+ 
+ void xv_destroy_pool(struct xv_pool *pool)
+ {
+ 	kfree(pool);
+ }
++EXPORT_SYMBOL_GPL(xv_destroy_pool);
+ 
+ /**
+  * xv_malloc - Allocate block of given size from pool.
+@@ -408,6 +412,7 @@ int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(xv_malloc);
+ 
+ /*
+  * Free block identified with <page, offset>
+@@ -484,6 +489,7 @@ void xv_free(struct xv_pool *pool, struct page *page, u32 offset)
+ 	put_ptr_atomic(page_start, KM_USER0);
+ 	spin_unlock(&pool->lock);
+ }
++EXPORT_SYMBOL_GPL(xv_free);
+ 
+ u32 xv_get_object_size(void *obj)
+ {
+@@ -492,6 +498,7 @@ u32 xv_get_object_size(void *obj)
+ 	blk = (struct block_header *)((char *)(obj) - XV_ALIGN);
+ 	return blk->size;
+ }
++EXPORT_SYMBOL_GPL(xv_get_object_size);
+ 
+ /*
+  * Returns total memory used by allocator (userdata + metadata)
+@@ -500,3 +507,4 @@ u64 xv_get_total_size_bytes(struct xv_pool *pool)
+ {
+ 	return pool->total_pages << PAGE_SHIFT;
+ }
++EXPORT_SYMBOL_GPL(xv_get_total_size_bytes);
+-- 
+1.7.3.5
 
-> > If you are only using this because Xen does/did it, that's not a valid
-> > excuse :)
-> Surely, you are joking.
-
-Not at all.
-
-> In any event I am sending you a new patch with that flag removed.
-
-Have you tested to see if you now loose all entropy, and it causes
-problems or not?
-
-thanks,
-
-greg k-h
