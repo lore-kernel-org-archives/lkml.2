@@ -1,330 +1,530 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab1BRPG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 10:06:28 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52250 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753686Ab1BRPFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 10:05:51 -0500
-From: Pratheesh Gangadhar <pratheesh@ti.com>
-To: davinci-linux-open-source@linux.davincidsp.com
-Cc: hjk@linutronix.de, gregkh@suse.de, pratheesh@ti.com,
-        amit.chatterjee@ti.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/2] PRUSS UIO driver support
-Date: Fri, 18 Feb 2011 20:35:29 +0530
-Message-Id: <1298041530-26855-2-git-send-email-pratheesh@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
+	id S1755710Ab1BRPHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 10:07:37 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:51405 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab1BRPHe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 10:07:34 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 09/13] can: pruss CAN driver.
+Date: Fri, 18 Feb 2011 16:07:20 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Subhasish Ghosh <subhasish@mistralsolutions.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        sachi@mistralsolutions.com, nsekhar@ti.com,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:CAN NETWORK DRIVERS" <socketcan-core@lists.berlios.de>,
+        "open list:CAN NETWORK DRIVERS" <netdev@vger.kernel.org>,
+        m-watkins@ti.com, Wolfgang Grandegger <wg@grandegger.com>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
+In-Reply-To: <1297435892-28278-10-git-send-email-subhasish@mistralsolutions.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102181607.20787.arnd@arndb.de>
+X-Provags-ID: V02:K0:ihW8TmqhIBoyaVabtJlz+rC1xPTkr6PTlCED/6JNX25
+ +Nrcdc+I77yU6Qw/Gg8ZV2zK+M17MTGBgJWnFEbF7bmwGwCzOz
+ VyVruDEQOxjSJgnv9eoUTgLSl97686j2kvXr6SRgJDseLFpHm4
+ A1G8YWP3r94NHQt8K6uqQtNMLx46P6GIgP4qmxyTvej1y7MA7w
+ 72kIoAfWQLR9dSDB0qR1w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
+On Friday 11 February 2011, Subhasish Ghosh wrote:
+> This patch adds support for the CAN device emulated on PRUSS.
 
-This patch implements PRUSS (Programmable Real-time Unit Sub System)
-UIO driver which exports SOC resources associated with PRUSS like
-I/O, memories and IRQs to user space. PRUSS is dual 32-bit RISC
-processors which is efficient in performing embedded tasks that
-require manipulation of packed memory mapped data structures and
-efficient in handling system events that have tight real time
-constraints. This driver is currently supported on Texas Instruments
-DA850, AM18xx and OMAPL1-38 devices.
-For example, PRUSS runs firmware for real-time critical industrial
-communication data link layer and communicates with application stack
-running in user space via shared memory and IRQs.
----
- drivers/uio/Kconfig     |   10 ++
- drivers/uio/Makefile    |    1 +
- drivers/uio/uio_pruss.c |  250 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 261 insertions(+), 0 deletions(-)
- create mode 100644 drivers/uio/uio_pruss.c
+Hi Subhasish,
 
-diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
-index bb44079..631ffe3 100644
---- a/drivers/uio/Kconfig
-+++ b/drivers/uio/Kconfig
-@@ -94,4 +94,14 @@ config UIO_NETX
- 	  To compile this driver as a module, choose M here; the module
- 	  will be called uio_netx.
- 
-+config UIO_PRUSS
-+	tristate "Texas Instruments PRUSS driver"
-+	depends on ARCH_DAVINCI_DA850
-+	default n
-+	help
-+	  PRUSS driver for OMAPL138/DA850/AM18XX devices
-+	  PRUSS driver requires user space components
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called uio_pruss.
-+
- endif
-diff --git a/drivers/uio/Makefile b/drivers/uio/Makefile
-index 18fd818..d4dd9a5 100644
---- a/drivers/uio/Makefile
-+++ b/drivers/uio/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_UIO_AEC)	+= uio_aec.o
- obj-$(CONFIG_UIO_SERCOS3)	+= uio_sercos3.o
- obj-$(CONFIG_UIO_PCI_GENERIC)	+= uio_pci_generic.o
- obj-$(CONFIG_UIO_NETX)	+= uio_netx.o
-+obj-$(CONFIG_UIO_PRUSS)         += uio_pruss.o
-diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
-new file mode 100644
-index 0000000..5ae78a5
---- /dev/null
-+++ b/drivers/uio/uio_pruss.c
-@@ -0,0 +1,250 @@
-+/*
-+ * Programmable Real-Time Unit Sub System (PRUSS) UIO driver (uio_pruss)
-+ *
-+ * This driver exports PRUSS host event out interrupts and PRUSS, L3 RAM,
-+ * and DDR RAM to user space for applications interacting with PRUSS firmware 
-+ *
-+ * Copyright (C) 2010-11 Texas Instruments Incorporated - http://www.ti.com/
-+ * 
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as 
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/uio_driver.h>
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/slab.h>
-+
-+#define DRV_NAME "pruss"
-+#define DRV_VERSION "0.50"
-+
-+/*
-+ * Host event IRQ numbers from PRUSS 	
-+ * 3 PRU_EVTOUT0 PRUSS Interrupt
-+ * 4 PRU_EVTOUT1 PRUSS Interrupt
-+ * 5 PRU_EVTOUT2 PRUSS Interrupt
-+ * 6 PRU_EVTOUT3 PRUSS Interrupt
-+ * 7 PRU_EVTOUT4 PRUSS Interrupt
-+ * 8 PRU_EVTOUT5 PRUSS Interrupt
-+ * 9 PRU_EVTOUT6 PRUSS Interrupt
-+ * 10 PRU_EVTOUT7 PRUSS Interrupt
-+*/
-+
-+#define MAX_PRUSS_EVTOUT_INSTANCE	(8)
-+
-+static struct clk *pruss_clk;
-+static struct uio_info *info[MAX_PRUSS_EVTOUT_INSTANCE];
-+static void *ddr_virt_addr;
-+static dma_addr_t ddr_phy_addr;
-+
-+static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
-+{
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit pruss_probe(struct platform_device *dev)
-+{
-+	int ret = -ENODEV;
-+	int count = 0;
-+	struct resource *regs_pruram, *regs_l3ram, *regs_ddr;
-+	char *string;
-+
-+	/* Power on PRU in case its not done as part of boot-loader */
-+	pruss_clk = clk_get(&dev->dev, "pruss");
-+	if (IS_ERR(pruss_clk)) {
-+		dev_err(&dev->dev, "Failed to get clock\n");
-+		ret = PTR_ERR(pruss_clk);
-+		pruss_clk = NULL;
-+		return ret;
-+	} else {
-+		clk_enable(pruss_clk);
-+	}
-+
-+	for (count = 0; count < MAX_PRUSS_EVTOUT_INSTANCE; count++) {
-+		info[count] = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
-+		if (!info[count])
-+			return -ENOMEM;
-+	}
-+
-+	regs_pruram = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	if (!regs_pruram) {
-+		dev_err(&dev->dev, "No memory resource specified\n");
-+		goto out_free;
-+	}
-+
-+	regs_l3ram = platform_get_resource(dev, IORESOURCE_MEM, 1);
-+	if (!regs_l3ram) {
-+		dev_err(&dev->dev, "No memory resource specified\n");
-+		goto out_free;
-+	}
-+
-+	regs_ddr = platform_get_resource(dev, IORESOURCE_MEM, 2);
-+	if (!regs_ddr) {
-+		dev_err(&dev->dev, "No memory resource specified\n");
-+		goto out_free;
-+	}
-+	ddr_virt_addr =
-+	    dma_alloc_coherent(&dev->dev, regs_ddr->end - regs_ddr->start + 1,
-+			       &ddr_phy_addr, GFP_KERNEL | GFP_DMA);
-+	if (!ddr_virt_addr) {
-+		dev_err(&dev->dev, "Could not allocate external memory\n");
-+		goto out_free;
-+	}
-+
-+	for (count = 0; count < MAX_PRUSS_EVTOUT_INSTANCE; count++) {
-+		info[count]->mem[0].addr = regs_pruram->start;
-+		info[count]->mem[0].size =
-+		    regs_pruram->end - regs_pruram->start + 1;
-+		if (!info[count]->mem[0].addr
-+		    || !(info[count]->mem[0].size - 1)) {
-+			dev_err(&dev->dev, "Invalid memory resource\n");
-+			break;
-+		}
-+		info[count]->mem[0].internal_addr =
-+		    ioremap(regs_pruram->start, info[count]->mem[0].size);
-+		if (!info[count]->mem[0].internal_addr) {
-+			dev_err(&dev->dev,
-+				"Can't remap memory address range\n");
-+			break;
-+		}
-+		info[count]->mem[0].memtype = UIO_MEM_PHYS;
-+
-+		info[count]->mem[1].addr = regs_l3ram->start;
-+		info[count]->mem[1].size =
-+		    regs_l3ram->end - regs_l3ram->start + 1;
-+		if (!info[count]->mem[1].addr
-+		    || !(info[count]->mem[1].size - 1)) {
-+			dev_err(&dev->dev, "Invalid memory resource\n");
-+			break;
-+		}
-+		info[count]->mem[1].internal_addr =
-+		    ioremap(regs_l3ram->start, info[count]->mem[1].size);
-+		if (!info[count]->mem[1].internal_addr) {
-+			dev_err(&dev->dev,
-+				"Can't remap memory address range\n");
-+			break;
-+		}
-+		info[count]->mem[1].memtype = UIO_MEM_PHYS;
-+
-+		info[count]->mem[2].addr = ddr_phy_addr;
-+		info[count]->mem[2].size = regs_ddr->end - regs_ddr->start + 1;
-+		if (!info[count]->mem[2].addr
-+		    || !(info[count]->mem[2].size - 1)) {
-+			dev_err(&dev->dev, "Invalid memory resource\n");
-+			break;
-+		}
-+		info[count]->mem[2].internal_addr = ddr_virt_addr;
-+		if (!info[count]->mem[2].internal_addr) {
-+			dev_err(&dev->dev,
-+				"Can't remap memory address range\n");
-+			break;
-+		}
-+		info[count]->mem[2].memtype = UIO_MEM_PHYS;
-+
-+		string = kzalloc(20, GFP_KERNEL);
-+		sprintf(string, "pruss_evt%d", count);
-+		info[count]->name = string;
-+		info[count]->version = "0.50";
-+
-+		/* Register PRUSS IRQ lines */
-+		info[count]->irq = IRQ_DA8XX_EVTOUT0 + count;
-+
-+		info[count]->irq_flags = IRQF_SHARED;
-+		info[count]->handler = pruss_handler;
-+
-+		ret = uio_register_device(&dev->dev, info[count]);
-+
-+		if (ret < 0)
-+			break;
-+	}
-+
-+	if (ret < 0) {
-+		if (ddr_virt_addr)
-+			dma_free_coherent(&dev->dev,
-+					  regs_ddr->end - regs_ddr->start + 1,
-+					  ddr_virt_addr, ddr_phy_addr);
-+		while (count--) {
-+			uio_unregister_device(info[count]);
-+			kfree(info[count]->name);
-+			iounmap(info[count]->mem[0].internal_addr);
-+		}
-+	} else {
-+		platform_set_drvdata(dev, info);
-+		return 0;
-+	}
-+
-+out_free:
-+	for (count = 0; count < MAX_PRUSS_EVTOUT_INSTANCE; count++)
-+		kfree(info[count]);
-+
-+	if (pruss_clk != NULL)
-+		clk_put(pruss_clk);
-+
-+	return ret;
-+}
-+
-+static int __devexit pruss_remove(struct platform_device *dev)
-+{
-+	int count = 0;
-+	struct uio_info **info;
-+
-+	info = (struct uio_info **)platform_get_drvdata(dev);
-+
-+	for (count = 0; count < MAX_PRUSS_EVTOUT_INSTANCE; count++) {
-+		uio_unregister_device(info[count]);
-+		kfree(info[count]->name);
-+
-+	}
-+	iounmap(info[0]->mem[0].internal_addr);
-+	iounmap(info[0]->mem[1].internal_addr);
-+	if (ddr_virt_addr)
-+		dma_free_coherent(&dev->dev, info[0]->mem[2].size,
-+				  info[0]->mem[2].internal_addr,
-+				  info[0]->mem[2].addr);
-+
-+	for (count = 0; count < MAX_PRUSS_EVTOUT_INSTANCE; count++)
-+		kfree(info[count]);
-+
-+	platform_set_drvdata(dev, NULL);
-+
-+	if (pruss_clk != NULL)
-+		clk_put(pruss_clk);
-+	return 0;
-+}
-+
-+static struct platform_driver pruss_driver = {
-+	.probe = pruss_probe,
-+	.remove = __devexit_p(pruss_remove),
-+	.driver = {
-+		   .name = DRV_NAME,
-+		   .owner = THIS_MODULE,
-+		   },
-+};
-+
-+static int __init pruss_init_module(void)
-+{
-+	return platform_driver_register(&pruss_driver);
-+}
-+
-+module_init(pruss_init_module);
-+
-+static void __exit pruss_exit_module(void)
-+{
-+	platform_driver_unregister(&pruss_driver);
-+}
-+
-+module_exit(pruss_exit_module);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_VERSION(DRV_VERSION);
-+MODULE_AUTHOR("Amit Chatterjee <amit.chatterjee@ti.com>");
-+MODULE_AUTHOR("Pratheesh Gangadhar <pratheesh@ti.com>");
--- 
-1.6.0.6
+This is a detailed walk through the can driver. The pruss_can.c
+file mostly looks good, there are very tiny changes that I'm
+suggesting to improve the code. I assume that you wrote that file.
 
+The pruss_can_api.c is a bit of a mess and looks like it was copied
+from some other code base and just barely changed to follow Linux
+coding style. I can tell from the main driver file that you can do
+better than that.
+
+My recommendation for that would be to throw it away and reimplement
+the few parts that you actually need, in proper coding style.
+You can also try to fix the file according to the comments I give
+you below, but I assume that would be signficantly more work.
+
+Moving everything into one file also makes things easier to read
+here and lets you identifer more quickly what is unused.
+
+	Arnd
+
+> +#ifdef __CAN_DEBUG
+> +#define __can_debug(fmt, args...) printk(KERN_DEBUG "can_debug: " fmt, ## args)
+> +#else
+> +#define __can_debug(fmt, args...)
+> +#endif
+> +#define __can_err(fmt, args...) printk(KERN_ERR "can_err: " fmt, ## args)
+
+Better use the existing dev_dbg() and dev_err() macros that provide the
+same functionality in a more standard way. You already use them in
+some places, as I noticed.
+
+If you don't have a way to pass a meaningful device, you can use
+pr_debug/pr_err.
+
+> +void omapl_pru_can_rx_wQ(struct work_struct *work)
+> +{
+
+This is only used in the same file, so better make it static.
+
+> +	if (-1 == pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl))
+> +		return;
+
+Don't make up your own return values, just use the standard error codes,
+e.g. -EIO or -EAGAIN, whatever fits.
+
+The more common way to write the comparison would be the other way round,
+
+	if (pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl) == -EAGAIN)
+		return;
+
+or, simpler
+
+	if (pru_can_get_intr_status(priv->dev, &priv->can_rx_hndl))
+		return;
+
+> +irqreturn_t omapl_tx_can_intr(int irq, void *dev_id)
+> +{
+
+This also should be static
+
+> +		for (bit_set = 0; ((priv->can_tx_hndl.u32interruptstatus & 0xFF)
+> +						>> bit_set != 0); bit_set++)
+> +		;
+
+	bit_set = fls(priv->can_tx_hndl.u32interruptstatus & 0xFF); ?
+
+> +irqreturn_t omapl_rx_can_intr(int irq, void *dev_id)
+
+static
+
+> diff --git a/drivers/net/can/da8xx_pruss/pruss_can_api.c b/drivers/net/can/da8xx_pruss/pruss_can_api.c
+> new file mode 100644
+> index 0000000..2f7438a
+> --- /dev/null
+> +++ b/drivers/net/can/da8xx_pruss/pruss_can_api.c
+
+A lot of code in this file seems to be unused. Is that right?
+I would suggest adding only the code that is actually being
+used. If you add more functionality later, you can always
+add back the low-level functions, but dead code usually
+turns into broken code quickly.
+
+> +static can_emu_drv_inst gstr_can_inst[ecanmaxinst];
+
+This is global data and probably needs some for of locking
+
+> +/*
+> + * pru_can_set_brp()	Updates the  BRP register of PRU0
+> + * and PRU1 of OMAP L138. This API will be called by the
+> + * Application to updtae the BRP register of PRU0 and PRU1
+> + *
+> + * param	u16bitrateprescaler		The can bus bitrate
+> + * prescaler value be set
+> + *
+> + * return   SUCCESS or FAILURE
+> + */
+> +s16 pru_can_set_brp(struct device *dev, u16 u16bitrateprescaler)
+> +{
+
+unused.
+
+> +	u32 u32offset;
+> +
+> +	if (u16bitrateprescaler > 255) {
+> +		return -1;
+> +	}
+
+non-standard error code. It also doesn't match the comment, which
+claims it is SUCCESS or FAILURE, both of which are (rightfully)
+not defined.
+
+> +	u32offset = (PRU_CAN_RX_CLOCK_BRP_REGISTER);
+> +	pruss_writel(dev, u32offset, (u32 *) &u16bitrateprescaler, 1);
+> +
+> +	u32offset = (PRU_CAN_TX_CLOCK_BRP_REGISTER);
+> +	pruss_writel(dev, u32offset, (u32 *) &u16bitrateprescaler, 1);
+
+You pass a 32 bit pointer to a 16 bit local variable here.
+This has an undefined effect, and if you build this code on
+a big-endian platform, it cannot possibly do anything good.
+
+pruss_writel() is defined in a funny way if it takes a thirty-two bit
+input argument by reference, rather than by value. What is going
+on there?
+
+> +s16 pru_can_set_bit_timing(struct device *dev,
+> +		can_bit_timing_consts *pstrbittiming)
+
+unused.
+
+> +	u32 u32offset;
+> +	u32 u32serregister;
+
+It's a bit silly to put the name of the type into the name
+of a variable. You already spell it out in the definition.
+
+> +s16 pru_can_write_data_to_mailbox(struct device *dev,
+> +			can_emu_app_hndl *pstremuapphndl)
+> +{
+> +	s16 s16subrtnretval;
+> +	u32 u32offset;
+> +
+> +	if (pstremuapphndl == NULL) {
+> +		return -1;
+> +	}
+
+nonstandard error code. Also, why the heck is type function
+return type s16 when the only possible return values are 0
+and -1? Just make this an int.
+
+> +	switch ((u8) pstremuapphndl->ecanmailboxnumber) {
+> +	case 0:
+> +		u32offset = (PRU_CAN_TX_MAILBOX0);
+> +		break;
+> +	case 1:
+> +		u32offset = (PRU_CAN_TX_MAILBOX1);
+> +		break;
+> +	case 2:
+> +		u32offset = (PRU_CAN_TX_MAILBOX2);
+> +		break;
+> +	case 3:
+> +		u32offset = (PRU_CAN_TX_MAILBOX3);
+> +		break;
+> +	case 4:
+> +		u32offset = (PRU_CAN_TX_MAILBOX4);
+> +		break;
+> +	case 5:
+> +		u32offset = (PRU_CAN_TX_MAILBOX5);
+> +		break;
+> +	case 6:
+> +		u32offset = (PRU_CAN_TX_MAILBOX6);
+> +		break;
+> +	case 7:
+> +		u32offset = (PRU_CAN_TX_MAILBOX7);
+> +		break;
+> +	default:
+> +		return -1;
+> +	}
+
+Lovely switch statement. I'm sure you find a better way to express this ;-)
+
+> +	s16subrtnretval = pruss_writel(dev, u32offset,
+> +		(u32 *) &(pstremuapphndl->strcanmailbox), 4);
+> +	if (s16subrtnretval == -1) {
+> +		return -1;
+> +	}
+> +	return 0;
+> +}
+
+return pruss_writel(...) ?
+
+> +
+> +/*
+> + * pru_can_get_intr_status()
+> + * Gets the interrupts status register value.
+> + * This API will be called by the Application
+> + * to get the interrupts status register value
+> + *
+> + * param  u8prunumber	PRU number for which IntStatusReg
+> + * has to be read
+> + *
+> + * return   SUCCESS or FAILURE
+> + */
+> +s16 pru_can_get_intr_status(struct device *dev,
+> +		can_emu_app_hndl *pstremuapphndl)
+> +{
+> +	u32 u32offset;
+> +	s16 s16subrtnretval = -1;
+> +
+> +	if (pstremuapphndl == NULL) {
+> +		return -1;
+> +	}
+
+In every function you check that pstremuapphndl is present. This seems
+rather pointless. How about just making sure you never pass a NULL
+value to these functions? That should not be hard at all from the
+high-level driver.
+
+> +	if (pstremuapphndl->u8prunumber == DA8XX_PRUCORE_1) {
+> +		u32offset = (PRU_CAN_TX_INTERRUPT_STATUS_REGISTER);
+> +	} else if (pstremuapphndl->u8prunumber == DA8XX_PRUCORE_0) {
+> +		u32offset = (PRU_CAN_RX_INTERRUPT_STATUS_REGISTER);
+> +	} else {
+> +		return -1;
+> +	}
+> +
+> +	s16subrtnretval = pruss_readl(dev, u32offset,
+> +		(u32 *) &pstremuapphndl->u32interruptstatus, 1);
+> +	if (s16subrtnretval == -1) {
+> +		return -1;
+> +	}
+
+You can also get rid of all these {} braces around one-line statements.
+
+> +/*
+> + * pru_can_get_mailbox_status()		Gets the mailbox status
+> + * register value. This API will be called by the Application
+> + * to get the mailbox status register value
+> + *
+> + * return   SUCCESS or FAILURE
+> + */
+> +s16 pru_can_get_mailbox_status(struct device *dev,
+> +		can_emu_app_hndl *pstremuapphndl)
+
+unused.
+
+> +/*
+> + * pru_can_config_mode_set()		Sets the timing value
+> + * for data transfer. This API will be called by the Application
+> + * to set timing valus for data transfer
+> + *
+> + * return   SUCCESS or FAILURE
+> + */
+> +s16 pru_can_config_mode_set(struct device *dev, bool bconfigmodeflag)
+
+unused.
+
+> +	u32offset = (PRU_CAN_TX_GLOBAL_CONTROL_REGISTER & 0xFFFF);
+> +	u32value = 0x00000000;
+> +	s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
+> +	if (s16subrtnretval == -1) {
+> +		return -1;
+> +	}
+> +
+> +	u32offset = (PRU_CAN_TX_GLOBAL_STATUS_REGISTER & 0xFFFF);
+> +	u32value = 0x00000040;
+> +	s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
+> +	if (s16subrtnretval == -1) {
+> +		return -1;
+> +	}
+> +	u32offset = (PRU_CAN_RX_GLOBAL_STATUS_REGISTER & 0xFFFF);
+> +	u32value = 0x00000040;
+> +	s16subrtnretval = pruss_writel(dev, u32offset, (u32 *) &u32value, 1);
+> +	if (s16subrtnretval == -1) {
+> +		return -1;
+> +	}
+
+<skipping 50 (!) more of these>
+
+After the third time of writing the same code, you should have noticed that
+there is some duplication involved that can trivially be reduced. A good
+way to express the same would be a table with the contents:
+
+static struct pru_can_register_init {
+	u16 offset;
+	u32 value;
+} = {
+	{ PRU_CAN_TX_GLOBAL_CONTROL_REGISTER, 0, },
+	{ PRU_CAN_TX_GLOBAL_STATUS_REGISTER, 0x40, },
+	{ PRU_CAN_RX_GLOBAL_STATUS_REGISTER, 0x40, },
+	...
+};
+
+
+> +
+> +
+> +/*
+> + * pru_can_emu_open()		Opens the can emu for
+> + * application to use. This API will be called by the Application
+> + * to Open the can emu for application to use.
+> + *
+> + * param	pstremuapphndl	Pointer to application handler
+> + * structure
+> + *
+> + * return   SUCCESS or FAILURE
+> + */
+> +s16 pru_can_emu_open(struct device *dev, can_emu_app_hndl *pstremuapphndl)
+
+unused.
+
+> +/*
+> + * brief    pru_can_emu_close()	Closes the can emu for other
+> + * applications to use. This API will be called by the Application to Close
+> + * the can emu for other applications to use
+> + *
+> + * param	pstremuapphndl	Pointer to application handler structure
+> + *
+> + * return   SUCCESS or FAILURE
+> + */
+> +s16 pru_can_emu_close(struct device *dev, can_emu_app_hndl *pstremuapphndl)
+
+unused
+
+> +s16 pru_can_emu_sreset(struct device *dev)
+> +{
+> +	return 0;
+> +}
+
+pointless.
+
+> +s16 pru_can_tx(struct device *dev, u8 u8mailboxnumber, u8 u8prunumber)
+> +{
+> +	u32 u32offset = 0;
+> +	u32 u32value = 0;
+> +	s16 s16subrtnretval = -1;
+> +
+> +	if (DA8XX_PRUCORE_1 == u8prunumber) {
+> +		switch (u8mailboxnumber) {
+> +		case 0:
+> +			u32offset = (PRU_CAN_TX_MAILBOX0_STATUS_REGISTER & 0xFFFF);
+> +			u32value = 0x00000080;
+> +			s16subrtnretval = pruss_writel(dev, u32offset,
+> +					(u32 *) &u32value, 1);
+> +			if (s16subrtnretval == -1) {
+> +				return -1;
+> +			}
+> +			break;
+> +		case 1:
+> +			u32offset = (PRU_CAN_TX_MAILBOX1_STATUS_REGISTER & 0xFFFF);
+> +			u32value = 0x00000080;
+> +			s16subrtnretval = pruss_writel(dev, u32offset,
+> +						(u32 *) &u32value, 1);
+> +			if (s16subrtnretval == -1) {
+> +				return -1;
+> +			}
+> +			break;
+> +		case 2:
+> +			u32offset = (PRU_CAN_TX_MAILBOX2_STATUS_REGISTER & 0xFFFF);
+
+Another pointless switch statement.
+
+> +s16 pru_can_mask_ints(struct device *dev, u32 int_mask)
+> +{
+> +	return 0;
+> +}
+> +
+> +int pru_can_get_error_cnt(struct device *dev, u8 u8prunumber)
+> +{
+> +	return 0;
+> +}
+
+useless.
+
+> +int pru_can_get_intc_status(struct device *dev)
+> +{
+> +	u32 u32offset = 0;
+> +	u32 u32getvalue = 0;
+> +	u32 u32clrvalue = 0;
+> +
+> +	u32offset = (PRUSS_INTC_STATCLRINT1 & 0xFFFF);
+> +	pruss_readl(dev, u32offset, (u32 *) &u32getvalue, 1);
+> +
+> +	if (u32getvalue & 4)
+> +		u32clrvalue = 34;	/* CLR Event 34 */
+> +
+> +	if (u32getvalue & 2)
+> +		u32clrvalue = 33;	/* CLR Event 33  */
+> +
+> +	if (u32clrvalue) {
+> +		u32offset = (PRUSS_INTC_STATIDXCLR & 0xFFFF);
+> +		pruss_writel(dev, u32offset, &u32clrvalue, 1);
+> +	} else
+> +		return -1;
+
+Could the controller signal both event 34 and 33 simultaneously?
+The only user of this function looks at the individual bits
+of the return value again, which looks wrong for all possible
+return values here.
+
+> +#ifndef _PRU_CAN_API_H_
+> +#define CAN_BIT_TIMINGS			(0x273)
+> +
+> +/* Timer Clock is sourced from DDR freq (PLL1 SYS CLK 2) */
+> +#define	TIMER_CLK_FREQ			132000000
+> +
+> +#define TIMER_SETUP_DELAY		14
+> +#define GPIO_SETUP_DELAY		150
+> +
+> +#define CAN_RX_PRU_0			PRUSS_NUM0
+> +#define CAN_TX_PRU_1			PRUSS_NUM1
+> +
+> +/* Number of Instruction in the Delay loop */
+> +#define DELAY_LOOP_LENGTH		2
+> +
+> +#define PRU1_BASE_ADDR			0x2000
+> +
+> +#define PRU_CAN_TX_GLOBAL_CONTROL_REGISTER		(PRU1_BASE_ADDR)
+> +#define PRU_CAN_TX_GLOBAL_STATUS_REGISTER		(PRU1_BASE_ADDR	+ 0x04)
+> +#define PRU_CAN_TX_INTERRUPT_MASK_REGISTER		(PRU1_BASE_ADDR	+ 0x08)
+> +#define PRU_CAN_TX_INTERRUPT_STATUS_REGISTER		(PRU1_BASE_ADDR	+ 0x0C)
+> +#define PRU_CAN_TX_MAILBOX0_STATUS_REGISTER		(PRU1_BASE_ADDR	+ 0x10)
+> +#define PRU_CAN_TX_MAILBOX1_STATUS_REGISTER		(PRU1_BASE_ADDR	+ 0x14)
+
+The header file should be used for interfaces between the two .c files,
+don't mix that with hardware specific definitions. Sometimes you may want
+to have register number lists in a header, if that list is going to be
+used in multiple places. In this case, there is just one user, so better
+move all those definitions over there.
+
+> +typedef enum {
+> +	ecaninst0 = 0,
+> +	ecaninst1,
+> +	ecanmaxinst
+> +} can_instance_enum;
+> +
+> +typedef enum {
+> +	ecanmailbox0 = 0,
+> +	ecanmailbox1,
+> +	ecanmailbox2,
+> +	ecanmailbox3,
+> +	ecanmailbox4,
+> +	ecanmailbox5,
+> +	ecanmailbox6,
+> +	ecanmailbox7
+> +} can_mailbox_number;
+> +
+> +typedef enum {
+> +	ecandirectioninit = 0,
+> +	ecantransmit,
+> +	ecanreceive
+> +} can_transfer_direction;
+
+The values are all unused, you only use the typedefs.
+IMHO it would be more sensible to just pass these as unsigned int
+or u32 values, but if you prefer, there is no reason to just do 
+
+typedef u32 can_mailbox_number;
+
+etc.
+
+> +typedef struct {
+> +	u16 u16extendedidentifier;
+> +	u16 u16baseidentifier;
+> +	u8 u8data7;
+> +	u8 u8data6;
+> +	u8 u8data5;
+> +	u8 u8data4;
+> +	u8 u8data3;
+> +	u8 u8data2;
+> +	u8 u8data1;
+> +	u8 u8data0;
+> +	u16 u16datalength;
+> +	u16 u16crc;
+> +} can_mail_box_structure;
+
+Please don't use typedef for complex data structures, and learn about
+better naming of identifiers. I would suggest writing this as
+
+struct pru_can_mailbox {
+	u16	ext_id;
+	u16	base_id;
+	u8	data[8]; /* note: reverse order */
+	u16	len;
+	u16	crc;
+};
+
+Sames rules apply to the other structures.
+
+	Arnd
