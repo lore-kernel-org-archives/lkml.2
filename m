@@ -1,97 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab1BRGEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 01:04:38 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:63914 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab1BRGEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 01:04:36 -0500
-Message-ID: <4D5E0BE2.6020104@cn.fujitsu.com>
-Date: Fri, 18 Feb 2011 14:04:18 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752859Ab1BRGSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 01:18:09 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:47021 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab1BRGSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 01:18:08 -0500
+Date: Fri, 18 Feb 2011 11:25:05 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v5 0/4] fadvise(DONTNEED) support
+Message-ID: <20110218055505.GA2648@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <cover.1297940291.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
- for CFQ queue
-References: <4D51ED26.8050809@cn.fujitsu.com> <4D539804.9090308@cn.fujitsu.com> <20110214181322.GJ13097@redhat.com>
-In-Reply-To: <20110214181322.GJ13097@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-18 14:03:29,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-18 14:03:30,
-	Serialize complete at 2011-02-18 14:03:30
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <cover.1297940291.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
+* MinChan Kim <minchan.kim@gmail.com> [2011-02-18 00:08:18]:
+
+> Sorry for my laziness. It's time to repost with some test result.
 > 
-> [..]
->> +/*
->> + * The time when a CFQ queue is put onto a service tree is recoreded in
->> + * cfqq->reposition_time. Currently, we check the first priority CFQ queues
->> + * on each service tree, and select the workload type that contains the lowest
->> + * reposition_time CFQ queue among them.
->> + */
->>  static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
->>  				struct cfq_group *cfqg, enum wl_prio_t prio)
->>  {
->>  	struct cfq_entity *cfqe;
->> +	struct cfq_queue *cfqq;
->> +	unsigned long lowest_start_time;
->>  	int i;
->> -	bool key_valid = false;
->> -	unsigned long lowest_key = 0;
->> +	bool time_valid = false;
->>  	enum wl_type_t cur_best = SYNC_NOIDLE_WORKLOAD;
->>  
->> +	/*
->> +	 * TODO: We may take io priority and io class into account when
->> +	 * choosing a workload type. But for the time being just make use of
->> +	 * reposition_time only.
->> +	 */
->>  	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
->> -		/* select the one with lowest rb_key */
->>  		cfqe = cfq_rb_first(service_tree_for(cfqg, prio, i));
->> -		if (cfqe &&
->> -		    (!key_valid || time_before(cfqe->rb_key, lowest_key))) {
->> -			lowest_key = cfqe->rb_key;
->> +		cfqq = cfqq_of_entity(cfqe);
->> +		if (cfqe && (!time_valid ||
->> +			     time_before(cfqq->reposition_time,
->> +					 lowest_start_time))) {
->> +			lowest_start_time = cfqq->reposition_time;
+> Recently, there was a reported problem about thrashing.
+> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+> It happens by backup workloads(ex, nightly rsync).
+> That's because the workload makes just use-once pages
+> and touches pages twice. It promotes the page into
+> active list so that it results in working set page eviction.
+> So app developer want to support POSIX_FADV_NOREUSE but other OSes include linux 
+> don't support it. (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
 > 
-> Gui,
+> By other approach, app developers use POSIX_FADV_DONTNEED.
+> But it has a problem. If kernel meets page is going on writing
+> during invalidate_mapping_pages, it can't work.
+> It makes application programmer to use it hard since they always 
+> consider sync data before calling fadivse(..POSIX_FADV_DONTNEED) to 
+> make sure the pages couldn't be discardable. At last, they can't use
+> deferred write of kernel so see performance loss.
+> (http://insights.oetiker.ch/linux/fadvise.html)
 > 
-> Have you had a chance to run some mixed workloads in a group (some sync,
-> some async and some sync-idle queues), and see how latency and throughput
-> of sync-idle workload changes due to this "resposition_time" logic. I 
-> just want to make sure that latency of sync-noidle workload does not
-> go up as that's the workload that people care and gets noticed first.
+> In fact, invalidation is very big hint to reclaimer.
+> It means we don't use the page any more. So the idea in this series is that
+> let's move invalidated pages but not-freed page until into inactive list.
+> It can help relcaim efficiency very much so that it can prevent
+> eviction working set.
+> 
+> My exeperiment is folowing as.
+> 
+> Test Environment :
+> DRAM : 2G, CPU : Intel(R) Core(TM)2 CPU
+> Rsync backup directory size : 16G
+> 
+> rsync version is 3.0.7.
+> rsync patch is Ben's fadivse.
+> The stress scenario do following jobs with parallel.
+> 
+> 1. git clone linux-2.6
+> 1. make all -j4 linux-mmotm
+> 3. rsync src dst
+> 
+> nrns : no-patched rsync + no stress
+> prns : patched rsync + no stress
+> nrs  : no-patched rsync + stress
+> prs  : patched rsync + stress
+> 
+> For profiling, I add some vmstat.
+> pginvalidate : the total number of pages which are moved by this patch.
+> pgreclaim : the number of pages which are moved at inactive's tail by PG_reclaim of pginvalidate
+> 
+>                         NRNS    PRNS    NRS     PRS 
+> Elapsed time            36:01.49        37:13.58        01:23:24        01:21:45
+> nr_vmscan_write         184     1       296     509 
+> pgactivate              76559   84714   445214  463143
+> pgdeactivate            19360   40184   74302   91423
+> pginvalidate            0       2240333 0       1769147
+> pgreclaim               0       1849651 0       1650796
+> pgfault                 406208  421860  72485217        70334416
+> pgmajfault              212     334     5149    3688
+> pgsteal_dma             0       0       0       0   
+> pgsteal_normal          2645174 1545116 2521098 1578651
+> pgsteal_high            5162080 2562269 6074720 3137294
+> pgsteal_movable         0       0       0       0   
+> pgscan_kswapd_dma       0       0       0       0   
+> pgscan_kswapd_normal    2641732 1545374 2499894 1557882
+> pgscan_kswapd_high      5143794 2567981 5999585 3051150
+> pgscan_kswapd_movable   0       0       0       0   
+> pgscan_direct_dma       0       0       0       0   
+> pgscan_direct_normal    3643    0       21613   21238
+> pgscan_direct_high      20174   1783    76980   87848
+> pgscan_direct_movable   0       0       0       0   
+> pginodesteal            130     1029    3510    24100
+> slabs_scanned           1421824 1648128 1870720 1880320
+> kswapd_steal            7785153 4105620 8498332 4608372
+> kswapd_inodesteal       189432  474052  342835  472503
+> pageoutrun              100687  52282   145712  70946
+> allocstall              22      1       149     163 
+> pgrotated               0       2231408 2932    1765393
+> unevictable_pgs_scanned 0       0       0       0   
+>
 
-Hi Vivek,
+The results do look impressive
+ 
 
-I made a quick test by using fio. It seems the number changes little
-between vanilla kernel and patched kernel.
-
-
-Vanilla:    SYNC read            SYNC-NOIDLE read      ASYNC write  
-         1. 23,640KB/s 5.40 ---- 6,696KB/s 19.07 ---- 50,142KB/s 128.00
-         2. 24,459KB/s 5.22 ---- 6,775KB/s 18.86 ---- 47,349KB/s 129.89
-         3. 25,929KB/s 4.93 ---- 7,378KB/s 17.32 ---- 32,350KB/s 131.88
-
-Patched:   SYNC read            SYNC-NOIDLE read      ASYNC write  
-        1. 24,000KB/s 5.32 ---- 6,942KB/s 18.39 ---- 30,860KB/s 135.95
-        2. 23,678KB/s 5.40 ---- 7,274KB/s 17.58 ---- 67,432KB/s 120.44
-        3. 23,004KB/s 5.55 ---- 6,621KB/s 19.30 ---- 36,536KB/s 148.64
-
-Thanks,
-Gui
+-- 
+	Three Cheers,
+	Balbir
