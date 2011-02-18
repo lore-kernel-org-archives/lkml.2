@@ -1,184 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab1BRDbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:31:19 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:42088 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752445Ab1BRDbR (ORCPT
+	id S1755102Ab1BRDdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:33:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751416Ab1BRDdg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:31:17 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-References: <20110217150224.GA26334@mail.hallyn.com>
-	<20110217150257.GA26395@mail.hallyn.com>
-Date: Thu, 17 Feb 2011 19:31:04 -0800
-In-Reply-To: <20110217150257.GA26395@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Thu, 17 Feb 2011 15:02:57 +0000")
-Message-ID: <m1k4gy81dz.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19YnOdGzbq7VRnII6cY9HDuhgsmEMVsGa0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/9] Add a user_namespace as creator/owner of uts_namespace
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Thu, 17 Feb 2011 22:33:36 -0500
+Date: Fri, 18 Feb 2011 14:33:25 +1100
+From: NeilBrown <neilb@suse.de>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: blk_throtl_exit taking q->queue_lock is problematic
+Message-ID: <20110218143325.5738e127@notabene.brown>
+In-Reply-To: <AANLkTi=t0vFTTDr9jBZ70UmJ9YYzziA0cRP8t0T9wswW@mail.gmail.com>
+References: <20110216183114.26a3613b@notabene.brown>
+	<20110216155305.GC14653@redhat.com>
+	<20110217113536.2bbf308e@notabene.brown>
+	<20110217011029.GA6793@redhat.com>
+	<20110217165501.47f3c26f@notabene.brown>
+	<20110217165906.GE9075@redhat.com>
+	<20110218134025.2a2e5bbb@notabene.brown>
+	<AANLkTi=t0vFTTDr9jBZ70UmJ9YYzziA0cRP8t0T9wswW@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+On Thu, 17 Feb 2011 22:19:52 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
 
-> copy_process() handles CLONE_NEWUSER before the rest of the
-> namespaces.  So in the case of clone(CLONE_NEWUSER|CLONE_NEWUTS)
-> the new uts namespace will have the new user namespace as its
-> owner.  That is what we want, since we want root in that new
-> userns to be able to have privilege over it.
+> On Thu, Feb 17, 2011 at 9:40 PM, NeilBrown <neilb@suse.de> wrote:
+> > On Thu, 17 Feb 2011 11:59:06 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> So if we do this change for performance reasons, it still makes sense
+> >> but doing this change because md provided a q->queue_lock and took away that
+> >> lock without notifying block layer hence we do this change, is still not
+> >> the right reason, IMHO.
+> >
+> > Well...I like that patch, as it makes my life easier....
+> >
+> > But I agree that md is doing something wrong.  Now that ->queue_lock is
+> > always initialised, it is wrong to leave it in a state where it not defined.
+> >
+> > So maybe I'll apply this (after testing it a bit.  The only reason for taking
+> > the lock queue_lock in a couple of places is to silence some warnings.
+> >
+> > Thanks,
+> > NeilBrown
+> >
+> >
+> > diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+> > index a23ffa3..909282d 100644
+> > --- a/drivers/md/raid1.c
+> > +++ b/drivers/md/raid1.c
+> > @@ -959,7 +961,9 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+> >                atomic_inc(&r1_bio->remaining);
+> >                spin_lock_irqsave(&conf->device_lock, flags);
+> >                bio_list_add(&conf->pending_bio_list, mbio);
+> > +               spin_lock(mddev->queue->queue_lock);
+> >                blk_plug_device(mddev->queue);
+> > +               spin_unlock(mddev->queue->queue_lock);
+> >                spin_unlock_irqrestore(&conf->device_lock, flags);
+> >        }
+> >        r1_bio_write_done(r1_bio, bio->bi_vcnt, behind_pages, behind_pages != NULL);
+> 
+> Noticed an inconsistency, raid10.c's additional locking also protects
+> the bio_list_add() whereas raid1.c's doesn't.  Seems the additional
+> protection in raid10 isn't needed?
 
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Correct - not needed at all.
+I put it there because it felt a little cleaner keeping the two 'lock's
+together like the two 'unlock's.  Probably confusing though...
 
->
-> Changelog:
-> 	Feb 15: don't set uts_ns->user_ns if we didn't create
-> 		a new uts_ns.
->
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> ---
->  include/linux/utsname.h |    3 +++
->  init/version.c          |    2 ++
->  kernel/nsproxy.c        |    5 +++++
->  kernel/user.c           |    8 ++++++--
->  kernel/utsname.c        |    4 ++++
->  5 files changed, 20 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/utsname.h b/include/linux/utsname.h
-> index 69f3997..85171be 100644
-> --- a/include/linux/utsname.h
-> +++ b/include/linux/utsname.h
-> @@ -37,9 +37,12 @@ struct new_utsname {
->  #include <linux/nsproxy.h>
->  #include <linux/err.h>
->  
-> +struct user_namespace;
-> +
->  struct uts_namespace {
->  	struct kref kref;
->  	struct new_utsname name;
-> +	struct user_namespace *user_ns;
->  };
->  extern struct uts_namespace init_uts_ns;
->  
-> diff --git a/init/version.c b/init/version.c
-> index adff586..97bb86f 100644
-> --- a/init/version.c
-> +++ b/init/version.c
-> @@ -21,6 +21,7 @@ extern int version_string(LINUX_VERSION_CODE);
->  int version_string(LINUX_VERSION_CODE);
->  #endif
->  
-> +extern struct user_namespace init_user_ns;
->  struct uts_namespace init_uts_ns = {
->  	.kref = {
->  		.refcount	= ATOMIC_INIT(2),
-> @@ -33,6 +34,7 @@ struct uts_namespace init_uts_ns = {
->  		.machine	= UTS_MACHINE,
->  		.domainname	= UTS_DOMAINNAME,
->  	},
-> +	.user_ns = &init_user_ns,
->  };
->  EXPORT_SYMBOL_GPL(init_uts_ns);
->  
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index f74e6c0..034dc2e 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -74,6 +74,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
->  		err = PTR_ERR(new_nsp->uts_ns);
->  		goto out_uts;
->  	}
-> +	if (new_nsp->uts_ns != tsk->nsproxy->uts_ns) {
-> +		put_user_ns(new_nsp->uts_ns->user_ns);
-> +		new_nsp->uts_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
-> +		get_user_ns(new_nsp->uts_ns->user_ns);
-> +	}
->  
->  	new_nsp->ipc_ns = copy_ipcs(flags, tsk->nsproxy->ipc_ns);
->  	if (IS_ERR(new_nsp->ipc_ns)) {
-> diff --git a/kernel/user.c b/kernel/user.c
-> index 5c598ca..9e03e9c 100644
-> --- a/kernel/user.c
-> +++ b/kernel/user.c
-> @@ -17,9 +17,13 @@
->  #include <linux/module.h>
->  #include <linux/user_namespace.h>
->  
-> +/*
-> + * userns count is 1 for root user, 1 for init_uts_ns,
-> + * and 1 for... ?
-> + */
->  struct user_namespace init_user_ns = {
->  	.kref = {
-> -		.refcount	= ATOMIC_INIT(2),
-> +		.refcount	= ATOMIC_INIT(3),
->  	},
->  	.creator = &root_user,
->  };
-> @@ -47,7 +51,7 @@ static struct kmem_cache *uid_cachep;
->   */
->  static DEFINE_SPINLOCK(uidhash_lock);
->  
-> -/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->creator */
-> +/* root_user.__count is 2, 1 for init task cred, 1 for init_user_ns->user_ns */
->  struct user_struct root_user = {
->  	.__count	= ATOMIC_INIT(2),
->  	.processes	= ATOMIC_INIT(1),
-> diff --git a/kernel/utsname.c b/kernel/utsname.c
-> index 8a82b4b..a7b3a8d 100644
-> --- a/kernel/utsname.c
-> +++ b/kernel/utsname.c
-> @@ -14,6 +14,7 @@
->  #include <linux/utsname.h>
->  #include <linux/err.h>
->  #include <linux/slab.h>
-> +#include <linux/user_namespace.h>
->  
->  static struct uts_namespace *create_uts_ns(void)
->  {
-> @@ -40,6 +41,8 @@ static struct uts_namespace *clone_uts_ns(struct uts_namespace *old_ns)
->  
->  	down_read(&uts_sem);
->  	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
-> +	ns->user_ns = old_ns->user_ns;
-> +	get_user_ns(ns->user_ns);
->  	up_read(&uts_sem);
->  	return ns;
->  }
-> @@ -71,5 +74,6 @@ void free_uts_ns(struct kref *kref)
->  	struct uts_namespace *ns;
->  
->  	ns = container_of(kref, struct uts_namespace, kref);
-> +	put_user_ns(ns->user_ns);
->  	kfree(ns);
->  }
+My other though is to stop using the block-layer plugging altogether like I
+have in RAID5 (Which I needed to do to make it work with DM).  Then I
+wouldn't need to touch queue_lock at all - very tempting.
+
+
+Thanks for the review.
+
+NeilBrown
+
+
+> 
+> > diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+> > index 3b607b2..60e6cb1 100644
+> > --- a/drivers/md/raid10.c
+> > +++ b/drivers/md/raid10.c
+> > @@ -970,8 +972,10 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+> >
+> >                atomic_inc(&r10_bio->remaining);
+> >                spin_lock_irqsave(&conf->device_lock, flags);
+> > +               spin_lock(mddev->queue->queue_lock);
+> >                bio_list_add(&conf->pending_bio_list, mbio);
+> >                blk_plug_device(mddev->queue);
+> > +               spin_unlock(mddev->queue->queue_lock);
+> >                spin_unlock_irqrestore(&conf->device_lock, flags);
+> >        }
+> >
+
