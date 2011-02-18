@@ -1,148 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab1BRNkS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 08:40:18 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:26882 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab1BRNkO (ORCPT
+	id S1754951Ab1BRNlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 08:41:07 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:39395 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750874Ab1BRNlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 08:40:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:from:date:to:reply-to:cc:subject;
-        b=UI9TpP3n1SgtWBm2vznyix4nwvERLgn8I6RGMObIuiXh7zaPcnQnagR17x6N+e6ZNV
-         MslrjvqTXbCeg5XsCRog==
-Message-ID: <4d5e76b8.815bdf0a.7ac3.774f@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Fri, 18 Feb 2011 14:40:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        eranian@google.com, robert.richter@amd.com, acme@redhat.com,
-        linux-perf-users@vger.kernel.org
-Subject: [PATCH] perf_events: fix rcu and locking issues with cgroup support
-X-System-Of-Record: true
+	Fri, 18 Feb 2011 08:41:04 -0500
+X-Authenticated: #911537
+X-Provags-ID: V01U2FsdGVkX19bCJc4JQZbzMjRpxPhGY92r1mAuiUidAiL2CKmMn
+	Umdj64hNphmJqW
+Date: Fri, 18 Feb 2011 14:40:50 +0100
+From: torbenh <torbenh@gmx.de>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Yong Zhang <yong.zhang0@gmail.com>, bharata@linux.vnet.ibm.com,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+Subject: Re: [patch] Re: autogroup: sched_setscheduler() fails
+Message-ID: <20110218134050.GF3124@siel.b>
+Mail-Followup-To: Mike Galbraith <efault@gmx.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Yong Zhang <yong.zhang0@gmail.com>, bharata@linux.vnet.ibm.com,
+	Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+	tglx@linutronix.de
+References: <20110111171046.GL4772@in.ibm.com>
+ <1294771686.8006.15.camel@marge.simson.net>
+ <1294810842.8370.7.camel@marge.simson.net>
+ <AANLkTimtwt+OGohMxGRC7L4Dm-h4wvCWYi-=13efqFtr@mail.gmail.com>
+ <1294890890.8089.39.camel@marge.simson.net>
+ <1295270160.30950.96.camel@laptop>
+ <20110215154612.GI3055@siel.b>
+ <1297788210.15382.51.camel@marge.simson.net>
+ <20110218110955.GA3124@siel.b>
+ <1298033412.8735.30.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298033412.8735.30.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches ensures that we do not end up calling
-perf_cgroup_from_task() when there is no cgroup event.
-This avoids potential RCU and locking issues.
+On Fri, Feb 18, 2011 at 01:50:12PM +0100, Mike Galbraith wrote:
+> On Fri, 2011-02-18 at 12:09 +0100, torbenh wrote:
+> > On Tue, Feb 15, 2011 at 05:43:30PM +0100, Mike Galbraith wrote:
+> > > On Tue, 2011-02-15 at 16:46 +0100, torbenh wrote:
+> > > > On Mon, Jan 17, 2011 at 02:16:00PM +0100, Peter Zijlstra wrote:
+> > > > > On Thu, 2011-01-13 at 04:54 +0100, Mike Galbraith wrote:
+> > > > > > sched, autogroup: fix CONFIG_RT_GROUP_SCHED sched_setscheduler() failure.
+> > > > > > 
+> > > > > > If CONFIG_RT_GROUP_SCHED is set, __sched_setscheduler() fails due to autogroup
+> > > > > > not allocating rt_runtime.  Free unused/unusable rt_se and rt_rq, redirect RT
+> > > > > > tasks to the root task group, and tell __sched_setscheduler() that it's ok.
+> > > > > > 
+> > > > > > Signed-off-by: Mike Galbraith <efault@gmx.de>
+> > > > > > Reported-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> > > > > 
+> > > > > Thanks, applied!
+> > > > 
+> > > > while this behaviour is certeinly necessary, i think this is a hack.
+> > > > it fixes the problem for autogroups.
+> > > > But its not fixed for things which want to control the cfs shares via
+> > > > normal cgroups.
+> > > 
+> > > You mean automated control ala systemd?  For a static set of groups, it
+> > > works fine.  I was wondering how systemd would deal with it.
+> > 
+> > but i can not get the same behaviour as if CONFIG_RT_GROUP_SCHED was
+> > off. iE N cgroups with different cpu.share values, but each with
+> > rt_runtime_us=950000
+> 
+> ? if CONFIG_RT_GROUP_SCHED was a noop, it wouldn't exist.
+> 
+> > if the rt_runtime_us was in a different subsystem, its my understanding
+> > that i could leave rt_runtime_us alone, and have all tasks in the root
+> > group in the rt_runtime subsystem.
+>  
+> Sounds like you just want to turn CONFIG_RT_GROUP_SCHED off.
+> 
+> > > The allocation problem was shamelessly punted back to the user, where I
+> > > think it truly belongs.
+> > 
+> > sure it belongs to the user. but what if user wants to have different
+> > cpu.shares, but full rt_runtime_us for all tasks ?
+> 
+> Then the user doesn't want CONFIG_RT_GROUP_SCHED set.
 
-The change in perf_cgroup_set_timestamp() ensures we
-check against ctx->nr_cgroups. It also avoids calling
-perf_clock() tiwce in a row. It also ensures we do need
-to grab ctx->lock before calling the function.
+many users dont configure their kernels themselves.
+and this setting is not dynamic.
 
-We drop update_cgrp_time() from task_clock_event_read()
-because it is not needed. This also avoids having to
-deal with perf_cgroup_from_task().
+i guess its highly unlikely any normal user wants CONFIG_RT_GROUP_SCHED.
+but maybe distros will turn it on. 
 
-Thanks to Peter Zijlstra for his help on this.
-
-Signed-off-by: Stephane Eranian <eranian@gmail.com>
----
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index a0a6987..438d73a 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -201,6 +201,11 @@ __get_cpu_context(struct perf_event_context *ctx)
- 
- #ifdef CONFIG_CGROUP_PERF
- 
-+/*
-+ * must ensure cgroup is pinned (css_get) before calling
-+ * this function. In other words, we cannot call this function
-+ * if there is no cgroup event for the current CPU context.
-+ */
- static inline struct perf_cgroup *
- perf_cgroup_from_task(struct task_struct *task)
- {
-@@ -268,28 +273,41 @@ static inline void update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx)
- 
- static inline void update_cgrp_time_from_event(struct perf_event *event)
- {
--	struct perf_cgroup *cgrp = perf_cgroup_from_task(current);
-+	struct perf_cgroup *cgrp;
-+
- 	/*
--	 * do not update time when cgroup is not active
-+	 * ensure we access cgroup data only when needed and
-+	 * when we know the cgroup is pinned (css_get)
- 	 */
--	if (!event->cgrp || cgrp != event->cgrp)
-+	if (!is_cgroup_event(event))
- 		return;
- 
--	__update_cgrp_time(event->cgrp);
-+	cgrp = perf_cgroup_from_task(current);
-+	/*
-+	 * do not update time when cgroup is not active
-+	 */
-+	if (cgrp == event->cgrp)
-+		__update_cgrp_time(event->cgrp);
- }
- 
- static inline void
--perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
-+perf_cgroup_set_timestamp(struct task_struct *task,
-+			  struct perf_event_context *ctx)
- {
- 	struct perf_cgroup *cgrp;
- 	struct perf_cgroup_info *info;
- 
--	if (!task)
-+	/*
-+	 * ctx->lock held by caller
-+	 * ensure we do not access cgroup data
-+	 * unless we have the cgroup pinned (css_get)
-+	 */
-+	if (!task || !ctx->nr_cgroups)
- 		return;
- 
- 	cgrp = perf_cgroup_from_task(task);
- 	info = this_cpu_ptr(cgrp->info);
--	info->timestamp = now;
-+	info->timestamp = ctx->timestamp;
- }
- 
- #define PERF_CGROUP_SWOUT	0x1 /* cgroup switch out every event */
-@@ -494,7 +512,8 @@ static inline int perf_cgroup_connect(pid_t pid, struct perf_event *event,
- }
- 
- static inline void
--perf_cgroup_set_timestamp(struct task_struct *task, u64 now)
-+perf_cgroup_set_timestamp(struct task_struct *task,
-+			  struct perf_event_context *ctx)
- {
- }
- 
-@@ -1613,7 +1632,7 @@ static int __perf_event_enable(void *info)
- 	/*
- 	 * set current task's cgroup time reference point
- 	 */
--	perf_cgroup_set_timestamp(current, perf_clock());
-+	perf_cgroup_set_timestamp(current, ctx);
- 
- 	__perf_event_mark_enabled(event, ctx);
- 
-@@ -2048,7 +2067,7 @@ ctx_sched_in(struct perf_event_context *ctx,
- 
- 	now = perf_clock();
- 	ctx->timestamp = now;
--	perf_cgroup_set_timestamp(task, now);
-+	perf_cgroup_set_timestamp(task, ctx);
- 	/*
- 	 * First go through the list and put on any pinned groups
- 	 * in order to give them the best chance of going on.
-@@ -5795,7 +5814,6 @@ static void task_clock_event_read(struct perf_event *event)
- 
- 	if (!in_nmi()) {
- 		update_context_time(event->ctx);
--		update_cgrp_time_from_event(event);
- 		time = event->ctx->time;
- 	} else {
- 		u64 now = perf_clock();
+-- 
+torben Hohn
