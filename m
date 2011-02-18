@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab1BRTaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 14:30:30 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57748 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558Ab1BRTa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 14:30:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=f0A1meez/oK9yYG73zbA+KdCX3aTwitH73d7ejvOXJyxMPMxuGD9ltsfosQ0QyeZ5s
-         UgDl0i5tJN9LB/XQVoE7MM4MvlbjbJ3dZjqcB7QtTxX3Lh9OISh0c8sdnGCnIAAuXc73
-         81uVUrRDRvV9DZgbRtBYCfxhdYtdPnJ/WdPJ8=
-Date: Fri, 18 Feb 2011 20:29:56 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <daahern@cisco.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, paulus@samba.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 3/3] perf events: add timehist option to record and
- report
-Message-ID: <20110218192953.GB5658@nowhere>
-References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
- <1298008433-22911-4-git-send-email-daahern@cisco.com>
- <20110218070657.GA11404@elte.hu>
- <4D5E8204.2090501@cisco.com>
- <20110218175926.GA3445@nowhere>
- <20110218184119.GC302@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110218184119.GC302@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758392Ab1BRTjC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 14:39:02 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43020
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754845Ab1BRTjA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 14:39:00 -0500
+Date: Fri, 18 Feb 2011 11:39:36 -0800 (PST)
+Message-Id: <20110218.113936.193694941.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: xiaosuo@gmail.com, linux@horizon.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, roland@purestorage.com, dbaluta@ixiacom.com
+Subject: Re: [PATCH v2] net: provide default_advmss() methods to blackhole
+ dst_ops
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1298036672.6201.65.camel@edumazet-laptop>
+References: <AANLkTi=O1LZzSc8=qMX=R3rJpCVL8eWr1eo6NkiZXS0m@mail.gmail.com>
+	<1298036005.6201.58.camel@edumazet-laptop>
+	<1298036672.6201.65.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 04:41:19PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Feb 18, 2011 at 06:59:30PM +0100, Frederic Weisbecker escreveu:
-> >   sched:sched_wait_task                      [Tracepoint event]
-> >   sched:sched_wakeup                         [Tracepoint event]
-> >   sched:sched_wakeup_new                     [Tracepoint event]
-> >   sched:sched_switch                         [Tracepoint event]
-> >   sched:sched_migrate_task                   [Tracepoint event]
-> >   sched:sched_process_free                   [Tracepoint event]
-> >   sched:sched_process_exit                   [Tracepoint event]
-> > 
-> > 
-> > You have the sched:sched_switch event and many others.
-> > 
-> > Just try:
-> > 
-> > perf record -a -e sched:*
-> > perf script
-> > 
-> >             perf-4128  [000] 19242.870025: sched_stat_runtime: comm=perf pid=4128 runtime=7430405 [ns] vruntime=3530192223488 
-> >             perf-4128  [000] 19242.870042: sched_stat_runtime: comm=perf pid=4128 runtime=23142 [ns] vruntime=3530192246630 [n
-> >             perf-4128  [000] 19242.870045: sched_stat_sleep: comm=kondemand/0 pid=59 delay=9979163 [ns]
-> >             perf-4128  [000] 19242.870048: sched_wakeup: comm=kondemand/0 pid=59 prio=120 success=1 target_cpu=000
-> >             perf-4128  [000] 19242.870063: sched_stat_runtime: comm=perf pid=4128 runtime=21581 [ns] vruntime=3530192268211 [n
-> >             perf-4128  [000] 19242.870066: sched_stat_wait: comm=kondemand/0 pid=59 delay=21581 [ns]
-> >             perf-4128  [000] 19242.870069: sched_switch: prev_comm=perf prev_pid=4128 prev_prio=120 prev_state=R ==> next_comm
-> >      kondemand/0-59    [000] 19242.870091: sched_stat_runtime: comm=kondemand/0 pid=59 runtime=27362 [ns] vruntime=35301862739
-> >      kondemand/0-59    [000] 19242.870094: sched_stat_wait: comm=perf pid=4128 delay=27362 [ns]
-> >      kondemand/0-59    [000] 19242.870095: sched_switch: prev_comm=kondemand/0 prev_pid=59 prev_prio=120 prev_state=S ==> next
-> > 
-> > And you can run your own script on these events:
-> > 
-> > $ sudo ./perf script -g python
-> > generated Python script: perf-script.py
-> > 
-> > Edit perf-script.py and then run it:
-> > 
-> > $ perf script -s ./perf-script.py
-> > 
-> > That also works for perl.
-> > 
-> > The timestamps will be the cpu time and not the walltime, but at least that seems
-> > to be partly what you seek?
-> 
-> The whole issue for him, AFAIK, is to correlate perf events with app
-> events.
-> 
-> Think about tcpdump + networking tracepoints or 'perf probe' dynamic
-> events in the network stack, he wants to merge those logs and correlate
-> the tcpdump packet exchange with the tracepoints events in the network
-> stack, etc.
-> 
-> I.e. it doesn't matter if it is ftrace or not, having a common clock
-> shared between apps and kernel tracing/whatever infrastructure is what
-> David is after, right?
-> 
-> He can change userspace to use the clock the kernel is using in the
-> perf/ftrace/whatever infrastructure or make the kernel use the clock
-> userspace uses.
-> 
-> The issue here is who will bend, u or k ;-)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 18 Feb 2011 14:44:32 +0100
 
-Right. I don't disagree with the need of a walltime. That already
-in debate :)
+> Le vendredi 18 février 2011 à 14:33 +0100, Eric Dumazet a écrit :
+> 
+>> I had this exact idea but found we need struct net pointer to get this
+>> value, not provided in parameters, so I falled back to the 256 value.
+>> 
+>> 
+> 
+> Hmm, reading again this stuff, maybe we can just use
+> ipv4_default_advmss() instead of a custom one.
+> 
+> dst->dev should be available
+> 
+> [PATCH] net: provide default_advmss() methods to blackhole dst_ops
+> 
+> Commit 0dbaee3b37e118a (net: Abstract default ADVMSS behind an
+> accessor.) introduced a possible crash in tcp_connect_init(), when
+> dst->default_advmss() is called from dst_metric_advmss()
+> 
+> Reported-by: George Spelvin <linux@horizon.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-I was rather arguing about the tracing part. Adding support in perf report
-in the wrong way to do this. If something must be extended, It should be done
-in perf script, where we do the tracing support.
+Yes, this is a lot better, applied.
+
+Thanks!
