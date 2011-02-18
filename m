@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab1BRUut (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 15:50:49 -0500
-Received: from juliet.he.net ([184.105.210.2]:53384 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752891Ab1BRUuq convert rfc822-to-8bit (ORCPT
+	id S1754084Ab1BRVMC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 16:12:02 -0500
+Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:55985 "EHLO
+	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751062Ab1BRVMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 15:50:46 -0500
-Date: Fri, 18 Feb 2011 12:50:43 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] kbuild: reenable section mismatch analysis
-Message-Id: <20110218125043.d65a4064.rdunlap@xenotime.net>
-In-Reply-To: <1298062040-2774-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <20110216200734.GA25184@merkur.ravnborg.org>
-	<1298062040-2774-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Feb 2011 16:12:00 -0500
+Date: Fri, 18 Feb 2011 22:11:40 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110218211140.GA2066@host1.dyn.jankratochvil.net>
+References: <20110204105343.GA12133@htj.dyndns.org>
+ <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+ <20110216215157.GA6054@host1.dyn.jankratochvil.net>
+ <201102170437.51382.vda.linux@googlemail.com>
+ <20110217191952.GA13611@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110217191952.GA13611@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011 21:47:20 +0100 Uwe Kleine-König wrote:
-
-> This was disabled in commit
+On Thu, 17 Feb 2011 20:19:52 +0100, Oleg Nesterov wrote:
+> > > That is after PTRACE_DETACH(0) the process should remain `T (stopped)'
+> > > iff the process was `T (stopped)' before PTRACE_ATTACH.
+> > >  - PTRACE_DETACH(0)       should preserve `T (stopped)'.
+> >
+> > I assume you are thinking about PTRACE_ATTACH + wait():SIGSTOP
+> > + PTRACE_DETACH(0) sequence.
 > 
-> 	e5f95c8 (kbuild: print only total number of section mismatces found)
-> 
-> because there were too many warnings.  Now we're down to a reasonable
-> number again, so we start scaring people with the details.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> plus it should be stopped before attach, I assume. Otherwise this
+> not true with the current code.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+I did not talk about the current code.  I was making a proposal of new
+behavior (which should not break existing software).
 
-Thanks.
-
-> ---
->  lib/Kconfig.debug |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
-> 
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 2b97418..0f77ed1 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -102,11 +102,7 @@ config HEADERS_CHECK
->  
->  config DEBUG_SECTION_MISMATCH
->  	bool "Enable full Section mismatch analysis"
-> -	depends on UNDEFINED || (BLACKFIN)
->  	default y
-> -	# This option is on purpose disabled for now.
-> -	# It will be enabled when we are down to a reasonable number
-> -	# of section mismatch warnings (< 10 for an allyesconfig build)
->  	help
->  	  The section mismatch analysis checks if there are illegal
->  	  references from one section to another section.
-> -- 
+If PTRACE_ATTACH was done on process with `T (stopped)' then after
+PTRACE_DETACH(0) again the process should be `T (stopped)'.
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Regards,
+Jan
