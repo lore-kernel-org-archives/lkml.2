@@ -1,104 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab1BRTxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 14:53:41 -0500
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:53276 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab1BRTxh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 14:53:37 -0500
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACddXk2rR7Hu/2dsb2JhbACmJ3OfTJszhV4EhQuHBoM6
-X-IronPort-AV: E=Sophos;i="4.62,188,1297036800"; 
-   d="scan'208";a="663150268"
-Message-ID: <4D5ECE3E.4040407@cisco.com>
-Date: Fri, 18 Feb 2011 12:53:34 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S932111Ab1BRTzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 14:55:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12548 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753551Ab1BRTzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 14:55:02 -0500
+Date: Fri, 18 Feb 2011 14:54:55 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
+        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Avoid preferential treatment of groups that aren't
+ backlogged
+Message-ID: <20110218195454.GI26654@redhat.com>
+References: <20110210013211.21573.69260.stgit@neat.mtv.corp.google.com>
+ <20110210020946.GA27040@redhat.com>
+ <AANLkTi=dZDK6VosLX8JH4gJyRQ0KXGKMA5vhJ-7D93s7@mail.gmail.com>
+ <20110210035738.GC27040@redhat.com>
+ <AANLkTi=J8x3cEhQ_tJJ0=YM6+y_ZNLtK_34PweQfNJL8@mail.gmail.com>
+ <AANLkTimdOO2qvafZ9f6csjqhh1e5w1iOEybN+1-3G3ep@mail.gmail.com>
+ <20110211181533.GG8773@redhat.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        acme@ghostprotocols.net, paulus@samba.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 3/3] perf events: add timehist option to record and report
-References: <1298008433-22911-1-git-send-email-daahern@cisco.com> <1298008433-22911-4-git-send-email-daahern@cisco.com> <20110218070657.GA11404@elte.hu> <4D5E8204.2090501@cisco.com> <20110218175926.GA3445@nowhere> <4D5EB564.6030504@cisco.com> <20110218192433.GA5658@nowhere>
-In-Reply-To: <20110218192433.GA5658@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110211181533.GG8773@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 02/18/11 12:24, Frederic Weisbecker wrote:
->> We want not only context-switch events, but the stack trace at the
->> switch. For example, with the stack trace you can see preemption -- when
->> a process got booted by another and where the booted process is at the
->> time. You can see not only which system call caused an ap to block
->> (e.g., an ioctl) but the full code path leading to the block.
+On Fri, Feb 11, 2011 at 01:15:33PM -0500, Vivek Goyal wrote:
+> On Thu, Feb 10, 2011 at 04:36:25PM -0800, Chad Talbott wrote:
+> > On Thu, Feb 10, 2011 at 10:57 AM, Chad Talbott <ctalbott@google.com> wrote:
+> > > On Wed, Feb 9, 2011 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > >> If you ran different random readers in different groups of differnet
+> > >> weight with group_isolation=1, then there is a case of having service
+> > >> differentiation. In that case we will idle for 8ms on each group before
+> > >> we expire the group. So in these test cases are low weight groups not
+> > >> submitting IO with-in 8ms? Putting a random reader in separate group
+> > >> with think time > 8, I think is going to hurt a lot because for every
+> > >> single IO dispatched group is going to weight for 8ms before it is
+> > >> expired.
+> > >
+> > > You're right about the behavior of group_idle.  We have more
+> > > experience with earlier kernels (before group_idle).  With this patch
+> > > we are able to achieve isolation without group_idle even with these
+> > > large ratios.  (Without group_idle the random reader workloads will
+> > > get marked seeky, and idling is disabled.  Without group_idle, we have
+> > > to remember the vdisktime to get isolation.)
+> > >
+> > >> Can you run blktrace and verify what's happenig?
+> > >
+> > > I can run a blktrace, and I think it will show what you expect.
+> > 
+> > So, I ran the following two tests and took a blktrace.
+> > 
+> > 950 rdrand, 50 rdrand.delay10
+> > weight 950 random reader with low think time vs weight 50 random
+> > reader with 10ms think time
+> > 
+> > 950 rdrand, 50 rdrand.delay50 # 50ms think time
+> > weight 950 random reader with low think time vs weight 50 random
+> > reader with 50ms think time
+> > 
+> > I find that we are still idling for these random readers, even the one
+> > with 50ms think time.  group_idle is 0 according to blktrace.
+> > 
+> > With this patch, both of these cases have correct isolation.  Without
+> > this patch, the small weight reader is able to get more than its
+> > share.
+> > 
+> > I think that idling for a random reader with a 50ms think time is
+> > likely a bug, but a separate issue.
 > 
-> You can recognize preemption a the context switch tracepoint: if the state
-> of the scheduled out task is R (TASK_RUNNING), which means it doesn't go
-> to sleep but gets preempted, with an explicit preemption point like cond_resched(),
-> or a more implicit one: spin_unlock(), preempt_enable(), an interrupt, ...
-> Or it has been woken up while it was about to sleep, but it doesn't make much
-> difference.
+> Thanks for checking this out. I agree that for a low weight random
+> reader/writer which high think time, we need to remember the vdisktime
+> otherwise it will showup as a fresh new candidate and get more done.
 > 
-> If you want to know when a process is booted by another you can use the
-> fork tracepoint, or sched:wake_up_new, etc...
+> Having said that, one can say that random reader/writer doing small
+> amount of IO should be able to get job done really fast and the one
+> who are hogging the disk for long time, should get higher vdisktime.
 > 
-> And you can use syscall tracepoints to get the syscalls you want.
+> So with this scheme, a random reader/writer shall have to be of higher
+> weight to get the job done fast. A low weight reader/writer will still
+> get higher vdisktime and get lesser share. I think it is reasonable.
 > 
-> I don't see much the point for you to use stacktraces. But if you
-> do, then rather add this support to perf script, in our scripting
-> framework.
+> And yes, even with group_idle=0 if we are idling on a 50ms thinktime
+> random reader it sounds like a bug.
 
-It's more the simplicity of what we are using today. 1 command, 1 event
-being monitored:
+Thinking more about it, I think it must be happening because of the fact
+that random IO goes on sync-noidle tree of group and there we idle on
+whole tree. I think if you set slice_idle=0 along with group_idle=0, that
+idling should go away.
 
-  perf record -ag -e cs -c 1
-
-A wealth of information. That command shows preemption, stack traces
-only for context-switches (not all of the syscalls which is
-overwhelming) and opens the door for other analysis. One data set.
-Simple. Focused.
-
-> 
-> Because what you've done is basically to add tracing support to
-> perf report. But we have perf script for that already. It only focuses
-> on tracepoint events but they are those people are interested in
-> because they show logical events in the kernel. I guess
-> people are not interested in cpu-cycles overflows events or so as
-> they don't show a state change in the kernel.
-
-I have always referred to this as pretty printing each sample recorded
-as opposed to summarizing into a histogram. With that approach you have
-dictated the analysis of the data - a histogram summary. By printing
-each sample with address-symbol conversions we can look at it in
-whatever angle we need to make sense of it.
-
-David
-
-
-> 
-> Well, yeah I can understand if one considers the software events,
-> that makes meaningful events from the kernel. But these software events
-> support have been a mistake in perf. You should rather use the
-> tracepoint events instead.
->  
->> That data along with the gettimeofday timestamp has allowed us to
->> resolve performance issues such as a system call taking longer than
->> expected during a specific sequence of events or a process getting
->> preempted and not scheduled for N seconds. etc., etc.
-> 
-> That's about the same here. If you really need this, you need to add
-> the support in perf script to handle that on tracepoint events.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks
+Vivek
