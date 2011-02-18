@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab1BRKld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 05:41:33 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:52525 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757296Ab1BRKl2 (ORCPT
+	id S1757296Ab1BRKms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 05:42:48 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50541 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab1BRKmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 05:41:28 -0500
-Message-ID: <4D5E4CC1.1010705@metafoo.de>
-Date: Fri, 18 Feb 2011 11:41:05 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Fri, 18 Feb 2011 05:42:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+Subject: Re: [PATCH 09/12] unicore32 machine related files: hardware registers
+Date: Fri, 18 Feb 2011 11:42:42 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        "'Greg KH'" <greg@kroah.com>
+References: <015301cbcdae$55cdb7e0$016927a0$@mprc.pku.edu.cn> <201102171759.45365.arnd@arndb.de> <00e901cbcf51$8507c290$8f1747b0$@mprc.pku.edu.cn>
+In-Reply-To: <00e901cbcf51$8507c290$8f1747b0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 01/09] ARM: s3c2442: gta02: Fix usage gpio bank j pin
- definitions
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
-In-Reply-To: <1297043521-21903-1-git-send-email-lars@metafoo.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102181142.42614.arnd@arndb.de>
+X-Provags-ID: V02:K0:b4jKJ/daw4c3yISYbw0oAttfI4gxQC1oGuhOipLYeyd
+ V6c7b+rhbbLLQi9C9bbyuqSg/oE9675Vha/H5+O7WAMY/AE31a
+ b8GlMNu/EGh7+k7niW+EYsJ9WzKsdchbkRpiAm0mkj3jcSJKT4
+ vZDGNYa/XT/8xNbmOK1PdDPLIT1ATf7L90xAQJeZD1+UfjpXVZ
+ mlW8tn1KL6CoIsDyveTNg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 02:51 AM, Lars-Peter Clausen wrote:
-> The gta02 header file still uses the old S3C2410_GPJx defines instead of the
-> S3C2410_GPJ(x) macro. Since the S3C2410_GPJx defines have already been removed
-> this causes the following build failure:
-> 
-> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_set_spk':
-> 	sound/soc/samsung/neo1973_wm8753.c:259: error: 'S3C2440_GPJ2' undeclared (first use in this function)
-> 	sound/soc/samsung/neo1973_wm8753.c:259: error: (Each undeclared identifier is reported only once
-> 	sound/soc/samsung/neo1973_wm8753.c:259: error: for each function it appears in.)
-> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_get_spk':
-> 	sound/soc/samsung/neo1973_wm8753.c:267: error: 'S3C2440_GPJ2' undeclared (first use in this function)
-> 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_event':
-> 	sound/soc/samsung/neo1973_wm8753.c:276: error: 'S3C2440_GPJ1' undeclared (first use in this function)
-> 	sound/soc/samsung/neo1973_wm8753.c: At top level:
-> 	sound/soc/samsung/neo1973_wm8753.c:439: error: 'S3C2440_GPJ2' undeclared here (not in a function)
-> 	sound/soc/samsung/neo1973_wm8753.c:440: error: 'S3C2440_GPJ1' undeclared here (not in a function)
-> 
-> This patches fixes the issue by doing a s,S3C2410_GPJ([\d]+),S3C2410_GPJ(\1),g
-> on the file.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+On Friday 18 February 2011 10:52:12 Guan Xuetao wrote:
 
+> > On Wednesday 16 February 2011, Guan Xuetao wrote:
+> > > +#define io_p2v(x)      ((x) - PKUNITY_IOSPACE_BASE)
+> > > +#define io_v2p(x)      ((x) + PKUNITY_IOSPACE_BASE)
+> > > +
+> > > +#ifndef __ASSEMBLY__
+> > > +
+> > > +# define __REG(x)      (*((volatile unsigned long *)io_p2v(x)))
+> > > +# define __PREG(x)     (io_v2p((unsigned long)&(x)))
+> > > +
+> > > +#else
+> > > +
+> > > +# define __REG(x)      io_p2v(x)
+> > > +# define __PREG(x)     io_v2p(x)
+> > 
+> > > #define PKUNITY_IOSPACE_BASE            0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
+> > 
+> > The typecasts look wrong here:
+> > 
+> > - "volatile unsigned long*" is not the right pointer type to do I/O on. It
+> >   should instead be "void __iomem *". Please use the "sparse" tool with "make C=1"
+> >   to get warnings about incorrect pointer type accesses.
+> __REG() macro could be used in both left and right sides of assignment sentence.
+> This idea is borrowed from arm/sa1100.
+>
+> When used in left side, __REG is a register port, and when used in right side, 
+> __REG is just the value of the register.
+> It is a trick, but very useful. I'd like to remain the macros.
+ 
+Ok, I didn't realize this. However, this is a really bad idea
+and I would strongly advise removing this throughout the code.
 
-Hi
+The only way we do MMIO accesses in Linux is through the
+readl()/writel() functions. On many architectures, these
+contain more than just a pointer dereference, and if you
+need that, you can change it in just one place.
 
-Ben or Kukjin could you take a look at this series and merge it, if it is ok?
+Things that can go wrong with volatile pointer dereferences include:
 
-- Lars
+* compiler turns 32 bit access into four 8-bit accesses
+* I/O bus reorders access and it moves outside of a spinlock
+* non-volatile accesses to system RAM get reordered around
+  MMIO access, which may break if the MMIO triggers a DMA.
 
+> diff --git a/arch/unicore32/include/mach/PKUnity.h b/arch/unicore32/include/mach/PKUnity.h
+> index 1e13208..39f27f4 100644
+> --- a/arch/unicore32/include/mach/PKUnity.h
+> +++ b/arch/unicore32/include/mach/PKUnity.h
+> @@ -21,7 +21,7 @@
+>   * Memory Definitions
+>   */
+>  #define PKUNITY_SDRAM_BASE		0x00000000 /* 0x00000000 - 0x7FFFFFFF 2GB */
+> -#define PKUNITY_IOSPACE_BASE            0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
+> +#define PKUNITY_MMIO_BASE		0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
+>  #define PKUNITY_PCI_BASE		0x80000000 /* 0x80000000 - 0xBFFFFFFF 1GB */
+>  #include "regs-pci.h"
+>  #define PKUNITY_BOOT_ROM2_BASE		0xF4000000 /* 0xF4000000 - 0xF7FFFFFF 64MB */
 
-> ---
->  arch/arm/mach-s3c2440/include/mach/gta02.h |   26 +++++++++++++-------------
->  1 files changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c2440/include/mach/gta02.h b/arch/arm/mach-s3c2440/include/mach/gta02.h
-> index 953331d..3a56a22 100644
-> --- a/arch/arm/mach-s3c2440/include/mach/gta02.h
-> +++ b/arch/arm/mach-s3c2440/include/mach/gta02.h
-> @@ -44,19 +44,19 @@
->  #define GTA02v3_GPIO_nUSB_FLT	S3C2410_GPG(10)	/* v3 + v4 only */
->  #define GTA02v3_GPIO_nGSM_OC	S3C2410_GPG(11)	/* v3 + v4 only */
+This change is ok.
+
+> diff --git a/arch/unicore32/include/mach/hardware.h b/arch/unicore32/include/mach/hardware.h
+> index 3fb7236..ebce7de 100644
+> --- a/arch/unicore32/include/mach/hardware.h
+> +++ b/arch/unicore32/include/mach/hardware.h
+> @@ -17,19 +17,14 @@
 >  
-> -#define GTA02_GPIO_AMP_SHUT	S3C2440_GPJ1	/* v2 + v3 + v4 only */
-> -#define GTA02v1_GPIO_WLAN_GPIO10	S3C2440_GPJ2
-> -#define GTA02_GPIO_HP_IN	S3C2440_GPJ2	/* v2 + v3 + v4 only */
-> -#define GTA02_GPIO_INT0		S3C2440_GPJ3	/* v2 + v3 + v4 only */
-> -#define GTA02_GPIO_nGSM_EN	S3C2440_GPJ4
-> -#define GTA02_GPIO_3D_RESET	S3C2440_GPJ5
-> -#define GTA02_GPIO_nDL_GSM	S3C2440_GPJ6	/* v4 + v5 only */
-> -#define GTA02_GPIO_WLAN_GPIO0	S3C2440_GPJ7
-> -#define GTA02v1_GPIO_BAT_ID	S3C2440_GPJ8
-> -#define GTA02_GPIO_KEEPACT	S3C2440_GPJ8
-> -#define GTA02v1_GPIO_HP_IN	S3C2440_GPJ10
-> -#define GTA02_CHIP_PWD		S3C2440_GPJ11	/* v2 + v3 + v4 only */
-> -#define GTA02_GPIO_nWLAN_RESET	S3C2440_GPJ12	/* v2 + v3 + v4 only */
-> +#define GTA02_GPIO_AMP_SHUT	S3C2410_GPJ(1)	/* v2 + v3 + v4 only */
-> +#define GTA02v1_GPIO_WLAN_GPIO10	S3C2410_GPJ(2)
-> +#define GTA02_GPIO_HP_IN	S3C2410_GPJ(2)	/* v2 + v3 + v4 only */
-> +#define GTA02_GPIO_INT0		S3C2410_GPJ(3)	/* v2 + v3 + v4 only */
-> +#define GTA02_GPIO_nGSM_EN	S3C2410_GPJ(4)
-> +#define GTA02_GPIO_3D_RESET	S3C2410_GPJ(5)
-> +#define GTA02_GPIO_nDL_GSM	S3C2410_GPJ(6)	/* v4 + v5 only */
-> +#define GTA02_GPIO_WLAN_GPIO0	S3C2410_GPJ(7)
-> +#define GTA02v1_GPIO_BAT_ID	S3C2410_GPJ(8)
-> +#define GTA02_GPIO_KEEPACT	S3C2410_GPJ(8)
-> +#define GTA02v1_GPIO_HP_IN	S3C2410_GPJ(10)
-> +#define GTA02_CHIP_PWD		S3C2410_GPJ(11)	/* v2 + v3 + v4 only */
-> +#define GTA02_GPIO_nWLAN_RESET	S3C2410_GPJ(12)	/* v2 + v3 + v4 only */
+>  #include "PKUnity.h"
 >  
->  #define GTA02_IRQ_GSENSOR_1	IRQ_EINT0
->  #define GTA02_IRQ_MODEM		IRQ_EINT1
+> -#define io_p2v(x)	((x) - PKUNITY_IOSPACE_BASE)
+> -#define io_v2p(x)	((x) + PKUNITY_IOSPACE_BASE)
+> +#define io_p2v(x)	((x) - PKUNITY_MMIO_BASE)
+> +#define io_v2p(x)	((x) + PKUNITY_MMIO_BASE)
+>
+>  #ifndef __ASSEMBLY__
 
+The result of io_p2v really needs to be a (void __iomem *) pointer, not
+an integer, so the accesses can work.
+
+>  # define __REG(x)	(*((volatile unsigned long *)io_p2v(x)))
+>  # define __PREG(x)	(io_v2p((unsigned long)&(x)))
+
+And as explained, these should be removed and all users converted to
+use readl()/writel().
+
+	Arnd
