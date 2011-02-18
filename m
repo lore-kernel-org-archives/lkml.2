@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab1BRQP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 11:15:28 -0500
-Received: from www.tglx.de ([62.245.132.106]:37529 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757214Ab1BRQP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 11:15:26 -0500
-Date: Fri, 18 Feb 2011 17:15:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org,
-        Pratheesh Gangadhar <pratheesh@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com, gregkh@suse.de,
-        amit.chatterjee@ti.com, "Hans J. Koch" <hjk@hansjkoch.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] PRUSS UIO driver support
-In-Reply-To: <201102181644.17634.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6>
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com> <1298041530-26855-2-git-send-email-pratheesh@ti.com> <201102181644.17634.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757707Ab1BRQQh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 11:16:37 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:60014 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab1BRQQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 11:16:33 -0500
+Date: Thu, 17 Feb 2011 18:40:55 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ryan Underwood <ryan.underwood@flightsafety.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38-rc2: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Message-ID: <20110218024055.GA2237@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <9F0C2539CB50A743894F8FCEEB1D569206F4A5@mx1.guavus.com>
+ <loom.20110217T003826-785@post.gmane.org>
+ <AANLkTikEMOxtTe7afmYsvyQkJi7j70TRX3cPPR0X=uQj@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikEMOxtTe7afmYsvyQkJi7j70TRX3cPPR0X=uQj@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011, Arnd Bergmann wrote:
-> On Friday 18 February 2011, Pratheesh Gangadhar wrote:
-> > Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
-> > +static irqreturn_t pruss_handler(int irq, struct uio_info *dev_info)
-> > +{
-> > +	return IRQ_HANDLED;
-> > +}
-> 
-> An empty interrupt handler is rather pointless. I guess you really
-> notify user space when the interrupt handler gets called, as this
-> is the main point of a UIO driver as far as I understand it.
+On Thu, Feb 17, 2011 at 10:59:43AM +0300, Cyrill Gorcunov wrote:
+> On Thu, Feb 17, 2011 at 3:17 AM, Ryan Underwood
+> <ryan.underwood@flightsafety.com> wrote:
+> > Preeti Khurana <Preeti.Khurana <at> guavus.com> writes:
+> >
+> >>
+> >> I am getting the similar issue as reported
+> >> in https://lkml.org/lkml/2011/2/10/187
+> >>
+> >> Can someone tell me if the same issue  because I am getting the
+> >> problem on Intel Xeon..
+> >>
+> >
+> > I am seeing exactly the same problem (on 2.6.35 as Preeti reported originally)
+> > on some Xeon servers but only with recently shipped BIOS revisions. The OS is
+> > CentOS 5.5.
+> >
+> ...
+> > I have not tried the following patches yet which seem to both be for spurious
+> > NMI messages, not accompanied by system lockups:
+> >
+> > https://lkml.org/lkml/2011/2/16/106
+> > https://lkml.org/lkml/2011/2/1/286
+> >
+> > Both nmi_watchdog=0 and pcie_aspm=off options do not solve the problem.
+> >
+> > I am not subscribed so please Cc me.
 
-The UIO core code does this for you when the driver handler returns
-IRQ_HANDLED, but the empty handler raises a different questions:
+Given 2.6.35, has anyone tried applying the following patch?
 
-Is the interrupt edge triggerd or how do you avoid an irq storm here?
-Usually UIO drivers are requested to mask the interrupt in the device
-itself.
+	https://patchwork.kernel.org/patch/23985/
 
-Thanks,
+It turned out to resolve an otherwise mysterious RCU CPU stall warning
+for someone running 2.6.36, IIRC.
 
-	tglx
-
+							Thanx, Paul
