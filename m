@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab1BRH1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 02:27:12 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60981 "EHLO mx3.mail.elte.hu"
+	id S1755744Ab1BRH2j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 02:28:39 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36981 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab1BRH1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 02:27:09 -0500
-Date: Fri, 18 Feb 2011 08:26:46 +0100
+	id S1753279Ab1BRH2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 02:28:37 -0500
+Date: Fri, 18 Feb 2011 08:28:24 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Arun Sharma <arun@sharma-home.net>,
-        "David S . Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
-Message-ID: <20110218072645.GB11404@elte.hu>
-References: <1297975291-12792-1-git-send-email-acme@infradead.org>
+To: Mike Travis <travis@sgi.com>, Len Brown <lenb@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Yinghai Lu <yhlu.kernel@gmail.com>,
+        linux-acpi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] ACPI: Minimize X2APIC initial messages
+Message-ID: <20110218072824.GC11404@elte.hu>
+References: <20110217185131.960038922@gulag1.americas.sgi.com>
+ <20110217185132.137154887@gulag1.americas.sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297975291-12792-1-git-send-email-acme@infradead.org>
+In-Reply-To: <20110217185132.137154887@gulag1.americas.sgi.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,36 +35,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Mike Travis <travis@sgi.com> wrote:
 
-> Hi Ingo,
+> Minimize X2APIC messages by printing 8 per line and dropping
+> the "enabled" flag since that's assumed.  It will still print
+> "disabled" if necessary.
 > 
->         Please consider pulling from:
+> v2: updated to apply to x86-tip
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (4):
->   perf python: Add cgroup.c to setup.py to get it building again
->   perf hists: Print number of samples, not the period sum
->   perf record: Delay setting the header writing atexit call
->   perf report: Tell the user when a perf.data file has no samples
-> 
-> Stephane Eranian (1):
->   perf: make perf stat print user provided full event names
-> 
->  tools/perf/builtin-record.c    |   10 +++++-----
->  tools/perf/builtin-report.c    |    6 ++++++
->  tools/perf/util/evsel.c        |    1 +
->  tools/perf/util/evsel.h        |    7 +++++++
->  tools/perf/util/hist.c         |    7 +++++--
->  tools/perf/util/parse-events.c |   10 ++++++++++
->  tools/perf/util/setup.py       |    2 +-
->  7 files changed, 35 insertions(+), 8 deletions(-)
+> Signed-off-by: Mike Travis <travis@sgi.com>
+> Reviewed-by: Jack Steiner <steiner@sgi.com>
+> Reviewed-by: Robin Holt <holt@sgi.com>
 
-Pulled, thanks a lot Arnaldo!
+If Len acks this then i can queue it up with the other patches. Or if Len wants to 
+apply it to the ACPI tree directly that's fine as well.
+
+Len, which is your preference?
+
+Thanks,
 
 	Ingo
