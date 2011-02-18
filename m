@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795Ab1BRJGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 04:06:10 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:56459 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab1BRJFF (ORCPT
+	id S1758157Ab1BRJGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 04:06:42 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52708 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757956Ab1BRJGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 04:05:05 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 5/7] drm/radeon/kms: fix s/r issues with bios scratch regs" has been added to staging queue
-Date: Fri, 18 Feb 2011 10:05:02 +0100
-Message-Id: <1298019902-2440-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-To: Alex Deucher <alexdeucher@gmail.com>
+	Fri, 18 Feb 2011 04:06:31 -0500
+Date: Fri, 18 Feb 2011 09:06:25 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: John Linn <John.Linn@xilinx.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        catalin.marinas@arm.com, glikely@secretlab.ca, arnd@arndb.de
+Subject: Re: [PATCH V3 3/4] ARM: Xilinx: base header files and assembly macros
+Message-ID: <20110218090625.GA3203@pulham.picochip.com>
+References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com>
+ <1297872716-13353-2-git-send-email-john.linn@xilinx.com>
+ <1297872716-13353-3-git-send-email-john.linn@xilinx.com>
+ <e58673f5-2881-4820-b5cd-99e8ef294ed5@VA3EHSMHS024.ehs.local>
+ <20110217100126.GD22961@pulham.picochip.com>
+ <2fdc2d92-486e-4319-866f-3882938363c3@VA3EHSMHS026.ehs.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2fdc2d92-486e-4319-866f-3882938363c3@VA3EHSMHS026.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On Thu, Feb 17, 2011 at 06:19:09PM -0700, John Linn wrote:
+> > > +#define PHYS_OFFSET             0x0
+> > 
+> > This should be PLAT_PHYS_OFFSET and could do with being surrounded
+> with
+> > UL() e.g.
+> > 
+> > #define PLAT_PHYS_OFFSET	UL(0x00000000)
+> 
+> This doesn't build with 2.6.38-rc5, am I missing something?
+> 
+> PHYS_OFFSET is still needed from what I can tell, but maybe I overlooked
+> something.
 
-    Subject: [PATCH 5/7] drm/radeon/kms: fix s/r issues with bios scratch regs
+The change is queued up in Russell's devel branch for the dynamic p2v 
+and will be in 2.6.39.  For a patch series like this it's probably worth 
+developing off of linux-next[1].  This contains all of the trees that 
+will be mereged into the next kernel so carries the bigger changes like 
+dynamic p2v.
 
-to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
+Jamie
 
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
-
-If you, or anyone else, feels it should not be added to the drm33-longterm tree,
-please reply to this email not later than 8 days after this email was sent.
-
-Thanks.
--Stefan
-
-------
-
->From 314bf442eb5bbd1b388cd49a758c676dd166a4b3 Mon Sep 17 00:00:00 2001
-From: Alex Deucher <alexdeucher@gmail.com>
-Date: Wed, 2 Feb 2011 19:46:06 -0500
-Subject: [PATCH 5/7] drm/radeon/kms: fix s/r issues with bios scratch regs
-
-commit 87364760de5d631390c478fcbac8db1b926e0adf upstream.
-
-The accelerate mode bit gets checked by certain atom
-command tables to set up some register state.  It needs
-to be clear when setting modes and set when not.
-
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=26942
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
----
- drivers/gpu/drm/radeon/radeon_atombios.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
-index 38631f6..7c9b013 100644
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -1496,7 +1496,7 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
- 	bios_2_scratch &= ~ATOM_S2_VRI_BRIGHT_ENABLE;
-
- 	/* tell the bios not to handle mode switching */
--	bios_6_scratch |= (ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH | ATOM_S6_ACC_MODE);
-+	bios_6_scratch |= ATOM_S6_ACC_BLOCK_DISPLAY_SWITCH;
-
- 	if (rdev->family >= CHIP_R600) {
- 		WREG32(R600_BIOS_2_SCRATCH, bios_2_scratch);
-@@ -1547,10 +1547,13 @@ void radeon_atom_output_lock(struct drm_encoder *encoder, bool lock)
- 	else
- 		bios_6_scratch = RREG32(RADEON_BIOS_6_SCRATCH);
-
--	if (lock)
-+	if (lock) {
- 		bios_6_scratch |= ATOM_S6_CRITICAL_STATE;
--	else
-+		bios_6_scratch &= ~ATOM_S6_ACC_MODE;
-+	} else {
- 		bios_6_scratch &= ~ATOM_S6_CRITICAL_STATE;
-+		bios_6_scratch |= ATOM_S6_ACC_MODE;
-+	}
-
- 	if (rdev->family >= CHIP_R600)
- 		WREG32(R600_BIOS_6_SCRATCH, bios_6_scratch);
---
-1.7.0.4
-
+1. git://git.kernel.org/pub/scm/linux/kernel/git/sfr/linux-next.git
