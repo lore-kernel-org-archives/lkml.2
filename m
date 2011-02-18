@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab1BREQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 23:16:49 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60535 "EHLO
+	id S1754187Ab1BRESk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 23:18:40 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41289 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab1BREQp convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751859Ab1BRESi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 23:16:45 -0500
+	Thu, 17 Feb 2011 23:18:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=nY47dt2ehSIoy//Djp3CVA6NAlfSLGHIn7AdKPflAX+3jroSZhdXJEY3iPUFxwkVNJ
-         ANPULCNz7Avn6oFCNfPso8JYSNyXf6B1iU5x7UUlgsJVLvJTiZ4O2U8RrCrylogByjfJ
-         SKAzes74Qd9UNwUTAw2WS4Uy/R9rD4QVXCs44=
+        b=Ci+IX2K7wRaiP+hD2tRlvoC54T/ByP6FtwFNE8kUR8th785vo9UHU4KSvttKgO4SE+
+         x1su9S8Df0qY7Xa7b0YWPe619tDqRa3uMtyl2PqfwS9pN3mKz88bSHgABPXrkaMh1Uo+
+         2u/2LuryinsIn0FKs3LTOmXSJa+yS/5gRiMSQ=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=2s0efMsByDKAdVTWaouk0r84RQJVrwn2h6DG_@mail.gmail.com>
+In-Reply-To: <AANLkTikfbqjk18JM8pTh+F6QR69m+QxQzdw6CQGOuZjH@mail.gmail.com>
 References: <cover.1297940291.git.minchan.kim@gmail.com>
-	<442221b243154ef2546cb921d53b774f2c8f5df5.1297940291.git.minchan.kim@gmail.com>
-	<20110218010416.230a65df.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTi=2s0efMsByDKAdVTWaouk0r84RQJVrwn2h6DG_@mail.gmail.com>
-Date: Fri, 18 Feb 2011 13:16:43 +0900
-Message-ID: <AANLkTinqs1+2UJzv0PUQNF95Cs1WVuOZoDa=RXzty49g@mail.gmail.com>
-Subject: Re: [PATCH v5 2/4] memcg: move memcg reclaimable page into tail of
- inactive list
+	<5677f3262774f4ddc24044065b7cbd6443ac5e16.1297940291.git.minchan.kim@gmail.com>
+	<20110218005020.d202acd2.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikfbqjk18JM8pTh+F6QR69m+QxQzdw6CQGOuZjH@mail.gmail.com>
+Date: Fri, 18 Feb 2011 13:18:37 +0900
+Message-ID: <AANLkTik+Kw0N8b=ny+NxjBAh577P3=GZmatRkTV1ZD7s@mail.gmail.com>
+Subject: Re: [PATCH v5 1/4] deactivate invalidated pages
 From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
 To: Minchan Kim <minchan.kim@gmail.com>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -45,110 +44,84 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 2011/2/18 Minchan Kim <minchan.kim@gmail.com>:
-> Hi Kame,
->
-> On Fri, Feb 18, 2011 at 1:04 AM, KAMEZAWA Hiroyuki
+> On Fri, Feb 18, 2011 at 12:50 AM, KAMEZAWA Hiroyuki
 > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> On Fri, 18 Feb 2011 00:08:20 +0900
+>> On Fri, 18 Feb 2011 00:08:19 +0900
 >> Minchan Kim <minchan.kim@gmail.com> wrote:
 >>
->>> The rotate_reclaimable_page function moves just written out
->>> pages, which the VM wanted to reclaim, to the end of the
->>> inactive list.  That way the VM will find those pages first
->>> next time it needs to free memory.
->>> This patch apply the rule in memcg.
->>> It can help to prevent unnecessary working page eviction of memcg.
+>>> Recently, there are reported problem about thrashing.
+>>> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+>>> It happens by backup workloads(ex, nightly rsync).
+>>> That's because the workload makes just use-once pages
+>>> and touches pages twice. It promotes the page into
+>>> active list so that it results in working set page eviction.
 >>>
->>> Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
->>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> Reviewed-by: Rik van Riel <riel@redhat.com>
->>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>>> Some app developer want to support POSIX_FADV_NOREUSE.
+>>> But other OSes don't support it, either.
+>>> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
+>>>
+>>> By other approach, app developers use POSIX_FADV_DONTNEED.
+>>> But it has a problem. If kernel meets page is writing
+>>> during invalidate_mapping_pages, it can't work.
+>>> It makes for application programmer to use it since they always
+>>> have to sync data before calling fadivse(..POSIX_FADV_DONTNEED) to
+>>> make sure the pages could be discardable. At last, they can't use
+>>> deferred write of kernel so that they could see performance loss.
+>>> (http://insights.oetiker.ch/linux/fadvise.html)
+>>>
+>>> In fact, invalidation is very big hint to reclaimer.
+>>> It means we don't use the page any more. So let's move
+>>> the writing page into inactive list's head if we can't truncate
+>>> it right now.
+>>>
+>>> Why I move page to head of lru on this patch, Dirty/Writeback page
+>>> would be flushed sooner or later. It can prevent writeout of pageout
+>>> which is less effective than flusher's writeout.
+>>>
+>>> Originally, I reused lru_demote of Peter with some change so added
+>>> his Signed-off-by.
+>>>
+>>> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
 >>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->>> ---
->>> Changelog since v4:
->>>  - add acked-by and reviewed-by
->>>  - change description - suggested by Rik
->>>
->>>  include/linux/memcontrol.h |    6 ++++++
->>>  mm/memcontrol.c            |   27 +++++++++++++++++++++++++++
->>>  mm/swap.c                  |    3 ++-
->>>  3 files changed, 35 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->>> index 3da48ae..5a5ce70 100644
->>> --- a/include/linux/memcontrol.h
->>> +++ b/include/linux/memcontrol.h
->>> @@ -62,6 +62,7 @@ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
->>>                                       gfp_t gfp_mask);
->>>  extern void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru);
->>>  extern void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru);
->>> +extern void mem_cgroup_rotate_reclaimable_page(struct page *page);
->>>  extern void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru);
->>>  extern void mem_cgroup_del_lru(struct page *page);
->>>  extern void mem_cgroup_move_lists(struct page *page,
->>> @@ -215,6 +216,11 @@ static inline void mem_cgroup_del_lru_list(struct page *page, int lru)
->>>       return ;
->>>  }
->>>
->>> +static inline inline void mem_cgroup_rotate_reclaimable_page(struct page *page)
->>> +{
->>> +     return ;
->>> +}
->>> +
->>>  static inline void mem_cgroup_rotate_lru_list(struct page *page, int lru)
->>>  {
->>>       return ;
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> index 686f1ce..ab8bdff 100644
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -813,6 +813,33 @@ void mem_cgroup_del_lru(struct page *page)
->>>       mem_cgroup_del_lru_list(page, page_lru(page));
->>>  }
->>>
->>> +/*
->>> + * Writeback is about to end against a page which has been marked for immediate
->>> + * reclaim.  If it still appears to be reclaimable, move it to the tail of the
->>> + * inactive list.
->>> + */
->>> +void mem_cgroup_rotate_reclaimable_page(struct page *page)
->>> +{
->>> +     struct mem_cgroup_per_zone *mz;
->>> +     struct page_cgroup *pc;
->>> +     enum lru_list lru = page_lru_base_type(page);
->>> +
->>> +     if (mem_cgroup_disabled())
->>> +             return;
->>> +
->>> +     pc = lookup_page_cgroup(page);
->>> +     /*
->>> +      * Used bit is set without atomic ops but after smp_wmb().
->>> +      * For making pc->mem_cgroup visible, insert smp_rmb() here.
->>> +      */
->>> +     smp_rmb();
->>> +     /* unused or root page is not rotated. */
->>> +     if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
->>> +             return;
->>> +     mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
->>> +     list_move_tail(&pc->lru, &mz->lists[lru]);
->>> +}
->>> +
+>>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>>> Acked-by: Rik van Riel <riel@redhat.com>
+>>> Acked-by: Mel Gorman <mel@csn.ul.ie>
+>>> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>> Cc: Wu Fengguang <fengguang.wu@intel.com>
+>>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>>> Cc: Nick Piggin <npiggin@kernel.dk>
+>>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 >>
->> Hmm, I'm sorry I misunderstand this. IIUC, page_lru_base_type() always returns
->> LRU_INACTIVE_XXX and this function may move page from active LRU to inactive LRU.
 >>
->> Then, LRU counters for memcg should be updated.
+>> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>
+>> One question is ....it seems there is no flush() code for percpu pagevec
+>> in this patch. Is it safe against cpu hot plug ?
+>>
+>> And from memory hot unplug point of view, I'm grad if pagevec for this
+>> is flushed at the same time as when we clear other per-cpu lru pagevecs.
+>> (And compaction will be affected by the page_count() magic by pagevec
+>>  which is flushed only when FADVISE is called.)
+>>
+>> Could you add add-on patches for flushing and hooks ?
 >
-> Goal of mem_cgroup_rotate_reclaimable_page is same with rotate_reclaimable_page.
-> It means the page was already in inactive list.
-> Look at the check !PageActive(page).
+> Isn't it enough in my patch? If I miss your point, Could you elaborate please?
+>
+>  * Drain pages out of the cpu's pagevecs.
+>  * Either "cpu" is the current CPU, and preemption has already been
+>  * disabled; or "cpu" is being hot-unplugged, and is already dead.
+> @@ -372,6 +427,29 @@ static void drain_cpu_pagevecs(int cpu)
+>               pagevec_move_tail(pvec);
+>               local_irq_restore(flags);
+>       }
+> +
+> +       pvec = &per_cpu(lru_deactivate_pvecs, cpu);
+> +       if (pagevec_count(pvec))
+> +               ____pagevec_lru_deactivate(pvec);
+> +}
+>
 
-Hmm, ok. If so, could you change
+I'm sorry that I missed this line. It seems I was wrong.
 
-page_lru_base_type() -> page_lru() ?
-
-It's misleading.
-
-Thanks,
+Regards,
 -Kame
