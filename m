@@ -1,172 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab1BRODH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 09:03:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55226 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1BRODC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 09:03:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=thSMJPWGZt+Sh6Qw7uuQ7B3ODwnXpDB8x6zVaLCk+24+vHGWVV3GAFi59FwKv7OvWE
-         rhhuRrK9xFXW5SWUD3f3u61YY3f5Yjj80LqvOaSVYCsUAlQTF/3RW4AtmRrj/dqyrRZO
-         AocOXeG+IK3px9p15dJqHnJPClMIxjx8rLNRg=
-Date: Fri, 18 Feb 2011 15:00:13 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH 3/3 tip:x86/mm] x86-64, NUMA: Add proper function comments
- to global functions
-Message-ID: <20110218140013.GI21209@htj.dyndns.org>
-References: <20110218135836.GG21209@htj.dyndns.org>
+	id S1756424Ab1BROE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 09:04:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753577Ab1BROE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 09:04:27 -0500
+Date: Fri, 18 Feb 2011 09:04:21 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: blk_throtl_exit taking q->queue_lock is problematic
+Message-ID: <20110218140420.GA20275@redhat.com>
+References: <20110216183114.26a3613b@notabene.brown>
+ <20110216155305.GC14653@redhat.com>
+ <20110217113536.2bbf308e@notabene.brown>
+ <20110217011029.GA6793@redhat.com>
+ <20110217165501.47f3c26f@notabene.brown>
+ <20110217165906.GE9075@redhat.com>
+ <20110218134025.2a2e5bbb@notabene.brown>
+ <AANLkTi=t0vFTTDr9jBZ70UmJ9YYzziA0cRP8t0T9wswW@mail.gmail.com>
+ <20110218143325.5738e127@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110218135836.GG21209@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110218143325.5738e127@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- arch/x86/mm/numa_64.c        |   50 ++++++++++++++++++++++++++++++++++++-------
- arch/x86/mm/numa_emulation.c |   29 ++++++++++++++++++++++--
- 2 files changed, 69 insertions(+), 10 deletions(-)
+On Thu, Feb 17 2011 at 10:33pm -0500,
+NeilBrown <neilb@suse.de> wrote:
 
-Index: work/arch/x86/mm/numa_64.c
-===================================================================
---- work.orig/arch/x86/mm/numa_64.c
-+++ work/arch/x86/mm/numa_64.c
-@@ -204,6 +204,14 @@ static int __init numa_add_memblk_to(int
- 	return 0;
- }
- 
-+/**
-+ * numa_remove_memblk_from - Remove one numa_memblk from a numa_meminfo
-+ * @idx: Index of memblk to remove
-+ * @mi: numa_meminfo to remove memblk from
-+ *
-+ * Remove @idx'th numa_memblk from @mi by shifting @mi->blk[] and
-+ * decrementing @mi->nr_blks.
-+ */
- void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
- {
- 	mi->nr_blks--;
-@@ -211,6 +219,17 @@ void __init numa_remove_memblk_from(int
- 		(mi->nr_blks - idx) * sizeof(mi->blk[0]));
- }
- 
-+/**
-+ * numa_add_memblk - Add one numa_memblk to numa_meminfo
-+ * @nid: NUMA node ID of the new memblk
-+ * @start: Start address of the new memblk
-+ * @end: End address of the new memblk
-+ *
-+ * Add a new memblk to the default numa_meminfo.
-+ *
-+ * RETURNS:
-+ * 0 on success, -errno on failure.
-+ */
- int __init numa_add_memblk(int nid, u64 start, u64 end)
- {
- 	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
-@@ -262,6 +281,16 @@ setup_node_bootmem(int nodeid, unsigned
- 	node_set_online(nodeid);
- }
- 
-+/**
-+ * numa_cleanup_meminfo - Cleanup a numa_meminfo
-+ * @mi: numa_meminfo to clean up
-+ *
-+ * Sanitize @mi by merging and removing unncessary memblks.  Also check for
-+ * conflicts and clear unused memblks.
-+ *
-+ * RETURNS:
-+ * 0 on success, -errno on failure.
-+ */
- int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
- {
- 	const u64 low = 0;
-@@ -352,9 +381,11 @@ static void __init numa_nodemask_from_me
- 			node_set(mi->blk[i].nid, *nodemask);
- }
- 
--/*
-- * Reset distance table.  The current table is freed.  The next
-- * numa_set_distance() call will create a new one.
-+/**
-+ * numa_reset_distance - Reset NUMA distance table
-+ *
-+ * The current table is freed.  The next numa_set_distance() call will
-+ * create a new one.
-  */
- void __init numa_reset_distance(void)
- {
-@@ -369,10 +400,15 @@ void __init numa_reset_distance(void)
- 	numa_distance = NULL;
- }
- 
--/*
-- * Set the distance between node @from to @to to @distance.  If distance
-- * table doesn't exist, one which is large enough to accomodate all the
-- * currently known nodes will be created.
-+/**
-+ * numa_set_distance - Set NUMA distance from one NUMA to another
-+ * @from: the 'from' node to set distance
-+ * @to: the 'to'  node to set distance
-+ * @distance: NUMA distance
-+ *
-+ * Set the distance from node @from to @to to @distance.  If distance table
-+ * doesn't exist, one which is large enough to accomodate all the currently
-+ * known nodes will be created.
-  */
- void __init numa_set_distance(int from, int to, int distance)
- {
-Index: work/arch/x86/mm/numa_emulation.c
-===================================================================
---- work.orig/arch/x86/mm/numa_emulation.c
-+++ work/arch/x86/mm/numa_emulation.c
-@@ -266,9 +266,32 @@ static int __init split_nodes_size_inter
- 	return 0;
- }
- 
--/*
-- * Sets up the system RAM area from start_pfn to last_pfn according to the
-- * numa=fake command-line option.
-+/**
-+ * numa_emulation - Emulate NUMA nodes
-+ * @numa_meminfo: NUMA configuration to massage
-+ * @numa_dist_cnt: The size of the physical NUMA distance table
-+ *
-+ * Emulate NUMA nodes according to the numa=fake kernel parameter.
-+ * @numa_meminfo contains the physical memory configuration and is modified
-+ * to reflect the emulated configuration on success.  @numa_dist_cnt is
-+ * used to determine the size of the physical distance table.
-+ *
-+ * On success, the following modifications are made.
-+ *
-+ * - @numa_meminfo is updated to reflect the emulated nodes.
-+ *
-+ * - __apicid_to_node[] is updated such that APIC IDs are mapped to the
-+ *   emulated nodes.
-+ *
-+ * - NUMA distance table is rebuilt to represent distances between emulated
-+ *   nodes.  The distances are determined considering how emulated nodes
-+ *   are mapped to physical nodes and match the actual distances.
-+ *
-+ * - emu_nid_to_phys[] reflects how emulated nodes are mapped to physical
-+ *   nodes.  This is used by numa_add_cpu() and numa_remove_cpu().
-+ *
-+ * If emulation is not enabled or fails, emu_nid_to_phys[] is filled with
-+ * identity mapping and no other modification is made.
-  */
- void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
- {
+> On Thu, 17 Feb 2011 22:19:52 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
+> 
+> > On Thu, Feb 17, 2011 at 9:40 PM, NeilBrown <neilb@suse.de> wrote:
+> > > On Thu, 17 Feb 2011 11:59:06 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+> > >> So if we do this change for performance reasons, it still makes sense
+> > >> but doing this change because md provided a q->queue_lock and took away that
+> > >> lock without notifying block layer hence we do this change, is still not
+> > >> the right reason, IMHO.
+> > >
+> > > Well...I like that patch, as it makes my life easier....
+> > >
+> > > But I agree that md is doing something wrong.  Now that ->queue_lock is
+> > > always initialised, it is wrong to leave it in a state where it not defined.
+> > >
+> > > So maybe I'll apply this (after testing it a bit.  The only reason for taking
+> > > the lock queue_lock in a couple of places is to silence some warnings.
+> > >
+> > > Thanks,
+> > > NeilBrown
+> > >
+> > >
+> > > diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+> > > index a23ffa3..909282d 100644
+> > > --- a/drivers/md/raid1.c
+> > > +++ b/drivers/md/raid1.c
+> > > @@ -959,7 +961,9 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+> > >                atomic_inc(&r1_bio->remaining);
+> > >                spin_lock_irqsave(&conf->device_lock, flags);
+> > >                bio_list_add(&conf->pending_bio_list, mbio);
+> > > +               spin_lock(mddev->queue->queue_lock);
+> > >                blk_plug_device(mddev->queue);
+> > > +               spin_unlock(mddev->queue->queue_lock);
+> > >                spin_unlock_irqrestore(&conf->device_lock, flags);
+> > >        }
+> > >        r1_bio_write_done(r1_bio, bio->bi_vcnt, behind_pages, behind_pages != NULL);
+> > 
+> > Noticed an inconsistency, raid10.c's additional locking also protects
+> > the bio_list_add() whereas raid1.c's doesn't.  Seems the additional
+> > protection in raid10 isn't needed?
+> 
+> Correct - not needed at all.
+> I put it there because it felt a little cleaner keeping the two 'lock's
+> together like the two 'unlock's.  Probably confusing though...
+> 
+> My other though is to stop using the block-layer plugging altogether like I
+> have in RAID5 (Which I needed to do to make it work with DM).  Then I
+> wouldn't need to touch queue_lock at all - very tempting.
+
+FYI, Jens has a considerable plugging overhaul staged in his tree for 2.6.39:
+http://git.kernel.dk/?p=linux-2.6-block.git;a=shortlog;h=refs/heads/for-2.6.39/stack-plug
+
+So if you do ween MD off of the block-layer's plugging Jens will need to
+adapt his patches that touch MD.. not a big deal.
+
+Mike
