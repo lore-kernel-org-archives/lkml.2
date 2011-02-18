@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab1BRDJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:09:33 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:51926 "EHLO lunge.queued.net"
+	id S932559Ab1BRDIV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:08:21 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:51879 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932567Ab1BRDIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:08:23 -0500
+	id S932431Ab1BRDIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 22:08:11 -0500
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 26/29] mfd-core: remove driver_data field from mfd_cell
-Date: Thu, 17 Feb 2011 19:07:33 -0800
-Message-Id: <1297998456-7615-27-git-send-email-dilinger@queued.net>
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 19/29] davinci_voicecodec: use mfd_data instead of driver_data
+Date: Thu, 17 Feb 2011 19:07:26 -0800
+Message-Id: <1297998456-7615-20-git-send-email-dilinger@queued.net>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297998456-7615-1-git-send-email-dilinger@queued.net>
 References: <1297998456-7615-1-git-send-email-dilinger@queued.net>
@@ -20,40 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All users of this have now been switched over to using mfd_data;
-it can go away now.
+Use mfd_data for passing information from mfd drivers to soc
+clients.  The mfd_cell's driver_data field is being phased out.
+
+Clients that were using driver_data now access .mfd_data
+via mfd_get_data().
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/mfd-core.c   |    1 -
- include/linux/mfd/core.h |    3 ---
- 2 files changed, 0 insertions(+), 4 deletions(-)
+ drivers/mfd/davinci_voicecodec.c |    4 ++--
+ sound/soc/codecs/cq93vc.c        |    3 ++-
+ sound/soc/davinci/davinci-vcif.c |    2 +-
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 21a39dc..01115f6 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -37,7 +37,6 @@ static int mfd_add_device(struct device *parent, int id,
- 		goto fail_device;
+diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
+index 33c923d..f946c0b 100644
+--- a/drivers/mfd/davinci_voicecodec.c
++++ b/drivers/mfd/davinci_voicecodec.c
+@@ -119,12 +119,12 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	/* Voice codec interface client */
+ 	cell = &davinci_vc->cells[DAVINCI_VC_VCIF_CELL];
+ 	cell->name = "davinci_vcif";
+-	cell->driver_data = davinci_vc;
++	cell->mfd_data = davinci_vc;
  
- 	pdev->dev.parent = parent;
--	platform_set_drvdata(pdev, cell->driver_data);
+ 	/* Voice codec CQ93VC client */
+ 	cell = &davinci_vc->cells[DAVINCI_VC_CQ93VC_CELL];
+ 	cell->name = "cq93vc";
+-	cell->driver_data = davinci_vc;
++	cell->mfd_data = davinci_vc;
  
- 	ret = platform_device_add_data(pdev, cell, sizeof(*cell));
- 	if (ret)
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index f317fe4..71cd1f9 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -30,9 +30,6 @@ struct mfd_cell {
- 	int			(*suspend)(struct platform_device *dev);
- 	int			(*resume)(struct platform_device *dev);
+ 	ret = mfd_add_devices(&pdev->dev, pdev->id, davinci_vc->cells,
+ 			      DAVINCI_VC_CELLS, NULL, 0);
+diff --git a/sound/soc/codecs/cq93vc.c b/sound/soc/codecs/cq93vc.c
+index 46dbfd0..b8066ef 100644
+--- a/sound/soc/codecs/cq93vc.c
++++ b/sound/soc/codecs/cq93vc.c
+@@ -153,7 +153,8 @@ static int cq93vc_resume(struct snd_soc_codec *codec)
  
--	/* driver-specific data for MFD-aware "cell" drivers */
--	void			*driver_data;
--
- 	/* mfd_data can be used to pass data to client drivers */
- 	void			*mfd_data;
+ static int cq93vc_probe(struct snd_soc_codec *codec)
+ {
+-	struct davinci_vc *davinci_vc = codec->dev->platform_data;
++	struct davinci_vc *davinci_vc =
++			mfd_get_data(to_platform_device(codec->dev));
+ 
+ 	davinci_vc->cq93vc.codec = codec;
+ 	codec->control_data = davinci_vc;
+diff --git a/sound/soc/davinci/davinci-vcif.c b/sound/soc/davinci/davinci-vcif.c
+index 9d2afcc..13e05a3 100644
+--- a/sound/soc/davinci/davinci-vcif.c
++++ b/sound/soc/davinci/davinci-vcif.c
+@@ -205,7 +205,7 @@ static struct snd_soc_dai_driver davinci_vcif_dai = {
+ 
+ static int davinci_vcif_probe(struct platform_device *pdev)
+ {
+-	struct davinci_vc *davinci_vc = platform_get_drvdata(pdev);
++	struct davinci_vc *davinci_vc = mfd_get_data(pdev);
+ 	struct davinci_vcif_dev *davinci_vcif_dev;
+ 	int ret;
  
 -- 
 1.7.2.3
