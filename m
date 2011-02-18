@@ -1,96 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab1BRNos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 08:44:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34592 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab1BRNom (ORCPT
+	id S1756848Ab1BRNqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 08:46:40 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39341 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753623Ab1BRNqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 08:44:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=R7XJ0/K4/BZZn6We88lAnG+NNz8eB4900kBW6cZXk+C14+0NHz+O7NgNfz5lPcsesA
-         BBeDxvHMPBA83uqqZyeqrGH6H842WPzg87DPTTX5mwO6nir3wLUJuU8XGGvgZYdWMxF6
-         3316n1dhUMJ8sT9pRa8Ww5rNXcdRjkfbOQbXA=
-Subject: [PATCH v2] net: provide default_advmss() methods to blackhole
- dst_ops
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: George Spelvin <linux@horizon.com>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Daniel Baluta <dbaluta@ixiacom.com>
-In-Reply-To: <1298036005.6201.58.camel@edumazet-laptop>
-References: <20110218050321.10415.qmail@science.horizon.com>
-	 <1298010735.2642.9.camel@edumazet-laptop>
-	 <1298023023.2595.170.camel@edumazet-laptop>
-	 <AANLkTi=GRPWNWZuORx1zoJJURE-drqEoMdTuKB9LZ8Ux@mail.gmail.com>
-	 <1298035443.6201.51.camel@edumazet-laptop>
-	 <AANLkTi=O1LZzSc8=qMX=R3rJpCVL8eWr1eo6NkiZXS0m@mail.gmail.com>
-	 <1298036005.6201.58.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Feb 2011 14:44:32 +0100
-Message-ID: <1298036672.6201.65.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 18 Feb 2011 08:46:38 -0500
+Message-ID: <90BDE50764124CA8AAD560BB1E92C062@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
+        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "open list" <linux-kernel@vger.kernel.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com><1297435892-28278-14-git-send-email-subhasish@mistralsolutions.com> <20110211162814.6ff274f1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110211162814.6ff274f1@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
+Date: Fri, 18 Feb 2011 19:17:38 +0530
+Organization: Mistral Solutions
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 18 février 2011 à 14:33 +0100, Eric Dumazet a écrit :
+Hello,
 
-> I had this exact idea but found we need struct net pointer to get this
-> value, not provided in parameters, so I falled back to the 256 value.
+Regarding the semaphore to mutex migration.
+We are using down_trylock in interrupt context,
+mutex_trylock cannot be used in interrupt context, so we cannot use mutex in 
+our driver.
+
+--------------------------------------------------
+From: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Sent: Friday, February 11, 2011 9:58 PM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>; 
+<linux-arm-kernel@lists.infradead.org>; <m-watkins@ti.com>; 
+<nsekhar@ti.com>; <sachi@mistralsolutions.com>; "Greg Kroah-Hartman" 
+<gregkh@suse.de>; "open list" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
+
+> Don't see why it needs its own sub-directory
+>
+>
+>
+>> +#ifdef __SUART_DEBUG
+>> +#define __suart_debug(fmt, args...) \
+>> + printk(KERN_DEBUG "suart_debug: " fmt, ## args)
+>> +#else
+>> +#define __suart_debug(fmt, args...)
+>> +#endif
+>> +
+>> +#define  __suart_err(fmt, args...) printk(KERN_ERR "suart_err: " fmt, ## 
+>> args)
+>
+> Use dev_dbg/dev_err/pr_debug/pr_err
+>
+>
+>> +static void omapl_pru_tx_chars(struct omapl_pru_suart *soft_uart, u32 
+>> uart_no)
+>> +{
+>> + struct circ_buf *xmit = &soft_uart->port[uart_no].state->xmit;
+>> + struct device *dev = soft_uart->dev;
+>> + s32 count = 0;
+>> +
+>> + if (!(suart_get_duplex(soft_uart, uart_no) & ePRU_SUART_HALF_TX))
+>> + return;
+>> +
+>> + if (down_trylock(&soft_uart->port_sem[uart_no]))
+>> + return;
+>
+> Please use a mutex not a semaphore. We are trying to get almost all the
+> kernel using mutexes as it is needed for hard real time.
+>
+>
+>> + pru_softuart_read_data(dev, &soft_uart->suart_hdl[uart_no],
+>> +        suart_data, data_len + 1,
+>> +        &data_len_read);
+>> +
+>> + for (i = 0; i <= data_len_read; i++) {
+>> + soft_uart->port[uart_no].icount.rx++;
+>> + /* check for sys rq */
+>> + if (uart_handle_sysrq_char
+>> +     (&soft_uart->port[uart_no], suart_data))
+>> + continue;
+>> + }
+>> + /* update the tty data structure */
+>> + tty_insert_flip_string(tty, suart_data, data_len_read);
+>
+> You can avoid a copy here by using tty_prepare_flip_string()
+>
+> Also please use the tty_port_tty_get/tty_kref_put interfaces so the tty
+> refcounting is right
+>
+>
+>> +static void pruss_suart_set_termios(struct uart_port *port,
+>> +   struct ktermios *termios,
+>> +   struct ktermios *old)
+>> +{
+>> + struct omapl_pru_suart *soft_uart =
+>> +     container_of(port, struct omapl_pru_suart, port[port->line]);
+>> + struct device *dev = soft_uart->dev;
+>> + u8 cval = 0;
+>> + unsigned long flags = 0;
+>> + u32 baud = 0;
+>> + u32 old_csize = old ? old->c_cflag & CSIZE : CS8;
+>> +
+>> +/*
+>> + * Do not allow unsupported configurations to be set
+>> + */
+>> + if (1) {
+>> + termios->c_cflag &= ~(HUPCL | CRTSCTS | CMSPAR | CSTOPB
+>> +       | PARENB | PARODD | CMSPAR);
+>> + termios->c_cflag |= CLOCAL;
+>
+> No. CLOCAL and HUPCL are user side flags. Apps expect to able to set them
+> even if in fact they have no effect, so leave those two alone. The rest
+> is fine.
+>
+>
+>> +/*
+>> + * Characteres to ignore
+>
+> Typo
+>
+>
+>
+>> diff --git a/drivers/tty/serial/da8xx_pruss/pruss_suart_api.c 
+>> b/drivers/tty/serial/da8xx_pruss/pruss_suart_api.c
+>> new file mode 100644
+>> index 0000000..d809dd3
+>> --- /dev/null
+>> +++ b/drivers/tty/serial/da8xx_pruss/pruss_suart_api.c
+>> @@ -0,0 +1,2350 @@
+>> +/*
+>> + * Copyright (C) 2010 Texas Instruments Incorporated
+>> + * Author: Jitendra Kumar <jitendra@mistralsolutions.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify 
+>> it
+>> + * under the terms of the GNU General Public License as  published by 
+>> the
+>> + * Free Software Foundation version 2.
+>> + *
+>> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
+>> + * whether express or implied; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+>> + * General Public License for more details.
+>> + */
+>> +
+>> +#include <linux/types.h>
+>> +#include <linux/mfd/pruss/da8xx_pru.h>
+>> +#include <linux/io.h>
+>> +#include <mach/hardware.h>
+>> +#include "pruss_suart_api.h"
+>> +#include "pruss_suart_regs.h"
+>> +#include "pruss_suart_board.h"
+>> +#include "pruss_suart_utils.h"
+>> +#include "pruss_suart_err.h"
+>> +
+>> +static u8 g_uart_statu_table[8];
+> Can you lose the g_, its  a windows naming convention we dont use
+>
+>
+>> +s16 pru_softuart_open(suart_handle h_suart)
+>> +{
+>
+> If you just used normal integers you could surely make this routine
+> trivial and remove all the duplication in the switches
+>
+>> + s16 status = PRU_SUART_SUCCESS;
+>
+> And please stick to Linux error codes
+>
+>
+>> +/* suart instance close routine */
+>> +s16 pru_softuart_close(suart_handle h_uart)
+>> +{
+>> + s16 status = SUART_SUCCESS;
+>> +
+>> + if (h_uart == NULL) {
+>> + return PRU_SUART_ERR_HANDLE_INVALID;
+>
+> Which is never checked. Far better to use WARN_ON and the like for such
+> cases - or if like this one they don't appear to be possible to simply
+> delete them
+>
+>> + if ((tx_clk_divisor > 385) || (tx_clk_divisor == 0))
+>> + return SUART_INVALID_CLKDIVISOR;
+>> + if ((rx_clk_divisor > 385) || (rx_clk_divisor == 0))
+>> + return SUART_INVALID_CLKDIVISOR;
+>
+> [minor] Lots of excess brackets
+>
+>
+>> + u32offset = (u32) (PRUSS_INTC_CHANMAP9 & 0xFFFF);
+>> + u32value = PRU_INTC_CHAN_34_SYSEVT_36_39;
+>> + s16retval = pruss_writel(dev, u32offset, (u32 *)&u32value, 1);
+>> + if (-1 == s16retval)
+>> + return -1;
+>
+> If you fixed the API here you'd be able to just write
+>
+> if (pruss_writel(dev, PRUSS_INTC_CHANMAP9 & 0xFFFF,
+> PRU_INTC_BLAH)
+>
+> or similar which would clean up a lot of messy code and shrink it
+> dramatically. Given you have lots of series of writes some kind of
+>
+> pruss_writel_multi(dev, array, len)
+>
+> that took an array of addr/value pairs might also clean up a ton of code
+> and turn it into trivial tables
 > 
-> 
-
-Hmm, reading again this stuff, maybe we can just use
-ipv4_default_advmss() instead of a custom one.
-
-dst->dev should be available
-
-[PATCH] net: provide default_advmss() methods to blackhole dst_ops
-
-Commit 0dbaee3b37e118a (net: Abstract default ADVMSS behind an
-accessor.) introduced a possible crash in tcp_connect_init(), when
-dst->default_advmss() is called from dst_metric_advmss()
-
-Reported-by: George Spelvin <linux@horizon.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Roland Dreier <roland@purestorage.com>
-CC: Changli Gao <xiaosuo@gmail.com>
-CC: Daniel Baluta <dbaluta@ixiacom.com>
----
- net/ipv4/route.c |    1 +
- net/ipv6/route.c |    1 +
- 2 files changed, 2 insertions(+)
-
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 788a3e7..6ed6603 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -2722,6 +2722,7 @@ static struct dst_ops ipv4_dst_blackhole_ops = {
- 	.destroy		=	ipv4_dst_destroy,
- 	.check			=	ipv4_blackhole_dst_check,
- 	.default_mtu		=	ipv4_blackhole_default_mtu,
-+	.default_advmss		=	ipv4_default_advmss,
- 	.update_pmtu		=	ipv4_rt_blackhole_update_pmtu,
- };
- 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 1c29f95..a998db6 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -128,6 +128,7 @@ static struct dst_ops ip6_dst_blackhole_ops = {
- 	.destroy		=	ip6_dst_destroy,
- 	.check			=	ip6_dst_check,
- 	.default_mtu		=	ip6_blackhole_default_mtu,
-+	.default_advmss		=	ip6_default_advmss,
- 	.update_pmtu		=	ip6_rt_blackhole_update_pmtu,
- };
- 
-
-
