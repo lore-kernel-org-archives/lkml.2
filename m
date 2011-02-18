@@ -1,39 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab1BRK7P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 05:59:15 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:51932 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab1BRK7L (ORCPT
+	id S1753998Ab1BRLCI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 06:02:08 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35868 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab1BRLCG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 05:59:11 -0500
-Subject: Re: [PATCH 1/3] perf events: fix WARN_ON_ONCE for 64-bit raw data,
- SW events
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, acme@ghostprotocols.net, paulus@samba.org
-In-Reply-To: <1298008433-22911-2-git-send-email-daahern@cisco.com>
-References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
-	 <1298008433-22911-2-git-send-email-daahern@cisco.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Feb 2011 12:00:21 +0100
-Message-ID: <1298026821.5226.642.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Feb 2011 06:02:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eP4iO/dovmyawNq2lR2b789ZYF1YUTvRV51dNQfE8F3bgHBc4dHKxO57JKPPHiSBvC
+         DXjFhvVjrNYs/juEo7NM4/95TI/VuC43HsAs6iNTi/39v4l3ICVD34jGBtw/3MQKO/FQ
+         rHORn9npAbDtNYk46wPedbasoJV0yy+85bR+4=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinqs1+2UJzv0PUQNF95Cs1WVuOZoDa=RXzty49g@mail.gmail.com>
+References: <cover.1297940291.git.minchan.kim@gmail.com>
+	<442221b243154ef2546cb921d53b774f2c8f5df5.1297940291.git.minchan.kim@gmail.com>
+	<20110218010416.230a65df.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=2s0efMsByDKAdVTWaouk0r84RQJVrwn2h6DG_@mail.gmail.com>
+	<AANLkTinqs1+2UJzv0PUQNF95Cs1WVuOZoDa=RXzty49g@mail.gmail.com>
+Date: Fri, 18 Feb 2011 20:02:04 +0900
+Message-ID: <AANLkTi=8KJ3JTC1rNwkhavJ-gR90V2YAoy63JwQWYLWT@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] memcg: move memcg reclaimable page into tail of
+ inactive list
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 22:53 -0700, David Ahern wrote:
-> This check does not work out for 64-bit counter:
-> 
->     sizeof(u32) + sizeof(u64) = 4 + 8 = 12
-> 
-> which does not pass the WARN_ON_ONCE test. I'm guessing (hoping
-> really) that the intent is that the size of the raw data is a
-> multiple of 4 bytes, not 8.
+On Fri, Feb 18, 2011 at 1:16 PM, Hiroyuki Kamezawa
+<kamezawa.hiroyuki@gmail.com> wrote:
+> 2011/2/18 Minchan Kim <minchan.kim@gmail.com>:
+>> Hi Kame,
+>>
+>> On Fri, Feb 18, 2011 at 1:04 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>> On Fri, 18 Feb 2011 00:08:20 +0900
+>>> Minchan Kim <minchan.kim@gmail.com> wrote:
+>>>
+>>>> The rotate_reclaimable_page function moves just written out
+>>>> pages, which the VM wanted to reclaim, to the end of the
+>>>> inactive list.  That way the VM will find those pages first
+>>>> next time it needs to free memory.
+>>>> This patch apply the rule in memcg.
+>>>> It can help to prevent unnecessary working page eviction of memcg.
+>>>>
+>>>> Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+>>>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>>> Reviewed-by: Rik van Riel <riel@redhat.com>
+>>>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>>>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>>>> ---
+>>>> Changelog since v4:
+>>>>  - add acked-by and reviewed-by
+>>>>  - change description - suggested by Rik
+>>>>
+>>>>  include/linux/memcontrol.h |    6 ++++++
+>>>>  mm/memcontrol.c            |   27 +++++++++++++++++++++++++++
+>>>>  mm/swap.c                  |    3 ++-
+>>>>  3 files changed, 35 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>>>> index 3da48ae..5a5ce70 100644
+>>>> --- a/include/linux/memcontrol.h
+>>>> +++ b/include/linux/memcontrol.h
+>>>> @@ -62,6 +62,7 @@ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>>>>                                       gfp_t gfp_mask);
+>>>>  extern void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru);
+>>>>  extern void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru);
+>>>> +extern void mem_cgroup_rotate_reclaimable_page(struct page *page);
+>>>>  extern void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru);
+>>>>  extern void mem_cgroup_del_lru(struct page *page);
+>>>>  extern void mem_cgroup_move_lists(struct page *page,
+>>>> @@ -215,6 +216,11 @@ static inline void mem_cgroup_del_lru_list(struct page *page, int lru)
+>>>>       return ;
+>>>>  }
+>>>>
+>>>> +static inline inline void mem_cgroup_rotate_reclaimable_page(struct page *page)
+>>>> +{
+>>>> +     return ;
+>>>> +}
+>>>> +
+>>>>  static inline void mem_cgroup_rotate_lru_list(struct page *page, int lru)
+>>>>  {
+>>>>       return ;
+>>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>>>> index 686f1ce..ab8bdff 100644
+>>>> --- a/mm/memcontrol.c
+>>>> +++ b/mm/memcontrol.c
+>>>> @@ -813,6 +813,33 @@ void mem_cgroup_del_lru(struct page *page)
+>>>>       mem_cgroup_del_lru_list(page, page_lru(page));
+>>>>  }
+>>>>
+>>>> +/*
+>>>> + * Writeback is about to end against a page which has been marked for immediate
+>>>> + * reclaim.  If it still appears to be reclaimable, move it to the tail of the
+>>>> + * inactive list.
+>>>> + */
+>>>> +void mem_cgroup_rotate_reclaimable_page(struct page *page)
+>>>> +{
+>>>> +     struct mem_cgroup_per_zone *mz;
+>>>> +     struct page_cgroup *pc;
+>>>> +     enum lru_list lru = page_lru_base_type(page);
+>>>> +
+>>>> +     if (mem_cgroup_disabled())
+>>>> +             return;
+>>>> +
+>>>> +     pc = lookup_page_cgroup(page);
+>>>> +     /*
+>>>> +      * Used bit is set without atomic ops but after smp_wmb().
+>>>> +      * For making pc->mem_cgroup visible, insert smp_rmb() here.
+>>>> +      */
+>>>> +     smp_rmb();
+>>>> +     /* unused or root page is not rotated. */
+>>>> +     if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
+>>>> +             return;
+>>>> +     mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
+>>>> +     list_move_tail(&pc->lru, &mz->lists[lru]);
+>>>> +}
+>>>> +
+>>>
+>>> Hmm, I'm sorry I misunderstand this. IIUC, page_lru_base_type() always returns
+>>> LRU_INACTIVE_XXX and this function may move page from active LRU to inactive LRU.
+>>>
+>>> Then, LRU counters for memcg should be updated.
+>>
+>> Goal of mem_cgroup_rotate_reclaimable_page is same with rotate_reclaimable_page.
+>> It means the page was already in inactive list.
+>> Look at the check !PageActive(page).
+>
+> Hmm, ok. If so, could you change
+>
+> page_lru_base_type() -> page_lru() ?
+>
+> It's misleading.
 
-No the data must come in 8bytes strides.
+No problem. Will resend.
 
+>
+> Thanks,
+> -Kame
+>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
