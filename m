@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab1BRRRa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 12:17:30 -0500
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:3201 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab1BRRR3 (ORCPT
+	id S1754457Ab1BRR1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 12:27:52 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58896 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab1BRR1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 12:17:29 -0500
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EALI3Xk2rRN+K/2dsb2JhbACEH6IGc6AFinuQPIEng0F2BIULhwaDOoIa
-X-IronPort-AV: E=Sophos;i="4.62,188,1297036800"; 
-   d="scan'208";a="408923533"
-Message-ID: <4D5EA9A8.2080209@cisco.com>
-Date: Fri, 18 Feb 2011 10:17:28 -0700
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	Fri, 18 Feb 2011 12:27:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GVb0BUdL/rEqGBrFF3q9Uj2N9CwGYmCYxvPWKW8UyGP11xqV7iFjaR86Mt9WKb6riI
+         LGipH0xJrZf4ERY3BZTrH8yVowaRVlIlfI3AU4rrdojiRZbJ3b4zwcBkRJk0OyneNmzw
+         y9i4ib3jVjCtQKAWKKdDlvuGeGmoH5cRSx5ec=
+Date: Fri, 18 Feb 2011 20:27:42 +0300
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, kernel-janitors@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Rupjyoti Sarmah <rsarmah@appliedmicro.com>,
+        Prodyut Hazarika <phazarika@appliedmicro.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: sata_dwc_460ex: fix error path
+Message-ID: <20110218172742.GA5238@albatros>
+References: <1284317830-5022-1-git-send-email-segooon@gmail.com>
+ <4D5C1326.2010101@ru.mvista.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org
-Subject: Re: [PATCH 1/3] perf events: fix WARN_ON_ONCE for 64-bit raw data,
- SW events
-References: <1298008433-22911-1-git-send-email-daahern@cisco.com>	 <1298008433-22911-2-git-send-email-daahern@cisco.com>	 <1298026821.5226.642.camel@laptop> <4D5E8338.8010602@cisco.com>	 <20110218145348.GA302@ghostprotocols.net>	 <1298041291.5226.776.camel@laptop>	 <20110218170450.GB302@ghostprotocols.net> <1298049189.2887.1.camel@twins> <4D5EA922.1090709@cisco.com>
-In-Reply-To: <4D5EA922.1090709@cisco.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D5C1326.2010101@ru.mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sergei,
 
-
-On 02/18/11 10:15, David Ahern wrote:
-
->> Its just that any custom payload must be of size 4+8*n bytes.
+On Wed, Feb 16, 2011 at 21:10 +0300, Sergei Shtylyov wrote:
+> >@@ -727,11 +727,15 @@ static int dma_dwc_xfer_setup(struct scatterlist *sg, int num_elems,
+> > static void dma_dwc_exit(struct sata_dwc_device *hsdev)
+> > {
+> > 	dev_dbg(host_pvt.dwc_dev, "%s:\n", __func__);
+> >-	if (host_pvt.sata_dma_regs)
+> >+	if (host_pvt.sata_dma_regs) {
+> > 		iounmap(host_pvt.sata_dma_regs);
+> >+		host_pvt.sata_dma_regs = NULL;
+> >+	}
+> >-	if (hsdev->irq_dma)
+> >+	if (hsdev->irq_dma) {
+> > 		free_irq(hsdev->irq_dma, hsdev);
+> >+		hsdev->irq_dma = 0;
+> >+	}
+> > }
 > 
-> 4 + 8*n != 8-byte aligned for any whole number n.
+>    Are those changes really necessary, i.e. is dma_dwc_exit() called
+> more than once?
 
-nevermind. you are referring to the payload only; I was thinking full
-raw sample.
+Because this function may be called once again before
+host_pvt.sata_dma_regs gains new value in sata_dwc_probe().  This would
+lead to double iounmap() and double free_irq().
 
-
+> >@@ -1606,7 +1610,7 @@ static int sata_dwc_probe(struct platform_device *ofdev,
+> > 	if (hsdev == NULL) {
+> > 		dev_err(&ofdev->dev, "kmalloc failed for hsdev\n");
+> > 		err = -ENOMEM;
+> >-		goto error_out;
+> >+		goto error;
 > 
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>    Why not just:
+> 
+> 		return err;
+
+If some resource allocation is added before this line in future then
+"return err" should be changed.  With goto the single cleanup is just
+added to the end of the function.
+
+
+Thanks,
+
+-- 
+Vasiliy
