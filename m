@@ -1,366 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab1BRSPm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 13:15:42 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54010
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755776Ab1BRSOt (ORCPT
+	id S1756441Ab1BRSVz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 13:21:55 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40598 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab1BRSVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 13:14:49 -0500
-X-SpamScore: 3
-X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-From: John Linn <john.linn@xilinx.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <glikely@secretlab.ca>, <jamie@jamieiles.com>, <arnd@arndb.de>
-CC: John Linn <john.linn@xilinx.com>
-Subject: [PATCH V4 1/4] ARM: Xilinx: Adding Xilinx board support
-Date: Fri, 18 Feb 2011 11:14:38 -0700
-X-Mailer: git-send-email 1.5.6.6
-In-Reply-To: <1298052881-14591-1-git-send-email-john.linn@xilinx.com>
-References: <1298052881-14591-1-git-send-email-john.linn@xilinx.com>
-X-RCIS-Action: ALLOW
+	Fri, 18 Feb 2011 13:21:51 -0500
+Date: Fri, 18 Feb 2011 18:21:48 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Steven Liu <lingjiujianke@gmail.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, liuqi <liuqi@thunderst.com>,
+        LiDongyang <jerry87905@gmail.com>
+Subject: Re: [PATCH 1/2] add ->mount function introduction into
+ Documentation/filesystems/porting
+Message-ID: <20110218182148.GM22723@ZenIV.linux.org.uk>
+References: <AANLkTinY6VHGGokQ1e0YzO-jpvyjR1QrS6nwLm3TG=D5@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-Message-ID: <b8e72ca5-de48-41ec-89b9-95bb90e18826@VA3EHSMHS013.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinY6VHGGokQ1e0YzO-jpvyjR1QrS6nwLm3TG=D5@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 1st board support is minimal to get a system up and running
-on the Xilinx platform.
+On Sat, Feb 19, 2011 at 12:17:44AM +0800, Steven Liu wrote:
+> +the VFS will call the appropriate get_sb() or mount() method for
+> +the specific filesystem. The dentry for the mount point will then
+> +be updated to point to the root inode for the new filesystem.
 
-Signed-off-by: John Linn <john.linn@xilinx.com>
----
+What do you mean, "updated"?  What happens is this
+	* filesystem driver will get the arguments of mount(2) telling
+what to mount and return you a reference to dentry in the root of
+the (sub)tree you have asked for.  Depending on the filesystem type
+and argument it might be on an already existing fs or on a new one.
+In the latter case filesystem driver will take care of creating a new fs
+(getting superblock allocated, filled, etc.)
+	* VFS will create a new vfsmount refering to that subtree and
+attach it to the mountpoint you have given.
 
-V4 Changes
-	Minor cleanup based on input from Jamie Iles.
+> +The mount() method must determine if the block device specified
+> +in the dev_name and fs_type contains a filesystem of the type the method
+> +supports. If it succeeds in opening the named block device, it initializes a
+> +struct super_block descriptor for the filesystem contained by the block device.
+> +On failure it returns an error.
 
-V3 Changes
+No.  Interpretation of ->mount() arguments is entirely up to ->mount().
+Many filesystem types interpret dev_name as pathname of block device to be
+opened, with the filesystem backed by that device.  It is by no means
+mandatory, _even_ _for_ _block-based_ _fs_.  There are filesystems that
+choose to do it differently.  What you've described is mount_bdev().
 
-Updates based on Russell Kings' comments
-	Changed headers to update the license info and remove
-	the address
+->mount() is NOT a superblock constructor.  It may have to create one,
+but that's up to fs.  For everybody outside its job is to give you
+a dentry (sub)tree.  If it's going to be on a new superblock, so be it,
+but that's really not a concern of VFS.  It _will_ grab a reference to
+whatever superblock these dentries live on and that reference will be
+kept as long as vfsmount lives, but that's just a "don't shut that
+one down as long as you want that dentry tree around" thing.
 
-	Changed the name of functions to include "xilinx" in 
-	common.c and common.h
+Note that even mount_bdev() may return an old struct super_block.  Mount
+e.g. ext2 from the same device twice (with the same flags) and you'll get
+two vfsmounts with identical ->mnt_root/->mnt_sb.  Things like e.g. sysfs
+*always* return the same superblock.  Things like nfs are in between -
+depending on what options you give you might end up with an old superblock
+or with a new one.  Note that depending on the options you may get a new
+subtree backed by old superblock.
 
-Changed the Kconfig and Makefile to use MACH_XILINX which
-matches the machine registered.
+If you are looking for superblock constructor, it's sget().  It finds a
+superblock of given type satisfying given condition or creates a new one.
+In any case, a reference to superblock is returned to caller locked.
+grep and you'll see how it's used; that'll give you the instances of
+->mount/->get_sb and helpers used by such.
 
-V2 Changes
+Again, as far as VFS is concerned, the main purpose of ->mount() is to give
+it a tree to attach; creation of new superblock is a common side effect,
+but that's really up to fs.  Hell, it doesn't even have to be of the same
+type - see e.g. what cpuset is doing.  And yes, it's perfectly legitimate.
 
-Updates based on Russell King's comments	
-	minor cleanups
-	cleaned up physical/virtual addresses in early i/o table		
+> +Usually, a filesystem uses one of the generic mount() implementations
+> +and provides a fill_super() method instead.
 
- arch/arm/mach-xilinx/Kconfig       |   14 +++++
- arch/arm/mach-xilinx/Makefile      |    7 ++
- arch/arm/mach-xilinx/Makefile.boot |    3 +
- arch/arm/mach-xilinx/board_ep107.c |   82 ++++++++++++++++++++++++++
- arch/arm/mach-xilinx/common.c      |  113 ++++++++++++++++++++++++++++++++++++
- arch/arm/mach-xilinx/common.h      |   30 ++++++++++
- 6 files changed, 249 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-xilinx/Kconfig
- create mode 100644 arch/arm/mach-xilinx/Makefile
- create mode 100644 arch/arm/mach-xilinx/Makefile.boot
- create mode 100644 arch/arm/mach-xilinx/board_ep107.c
- create mode 100644 arch/arm/mach-xilinx/common.c
- create mode 100644 arch/arm/mach-xilinx/common.h
+s/method/callback/
 
-diff --git a/arch/arm/mach-xilinx/Kconfig b/arch/arm/mach-xilinx/Kconfig
-new file mode 100644
-index 0000000..61532af
---- /dev/null
-+++ b/arch/arm/mach-xilinx/Kconfig
-@@ -0,0 +1,14 @@
-+if ARCH_XILINX
-+
-+choice
-+        prompt "Board Selection"
-+	default MACH_XILINX
-+
-+config MACH_XILINX
-+	bool "Xilinx EP107 Board"
-+	help
-+	  Select if you are using a Xilinx EP107 board.
-+
-+endchoice
-+
-+endif
-diff --git a/arch/arm/mach-xilinx/Makefile b/arch/arm/mach-xilinx/Makefile
-new file mode 100644
-index 0000000..76e9e55
---- /dev/null
-+++ b/arch/arm/mach-xilinx/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for the linux kernel.
-+#
-+
-+# Common support
-+obj-y 				:= common.o
-+obj-$(CONFIG_MACH_XILINX)	+= board_ep107.o
-diff --git a/arch/arm/mach-xilinx/Makefile.boot b/arch/arm/mach-xilinx/Makefile.boot
-new file mode 100644
-index 0000000..67039c3
---- /dev/null
-+++ b/arch/arm/mach-xilinx/Makefile.boot
-@@ -0,0 +1,3 @@
-+   zreladdr-y	:= 0x00008000
-+params_phys-y	:= 0x00000100
-+initrd_phys-y	:= 0x00800000
-diff --git a/arch/arm/mach-xilinx/board_ep107.c b/arch/arm/mach-xilinx/board_ep107.c
-new file mode 100644
-index 0000000..a1635b5
---- /dev/null
-+++ b/arch/arm/mach-xilinx/board_ep107.c
-@@ -0,0 +1,82 @@
-+/* arch/arm/mach-xilinx/board_ep107.c
-+ *
-+ * This file contains code specific to the Xilinx EP107 board.
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * based on /arch/arm/mach-realview/core.c
-+ *
-+ *  Copyright (C) 1999 - 2003 ARM Limited
-+ *  Copyright (C) 2000 Deep Blue Solutions Ltd
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <asm/mach-types.h>
-+#include <asm/mach/arch.h>
-+#include <mach/xilinx_soc.h>
-+#include <mach/irqs.h>
-+#include <linux/clkdev.h>
-+#include "common.h"
-+
-+/*
-+ * Fixed clocks for now
-+ */
-+
-+static struct clk ref50_clk = {
-+	.rate	= 50000000,
-+};
-+
-+/* Create all the platform devices for the board */
-+
-+static struct resource uart0[] = {
-+	{
-+		.start = UART0_PHYS,
-+		.end = UART0_PHYS + 0xFFF,
-+		.flags = IORESOURCE_MEM,
-+	}, {
-+		.start = IRQ_UART0,
-+		.end = IRQ_UART0,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device uart_device0 = {
-+	.name = "xuartpss",
-+	.id = 0,
-+	.dev = {
-+		.platform_data = &ref50_clk.rate,
-+	},
-+	.resource = uart0,
-+	.num_resources = ARRAY_SIZE(uart0),
-+};
-+
-+static struct platform_device *xilinx_pdevices[] __initdata = {
-+	&uart_device0,
-+};
-+
-+/**
-+ * board_ep107_init - Board specific initialization for the Xilinx EP107 board.
-+ *
-+ **/
-+static void __init board_ep107_init(void)
-+{
-+	xilinx_system_init();
-+	platform_add_devices(&xilinx_pdevices[0], ARRAY_SIZE(xilinx_pdevices));
-+}
-+
-+MACHINE_START(XILINX_EP107, "Xilinx EP107")
-+	.boot_params    = PHYS_OFFSET + 0x00000100,
-+	.map_io         = xilinx_map_io,
-+	.init_irq       = xilinx_irq_init,
-+	.init_machine   = board_ep107_init,
-+	.timer          = &xttcpss_sys_timer,
-+MACHINE_END
-diff --git a/arch/arm/mach-xilinx/common.c b/arch/arm/mach-xilinx/common.c
-new file mode 100644
-index 0000000..564b707
---- /dev/null
-+++ b/arch/arm/mach-xilinx/common.c
-@@ -0,0 +1,113 @@
-+/* arch/arm/mach-xilinx/common.c
-+ *
-+ * This file contains common code that is intended to be used across
-+ * boards so that it's not replicated.
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/cpumask.h>
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+
-+#include <asm/mach/map.h>
-+#include <asm/page.h>
-+#include <asm/hardware/gic.h>
-+#include <asm/hardware/cache-l2x0.h>
-+
-+#include <mach/xilinx_soc.h>
-+#include <mach/clkdev.h>
-+
-+/*
-+ * Clock function infrastructure.
-+ */
-+int clk_enable(struct clk *clk)
-+{
-+	return 0;
-+}
-+
-+void clk_disable(struct clk *clk)
-+{
-+}
-+
-+unsigned long clk_get_rate(struct clk *clk)
-+{
-+	return clk->rate;
-+}
-+
-+/**
-+ * system_init - System specific initialization, intended to be called from
-+ *			board specific initialization.
-+ *
-+ **/
-+void __init xilinx_system_init(void)
-+{
-+#ifdef CONFIG_CACHE_L2X0
-+	/*
-+	 * 64KB way size, 8-way associativity, parity disabled
-+	 */
-+	l2x0_init(PL310_L2CC_BASE, 0x02060000, 0xF0F0FFFF);
-+#endif
-+}
-+
-+/**
-+ * irq_init - Interrupt controller initialization for the GIC.
-+ *
-+ **/
-+void __init xilinx_irq_init(void)
-+{
-+	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
-+}
-+
-+/* The minimum devices needed to be mapped before the VM system is up and
-+ * running include the GIC, UART and Timer Counter.
-+ */
-+
-+static struct map_desc io_desc[] __initdata = {
-+	{
-+		.virtual	= TTC0_VIRT,
-+		.pfn		= __phys_to_pfn(TTC0_PHYS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	}, {
-+		.virtual	= SCU_PERIPH_VIRT,
-+		.pfn		= __phys_to_pfn(SCU_PERIPH_PHYS),
-+		.length		= SZ_8K,
-+		.type		= MT_DEVICE,
-+	}, {
-+		.virtual	= PL310_L2CC_VIRT,
-+		.pfn		= __phys_to_pfn(PL310_L2CC_PHYS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	},
-+
-+#ifdef CONFIG_DEBUG_LL
-+	{
-+		.virtual	= UART0_VIRT,
-+		.pfn		= __phys_to_pfn(UART0_PHYS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	},
-+#endif
-+
-+};
-+
-+/**
-+ * map_io - Create memory mappings needed for early I/O.
-+ *
-+ **/
-+void __init xilinx_map_io(void)
-+{
-+	iotable_init(io_desc, ARRAY_SIZE(io_desc));
-+}
-diff --git a/arch/arm/mach-xilinx/common.h b/arch/arm/mach-xilinx/common.h
-new file mode 100644
-index 0000000..71f4ebc
---- /dev/null
-+++ b/arch/arm/mach-xilinx/common.h
-@@ -0,0 +1,30 @@
-+/* arch/arm/mach-xilinx/common.h
-+ *
-+ * This file contains common function prototypes to avoid externs
-+ * in the c files.
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MACH_XILINX_COMMON_H__
-+#define __MACH_XILINX_COMMON_H__
-+
-+#include <linux/init.h>
-+#include <asm/mach/time.h>
-+
-+void __init xilinx_system_init(void);
-+void __init xilinx_irq_init(void);
-+void __init xilinx_map_io(void);
-+
-+extern struct sys_timer xttcpss_sys_timer;
-+
-+#endif
--- 
-1.6.2.1
+> The generic methods are:
+s/methods/helpers/
+> +  mount_bdev: mount a filesystem residing on a block device
+> +
+> +  mount_nodev: mount a filesystem that is not backed by a device
+> +
+> +  mount_single: mount a filesystem which shares the instance between
+> +  	all mounts
 
 
+FWIW, file_system_type is a bit odd.  I'm not sure it's worth messing with,
+but essentially what we have there is a mix of several things.
+	a) ->kill_sb() and "behaviour" flags are really properties of
+individual superblock.  ->kill_sb probably belongs in ->super_operations.
+	b) (name, ->mount, ->owner) triple is how VFS finds which ->mount()
+to call when asked to mount fs of this type and what module to pin down
+for the duration.  It's what /proc/filesystems refers to and "is that a block
+one?" flag is relevant only for that (the only effect is whether we slap
+"nodev" in the corresponding line of /proc/filesystems or put spaces in there -
+really)
+	c) type for the purposes of sget().  This is a dynamic object -
+collection of all superblocks of the same type.  ->name and ->owner are
+relevant here as well.  Note that it's *NOT* necessary the same one we
+talked to when we did mount(2) - see cpuset again, or weirder nfs ones.
+The latter add superblocks into _usual_ nfs types, so you end up with
+e.g. crossing server device boundary on nfs4, stepping into automount point
+and calling vfs_kern_mount() on nfs4_xdev_fs_type.  It calls nfs4_xdev_mount(),
+which will do sget() in nfs4_fs_type.  As the result, you get a superblock
+of a different type - nfs4.  As the matter of fact,
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+struct file_system_type nfs4_xdev_fs_type = {
+        .mount          = nfs4_xdev_mount,
+};
 
+would suffice - the rest of its initializer is pure fluff.  It's &nfs4_fs_type
+that will be in s->s_type and it's nfs4_fs_type ->kill_sb() that will be
+called, etc.  Doesn't even need a name, since we never register it and refer
+to the sucker directly...
 
+It's probably not worth the effort trying to separate these objects.  We'd
+need more boilerplate code for very little additional clarity in the area
+that isn't particulary tricky to start with.
