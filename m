@@ -1,210 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab1BRPF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 10:05:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab1BRPFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 10:05:54 -0500
-Date: Fri, 18 Feb 2011 10:05:47 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
-Subject: Re: blk_throtl_exit  taking q->queue_lock is problematic
-Message-ID: <20110218150547.GC26654@redhat.com>
-References: <20110216183114.26a3613b@notabene.brown>
- <20110216155305.GC14653@redhat.com>
- <20110217113536.2bbf308e@notabene.brown>
- <20110217011029.GA6793@redhat.com>
- <20110217165501.47f3c26f@notabene.brown>
- <20110217165906.GE9075@redhat.com>
- <20110218134025.2a2e5bbb@notabene.brown>
+	id S1754410Ab1BRPF6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 10:05:58 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:52061 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755603Ab1BRPFx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 10:05:53 -0500
+Date: Fri, 18 Feb 2011 10:05:52 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Rabin Vincent <rabin@rab.in>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pm@lists.linux-foundation.org>,
+        <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <khilman@ti.com>, <magnus.damm@gmail.com>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+In-Reply-To: <AANLkTinsPqFcodH0w7LQeFEY+amodNH4CneRCRhhbKaz@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1102180952470.1972-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110218134025.2a2e5bbb@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 01:40:25PM +1100, NeilBrown wrote:
-> On Thu, 17 Feb 2011 11:59:06 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > On Thu, Feb 17, 2011 at 04:55:01PM +1100, NeilBrown wrote:
-> > > On Wed, 16 Feb 2011 20:10:29 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
-> > > 
-> > > > So is it possible to keep the spinlock intact when md is calling up
-> > > > blk_cleanup_queue()?
-> > > > 
-> > > 
-> > > It would be possible, yes - but messy.  I would probably end up just making
-> > > ->queue_lock always point to __queue_lock, and then only take it at the
-> > > places where I call 'block' code which wants to test to see if it is
-> > > currently held (like the plugging routines).
-> > > 
-> > > The queue lock (and most of the request queue) is simply irrelevant for md.
-> > > I would prefer to get away from having to touch it at all...
-> > 
-> > If queue lock is mostly irrelevant for md, then why md should provide an
-> > external lock and not use queue's internal spin lock?
-> 
-> See other email - historical reasons mostly.
-> 
-> > 
-> > > 
-> > > I'll see how messy it would be to stop using it completely and it can just be
-> > > __queue_lock.
-> > > 
-> > > Though for me - it would be much easier if you just used __queue_lock .....
-> > 
-> > Ok, here is the simple patch which splits the queue lock and uses
-> > throtl_lock for throttling logic. I booted and it seems to be working.
-> > 
-> > Having said that, this now introduces the possibility of races for any
-> > services I take from request queue. I need to see if I need to take
-> > queue lock and that makes me little uncomfortable. 
-> > 
-> > I am using kblockd_workqueue to queue throtl work. Looks like I don't
-> > need queue lock for that. I am also using block tracing infrastructure
-> > and my understanding is that I don't need queue lock for that as well.
-> > 
-> > So if we do this change for performance reasons, it still makes sense
-> > but doing this change because md provided a q->queue_lock and took away that
-> > lock without notifying block layer hence we do this change, is still not
-> > the right reason, IMHO.
-> 
-> Well...I like that patch, as it makes my life easier....
-> 
-> But I agree that md is doing something wrong.  Now that ->queue_lock is
-> always initialised, it is wrong to leave it in a state where it not defined.
-> 
-> So maybe I'll apply this (after testing it a bit.  The only reason for taking
-> the lock queue_lock in a couple of places is to silence some warnings.
-> 
-> Thanks,
-> NeilBrown
+On Fri, 18 Feb 2011, Rabin Vincent wrote:
 
-Thanks Neil. This looks much better in the sense that now we know that
-queue_lock is still valid at the blk_cleanup_queue() time and did not
-vanish unexpectdly.
+> How about something like the below?  If we have something like this, we
+> can just switch platform to GENERIC_PM_OPS and add the
+> pm_runtime_want_interaction() (or something better named)
 
-Thanks
-Vivek
+Yes, please find a better name!  Maybe something starting with 
+"generic_" to indicate that this applies only to devices using the 
+GENERIC_PM_OPS.
 
+>  call to the
+> i2c and spi drivers using runtime PM.
+
+> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> index 42615b4..2b8a099 100644
+> --- a/drivers/base/power/runtime.c
+> +++ b/drivers/base/power/runtime.c
+> @@ -1069,6 +1069,30 @@ void pm_runtime_allow(struct device *dev)
+>  EXPORT_SYMBOL_GPL(pm_runtime_allow);
 > 
-> 
-> diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-> index 8a2f767..0ed7f6b 100644
-> --- a/drivers/md/linear.c
-> +++ b/drivers/md/linear.c
-> @@ -216,7 +216,6 @@ static int linear_run (mddev_t *mddev)
->  
->  	if (md_check_no_bitmap(mddev))
->  		return -EINVAL;
-> -	mddev->queue->queue_lock = &mddev->queue->__queue_lock;
->  	conf = linear_conf(mddev, mddev->raid_disks);
->  
->  	if (!conf)
-> diff --git a/drivers/md/multipath.c b/drivers/md/multipath.c
-> index 6d7ddf3..3a62d44 100644
-> --- a/drivers/md/multipath.c
-> +++ b/drivers/md/multipath.c
-> @@ -435,7 +435,6 @@ static int multipath_run (mddev_t *mddev)
->  	 * bookkeeping area. [whatever we allocate in multipath_run(),
->  	 * should be freed in multipath_stop()]
->  	 */
-> -	mddev->queue->queue_lock = &mddev->queue->__queue_lock;
->  
->  	conf = kzalloc(sizeof(multipath_conf_t), GFP_KERNEL);
->  	mddev->private = conf;
-> diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-> index 75671df..c0ac457 100644
-> --- a/drivers/md/raid0.c
-> +++ b/drivers/md/raid0.c
-> @@ -361,7 +361,6 @@ static int raid0_run(mddev_t *mddev)
->  	if (md_check_no_bitmap(mddev))
->  		return -EINVAL;
->  	blk_queue_max_hw_sectors(mddev->queue, mddev->chunk_sectors);
-> -	mddev->queue->queue_lock = &mddev->queue->__queue_lock;
->  
->  	/* if private is not null, we are here after takeover */
->  	if (mddev->private == NULL) {
-> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> index a23ffa3..909282d 100644
-> --- a/drivers/md/raid1.c
-> +++ b/drivers/md/raid1.c
-> @@ -593,7 +593,9 @@ static int flush_pending_writes(conf_t *conf)
->  	if (conf->pending_bio_list.head) {
->  		struct bio *bio;
->  		bio = bio_list_get(&conf->pending_bio_list);
-> +		spin_lock(conf->mddev->queue->queue_lock);
->  		blk_remove_plug(conf->mddev->queue);
-> +		spin_unlock(conf->mddev->queue->queue_lock);
->  		spin_unlock_irq(&conf->device_lock);
->  		/* flush any pending bitmap writes to
->  		 * disk before proceeding w/ I/O */
-> @@ -959,7 +961,9 @@ static int make_request(mddev_t *mddev, struct bio * bio)
->  		atomic_inc(&r1_bio->remaining);
->  		spin_lock_irqsave(&conf->device_lock, flags);
->  		bio_list_add(&conf->pending_bio_list, mbio);
-> +		spin_lock(mddev->queue->queue_lock);
->  		blk_plug_device(mddev->queue);
-> +		spin_unlock(mddev->queue->queue_lock);
->  		spin_unlock_irqrestore(&conf->device_lock, flags);
->  	}
->  	r1_bio_write_done(r1_bio, bio->bi_vcnt, behind_pages, behind_pages != NULL);
-> @@ -2021,7 +2025,6 @@ static int run(mddev_t *mddev)
->  	if (IS_ERR(conf))
->  		return PTR_ERR(conf);
->  
-> -	mddev->queue->queue_lock = &conf->device_lock;
->  	list_for_each_entry(rdev, &mddev->disks, same_set) {
->  		disk_stack_limits(mddev->gendisk, rdev->bdev,
->  				  rdev->data_offset << 9);
-> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-> index 3b607b2..60e6cb1 100644
-> --- a/drivers/md/raid10.c
-> +++ b/drivers/md/raid10.c
-> @@ -662,7 +662,9 @@ static int flush_pending_writes(conf_t *conf)
->  	if (conf->pending_bio_list.head) {
->  		struct bio *bio;
->  		bio = bio_list_get(&conf->pending_bio_list);
-> +		spin_lock(conf->mddev->queue->queue_lock);
->  		blk_remove_plug(conf->mddev->queue);
-> +		spin_unlock(conf->mddev->queue->queue_lock);
->  		spin_unlock_irq(&conf->device_lock);
->  		/* flush any pending bitmap writes to disk
->  		 * before proceeding w/ I/O */
-> @@ -970,8 +972,10 @@ static int make_request(mddev_t *mddev, struct bio * bio)
->  
->  		atomic_inc(&r10_bio->remaining);
->  		spin_lock_irqsave(&conf->device_lock, flags);
-> +		spin_lock(mddev->queue->queue_lock);
->  		bio_list_add(&conf->pending_bio_list, mbio);
->  		blk_plug_device(mddev->queue);
-> +		spin_unlock(mddev->queue->queue_lock);
->  		spin_unlock_irqrestore(&conf->device_lock, flags);
->  	}
->  
-> @@ -2304,8 +2308,6 @@ static int run(mddev_t *mddev)
->  	if (!conf)
->  		goto out;
->  
-> -	mddev->queue->queue_lock = &conf->device_lock;
-> -
->  	mddev->thread = conf->thread;
->  	conf->thread = NULL;
->  
-> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-> index 7028128..78536fd 100644
-> --- a/drivers/md/raid5.c
-> +++ b/drivers/md/raid5.c
-> @@ -5204,7 +5204,6 @@ static int run(mddev_t *mddev)
->  
->  		mddev->queue->backing_dev_info.congested_data = mddev;
->  		mddev->queue->backing_dev_info.congested_fn = raid5_congested;
-> -		mddev->queue->queue_lock = &conf->device_lock;
->  		mddev->queue->unplug_fn = raid5_unplug_queue;
->  
->  		chunk_size = mddev->chunk_sectors << 9;
+>  /**
+> + * pm_runtime_want_interaction - Enable interaction between system sleep
+> + *				 and runtime PM callbacks at the bus/subsystem
+> + *				 level.
+> + * @dev: Device to handle
+> + *
+> + * Set the power.want_interaction flage, which tells the generic PM subsystem
+> + * ops that the following actions should be done during system suspend/resume:
+> + *
+> + * - If the device has been runtime suspended, the driver's
+> + *   suspend() handler will not be invoked.
+> + *
+> + * - If the device has a resume() pm callback, and the resume()
+> + *   callback returns success on system resume, the device's
+> + *   runtime PM status will be set to active.
+> + */
+
+This last part is normally true for all devices.  If you don't want it 
+to hold when want_interaction isn't set, you should add a good 
+explanation to sections 6 and 7 in Documentation/power/runtime.txt.
+
+> +void pm_runtime_want_interaction(struct device *dev)
+> +{
+> +	spin_lock_irq(&dev->power.lock);
+> +	dev->power.want_interaction = 1;
+> +	spin_unlock_irq(&dev->power.lock);
+> +}
+> +EXPORT_SYMBOL_GPL(pm_runtime_want_interaction);
+> +
+> +/**
+>   * pm_runtime_no_callbacks - Ignore run-time PM callbacks for a device.
+>   * @dev: Device to handle.
+>   *
+
+Don't forget that you also need to describe these things in 
+Documentation/power/runtime.txt.
+
+Alan Stern
+
