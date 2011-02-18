@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab1BRPEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 10:04:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17273 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753822Ab1BRPEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 10:04:33 -0500
-Date: Fri, 18 Feb 2011 10:04:29 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: blk_throtl_exit taking q->queue_lock is problematic
-Message-ID: <20110218150429.GB26654@redhat.com>
-References: <20110216183114.26a3613b@notabene.brown>
- <20110216155305.GC14653@redhat.com>
- <20110217113536.2bbf308e@notabene.brown>
- <20110217011029.GA6793@redhat.com>
- <20110217165501.47f3c26f@notabene.brown>
- <20110217165906.GE9075@redhat.com>
- <20110218134025.2a2e5bbb@notabene.brown>
- <AANLkTi=t0vFTTDr9jBZ70UmJ9YYzziA0cRP8t0T9wswW@mail.gmail.com>
- <20110218143325.5738e127@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110218143325.5738e127@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755642Ab1BRPFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 10:05:53 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53675 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab1BRPFu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 10:05:50 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
+To: davinci-linux-open-source@linux.davincidsp.com
+Cc: hjk@linutronix.de, gregkh@suse.de, pratheesh@ti.com,
+        amit.chatterjee@ti.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/2] Add PRUSS UIO driver support
+Date: Fri, 18 Feb 2011 20:35:28 +0530
+Message-Id: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 02:33:25PM +1100, NeilBrown wrote:
-> On Thu, 17 Feb 2011 22:19:52 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
-> 
-> > On Thu, Feb 17, 2011 at 9:40 PM, NeilBrown <neilb@suse.de> wrote:
-> > > On Thu, 17 Feb 2011 11:59:06 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
-> > >> So if we do this change for performance reasons, it still makes sense
-> > >> but doing this change because md provided a q->queue_lock and took away that
-> > >> lock without notifying block layer hence we do this change, is still not
-> > >> the right reason, IMHO.
-> > >
-> > > Well...I like that patch, as it makes my life easier....
-> > >
-> > > But I agree that md is doing something wrong.  Now that ->queue_lock is
-> > > always initialised, it is wrong to leave it in a state where it not defined.
-> > >
-> > > So maybe I'll apply this (after testing it a bit.  The only reason for taking
-> > > the lock queue_lock in a couple of places is to silence some warnings.
-> > >
-> > > Thanks,
-> > > NeilBrown
-> > >
-> > >
-> > > diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> > > index a23ffa3..909282d 100644
-> > > --- a/drivers/md/raid1.c
-> > > +++ b/drivers/md/raid1.c
-> > > @@ -959,7 +961,9 @@ static int make_request(mddev_t *mddev, struct bio * bio)
-> > >                atomic_inc(&r1_bio->remaining);
-> > >                spin_lock_irqsave(&conf->device_lock, flags);
-> > >                bio_list_add(&conf->pending_bio_list, mbio);
-> > > +               spin_lock(mddev->queue->queue_lock);
-> > >                blk_plug_device(mddev->queue);
-> > > +               spin_unlock(mddev->queue->queue_lock);
-> > >                spin_unlock_irqrestore(&conf->device_lock, flags);
-> > >        }
-> > >        r1_bio_write_done(r1_bio, bio->bi_vcnt, behind_pages, behind_pages != NULL);
-> > 
-> > Noticed an inconsistency, raid10.c's additional locking also protects
-> > the bio_list_add() whereas raid1.c's doesn't.  Seems the additional
-> > protection in raid10 isn't needed?
-> 
-> Correct - not needed at all.
-> I put it there because it felt a little cleaner keeping the two 'lock's
-> together like the two 'unlock's.  Probably confusing though...
+This patch series add support for PRUSS (Programmable Real-time Unit Sub System) UIO driver in Texas Instruments DA850, AM18xx and OMAPL1-38 processors. PRUSS is programmable RISC core which can be used to implement Soft IPs (eg:- DMA, CAN, UART,SmartCard) and Industrial communications data link layers (eg:- PROFIBUS). UIO driver exposes PRUSS resources like memory and interrupts to user space application.PRUSS UIO application API can be used to control PRUs in PRUSS, setup PRU INTC, load firmware to PRUs and implement IPC between Host processor and PRUs. More information on PRUSS and UIO linux user space API available in the links below
 
-I guess you could use blk_plug_device_unlocked() to get rid of ugliness
-and this routine will take care of taking queue lock.
+http://processors.wiki.ti.com/index.php/Programmable_Realtime_Unit_Subsystem
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader
+http://processors.wiki.ti.com/index.php/PRU_Linux_Application_Loader_API_Guide 
 
-Thanks
-Vivek
+PRUSS UIO driver support patch applies on top of Linus's tree latest.
+Both patches applies on top of linux-davinci tree latest. 
+
+Pratheesh Gangadhar (2):
+  PRUSS UIO driver support
+  Defines DA850/AM18xx/OMAPL1-38 SOC resources used by PRUSS UIO driver
+
+ arch/arm/mach-davinci/board-da850-evm.c    |    4 +
+ arch/arm/mach-davinci/da850.c              |   35 ++++
+ arch/arm/mach-davinci/devices-da8xx.c      |   73 ++++++++
+ arch/arm/mach-davinci/include/mach/da8xx.h |    3 +
+ drivers/uio/Kconfig                        |   10 +
+ drivers/uio/Makefile                       |    1 +
+ drivers/uio/uio_pruss.c                    |  250 ++++++++++++++++++++++++++++
+ 7 files changed, 376 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/uio/uio_pruss.c
+
