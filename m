@@ -1,124 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab1BRGSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 01:18:09 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:47021 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab1BRGSI (ORCPT
+	id S1752899Ab1BRGUY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 01:20:24 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64723 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab1BRGUW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 01:18:08 -0500
-Date: Fri, 18 Feb 2011 11:25:05 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v5 0/4] fadvise(DONTNEED) support
-Message-ID: <20110218055505.GA2648@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <cover.1297940291.git.minchan.kim@gmail.com>
+	Fri, 18 Feb 2011 01:20:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=SkyDZcqsRG5bNnr28hHf8g9r1yBAaZmR2icpPPB5v1rPRv3btRDgfl6vMAPyMvZgW/
+         OJAmg9uk4xoZE70YNu3fOlwj76iCfNWwvyPjKFHMhtEr+zfFAJCUNaurK7LHwdCmyI+3
+         nEYCUyq9TeXgmoD8WYe/I6mbOL0s3cfE9NZ/k=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <cover.1297940291.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1297679802-24669-1-git-send-email-dbaryshkov@gmail.com>
+References: <1297679802-24669-1-git-send-email-dbaryshkov@gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Fri, 18 Feb 2011 14:20:01 +0800
+Message-ID: <AANLkTi=Fi_W99Nd6ZG9tp+jPqe1iOHL-rddwBVXp0ZuW@mail.gmail.com>
+Subject: Re: [PATCH] tosa-bt: drop setting LED trigger name, as it's
+ unsupported now
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* MinChan Kim <minchan.kim@gmail.com> [2011-02-18 00:08:18]:
-
-> Sorry for my laziness. It's time to repost with some test result.
-> 
-> Recently, there was a reported problem about thrashing.
-> (http://marc.info/?l=rsync&m=128885034930933&w=2)
-> It happens by backup workloads(ex, nightly rsync).
-> That's because the workload makes just use-once pages
-> and touches pages twice. It promotes the page into
-> active list so that it results in working set page eviction.
-> So app developer want to support POSIX_FADV_NOREUSE but other OSes include linux 
-> don't support it. (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
-> 
-> By other approach, app developers use POSIX_FADV_DONTNEED.
-> But it has a problem. If kernel meets page is going on writing
-> during invalidate_mapping_pages, it can't work.
-> It makes application programmer to use it hard since they always 
-> consider sync data before calling fadivse(..POSIX_FADV_DONTNEED) to 
-> make sure the pages couldn't be discardable. At last, they can't use
-> deferred write of kernel so see performance loss.
-> (http://insights.oetiker.ch/linux/fadvise.html)
-> 
-> In fact, invalidation is very big hint to reclaimer.
-> It means we don't use the page any more. So the idea in this series is that
-> let's move invalidated pages but not-freed page until into inactive list.
-> It can help relcaim efficiency very much so that it can prevent
-> eviction working set.
-> 
-> My exeperiment is folowing as.
-> 
-> Test Environment :
-> DRAM : 2G, CPU : Intel(R) Core(TM)2 CPU
-> Rsync backup directory size : 16G
-> 
-> rsync version is 3.0.7.
-> rsync patch is Ben's fadivse.
-> The stress scenario do following jobs with parallel.
-> 
-> 1. git clone linux-2.6
-> 1. make all -j4 linux-mmotm
-> 3. rsync src dst
-> 
-> nrns : no-patched rsync + no stress
-> prns : patched rsync + no stress
-> nrs  : no-patched rsync + stress
-> prs  : patched rsync + stress
-> 
-> For profiling, I add some vmstat.
-> pginvalidate : the total number of pages which are moved by this patch.
-> pgreclaim : the number of pages which are moved at inactive's tail by PG_reclaim of pginvalidate
-> 
->                         NRNS    PRNS    NRS     PRS 
-> Elapsed time            36:01.49        37:13.58        01:23:24        01:21:45
-> nr_vmscan_write         184     1       296     509 
-> pgactivate              76559   84714   445214  463143
-> pgdeactivate            19360   40184   74302   91423
-> pginvalidate            0       2240333 0       1769147
-> pgreclaim               0       1849651 0       1650796
-> pgfault                 406208  421860  72485217        70334416
-> pgmajfault              212     334     5149    3688
-> pgsteal_dma             0       0       0       0   
-> pgsteal_normal          2645174 1545116 2521098 1578651
-> pgsteal_high            5162080 2562269 6074720 3137294
-> pgsteal_movable         0       0       0       0   
-> pgscan_kswapd_dma       0       0       0       0   
-> pgscan_kswapd_normal    2641732 1545374 2499894 1557882
-> pgscan_kswapd_high      5143794 2567981 5999585 3051150
-> pgscan_kswapd_movable   0       0       0       0   
-> pgscan_direct_dma       0       0       0       0   
-> pgscan_direct_normal    3643    0       21613   21238
-> pgscan_direct_high      20174   1783    76980   87848
-> pgscan_direct_movable   0       0       0       0   
-> pginodesteal            130     1029    3510    24100
-> slabs_scanned           1421824 1648128 1870720 1880320
-> kswapd_steal            7785153 4105620 8498332 4608372
-> kswapd_inodesteal       189432  474052  342835  472503
-> pageoutrun              100687  52282   145712  70946
-> allocstall              22      1       149     163 
-> pgrotated               0       2231408 2932    1765393
-> unevictable_pgs_scanned 0       0       0       0   
+On Mon, Feb 14, 2011 at 6:36 PM, Dmitry Eremin-Solenikov
+<dbaryshkov@gmail.com> wrote:
+> Since 2e48928d8a0f38c1b5c81eb3f1294de8a6382c68 it's no longer possible to set
+> the name of the LED trigger for RFKILL events. Drop respective code from tosa-bt.c
 >
+> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: John W. Linville <linville@tuxdriver.com>
 
-The results do look impressive
- 
+Applied to 'fix'.
 
--- 
-	Three Cheers,
-	Balbir
+I hope there is no existing user of this trigger name, but you know
+better than I do.
+
+> ---
+>  arch/arm/mach-pxa/tosa-bt.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-pxa/tosa-bt.c b/arch/arm/mach-pxa/tosa-bt.c
+> index c31e601..b9b1e5c 100644
+> --- a/arch/arm/mach-pxa/tosa-bt.c
+> +++ b/arch/arm/mach-pxa/tosa-bt.c
+> @@ -81,8 +81,6 @@ static int tosa_bt_probe(struct platform_device *dev)
+>                goto err_rfk_alloc;
+>        }
+>
+> -       rfkill_set_led_trigger_name(rfk, "tosa-bt");
+> -
+>        rc = rfkill_register(rfk);
+>        if (rc)
+>                goto err_rfkill;
+> --
+> 1.7.2.3
+>
+>
