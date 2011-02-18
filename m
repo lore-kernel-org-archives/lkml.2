@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab1BRSsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 13:48:41 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52700 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752791Ab1BRSr7 (ORCPT
+	id S1757193Ab1BRSsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 13:48:36 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38973 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753596Ab1BRSr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Feb 2011 13:47:59 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Michael Witten <mfwitten@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/4] perf tools: Makefile: Remove platform-specific cruft
-Date: Fri, 18 Feb 2011 16:47:50 -0200
-Message-Id: <1298054872-16434-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 4/4] perf tools: Makefile: Remove various and sundry cruft
+Date: Fri, 18 Feb 2011 16:47:52 -0200
+Message-Id: <1298054872-16434-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1298054872-16434-1-git-send-email-acme@infradead.org>
 References: <1298054872-16434-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,455 +25,501 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Witten <mfwitten@gmail.com>
 
-While it makes sense that this tool could be used on
-other platforms at least to parse data, there doesn't
-appear to be any real support for such usage.
-
 This commit squashes several commits that remove:
 
- SNPRINTF_RETURNS_BOGUS
- FREAD_READS_DIRECTORIES
- NO_D_{INO,TYPE}_IN_DIRENT
- NO_STRCASESTR
- NO_MEMMEM
- NO_STRTOUMAX and NO_STRTOULL
- NO_SETENV
- NO_UNSETENV
- NO_MKDTEMP
- NEEDS_LIBICONV
- NEEDS_SOCKET
- NO_MMAP
- NO_PTHREADS
- NO_PREAD
- NO_TRUSTABLE_FILEMODE
- NO_IPV6 and NO_SOCKADDR_STORAGE
- NO_ICONV and OLD_ICONV
- NO_NSEC, USE_NSEC, and USE_ST_TIMESPEC
- NO_ST_BLOCKS_IN_STRUCT_STAT
- NO_FINK and NO_DARWIN_PORTS
- NO_SYS_SELECT_H
- NO_HSTRERROR
- DIR_HAS_BSD_GROUP_SEMANTICS and FORCE_DIR_SET_GID
- NEEDS_NSL, NO_UINTMAX_T, NO_INET_{N,P}TON
- COMPAT_{CFLAGS,OBJS}
- Executable extension `X'
+ unnecessary uname calls
+ `sh -c'
+ BUILT_INS and QUIET_BUILT_IN
+
+    They have no effect, and the `fixup-builtins' and `check-builtins.sh'
+    scripts don't even exist.
+
+ RUNTIME_PREFIX
+
+    It's currently never anything but unset, and it's apparently
+    only meaningful when Microsoft Windows is the operating system
+    (according to the source for git).
+
+ TEST_PROGRAMS
+ EXTRA_PROGRAMS
+ unused SHELL_PATH_SQ portions
+ unused test for V=2
+ useless exports
+
+    Only when `V' is undefined (that is, only when the value of `V'
+    is empty) is `export V' performed, which just has the effect of
+    placing the empty-valued variable `V' in the environment.
+
+    The only other script to make use of `V' is `Documentation/Makefile',
+    which only checks whether `V' is undefined (that is, whether the value
+    of `V' is empty); hence, the `export V' has no effect whatsoever.
+
+    Similarly, `export QUIET_GEN' is useless because it will only have
+    a non-empty value when `V' has an empty-value, and when `V' has
+    an empty-value, `QUIET_GEN' is always explicitly set in every
+    script in which it is used.
+
+    `DESTDIR' is only ever defined by the user via the environment
+    or the command line, both of which are automatically exported
+    to sub-make processes. Furthermore, no non-make sub-scripts
+    make use of `DESTDIR' as an environment variable.
+
+    No other scripts use `perfexec_instdir'.
+
+ unused QUIET_SUBDIR{0,1}
+ TAR and RPMBUILD
+ PTHREAD_LIBS
+ Maintainer's dist rules and commands
+ distclean target
+ Test suite coverage testing
+ PRINT_DIR and NO_SUBDIR
+ `configure' target
+ NO_CURL
+ @@PERF_VERSION@@ substitution
+
+    Without the sed command, all of the rule's commands can be reduced
+    to a single line that copies a file and sets the permissions properly
+    in the process.
+
+ `make test' echo line
+ template_instdir
+ PERF-BUILD-OPTIONS
+ double-colon rules
+
+    The use of double-colon rules seems misguided or vestigial git.
+
+ Essentially hard-coded $(SCRIPTS) expansion
 
 Signed-off-by: Michael Witten <mfwitten@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile    |  232 ++----------------------------------------------
- tools/perf/util/util.h |   26 ------
- 2 files changed, 8 insertions(+), 250 deletions(-)
+ tools/perf/.gitignore      |    1 -
+ tools/perf/Makefile        |  213 ++-----------------------------------------
+ tools/perf/util/exec_cmd.c |   19 ----
+ 3 files changed, 10 insertions(+), 223 deletions(-)
 
+diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
+index cb43289..416684b 100644
+--- a/tools/perf/.gitignore
++++ b/tools/perf/.gitignore
+@@ -1,4 +1,3 @@
+-PERF-BUILD-OPTIONS
+ PERF-CFLAGS
+ PERF-GUI-VARS
+ PERF-VERSION-FILE
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 544367c..53c1e93 100644
+index fde196f..9b84218 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -14,103 +14,23 @@ endif
- # Define V=1 to have a more verbose compile.
- # Define V=2 to have an even more verbose compile.
+@@ -3,7 +3,7 @@ ifeq ("$(origin O)", "command line")
+ endif
+ 
+ # The default target of this Makefile is...
+-all::
++all:
+ 
+ ifneq ($(OUTPUT),)
+ # check that the output directory actually exists
+@@ -11,8 +11,7 @@ OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
+ $(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
+ endif
+ 
+-# Define V=1 to have a more verbose compile.
+-# Define V=2 to have an even more verbose compile.
++# Define V to have a more verbose compile.
  #
--# Define SNPRINTF_RETURNS_BOGUS if your are on a system which snprintf()
--# or vsnprintf() return -1 instead of number of characters which would
--# have been written to the final string if enough space had been available.
--#
--# Define FREAD_READS_DIRECTORIES if your are on a system which succeeds
--# when attempting to read from an fopen'ed directory.
--#
- # Define CURLDIR=/foo/bar if your curl header and library files are in
- # /foo/bar/include and /foo/bar/lib directories.
- #
- # Define EXPATDIR=/foo/bar if your expat header and library files are in
- # /foo/bar/include and /foo/bar/lib directories.
- #
--# Define NO_D_INO_IN_DIRENT if you don't have d_ino in your struct dirent.
--#
--# Define NO_D_TYPE_IN_DIRENT if your platform defines DT_UNKNOWN but lacks
--# d_type in struct dirent (latest Cygwin -- will be fixed soonish).
--#
- # Define NO_C99_FORMAT if your formatted IO functions (printf/scanf et.al.)
- # do not support the 'size specifiers' introduced by C99, namely ll, hh,
- # j, z, t. (representing long long int, char, intmax_t, size_t, ptrdiff_t).
- # some C compilers supported these specifiers prior to C99 as an extension.
- #
--# Define NO_STRCASESTR if you don't have strcasestr.
--#
--# Define NO_MEMMEM if you don't have memmem.
--#
--# Define NO_STRTOUMAX if you don't have strtoumax in the C library.
--# If your compiler also does not support long long or does not have
--# strtoull, define NO_STRTOULL.
--#
--# Define NO_SETENV if you don't have setenv in the C library.
--#
--# Define NO_UNSETENV if you don't have unsetenv in the C library.
--#
--# Define NO_MKDTEMP if you don't have mkdtemp in the C library.
--#
--# Define NO_SYS_SELECT_H if you don't have sys/select.h.
--#
--# Define NO_FINK if you are building on Darwin/Mac OS X, have Fink
--# installed in /sw, but don't want PERF to link against any libraries
--# installed there.  If defined you may specify your own (or Fink's)
--# include directories and library directories by defining CFLAGS
--# and LDFLAGS appropriately.
--#
--# Define NO_DARWIN_PORTS if you are building on Darwin/Mac OS X,
--# have DarwinPorts installed in /opt/local, but don't want PERF to
--# link against any libraries installed there.  If defined you may
--# specify your own (or DarwinPort's) include directories and
--# library directories by defining CFLAGS and LDFLAGS appropriately.
--#
--# Define NEEDS_LIBICONV if linking with libc is not enough (Darwin).
--#
--# Define NEEDS_SOCKET if linking with libc is not enough (SunOS,
--# Patrick Mauritz).
--#
--# Define NO_MMAP if you want to avoid mmap.
--#
--# Define NO_PTHREADS if you do not have or do not want to use Pthreads.
--#
--# Define NO_PREAD if you have a problem with pread() system call (e.g.
--# cygwin.dll before v1.5.22).
--#
--# Define NO_TRUSTABLE_FILEMODE if your filesystem may claim to support
--# the executable mode bit, but doesn't really do so.
--#
--# Define NO_IPV6 if you lack IPv6 support and getaddrinfo().
--#
--# Define NO_SOCKADDR_STORAGE if your platform does not have struct
--# sockaddr_storage.
--#
--# Define NO_ICONV if your libc does not properly support iconv.
--#
--# Define OLD_ICONV if your library has an old iconv(), where the second
--# (input buffer pointer) parameter is declared with type (const char **).
--#
- # Define NO_DEFLATE_BOUND if your zlib does not have deflateBound.
- #
- # Define NO_R_TO_GCC_LINKER if your gcc does not like "-R/path/lib"
- # that tells runtime paths to dynamic libraries;
- # "-Wl,-rpath=/path/lib" is used instead.
- #
--# Define USE_NSEC below if you want perf to care about sub-second file mtimes
--# and ctimes. Note that you need recent glibc (at least 2.2.4) for this, and
--# it will BREAK YOUR LOCAL DIFFS! show-diff and anything using it will likely
--# randomly break unless your underlying filesystem supports those sub-second
--# times (my ext3 doesn't).
--#
--# Define USE_ST_TIMESPEC if your "struct stat" uses "st_ctimespec" instead of
--# "st_ctim"
--#
--# Define NO_NSEC if your "struct stat" does not have "st_ctim.tv_nsec"
--# available.  This automatically turns USE_NSEC off.
--#
--# Define NO_ST_BLOCKS_IN_STRUCT_STAT if your platform does not have st_blocks
--# field that counts the on-disk footprint in 512-byte blocks.
--#
  # Define ASCIIDOC8 if you want to format documentation with AsciiDoc 8
  #
- # Define DOCBOOK_XSL_172 if you want to format man pages with DocBook XSL v1.72.
-@@ -282,8 +202,6 @@ BASIC_LDFLAGS =
+@@ -28,12 +27,7 @@ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+ -include $(OUTPUT)PERF-VERSION-FILE
+ 
+-uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+-uname_M := $(shell sh -c 'uname -m 2>/dev/null || echo not')
+-uname_O := $(shell sh -c 'uname -o 2>/dev/null || echo not')
+-uname_R := $(shell sh -c 'uname -r 2>/dev/null || echo not')
+-uname_P := $(shell sh -c 'uname -p 2>/dev/null || echo not')
+-uname_V := $(shell sh -c 'uname -v 2>/dev/null || echo not')
++uname_M := $(shell uname -m 2>/dev/null || echo not)
+ 
+ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+@@ -52,8 +46,6 @@ ifeq ($(ARCH),x86_64)
+ 	ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S
+ endif
+ 
+-# CFLAGS and LDFLAGS are for the users to override from the command line.
+-
+ #
+ # Include saner warnings here, which can catch bugs:
+ #
+@@ -131,22 +123,13 @@ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+ RM = rm -f
+ MKDIR = mkdir
+-TAR = tar
+ FIND = find
+ INSTALL = install
+-RPMBUILD = rpmbuild
+-PTHREAD_LIBS = -lpthread
+ 
+ # sparse is architecture-neutral, which means that we need to tell it
+ # explicitly what architecture to check for. Fix this up for yours..
+ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ 
+-ifeq ($(V), 2)
+-	QUIET_STDERR = ">/dev/null"
+-else
+-	QUIET_STDERR = ">/dev/null 2>&1"
+-endif
+-
+ -include feature-tests.mak
+ 
+ ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
+@@ -171,12 +154,10 @@ BASIC_LDFLAGS =
+ 
  # Guard against environment variables
  BUILTIN_OBJS =
- BUILT_INS =
--COMPAT_CFLAGS =
--COMPAT_OBJS =
+-BUILT_INS =
  LIB_H =
  LIB_OBJS =
  PYRF_OBJS =
-@@ -329,7 +247,7 @@ LANG_BINDINGS =
+ SCRIPT_SH =
+-TEST_PROGRAMS =
+ 
+ SCRIPT_SH += perf-archive.sh
+ 
+@@ -192,12 +173,6 @@ $(OUTPUT)python/perf.so: $(PYRF_OBJS)
+ 
+ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ 
+-# Empty...
+-EXTRA_PROGRAMS =
+-
+-# ... and all the rest that could be moved out of bindir to perfexecdir
+-PROGRAMS += $(EXTRA_PROGRAMS)
+-
+ #
+ # Single 'perf' binary right now:
+ #
+@@ -205,10 +180,6 @@ PROGRAMS += $(OUTPUT)perf
+ 
+ LANG_BINDINGS =
+ 
+-# List built-in command $C whose implementation cmd_$C() is not in
+-# builtin-$C.o but is linked in as part of some other command.
+-#
+-
+ # what 'all' will build and 'install' will install, in perfexecdir
  ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
  
- # what 'all' will build but not install in perfexecdir
--OTHER_PROGRAMS = $(OUTPUT)perf$X
-+OTHER_PROGRAMS = $(OUTPUT)perf
- 
- # Set paths to tools early so that they can be used for version tests.
- ifndef SHELL_PATH
-@@ -538,22 +456,6 @@ endif # NO_DWARF
- 
- -include arch/$(ARCH)/Makefile
- 
--ifeq ($(uname_S),Darwin)
--	ifndef NO_FINK
--		ifeq ($(shell test -d /sw/lib && echo y),y)
--			BASIC_CFLAGS += -I/sw/include
--			BASIC_LDFLAGS += -L/sw/lib
--		endif
--	endif
--	ifndef NO_DARWIN_PORTS
--		ifeq ($(shell test -d /opt/local/lib && echo y),y)
--			BASIC_CFLAGS += -I/opt/local/include
--			BASIC_LDFLAGS += -L/opt/local/lib
--		endif
--	endif
--	PTHREAD_LIBS =
--endif
--
- ifneq ($(OUTPUT),)
- 	BASIC_CFLAGS += -I$(OUTPUT)
- endif
-@@ -707,110 +609,9 @@ ifndef CC_LD_DYNPATH
+@@ -565,33 +536,13 @@ else
  	endif
  endif
  
--ifdef NEEDS_SOCKET
--	EXTLIBS += -lsocket
--endif
--ifdef NEEDS_NSL
--	EXTLIBS += -lnsl
--endif
--ifdef NO_D_TYPE_IN_DIRENT
--	BASIC_CFLAGS += -DNO_D_TYPE_IN_DIRENT
--endif
--ifdef NO_D_INO_IN_DIRENT
--	BASIC_CFLAGS += -DNO_D_INO_IN_DIRENT
--endif
--ifdef NO_ST_BLOCKS_IN_STRUCT_STAT
--	BASIC_CFLAGS += -DNO_ST_BLOCKS_IN_STRUCT_STAT
--endif
--ifdef USE_NSEC
--	BASIC_CFLAGS += -DUSE_NSEC
--endif
--ifdef USE_ST_TIMESPEC
--	BASIC_CFLAGS += -DUSE_ST_TIMESPEC
--endif
--ifdef NO_NSEC
--	BASIC_CFLAGS += -DNO_NSEC
--endif
- ifdef NO_C99_FORMAT
- 	BASIC_CFLAGS += -DNO_C99_FORMAT
- endif
--ifdef SNPRINTF_RETURNS_BOGUS
--	COMPAT_CFLAGS += -DSNPRINTF_RETURNS_BOGUS
--	COMPAT_OBJS += $(OUTPUT)compat/snprintf.o
--endif
--ifdef FREAD_READS_DIRECTORIES
--	COMPAT_CFLAGS += -DFREAD_READS_DIRECTORIES
--	COMPAT_OBJS += $(OUTPUT)compat/fopen.o
--endif
--ifdef NO_STRCASESTR
--	COMPAT_CFLAGS += -DNO_STRCASESTR
--	COMPAT_OBJS += $(OUTPUT)compat/strcasestr.o
--endif
--ifdef NO_STRTOUMAX
--	COMPAT_CFLAGS += -DNO_STRTOUMAX
--	COMPAT_OBJS += $(OUTPUT)compat/strtoumax.o
--endif
--ifdef NO_STRTOULL
--	COMPAT_CFLAGS += -DNO_STRTOULL
--endif
--ifdef NO_SETENV
--	COMPAT_CFLAGS += -DNO_SETENV
--	COMPAT_OBJS += $(OUTPUT)compat/setenv.o
--endif
--ifdef NO_MKDTEMP
--	COMPAT_CFLAGS += -DNO_MKDTEMP
--	COMPAT_OBJS += $(OUTPUT)compat/mkdtemp.o
--endif
--ifdef NO_UNSETENV
--	COMPAT_CFLAGS += -DNO_UNSETENV
--	COMPAT_OBJS += $(OUTPUT)compat/unsetenv.o
--endif
--ifdef NO_SYS_SELECT_H
--	BASIC_CFLAGS += -DNO_SYS_SELECT_H
--endif
--ifdef NO_MMAP
--	COMPAT_CFLAGS += -DNO_MMAP
--	COMPAT_OBJS += $(OUTPUT)compat/mmap.o
--else
--	ifdef USE_WIN32_MMAP
--		COMPAT_CFLAGS += -DUSE_WIN32_MMAP
--		COMPAT_OBJS += $(OUTPUT)compat/win32mmap.o
--	endif
--endif
--ifdef NO_PREAD
--	COMPAT_CFLAGS += -DNO_PREAD
--	COMPAT_OBJS += $(OUTPUT)compat/pread.o
--endif
--ifdef NO_TRUSTABLE_FILEMODE
--	BASIC_CFLAGS += -DNO_TRUSTABLE_FILEMODE
--endif
--ifdef NO_IPV6
--	BASIC_CFLAGS += -DNO_IPV6
--endif
--ifdef NO_UINTMAX_T
--	BASIC_CFLAGS += -Duintmax_t=uint32_t
--endif
--ifdef NO_SOCKADDR_STORAGE
--ifdef NO_IPV6
--	BASIC_CFLAGS += -Dsockaddr_storage=sockaddr_in
--else
--	BASIC_CFLAGS += -Dsockaddr_storage=sockaddr_in6
--endif
--endif
--ifdef NO_INET_NTOP
--	LIB_OBJS += $(OUTPUT)compat/inet_ntop.o
--endif
--ifdef NO_INET_PTON
--	LIB_OBJS += $(OUTPUT)compat/inet_pton.o
+-ifdef RUNTIME_PREFIX
+-	COMPAT_CFLAGS += -DRUNTIME_PREFIX
 -endif
 -
--ifdef NO_ICONV
--	BASIC_CFLAGS += -DNO_ICONV
+-QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
+-QUIET_SUBDIR1  =
+-
+-ifneq ($(findstring $(MAKEFLAGS),w),w)
+-PRINT_DIR = --no-print-directory
+-else # "make -w"
+-NO_SUBDIR = :
 -endif
 -
--ifdef OLD_ICONV
--	BASIC_CFLAGS += -DOLD_ICONV
--endif
- 
- ifdef NO_DEFLATE_BOUND
- 	BASIC_CFLAGS += -DNO_DEFLATE_BOUND
-@@ -819,14 +620,6 @@ endif
- ifdef NO_PERL_MAKEMAKER
- 	export NO_PERL_MAKEMAKER
+ ifneq ($(findstring $(MAKEFLAGS),s),s)
+ ifndef V
+ 	QUIET_CC       = @echo '   ' CC $@;
+ 	QUIET_AR       = @echo '   ' AR $@;
+ 	QUIET_LINK     = @echo '   ' LINK $@;
+ 	QUIET_MKDIR    = @echo '   ' MKDIR $@;
+-	QUIET_BUILT_IN = @echo '   ' BUILTIN $@;
+ 	QUIET_GEN      = @echo '   ' GEN $@;
+-	QUIET_SUBDIR0  = +@subdir=
+-	QUIET_SUBDIR1  = ;$(NO_SUBDIR) echo '   ' SUBDIR $$subdir; \
+-			 $(MAKE) $(PRINT_DIR) -C $$subdir
+-	export V
+-	export QUIET_GEN
+-	export QUIET_BUILT_IN
  endif
--ifdef NO_HSTRERROR
--	COMPAT_CFLAGS += -DNO_HSTRERROR
--	COMPAT_OBJS += $(OUTPUT)compat/hstrerror.o
--endif
--ifdef NO_MEMMEM
--	COMPAT_CFLAGS += -DNO_MEMMEM
--	COMPAT_OBJS += $(OUTPUT)compat/memmem.o
--endif
- ifdef INTERNAL_QSORT
- 	COMPAT_CFLAGS += -DINTERNAL_QSORT
- 	COMPAT_OBJS += $(OUTPUT)compat/qsort.o
-@@ -835,9 +628,6 @@ ifdef RUNTIME_PREFIX
- 	COMPAT_CFLAGS += -DRUNTIME_PREFIX
  endif
  
--ifdef DIR_HAS_BSD_GROUP_SEMANTICS
--	COMPAT_CFLAGS += -DDIR_HAS_BSD_GROUP_SEMANTICS
--endif
- ifdef NO_EXTERNAL_GREP
- 	BASIC_CFLAGS += -DNO_EXTERNAL_GREP
- endif
-@@ -895,9 +685,6 @@ PERL_PATH_SQ = $(subst ','\'',$(PERL_PATH))
- 
- LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive $(EXTLIBS)
- 
--BASIC_CFLAGS += $(COMPAT_CFLAGS)
--LIB_OBJS += $(COMPAT_OBJS)
--
- ALL_CFLAGS += $(BASIC_CFLAGS)
+@@ -621,16 +572,14 @@ ALL_CFLAGS += $(BASIC_CFLAGS)
  ALL_CFLAGS += $(ARCH_CFLAGS)
  ALL_LDFLAGS += $(BASIC_LDFLAGS)
-@@ -910,9 +697,6 @@ export TAR INSTALL DESTDIR SHELL_PATH
+ 
+-export TAR INSTALL DESTDIR SHELL_PATH
++export INSTALL SHELL_PATH
+ 
+ 
+ ### Build rules
+ 
  SHELL = $(SHELL_PATH)
  
- all:: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(BUILT_INS) $(OTHER_PROGRAMS) $(OUTPUT)PERF-BUILD-OPTIONS
--ifneq (,$X)
--	$(foreach p,$(patsubst %$X,%,$(filter %$X,$(ALL_PROGRAMS) $(BUILT_INS) perf$X)), test '$p' -ef '$p$X' || $(RM) '$p';)
+-all:: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(BUILT_INS) $(OTHER_PROGRAMS) $(OUTPUT)PERF-BUILD-OPTIONS
+-
+-all::
++all: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(OTHER_PROGRAMS)
+ 
+ please_set_SHELL_PATH_to_a_more_modern_shell:
+ 	@$$(:)
+@@ -661,37 +610,17 @@ $(OUTPUT)builtin-timechart.o: builtin-timechart.c $(OUTPUT)common-cmds.h $(OUTPU
+ 		'-DPERF_MAN_PATH="$(mandir_SQ)"' \
+ 		'-DPERF_INFO_PATH="$(infodir_SQ)"' $<
+ 
+-$(BUILT_INS): $(OUTPUT)perf$X
+-	$(QUIET_BUILT_IN)$(RM) $@ && \
+-	ln perf$X $@ 2>/dev/null || \
+-	ln -s perf$X $@ 2>/dev/null || \
+-	cp perf$X $@
+-
+ $(OUTPUT)common-cmds.h: util/generate-cmdlist.sh command-list.txt
+ 
+ $(OUTPUT)common-cmds.h: $(wildcard Documentation/perf-*.txt)
+ 	$(QUIET_GEN). util/generate-cmdlist.sh > $@+ && mv $@+ $@
+ 
+-$(patsubst %.sh,%,$(SCRIPT_SH)) : % : %.sh
+-	$(QUIET_GEN)$(RM) $(OUTPUT)$@ $(OUTPUT)$@+ && \
+-	sed -e '1s|#!.*/sh|#!$(SHELL_PATH_SQ)|' \
+-	    -e 's|@SHELL_PATH@|$(SHELL_PATH_SQ)|' \
+-	    -e 's/@@PERF_VERSION@@/$(PERF_VERSION)/g' \
+-	    -e 's/@@NO_CURL@@/$(NO_CURL)/g' \
+-	    $@.sh > $(OUTPUT)$@+ && \
+-	chmod +x $(OUTPUT)$@+ && \
+-	mv $(OUTPUT)$@+ $(OUTPUT)$@
+-
+-configure: configure.ac
+-	$(QUIET_GEN)$(RM) $@ $<+ && \
+-	sed -e 's/@@PERF_VERSION@@/$(PERF_VERSION)/g' \
+-	    $< > $<+ && \
+-	autoconf -o $@ $<+ && \
+-	$(RM) $<+
++$(SCRIPTS) : % : %.sh
++	$(QUIET_GEN)$(INSTALL) '$@.sh' '$(OUTPUT)$@'
+ 
+ # These can record PERF_VERSION
+ $(OUTPUT)perf.o perf.spec \
+-	$(patsubst %.sh,%,$(SCRIPT_SH)) \
++	$(SCRIPTS) \
+ 	: $(OUTPUT)PERF-VERSION-FILE
+ 
+ $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+@@ -826,23 +755,8 @@ $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
+ 		echo "$$FLAGS" >$(OUTPUT)PERF-CFLAGS; \
+             fi
+ 
+-# We need to apply sq twice, once to protect from the shell
+-# that runs $(OUTPUT)PERF-BUILD-OPTIONS, and then again to protect it
+-# and the first level quoting from the shell that runs "echo".
+-$(OUTPUT)PERF-BUILD-OPTIONS: .FORCE-PERF-BUILD-OPTIONS
+-	@echo SHELL_PATH=\''$(subst ','\'',$(SHELL_PATH_SQ))'\' >$@
+-	@echo TAR=\''$(subst ','\'',$(subst ','\'',$(TAR)))'\' >>$@
+-	@echo NO_CURL=\''$(subst ','\'',$(subst ','\'',$(NO_CURL)))'\' >>$@
+-
+ ### Testing rules
+ 
+-#
+-# None right now:
+-#
+-# TEST_PROGRAMS += test-something$X
+-
+-all:: $(TEST_PROGRAMS)
+-
+ # GNU make supports exporting all variables by "export" without parameters.
+ # However, the environment gets quite big, and some programs have problems
+ # with that.
+@@ -855,29 +769,17 @@ check: $(OUTPUT)common-cmds.h
+ 			sparse $(ALL_CFLAGS) $(SPARSE_FLAGS) $$i || exit; \
+ 		done; \
+ 	else \
+-		echo 2>&1 "Did you mean 'make test'?"; \
+ 		exit 1; \
+ 	fi
+ 
+-remove-dashes:
+-	./fixup-builtins $(BUILT_INS) $(PROGRAMS) $(SCRIPTS)
+-
+ ### Installation rules
+ 
+-ifneq ($(filter /%,$(firstword $(template_dir))),)
+-template_instdir = $(template_dir)
+-else
+-template_instdir = $(prefix)/$(template_dir)
 -endif
- 
- all::
- 
-@@ -921,15 +705,15 @@ please_set_SHELL_PATH_to_a_more_modern_shell:
- 
- shell_compatibility_test: please_set_SHELL_PATH_to_a_more_modern_shell
- 
--strip: $(PROGRAMS) $(OUTPUT)perf$X
--	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf$X
-+strip: $(PROGRAMS) $(OUTPUT)perf
-+	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf
- 
- $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -DPERF_VERSION='"$(PERF_VERSION)"' \
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
- 		$(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
- 
--$(OUTPUT)perf$X: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
-+$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
-                $(BUILTIN_OBJS) $(LIBS) -o $@
- 
-@@ -1027,11 +811,11 @@ $(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/tra
- $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
- 
--$(OUTPUT)perf-%$X: %.o $(PERFLIBS)
-+$(OUTPUT)perf-%: %.o $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
- 
- $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
--$(patsubst perf-%$X,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
-+$(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
- 
- # we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
- # we depend the various files onto their directories.
-@@ -1168,7 +952,7 @@ export perfexec_instdir
+-export template_instdir
+-
+ ifneq ($(filter /%,$(firstword $(perfexecdir))),)
+ perfexec_instdir = $(perfexecdir)
+ else
+ perfexec_instdir = $(prefix)/$(perfexecdir)
+ endif
+ perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
+-export perfexec_instdir
  
  install: all
  	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
--	$(INSTALL) $(OUTPUT)perf$X '$(DESTDIR_SQ)$(bindir_SQ)'
-+	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/bin'
- 	$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
-@@ -1267,7 +1051,7 @@ distclean: clean
+@@ -894,14 +796,6 @@ install: all
+ 	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
+ 	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
  
+-ifdef BUILT_INS
+-	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+-	$(INSTALL) $(BUILT_INS) '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+-ifneq (,$X)
+-	$(foreach p,$(patsubst %$X,%,$(filter %$X,$(ALL_PROGRAMS) $(BUILT_INS) $(OUTPUT)perf$X)), $(RM) '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/$p';)
+-endif
+-endif
+-
+ install-doc:
+ 	$(MAKE) -C Documentation install
+ 
+@@ -926,104 +820,17 @@ quick-install-man:
+ quick-install-html:
+ 	$(MAKE) -C Documentation quick-install-html
+ 
+-
+-### Maintainer's dist rules
+-#
+-# None right now
+-#
+-#
+-# perf.spec: perf.spec.in
+-#	sed -e 's/@@VERSION@@/$(PERF_VERSION)/g' < $< > $@+
+-#	mv $@+ $@
+-#
+-# PERF_TARNAME=perf-$(PERF_VERSION)
+-# dist: perf.spec perf-archive$(X) configure
+-#	./perf-archive --format=tar \
+-#		--prefix=$(PERF_TARNAME)/ HEAD^{tree} > $(PERF_TARNAME).tar
+-#	@mkdir -p $(PERF_TARNAME)
+-#	@cp perf.spec configure $(PERF_TARNAME)
+-#	@echo $(PERF_VERSION) > $(PERF_TARNAME)/version
+-#	$(TAR) rf $(PERF_TARNAME).tar \
+-#		$(PERF_TARNAME)/perf.spec \
+-#		$(PERF_TARNAME)/configure \
+-#		$(PERF_TARNAME)/version
+-#	@$(RM) -r $(PERF_TARNAME)
+-#	gzip -f -9 $(PERF_TARNAME).tar
+-#
+-# htmldocs = perf-htmldocs-$(PERF_VERSION)
+-# manpages = perf-manpages-$(PERF_VERSION)
+-# dist-doc:
+-#	$(RM) -r .doc-tmp-dir
+-#	mkdir .doc-tmp-dir
+-#	$(MAKE) -C Documentation WEBDOC_DEST=../.doc-tmp-dir install-webdoc
+-#	cd .doc-tmp-dir && $(TAR) cf ../$(htmldocs).tar .
+-#	gzip -n -9 -f $(htmldocs).tar
+-#	:
+-#	$(RM) -r .doc-tmp-dir
+-#	mkdir -p .doc-tmp-dir/man1 .doc-tmp-dir/man5 .doc-tmp-dir/man7
+-#	$(MAKE) -C Documentation DESTDIR=./ \
+-#		man1dir=../.doc-tmp-dir/man1 \
+-#		man5dir=../.doc-tmp-dir/man5 \
+-#		man7dir=../.doc-tmp-dir/man7 \
+-#		install
+-#	cd .doc-tmp-dir && $(TAR) cf ../$(manpages).tar .
+-#	gzip -n -9 -f $(manpages).tar
+-#	$(RM) -r .doc-tmp-dir
+-#
+-# rpm: dist
+-#	$(RPMBUILD) -ta $(PERF_TARNAME).tar.gz
+-
+ ### Cleaning rules
+ 
+-distclean: clean
+-#	$(RM) configure
+-
  clean:
  	$(RM) $(OUTPUT){*.o,*/*.o,*/*/*.o,*/*/*/*.o,$(LIB_FILE),perf-archive}
--	$(RM) $(ALL_PROGRAMS) $(BUILT_INS) perf$X
-+	$(RM) $(ALL_PROGRAMS) $(BUILT_INS) perf
- 	$(RM) $(TEST_PROGRAMS)
+-	$(RM) $(ALL_PROGRAMS) $(BUILT_INS) perf
+-	$(RM) $(TEST_PROGRAMS)
++	$(RM) $(ALL_PROGRAMS) perf
  	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
- 	$(RM) -r $(PERF_TARNAME) .doc-tmp-dir
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index e833f26..fc78428 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -70,9 +70,7 @@
- #include <sys/poll.h>
- #include <sys/socket.h>
- #include <sys/ioctl.h>
--#ifndef NO_SYS_SELECT_H
- #include <sys/select.h>
--#endif
- #include <netinet/in.h>
- #include <netinet/tcp.h>
- #include <arpa/inet.h>
-@@ -83,10 +81,6 @@
- #include "types.h"
- #include <sys/ttydefaults.h>
+-	$(RM) -r $(PERF_TARNAME) .doc-tmp-dir
+-	$(RM) $(PERF_TARNAME).tar.gz perf-core_$(PERF_VERSION)-*.tar.gz
+-	$(RM) $(htmldocs).tar.gz $(manpages).tar.gz
+ 	$(MAKE) -C Documentation/ clean
+-	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-BUILD-OPTIONS
++	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
+ 	@python util/setup.py clean --build-lib='$(OUTPUT)python' \
+ 				   --build-temp='$(OUTPUT)python/temp'
  
--#ifndef NO_ICONV
--#include <iconv.h>
+ .PHONY: all install clean strip
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+ .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
+-.PHONY: .FORCE-PERF-BUILD-OPTIONS
+-
+-### Make sure built-ins do not have dups and listed in perf.c
+-#
+-check-builtins::
+-	./check-builtins.sh
+-
+-### Test suite coverage testing
+-#
+-# None right now
+-#
+-# .PHONY: coverage coverage-clean coverage-build coverage-report
+-#
+-# coverage:
+-#	$(MAKE) coverage-build
+-#	$(MAKE) coverage-report
+-#
+-# coverage-clean:
+-#	rm -f *.gcda *.gcno
+-#
+-# COVERAGE_CFLAGS = $(CFLAGS) -O0 -ftest-coverage -fprofile-arcs
+-# COVERAGE_LDFLAGS = $(CFLAGS)  -O0 -lgcov
+-#
+-# coverage-build: coverage-clean
+-#	$(MAKE) CFLAGS="$(COVERAGE_CFLAGS)" LDFLAGS="$(COVERAGE_LDFLAGS)" all
+-#	$(MAKE) CFLAGS="$(COVERAGE_CFLAGS)" LDFLAGS="$(COVERAGE_LDFLAGS)" \
+-#		-j1 test
+-#
+-# coverage-report:
+-#	gcov -b *.c */*.c
+-#	grep '^function.*called 0 ' *.c.gcov */*.c.gcov \
+-#		| sed -e 's/\([^:]*\)\.gcov: *function \([^ ]*\) called.*/\1: \2/' \
+-#		| tee coverage-untested-functions
+diff --git a/tools/perf/util/exec_cmd.c b/tools/perf/util/exec_cmd.c
+index 67eeff5..7adf4ad 100644
+--- a/tools/perf/util/exec_cmd.c
++++ b/tools/perf/util/exec_cmd.c
+@@ -11,31 +11,12 @@ static const char *argv0_path;
+ 
+ const char *system_path(const char *path)
+ {
+-#ifdef RUNTIME_PREFIX
+-	static const char *prefix;
+-#else
+ 	static const char *prefix = PREFIX;
+-#endif
+ 	struct strbuf d = STRBUF_INIT;
+ 
+ 	if (is_absolute_path(path))
+ 		return path;
+ 
+-#ifdef RUNTIME_PREFIX
+-	assert(argv0_path);
+-	assert(is_absolute_path(argv0_path));
+-
+-	if (!prefix &&
+-	    !(prefix = strip_path_suffix(argv0_path, PERF_EXEC_PATH)) &&
+-	    !(prefix = strip_path_suffix(argv0_path, BINDIR)) &&
+-	    !(prefix = strip_path_suffix(argv0_path, "perf"))) {
+-		prefix = PREFIX;
+-		fprintf(stderr, "RUNTIME_PREFIX requested, "
+-				"but prefix computation failed.  "
+-				"Using static fallback '%s'.\n", prefix);
+-	}
 -#endif
 -
- extern const char *graph_line;
- extern const char *graph_dotted_line;
- extern char buildid_dir[];
-@@ -236,26 +230,6 @@ static inline int sane_case(int x, int high)
- 	return x;
- }
- 
--#ifndef DIR_HAS_BSD_GROUP_SEMANTICS
--# define FORCE_DIR_SET_GID S_ISGID
--#else
--# define FORCE_DIR_SET_GID 0
--#endif
--
--#ifdef NO_NSEC
--#undef USE_NSEC
--#define ST_CTIME_NSEC(st) 0
--#define ST_MTIME_NSEC(st) 0
--#else
--#ifdef USE_ST_TIMESPEC
--#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
--#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
--#else
--#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctim.tv_nsec))
--#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtim.tv_nsec))
--#endif
--#endif
--
- int mkdir_p(char *path, mode_t mode);
- int copyfile(const char *from, const char *to);
- 
+ 	strbuf_addf(&d, "%s/%s", prefix, path);
+ 	path = strbuf_detach(&d, NULL);
+ 	return path;
 -- 
 1.6.2.5
 
