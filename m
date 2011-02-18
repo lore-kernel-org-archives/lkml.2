@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab1BRUOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 15:14:43 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38091 "EHLO ogre.sisk.pl"
+	id S1758531Ab1BRUTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 15:19:50 -0500
+Received: from mail.perches.com ([173.55.12.10]:3751 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732Ab1BRUOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 15:14:40 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] PM: Make system-wide PM and runtime PM treat subsystems consistently
-Date: Fri, 18 Feb 2011 21:14:24 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: "R. J. Wysocki" <Rafal.Wysocki@fuw.edu.pl>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Len Brown <lenb@kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <201102170045.48975.rjw@sisk.pl> <201102180054.25603.rwys@fuw.edu.pl> <20110218192241.GA6172@kroah.com>
-In-Reply-To: <20110218192241.GA6172@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752301Ab1BRUTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 15:19:49 -0500
+Subject: Re: [tip:x86/debug] x86: Combine printk()s in show_regs_common()
+From: Joe Perches <joe@perches.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <20110218200528.GA4966@elte.hu>
+References: <4D5D535A0200007800032730@vpn.id2.novell.com>
+	 <tip-fd8fa4d3ddc4cc04ec8097e632b995d535c52beb@git.kernel.org>
+	 <1298058105.15565.4.camel@Joe-Laptop>  <20110218200528.GA4966@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Feb 2011 12:19:46 -0800
+Message-ID: <1298060386.15565.25.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102182114.25098.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 18, 2011, Greg KH wrote:
-> On Fri, Feb 18, 2011 at 12:54:25AM +0100, R. J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > The code handling system-wide power transitions (eg. suspend-to-RAM)
-> > can in theory execute callbacks provided by the device's bus type,
-> > device type and class in each phase of the power transition.  In
-> > turn, the runtime PM core code only calls one of those callbacks at
-> > a time, preferring bus type callbacks to device type or class
-> > callbacks and device type callbacks to class callbacks.
-> > 
-> > It seems reasonable to make them both behave in the same way in that
-> > respect.  Moreover, even though a device may belong to two subsystems
-> > (eg. bus type and device class) simultaneously, in practice power
-> > management callbacks for system-wide power transitions are always
-> > provided by only one of them (ie. if the bus type callbacks are
-> > defined, the device class ones are not and vice versa).  Thus it is
-> > possible to modify the code handling system-wide power transitions
-> > so that it follows the core runtime PM code (ie. treats the
-> > subsystem callbacks as mutually exclusive).
-> > 
-> > On the other hand, the core runtime PM code will choose to execute,
-> > for example, a runtime suspend callback provided by the device type
-> > even if the bus type's struct dev_pm_ops object exists, but the
-> > runtime_suspend pointer in it happens to be NULL.  This is confusing,
-> > because it may lead to the execution of callbacks from different
-> > subsystems during different operations (eg. the bus type suspend
-> > callback may be executed during runtime suspend of the device, while
-> > the device type callback will be executed during system suspend).
-> > 
-> > Make all of the power management code treat subsystem callbacks in
-> > a consistent way, such that:
-> > (1) If the device's type is defined (eg. dev->type is not NULL)
-> >     and its pm pointer is not NULL, the callbacks from dev->type->pm
-> >     will be used.
-> > (2) If dev->type is NULL or dev->type->pm is NULL, but the device's
-> >     class is defined (eg. dev->class is not NULL) and its pm pointer
-> >     is not NULL, the callbacks from dev->class->pm will be used.
-> > (3) If dev->type is NULL or dev->type->pm is NULL and dev->class is
-> >     NULL or dev->class->pm is NULL, the callbacks from dev->bus->pm
-> >     will be used provided that both dev->bus and dev->bus->pm are
-> >     not NULL.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > Acked-by: Kevin Hilman <khilman@ti.com>
-> > Reasoning-sounds-sane-to: Grant Likely <grant.likely@secretlab.ca>
+On Fri, 2011-02-18 at 21:05 +0100, Ingo Molnar wrote:
+> * Joe Perches <joe@perches.com> wrote:
+> > Ingo, why did you choose to apply this patch instead of
+> > the alternative one I posted on the same thread?
+> Your version:
 > 
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 	/* Board Name is optional */
+> 	board = dmi_get_system_info(DMI_BOARD_NAME);
+> 	if (!board)
+> 		board = "";
 > 
-> You are going to take this through your tree, right?
+> 	printk(KERN_CONT "\n");
+> 
+> 	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
+> 	       current->pid, current->comm, print_tainted(),
+> 	       init_utsname()->release,
+> 	       (int)strcspn(init_utsname()->version, " "),
+> 	       init_utsname()->version,
+> 	       vendor, product,
+> 	       strlen(board) ? "/" : "",
+> 	       board);
+> 
+> The 'board' fiddling and the strlen(board) check complicates things unnecessarily 
+> and makes the code hard to read. Jan's version was at least simple.
 
-Yes, I am.  Thanks!
+Perhaps you should look at the surrounding code.
+It's uses the same style as I chose for "board".
 
-Rafael
+void show_regs_common(void)
+{
+	const char *vendor, *product, *board;
+
+	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+	if (!vendor)
+		vendor = "";
+	product = dmi_get_system_info(DMI_PRODUCT_NAME);
+	if (!product)
+		product = "";
+...
+
+> Something like this:
+> 
+> 	/* Board Name is optional */
+> 	board = dmi_get_system_info(DMI_BOARD_NAME);
+> 
+> 	printk(KERN_CONT "\n");
+> 
+> 	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s %s %s\n",
+> 	       current->pid, current->comm, print_tainted(),
+> 	       init_utsname()->release,
+> 	       (int)strcspn(init_utsname()->version, " "),
+> 	       init_utsname()->version,
+> 	       vendor, product, board ? : "");
+> 
+> Would be easier to read and gives similarly useful output.
+
+It's a question of using identical output or
+merely similar output.
+
+cheers, Joe
+
