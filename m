@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab1BRUTu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 15:19:50 -0500
-Received: from mail.perches.com ([173.55.12.10]:3751 "EHLO mail.perches.com"
+	id S1758495Ab1BRUUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 15:20:51 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38109 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab1BRUTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 15:19:49 -0500
-Subject: Re: [tip:x86/debug] x86: Combine printk()s in show_regs_common()
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@novell.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110218200528.GA4966@elte.hu>
-References: <4D5D535A0200007800032730@vpn.id2.novell.com>
-	 <tip-fd8fa4d3ddc4cc04ec8097e632b995d535c52beb@git.kernel.org>
-	 <1298058105.15565.4.camel@Joe-Laptop>  <20110218200528.GA4966@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Feb 2011 12:19:46 -0800
-Message-ID: <1298060386.15565.25.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752301Ab1BRUUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 15:20:50 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Rabin Vincent <rabin@rab.in>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+Date: Fri, 18 Feb 2011 21:20:29 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: stern@rowland.harvard.edu, linux-pm@lists.linux-foundation.org,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        khilman@ti.com, magnus.damm@gmail.com
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com> <201102181928.05911.rjw@sisk.pl> <AANLkTi=j9KeX2TSzMaKMWR6GpXjFcsjp0z8Rt+ArLXiV@mail.gmail.com>
+In-Reply-To: <AANLkTi=j9KeX2TSzMaKMWR6GpXjFcsjp0z8Rt+ArLXiV@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102182120.29977.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-18 at 21:05 +0100, Ingo Molnar wrote:
-> * Joe Perches <joe@perches.com> wrote:
-> > Ingo, why did you choose to apply this patch instead of
-> > the alternative one I posted on the same thread?
-> Your version:
+On Friday, February 18, 2011, Rabin Vincent wrote:
+> On Fri, Feb 18, 2011 at 23:58, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Friday, February 18, 2011, Rabin Vincent wrote:
+> >> On Thu, Feb 17, 2011 at 20:55, Rabin Vincent <rabin@rab.in> wrote:
+> >> > This will solve the platform vs AMBA bus, but shouldn't we really be
+> >> > aiming for consistent behaviour between these and the other busses such
+> >> > as I2C and SPI, which are also usually commonly used on the same
+> >> > platforms and are using GENERIC_PM_OPS?
+> >> >
+> >> > Should we be auditing all platform drivers and then switch platform to
+> >> > the GENERIC_PM_OPS?
+> >> >
+> >> > Or should the two points (1) and (2) be not handled in the bus at all
+> >> > and be left to individual drivers (in which case we should audit i2c and
+> >> > spi and change GENERIC_PM_OPS)?
+> >>
+> >> How about something like the below?  If we have something like this, we
+> >> can just switch platform to GENERIC_PM_OPS and add the
+> >> pm_runtime_want_interaction() (or something better named) call to the
+> >> i2c and spi drivers using runtime PM.
+> >
+> > Why don't we make platform_bus_type behave along the lines of generic ops
+> > instead?
 > 
-> 	/* Board Name is optional */
-> 	board = dmi_get_system_info(DMI_BOARD_NAME);
-> 	if (!board)
-> 		board = "";
-> 
-> 	printk(KERN_CONT "\n");
-> 
-> 	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
-> 	       current->pid, current->comm, print_tainted(),
-> 	       init_utsname()->release,
-> 	       (int)strcspn(init_utsname()->version, " "),
-> 	       init_utsname()->version,
-> 	       vendor, product,
-> 	       strlen(board) ? "/" : "",
-> 	       board);
-> 
-> The 'board' fiddling and the strlen(board) check complicates things unnecessarily 
-> and makes the code hard to read. Jan's version was at least simple.
+> At least drivers/spi/omap2_mcspi.c, drivers/video/sh_mobile_lcdcfb.c and
+> drivers/watchdog/omap_wdt.c are some pm_runtime-using drivers which seem
+> to do different things in their runtime vs normal suspend/resume
+> routines, so forcing platform into the active-on-resume behaviour of the
+> generic ops may make some use cases impossible.  Conversion of more OMAP
+> drivers to runtime pm appears to be ongoing so I'd imagine we'd be
+> seeing more of this.  Perhaps Kevin or Magnus will have a comment here.
+> The same thing applies to AMBA drivers.
 
-Perhaps you should look at the surrounding code.
-It's uses the same style as I chose for "board".
+I see.
 
-void show_regs_common(void)
-{
-	const char *vendor, *product, *board;
+> Looking at the i2c drivers using runtime pm in comparison, they all seem
+> to be using straightforward UNIVERSAL_PM_OPS-style code with the runtime
+> and the system sleep doing the same things.  So maybe we do need to
+> treat platform/AMBA different from the I2C/SPI group?
 
-	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-	if (!vendor)
-		vendor = "";
-	product = dmi_get_system_info(DMI_PRODUCT_NAME);
-	if (!product)
-		product = "";
-...
+We probably do.
 
-> Something like this:
-> 
-> 	/* Board Name is optional */
-> 	board = dmi_get_system_info(DMI_BOARD_NAME);
-> 
-> 	printk(KERN_CONT "\n");
-> 
-> 	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s %s %s\n",
-> 	       current->pid, current->comm, print_tainted(),
-> 	       init_utsname()->release,
-> 	       (int)strcspn(init_utsname()->version, " "),
-> 	       init_utsname()->version,
-> 	       vendor, product, board ? : "");
-> 
-> Would be easier to read and gives similarly useful output.
-
-It's a question of using identical output or
-merely similar output.
-
-cheers, Joe
-
+Thanks,
+Rafael
