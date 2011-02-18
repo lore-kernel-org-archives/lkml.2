@@ -1,96 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375Ab1BRVqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 16:46:10 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:52490 "EHLO imr4.ericy.com"
+	id S1757934Ab1BRVtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 16:49:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29738 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757191Ab1BRVqI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 16:46:08 -0500
-From: Dominique Toupin <dominique.toupin@ericsson.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Date: Fri, 18 Feb 2011 16:45:31 -0500
-Subject: RE: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
- for x86_64 right now)
-Thread-Topic: [RFC][PATCH 0/4] ftrace: Use -mfentry when supported (this is
- for x86_64 right now)
-Thread-Index: AcvPq5P826IDTfQrQKuB8/vxoFUeuwABJMBg
-Message-ID: <D58A856745AB5A47B1448181D1A8BBFA07673BC2D6@EUSAACMS0701.eamcs.ericsson.se>
-References: <20110209200249.111932716@goodmis.org>
-	 <4D5D1672.6070206@hitachi.com>
-	 <1297948703.23343.907.camel@gandalf.stny.rr.com>
-	 <4D5D4013.4070602@hitachi.com>
-	 <1297957591.23343.921.camel@gandalf.stny.rr.com>
-	 <4D5D47C0.9020206@hitachi.com>
-	 <1297973501.23343.953.camel@gandalf.stny.rr.com>
-	 <4D5E5BCF.1040509@hitachi.com>
-	 <1298041659.23343.956.camel@gandalf.stny.rr.com>
-	 <20110218151954.GA27834@Krystal>
-	 <D58A856745AB5A47B1448181D1A8BBFA07673BC266@EUSAACMS0701.eamcs.ericsson.se>
- <1298061395.23343.975.camel@gandalf.stny.rr.com>
-In-Reply-To: <1298061395.23343.975.camel@gandalf.stny.rr.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756356Ab1BRVtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 16:49:05 -0500
+Date: Fri, 18 Feb 2011 16:48:57 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
+        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Avoid preferential treatment of groups that aren't
+ backlogged
+Message-ID: <20110218214857.GK26654@redhat.com>
+References: <20110214164139.GC13097@redhat.com>
+ <20110214180111.18776.57533.stgit@neat.mtv.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110214180111.18776.57533.stgit@neat.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 14, 2011 at 10:01:11AM -0800, Chad Talbott wrote:
+> Problem: If a group isn't backlogged, we remove it from the service
+> tree. When it becomes active again, it gets either the minimum vtime
+> of the tree or gets put at the "back of the line." That is true even
+> when the group was idle for a very small time, and it consumed some IO
+> time right before it became idle.  If group has very small weight, it
+> can end up using more disk time than its fair share. Conversely, if it
+> has a very large weight, being put at the back of the vtime line is a
+> large penalty which prevents it consuming its share.
+> 
+> Solution: We solve the problem by assigning the group its old vtime if
+> it has not been idle long enough. Otherise we assign it the service
+> tree's min vtime.
+> 
+> Complications: When an entire service tree becomes completely idle, we
+> lose the vtime state. All the old vtime values are not relevant any
+> more. For example, consider the case when the service tree is idle and
+> a brand new group sends IO. That group would have an old vtime value
+> of zero, but the service tree's vtime would become closer to zero. In
+> such a case, it would be unfair for the older groups to get a much
+> higher old vtime stored in them.
+> 
+> We solve that issue by keeping a generation number that counts the
+> number of instances when the service tree becomes completely
+> empty. The generation number is stored in each group too. If a group
+> becomes backlogged after a service tree has been empty, we compare its
+> stored generation number with the current service tree generation
+> number, and discard the old vtime if the group generation number is
+> stale.
+> 
+> The preemption specific code is taken care of automatically because we
+> allow preemption checks after inserting a group back into the service
+> tree and assigning it an appropriate vtime.
+> 
+> Signed-off-by: Chad Talbott <ctalbott@google.com>
+> ---
 
-If it's 1 us it might be OK for some of our "server" type of system, still the number of cores are growing quite fast and stopping _all_ of them is a bit scary. Some cores are dedicated to a special telecom subsystem which is very sensitive to even very small hic-up, we don't want to stop those cores.
+Chad, 
 
-As background info, we can use GDB dynamic tracepoint in those systems because GDB doesn't stop all cores when the tracepoint are inserted with a jump.
+Got following compile warning with this patch.
 
+  CC      block/cfq-iosched.o
+block/cfq-iosched.c: In function ‘cfq_group_service_tree_add’:
+block/cfq-iosched.c:874: warning: unused variable ‘n’
+block/cfq-iosched.c:873: warning: unused variable ‘__cfqg’
 
-> -----Original Message-----
-> From: Steven Rostedt [mailto:rostedt@goodmis.org] 
-> Sent: 18-Feb-11 15:37
-> To: Dominique Toupin
-> Cc: Mathieu Desnoyers; Masami Hiramatsu; 
-> linux-kernel@vger.kernel.org; Ingo Molnar; Andrew Morton; 
-> Thomas Gleixner; Frederic Weisbecker; H. Peter Anvin; Andi 
-> Kleen; 2nddept-manager@sdl.hitachi.co.jp
-> Subject: RE: [RFC][PATCH 0/4] ftrace: Use -mfentry when 
-> supported (this is for x86_64 right now)
+Lets get rid of some unused variables. May be generate a V4 of the patch.
+
+Thanks
+Vivek
+
+>  block/cfq-iosched.c |   25 ++++++++++++++-----------
+>  1 files changed, 14 insertions(+), 11 deletions(-)
 > 
-> On Fri, 2011-02-18 at 15:10 -0500, Dominique Toupin wrote:
-> > My understanding is stop_machine will stop all processors 
-> for many ms.
-> 
-> s/ms/us/
-> 
-> 
-> > Even if most of our systems are not hard real-time they are 
-> soft real-time and stopping all cores for a few ms is not allowed.
-> > We can stop a few threads while we are jump patching but 
-> all processors is too much for us.
-> 
-> I think I could hit a single ms if we enable full function 
-> tracing which disables ~22,000 functions in one shot. But if 
-> you enable full function tracing, the kernel can slow down 
-> quite drastically, and that would even be more problematic 
-> than a single ms hic-up. As hackbench showed a %150 slowdown 
-> when function tracer was running.
-> 
-> Now the last measurements I took was a few years ago and it 
-> was on a 4 CPU box. Perhaps stop_machine() may be a bit more 
-> expensive on a 1024 CPU box.
-> 
-> -- Steve
-> 
-> 
-> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 501ffdf..216d87b 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -178,6 +178,7 @@ struct cfq_group {
+>  
+>  	/* group service_tree key */
+>  	u64 vdisktime;
+> +	u64 generation_num;
+>  	unsigned int weight;
+>  
+>  	/* number of cfqq currently on this group */
+> @@ -300,6 +301,9 @@ struct cfq_data {
+>  	/* List of cfq groups being managed on this device*/
+>  	struct hlist_head cfqg_list;
+>  	struct rcu_head rcu;
+> +
+> +	/* Generation number, counts service tree empty events */
+> +	u64 active_generation;
+>  };
+>  
+>  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+> @@ -873,18 +877,14 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		return;
+>  
+> -	/*
+> -	 * Currently put the group at the end. Later implement something
+> -	 * so that groups get lesser vtime based on their weights, so that
+> -	 * if group does not loose all if it was not continously backlogged.
+> -	 */
+> -	n = rb_last(&st->rb);
+> -	if (n) {
+> -		__cfqg = rb_entry_cfqg(n);
+> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+> -	} else
+> +	if (cfqd->active_generation > cfqg->generation_num)
+>  		cfqg->vdisktime = st->min_vdisktime;
+> -
+> +	else
+> +		/* We assume that vdisktime was not modified when the task
+> +		   was off the service tree.
+> +		 */
+> +		cfqg->vdisktime = max_vdisktime(st->min_vdisktime,
+> +						cfqg->vdisktime);
+>  	__cfq_group_service_tree_add(st, cfqg);
+>  	st->total_weight += cfqg->weight;
+>  }
+> @@ -906,6 +906,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		cfq_rb_erase(&cfqg->rb_node, st);
+>  	cfqg->saved_workload_slice = 0;
+> +	cfqg->generation_num = cfqd->active_generation;
+> +	if (RB_EMPTY_ROOT(&st->rb))
+> +		cfqd->active_generation++;
+>  	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+>  }
+>  
