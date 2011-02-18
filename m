@@ -1,169 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab1BRDUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:20:07 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:58237 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1BRDUE (ORCPT
+	id S1755244Ab1BRDUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:20:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45917 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab1BRDUN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:20:04 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-References: <20110217150224.GA26334@mail.hallyn.com>
-	<20110217150349.GG26395@mail.hallyn.com>
-Date: Thu, 17 Feb 2011 19:19:58 -0800
-In-Reply-To: <20110217150349.GG26395@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Thu, 17 Feb 2011 15:03:49 +0000")
-Message-ID: <m1oc6a81wh.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 17 Feb 2011 22:20:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=eYXipzzMcs+QM7c3FEXrnM5JjiVrDN2rK3L82AJfVMuR2EuT/lWBJIQC5jiD5h4+Oq
+         TBS3n0C/QFwXMF8XujsbiKk1OjK9zBjK6dOI4moTDjFTDCQnSjphSO/yahfFYqFBnkiv
+         7KAlCDYNWdj87lkb1plu2TIPJOby7kM2lUR9Q=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/KnUpYe63dZixKcU0ZeGKACX6JnZsSz24=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 7/9] add a user namespace owner of ipc ns
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <20110218134025.2a2e5bbb@notabene.brown>
+References: <20110216183114.26a3613b@notabene.brown> <20110216155305.GC14653@redhat.com>
+ <20110217113536.2bbf308e@notabene.brown> <20110217011029.GA6793@redhat.com>
+ <20110217165501.47f3c26f@notabene.brown> <20110217165906.GE9075@redhat.com> <20110218134025.2a2e5bbb@notabene.brown>
+From: Mike Snitzer <snitzer@redhat.com>
+Date: Thu, 17 Feb 2011 22:19:52 -0500
+X-Google-Sender-Auth: mf3HA8Nr-kzQG0sSy7GXoXMORzU
+Message-ID: <AANLkTi=t0vFTTDr9jBZ70UmJ9YYzziA0cRP8t0T9wswW@mail.gmail.com>
+Subject: Re: blk_throtl_exit taking q->queue_lock is problematic
+To: NeilBrown <neilb@suse.de>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
-
-> Changelog:
-> 	Feb 15: Don't set new ipc->user_ns if we didn't create a new
-> 		ipc_ns.
-
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
+On Thu, Feb 17, 2011 at 9:40 PM, NeilBrown <neilb@suse.de> wrote:
+> On Thu, 17 Feb 2011 11:59:06 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+>> So if we do this change for performance reasons, it still makes sense
+>> but doing this change because md provided a q->queue_lock and took away that
+>> lock without notifying block layer hence we do this change, is still not
+>> the right reason, IMHO.
 >
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> ---
->  include/linux/ipc_namespace.h |    3 +++
->  ipc/msgutil.c                 |    3 +++
->  ipc/namespace.c               |    9 +++++++--
->  kernel/nsproxy.c              |    5 +++++
->  4 files changed, 18 insertions(+), 2 deletions(-)
+> Well...I like that patch, as it makes my life easier....
 >
-> diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-> index 5195298..46d2eb4 100644
-> --- a/include/linux/ipc_namespace.h
-> +++ b/include/linux/ipc_namespace.h
-> @@ -24,6 +24,7 @@ struct ipc_ids {
->  	struct idr ipcs_idr;
->  };
->  
-> +struct user_namespace;
->  struct ipc_namespace {
->  	atomic_t	count;
->  	struct ipc_ids	ids[3];
-> @@ -56,6 +57,8 @@ struct ipc_namespace {
->  	unsigned int    mq_msg_max;      /* initialized to DFLT_MSGMAX */
->  	unsigned int    mq_msgsize_max;  /* initialized to DFLT_MSGSIZEMAX */
->  
-> +	/* user_ns which owns the ipc ns */
-> +	struct user_namespace *user_ns;
->  };
->  
->  extern struct ipc_namespace init_ipc_ns;
-> diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-> index f095ee2..d91ff4b 100644
-> --- a/ipc/msgutil.c
-> +++ b/ipc/msgutil.c
-> @@ -20,6 +20,8 @@
->  
->  DEFINE_SPINLOCK(mq_lock);
->  
-> +extern struct user_namespace init_user_ns;
-> +
->  /*
->   * The next 2 defines are here bc this is the only file
->   * compiled when either CONFIG_SYSVIPC and CONFIG_POSIX_MQUEUE
-> @@ -32,6 +34,7 @@ struct ipc_namespace init_ipc_ns = {
->  	.mq_msg_max      = DFLT_MSGMAX,
->  	.mq_msgsize_max  = DFLT_MSGSIZEMAX,
->  #endif
-> +	.user_ns = &init_user_ns,
->  };
->  
->  atomic_t nr_ipc_ns = ATOMIC_INIT(1);
-> diff --git a/ipc/namespace.c b/ipc/namespace.c
-> index a1094ff..aa18899 100644
-> --- a/ipc/namespace.c
-> +++ b/ipc/namespace.c
-> @@ -11,10 +11,11 @@
->  #include <linux/slab.h>
->  #include <linux/fs.h>
->  #include <linux/mount.h>
-> +#include <linux/user_namespace.h>
->  
->  #include "util.h"
->  
-> -static struct ipc_namespace *create_ipc_ns(void)
-> +static struct ipc_namespace *create_ipc_ns(struct ipc_namespace *old_ns)
->  {
->  	struct ipc_namespace *ns;
->  	int err;
-> @@ -43,6 +44,9 @@ static struct ipc_namespace *create_ipc_ns(void)
->  	ipcns_notify(IPCNS_CREATED);
->  	register_ipcns_notifier(ns);
->  
-> +	ns->user_ns = old_ns->user_ns;
-> +	get_user_ns(ns->user_ns);
-> +
->  	return ns;
->  }
->  
-> @@ -50,7 +54,7 @@ struct ipc_namespace *copy_ipcs(unsigned long flags, struct ipc_namespace *ns)
->  {
->  	if (!(flags & CLONE_NEWIPC))
->  		return get_ipc_ns(ns);
-> -	return create_ipc_ns();
-> +	return create_ipc_ns(ns);
->  }
->  
->  /*
-> @@ -105,6 +109,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
->  	 * order to have a correct value when recomputing msgmni.
->  	 */
->  	ipcns_notify(IPCNS_REMOVED);
-> +	put_user_ns(ns->user_ns);
->  }
->  
->  /*
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index 034dc2e..b6dbff2 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -85,6 +85,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
->  		err = PTR_ERR(new_nsp->ipc_ns);
->  		goto out_ipc;
->  	}
-> +	if (new_nsp->ipc_ns != tsk->nsproxy->ipc_ns) {
-> +		put_user_ns(new_nsp->ipc_ns->user_ns);
-> +		new_nsp->ipc_ns->user_ns = task_cred_xxx(tsk, user)->user_ns;
-> +		get_user_ns(new_nsp->ipc_ns->user_ns);
-> +	}
->  
->  	new_nsp->pid_ns = copy_pid_ns(flags, task_active_pid_ns(tsk));
->  	if (IS_ERR(new_nsp->pid_ns)) {
+> But I agree that md is doing something wrong.  Now that ->queue_lock is
+> always initialised, it is wrong to leave it in a state where it not defined.
+>
+> So maybe I'll apply this (after testing it a bit.  The only reason for taking
+> the lock queue_lock in a couple of places is to silence some warnings.
+>
+> Thanks,
+> NeilBrown
+>
+>
+> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+> index a23ffa3..909282d 100644
+> --- a/drivers/md/raid1.c
+> +++ b/drivers/md/raid1.c
+> @@ -959,7 +961,9 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+>                atomic_inc(&r1_bio->remaining);
+>                spin_lock_irqsave(&conf->device_lock, flags);
+>                bio_list_add(&conf->pending_bio_list, mbio);
+> +               spin_lock(mddev->queue->queue_lock);
+>                blk_plug_device(mddev->queue);
+> +               spin_unlock(mddev->queue->queue_lock);
+>                spin_unlock_irqrestore(&conf->device_lock, flags);
+>        }
+>        r1_bio_write_done(r1_bio, bio->bi_vcnt, behind_pages, behind_pages != NULL);
+
+Noticed an inconsistency, raid10.c's additional locking also protects
+the bio_list_add() whereas raid1.c's doesn't.  Seems the additional
+protection in raid10 isn't needed?
+
+> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+> index 3b607b2..60e6cb1 100644
+> --- a/drivers/md/raid10.c
+> +++ b/drivers/md/raid10.c
+> @@ -970,8 +972,10 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+>
+>                atomic_inc(&r10_bio->remaining);
+>                spin_lock_irqsave(&conf->device_lock, flags);
+> +               spin_lock(mddev->queue->queue_lock);
+>                bio_list_add(&conf->pending_bio_list, mbio);
+>                blk_plug_device(mddev->queue);
+> +               spin_unlock(mddev->queue->queue_lock);
+>                spin_unlock_irqrestore(&conf->device_lock, flags);
+>        }
+>
