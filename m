@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1BRGUY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 01:20:24 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:64723 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab1BRGUW convert rfc822-to-8bit (ORCPT
+	id S1753576Ab1BRGZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 01:25:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45643 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1BRGZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 01:20:22 -0500
+	Fri, 18 Feb 2011 01:25:30 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=SkyDZcqsRG5bNnr28hHf8g9r1yBAaZmR2icpPPB5v1rPRv3btRDgfl6vMAPyMvZgW/
-         OJAmg9uk4xoZE70YNu3fOlwj76iCfNWwvyPjKFHMhtEr+zfFAJCUNaurK7LHwdCmyI+3
-         nEYCUyq9TeXgmoD8WYe/I6mbOL0s3cfE9NZ/k=
-MIME-Version: 1.0
-In-Reply-To: <1297679802-24669-1-git-send-email-dbaryshkov@gmail.com>
-References: <1297679802-24669-1-git-send-email-dbaryshkov@gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Fri, 18 Feb 2011 14:20:01 +0800
-Message-ID: <AANLkTi=Fi_W99Nd6ZG9tp+jPqe1iOHL-rddwBVXp0ZuW@mail.gmail.com>
-Subject: Re: [PATCH] tosa-bt: drop setting LED trigger name, as it's
- unsupported now
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=EYqXdUdLF6j4R/PF+H6g3T0dIRURVuI7DdtCcrbtOZIw3HwT94/XqK9TFI+rti8rvx
+         kefVk6evLwKJVkXbeHvNZM05HBYh3T8jt0O+FBKhOz+O9W5mTTg3XlycIiqzHiBjUkz0
+         wDyVQ8Dp9tXWe3aGdB7cYQbx6yLRn2AJ6Qpbs=
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, ebiederm@xmission.com, opurdila@ixiacom.com,
+        mingo@elte.hu, mhocko@suse.cz, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110217.203647.193696765.davem@davemloft.net>
+References: <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	 <m1sjvm822m.fsf@fess.ebiederm.org>
+	 <AANLkTimzP0UNRXutkt1zJ+OGhmeg6ga87HFyMuZQmpMj@mail.gmail.com>
+	 <20110217.203647.193696765.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Feb 2011 07:25:20 +0100
+Message-ID: <1298010320.2642.7.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 6:36 PM, Dmitry Eremin-Solenikov
-<dbaryshkov@gmail.com> wrote:
-> Since 2e48928d8a0f38c1b5c81eb3f1294de8a6382c68 it's no longer possible to set
-> the name of the LED trigger for RFKILL events. Drop respective code from tosa-bt.c
->
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: John W. Linville <linville@tuxdriver.com>
+Le jeudi 17 février 2011 à 20:36 -0800, David Miller a écrit :
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Thu, 17 Feb 2011 20:30:42 -0800
+> 
+> > On Thu, Feb 17, 2011 at 7:16 PM, Eric W. Biederman
+> > <ebiederm@xmission.com> wrote:
+> >> BUG: unable to handle kernel paging request at ffff8801adf8d760
+> >> IP: [<ffffffff8140c7ca>] unregister_netdevice_queue+0x3a/0xb0
+> > 
+> > Yup. That's the "list_move()". The disassembly is exactly what I'd
+> > expect from __list_del():
+> > 
+> >   16:	48 8b 93 a0 00 00 00 	mov    0xa0(%rbx),%rdx
+> >   1d:	48 8b 83 a8 00 00 00 	mov    0xa8(%rbx),%rax
+> >   24:	48 8d bb a0 00 00 00 	lea    0xa0(%rbx),%rdi
+> >   2b:*	48 89 42 08          	mov    %rax,0x8(%rdx)     <-- trapping instruction
+> >   2f:	48 89 10             	mov    %rdx,(%rax)
+> > 
+> > So I think we can consider this confirmed: it really is the stale
+> > queue left over on the stack (introduced by commit 443457242beb). With
+> > CONFIG_DEBUG_PAGEALLOC, you get a page fault when it tries to update
+> > the now stale pointers.
+> > 
+> > The patch from Eric Dumazet (which adds a few more cases to my patch
+> > and hopefully catches them all) almost certainly fixes this rather
+> > nasty memory corruption.
+> 
+> Eric D., please get a final version of the fix posted to netdev and
+> I'll make sure it slithers it's way to Linus's tree :-)
+> 
+> Thanks!
 
-Applied to 'fix'.
+I believe we can apply Linus patch as is for current linux-2.6
 
-I hope there is no existing user of this trigger name, but you know
-better than I do.
+Then add a second patch for previous kernels (the parts I added), since
+we might had a previous bug, un-noticed ?
 
-> ---
->  arch/arm/mach-pxa/tosa-bt.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-pxa/tosa-bt.c b/arch/arm/mach-pxa/tosa-bt.c
-> index c31e601..b9b1e5c 100644
-> --- a/arch/arm/mach-pxa/tosa-bt.c
-> +++ b/arch/arm/mach-pxa/tosa-bt.c
-> @@ -81,8 +81,6 @@ static int tosa_bt_probe(struct platform_device *dev)
->                goto err_rfk_alloc;
->        }
->
-> -       rfkill_set_led_trigger_name(rfk, "tosa-bt");
-> -
->        rc = rfkill_register(rfk);
->        if (rc)
->                goto err_rfkill;
-> --
-> 1.7.2.3
->
->
+
+
