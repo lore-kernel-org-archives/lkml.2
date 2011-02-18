@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1BROtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 09:49:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2191 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754047Ab1BROtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 09:49:36 -0500
-Date: Fri, 18 Feb 2011 15:40:19 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kurz <gkurz@fr.ibm.com>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, akpm@linux-foundation.org, xemul@openvz.org
-Subject: Re: [PATCH 2/2] pidns: Support unsharing the pid namespace.
-Message-ID: <20110218144019.GA29600@redhat.com>
-References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr> <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr> <20110215190118.GA16707@redhat.com> <4D5C6219.8060207@free.fr> <20110217202959.GA16076@redhat.com> <4D5DA2CF.5010200@fr.ibm.com>
+	id S1755381Ab1BROvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 09:51:06 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36180 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab1BROvC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 09:51:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IWXqZ+jXkWUStGZ/tB7IVquU6iv8lAQKMKQ9AosF7VqEmUYLwY5w5AORYWNyoe0zzz
+         RjYRVd/IUlzc0w+H6irsM/sqr3/knsAFn+X+2NkXdqR17zOR7prH9rfMf+/oMEWR3cMQ
+         p2PQkyMc7hrjsEmGIxlF4KtmXnI7lH84I+N2Q=
+Date: Fri, 18 Feb 2011 15:50:57 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        Andy Whitcroft <apw@canonical.com>
+Subject: Re: Some hints needed how to handle SATA ALPM failures
+Message-ID: <20110218145057.GM21209@htj.dyndns.org>
+References: <4D5E6CE1.9020908@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D5DA2CF.5010200@fr.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D5E6CE1.9020908@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17, Greg Kurz wrote:
->
-> On 02/17/2011 09:29 PM, Oleg Nesterov wrote:
->> On 02/17, Daniel Lezcano wrote:
->>>
->>> On 02/15/2011 08:01 PM, Oleg Nesterov wrote:
->>>>
->>>> I have to admit, I can't say I like this very much. OK, if we need
->>>> this, can't we just put something into, say, signal->flags so that
->>>> copy_process can check and create the new namespace.
->>>>
->>>> Also. I remember, I already saw something like this and google found
->>>> my questions. I didn't actually read the new version, perhaps my
->>>> concerns were already answered...
->>>>
->>>> 	But what if the task T does unshare(CLONE_NEWPID) and then, say,
->>>> 	pthread_create() ? Unless I missed something, the new thread won't
->>>> 	be able to see T ?
->>>
->>> Right. Is it really a problem ? I mean it is a weird use case where we
->>> fall in a weird situation.
->>
->> But this is really weird! How it is possible that the parent can't see
->> its own child? No matter which thread did fork(), the new process is
->
-> Hmmm... I guess you mean the opposite. The way pid namespaces are
-> nested, parents always see their children.
+Hello,
 
-Well, yes. But it can't see this child using the same pid number,
-unless I missed something.
+On Fri, Feb 18, 2011 at 01:58:09PM +0100, Stefan Bader wrote:
+> We are hoping that those working more closely with the SATA code might
+> be aware of this issue.  As the symptoms are so severe (data corruption)
+> we have ALPM disabled globally, but this does make it hard to get more
+> targeted information on affected platforms.
 
-> But indeed, the child thread
-> can't see its group leader and that's kind of unusual.
+What do you mean by data corruption?  File system ro remount or actual
+fs corruption?  If actual fs corruption is happening, it's highly
+likely that there's an underlying issue with the hardware.  If data
+corruption can be reproduced, can you please run smartctl -a before
+and after such failure and post the outputs?
 
-This too. And to me this is more "kind of buggy". But yes, I am
-biased because I dislike this approach in general ;)
+As for ro remounts, I recall applying fixes for that months ago.  I
+don't remember the details but some configurations raised extra PHY
+event afterwards and command was failed without retry.  Anyways, it
+got fixed.  Please dig through the log for details.
 
-And, once again, this patch also lacks the necessary s/nsproxy/atcive_pid_ns/
-changes.
+Also, the whole LPM thing got revamped several releases ago.  Can you
+please test how the recent kernels behave?  There will be failures as
+not all hardware can handle LPM well but those failures shouldn't lead
+to any catastrophic failures like ro remounting of filesystem.
 
-Anyway. It is very possible I missed something. As I said, I didn't
-actually read this version and I forgot all I knew about this change
-before.
+Thanks.
 
-But afaics this patch is buggy in its current form.
-
-Oleg.
-
+-- 
+tejun
