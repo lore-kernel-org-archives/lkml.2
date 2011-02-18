@@ -1,92 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424Ab1BROE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 09:04:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753577Ab1BROE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 09:04:27 -0500
-Date: Fri, 18 Feb 2011 09:04:21 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: blk_throtl_exit taking q->queue_lock is problematic
-Message-ID: <20110218140420.GA20275@redhat.com>
-References: <20110216183114.26a3613b@notabene.brown>
- <20110216155305.GC14653@redhat.com>
- <20110217113536.2bbf308e@notabene.brown>
- <20110217011029.GA6793@redhat.com>
- <20110217165501.47f3c26f@notabene.brown>
- <20110217165906.GE9075@redhat.com>
- <20110218134025.2a2e5bbb@notabene.brown>
- <AANLkTi=t0vFTTDr9jBZ70UmJ9YYzziA0cRP8t0T9wswW@mail.gmail.com>
- <20110218143325.5738e127@notabene.brown>
+	id S1756961Ab1BROHy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 09:07:54 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44667 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756170Ab1BROHv (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 18 Feb 2011 09:07:51 -0500
+Date: Fri, 18 Feb 2011 09:07:29 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] [PATCH 1/3] pci/xen: Use xen_allocate_pirq_msi
+Message-ID: <20110218140729.GA8446@dumpdata.com>
+References: <1297894638-28007-1-git-send-email-konrad.wilk@oracle.com>
+ <1297894638-28007-2-git-send-email-konrad.wilk@oracle.com>
+ <1297932091.16356.1292.camel@zakaz.uk.xensource.com>
+ <20110217143003.GE5987@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110218143325.5738e127@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110217143003.GE5987@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D5E7D26.018A:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17 2011 at 10:33pm -0500,
-NeilBrown <neilb@suse.de> wrote:
-
-> On Thu, 17 Feb 2011 22:19:52 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
-> 
-> > On Thu, Feb 17, 2011 at 9:40 PM, NeilBrown <neilb@suse.de> wrote:
-> > > On Thu, 17 Feb 2011 11:59:06 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
-> > >> So if we do this change for performance reasons, it still makes sense
-> > >> but doing this change because md provided a q->queue_lock and took away that
-> > >> lock without notifying block layer hence we do this change, is still not
-> > >> the right reason, IMHO.
-> > >
-> > > Well...I like that patch, as it makes my life easier....
-> > >
-> > > But I agree that md is doing something wrong.  Now that ->queue_lock is
-> > > always initialised, it is wrong to leave it in a state where it not defined.
-> > >
-> > > So maybe I'll apply this (after testing it a bit.  The only reason for taking
-> > > the lock queue_lock in a couple of places is to silence some warnings.
-> > >
-> > > Thanks,
-> > > NeilBrown
-> > >
-> > >
-> > > diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> > > index a23ffa3..909282d 100644
-> > > --- a/drivers/md/raid1.c
-> > > +++ b/drivers/md/raid1.c
-> > > @@ -959,7 +961,9 @@ static int make_request(mddev_t *mddev, struct bio * bio)
-> > >                atomic_inc(&r1_bio->remaining);
-> > >                spin_lock_irqsave(&conf->device_lock, flags);
-> > >                bio_list_add(&conf->pending_bio_list, mbio);
-> > > +               spin_lock(mddev->queue->queue_lock);
-> > >                blk_plug_device(mddev->queue);
-> > > +               spin_unlock(mddev->queue->queue_lock);
-> > >                spin_unlock_irqrestore(&conf->device_lock, flags);
-> > >        }
-> > >        r1_bio_write_done(r1_bio, bio->bi_vcnt, behind_pages, behind_pages != NULL);
+On Thu, Feb 17, 2011 at 09:30:03AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Thu, Feb 17, 2011 at 08:41:31AM +0000, Ian Campbell wrote:
+> > On Wed, 2011-02-16 at 22:17 +0000, Konrad Rzeszutek Wilk wrote:
+> > > There is no need to use the old interface.
 > > 
-> > Noticed an inconsistency, raid10.c's additional locking also protects
-> > the bio_list_add() whereas raid1.c's doesn't.  Seems the additional
-> > protection in raid10 isn't needed?
+> > xen_allocate_pirq -> xen_map_pirq_gsi -> PHYSDEVOP_alloc_irq_vector IFF
+> > xen_initial_domain() in addition to the kernel side book-keeping side of
+> > things (set chip and handler, update irq_info etc) whereas
+> > xen_allocate_pirq_msi just does the kernel book keeping.
+> > 
+> > Also xen_allocate_pirq allocates an IRQ in the 1-1 GSI space whereas
+> > xen_allocate_pirq_msi allocates a dynamic one in the >GSI IRQ space.
 > 
-> Correct - not needed at all.
-> I put it there because it felt a little cleaner keeping the two 'lock's
-> together like the two 'unlock's.  Probably confusing though...
+> Which is OK. These are MSIs.
+> > 
+> > So this change is actually a semantic change and not just a switch to a
+> > new interface. I think the change is OK (because the caller is domU
 > 
-> My other though is to stop using the block-layer plugging altogether like I
-> have in RAID5 (Which I needed to do to make it work with DM).  Then I
-> wouldn't need to touch queue_lock at all - very tempting.
+> Right.
+> 
+> > only?) but a comment explaining this would be appreciated.
+> 
+> Correct: "domU side".
+> 
+> Will fix it up.
 
-FYI, Jens has a considerable plugging overhaul staged in his tree for 2.6.39:
-http://git.kernel.dk/?p=linux-2.6-block.git;a=shortlog;h=refs/heads/for-2.6.39/stack-plug
+How does this look to you?
 
-So if you do ween MD off of the block-layer's plugging Jens will need to
-adapt his patches that touch MD.. not a big deal.
+>From eb832bece3131ecbdb509f7f2a9bc53f6692177c Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 16 Feb 2011 13:43:04 -0500
+Subject: [PATCH 3/5] pci/xen: Use xen_allocate_pirq_msi instead of xen_allocate_pirq
 
-Mike
+xen_allocate_pirq -> xen_map_pirq_gsi -> PHYSDEVOP_alloc_irq_vector IFF
+xen_initial_domain() in addition to the kernel side book-keeping side of
+things (set chip and handler, update irq_info etc) whereas
+xen_allocate_pirq_msi just does the kernel book keeping.
+
+Also xen_allocate_pirq allocates an IRQ in the 1-1 GSI space whereas
+xen_allocate_pirq_msi allocates a dynamic one in the >GSI IRQ space.
+
+All of this is uneccessary as this code path is only executed
+when we run as a domU PV guest with an MSI/MSI-X PCI card passed in.
+Hence we can jump straight to allocating an dynamic IRQ (and
+binding it to the proper PIRQ) and skip the rest.
+
+In short: this change is a cosmetic one.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/pci/xen.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 25cd4a0..6432f75 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -157,14 +157,14 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 		goto error;
+ 	i = 0;
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+-		irq = xen_allocate_pirq(v[i], 0, /* not sharable */
++		xen_allocate_pirq_msi(
+ 			(type == PCI_CAP_ID_MSIX) ?
+-			"pcifront-msi-x" : "pcifront-msi");
++			"pcifront-msi-x" : "pcifront-msi",
++			&irq, &v[i], XEN_ALLOC_IRQ);
+ 		if (irq < 0) {
+ 			ret = -1;
+ 			goto free;
+ 		}
+-
+ 		ret = set_irq_msi(irq, msidesc);
+ 		if (ret)
+ 			goto error_while;
+-- 
+1.7.1
+
