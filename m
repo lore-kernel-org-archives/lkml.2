@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab1BRKhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 05:37:32 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53264 "EHLO hera.kernel.org"
+	id S1756751Ab1BRKiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 05:38:07 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53292 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab1BRKh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 05:37:26 -0500
-Date: Fri, 18 Feb 2011 10:36:50 GMT
+	id S1751745Ab1BRKiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 05:38:03 -0500
+Date: Fri, 18 Feb 2011 10:37:39 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, eranian@google.com,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
         peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
         tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
         efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
         tglx@linutronix.de, mingo@elte.hu
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf python: Add cgroup.c to setup.py to get it building again
-Message-ID: <tip-4498062e72fd55b2a9a4ac1b44fab8cb44ad5367@git.kernel.org>
-Git-Commit-ID: 4498062e72fd55b2a9a4ac1b44fab8cb44ad5367
+Subject: [tip:perf/core] perf hists: Print number of samples, not the period sum
+Message-ID: <tip-fec9cbd15b9e99bab9bc50f1ed7e20a1087d7c6d@git.kernel.org>
+Git-Commit-ID: fec9cbd15b9e99bab9bc50f1ed7e20a1087d7c6d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Feb 2011 10:36:52 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Feb 2011 10:37:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4498062e72fd55b2a9a4ac1b44fab8cb44ad5367
-Gitweb:     http://git.kernel.org/tip/4498062e72fd55b2a9a4ac1b44fab8cb44ad5367
+Commit-ID:  fec9cbd15b9e99bab9bc50f1ed7e20a1087d7c6d
+Gitweb:     http://git.kernel.org/tip/fec9cbd15b9e99bab9bc50f1ed7e20a1087d7c6d
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 17 Feb 2011 10:07:42 -0200
+AuthorDate: Thu, 17 Feb 2011 10:37:23 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 17 Feb 2011 10:07:42 -0200
+CommitDate: Thu, 17 Feb 2011 13:56:20 -0200
 
-perf python: Add cgroup.c to setup.py to get it building again
+perf hists: Print number of samples, not the period sum
 
-The 023695d cset added a new file, util/cgroup.c, that is referenced from
-util/evsel.c, so it needs to be present in util/setup.py so that the python
-shared object binding works, fixing this:
+So that we match the header where we state the number of events with the
+"Samples" column when using 'perf report -n/--show-nr-samples':
 
-[root@emilia linux]# export PYTHONPATH=~acme/git/build/perf/python/
-[root@emilia linux]# ./tools/perf/python/twatch.py
-Traceback (most recent call last):
-  File "./tools/perf/python/twatch.py", line 16, in <module>
-    import perf
-ImportError: /home/acme/git/build/perf/python/perf.so: undefined symbol: close_cgroup
+ [root@emilia ~]# perf record -a sleep 1
+ [ perf record: Woken up 1 times to write data ]
+ [ perf record: Captured and wrote 0.111 MB perf.data (~4860 samples) ]
+ [root@emilia ~]# perf report --stdio --show-nr-samples
+ # Events: 11  cycles
+ #
+ # Overhead  Samples        Command       Shared Object                        Symbol
+ # ........ ..........  ...........  ..................  ............................
+ #
+     16.65%          1        sleep  [kernel.kallsyms]   [k] unmap_vmas
+     16.10%          1         perf  libpthread-2.12.so  [.] __pthread_cleanup_push_defer
+     15.79%          2         perf  [kernel.kallsyms]   [k] format_decode
+     12.88%          1  kworker/1:2  [kernel.kallsyms]   [k] cache_reap
+     10.69%          1      swapper  [kernel.kallsyms]   [k] _raw_spin_lock
+      7.55%          1        sleep  [kernel.kallsyms]   [k] prepare_exec_creds
+      6.00%          1         perf  [jbd2]              [k] start_this_handle
+      5.29%          1         perf  [kernel.kallsyms]   [k] seq_read
+      4.75%          1         perf  [kernel.kallsyms]   [k] get_pid_task
+      4.30%          1         perf  [kernel.kallsyms]   [k] _raw_spin_unlock_irqrestore
 
+ #
+ # (For a higher level overview, try: perf report --sort comm,dso)
+ #
+ [root@emilia ~]#
+
+Reported-by: Stephane Eranian <eranian@google.com>
+Acked-by: Stephane Eranian <eranian@google.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -63,19 +82,46 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/setup.py |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/hist.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index 1947b04..e24ffad 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -5,7 +5,7 @@ from distutils.core import setup, Extension
- perf = Extension('perf',
- 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
- 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
--			     'util/util.c', 'util/xyarray.c'],
-+			     'util/util.c', 'util/xyarray.c', 'util/cgroup.c'],
- 		  include_dirs = ['util/include'],
- 		  extra_compile_args = ['-fno-strict-aliasing', '-Wno-write-strings'])
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 3f43723..da2899e 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -591,6 +591,7 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
+ {
+ 	struct sort_entry *se;
+ 	u64 period, total, period_sys, period_us, period_guest_sys, period_guest_us;
++	u64 nr_events;
+ 	const char *sep = symbol_conf.field_sep;
+ 	int ret;
  
+@@ -599,6 +600,7 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
+ 
+ 	if (pair_hists) {
+ 		period = self->pair ? self->pair->period : 0;
++		nr_events = self->pair ? self->pair->nr_events : 0;
+ 		total = pair_hists->stats.total_period;
+ 		period_sys = self->pair ? self->pair->period_sys : 0;
+ 		period_us = self->pair ? self->pair->period_us : 0;
+@@ -606,6 +608,7 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
+ 		period_guest_us = self->pair ? self->pair->period_guest_us : 0;
+ 	} else {
+ 		period = self->period;
++		nr_events = self->nr_events;
+ 		total = session_total;
+ 		period_sys = self->period_sys;
+ 		period_us = self->period_us;
+@@ -646,9 +649,9 @@ int hist_entry__snprintf(struct hist_entry *self, char *s, size_t size,
+ 
+ 	if (symbol_conf.show_nr_samples) {
+ 		if (sep)
+-			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
++			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
+ 		else
+-			ret += snprintf(s + ret, size - ret, "%11" PRIu64, period);
++			ret += snprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
+ 	}
+ 
+ 	if (pair_hists) {
