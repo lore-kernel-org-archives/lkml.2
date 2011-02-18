@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab1BRPrb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 10:47:31 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37920 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab1BRPr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 10:47:28 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: <x86@kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] x86, system.h: Drop unused __SAVE/__RESTORE macros
-Date: Fri, 18 Feb 2011 16:47:36 +0100
-Message-Id: <1298044056-31104-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+	id S1756214Ab1BRPs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 10:48:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753393Ab1BRPs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 10:48:26 -0500
+Subject: Re: [PATCH] gpio: add trace events for setting direction and value
+From: Steven Rostedt <srostedt@redhat.com>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+In-Reply-To: <20110218095803.GY22310@pengutronix.de>
+References: <1297875784-2302-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	 <1297876371.26768.7235.camel@fedora>
+	 <20110218095803.GY22310@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 18 Feb 2011 10:48:06 -0500
+Message-ID: <1298044086.26768.7242.camel@fedora>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Fri, 2011-02-18 at 10:58 +0100, Uwe Kleine-König wrote:
+> Hi Steven, hi Grant,
+> 
+> On Wed, Feb 16, 2011 at 12:12:51PM -0500, Steven Rostedt wrote:
+> > Note: to save the memory footprint of these tracepoints, you can use
+> > DEFINE_EVENT_PRINT(). You can see the usage for this in the
+> > include/trace/events/kmem.h.
+> > But to do this, you will need to have a single TP_STRUCT__entry() for
+> > both. Not sure if this is what you want.
+> > 
+> > 	TP_STRUCT__entry(
+> > 		__field(unsigned, gpiq)
+> > 		__field(int, get_in)
+> > 		__field(int, value_err)
+> > 
+> > ??
+> > 
+> > Just a suggestion, but may not be worth it.
+> Yeah, I saw that, still I think it's sane to keep them seperated.
+> Or how much would we save?  Can you estimate that?
 
-Those are unused since at least the beginning of git history.
+You can do it :)   Especially since it can vary by archs.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/include/asm/system.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Just compile the kernel once this way, and then try it with
+DEFINE_EVENT_PRINT(), compile the kernel and run size on the two.
 
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index 33ecc3e..12569e6 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -98,8 +98,6 @@ do {									\
-  */
- #define HAVE_DISABLE_HLT
- #else
--#define __SAVE(reg, offset) "movq %%" #reg ",(14-" #offset ")*8(%%rsp)\n\t"
--#define __RESTORE(reg, offset) "movq (14-" #offset ")*8(%%rsp),%%" #reg "\n\t"
- 
- /* frame pointer must be last for get_wchan */
- #define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
--- 
-1.7.4.rc2
+Then you can see the difference it makes. It may end up not being worth
+the difference. But as embedded uses gpio the most, I'll leave that up
+to you.
+
+-- Steve
+
+
 
