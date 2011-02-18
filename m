@@ -1,42 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1BRAB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 19:01:56 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50182 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752091Ab1BRABw (ORCPT
+	id S1754719Ab1BRAGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 19:06:43 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:7077 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753537Ab1BRAGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 19:01:52 -0500
-Date: Fri, 18 Feb 2011 00:01:50 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <greg@kroah.com>
-Cc: Charles Manning <manningc2@actrix.gen.nz>,
-        Ryan Mallon <ryan@bluewatersys.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
-Message-ID: <20110218000150.GA27668@opensource.wolfsonmicro.com>
-References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <201102171531.03924.manningc2@actrix.gen.nz> <4D5C8D62.4060809@bluewatersys.com> <201102171649.57457.manningc2@actrix.gen.nz> <20110217234154.GA1474@kroah.com>
+	Thu, 17 Feb 2011 19:06:41 -0500
+Message-ID: <4D5DB833.4070902@bluewatersys.com>
+Date: Fri, 18 Feb 2011 13:07:15 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110217234154.GA1474@kroah.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Peter Tyser <ptyser@xes-inc.com>
+CC: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 1/4] gpiolib: Add "unknown" direction support
+References: <1297983799-4747-1-git-send-email-ptyser@xes-inc.com>
+In-Reply-To: <1297983799-4747-1-git-send-email-ptyser@xes-inc.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 03:41:54PM -0800, Greg KH wrote:
-> On Thu, Feb 17, 2011 at 04:49:57PM +1300, Charles Manning wrote:
+On 02/18/2011 12:03 PM, Peter Tyser wrote:
+> Previously, gpiolib would unconditionally flag all GPIO pins as inputs,
+> regardless of their true state.  This resulted in all GPIO output pins
+> initially being incorrectly identified as "input" in the GPIO sysfs.
+> 
+> Since the direction of GPIOs is not known prior to having their
+> direction set, instead set the default direction to "unknown" to prevent
+> user confusion.  A pin with an "unknown" direction can not be written or
+> read via sysfs; it must first be configured as an input or output before
+> it can be used.
+> 
+> While we're playing with the direction flag in/out defines, rename them to
+> a more descriptive FLAG_DIR_* format.
+> 
+> Cc: Alek Du <alek.du@intel.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: David Brownell <dbrownell@users.sourceforge.net>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> ---
+> Change since V1:
+> - This patch is new and is based on feedback from Alan to support a new
+>   "unknown" direction.
+> - Rename FLAG_IS_OUT to FLAG_DIR_OUT, and add FLAG_DIR_IN
+> 
+> Change since V2:
+> - None
+> 
+>  drivers/gpio/gpiolib.c |   91 ++++++++++++++++++++++++++---------------------
+>  1 files changed, 50 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index 649550e..eb74311 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -49,13 +49,14 @@ struct gpio_desc {
+>  	unsigned long		flags;
+>  /* flag symbols are bit numbers */
+>  #define FLAG_REQUESTED	0
+> -#define FLAG_IS_OUT	1
+> -#define FLAG_RESERVED	2
+> -#define FLAG_EXPORT	3	/* protected by sysfs_lock */
+> -#define FLAG_SYSFS	4	/* exported via /sys/class/gpio/control */
+> -#define FLAG_TRIG_FALL	5	/* trigger on falling edge */
+> -#define FLAG_TRIG_RISE	6	/* trigger on rising edge */
+> -#define FLAG_ACTIVE_LOW	7	/* sysfs value has active low */
+> +#define FLAG_DIR_OUT	1	/* pin is an output */
+> +#define FLAG_DIR_IN	2	/* pin is an input */
+> +#define FLAG_RESERVED	3
+> +#define FLAG_EXPORT	4	/* protected by sysfs_lock */
+> +#define FLAG_SYSFS	5	/* exported via /sys/class/gpio/control */
+> +#define FLAG_TRIG_FALL	6	/* trigger on falling edge */
+> +#define FLAG_TRIG_RISE	7	/* trigger on rising edge */
+> +#define FLAG_ACTIVE_LOW	8	/* sysfs value has active low */
 
-> > Stripping out the tracing is easy enough but pointless if people (ie those 
-> > actually using yaffs) really want it. Same for the proc interface (though 
-> > that could be moved to sysfs).
+This patch really shouldn't renumber all (and rename some) of the flags.
+Patches should ideally do one thing only, so if you want to rename
+FLAG_IS_OUT to FLAG_DIR_OUT that should be done in a separate patch.
+Same goes for the renumbering, it should be a separate patch to adding
+the support for "unknown" direction.
 
-> Use debugfs please, if it's debugging stuff.  If it's "real" stuff, then
-> yes, it should be in sysfs, you already have a place for it in /sys/fs/
-> to use.  Just abide by the sysfs rules and you will be fine.
+~Ryan
 
-For the proc stuff - for tracing stuff then tracepoints are likely to be
-a good option if it's useful to people.
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
