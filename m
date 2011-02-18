@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab1BRIG4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 03:06:56 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:41235 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab1BRIGw convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Fri, 18 Feb 2011 03:06:52 -0500
-Message-Id: <4D5E36DD02000078000329CE@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 18 Feb 2011 08:07:41 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ingo Molnar" <mingo@elte.hu>
-Cc: <tony.luck@intel.com>, <tglx@linutronix.de>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH 2/3] x86-64: use relative 32-bit pointers in
-	 exception tables
-References: <4D5D62EE02000078000327E7@vpn.id2.novell.com>
- <20110217172559.GD17058@elte.hu>
-In-Reply-To: <20110217172559.GD17058@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756116Ab1BRIJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 03:09:16 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57127 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab1BRIJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 03:09:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <4D5DCB46.9090506@wytron.com.tw>
+References: <c7a7085602687d2f1b6ac505c030f19bafda04e3.1297245277.git.tklauser@distanz.ch>
+ <1297872732-10207-1-git-send-email-tklauser@distanz.ch> <4D5C86C1.8070404@wytron.com.tw>
+ <20110217074846.GG4076@distanz.ch> <4D5DCB46.9090506@wytron.com.tw>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 18 Feb 2011 01:08:53 -0700
+X-Google-Sender-Auth: jMsh4uUqBtRzBLXDbTGkvSTpvJQ
+Message-ID: <AANLkTinDD71YQbYovBSwU8YSCCZ56wQf35X97WFoY6R9@mail.gmail.com>
+Subject: Re: [Nios2-dev] [PATHV v2] tty: serial: altera_uart: Add devicetree support
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Tobias Klauser <tklauser@distanz.ch>, nios2-dev@sopc.et.ntust.edu.tw,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.02.11 at 18:25, Ingo Molnar <mingo@elte.hu> wrote:
+On Thu, Feb 17, 2011 at 6:28 PM, Thomas Chou <thomas@wytron.com.tw> wrote:
+> On 02/17/2011 03:48 PM, Tobias Klauser wrote:
+>>>>
+>>>> +       ret = altera_uart_get_of_uartclk(pdev, port);
+>>>> +       if (ret&&   platp)
+>>>> +               port->uartclk = platp->uartclk;
+>>>> +       else if (ret)
+>>>> +               return ret;
+>>>> +
+>>>
+>>> Better reverse the priority, with platform data checked first.
+>>>
+>>>        if (platp)
+>>>                port->uartclk = platp->uartclk;
+>>>        else {
+>>>                ret = altera_uart_get_of_uartclk(pdev, port);
+>>>                if (ret)
+>>>                        return ret;
+>>>        }
+>>
+>> Do you have a specific reasoning for this? I thought it might make sense
+>> to do it in the same order as with the resources above, but I have no
+>> problem changing it to the way you suggest.
+>
+> Not quite sure. But I see some drivers follow this order, and I just
+> followed, too.
 
-> Nice patch. I've got a really small code readability nitpick:
-> 
->> +#ifndef ex_insn /* until all architectures have this accessor */
->> +#define ex_insn(x) (x)->insn
->> +#endif
-> 
->> +#else
->> +#define swap_ex NULL
->> +#endif
-> 
-> In the x86 architecture we tend to write this as:
-> 
->> +#else
->> +# define swap_ex NULL
->> +#endif
-> 
-> So that the conditional structure stands out more, visually. (There might be 
-> more 
-> such cases in these patches as well.)
+The reason to check for platform_data first is that if a device has
+*both* platform data and a device node pointer, then more than likely
+the platform_data is indented to override the device node data.
 
-I can certainly fix this, but got a comment from (I think) Andrew
-Morton to do exactly the opposite quite some time ago, with the
-rationale that this indentation leads to more involved patches
-when further conditionals get added around them.
-
-As I'll have to fix the test_nx issue hpa pointed out anyway, I can
-adjust this as you say, but I'd prefer you to confirm first whether
-indeed you think this is the right thing to do in non-x86 code.
-
-Jan
-
+g.
