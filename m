@@ -1,140 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab1BRVtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 16:49:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29738 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab1BRVtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 16:49:05 -0500
-Date: Fri, 18 Feb 2011 16:48:57 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
-        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Avoid preferential treatment of groups that aren't
- backlogged
-Message-ID: <20110218214857.GK26654@redhat.com>
-References: <20110214164139.GC13097@redhat.com>
- <20110214180111.18776.57533.stgit@neat.mtv.corp.google.com>
+	id S1758213Ab1BRVvm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 16:51:42 -0500
+Received: from usmamail.tilera.com ([206.83.70.70]:22165 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab1BRVvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 16:51:39 -0500
+Message-ID: <4D5EE9E9.2000407@tilera.com>
+Date: Fri, 18 Feb 2011 16:51:37 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110214180111.18776.57533.stgit@neat.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cypher Wu <cypher.w@gmail.com>
+CC: David Miller <davem@davemloft.net>, <xiyou.wangcong@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <eric.dumazet@gmail.com>,
+        <netdev@vger.kernel.org>
+Subject: Re: IGMP and rwlock: Dead ocurred again on TILEPro
+References: <4D5DA60A.8080201@tilera.com>	<20110217.145333.232751283.davem@davemloft.net>	<4D5DA96D.5060200@tilera.com>	<20110217.151147.35033921.davem@davemloft.net>	<4D5DACC5.60105@tilera.com> <AANLkTim1F679mmnbHnYkvi6ZDojxD-tPGer4F+61C+di@mail.gmail.com>
+In-Reply-To: <AANLkTim1F679mmnbHnYkvi6ZDojxD-tPGer4F+61C+di@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 14, 2011 at 10:01:11AM -0800, Chad Talbott wrote:
-> Problem: If a group isn't backlogged, we remove it from the service
-> tree. When it becomes active again, it gets either the minimum vtime
-> of the tree or gets put at the "back of the line." That is true even
-> when the group was idle for a very small time, and it consumed some IO
-> time right before it became idle.  If group has very small weight, it
-> can end up using more disk time than its fair share. Conversely, if it
-> has a very large weight, being put at the back of the vtime line is a
-> large penalty which prevents it consuming its share.
-> 
-> Solution: We solve the problem by assigning the group its old vtime if
-> it has not been idle long enough. Otherise we assign it the service
-> tree's min vtime.
-> 
-> Complications: When an entire service tree becomes completely idle, we
-> lose the vtime state. All the old vtime values are not relevant any
-> more. For example, consider the case when the service tree is idle and
-> a brand new group sends IO. That group would have an old vtime value
-> of zero, but the service tree's vtime would become closer to zero. In
-> such a case, it would be unfair for the older groups to get a much
-> higher old vtime stored in them.
-> 
-> We solve that issue by keeping a generation number that counts the
-> number of instances when the service tree becomes completely
-> empty. The generation number is stored in each group too. If a group
-> becomes backlogged after a service tree has been empty, we compare its
-> stored generation number with the current service tree generation
-> number, and discard the old vtime if the group generation number is
-> stale.
-> 
-> The preemption specific code is taken care of automatically because we
-> allow preemption checks after inserting a group back into the service
-> tree and assigning it an appropriate vtime.
-> 
-> Signed-off-by: Chad Talbott <ctalbott@google.com>
-> ---
+On 2/17/2011 10:16 PM, Cypher Wu wrote:
+> On Fri, Feb 18, 2011 at 7:18 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>> The interrupt architecture on Tile allows a write to a special-purpose
+>> register to put you into a "critical section" where no interrupts or faults
+>> are delivered.  So we just need to bracket the read_lock operations with
+>> two SPR writes; each takes six machine cycles, so we're only adding 12
+>> cycles to the total cost of taking or releasing a read lock on an rwlock
+> I agree that just lock interrupt for read operations should be enough,
+> but read_unlock() is also the place we should lock interrupt, right?
+> If interrupt occurred when it hold lock-val after TNS deadlock still
+> can occur.
 
-Chad, 
+Correct; that's what I meant by "read_lock operations".  This include lock,
+trylock, and unlock.
 
-Got following compile warning with this patch.
+> When will you release out that patch? Since time is tight, so maybe
+> I've to fix-up it myself.
 
-  CC      block/cfq-iosched.o
-block/cfq-iosched.c: In function ‘cfq_group_service_tree_add’:
-block/cfq-iosched.c:874: warning: unused variable ‘n’
-block/cfq-iosched.c:873: warning: unused variable ‘__cfqg’
+I heard from one of our support folks that you were asking through that
+channel, so I asked him to go ahead and give you the spinlock sources
+directly.  I will be spending time next week syncing up our internal tree
+with the public git repository so you'll see it on LKML at that time.
 
-Lets get rid of some unused variables. May be generate a V4 of the patch.
+> 1. If we use SPR_INTERRUPT_CRITICAL_SECTION it will disable all the
+> interrupt which claimed 'CM', is that right? Should we have to same
+> its original value and restore it later?
 
-Thanks
-Vivek
+We don't need to save and restore, since INTERRUPT_CRITICAL_SECTION is
+almost always zero except in very specific situations.
 
->  block/cfq-iosched.c |   25 ++++++++++++++-----------
->  1 files changed, 14 insertions(+), 11 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 501ffdf..216d87b 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -178,6 +178,7 @@ struct cfq_group {
->  
->  	/* group service_tree key */
->  	u64 vdisktime;
-> +	u64 generation_num;
->  	unsigned int weight;
->  
->  	/* number of cfqq currently on this group */
-> @@ -300,6 +301,9 @@ struct cfq_data {
->  	/* List of cfq groups being managed on this device*/
->  	struct hlist_head cfqg_list;
->  	struct rcu_head rcu;
-> +
-> +	/* Generation number, counts service tree empty events */
-> +	u64 active_generation;
->  };
->  
->  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
-> @@ -873,18 +877,14 @@ cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
->  		return;
->  
-> -	/*
-> -	 * Currently put the group at the end. Later implement something
-> -	 * so that groups get lesser vtime based on their weights, so that
-> -	 * if group does not loose all if it was not continously backlogged.
-> -	 */
-> -	n = rb_last(&st->rb);
-> -	if (n) {
-> -		__cfqg = rb_entry_cfqg(n);
-> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
-> -	} else
-> +	if (cfqd->active_generation > cfqg->generation_num)
->  		cfqg->vdisktime = st->min_vdisktime;
-> -
-> +	else
-> +		/* We assume that vdisktime was not modified when the task
-> +		   was off the service tree.
-> +		 */
-> +		cfqg->vdisktime = max_vdisktime(st->min_vdisktime,
-> +						cfqg->vdisktime);
->  	__cfq_group_service_tree_add(st, cfqg);
->  	st->total_weight += cfqg->weight;
->  }
-> @@ -906,6 +906,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
->  		cfq_rb_erase(&cfqg->rb_node, st);
->  	cfqg->saved_workload_slice = 0;
-> +	cfqg->generation_num = cfqd->active_generation;
-> +	if (RB_EMPTY_ROOT(&st->rb))
-> +		cfqd->active_generation++;
->  	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
->  }
->  
+> 2. Should we lock interrupt for the whole operation of
+> read_lock()/read_unlock(), or we should leave interrupt critical
+> section if it run into  __raw_read_lock_slow() and before have to
+> delay_backoff() some time, and re-enter interrupt critical section
+> again before TNS?
+
+Correct, the fix only holds the critical section around the tns and the
+write-back, not during the delay_backoff().
+
+> Bye the way, other RISC platforms, say ARM and MIPS, use store
+> conditional rather that TNS a temp value for lock-val, does Fx have
+> similar instructions?
+
+TILEPro does not have anything more than test-and-set; TILE-Gx (the 64-bit
+processor) has a full array of atomic instructions.
+
+> Adding that to SPR writes should be fine, but it may cause interrupt
+> delay a little more that other platform's read_lock()?
+
+A little, but I think it's in the noise relative to the basic cost of
+read_lock in the absence of full-fledged atomic instructions.
+
+> Another question: What NMI in the former mail means?
+
+Non-maskable interrupt, such as performance counter interrupts.
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
