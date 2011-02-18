@@ -1,149 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab1BRI5k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 03:57:40 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35085 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab1BRI5h (ORCPT
+	id S1757751Ab1BRI71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 03:59:27 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43998 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab1BRI7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 03:57:37 -0500
-Date: Fri, 18 Feb 2011 09:57:34 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 2/4] gpiolib: Add ability to get GPIO pin direction
-Message-ID: <20110218085734.GX22310@pengutronix.de>
-References: <1297983799-4747-1-git-send-email-ptyser@xes-inc.com>
- <1297983799-4747-2-git-send-email-ptyser@xes-inc.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1297983799-4747-2-git-send-email-ptyser@xes-inc.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 18 Feb 2011 03:59:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tYrb1fTEe2WCyOGJ92TfVXBf9MGEpwYMBKwKzcFHpsE+4cOJ1w8ST7bANr62yO/cK9
+         QN8jYQVW2N2ZWRifoEJlO5i/5rxO9JCvRJT593C/GtGB/xjYtWpfLueXHXX8iaCHJNBm
+         Ayyy/dmICcL8y3EcFSgUAAK5YtlBWMZSeRS+g=
+Subject: [PATCH 2/2] net: deinit automatic LIST_HEAD
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, ebiederm@xmission.com, mingo@elte.hu,
+        opurdila@ixiacom.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz, netdev <netdev@vger.kernel.org>, stable@kernel.org
+In-Reply-To: <m17hcx7wca.fsf@fess.ebiederm.org>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+	 <20110216193700.GA6377@elte.hu>
+	 <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+	 <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+	 <20110217090910.GA3781@tiehlicka.suse.cz>
+	 <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+	 <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+	 <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	 <m1sjvm822m.fsf@fess.ebiederm.org>
+	 <AANLkTimzP0UNRXutkt1zJ+OGhmeg6ga87HFyMuZQmpMj@mail.gmail.com>
+	 <m17hcx7wca.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Feb 2011 09:59:19 +0100
+Message-ID: <1298019559.2595.92.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 05:03:17PM -0600, Peter Tyser wrote:
-> Add a new get_direction() function to the gpio_chip structure.  This is
-> useful so that the direction of a pin can be determined when its
-> initially exported.  Previously, the direction defaulted to "unknown"
-> regardless of the actual configuration of the GPIO pin.
-> 
-> If a GPIO driver implements get_direction(), it is called in
-> gpio_request() to set the initial direction of the pin accurately.
-IMHO the commit log is conceptually wrong, because it talks about a
-"pin".  Better use gpio here.
+commit 9b5e383c11b08784 (net: Introduce
+unregister_netdevice_many()) left an active LIST_HEAD() in
+rollback_registered(), with possible memory corruption.
 
-> Cc: Alek Du <alek.du@intel.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: David Brownell <dbrownell@users.sourceforge.net>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
-> ---
-> Changes since v1:
-> - Add support for "unknown" direction
-> 
-> Changes since v2:
->   Based on Wolfram's feedback:
-> - Use GPIOF_DIR_* flags as returns from get_direction()
-> - Call spin_lock_irqsave() to before setting flags
-> 
->  drivers/gpio/gpiolib.c     |   23 +++++++++++++++++++++++
->  include/asm-generic/gpio.h |    4 ++++
->  2 files changed, 27 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index eb74311..a656a2c 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1174,6 +1174,7 @@ int gpio_request(unsigned gpio, const char *label)
->  	struct gpio_desc	*desc;
->  	struct gpio_chip	*chip;
->  	int			status = -EINVAL;
-> +	int			dir;
->  	unsigned long		flags;
->  
->  	spin_lock_irqsave(&gpio_lock, flags);
-> @@ -1214,6 +1215,28 @@ int gpio_request(unsigned gpio, const char *label)
->  		}
->  	}
->  
-> +	if (chip->get_direction) {
-> +		/* chip->get_direction may sleep */
-> +		spin_unlock_irqrestore(&gpio_lock, flags);
-might_sleep_if(chip->can_sleep) ?
+Even if device is freed without touching its unreg_list (and therefore
+touching the previous memory location holding LISTE_HEAD(single), better
+close the bug for good, since its really subtle.
 
-> +		dir = chip->get_direction(chip, gpio - chip->base);
-> +		spin_lock_irqsave(&gpio_lock, flags);
-> +		switch (dir) {
-> +		case GPIOF_DIR_OUT:
-> +			set_bit(FLAG_DIR_OUT, &desc->flags);
-> +			clear_bit(FLAG_DIR_IN, &desc->flags);
-> +			break;
-> +		case GPIOF_DIR_IN:
-> +			set_bit(FLAG_DIR_IN, &desc->flags);
-> +			clear_bit(FLAG_DIR_OUT, &desc->flags);
-> +			break;
-> +		default:
-> +			/* Direction isn't known */
-> +			clear_bit(FLAG_DIR_OUT, &desc->flags);
-> +			clear_bit(FLAG_DIR_IN, &desc->flags);
-> +			break;
-> +		}
-Alternatively to my suggestion for patch1:
-	} else {
-		clear_bit(FLAG_DIR_OUT, &desc->flags);
-		clear_bit(FLAG_DIR_IN, &desc->flags);
-> +	}
-> +
->  done:
->  	if (status)
->  		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
-> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-> index ff5c660..6af5a3e 100644
-> --- a/include/asm-generic/gpio.h
-> +++ b/include/asm-generic/gpio.h
-> @@ -57,6 +57,8 @@ struct device_node;
->   * @direction_input: configures signal "offset" as input, or returns error
->   * @get: returns value for signal "offset"; for output signals this
->   *	returns either the value actually sensed, or zero
-> + * @get_direction: optional hook to determine if a GPIO signal is configured
-> + *	as an input, output, or unknown
->   * @direction_output: configures signal "offset" as output, or returns error
->   * @set: assigns output value for signal "offset"
->   * @to_irq: optional hook supporting non-static gpio_to_irq() mappings;
-> @@ -101,6 +103,8 @@ struct gpio_chip {
->  						unsigned offset);
->  	int			(*get)(struct gpio_chip *chip,
->  						unsigned offset);
-> +	int			(*get_direction)(struct gpio_chip *chip,
-> +						unsigned offset);
->  	int			(*direction_output)(struct gpio_chip *chip,
->  						unsigned offset, int value);
->  	int			(*set_debounce)(struct gpio_chip *chip,
-> -- 
-> 1.7.0.4
-> 
-> 
+(Same fix for default_device_exit_batch() for completeness)
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Reported-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Eric W. Biderman <ebiderman@xmission.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Octavian Purdila <opurdila@ixiacom.com>
+CC: Eric W. Biderman <ebiderman@xmission.com>
+CC: stable <stable@kernel.org> [.33+]
+---
+ net/core/dev.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index a18c164..8ae6631 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5066,6 +5066,7 @@ static void rollback_registered(struct net_device *dev)
+ 
+ 	list_add(&dev->unreg_list, &single);
+ 	rollback_registered_many(&single);
++	list_del(&single);
+ }
+ 
+ unsigned long netdev_fix_features(unsigned long features, const char *name)
+@@ -6219,6 +6220,7 @@ static void __net_exit default_device_exit_batch(struct list_head *net_list)
+ 		}
+ 	}
+ 	unregister_netdevice_many(&dev_kill_list);
++	list_del(&dev_kill_list);
+ 	rtnl_unlock();
+ }
+ 
+
+
