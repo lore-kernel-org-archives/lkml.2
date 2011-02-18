@@ -1,236 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1BRBvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 20:51:36 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:48078 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753191Ab1BRBve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 20:51:34 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: LSM <linux-security-module@vger.kernel.org>, Andrew Morton <akpm@osdl.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-References: <20110217150224.GA26334@mail.hallyn.com>
-	<20110217150356.GH26395@mail.hallyn.com>
-Date: Thu, 17 Feb 2011 17:51:25 -0800
-In-Reply-To: <20110217150356.GH26395@mail.hallyn.com> (Serge E. Hallyn's
-	message of "Thu, 17 Feb 2011 15:03:56 +0000")
-Message-ID: <m14o82cdpe.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1754807Ab1BRBw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 20:52:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46181 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752318Ab1BRBww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 20:52:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,184,1297065600"; 
+   d="scan'208";a="709283278"
+Date: Fri, 18 Feb 2011 09:52:11 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Jan Kara <jack@suse.cz>
+CC: "op.q.liu@gmail.com" <op.q.liu@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: ext2 write performance regression from 2.6.32
+Message-ID: <20110218095211.556c22ed@feng-i7>
+In-Reply-To: <20110217103214.GA4947@quack.suse.cz>
+References: <AANLkTinES_gU=MxbSnidorsKDsMnAwzHVx+yntOLCf=f@mail.gmail.com>
+	<AANLkTikvpyTPVnP1cxC4rSLARO3thpscyhmB4=BpFW-G@mail.gmail.com>
+	<20110215144641.05318556@feng-i7>
+	<20110215111126.GD17313@quack.suse.cz>
+	<AANLkTikGdud4FX0TcC-Sf_-_V-i8doZ73m63B=JA4kWp@mail.gmail.com>
+	<20110216174031.183180c4@feng-i7>
+	<20110216143530.GA5592@quack.suse.cz>
+	<20110217140846.2196b756@feng-i7>
+	<20110217103214.GA4947@quack.suse.cz>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19Hgb8ScycGSX1Tl6s40W4xePmX07VHyZY=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 8/9] user namespaces: convert several capable() calls
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+Hi Jan,
 
-> CAP_IPC_OWNER and CAP_IPC_LOCK can be checked against current_user_ns(),
-> because the resource comes from current's own ipc namespace.
->
-> setuid/setgid are to uids in own namespace, so again checks can be
-> against current_user_ns().
+On Thu, 17 Feb 2011 18:32:14 +0800
+Jan Kara <jack@suse.cz> wrote:
 
-Some nits below.  But this generally looks good if a little bit all over
-the map for a single patch.
+> On Thu 17-02-11 14:08:46, Feng Tang wrote:
+> > On Wed, 16 Feb 2011 22:35:30 +0800
+> > Jan Kara <jack@suse.cz> wrote:
+> > > On Wed 16-02-11 17:40:31, Feng Tang wrote:
+> > > > Hi,
+> > > > 
+> > > > I made out a debug patch which try to delay the pure FS metadata
+> > > > writeback (maxim 30 seconds to match current writeback expire
+> > > > time). It works for me on 2.6.32, and the dd performance is
+> > > > restored.
+> > > > 
+> > > > Please help to review it, thanks!
+> > > > 
+> > > > btw, I've sent out the block dump info requested by Jan Kara,
+> > > > but didn't see it on LKML, so attached them again.
+> > > > 
+> > > > - Feng
+> > > > 
+> > > > From c35548c7d0c3a334d24c26adab277ef62b9825db Mon Sep 17
+> > > > 00:00:00 2001 From: Feng Tang <feng.tang@intel.com>
+> > > > Date: Wed, 16 Feb 2011 17:27:36 +0800
+> > > > Subject: [PATCH] writeback: delay the file system metadata
+> > > > writeback in 30 seconds
+> > > > 
+> > > > Signed-off-by: Feng Tang <feng.tang@intel.com>
+> > > > ---
+> > > >  fs/fs-writeback.c |   10 ++++++++++
+> > > >  1 files changed, 10 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> > > > index 9d5360c..418fd9e 100644
+> > > > --- a/fs/fs-writeback.c
+> > > > +++ b/fs/fs-writeback.c
+> > > > @@ -635,6 +635,16 @@ static void writeback_inodes_wb(struct
+> > > > bdi_writeback *wb, continue;
+> > > >  		}
+> > > >  
+> > > > +		if ((wbc->sync_mode != WB_SYNC_ALL)
+> > > > +			&& !inode->i_ino
+> > > > +			&& !strcmp(inode->i_sb->s_id, "bdev"))
+> > > > {
+> > > > +			if (inode->dirtied_when + 30 * HZ >
+> > > > jiffies) {
+> > > > +				list_move(&inode->i_list,
+> > > > &wb->b_dirty);
+> > > > +				continue;
+> > > > +			} 
+> > > > +		}
+> > > > +
+> > > > +
+> > >   Doh, this is a crude hack! Nice for debugging but no way to get
+> > > this into the kernel. We have to find a cleaner way to speedup the
+> > > writeback...
+> > 
+> > I just tested you 5 writeback patches, and they don't fix the
+> > problem, the FS metadata are still periodically written back every
+> > one or two seconds. Attached the block dump on 2.6.37 + your
+> > patches.
+> Yes, so I didn't expect the writeout of metadata will disappear, just
+> the IO pattern should be better. So you didn't observe any change in
+> throughput with my patches vs without them?
 
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+With your patches, it did bring some improvements, like from 7 MB/s to
+7.7 MB/s, but not restore back to 10 MB/s. Kyle Liu, who is the original
+reporter of this issue also see similar results for your patch.
 
+Anyway, I really hope the IO-less patch either from you or Fengguang
+can be merged, which will significantly improve the writeback.
 
-> Changelog:
-> 	Jan 11: Use task_ns_capable() in place of sched_capable().
-> 	Jan 11: Use nsown_capable() as suggested by Bastian Blank.
-> 	Jan 11: Clarify (hopefully) some logic in futex and sched.c
-> 	Feb 15: use ns_capable for ipc, not nsown_capable
->
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> ---
->  ipc/shm.c             |    2 +-
->  ipc/util.c            |    5 +++--
->  kernel/futex.c        |   11 ++++++++++-
->  kernel/futex_compat.c |   11 ++++++++++-
->  kernel/groups.c       |    2 +-
->  kernel/sched.c        |    9 ++++++---
->  kernel/uid16.c        |    2 +-
->  7 files changed, 32 insertions(+), 10 deletions(-)
->
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 7d3bb22..e91e2e9 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -773,7 +773,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+> 
+> Looking at the block trace, we write about 8 MB of data before doing
+> metadata writeback. That's about the best what I'd expect with current
+> writeback settings so things worked as expected.
+
+Yes, it is
+
+> 
+> Hmm, but probably flash card is simple and does not have any
+> Flash Translation Layer and so each write of one metadata block costs
+> us as a rewrite of the whole erase block which may well be in a MB
+> range? That would explain it. Raising MAX_WRITEBACK_PAGES would help
+> here but given the throughput of the flash card, the fairness of
+> writeback when there are more inodes to write would be already rather
+> bad so that's not a good solution either.
 >  
->  		audit_ipc_obj(&(shp->shm_perm));
->  
-> -		if (!capable(CAP_IPC_LOCK)) {
-> +		if (!ns_capable(ns->user_ns, CAP_IPC_LOCK)) {
->  			uid_t euid = current_euid();
->  			err = -EPERM;
->  			if (euid != shp->shm_perm.uid &&
-> diff --git a/ipc/util.c b/ipc/util.c
-> index 69a0cc1..8e7ec6a 100644
-> --- a/ipc/util.c
-> +++ b/ipc/util.c
-> @@ -627,7 +627,7 @@ int ipcperms (struct kern_ipc_perm *ipcp, short flag)
->  		granted_mode >>= 3;
->  	/* is there some bit set in requested_mode but not in granted_mode? */
->  	if ((requested_mode & ~granted_mode & 0007) && 
-> -	    !capable(CAP_IPC_OWNER))
-> +	    !ns_capable(current->nsproxy->ipc_ns->user_ns, CAP_IPC_OWNER))
->  		return -1;
+> > And ye, I agree my patch is kinds of hacky, but its main point is
+> > to delay the file system metadata writeback (no longer than current
+> > writeback expiration limit: 30 seconds) to make the normal data
+> > pages writeback as sequential as possible. Could we go on tuning it
+> > in this direction?
+> Apart from my aesthetical feelings, the patch brings also some
+> technical difficulties. For example if lots of dirtying happens
+> against device inode (metadata heavy workload), we need to push out
+> dirty pages from the device inode to clean dirty memory. Otherwise
+> the processes would just stall in balance_dirty_pages() for 30 s
+> waiting for pages to get cleaned. Another issue is that under heavier
+> load, the inode will get redirtied while you are writing metadata.
+> Thus i_dirtied_when need not change.  Finally, if the load is not so
+> trivial like your single dd write, but there happens also some other
+> activity in the filesystem (like syslog writing to the device once in
+> a while or so), then your large dd write will be mixed with small
+> writes to other files anyway and thus performance will degrade.
+> 
+> That being said I don't see an easy solution to your problem. The
+> fact that 2.6.30 didn't write metadata was more a bug than a feature
+> but happened to work good for your flash card. A solution that comes
+> to my mind is that we could have a "write chunk size" parameter in
+> each BDI (it would make sense not only for flash devices but also for
+> RAID) and writeback would be aware that written amount is always
+> rounded up to "write chunk size". This ignores filesystem
+> fragmentation but that might be dealt with. And if we are doing well
+> with cleaning pages, we may skip writes that have small
+> cleaned_pages / write_chunk_size ratio. But we'd have to be careful
+> not to delay such "inprofitable" writes for too long. So it's not so
+> easy to implement this.
+> 
 
-Serge can we please modify the code to pass the ns down from
-ipcget_public to ipcperms.  It is passed in and dropping the value and
-going back to current to get it just feels wrong.
+Thanks for the detailed analysis, that patch can't handle heavy metadata
+dirtier case. I'll try to do more check
 
-Strictly speaking this code is correct but it requires an audit of all
-of the callers to know that, which is unfortunate.
+Thanks,
+Feng
 
->  	return security_ipc_permission(ipcp, flag);
-> @@ -800,7 +800,8 @@ struct kern_ipc_perm *ipcctl_pre_down(struct ipc_ids *ids, int id, int cmd,
->  
->  	euid = current_euid();
->  	if (euid == ipcp->cuid ||
-> -	    euid == ipcp->uid  || capable(CAP_SYS_ADMIN))
-> +	    euid == ipcp->uid  ||
-> +	    ns_capable(current->nsproxy->ipc_ns->user_ns, CAP_SYS_ADMIN))
->  		return ipcp;
-
-Like the other ipc call can we please pass the ipc_ns into ipcctl_pre_down.
-
-The code as constructed appears correct but because we are passing the
-namespace into the caller of this function always using current to get
-the ipc_ns seems confusing and unnecessary.
-
->  	err = -EPERM;
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index b766d28..1e876f1 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -2421,10 +2421,19 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
->  			goto err_unlock;
->  		ret = -EPERM;
->  		pcred = __task_cred(p);
-> +		/* If victim is in different user_ns, then uids are not
-> +		   comparable, so we must have CAP_SYS_PTRACE */
-> +		if (cred->user->user_ns != pcred->user->user_ns) {
-> +			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-> +				goto err_unlock;
-> +			goto ok;
-> +		}
-> +		/* If victim is in same user_ns, then uids are comparable */
->  		if (cred->euid != pcred->euid &&
->  		    cred->euid != pcred->uid &&
-> -		    !capable(CAP_SYS_PTRACE))
-> +		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
->  			goto err_unlock;
-> +ok:
->  		head = p->robust_list;
->  		rcu_read_unlock();
->  	}
-> diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
-> index a7934ac..5f9e689 100644
-> --- a/kernel/futex_compat.c
-> +++ b/kernel/futex_compat.c
-> @@ -153,10 +153,19 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
->  			goto err_unlock;
->  		ret = -EPERM;
->  		pcred = __task_cred(p);
-> +		/* If victim is in different user_ns, then uids are not
-> +		   comparable, so we must have CAP_SYS_PTRACE */
-> +		if (cred->user->user_ns != pcred->user->user_ns) {
-> +			if (!ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
-> +				goto err_unlock;
-> +			goto ok;
-> +		}
-> +		/* If victim is in same user_ns, then uids are comparable */
->  		if (cred->euid != pcred->euid &&
->  		    cred->euid != pcred->uid &&
-> -		    !capable(CAP_SYS_PTRACE))
-> +		    !ns_capable(pcred->user->user_ns, CAP_SYS_PTRACE))
->  			goto err_unlock;
-> +ok:
->  		head = p->compat_robust_list;
->  		rcu_read_unlock();
->  	}
-> diff --git a/kernel/groups.c b/kernel/groups.c
-> index 253dc0f..1cc476d 100644
-> --- a/kernel/groups.c
-> +++ b/kernel/groups.c
-> @@ -233,7 +233,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
->  	struct group_info *group_info;
->  	int retval;
->  
-> -	if (!capable(CAP_SETGID))
-> +	if (!nsown_capable(CAP_SETGID))
->  		return -EPERM;
->  	if ((unsigned)gidsetsize > NGROUPS_MAX)
->  		return -EINVAL;
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 18d38e4..dc12bc2 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -4761,8 +4761,11 @@ static bool check_same_owner(struct task_struct *p)
->  
->  	rcu_read_lock();
->  	pcred = __task_cred(p);
-> -	match = (cred->euid == pcred->euid ||
-> -		 cred->euid == pcred->uid);
-> +	if (cred->user->user_ns == pcred->user->user_ns)
-> +		match = (cred->euid == pcred->euid ||
-> +			 cred->euid == pcred->uid);
-> +	else
-> +		match = false;
->  	rcu_read_unlock();
->  	return match;
->  }
-> @@ -5088,7 +5091,7 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
->  		goto out_free_cpus_allowed;
->  	}
->  	retval = -EPERM;
-> -	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
-> +	if (!check_same_owner(p) && !task_ns_capable(p, CAP_SYS_NICE))
->  		goto out_unlock;
->  
->  	retval = security_task_setscheduler(p);
-> diff --git a/kernel/uid16.c b/kernel/uid16.c
-> index 4192098..51c6e89 100644
-> --- a/kernel/uid16.c
-> +++ b/kernel/uid16.c
-> @@ -189,7 +189,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
->  	struct group_info *group_info;
->  	int retval;
->  
-> -	if (!capable(CAP_SETGID))
-> +	if (!nsown_capable(CAP_SETGID))
->  		return -EPERM;
->  	if ((unsigned)gidsetsize > NGROUPS_MAX)
->  		return -EINVAL;
+> 									Honza
