@@ -1,23 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1BRDMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:12:45 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:51861 "EHLO lunge.queued.net"
+	id S1755714Ab1BRDH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:07:59 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:51789 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab1BRDIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:08:06 -0500
+	id S1755238Ab1BRDHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 22:07:54 -0500
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-input@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: [PATCH 13/29] twl4030: mfd_cell is now implicitly available to drivers (v2)
-Date: Thu, 17 Feb 2011 19:07:20 -0800
-Message-Id: <1297998456-7615-14-git-send-email-dilinger@queued.net>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 02/29] mfd-core: unconditionally add mfd_cell to every platform_device
+Date: Thu, 17 Feb 2011 19:07:09 -0800
+Message-Id: <1297998456-7615-3-git-send-email-dilinger@queued.net>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297998456-7615-1-git-send-email-dilinger@queued.net>
 References: <1297998456-7615-1-git-send-email-dilinger@queued.net>
@@ -25,89 +20,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cell's platform_data is now accessed with a helper function;
-change clients to use that, and remove the now-unused data_size.
+Previously, one would set the mfd_cell's platform_data/data_size to point
+to the current mfd_cell in order to pass that information along to drivers.
 
-v2: add some missing mfd/core.h includes.
+This causes the current mfd_cell to always be available to drivers.  It
+also adds a wrapper function for fetching the mfd cell from a platform
+device, similar to what originally existed for mfd devices.
+
+Drivers who previously used platform_data for other purposes can still
+use it; the difference is that mfd_get_data() must be used to
+access it (and the pdata structure is no longer allocated in
+mfd_add_devices).
+
+Note that mfd_get_data is intentionally vague (in name) about where
+the data is stored; variable name changes can come later without having
+to touch brazillions of drivers.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/input/misc/twl4030-vibra.c |    3 ++-
- drivers/mfd/twl4030-codec.c        |    2 --
- sound/soc/codecs/twl4030.c         |    6 ++++--
- 3 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/mfd/mfd-core.c   |    9 +++------
+ include/linux/mfd/core.h |   23 +++++++++++++++++++++--
+ 2 files changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-index 014dd4a..6a11694 100644
---- a/drivers/input/misc/twl4030-vibra.c
-+++ b/drivers/input/misc/twl4030-vibra.c
-@@ -29,6 +29,7 @@
- #include <linux/workqueue.h>
- #include <linux/i2c/twl.h>
- #include <linux/mfd/twl4030-codec.h>
-+#include <linux/mfd/core.h>
- #include <linux/input.h>
- #include <linux/slab.h>
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index d83ad0f..21a39dc 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -39,12 +39,9 @@ static int mfd_add_device(struct device *parent, int id,
+ 	pdev->dev.parent = parent;
+ 	platform_set_drvdata(pdev, cell->driver_data);
  
-@@ -196,7 +197,7 @@ static SIMPLE_DEV_PM_OPS(twl4030_vibra_pm_ops,
+-	if (cell->data_size) {
+-		ret = platform_device_add_data(pdev,
+-					cell->platform_data, cell->data_size);
+-		if (ret)
+-			goto fail_res;
+-	}
++	ret = platform_device_add_data(pdev, cell, sizeof(*cell));
++	if (ret)
++		goto fail_res;
  
- static int __devinit twl4030_vibra_probe(struct platform_device *pdev)
- {
--	struct twl4030_codec_vibra_data *pdata = pdev->dev.platform_data;
-+	struct twl4030_codec_vibra_data *pdata = mfd_get_data(pdev);
- 	struct vibra_info *info;
- 	int ret;
+ 	for (r = 0; r < cell->num_resources; r++) {
+ 		res[r].name = cell->resources[r].name;
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index 1fd7c44..aefc378 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -33,9 +33,10 @@ struct mfd_cell {
+ 	/* driver-specific data for MFD-aware "cell" drivers */
+ 	void			*driver_data;
  
-diff --git a/drivers/mfd/twl4030-codec.c b/drivers/mfd/twl4030-codec.c
-index 9a4b196..0f57426 100644
---- a/drivers/mfd/twl4030-codec.c
-+++ b/drivers/mfd/twl4030-codec.c
-@@ -209,14 +209,12 @@ static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- 		cell = &codec->cells[childs];
- 		cell->name = "twl4030-codec";
- 		cell->platform_data = pdata->audio;
--		cell->data_size = sizeof(*pdata->audio);
- 		childs++;
- 	}
- 	if (pdata->vibra) {
- 		cell = &codec->cells[childs];
- 		cell->name = "twl4030-vibra";
- 		cell->platform_data = pdata->vibra;
--		cell->data_size = sizeof(*pdata->vibra);
- 		childs++;
- 	}
+-	/* platform_data can be used to either pass data to "generic"
+-	   driver or as a hook to mfd_cell for the "cell" drivers */
++	/* platform_data can be used to pass data to "generic" drivers */
+ 	void			*platform_data;
++
++	/* unused */
+ 	size_t			data_size;
  
-diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
-index e4d464b..8512800 100644
---- a/sound/soc/codecs/twl4030.c
-+++ b/sound/soc/codecs/twl4030.c
-@@ -26,6 +26,7 @@
- #include <linux/pm.h>
- #include <linux/i2c.h>
- #include <linux/platform_device.h>
-+#include <linux/mfd/core.h>
- #include <linux/i2c/twl.h>
- #include <linux/slab.h>
- #include <sound/core.h>
-@@ -732,7 +733,8 @@ static int aif_event(struct snd_soc_dapm_widget *w,
+ 	/*
+@@ -55,6 +56,24 @@ struct mfd_cell {
+ 	bool			pm_runtime_no_callbacks;
+ };
  
- static void headset_ramp(struct snd_soc_codec *codec, int ramp)
- {
--	struct twl4030_codec_audio_data *pdata = codec->dev->platform_data;
-+	struct twl4030_codec_audio_data *pdata =
-+			mfd_get_data(to_platform_device(codec->dev));
- 	unsigned char hs_gain, hs_pop;
- 	struct twl4030_priv *twl4030 = snd_soc_codec_get_drvdata(codec);
- 	/* Base values for ramp delay calculation: 2^19 - 2^26 */
-@@ -2297,7 +2299,7 @@ static struct snd_soc_codec_driver soc_codec_dev_twl4030 = {
- 
- static int __devinit twl4030_codec_probe(struct platform_device *pdev)
- {
--	struct twl4030_codec_audio_data *pdata = pdev->dev.platform_data;
-+	struct twl4030_codec_audio_data *pdata = mfd_get_data(pdev);
- 
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "platform_data is missing\n");
++/*
++ * Given a platform device that's been created by mfd_add_devices(), fetch
++ * the mfd_cell that created it.
++ */
++static inline const struct mfd_cell *mfd_get_cell(struct platform_device *pdev)
++{
++	return pdev->dev.platform_data;
++}
++
++/*
++ * Given a platform device that's been created by mfd_add_devices(), fetch
++ * the .platform_data entry from the mfd_cell that created it.
++ */
++static inline void *mfd_get_data(struct platform_device *pdev)
++{
++	return mfd_get_cell(pdev)->platform_data;
++}
++
+ extern int mfd_add_devices(struct device *parent, int id,
+ 			   const struct mfd_cell *cells, int n_devs,
+ 			   struct resource *mem_base,
 -- 
 1.7.2.3
 
