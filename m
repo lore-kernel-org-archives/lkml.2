@@ -1,69 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab1BRAiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 19:38:21 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:46651 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757805Ab1BRAiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 19:38:11 -0500
-From: Matt Helsley <matthltc@us.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matt Helsley <matthltc@us.ibm.com>, David Howells <dhowells@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        containers@lists.linux-foundation.org
-Subject: [PATCH] Reduce uidhash lock hold time when lookup succeeds
-Date: Thu, 17 Feb 2011 15:52:53 -0800
-Message-Id: <caebc7ebaa97599ef72b22d1172dfd2ebe770fce.1297986770.git.matthltc@us.ibm.com>
-X-Mailer: git-send-email 1.6.3.3
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1758124Ab1BRAiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 19:38:46 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:47205 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757805Ab1BRAik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 19:38:40 -0500
+X-Sasl-enc: QNn5VcnxlSdGN+9VLgw1dRCxRmjVaALYXX2T+0QwTS9X 1297989519
+Date: Thu, 17 Feb 2011 22:38:28 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        ddutile@redhat.com, chrisw@redhat.com
+Subject: Re: [PATCH v2 0/2] intel-iommu: Fix domain_ids exhaustion
+Message-ID: <20110218003828.GA991@khazad-dum.debian.net>
+References: <20110216203204.2979.13203.stgit@s20.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110216203204.2979.13203.stgit@s20.home>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When lookup succeeds we don't need the "new" user struct which hasn't
-been linked into the uidhash. So we can immediately drop the lock and
-then free "new" rather than free it with the lock held.
+Once merged, should it go to -stable?  If so, maybe it would be a good
+idea to add that while collecting the Acked-By's...
 
-Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: containers@lists.linux-foundation.org
----
- kernel/user.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/user.c b/kernel/user.c
-index 5c598ca..4ea8e58 100644
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -157,16 +157,18 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
- 		 */
- 		spin_lock_irq(&uidhash_lock);
- 		up = uid_hash_find(uid, hashent);
--		if (up) {
-+		if (!up) {
-+			uid_hash_insert(new, hashent);
-+			up = new;
-+		}
-+		spin_unlock_irq(&uidhash_lock);
-+
-+		if (up != new) {
- 			put_user_ns(ns);
- 			key_put(new->uid_keyring);
- 			key_put(new->session_keyring);
- 			kmem_cache_free(uid_cachep, new);
--		} else {
--			uid_hash_insert(new, hashent);
--			up = new;
- 		}
--		spin_unlock_irq(&uidhash_lock);
- 	}
- 
- 	return up;
 -- 
-1.6.3.3
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
