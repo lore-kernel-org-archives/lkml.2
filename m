@@ -1,277 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab1BRA3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 19:29:17 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:35445 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab1BRA3N (ORCPT
+	id S1757966Ab1BRAd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 19:33:59 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44979 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab1BRAdy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 19:29:13 -0500
-Date: Thu, 17 Feb 2011 18:29:04 -0600
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Steve Grubb <sgrubb@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-Message-ID: <20110218002904.GA12679@localhost>
-References: <1294266337.3237.45.camel@localhost.localdomain>
- <201101270942.07689.sgrubb@redhat.com>
- <20110128184901.GA5134@localhost>
- <201101281410.29794.sgrubb@redhat.com>
- <20110128193809.GB8854@localhost>
- <1296584221.3145.12.camel@localhost.localdomain>
- <20110201212605.GB5294@localhost>
- <AANLkTin6Msom+b8wHULvzEjA+VL5ofQ9wx-ZN5SiK6-p@mail.gmail.com>
- <1297133758.2323.5.camel@localhost.localdomain>
+	Thu, 17 Feb 2011 19:33:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uk96NOC3ytPbijZdcadRkdT/Og0W3A86LgopCmujlEVgDtdUJ38COaDF5fh5Quc2Jh
+         VH5OV+q8jRiLWvPYkJaJgDZb/VjO8mvqtWkScX+wEbP4P/970UXyUnZ5nrS9AYM5oCDm
+         Y6tRhDEYG602h02k49M4c2hpqe6dS4cUIVOrk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297133758.2323.5.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110218005020.d202acd2.kamezawa.hiroyu@jp.fujitsu.com>
+References: <cover.1297940291.git.minchan.kim@gmail.com>
+	<5677f3262774f4ddc24044065b7cbd6443ac5e16.1297940291.git.minchan.kim@gmail.com>
+	<20110218005020.d202acd2.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 18 Feb 2011 09:33:52 +0900
+Message-ID: <AANLkTikfbqjk18JM8pTh+F6QR69m+QxQzdw6CQGOuZjH@mail.gmail.com>
+Subject: Re: [PATCH v5 1/4] deactivate invalidated pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric Paris (eparis@redhat.com):
-> On Tue, 2011-02-01 at 20:02 -0800, Andrew G. Morgan wrote:
-> 
-> > In this case, I would like to suggest what you need is a user
-> > configurable state for kernel threads to launch helper programs - a
-> > kernel side equivalent to Sergey's wrapper idea.  I continue to
-> > dislike the global bounding set idea, but I would support a base
-> > credential set for this kthread launcher. I'd include pI, bset, and
-> > securebits and uid as something your initrd could initialize away from
-> > their default values for kernel launched helper binaries. I'd prefer
-> > it if you allowed the regular capability convolution rules to apply
-> > and propagate this bounding set for all kernel launched binaries, and
-> > also add the relevant code to init to enforce your desired bounding
-> > set for init parented processes.
-> 
-> 
-> > >> Or an interface in which I can force things out of the bset and pI of
-> > >> other tasks?  Possibly the interface could be specific to the "khelper"
-> > >> thread?
-> > >
-> > > No no no no no :)
-> 
-> Below is what I'm working on.  I've asked dhowells to review the creds
-> code, since commit_creds() does not take const.  Maybe that's just an
-> oversight.  Basically I've exposed two new sysctls.
-> 
-> /proc/sys/kernel/usermodehelper/bset
-> /proc/sys/kernel/usermodehelper/inheritable
-> 
-> You must have CAP_SYS_MODULE to change these (changes are &= ONLY).
-> When the kernel launches a usermodehelper it will do so with these as
-> the bset and pI.  I haven't attempted securebits and uid (since I didn't
-> really need them I don't think)  But will if anyone can think of a use
-> case.
-> 
-> Is this what you were thinking?
+On Fri, Feb 18, 2011 at 12:50 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Fri, 18 Feb 2011 00:08:19 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> Recently, there are reported problem about thrashing.
+>> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+>> It happens by backup workloads(ex, nightly rsync).
+>> That's because the workload makes just use-once pages
+>> and touches pages twice. It promotes the page into
+>> active list so that it results in working set page eviction.
+>>
+>> Some app developer want to support POSIX_FADV_NOREUSE.
+>> But other OSes don't support it, either.
+>> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
+>>
+>> By other approach, app developers use POSIX_FADV_DONTNEED.
+>> But it has a problem. If kernel meets page is writing
+>> during invalidate_mapping_pages, it can't work.
+>> It makes for application programmer to use it since they always
+>> have to sync data before calling fadivse(..POSIX_FADV_DONTNEED) to
+>> make sure the pages could be discardable. At last, they can't use
+>> deferred write of kernel so that they could see performance loss.
+>> (http://insights.oetiker.ch/linux/fadvise.html)
+>>
+>> In fact, invalidation is very big hint to reclaimer.
+>> It means we don't use the page any more. So let's move
+>> the writing page into inactive list's head if we can't truncate
+>> it right now.
+>>
+>> Why I move page to head of lru on this patch, Dirty/Writeback page
+>> would be flushed sooner or later. It can prevent writeout of pageout
+>> which is less effective than flusher's writeout.
+>>
+>> Originally, I reused lru_demote of Peter with some change so added
+>> his Signed-off-by.
+>>
+>> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>> Acked-by: Rik van Riel <riel@redhat.com>
+>> Acked-by: Mel Gorman <mel@csn.ul.ie>
+>> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Wu Fengguang <fengguang.wu@intel.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nick Piggin <npiggin@kernel.dk>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>
+>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> One question is ....it seems there is no flush() code for percpu pagevec
+> in this patch. Is it safe against cpu hot plug ?
+>
+> And from memory hot unplug point of view, I'm grad if pagevec for this
+> is flushed at the same time as when we clear other per-cpu lru pagevecs.
+> (And compaction will be affected by the page_count() magic by pagevec
+>  which is flushed only when FADVISE is called.)
+>
+> Could you add add-on patches for flushing and hooks ?
 
-Sorry about the wait.
+Isn't it enough in my patch? If I miss your point, Could you elaborate please?
 
-No objection from me.
+ * Drain pages out of the cpu's pagevecs.
+ * Either "cpu" is the current CPU, and preemption has already been
+ * disabled; or "cpu" is being hot-unplugged, and is already dead.
+@@ -372,6 +427,29 @@ static void drain_cpu_pagevecs(int cpu)
+               pagevec_move_tail(pvec);
+               local_irq_restore(flags);
+       }
++
++       pvec = &per_cpu(lru_deactivate_pvecs, cpu);
++       if (pagevec_count(pvec))
++               ____pagevec_lru_deactivate(pvec);
++}
 
-If someone ends up wanting to do more generic security context tweaking
-we can worry about that later.
 
-thanks,
--serge
+>
+> Thanks,
+> -Kame
+>
+>
+>
+>> ---
+>> Changelog since v4:
+>>  - Change function comments - suggested by Johannes
+>>  - Change function name - suggested by Johannes
+>>  - Drop only dirty/writeback pages to deactive pagevec - suggested by Johannes
+>>  - Add acked-by
+>>
+>> Changelog since v3:
+>>  - Change function comments - suggested by Johannes
+>>  - Change function name - suggested by Johannes
+>>  - add only dirty/writeback pages to deactive pagevec
+>>
+>> Changelog since v2:
+>>  - mapped page leaves alone - suggested by Mel
+>>  - pass part related PG_reclaim in next patch.
+>>
+>> Changelog since v1:
+>>  - modify description
+>>  - correct typo
+>>  - add some comment
+>>
+>>  include/linux/swap.h |    1 +
+>>  mm/swap.c            |   78 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  mm/truncate.c        |   17 ++++++++---
+>>  3 files changed, 91 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/include/linux/swap.h b/include/linux/swap.h
+>> index 4d55932..c335055 100644
+>> --- a/include/linux/swap.h
+>> +++ b/include/linux/swap.h
+>> @@ -215,6 +215,7 @@ extern void mark_page_accessed(struct page *);
+>>  extern void lru_add_drain(void);
+>>  extern int lru_add_drain_all(void);
+>>  extern void rotate_reclaimable_page(struct page *page);
+>> +extern void deactivate_page(struct page *page);
+>>  extern void swap_setup(void);
+>>
+>>  extern void add_page_to_unevictable_list(struct page *page);
+>> diff --git a/mm/swap.c b/mm/swap.c
+>> index c02f936..4aea806 100644
+>> --- a/mm/swap.c
+>> +++ b/mm/swap.c
+>> @@ -39,6 +39,7 @@ int page_cluster;
+>>
+>>  static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
+>>  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
+>> +static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
+>>
+>>  /*
+>>   * This path almost never happens for VM activity - pages are normally
+>> @@ -347,6 +348,60 @@ void add_page_to_unevictable_list(struct page *page)
+>>  }
+>>
+>>  /*
+>> + * If the page can not be invalidated, it is moved to the
+>> + * inactive list to speed up its reclaim.  It is moved to the
+>> + * head of the list, rather than the tail, to give the flusher
+>> + * threads some time to write it out, as this is much more
+>> + * effective than the single-page writeout from reclaim.
+>> + */
+>> +static void lru_deactivate(struct page *page, struct zone *zone)
+>> +{
+>> +     int lru, file;
+>> +
+>> +     if (!PageLRU(page) || !PageActive(page))
+>> +             return;
+>> +
+>> +     /* Some processes are using the page */
+>> +     if (page_mapped(page))
+>> +             return;
+>> +
+>> +     file = page_is_file_cache(page);
+>> +     lru = page_lru_base_type(page);
+>> +     del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
+>> +     ClearPageActive(page);
+>> +     ClearPageReferenced(page);
+>> +     add_page_to_lru_list(zone, page, lru);
+>> +     __count_vm_event(PGDEACTIVATE);
+>> +
+>> +     update_page_reclaim_stat(zone, page, file, 0);
+>> +}
+>> +
+>> +static void ____pagevec_lru_deactivate(struct pagevec *pvec)
+>> +{
+>> +     int i;
+>> +     struct zone *zone = NULL;
+>> +
+>> +     for (i = 0; i < pagevec_count(pvec); i++) {
+>> +             struct page *page = pvec->pages[i];
+>> +             struct zone *pagezone = page_zone(page);
+>> +
+>> +             if (pagezone != zone) {
+>> +                     if (zone)
+>> +                             spin_unlock_irq(&zone->lru_lock);
+>> +                     zone = pagezone;
+>> +                     spin_lock_irq(&zone->lru_lock);
+>> +             }
+>> +             lru_deactivate(page, zone);
+>> +     }
+>> +     if (zone)
+>> +             spin_unlock_irq(&zone->lru_lock);
+>> +
+>> +     release_pages(pvec->pages, pvec->nr, pvec->cold);
+>> +     pagevec_reinit(pvec);
+>> +}
+>> +
+>> +
+>> +/*
+>>   * Drain pages out of the cpu's pagevecs.
+>>   * Either "cpu" is the current CPU, and preemption has already been
+>>   * disabled; or "cpu" is being hot-unplugged, and is already dead.
+>> @@ -372,6 +427,29 @@ static void drain_cpu_pagevecs(int cpu)
+>>               pagevec_move_tail(pvec);
+>>               local_irq_restore(flags);
+>>       }
+>> +
+>> +     pvec = &per_cpu(lru_deactivate_pvecs, cpu);
+>> +     if (pagevec_count(pvec))
+>> +             ____pagevec_lru_deactivate(pvec);
+>> +}
+>> +
+>> +/**
+>> + * deactivate_page - forcefully deactivate a page
+>> + * @page: page to deactivate
+>> + *
+>> + * This function hints the VM that @page is a good reclaim candidate,
+>> + * for example if its invalidation fails due to the page being dirty
+>> + * or under writeback.
+>> + */
+>> +void deactivate_page(struct page *page)
+>> +{
+>> +     if (likely(get_page_unless_zero(page))) {
+>> +             struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
+>> +
+>> +             if (!pagevec_add(pvec, page))
+>> +                     ____pagevec_lru_deactivate(pvec);
+>> +             put_cpu_var(lru_deactivate_pvecs);
+>> +     }
+>>  }
+>>
+>>  void lru_add_drain(void)
+>> diff --git a/mm/truncate.c b/mm/truncate.c
+>> index 4d415b3..9ec7bc5 100644
+>> --- a/mm/truncate.c
+>> +++ b/mm/truncate.c
+>> @@ -328,11 +328,12 @@ EXPORT_SYMBOL(truncate_inode_pages);
+>>   * pagetables.
+>>   */
+>>  unsigned long invalidate_mapping_pages(struct address_space *mapping,
+>> -                                    pgoff_t start, pgoff_t end)
+>> +             pgoff_t start, pgoff_t end)
+>>  {
+>>       struct pagevec pvec;
+>>       pgoff_t next = start;
+>> -     unsigned long ret = 0;
+>> +     unsigned long ret;
+>> +     unsigned long count = 0;
+>>       int i;
+>>
+>>       pagevec_init(&pvec, 0);
+>> @@ -359,8 +360,14 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+>>                       if (lock_failed)
+>>                               continue;
+>>
+>> -                     ret += invalidate_inode_page(page);
+>> -
+>> +                     ret = invalidate_inode_page(page);
+>> +                     /*
+>> +                      * Invalidation is a hint that the page is no longer
+>> +                      * of interest and try to speed up its reclaim.
+>> +                      */
+>> +                     if (!ret)
+>> +                             deactivate_page(page);
+>> +                     count += ret;
+>>                       unlock_page(page);
+>>                       if (next > end)
+>>                               break;
+>> @@ -369,7 +376,7 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
+>>               mem_cgroup_uncharge_end();
+>>               cond_resched();
+>>       }
+>> -     return ret;
+>> +     return count;
+>>  }
+>>  EXPORT_SYMBOL(invalidate_mapping_pages);
+>>
+>> --
+>> 1.7.1
+>>
+>>
+>
+>
 
-> -Eric
-> 
-> commit 23dbb6813349509a463103a34b51b18182c2ca0f
-> Author: Eric Paris <eparis@redhat.com>
-> Date:   Mon Feb 7 21:39:58 2011 -0500
-> 
->     limit kthreads usermode helper words stuff
-> 
-> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-> index 6efd7a7..79bb98d 100644
-> --- a/include/linux/kmod.h
-> +++ b/include/linux/kmod.h
-> @@ -24,6 +24,7 @@
->  #include <linux/errno.h>
->  #include <linux/compiler.h>
->  #include <linux/workqueue.h>
-> +#include <linux/sysctl.h>
->  
->  #define KMOD_PATH_LEN 256
->  
-> @@ -109,6 +110,8 @@ call_usermodehelper(char *path, char **argv, char **envp, enum umh_wait wait)
->  				       NULL, NULL, NULL);
->  }
->  
-> +extern struct ctl_table usermodehelper_table[];
-> +
->  extern void usermodehelper_init(void);
->  
->  extern int usermodehelper_disable(void);
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 9cd0591..d38be14 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -25,6 +25,7 @@
->  #include <linux/kmod.h>
->  #include <linux/slab.h>
->  #include <linux/completion.h>
-> +#include <linux/cred.h>
->  #include <linux/file.h>
->  #include <linux/fdtable.h>
->  #include <linux/workqueue.h>
-> @@ -43,6 +44,12 @@ extern int max_threads;
->  
->  static struct workqueue_struct *khelper_wq;
->  
-> +#define CAP_BSET	(void *)1
-> +#define CAP_PI		(void *)2
-> +
-> +kernel_cap_t usermodehelper_bset = CAP_FULL_SET;
-> +kernel_cap_t usermodehelper_inheritable = CAP_FULL_SET;
-> +
->  #ifdef CONFIG_MODULES
->  
->  /*
-> @@ -132,6 +139,8 @@ EXPORT_SYMBOL(__request_module);
->  static int ____call_usermodehelper(void *data)
->  {
->  	struct subprocess_info *sub_info = data;
-> +	const struct cred *old;
-> +	struct cred *new;
->  	int retval;
->  
->  	spin_lock_irq(&current->sighand->siglock);
-> @@ -153,10 +162,23 @@ static int ____call_usermodehelper(void *data)
->  			goto fail;
->  	}
->  
-> +	retval = -ENOMEM;
-> +	new = prepare_kernel_cred(current);
-> +	if (!new)
-> +		goto fail;
-> +
-> +	new->cap_bset = usermodehelper_bset;
-> +	new->cap_inheritable = usermodehelper_inheritable; 
-> +
-> +	old = get_cred(current_cred());
-> +	commit_creds(new);
-> +
->  	retval = kernel_execve(sub_info->path,
->  			       (const char *const *)sub_info->argv,
->  			       (const char *const *)sub_info->envp);
->  
-> +	commit_creds(old);
-> +
->  	/* Exec failed? */
->  fail:
->  	sub_info->retval = retval;
-> @@ -418,6 +440,79 @@ unlock:
->  }
->  EXPORT_SYMBOL(call_usermodehelper_exec);
->  
-> +static int proc_cap_handler(struct ctl_table *table, int write,
-> +			 void __user *buffer, size_t *lenp, loff_t *ppos)
-> +{
-> +	struct ctl_table t;
-> +	unsigned long cap_array[_KERNEL_CAPABILITY_U32S];
-> +	kernel_cap_t new_cap;
-> +	int err, i;
-> +
-> +	if (write && !capable(CAP_SYS_MODULE))
-> +		return -EPERM;
-> +
-> +	/*
-> +	 * convert from the global kernel_cap_t to the ulong array to print to
-> +	 * userspace if this is a read.
-> +	 */
-> +	for (i = 0; i < _KERNEL_CAPABILITY_U32S; i++)  {
-> +		if (table->data == CAP_BSET)
-> +			cap_array[i] = usermodehelper_bset.cap[i];
-> +		else if (table->data == CAP_PI)
-> +			cap_array[i] = usermodehelper_inheritable.cap[i];
-> +		else
-> +			BUG();
-> +	}
-> +
-> +	t = *table;
-> +	t.data = &cap_array;
-> +
-> +	/*
-> +	 * actually read or write and array of ulongs from userspace.  Remember
-> +	 * these are least significant 32 bits first
-> +	 */
-> +	err = proc_doulongvec_minmax(&t, write, buffer, lenp, ppos);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	/*
-> +	 * convert from the sysctl array of ulongs to the kernel_cap_t
-> +	 * internal representation
-> +	 */
-> +	for (i = 0; i < _KERNEL_CAPABILITY_U32S; i++)
-> +		new_cap.cap[i] = cap_array[i];
-> +
-> +	/*
-> +	 * Drop everything not in the new_cap (but don't add things)
-> +	 */
-> +	if (write) {
-> +		if (table->data == CAP_BSET)
-> +			usermodehelper_bset = cap_intersect(usermodehelper_bset, new_cap);
-> +		if (table->data == CAP_PI)
-> +			usermodehelper_inheritable = cap_intersect(usermodehelper_inheritable, new_cap);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +struct ctl_table usermodehelper_table[] = {
-> +	{
-> +		.procname	= "bset",
-> +		.data		= CAP_BSET,
-> +		.maxlen		= _KERNEL_CAPABILITY_U32S * sizeof(unsigned long),
-> +		.mode		= 0600,
-> +		.proc_handler	= proc_cap_handler,
-> +	},
-> +	{
-> +		.procname	= "inheritable",
-> +		.data		= CAP_PI,
-> +		.maxlen		= _KERNEL_CAPABILITY_U32S * sizeof(unsigned long),
-> +		.mode		= 0600,
-> +		.proc_handler	= proc_cap_handler,
-> +	},
-> +	{ }
-> +};
-> +
->  void __init usermodehelper_init(void)
->  {
->  	khelper_wq = create_singlethread_workqueue("khelper");
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 0f1bd83..099d2e2 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -56,6 +56,7 @@
->  #include <linux/kprobes.h>
->  #include <linux/pipe_fs_i.h>
->  #include <linux/oom.h>
-> +#include <linux/kmod.h>
->  
->  #include <asm/uaccess.h>
->  #include <asm/processor.h>
-> @@ -617,6 +618,11 @@ static struct ctl_table kern_table[] = {
->  		.child		= random_table,
->  	},
->  	{
-> +		.procname	= "usermodehelper",
-> +		.mode		= 0555,
-> +		.child		= usermodehelper_table,
-> +	},
-> +	{
->  		.procname	= "overflowuid",
->  		.data		= &overflowuid,
->  		.maxlen		= sizeof(int),
-> 
-> 
+
+
+-- 
+Kind regards,
+Minchan Kim
