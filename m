@@ -1,289 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab1BRKje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 05:39:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54084 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086Ab1BRKj2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 05:39:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cg5pux4OOSn3j1JB63FUPA2Hmw/YmPn8bLJbslhyhX+PYwyuD4jjHHnqmHkO92pwRm
-         pVGOW3IMc17hZRIgOkw/cNX+Om3sG/cnLMIMeZOnjh2LTqp0Z3ruAE+/VWCASiIUrGBf
-         Xfs83qetmvm4jm6E47+Gj4MqjEDiKBPr2P16U=
+	id S1757264Ab1BRKkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 05:40:04 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50694 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756885Ab1BRKkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 05:40:02 -0500
+Date: Fri, 18 Feb 2011 10:39:37 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <4D5D512902000078000326EE@vpn.id2.novell.com>
+References: <4D5D512902000078000326EE@vpn.id2.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86: Don't call dump_stack() from arch_trigger_all_cpu_backtrace_handler()
+Message-ID: <tip-bb3e6251a69e67d7620373ee18e35b404964273e@git.kernel.org>
+Git-Commit-ID: bb3e6251a69e67d7620373ee18e35b404964273e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110218062901.GB2648@balbir.in.ibm.com>
-References: <cover.1297940291.git.minchan.kim@gmail.com>
-	<5677f3262774f4ddc24044065b7cbd6443ac5e16.1297940291.git.minchan.kim@gmail.com>
-	<20110218062901.GB2648@balbir.in.ibm.com>
-Date: Fri, 18 Feb 2011 19:39:27 +0900
-Message-ID: <AANLkTi=Pko=HKkhT7cPxxc+d7weiFi0ur66q-W-LiA+d@mail.gmail.com>
-Subject: Re: [PATCH v5 1/4] deactivate invalidated pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: balbir@linux.vnet.ibm.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Feb 2011 10:39:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbir,
+Commit-ID:  bb3e6251a69e67d7620373ee18e35b404964273e
+Gitweb:     http://git.kernel.org/tip/bb3e6251a69e67d7620373ee18e35b404964273e
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Thu, 17 Feb 2011 15:47:37 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 18 Feb 2011 08:52:29 +0100
 
-On Fri, Feb 18, 2011 at 3:29 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> * MinChan Kim <minchan.kim@gmail.com> [2011-02-18 00:08:19]:
->
->> Recently, there are reported problem about thrashing.
->> (http://marc.info/?l=rsync&m=128885034930933&w=2)
->> It happens by backup workloads(ex, nightly rsync).
->> That's because the workload makes just use-once pages
->> and touches pages twice. It promotes the page into
->> active list so that it results in working set page eviction.
->>
->> Some app developer want to support POSIX_FADV_NOREUSE.
->> But other OSes don't support it, either.
->> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
->>
->> By other approach, app developers use POSIX_FADV_DONTNEED.
->> But it has a problem. If kernel meets page is writing
->> during invalidate_mapping_pages, it can't work.
->> It makes for application programmer to use it since they always
->> have to sync data before calling fadivse(..POSIX_FADV_DONTNEED) to
->> make sure the pages could be discardable. At last, they can't use
->> deferred write of kernel so that they could see performance loss.
->> (http://insights.oetiker.ch/linux/fadvise.html)
->>
->> In fact, invalidation is very big hint to reclaimer.
->> It means we don't use the page any more. So let's move
->> the writing page into inactive list's head if we can't truncate
->> it right now.
->>
->> Why I move page to head of lru on this patch, Dirty/Writeback page
->> would be flushed sooner or later. It can prevent writeout of pageout
->> which is less effective than flusher's writeout.
->>
->> Originally, I reused lru_demote of Peter with some change so added
->> his Signed-off-by.
->>
->> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
->> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->> Acked-by: Rik van Riel <riel@redhat.com>
->> Acked-by: Mel Gorman <mel@csn.ul.ie>
->> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Cc: Wu Fengguang <fengguang.wu@intel.com>
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Nick Piggin <npiggin@kernel.dk>
->> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
->> ---
->> Changelog since v4:
->>  - Change function comments - suggested by Johannes
->>  - Change function name - suggested by Johannes
->>  - Drop only dirty/writeback pages to deactive pagevec - suggested by Johannes
->>  - Add acked-by
->>
->> Changelog since v3:
->>  - Change function comments - suggested by Johannes
->>  - Change function name - suggested by Johannes
->>  - add only dirty/writeback pages to deactive pagevec
->>
->> Changelog since v2:
->>  - mapped page leaves alone - suggested by Mel
->>  - pass part related PG_reclaim in next patch.
->>
->> Changelog since v1:
->>  - modify description
->>  - correct typo
->>  - add some comment
->>
->>  include/linux/swap.h |    1 +
->>  mm/swap.c            |   78 ++++++++++++++++++++++++++++++++++++++++++++++++++
->>  mm/truncate.c        |   17 ++++++++---
->>  3 files changed, 91 insertions(+), 5 deletions(-)
->>
->> diff --git a/include/linux/swap.h b/include/linux/swap.h
->> index 4d55932..c335055 100644
->> --- a/include/linux/swap.h
->> +++ b/include/linux/swap.h
->> @@ -215,6 +215,7 @@ extern void mark_page_accessed(struct page *);
->>  extern void lru_add_drain(void);
->>  extern int lru_add_drain_all(void);
->>  extern void rotate_reclaimable_page(struct page *page);
->> +extern void deactivate_page(struct page *page);
->>  extern void swap_setup(void);
->>
->>  extern void add_page_to_unevictable_list(struct page *page);
->> diff --git a/mm/swap.c b/mm/swap.c
->> index c02f936..4aea806 100644
->> --- a/mm/swap.c
->> +++ b/mm/swap.c
->> @@ -39,6 +39,7 @@ int page_cluster;
->>
->>  static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
->>  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
->> +static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
->>
->>  /*
->>   * This path almost never happens for VM activity - pages are normally
->> @@ -347,6 +348,60 @@ void add_page_to_unevictable_list(struct page *page)
->>  }
->>
->>  /*
->> + * If the page can not be invalidated, it is moved to the
->> + * inactive list to speed up its reclaim.  It is moved to the
->> + * head of the list, rather than the tail, to give the flusher
->> + * threads some time to write it out, as this is much more
->> + * effective than the single-page writeout from reclaim.
->> + */
->> +static void lru_deactivate(struct page *page, struct zone *zone)
->> +{
->> +     int lru, file;
->> +
->> +     if (!PageLRU(page) || !PageActive(page))
->> +             return;
->> +
->> +     /* Some processes are using the page */
->> +     if (page_mapped(page))
->> +             return;
->> +
->> +     file = page_is_file_cache(page);
->> +     lru = page_lru_base_type(page);
->> +     del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
->> +     ClearPageActive(page);
->> +     ClearPageReferenced(page);
->> +     add_page_to_lru_list(zone, page, lru);
->> +     __count_vm_event(PGDEACTIVATE);
->> +
->> +     update_page_reclaim_stat(zone, page, file, 0);
->> +}
->> +
->> +static void ____pagevec_lru_deactivate(struct pagevec *pvec)
->> +{
->> +     int i;
->> +     struct zone *zone = NULL;
->> +
->> +     for (i = 0; i < pagevec_count(pvec); i++) {
->> +             struct page *page = pvec->pages[i];
->> +             struct zone *pagezone = page_zone(page);
->> +
->> +             if (pagezone != zone) {
->> +                     if (zone)
->> +                             spin_unlock_irq(&zone->lru_lock);
->> +                     zone = pagezone;
->> +                     spin_lock_irq(&zone->lru_lock);
->> +             }
->
-> The optimization to avoid taking locks if the zone does not change is
-> quite subtle
+x86: Don't call dump_stack() from arch_trigger_all_cpu_backtrace_handler()
 
-I just used it without big considering as it's a normal technique of
-page array handling we have been used. So I want to keep it if it
-doesn't make big overhead.
+show_regs() already prints two(!) stack traces, no need for a third one.
 
->
->> +             lru_deactivate(page, zone);
->> +     }
->> +     if (zone)
->> +             spin_unlock_irq(&zone->lru_lock);
->> +
->> +     release_pages(pvec->pages, pvec->nr, pvec->cold);
->> +     pagevec_reinit(pvec);
->> +}
->> +
->> +
->> +/*
->>   * Drain pages out of the cpu's pagevecs.
->>   * Either "cpu" is the current CPU, and preemption has already been
->>   * disabled; or "cpu" is being hot-unplugged, and is already dead.
->> @@ -372,6 +427,29 @@ static void drain_cpu_pagevecs(int cpu)
->>               pagevec_move_tail(pvec);
->>               local_irq_restore(flags);
->>       }
->> +
->> +     pvec = &per_cpu(lru_deactivate_pvecs, cpu);
->> +     if (pagevec_count(pvec))
->> +             ____pagevec_lru_deactivate(pvec);
->> +}
->> +
->> +/**
->> + * deactivate_page - forcefully deactivate a page
->> + * @page: page to deactivate
->> + *
->> + * This function hints the VM that @page is a good reclaim candidate,
->> + * for example if its invalidation fails due to the page being dirty
->> + * or under writeback.
->> + */
->> +void deactivate_page(struct page *page)
->> +{
->> +     if (likely(get_page_unless_zero(page))) {
->> +             struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
->> +
->> +             if (!pagevec_add(pvec, page))
->> +                     ____pagevec_lru_deactivate(pvec);
->> +             put_cpu_var(lru_deactivate_pvecs);
->> +     }
->>  }
->>
->>  void lru_add_drain(void)
->> diff --git a/mm/truncate.c b/mm/truncate.c
->> index 4d415b3..9ec7bc5 100644
->> --- a/mm/truncate.c
->> +++ b/mm/truncate.c
->> @@ -328,11 +328,12 @@ EXPORT_SYMBOL(truncate_inode_pages);
->>   * pagetables.
->>   */
->>  unsigned long invalidate_mapping_pages(struct address_space *mapping,
->> -                                    pgoff_t start, pgoff_t end)
->> +             pgoff_t start, pgoff_t end)
->>  {
->>       struct pagevec pvec;
->>       pgoff_t next = start;
->> -     unsigned long ret = 0;
->> +     unsigned long ret;
->> +     unsigned long count = 0;
->>       int i;
->>
->>       pagevec_init(&pvec, 0);
->> @@ -359,8 +360,14 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->>                       if (lock_failed)
->>                               continue;
->>
->> -                     ret += invalidate_inode_page(page);
->> -
->> +                     ret = invalidate_inode_page(page);
->> +                     /*
->> +                      * Invalidation is a hint that the page is no longer
->> +                      * of interest and try to speed up its reclaim.
->> +                      */
->> +                     if (!ret)
->> +                             deactivate_page(page);
->
-> Do we need to do this under page_lock? Is there scope for us to reuse
-> rotate_reclaimable_page() logic?
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4D5D512902000078000326EE@vpn.id2.novell.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/apic/hw_nmi.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Good point.
-I think we don't need page_lock. will fix.
-About rotate_reclaimable_page, it has little bit similar logic but
-several page flags test and irq disable are different so it would
-result in ugly shape as far as I think.
-
-I hope if you have a good idea, please, do refactoring after merging.
-
-Thanks for the review, Balbir.
-
--- 
-Kind regards,
-Minchan Kim
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index 79fd43c..c4e557a 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -83,7 +83,6 @@ arch_trigger_all_cpu_backtrace_handler(struct notifier_block *self,
+ 		arch_spin_lock(&lock);
+ 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
+ 		show_regs(regs);
+-		dump_stack();
+ 		arch_spin_unlock(&lock);
+ 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+ 		return NOTIFY_STOP;
