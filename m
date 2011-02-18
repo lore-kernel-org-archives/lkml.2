@@ -1,397 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab1BRFVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 00:21:00 -0500
-Received: from hera.kernel.org ([140.211.167.34]:55514 "EHLO hera.kernel.org"
+	id S1752379Ab1BRFjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 00:39:17 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:43794 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114Ab1BRFUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 00:20:45 -0500
-Date: Fri, 18 Feb 2011 05:20:19 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        castet.matthieu@free.fr, sfr@canb.auug.org.au, tglx@linutronix.de,
-        rjw@sisk.pl, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        castet.matthieu@free.fr, sfr@canb.auug.org.au, tglx@linutronix.de,
-        rjw@sisk.pl, hpa@linux.intel.com
-In-Reply-To: <4D5DFBE4.7090104@intel.com>
-References: <4D5DFBE4.7090104@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/trampoline] x86, reboot: Move the real-mode reboot code to an assembly file
-Message-ID: <tip-3d35ac346e981162eeba391e496faceed4753e7b@git.kernel.org>
-Git-Commit-ID: 3d35ac346e981162eeba391e496faceed4753e7b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Feb 2011 05:20:20 +0000 (UTC)
+	id S1751343Ab1BRFjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 00:39:14 -0500
+Date: Fri, 18 Feb 2011 16:39:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for February 18
+Message-Id: <20110218163906.8f8ca020.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3d35ac346e981162eeba391e496faceed4753e7b
-Gitweb:     http://git.kernel.org/tip/3d35ac346e981162eeba391e496faceed4753e7b
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Mon, 14 Feb 2011 18:36:03 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 17 Feb 2011 21:05:34 -0800
+--Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-x86, reboot: Move the real-mode reboot code to an assembly file
+Hi all,
 
-Move the real-mode reboot code out to an assembly file (reboot_32.S)
-which is allocated using the common lowmem trampoline allocator.
+Changes since 20110217:
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <4D5DFBE4.7090104@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Matthieu Castet <castet.matthieu@free.fr>
----
- arch/x86/include/asm/reboot.h |    5 +-
- arch/x86/kernel/Makefile      |    1 +
- arch/x86/kernel/apm_32.c      |   12 +----
- arch/x86/kernel/reboot.c      |  120 ++++++++-----------------------------
- arch/x86/kernel/reboot_32.S   |  131 +++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 162 insertions(+), 107 deletions(-)
+Dropped tree: xen
 
-diff --git a/arch/x86/include/asm/reboot.h b/arch/x86/include/asm/reboot.h
-index 562d4fd..3250e3d 100644
---- a/arch/x86/include/asm/reboot.h
-+++ b/arch/x86/include/asm/reboot.h
-@@ -18,7 +18,10 @@ extern struct machine_ops machine_ops;
- 
- void native_machine_crash_shutdown(struct pt_regs *regs);
- void native_machine_shutdown(void);
--void machine_real_restart(const unsigned char *code, int length);
-+void machine_real_restart(unsigned int type);
-+/* These must match dispatch_table in reboot_32.S */
-+#define MRR_BIOS	0
-+#define MRR_APM		1
- 
- typedef void (*nmi_shootdown_cb)(int, struct die_args*);
- void nmi_shootdown_cpus(nmi_shootdown_cb callback);
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 2e8ce0d..778c5b93 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -59,6 +59,7 @@ obj-$(CONFIG_STACKTRACE)	+= stacktrace.o
- obj-y				+= cpu/
- obj-y				+= acpi/
- obj-y				+= reboot.o
-+obj-$(CONFIG_X86_32)		+= reboot_32.o
- obj-$(CONFIG_MCA)		+= mca_32.o
- obj-$(CONFIG_X86_MSR)		+= msr.o
- obj-$(CONFIG_X86_CPUID)		+= cpuid.o
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index 0e4f24c..b929108 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -975,20 +975,10 @@ recalc:
- 
- static void apm_power_off(void)
- {
--	unsigned char po_bios_call[] = {
--		0xb8, 0x00, 0x10,	/* movw  $0x1000,ax  */
--		0x8e, 0xd0,		/* movw  ax,ss       */
--		0xbc, 0x00, 0xf0,	/* movw  $0xf000,sp  */
--		0xb8, 0x07, 0x53,	/* movw  $0x5307,ax  */
--		0xbb, 0x01, 0x00,	/* movw  $0x0001,bx  */
--		0xb9, 0x03, 0x00,	/* movw  $0x0003,cx  */
--		0xcd, 0x15		/* int   $0x15       */
--	};
--
- 	/* Some bioses don't like being called from CPU != 0 */
- 	if (apm_info.realmode_power_off) {
- 		set_cpus_allowed_ptr(current, cpumask_of(0));
--		machine_real_restart(po_bios_call, sizeof(po_bios_call));
-+		machine_real_restart(MRR_APM);
- 	} else {
- 		(void)set_system_power_state(APM_STATE_OFF);
- 	}
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index fc7aae1..10c6619 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -295,68 +295,16 @@ static int __init reboot_init(void)
- }
- core_initcall(reboot_init);
- 
--/* The following code and data reboots the machine by switching to real
--   mode and jumping to the BIOS reset entry point, as if the CPU has
--   really been reset.  The previous version asked the keyboard
--   controller to pulse the CPU reset line, which is more thorough, but
--   doesn't work with at least one type of 486 motherboard.  It is easy
--   to stop this code working; hence the copious comments. */
--static const unsigned long long
--real_mode_gdt_entries [3] =
--{
--	0x0000000000000000ULL,	/* Null descriptor */
--	0x00009b000000ffffULL,	/* 16-bit real-mode 64k code at 0x00000000 */
--	0x000093000100ffffULL	/* 16-bit real-mode 64k data at 0x00000100 */
--};
-+extern const unsigned char machine_real_restart_asm[];
-+extern const u64 machine_real_restart_gdt[3];
- 
--static const struct desc_ptr
--real_mode_gdt = { sizeof (real_mode_gdt_entries) - 1, (long)real_mode_gdt_entries },
--real_mode_idt = { 0x3ff, 0 };
--
--/* This is 16-bit protected mode code to disable paging and the cache,
--   switch to real mode and jump to the BIOS reset code.
--
--   The instruction that switches to real mode by writing to CR0 must be
--   followed immediately by a far jump instruction, which set CS to a
--   valid value for real mode, and flushes the prefetch queue to avoid
--   running instructions that have already been decoded in protected
--   mode.
--
--   Clears all the flags except ET, especially PG (paging), PE
--   (protected-mode enable) and TS (task switch for coprocessor state
--   save).  Flushes the TLB after paging has been disabled.  Sets CD and
--   NW, to disable the cache on a 486, and invalidates the cache.  This
--   is more like the state of a 486 after reset.  I don't know if
--   something else should be done for other chips.
--
--   More could be done here to set up the registers as if a CPU reset had
--   occurred; hopefully real BIOSs don't assume much. */
--static const unsigned char real_mode_switch [] =
--{
--	0x66, 0x0f, 0x20, 0xc0,			/*    movl  %cr0,%eax        */
--	0x66, 0x83, 0xe0, 0x11,			/*    andl  $0x00000011,%eax */
--	0x66, 0x0d, 0x00, 0x00, 0x00, 0x60,	/*    orl   $0x60000000,%eax */
--	0x66, 0x0f, 0x22, 0xc0,			/*    movl  %eax,%cr0        */
--	0x66, 0x0f, 0x22, 0xd8,			/*    movl  %eax,%cr3        */
--	0x66, 0x0f, 0x20, 0xc3,			/*    movl  %cr0,%ebx        */
--	0x66, 0x81, 0xe3, 0x00, 0x00, 0x00, 0x60,	/*    andl  $0x60000000,%ebx */
--	0x74, 0x02,				/*    jz    f                */
--	0x0f, 0x09,				/*    wbinvd                 */
--	0x24, 0x10,				/* f: andb  $0x10,al         */
--	0x66, 0x0f, 0x22, 0xc0			/*    movl  %eax,%cr0        */
--};
--static const unsigned char jump_to_bios [] =
-+void machine_real_restart(unsigned int type)
- {
--	0xea, 0x00, 0x00, 0xff, 0xff		/*    ljmp  $0xffff,$0x0000  */
--};
-+	void *restart_va;
-+	unsigned long restart_pa;
-+	void (*restart_lowmem)(unsigned int);
-+	u64 *lowmem_gdt;
- 
--/*
-- * Switch to real mode and then execute the code
-- * specified by the code and length parameters.
-- * We assume that length will aways be less that 100!
-- */
--void machine_real_restart(const unsigned char *code, int length)
--{
- 	local_irq_disable();
- 
- 	/* Write zero to CMOS register number 0x0f, which the BIOS POST
-@@ -384,41 +332,23 @@ void machine_real_restart(const unsigned char *code, int length)
- 	   too. */
- 	*((unsigned short *)0x472) = reboot_mode;
- 
--	/* For the switch to real mode, copy some code to low memory.  It has
--	   to be in the first 64k because it is running in 16-bit mode, and it
--	   has to have the same physical and virtual address, because it turns
--	   off paging.  Copy it near the end of the first page, out of the way
--	   of BIOS variables. */
--	memcpy((void *)(0x1000 - sizeof(real_mode_switch) - 100),
--		real_mode_switch, sizeof (real_mode_switch));
--	memcpy((void *)(0x1000 - 100), code, length);
--
--	/* Set up the IDT for real mode. */
--	load_idt(&real_mode_idt);
--
--	/* Set up a GDT from which we can load segment descriptors for real
--	   mode.  The GDT is not used in real mode; it is just needed here to
--	   prepare the descriptors. */
--	load_gdt(&real_mode_gdt);
--
--	/* Load the data segment registers, and thus the descriptors ready for
--	   real mode.  The base address of each segment is 0x100, 16 times the
--	   selector value being loaded here.  This is so that the segment
--	   registers don't have to be reloaded after switching to real mode:
--	   the values are consistent for real mode operation already. */
--	__asm__ __volatile__ ("movl $0x0010,%%eax\n"
--				"\tmovl %%eax,%%ds\n"
--				"\tmovl %%eax,%%es\n"
--				"\tmovl %%eax,%%fs\n"
--				"\tmovl %%eax,%%gs\n"
--				"\tmovl %%eax,%%ss" : : : "eax");
--
--	/* Jump to the 16-bit code that we copied earlier.  It disables paging
--	   and the cache, switches to real mode, and jumps to the BIOS reset
--	   entry point. */
--	__asm__ __volatile__ ("ljmp $0x0008,%0"
--				:
--				: "i" ((void *)(0x1000 - sizeof (real_mode_switch) - 100)));
-+	/* Patch the GDT in the low memory trampoline */
-+	lowmem_gdt = TRAMPOLINE_SYM(machine_real_restart_gdt);
-+
-+	restart_va = TRAMPOLINE_SYM(machine_real_restart_asm);
-+	restart_pa = virt_to_phys(restart_va);
-+	restart_lowmem = (void (*)(unsigned int))restart_pa;
-+
-+	/* GDT[0]: GDT self-pointer */
-+	lowmem_gdt[0] =
-+		(u64)(sizeof(machine_real_restart_gdt) - 1) +
-+		((u64)virt_to_phys(lowmem_gdt) << 16);
-+	/* GDT[1]: 64K real mode code segment */
-+	lowmem_gdt[1] =
-+		GDT_ENTRY(0x009b, restart_pa, 0xffff);
-+
-+	/* Jump to the identity-mapped low memory code */
-+	restart_lowmem(type);
- }
- #ifdef CONFIG_APM_MODULE
- EXPORT_SYMBOL(machine_real_restart);
-@@ -573,7 +503,7 @@ static void native_machine_emergency_restart(void)
- 
- #ifdef CONFIG_X86_32
- 		case BOOT_BIOS:
--			machine_real_restart(jump_to_bios, sizeof(jump_to_bios));
-+			machine_real_restart(MRR_BIOS);
- 
- 			reboot_type = BOOT_KBD;
- 			break;
-diff --git a/arch/x86/kernel/reboot_32.S b/arch/x86/kernel/reboot_32.S
-new file mode 100644
-index 0000000..f242356
---- /dev/null
-+++ b/arch/x86/kernel/reboot_32.S
-@@ -0,0 +1,131 @@
-+#include <linux/linkage.h>
-+#include <linux/init.h>
-+#include <asm/segment.h>
-+#include <asm/page_types.h>
-+
-+/*
-+ * The following code and data reboots the machine by switching to real
-+ * mode and jumping to the BIOS reset entry point, as if the CPU has
-+ * really been reset.  The previous version asked the keyboard
-+ * controller to pulse the CPU reset line, which is more thorough, but
-+ * doesn't work with at least one type of 486 motherboard.  It is easy
-+ * to stop this code working; hence the copious comments.
-+ *
-+ * This code is called with the restart type (0 = BIOS, 1 = APM) in %eax.
-+ */
-+	.section ".x86_trampoline","a"
-+	.balign 16
-+	.code32
-+ENTRY(machine_real_restart_asm)
-+r_base = .
-+	/* Get our own relocated address */
-+	call	1f
-+1:	popl	%ebx
-+	subl	$1b, %ebx
-+
-+	/* Patch post-real-mode segment jump */
-+	movw	dispatch_table(%ebx,%ecx,2),%cx
-+	movw	%cx, 101f(%ebx)
-+	movw	%ax, 102f(%ebx)
-+
-+	/* Set up the IDT for real mode. */
-+	lidtl	machine_real_restart_idt(%ebx)
-+
-+	/*
-+	 * Set up a GDT from which we can load segment descriptors for real
-+	 * mode.  The GDT is not used in real mode; it is just needed here to
-+	 * prepare the descriptors.
-+	 */
-+	lgdtl	machine_real_restart_gdt(%ebx)
-+
-+	/*
-+	 * Load the data segment registers with 16-bit compatible values
-+	 */
-+	movl	$16, %ecx
-+	movl	%ecx, %ds
-+	movl	%ecx, %es
-+	movl	%ecx, %fs
-+	movl	%ecx, %gs
-+	movl	%ecx, %ss
-+	ljmpl	$8, $1f - r_base
-+
-+/*
-+ * This is 16-bit protected mode code to disable paging and the cache,
-+ * switch to real mode and jump to the BIOS reset code.
-+ *
-+ * The instruction that switches to real mode by writing to CR0 must be
-+ * followed immediately by a far jump instruction, which set CS to a
-+ * valid value for real mode, and flushes the prefetch queue to avoid
-+ * running instructions that have already been decoded in protected
-+ * mode.
-+ *
-+ * Clears all the flags except ET, especially PG (paging), PE
-+ * (protected-mode enable) and TS (task switch for coprocessor state
-+ * save).  Flushes the TLB after paging has been disabled.  Sets CD and
-+ * NW, to disable the cache on a 486, and invalidates the cache.  This
-+ * is more like the state of a 486 after reset.  I don't know if
-+ * something else should be done for other chips.
-+ *
-+ * More could be done here to set up the registers as if a CPU reset had
-+ * occurred; hopefully real BIOSs don't assume much.  This is not the
-+ * actual BIOS entry point, anyway (that is at 0xfffffff0).
-+ *
-+ * Most of this work is probably excessive, but it is what is tested.
-+ */
-+	.code16
-+1:
-+	xorl	%ecx, %ecx
-+	movl	%cr0, %eax
-+	andl	$0x00000011, %eax
-+	orl	$0x60000000, %eax
-+	movl	%eax, %cr0
-+	movl	%ecx, %cr3
-+	movl	%cr0, %edx
-+	andl	$0x60000000, %edx	/* If no cache bits -> no wbinvd */
-+	jz	2f
-+	wbinvd
-+2:
-+	andb	$0x10, %al
-+	movl	%eax, %cr0
-+	.byte	0xea			/* ljmpw */
-+101:	.word	0			/* Offset */
-+102:	.word	0			/* Segment */
-+
-+bios:
-+	ljmpw	$0xf000, $0xfff0
-+
-+apm:
-+	movw	$0x1000, %ax
-+	movw	%ax, %ss
-+	movw	$0xf000, %sp
-+	movw	$0x5307, %ax
-+	movw	$0x0001, %bx
-+	movw	$0x0003, %cx
-+	int	$0x15
-+
-+END(machine_real_restart_asm)
-+
-+	.balign 16
-+	/* These must match <asm/reboot.h */
-+dispatch_table:
-+	.word	bios - r_base
-+	.word	apm - r_base
-+END(dispatch_table)
-+
-+	.balign 16
-+machine_real_restart_idt:
-+	.word	0xffff		/* Length - real mode default value */
-+	.long	0		/* Base - real mode default value */
-+END(machine_real_restart_idt)
-+
-+	.balign 16
-+ENTRY(machine_real_restart_gdt)
-+	.quad	0		/* Self-pointer, filled in by PM code */
-+	.quad	0		/* 16-bit code segment, filled in by PM code */
-+	/*
-+	 * 16-bit data segment with the selector value 16 = 0x10 and
-+	 * base value 0x100; since this is consistent with real mode
-+	 * semantics we don't have to reload the segments once CR0.PE = 0.
-+	 */
-+	.quad	GDT_ENTRY(0x0093, 0x100, 0xffff)
-+END(machine_real_restart_gdt)
+My fixes tree contains:
+	fixdep: Do not record dependency on the source file itself
+
+The net tree gained a conflict against the net-current tree.
+
+The omap_dss2 tree gained conflicts against the omap tree.
+
+The workqueue tree lost its build failure but gained another for which I
+applied a patc.
+
+The usb tree lost a conflict.
+
+The powerpc allyesconfig build is still broken by some obscure bloating
+of the low memory code.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 188 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
+.h
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_ata.c
+CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_scsi_host.c
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+CONFLICT (content): Merge conflict in drivers/net/e1000e/netdev.c
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-am3517evm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_2420_d=
+ata.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_2430_d=
+ata.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/omap_hwmod_44xx_d=
+ata.c
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+CONFLICT (content): Merge conflict in drivers/spi/pxa2xx_spi_pci.c
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
+Merging edac-amd/for-next
+CONFLICT (content): Merge conflict in include/linux/pci_ids.h
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in arch/x86/kernel/vmlinux.lds.S
+Merging workqueues/for-next
+Applying: input: update for FREEZEABLE -> FREEZABLE change
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Applying: OLPC: fix for removal of run_wake_count
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/tty/serial/68328serial.c
+CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
+CONFLICT (content): Merge conflict in drivers/tty/serial/Makefile
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/zram/zram_drv.c
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (content): Merge conflict in drivers/scsi/pm8001/pm8001_sas.h
+CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
+nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
+ing/stradis/Kconfig left in tree.
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+$ git rm -f drivers/staging/stradis/Kconfig
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNXgX6AAoJEDMEi1NhKgbsreoH+wWpZXV2AW33LPHjGeABEKc6
+yGecJNQNOXcOKg0KdCOyEl01U+172gdkYoQq9YfQ8jJ51tOa81gwdEeYkQ9FUTsd
+D064G78L7gjWhJXv89Iy1nz3hKOg8LLLIYR3Aaue2bdahGQa+5TjBlDPcwj6kXwn
+CgY8ePYBJgFSSihP3mcHIuDnoV1QyN0FUHyFgL0GeKJ4scooJ8CSmYosqGSCusCJ
+OZerPTxo15/VDLFfBRgdx8AYFtfGHQJqFy1DvKgpH9zLwP0lQEJBI+v6Be1Pyyo+
++adCsOU2qwVdhGUPDlR72ibLbAUoIO0ZDvyvRCjCLqQNo7zG5UCVU+x5Q57cDIc=
+=hSov
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__18_Feb_2011_16_39_06_+1100_1hmZ4pMbzY3Vf6RO--
