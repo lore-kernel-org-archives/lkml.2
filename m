@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758505Ab1BRXnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 18:43:00 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56354 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab1BRXm6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 18:42:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=f/+V8rfLuIGYb5/0Nmb4F818gL4LZANrY2zJbRrc0BLIKZJmSCCPqYKjdst+Pp8SH1
-         m3937dY2RtwF84/8PmPTwZ2S+GXCCzOapNckTwoVhzHY+4ZQTUhBlR7Dli+0Jjei7Xn3
-         Mxhi4FuGQiYKo/xLsMt/1lFsTt25r6LXVb8yM=
+	id S1758583Ab1BRXpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 18:45:05 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:39225 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319Ab1BRXpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 18:45:02 -0500
+Message-ID: <4D5F0472.4000403@free.fr>
+Date: Sat, 19 Feb 2011 00:44:50 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1297896277.3011.5.camel@macbook.infradead.org>
-References: <20110216222820.487AE9D401C@zog.reactivated.net>
-	<1297896277.3011.5.camel@macbook.infradead.org>
-Date: Fri, 18 Feb 2011 23:42:57 +0000
-X-Google-Sender-Auth: Swkcp3hEvseX1N7n985XPxJ4rYs
-Message-ID: <AANLkTikAF2X1A5jfoNfCPRhZkZ7qPdZ57c8B5b9z4+qr@mail.gmail.com>
-Subject: Re: [PATCH v3] olpc_battery: convert to platform device
-From: Daniel Drake <dsd@laptop.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: cbou@mail.ru, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        dilinger@queued.net, dmitry.torokhov@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: xemul@parallels.com, containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>, dhowells@redhat.com,
+        LSM <linux-security-module@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 2/9] security: Make capabilities relative to the user
+ namespace.
+References: <20110217150224.GA26334@mail.hallyn.com> <20110217150306.GB26395@mail.hallyn.com>
+In-Reply-To: <20110217150306.GB26395@mail.hallyn.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 February 2011 22:44, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Wed, 2011-02-16 at 22:28 +0000, Daniel Drake wrote:
->>
->> +static int __init add_common_platform_devices(void)
->> +{
->> +       struct platform_device *pdev;
->> +
->> +       pdev = platform_device_register_simple("olpc-battery", -1, NULL, 0);
->> +       if (IS_ERR(pdev))
->> +               return PTR_ERR(pdev);
->> +
->> +       return 0;
->> +}
->> +
+On 02/17/2011 04:03 PM, Serge E. Hallyn wrote:
+> - Introduce ns_capable to test for a capability in a non-default
+>    user namespace.
+> - Teach cap_capable to handle capabilities in a non-default
+>    user namespace.
 >
-> Still kind of sucks that you have to do this, and can't bind to
-> something in the device-tree.
+> The motivation is to get to the unprivileged creation of new
+> namespaces.  It looks like this gets us 90% of the way there, with
+> only potential uid confusion issues left.
+>
+> I still need to handle getting all caps after creation but otherwise I
+> think I have a good starter patch that achieves all of your goals.
+>
+> Changelog:
+> 	11/05/2010: [serge] add apparmor
+> 	12/14/2010: [serge] fix capabilities to created user namespaces
+> 	Without this, if user serge creates a user_ns, he won't have
+> 	capabilities to the user_ns he created.  THis is because we
+> 	were first checking whether his effective caps had the caps
+> 	he needed and returning -EPERM if not, and THEN checking whether
+> 	he was the creator.  Reverse those checks.
+> 	12/16/2010: [serge] security_real_capable needs ns argument in !security case
+> 	01/11/2011: [serge] add task_ns_capable helper
+> 	01/11/2011: [serge] add nsown_capable() helper per Bastian Blank suggestion
+> 	02/16/2011: [serge] fix a logic bug: the root user is always creator of
+> 		    init_user_ns, but should not always have capabilities to
+> 		    it!  Fix the check in cap_capable().
+>
+> Signed-off-by: Eric W. Biederman<ebiederm@xmission.com>
+> Signed-off-by: Serge E. Hallyn<serge.hallyn@canonical.com>
+> ---
 
-OK, feel free to put this patch on hold for now. I started looking at
-the device tree approach today. It looks doable but first we have to
-fix a DT bug/inconsistency that is preventing us from correctly
-binding to the tree's devices.
+Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
 
-Daniel
