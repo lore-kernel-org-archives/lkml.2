@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab1BRWAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 17:00:10 -0500
-Received: from smtp.microsoft.com ([131.107.115.215]:16561 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab1BRWAG convert rfc822-to-8bit (ORCPT
+	id S1754196Ab1BRWHD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 17:07:03 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47125 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752809Ab1BRWHC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 17:00:06 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QITSqA//+CNEA=
-Date: Fri, 18 Feb 2011 22:00:04 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048011604@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <20110218211423.GH796@kroah.com>
-In-Reply-To: <20110218211423.GH796@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Feb 2011 17:07:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ngA/2W1I5sN6PEdeQIkYc1HePLBhYGCKvnllbBLyjwhDRvIHdqZi4FGMfiuHYKLpcu
+         N2dWU04qledOMEi9W8nZpXKp3Sv/CjIUUL77C4BLBs8N9S1EdzqMKgzTVtZSi7OH9Ecg
+         O8jlYre/pC+DQnH9Os1qeCzw4COOPlGKTGUtQ=
 MIME-Version: 1.0
+In-Reply-To: <20110218165827.GB13246@csn.ul.ie>
+References: <cover.1297940291.git.minchan.kim@gmail.com>
+	<7563767d6b6e841a8ac5f8315ee166e0f039723c.1297940291.git.minchan.kim@gmail.com>
+	<20110218165827.GB13246@csn.ul.ie>
+Date: Sat, 19 Feb 2011 07:07:01 +0900
+Message-ID: <AANLkTikom2dZaE4v2fNBaRV+OKT+0ZF3ZcEnvkRH0oJW@mail.gmail.com>
+Subject: Re: [PATCH v5 4/4] add profile information for invalidated page
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mel,
 
+On Sat, Feb 19, 2011 at 1:58 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> On Fri, Feb 18, 2011 at 12:08:22AM +0900, Minchan Kim wrote:
+>> This patch adds profile information about invalidated page reclaim.
+>> It's just for profiling for test so it is never for merging.
+>>
+>> Acked-by: Rik van Riel <riel@redhat.com>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Cc: Wu Fengguang <fengguang.wu@intel.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nick Piggin <npiggin@kernel.dk>
+>> Cc: Mel Gorman <mel@csn.ul.ie>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> ---
+>>  include/linux/vmstat.h |    4 ++--
+>>  mm/swap.c              |    3 +++
+>>  mm/vmstat.c            |    3 +++
+>>  3 files changed, 8 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+>> index 833e676..c38ad95 100644
+>> --- a/include/linux/vmstat.h
+>> +++ b/include/linux/vmstat.h
+>> @@ -30,8 +30,8 @@
+>>
+>>  enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+>>               FOR_ALL_ZONES(PGALLOC),
+>> -             PGFREE, PGACTIVATE, PGDEACTIVATE,
+>> -             PGFAULT, PGMAJFAULT,
+>> +             PGFREE, PGACTIVATE, PGDEACTIVATE, PGINVALIDATE,
+>> +             PGRECLAIM, PGFAULT, PGMAJFAULT,
+>>               FOR_ALL_ZONES(PGREFILL),
+>>               FOR_ALL_ZONES(PGSTEAL),
+>>               FOR_ALL_ZONES(PGSCAN_KSWAPD),
+>> diff --git a/mm/swap.c b/mm/swap.c
+>> index 0a33714..980c17b 100644
+>> --- a/mm/swap.c
+>> +++ b/mm/swap.c
+>> @@ -397,6 +397,7 @@ static void lru_deactivate(struct page *page, struct zone *zone)
+>>                * is _really_ small and  it's non-critical problem.
+>>                */
+>>               SetPageReclaim(page);
+>> +             __count_vm_event(PGRECLAIM);
+>>       } else {
+>>               /*
+>>                * The page's writeback ends up during pagevec
+>
+> Is this name potentially misleading?
+>
+> Pages that are reclaimed are accounted for with _steal. It's not particularly
+> obvious but that's the name it was given. I'd worry that an administrator that
+> was not aware of *_steal would read pgreclaim as "pages that were reclaimed"
+> when this is not necessarily the case.
+>
+> Is there a better name for this? pginvalidate_deferred
+> or pginvalidate_delayed maybe?
+>
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Friday, February 18, 2011 4:14 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> 
-> On Tue, Feb 15, 2011 at 11:55:35AM -0800, K. Y. Srinivasan wrote:
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> 
-> You didn't run this through checkpatch.pl.
-> 
-> Please do so and fix the warning it gives you.
-Greg, I did run the checkpatch script against this patch and the only complaint I got was with 
-regards to the IRQF_SAMPLE_RANDOM flag that I pass. As a virtual machine, this is the only
-external event that the VM is going to see and so I chose to keep this flag.  Is there something that would 
-replace this flag; looking at the Xen drivers they do pass this flag.
+Yep. Your suggestion is fair enough. But as I said in description,
+It's just for testing for my profiling, not merging so I didn't care
+about it.
+I don't think we need new vmstat of pginvalidate.
 
-Regards,
-
-K. Y 
-
-> 
-> thanks,
-> 
-> greg k-h
-
+-- 
+Kind regards,
+Minchan Kim
