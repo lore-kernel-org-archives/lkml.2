@@ -1,91 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab1BROAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 09:00:00 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:28914
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754916Ab1BRN74 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 08:59:56 -0500
-X-SpamScore: -39
-X-BigFish: VPS-39(zzbb2cK542N1432N98dN1447R9371Pzz1202hzz8275dhz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1754385Ab1BRODH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 09:03:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55226 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1BRODC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 09:03:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=thSMJPWGZt+Sh6Qw7uuQ7B3ODwnXpDB8x6zVaLCk+24+vHGWVV3GAFi59FwKv7OvWE
+         rhhuRrK9xFXW5SWUD3f3u61YY3f5Yjj80LqvOaSVYCsUAlQTF/3RW4AtmRrj/dqyrRZO
+         AocOXeG+IK3px9p15dJqHnJPClMIxjx8rLNRg=
+Date: Fri, 18 Feb 2011 15:00:13 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: [PATCH 3/3 tip:x86/mm] x86-64, NUMA: Add proper function comments
+ to global functions
+Message-ID: <20110218140013.GI21209@htj.dyndns.org>
+References: <20110218135836.GG21209@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH V3 3/4] ARM: Xilinx: base header files and assembly macros
-Date: Fri, 18 Feb 2011 06:59:47 -0700
-In-Reply-To: <20110218090625.GA3203@pulham.picochip.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH V3 3/4] ARM: Xilinx: base header files and assembly macros
-Thread-Index: AcvPSyP5S2fshXJuTDCvIT2GxtrUTQAKKMAg
-References: <1297872716-13353-1-git-send-email-john.linn@xilinx.com> <1297872716-13353-2-git-send-email-john.linn@xilinx.com> <1297872716-13353-3-git-send-email-john.linn@xilinx.com> <e58673f5-2881-4820-b5cd-99e8ef294ed5@VA3EHSMHS024.ehs.local> <20110217100126.GD22961@pulham.picochip.com> <2fdc2d92-486e-4319-866f-3882938363c3@VA3EHSMHS026.ehs.local> <20110218090625.GA3203@pulham.picochip.com>
-From: John Linn <John.Linn@xilinx.com>
-To: Jamie Iles <jamie@jamieiles.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
-        <glikely@secretlab.ca>, <arnd@arndb.de>
-X-OriginalArrivalTime: 18 Feb 2011 13:59:48.0435 (UTC) FILETIME=[1AE1C230:01CBCF74]
-X-RCIS-Action: ALLOW
-Message-ID: <625bb321-106e-432a-b8d1-bdc9012fd18d@VA3EHSMHS016.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110218135836.GG21209@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jamie Iles [mailto:jamie@jamieiles.com]
-> Sent: Friday, February 18, 2011 2:06 AM
-> To: John Linn
-> Cc: Jamie Iles; linux-arm-kernel@lists.infradead.org;
-linux-kernel@vger.kernel.org;
-> linux@arm.linux.org.uk; catalin.marinas@arm.com; glikely@secretlab.ca;
-arnd@arndb.de
-> Subject: Re: [PATCH V3 3/4] ARM: Xilinx: base header files and
-assembly macros
-> 
-> On Thu, Feb 17, 2011 at 06:19:09PM -0700, John Linn wrote:
-> > > > +#define PHYS_OFFSET             0x0
-> > >
-> > > This should be PLAT_PHYS_OFFSET and could do with being surrounded
-> > with
-> > > UL() e.g.
-> > >
-> > > #define PLAT_PHYS_OFFSET	UL(0x00000000)
-> >
-> > This doesn't build with 2.6.38-rc5, am I missing something?
-> >
-> > PHYS_OFFSET is still needed from what I can tell, but maybe I
-overlooked
-> > something.
-> 
-> The change is queued up in Russell's devel branch for the dynamic p2v
-> and will be in 2.6.39.  For a patch series like this it's probably
-worth
-> developing off of linux-next[1].  This contains all of the trees that
-> will be mereged into the next kernel so carries the bigger changes
-like
-> dynamic p2v.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ arch/x86/mm/numa_64.c        |   50 ++++++++++++++++++++++++++++++++++++-------
+ arch/x86/mm/numa_emulation.c |   29 ++++++++++++++++++++++--
+ 2 files changed, 69 insertions(+), 10 deletions(-)
 
-My hope was to get into 2.6.38 and maybe that was not realistic.  If
-it's too late
-for 2.6.38 then I'll revise the patch for this branch.
-
-Any thoughts Russell based on where we are?
-
-Thanks for the insight.
-John
-
-> 
-> Jamie
-> 
-> 1. git://git.kernel.org/pub/scm/linux/kernel/git/sfr/linux-next.git
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+Index: work/arch/x86/mm/numa_64.c
+===================================================================
+--- work.orig/arch/x86/mm/numa_64.c
++++ work/arch/x86/mm/numa_64.c
+@@ -204,6 +204,14 @@ static int __init numa_add_memblk_to(int
+ 	return 0;
+ }
+ 
++/**
++ * numa_remove_memblk_from - Remove one numa_memblk from a numa_meminfo
++ * @idx: Index of memblk to remove
++ * @mi: numa_meminfo to remove memblk from
++ *
++ * Remove @idx'th numa_memblk from @mi by shifting @mi->blk[] and
++ * decrementing @mi->nr_blks.
++ */
+ void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
+ {
+ 	mi->nr_blks--;
+@@ -211,6 +219,17 @@ void __init numa_remove_memblk_from(int
+ 		(mi->nr_blks - idx) * sizeof(mi->blk[0]));
+ }
+ 
++/**
++ * numa_add_memblk - Add one numa_memblk to numa_meminfo
++ * @nid: NUMA node ID of the new memblk
++ * @start: Start address of the new memblk
++ * @end: End address of the new memblk
++ *
++ * Add a new memblk to the default numa_meminfo.
++ *
++ * RETURNS:
++ * 0 on success, -errno on failure.
++ */
+ int __init numa_add_memblk(int nid, u64 start, u64 end)
+ {
+ 	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
+@@ -262,6 +281,16 @@ setup_node_bootmem(int nodeid, unsigned
+ 	node_set_online(nodeid);
+ }
+ 
++/**
++ * numa_cleanup_meminfo - Cleanup a numa_meminfo
++ * @mi: numa_meminfo to clean up
++ *
++ * Sanitize @mi by merging and removing unncessary memblks.  Also check for
++ * conflicts and clear unused memblks.
++ *
++ * RETURNS:
++ * 0 on success, -errno on failure.
++ */
+ int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
+ {
+ 	const u64 low = 0;
+@@ -352,9 +381,11 @@ static void __init numa_nodemask_from_me
+ 			node_set(mi->blk[i].nid, *nodemask);
+ }
+ 
+-/*
+- * Reset distance table.  The current table is freed.  The next
+- * numa_set_distance() call will create a new one.
++/**
++ * numa_reset_distance - Reset NUMA distance table
++ *
++ * The current table is freed.  The next numa_set_distance() call will
++ * create a new one.
+  */
+ void __init numa_reset_distance(void)
+ {
+@@ -369,10 +400,15 @@ void __init numa_reset_distance(void)
+ 	numa_distance = NULL;
+ }
+ 
+-/*
+- * Set the distance between node @from to @to to @distance.  If distance
+- * table doesn't exist, one which is large enough to accomodate all the
+- * currently known nodes will be created.
++/**
++ * numa_set_distance - Set NUMA distance from one NUMA to another
++ * @from: the 'from' node to set distance
++ * @to: the 'to'  node to set distance
++ * @distance: NUMA distance
++ *
++ * Set the distance from node @from to @to to @distance.  If distance table
++ * doesn't exist, one which is large enough to accomodate all the currently
++ * known nodes will be created.
+  */
+ void __init numa_set_distance(int from, int to, int distance)
+ {
+Index: work/arch/x86/mm/numa_emulation.c
+===================================================================
+--- work.orig/arch/x86/mm/numa_emulation.c
++++ work/arch/x86/mm/numa_emulation.c
+@@ -266,9 +266,32 @@ static int __init split_nodes_size_inter
+ 	return 0;
+ }
+ 
+-/*
+- * Sets up the system RAM area from start_pfn to last_pfn according to the
+- * numa=fake command-line option.
++/**
++ * numa_emulation - Emulate NUMA nodes
++ * @numa_meminfo: NUMA configuration to massage
++ * @numa_dist_cnt: The size of the physical NUMA distance table
++ *
++ * Emulate NUMA nodes according to the numa=fake kernel parameter.
++ * @numa_meminfo contains the physical memory configuration and is modified
++ * to reflect the emulated configuration on success.  @numa_dist_cnt is
++ * used to determine the size of the physical distance table.
++ *
++ * On success, the following modifications are made.
++ *
++ * - @numa_meminfo is updated to reflect the emulated nodes.
++ *
++ * - __apicid_to_node[] is updated such that APIC IDs are mapped to the
++ *   emulated nodes.
++ *
++ * - NUMA distance table is rebuilt to represent distances between emulated
++ *   nodes.  The distances are determined considering how emulated nodes
++ *   are mapped to physical nodes and match the actual distances.
++ *
++ * - emu_nid_to_phys[] reflects how emulated nodes are mapped to physical
++ *   nodes.  This is used by numa_add_cpu() and numa_remove_cpu().
++ *
++ * If emulation is not enabled or fails, emu_nid_to_phys[] is filled with
++ * identity mapping and no other modification is made.
+  */
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+ {
