@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1BRHT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 02:19:58 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56426 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab1BRHTx (ORCPT
+	id S1755655Ab1BRHUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 02:20:05 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:35815 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab1BRHT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 02:19:53 -0500
-Message-ID: <22D5E56F60D24A7190AD7FEAD0EF75D2@subhasishg>
+	Fri, 18 Feb 2011 02:19:59 -0500
+Message-ID: <2FF339434FAA4AA6957A44481CCF0A42@subhasishg>
 From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
 To: "Sergei Shtylyov" <sshtylyov@mvista.com>
 Cc: <davinci-linux-open-source@linux.davincidsp.com>,
         <sachi@mistralsolutions.com>, "Russell King" <linux@arm.linux.org.uk>,
-        "Kevin Hilman" <khilman@deeprootsystems.com>, <nsekhar@ti.com>,
-        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>,
+        "Thomas Koeller" <thomas.koeller@baslerweb.com>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>,
+        "Victor Rodriguez" <vm.rod25@gmail.com>,
+        "Cyril Chemparathy" <cyril@ti.com>, <m-watkins@ti.com>,
         <linux-arm-kernel@lists.infradead.org>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-7-git-send-email-subhasish@mistralsolutions.com> <4D5583CF.8010905@mvista.com>
-In-Reply-To: <4D5583CF.8010905@mvista.com>
-Subject: Re: [PATCH v2 06/13] da850: pruss CAN board specific additions.
-Date: Fri, 18 Feb 2011 12:49:49 +0530
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-8-git-send-email-subhasish@mistralsolutions.com> <4D558455.8090709@mvista.com>
+In-Reply-To: <4D558455.8090709@mvista.com>
+Subject: Re: [PATCH v2 07/13] da850: pruss CAN platform specific changes for gpios.
+Date: Fri, 18 Feb 2011 12:50:24 +0530
 Organization: Mistral Solutions
 MIME-Version: 1.0
 Content-Type: text/plain;
@@ -39,45 +42,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 --------------------------------------------------
 From: "Sergei Shtylyov" <sshtylyov@mvista.com>
-Sent: Saturday, February 12, 2011 12:15 AM
+Sent: Saturday, February 12, 2011 12:17 AM
 To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
 Cc: <davinci-linux-open-source@linux.davincidsp.com>; 
 <sachi@mistralsolutions.com>; "Russell King" <linux@arm.linux.org.uk>; 
-"Kevin Hilman" <khilman@deeprootsystems.com>; <nsekhar@ti.com>; "open list" 
-<linux-kernel@vger.kernel.org>; <m-watkins@ti.com>; 
+"Kevin Hilman" <khilman@deeprootsystems.com>; "Thomas Koeller" 
+<thomas.koeller@baslerweb.com>; <nsekhar@ti.com>; "open list" 
+<linux-kernel@vger.kernel.org>; "Victor Rodriguez" <vm.rod25@gmail.com>; 
+"Cyril Chemparathy" <cyril@ti.com>; <m-watkins@ti.com>; 
 <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 06/13] da850: pruss CAN board specific additions.
+Subject: Re: [PATCH v2 07/13] da850: pruss CAN platform specific changes for 
+gpios.
 
+> Hello.
+>
 > Subhasish Ghosh wrote:
 >
->> This patch adds the pruss CAN pin mux and registers the device
->> with the pruss mfd driver.
+>> This patch adds the GPIOs for the pruss CAN device.
 >
 >> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
-> [...]
 >
->> diff --git a/arch/arm/mach-davinci/board-da850-evm.c 
->> b/arch/arm/mach-davinci/board-da850-evm.c
->> index 242d1ed..2ce5536 100644
->> --- a/arch/arm/mach-davinci/board-da850-evm.c
->> +++ b/arch/arm/mach-davinci/board-da850-evm.c
->> @@ -1053,8 +1053,43 @@ static __init int da850_evm_init_cpufreq(void)
-> [...]
->>  static struct da8xx_pruss_devices pruss_devices[] = {
->> - {.dev_name = NULL,},
->> + {
->> + .dev_name = "da8xx_pruss_can",
->> + .pdata = &can_data,
->> + .pdata_size = sizeof(can_data),
->> + .setup = da850_evm_setup_pruss_can,
->> + },
->> + {
->> + .dev_name = NULL,
->> + },
+>    I still think this patch should be merged with patch 5, and patch 8 
+> with patch 6...
 >
->    No need to explicitly initialize to NULL.
+SG -- Ok, Will do.
 
-SG -- ok, Will remove
->
 > WBR, Sergei 
 
