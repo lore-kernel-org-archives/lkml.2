@@ -1,119 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab1BRQ66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 11:58:58 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:50579 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932247Ab1BRQ6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 11:58:55 -0500
-Date: Fri, 18 Feb 2011 16:58:27 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v5 4/4] add profile information for invalidated page
-Message-ID: <20110218165827.GB13246@csn.ul.ie>
-References: <cover.1297940291.git.minchan.kim@gmail.com> <7563767d6b6e841a8ac5f8315ee166e0f039723c.1297940291.git.minchan.kim@gmail.com>
+	id S932339Ab1BRRB7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 12:01:59 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58796 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932234Ab1BRRB4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 12:01:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=bAoAq2zKvSN7Yg+CX4gLNmDJValMlgCK+pk5yZEjvjXu7tnLGXjcgh5gGGrTl9XnsN
+         dxcC7At6DbTKK0dnUGbXNFNHE4W+oM5A/3RUgJ7KTIGjnvfArw2nHb1cKvCG4x3BgrJ/
+         U0CgQQ+4muRe4kHXxDUg63f6lFmtDAbtbzRJA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <7563767d6b6e841a8ac5f8315ee166e0f039723c.1297940291.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <b5dceec3591728e7dfa4d9fb2e978780e55420c5.1296818921.git.segoon@openwall.com>
+References: <cover.1296818921.git.segoon@openwall.com>
+	<b5dceec3591728e7dfa4d9fb2e978780e55420c5.1296818921.git.segoon@openwall.com>
+Date: Fri, 18 Feb 2011 20:01:55 +0300
+Message-ID: <AANLkTinrXQsF_MfHZJbACGnw0=iWQ4otdMUL3GhMDNbf@mail.gmail.com>
+Subject: Re: [PATCH 08/20] mfd: ab3100: world-writable debugfs *_priv files
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 12:08:22AM +0900, Minchan Kim wrote:
-> This patch adds profile information about invalidated page reclaim.
-> It's just for profiling for test so it is never for merging.
-> 
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+2011/2/4 Vasiliy Kulikov <segoon@openwall.com>:
+> Don't allow everybody to change device hardware registers.
+
+Ping.
+
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 > ---
->  include/linux/vmstat.h |    4 ++--
->  mm/swap.c              |    3 +++
->  mm/vmstat.c            |    3 +++
->  3 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-> index 833e676..c38ad95 100644
-> --- a/include/linux/vmstat.h
-> +++ b/include/linux/vmstat.h
-> @@ -30,8 +30,8 @@
->  
->  enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
->  		FOR_ALL_ZONES(PGALLOC),
-> -		PGFREE, PGACTIVATE, PGDEACTIVATE,
-> -		PGFAULT, PGMAJFAULT,
-> +		PGFREE, PGACTIVATE, PGDEACTIVATE, PGINVALIDATE,
-> +		PGRECLAIM, PGFAULT, PGMAJFAULT,
->  		FOR_ALL_ZONES(PGREFILL),
->  		FOR_ALL_ZONES(PGSTEAL),
->  		FOR_ALL_ZONES(PGSCAN_KSWAPD),
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 0a33714..980c17b 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -397,6 +397,7 @@ static void lru_deactivate(struct page *page, struct zone *zone)
->  		 * is _really_ small and  it's non-critical problem.
->  		 */
->  		SetPageReclaim(page);
-> +		__count_vm_event(PGRECLAIM);
->  	} else {
->  		/*
->  		 * The page's writeback ends up during pagevec
-
-Is this name potentially misleading?
-
-Pages that are reclaimed are accounted for with _steal. It's not particularly
-obvious but that's the name it was given. I'd worry that an administrator that
-was not aware of *_steal would read pgreclaim as "pages that were reclaimed"
-when this is not necessarily the case.
-
-Is there a better name for this? pginvalidate_deferred
-or pginvalidate_delayed maybe?
-
-> @@ -409,6 +410,8 @@ static void lru_deactivate(struct page *page, struct zone *zone)
->  
->  	if (active)
->  		__count_vm_event(PGDEACTIVATE);
-> +
-> +	__count_vm_event(PGINVALIDATE);
->  	update_page_reclaim_stat(zone, page, file, 0);
->  }
->  
-> diff --git a/mm/vmstat.c b/mm/vmstat.c
-> index 0c3b504..cbe032b 100644
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -896,6 +896,9 @@ static const char * const vmstat_text[] = {
->  	"pgactivate",
->  	"pgdeactivate",
->  
-> +	"pginvalidate",
-> +	"pgreclaim",
-> +
->  	"pgfault",
->  	"pgmajfault",
->  
-> -- 
-> 1.7.1
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+>  Compile tested only.
+>
+>  drivers/mfd/ab3100-core.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+> index 4193af5..1707d22 100644
+> --- a/drivers/mfd/ab3100-core.c
+> +++ b/drivers/mfd/ab3100-core.c
+> @@ -613,7 +613,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
+>        ab3100_get_priv.ab3100 = ab3100;
+>        ab3100_get_priv.mode = false;
+>        ab3100_get_reg_file = debugfs_create_file("get_reg",
+> -                               S_IWUGO, ab3100_dir, &ab3100_get_priv,
+> +                               S_IWUSR, ab3100_dir, &ab3100_get_priv,
+>                                &ab3100_get_set_reg_fops);
+>        if (!ab3100_get_reg_file) {
+>                err = -ENOMEM;
+> @@ -623,7 +623,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
+>        ab3100_set_priv.ab3100 = ab3100;
+>        ab3100_set_priv.mode = true;
+>        ab3100_set_reg_file = debugfs_create_file("set_reg",
+> -                               S_IWUGO, ab3100_dir, &ab3100_set_priv,
+> +                               S_IWUSR, ab3100_dir, &ab3100_set_priv,
+>                                &ab3100_get_set_reg_fops);
+>        if (!ab3100_set_reg_file) {
+>                err = -ENOMEM;
+> --
+> 1.7.0.4
+>
+>
