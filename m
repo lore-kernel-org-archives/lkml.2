@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1BRLMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 06:12:51 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:35485 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab1BRLMr (ORCPT
+	id S1754260Ab1BRL1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 06:27:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45660 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab1BRL1n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 06:12:47 -0500
-Subject: Re: [PATCH 2/3] perf events: Introduce realtime clock event
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, acme@ghostprotocols.net, paulus@samba.org
-In-Reply-To: <1298008433-22911-3-git-send-email-daahern@cisco.com>
-References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
-	 <1298008433-22911-3-git-send-email-daahern@cisco.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Feb 2011 12:14:01 +0100
-Message-ID: <1298027641.5226.666.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Feb 2011 06:27:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=QR5ER27f8wEC805QdPp5F1g44tnPn8K2bFNAB9CGEdaf1Eor89KryA77vijutPih+y
+         dPoCLFiUKJic2FIuRVuWFbf6hBg0MXvw3BaIhaetRWwNE4dBIpcS465MnZGX3RKSeZ0X
+         wgZq6efjo6G6P+YGS4ncTmjyzjU64r+qUyR7M=
+MIME-Version: 1.0
+In-Reply-To: <4D5DB83D.80205@snapgear.com>
+References: <4D5DB83D.80205@snapgear.com>
+Date: Fri, 18 Feb 2011 12:27:41 +0100
+X-Google-Sender-Auth: 1AASo7qaLEB8oR1mkkmiVn9piQo
+Message-ID: <AANLkTin0X-ST=rZqwfCA0i5VGCh5ygYXyZFdndiDgR_2@mail.gmail.com>
+Subject: Re: merge of m68knommu and m68k arch branches?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Steven King <sfking00@yahoo.com>,
+        uClinux development list <uclinux-dev@uclinux.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Greg Ungerer <gregungerer@westnet.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 22:53 -0700, David Ahern wrote:
-> The motivation for this event is to convert perf_clock() time stamps
-> to wall-clock (gettimeofday()) equivalents, including adjustments made
-> by NTP (e.g., for comparing perf events to other log files).
+On Fri, Feb 18, 2011 at 01:07, Greg Ungerer <gerg@snapgear.com> wrote:
+> I would like to put up for discussion a merge of the m68knommu and
+> m68k arch branches.
+>
+> Attached is a script and patch that does a kind of brute force
+> simplistic merge of the directories and files. (Thanks to Stephen King
+> <sfking@fdwdc.com> for the initial version of this script, and to
+> Sam Ravnborg for the m68k includes merge script this was based on).
+> Nothing outside of the arch/m68k and arch/m68knommu directories is
+> touched, and in the end there is no more arch/m68knommu. To apply you
+> simply run the script from the top of a current kernel git tree (I used
+> 2.6.38-rc5 for testing) and then apply the patch.
 
-> This patch is based on the monotonic patch by Arnaldo Carvalho de Melo
-> <acme@redhat.com>.
-> 
-> (NOTE: Comments from the last review of the timehist patch series
-> suggested calling this a monotonic clock. I am not trying to be
-> dense here; since gettimeofday maps to realtime clock I think that
-> is the better name for it.)
+Initial feedback:
 
-Well, the idea was to use CLOCK_MONOTONIC, not to call CLOCK_REALTIME
-monotonic.
+--- a/arch/m68k/Makefile
++++ b/arch/m68k/Makefile
+@@ -1,5 +1,5 @@
+ ifdef CONFIG_MMU
+-include arch/m68k/Makefile_mm
++include $(srctree)/arch/m68k/Makefile_mm
+ else
+-include arch/m68k/Makefile_no
++include $(srctree)/arch/m68k/Makefile_no
+ endif
 
-I'm really not sure why you want CLOCK_REALTIME and I think
-CLOCK_MONOTONIC is more useful (I'd argue you want your system logs to
-contain both, every admin who's ever had to untangle what happened
-during DST switches will agree)
+Don't you need to add "# CONFIG_MMU is not set" to all m68knommu
+defconfig files?
 
-> @@ -5610,6 +5612,13 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
->  
->  	perf_sample_data_init(&data, 0);
->  	data.period = event->hw.last_period;
-> +	if (event->attr.sample_type & PERF_SAMPLE_RAW) 
-> +	{
-> +		raw.size = sizeof(u64);
-> +		raw.data = &event->count;
-> +		data.raw = &raw;
-> +	}
-> +
->  	regs = get_irq_regs();
->  
->  	if (regs && !perf_exclude_event(event, regs)) {
+Building...
 
+Gr{oetje,eeting}s,
 
-Why!? you already keep ->count = ktime_get_real(), so simply reading the
-count value will get you the timestamp.. this is superfluous at best.
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
