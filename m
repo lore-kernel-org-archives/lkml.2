@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab1BRDQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:16:25 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40077 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab1BRDQW (ORCPT
+	id S1754416Ab1BRDQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:16:30 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:34834 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab1BRDQZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:16:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=gEpaXXYbIII5A4GJGsZrV2XiWJPL8Tg/UhR4077/5LBczVw9MjQPDiod/1wXVwEtIT
-         MhYEDEXD03cjyXvmeU1daPFVNYAVuJEpWfd+he/SYph6XElXDW7o4LukDuxNoBF2/2EM
-         q/WZu9TGbHLXVK4MO386pbEl6kiNO/JaQIIXc=
+	Thu, 17 Feb 2011 22:16:25 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+	<20110216193700.GA6377@elte.hu>
+	<AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+	<AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+	<20110217090910.GA3781@tiehlicka.suse.cz>
+	<AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+	<20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+	<AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+Date: Thu, 17 Feb 2011 19:16:17 -0800
+In-Reply-To: <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	(Linus Torvalds's message of "Thu, 17 Feb 2011 11:11:51 -0800")
+Message-ID: <m1sjvm822m.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4D5DACC5.60105@tilera.com>
-References: <4D5DA60A.8080201@tilera.com>
-	<20110217.145333.232751283.davem@davemloft.net>
-	<4D5DA96D.5060200@tilera.com>
-	<20110217.151147.35033921.davem@davemloft.net>
-	<4D5DACC5.60105@tilera.com>
-Date: Fri, 18 Feb 2011 11:16:20 +0800
-Message-ID: <AANLkTimDeFYuw5-_e9bHAq8QR5O2eYBTon5OjBGvrKEn@mail.gmail.com>
-Subject: Re: IGMP and rwlock: Dead ocurred again on TILEPro
-From: Cypher Wu <cypher.w@gmail.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: David Miller <davem@davemloft.net>, xiyou.wangcong@gmail.com,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX183IDoRn4HiNZtq9i4Vs06ewx+KPGltVqQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: linux-foundation.org]
+	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 7:18 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> On 2/17/2011 6:11 PM, David Miller wrote:
->> From: Chris Metcalf <cmetcalf@tilera.com>
->> Date: Thu, 17 Feb 2011 18:04:13 -0500
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+
+> On Thu, Feb 17, 2011 at 10:57 AM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
 >>
->>> On 2/17/2011 5:53 PM, David Miller wrote:
->>>> From: Chris Metcalf <cmetcalf@tilera.com>
->>>> Date: Thu, 17 Feb 2011 17:49:46 -0500
->>>>
->>>>> The fix is to disable interrupts for the arch_read_lock family of methods.
->>>> How does that help handle the race when it happens between different
->>>> cpus, instead of between IRQ and non-IRQ context on the same CPU?
->>> There's no race in that case, since the lock code properly backs off and
->>> retries until the other cpu frees it.  The distinction here is that the
->>> non-IRQ context is "wedged" by the IRQ context.
->>>
->>>> Why don't you just use the generic spinlock based rwlock code on Tile,
->>>> since that is all that your atomic instructions can handle
->>>> sufficiently?
->>> The tile-specific code encodes reader/writer information in the same 32-bit
->>> word that the test-and-set instruction manipulates, so it's more efficient
->>> both in space and time.  This may not really matter for rwlocks, since no
->>> one cares much about them any more, but that was the motivation.
->> Ok, but IRQ disabling is going to be very expensive.
+>> fedora 14
+>> ext4 on all filesystems
 >
-> The interrupt architecture on Tile allows a write to a special-purpose
-> register to put you into a "critical section" where no interrupts or faults
-> are delivered.  So we just need to bracket the read_lock operations with
-> two SPR writes; each takes six machine cycles, so we're only adding 12
-> cycles to the total cost of taking or releasing a read lock on an rwlock.
+> Your dmesg snippets had ext3 mentioned, though:
 >
-> --
-> Chris Metcalf, Tilera Corp.
-> http://www.tilera.com
+>   <6>EXT3-fs (sda1): recovery required on readonly filesystem
+>   <6>EXT3-fs (sda1): write access will be enabled during recovery
+>   <6>EXT3-fs: barriers not enabled
+>   ..
+>   <6>EXT3-fs (sda1): recovery complete
+>   <6>EXT3-fs (sda1): mounted filesystem with ordered data mode
+>   <6>dracut: Mounted root filesystem /dev/sda1
 >
+> not that I see that it should matter, but there's been some bigger
+> ext3 changes too (like the batched discard).
 >
+> I don't really think ext3 is the issue, though.
+>
+>> I was about to say this happens with DEBUG_PAGEALLOC enabled but it
+>> appears that options keeps eluding my fingers when I have a few minutes
+>> to play with it.  Perhaps this time will be the charm.
+>
+> Please do. You seem to be much better at triggering it than anybody
+> else. And do the DEBUG_LIST and DEBUG_SLUB_ON things too (even if the
+> DEBUG_LIST thing won't catch list_move())
 
-I agree that just lock interrupt for read operations should be enough,
-but read_unlock() is also the place we should lock interrupt, right?
-If interrupt occurred when it hold lock-val after TNS deadlock still
-can occur.
+Interesting.  I just got this with DEBUG_PAGEALLOC
+It looks like something in DEBUG_PAGEALLOC is interfering with taking a
+successful crashdump.
 
-When will you release out that patch? Since time is tight, so maybe
-I've to fix-up it myself. Though the problem is clearly now, I still
-have two questions to confirm:
+Given how many network namespaces I create and destroy this might be a
+code path I exercise more than most people.
 
-1. If we use SPR_INTERRUPT_CRITICAL_SECTION it will disable all the
-interrupt which claimed 'CM', is that right? Should we have to same
-its original value and restore it later?
-There is some code in Linux:
-int __tns_atomic_acquire(atomic_t *lock)
-{
-	int ret;
-	u32 iterations = 0;
+BUG: unable to handle kernel paging request at ffff8801adf8d760
+IP: [<ffffffff8140c7ca>] unregister_netdevice_queue+0x3a/0xb0
+Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
+last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
+Stack:
+Call Trace:
+Code: 24 08 48 89 fb 49 89 f4 e8 f4 c8 00 00 85 c0 74 6d 4d 85 e4 74 3b 48 8b 93 a0 00 00 00 48 8b 83 a8 00 00 00 48 8d bb a0 00 00 00 <48> 89 42 08 48 89 10 4c 89 e2 49 8b 74 24 08 e8 32 75 e7 ff 48 
+RIP  [<ffffffff8140c7ca>] unregister_netdevice_queue+0x3a/0xb0
+CR2: ffff8801adf8d760
 
-	BUG_ON(__insn_mfspr(SPR_INTERRUPT_CRITICAL_SECTION));
-	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
-
-	while((ret = __insn_tns(&lock->counter)) == 1)
-		delay_backoff(iterations++);
-	return ret;
-}
-It just use BUG_ON to check SPR_INTERRUPT_CRITICAL_SECTION have to be
-0, is that means that SPR is only used in special situations like
-that?
-
-2. Should we lock interrupt for the whole operation of
-read_lock()/read_unlock(), or we should leave interrupt critical
-section if it run into  __raw_read_lock_slow() and before have to
-delay_backoff() some time, and re-enter interrupt critical section
-again before TNS?
-
-
-
-
--- 
-Cyberman Wu
+Eric
