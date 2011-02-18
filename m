@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab1BRDsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:48:52 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:39981 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1BRDst (ORCPT
+	id S1755821Ab1BRDvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:51:24 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47099 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751821Ab1BRDvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:48:49 -0500
-Date: Thu, 17 Feb 2011 21:48:44 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Dustin Kirkland <kirkland@canonical.com>,
-        ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ecryptfs: read on a directory should return EISDIR
- if not supported
-Message-ID: <20110218034843.GF24444@boyd.l.tihix.com>
-References: <1297831799-5169-1-git-send-email-apw@canonical.com>
+	Thu, 17 Feb 2011 22:51:21 -0500
+Date: Thu, 17 Feb 2011 19:51:34 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 20/29] wm8400-codec: use mfd_data instead of
+ driver_data (v2)
+Message-ID: <20110218035133.GA6069@opensource.wolfsonmicro.com>
+References: <1297998456-7615-1-git-send-email-dilinger@queued.net>
+ <1297998456-7615-21-git-send-email-dilinger@queued.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297831799-5169-1-git-send-email-apw@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1297998456-7615-21-git-send-email-dilinger@queued.net>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Feb 16, 2011 at 04:49:59AM +0000, Andy Whitcroft <apw@canonical.com> wrote:
-> read() calls against a file descriptor connected to a directory are
-> incorrectly returning EINVAL rather than EISDIR:
+On Thu, Feb 17, 2011 at 07:07:27PM -0800, Andres Salomon wrote:
+> Use mfd_data for passing information from mfd drivers to soc
+> clients.  The mfd_cell's driver_data field is being phased out.
 > 
->   [EISDIR]
->     [XSI] [Option Start] The fildes argument refers to a directory and the
->     implementation does not allow the directory to be read using read()
->     or pread(). The readdir() function should be used instead. [Option End]
+> Clients that were using driver_data now access .mfd_data
+> via mfd_get_data().
 > 
-> This occurs because we do not have a .read operation defined for
-> ecryptfs directories.  Connect this up to generic_read_dir().
+> v2: add some missing mfd/core.h includes.
 > 
-> BugLink: http://bugs.launchpad.net/bugs/719691
-> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-Thanks Andy - applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
-
-Tyler
-
-> ---
->  fs/ecryptfs/file.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-> index 81e10e6..7d1050e 100644
-> --- a/fs/ecryptfs/file.c
-> +++ b/fs/ecryptfs/file.c
-> @@ -317,6 +317,7 @@ ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> 
->  const struct file_operations ecryptfs_dir_fops = {
->  	.readdir = ecryptfs_readdir,
-> +	.read = generic_read_dir,
->  	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
->  #ifdef CONFIG_COMPAT
->  	.compat_ioctl = ecryptfs_compat_ioctl,
-> -- 
-> 1.7.1
-> 
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
