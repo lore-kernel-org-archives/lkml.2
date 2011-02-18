@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568Ab1BRIjn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 03:39:43 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54526 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756071Ab1BRIjl (ORCPT
+	id S1756778Ab1BRIli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 03:41:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58751 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab1BRIlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 03:39:41 -0500
-Date: Fri, 18 Feb 2011 09:39:28 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 16/17] mc13xxx: mfd_cell is now implicitly available to
- drivers
-Message-ID: <20110218083928.GU22310@pengutronix.de>
-References: <20110211181921.3d561568@queued.net>
- <20110216094154.GV13279@pengutronix.de>
- <20110216090036.6fffed34@debxo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110216090036.6fffed34@debxo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 18 Feb 2011 03:41:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=V2NWxZLaK/IuNx709TmsYkCArXaofluP24IOd0j1swm2n4K3yLgywKxfOl0g1deS25
+         m9dpzqCmNzVcSALeLM/MrygxjCqqU+ROFOwUvBJmVWY8CMj6OtWaTgsCyzhuGodOUgsP
+         88O9/cpLlsULrnN9zh+7RfqWjablxSbhI3pO4=
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Octavian Purdila <opurdila@ixiacom.com>,
+        David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <m17hcx7wca.fsf@fess.ebiederm.org>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+	 <20110216193700.GA6377@elte.hu>
+	 <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+	 <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+	 <20110217090910.GA3781@tiehlicka.suse.cz>
+	 <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+	 <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+	 <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	 <m1sjvm822m.fsf@fess.ebiederm.org>
+	 <AANLkTimzP0UNRXutkt1zJ+OGhmeg6ga87HFyMuZQmpMj@mail.gmail.com>
+	 <m17hcx7wca.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Feb 2011 09:41:25 +0100
+Message-ID: <1298018485.2595.44.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 09:00:36AM -0800, Andres Salomon wrote:
-> On Wed, 16 Feb 2011 10:41:54 +0100
-> Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> 
-> > On Fri, Feb 11, 2011 at 06:19:21PM -0800, Andres Salomon wrote:
-> > > 
-> > > The cell's platform_data is now accessed with a helper function;
-> > > change clients to use that, and remove the now-unused data_size.
-> > > 
-> > > Note that mfd-core no longer makes a copy of platform_data, but the
-> > why was this changed and where?  I'm not able to find your complete
-> > series via gmane.
-> 
-> http://permalink.gmane.org/gmane.linux.kernel/1099164
-I still don't get the motivation of your patch set.  For drivers that
-don't need the mfd_cells you introduce another level of indirection.
-And drivers that want to use mfd_cells as platform_data, they can
-already now.
+So I confirm previous kernels had a bug too in rollback_registered()
 
-Best regards
-Uwe
+The "single" list was left as is before exiting.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+default_device_exit_batch() seems OK, because the rtnl_unlock() acted as
+a barrier in this respect : devices were removed from dev_kill_list
+before exiting default_device_exit_batch()
+
+Following this mail, please find two patches.
+
+One from Linus to address bug introduced in commit 443457242beb6
+(net: factorize
+sync-rcu call in unregister_netdevice_many) in 2.6.38-rc1
+
+A second one to address old bugs, so that stable teams can fix previous
+kernels (2.6.33 and up)
+Offending commit was 9b5e383c11b08784 (net: Introduce
+unregister_netdevice_many())
+
+Of course this second patch is also needed for current linux-2.6
+
+Thanks
+
+
