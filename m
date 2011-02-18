@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543Ab1BRDIU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 22:08:20 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:51853 "EHLO lunge.queued.net"
+	id S1755905Ab1BRDKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 22:10:06 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:51919 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755891Ab1BRDIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 22:08:04 -0500
+	id S932538Ab1BRDIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 22:08:19 -0500
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: [PATCH 12/29] tc6393xb: mfd_cell is now implicitly available to drivers
-Date: Thu, 17 Feb 2011 19:07:19 -0800
-Message-Id: <1297998456-7615-13-git-send-email-dilinger@queued.net>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 28/29] mfd-core: add platform_device sharing support for mfd (v2)
+Date: Thu, 17 Feb 2011 19:07:35 -0800
+Message-Id: <1297998456-7615-29-git-send-email-dilinger@queued.net>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1297998456-7615-1-git-send-email-dilinger@queued.net>
 References: <1297998456-7615-1-git-send-email-dilinger@queued.net>
@@ -23,176 +20,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to explicitly set the cell's platform_data/data_size.
+This adds functions to enable platform_device sharing for mfd clients.
 
-Modify clients to use mfd_get_cell helper function instead of
-accessing platform_data directly.
+Each platform driver (mfd client) that wants to share an mfd_cell's
+platform_device uses the mfd_shared_platform_driver_{un,}register()
+functions instead of platform_driver_{un,}register().  Along with
+registering the platform driver, these also register a new platform
+device with the same characteristics as the original cell, but a different
+name.  Given an mfd_cell with the name "foo", drivers that want to
+share access to its resources can call mfd_shared_platform_driver_register
+with platform drivers named (for example) "bar" and "baz".  This
+will register two platform devices and drivers named "bar" and "baz"
+that share the same cell as the platform device "foo".  The drivers
+can then call "foo" cell's enable hooks (or mfd_shared_cell_enable)
+to enable resources, and obtain platform resources as they normally
+would.
+
+This deals with platform handling only; mfd driver-specific details,
+hardware handling, refcounting, etc are all dealt with separately.
+
+v2: Drop the randomized names, and instead let drivers specify
+their own names.  This gets rid of a bunch of code, and ensures
+that userspace will know where platform drivers/devices will show
+up in sysfs.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/mfd/tc6393xb.c       |   19 -------------------
- drivers/usb/host/ohci-tmio.c |    8 ++++----
- drivers/video/tmiofb.c       |   20 +++++++++-----------
- 3 files changed, 13 insertions(+), 34 deletions(-)
+ drivers/mfd/mfd-core.c   |   61 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/core.h |    9 +++++++
+ 2 files changed, 70 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
-index 9a23863..a71ff5c 100644
---- a/drivers/mfd/tc6393xb.c
-+++ b/drivers/mfd/tc6393xb.c
-@@ -694,26 +694,7 @@ static int __devinit tc6393xb_probe(struct platform_device *dev)
- 	}
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index ca789f8..bb2264c 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -184,5 +184,66 @@ void mfd_remove_devices(struct device *parent)
+ }
+ EXPORT_SYMBOL(mfd_remove_devices);
  
- 	tc6393xb_cells[TC6393XB_CELL_NAND].driver_data = tcpd->nand_data;
--	tc6393xb_cells[TC6393XB_CELL_NAND].platform_data =
--		&tc6393xb_cells[TC6393XB_CELL_NAND];
--	tc6393xb_cells[TC6393XB_CELL_NAND].data_size =
--		sizeof(tc6393xb_cells[TC6393XB_CELL_NAND]);
--
--	tc6393xb_cells[TC6393XB_CELL_MMC].platform_data =
--		&tc6393xb_cells[TC6393XB_CELL_MMC];
--	tc6393xb_cells[TC6393XB_CELL_MMC].data_size =
--		sizeof(tc6393xb_cells[TC6393XB_CELL_MMC]);
--
--	tc6393xb_cells[TC6393XB_CELL_OHCI].platform_data =
--		&tc6393xb_cells[TC6393XB_CELL_OHCI];
--	tc6393xb_cells[TC6393XB_CELL_OHCI].data_size =
--		sizeof(tc6393xb_cells[TC6393XB_CELL_OHCI]);
--
- 	tc6393xb_cells[TC6393XB_CELL_FB].driver_data = tcpd->fb_data;
--	tc6393xb_cells[TC6393XB_CELL_FB].platform_data =
--		&tc6393xb_cells[TC6393XB_CELL_FB];
--	tc6393xb_cells[TC6393XB_CELL_FB].data_size =
--		sizeof(tc6393xb_cells[TC6393XB_CELL_FB]);
++static int add_shared_platform_device(const char *cell, const char *name)
++{
++	struct mfd_cell cell_entry;
++	struct device *dev;
++	struct platform_device *pdev;
++	int err;
++
++	/* check if we've already registered a device (don't fail if we have) */
++	if (bus_find_device_by_name(&platform_bus_type, NULL, name))
++		return 0;
++
++	/* fetch the parent cell's device (should already be registered!) */
++	dev = bus_find_device_by_name(&platform_bus_type, NULL, cell);
++	if (!dev) {
++		printk(KERN_ERR "failed to find device for cell %s\n", cell);
++		return -ENODEV;
++	}
++	pdev = to_platform_device(dev);
++	memcpy(&cell_entry, mfd_get_cell(pdev), sizeof(cell_entry));
++
++	WARN_ON(!cell_entry.enable);
++
++	cell_entry.name = name;
++	err = mfd_add_device(pdev->dev.parent, -1, &cell_entry, NULL, 0);
++	if (err)
++		dev_err(dev, "MFD add devices failed: %d\n", err);
++	return err;
++}
++
++int mfd_shared_platform_driver_register(struct platform_driver *drv,
++		const char *cellname)
++{
++	int err;
++
++	err = add_shared_platform_device(cellname, drv->driver.name);
++	if (err)
++		printk(KERN_ERR "failed to add platform device %s\n",
++				drv->driver.name);
++
++	err = platform_driver_register(drv);
++	if (err)
++		printk(KERN_ERR "failed to add platform driver %s\n",
++				drv->driver.name);
++
++	return err;
++}
++EXPORT_SYMBOL(mfd_shared_platform_driver_register);
++
++void mfd_shared_platform_driver_unregister(struct platform_driver *drv)
++{
++	struct device *dev;
++
++	dev = bus_find_device_by_name(&platform_bus_type, NULL,
++			drv->driver.name);
++	if (dev)
++		platform_device_unregister(to_platform_device(dev));
++
++	platform_driver_unregister(drv);
++}
++EXPORT_SYMBOL(mfd_shared_platform_driver_unregister);
++
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Ian Molton, Dmitry Baryshkov");
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index 22a2f5e..ed99704 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -87,4 +87,13 @@ extern int mfd_add_devices(struct device *parent, int id,
  
- 	ret = mfd_add_devices(&dev->dev, dev->id,
- 			tc6393xb_cells, ARRAY_SIZE(tc6393xb_cells),
-diff --git a/drivers/usb/host/ohci-tmio.c b/drivers/usb/host/ohci-tmio.c
-index 8dabe8e..eeed164 100644
---- a/drivers/usb/host/ohci-tmio.c
-+++ b/drivers/usb/host/ohci-tmio.c
-@@ -185,7 +185,7 @@ static struct platform_driver ohci_hcd_tmio_driver;
+ extern void mfd_remove_devices(struct device *parent);
  
- static int __devinit ohci_hcd_tmio_drv_probe(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct resource *regs = platform_get_resource(dev, IORESOURCE_MEM, 0);
- 	struct resource *config = platform_get_resource(dev, IORESOURCE_MEM, 1);
- 	struct resource *sram = platform_get_resource(dev, IORESOURCE_MEM, 2);
-@@ -274,7 +274,7 @@ static int __devexit ohci_hcd_tmio_drv_remove(struct platform_device *dev)
- {
- 	struct usb_hcd *hcd = platform_get_drvdata(dev);
- 	struct tmio_hcd *tmio = hcd_to_tmio(hcd);
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 
- 	usb_remove_hcd(hcd);
- 	tmio_stop_hc(dev);
-@@ -293,7 +293,7 @@ static int __devexit ohci_hcd_tmio_drv_remove(struct platform_device *dev)
- #ifdef CONFIG_PM
- static int ohci_hcd_tmio_drv_suspend(struct platform_device *dev, pm_message_t state)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct usb_hcd *hcd = platform_get_drvdata(dev);
- 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
- 	struct tmio_hcd *tmio = hcd_to_tmio(hcd);
-@@ -326,7 +326,7 @@ static int ohci_hcd_tmio_drv_suspend(struct platform_device *dev, pm_message_t s
- 
- static int ohci_hcd_tmio_drv_resume(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct usb_hcd *hcd = platform_get_drvdata(dev);
- 	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
- 	struct tmio_hcd *tmio = hcd_to_tmio(hcd);
-diff --git a/drivers/video/tmiofb.c b/drivers/video/tmiofb.c
-index dfef88c..6302882 100644
---- a/drivers/video/tmiofb.c
-+++ b/drivers/video/tmiofb.c
-@@ -250,7 +250,7 @@ static irqreturn_t tmiofb_irq(int irq, void *__info)
-  */
- static int tmiofb_hw_stop(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct tmio_fb_data *data = cell->driver_data;
- 	struct fb_info *info = platform_get_drvdata(dev);
- 	struct tmiofb_par *par = info->par;
-@@ -268,7 +268,7 @@ static int tmiofb_hw_stop(struct platform_device *dev)
-  */
- static int tmiofb_hw_init(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct fb_info *info = platform_get_drvdata(dev);
- 	struct tmiofb_par *par = info->par;
- 	const struct resource *nlcr = &cell->resources[0];
-@@ -312,7 +312,7 @@ static int tmiofb_hw_init(struct platform_device *dev)
-  */
- static void tmiofb_hw_mode(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct tmio_fb_data *data = cell->driver_data;
- 	struct fb_info *info = platform_get_drvdata(dev);
- 	struct fb_videomode *mode = info->mode;
-@@ -559,8 +559,7 @@ static int tmiofb_ioctl(struct fb_info *fbi,
- static struct fb_videomode *
- tmiofb_find_mode(struct fb_info *info, struct fb_var_screeninfo *var)
- {
--	struct mfd_cell *cell =
--		info->device->platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(to_platform_device(info->device));
- 	struct tmio_fb_data *data = cell->driver_data;
- 	struct fb_videomode *best = NULL;
- 	int i;
-@@ -581,8 +580,7 @@ static int tmiofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
- {
- 
- 	struct fb_videomode *mode;
--	struct mfd_cell *cell =
--		info->device->platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(to_platform_device(info->device));
- 	struct tmio_fb_data *data = cell->driver_data;
- 
- 	mode = tmiofb_find_mode(info, var);
-@@ -683,7 +681,7 @@ static struct fb_ops tmiofb_ops = {
- 
- static int __devinit tmiofb_probe(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct tmio_fb_data *data = cell->driver_data;
- 	struct resource *ccr = platform_get_resource(dev, IORESOURCE_MEM, 1);
- 	struct resource *lcr = platform_get_resource(dev, IORESOURCE_MEM, 0);
-@@ -811,7 +809,7 @@ err_ioremap_ccr:
- 
- static int __devexit tmiofb_remove(struct platform_device *dev)
- {
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	struct fb_info *info = platform_get_drvdata(dev);
- 	int irq = platform_get_irq(dev, 0);
- 	struct tmiofb_par *par;
-@@ -941,7 +939,7 @@ static int tmiofb_suspend(struct platform_device *dev, pm_message_t state)
- #ifdef CONFIG_FB_TMIO_ACCELL
- 	struct tmiofb_par *par = info->par;
++/*
++ * For MFD drivers with clients sharing access to resources, these create
++ * multiple platform devices per cell.  Contention handling must still be
++ * handled via drivers (ie, with enable/disable hooks).
++ */
++extern int mfd_shared_platform_driver_register(struct platform_driver *drv,
++		const char *cellname);
++extern void mfd_shared_platform_driver_unregister(struct platform_driver *drv);
++
  #endif
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	int retval = 0;
- 
- 	console_lock();
-@@ -973,7 +971,7 @@ static int tmiofb_suspend(struct platform_device *dev, pm_message_t state)
- static int tmiofb_resume(struct platform_device *dev)
- {
- 	struct fb_info *info = platform_get_drvdata(dev);
--	struct mfd_cell *cell = dev->dev.platform_data;
-+	struct mfd_cell *cell = mfd_get_cell(dev);
- 	int retval = 0;
- 
- 	console_lock();
 -- 
 1.7.2.3
 
