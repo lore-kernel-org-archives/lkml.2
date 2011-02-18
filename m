@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab1BRH2j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 02:28:39 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36981 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab1BRH2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 02:28:37 -0500
-Date: Fri, 18 Feb 2011 08:28:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Mike Travis <travis@sgi.com>, Len Brown <lenb@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>, Yinghai Lu <yhlu.kernel@gmail.com>,
-        linux-acpi@vger.kernel.org, x86@kernel.org,
+	id S1755799Ab1BRHaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 02:30:00 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51981 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab1BRH36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 02:29:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vIRVqDVhpEwR7qaHAAVlksaKVj/LMPEcLaxCxgeRU7GPdD8vHShjVURJs9eMn0Df2h
+         NS4UykscUj/vaEGMraOfFAQ9EYWWun5lL1MnDzKYN8q/1VP/8AyQYap4PDx+451FWOiI
+         SJKCoLNUE1RUwloIQIRX9/0pVG/4+libyQjJc=
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, ebiederm@xmission.com, opurdila@ixiacom.com,
+        mingo@elte.hu, mhocko@suse.cz, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] ACPI: Minimize X2APIC initial messages
-Message-ID: <20110218072824.GC11404@elte.hu>
-References: <20110217185131.960038922@gulag1.americas.sgi.com>
- <20110217185132.137154887@gulag1.americas.sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110217185132.137154887@gulag1.americas.sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1298010320.2642.7.camel@edumazet-laptop>
+References: <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	 <m1sjvm822m.fsf@fess.ebiederm.org>
+	 <AANLkTimzP0UNRXutkt1zJ+OGhmeg6ga87HFyMuZQmpMj@mail.gmail.com>
+	 <20110217.203647.193696765.davem@davemloft.net>
+	 <1298010320.2642.7.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Feb 2011 08:29:51 +0100
+Message-ID: <1298014191.2642.11.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mike Travis <travis@sgi.com> wrote:
-
-> Minimize X2APIC messages by printing 8 per line and dropping
-> the "enabled" flag since that's assumed.  It will still print
-> "disabled" if necessary.
+Le vendredi 18 février 2011 à 07:25 +0100, Eric Dumazet a écrit :
+> Le jeudi 17 février 2011 à 20:36 -0800, David Miller a écrit :
+> > 
+> > Eric D., please get a final version of the fix posted to netdev and
+> > I'll make sure it slithers it's way to Linus's tree :-)
+> > 
+> > Thanks!
 > 
-> v2: updated to apply to x86-tip
+> I believe we can apply Linus patch as is for current linux-2.6
 > 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Reviewed-by: Jack Steiner <steiner@sgi.com>
-> Reviewed-by: Robin Holt <holt@sgi.com>
+> Then add a second patch for previous kernels (the parts I added), since
+> we might had a previous bug, un-noticed ?
+> 
 
-If Len acks this then i can queue it up with the other patches. Or if Len wants to 
-apply it to the ACPI tree directly that's fine as well.
+I am working on this right now, to make sure "my part" is really needed
+for stable teams.
 
-Len, which is your preference?
+I'll send an update in a couple of hours.
 
-Thanks,
+Thanks
 
-	Ingo
+
