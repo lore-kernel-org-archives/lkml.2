@@ -1,191 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab1BRSs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 13:48:58 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38971 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab1BRSr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 13:47:59 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Michael Witten <mfwitten@gmail.com>,
+	id S932147Ab1BRStR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 13:49:17 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48713 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756314Ab1BRStO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 13:49:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <m17hcx43m3.fsf@fess.ebiederm.org>
+References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
+ <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+ <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+ <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+ <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+ <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+ <20110218122938.GB26779@tiehlicka.suse.cz> <20110218162623.GD4862@tiehlicka.suse.cz>
+ <AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com> <m17hcx43m3.fsf@fess.ebiederm.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 18 Feb 2011 10:48:18 -0800
+Message-ID: <AANLkTikh4oaR6CBK3NBazer7yjhE0VndsUB5FCDRsbJc@mail.gmail.com>
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3/4] perf tools: Makefile: Remove tool-specific cruft
-Date: Fri, 18 Feb 2011 16:47:51 -0200
-Message-Id: <1298054872-16434-4-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1298054872-16434-1-git-send-email-acme@infradead.org>
-References: <1298054872-16434-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Witten <mfwitten@gmail.com>
+On Fri, Feb 18, 2011 at 10:08 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> I am still getting programs segfaulting but that is happening on other
+> machines running on older kernels so I am going to chalk that up to a
+> buggy test and a false positive.
 
-This commit squashes several commits that remove:
+Ok.
 
- NO_C99_FORMAT
- CURLDIR and EXPATDIR
- NO_DEFLATE_BOUND
- CC_LD_DYNPATH and NO_R_TO_GCC_LINKER
- NO_PERL_MAKEMAKER
- INTERNAL_QSORT
- NO_EXTERNAL_GREP
- NO_PERL
- SCRIPT_PERL
- PERL_PATH_SQ
+> I am have OOM problems getting my tests run to complete.  On a good
+> day that happens about 1 time in 3 right now.  I'm guess I will have
+> to turn off DEBUG_PAGEALLOC to get everything to complete.
+> DEBUG_PAGEALLOC causes us to use more memory doesn't it?
 
-Signed-off-by: Michael Witten <mfwitten@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile |   73 +--------------------------------------------------
- 1 files changed, 1 insertions(+), 72 deletions(-)
+It does use a bit more memory, but it shouldn't be _that_ noticeable.
+The real cost of DEBUG_PAGEALLOC is all the crazy page table
+operations and TLB flushes we do for each allocation/deallocation. So
+DEBUG_PAGEALLOC is very CPU-intensive, but it shouldn't have _that_
+much of a memory overhead - just some trivial overhead due to not
+being able to use largepages for the normal kernel identity mappings.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 53c1e93..fde196f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -14,40 +14,10 @@ endif
- # Define V=1 to have a more verbose compile.
- # Define V=2 to have an even more verbose compile.
- #
--# Define CURLDIR=/foo/bar if your curl header and library files are in
--# /foo/bar/include and /foo/bar/lib directories.
--#
--# Define EXPATDIR=/foo/bar if your expat header and library files are in
--# /foo/bar/include and /foo/bar/lib directories.
--#
--# Define NO_C99_FORMAT if your formatted IO functions (printf/scanf et.al.)
--# do not support the 'size specifiers' introduced by C99, namely ll, hh,
--# j, z, t. (representing long long int, char, intmax_t, size_t, ptrdiff_t).
--# some C compilers supported these specifiers prior to C99 as an extension.
--#
--# Define NO_DEFLATE_BOUND if your zlib does not have deflateBound.
--#
--# Define NO_R_TO_GCC_LINKER if your gcc does not like "-R/path/lib"
--# that tells runtime paths to dynamic libraries;
--# "-Wl,-rpath=/path/lib" is used instead.
--#
- # Define ASCIIDOC8 if you want to format documentation with AsciiDoc 8
- #
- # Define DOCBOOK_XSL_172 if you want to format man pages with DocBook XSL v1.72.
- #
--# Define NO_PERL_MAKEMAKER if you cannot use Makefiles generated by perl's
--# MakeMaker (e.g. using ActiveState under Cygwin).
--#
--# Define NO_PERL if you do not want Perl scripts or libraries at all.
--#
--# Define INTERNAL_QSORT to use Git's implementation of qsort(), which
--# is a simplified version of the merge sort used in glibc. This is
--# recommended if Git triggers O(n^2) behavior in your platform's qsort().
--#
--# Define NO_EXTERNAL_GREP if you don't want "perf grep" to ever call
--# your external grep (e.g., if your system lacks grep, if its grep is
--# broken, or spawning external process is slower than built-in grep perf has).
--#
- # Define LDFLAGS=-static to build a static binary.
- #
- # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
-@@ -205,7 +175,6 @@ BUILT_INS =
- LIB_H =
- LIB_OBJS =
- PYRF_OBJS =
--SCRIPT_PERL =
- SCRIPT_SH =
- TEST_PROGRAMS =
- 
-@@ -221,10 +190,7 @@ $(OUTPUT)python/perf.so: $(PYRF_OBJS)
- # No Perl scripts right now:
- #
- 
--# SCRIPT_PERL += perf-add--interactive.perl
--
--SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH)) \
--	  $(patsubst %.perl,%,$(SCRIPT_PERL))
-+SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- 
- # Empty...
- EXTRA_PROGRAMS =
-@@ -599,43 +565,10 @@ else
- 	endif
- endif
- 
--ifndef CC_LD_DYNPATH
--	ifdef NO_R_TO_GCC_LINKER
--		# Some gcc does not accept and pass -R to the linker to specify
--		# the runtime dynamic library path.
--		CC_LD_DYNPATH = -Wl,-rpath,
--	else
--		CC_LD_DYNPATH = -R
--	endif
--endif
--
--ifdef NO_C99_FORMAT
--	BASIC_CFLAGS += -DNO_C99_FORMAT
--endif
--
--ifdef NO_DEFLATE_BOUND
--	BASIC_CFLAGS += -DNO_DEFLATE_BOUND
--endif
--
--ifdef NO_PERL_MAKEMAKER
--	export NO_PERL_MAKEMAKER
--endif
--ifdef INTERNAL_QSORT
--	COMPAT_CFLAGS += -DINTERNAL_QSORT
--	COMPAT_OBJS += $(OUTPUT)compat/qsort.o
--endif
- ifdef RUNTIME_PREFIX
- 	COMPAT_CFLAGS += -DRUNTIME_PREFIX
- endif
- 
--ifdef NO_EXTERNAL_GREP
--	BASIC_CFLAGS += -DNO_EXTERNAL_GREP
--endif
--
--ifeq ($(PERL_PATH),)
--NO_PERL=NoThanks
--endif
--
- QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
- QUIET_SUBDIR1  =
- 
-@@ -681,7 +614,6 @@ htmldir_SQ = $(subst ','\'',$(htmldir))
- prefix_SQ = $(subst ','\'',$(prefix))
- 
- SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
--PERL_PATH_SQ = $(subst ','\'',$(PERL_PATH))
- 
- LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive $(EXTLIBS)
- 
-@@ -744,7 +676,6 @@ $(patsubst %.sh,%,$(SCRIPT_SH)) : % : %.sh
- 	$(QUIET_GEN)$(RM) $(OUTPUT)$@ $(OUTPUT)$@+ && \
- 	sed -e '1s|#!.*/sh|#!$(SHELL_PATH_SQ)|' \
- 	    -e 's|@SHELL_PATH@|$(SHELL_PATH_SQ)|' \
--	    -e 's|@@PERL@@|$(PERL_PATH_SQ)|g' \
- 	    -e 's/@@PERF_VERSION@@/$(PERF_VERSION)/g' \
- 	    -e 's/@@NO_CURL@@/$(NO_CURL)/g' \
- 	    $@.sh > $(OUTPUT)$@+ && \
-@@ -761,7 +692,6 @@ configure: configure.ac
- # These can record PERF_VERSION
- $(OUTPUT)perf.o perf.spec \
- 	$(patsubst %.sh,%,$(SCRIPT_SH)) \
--	$(patsubst %.perl,%,$(SCRIPT_PERL)) \
- 	: $(OUTPUT)PERF-VERSION-FILE
- 
- $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
-@@ -903,7 +833,6 @@ $(OUTPUT)PERF-BUILD-OPTIONS: .FORCE-PERF-BUILD-OPTIONS
- 	@echo SHELL_PATH=\''$(subst ','\'',$(SHELL_PATH_SQ))'\' >$@
- 	@echo TAR=\''$(subst ','\'',$(subst ','\'',$(TAR)))'\' >>$@
- 	@echo NO_CURL=\''$(subst ','\'',$(subst ','\'',$(NO_CURL)))'\' >>$@
--	@echo NO_PERL=\''$(subst ','\'',$(subst ','\'',$(NO_PERL)))'\' >>$@
- 
- ### Testing rules
- 
--- 
-1.6.2.5
+But there might be some other interaction with OOM that I haven't thought about.
 
+> The most interesting thing I have right now is a networking lockdep
+> issue.  Does anyone know what is going on there?
+
+This seems to be a fairly straightforward bug.
+
+In net/ipv4/inet_timewait_sock.c we have this:
+
+  /* These are always called from BH context.  See callers in
+   * tcp_input.c to verify this.
+   */
+
+  /* This is for handling early-kills of TIME_WAIT sockets. */
+  void inet_twsk_deschedule(struct inet_timewait_sock *tw,
+                            struct inet_timewait_death_row *twdr)
+  {
+          spin_lock(&twdr->death_lock);
+          ..
+
+and the intention is clearly that that spin_lock is BH-safe because
+it's called from BH context.
+
+Except that clearly isn't true. It's called from a worker thread:
+
+> stack backtrace:
+> Pid: 10833, comm: kworker/u:1 Not tainted 2.6.38-rc4-359399.2010AroraKernelBeta.fc14.x86_64 #1
+> Call Trace:
+>  [<ffffffff81460e69>] ? inet_twsk_deschedule+0x29/0xa0
+>  [<ffffffff81460fd6>] ? inet_twsk_purge+0xf6/0x180
+>  [<ffffffff81460f10>] ? inet_twsk_purge+0x30/0x180
+>  [<ffffffff814760fc>] ? tcp_sk_exit_batch+0x1c/0x20
+>  [<ffffffff8141c1d3>] ? ops_exit_list.clone.0+0x53/0x60
+>  [<ffffffff8141c520>] ? cleanup_net+0x100/0x1b0
+>  [<ffffffff81068c47>] ? process_one_work+0x187/0x4b0
+>  [<ffffffff81068be1>] ? process_one_work+0x121/0x4b0
+>  [<ffffffff8141c420>] ? cleanup_net+0x0/0x1b0
+>  [<ffffffff8106a65c>] ? worker_thread+0x15c/0x330
+
+so it can deadlock with a BH happening at the same time, afaik.
+
+The code (and comment) is all from 2005, it looks like the BH->worker
+thread has broken the code. But somebody who knows that code better
+should take a deeper look at it.
+
+Added acme to the cc, since the code is attributed to him back in 2005
+;). Although I don't know how active he's been in networking lately
+(seems to be all perf-related). Whatever, it can't hurt.
+
+                   Linus
