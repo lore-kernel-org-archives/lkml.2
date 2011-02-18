@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab1BRA7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 19:59:07 -0500
-Received: from kroah.org ([198.145.64.141]:37059 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754187Ab1BRA65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 19:58:57 -0500
-Date: Thu, 17 Feb 2011 16:58:52 -0800
-From: Greg KH <greg@kroah.com>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Charles Manning <manningc2@actrix.gen.nz>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
-Message-ID: <20110218005852.GA14546@kroah.com>
-References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com>
- <201102171531.03924.manningc2@actrix.gen.nz>
- <4D5C8D62.4060809@bluewatersys.com>
- <201102171649.57457.manningc2@actrix.gen.nz>
- <20110217234154.GA1474@kroah.com>
- <20110218000150.GA27668@opensource.wolfsonmicro.com>
- <20110218003353.GA25386@kroah.com>
- <20110218004354.GB27668@opensource.wolfsonmicro.com>
- <4D5DC368.2080003@bluewatersys.com>
+	id S1758068Ab1BRBAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 20:00:19 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:17758 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab1BRBAP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Feb 2011 20:00:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hRRwBNP5VKFi58A3cAR8EBMGT8Xc/TTnxb6hbwvvmNW0wc0VJUMpcOhb2oPWjtfVuy
+         NWfoyygYYVdQiqO4XSaw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5DC368.2080003@bluewatersys.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110217133152.4043.94951.stgit@rabbit.intern.cm-ag>
+References: <20110217133152.4043.94951.stgit@rabbit.intern.cm-ag>
+From: Paul Menage <menage@google.com>
+Date: Thu, 17 Feb 2011 16:59:51 -0800
+Message-ID: <AANLkTi=X7rHEy9yOngogs_OQ69FJeZeQRSwvFdgnbWxo@mail.gmail.com>
+Subject: Re: [PATCH] new cgroup controller "fork"
+To: Max Kellermann <mk@cm4all.com>
+Cc: lizf@cn.fujitsu.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 01:55:04PM +1300, Ryan Mallon wrote:
-> On 02/18/2011 01:43 PM, Mark Brown wrote:
-> > On Thu, Feb 17, 2011 at 04:33:53PM -0800, Greg KH wrote:
-> >> On Fri, Feb 18, 2011 at 12:01:50AM +0000, Mark Brown wrote:
-> > 
-> >>> For the proc stuff - for tracing stuff then tracepoints are likely to be
-> >>> a good option if it's useful to people.
-> > 
-> >> Then use the in-kernel tracing functionality, don't roll your own.  And
-> >> that is not in /proc, so it should be there for this filesystem either.
-> > 
-> > That'd be the tracepoints I was mentioning, then...
-> 
-> Are you suggesting that the yaffs_trace function should be replaced with
-> tracepoints?
-> 
-> yaffs_trace is basically just a wrapper around printk, which I suggested
-> should be replaced with pr_debug so that it can be compiled out
-> completely. Other drivers and filesystems have similar custom debugging
-> functions.
-> 
-> I haven't used tracepoints, but it seems like they are better suited to
-> tracing specific events than as a general printk style debugging
-> replacement?
+On Thu, Feb 17, 2011 at 5:31 AM, Max Kellermann <mk@cm4all.com> wrote:
+> Can limit the number of fork()/clone() calls in a cgroup.  It is
+> useful as a safeguard against fork bombs.
 
-If you want printk(), then yes, use pr_debug() as it ties into the
-dynamic debug infrastructure, which is great.
+I'd be inclined to simplify this a bit - avoid impacting the fork()
+path twice, with cgroup_fork_pre_fork() and cgroup_fork_fork() and
+just do the checks and decrements in a single pass. (In the event of
+hitting a limit, you may need to make another partial pass up the tree
+to restore the charged fork attempts)
 
-Then you can remove the proc files, as the kernel already controls the
-debug interface through the standard way, no need for a custom one.
+Yes, it's true that you might charge for a fork() that later failed
+for some other reason, but this will very rare (except on a machine
+that's already screwed for other reasons) so that I don't think anyone
+would complain about it. Especially if you explicitly document
+"fork.remaining" as number of permitted "fork attempts".
 
-thanks,
+Also, it would be slightly clearer to use fork_cgroup_* rather than
+cgroup_fork_* - this makes it clearer that it's part of a cgroups
+subsystem called "fork", rather than part of the cgroups core
+framework.
 
-greg k-h
+I don't think that you need to make your spinlock IRQ-safe - AFAICS
+nothing accesses it from the interrupt path.
+
+Paul
