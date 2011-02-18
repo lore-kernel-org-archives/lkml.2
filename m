@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab1BRBAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Feb 2011 20:00:19 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:17758 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab1BRBAP convert rfc822-to-8bit (ORCPT
+	id S1758097Ab1BRBHF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Feb 2011 20:07:05 -0500
+Received: from mga14.intel.com ([143.182.124.37]:3853 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752213Ab1BRBG7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Feb 2011 20:00:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hRRwBNP5VKFi58A3cAR8EBMGT8Xc/TTnxb6hbwvvmNW0wc0VJUMpcOhb2oPWjtfVuy
-         NWfoyygYYVdQiqO4XSaw==
-MIME-Version: 1.0
-In-Reply-To: <20110217133152.4043.94951.stgit@rabbit.intern.cm-ag>
-References: <20110217133152.4043.94951.stgit@rabbit.intern.cm-ag>
-From: Paul Menage <menage@google.com>
-Date: Thu, 17 Feb 2011 16:59:51 -0800
-Message-ID: <AANLkTi=X7rHEy9yOngogs_OQ69FJeZeQRSwvFdgnbWxo@mail.gmail.com>
-Subject: Re: [PATCH] new cgroup controller "fork"
-To: Max Kellermann <mk@cm4all.com>
-Cc: lizf@cn.fujitsu.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 17 Feb 2011 20:06:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,183,1297065600"; 
+   d="scan'208";a="390508040"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Jan Beulich <JBeulich@novell.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Date: Thu, 17 Feb 2011 17:06:56 -0800
+Subject: RE: [PATCH 3/3] ia64: drop custom exception table implementation
+Thread-Topic: [PATCH 3/3] ia64: drop custom exception table implementation
+Thread-Index: AcvOx27hP4WzYpDaSpe/um4hrMejygAQDegw
+Message-ID: <987664A83D2D224EAE907B061CE93D53019D4BCC7B@orsmsx505.amr.corp.intel.com>
+References: <4D5D631F0200007800032802@vpn.id2.novell.com>
+ <20110217172321.GC17058@elte.hu>
+In-Reply-To: <20110217172321.GC17058@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 17, 2011 at 5:31 AM, Max Kellermann <mk@cm4all.com> wrote:
-> Can limit the number of fork()/clone() calls in a cgroup.  It is
-> useful as a safeguard against fork bombs.
+> Nice generalization of the exception code.
 
-I'd be inclined to simplify this a bit - avoid impacting the fork()
-path twice, with cgroup_fork_pre_fork() and cgroup_fork_fork() and
-just do the checks and decrements in a single pass. (In the event of
-hitting a limit, you may need to make another partial pass up the tree
-to restore the charged fork attempts)
+Yes - nice to see x86 finally catch up with ia64's compact exception tables :-)
 
-Yes, it's true that you might charge for a fork() that later failed
-for some other reason, but this will very rare (except on a machine
-that's already screwed for other reasons) so that I don't think anyone
-would complain about it. Especially if you explicitly document
-"fork.remaining" as number of permitted "fork attempts".
+> If Tony acks this patch then we can put the 3 patches into a separate -tip branch 
+> and test it on x86 and push it into -next for ia64 testing. That would be the 
+> simplest upstream merge route - if that's fine by Tony as well.
 
-Also, it would be slightly clearer to use fork_cgroup_* rather than
-cgroup_fork_* - this makes it clearer that it's part of a cgroups
-subsystem called "fork", rather than part of the cgroups core
-framework.
+It *looks* ok. I didn't get time to try it out - but if it worked
+on Jan's test system, then I'm fine to have it thrown into the linux-next
+mix so I can pick it up with my regular linux-next tests.
 
-I don't think that you need to make your spinlock IRQ-safe - AFAICS
-nothing accesses it from the interrupt path.
+Acked-by: Tony Luck <tony.luck@intel.com>
 
-Paul
+-Tony
