@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab1BSJbm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 04:31:42 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50440 "EHLO hera.kernel.org"
+	id S1753236Ab1BSJcA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 04:32:00 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50452 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028Ab1BSJbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 04:31:37 -0500
-Date: Sat, 19 Feb 2011 09:31:16 GMT
+	id S1752792Ab1BSJb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 04:31:56 -0500
+Date: Sat, 19 Feb 2011 09:31:44 GMT
 From: tip-bot for Michael Witten <mfwitten@gmail.com>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@redhat.com, mfwitten@gmail.com, tglx@linutronix.de
@@ -15,199 +15,475 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Makefile: Remove vestigial git-specific cruft
-Message-ID: <tip-006cdc32618e09ffe228a7a86af044f3cc0dd714@git.kernel.org>
-Git-Commit-ID: 006cdc32618e09ffe228a7a86af044f3cc0dd714
+Subject: [tip:perf/core] perf tools: Makefile: Remove platform-specific cruft
+Message-ID: <tip-8796cb9d7dc028945af4b2ea858ae8f8f2ecbe8c@git.kernel.org>
+Git-Commit-ID: 8796cb9d7dc028945af4b2ea858ae8f8f2ecbe8c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Feb 2011 09:31:18 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Feb 2011 09:31:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  006cdc32618e09ffe228a7a86af044f3cc0dd714
-Gitweb:     http://git.kernel.org/tip/006cdc32618e09ffe228a7a86af044f3cc0dd714
+Commit-ID:  8796cb9d7dc028945af4b2ea858ae8f8f2ecbe8c
+Gitweb:     http://git.kernel.org/tip/8796cb9d7dc028945af4b2ea858ae8f8f2ecbe8c
 Author:     Michael Witten <mfwitten@gmail.com>
-AuthorDate: Wed, 2 Feb 2011 13:01:41 -0600
+AuthorDate: Wed, 2 Feb 2011 11:57:41 -0600
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 18 Feb 2011 07:40:54 -0200
+CommitDate: Fri, 18 Feb 2011 07:42:07 -0200
 
-perf tools: Makefile: Remove vestigial git-specific cruft
+perf tools: Makefile: Remove platform-specific cruft
+
+While it makes sense that this tool could be used on
+other platforms at least to parse data, there doesn't
+appear to be any real support for such usage.
 
 This commit squashes several commits that remove:
 
- NO_SYMLINK_HEAD
- NO_SVN_TESTS
- NO_FAST_WORKING_DIRECTORY
- USE_STDEV
- SHA1/SSL cruft
- makefile rules
+ SNPRINTF_RETURNS_BOGUS
+ FREAD_READS_DIRECTORIES
+ NO_D_{INO,TYPE}_IN_DIRENT
+ NO_STRCASESTR
+ NO_MEMMEM
+ NO_STRTOUMAX and NO_STRTOULL
+ NO_SETENV
+ NO_UNSETENV
+ NO_MKDTEMP
+ NEEDS_LIBICONV
+ NEEDS_SOCKET
+ NO_MMAP
+ NO_PTHREADS
+ NO_PREAD
+ NO_TRUSTABLE_FILEMODE
+ NO_IPV6 and NO_SOCKADDR_STORAGE
+ NO_ICONV and OLD_ICONV
+ NO_NSEC, USE_NSEC, and USE_ST_TIMESPEC
+ NO_ST_BLOCKS_IN_STRUCT_STAT
+ NO_FINK and NO_DARWIN_PORTS
+ NO_SYS_SELECT_H
+ NO_HSTRERROR
+ DIR_HAS_BSD_GROUP_SEMANTICS and FORCE_DIR_SET_GID
+ NEEDS_NSL, NO_UINTMAX_T, NO_INET_{N,P}TON
+ COMPAT_{CFLAGS,OBJS}
+ Executable extension `X'
 
 Signed-off-by: Michael Witten <mfwitten@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |   62 +--------------------------------------------------
- 1 files changed, 1 insertions(+), 61 deletions(-)
+ tools/perf/Makefile    |  232 ++----------------------------------------------
+ tools/perf/util/util.h |   26 ------
+ 2 files changed, 8 insertions(+), 250 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 7c75f1d..544367c 100644
+index 544367c..53c1e93 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -21,9 +21,6 @@ endif
- # Define FREAD_READS_DIRECTORIES if your are on a system which succeeds
- # when attempting to read from an fopen'ed directory.
+@@ -14,103 +14,23 @@ endif
+ # Define V=1 to have a more verbose compile.
+ # Define V=2 to have an even more verbose compile.
  #
--# Define NO_OPENSSL environment variable if you do not have OpenSSL.
--# This also implies MOZILLA_SHA1.
+-# Define SNPRINTF_RETURNS_BOGUS if your are on a system which snprintf()
+-# or vsnprintf() return -1 instead of number of characters which would
+-# have been written to the final string if enough space had been available.
+-#
+-# Define FREAD_READS_DIRECTORIES if your are on a system which succeeds
+-# when attempting to read from an fopen'ed directory.
 -#
  # Define CURLDIR=/foo/bar if your curl header and library files are in
  # /foo/bar/include and /foo/bar/lib directories.
  #
-@@ -56,13 +53,6 @@ endif
+ # Define EXPATDIR=/foo/bar if your expat header and library files are in
+ # /foo/bar/include and /foo/bar/lib directories.
  #
- # Define NO_SYS_SELECT_H if you don't have sys/select.h.
+-# Define NO_D_INO_IN_DIRENT if you don't have d_ino in your struct dirent.
+-#
+-# Define NO_D_TYPE_IN_DIRENT if your platform defines DT_UNKNOWN but lacks
+-# d_type in struct dirent (latest Cygwin -- will be fixed soonish).
+-#
+ # Define NO_C99_FORMAT if your formatted IO functions (printf/scanf et.al.)
+ # do not support the 'size specifiers' introduced by C99, namely ll, hh,
+ # j, z, t. (representing long long int, char, intmax_t, size_t, ptrdiff_t).
+ # some C compilers supported these specifiers prior to C99 as an extension.
  #
--# Define NO_SYMLINK_HEAD if you never want .perf/HEAD to be a symbolic link.
--# Enable it on Windows.  By default, symrefs are still used.
+-# Define NO_STRCASESTR if you don't have strcasestr.
 -#
--# Define NO_SVN_TESTS if you want to skip time-consuming SVN interoperability
--# tests.  These tests take up a significant amount of the total test time
--# but are not needed unless you plan to talk to SVN repos.
+-# Define NO_MEMMEM if you don't have memmem.
 -#
- # Define NO_FINK if you are building on Darwin/Mac OS X, have Fink
- # installed in /sw, but don't want PERF to link against any libraries
- # installed there.  If defined you may specify your own (or Fink's)
-@@ -75,19 +65,6 @@ endif
- # specify your own (or DarwinPort's) include directories and
- # library directories by defining CFLAGS and LDFLAGS appropriately.
+-# Define NO_STRTOUMAX if you don't have strtoumax in the C library.
+-# If your compiler also does not support long long or does not have
+-# strtoull, define NO_STRTOULL.
+-#
+-# Define NO_SETENV if you don't have setenv in the C library.
+-#
+-# Define NO_UNSETENV if you don't have unsetenv in the C library.
+-#
+-# Define NO_MKDTEMP if you don't have mkdtemp in the C library.
+-#
+-# Define NO_SYS_SELECT_H if you don't have sys/select.h.
+-#
+-# Define NO_FINK if you are building on Darwin/Mac OS X, have Fink
+-# installed in /sw, but don't want PERF to link against any libraries
+-# installed there.  If defined you may specify your own (or Fink's)
+-# include directories and library directories by defining CFLAGS
+-# and LDFLAGS appropriately.
+-#
+-# Define NO_DARWIN_PORTS if you are building on Darwin/Mac OS X,
+-# have DarwinPorts installed in /opt/local, but don't want PERF to
+-# link against any libraries installed there.  If defined you may
+-# specify your own (or DarwinPort's) include directories and
+-# library directories by defining CFLAGS and LDFLAGS appropriately.
+-#
+-# Define NEEDS_LIBICONV if linking with libc is not enough (Darwin).
+-#
+-# Define NEEDS_SOCKET if linking with libc is not enough (SunOS,
+-# Patrick Mauritz).
+-#
+-# Define NO_MMAP if you want to avoid mmap.
+-#
+-# Define NO_PTHREADS if you do not have or do not want to use Pthreads.
+-#
+-# Define NO_PREAD if you have a problem with pread() system call (e.g.
+-# cygwin.dll before v1.5.22).
+-#
+-# Define NO_TRUSTABLE_FILEMODE if your filesystem may claim to support
+-# the executable mode bit, but doesn't really do so.
+-#
+-# Define NO_IPV6 if you lack IPv6 support and getaddrinfo().
+-#
+-# Define NO_SOCKADDR_STORAGE if your platform does not have struct
+-# sockaddr_storage.
+-#
+-# Define NO_ICONV if your libc does not properly support iconv.
+-#
+-# Define OLD_ICONV if your library has an old iconv(), where the second
+-# (input buffer pointer) parameter is declared with type (const char **).
+-#
+ # Define NO_DEFLATE_BOUND if your zlib does not have deflateBound.
  #
--# Define PPC_SHA1 environment variable when running make to make use of
--# a bundled SHA1 routine optimized for PowerPC.
--#
--# Define ARM_SHA1 environment variable when running make to make use of
--# a bundled SHA1 routine optimized for ARM.
--#
--# Define MOZILLA_SHA1 environment variable when running make to make use of
--# a bundled SHA1 routine coming from Mozilla. It is GPL'd and should be fast
--# on non-x86 architectures (e.g. PowerPC), while the OpenSSL version (default
--# choice) has very fast version optimized for i586.
--#
--# Define NEEDS_SSL_WITH_CRYPTO if you need -lcrypto with -lssl (Darwin).
--#
- # Define NEEDS_LIBICONV if linking with libc is not enough (Darwin).
+ # Define NO_R_TO_GCC_LINKER if your gcc does not like "-R/path/lib"
+ # that tells runtime paths to dynamic libraries;
+ # "-Wl,-rpath=/path/lib" is used instead.
  #
- # Define NEEDS_SOCKET if linking with libc is not enough (SunOS,
-@@ -100,9 +77,6 @@ endif
- # Define NO_PREAD if you have a problem with pread() system call (e.g.
- # cygwin.dll before v1.5.22).
- #
--# Define NO_FAST_WORKING_DIRECTORY if accessing objects in pack files is
--# generally faster on your platform than accessing the working directory.
+-# Define USE_NSEC below if you want perf to care about sub-second file mtimes
+-# and ctimes. Note that you need recent glibc (at least 2.2.4) for this, and
+-# it will BREAK YOUR LOCAL DIFFS! show-diff and anything using it will likely
+-# randomly break unless your underlying filesystem supports those sub-second
+-# times (my ext3 doesn't).
 -#
- # Define NO_TRUSTABLE_FILEMODE if your filesystem may claim to support
- # the executable mode bit, but doesn't really do so.
- #
-@@ -134,9 +108,6 @@ endif
- # Define NO_NSEC if your "struct stat" does not have "st_ctim.tv_nsec"
- # available.  This automatically turns USE_NSEC off.
- #
--# Define USE_STDEV below if you want perf to care about the underlying device
--# change being considered an inode change from the update-index perspective.
+-# Define USE_ST_TIMESPEC if your "struct stat" uses "st_ctimespec" instead of
+-# "st_ctim"
 -#
- # Define NO_ST_BLOCKS_IN_STRUCT_STAT if your platform does not have st_blocks
- # field that counts the on-disk footprint in 512-byte blocks.
+-# Define NO_NSEC if your "struct stat" does not have "st_ctim.tv_nsec"
+-# available.  This automatically turns USE_NSEC off.
+-#
+-# Define NO_ST_BLOCKS_IN_STRUCT_STAT if your platform does not have st_blocks
+-# field that counts the on-disk footprint in 512-byte blocks.
+-#
+ # Define ASCIIDOC8 if you want to format documentation with AsciiDoc 8
  #
-@@ -771,9 +742,6 @@ ifdef FREAD_READS_DIRECTORIES
- 	COMPAT_CFLAGS += -DFREAD_READS_DIRECTORIES
- 	COMPAT_OBJS += $(OUTPUT)compat/fopen.o
- endif
--ifdef NO_SYMLINK_HEAD
--	BASIC_CFLAGS += -DNO_SYMLINK_HEAD
+ # Define DOCBOOK_XSL_172 if you want to format man pages with DocBook XSL v1.72.
+@@ -282,8 +202,6 @@ BASIC_LDFLAGS =
+ # Guard against environment variables
+ BUILTIN_OBJS =
+ BUILT_INS =
+-COMPAT_CFLAGS =
+-COMPAT_OBJS =
+ LIB_H =
+ LIB_OBJS =
+ PYRF_OBJS =
+@@ -329,7 +247,7 @@ LANG_BINDINGS =
+ ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
+ 
+ # what 'all' will build but not install in perfexecdir
+-OTHER_PROGRAMS = $(OUTPUT)perf$X
++OTHER_PROGRAMS = $(OUTPUT)perf
+ 
+ # Set paths to tools early so that they can be used for version tests.
+ ifndef SHELL_PATH
+@@ -538,22 +456,6 @@ endif # NO_DWARF
+ 
+ -include arch/$(ARCH)/Makefile
+ 
+-ifeq ($(uname_S),Darwin)
+-	ifndef NO_FINK
+-		ifeq ($(shell test -d /sw/lib && echo y),y)
+-			BASIC_CFLAGS += -I/sw/include
+-			BASIC_LDFLAGS += -L/sw/lib
+-		endif
+-	endif
+-	ifndef NO_DARWIN_PORTS
+-		ifeq ($(shell test -d /opt/local/lib && echo y),y)
+-			BASIC_CFLAGS += -I/opt/local/include
+-			BASIC_LDFLAGS += -L/opt/local/lib
+-		endif
+-	endif
+-	PTHREAD_LIBS =
 -endif
- ifdef NO_STRCASESTR
- 	COMPAT_CFLAGS += -DNO_STRCASESTR
- 	COMPAT_OBJS += $(OUTPUT)compat/strcasestr.o
-@@ -813,9 +781,6 @@ ifdef NO_PREAD
- 	COMPAT_CFLAGS += -DNO_PREAD
- 	COMPAT_OBJS += $(OUTPUT)compat/pread.o
+-
+ ifneq ($(OUTPUT),)
+ 	BASIC_CFLAGS += -I$(OUTPUT)
  endif
--ifdef NO_FAST_WORKING_DIRECTORY
--	BASIC_CFLAGS += -DNO_FAST_WORKING_DIRECTORY
--endif
- ifdef NO_TRUSTABLE_FILEMODE
- 	BASIC_CFLAGS += -DNO_TRUSTABLE_FILEMODE
- endif
-@@ -851,23 +816,6 @@ ifdef NO_DEFLATE_BOUND
- 	BASIC_CFLAGS += -DNO_DEFLATE_BOUND
+@@ -707,110 +609,9 @@ ifndef CC_LD_DYNPATH
+ 	endif
  endif
  
--ifdef PPC_SHA1
--	SHA1_HEADER = "ppc/sha1.h"
--	LIB_OBJS += $(OUTPUT)ppc/sha1.o ppc/sha1ppc.o
+-ifdef NEEDS_SOCKET
+-	EXTLIBS += -lsocket
+-endif
+-ifdef NEEDS_NSL
+-	EXTLIBS += -lnsl
+-endif
+-ifdef NO_D_TYPE_IN_DIRENT
+-	BASIC_CFLAGS += -DNO_D_TYPE_IN_DIRENT
+-endif
+-ifdef NO_D_INO_IN_DIRENT
+-	BASIC_CFLAGS += -DNO_D_INO_IN_DIRENT
+-endif
+-ifdef NO_ST_BLOCKS_IN_STRUCT_STAT
+-	BASIC_CFLAGS += -DNO_ST_BLOCKS_IN_STRUCT_STAT
+-endif
+-ifdef USE_NSEC
+-	BASIC_CFLAGS += -DUSE_NSEC
+-endif
+-ifdef USE_ST_TIMESPEC
+-	BASIC_CFLAGS += -DUSE_ST_TIMESPEC
+-endif
+-ifdef NO_NSEC
+-	BASIC_CFLAGS += -DNO_NSEC
+-endif
+ ifdef NO_C99_FORMAT
+ 	BASIC_CFLAGS += -DNO_C99_FORMAT
+ endif
+-ifdef SNPRINTF_RETURNS_BOGUS
+-	COMPAT_CFLAGS += -DSNPRINTF_RETURNS_BOGUS
+-	COMPAT_OBJS += $(OUTPUT)compat/snprintf.o
+-endif
+-ifdef FREAD_READS_DIRECTORIES
+-	COMPAT_CFLAGS += -DFREAD_READS_DIRECTORIES
+-	COMPAT_OBJS += $(OUTPUT)compat/fopen.o
+-endif
+-ifdef NO_STRCASESTR
+-	COMPAT_CFLAGS += -DNO_STRCASESTR
+-	COMPAT_OBJS += $(OUTPUT)compat/strcasestr.o
+-endif
+-ifdef NO_STRTOUMAX
+-	COMPAT_CFLAGS += -DNO_STRTOUMAX
+-	COMPAT_OBJS += $(OUTPUT)compat/strtoumax.o
+-endif
+-ifdef NO_STRTOULL
+-	COMPAT_CFLAGS += -DNO_STRTOULL
+-endif
+-ifdef NO_SETENV
+-	COMPAT_CFLAGS += -DNO_SETENV
+-	COMPAT_OBJS += $(OUTPUT)compat/setenv.o
+-endif
+-ifdef NO_MKDTEMP
+-	COMPAT_CFLAGS += -DNO_MKDTEMP
+-	COMPAT_OBJS += $(OUTPUT)compat/mkdtemp.o
+-endif
+-ifdef NO_UNSETENV
+-	COMPAT_CFLAGS += -DNO_UNSETENV
+-	COMPAT_OBJS += $(OUTPUT)compat/unsetenv.o
+-endif
+-ifdef NO_SYS_SELECT_H
+-	BASIC_CFLAGS += -DNO_SYS_SELECT_H
+-endif
+-ifdef NO_MMAP
+-	COMPAT_CFLAGS += -DNO_MMAP
+-	COMPAT_OBJS += $(OUTPUT)compat/mmap.o
 -else
--ifdef ARM_SHA1
--	SHA1_HEADER = "arm/sha1.h"
--	LIB_OBJS += $(OUTPUT)arm/sha1.o $(OUTPUT)arm/sha1_arm.o
+-	ifdef USE_WIN32_MMAP
+-		COMPAT_CFLAGS += -DUSE_WIN32_MMAP
+-		COMPAT_OBJS += $(OUTPUT)compat/win32mmap.o
+-	endif
+-endif
+-ifdef NO_PREAD
+-	COMPAT_CFLAGS += -DNO_PREAD
+-	COMPAT_OBJS += $(OUTPUT)compat/pread.o
+-endif
+-ifdef NO_TRUSTABLE_FILEMODE
+-	BASIC_CFLAGS += -DNO_TRUSTABLE_FILEMODE
+-endif
+-ifdef NO_IPV6
+-	BASIC_CFLAGS += -DNO_IPV6
+-endif
+-ifdef NO_UINTMAX_T
+-	BASIC_CFLAGS += -Duintmax_t=uint32_t
+-endif
+-ifdef NO_SOCKADDR_STORAGE
+-ifdef NO_IPV6
+-	BASIC_CFLAGS += -Dsockaddr_storage=sockaddr_in
 -else
--ifdef MOZILLA_SHA1
--	SHA1_HEADER = "mozilla-sha1/sha1.h"
--	LIB_OBJS += $(OUTPUT)mozilla-sha1/sha1.o
--else
--	SHA1_HEADER = <openssl/sha.h>
--	EXTLIBS += $(LIB_4_CRYPTO)
+-	BASIC_CFLAGS += -Dsockaddr_storage=sockaddr_in6
 -endif
 -endif
+-ifdef NO_INET_NTOP
+-	LIB_OBJS += $(OUTPUT)compat/inet_ntop.o
 -endif
+-ifdef NO_INET_PTON
+-	LIB_OBJS += $(OUTPUT)compat/inet_pton.o
+-endif
+-
+-ifdef NO_ICONV
+-	BASIC_CFLAGS += -DNO_ICONV
+-endif
+-
+-ifdef OLD_ICONV
+-	BASIC_CFLAGS += -DOLD_ICONV
+-endif
+ 
+ ifdef NO_DEFLATE_BOUND
+ 	BASIC_CFLAGS += -DNO_DEFLATE_BOUND
+@@ -819,14 +620,6 @@ endif
  ifdef NO_PERL_MAKEMAKER
  	export NO_PERL_MAKEMAKER
  endif
-@@ -930,7 +878,6 @@ endif
+-ifdef NO_HSTRERROR
+-	COMPAT_CFLAGS += -DNO_HSTRERROR
+-	COMPAT_OBJS += $(OUTPUT)compat/hstrerror.o
+-endif
+-ifdef NO_MEMMEM
+-	COMPAT_CFLAGS += -DNO_MEMMEM
+-	COMPAT_OBJS += $(OUTPUT)compat/memmem.o
+-endif
+ ifdef INTERNAL_QSORT
+ 	COMPAT_CFLAGS += -DINTERNAL_QSORT
+ 	COMPAT_OBJS += $(OUTPUT)compat/qsort.o
+@@ -835,9 +628,6 @@ ifdef RUNTIME_PREFIX
+ 	COMPAT_CFLAGS += -DRUNTIME_PREFIX
+ endif
  
- # Shell quote (do not use $(call) to accommodate ancient setups);
- 
--SHA1_HEADER_SQ = $(subst ','\'',$(SHA1_HEADER))
- ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
- 
- DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
-@@ -948,8 +895,7 @@ PERL_PATH_SQ = $(subst ','\'',$(PERL_PATH))
+-ifdef DIR_HAS_BSD_GROUP_SEMANTICS
+-	COMPAT_CFLAGS += -DDIR_HAS_BSD_GROUP_SEMANTICS
+-endif
+ ifdef NO_EXTERNAL_GREP
+ 	BASIC_CFLAGS += -DNO_EXTERNAL_GREP
+ endif
+@@ -895,9 +685,6 @@ PERL_PATH_SQ = $(subst ','\'',$(PERL_PATH))
  
  LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive $(EXTLIBS)
  
--BASIC_CFLAGS += -DSHA1_HEADER='$(SHA1_HEADER_SQ)' \
--	$(COMPAT_CFLAGS)
-+BASIC_CFLAGS += $(COMPAT_CFLAGS)
- LIB_OBJS += $(COMPAT_OBJS)
- 
- ALL_CFLAGS += $(BASIC_CFLAGS)
-@@ -1048,9 +994,6 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
- 		'-DPREFIX="$(prefix_SQ)"' \
- 		$<
- 
--$(OUTPUT)builtin-init-db.o: builtin-init-db.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DDEFAULT_PERF_TEMPLATE_DIR='"$(template_dir_SQ)"' $<
+-BASIC_CFLAGS += $(COMPAT_CFLAGS)
+-LIB_OBJS += $(COMPAT_OBJS)
 -
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ ALL_CFLAGS += $(BASIC_CFLAGS)
+ ALL_CFLAGS += $(ARCH_CFLAGS)
+ ALL_LDFLAGS += $(BASIC_LDFLAGS)
+@@ -910,9 +697,6 @@ export TAR INSTALL DESTDIR SHELL_PATH
+ SHELL = $(SHELL_PATH)
  
-@@ -1089,7 +1032,6 @@ $(OUTPUT)perf-%$X: %.o $(PERFLIBS)
+ all:: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(BUILT_INS) $(OTHER_PROGRAMS) $(OUTPUT)PERF-BUILD-OPTIONS
+-ifneq (,$X)
+-	$(foreach p,$(patsubst %$X,%,$(filter %$X,$(ALL_PROGRAMS) $(BUILT_INS) perf$X)), test '$p' -ef '$p$X' || $(RM) '$p';)
+-endif
+ 
+ all::
+ 
+@@ -921,15 +705,15 @@ please_set_SHELL_PATH_to_a_more_modern_shell:
+ 
+ shell_compatibility_test: please_set_SHELL_PATH_to_a_more_modern_shell
+ 
+-strip: $(PROGRAMS) $(OUTPUT)perf$X
+-	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf$X
++strip: $(PROGRAMS) $(OUTPUT)perf
++	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf
+ 
+ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -DPERF_VERSION='"$(PERF_VERSION)"' \
+ 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+ 		$(ALL_CFLAGS) -c $(filter %.c,$^) -o $@
+ 
+-$(OUTPUT)perf$X: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
++$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(LIBS) -o $@
+ 
+@@ -1027,11 +811,11 @@ $(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/tra
+ $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
+ 
+-$(OUTPUT)perf-%$X: %.o $(PERFLIBS)
++$(OUTPUT)perf-%: %.o $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(ALL_LDFLAGS) $(filter %.o,$^) $(LIBS)
  
  $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
- $(patsubst perf-%$X,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
--builtin-revert.o wt-status.o: wt-status.h
+-$(patsubst perf-%$X,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
++$(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
  
  # we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
  # we depend the various files onto their directories.
-@@ -1192,8 +1134,6 @@ all:: $(TEST_PROGRAMS)
- # However, the environment gets quite big, and some programs have problems
- # with that.
+@@ -1168,7 +952,7 @@ export perfexec_instdir
  
--export NO_SVN_TESTS
+ install: all
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+-	$(INSTALL) $(OUTPUT)perf$X '$(DESTDIR_SQ)$(bindir_SQ)'
++	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/bin'
+ 	$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+@@ -1267,7 +1051,7 @@ distclean: clean
+ 
+ clean:
+ 	$(RM) $(OUTPUT){*.o,*/*.o,*/*/*.o,*/*/*/*.o,$(LIB_FILE),perf-archive}
+-	$(RM) $(ALL_PROGRAMS) $(BUILT_INS) perf$X
++	$(RM) $(ALL_PROGRAMS) $(BUILT_INS) perf
+ 	$(RM) $(TEST_PROGRAMS)
+ 	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	$(RM) -r $(PERF_TARNAME) .doc-tmp-dir
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index e833f26..fc78428 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -70,9 +70,7 @@
+ #include <sys/poll.h>
+ #include <sys/socket.h>
+ #include <sys/ioctl.h>
+-#ifndef NO_SYS_SELECT_H
+ #include <sys/select.h>
+-#endif
+ #include <netinet/in.h>
+ #include <netinet/tcp.h>
+ #include <arpa/inet.h>
+@@ -83,10 +81,6 @@
+ #include "types.h"
+ #include <sys/ttydefaults.h>
+ 
+-#ifndef NO_ICONV
+-#include <iconv.h>
+-#endif
 -
- check: $(OUTPUT)common-cmds.h
- 	if sparse; \
- 	then \
+ extern const char *graph_line;
+ extern const char *graph_dotted_line;
+ extern char buildid_dir[];
+@@ -236,26 +230,6 @@ static inline int sane_case(int x, int high)
+ 	return x;
+ }
+ 
+-#ifndef DIR_HAS_BSD_GROUP_SEMANTICS
+-# define FORCE_DIR_SET_GID S_ISGID
+-#else
+-# define FORCE_DIR_SET_GID 0
+-#endif
+-
+-#ifdef NO_NSEC
+-#undef USE_NSEC
+-#define ST_CTIME_NSEC(st) 0
+-#define ST_MTIME_NSEC(st) 0
+-#else
+-#ifdef USE_ST_TIMESPEC
+-#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctimespec.tv_nsec))
+-#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtimespec.tv_nsec))
+-#else
+-#define ST_CTIME_NSEC(st) ((unsigned int)((st).st_ctim.tv_nsec))
+-#define ST_MTIME_NSEC(st) ((unsigned int)((st).st_mtim.tv_nsec))
+-#endif
+-#endif
+-
+ int mkdir_p(char *path, mode_t mode);
+ int copyfile(const char *from, const char *to);
+ 
