@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab1BSPem (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 10:34:42 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:32847 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755584Ab1BSPej (ORCPT
+	id S1755710Ab1BSPfU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 10:35:20 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53356 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab1BSPfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 10:34:39 -0500
+	Sat, 19 Feb 2011 10:35:16 -0500
+Date: Sat, 19 Feb 2011 15:34:50 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Make clocksource name const
+Message-ID: <20110219153450.GI29493@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <m1oc68ilw7.fsf@fess.ebiederm.org>
-References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
- <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
- <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
- <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
- <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
- <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
- <20110218122938.GB26779@tiehlicka.suse.cz> <20110218162623.GD4862@tiehlicka.suse.cz>
- <AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com> <m1oc68ilw7.fsf@fess.ebiederm.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 19 Feb 2011 07:33:45 -0800
-Message-ID: <AANLkTincrnq1kMcAYEWYLf5vdbQ4DYbYObbg=0cLfHnm@mail.gmail.com>
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 10:22 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->
-> It looks like the same problematic dellink pattern made it into net_namespace.c,
-> and your new LIST_DEBUG changes caught it.
+As nothing should be writing to the clocksource name string, make the
+clocksource name pointer const.  Build-tested on ARM Versatile Express.
 
-Hey, goodie. Committing that patch felt like locking the barn door
-after the horse had bolted, so I'm happy to hear it was actually worth
-it.
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+ include/linux/clocksource.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> I will cook up a patch after I get some sleep.
-
-Thanks,
-
-                 Linus
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index c37b21a..94c1f38 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -161,7 +161,7 @@ struct clocksource {
+ 	/*
+ 	 * First part of structure is read mostly
+ 	 */
+-	char *name;
++	const char *name;
+ 	struct list_head list;
+ 	int rating;
+ 	cycle_t (*read)(struct clocksource *cs);
