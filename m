@@ -1,57 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1BSX3Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 18:29:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:60952 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab1BSX3X (ORCPT
+	id S1754704Ab1BSXlc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 18:41:32 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47476 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab1BSXla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 18:29:23 -0500
-From: Stefan Weil <weil@mail.berlios.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Stefan Weil <weil@mail.berlios.de>, Brett Rudley <brudley@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: brcm80211: Fix memory leak after kmalloc failure
-Date: Sun, 20 Feb 2011 00:29:11 +0100
-Message-Id: <1298158151-22903-1-git-send-email-weil@mail.berlios.de>
-X-Mailer: git-send-email 1.7.2.3
-X-Provags-ID: V02:K0:ePURRHppb3MNzk8IdwxkRImBEy5FsdDcKOrR6rFUBPV
- R5uR2bXCSzacTAt5Dd+lFZenONGq+zmHDLzQ/jxAcMXwFyhsNu
- 5npyQTKITctShohGAG692E6xkyGf5b9Ch7PgSFkoAaYb3oSUce
- SY07KasTS+a1kf1JWaBF6nQNYy4C1xM1ri1+xgv9cht/OskEd4
- LBxXpeacAkLZKRBC8NROZGSo+XJB+cYsylT5EgDdNjcnsrXOIF
- 5s5GuGPezPORi
+	Sat, 19 Feb 2011 18:41:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=E6PbFhj8dvSLUYSo9B8nmnbNZfCHsKIEoesg7015xXoqLV3SiEaxJ1Gfgq2v2J51us
+         WRe9bqBb9vSlgX8beH5hlJzed2Ll9zfJ4pHO8105Wfnk9cGT/EI0HwgT+YDfHzkJDFtT
+         wtsISf6Omv+pC2hJDOzKfVh2joQYk86S1wY5c=
+Date: Sun, 20 Feb 2011 08:41:21 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] mm: optimize replace_page_cache_page
+Message-ID: <20110219234121.GA2546@barrios-desktop>
+References: <1297355626-5152-1-git-send-email-minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297355626-5152-1-git-send-email-minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This error was spotted by cppcheck:
+Resend.
 
-drivers/staging/brcm80211/phy/wlc_phy_lcn.c:4053: error: Memory leak: ptr
+he patch is based on mmotm-2011-02-04 + 
+mm-add-replace_page_cache_page-function-add-freepage-hook.patch.
 
-Cc: Brett Rudley <brudley@broadcom.com>
-Cc: Henry Ptasinski <henryp@broadcom.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Stefan Weil <weil@mail.berlios.de>
----
- drivers/staging/brcm80211/phy/wlc_phy_lcn.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Fri, Feb 11, 2011 at 01:33:46AM +0900, Minchan Kim wrote:
+> This patch optmizes replace_page_cache_page.
+> 
+> 1) remove radix_tree_preload
+> 2) single radix_tree_lookup_slot and replace radix tree slot
+> 3) page accounting optimization if both pages are in same zone.
+> 
+> Cc: Miklos Szeredi <mszeredi@suse.cz>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> ---
+>  mm/filemap.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++---------
+>  1 files changed, 51 insertions(+), 10 deletions(-)
+> 
+> Hi Miklos,
+> This patch is totally not tested.
+> Could you test this patch?
+> 
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index a25c898..918ef1e 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -148,6 +148,56 @@ void __remove_from_page_cache(struct page *page)
+>  	}
+>  }
+>  
+> +/*
+> + * Replace a page from the page cache with a new one.
+> + * Both the old and new page must be locked.
+> + * The caller must hold the mapping's tree_lock.
+> + */
+> +void __replace_page_cache_page(struct page *old, struct page *new)
+> +{
+> +	void **pslot;
+> +	struct address_space *mapping = old->mapping;
+> +	struct zone *old_zone, *new_zone;
+> +
+> +	old_zone = page_zone(old);
+> +	new_zone = page_zone(new);
+> +	/*
+> +	 * if we're uptodate, flush out into the cleancache, otherwise
+> +	 * invalidate any existing cleancache entries.  We can't leave
+> +	 * stale data around in the cleancache once our page is gone
+> +	 */
+> +	if (PageUptodate(old))
+> +		cleancache_put_page(old);
+> +	else
+> +		cleancache_flush_page(mapping, old);
+> +
+> +	pslot = radix_tree_lookup_slot(&mapping->page_tree,
+> +			page_index(old));
+> +	get_page(new);      /* add cache reference */
+> +	radix_tree_replace_slot(pslot, new);
+> +	old->mapping = NULL;
+> +	if (old_zone != new_zone) {
+> +		__dec_zone_page_state(old, NR_FILE_PAGES);
+> +		__inc_zone_page_state(new, NR_FILE_PAGES);
+> +		if (PageSwapBacked(old)) {
+> +			__dec_zone_page_state(old, NR_SHMEM);
+> +			__inc_zone_page_state(new, NR_SHMEM);
+> +		}
+> +	}
+> +	BUG_ON(page_mapped(old));
+> +	/*
+> +	 * Some filesystems seem to re-dirty the page even after
+> +	 * the VM has canceled the dirty bit (eg ext3 journaling).
+> +	 *
+> +	 * Fix it up by doing a final dirty accounting check after
+> +	 * having removed the page entirely.
+> +	 */
+> +	if (PageDirty(old) && mapping_cap_account_dirty(mapping)) {
+> +		dec_zone_page_state(old, NR_FILE_DIRTY);
+> +		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+> +	}
+> +}
+> +
+>  void remove_from_page_cache(struct page *page)
+>  {
+>  	struct address_space *mapping = page->mapping;
+> @@ -433,7 +483,6 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+>  	if (error)
+>  		return error;
+>  
+> -	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+>  	if (!error) {
+>  		struct address_space *mapping = old->mapping;
+>  		void (*freepage)(struct page *);
+> @@ -441,20 +490,12 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+>  		pgoff_t offset = old->index;
+>  		freepage = mapping->a_ops->freepage;
+>  
+> -		page_cache_get(new);
+>  		new->mapping = mapping;
+>  		new->index = offset;
+>  
+>  		spin_lock_irq(&mapping->tree_lock);
+> -		__remove_from_page_cache(old);
+> -		error = radix_tree_insert(&mapping->page_tree, offset, new);
+> -		BUG_ON(error);
+> -		mapping->nrpages++;
+> -		__inc_zone_page_state(new, NR_FILE_PAGES);
+> -		if (PageSwapBacked(new))
+> -			__inc_zone_page_state(new, NR_SHMEM);
+> +		__replace_page_cache_page(old, new);
+>  		spin_unlock_irq(&mapping->tree_lock);
+> -		radix_tree_preload_end();
+>  		if (freepage)
+>  			freepage(old);
+>  		page_cache_release(old);
+> -- 
+> 1.7.1
+> 
 
-diff --git a/drivers/staging/brcm80211/phy/wlc_phy_lcn.c b/drivers/staging/brcm80211/phy/wlc_phy_lcn.c
-index 3ac2b49..9e2cb60 100644
---- a/drivers/staging/brcm80211/phy/wlc_phy_lcn.c
-+++ b/drivers/staging/brcm80211/phy/wlc_phy_lcn.c
-@@ -4050,6 +4050,7 @@ wlc_lcnphy_a1(phy_info_t *pi, int cal_type, int num_levels, int step_size_lg2)
- 
- 	phy_c32 = kmalloc(sizeof(u16) * 20, GFP_ATOMIC);
- 	if (NULL == phy_c32) {
-+		kfree(ptr);
- 		return;
- 	}
- 	phy_c26 = read_phy_reg(pi, 0x6da);
 -- 
-1.7.2.3
-
+Kind regards,
+Minchan Kim
