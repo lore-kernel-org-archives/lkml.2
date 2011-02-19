@@ -1,85 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1BSSec (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 13:34:32 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:41220 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754444Ab1BSSea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 13:34:30 -0500
-Date: Sat, 19 Feb 2011 19:34:27 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] PRUSS UIO driver support
-Message-ID: <20110219183427.GG4684@local>
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
- <201102181644.17634.arnd@arndb.de>
- <alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6>
- <201102181731.05644.arnd@arndb.de>
- <alpine.LFD.2.00.1102181802580.2701@localhost6.localdomain6>
- <B85A65D85D7EB246BE421B3FB0FBB593024B83C108@dbde02.ent.ti.com>
+	id S1755402Ab1BSSyM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 13:54:12 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:52655 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab1BSSyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 13:54:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=RQXWLct4cOi0nCK6fMWN1qvqhdbPJSzq6UQl81s5fABTpem1G171ghtDOUvWBj2ZPd
+         G6XoPD8XPvqPqR2V1egg==
+Date: Sat, 19 Feb 2011 10:54:00 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: supercilious.dude@gmail.com
+cc: linux-kernel@vger.kernel.org
+Subject: Re: KSM kernel interface
+In-Reply-To: <ijnfme$snp$1@dough.gmane.org>
+Message-ID: <alpine.LSU.2.00.1102191026070.5067@sister.anvils>
+References: <ijnfme$snp$1@dough.gmane.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024B83C108@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 19, 2011 at 09:10:23PM +0530, TK, Pratheesh Gangadhar wrote:
+On Sat, 19 Feb 2011, supercilious.dude@gmail.com wrote:
 > 
-> For my understanding - if the interrupt is not shared and not level triggered -
-> is this okay to have empty handler?
+> Is there a way to enable KSM globally for all eligible pages in the system
+> such that applications need not call madvise() themselves? If not, is there
+> a way to do so on behalf of a particular application without an ugly
+> LD_PRELOAD hack?
 
-Greg already said he won't accept that. And I'm quite sure these interrupts
-are level triggered, since that is the default on arch/omap.
-
-E.g. in arch/arm/mach-omap1/irq.c, a loop sets all irqs to level triggered
-handling: set_irq_handler(j, handle_level_irq); (line 234)
-
-> In this specific case, these interrupt lines are internal to SOC and hooked to ARM INTC from PRUSS. PRUSS has another INTC to handle system events to PRUSS as well as to generate system events to host ARM. These generated events are used for IPC between user application and PRU firmware and for async notifications from PRU firmware to user space. I don't see a reason to make it shared as we have 8 lines available for use. As mentioned before ARM INTC interrupt processing logic converts interrupts to active high pulses.
-
-What's a "pulse triggered interrupt"? I know level and edge triggered ones.
+Sorry, there is not.
 
 > 
-> I also looked at the interrupt handling in existing UIO drivers
-> 
-> 
-> static irqreturn_t my_uio_handler(int irq, struct uio_info *dev_info)
-> {
->         if (no interrupt is enabled and no interrupt is active) /For shared interrupt handling
->                 return IRQ_NONE;
-> 
->         disable interrupt; // For level triggered interrupts 
->         return IRQ_HANDLED;
-> }
-> 
-> It's not clear how and where interrupts are re-enabled. Is this expected to be done from user space?
+> Perhaps there is a small kernel modification that might make this possible
+> or provide a sysfs flag that enables it (off by default of course)?
 
-That's the normal case, yes. You re-enable the interrupts by accessing the irq
-mask register of your chip.
+Indeed it could be added if there were a general call for it; but ksmd
+would tend to get wasteful, and the only call for it that I remember is
+for testing.
+
+I expect you've noticed the transparent_hugepage/enabled "always" option,
+and you are thinking something like that could be done for KSM: yes.
 
 > 
-> Uio_secos3.c has an irqcontrol function to enable/disable interrupts. Is this the recommended approach?
+> I read through the code very briefly, and as far as I can tell, I need to
+> add the VM_MERGEABLE flag to all eligible VMAs at the time they are created
+> and also __ksm_enter() the associated mm_struct at creation also. Would that
+> work?
 
-No. That is a workaround for broken hardware. You need it if and only if your
-chip 1) has several internal irq sources and 2) there's no possibility for
-the kernel to mask the interrupt in the chip without loosing the information
-which irq source actually triggered the interrupt.
+I think that's right.
 
-If that is the case, the kernel will disable the irq line in some other way
-without touching the chip. Userspace then needs a way to re-enable irqs,
-and that's where the irqcontrol function is used.
+Here is the hack I use myself for testing KSM: just boot with option
+"allksm" (which here disables randomize_va_space as a side-effect,
+to widen the scope of sharing: cut that line out if you prefer).
 
-Normally, you shouldn't need it.
+You may be puzzled by the squashed comments etc: just trying not to
+interfere with the line numbering in mm/mmap.c, in case I have other
+patches to apply there, or hit a BUG to report.
 
-Thanks,
-Hans
+Hugh
+---
+
+ mm/mmap.c |   27 +++++++++++++++++----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
+
+--- 2.6.37/mm/mmap.c	2011-01-04 16:50:19.000000000 -0800
++++ allksm/mm/mmap.c	2011-01-04 19:47:16.000000000 -0800
+@@ -960,9 +960,9 @@ void vm_stat_account(struct mm_struct *m
+ #endif /* CONFIG_PROC_FS */
+ 
+ /*
+- * The caller must hold down_write(&current->mm->mmap_sem).
+- */
+-
++ * The caller must hold down_write(&current->mm->mmap_sem). */
++#include <linux/ksm.h>
++unsigned long vm_mergeable;
+ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+ 			unsigned long len, unsigned long prot,
+ 			unsigned long flags, unsigned long pgoff)
+@@ -1086,7 +1086,7 @@ unsigned long do_mmap_pgoff(struct file
+ 			/*
+ 			 * Set pgoff according to addr for anon_vma.
+ 			 */
+-			pgoff = addr >> PAGE_SHIFT;
++			vm_flags |= vm_mergeable; pgoff = addr >> PAGE_SHIFT;
+ 			break;
+ 		default:
+ 			return -EINVAL;
+@@ -1303,10 +1303,10 @@ munmap_back:
+ 		vma->vm_file = file;
+ 		get_file(file);
+ 		error = file->f_op->mmap(file, vma);
+-		if (error)
+-			goto unmap_and_free_vma;
+-		if (vm_flags & VM_EXECUTABLE)
+-			added_exe_file_vma(mm);
++		if (error) goto unmap_and_free_vma;
++		if (vm_flags & VM_EXECUTABLE) added_exe_file_vma(mm);
++		if (vm_mergeable)
++			ksm_madvise(vma, 0, 0, MADV_MERGEABLE,&vma->vm_flags);
+ 
+ 		/* Can addr have changed??
+ 		 *
+@@ -2167,7 +2167,7 @@ unsigned long do_brk(unsigned long addr,
+ 		return error;
+ 
+ 	flags = VM_DATA_DEFAULT_FLAGS | VM_ACCOUNT | mm->def_flags;
+-
++	flags |= vm_mergeable;
+ 	error = get_unmapped_area(NULL, addr, len, 0, MAP_FIXED);
+ 	if (error & ~PAGE_MASK)
+ 		return error;
+@@ -2318,7 +2318,7 @@ int insert_vm_struct(struct mm_struct *
+ 	if (!vma->vm_file) {
+ 		BUG_ON(vma->anon_vma);
+ 		vma->vm_pgoff = vma->vm_start >> PAGE_SHIFT;
+-	}
++		vma->vm_flags |= vm_mergeable;	}
+ 	__vma = find_vma_prepare(mm,vma->vm_start,&prev,&rb_link,&rb_parent);
+ 	if (__vma && __vma->vm_start < vma->vm_end)
+ 		return -ENOMEM;
+@@ -2677,3 +2677,10 @@ void __init mmap_init(void)
+ 	ret = percpu_counter_init(&vm_committed_as, 0);
+ 	VM_BUG_ON(ret);
+ }
++static int __init allksm(char *s)
++{
++	randomize_va_space = 0;
++	vm_mergeable = VM_MERGEABLE;
++	return 1;
++}
++__setup("allksm", allksm);
