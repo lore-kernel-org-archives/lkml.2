@@ -1,142 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab1BSSyM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 13:54:12 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:52655 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab1BSSyJ (ORCPT
+	id S1755490Ab1BSTIJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 14:08:09 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50721 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755014Ab1BSTIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 13:54:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=RQXWLct4cOi0nCK6fMWN1qvqhdbPJSzq6UQl81s5fABTpem1G171ghtDOUvWBj2ZPd
-         G6XoPD8XPvqPqR2V1egg==
-Date: Sat, 19 Feb 2011 10:54:00 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: supercilious.dude@gmail.com
-cc: linux-kernel@vger.kernel.org
-Subject: Re: KSM kernel interface
-In-Reply-To: <ijnfme$snp$1@dough.gmane.org>
-Message-ID: <alpine.LSU.2.00.1102191026070.5067@sister.anvils>
-References: <ijnfme$snp$1@dough.gmane.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Sat, 19 Feb 2011 14:08:06 -0500
+Message-ID: <4D6014F9.8040605@kernel.org>
+Date: Sat, 19 Feb 2011 11:07:37 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] genirq: Make nr_irqs runtime expandable
+References: <tip-e7bcecb7b1d29b9ad5af939149a945658620ca8f@git.kernel.org>
+In-Reply-To: <tip-e7bcecb7b1d29b9ad5af939149a945658620ca8f@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D601505.00DA,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Feb 2011, supercilious.dude@gmail.com wrote:
+On 02/19/2011 04:15 AM, tip-bot for Thomas Gleixner wrote:
+> Commit-ID:  e7bcecb7b1d29b9ad5af939149a945658620ca8f
+> Gitweb:     http://git.kernel.org/tip/e7bcecb7b1d29b9ad5af939149a945658620ca8f
+> Author:     Thomas Gleixner <tglx@linutronix.de>
+> AuthorDate: Wed, 16 Feb 2011 17:12:57 +0100
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Sat, 19 Feb 2011 12:58:06 +0100
 > 
-> Is there a way to enable KSM globally for all eligible pages in the system
-> such that applications need not call madvise() themselves? If not, is there
-> a way to do so on behalf of a particular application without an ugly
-> LD_PRELOAD hack?
-
-Sorry, there is not.
-
+> genirq: Make nr_irqs runtime expandable
 > 
-> Perhaps there is a small kernel modification that might make this possible
-> or provide a sysfs flag that enables it (off by default of course)?
-
-Indeed it could be added if there were a general call for it; but ksmd
-would tend to get wasteful, and the only call for it that I remember is
-for testing.
-
-I expect you've noticed the transparent_hugepage/enabled "always" option,
-and you are thinking something like that could be done for KSM: yes.
-
+> We face more and more the requirement to expand nr_irqs at
+> runtime. The reason are irq expanders which can not be detected in the
+> early boot stage. So we speculate nr_irqs to have enough room. Further
+> Xen needs extra irq numbers and we really want to avoid adding more
+> "detection" code into the early boot. There is no real good reason why
+> we need to limit nr_irqs at early boot.
 > 
-> I read through the code very briefly, and as far as I can tell, I need to
-> add the VM_MERGEABLE flag to all eligible VMAs at the time they are created
-> and also __ksm_enter() the associated mm_struct at creation also. Would that
-> work?
+> Allow the allocation code to expand nr_irqs. We have already 8k extra
+> number space in the allocation bitmap, so lets use it.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/irq/irqdesc.c |   22 +++++++++++++++++++---
+>  1 files changed, 19 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+> index a250d3a..6f6644f 100644
+> --- a/kernel/irq/irqdesc.c
+> +++ b/kernel/irq/irqdesc.c
+> @@ -206,6 +206,14 @@ struct irq_desc * __ref irq_to_desc_alloc_node(unsigned int irq, int node)
+>  	return NULL;
+>  }
+>  
+> +static int irq_expand_nr_irqs(unsigned int cnt)
+> +{
+> +	if (nr_irqs + cnt > IRQ_BITMAP_BITS)
+> +		return -ENOMEM;
+> +	nr_irqs += cnt;
+> +	return 0;
+> +}
+> +
+>  int __init early_irq_init(void)
+>  {
+>  	int i, initcnt, node = first_online_node;
+> @@ -287,6 +295,12 @@ static inline int alloc_descs(unsigned int start, unsigned int cnt, int node)
+>  {
+>  	return start;
+>  }
+> +
+> +static int irq_expand_nr_irqs(unsigned int cnt)
+> +{
+> +	return -ENOMEM;
+> +}
+> +
+>  #endif /* !CONFIG_SPARSE_IRQ */
+>  
+>  /* Dynamic interrupt handling */
+> @@ -335,9 +349,11 @@ irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
+>  	if (irq >=0 && start != irq)
+>  		goto err;
+>  
+> -	ret = -ENOMEM;
+> -	if (start >= nr_irqs)
+> -		goto err;
+> +	if (start >= nr_irqs) {
+> +		ret = irq_expand_nr_irqs(cnt);
+> +		if (ret)
+> +			goto err;
+> +	}
 
-I think that's right.
+may need following patch.
 
-Here is the hack I use myself for testing KSM: just boot with option
-"allksm" (which here disables randomize_va_space as a side-effect,
-to widen the scope of sharing: cut that line out if you prefer).
+[PATCH] genirq: use IRQ_BITMAP_BITS as search size
 
-You may be puzzled by the squashed comments etc: just trying not to
-interfere with the line numbering in mm/mmap.c, in case I have other
-patches to apply there, or hit a BUG to report.
+instead of nr_irqs.
 
-Hugh
+Otherwise bitmap_find_next_area could exit with larger start and in extreme
+case we could fail to get wrong irqs return.
+
+For example:
+IRQ_BITMAP_BITS=10240
+nr_irqs=8192
+cnt=2048
+
+and bit 0 to bit 8190 are set already.
+
+before patch start from bit_find_next_area() will be 8191+2048.
+later irq_expand_nr_irqs will set nr_irqs 10240.
+finally irq_alloc_descs will return [8191+2048, 8191+2048+2047] happily..
+
+with this patch, will get correct [8191, 8191+2047]
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
+ kernel/irq/irqdesc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
- mm/mmap.c |   27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
-
---- 2.6.37/mm/mmap.c	2011-01-04 16:50:19.000000000 -0800
-+++ allksm/mm/mmap.c	2011-01-04 19:47:16.000000000 -0800
-@@ -960,9 +960,9 @@ void vm_stat_account(struct mm_struct *m
- #endif /* CONFIG_PROC_FS */
+Index: linux-2.6/kernel/irq/irqdesc.c
+===================================================================
+--- linux-2.6.orig/kernel/irq/irqdesc.c
++++ linux-2.6/kernel/irq/irqdesc.c
+@@ -346,12 +346,13 @@ irq_alloc_descs(int irq, unsigned int fr
  
- /*
-- * The caller must hold down_write(&current->mm->mmap_sem).
-- */
--
-+ * The caller must hold down_write(&current->mm->mmap_sem). */
-+#include <linux/ksm.h>
-+unsigned long vm_mergeable;
- unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 			unsigned long len, unsigned long prot,
- 			unsigned long flags, unsigned long pgoff)
-@@ -1086,7 +1086,7 @@ unsigned long do_mmap_pgoff(struct file
- 			/*
- 			 * Set pgoff according to addr for anon_vma.
- 			 */
--			pgoff = addr >> PAGE_SHIFT;
-+			vm_flags |= vm_mergeable; pgoff = addr >> PAGE_SHIFT;
- 			break;
- 		default:
- 			return -EINVAL;
-@@ -1303,10 +1303,10 @@ munmap_back:
- 		vma->vm_file = file;
- 		get_file(file);
- 		error = file->f_op->mmap(file, vma);
--		if (error)
--			goto unmap_and_free_vma;
--		if (vm_flags & VM_EXECUTABLE)
--			added_exe_file_vma(mm);
-+		if (error) goto unmap_and_free_vma;
-+		if (vm_flags & VM_EXECUTABLE) added_exe_file_vma(mm);
-+		if (vm_mergeable)
-+			ksm_madvise(vma, 0, 0, MADV_MERGEABLE,&vma->vm_flags);
+ 	mutex_lock(&sparse_irq_lock);
  
- 		/* Can addr have changed??
- 		 *
-@@ -2167,7 +2167,7 @@ unsigned long do_brk(unsigned long addr,
- 		return error;
+-	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
++	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
++						 from, cnt, 0);
+ 	ret = -EEXIST;
+ 	if (irq >=0 && start != irq)
+ 		goto err;
  
- 	flags = VM_DATA_DEFAULT_FLAGS | VM_ACCOUNT | mm->def_flags;
--
-+	flags |= vm_mergeable;
- 	error = get_unmapped_area(NULL, addr, len, 0, MAP_FIXED);
- 	if (error & ~PAGE_MASK)
- 		return error;
-@@ -2318,7 +2318,7 @@ int insert_vm_struct(struct mm_struct *
- 	if (!vma->vm_file) {
- 		BUG_ON(vma->anon_vma);
- 		vma->vm_pgoff = vma->vm_start >> PAGE_SHIFT;
--	}
-+		vma->vm_flags |= vm_mergeable;	}
- 	__vma = find_vma_prepare(mm,vma->vm_start,&prev,&rb_link,&rb_parent);
- 	if (__vma && __vma->vm_start < vma->vm_end)
- 		return -ENOMEM;
-@@ -2677,3 +2677,10 @@ void __init mmap_init(void)
- 	ret = percpu_counter_init(&vm_committed_as, 0);
- 	VM_BUG_ON(ret);
- }
-+static int __init allksm(char *s)
-+{
-+	randomize_va_space = 0;
-+	vm_mergeable = VM_MERGEABLE;
-+	return 1;
-+}
-+__setup("allksm", allksm);
+-	if (start >= nr_irqs) {
++	if (start + cnt > nr_irqs) {
+ 		ret = irq_expand_nr_irqs(cnt);
+ 		if (ret)
+ 			goto err;
