@@ -1,158 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab1BSXlc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 18:41:32 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:47476 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab1BSXla (ORCPT
+	id S1754922Ab1BSXnu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 18:43:50 -0500
+Received: from nm9-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.67]:37728 "HELO
+	nm9-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754488Ab1BSXnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 18:41:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E6PbFhj8dvSLUYSo9B8nmnbNZfCHsKIEoesg7015xXoqLV3SiEaxJ1Gfgq2v2J51us
-         WRe9bqBb9vSlgX8beH5hlJzed2Ll9zfJ4pHO8105Wfnk9cGT/EI0HwgT+YDfHzkJDFtT
-         wtsISf6Omv+pC2hJDOzKfVh2joQYk86S1wY5c=
-Date: Sun, 20 Feb 2011 08:41:21 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] mm: optimize replace_page_cache_page
-Message-ID: <20110219234121.GA2546@barrios-desktop>
-References: <1297355626-5152-1-git-send-email-minchan.kim@gmail.com>
+	Sat, 19 Feb 2011 18:43:49 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 917842.4252.bm@omp1033.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
+  b=nOKsY8ZBF1W+PucjFkKsDW9nB7VYlMfH5n6rD8MEVAv1HW7/F4ZS6j1DL0/0lT1tfnQGYdCysy+2nhQAljajehvCxW2hno0bDqkpo3oBiMCgcyVGr4EbbF7izjaIv3GEJPusc/NllYematKTp5E0cEV1mQJCm2N/PjYWLU5Ykbc=;
+Message-ID: <698697.4037.qm@web121807.mail.ne1.yahoo.com>
+X-YMail-OSG: OihxOKYVM1mdM1APqx4bQ8yYxZXgl7W0N5jI.pk0Q4VPjjR
+ GybF8.I4..0sqIxaCiZydCe33q66H9edYjiqHol74VeCljQvD6csrFB1KB6M
+ Fi6KyfkBqb2qA_R4rGT4BxZY9br9MIX4uQ.1hWL3rS3QNdVmSAAEJnFrrmyQ
+ EDBTUGei_ZNRfAvhVwlVulA2uulBCNLb.LljmeX4SVy9Pyf.p.EQUV0EptjV
+ XHag93HUADFqk7vDyEuCMV0ew4jwOTLKi9YKvjxvEJk7jEG1R9U.M
+X-Mailer: YahooMailWebService/0.8.109.292656
+Date: Sat, 19 Feb 2011 15:43:48 -0800 (PST)
+From: GAURAV YADAV <gaurav_christmas@yahoo.com>
+To: preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com,
+        draju_d@hotmail.com, ram.ojha@relianceinfo.com,
+        rankendrasingh@lycos.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297355626-5152-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resend.
+http://electroniques.us/gift.php?aolid=4608
 
-he patch is based on mmotm-2011-02-04 + 
-mm-add-replace_page_cache_page-function-add-freepage-hook.patch.
 
-On Fri, Feb 11, 2011 at 01:33:46AM +0900, Minchan Kim wrote:
-> This patch optmizes replace_page_cache_page.
-> 
-> 1) remove radix_tree_preload
-> 2) single radix_tree_lookup_slot and replace radix tree slot
-> 3) page accounting optimization if both pages are in same zone.
-> 
-> Cc: Miklos Szeredi <mszeredi@suse.cz>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/filemap.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++---------
->  1 files changed, 51 insertions(+), 10 deletions(-)
-> 
-> Hi Miklos,
-> This patch is totally not tested.
-> Could you test this patch?
-> 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index a25c898..918ef1e 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -148,6 +148,56 @@ void __remove_from_page_cache(struct page *page)
->  	}
->  }
->  
-> +/*
-> + * Replace a page from the page cache with a new one.
-> + * Both the old and new page must be locked.
-> + * The caller must hold the mapping's tree_lock.
-> + */
-> +void __replace_page_cache_page(struct page *old, struct page *new)
-> +{
-> +	void **pslot;
-> +	struct address_space *mapping = old->mapping;
-> +	struct zone *old_zone, *new_zone;
-> +
-> +	old_zone = page_zone(old);
-> +	new_zone = page_zone(new);
-> +	/*
-> +	 * if we're uptodate, flush out into the cleancache, otherwise
-> +	 * invalidate any existing cleancache entries.  We can't leave
-> +	 * stale data around in the cleancache once our page is gone
-> +	 */
-> +	if (PageUptodate(old))
-> +		cleancache_put_page(old);
-> +	else
-> +		cleancache_flush_page(mapping, old);
-> +
-> +	pslot = radix_tree_lookup_slot(&mapping->page_tree,
-> +			page_index(old));
-> +	get_page(new);      /* add cache reference */
-> +	radix_tree_replace_slot(pslot, new);
-> +	old->mapping = NULL;
-> +	if (old_zone != new_zone) {
-> +		__dec_zone_page_state(old, NR_FILE_PAGES);
-> +		__inc_zone_page_state(new, NR_FILE_PAGES);
-> +		if (PageSwapBacked(old)) {
-> +			__dec_zone_page_state(old, NR_SHMEM);
-> +			__inc_zone_page_state(new, NR_SHMEM);
-> +		}
-> +	}
-> +	BUG_ON(page_mapped(old));
-> +	/*
-> +	 * Some filesystems seem to re-dirty the page even after
-> +	 * the VM has canceled the dirty bit (eg ext3 journaling).
-> +	 *
-> +	 * Fix it up by doing a final dirty accounting check after
-> +	 * having removed the page entirely.
-> +	 */
-> +	if (PageDirty(old) && mapping_cap_account_dirty(mapping)) {
-> +		dec_zone_page_state(old, NR_FILE_DIRTY);
-> +		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-> +	}
-> +}
-> +
->  void remove_from_page_cache(struct page *page)
->  {
->  	struct address_space *mapping = page->mapping;
-> @@ -433,7 +483,6 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
->  	if (error)
->  		return error;
->  
-> -	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
->  	if (!error) {
->  		struct address_space *mapping = old->mapping;
->  		void (*freepage)(struct page *);
-> @@ -441,20 +490,12 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
->  		pgoff_t offset = old->index;
->  		freepage = mapping->a_ops->freepage;
->  
-> -		page_cache_get(new);
->  		new->mapping = mapping;
->  		new->index = offset;
->  
->  		spin_lock_irq(&mapping->tree_lock);
-> -		__remove_from_page_cache(old);
-> -		error = radix_tree_insert(&mapping->page_tree, offset, new);
-> -		BUG_ON(error);
-> -		mapping->nrpages++;
-> -		__inc_zone_page_state(new, NR_FILE_PAGES);
-> -		if (PageSwapBacked(new))
-> -			__inc_zone_page_state(new, NR_SHMEM);
-> +		__replace_page_cache_page(old, new);
->  		spin_unlock_irq(&mapping->tree_lock);
-> -		radix_tree_preload_end();
->  		if (freepage)
->  			freepage(old);
->  		page_cache_release(old);
-> -- 
-> 1.7.1
-> 
-
--- 
-Kind regards,
-Minchan Kim
+      
