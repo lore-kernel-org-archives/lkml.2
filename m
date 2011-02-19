@@ -1,105 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758717Ab1BSA12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 19:27:28 -0500
-Received: from www.tglx.de ([62.245.132.106]:36208 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab1BSA1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 19:27:24 -0500
-Date: Sat, 19 Feb 2011 01:27:04 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Deadlock in gpiolib
-In-Reply-To: <20110218225407.GL22310@pengutronix.de>
-Message-ID: <alpine.LFD.2.00.1102190028400.2701@localhost6.localdomain6>
-References: <20110218225407.GL22310@pengutronix.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753871Ab1BSA4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 19:56:20 -0500
+Received: from smtp.microsoft.com ([131.107.115.214]:15194 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab1BSA4R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 19:56:17 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Greg KH <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QITSqA//+CNECAAIydAP//es7AgACLTgD//51bwA==
+Date: Sat, 19 Feb 2011 00:56:16 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048011693@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
+ <20110218211423.GH796@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048011604@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110218220724.GA28986@suse.de>
+ <6E21E5352C11B742B20C142EB499E04801162F@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <20110218222916.GA14244@suse.de>
+In-Reply-To: <20110218222916.GA14244@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1491873736-1298075226=:2701"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
----1463795968-1491873736-1298075226=:2701
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
 
-On Fri, 18 Feb 2011, Uwe Kleine-König wrote:
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, February 18, 2011 5:29 PM
+> To: KY Srinivasan
+> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org
+> Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> 
+> On Fri, Feb 18, 2011 at 10:16:05PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@suse.de]
+> > > Sent: Friday, February 18, 2011 5:07 PM
+> > > To: KY Srinivasan
+> > > Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > virtualization@lists.osdl.org
+> > > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> > >
+> > > On Fri, Feb 18, 2011 at 10:00:04PM +0000, KY Srinivasan wrote:
+> > > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Greg KH [mailto:greg@kroah.com]
+> > > > > Sent: Friday, February 18, 2011 4:14 PM
+> > > > > To: KY Srinivasan
+> > > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > > > > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> > > > >
+> > > > > On Tue, Feb 15, 2011 at 11:55:35AM -0800, K. Y. Srinivasan wrote:
+> > > > > >
+> > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > > > >
+> > > > > You didn't run this through checkpatch.pl.
+> > > > >
+> > > > > Please do so and fix the warning it gives you.
+> > > > Greg, I did run the checkpatch script against this patch and the only
+> > > > complaint I got was with regards to the IRQF_SAMPLE_RANDOM flag that I
+> > > > pass. As a virtual machine, this is the only external event that the
+> > > > VM is going to see and so I chose to keep this flag.  Is there
+> > > > something that would replace this flag; looking at the Xen drivers
+> > > > they do pass this flag.
+> > >
+> > > But that flag is going away, right?  And this really can't be a valid
+> > > source of entropy as the HV channel is pretty predictable.
+> >
+> > Is it going away? What would replace this. Is all interrupt sources considered
+> > predictable?
+> 
+> Did you read the file that the checkpatch script told you to about this
+> entry?
 
-Brilliant move to not CC the ones who explained you in detail why this
-lockdep splat triggers and why it can lead to a real deadlock.
+It is only after reading the document, I decided to keep that flag. Please
+note this is not a question of some interrupt sources not being 
+a good source of entropy; for this VM this is the only source of interrupts.
+The document on this flag talked about how people were incorrectly
+marking their interrupt as an entropy source; in this case there is not much of a
+choice. 
 
-<SNIP>
- 
-> I tried to wrap my head around all that sysfs stuff and the implied
-> locking, but I failed.
+> 
+> > This is the only unpredictable thing happening in the VM and that is the reason
+> > I chose to keep the flag.
+> 
+> If you remove it, do we loose all entropy for the VM?
+> 
+> > > If you are only using this because Xen does/did it, that's not a valid
+> > > excuse :)
+> > Surely, you are joking.
+> 
+> Not at all.
 
-You did not even think about providing the information about the
-already decoded problem and instead you post your findings as
-something completely new and unexplainable.
+To set the record straight here, this flag is in the existing code.
+After I ran checkpatch, I toyed with the idea of getting rid of this. Then I 
+decided to keep it for all the reasons I mentioned earlier. 
 
-Dude, that sucks and I'm seriously grumpy about that. As you are too
-tired, I sat down and retrieved from the IRC logs what avoids people
-to twist their brain around that clusterf*ck over and over.
+> 
+> > In any event I am sending you a new patch with that flag removed.
+> 
+> Have you tested to see if you now loose all entropy, and it causes
+> problems or not?
 
-<peterz>  
-	 well, if you, like mentioned, assume sysfs_get/put_active() is a lock,
-	 then what it did is: sysfs_get_active_lock(); mutex_lock(sysfs_lock);
-	 vs mutex_lock(sysfs_lock); sysfs_deactivate();
-	 where, sysfs_deactivate() can be considered to also want a ref
-	 which gets you AB-BA
+I am glad you asked me to test it. When I remove this flag, the entropy goes down 
+significantly and this is not surprising. Looking at 
+/proc/sys/kernel/entropy/entropy_avail, with the original patch after a couple
+of compiles the number would be in thousands. With that flag removed,
+I have the VM up for about an hour, even after a couple of compiles,
+the entropy number is yet to crack 200.
 
-<tglx>
-	export does
-	lock(sysfs_lock) -> create sysfs entries 
-	read does -> "read-lock(sysfs-entry)" -> lock(sysfs_lock)
-	unexport does
-	lock(sysfs_lock) -> remove sysfs entries, which needs to read_lock them 
-	and looking at the implementation it can actually deadlock
-	assume one reader vs one unexporter
-	cat gpio74/value is in progress while on the other side you do echo 74 >unexport
-	then the unexport will hang in wait for completion
-	while the reader is waiting for sysfs lock in gpio
+Let me know how you want to proceed here.
 
-There is more info in those logs, but i'm too tired to extract it, so
-here is my tentative conclusion in clear text:
+Regards,
 
-sysfs_lock in gpio is only useful to serialize export
-vs. unexport. The comment above the lock declaration 
+K. Y
 
-/* lock protects against unexport_gpio() being called while
- * sysfs files are active.
- */
 
-is stupid.
-
-The only real concern is a concurrent instantiation of that sysfs
-export vs. a teardown. That might be eventually be handled by the
-EXPORT bit in the flags of that gpio chip, but I have not had time to
-look at it closely.
-
-Taking the gpio:sysfs_lock inside of the particular read/write
-functions is pointless. If sysfs is not preventing the teardown of
-that entry while access in progress then sysfs needs fixing.
-
-AFAICT the refcounting in sysfs (which leads to that lockdep splat)
-does the right thing, so taking gpiolib:sysfs_lock inside those
-read/write functions which are associated with an exported gpio is
-simply wrong.
-
-I leave the deeper analysis to the gpio crowd and sysfs experts, but I
-would be surprised if I'm wrong.
-
-Thanks,
-
-	tglx
----1463795968-1491873736-1298075226=:2701--
