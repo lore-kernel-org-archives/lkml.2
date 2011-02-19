@@ -1,139 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab1BSSeG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 13:34:06 -0500
-Received: from cable-static-49-187.intergga.ch ([157.161.49.187]:56348 "EHLO
-	mail.ffwll.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541Ab1BSSeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 13:34:02 -0500
-X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Feb 2011 13:34:01 EST
-X-Spam-ASN: 
-X-Spam-Spammy: 
-X-Spam-Hammy: 0.000-+--H*Ad:U*dri-devel, 0.000-+--HCc:D*freedesktop.org,
-	0.000-+--HCc:D*lists.freedesktop.org
-Date: Sat, 19 Feb 2011 19:25:11 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: Re: [BUG] drm/i915 Screen corruption introduced by
- a00b10c360b35d6431a94cb
-Message-ID: <20110219182511.GA3977@viiv.ffwll.ch>
-Mail-Followup-To: Indan Zupancic <indan@nul.nu>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl>
+	id S1755372Ab1BSSec (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 13:34:32 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:41220 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754444Ab1BSSea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 13:34:30 -0500
+Date: Sat, 19 Feb 2011 19:34:27 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] PRUSS UIO driver support
+Message-ID: <20110219183427.GG4684@local>
+References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
+ <201102181644.17634.arnd@arndb.de>
+ <alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6>
+ <201102181731.05644.arnd@arndb.de>
+ <alpine.LFD.2.00.1102181802580.2701@localhost6.localdomain6>
+ <B85A65D85D7EB246BE421B3FB0FBB593024B83C108@dbde02.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="k1lZvvs/B4yU6o8G"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl>
-X-Operating-System: Linux viiv 2.6.38-rc5-00035-g3077686 
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024B83C108@dbde02.ent.ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 19, 2011 at 09:10:23PM +0530, TK, Pratheesh Gangadhar wrote:
+> 
+> For my understanding - if the interrupt is not shared and not level triggered -
+> is this okay to have empty handler?
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Greg already said he won't accept that. And I'm quite sure these interrupts
+are level triggered, since that is the default on arch/omap.
 
-Hi Indan,
+E.g. in arch/arm/mach-omap1/irq.c, a loop sets all irqs to level triggered
+handling: set_irq_handler(j, handle_level_irq); (line 234)
 
-Please provide the usual details about your system (especially what gpu
-this is on). Also, screenshots of what typical corruptions look like can
-help a lot in tracking down such things.
+> In this specific case, these interrupt lines are internal to SOC and hooked to ARM INTC from PRUSS. PRUSS has another INTC to handle system events to PRUSS as well as to generate system events to host ARM. These generated events are used for IPC between user application and PRU firmware and for async notifications from PRU firmware to user space. I don't see a reason to make it shared as we have 8 lines available for use. As mentioned before ARM INTC interrupt processing logic converts interrupts to active high pulses.
 
-I've created two quick patches to check a few theories, please test them
-(both patches independently and both together). Patches attached.
+What's a "pulse triggered interrupt"? I know level and edge triggered ones.
 
-Yours, Daniel
+> 
+> I also looked at the interrupt handling in existing UIO drivers
+> 
+> 
+> static irqreturn_t my_uio_handler(int irq, struct uio_info *dev_info)
+> {
+>         if (no interrupt is enabled and no interrupt is active) /For shared interrupt handling
+>                 return IRQ_NONE;
+> 
+>         disable interrupt; // For level triggered interrupts 
+>         return IRQ_HANDLED;
+> }
+> 
+> It's not clear how and where interrupts are re-enabled. Is this expected to be done from user space?
 
-On Sat, Feb 19, 2011 at 06:58:06AM +0100, Indan Zupancic wrote:
-> Hello,
-> 
-> Since 2.6.38-rc I get screen corruption (mostly horizontal grabage stripes on
-> the right side of the screen). After a long time bisecting the offending commit
-> ends up being:
-> 
-> commit a00b10c360b35d6431a94cbf130a4e162870d661
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Fri Sep 24 21:15:47 2010 +0100
-> 
->     drm/i915: Only enforce fence limits inside the GTT.
-> 
->     So long as we adhere to the fence registers rules for alignment and no
->     overlaps (including with unfenced accesses to linear memory) and account
->     for the tiled access in our size allocation, we do not have to allocate
->     the full fenced region for the object. This allows us to fight the bloat
->     tiling imposed on pre-i965 chipsets and frees up RAM for real use. [Inside
->     the GTT we still suffer the additional alignment constraints, so it doesn't
->     magic allow us to render larger scenes without stalls -- we need the
->     expanded GTT and fence pipelining to overcome those...]
-> 
->     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> 
-> This commit caused other problems too, which Daniel tried to fix with commits:
-> 
-> 5e78330126e23e00950 drm/i915: fix relaxed tiling for gen <= 3 && !g33
-> 75e9e9158f38e5cb21e drm/i915: kill mappable/fenceable disdinction
-> 818f2a3cc34b0673dcc drm/i915: revert pageflip/mappable related abi breakage
-> 
-> But those don't fix my screen corruption.
-> 
-> Unfortunately, it's a big commit and it doesn't revert cleanly, and its size
-> makes it unclear what the source of the problem is. Daniel's commits don't
-> revert cleanly either, so reverting all of them didn't work.
-> 
-> I'll start poking at it and see if I can find anything.
-> 
-> Greetings,
-> 
-> Indan
-> 
-> 
+That's the normal case, yes. You re-enable the interrupts by accessing the irq
+mask register of your chip.
 
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+> 
+> Uio_secos3.c has an irqcontrol function to enable/disable interrupts. Is this the recommended approach?
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="for-indan-1.patch"
+No. That is a workaround for broken hardware. You need it if and only if your
+chip 1) has several internal irq sources and 2) there's no possibility for
+the kernel to mask the interrupt in the chip without loosing the information
+which irq source actually triggered the interrupt.
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index cf4f74c..2e6b532 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1404,6 +1404,8 @@ i915_gem_get_unfenced_gtt_alignment(struct drm_i915_gem_object *obj)
- 	struct drm_device *dev = obj->base.dev;
- 	int tile_height;
- 
-+	return i915_gem_get_gtt_alignment(obj);
-+
- 	/*
- 	 * Minimum alignment is 4k (GTT page size) for sane hw.
- 	 */
+If that is the case, the kernel will disable the irq line in some other way
+without touching the chip. Userspace then needs a way to re-enable irqs,
+and that's where the irqcontrol function is used.
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="for-indan-2.patch"
+Normally, you shouldn't need it.
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 17bd766..fbc21e3 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -763,7 +763,7 @@ static int i915_getparam(struct drm_device *dev, void *data,
- 		value = HAS_BLT(dev);
- 		break;
- 	case I915_PARAM_HAS_RELAXED_FENCING:
--		value = 1;
-+		value = 0;
- 		break;
- 	case I915_PARAM_HAS_COHERENT_RINGS:
- 		value = 1;
-
---k1lZvvs/B4yU6o8G--
+Thanks,
+Hans
