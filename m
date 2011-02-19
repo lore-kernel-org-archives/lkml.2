@@ -1,68 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab1BSJ0A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 04:26:00 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:57243 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab1BSJZz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 04:25:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=n6NV3fvsAh8ORaz2R4xyJUMOycTxU2paYgETYgcXuxbfaQ3ILd4M6FxF5hQYFmUaHu
-         TslqnkXKArtVVI07gujCaSKUfn52Pm8GDOijBNqEJK5OZiEez4ezBLvZR3SpaYh1B6CL
-         HQ50M0wZIlSMqZsXFgoMX01SSMP4V2IG4baCo=
+	id S1752913Ab1BSJbm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 04:31:42 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50440 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752028Ab1BSJbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 04:31:37 -0500
+Date: Sat, 19 Feb 2011 09:31:16 GMT
+From: tip-bot for Michael Witten <mfwitten@gmail.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, mfwitten@gmail.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mfwitten@gmail.com, tglx@linutronix.de
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Makefile: Remove vestigial git-specific cruft
+Message-ID: <tip-006cdc32618e09ffe228a7a86af044f3cc0dd714@git.kernel.org>
+Git-Commit-ID: 006cdc32618e09ffe228a7a86af044f3cc0dd714
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <4D514754.30203@ru.mvista.com>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
-	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
-	<AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
-	<20110208132518.300bb098@lxorguk.ukuu.org.uk>
-	<4D514754.30203@ru.mvista.com>
-Date: Sat, 19 Feb 2011 10:25:53 +0100
-Message-ID: <AANLkTinE5x=hmQ6Oykw3Tb38HVeL5eHxjdnPOdMt930q@mail.gmail.com>
-Subject: Re: [PATCH 05/20] pata_efar: always program master_data before slave_data
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Feb 2011 09:31:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  006cdc32618e09ffe228a7a86af044f3cc0dd714
+Gitweb:     http://git.kernel.org/tip/006cdc32618e09ffe228a7a86af044f3cc0dd714
+Author:     Michael Witten <mfwitten@gmail.com>
+AuthorDate: Wed, 2 Feb 2011 13:01:41 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 18 Feb 2011 07:40:54 -0200
 
-On Tue, Feb 8, 2011 at 2:38 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
-> Hello.
->
-> On 08-02-2011 16:25, Alan Cox wrote:
->
->>>>> We may need to set SITRE before programming slave_data.
->
->>>> Do you have a documentation cite for this or is it random fiddling with
->>>> a
->>>> driver you can't test ?
->
->>> It is good to enable SITRE register before programming it and all
->>> Intel controllers
->
->> That sounds like someone quoting religion. Documentation cite please.
->
->   SLC90E66 datasheet only says that SIDETIM register has no effect without
-> SITRE bit set.
+perf tools: Makefile: Remove vestigial git-specific cruft
 
-Alan, is this explanation sufficient to ACK this patch?  (Thanks
-Sergei for digging it out.)
+This commit squashes several commits that remove:
 
-Jeff, would it be possible to queue patches #01-15 for 2.6.39 if there
-are no further concerns with them (thus leaving the merging of
-PIIX-like drivers for later)?  They got additional testing on ICH4 and
-they look mostly safe & straight-forward compared to #16-21.
+ NO_SYMLINK_HEAD
+ NO_SVN_TESTS
+ NO_FAST_WORKING_DIRECTORY
+ USE_STDEV
+ SHA1/SSL cruft
+ makefile rules
 
-Thanks,
-Bartlomiej
+Signed-off-by: Michael Witten <mfwitten@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |   62 +--------------------------------------------------
+ 1 files changed, 1 insertions(+), 61 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 7c75f1d..544367c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -21,9 +21,6 @@ endif
+ # Define FREAD_READS_DIRECTORIES if your are on a system which succeeds
+ # when attempting to read from an fopen'ed directory.
+ #
+-# Define NO_OPENSSL environment variable if you do not have OpenSSL.
+-# This also implies MOZILLA_SHA1.
+-#
+ # Define CURLDIR=/foo/bar if your curl header and library files are in
+ # /foo/bar/include and /foo/bar/lib directories.
+ #
+@@ -56,13 +53,6 @@ endif
+ #
+ # Define NO_SYS_SELECT_H if you don't have sys/select.h.
+ #
+-# Define NO_SYMLINK_HEAD if you never want .perf/HEAD to be a symbolic link.
+-# Enable it on Windows.  By default, symrefs are still used.
+-#
+-# Define NO_SVN_TESTS if you want to skip time-consuming SVN interoperability
+-# tests.  These tests take up a significant amount of the total test time
+-# but are not needed unless you plan to talk to SVN repos.
+-#
+ # Define NO_FINK if you are building on Darwin/Mac OS X, have Fink
+ # installed in /sw, but don't want PERF to link against any libraries
+ # installed there.  If defined you may specify your own (or Fink's)
+@@ -75,19 +65,6 @@ endif
+ # specify your own (or DarwinPort's) include directories and
+ # library directories by defining CFLAGS and LDFLAGS appropriately.
+ #
+-# Define PPC_SHA1 environment variable when running make to make use of
+-# a bundled SHA1 routine optimized for PowerPC.
+-#
+-# Define ARM_SHA1 environment variable when running make to make use of
+-# a bundled SHA1 routine optimized for ARM.
+-#
+-# Define MOZILLA_SHA1 environment variable when running make to make use of
+-# a bundled SHA1 routine coming from Mozilla. It is GPL'd and should be fast
+-# on non-x86 architectures (e.g. PowerPC), while the OpenSSL version (default
+-# choice) has very fast version optimized for i586.
+-#
+-# Define NEEDS_SSL_WITH_CRYPTO if you need -lcrypto with -lssl (Darwin).
+-#
+ # Define NEEDS_LIBICONV if linking with libc is not enough (Darwin).
+ #
+ # Define NEEDS_SOCKET if linking with libc is not enough (SunOS,
+@@ -100,9 +77,6 @@ endif
+ # Define NO_PREAD if you have a problem with pread() system call (e.g.
+ # cygwin.dll before v1.5.22).
+ #
+-# Define NO_FAST_WORKING_DIRECTORY if accessing objects in pack files is
+-# generally faster on your platform than accessing the working directory.
+-#
+ # Define NO_TRUSTABLE_FILEMODE if your filesystem may claim to support
+ # the executable mode bit, but doesn't really do so.
+ #
+@@ -134,9 +108,6 @@ endif
+ # Define NO_NSEC if your "struct stat" does not have "st_ctim.tv_nsec"
+ # available.  This automatically turns USE_NSEC off.
+ #
+-# Define USE_STDEV below if you want perf to care about the underlying device
+-# change being considered an inode change from the update-index perspective.
+-#
+ # Define NO_ST_BLOCKS_IN_STRUCT_STAT if your platform does not have st_blocks
+ # field that counts the on-disk footprint in 512-byte blocks.
+ #
+@@ -771,9 +742,6 @@ ifdef FREAD_READS_DIRECTORIES
+ 	COMPAT_CFLAGS += -DFREAD_READS_DIRECTORIES
+ 	COMPAT_OBJS += $(OUTPUT)compat/fopen.o
+ endif
+-ifdef NO_SYMLINK_HEAD
+-	BASIC_CFLAGS += -DNO_SYMLINK_HEAD
+-endif
+ ifdef NO_STRCASESTR
+ 	COMPAT_CFLAGS += -DNO_STRCASESTR
+ 	COMPAT_OBJS += $(OUTPUT)compat/strcasestr.o
+@@ -813,9 +781,6 @@ ifdef NO_PREAD
+ 	COMPAT_CFLAGS += -DNO_PREAD
+ 	COMPAT_OBJS += $(OUTPUT)compat/pread.o
+ endif
+-ifdef NO_FAST_WORKING_DIRECTORY
+-	BASIC_CFLAGS += -DNO_FAST_WORKING_DIRECTORY
+-endif
+ ifdef NO_TRUSTABLE_FILEMODE
+ 	BASIC_CFLAGS += -DNO_TRUSTABLE_FILEMODE
+ endif
+@@ -851,23 +816,6 @@ ifdef NO_DEFLATE_BOUND
+ 	BASIC_CFLAGS += -DNO_DEFLATE_BOUND
+ endif
+ 
+-ifdef PPC_SHA1
+-	SHA1_HEADER = "ppc/sha1.h"
+-	LIB_OBJS += $(OUTPUT)ppc/sha1.o ppc/sha1ppc.o
+-else
+-ifdef ARM_SHA1
+-	SHA1_HEADER = "arm/sha1.h"
+-	LIB_OBJS += $(OUTPUT)arm/sha1.o $(OUTPUT)arm/sha1_arm.o
+-else
+-ifdef MOZILLA_SHA1
+-	SHA1_HEADER = "mozilla-sha1/sha1.h"
+-	LIB_OBJS += $(OUTPUT)mozilla-sha1/sha1.o
+-else
+-	SHA1_HEADER = <openssl/sha.h>
+-	EXTLIBS += $(LIB_4_CRYPTO)
+-endif
+-endif
+-endif
+ ifdef NO_PERL_MAKEMAKER
+ 	export NO_PERL_MAKEMAKER
+ endif
+@@ -930,7 +878,6 @@ endif
+ 
+ # Shell quote (do not use $(call) to accommodate ancient setups);
+ 
+-SHA1_HEADER_SQ = $(subst ','\'',$(SHA1_HEADER))
+ ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+ 
+ DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
+@@ -948,8 +895,7 @@ PERL_PATH_SQ = $(subst ','\'',$(PERL_PATH))
+ 
+ LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive $(EXTLIBS)
+ 
+-BASIC_CFLAGS += -DSHA1_HEADER='$(SHA1_HEADER_SQ)' \
+-	$(COMPAT_CFLAGS)
++BASIC_CFLAGS += $(COMPAT_CFLAGS)
+ LIB_OBJS += $(COMPAT_OBJS)
+ 
+ ALL_CFLAGS += $(BASIC_CFLAGS)
+@@ -1048,9 +994,6 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ 		'-DPREFIX="$(prefix_SQ)"' \
+ 		$<
+ 
+-$(OUTPUT)builtin-init-db.o: builtin-init-db.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DDEFAULT_PERF_TEMPLATE_DIR='"$(template_dir_SQ)"' $<
+-
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+@@ -1089,7 +1032,6 @@ $(OUTPUT)perf-%$X: %.o $(PERFLIBS)
+ 
+ $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
+ $(patsubst perf-%$X,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
+-builtin-revert.o wt-status.o: wt-status.h
+ 
+ # we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
+ # we depend the various files onto their directories.
+@@ -1192,8 +1134,6 @@ all:: $(TEST_PROGRAMS)
+ # However, the environment gets quite big, and some programs have problems
+ # with that.
+ 
+-export NO_SVN_TESTS
+-
+ check: $(OUTPUT)common-cmds.h
+ 	if sparse; \
+ 	then \
