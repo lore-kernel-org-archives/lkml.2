@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1BSQrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 11:47:16 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46971 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751117Ab1BSQrO convert rfc822-to-8bit (ORCPT
+	id S1753653Ab1BSQtI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 11:49:08 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:42389 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752471Ab1BSQtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 11:47:14 -0500
-Date: Sat, 19 Feb 2011 16:48:11 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
- slave_data
-Message-ID: <20110219164811.2e90de88@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTinE5x=hmQ6Oykw3Tb38HVeL5eHxjdnPOdMt930q@mail.gmail.com>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
-	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
-	<AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
-	<20110208132518.300bb098@lxorguk.ukuu.org.uk>
-	<4D514754.30203@ru.mvista.com>
-	<AANLkTinE5x=hmQ6Oykw3Tb38HVeL5eHxjdnPOdMt930q@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+	Sat, 19 Feb 2011 11:49:05 -0500
+Date: Sat, 19 Feb 2011 17:48:39 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, jiaweiwei.xiyou@gmail.com,
+        linux-kernel@vger.kernel.org, joe@perches.com, greg@kroah.com,
+        rdunlap@xenotime.net
+Subject: Re: [PATCH]move double quotation marks so that keep MAINTAINERS
+ consistent
+Message-ID: <20110219164839.GA20047@ucw.cz>
+References: <20110210025133.GA3285@gmail.com>
+ <20110209190631.f29419ef.akpm@linux-foundation.org>
+ <20110209.191752.226762899.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110209.191752.226762899.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >   SLC90E66 datasheet only says that SIDETIM register has no effect without
-> > SITRE bit set.
-
-Which means the current setup is fine yes ?
-
-> Alan, is this explanation sufficient to ACK this patch?  (Thanks
-> Sergei for digging it out.)
+On Wed 2011-02-09 19:17:52, David Miller wrote:
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Date: Wed, 9 Feb 2011 19:06:31 -0800
 > 
-> Jeff, would it be possible to queue patches #01-15 for 2.6.39 
+> > I suspect that some mail clients will explode if you provide them with
+> > an unquoted string containing periods.  That would make copy-n-paste
+> > rather a hassle.
+> 
+> It's not clients, it's servers.
+> 
+> SMTP rules state that characters such as "." cannot appear
+> unquoted in email headers.
+> 
+> vger.kernel.org rejects mail when this violation occurs.
 
-Have they been tested on the relevant hardware yet - I don't believe the
-changes should be made for the untested stuff and you indicated you
-agreed with that.
+Ok, but should not MUA do this quotation? Quick test shows that mutt does... 
 
-The tidyups for the easily tested cases (PIIX4 etc) look sensible
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
