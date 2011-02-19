@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab1BSQqV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 11:46:21 -0500
-Received: from mail3.microsoft.com ([131.107.115.214]:13178 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab1BSQqS convert rfc822-to-8bit (ORCPT
+	id S1753606Ab1BSQrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 11:47:16 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46971 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751117Ab1BSQrO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 11:46:18 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QJKYYA//++VECAAJKGgP//jS1Q
-Date: Sat, 19 Feb 2011 16:46:17 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
+	Sat, 19 Feb 2011 11:47:14 -0500
+Date: Sat, 19 Feb 2011 16:48:11 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
+ slave_data
+Message-ID: <20110219164811.2e90de88@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTinE5x=hmQ6Oykw3Tb38HVeL5eHxjdnPOdMt930q@mail.gmail.com>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
+	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
+	<AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
+	<20110208132518.300bb098@lxorguk.ukuu.org.uk>
+	<4D514754.30203@ru.mvista.com>
+	<AANLkTinE5x=hmQ6Oykw3Tb38HVeL5eHxjdnPOdMt930q@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> >   SLC90E66 datasheet only says that SIDETIM register has no effect without
+> > SITRE bit set.
 
+Which means the current setup is fine yes ?
 
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Saturday, February 19, 2011 10:12 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
-> Janssen
-> Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> Alan, is this explanation sufficient to ACK this patch?  (Thanks
+> Sergei for digging it out.)
 > 
-> On Sat, 19 Feb 2011, KY Srinivasan wrote:
-> > > From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > > Please do not use probe_irq_on for dynamic irq allocation. Highjacking
-> > > the lower PIC irqs is really not a good idea. Depending on when this
-> > > runs, you might grab an irq required by a driver which gets loaded
-> > > later.
-> > >
-> > > Could you please explain what you're trying to do here ?
-> >
-> > The IRQ being allocated is for the VMBUS driver for Linux guests running on
-> > a Windows virtualization platform (Hyper-V hypervisor).
-> > The hypervisor is capable of notifying events on the VMBUS via
-> > a guest specified interrupt line. Prior to this patch,
-> > the code was statically selecting an interrupt line for
-> > use by VMBUS. One of the long standing review comments
-> > on  that code was to make this irq allocation dynamic and that
-> > is what this patch does. For the Linux guest running as a VM
-> > on Hyper-V, the concern you raise is not an issue.
-> 
-> That patch does a whole lot of useless crap.
-> 
-> When grabbing some random irq from the PIC is not an issue, then
-> what's the point of this probing, retry loop and the comments about
-> racing ? What races here? That does not make sense at all.
+> Jeff, would it be possible to queue patches #01-15 for 2.6.39 
 
-Like most virtualization platforms, Hyper-V also emulates the full PC 
-platform. So, it is possible that the driver of some other emulated
-devices might register for the IRQ line we might have selected. That 
-is the race this code addresses. For performance reasons, we want
-both storage and network traffic to go over the PV drivers. 
+Have they been tested on the relevant hardware yet - I don't believe the
+changes should be made for the untested stuff and you indicated you
+agreed with that.
 
-> 
-> I don't know why the previous reviewer wanted to have that
-> dynamic. That just does not make sense to me.
-
-Prior to this patch, we had a hard coded interrupt line for use by
-this driver. If that line was already in use, the load of this driver 
-would fail. This would be a fatal issue especially for distributions
-that have embedded these PV drivers as part of their installation
-media. This patch deals with such collisions in a more graceful way -
-we would not bail until we have scanned all low interrupt lines.
- 
-> 
-> Btw, that whole interrupt handler with two tasklets, one of them
-> scheduling work is just screaming threaded interrupt handler.
-
-We are in the process of cleaning up these drivers; I am looking at
-some of these and other issues.
-
-Regards,
-
-K. Y  
-
+The tidyups for the easily tested cases (PIIX4 etc) look sensible
