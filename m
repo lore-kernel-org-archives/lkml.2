@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab1BSW0l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 17:26:41 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:26138 "EHLO
+	id S1755339Ab1BSW2K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 17:28:10 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:26162 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab1BSW0g (ORCPT
+	with ESMTP id S1754702Ab1BSW0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 17:26:36 -0500
+	Sat, 19 Feb 2011 17:26:41 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, konkers@android.com, olof@lixom.net,
         Colin Cross <ccross@android.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 16/21] ARM: tegra: Add external memory controller driver
-Date: Sat, 19 Feb 2011 14:26:05 -0800
-Message-Id: <1298154371-5641-18-git-send-email-ccross@android.com>
+Subject: [PATCH v2 03/21] ARM: tegra: clock: Drop debugging
+Date: Sat, 19 Feb 2011 14:25:52 -0800
+Message-Id: <1298154371-5641-5-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1298154371-5641-1-git-send-email-ccross@android.com>
 References: <1298154371-5641-1-git-send-email-ccross@android.com>
@@ -26,249 +26,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/Kconfig      |    4 +
- arch/arm/mach-tegra/Makefile     |    1 +
- arch/arm/mach-tegra/tegra2_emc.c |  172 ++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-tegra/tegra2_emc.h |   27 ++++++
- 4 files changed, 204 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-tegra/tegra2_emc.c
- create mode 100644 arch/arm/mach-tegra/tegra2_emc.h
+ arch/arm/mach-tegra/clock.c |   19 ++-----------------
+ 1 files changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 9f4fc6b..42d44c7 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -71,3 +71,7 @@ config TEGRA_SYSTEM_DMA
- 	  several Tegra device drivers
+diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
+index 77948e0..f55bb83 100644
+--- a/arch/arm/mach-tegra/clock.c
++++ b/arch/arm/mach-tegra/clock.c
+@@ -138,7 +138,6 @@ static void clk_recalculate_rate(struct clk *c)
  
- endif
+ int clk_reparent(struct clk *c, struct clk *parent)
+ {
+-	pr_debug("%s: %s\n", __func__, c->name);
+ 	c->parent = parent;
+ 	list_del(&c->sibling);
+ 	list_add_tail(&c->sibling, &parent->children);
+@@ -148,9 +147,8 @@ int clk_reparent(struct clk *c, struct clk *parent)
+ static void propagate_rate(struct clk *c)
+ {
+ 	struct clk *clkp;
+-	pr_debug("%s: %s\n", __func__, c->name);
 +
-+config TEGRA_EMC_SCALING_ENABLE
-+	bool "Enable scaling the memory frequency"
-+	default n
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index 23de060..3fe357b 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -9,6 +9,7 @@ obj-y                                   += powergate.o
- obj-y					+= fuse.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clock.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_clocks.o
-+obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
- obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= pinmux-t2-tables.o
- obj-$(CONFIG_SMP)                       += platsmp.o localtimer.o headsmp.o
- obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
-diff --git a/arch/arm/mach-tegra/tegra2_emc.c b/arch/arm/mach-tegra/tegra2_emc.c
-new file mode 100644
-index 0000000..bd4fa27
---- /dev/null
-+++ b/arch/arm/mach-tegra/tegra2_emc.c
-@@ -0,0 +1,172 @@
-+/*
-+ * Copyright (C) 2010 Google, Inc.
-+ *
-+ * Author:
-+ *	Colin Cross <ccross@google.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
+ 	list_for_each_entry(clkp, &c->children, sibling) {
+-		pr_debug("   %s\n", clkp->name);
+ 		clk_recalculate_rate(clkp);
+ 		propagate_rate(clkp);
+ 	}
+@@ -160,8 +158,6 @@ void clk_init(struct clk *c)
+ {
+ 	unsigned long flags;
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	spin_lock_irqsave(&clock_lock, flags);
+ 
+ 	INIT_LIST_HEAD(&c->children);
+@@ -183,7 +179,7 @@ void clk_init(struct clk *c)
+ int clk_enable_locked(struct clk *c)
+ {
+ 	int ret;
+-	pr_debug("%s: %s\n", __func__, c->name);
 +
-+#include <linux/kernel.h>
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+
-+#include <mach/iomap.h>
-+
-+#include "tegra2_emc.h"
-+
-+#ifdef CONFIG_TEGRA_EMC_SCALING_ENABLE
-+static bool emc_enable = true;
-+#else
-+static bool emc_enable;
-+#endif
-+module_param(emc_enable, bool, 0644);
-+
-+static void __iomem *emc = IO_ADDRESS(TEGRA_EMC_BASE);
-+static const struct tegra_emc_table *tegra_emc_table;
-+static int tegra_emc_table_size;
-+
-+static inline void emc_writel(u32 val, unsigned long addr)
-+{
-+	writel(val, emc + addr);
-+}
-+
-+static inline u32 emc_readl(unsigned long addr)
-+{
-+	return readl(emc + addr);
-+}
-+
-+static const unsigned long emc_reg_addr[TEGRA_EMC_NUM_REGS] = {
-+	0x2c,	/* RC */
-+	0x30,	/* RFC */
-+	0x34,	/* RAS */
-+	0x38,	/* RP */
-+	0x3c,	/* R2W */
-+	0x40,	/* W2R */
-+	0x44,	/* R2P */
-+	0x48,	/* W2P */
-+	0x4c,	/* RD_RCD */
-+	0x50,	/* WR_RCD */
-+	0x54,	/* RRD */
-+	0x58,	/* REXT */
-+	0x5c,	/* WDV */
-+	0x60,	/* QUSE */
-+	0x64,	/* QRST */
-+	0x68,	/* QSAFE */
-+	0x6c,	/* RDV */
-+	0x70,	/* REFRESH */
-+	0x74,	/* BURST_REFRESH_NUM */
-+	0x78,	/* PDEX2WR */
-+	0x7c,	/* PDEX2RD */
-+	0x80,	/* PCHG2PDEN */
-+	0x84,	/* ACT2PDEN */
-+	0x88,	/* AR2PDEN */
-+	0x8c,	/* RW2PDEN */
-+	0x90,	/* TXSR */
-+	0x94,	/* TCKE */
-+	0x98,	/* TFAW */
-+	0x9c,	/* TRPAB */
-+	0xa0,	/* TCLKSTABLE */
-+	0xa4,	/* TCLKSTOP */
-+	0xa8,	/* TREFBW */
-+	0xac,	/* QUSE_EXTRA */
-+	0x114,	/* FBIO_CFG6 */
-+	0xb0,	/* ODT_WRITE */
-+	0xb4,	/* ODT_READ */
-+	0x104,	/* FBIO_CFG5 */
-+	0x2bc,	/* CFG_DIG_DLL */
-+	0x2c0,	/* DLL_XFORM_DQS */
-+	0x2c4,	/* DLL_XFORM_QUSE */
-+	0x2e0,	/* ZCAL_REF_CNT */
-+	0x2e4,	/* ZCAL_WAIT_CNT */
-+	0x2a8,	/* AUTO_CAL_INTERVAL */
-+	0x2d0,	/* CFG_CLKTRIM_0 */
-+	0x2d4,	/* CFG_CLKTRIM_1 */
-+	0x2d8,	/* CFG_CLKTRIM_2 */
-+};
-+
-+/* Select the closest EMC rate that is higher than the requested rate */
-+long tegra_emc_round_rate(unsigned long rate)
-+{
-+	int i;
-+	int best = -1;
-+	unsigned long distance = ULONG_MAX;
-+
-+	if (!tegra_emc_table)
-+		return -EINVAL;
-+
-+	if (!emc_enable)
-+		return -EINVAL;
-+
-+	pr_debug("%s: %lu\n", __func__, rate);
-+
-+	/* The EMC clock rate is twice the bus rate, and the bus rate is
-+	 * measured in kHz */
-+	rate = rate / 2 / 1000;
-+
-+	for (i = 0; i < tegra_emc_table_size; i++) {
-+		if (tegra_emc_table[i].rate >= rate &&
-+		    (tegra_emc_table[i].rate - rate) < distance) {
-+			distance = tegra_emc_table[i].rate - rate;
-+			best = i;
-+		}
-+	}
-+
-+	if (best < 0)
-+		return -EINVAL;
-+
-+	pr_debug("%s: using %lu\n", __func__, tegra_emc_table[best].rate);
-+
-+	return tegra_emc_table[best].rate * 2 * 1000;
-+}
-+
-+/* The EMC registers have shadow registers.  When the EMC clock is updated
-+ * in the clock controller, the shadow registers are copied to the active
-+ * registers, allowing glitchless memory bus frequency changes.
-+ * This function updates the shadow registers for a new clock frequency,
-+ * and relies on the clock lock on the emc clock to avoid races between
-+ * multiple frequency changes */
-+int tegra_emc_set_rate(unsigned long rate)
-+{
-+	int i;
-+	int j;
-+
-+	if (!tegra_emc_table)
-+		return -EINVAL;
-+
-+	/* The EMC clock rate is twice the bus rate, and the bus rate is
-+	 * measured in kHz */
-+	rate = rate / 2 / 1000;
-+
-+	for (i = 0; i < tegra_emc_table_size; i++)
-+		if (tegra_emc_table[i].rate == rate)
-+			break;
-+
-+	if (i >= tegra_emc_table_size)
-+		return -EINVAL;
-+
-+	pr_debug("%s: setting to %lu\n", __func__, rate);
-+
-+	for (j = 0; j < TEGRA_EMC_NUM_REGS; j++)
-+		emc_writel(tegra_emc_table[i].regs[j], emc_reg_addr[j]);
-+
-+	emc_readl(tegra_emc_table[i].regs[TEGRA_EMC_NUM_REGS - 1]);
-+
-+	return 0;
-+}
-+
-+void tegra_init_emc(const struct tegra_emc_table *table, int table_size)
-+{
-+	tegra_emc_table = table;
-+	tegra_emc_table_size = table_size;
-+}
-diff --git a/arch/arm/mach-tegra/tegra2_emc.h b/arch/arm/mach-tegra/tegra2_emc.h
-new file mode 100644
-index 0000000..3515e57
---- /dev/null
-+++ b/arch/arm/mach-tegra/tegra2_emc.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (C) 2010 Google, Inc.
-+ *
-+ * Author:
-+ *	Colin Cross <ccross@google.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#define TEGRA_EMC_NUM_REGS 46
-+
-+struct tegra_emc_table {
-+	unsigned long rate;
-+	u32 regs[TEGRA_EMC_NUM_REGS];
-+};
-+
-+int tegra_emc_set_rate(unsigned long rate);
-+long tegra_emc_round_rate(unsigned long rate);
-+void tegra_init_emc(const struct tegra_emc_table *table, int table_size);
+ 	if (c->refcnt == 0) {
+ 		if (c->parent) {
+ 			ret = clk_enable_locked(c->parent);
+@@ -247,7 +243,6 @@ EXPORT_SYMBOL(clk_enable);
+ 
+ void clk_disable_locked(struct clk *c)
+ {
+-	pr_debug("%s: %s\n", __func__, c->name);
+ 	if (c->refcnt == 0) {
+ 		WARN(1, "Attempting to disable clock %s with refcnt 0", c->name);
+ 		return;
+@@ -298,8 +293,6 @@ int clk_set_parent_locked(struct clk *c, struct clk *parent)
+ {
+ 	int ret;
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	if (!c->ops || !c->ops->set_parent)
+ 		return -ENOSYS;
+ 
+@@ -359,8 +352,6 @@ int clk_set_rate_cansleep(struct clk *c, unsigned long rate)
+ 	int ret = 0;
+ 	unsigned long flags;
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	mutex_lock(&dvfs_lock);
+ 
+ 	if (rate > c->rate)
+@@ -388,8 +379,6 @@ int clk_set_rate(struct clk *c, unsigned long rate)
+ 	int ret = 0;
+ 	unsigned long flags;
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	if (clk_is_dvfs(c))
+ 		BUG();
+ 
+@@ -408,8 +397,6 @@ unsigned long clk_get_rate(struct clk *c)
+ 
+ 	spin_lock_irqsave(&clock_lock, flags);
+ 
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	ret = c->rate;
+ 
+ 	spin_unlock_irqrestore(&clock_lock, flags);
+@@ -419,8 +406,6 @@ EXPORT_SYMBOL(clk_get_rate);
+ 
+ long clk_round_rate(struct clk *c, unsigned long rate)
+ {
+-	pr_debug("%s: %s\n", __func__, c->name);
+-
+ 	if (!c->ops || !c->ops->round_rate)
+ 		return -ENOSYS;
+ 
 -- 
 1.7.3.1
 
