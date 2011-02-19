@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab1BSMLF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 07:11:05 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35861 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab1BSMLE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 07:11:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PQeQ5uQCwZdDlgCCppV7qb6huub/7gedurLYUjJPj9zTkceUKlih8x/1k+5o+332FQ
-         E7F7USyVxSIAIwBKjmdR+ElBjs/kao0uRlgmyUOfDYCWm12puDJ+nxK7eQ36Imsebvrm
-         1nCPxsbzjMR3Xa2JqhqdmhaR6eANB+jXRl/iM=
+	id S1754495Ab1BSMWU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 07:22:20 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42498 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753069Ab1BSMWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 07:22:17 -0500
+Date: Sat, 19 Feb 2011 12:22:05 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20110202212551.667607458@linutronix.de>
+References: <20110202212551.667607458@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Remove bogus conditional
+Message-ID: <tip-3b56f0585fd4c02d047dc406668cb40159b2d340@git.kernel.org>
+Git-Commit-ID: 3b56f0585fd4c02d047dc406668cb40159b2d340
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-	<20110216192658.GA7225@blimp.localdomain>
-	<20110217221329.GA3332@x61.home>
-	<3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-Date: Sat, 19 Feb 2011 13:11:00 +0100
-Message-ID: <AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after
- reopening lid
-From: Alex Riesen <raa.lkml@gmail.com>
-To: Indan Zupancic <indan@nul.nu>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Feb 2011 12:22:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for this late answer. I only get a very little time for this.
+Commit-ID:  3b56f0585fd4c02d047dc406668cb40159b2d340
+Gitweb:     http://git.kernel.org/tip/3b56f0585fd4c02d047dc406668cb40159b2d340
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 2 Feb 2011 21:41:12 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 19 Feb 2011 12:58:10 +0100
 
-On Fri, Feb 18, 2011 at 05:57, Indan Zupancic <indan@nul.nu> wrote:
-> On Thu, February 17, 2011 23:13, Tino Keitel wrote:
->> with kernel 2.6.37, the display brightness of my ThinkPad X61s was
->> always reduced after lid open, resume from suspend etc.  With this
->> patch on top of 2.6.38-rc5, the problem is gone.  Thanks.
->
-> Tino, I think Alex's patch only hides the problem and doesn't properly solve
+genirq: Remove bogus conditional
 
-Could well be. I don't understand what the code is supposed to do.
-The patch was created just be looking at diffs.
+The if (chip->irq_shutdown) check will always evaluate to true, as we
+fill in chip->irq_shutdown with default_shutdown in
+irq_chip_set_defaults() if the chip does not provide its own function.
 
-> the real bug. Can you confirm that this is the bit that fixes it for you?
->
-> diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-> index c65992d..c4b1ca4 100644
-> --- a/drivers/gpu/drm/i915/intel_panel.c
-> +++ b/drivers/gpu/drm/i915/intel_panel.c
-> @@ -267,6 +235,9 @@ void intel_panel_enable_backlight(struct drm_device *dev)
->  {
->        struct drm_i915_private *dev_priv = dev->dev_private;
->
-> +       if (dev_priv->backlight_enabled)
-> +               return;
-> +
->        if (dev_priv->backlight_level == 0)
->                dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
->
-> (Alex's patch edited by hand, offsets might be wrong.)
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <20110202212551.667607458@linutronix.de>
+---
+ kernel/irq/manage.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-It is not enough, at least for me.
-
-> The other bits either don't change the logic, or should be harmless, or are
-> plain wrong, like setting the brightness to maximum at bootup.
-
-I am not absolutely sure, but I don't think this is what happens on this laptop.
-
-> Lastly, could you verify that my patch at https://lkml.org/lkml/2011/2/16/447 fixes
-> it for you too? (Make sure you're at max brightness before rebooting.)
-
-I'll try it now.
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 33a6ee0..30bc8de 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1057,10 +1057,7 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+ 	/* If this was the last handler, shut down the IRQ line: */
+ 	if (!desc->action) {
+ 		desc->status |= IRQ_DISABLED;
+-		if (desc->irq_data.chip->irq_shutdown)
+-			desc->irq_data.chip->irq_shutdown(&desc->irq_data);
+-		else
+-			desc->irq_data.chip->irq_disable(&desc->irq_data);
++		desc->irq_data.chip->irq_shutdown(&desc->irq_data);
+ 	}
+ 
+ #ifdef CONFIG_SMP
