@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab1BSOex (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 09:34:53 -0500
-Received: from mail3.microsoft.com ([131.107.115.214]:27712 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754766Ab1BSOew convert rfc822-to-8bit (ORCPT
+	id S1755430Ab1BSOih (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 09:38:37 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45878 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab1BSOid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 09:34:52 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QJKYYA//++VEA=
-Date: Sat, 19 Feb 2011 14:34:51 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 19 Feb 2011 09:38:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=M/Tp+d0Gn79Wrh9rxYcL4q2C46UMFI8Lxw+vDWmFNQV/CdM7mNsRf+MRS35RD91Bc7
+         NEfywo0N9AwCCkra5xRfJvVimSBjExGxjPdBXUbOnN3B/8T22W1HOKXvIQhbXcZisvQJ
+         139eqmgEoITwwzxqGBvSMD1d6kUCOlHmsJZj0=
+Date: Sat, 19 Feb 2011 12:38:25 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Ahern <daahern@cisco.com>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/3] perf events: add timehist option to record and report
+Message-ID: <20110219143825.GA2729@ghostprotocols.net>
+References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
+ <1298008433-22911-4-git-send-email-daahern@cisco.com>
+ <20110218070657.GA11404@elte.hu>
+ <4D5E8204.2090501@cisco.com>
+ <20110218175926.GA3445@nowhere>
+ <4D5EB564.6030504@cisco.com>
+ <1298054399.5226.779.camel@laptop>
+ <4D5EBE2C.7000701@cisco.com>
+ <20110219093216.GA30331@elte.hu>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110219093216.GA30331@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Saturday, February 19, 2011 5:23 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
-> Janssen
-> Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Em Sat, Feb 19, 2011 at 10:32:16AM +0100, Ingo Molnar escreveu:
+> * David Ahern <daahern@cisco.com> wrote:
 > 
-> On Tue, 15 Feb 2011, K. Y. Srinivasan wrote:
-> > -/* FIXME! We need to do this dynamically for PIC and APIC system */
-> > -#define VMBUS_IRQ		0x5
-> > -#define VMBUS_IRQ_VECTOR	IRQ5_VECTOR
-> > +static int vmbus_irq;
-> >
-> >  /* Main vmbus driver data structure */
-> >  struct vmbus_driver_context {
-> > @@ -57,6 +55,27 @@ struct vmbus_driver_context {
-> >  	struct vm_device device_ctx;
-> >  };
-> >
-> > +/*
-> > + * Find an un-used IRQ that the VMBUS can use. If none is available;
-> > + * return -EBUSY.
-> > + */
-> > +static int vmbus_get_irq(void)
-> > +{
-> > +	unsigned int avail_irq_mask;
-> > +	int irq = -EBUSY;
-> > +
-> > +	/*
-> > +	 * Pick the first unused interrupt. HyperV can
-> > +	 * interrupt us on any interrupt line we specify.
-> > +	 */
-> > +
-> > +	avail_irq_mask = probe_irq_on();
-> > +	if (avail_irq_mask != 0)
-> > +		irq = ffs(avail_irq_mask);
-> > +	probe_irq_off(avail_irq_mask);
-> > +	return irq;
+> > On 01/23/11 at 03:45:67 a syslog event noted an application restart.
+> > Checking the applications logs it went silent. Why? What does perf say?
+> > 
+> > Oh, 2 days have gone by before said event is reported to engineering,
+> > and the server was been rebooted to 'clear' the problem - hence
+> > resetting monotonic clock.
 > 
+> I think that's a valid usecase and the feature you are suggestion is very useful.
 > 
-> Please do not use probe_irq_on for dynamic irq allocation. Highjacking
-> the lower PIC irqs is really not a good idea. Depending on when this
-> runs, you might grab an irq required by a driver which gets loaded
-> later.
-> 
-> Could you please explain what you're trying to do here ?
+> Why not extend the regular trace output to also (optionally) output GTOD timestamps?
 
-The IRQ being allocated is for the VMBUS driver for Linux guests running on
-a Windows virtualization platform (Hyper-V hypervisor).
-The hypervisor is capable of notifying events on the VMBUS via
-a guest specified interrupt line. Prior to this patch,
-the code was statically selecting an interrupt line for
-use by VMBUS. One of the long standing review comments
-on  that code was to make this irq allocation dynamic and that
-is what this patch does. For the Linux guest running as a VM
-on Hyper-V, the concern you raise is not an issue.
+That is how this this feature request/submission originally started.
 
-Regards,
+David tried with an extra header, then a synthesized event, then after
+some discussion with Peter I started working on a monotonic clock event,
+but got sidetracked with other stuff, he tried picking up from where I
+left and here we are.
 
-K. Y
+I think the summary is: we need a clock_gettime like interface so that
+users can pick and choose what clock matches best whatever app they're
+trying to merge logs.
 
+- Arnaldo
