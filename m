@@ -1,98 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1BSW00 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 17:26:26 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:52355 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752437Ab1BSW0Z (ORCPT
+	id S1753338Ab1BSWhX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 17:37:23 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:36592 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752780Ab1BSWhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 17:26:25 -0500
-From: Colin Cross <ccross@android.com>
-To: linux-tegra@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, konkers@android.com, olof@lixom.net,
-        Colin Cross <ccross@android.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 05/21] ARM: tegra: clock: Disable clocks left on by bootloader
-Date: Sat, 19 Feb 2011 14:25:54 -0800
-Message-Id: <1298154371-5641-7-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1298154371-5641-1-git-send-email-ccross@android.com>
-References: <1298154371-5641-1-git-send-email-ccross@android.com>
-To: linux-tegra@vger.kernel.org
-X-System-Of-Record: true
+	Sat, 19 Feb 2011 17:37:22 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBACfUX01Ld/sX/2dsb2JhbAAMhBTMT49igSeDQXYEhQ2MW4Yy
+X-IronPort-AV: E=Sophos;i="4.62,193,1297054800"; 
+   d="scan'208";a="92330708"
+Message-ID: <4D604620.9060204@teksavvy.com>
+Date: Sat, 19 Feb 2011 17:37:20 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: ext4 crash on 2.6.37: NULL ptr in ext4_discard_preallocations
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds CONFIG_TEGRA_DISABLE_BOOTLOADER_CLOCKS that iterates
-through all clocks, disabling any for which the refcount
-is 0 but the clock init detected the bootloader left the
-clock on.
+32-bit x86 system, 2.6.37 SMP kernel, Core2duo, 3.3GB RAM, no swap.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
- arch/arm/mach-tegra/Kconfig |    6 ++++++
- arch/arm/mach-tegra/clock.c |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 0 deletions(-)
+The system just suddenly switched to fbconsole and dumped a traceback.
+Here's the screen-shot photo:  http://rtr.ca/ext4_crash.jpg
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index f0fda77..9f4fc6b 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -57,6 +57,12 @@ config TEGRA_DEBUG_UARTE
- 
- endchoice
- 
-+config TEGRA_DISABLE_BOOTLOADER_CLOCKS
-+	bool "Disable clocks left on by bootloader"
-+	help
-+	  Disables clocks that are detected to be on but haven't
-+	  been requested by a kernel driver.
-+
- config TEGRA_SYSTEM_DMA
- 	bool "Enable system DMA driver for NVIDIA Tegra SoCs"
- 	default y
-diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
-index f55bb83..0ea5d92 100644
---- a/arch/arm/mach-tegra/clock.c
-+++ b/arch/arm/mach-tegra/clock.c
-@@ -511,6 +511,36 @@ int __init tegra_init_dvfs(void)
- 
- late_initcall(tegra_init_dvfs);
- 
-+/*
-+ * Iterate through all clocks, disabling any for which the refcount is 0
-+ * but the clock init detected the bootloader left the clock on.
-+ */
-+#ifdef CONFIG_TEGRA_DISABLE_BOOTLOADER_CLOCKS
-+int __init tegra_disable_boot_clocks(void)
-+{
-+	unsigned long flags;
-+
-+	struct clk *c;
-+
-+	spin_lock_irqsave(&clock_lock, flags);
-+
-+	list_for_each_entry(c, &clocks, node) {
-+		if (c->refcnt == 0 && c->state == ON &&
-+				c->ops && c->ops->disable) {
-+			pr_warning("Disabling clock %s left on by bootloader\n",
-+				c->name);
-+			c->ops->disable(c);
-+			c->state = OFF;
-+		}
-+	}
-+
-+	spin_unlock_irqrestore(&clock_lock, flags);
-+
-+	return 0;
-+}
-+late_initcall(tegra_disable_boot_clocks);
-+#endif
-+
- #ifdef CONFIG_DEBUG_FS
- static struct dentry *clk_debugfs_root;
- 
--- 
-1.7.3.1
+Is this a known bug that got fixed in 2.6.37.1 ?
 
+Thanks
+-ml
