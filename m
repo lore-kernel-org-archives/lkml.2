@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab1BSW2d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 17:28:33 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:26156 "EHLO
+	id S1754656Ab1BSW0j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 17:26:39 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:26139 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488Ab1BSW0k (ORCPT
+	with ESMTP id S1754376Ab1BSW0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 17:26:40 -0500
+	Sat, 19 Feb 2011 17:26:36 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, konkers@android.com, olof@lixom.net,
         Colin Cross <ccross@android.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 04/21] ARM: tegra: clock: Don't use PLL lock bits
-Date: Sat, 19 Feb 2011 14:25:53 -0800
-Message-Id: <1298154371-5641-6-git-send-email-ccross@android.com>
+Subject: [PATCH v2 08/21] ARM: tegra: clock: Rearrange static clock tables
+Date: Sat, 19 Feb 2011 14:25:57 -0800
+Message-Id: <1298154371-5641-10-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1298154371-5641-1-git-send-email-ccross@android.com>
 References: <1298154371-5641-1-git-send-email-ccross@android.com>
@@ -24,167 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PLL lock bits are not reliable, use per-PLL timeouts instead.
+Make the static clocks look more like the array of clocks
+so they can all be initalized with the same helper function.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/clock.h         |    2 +-
- arch/arm/mach-tegra/tegra2_clocks.c |   31 +++++++++----------------------
- 2 files changed, 10 insertions(+), 23 deletions(-)
+ arch/arm/mach-tegra/tegra2_clocks.c |  106 +++++++++++++++++------------------
+ 1 files changed, 51 insertions(+), 55 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/clock.h b/arch/arm/mach-tegra/clock.h
-index 42f00c0..b76d33d 100644
---- a/arch/arm/mach-tegra/clock.h
-+++ b/arch/arm/mach-tegra/clock.h
-@@ -53,7 +53,6 @@ struct dvfs_process_id_table {
- 	struct dvfs_table *table;
- };
- 
--
- struct dvfs {
- 	struct regulator *reg;
- 	struct dvfs_table *table;
-@@ -128,6 +127,7 @@ struct clk {
- 	unsigned long			vco_min;
- 	unsigned long			vco_max;
- 	const struct clk_pll_table	*pll_table;
-+	int				pll_lock_delay;
- 
- 	/* DIV */
- 	u32				div;
 diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
-index db27e59..36da2e8 100644
+index e1e0d81f..62ec3fb 100644
 --- a/arch/arm/mach-tegra/tegra2_clocks.c
 +++ b/arch/arm/mach-tegra/tegra2_clocks.c
-@@ -79,7 +79,6 @@
- #define PLL_BASE_ENABLE			(1<<30)
- #define PLL_BASE_REF_ENABLE		(1<<29)
- #define PLL_BASE_OVERRIDE		(1<<28)
--#define PLL_BASE_LOCK			(1<<27)
- #define PLL_BASE_DIVP_MASK		(0x7<<20)
- #define PLL_BASE_DIVP_SHIFT		20
- #define PLL_BASE_DIVN_MASK		(0x3FF<<8)
-@@ -94,7 +93,6 @@
- #define PLL_OUT_RESET_DISABLE		(1<<0)
+@@ -1770,7 +1770,7 @@ static struct clk_mux_sel mux_clk_32k[] = {
+ 		.max_rate  = _max,			\
+ 	}
  
- #define PLL_MISC(c)			(((c)->flags & PLL_ALT_MISC_REG) ? 0x4 : 0xc)
--#define PLL_MISC_LOCK_ENABLE(c)		(((c)->flags & PLLU) ? (1<<22) : (1<<18))
+-struct clk tegra_periph_clks[] = {
++struct clk tegra_list_clks[] = {
+ 	PERIPH_CLK("rtc",	"rtc-tegra",		NULL,	4,	0,	32768,     mux_clk_32k,			PERIPH_NO_RESET),
+ 	PERIPH_CLK("timer",	"timer",		NULL,	5,	0,	26000000,  mux_clk_m,			0),
+ 	PERIPH_CLK("i2s1",	"i2s.0",		NULL,	11,	0x100,	26000000,  mux_pllaout0_audio2x_pllp_clkm,	MUX | DIV_U71),
+@@ -1879,71 +1879,67 @@ struct clk_duplicate tegra_clk_duplicates[] = {
+ 		.clk = ck,	\
+ 	}
  
- #define PLL_MISC_DCCON_SHIFT		20
- #define PLL_MISC_CPCON_SHIFT		8
-@@ -546,17 +544,7 @@ static struct clk_ops tegra_blink_clk_ops = {
- /* PLL Functions */
- static int tegra2_pll_clk_wait_for_lock(struct clk *c)
+-struct clk_lookup tegra_clk_lookups[] = {
+-	/* external root sources */
+-	CLK(NULL,	"32k_clk",	&tegra_clk_32k),
+-	CLK(NULL,	"pll_s",	&tegra_pll_s),
+-	CLK(NULL,	"clk_m",	&tegra_clk_m),
+-	CLK(NULL,	"pll_m",	&tegra_pll_m),
+-	CLK(NULL,	"pll_m_out1",	&tegra_pll_m_out1),
+-	CLK(NULL,	"pll_c",	&tegra_pll_c),
+-	CLK(NULL,	"pll_c_out1",	&tegra_pll_c_out1),
+-	CLK(NULL,	"pll_p",	&tegra_pll_p),
+-	CLK(NULL,	"pll_p_out1",	&tegra_pll_p_out1),
+-	CLK(NULL,	"pll_p_out2",	&tegra_pll_p_out2),
+-	CLK(NULL,	"pll_p_out3",	&tegra_pll_p_out3),
+-	CLK(NULL,	"pll_p_out4",	&tegra_pll_p_out4),
+-	CLK(NULL,	"pll_a",	&tegra_pll_a),
+-	CLK(NULL,	"pll_a_out0",	&tegra_pll_a_out0),
+-	CLK(NULL,	"pll_d",	&tegra_pll_d),
+-	CLK(NULL,	"pll_d_out0",	&tegra_pll_d_out0),
+-	CLK(NULL,	"pll_u",	&tegra_pll_u),
+-	CLK(NULL,	"pll_x",	&tegra_pll_x),
+-	CLK(NULL,	"pll_e",	&tegra_pll_e),
+-	CLK(NULL,	"cclk",		&tegra_clk_cclk),
+-	CLK(NULL,	"sclk",		&tegra_clk_sclk),
+-	CLK(NULL,	"hclk",		&tegra_clk_hclk),
+-	CLK(NULL,	"pclk",		&tegra_clk_pclk),
+-	CLK(NULL,	"clk_d",	&tegra_clk_d),
+-	CLK(NULL,	"clk_dev1",	&tegra_dev1_clk),
+-	CLK(NULL,	"clk_dev2",	&tegra_dev2_clk),
+-	CLK(NULL,	"cpu",		&tegra_clk_virtual_cpu),
+-	CLK(NULL,	"blink",	&tegra_clk_blink),
+-};
++struct clk *tegra_ptr_clks[] = {
++	&tegra_clk_32k,
++	&tegra_pll_s,
++	&tegra_clk_m,
++	&tegra_pll_m,
++	&tegra_pll_m_out1,
++	&tegra_pll_c,
++	&tegra_pll_c_out1,
++	&tegra_pll_p,
++	&tegra_pll_p_out1,
++	&tegra_pll_p_out2,
++	&tegra_pll_p_out3,
++	&tegra_pll_p_out4,
++	&tegra_pll_a,
++	&tegra_pll_a_out0,
++	&tegra_pll_d,
++	&tegra_pll_d_out0,
++	&tegra_pll_u,
++	&tegra_pll_x,
++	&tegra_pll_e,
++	&tegra_clk_cclk,
++	&tegra_clk_sclk,
++	&tegra_clk_hclk,
++	&tegra_clk_pclk,
++	&tegra_clk_d,
++	&tegra_dev1_clk,
++	&tegra_dev2_clk,
++	&tegra_clk_virtual_cpu,
++	&tegra_clk_blink,
++};
++
++static void tegra2_init_one_clock(struct clk *c)
++{
++	clk_init(c);
++	if (!c->lookup.dev_id && !c->lookup.con_id)
++		c->lookup.con_id = c->name;
++	c->lookup.clk = c;
++	clkdev_add(&c->lookup);
++}
+ 
+ void __init tegra2_init_clocks(void)
  {
--	ktime_t before;
+ 	int i;
+-	struct clk_lookup *cl;
+ 	struct clk *c;
+-	struct clk_duplicate *cd;
 -
--	before = ktime_get();
--
--	while (!(clk_readl(c->reg + PLL_BASE) & PLL_BASE_LOCK)) {
--		if (ktime_us_delta(ktime_get(), before) > 5000) {
--			pr_err("Timed out waiting for lock bit on pll %s",
--				c->name);
--			return -1;
--		}
+-	for (i = 0; i < ARRAY_SIZE(tegra_clk_lookups); i++) {
+-		cl = &tegra_clk_lookups[i];
+-		clk_init(cl->clk);
+-		clkdev_add(cl);
 -	}
-+	udelay(c->pll_lock_delay);
  
- 	return 0;
- }
-@@ -594,10 +582,6 @@ static int tegra2_pll_clk_enable(struct clk *c)
- 	val |= PLL_BASE_ENABLE;
- 	clk_writel(val, c->reg + PLL_BASE);
+-	for (i = 0; i < ARRAY_SIZE(tegra_periph_clks); i++) {
+-		c = &tegra_periph_clks[i];
+-		cl = &c->lookup;
+-		cl->clk = c;
++	for (i = 0; i < ARRAY_SIZE(tegra_ptr_clks); i++)
++		tegra2_init_one_clock(tegra_ptr_clks[i]);
  
--	val = clk_readl(c->reg + PLL_MISC(c));
--	val |= PLL_MISC_LOCK_ENABLE(c);
--	clk_writel(val, c->reg + PLL_MISC(c));
--
- 	tegra2_pll_clk_wait_for_lock(c);
+-		clk_init(cl->clk);
+-		clkdev_add(cl);
+-	}
++	for (i = 0; i < ARRAY_SIZE(tegra_list_clks); i++)
++		tegra2_init_one_clock(&tegra_list_clks[i]);
  
- 	return 0;
-@@ -1177,6 +1161,7 @@ static struct clk tegra_pll_s = {
- 	.vco_max   = 26000000,
- 	.pll_table = tegra_pll_s_table,
- 	.max_rate  = 26000000,
-+	.pll_lock_delay = 300,
- };
+ 	for (i = 0; i < ARRAY_SIZE(tegra_clk_duplicates); i++) {
+-		cd = &tegra_clk_duplicates[i];
+-		c = tegra_get_clock_by_name(cd->name);
+-		if (c) {
+-			cl = &cd->lookup;
+-			cl->clk = c;
+-			clkdev_add(cl);
+-		} else {
++		c = tegra_get_clock_by_name(tegra_clk_duplicates[i].name);
++		if (!c) {
+ 			pr_err("%s: Unknown duplicate clock %s\n", __func__,
+-				cd->name);
++				tegra_clk_duplicates[i].name);
++			continue;
+ 		}
++
++		tegra_clk_duplicates[i].lookup.clk = c;
++		clkdev_add(&tegra_clk_duplicates[i].lookup);
+ 	}
  
- static struct clk_mux_sel tegra_clk_m_sel[] = {
-@@ -1213,6 +1198,7 @@ static struct clk tegra_pll_c = {
- 	.vco_max   = 1400000000,
- 	.pll_table = tegra_pll_c_table,
- 	.max_rate  = 600000000,
-+	.pll_lock_delay = 300,
- };
- 
- static struct clk tegra_pll_c_out1 = {
-@@ -1251,6 +1237,7 @@ static struct clk tegra_pll_m = {
- 	.vco_max   = 1200000000,
- 	.pll_table = tegra_pll_m_table,
- 	.max_rate  = 800000000,
-+	.pll_lock_delay = 300,
- };
- 
- static struct clk tegra_pll_m_out1 = {
-@@ -1289,6 +1276,7 @@ static struct clk tegra_pll_p = {
- 	.vco_max   = 1400000000,
- 	.pll_table = tegra_pll_p_table,
- 	.max_rate  = 432000000,
-+	.pll_lock_delay = 300,
- };
- 
- static struct clk tegra_pll_p_out1 = {
-@@ -1354,6 +1342,7 @@ static struct clk tegra_pll_a = {
- 	.vco_max   = 1400000000,
- 	.pll_table = tegra_pll_a_table,
- 	.max_rate  = 56448000,
-+	.pll_lock_delay = 300,
- };
- 
- static struct clk tegra_pll_a_out0 = {
-@@ -1399,6 +1388,7 @@ static struct clk tegra_pll_d = {
- 	.vco_max   = 1000000000,
- 	.pll_table = tegra_pll_d_table,
- 	.max_rate  = 1000000000,
-+	.pll_lock_delay = 1000,
- };
- 
- static struct clk tegra_pll_d_out0 = {
-@@ -1431,6 +1421,7 @@ static struct clk tegra_pll_u = {
- 	.vco_max   = 960000000,
- 	.pll_table = tegra_pll_u_table,
- 	.max_rate  = 480000000,
-+	.pll_lock_delay = 1000,
- };
- 
- static struct clk_pll_table tegra_pll_x_table[] = {
-@@ -1493,6 +1484,7 @@ static struct clk tegra_pll_x = {
- 	.vco_max   = 1200000000,
- 	.pll_table = tegra_pll_x_table,
- 	.max_rate  = 1000000000,
-+	.pll_lock_delay = 300,
- };
- 
- static struct clk_pll_table tegra_pll_e_table[] = {
-@@ -1966,7 +1958,6 @@ static u32 clk_rst_suspend[RST_DEVICES_NUM + CLK_OUT_ENB_NUM +
- void tegra_clk_suspend(void)
- {
- 	unsigned long off, i;
--	u32 pllx_misc;
- 	u32 *ctx = clk_rst_suspend;
- 
- 	*ctx++ = clk_readl(OSC_CTRL) & OSC_CTRL_MASK;
-@@ -2007,10 +1998,6 @@ void tegra_clk_suspend(void)
- 
- 	*ctx++ = clk_readl(MISC_CLK_ENB);
- 	*ctx++ = clk_readl(CLK_MASK_ARM);
--
--	pllx_misc = clk_readl(tegra_pll_x.reg + PLL_MISC(&tegra_pll_x));
--	pllx_misc &= ~PLL_MISC_LOCK_ENABLE(&tegra_pll_x);
--	clk_writel(pllx_misc, tegra_pll_x.reg + PLL_MISC(&tegra_pll_x));
- }
- 
- void tegra_clk_resume(void)
+ 	init_audio_sync_clock_mux();
 -- 
 1.7.3.1
 
