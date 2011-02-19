@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab1BSW0e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 17:26:34 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:52415 "EHLO
+	id S1755316Ab1BSW0q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 17:26:46 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:26188 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919Ab1BSW0c (ORCPT
+	with ESMTP id S1754428Ab1BSW0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 17:26:32 -0500
+	Sat, 19 Feb 2011 17:26:45 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, konkers@android.com, olof@lixom.net,
-        Colin Cross <ccross@android.com>,
+        Colin Cross <ccross@android.com>, sboyd@codeaurora.org,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 15/21] ARM: tegra: clock: Round rate before setting rate
-Date: Sat, 19 Feb 2011 14:26:04 -0800
-Message-Id: <1298154371-5641-17-git-send-email-ccross@android.com>
+Subject: [PATCH v2 12/21] ARM: tegra: clock: Add shared bus clock type
+Date: Sat, 19 Feb 2011 14:26:01 -0800
+Message-Id: <1298154371-5641-14-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1298154371-5641-1-git-send-email-ccross@android.com>
 References: <1298154371-5641-1-git-send-email-ccross@android.com>
@@ -24,98 +24,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call the clock's round_rate op, if it exists, before calling
-the set_rate op.  This will help later when dvfs is added,
-dvfs needs to know what the final rate will be before the
-frequency changes.
-
-Also requires fixes to the round rate functions to ensure
-calling round rate and then set rate will not cause the
-frequency to be rounded down twice.  When picking clock
-divider values, the clock framework picks the closest
-frequency that is lower than the requested frequency.  If
-the new frequency calculated from the divider value is
-rounded down, and then passed to set_rate, it will get
-rounded down again, possibly resulting in a frequency two
-steps lower than the original requested frequency.
-
-Fix the problem by rounding up when calculating the frequency
-coming out of a clock divider, so if that frequency is
-requested again, the same divider value will be picked.
+Some clocks may have multiple downstream users that need to request a
+higher clock rate.  Shared bus clocks provide a unique shared_bus_user
+clock to each user.  The frequency of the bus is set to the highest
+enabled shared_bus_user clock, with a minimum value set by the
+shared bus.  Drivers can use clk_enable and clk_disable to enable
+or disable their requirement, and clk_set_rate to set the minimum rate.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/clock.c         |   12 ++++++++++++
- arch/arm/mach-tegra/tegra2_clocks.c |    8 ++++----
- 2 files changed, 16 insertions(+), 4 deletions(-)
+ arch/arm/mach-tegra/clock.h         |    8 +++
+ arch/arm/mach-tegra/tegra2_clocks.c |  116 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 124 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
-index 8d01a49..9798585 100644
---- a/arch/arm/mach-tegra/clock.c
-+++ b/arch/arm/mach-tegra/clock.c
-@@ -86,6 +86,7 @@ static unsigned long clk_predict_rate_from_parent(struct clk *c, struct clk *p)
+diff --git a/arch/arm/mach-tegra/clock.h b/arch/arm/mach-tegra/clock.h
+index a63dbf9..bb755c2 100644
+--- a/arch/arm/mach-tegra/clock.h
++++ b/arch/arm/mach-tegra/clock.h
+@@ -85,6 +85,7 @@ struct clk {
+ 	struct clk_ops		*ops;
+ 	unsigned long		rate;
+ 	unsigned long		max_rate;
++	unsigned long		min_rate;
+ 	u32			flags;
+ 	const char		*name;
  
- 	if (c->mul != 0 && c->div != 0) {
- 		rate *= c->mul;
-+		rate += c->div / 2; /* round up */
- 		do_div(rate, c->div);
- 	}
+@@ -98,6 +99,8 @@ struct clk {
+ 	u32				reg;
+ 	u32				reg_shift;
  
-@@ -240,12 +241,23 @@ EXPORT_SYMBOL(clk_get_parent);
- 
- int clk_set_rate_locked(struct clk *c, unsigned long rate)
- {
-+	long new_rate;
++	struct list_head		shared_bus_list;
 +
- 	if (!c->ops || !c->ops->set_rate)
- 		return -ENOSYS;
+ 	union {
+ 		struct {
+ 			unsigned int			clk_num;
+@@ -120,6 +123,11 @@ struct clk {
+ 			struct clk			*main;
+ 			struct clk			*backup;
+ 		} cpu;
++		struct {
++			struct list_head		node;
++			bool				enabled;
++			unsigned long			rate;
++		} shared_bus_user;
+ 	} u;
  
- 	if (rate > c->max_rate)
- 		rate = c->max_rate;
- 
-+	if (c->ops && c->ops->round_rate) {
-+		new_rate = c->ops->round_rate(c, rate);
-+
-+		if (new_rate < 0)
-+			return new_rate;
-+
-+		rate = new_rate;
-+	}
-+
- 	return c->ops->set_rate(c, rate);
- }
- 
+ 	spinlock_t spinlock;
 diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
-index 2734889..480c0f6 100644
+index a1c86d8..dd53af3 100644
 --- a/arch/arm/mach-tegra/tegra2_clocks.c
 +++ b/arch/arm/mach-tegra/tegra2_clocks.c
-@@ -866,9 +866,9 @@ static long tegra2_pll_div_clk_round_rate(struct clk *c, unsigned long rate)
- 		divider = clk_div71_get_divider(parent_rate, rate);
- 		if (divider < 0)
- 			return divider;
--		return parent_rate * 2 / (divider + 2);
-+		return DIV_ROUND_UP(parent_rate * 2, divider + 2);
- 	} else if (c->flags & DIV_2) {
--		return parent_rate / 2;
-+		return DIV_ROUND_UP(parent_rate, 2);
- 	}
- 	return -EINVAL;
- }
-@@ -1058,12 +1058,12 @@ static long tegra2_periph_clk_round_rate(struct clk *c,
- 		if (divider < 0)
- 			return divider;
+@@ -1188,6 +1188,110 @@ static struct clk_ops tegra_cdev_clk_ops = {
+ 	.disable		= &tegra2_cdev_clk_disable,
+ };
  
--		return parent_rate * 2 / (divider + 2);
-+		return DIV_ROUND_UP(parent_rate * 2, divider + 2);
- 	} else if (c->flags & DIV_U16) {
- 		divider = clk_div16_get_divider(parent_rate, rate);
- 		if (divider < 0)
- 			return divider;
--		return parent_rate / (divider + 1);
-+		return DIV_ROUND_UP(parent_rate, divider + 1);
++/* shared bus ops */
++/*
++ * Some clocks may have multiple downstream users that need to request a
++ * higher clock rate.  Shared bus clocks provide a unique shared_bus_user
++ * clock to each user.  The frequency of the bus is set to the highest
++ * enabled shared_bus_user clock, with a minimum value set by the
++ * shared bus.
++ */
++static int tegra_clk_shared_bus_update(struct clk *bus)
++{
++	struct clk *c;
++	unsigned long rate = bus->min_rate;
++
++	list_for_each_entry(c, &bus->shared_bus_list, u.shared_bus_user.node)
++		if (c->u.shared_bus_user.enabled)
++			rate = max(c->u.shared_bus_user.rate, rate);
++
++	if (rate == clk_get_rate_locked(bus))
++		return 0;
++
++	return clk_set_rate_locked(bus, rate);
++};
++
++static void tegra_clk_shared_bus_init(struct clk *c)
++{
++	unsigned long flags;
++
++	c->max_rate = c->parent->max_rate;
++	c->u.shared_bus_user.rate = c->parent->max_rate;
++	c->state = OFF;
++#ifdef CONFIG_DEBUG_FS
++	c->set = 1;
++#endif
++
++	spin_lock_irqsave(&c->parent->spinlock, flags);
++
++	list_add_tail(&c->u.shared_bus_user.node,
++		&c->parent->shared_bus_list);
++
++	spin_unlock_irqrestore(&c->parent->spinlock, flags);
++}
++
++static int tegra_clk_shared_bus_set_rate(struct clk *c, unsigned long rate)
++{
++	unsigned long flags;
++	int ret;
++
++	rate = clk_round_rate(c->parent, rate);
++	if (rate < 0)
++		return rate;
++
++	spin_lock_irqsave(&c->parent->spinlock, flags);
++
++	c->u.shared_bus_user.rate = rate;
++	ret = tegra_clk_shared_bus_update(c->parent);
++
++	spin_unlock_irqrestore(&c->parent->spinlock, flags);
++
++	return ret;
++}
++
++static long tegra_clk_shared_bus_round_rate(struct clk *c, unsigned long rate)
++{
++	return clk_round_rate(c->parent, rate);
++}
++
++static int tegra_clk_shared_bus_enable(struct clk *c)
++{
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&c->parent->spinlock, flags);
++
++	c->u.shared_bus_user.enabled = true;
++	ret = tegra_clk_shared_bus_update(c->parent);
++
++	spin_unlock_irqrestore(&c->parent->spinlock, flags);
++
++	return ret;
++}
++
++static void tegra_clk_shared_bus_disable(struct clk *c)
++{
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&c->parent->spinlock, flags);
++
++	c->u.shared_bus_user.enabled = false;
++	ret = tegra_clk_shared_bus_update(c->parent);
++	WARN_ON_ONCE(ret);
++
++	spin_unlock_irqrestore(&c->parent->spinlock, flags);
++}
++
++static struct clk_ops tegra_clk_shared_bus_ops = {
++	.init = tegra_clk_shared_bus_init,
++	.enable = tegra_clk_shared_bus_enable,
++	.disable = tegra_clk_shared_bus_disable,
++	.set_rate = tegra_clk_shared_bus_set_rate,
++	.round_rate = tegra_clk_shared_bus_round_rate,
++};
++
++
+ /* Clock definitions */
+ static struct clk tegra_clk_32k = {
+ 	.name = "clk_32k",
+@@ -1858,6 +1962,17 @@ static struct clk_mux_sel mux_clk_32k[] = {
+ 		},					\
  	}
- 	return -EINVAL;
- }
+ 
++#define SHARED_CLK(_name, _dev, _con, _parent)		\
++	{						\
++		.name      = _name,			\
++		.lookup    = {				\
++			.dev_id    = _dev,		\
++			.con_id    = _con,		\
++		},					\
++		.ops       = &tegra_clk_shared_bus_ops,	\
++		.parent = _parent,			\
++	}
++
+ struct clk tegra_list_clks[] = {
+ 	PERIPH_CLK("rtc",	"rtc-tegra",		NULL,	4,	0,	32768,     mux_clk_32k,			PERIPH_NO_RESET),
+ 	PERIPH_CLK("timer",	"timer",		NULL,	5,	0,	26000000,  mux_clk_m,			0),
+@@ -2001,6 +2116,7 @@ struct clk *tegra_ptr_clks[] = {
+ static void tegra2_init_one_clock(struct clk *c)
+ {
+ 	clk_init(c);
++	INIT_LIST_HEAD(&c->shared_bus_list);
+ 	if (!c->lookup.dev_id && !c->lookup.con_id)
+ 		c->lookup.con_id = c->name;
+ 	c->lookup.clk = c;
 -- 
 1.7.3.1
 
