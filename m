@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab1BSV4Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 16:56:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45697 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab1BSV4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 16:56:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=xyZxzWRYgtbLo6nBh9JcxdvbNqAL2ZnMA/cQPuNXkNPMWm1wzY7Jr9bv4wKywfaXYX
-         7YEKcYvalxNgIQtSZc6BKugkQOpEWN+F7q1i+GpmlKLgdlvdJpAYN8G0UZaT8uK3eP19
-         qTCadMTuzj8JDGtZZyHMcHQl0Z4XjT31g0hsA=
-From: Kushal Koolwal <kushalkoolwal@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Kushal Koolwal <kushalkoolwal@gmail.com>
-Subject: [PATCH 1/1] x86: Fix reboot problem on VersaLogic Menlow boards.
-Date: Sat, 19 Feb 2011 13:56:03 -0800
-Message-Id: <1298152563-21594-1-git-send-email-kushalkoolwal@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1752333Ab1BSV7x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 16:59:53 -0500
+Received: from mail.perches.com ([173.55.12.10]:3782 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319Ab1BSV7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 16:59:52 -0500
+Subject: Re: [PATCH]move double quotation marks so that keep MAINTAINERS
+ consistent
+From: Joe Perches <joe@perches.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        jiaweiwei.xiyou@gmail.com, linux-kernel@vger.kernel.org,
+        greg@kroah.com, rdunlap@xenotime.net
+In-Reply-To: <20110219164839.GA20047@ucw.cz>
+References: <20110210025133.GA3285@gmail.com>
+	 <20110209190631.f29419ef.akpm@linux-foundation.org>
+	 <20110209.191752.226762899.davem@davemloft.net>
+	 <20110219164839.GA20047@ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Feb 2011 13:59:50 -0800
+Message-ID: <1298152790.7179.27.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VersaLogic Menlow based boards hang on reboot unless reboot=bios is used.
-Add quirk to reboot through the BIOS.
+On Sat, 2011-02-19 at 17:48 +0100, Pavel Machek wrote:
+> On Wed 2011-02-09 19:17:52, David Miller wrote:
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > > I suspect that some mail clients will explode if you provide them with
+> > > an unquoted string containing periods.  That would make copy-n-paste
+> > > rather a hassle.
+> > It's not clients, it's servers.
+> > SMTP rules state that characters such as "." cannot appear
+> > unquoted in email headers.
+> > vger.kernel.org rejects mail when this violation occurs.
+> Ok, but should not MUA do this quotation? Quick test shows that mutt does... 
 
-Tested on at least four boards.
+My recollection is that the get_maintainer script
+cannot parse M: lines with multiple entries with
+periods without the quotes.
 
-Signed-off-by: Kushal Koolwal <kushalkoolwal@gmail.com>
----
- arch/x86/kernel/reboot.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+M:	First I. Last <fil@foo.bar>, Last.I.First <lif@foo.bar>
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index fc7aae1..715037c 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -285,6 +285,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on VersaLogic Menlow boards */
-+		.callback = set_bios_reboot,
-+		.ident = "VersaLogic Menlow based board",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic Corporation"),
-+			DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow board"),
-+		},
-+	},
- 	{ }
- };
- 
--- 
-1.7.2.3
+fails and
+
+M:	"First I. Last" <fil@foo.bar>, "Last.I.First" <lif@foo.bar>
+
+succeeds.
+
+You are welcome to improve the parsing in that routine.
 
