@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab1BSUYs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 15:24:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13577 "EHLO mx1.redhat.com"
+	id S1754402Ab1BSUvq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 15:51:46 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:43831 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab1BSUYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 15:24:47 -0500
-Date: Sat, 19 Feb 2011 21:16:03 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110219201603.GB8662@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110216215157.GA6054@host1.dyn.jankratochvil.net> <201102170437.51382.vda.linux@googlemail.com> <20110217191952.GA13611@redhat.com> <20110218211140.GA2066@host1.dyn.jankratochvil.net>
+	id S1753526Ab1BSUvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 15:51:45 -0500
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 2.6.38
+Date: Sat, 19 Feb 2011 12:50:29 -0800
+Message-ID: <1298148629-1817-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110218211140.GA2066@host1.dyn.jankratochvil.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18, Jan Kratochvil wrote:
->
-> On Thu, 17 Feb 2011 20:19:52 +0100, Oleg Nesterov wrote:
-> > > > That is after PTRACE_DETACH(0) the process should remain `T (stopped)'
-> > > > iff the process was `T (stopped)' before PTRACE_ATTACH.
-> > > >  - PTRACE_DETACH(0)       should preserve `T (stopped)'.
-> > >
-> > > I assume you are thinking about PTRACE_ATTACH + wait():SIGSTOP
-> > > + PTRACE_DETACH(0) sequence.
-> >
-> > plus it should be stopped before attach, I assume. Otherwise this
-> > not true with the current code.
->
-> I did not talk about the current code.  I was making a proposal of new
-> behavior (which should not break existing software).
+Hi Linus,
 
-Confused.
+Please pull hwmon subsystem fixes for Linux 2.6.38 from:
 
-> If PTRACE_ATTACH was done on process with `T (stopped)'
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
-this matters "it should be stopped before attach"
+Besides the bug fixes, there is added support for AMD Family 12h/14h CPUs and
+for EMC6D103. I included those because they meet requirements for submission
+to stable (new device IDs).
 
-> then after
-> PTRACE_DETACH(0) again the process should be `T (stopped)'.
+Thanks,
+Guenter Roeck
 
-Regardless of what the debugger did in between? This can't be right.
-I'd say, it doesn't make sense to take the state of the tracee before
-PTRACE_ATTACH into account. What does matter, is its state before
-PTRACE_DETACH.
+------
 
-If the debugger did not resume the tracee before PTRACE_DETACH, then
-of course I agree, PTRACE_DETACH(0) should preserve T (stopped).
+The following changes since commit 85e2efbb1db9a18d218006706d6e4fbeb0216213:
 
-But again, lets discuss this separately.
+  Linux 2.6.38-rc5 (2011-02-15 19:23:45 -0800)
 
-Oleg.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
+Clemens Ladisch (4):
+      hwmon: (jc42) fix type mismatch
+      hwmon: (jc42) more helpful documentation
+      hwmon: (jc42) do not allow writing to locked registers
+      hwmon: (k10temp) add support for AMD Family 12h/14h CPUs
+
+Guenter Roeck (1):
+      MAINTAINERS: Remove stale hwmon quilt tree
+
+Jan Beulich (1):
+      hwmon: (lm85) extend to support EMC6D103 chips
+
+ Documentation/hwmon/jc42    |   21 +++++++++++++++------
+ Documentation/hwmon/k10temp |    8 +++++++-
+ MAINTAINERS                 |    1 -
+ drivers/hwmon/Kconfig       |   19 ++++++++++---------
+ drivers/hwmon/jc42.c        |   35 ++++++++++++++++++++++++++++++-----
+ drivers/hwmon/k10temp.c     |    5 +++--
+ drivers/hwmon/lm85.c        |   23 +++++++++++++++++++++--
+ 7 files changed, 86 insertions(+), 26 deletions(-)
