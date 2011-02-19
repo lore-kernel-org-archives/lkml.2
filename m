@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447Ab1BSF6O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 00:58:14 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:51110 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab1BSF6M (ORCPT
+	id S1751488Ab1BSGC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 01:02:29 -0500
+Received: from smtp105.rog.mail.re2.yahoo.com ([206.190.36.83]:20000 "HELO
+	smtp105.rog.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750849Ab1BSGC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 00:58:12 -0500
-Message-ID: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl>
-Date: Sat, 19 Feb 2011 06:58:06 +0100 (CET)
-Subject: [BUG] drm/i915 Screen corruption introduced by 
-     a00b10c360b35d6431a94cb
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Chris Wilson" <chris@chris-wilson.co.uk>
-Cc: "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "LKML" <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        indan@nul.nu
-User-Agent: SquirrelMail/1.4.17
+	Sat, 19 Feb 2011 01:02:27 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=rogers.com;
+  h=DKIM-Signature:Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Cc:Subject:Date:Organization:User-Agent:MIME-Version:Content-Transfer-Encoding:Content-Type;
+  b=zFshqMxb/m/G/FhIgf6JXvU0eref9RenfXN+qk02tjZugHOvbBDEN5FpnMqDGnw6t+xzEiC4vgQNxwT50wluM01235H69QjN3ra+DkLpamCb7ZWe3zCzqH+XtINVhhD6ODIXd5/tfnvAKQpiFWUhRrium/9SF1d40pYU687rQsc=  ;
+Message-ID: <474630.25335.qm@smtp105.rog.mail.re2.yahoo.com>
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+X-YMail-OSG: FbspZdUVM1kDhPkvTCoIZLNQI6EXcAEpvcrWdvQ8P9RO102
+ Jw4gX9wX1N20UdnbY4NQNVH1o7aB0GALtFDldZRCLiA7oQYYw4jdqwrGvGin
+ WbDkXVNt_Z_4d9HLKH9iTksYXivoylPcu1l.vCbPtceSsK6.8fvKCoPi7trF
+ lX2QuM4wmdCg76F8e6SbZRF8yechzUaFS_RTMXEKmjdfENRaZhv0O72NVrsl
+ HlxW.RI3LIw6LahKC0iKCMa07ryuoavfAmQP5tGtpfuUQYhtKEJ43yGk-
+X-Yahoo-Newman-Property: ymail-3
+From: Shawn Starr <shawn.starr@rogers.com>
+To: linux-kernel@vger.kernel.org
+Cc: alsa-user@lists.sourceforge.net
+Subject: [regression][ALSA][hda-conexant][2.6.38-rcX] external microphone sound too quiet
+Date: Sat, 19 Feb 2011 01:02:22 -0500
+Organization: sh0n.net
+User-Agent: KMail/4.6 beta4 (Linux/2.6.38-0.rc4.git0.2.fc15.x86_64; KDE/4.6.0; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 2394e6fd9f1e9f86011669f8146dc264
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-Since 2.6.38-rc I get screen corruption (mostly horizontal grabage stripes on
-the right side of the screen). After a long time bisecting the offending commit
-ends up being:
+Hello, 
 
-commit a00b10c360b35d6431a94cbf130a4e162870d661
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri Sep 24 21:15:47 2010 +0100
+I've noticed some changes with ALSA recently, and when I use my Conexant CX20561 (Hermosa) microphone I get mixed results:
 
-    drm/i915: Only enforce fence limits inside the GTT.
+My current Fedora rawhide kernel is: 2.6.38-0.rc4.git0.2.fc15.x86_64. I certainly will be using -rc5 as soon as either it 
+hits rawhide rpm factory or rawhide mirrors.
 
-    So long as we adhere to the fence registers rules for alignment and no
-    overlaps (including with unfenced accesses to linear memory) and account
-    for the tiled access in our size allocation, we do not have to allocate
-    the full fenced region for the object. This allows us to fight the bloat
-    tiling imposed on pre-i965 chipsets and frees up RAM for real use. [Inside
-    the GTT we still suffer the additional alignment constraints, so it doesn't
-    magic allow us to render larger scenes without stalls -- we need the
-    expanded GTT and fence pipelining to overcome those...]
+... its in the factory .. 2.6.38-0.rc5.git1.1.fc15
 
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+1) Plug in headset, microphone works (using microphone headset)
 
-This commit caused other problems too, which Daniel tried to fix with commits:
+2) Disconnect headset from microphone jack and external microphone on laptop shows barely any sound being picked up.
 
-5e78330126e23e00950 drm/i915: fix relaxed tiling for gen <= 3 && !g33
-75e9e9158f38e5cb21e drm/i915: kill mappable/fenceable disdinction
-818f2a3cc34b0673dcc drm/i915: revert pageflip/mappable related abi breakage
+Laptop info:
 
-But those don't fix my screen corruption.
+Manufacturer:      LENOVO
+Product Name:      4058CTO
+Product Version:   ThinkPad W500
 
-Unfortunately, it's a big commit and it doesn't revert cleanly, and its size
-makes it unclear what the source of the problem is. Daniel's commits don't
-revert cleanly either, so reverting all of them didn't work.
-
-I'll start poking at it and see if I can find anything.
-
-Greetings,
-
-Indan
+Driver version:     1.0.23
+Library version:    1.0.24
+Utilities version:  1.0.24.1
 
 
+If someone from ALSA is on this list, I can provide you the alsa-info data. Maybe a quirk is needed.
+
+Thanks,
+Shawn.
