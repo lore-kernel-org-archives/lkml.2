@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1BSR5l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 12:57:41 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:53057 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754406Ab1BSR5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 12:57:38 -0500
-Message-ID: <4D600485.2030400@free.fr>
-Date: Sat, 19 Feb 2011 18:57:25 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1754719Ab1BSS0w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 13:26:52 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52007 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab1BSS0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 13:26:51 -0500
+Date: Sat, 19 Feb 2011 18:26:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v4 15/19] ARM: LPAE: use phys_addr_t instead of
+	unsigned long for physical addresses
+Message-ID: <20110219182631.GS29493@n2100.arm.linux.org.uk>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-16-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: xemul@parallels.com, containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>, dhowells@redhat.com,
-        LSM <linux-security-module@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 7/9] add a user namespace owner of ipc ns
-References: <20110217150224.GA26334@mail.hallyn.com> <20110217150349.GG26395@mail.hallyn.com>
-In-Reply-To: <20110217150349.GG26395@mail.hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295891761-18366-16-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2011 04:03 PM, Serge E. Hallyn wrote:
-> Changelog:
-> 	Feb 15: Don't set new ipc->user_ns if we didn't create a new
-> 		ipc_ns.
->
-> Signed-off-by: Serge E. Hallyn<serge.hallyn@canonical.com>
-> ---
+On Mon, Jan 24, 2011 at 05:55:57PM +0000, Catalin Marinas wrote:
+> From: Will Deacon <will.deacon@arm.com>
+> 
+> The unsigned long datatype is not sufficient for mapping physical addresses
+> >= 4GB.
+> 
+> This patch ensures that the phys_addr_t datatype is used to represent
+> physical addresses which may be beyond the range of an unsigned long.
+> The virt <-> phys macros are updated accordingly to ensure that virtual
+> addresses can remain as they are.
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
+This patch needs some more things fixed to prevent warnings:
 
-
-[ ... ]
-
-> +	ns->user_ns = old_ns->user_ns;
-> +	get_user_ns(ns->user_ns);
-
-A mindless change.
-
-ns->user_ns = get_user_ns(old_ns->user_ns);
-
-
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index a81355d..6cf76b3 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -809,9 +809,10 @@ static void __init sanity_check_meminfo(void)
+ 		 */
+ 		if (__va(bank->start) >= vmalloc_min ||
+ 		    __va(bank->start) < (void *)PAGE_OFFSET) {
+-			printk(KERN_NOTICE "Ignoring RAM at %.8lx-%.8lx "
++			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
+ 			       "(vmalloc region overlap).\n",
+-			       bank->start, bank->start + bank->size - 1);
++			       (unsigned long long)bank->start,
++			       (unsigned long long)bank->start + bank->size - 1);
+ 			continue;
+ 		}
+ 
+@@ -822,10 +823,11 @@ static void __init sanity_check_meminfo(void)
+ 		if (__va(bank->start + bank->size) > vmalloc_min ||
+ 		    __va(bank->start + bank->size) < __va(bank->start)) {
+ 			unsigned long newsize = vmalloc_min - __va(bank->start);
+-			printk(KERN_NOTICE "Truncating RAM at %.8lx-%.8lx "
+-			       "to -%.8lx (vmalloc region overlap).\n",
+-			       bank->start, bank->start + bank->size - 1,
+-			       bank->start + newsize - 1);
++			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
++			       "to -%.8llx (vmalloc region overlap).\n",
++			       (unsigned long long)bank->start,
++			       (unsigned long long)bank->start + bank->size - 1,
++			       (unsigned long long)bank->start + newsize - 1);
+ 			bank->size = newsize;
+ 		}
+ #endif
