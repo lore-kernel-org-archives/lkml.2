@@ -1,68 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab1BSHZg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 02:25:36 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47466 "EHLO
+	id S1751862Ab1BSIgH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 03:36:07 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45162 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab1BSHZd convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750998Ab1BSIgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 02:25:33 -0500
+	Sat, 19 Feb 2011 03:36:04 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=T8pwQ8b7Xva3Z347Rxd3rDwpxTxfWQuwHMsHfIysdaNawaB/4Enr5dyDjucWsBQsB1
-         nk6PO4aQ5zaEHDwCIL4NYVTUjzkQfR8dhbdvc6P71Ht0BAYxcTYj/dGP2+CpKg+oKUWi
-         6D5bvUIrV4DFYEJekg32i5ZQjebAcdE6zT6U8=
-MIME-Version: 1.0
-In-Reply-To: <20110218202744.GA19427@n2100.arm.linux.org.uk>
-References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
- <201102181928.05911.rjw@sisk.pl> <AANLkTi=j9KeX2TSzMaKMWR6GpXjFcsjp0z8Rt+ArLXiV@mail.gmail.com>
- <201102182120.29977.rjw@sisk.pl> <20110218202744.GA19427@n2100.arm.linux.org.uk>
-From: Rabin Vincent <rabin@rab.in>
-Date: Sat, 19 Feb 2011 12:54:52 +0530
-X-Google-Sender-Auth: AkyY7dgy0q5zrozlB5a__4AyHwQ
-Message-ID: <AANLkTinb0zVSUyNBAySH7K7=3bX-ecoQa--CzPJ+OM_b@mail.gmail.com>
-Subject: Re: platform/i2c busses: pm runtime and system sleep
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, khilman@ti.com, magnus.damm@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>, stern@rowland.harvard.edu,
-        linux-i2c@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sU1OY19kbx3MOBnjaCY+GcvzE+lFIPWozNZ26eiDjAKv2UjCAq+b9hqvvu+aqLuJjd
+         cFTa8WINdop+MFVBdtZ2IZyvysyYqslNVwXEQ2lCX7Jm2MWRL7Uuue+KZcR30nU3w3PW
+         VDyqkcy9U5+QoDQOZxayWOP5Xj2MYNCTK5TZU=
+Subject: [PATCH] tcp: fix inet_twsk_deschedule()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Miller <davem@davemloft.net>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, Pavel Emelyanov <xemul@openvz.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>
+In-Reply-To: <m1sjvl2i3q.fsf@fess.ebiederm.org>
+References: <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+	 <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+	 <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	 <20110218122938.GB26779@tiehlicka.suse.cz>
+	 <20110218162623.GD4862@tiehlicka.suse.cz>
+	 <AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com>
+	 <m17hcx43m3.fsf@fess.ebiederm.org>
+	 <AANLkTikh4oaR6CBK3NBazer7yjhE0VndsUB5FCDRsbJc@mail.gmail.com>
+	 <20110218190128.GF13211@ghostprotocols.net>
+	 <20110218191146.GG13211@ghostprotocols.net>
+	 <m1sjvl2i3q.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Feb 2011 09:35:56 +0100
+Message-ID: <1298104556.8559.21.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 19, 2011 at 01:57, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> Do we have any pressing need to convert AMBA stuff? �I haven't heard any
-> reason yet to convert them to runtime PM - they don't even make any
-> runtime PM calls.
->
-> Maybe Linus can comment on the PM stuff as he has SoCs with these in.
-> As my boards don't have any sensible PM support, I don't have any
-> visibility of what PM facilities would be required.
+Le vendredi 18 février 2011 à 12:38 -0800, Eric W. Biederman a écrit :
+> Arnaldo Carvalho de Melo <acme@redhat.com> writes:
+> 
+> > Em Fri, Feb 18, 2011 at 05:01:28PM -0200, Arnaldo Carvalho de Melo escreveu:
+> >> Em Fri, Feb 18, 2011 at 10:48:18AM -0800, Linus Torvalds escreveu:
+> >> > This seems to be a fairly straightforward bug.
+> >> > 
+> >> > In net/ipv4/inet_timewait_sock.c we have this:
+> >> > 
+> >> >   /* These are always called from BH context.  See callers in
+> >> >    * tcp_input.c to verify this.
+> >> >    */
+> >> > 
+> >> >   /* This is for handling early-kills of TIME_WAIT sockets. */
+> >> >   void inet_twsk_deschedule(struct inet_timewait_sock *tw,
+> >> >                             struct inet_timewait_death_row *twdr)
+> >> >   {
+> >> >           spin_lock(&twdr->death_lock);
+> >> >           ..
+> >> > 
+> >> > and the intention is clearly that that spin_lock is BH-safe because
+> >> > it's called from BH context.
+> >> > 
+> >> > Except that clearly isn't true. It's called from a worker thread:
+> >> > 
+> >> > > stack backtrace:
+> >> > > Pid: 10833, comm: kworker/u:1 Not tainted 2.6.38-rc4-359399.2010AroraKernelBeta.fc14.x86_64 #1
+> >> > > Call Trace:
+> >> > >  [<ffffffff81460e69>] ? inet_twsk_deschedule+0x29/0xa0
+> >> > >  [<ffffffff81460fd6>] ? inet_twsk_purge+0xf6/0x180
+> >> > >  [<ffffffff81460f10>] ? inet_twsk_purge+0x30/0x180
+> >> > >  [<ffffffff814760fc>] ? tcp_sk_exit_batch+0x1c/0x20
+> >> > >  [<ffffffff8141c1d3>] ? ops_exit_list.clone.0+0x53/0x60
+> >> > >  [<ffffffff8141c520>] ? cleanup_net+0x100/0x1b0
+> >> > >  [<ffffffff81068c47>] ? process_one_work+0x187/0x4b0
+> >> > >  [<ffffffff81068be1>] ? process_one_work+0x121/0x4b0
+> >> > >  [<ffffffff8141c420>] ? cleanup_net+0x0/0x1b0
+> >> > >  [<ffffffff8106a65c>] ? worker_thread+0x15c/0x330
+> >> > 
+> >> > so it can deadlock with a BH happening at the same time, afaik.
+> >> > 
+> >> > The code (and comment) is all from 2005, it looks like the BH->worker
+> >> > thread has broken the code. But somebody who knows that code better
+> >> > should take a deeper look at it.
+> >> > 
+> >> > Added acme to the cc, since the code is attributed to him back in 2005
+> >> > ;). Although I don't know how active he's been in networking lately
+> >> > (seems to be all perf-related). Whatever, it can't hurt.
+> >> 
+> >> Original code is ANK's, I just made it possible to use with DCCP, and
+> >> yeah, the smiley is appropriate, something 6 years old and the world
+> >> around it changing continually... well, thanks for the git blame ;-)
+> >
+> > But yeah, your analisys seems correct, with the bug being introduced by
+> > one of these world around it changing continually issues, networking
+> > namespaces broke the rules of the game on its cleanup_net() routine,
+> > adding Pavel to the CC list since it doesn't hurt ;-)
+> 
+> Which probably gets the bug back around to me.
+> 
+> I guess this must be one of those ipv4 cases that where the cleanup
+> simply did not exist in the rmmod sense that we had to invent.
+> 
+> I think that was Daniel who did the time wait sockets.  I do remember
+> they were a real pain.
+> 
+> Would a bh_disable be sufficient?  I guess I should stop remembering and
+> look at the code now.
+> 
 
-The rationale for runtime power control is the same as that for
-65500fa94aaeb3 "ARM: 6467/1: amba: optional PrimeCell core voltage
-switch".
+Here is the patch to fix the problem
 
-As compared to the regulator API which that patch is using, the runtime
-pm usage is more flexible (for example allowing certain power control
-APIs to be called from atomic context), provides callbacks for
-asynchronous turnoff with callbacks back to the driver to save/restore
-state (runtime_suspend()/runtime_resume()), and provides core support
-for things like "autosuspend" which allows delaying suspend until some
-time after last inactivity.  Using runtime PM also allows use of the new
-device-level power domain support ("PM: Add support for device power
-domains", in -next) to easily implement SoC-specific handling.
+Daniel commit (d315492b1a6ba29d (netns : fix kernel panic in timewait
+socket destruction) was OK (it did use local_bh_disable())
 
-We need to first add bus support for this to allow drivers to use this
-API.  It is possible to make the AMBA patch smaller and touch only the
-AMBA bus code by implementing support for the legacy bus-specific
-suspend/resume calls, and drivers can be later converted to pm-ops as
-needed.
+Problem comes from commit 575f4cd5a5b6394577
+(net: Use rcu lookups in inet_twsk_purge.) added in 2.6.33
+
+Thanks !
+
+[PATCH] tcp: fix inet_twsk_deschedule()
+
+Eric W. Biederman reported a lockdep splat in inet_twsk_deschedule()
+
+This is caused by inet_twsk_purge(), run from process context,
+and commit 575f4cd5a5b6394577 (net: Use rcu lookups in inet_twsk_purge.)
+removed the BH disabling that was necessary.
+
+Add the BH disabling but fine grained, right before calling
+inet_twsk_deschedule(), instead of whole function.
+
+With help from Linus Torvalds and Eric W. Biederman
+
+Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Daniel Lezcano <daniel.lezcano@free.fr>
+CC: Pavel Emelyanov <xemul@openvz.org>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: stable <stable@kernel.org> (# 2.6.33+)
+---
+ net/ipv4/inet_timewait_sock.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/net/ipv4/inet_timewait_sock.c b/net/ipv4/inet_timewait_sock.c
+index c5af909..3c8dfa1 100644
+--- a/net/ipv4/inet_timewait_sock.c
++++ b/net/ipv4/inet_timewait_sock.c
+@@ -505,7 +505,9 @@ restart:
+ 			}
+ 
+ 			rcu_read_unlock();
++			local_bh_disable();
+ 			inet_twsk_deschedule(tw, twdr);
++			local_bh_enable();
+ 			inet_twsk_put(tw);
+ 			goto restart_rcu;
+ 		}
+
+
