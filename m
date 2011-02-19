@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab1BSCWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 21:22:12 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35598 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab1BSCWK convert rfc822-to-8bit (ORCPT
+	id S1755549Ab1BSCYb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 21:24:31 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:42335 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab1BSCY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 21:22:10 -0500
+	Fri, 18 Feb 2011 21:24:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jRjI0brYeMLSyQkNbK8glsGkz4i5QwZj8Lq9bDQOVvlIuFQOxWdFUYYDGDLJmoDv58
-         oIhUqdxtHVMF8SlgjL5ioBNhZWMjKLQqu6b/Rujqy19n/wWj2VHZ4MA1WWxN5Xl6UMBM
-         1c1cFliNPUwrjKI32tB5mKk1WKc2SrWNo0kC4=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kvqT4k3Vcn8hZWEqP5b0F2tARWDewF9k7ozoF/aGwn5EZDw7QyNhBs1Zgbz4l2OIv1
+         TkcVctB47KHkNiWWKzb3J+OcoeUNx2E+DJLsYQgYHVEDNzJ4oaKTjckURFQIunP7k/0H
+         4F8tP33LKW79cDbn9FWKpC+3TiKnR3gTz4nZU=
+Message-ID: <4D5F29D9.1080601@gmail.com>
+Date: Sat, 19 Feb 2011 03:24:25 +0100
+From: Klaas Neirinck <klaas.neirinck@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <20110218095221.GK24426@pengutronix.de>
-References: <1297865452-32181-1-git-send-email-s.hauer@pengutronix.de>
-	<1297865452-32181-4-git-send-email-s.hauer@pengutronix.de>
-	<AANLkTina46_CMvB_9cqc4=PvcPxaV_BQ_H_ghJZFFxg8@mail.gmail.com>
-	<20110218095221.GK24426@pengutronix.de>
-Date: Sat, 19 Feb 2011 10:22:08 +0800
-Message-ID: <AANLkTi=hm41HUtwXJSdfGtjj2pRo1xAv1AmZ5zaTp5Sj@mail.gmail.com>
-Subject: Re: [PATCH 3/7] Add i.MX5 framebuffer driver
-From: Jason Chen <weitway@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <greg@kroah.com>
+CC: gregkh@suse.de, devel@driverdev.osuosl.org,
+        Klaas Neirinck <klaas.nerinck@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/10] Staging: tidspbridge: fixed a brace coding style
+ issue
+References: <1297911534-31534-1-git-send-email-klaas.neirinck@gmail.com> <20110218212752.GJ796@kroah.com>
+In-Reply-To: <20110218212752.GJ796@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, Sascha,
+On 18/02/2011 22:27, Greg KH wrote:
+> On Thu, Feb 17, 2011 at 03:58:45AM +0100, Klaas Neirinck wrote:
+>> Fixed a coding style issue.
+>>
+>> Signed-off-by: Klaas Neirinck<klaas.nerinck@gmail.com>
+> This doesn't apply at all to the linux-next tree, what did you do it
+> against?
+>
+> confused,
+>
+> greg k-h
+I did it against 
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+as shown in http://www.youtube.com/fosdemtalks#p/u/0/LLBrBBImJt4
+great talk btw!
 
-2011/2/18 Sascha Hauer <s.hauer@pengutronix.de>:
-> Hi Jason,
->
-> On Fri, Feb 18, 2011 at 05:22:09PM +0800, Jason Chen wrote:
->> hi, Sasha,
->>
->> > +       if (var->vmode & FB_VMODE_ODD_FLD_FIRST) /* PAL */
->> > +               sig_cfg.odd_field_first = 1;
->> > +       if (var->sync & FB_SYNC_EXT)
->> > +               sig_cfg.ext_clk = 1;
->> > +       if (var->sync & FB_SYNC_HOR_HIGH_ACT)
->> > +               sig_cfg.Hsync_pol = 1;
->> Please remove FB_SYNC_EXT support.
->
-> No problem, can do. But why? Is it nonfunctional in the hardware
-> or is it that the current code just misses more pieces to support
-> this?
->
-This flag represents external sync, some application will not check
-this flag when they reset fb var, for example, X server fb driver will
-ignore it, if so, the ipu external clock can not be set correctly.
-I think ipu should decide external clock usage by other method. The
-latest method in freesacle mainline is decide it automatically -- if
-internal clock can not fit target clock rate well, switch it to
-external.
->>
->> +static void imx_ipu_fb_disable_overlay(struct fb_info *ovl)
->> +{
->> +       struct imx_ipu_fb_info *mxc_ovl = ovl->par;
->> +
->> +       if (!mxc_ovl->enabled)
->> +               return;
->> +
->> +       ipu_dp_disable_fg(mxc_ovl->dp);
->> +       ipu_wait_for_interrupt(451, 100);
->> +       ipu_idmac_disable_channel(mxc_ovl->ipu_ch);
->> +       ipu_dmfc_disable_channel(mxc_ovl->dmfc);
->> +       mxc_ovl->enabled = 0;
->> +}
->> Had better has a definition of ipu irq 451.
->
-> Ok.
->
-> Sascha
->
-> --
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
->
+Klaas
