@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab1BSJdQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 04:33:16 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40435 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab1BSJdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 04:33:13 -0500
-Date: Sat, 19 Feb 2011 10:32:16 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: David Ahern <daahern@cisco.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, paulus@samba.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 3/3] perf events: add timehist option to record and report
-Message-ID: <20110219093216.GA30331@elte.hu>
-References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
- <1298008433-22911-4-git-send-email-daahern@cisco.com>
- <20110218070657.GA11404@elte.hu>
- <4D5E8204.2090501@cisco.com>
- <20110218175926.GA3445@nowhere>
- <4D5EB564.6030504@cisco.com>
- <1298054399.5226.779.camel@laptop>
- <4D5EBE2C.7000701@cisco.com>
+	id S1753201Ab1BSJzA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 04:55:00 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42137 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab1BSJy6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 04:54:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Rf82+ATYBkY7lBwh0jHR7lFbT1QDwhbGfXkVcRuV9K+6GMXZTfCg+LxehOjOMwXgum
+         Ew8ZkiPc4YJAk/yQGhHhL2VZKqqde3m5zWEkupaKtw7TS5R40IY7N9+GDhnf9D9NC8AG
+         7+Jla7SB8YJ1sd2hB7nMtfXkXor8t0ZD+wPTg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5EBE2C.7000701@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110218202744.GA19427@n2100.arm.linux.org.uk>
+References: <AANLkTinyDE3OxKup_aqsN8HJH_r5LcwkP17OtuMRpACx@mail.gmail.com>
+	<201102181928.05911.rjw@sisk.pl>
+	<AANLkTi=j9KeX2TSzMaKMWR6GpXjFcsjp0z8Rt+ArLXiV@mail.gmail.com>
+	<201102182120.29977.rjw@sisk.pl>
+	<20110218202744.GA19427@n2100.arm.linux.org.uk>
+Date: Sat, 19 Feb 2011 10:54:57 +0100
+X-Google-Sender-Auth: rtPtFx_61XhVvKUNwiZDmKUYMLw
+Message-ID: <AANLkTim2TfG-18XN3r9m3Rq68ZD6QHUY7X82E4-XWH83@mail.gmail.com>
+Subject: Re: platform/i2c busses: pm runtime and system sleep
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Rabin Vincent <rabin@rab.in>,
+        khilman@ti.com, magnus.damm@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, stern@rowland.harvard.edu,
+        linux-i2c@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/2/18 Russell King - ARM Linux <linux@arm.linux.org.uk>:
 
-* David Ahern <daahern@cisco.com> wrote:
+> Do we have any pressing need to convert AMBA stuff?  I haven't heard any
+> reason yet to convert them to runtime PM - they don't even make any
+> runtime PM calls.
+>
+> Maybe Linus can comment on the PM stuff as he has SoCs with these in.
+> As my boards don't have any sensible PM support, I don't have any
+> visibility of what PM facilities would be required.
 
-> On 01/23/11 at 03:45:67 a syslog event noted an application restart.
-> Checking the applications logs it went silent. Why? What does perf say?
-> 
-> Oh, 2 days have gone by before said event is reported to engineering,
-> and the server was been rebooted to 'clear' the problem - hence
-> resetting monotonic clock.
+Sure, basically I ACK Rabins patch and his reasoning for it. (BTW
+Rabin spends most of his days working on the Ux500 SoCs too.)
 
-I think that's a valid usecase and the feature you are suggestion is very useful.
+The runtime PM we need for Ux500 is to switch off silicon core
+voltage first and foremost. The call I've added to switch of a core
+voltage regulator will need to be called when the silicon is idle.
 
-Why not extend the regular trace output to also (optionally) output GTOD timestamps?
+In spi/amba-pl022.c I take the most brutal approach with a recent
+patch: hammer off this core switch (and clock) whenever the hardware
+is not used. This is simple in this driver since it has no state to preserve
+across transfers, it is written such that the core is loaded with the
+appropriate state for each message.
 
-Thanks,
+Continuing this approach we run into two problems with this
+and other drivers:
 
-	Ingo
+-  Hammering off/on the clock+voltage is causing delays in HW
+   so what you want is some hysteresis (usually, wait a few us/ms
+   then switch off) - sort of a takeoff/landing effect.
+
+-  Modelling voltage domains as regulators is nice, but require
+   us to switch on/off from process context, so we cannot do this
+   from interrupt handlers.
+
+Both of these problems are solved by elegance if we use runtime
+PM, since it will provide a hysteresis timeout that can be triggered
+from interrupt context and call the idling hooks in process context.
+
+Yours,
+Linus Walleij
