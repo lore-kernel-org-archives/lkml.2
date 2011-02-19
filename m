@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab1BSB0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 20:26:14 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59126 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755755Ab1BSB0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 20:26:11 -0500
-Date: Sat, 19 Feb 2011 01:25:42 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        brgerst@gmail.com, castet.matthieu@free.fr, tglx@linutronix.de,
-        sfr@canb.auug.org.au, hpa@linux.intel.com, rjw@sisk.pl
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        brgerst@gmail.com, castet.matthieu@free.fr, tglx@linutronix.de,
-        sfr@canb.auug.org.au, hpa@linux.intel.com, rjw@sisk.pl
-In-Reply-To: <AANLkTik6UJ680mWJcu_W+jerLcqPjwjvaXyxB1jAMaG0@mail.gmail.com>
-References: <AANLkTik6UJ680mWJcu_W+jerLcqPjwjvaXyxB1jAMaG0@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/trampoline] x86-64, trampoline: Remove unused variable
-Message-ID: <tip-1c4badbdeae53d2584bb5395a062cfebed76696e@git.kernel.org>
-Git-Commit-ID: 1c4badbdeae53d2584bb5395a062cfebed76696e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Feb 2011 01:25:42 +0000 (UTC)
+	id S1755751Ab1BSB22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 20:28:28 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20352 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754891Ab1BSB20 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 20:28:26 -0500
+Date: Fri, 18 Feb 2011 17:25:36 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org,
+        linville@tuxdriver.com
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Luciano Coelho <luciano.coelho@nokia.com>,
+        Roger Quadros <roger.quadros@nokia.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH -next] wl12xx: fix sdio_test kconfig/build errors
+Message-Id: <20110218172536.970b5b39.randy.dunlap@oracle.com>
+In-Reply-To: <20110217162650.092e77c3.sfr@canb.auug.org.au>
+References: <20110217162650.092e77c3.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D5F1C87.00C1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1c4badbdeae53d2584bb5395a062cfebed76696e
-Gitweb:     http://git.kernel.org/tip/1c4badbdeae53d2584bb5395a062cfebed76696e
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Fri, 18 Feb 2011 15:50:36 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 18 Feb 2011 15:50:36 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-x86-64, trampoline: Remove unused variable
+The wl12xx sdio_test code uses wl12xx_get_platform_data, which is
+only present when WL12*_SDIO is enabled, so make WL12XX_SDIO_TEST
+depend on WL12XX_SDIO so that the needed interface will be present.
 
-Removed unused variable left over from development.
+sdio_test.c:(.devinit.text+0x13178): undefined reference to `wl12xx_get_platform_data'
 
-Reported-by: Brian Gerst <brgerst@gmail.com>
-LKML-Reference: <AANLkTik6UJ680mWJcu_W+jerLcqPjwjvaXyxB1jAMaG0@mail.gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Matthieu Castet <castet.matthieu@free.fr>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Luciano Coelho <luciano.coelho@nokia.com>
+Cc: Roger Quadros <roger.quadros@nokia.com>
 ---
- arch/x86/kernel/trampoline_64.S |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/net/wireless/wl12xx/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/trampoline_64.S b/arch/x86/kernel/trampoline_64.S
-index 49c77a6..09ff517 100644
---- a/arch/x86/kernel/trampoline_64.S
-+++ b/arch/x86/kernel/trampoline_64.S
-@@ -157,8 +157,6 @@ startup_64_vector:
- 	.word	__KERNEL_CS, 0
+--- linux-next-20110217.orig/drivers/net/wireless/wl12xx/Kconfig
++++ linux-next-20110217/drivers/net/wireless/wl12xx/Kconfig
+@@ -54,7 +54,7 @@ config WL12XX_SDIO
  
- 	.balign 4
--fixup_base:
--	.long	0
- ENTRY(trampoline_status)
- 	.long	0
- 
+ config WL12XX_SDIO_TEST
+ 	tristate "TI wl12xx SDIO testing support"
+-	depends on WL12XX && MMC
++	depends on WL12XX && MMC && WL12XX_SDIO
+ 	default n
+ 	---help---
+ 	  This module adds support for the SDIO bus testing with the
