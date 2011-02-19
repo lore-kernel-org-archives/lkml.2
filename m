@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab1BSMAP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 07:00:15 -0500
-Received: from fep22.mx.upcmail.net ([62.179.121.42]:59442 "EHLO
-	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab1BSMAM (ORCPT
+	id S1753569Ab1BSMJR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 07:09:17 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54673 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab1BSMJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 07:00:12 -0500
-X-SourceIP: 115.184.6.231
-Reply-To: <centerdept1@hotmail.com>
-From: "ATTENTION" <info@e-boos.web.nl>
-To: info@winners.com
-Subject: mail winner
-Date: Sat, 19 Feb 2011 17:29:34 +0530
+	Sat, 19 Feb 2011 07:09:15 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [alsa-devel] [PATCH v9 01/12] media: Media device node support
+Date: Sat, 19 Feb 2011 13:09:13 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37-gentoo; KDE/4.6.0; x86_64; ; )
+Cc: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com
+References: <1297686067-9666-1-git-send-email-laurent.pinchart@ideasonboard.com> <1297686067-9666-2-git-send-email-laurent.pinchart@ideasonboard.com> <20110218223337.GC25168@sirena.org.uk>
+In-Reply-To: <20110218223337.GC25168@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110219-0, 02/19/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110219115935.HUME1633.viefep15-int.chello.at@edge04.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=JvXQbuMnWGQeb488dJ7w43Du7THgE+O7ieb9U20/rjk= c=1 sm=0 a=Dyoqhi_TatcA:10 a=OFY6g5uvMqYA:10 a=WHsXhg87phMA:10 a=8EU9Q7FnrCoA:10 a=iemI8Umg2V8A:10 a=Cfj4BQAnxiAA:10 a=Qy6kL3YQhM9Wk_2B7yQA:9 a=wyb3jAxg6RvQwewXgbYqwQpeZFgA:4 a=Ft8UYL4EG9YA:10 a=URSS0qY9UMeuwhqS:21 a=0USd3I5blN5geHyn:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Message-Id: <201102191309.13896.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mark,
 
- Dear e_mail winner
+On Friday 18 February 2011 23:33:37 Mark Brown wrote:
+> On Mon, Feb 14, 2011 at 01:20:56PM +0100, Laurent Pinchart wrote:
+> > +	  Enable the media controller API used to query media devices internal
+> > +	  topology and configure it dynamically.
+> > +
+> > +	  This API is mostly used by camera interfaces in embedded platforms.
+> 
+> I'd expect this comment is going to bitrot very soon once the framework
+> goes in.
 
-Your email id was selected among the four(4)lucky  email ids that was randomly selcted in the last online draw held.You have won 1000,000GBP.
-We therefore request you to send us the following requriements for claims processing.
+Thanks for the comment. I can remove this now, but wouldn't it be better to 
+update the description when removing the experimental flag ? We will 
+(hopefully) have more users then.
 
-Name-
-occupation-
-age-
-sex-
-address-
-mobile-
+-- 
+Regards,
 
-Kindly send this informations to us by clicking reply to in your email.
+Laurent Pinchart
