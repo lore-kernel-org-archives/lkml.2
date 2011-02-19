@@ -1,159 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab1BSBTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Feb 2011 20:19:47 -0500
-Received: from mail3.microsoft.com ([131.107.115.214]:25669 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab1BSBTo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Feb 2011 20:19:44 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QITSqA//+CNECAAIydAP//es7AgACLTgD//51bwAARrqQAABA28rA=
-Date: Sat, 19 Feb 2011 01:19:43 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0480116B6@TK5EX14MBXC124.redmond.corp.microsoft.com>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <20110218211423.GH796@kroah.com>
- <6E21E5352C11B742B20C142EB499E048011604@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110218220724.GA28986@suse.de>
- <6E21E5352C11B742B20C142EB499E04801162F@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110218222916.GA14244@suse.de>
- <6E21E5352C11B742B20C142EB499E048011693@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <20110219010230.GA2402@suse.de>
-In-Reply-To: <20110219010230.GA2402@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755620Ab1BSB0D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Feb 2011 20:26:03 -0500
+Received: from hera.kernel.org ([140.211.167.34]:59118 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753509Ab1BSBZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Feb 2011 20:25:59 -0500
+Date: Sat, 19 Feb 2011 01:25:13 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        brgerst@gmail.com, castet.matthieu@free.fr, tglx@linutronix.de,
+        sfr@canb.auug.org.au, hpa@linux.intel.com, rjw@sisk.pl
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        brgerst@gmail.com, castet.matthieu@free.fr, tglx@linutronix.de,
+        sfr@canb.auug.org.au, hpa@linux.intel.com, rjw@sisk.pl
+In-Reply-To: <AANLkTikxqk=HEw9R-Du=v-1ti1HDGAY9vaNUep2XARaz@mail.gmail.com>
+References: <AANLkTikxqk=HEw9R-Du=v-1ti1HDGAY9vaNUep2XARaz@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/trampoline] x86, reboot: Fix the use of passed arguments in 32-bit BIOS reboot
+Message-ID: <tip-ee1b06ea6aed979da3b4e6b6ffea98ad55a3c5c1@git.kernel.org>
+Git-Commit-ID: ee1b06ea6aed979da3b4e6b6ffea98ad55a3c5c1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Feb 2011 01:25:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  ee1b06ea6aed979da3b4e6b6ffea98ad55a3c5c1
+Gitweb:     http://git.kernel.org/tip/ee1b06ea6aed979da3b4e6b6ffea98ad55a3c5c1
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 18 Feb 2011 15:47:42 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 18 Feb 2011 15:47:42 -0800
 
+x86, reboot: Fix the use of passed arguments in 32-bit BIOS reboot
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Friday, February 18, 2011 8:03 PM
-> To: KY Srinivasan
-> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org
-> Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> 
-> On Sat, Feb 19, 2011 at 12:56:16AM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@suse.de]
-> > > Sent: Friday, February 18, 2011 5:29 PM
-> > > To: KY Srinivasan
-> > > Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > virtualization@lists.osdl.org
-> > > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> > >
-> > > On Fri, Feb 18, 2011 at 10:16:05PM +0000, KY Srinivasan wrote:
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Greg KH [mailto:gregkh@suse.de]
-> > > > > Sent: Friday, February 18, 2011 5:07 PM
-> > > > > To: KY Srinivasan
-> > > > > Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> > > > > virtualization@lists.osdl.org
-> > > > > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> > > > >
-> > > > > On Fri, Feb 18, 2011 at 10:00:04PM +0000, KY Srinivasan wrote:
-> > > > > >
-> > > > > >
-> > > > > > > -----Original Message-----
-> > > > > > > From: Greg KH [mailto:greg@kroah.com]
-> > > > > > > Sent: Friday, February 18, 2011 4:14 PM
-> > > > > > > To: KY Srinivasan
-> > > > > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > > > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> > > > > > > Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> > > > > > >
-> > > > > > > On Tue, Feb 15, 2011 at 11:55:35AM -0800, K. Y. Srinivasan wrote:
-> > > > > > > >
-> > > > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > > > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > > > > > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> > > > > > >
-> > > > > > > You didn't run this through checkpatch.pl.
-> > > > > > >
-> > > > > > > Please do so and fix the warning it gives you.
-> > > > > > Greg, I did run the checkpatch script against this patch and the only
-> > > > > > complaint I got was with regards to the IRQF_SAMPLE_RANDOM flag
-> that I
-> > > > > > pass. As a virtual machine, this is the only external event that the
-> > > > > > VM is going to see and so I chose to keep this flag.  Is there
-> > > > > > something that would replace this flag; looking at the Xen drivers
-> > > > > > they do pass this flag.
-> > > > >
-> > > > > But that flag is going away, right?  And this really can't be a valid
-> > > > > source of entropy as the HV channel is pretty predictable.
-> > > >
-> > > > Is it going away? What would replace this. Is all interrupt sources considered
-> > > > predictable?
-> > >
-> > > Did you read the file that the checkpatch script told you to about this
-> > > entry?
-> >
-> > It is only after reading the document, I decided to keep that flag. Please
-> > note this is not a question of some interrupt sources not being
-> > a good source of entropy; for this VM this is the only source of interrupts.
-> > The document on this flag talked about how people were incorrectly
-> > marking their interrupt as an entropy source; in this case there is not much of a
-> > choice.
-> >
-> > >
-> > > > This is the only unpredictable thing happening in the VM and that is the
-> reason
-> > > > I chose to keep the flag.
-> > >
-> > > If you remove it, do we loose all entropy for the VM?
-> > >
-> > > > > If you are only using this because Xen does/did it, that's not a valid
-> > > > > excuse :)
-> > > > Surely, you are joking.
-> > >
-> > > Not at all.
-> >
-> > To set the record straight here, this flag is in the existing code.
-> > After I ran checkpatch, I toyed with the idea of getting rid of this. Then I
-> > decided to keep it for all the reasons I mentioned earlier.
-> >
-> > >
-> > > > In any event I am sending you a new patch with that flag removed.
-> > >
-> > > Have you tested to see if you now loose all entropy, and it causes
-> > > problems or not?
-> >
-> > I am glad you asked me to test it. When I remove this flag, the entropy goes
-> down
-> > significantly and this is not surprising. Looking at
-> > /proc/sys/kernel/entropy/entropy_avail, with the original patch after a couple
-> > of compiles the number would be in thousands. With that flag removed,
-> > I have the VM up for about an hour, even after a couple of compiles,
-> > the entropy number is yet to crack 200.
-> >
-> > Let me know how you want to proceed here.
-> 
-> Ok, my fault, let's keep the original flag.  Care to resend the patch
-> you had originally sent?
-Thanks Greg; I just sent it. I will deal with irq balancing issue in a separate patch.
+The initial version of this patch had %eax being a segment and %ecx
+being the mode.  I had changed the interfaces, but not the actual
+implementation!
 
-Regards,
+Reported-by: Brian Gerst <brgerst@gmail.com>
+LKML-Reference: <AANLkTikxqk=HEw9R-Du=v-1ti1HDGAY9vaNUep2XARaz@mail.gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Matthieu Castet <castet.matthieu@free.fr>
+---
+ arch/x86/kernel/reboot_32.S |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-K. Y
-
-
+diff --git a/arch/x86/kernel/reboot_32.S b/arch/x86/kernel/reboot_32.S
+index f242356..29092b3 100644
+--- a/arch/x86/kernel/reboot_32.S
++++ b/arch/x86/kernel/reboot_32.S
+@@ -23,10 +23,14 @@ r_base = .
+ 1:	popl	%ebx
+ 	subl	$1b, %ebx
+ 
++	/* Compute the equivalent real-mode segment */
++	movl	%ebx, %ecx
++	shrl	$4, %ecx
++	
+ 	/* Patch post-real-mode segment jump */
+-	movw	dispatch_table(%ebx,%ecx,2),%cx
+-	movw	%cx, 101f(%ebx)
+-	movw	%ax, 102f(%ebx)
++	movw	dispatch_table(%ebx,%eax,2),%ax
++	movw	%ax, 101f(%ebx)
++	movw	%cx, 102f(%ebx)
+ 
+ 	/* Set up the IDT for real mode. */
+ 	lidtl	machine_real_restart_idt(%ebx)
