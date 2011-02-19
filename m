@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab1BSUUL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 15:20:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45851 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956Ab1BSUUJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 15:20:09 -0500
-Date: Sat, 19 Feb 2011 21:20:03 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Deadlock in gpiolib
-Message-ID: <20110219202002.GN22310@pengutronix.de>
-References: <20110218225407.GL22310@pengutronix.de>
- <alpine.LFD.2.00.1102190028400.2701@localhost6.localdomain6>
+	id S1754187Ab1BSUYs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 15:24:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13577 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752083Ab1BSUYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 15:24:47 -0500
+Date: Sat, 19 Feb 2011 21:16:03 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110219201603.GB8662@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110216215157.GA6054@host1.dyn.jankratochvil.net> <201102170437.51382.vda.linux@googlemail.com> <20110217191952.GA13611@redhat.com> <20110218211140.GA2066@host1.dyn.jankratochvil.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1102190028400.2701@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20110218211140.GA2066@host1.dyn.jankratochvil.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
+On 02/18, Jan Kratochvil wrote:
+>
+> On Thu, 17 Feb 2011 20:19:52 +0100, Oleg Nesterov wrote:
+> > > > That is after PTRACE_DETACH(0) the process should remain `T (stopped)'
+> > > > iff the process was `T (stopped)' before PTRACE_ATTACH.
+> > > >  - PTRACE_DETACH(0)       should preserve `T (stopped)'.
+> > >
+> > > I assume you are thinking about PTRACE_ATTACH + wait():SIGSTOP
+> > > + PTRACE_DETACH(0) sequence.
+> >
+> > plus it should be stopped before attach, I assume. Otherwise this
+> > not true with the current code.
+>
+> I did not talk about the current code.  I was making a proposal of new
+> behavior (which should not break existing software).
 
-On Sat, Feb 19, 2011 at 01:27:04AM +0100, Thomas Gleixner wrote:
-> On Fri, 18 Feb 2011, Uwe Kleine-König wrote:
-> > I tried to wrap my head around all that sysfs stuff and the implied
-> > locking, but I failed.
-> 
-> You did not even think about providing the information about the
-> already decoded problem and instead you post your findings as
-> something completely new and unexplainable.
-Sorry, really wasn't a very clever and thanks for providing the
-necessary details.
+Confused.
 
-Uwe
+> If PTRACE_ATTACH was done on process with `T (stopped)'
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+this matters "it should be stopped before attach"
+
+> then after
+> PTRACE_DETACH(0) again the process should be `T (stopped)'.
+
+Regardless of what the debugger did in between? This can't be right.
+I'd say, it doesn't make sense to take the state of the tracee before
+PTRACE_ATTACH into account. What does matter, is its state before
+PTRACE_DETACH.
+
+If the debugger did not resume the tracee before PTRACE_DETACH, then
+of course I agree, PTRACE_DETACH(0) should preserve T (stopped).
+
+But again, lets discuss this separately.
+
+Oleg.
+
