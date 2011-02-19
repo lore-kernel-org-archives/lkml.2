@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab1BSW0c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 17:26:32 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:26065 "EHLO
+	id S1754290Ab1BSW0e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 17:26:34 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:52415 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab1BSW01 (ORCPT
+	with ESMTP id S1753919Ab1BSW0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 17:26:27 -0500
+	Sat, 19 Feb 2011 17:26:32 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, konkers@android.com, olof@lixom.net,
         Colin Cross <ccross@android.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 06/21] ARM: tegra: clock: Initialize clocks that have no enable
-Date: Sat, 19 Feb 2011 14:25:55 -0800
-Message-Id: <1298154371-5641-8-git-send-email-ccross@android.com>
+Subject: [PATCH v2 15/21] ARM: tegra: clock: Round rate before setting rate
+Date: Sat, 19 Feb 2011 14:26:04 -0800
+Message-Id: <1298154371-5641-17-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1298154371-5641-1-git-send-email-ccross@android.com>
 References: <1298154371-5641-1-git-send-email-ccross@android.com>
@@ -24,33 +24,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assume that any clock that has no enable op is always on.
+Call the clock's round_rate op, if it exists, before calling
+the set_rate op.  This will help later when dvfs is added,
+dvfs needs to know what the final rate will be before the
+frequency changes.
+
+Also requires fixes to the round rate functions to ensure
+calling round rate and then set rate will not cause the
+frequency to be rounded down twice.  When picking clock
+divider values, the clock framework picks the closest
+frequency that is lower than the requested frequency.  If
+the new frequency calculated from the divider value is
+rounded down, and then passed to set_rate, it will get
+rounded down again, possibly resulting in a frequency two
+steps lower than the original requested frequency.
+
+Fix the problem by rounding up when calculating the frequency
+coming out of a clock divider, so if that frequency is
+requested again, the same divider value will be picked.
 
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/clock.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ arch/arm/mach-tegra/clock.c         |   12 ++++++++++++
+ arch/arm/mach-tegra/tegra2_clocks.c |    8 ++++----
+ 2 files changed, 16 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
-index 0ea5d92..79c0bd8 100644
+index 8d01a49..9798585 100644
 --- a/arch/arm/mach-tegra/clock.c
 +++ b/arch/arm/mach-tegra/clock.c
-@@ -166,6 +166,15 @@ void clk_init(struct clk *c)
- 	if (c->ops && c->ops->init)
- 		c->ops->init(c);
+@@ -86,6 +86,7 @@ static unsigned long clk_predict_rate_from_parent(struct clk *c, struct clk *p)
  
-+	if (!c->ops || !c->ops->enable) {
-+		c->refcnt++;
-+		c->set = 1;
-+		if (c->parent)
-+			c->state = c->parent->state;
-+		else
-+			c->state = ON;
+ 	if (c->mul != 0 && c->div != 0) {
+ 		rate *= c->mul;
++		rate += c->div / 2; /* round up */
+ 		do_div(rate, c->div);
+ 	}
+ 
+@@ -240,12 +241,23 @@ EXPORT_SYMBOL(clk_get_parent);
+ 
+ int clk_set_rate_locked(struct clk *c, unsigned long rate)
+ {
++	long new_rate;
++
+ 	if (!c->ops || !c->ops->set_rate)
+ 		return -ENOSYS;
+ 
+ 	if (rate > c->max_rate)
+ 		rate = c->max_rate;
+ 
++	if (c->ops && c->ops->round_rate) {
++		new_rate = c->ops->round_rate(c, rate);
++
++		if (new_rate < 0)
++			return new_rate;
++
++		rate = new_rate;
 +	}
 +
- 	clk_recalculate_rate(c);
+ 	return c->ops->set_rate(c, rate);
+ }
  
- 	list_add(&c->node, &clocks);
+diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
+index 2734889..480c0f6 100644
+--- a/arch/arm/mach-tegra/tegra2_clocks.c
++++ b/arch/arm/mach-tegra/tegra2_clocks.c
+@@ -866,9 +866,9 @@ static long tegra2_pll_div_clk_round_rate(struct clk *c, unsigned long rate)
+ 		divider = clk_div71_get_divider(parent_rate, rate);
+ 		if (divider < 0)
+ 			return divider;
+-		return parent_rate * 2 / (divider + 2);
++		return DIV_ROUND_UP(parent_rate * 2, divider + 2);
+ 	} else if (c->flags & DIV_2) {
+-		return parent_rate / 2;
++		return DIV_ROUND_UP(parent_rate, 2);
+ 	}
+ 	return -EINVAL;
+ }
+@@ -1058,12 +1058,12 @@ static long tegra2_periph_clk_round_rate(struct clk *c,
+ 		if (divider < 0)
+ 			return divider;
+ 
+-		return parent_rate * 2 / (divider + 2);
++		return DIV_ROUND_UP(parent_rate * 2, divider + 2);
+ 	} else if (c->flags & DIV_U16) {
+ 		divider = clk_div16_get_divider(parent_rate, rate);
+ 		if (divider < 0)
+ 			return divider;
+-		return parent_rate / (divider + 1);
++		return DIV_ROUND_UP(parent_rate, divider + 1);
+ 	}
+ 	return -EINVAL;
+ }
 -- 
 1.7.3.1
 
