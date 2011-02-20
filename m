@@ -1,68 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab1BTWpl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 17:45:41 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62564 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab1BTWpk (ORCPT
+	id S1755326Ab1BTW50 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 17:57:26 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:22850 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754958Ab1BTW5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 17:45:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=G89+8JKXeUsV1rWpuOVkuomdkoNR4Ooay5IxSZLNajHJVDtaR6Pf1THofauHNzxu61
-         xvmdvivm7CRhamYxWgQbFdA3e6R9H5IRBrDIvZb5pbaQUuFMov0LgfVrD2CJ9ng7RANj
-         /zWrpH4KzgUJ+Z/xw+UaMOKHC8H6iIFiuIIx4=
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: drbd-dev@lists.linbit.com
-Cc: linux-kernel@vger.kernel.org, Ilia Mirkin <imirkin@alum.mit.edu>
-Subject: [PATCH] lru_cache: Use correct type in sizeof for allocation
-Date: Sun, 20 Feb 2011 17:45:14 -0500
-Message-Id: <1298241914-1400-1-git-send-email-imirkin@alum.mit.edu>
-X-Mailer: git-send-email 1.7.3.4
+	Sun, 20 Feb 2011 17:57:19 -0500
+Message-ID: <4D619C70.6010508@bluewatersys.com>
+Date: Mon, 21 Feb 2011 11:57:52 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Charles Manning <manningc2@actrix.gen.nz>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 0/10] Add yaffs2 file system:  Fifth patchset
+References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com> <4D5DC368.2080003@bluewatersys.com> <20110218005852.GA14546@kroah.com> <201102210625.08616.manningc2@actrix.gen.nz> <20110220200755.GA26243@kroah.com> <4D617EF0.7020308@bluewatersys.com> <20110220222916.GA27324@kroah.com>
+In-Reply-To: <20110220222916.GA27324@kroah.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has no actual effect, since sizeof(struct hlist_head) ==
-sizeof(struct hlist_head *), but it's still the wrong type to use.
+On 02/21/2011 11:29 AM, Greg KH wrote:
+> On Mon, Feb 21, 2011 at 09:52:00AM +1300, Ryan Mallon wrote:
+>> On 02/21/2011 09:07 AM, Greg KH wrote:
+>>> On Mon, Feb 21, 2011 at 06:25:08AM +1300, Charles Manning wrote:
+>>>> On Friday 18 February 2011 13:58:52 Greg KH wrote:
+>>>> I still intend to keep the tracing printk-based tracing:
+>>>>
+>>>> #define yaffs_trace(msk, fmt, ...) do { \
+>>>> 	if (yaffs_trace_mask & (msk)) \
+>>>> 		printk(KERN_DEBUG "yaffs: " fmt "\n", ##__VA_ARGS__); \
+>>>> } while (0)
+>>>
+>>> No, please don't invent your own stuff like this, again, use the
+>>> in-kernel functionality provided for this.
+>>
+>> Do you mean using pr_debug? Other filesystems (see for example
+>> fs/ubifs/debug.h:dbg_do_msg) and drivers have similar approaches to this
+>> to allow printk debugging with multiple message levels.
+> 
+> Yes, other ones do have this, and it's a pain, and not consistant across
+> the kernel, and usually just not worth it at all.
+> 
+> Please use the standardized functions for this, you do not need to roll
+> your own at all.
 
-The semantic match that finds this problem:
-// <smpl>
-@@
-type T;
-identifier x;
-@@
-T *x;
-...
-* x = kzalloc(... * sizeof(T*) * ..., ...);
-// </smpl>
+What standardised functions are there for managing debug printk's with
+different log types? For example, yaffs currently allows printk
+debugging to be enabled individually for garbage collection, check
+pointing, bad blocks, etc. I am at least in favour of switching to
+pr_debug and using pr_fmt for the "yaffs: " prefix, but what should the
+yaffs_trace_mask be replaced with?
 
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+My understanding is that replacing the proc interface which controls the
+yaffs_trace_mask with a more sane sysfs one (ie exposing
+yaffs_trace_mask directly), and keeping the yaffs_trace macro but
+replacing the printk with pr_debug so that it can be compiled out
+completely should be sufficient. i.e.:
 
----
- lib/lru_cache.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+#ifdef CONFIG_YAFFS_DEBUG
+#define DEBUG
+#endif
 
-Note that in lc_reset, there is the line
+#define pr_fmt "yaffs: " fmt
+#define yaffs_trace(msk, fmt, ...) do {		\
+	if (yaffs_trace_mask & (msk))		\
+		pr_debug(fmt, ##__VA_ARGS__);	\
+	} while (0)
 
-memset(lc->lc_slot, 0, sizeof(struct hlist_head) * lc->nr_elements);
+> 
+> Especially for trace stuff.
 
-So this seems correct. But otherwise untested.
+I think we are conflating two things here. Tracepoints have been
+suggested as a replacement for some parts of the printk debugging, such
+as the mtd debugging. However, it is likely that much of the printk
+debugging remains useful and is not ideally replaced by tracepoints.
 
-diff --git a/lib/lru_cache.c b/lib/lru_cache.c
-index 270de9d..b312c8f 100644
---- a/lib/lru_cache.c
-+++ b/lib/lru_cache.c
-@@ -84,7 +84,7 @@ struct lru_cache *lc_create(const char *name, struct kmem_cache *cache,
- 	if (e_count > LC_MAX_ACTIVE)
- 		return NULL;
- 
--	slot = kzalloc(e_count * sizeof(struct hlist_head*), GFP_KERNEL);
-+	slot = kzalloc(e_count * sizeof(struct hlist_head), GFP_KERNEL);
- 	if (!slot)
- 		goto out_fail;
- 	element = kzalloc(e_count * sizeof(struct lc_element *), GFP_KERNEL);
+~Ryan
+
 -- 
-1.7.3.4
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
