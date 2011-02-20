@@ -1,114 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab1BTBv2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 20:51:28 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:4007 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab1BTBvB (ORCPT
+	id S1754271Ab1BTCBy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 21:01:54 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:47731 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab1BTCBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 20:51:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=v6jxQaHMPbRMs67mccDnTnziv1bj0sjKNODjesdGQBd2x0hPgfqrIz9hg6DPBEs6tE
-         lkyq9wXdZLGoOo0wqfgg==
-Date: Sat, 19 Feb 2011 17:50:51 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mike Travis <travis@sgi.com>
-cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] ACPI: Minimize X2APIC initial messages
-In-Reply-To: <20110219024705.559950799@gulag1.americas.sgi.com>
-Message-ID: <alpine.DEB.2.00.1102191637290.27722@chino.kir.corp.google.com>
-References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024705.559950799@gulag1.americas.sgi.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 19 Feb 2011 21:01:52 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+	<20110216193700.GA6377@elte.hu>
+	<AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+	<AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+	<20110217090910.GA3781@tiehlicka.suse.cz>
+	<AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+	<20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
+	<AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
+	<20110218122938.GB26779@tiehlicka.suse.cz>
+	<20110218162623.GD4862@tiehlicka.suse.cz>
+	<AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com>
+	<m1oc68ilw7.fsf@fess.ebiederm.org>
+	<AANLkTincrnq1kMcAYEWYLf5vdbQ4DYbYObbg=0cLfHnm@mail.gmail.com>
+Date: Sat, 19 Feb 2011 18:01:36 -0800
+In-Reply-To: <AANLkTincrnq1kMcAYEWYLf5vdbQ4DYbYObbg=0cLfHnm@mail.gmail.com>
+	(Linus Torvalds's message of "Sat, 19 Feb 2011 07:33:45 -0800")
+Message-ID: <m1oc67zcov.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/ihZ02BIL+mDo3It0Kh2XNGBApdwfVP6k=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: linux-foundation.org]
+	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011, Mike Travis wrote:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-> Minimize X2APIC messages by printing 8 per line and dropping
-> the "enabled" flag since that's assumed.  It will still print
-> "disabled" if necessary.
-> 
-> v2: updated to apply to x86-tip
-> 
+> On Fri, Feb 18, 2011 at 10:22 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>>
+>> It looks like the same problematic dellink pattern made it into net_namespace.c,
+>> and your new LIST_DEBUG changes caught it.
+>
+> Hey, goodie. Committing that patch felt like locking the barn door
+> after the horse had bolted, so I'm happy to hear it was actually worth
+> it.
+>
+>> I will cook up a patch after I get some sleep.
 
-For each patch in this series, it would be tremendously helpful to show 
-what format the current output is in and what the format is after the 
-patch is applied.
+After some sleep and some more looking I think I understand what is
+going on and what is happening.
 
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Reviewed-by: Jack Steiner <steiner@sgi.com>
-> Reviewed-by: Robin Holt <holt@sgi.com>
-> ---
->  arch/x86/kernel/acpi/boot.c |    3 +++
->  drivers/acpi/tables.c       |   16 +++++++++++-----
->  2 files changed, 14 insertions(+), 5 deletions(-)
-> 
-> --- linux.orig/arch/x86/kernel/acpi/boot.c
-> +++ linux/arch/x86/kernel/acpi/boot.c
-> @@ -903,6 +903,9 @@ static int __init acpi_parse_madt_lapic_
->  	if (!count) {
->  		x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC,
->  					acpi_parse_x2apic, MAX_LOCAL_APIC);
-> +		/* insure trailing newline is output */
+The first is that I was wrong about net_namespace.c being the culprit.
+The list debug failures are new with Linus's patch and there is not a
+single list_move net_namespace.c.
 
-s/insure/ensure/
+So this brings me back to unregister_netdevice_queue and the unreg_list.
 
-> +		pr_cont("\n");
+In the beginning with batching unreg_list was a list that was used only
+once in the lifetime of a network device (I think).  Now we have calls
+using the unreg_list that can happen multiple times in the life of a
+network device like dev_deactivate and dev_close that are also using the
+unreg_list.  In addition in unregister_netdevice_queue we also do a
+list_move because for devices like veth pairs it is possible that
+unregister_netdevice_queue will be called multiple times.
 
-I know that this is the only code that passes ACPI_MADT_TYPE_LOCAL_X2APIC.  
-That said, this line really has no place in the caller.
+So I think the change below to fix dev_deactivate which Eric D. missed
+will fix this problem.  Now to go test that.
 
-> +
->  		count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC,
->  					acpi_parse_lapic, MAX_LOCAL_APIC);
->  	}
-> --- linux.orig/drivers/acpi/tables.c
-> +++ linux/drivers/acpi/tables.c
-> @@ -66,11 +66,17 @@ void acpi_table_print_madt_entry(struct
->  		{
->  			struct acpi_madt_local_x2apic *p =
->  			    (struct acpi_madt_local_x2apic *)header;
-> -			printk(KERN_INFO PREFIX
-> -			       "X2APIC (apic_id[0x%02x] uid[0x%02x] %s)\n",
-> -			       p->local_apic_id, p->uid,
-> -			       (p->lapic_flags & ACPI_MADT_ENABLED) ?
-> -			       "enabled" : "disabled");
-> +
-> +			if ((p->uid & 7) == 0)
-> +				pr_info(PREFIX "X2APIC apic_id=uid:");
-> +
-> +			pr_cont(" %02x=%02x%s%s",
-> +				p->local_apic_id, p->uid,
-> +				/* assume "enabled" unless "disabled" */
-> +				(p->lapic_flags & ACPI_MADT_ENABLED) ?
-> +					"" : " disabled",
+In other news my userspace is still very unhappy.  So it looks like I am
+going to be tracking 2.6.38-rcN bugs for a while.
 
-Because you're printing only " disabled" when ACPI_MADT_ENABLED is not 
-set, this seems like the format of the line would be ambiguous with regard 
-to which entry it applies to.  I could imagine a line such as
+Eric
 
-	X2APIC apic_id=uid: 01=01 disabled 02=02
+diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
+index 8acba45..7a10a8d 100644
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -1229,6 +1229,7 @@ void ieee80211_remove_interfaces(struct ieee80211_local *local)
+ 	}
+ 	mutex_unlock(&local->iflist_mtx);
+ 	unregister_netdevice_many(&unreg_list);
++	list_del(&unreg_list);
+ }
+ 
+ static u32 ieee80211_idle_off(struct ieee80211_local *local,
+diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
+index 34dc598..1bc6980 100644
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -839,6 +839,7 @@ void dev_deactivate(struct net_device *dev)
+ 
+ 	list_add(&dev->unreg_list, &single);
+ 	dev_deactivate_many(&single);
++	list_del(&single);
+ }
+ 
+ static void dev_init_scheduler_queue(struct net_device *dev,
 
-and then we're left wondering which entry is actually disabled.  I'd 
-prefer "01=01(disabled) 02=02" instead.
-
-Also, why did you drop the "0x" prefixes from the current format?
-
-> +				/* nl every 8th item */
-> +				(p->uid & 7) == 7 ? "\n" : "");
->  		}
->  		break;
->  
