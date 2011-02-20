@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab1BTCqN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 21:46:13 -0500
-Received: from lo.gmane.org ([80.91.229.12]:46898 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab1BTCqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 21:46:12 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: supercilious.dude@gmail.com
-Subject: Re: KSM kernel interface
-Date: Sun, 20 Feb 2011 02:45:54 +0000
-Message-ID: <ijpv94$j4d$1@dough.gmane.org>
-References: <ijnfme$snp$1@dough.gmane.org> <alpine.LSU.2.00.1102191026070.5067@sister.anvils>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 5ac0ec50.bb.sky.com
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-In-Reply-To: <alpine.LSU.2.00.1102191026070.5067@sister.anvils>
+	id S1754977Ab1BTCsy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 21:48:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64831 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754039Ab1BTCsx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 21:48:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=usSnGC4E3+UjpHXH1rKqXBCcmCiF5sFjatdNNmR1O16XtvWXVv3msQbJGWquYTo9MJ
+         w90DMefbcDI3NDtoc3msmTyeCv/lmqtLcWSsEek7AOxPdv1DDzCvW8q3kHr8ESU3ySEb
+         0ksYleIrFf+71q9Z70S7DruIDiSWbCyqT9e/M=
+Date: Sun, 20 Feb 2011 10:48:43 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: joe@perches.com
+Cc: davem@davemloft.net, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, greg@kroah.com, rdunlap@xenotime.net,
+        pavel@ucw.cz
+Subject: Re: Fwd: [PATCH]move double quotation marks so that keep
+ MAINTAINERS consistent
+Message-ID: <20110220024842.GA2138@gmail.com>
+References: <20110210025133.GA3285@gmail.com>
+ <20110209190631.f29419ef.akpm@linux-foundation.org>
+ <20110209.191752.226762899.davem@davemloft.net>
+ <20110219164839.GA20047@ucw.cz>
+ <1298152790.7179.27.camel@Joe-Laptop>
+ <AANLkTi=DbJUFfKA9EMnaUm89Fk2OEDWo64-Lu5H8Yjjv@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=DbJUFfKA9EMnaUm89Fk2OEDWo64-Lu5H8Yjjv@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the patch. I will try it out later today.
-
- >
- > > Perhaps there is a small kernel modification that might make this
- > possible
- > > or provide a sysfs flag that enables it (off by default of course)?
- >
- > Indeed it could be added if there were a general call for it; but ksmd
- > would tend to get wasteful, and the only call for it that I remember is
- > for testing.
- >
- > I expect you've noticed the transparent_hugepage/enabled "always" option,
- > and you are thinking something like that could be done for KSM: yes.
- >
- >
-
-For what its worth, I believe that the option in sysfs to enable KSM
-globally would be useful to have. I'm sure i'm not the only one. Its not
-like it would be a great deal of overhead, since the KSM machinery is
-already there anyway, just needs a flag to enable it at runtime instead 
-of at boot.
-
-I have at least one system running mostly legacy code that is according 
-to ESXI's memory report, using only 400mb per gigabyte thanks to 
-transparent page sharing. I would very much like to be able to have that 
-level of memory saving on arbitrary code running on bare metal. 
-Administrators can make their own judgement about ksmd's CPU usage, and 
-the defaults already suit most people. I don't really see how having 
-that extra flag (defaulting to off of course) would hurt.
-
-Thanks
-
+On Sun, Feb 20, 2011 at 10:38:06AM +0800, harryxiyou wrote:
+> ---------- Forwarded message ----------
+> From: Joe Perches <joe@perches.com>
+> Date: 2011/2/20
+> Subject: Re: [PATCH]move double quotation marks so that keep MAINTAINERS
+> consistent
+> To: Pavel Machek <pavel@ucw.cz>
+> Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+> jiaweiwei.xiyou@gmail.com, linux-kernel@vger.kernel.org, greg@kroah.com,
+> rdunlap@xenotime.net
+> 
+> 
+> On Sat, 2011-02-19 at 17:48 +0100, Pavel Machek wrote:
+> > On Wed 2011-02-09 19:17:52, David Miller wrote:
+> > > From: Andrew Morton <akpm@linux-foundation.org>
+> > > > I suspect that some mail clients will explode if you provide them with
+> > > > an unquoted string containing periods.  That would make copy-n-paste
+> > > > rather a hassle.
+> > > It's not clients, it's servers.
+> > > SMTP rules state that characters such as "." cannot appear
+> > > unquoted in email headers.
+> > > vger.kernel.org rejects mail when this violation occurs.
+> > Ok, but should not MUA do this quotation? Quick test shows that mutt
+> does...
+> 
+> My recollection is that the get_maintainer script
+> cannot parse M: lines with multiple entries with
+> periods without the quotes.
+> 
+> M:      First I. Last <fil@foo.bar>, Last.I.First <lif@foo.bar>
+> 
+> fails and
+> 
+> M:      "First I. Last" <fil@foo.bar>, "Last.I.First" <lif@foo.bar>
+> 
+> succeeds.
+> 
+> You are welcome to improve the parsing in that routine.
+Hi Joe,
+   	In order to improve the parsing in that routine we should remove all the the double-quotation-marks in the MAINTAINERS ?  Maybe we have other better ways?  Tell me and i will patch for us.
+	Like the Greg K-H said, we should firstly notify the maintainers who have the double-quotation-marks in their M:. Then we can make this patch :)
+ 
+Thanks.
+Best Regards.
+Harry Wei.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
+> -- 
+> Best Regards.
+> Harry Wei.
+> Do what u like!
