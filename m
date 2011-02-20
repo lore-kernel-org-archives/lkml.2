@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab1BTS6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 13:58:39 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54911 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754576Ab1BTS6i (ORCPT
+	id S1754722Ab1BTTFh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 14:05:37 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34574 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab1BTTFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 13:58:38 -0500
-Date: Sun, 20 Feb 2011 18:59:58 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/20] ata_piix: unify code for programming PIO and
- MWDMA timings
-Message-ID: <20110220185958.364df4cc@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D6118DC.80505@ru.mvista.com>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<20110208122346.19110.8441.sendpatchset@linux-mhg7.site>
-	<4D6118DC.80505@ru.mvista.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Feb 2011 14:05:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=O7i+DqopjsQIfjwfSR6jQW6cULdnJtXLWy4/EKA4FMBXw+Rl1VjLuqhWFL3kPOqJKk
+         ileU5MwBkrz2d1kXQm723kKn5gCleeKZJs6k+tcU1LzVbVUg7TmDijcMonJwzOEXmgMl
+         wyCnFOYha1T5u5vxBkRrboSyZUAXpr9hL/tHQ=
+Date: Sun, 20 Feb 2011 20:03:34 +0100
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging/et131x: fix et131x_rx_dma_disable halt_status usage
+Message-ID: <20110220190334.GA3825@joi.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	if (ata_pio_need_iordy(adev) || use_mwdma)
-> >   		control |= 2;	/* IE enable */
-> 
->     Why IORDY is enabled for MWDMA has always been beyond me... I understand 
-> that the stupid Intel docs are to be blamed here.
+Commit 1bd751c1abc1029e8a0ae63ef4f19357c735a2a3
+("Staging: et131x: Clean up rxdma_csr") changed csr from bitfield to
+u32, but failed to convert 2 uses of halt_status bit. It did:
 
-I fail to see whats stupid about the docs ?
+- if (csr.bits.halt_status != 1)
++ if ((csr & 0x00020000) != 1)
 
-The same timing register set is used for MWDMA and PIO cycles in MWDMA
-tuned modes (eg ATAPI). Thus the controller needs to be in an MWDMA mode
-whose timings are compatible with the PIO timing and we want IORDY in use
-for the PIO transfer parts.
+which is wrong, because second version is always true.
+Fix it.
 
-Alan
+This bug was found by coccinelle (http://coccinelle.lip6.fr/).
+
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/et131x/et1310_rx.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/et131x/et1310_rx.c b/drivers/staging/et131x/et1310_rx.c
+index 8e04bdd..a414830 100644
+--- a/drivers/staging/et131x/et1310_rx.c
++++ b/drivers/staging/et131x/et1310_rx.c
+@@ -717,10 +717,10 @@ void et131x_rx_dma_disable(struct et131x_adapter *etdev)
+ 	/* Setup the receive dma configuration register */
+ 	writel(0x00002001, &etdev->regs->rxdma.csr);
+ 	csr = readl(&etdev->regs->rxdma.csr);
+-	if ((csr & 0x00020000) != 1) {	/* Check halt status (bit 17) */
++	if ((csr & 0x00020000) == 0) {	/* Check halt status (bit 17) */
+ 		udelay(5);
+ 		csr = readl(&etdev->regs->rxdma.csr);
+-		if ((csr & 0x00020000) != 1)
++		if ((csr & 0x00020000) == 0)
+ 			dev_err(&etdev->pdev->dev,
+ 			"RX Dma failed to enter halt state. CSR 0x%08x\n",
+ 				csr);
+-- 
+1.7.4.rc3
+
