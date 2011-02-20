@@ -1,130 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab1BTOjA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 09:39:00 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49560 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1BTOi7 (ORCPT
+	id S1753966Ab1BTOj1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 09:39:27 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:61111 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753746Ab1BTOjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 09:38:59 -0500
-Message-ID: <4D612734.20605@ru.mvista.com>
-Date: Sun, 20 Feb 2011 17:37:40 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 20 Feb 2011 09:39:25 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAFO2YE1Ld/sX/2dsb2JhbAAMhBTLco9HgSeDQXYEhQ2MW4Yy
+X-IronPort-AV: E=Sophos;i="4.62,194,1297054800"; 
+   d="scan'208";a="92581016"
+Message-ID: <4D61279B.5030203@teksavvy.com>
+Date: Sun, 20 Feb 2011 09:39:23 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/20] pata_it8213: unify code for programming PIO and
- MWDMA timings
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site> <20110208122424.19110.10832.sendpatchset@linux-mhg7.site>
-In-Reply-To: <20110208122424.19110.10832.sendpatchset@linux-mhg7.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4 crash on 2.6.37: NULL ptr in ext4_discard_preallocations
+References: <4D604620.9060204@teksavvy.com> <20110220000550.GA8765@thunk.org> <4D609E87.5000903@teksavvy.com> <4D60A117.8090604@teksavvy.com> <20110220061552.GB8765@thunk.org> <4D611D62.2030703@teksavvy.com>
+In-Reply-To: <4D611D62.2030703@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 11-02-20 08:55 AM, Mark Lord wrote:
+> On 11-02-20 01:15 AM, Ted Ts'o wrote:
+>> On Sun, Feb 20, 2011 at 12:05:27AM -0500, Mark Lord wrote:
+>>> I suppose it must be, as there's no other 0x3c offset in that function.
+>>> Which means it's probably this line that's crashing:
+>>>
+>>>              BUG_ON(pa->pa_obj_lock != &ei->i_prealloc_lock);
+>>>
+>>> ...which could only happen if "pa" was NULL there.
+>>> I wonder how that happened ?
+>>
+>> Which could only happen if ei->i_prealloc_list were not properly
+>> initialized (i..e, it was still NULL).  Which shouldn't ever
+>> happen...., since all ext4_inodes are initialized in
+>> ext4_alloc_inode().
+>>
+>> Hmm, can you replicate the crash?
+> 
+> So far it has been a one time deal here,
+> but stuff like this is pretty serious nonetheless.
+> 
+> I suppose it could also happen if another thread did a list-delete
+> at the same time as that function was running.  Which would require
+> that there be a locking bug/confusion somewhere.
+> 
+> Looking over the code, most places use rcu to protect accesses,
+> except for the fragment that crashed.  That's probably just fine,
+> but something to reexamine just out of paranoia.
+> 
+> Also, the spinlock pointer appears to be dynamic, one of two
+> possible spinlocks.  Maybe something got confused there
+> (well, obviously *something* got confused, so..).
 
-On 08-02-2011 15:24, Bartlomiej Zolnierkiewicz wrote:
+That looks like the best candidate:  perhaps pa->pa_obj_lock was
+one of the per-cpu lg_prealloc_lock's at that point in time.
+In which case an item could be deleted from the pa list
+concurrently with the function that actually crashed?
 
->  From 57632718f2e761e69b96e14f6900a487bad5d586 Mon Sep 17 00:00:00 2001
-> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> Date: Tue, 8 Feb 2011 12:39:26 +0100
-> Subject: [PATCH 07/20] pata_it8213: unify code for programming PIO and MWDMA timings
+That's as far as I can get with it in the time available.
+You folks do know this code much better, so perhaps just expend
+a few little grey cells on that theory before calling it quits?
 
-> Besides making things noticably simpler it results in ~9% decrease in
-> the driver LOC count and also ~6% decrease in the driver binary size
-> (as measured on x86-32).
-
-> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-[...]
-
-> diff --git a/drivers/ata/pata_it8213.c b/drivers/ata/pata_it8213.c
-> index 911f50b..ccfd1ae 100644
-> --- a/drivers/ata/pata_it8213.c
-> +++ b/drivers/ata/pata_it8213.c
-[...]
-> @@ -92,13 +81,18 @@ static void it8213_set_piomode (struct ata_port *ap, struct ata_device *adev)
->   			    { 2, 1 },
->   			    { 2, 3 }, };
->
-> -	if (pio > 1)
-> +	if (pio > 1 || use_mwdma)
->   		control |= 1;	/* TIME */
-> -	if (ata_pio_need_iordy(adev))	/* PIO 3/4 require IORDY */
-> +	if (ata_pio_need_iordy(adev) || use_mwdma)
->   		control |= 2;	/* IE */
->   	/* Bit 2 is set for ATAPI on the IT8213 - reverse of ICH/PIIX */
->   	if (adev->class != ATA_DEV_ATA)
->   		control |= 4;	/* PPE */
-> +	/* If the drive MWDMA is faster than it can do PIO then
-> +	   we must force PIO into PIO0 */
-
-    Fix the comment style, please.
-
-> +	if (use_mwdma && adev->pio_mode < (XFER_PIO_0 + pio))
-
-    Parens not needed around +.
-
-> +		/* Enable DMA timing only */
-> +		control |= 8;	/* PIO cycles in PIO0 */
->
->   	pci_read_config_word(dev, master_port,&master_data);
->
-> @@ -126,6 +120,22 @@ static void it8213_set_piomode (struct ata_port *ap, struct ata_device *adev)
->   }
->
->   /**
-> + *	it8213_set_piomode - Initialize host controller PATA PIO timings
-> + *	@ap: Port whose timings we are configuring
-> + *	@adev: Device whose timings we are configuring
-> + *
-> + *	Set PIO mode for device, in host controller PCI config space.
-> + *
-> + *	LOCKING:
-> + *	None (inherited from caller).
-> + */
-> +
-> +static void it8213_set_piomode(struct ata_port *ap, struct ata_device *adev)
-> +{
-> +	it8213_set_timings(ap, adev, adev->pio_mode - XFER_PIO_0, 0);
-
-     s/0/false/?
-
-> @@ -140,23 +150,14 @@ static void it8213_set_piomode (struct ata_port *ap, struct ata_device *adev)
->   static void it8213_set_dmamode (struct ata_port *ap, struct ata_device *adev)
->   {
->   	struct pci_dev *dev	= to_pci_dev(ap->host->dev);
-> -	u16 master_data;
->   	u8 speed		= adev->dma_mode;
->   	int devid		= adev->devno;
->   	u8 udma_enable;
->
-> -	static const	 /* ISP  RTC */
-> -	u8 timings[][2]	= { { 0, 0 },
-> -			    { 0, 0 },
-> -			    { 1, 0 },
-> -			    { 2, 1 },
-> -			    { 2, 3 }, };
-> -
-> -	pci_read_config_word(dev, 0x40,&master_data);
->   	pci_read_config_byte(dev, 0x48,&udma_enable);
-
-    Strange, here you're not moving that read and nnot removing disabling of 
-UDMA -- is that because of the missing lock?
-
-> @@ -184,46 +185,16 @@ static void it8213_set_dmamode (struct ata_port *ap, struct ata_device *adev)
-[...]
-> +		it8213_set_timings(ap, adev, pio, 1);
-
-    s/1/true/?
-
-> +
->   		udma_enable&= ~(1 << devid);
-> -		pci_write_config_word(dev, 0x40, master_data);
->   	}
->   	pci_write_config_byte(dev, 0x48, udma_enable);
->   }
-
-WBR, Sergei
+Cheers!
