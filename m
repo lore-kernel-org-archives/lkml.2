@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab1BTVh5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 16:37:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62950 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887Ab1BTVh4 (ORCPT
+	id S1755101Ab1BTVyS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 16:54:18 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:6975 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab1BTVyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 16:37:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: John Linn <john.linn@xilinx.com>
-Subject: Re: [PATCH V4 3/4] ARM: Xilinx: base header files and assembly macros
-Date: Sun, 20 Feb 2011 22:37:47 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, catalin.marinas@arm.com, glikely@secretlab.ca,
-        jamie@jamieiles.com
-References: <1298052881-14591-1-git-send-email-john.linn@xilinx.com> <1298052881-14591-3-git-send-email-john.linn@xilinx.com> <42efee69-aca1-446b-a997-f0063e113877@VA3EHSMHS009.ehs.local>
-In-Reply-To: <42efee69-aca1-446b-a997-f0063e113877@VA3EHSMHS009.ehs.local>
+	Sun, 20 Feb 2011 16:54:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=E7DDKVe33BUkV++Vg73woDOxPJtanG87BPuRJQowxQcoOQMmZJmiPW2Gq8B5/NL43C
+         pifPq1X+TJWXfyIFeVBg==
+Date: Sun, 20 Feb 2011 13:54:09 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>
+Subject: Re: [PATCH 0/5] fix up /proc/$pid/smaps to not split huge pages
+In-Reply-To: <20110209212404.GR3347@random.random>
+Message-ID: <alpine.DEB.2.00.1102201352570.26991@chino.kir.corp.google.com>
+References: <20110209195406.B9F23C9F@kernel> <20110209212404.GR3347@random.random>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102202237.47327.arnd@arndb.de>
-X-Provags-ID: V02:K0:xe93cJVO8pWmUWC6bFwRioFPiyLapJPo9CAJiER30yo
- 0+aTeJYbDu10z9mWnNfK5sx3qCQa6yOSIqMXya9Lk1LdtwyWNy
- 6o72I/uJ7Ht8GCQ92gZ8l8oOcR3JBngBeZFihi2XTaMngBFyat
- btZJhHIjui1ADTT+3bhefCxke6ZS6RA2zc46+EjKM4cAui5Vet
- rwDcVGXuiMo2Lc6FlX0AA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 February 2011, John Linn wrote:
-> +
-> +/* IO address mapping macros, nothing special at this time but required */
-> +
-> +#ifdef __ASSEMBLER__
-> +#define IOMEM(x)               (x)
-> +#else
-> +#define IOMEM(x)               ((void __force __iomem *)(x))
-> +#endif
-> +
-> +#define __io(a)                        __typesafe_io(a)
-> +#define __mem_pci(a)           (a)
+On Wed, 9 Feb 2011, Andrea Arcangeli wrote:
 
-Are you planning to support PCI or PCMCIA? If so, the __io definition will have to
-change so it points to the PIO register window.
+> On Wed, Feb 09, 2011 at 11:54:06AM -0800, Dave Hansen wrote:
+> > Andrea, after playing with this for a week or two, I'm quite a bit
+> > more confident that it's not causing much harm.  Seems a fairly
+> > low-risk feature.  Could we stick these somewhere so they'll at
+> > least hit linux-next for the 2.6.40 cycle perhaps?
+> 
+> I think they're good to go in mmotm already and to be merged ASAP.
+> 
+> The only minor issue I have is the increment, to become per-cpu. Are
+> we going to change its location then or it's still read through sysfs?
+> 
 
-> diff --git a/arch/arm/mach-xilinx/include/mach/timex.h b/arch/arm/mach-xilinx/include/mach/timex.h
-> new file mode 100644
-> index 0000000..4ebc0a6
-> --- /dev/null
-> +++ b/arch/arm/mach-xilinx/include/mach/timex.h
-> +#ifndef __MACH_TIMEX_H__
-> +#define __MACH_TIMEX_H__
-> +
-> +#define PERIPHERAL_CLOCK_RATE  2500000
-> +
-> +#define CLOCK_TICK_RATE        (PERIPHERAL_CLOCK_RATE / 32)
-> +
-> +#endif
-
-I thought we were at the point where CLOCK_TICK_RATE is no longer used.
-Did the patches not make it in yet?
-
-The rest looks fine to me.
-
-	Arnd
+Dave, I notice these patches haven't been merged into -mm yet.  Are we 
+waiting on another iteration or is this set ready to go?
