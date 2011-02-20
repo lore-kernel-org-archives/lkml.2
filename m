@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab1BTR5M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 12:57:12 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:51083 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab1BTR5L (ORCPT
+	id S1754500Ab1BTR7N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 12:59:13 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58512 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab1BTR7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 12:57:11 -0500
-Date: Sun, 20 Feb 2011 18:57:09 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>, torvalds@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Add extra gcc checks
-Message-ID: <20110220175709.GA5178@merkur.ravnborg.org>
-References: <1298219710-9846-1-git-send-email-bp@alien8.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298219710-9846-1-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 20 Feb 2011 12:59:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=UBhSmaodhhoopv6ah/bNruLLrM9IlHWj0RkALoRST9reMcO56DN/n8pKYZuON6jkIb
+         53a4JmWRZun7HWpm6wN6wxwHGC/KUovRGxA5TeYTkrDOAPYTc8iWo76DnFN8o/dugB0I
+         oRNaV8BcuFoHCwI3bmpl2jfk5mIHsOgvwMGfc=
+From: Ralf Thielow <ralf.thielow@googlemail.com>
+To: airlied@linux.ie
+Cc: bskeggs@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Ralf Thielow <ralf.thielow@googlemail.com>
+Subject: [PATCH] gpu: drm: nouveau: Remove unused variable to prevent compile warning.
+Date: Sun, 20 Feb 2011 18:58:47 +0100
+Message-Id: <1298224727-5474-1-git-send-email-ralf.thielow@googlemail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 05:35:10PM +0100, Borislav Petkov wrote:
-> Add a 'W=1' Makefile switch which adds additional checking per build
-> object.
-> 
-> The idea behind this option is targeted at developers who, in the
-> process of writing their code, want to do the occasional
-> 
-> make W=1 [target.o]
-> 
-> and let gcc do more extensive code checking for them. Then, they
-> could eyeball the output for valid gcc warnings about various
-> bugs/discrepancies which are not reported during the normal build
-> process.
-> 
-> For more background information and a use case, read through this
-> thread: http://marc.info/?i=20110218091716.GA4384@bicker
-> 
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: linux-kbuild@vger.kernel.org
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-> ---
->  Makefile |   31 +++++++++++++++++++++++++++++++
->  1 files changed, 31 insertions(+), 0 deletions(-)
+Remove unused variable "dev_priv" in function "nv50_vm_map_pgt" to
+prevent compile warning.
 
-I like the idea.
-But can we avoid polluting the top-level Makefile?
-That file is full of unreadable stuff, and adding more
-is not good.
+Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
+---
+ drivers/gpu/drm/nouveau/nv50_vm.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Makefile.lib or Makefile.build seems like a better place for this.
+diff --git a/drivers/gpu/drm/nouveau/nv50_vm.c b/drivers/gpu/drm/nouveau/nv50_vm.c
+index 459ff08..03c1a63 100644
+--- a/drivers/gpu/drm/nouveau/nv50_vm.c
++++ b/drivers/gpu/drm/nouveau/nv50_vm.c
+@@ -31,7 +31,6 @@ void
+ nv50_vm_map_pgt(struct nouveau_gpuobj *pgd, u32 pde,
+ 		struct nouveau_gpuobj *pgt[2])
+ {
+-	struct drm_nouveau_private *dev_priv = pgd->dev->dev_private;
+ 	u64 phys = 0xdeadcafe00000000ULL;
+ 	u32 coverage = 0;
+ 
+-- 
+1.7.1
 
-	Sam
