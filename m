@@ -1,22 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab1BTMk6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 07:40:58 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42328 "EHLO mx3.mail.elte.hu"
+	id S1752165Ab1BTMoO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 07:44:14 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36849 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab1BTMk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 07:40:56 -0500
-Date: Sun, 20 Feb 2011 13:40:51 +0100
+	id S1750836Ab1BTMoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 07:44:13 -0500
+Date: Sun, 20 Feb 2011 13:43:58 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Michael Witten <mfwitten@gmail.com>
-Subject: Re: [GIT PULL 0/4] perf/core cleanups
-Message-ID: <20110220124051.GA25700@elte.hu>
-References: <1298054872-16434-1-git-send-email-acme@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+Message-ID: <20110220124358.GA26666@elte.hu>
+References: <20110216185234.GA11636@tiehlicka.suse.cz>
+ <20110216193700.GA6377@elte.hu>
+ <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
+ <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
+ <20110217090910.GA3781@tiehlicka.suse.cz>
+ <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
+ <20110217163531.GF14168@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298054872-16434-1-git-send-email-acme@infradead.org>
+In-Reply-To: <20110217163531.GF14168@elte.hu>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -30,33 +39,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> 	This just trims the Makefile perf stole from git aeons ago, trowing
-> away things that either are unused or plain don't make any sense for us.
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Michael Witten (4):
->   perf tools: Makefile: Remove vestigial git-specific cruft
->   perf tools: Makefile: Remove platform-specific cruft
->   perf tools: Makefile: Remove tool-specific cruft
->   perf tools: Makefile: Remove various and sundry cruft
-> 
->  tools/perf/.gitignore      |    1 -
->  tools/perf/Makefile        |  576 ++------------------------------------------
->  tools/perf/util/exec_cmd.c |   19 --
->  tools/perf/util/util.h     |   26 --
->  4 files changed, 18 insertions(+), 604 deletions(-)
+> [...] Anything atypical in your setup or usage that doesnt match a bog-standard 
+> whitebox PC with LAN? [...]
 
-Pulled, thanks a lot guys!
+Just to answer that question: the odd thumb out was 'namespaces'. Eric has been 
+stressing the namespace code heavily so this is why most other folks never saw
+these problem.
+
+Thanks,
 
 	Ingo
