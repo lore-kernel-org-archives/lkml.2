@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab1BTNIY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 08:08:24 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36512 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab1BTNIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 08:08:23 -0500
-Date: Sun, 20 Feb 2011 13:07:37 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
-Message-ID: <20110220130737.GE14495@n2100.arm.linux.org.uk>
-References: <1297233693.242364.862698430999.1.gpush@pororo> <201102151526.54280.jeremy.kerr@canonical.com> <20110215083759.GA4152@n2100.arm.linux.org.uk> <201102151733.30332.jeremy.kerr@canonical.com>
+	id S1753602Ab1BTNIc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 08:08:32 -0500
+Received: from hera.kernel.org ([140.211.167.34]:52641 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752806Ab1BTNI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 08:08:29 -0500
+Date: Sun, 20 Feb 2011 13:07:36 GMT
+From: tip-bot for Dan Carpenter <error27@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        andreas.herrmann3@amd.com, amd64-microcode@amd64.org,
+        error27@gmail.com, tglx@linutronix.de, mingo@elte.hu,
+        borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        amd64-microcode@amd64.org, andreas.herrmann3@amd.com,
+        error27@gmail.com, tglx@linutronix.de, mingo@elte.hu,
+        borislav.petkov@amd.com
+In-Reply-To: <20110218091716.GA4384@bicker>
+References: <20110218091716.GA4384@bicker>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86, microcode, AMD: Fix signedness bug in generic_load_microcode()
+Message-ID: <tip-1396fa9cd2e34669253b7ca8c75f12103481f71c@git.kernel.org>
+Git-Commit-ID: 1396fa9cd2e34669253b7ca8c75f12103481f71c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <201102151733.30332.jeremy.kerr@canonical.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 20 Feb 2011 13:07:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 15, 2011 at 05:33:29PM +0800, Jeremy Kerr wrote:
-> Hi Russell,
-> 
-> > > Why is that? Consider two devices using one clock; one does some
-> > > initialisation based on the return value of clk_get_rate(), the other
-> > > calls clk_set_rate() some time later. Now the first device is
-> > > incorrectly initialised.
-> > 
-> > What about a clock sourced from a PLL which provides the dotclock for a
-> > framebuffer device?  On every mode set, should the clk have to be disabled,
-> > unprepared, rate set, re-prepared and re-enabled?
-> 
-> Sounds heavy-handed, but I honestly have no idea if that's reasonable or not.
-> 
-> Other options are:
-> 
->  * Require that the driver has called clk_prepare, and that prepare_count
->    is 1 during the set_rate call (indicating that this is the only user); or
-> 
->  * Leave the set_rate and set_parent semantics as-is and assume that anything
->    calling either knows what it's doing (and that it won't affect other
->    devices)
-> 
-> Are you OK if we address this separately to the API unification though?
+Commit-ID:  1396fa9cd2e34669253b7ca8c75f12103481f71c
+Gitweb:     http://git.kernel.org/tip/1396fa9cd2e34669253b7ca8c75f12103481f71c
+Author:     Dan Carpenter <error27@gmail.com>
+AuthorDate: Fri, 18 Feb 2011 12:17:16 +0300
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 20 Feb 2011 14:01:32 +0100
 
-Absolutely.  I think there's enough issues already without adding new
-changes on top.  The unification step should do just that - unify.  It
-should not introduce new restrictions that are not absolutely necessary
-for the unification step.
+x86, microcode, AMD: Fix signedness bug in generic_load_microcode()
+
+install_equiv_cpu_table() returns type int.  It uses negative
+error codes so using an unsigned type breaks the error handling.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: open list:AMD MICROCODE UPD... <amd64-microcode@amd64.org>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20110218091716.GA4384@bicker>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/microcode_amd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index 9fb8405..c561038 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -246,7 +246,7 @@ generic_load_microcode(int cpu, const u8 *data, size_t size)
+ 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+ 	struct microcode_header_amd *mc_hdr = NULL;
+ 	unsigned int mc_size, leftover;
+-	unsigned long offset;
++	int offset;
+ 	const u8 *ucode_ptr = data;
+ 	void *new_mc = NULL;
+ 	unsigned int new_rev = uci->cpu_sig.rev;
