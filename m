@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab1BTVGK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 16:06:10 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52096 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753468Ab1BTVGJ (ORCPT
+	id S1754970Ab1BTVG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 16:06:28 -0500
+Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:40052 "EHLO
+	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753907Ab1BTVG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 16:06:09 -0500
-Date: Sun, 20 Feb 2011 21:07:31 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/20] ata_piix: unify code for programming PIO and
- MWDMA timings
-Message-ID: <20110220210731.0c774fa7@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D617CC8.3020108@ru.mvista.com>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<20110208122346.19110.8441.sendpatchset@linux-mhg7.site>
-	<4D6118DC.80505@ru.mvista.com>
-	<20110220185958.364df4cc@lxorguk.ukuu.org.uk>
-	<4D617CC8.3020108@ru.mvista.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Feb 2011 16:06:27 -0500
+Date: Sun, 20 Feb 2011 22:06:08 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: `(T) stopped' preservation after _exit()  [Re: [PATCH 1/1] ptrace:
+ make sure do_wait() won't hang after PTRACE_ATTACH]
+Message-ID: <20110220210608.GA23222@host1.dyn.jankratochvil.net>
+References: <20110219201603.GB8662@redhat.com>
+ <20110219200637.GA8662@redhat.com>
+ <20110220094050.GA7714@host1.dyn.jankratochvil.net>
+ <20110220171658.GA27355@redhat.com>
+ <20110220185204.GA14737@host1.dyn.jankratochvil.net>
+ <20110220203819.GB32682@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110220203819.GB32682@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->     PIO mode is setup by different code, and it takes care of the IORDY 
-> setting according to the PIO rules (and it gets called). DMA mode setup should 
-> just ignore the IORDY setting as in all other sane drivers.
+On Sun, 20 Feb 2011 21:38:19 +0100, Oleg Nesterov wrote:
+> If you think we need this new (and imho very wrong ;) feature -
+> lets discuss this separately.
 
 
-Well it can't ignore it - but if you mean just keep the bit as is then
-that sounds sensible, have to see what the docs say happens if you ever
-set MWDMA without IORDY.
+> On 02/20, Jan Kratochvil wrote:
+> > On Sun, 20 Feb 2011 18:16:58 +0100, Oleg Nesterov wrote:
+> > > The tracee was stopped. gdb makes it running. If gdb wants it stopped,
+> > > it should take care during/before the detach. Like it should restore
+> > > eip before detach. The kernel can't know what ptracer wants.
+> >
+> > The ptracer does PTRACE_DETACH(0), therefore to "restore the original state".
+> > If GDB uses uprobes one day it would also expect removal of breakpoints from
+> > the inferior.  The same situation applies for intentional or unintentional
+> > (crash) _exit() of the debugger.
+> 
+> This doesn't explain why the kernel should restore TASK_STOPPED.
+> Suppose the tracee creates the file when it was run under debugger,
+> should the kernel remove this file after detach?
 
+No, opening such file is like writing data into a file.
+
+
+> And, if SIGCONT comes in between, the tracee is no longer stopped. It needs
+> another SIGSTOP, gdb can do this via ptrace(DETACH, SIGSTOP).
+
+It cannot if it crashes in between.  It would be OK if it can do so right
+after the inferior call.  Which I realize now it can, after the inferior call
+returns (wait->SIGTRAP) GDB can do PTRACE_CONT(SIGSTOP), wait->SIGSTOP and now
+it can do PTRACE_GETREGS etc. while after _exit() it will be like after
+PTRACE_DETACH(0) and the debuggee still remains `(T) stopped', doesn't it?
+
+
+Thanks,
+Jan
