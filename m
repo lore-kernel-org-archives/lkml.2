@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab1BTQAZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 11:00:25 -0500
-Received: from mail.perches.com ([173.55.12.10]:3803 "EHLO mail.perches.com"
+	id S1754068Ab1BTQP7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 11:15:59 -0500
+Received: from www.tglx.de ([62.245.132.106]:36697 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038Ab1BTQAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 11:00:24 -0500
-Subject: Re: [PATCH] MAINTAINERS: Quote non-alphanumeric email addresses
-From: Joe Perches <joe@perches.com>
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Cc: davem@davemloft.net, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, greg@kroah.com, rdunlap@xenotime.net,
-        pavel@ucw.cz
-In-Reply-To: <20110220135918.GB1972@gmail.com>
-References: <20110210025133.GA3285@gmail.com>
-	 <20110209190631.f29419ef.akpm@linux-foundation.org>
-	 <20110209.191752.226762899.davem@davemloft.net>
-	 <20110219164839.GA20047@ucw.cz> <1298152790.7179.27.camel@Joe-Laptop>
-	 <AANLkTi=DbJUFfKA9EMnaUm89Fk2OEDWo64-Lu5H8Yjjv@mail.gmail.com>
-	 <20110220024842.GA2138@gmail.com> <1298177214.7179.55.camel@Joe-Laptop>
-	 <20110220135918.GB1972@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 20 Feb 2011 08:00:22 -0800
-Message-ID: <1298217622.7179.93.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753206Ab1BTQP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 11:15:58 -0500
+Date: Sun, 20 Feb 2011 17:15:42 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: KY Srinivasan <kys@microsoft.com>
+cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
+Message-ID: <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com> <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6> <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com> <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-02-20 at 21:59 +0800, Harry Wei wrote:
-> On Sat, Feb 19, 2011 at 08:46:54PM -0800, Joe Perches wrote:
-> > Add quotes around email address with periods and commas.
-> Hmm, what about some other conditions except 
-> for periods and commas in maintainers' M:. 
-> Like following:
-> 1> Character '-' in M:
+On Sat, 19 Feb 2011, KY Srinivasan wrote:
+> > When grabbing some random irq from the PIC is not an issue, then
+> > what's the point of this probing, retry loop and the comments about
+> > racing ? What races here? That does not make sense at all.
+> 
+> Like most virtualization platforms, Hyper-V also emulates the full PC 
+> platform. So, it is possible that the driver of some other emulated
+> devices might register for the IRQ line we might have selected. That 
+> is the race this code addresses. For performance reasons, we want
+> both storage and network traffic to go over the PV drivers. 
 
-Dashes are not an issue.
+So in case your driver gets the interrupt line first, which the other
+driver wants to acquire as well, then what? Do you want to do that
+probe magic in the other driver as well? What if this is a regular
+device driver which gets its irq number from ACPI/PCI or
+whatever. Then that driver simply wont work as it's interrupt line is
+busy.
 
-> 2> No name of the M:
-> M:      support@lsi.com  
+> > 
+> > I don't know why the previous reviewer wanted to have that
+> > dynamic. That just does not make sense to me.
+> 
+> Prior to this patch, we had a hard coded interrupt line for use by
+> this driver. If that line was already in use, the load of this driver 
+> would fail. This would be a fatal issue especially for distributions
+> that have embedded these PV drivers as part of their installation
+> media. This patch deals with such collisions in a more graceful way -
+> we would not bail until we have scanned all low interrupt lines.
 
-Names and angle brackets are optional.
+So you trade breaking the PV stuff against breaking random other
+drivers? That doesn't sound like a brilliant idea.
 
-> 3> Messy code in M:
-> M:      Benoît Cousson <b-cousson@ti.com>
+There are various ways to solve that proper.
 
-8 bit characters _might_ be an issue, but
-no one has reported any problems yet.
+ - You can provide the interrupt number from ACPI/PCI or whatever your HV
+   provides as enumeration.
 
-I think you should read and understand rfc 2822
-before continuing with this.
+ - Use a fixed vector like XEN does for the event channel
 
-Utilities like git send-email and get_maintainer.pl
-generally provide email address parsing for only a
-subset of all valid address styles.
+ - Use dynamic allocation in the IOAPIC space like the kernel does for
+   MSI(-X)
 
-As these utilities are done mostly by regex, not
-all valid email addresses are supported because the
-regex validations get ridiculously complicated.
+Thanks,
 
-There are some "monster" regex classes that attempt
-to support a greater range of valid email address
-styles, but the pain of implementation generally
-isn't worth it.
-
-You're free to try to improve it of course, but I
-think that modifications to the address styles
-currently used in MAINTAINERS to remove "special"
-address style handling isn't necessary.
-
+	tglx
