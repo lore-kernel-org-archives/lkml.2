@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab1BTQP7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 11:15:59 -0500
-Received: from www.tglx.de ([62.245.132.106]:36697 "EHLO www.tglx.de"
+	id S1754135Ab1BTQfT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 11:35:19 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:60411 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab1BTQP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 11:15:58 -0500
-Date: Sun, 20 Feb 2011 17:15:42 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: KY Srinivasan <kys@microsoft.com>
-cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-In-Reply-To: <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
-Message-ID: <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com> <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6> <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com> <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753849Ab1BTQfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 11:35:16 -0500
+From: Borislav Petkov <bp@alien8.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: <torvalds@linux-foundation.org>, <x86@kernel.org>,
+        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@elte.hu>, linux-kbuild@vger.kernel.org
+Subject: [PATCH] kbuild: Add extra gcc checks
+Date: Sun, 20 Feb 2011 17:35:10 +0100
+Message-Id: <1298219710-9846-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.7.4.1.48.g5673d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Feb 2011, KY Srinivasan wrote:
-> > When grabbing some random irq from the PIC is not an issue, then
-> > what's the point of this probing, retry loop and the comments about
-> > racing ? What races here? That does not make sense at all.
-> 
-> Like most virtualization platforms, Hyper-V also emulates the full PC 
-> platform. So, it is possible that the driver of some other emulated
-> devices might register for the IRQ line we might have selected. That 
-> is the race this code addresses. For performance reasons, we want
-> both storage and network traffic to go over the PV drivers. 
+Add a 'W=1' Makefile switch which adds additional checking per build
+object.
 
-So in case your driver gets the interrupt line first, which the other
-driver wants to acquire as well, then what? Do you want to do that
-probe magic in the other driver as well? What if this is a regular
-device driver which gets its irq number from ACPI/PCI or
-whatever. Then that driver simply wont work as it's interrupt line is
-busy.
+The idea behind this option is targeted at developers who, in the
+process of writing their code, want to do the occasional
 
-> > 
-> > I don't know why the previous reviewer wanted to have that
-> > dynamic. That just does not make sense to me.
-> 
-> Prior to this patch, we had a hard coded interrupt line for use by
-> this driver. If that line was already in use, the load of this driver 
-> would fail. This would be a fatal issue especially for distributions
-> that have embedded these PV drivers as part of their installation
-> media. This patch deals with such collisions in a more graceful way -
-> we would not bail until we have scanned all low interrupt lines.
+make W=1 [target.o]
 
-So you trade breaking the PV stuff against breaking random other
-drivers? That doesn't sound like a brilliant idea.
+and let gcc do more extensive code checking for them. Then, they
+could eyeball the output for valid gcc warnings about various
+bugs/discrepancies which are not reported during the normal build
+process.
 
-There are various ways to solve that proper.
+For more background information and a use case, read through this
+thread: http://marc.info/?i=20110218091716.GA4384@bicker
 
- - You can provide the interrupt number from ACPI/PCI or whatever your HV
-   provides as enumeration.
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ Makefile |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
 
- - Use a fixed vector like XEN does for the event channel
+diff --git a/Makefile b/Makefile
+index c9c8c8f..a783a69 100644
+--- a/Makefile
++++ b/Makefile
+@@ -102,6 +102,10 @@ ifeq ("$(origin O)", "command line")
+   KBUILD_OUTPUT := $(O)
+ endif
+ 
++ifeq ("$(origin W)", "command line")
++  KBUILD_ENABLE_EXTRA_WARNINGS = 1
++endif
++
+ # That's our default target when none is given on the command line
+ PHONY := _all
+ _all:
+@@ -363,6 +367,32 @@ KBUILD_AFLAGS_MODULE  := -DMODULE
+ KBUILD_CFLAGS_MODULE  := -DMODULE
+ KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
+ 
++ifdef KBUILD_ENABLE_EXTRA_WARNINGS
++KBUILD_CFLAGS += -Wextra -Wno-unused
++KBUILD_CFLAGS += -Waggregate-return
++KBUILD_CFLAGS += -Wbad-function-cast
++KBUILD_CFLAGS += -Wcast-qual
++KBUILD_CFLAGS += -Wcast-align
++KBUILD_CFLAGS += -Wconversion
++KBUILD_CFLAGS += -Wdisabled-optimization
++KBUILD_CFLAGS += -Wlogical-op
++KBUILD_CFLAGS += -Wmissing-declarations
++KBUILD_CFLAGS += -Wmissing-format-attribute
++KBUILD_CFLAGS += -Wmissing-include-dirs
++KBUILD_CFLAGS += -Wmissing-prototypes
++KBUILD_CFLAGS += -Wnested-externs
++KBUILD_CFLAGS += -Wold-style-definition
++KBUILD_CFLAGS += -Woverlength-strings
++KBUILD_CFLAGS += -Wpacked
++KBUILD_CFLAGS += -Wpacked-bitfield-compat
++KBUILD_CFLAGS += -Wpadded
++KBUILD_CFLAGS += -Wpointer-arith
++KBUILD_CFLAGS += -Wredundant-decls
++KBUILD_CFLAGS += -Wshadow
++KBUILD_CFLAGS += -Wswitch-default
++KBUILD_CFLAGS += -Wvla
++endif
++
+ # Read KERNELRELEASE from include/config/kernel.release (if it exists)
+ KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
+ KERNELVERSION = $(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
+@@ -1262,6 +1292,7 @@ help:
+ 	@echo  '  make O=dir [targets] Locate all output files in "dir", including .config'
+ 	@echo  '  make C=1   [targets] Check all c source with $$CHECK (sparse by default)'
+ 	@echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
++	@echo  '  make W=1   [targets] Enable extra gcc checks'
+ 	@echo  ''
+ 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
+ 	@echo  'For further info see the ./README file'
+-- 
+1.7.4.1.48.g5673d
 
- - Use dynamic allocation in the IOAPIC space like the kernel does for
-   MSI(-X)
-
-Thanks,
-
-	tglx
