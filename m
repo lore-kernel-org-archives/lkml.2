@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab1BTPFa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 10:05:30 -0500
-Received: from mail-ey0-f180.google.com ([209.85.215.180]:58801 "EHLO
-	mail-ey0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab1BTPF3 (ORCPT
+	id S1753746Ab1BTPRb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 10:17:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46131 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab1BTPRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 10:05:29 -0500
-Message-ID: <4D612D6A.3010905@ru.mvista.com>
-Date: Sun, 20 Feb 2011 18:04:10 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/20] pata_rdc: parallel scanning needs an extra locking
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site> <20110208122502.19110.28978.sendpatchset@linux-mhg7.site>
-In-Reply-To: <20110208122502.19110.28978.sendpatchset@linux-mhg7.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Feb 2011 10:17:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=UsNQpZtIym3QeSUQhoExeO44HPDNY6nCz+SqNmz/vHsBKAfbdbzibVCaHJ22dkwUf6
+         /Ma4Mje+RWGZAEnCgGLbhSY4uxoA7tVxGeOIu0DPdIGMN5/nHqFAA5/QjsKbD4mIbWYt
+         fgnxhNK7k9Vmp4mlte1y9ift7pJ5VMlTuZIKw=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH v2 0/2] memcg: migration clean up
+Date: Mon, 21 Feb 2011 00:17:16 +0900
+Message-Id: <cover.1298214672.git.minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This patch cleans up memcg migration.
+This patch sent Tue, Jan 11, 2011 but maybe Andrew was very busy so lost.
+I resend with Acked-by and rebased on mmotm-2011-02-04.
 
-On 08-02-2011 15:25, Bartlomiej Zolnierkiewicz wrote:
+Minchan Kim (2):
+  memcg: remove unnecessary BUG_ON
+  memcg: remove charge variable in unmap_and_move
 
->  From 540001238b8ebbc4bedd46ca4e2672fcf3787998 Mon Sep 17 00:00:00 2001
-> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> Date: Tue, 8 Feb 2011 12:39:27 +0100
-> Subject: [PATCH 12/20] pata_rdc: parallel scanning needs an extra locking
+ mm/memcontrol.c |    1 +
+ mm/migrate.c    |   10 +++-------
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
-> This is similar change as commit 60c3be3 for ata_piix host driver.
-
-    Linus asks to also specify the commit summary in parens.
-
-> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-
-WBR, Sergei
