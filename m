@@ -1,122 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1BTPRs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 10:17:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46131 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab1BTPRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 10:17:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Y2pP0kFwFkHr2K52GWjIC4AVHSTeO7enZ7gscyXg7gY4/IzoqM0dZDI2TFdDd+Rvsn
-         Ecki6m9wyfA+MpJNTDtG56ducvPEj4kPt+8qbLFQZnelEIPQ7dFYszFEOgMgcCwlI3vO
-         K05kkkg2gXqmtCi+b3qxi0UmTy2rwn4b4Lats=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v2 2/2] memcg: remove charge variable in unmap_and_move
-Date: Mon, 21 Feb 2011 00:17:18 +0900
-Message-Id: <c48df61c1186492699f18c4c6b401dcbc0db2b7f.1298214672.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1298214672.git.minchan.kim@gmail.com>
-References: <cover.1298214672.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1298214672.git.minchan.kim@gmail.com>
-References: <cover.1298214672.git.minchan.kim@gmail.com>
+	id S1753849Ab1BTPyL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 10:54:11 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:58083 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038Ab1BTPyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 10:54:10 -0500
+Message-ID: <4D6138F4.1090107@upmc.fr>
+Date: Sun, 20 Feb 2011 16:53:24 +0100
+From: Bernard Pidoux <bernard.pidoux@upmc.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101213 Mandriva/3.0.11-0.1mdv2010.1 (2010.1) Thunderbird/3.0.11
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [media] radio-aimslab.c needs #include <linux/delay.h>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memcg charge/uncharge could be handled by mem_cgroup_[prepare/end]
-migration itself so charge local variable in unmap_and_move lost the role
-since we introduced 01b1ae63c2.
+Your patch was not included ( was forgotten) into kernel 2.6.37.1 release.
 
-In addition, the variable name is not good like below.
 
-int unmap_and_move()
-{
-	charge = mem_cgroup_prepare_migration(xxx);
-	..
-		BUG_ON(charge); <-- BUG if it is charged?
-		..
-uncharge:
-		if (!charge)    <-- why do we have to uncharge !charge?
-			mem_group_end_migration(xxx);
-	..
-}
-
-So let's remove unnecessary and confusing variable.
-
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-Suggested-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/memcontrol.c |    1 +
- mm/migrate.c    |    9 +++------
- 2 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8a97571..3c91d5c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2873,6 +2873,7 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
- /*
-  * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
-  * page belongs to.
-+ * Note: Should not return -EAGAIN. unmap_and_move depens on it.
-  */
- int mem_cgroup_prepare_migration(struct page *page,
- 	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask)
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 2abc9c9..37055d0 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -622,7 +622,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	int *result = NULL;
- 	struct page *newpage = get_new_page(page, private, &result);
- 	int remap_swapcache = 1;
--	int charge = 0;
- 	struct mem_cgroup *mem;
- 	struct anon_vma *anon_vma = NULL;
- 
-@@ -637,7 +636,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 		if (unlikely(split_huge_page(page)))
- 			goto move_newpage;
- 
--	/* prepare cgroup just returns 0 or -ENOMEM */
-+	/* mem_cgroup_prepage_migration never returns -EAGAIN */
- 	rc = -EAGAIN;
- 
- 	if (!trylock_page(page)) {
-@@ -678,8 +677,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	}
- 
- 	/* charge against new page */
--	charge = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
--	if (charge == -ENOMEM) {
-+	if (mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL)) {
- 		rc = -ENOMEM;
- 		goto unlock;
- 	}
-@@ -766,8 +764,7 @@ skip_unmap:
- 		drop_anon_vma(anon_vma);
- 
- uncharge:
--	if (!charge)
--		mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-+	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
- unlock:
- 	unlock_page(page);
- 
--- 
-1.7.1
-
+Bernard Pidoux
