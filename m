@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1BTDvs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 22:51:48 -0500
-Received: from foo.stuge.se ([213.88.146.6]:57064 "HELO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750952Ab1BTDvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 22:51:47 -0500
-Message-ID: <20110220035143.15480.qmail@stuge.se>
-Date: Sun, 20 Feb 2011 04:51:43 +0100
-From: Peter Stuge <peter@stuge.se>
-To: Indan Zupancic <indan@nul.nu>, Chris Wilson <chris@chris-wilson.co.uk>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-Subject: Re: [BUG] drm/i915 Screen corruption introduced by
-	a00b10c360b35d6431a94cb
-Mail-Followup-To: Indan Zupancic <indan@nul.nu>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org
-References: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl> <20110219182511.GA3977@viiv.ffwll.ch>
+	id S1753368Ab1BTEDj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 23:03:39 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:48893 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab1BTEDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 23:03:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=octpcqMiuJFtwd2bN4FndCoM135RQkVBurBUCVZl9yTpus/kkHFIui2DR/HtxTb1pY
+         nAKhYR0R7xUX0yxyfwgA==
+Date: Sat, 19 Feb 2011 20:03:32 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [PATCH 1/4] x86, numa: Do not scan two times for
+ setup_node_bootmem()
+In-Reply-To: <4D5EC177.7030101@kernel.org>
+Message-ID: <alpine.DEB.2.00.1102191942420.32280@chino.kir.corp.google.com>
+References: <4D5EC05A.60103@kernel.org> <4D5EC177.7030101@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110219182511.GA3977@viiv.ffwll.ch>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Vetter wrote:
-> Please provide the usual details about your system (especially what gpu
-> this is on). Also, screenshots of what typical corruptions look like can
-> help a lot in tracking down such things.
+On Fri, 18 Feb 2011, Yinghai Lu wrote:
 
-Confirm I also have this issue on my X40, but there are other bugs
-that are much more significant so I haven't bothered mentioning this.
+> 
+> We don't need to scan two times for setup_node_bootmem()
+> because We are using mapped memblock for node_data finding already.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/mm/numa_64.c |   31 +++++++++++++------------------
+>  1 file changed, 13 insertions(+), 18 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/mm/numa_64.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/mm/numa_64.c
+> +++ linux-2.6/arch/x86/mm/numa_64.c
+> @@ -480,7 +480,7 @@ static bool __init numa_meminfo_cover_me
+>  
+>  static int __init numa_register_memblks(struct numa_meminfo *mi)
+>  {
+> -	int i, j, nid;
+> +	int i, nid;
+>  
+>  	/* Account for nodes with cpus and no memory */
+>  	node_possible_map = numa_nodes_parsed;
+> @@ -507,27 +507,22 @@ static int __init numa_register_memblks(
+>  	init_memory_mapping_high();
+>  
+>  	/*
+> -	 * Finally register nodes.  Do it twice in case setup_node_bootmem
+> -	 * missed one due to missing bootmem.
+> +	 * Do not do that twice, not needed!
+> +	 *   We are using mapped memblock directly for node data
 
-On the other hand my kernel is nearly two months old.
+I don't think this comment is actually needed, it seems to be referring to 
+why this patch is changing it and has no real relevance once it's merged.
 
-Please don't mistake this as a complaint. I'm overall rather happy
-even with current state and it's issues, and especially I think the
-situation is consistently getting better, with some bumps here and
-there along the way.
+Other than that:
 
-Last time I used a projector I had some trouble, because the graphics
-driver was too clever; it automatically set the correct resolution
-for the projector, but I needed the resolution of my internal screen. :)
+Acked-by: David Rientjes <rientjes@google.com>
 
-
-//Peter
+>  	 */
+> -	for (i = 0; i < 2; i++) {
+> -		for_each_node_mask(nid, node_possible_map) {
+> -			u64 start = (u64)max_pfn << PAGE_SHIFT;
+> -			u64 end = 0;
+> +	for_each_node_mask(nid, node_possible_map) {
+> +		u64 start = (u64)max_pfn << PAGE_SHIFT;
+> +		u64 end = 0;
+>  
+> -			if (node_online(nid))
+> +		for (i = 0; i < mi->nr_blks; i++) {
+> +			if (nid != mi->blk[i].nid)
+>  				continue;
+> -
+> -			for (j = 0; j < mi->nr_blks; j++) {
+> -				if (nid != mi->blk[j].nid)
+> -					continue;
+> -				start = min(mi->blk[j].start, start);
+> -				end = max(mi->blk[j].end, end);
+> -			}
+> -
+> -			if (start < end)
+> -				setup_node_bootmem(nid, start, end);
+> +			start = min(mi->blk[i].start, start);
+> +			end = max(mi->blk[i].end, end);
+>  		}
+> +
+> +		if (start < end)
+> +			setup_node_bootmem(nid, start, end);
+>  	}
+>  
+>  	return 0;
+> 
