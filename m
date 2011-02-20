@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab1BTCsy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 21:48:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64831 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab1BTCsx (ORCPT
+	id S1755007Ab1BTC7L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 21:59:11 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34987
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752238Ab1BTC7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 21:48:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=usSnGC4E3+UjpHXH1rKqXBCcmCiF5sFjatdNNmR1O16XtvWXVv3msQbJGWquYTo9MJ
-         w90DMefbcDI3NDtoc3msmTyeCv/lmqtLcWSsEek7AOxPdv1DDzCvW8q3kHr8ESU3ySEb
-         0ksYleIrFf+71q9Z70S7DruIDiSWbCyqT9e/M=
-Date: Sun, 20 Feb 2011 10:48:43 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: joe@perches.com
-Cc: davem@davemloft.net, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, greg@kroah.com, rdunlap@xenotime.net,
-        pavel@ucw.cz
-Subject: Re: Fwd: [PATCH]move double quotation marks so that keep
- MAINTAINERS consistent
-Message-ID: <20110220024842.GA2138@gmail.com>
-References: <20110210025133.GA3285@gmail.com>
- <20110209190631.f29419ef.akpm@linux-foundation.org>
- <20110209.191752.226762899.davem@davemloft.net>
- <20110219164839.GA20047@ucw.cz>
- <1298152790.7179.27.camel@Joe-Laptop>
- <AANLkTi=DbJUFfKA9EMnaUm89Fk2OEDWo64-Lu5H8Yjjv@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=DbJUFfKA9EMnaUm89Fk2OEDWo64-Lu5H8Yjjv@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 19 Feb 2011 21:59:10 -0500
+Date: Sat, 19 Feb 2011 18:59:46 -0800 (PST)
+Message-Id: <20110219.185946.193690650.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: ebiederm@xmission.com, acme@redhat.com, torvalds@linux-foundation.org,
+        mhocko@suse.cz, mingo@elte.hu, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, xemul@openvz.org,
+        daniel.lezcano@free.fr
+Subject: Re: [PATCH] tcp: fix inet_twsk_deschedule()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1298104556.8559.21.camel@edumazet-laptop>
+References: <20110218191146.GG13211@ghostprotocols.net>
+	<m1sjvl2i3q.fsf@fess.ebiederm.org>
+	<1298104556.8559.21.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 10:38:06AM +0800, harryxiyou wrote:
-> ---------- Forwarded message ----------
-> From: Joe Perches <joe@perches.com>
-> Date: 2011/2/20
-> Subject: Re: [PATCH]move double quotation marks so that keep MAINTAINERS
-> consistent
-> To: Pavel Machek <pavel@ucw.cz>
-> Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-> jiaweiwei.xiyou@gmail.com, linux-kernel@vger.kernel.org, greg@kroah.com,
-> rdunlap@xenotime.net
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Sat, 19 Feb 2011 09:35:56 +0100
+
+> [PATCH] tcp: fix inet_twsk_deschedule()
 > 
+> Eric W. Biederman reported a lockdep splat in inet_twsk_deschedule()
 > 
-> On Sat, 2011-02-19 at 17:48 +0100, Pavel Machek wrote:
-> > On Wed 2011-02-09 19:17:52, David Miller wrote:
-> > > From: Andrew Morton <akpm@linux-foundation.org>
-> > > > I suspect that some mail clients will explode if you provide them with
-> > > > an unquoted string containing periods.  That would make copy-n-paste
-> > > > rather a hassle.
-> > > It's not clients, it's servers.
-> > > SMTP rules state that characters such as "." cannot appear
-> > > unquoted in email headers.
-> > > vger.kernel.org rejects mail when this violation occurs.
-> > Ok, but should not MUA do this quotation? Quick test shows that mutt
-> does...
+> This is caused by inet_twsk_purge(), run from process context,
+> and commit 575f4cd5a5b6394577 (net: Use rcu lookups in inet_twsk_purge.)
+> removed the BH disabling that was necessary.
 > 
-> My recollection is that the get_maintainer script
-> cannot parse M: lines with multiple entries with
-> periods without the quotes.
+> Add the BH disabling but fine grained, right before calling
+> inet_twsk_deschedule(), instead of whole function.
 > 
-> M:      First I. Last <fil@foo.bar>, Last.I.First <lif@foo.bar>
+> With help from Linus Torvalds and Eric W. Biederman
 > 
-> fails and
-> 
-> M:      "First I. Last" <fil@foo.bar>, "Last.I.First" <lif@foo.bar>
-> 
-> succeeds.
-> 
-> You are welcome to improve the parsing in that routine.
-Hi Joe,
-   	In order to improve the parsing in that routine we should remove all the the double-quotation-marks in the MAINTAINERS ?  Maybe we have other better ways?  Tell me and i will patch for us.
-	Like the Greg K-H said, we should firstly notify the maintainers who have the double-quotation-marks in their M:. Then we can make this patch :)
- 
-Thanks.
-Best Regards.
-Harry Wei.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
-> -- 
-> Best Regards.
-> Harry Wei.
-> Do what u like!
+> Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Daniel Lezcano <daniel.lezcano@free.fr>
+> CC: Pavel Emelyanov <xemul@openvz.org>
+> CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> CC: stable <stable@kernel.org> (# 2.6.33+)
+
+Applied, thanks Eric.
