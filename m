@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab1BTED7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 23:03:59 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:31050 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab1BTEDn (ORCPT
+	id S1753155Ab1BTERO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 23:17:14 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41548 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab1BTERN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 23:03:43 -0500
+	Sat, 19 Feb 2011 23:17:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=JItxqr2Y/tgISjNxNod8SOMZDjM7UC6mX31bvBWMwwMKOE6+NRi30VfEMtgcirlGDM
-         fSMg/jgTGp+BXDa6tA6w==
-Date: Sat, 19 Feb 2011 20:03:19 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=XVXIn2wa70F+RHUrsp8WUtR1Z3gROpRF0VbVdz0A4VmuN8oPGaeDVObGzkXXZWLtMP
+         tZ+GT5JqGAiDxGiYVazbhi5PGJFsUa7MMSKTJYuNSHebHN8e1+L06cU6cH4Jow8iGDBN
+         xZrwYvqcMimHQzksgZZMXySud/3DyEV0l4M4w=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1102191944530.32280@chino.kir.corp.google.com>
+References: <4D5EC05A.60103@kernel.org>
+	<4D5EC184.6000505@kernel.org>
+	<alpine.DEB.2.00.1102191944530.32280@chino.kir.corp.google.com>
+Date: Sat, 19 Feb 2011 20:17:11 -0800
+X-Google-Sender-Auth: 33JUvefcsx5cczm6rKohtUptFjA
+Message-ID: <AANLkTikgR8vEhz3Hsmx96QqZw_gsLZetc3W_9evf3ufb@mail.gmail.com>
+Subject: Re: [PATCH 2/4] x86, numa: Do not adjust start/end for early_node_mem()
+From: Yinghai Lu <yinghai@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: [PATCH 4/4] x86, numa: seperate alloc_numa_distance from
- numa_reset_distance.
-In-Reply-To: <4D5EC19A.9030808@kernel.org>
-Message-ID: <alpine.DEB.2.00.1102192002480.32699@chino.kir.corp.google.com>
-References: <4D5EC05A.60103@kernel.org> <4D5EC19A.9030808@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011, Yinghai Lu wrote:
+On Sat, Feb 19, 2011 at 8:03 PM, David Rientjes <rientjes@google.com> wrote:
+> On Fri, 18 Feb 2011, Yinghai Lu wrote:
+>
+>> Index: linux-2.6/arch/x86/mm/numa_64.c
+>> ===================================================================
+>> --- linux-2.6.orig/arch/x86/mm/numa_64.c
+>> +++ linux-2.6/arch/x86/mm/numa_64.c
+>> @@ -164,14 +164,9 @@ static void * __init early_node_mem(int
+>>       unsigned long mem;
+>>
+>>       /*
+>> -      * put it on high as possible
+>> -      * something will go with NODE_DATA
+>> +      * memblock find will follow top-down, so don't need to adjust
+>> +      *   start anymore
+>>        */
+>> -     if (start < (MAX_DMA_PFN<<PAGE_SHIFT))
+>> -             start = MAX_DMA_PFN<<PAGE_SHIFT;
+>> -     if (start < (MAX_DMA32_PFN<<PAGE_SHIFT) &&
+>> -         end > (MAX_DMA32_PFN<<PAGE_SHIFT))
+>> -             start = MAX_DMA32_PFN<<PAGE_SHIFT;
+>>       mem = memblock_x86_find_in_range_node(nodeid, start, end, size, align);
+>>       if (mem != MEMBLOCK_ERROR)
+>>               return __va(mem);
+>>
+>
+> The old code guarantees that the range is from a single zone, and even
+> though memblock may be top -> down, it seems like there would be
+> configurations where this would still be an issue (perhaps simulating it
+> with numa=fake for testing?) if it crosses the boundary.
 
-> 
-> alloc code is much bigger the setting self.
-> 
->  make the code some readable.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+memblock_x86_find_in_range_node() will go over with early_node_map[].
+so it will always can get right on node allocation.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Thanks
+
+Yinghai
