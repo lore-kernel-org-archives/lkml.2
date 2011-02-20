@@ -1,188 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1BTOoX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 09:44:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46470 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab1BTOoS (ORCPT
+	id S1753749Ab1BTOyU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 09:54:20 -0500
+Received: from mail-ey0-f180.google.com ([209.85.215.180]:43395 "EHLO
+	mail-ey0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab1BTOyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 09:44:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eAoPWIG4LOt1Ksh7y3KocK7ox8N7pDMbb49me5lFPfWGdEGwPCV0jJqx2HrZ7Z8WiL
-         MGxctBTtnIymCiq+G30SJDtlGapwjJRKZwZydRm6n2LAlecGISWHPWzrXS30JmbzI0O1
-         YjqH9sfouxnOsCItXWG/h/P2Ry7yXneyOw4ME=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v6 3/3] Reclaim invalidated page ASAP
-Date: Sun, 20 Feb 2011 23:43:38 +0900
-Message-Id: <62711cef6888401f34f366af64651dac3795fdf4.1298212517.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1298212517.git.minchan.kim@gmail.com>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1298212517.git.minchan.kim@gmail.com>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
+	Sun, 20 Feb 2011 09:54:19 -0500
+Message-ID: <4D612ACB.7080708@ru.mvista.com>
+Date: Sun, 20 Feb 2011 17:52:59 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/20] pata_oldpiix: unify code for programming PIO and
+ MWDMA timings
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site> <20110208122438.19110.37982.sendpatchset@linux-mhg7.site>
+In-Reply-To: <20110208122438.19110.37982.sendpatchset@linux-mhg7.site>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-invalidate_mapping_pages is very big hint to reclaimer.
-It means user doesn't want to use the page any more.
-So in order to prevent working set page eviction, this patch
-move the page into tail of inactive list by PG_reclaim.
+Hello.
 
-Please, remember that pages in inactive list are working set
-as well as active list. If we don't move pages into inactive list's
-tail, pages near by tail of inactive list can be evicted although
-we have a big clue about useless pages. It's totally bad.
+On 08-02-2011 15:24, Bartlomiej Zolnierkiewicz wrote:
 
-Now PG_readahead/PG_reclaim is shared.
-fe3cba17 added ClearPageReclaim into clear_page_dirty_for_io for
-preventing fast reclaiming readahead marker page.
+>  From 30f6c60ad1e2f9c640352b74279fdf8a930847bf Mon Sep 17 00:00:00 2001
+> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+> Date: Tue, 8 Feb 2011 12:39:26 +0100
+> Subject: [PATCH 09/20] pata_oldpiix: unify code for programming PIO and MWDMA timings
 
-In this series, PG_reclaim is used by invalidated page, too.
-If VM find the page is invalidated and it's dirty, it sets PG_reclaim
-to reclaim asap. Then, when the dirty page will be writeback,
-clear_page_dirty_for_io will clear PG_reclaim unconditionally.
-It disturbs this serie's goal.
+> Besides making things noticably simpler it results in ~12% decrease in
+> the driver LOC count and also ~5% decrease in the driver binary size
+> (as measured on x86-32).
 
-I think it's okay to clear PG_readahead when the page is dirty, not
-writeback time. So this patch moves ClearPageReadahead.
-In v4, ClearPageReadahead in set_page_dirty has a problem which is reported
-by Steven Barrett. It's due to compound page. Some driver(ex, audio) calls
-set_page_dirty with compound page which isn't on LRU. but my patch does
-ClearPageRelcaim on compound page. In non-CONFIG_PAGEFLAGS_EXTENDED, it breaks
-PageTail flag.
+> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+[...]
 
-I think it doesn't affect THP and pass my test with THP enabling
-but Cced Andrea for double check.
+> diff --git a/drivers/ata/pata_oldpiix.c b/drivers/ata/pata_oldpiix.c
+> index b811c16..433d2fc 100644
+> --- a/drivers/ata/pata_oldpiix.c
+> +++ b/drivers/ata/pata_oldpiix.c
+[...]
+> @@ -82,14 +71,18 @@ static void oldpiix_set_piomode (struct ata_port *ap, struct ata_device *adev)
+>   			    { 2, 1 },
+>   			    { 2, 3 }, };
+>
+> -	if (pio>  1)
+> +	if (pio > 1 || use_mwdma)
 
-Reported-by: Steven Barrett <damentz@liquorix.net>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/page-writeback.c |   12 +++++++++++-
- mm/swap.c           |   41 ++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 49 insertions(+), 4 deletions(-)
+    'use_mwdma' check is superfluous...
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 2cb01f6..b437fe6 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1211,6 +1211,17 @@ int set_page_dirty(struct page *page)
- 
- 	if (likely(mapping)) {
- 		int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
-+		/*
-+		 * readahead/lru_deactivate_page could remain
-+		 * PG_readahead/PG_reclaim due to race with end_page_writeback
-+		 * About readahead, if the page is written, the flags would be
-+		 * reset. So no problem.
-+		 * About lru_deactivate_page, if the page is redirty, the flag
-+		 * will be reset. So no problem. but if the page is used by readahead
-+		 * it will confuse readahead and make it restart the size rampup
-+		 * process. But it's a trivial problem.
-+		 */
-+		ClearPageReclaim(page);
- #ifdef CONFIG_BLOCK
- 		if (!spd)
- 			spd = __set_page_dirty_buffers;
-@@ -1266,7 +1277,6 @@ int clear_page_dirty_for_io(struct page *page)
- 
- 	BUG_ON(!PageLocked(page));
- 
--	ClearPageReclaim(page);
- 	if (mapping && mapping_cap_account_dirty(mapping)) {
- 		/*
- 		 * Yes, Virginia, this is indeed insane.
-diff --git a/mm/swap.c b/mm/swap.c
-index 1b9e4eb..0a33714 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -354,26 +354,61 @@ void add_page_to_unevictable_list(struct page *page)
-  * head of the list, rather than the tail, to give the flusher
-  * threads some time to write it out, as this is much more
-  * effective than the single-page writeout from reclaim.
-+ *
-+ * If the page isn't page_mapped and dirty/writeback, the page
-+ * could reclaim asap using PG_reclaim.
-+ *
-+ * 1. active, mapped page -> none
-+ * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-+ * 3. inactive, mapped page -> none
-+ * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-+ * 5. inactive, clean -> inactive, tail
-+ * 6. Others -> none
-+ *
-+ * In 4, why it moves inactive's head, the VM expects the page would
-+ * be write it out by flusher threads as this is much more effective
-+ * than the single-page writeout from reclaim.
-  */
- static void lru_deactivate(struct page *page, struct zone *zone)
- {
- 	int lru, file;
-+	bool active;
- 
--	if (!PageLRU(page) || !PageActive(page))
-+	if (!PageLRU(page))
- 		return;
- 
- 	/* Some processes are using the page */
- 	if (page_mapped(page))
- 		return;
- 
-+	active = PageActive(page);
-+
- 	file = page_is_file_cache(page);
- 	lru = page_lru_base_type(page);
--	del_page_from_lru_list(zone, page, lru + LRU_ACTIVE);
-+	del_page_from_lru_list(zone, page, lru + active);
- 	ClearPageActive(page);
- 	ClearPageReferenced(page);
- 	add_page_to_lru_list(zone, page, lru);
--	__count_vm_event(PGDEACTIVATE);
- 
-+	if (PageWriteback(page) || PageDirty(page)) {
-+		/*
-+		 * PG_reclaim could be raced with end_page_writeback
-+		 * It can make readahead confusing.  But race window
-+		 * is _really_ small and  it's non-critical problem.
-+		 */
-+		SetPageReclaim(page);
-+	} else {
-+		/*
-+		 * The page's writeback ends up during pagevec
-+		 * We moves tha page into tail of inactive.
-+		 */
-+		list_move_tail(&page->lru, &zone->lru[lru].list);
-+		mem_cgroup_rotate_reclaimable_page(page);
-+		__count_vm_event(PGROTATED);
-+	}
-+
-+	if (active)
-+		__count_vm_event(PGDEACTIVATE);
- 	update_page_reclaim_stat(zone, page, file, 0);
- }
- 
--- 
-1.7.1
+>   		control |= 1;	/* TIME */
+> -	if (ata_pio_need_iordy(adev))
+> +	if (ata_pio_need_iordy(adev) || use_mwdma)
+>   		control |= 2;	/* IE */
+> -
+>   	/* Intel specifies that the prefetch/posting is for disk only */
+>   	if (adev->class == ATA_DEV_ATA)
+>   		control |= 4;	/* PPE */
+> +	/* If the drive MWDMA is faster than it can do PIO then
+> +	   we must force PIO into PIO0 */
 
+    Please fix the comment style.
+
+> +	if (use_mwdma && adev->pio_mode < (XFER_PIO_0 + pio))
+
+    Parens not needed around +.
+
+> +		/* Enable DMA timing only */
+> +		control |= 8;	/* PIO cycles in PIO0 */
+>
+>   	pci_read_config_word(dev, idetm_port,&idetm_data);
+>
+> @@ -113,6 +106,22 @@ static void oldpiix_set_piomode (struct ata_port *ap, struct ata_device *adev)
+>   }
+>
+>   /**
+> + *	oldpiix_set_piomode - Initialize host controller PATA PIO timings
+> + *	@ap: Port whose timings we are configuring
+> + *	@adev: Device whose timings we are configuring
+> + *
+> + *	Set PIO mode for device, in host controller PCI config space.
+> + *
+> + *	LOCKING:
+> + *	None (inherited from caller).
+> + */
+> +
+> +static void oldpiix_set_piomode(struct ata_port *ap, struct ata_device *adev)
+> +{
+> +	oldpiix_set_timings(ap, adev, adev->pio_mode - XFER_PIO_0, 0);
+
+    s/0/false/?
+
+> +}
+> +
+> +/**
+>    *	oldpiix_set_dmamode - Initialize host controller PATA DMA timings
+>    *	@ap: Port whose timings we are configuring
+>    *	@adev: Device to program
+> @@ -125,58 +134,15 @@ static void oldpiix_set_piomode (struct ata_port *ap, struct ata_device *adev)
+[...]
+> +	oldpiix_set_timings(ap, adev, pio, 1);
+
+    s/1/true/?
+
+WBR, Sergei
