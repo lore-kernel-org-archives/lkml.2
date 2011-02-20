@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab1BTVyS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 16:54:18 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:6975 "EHLO
+	id S1755208Ab1BTV6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 16:58:24 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:9303 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793Ab1BTVyQ (ORCPT
+	with ESMTP id S1754363Ab1BTV6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 16:54:16 -0500
+	Sun, 20 Feb 2011 16:58:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=E7DDKVe33BUkV++Vg73woDOxPJtanG87BPuRJQowxQcoOQMmZJmiPW2Gq8B5/NL43C
-         pifPq1X+TJWXfyIFeVBg==
-Date: Sun, 20 Feb 2011 13:54:09 -0800 (PST)
+        b=NDEloCxBaqfy1cpiQbN1kkNd2ptCQ1KoVSoU98f72BaVbiduDHRhEUOCATRuOhQa0e
+         MN+hc9Ten8nAKp3hyyeg==
+Date: Sun, 20 Feb 2011 13:58:17 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>
-Subject: Re: [PATCH 0/5] fix up /proc/$pid/smaps to not split huge pages
-In-Reply-To: <20110209212404.GR3347@random.random>
-Message-ID: <alpine.DEB.2.00.1102201352570.26991@chino.kir.corp.google.com>
-References: <20110209195406.B9F23C9F@kernel> <20110209212404.GR3347@random.random>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [PATCH 2/3 tip:x86/mm] x86-64, NUMA: Move NUMA emulation into
+ numa_emulation.c
+In-Reply-To: <4D5EB35D.3000305@kernel.org>
+Message-ID: <alpine.DEB.2.00.1102201357110.26991@chino.kir.corp.google.com>
+References: <20110218135836.GG21209@htj.dyndns.org> <20110218135939.GH21209@htj.dyndns.org> <4D5EB35D.3000305@kernel.org>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -32,19 +33,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Feb 2011, Andrea Arcangeli wrote:
+On Fri, 18 Feb 2011, Yinghai Lu wrote:
 
-> On Wed, Feb 09, 2011 at 11:54:06AM -0800, Dave Hansen wrote:
-> > Andrea, after playing with this for a week or two, I'm quite a bit
-> > more confident that it's not causing much harm.  Seems a fairly
-> > low-risk feature.  Could we stick these somewhere so they'll at
-> > least hit linux-next for the 2.6.40 cycle perhaps?
-> 
-> I think they're good to go in mmotm already and to be merged ASAP.
-> 
-> The only minor issue I have is the increment, to become per-cpu. Are
-> we going to change its location then or it's still read through sysfs?
+> David, can you please check tip/x86/mm ?
 > 
 
-Dave, I notice these patches haven't been merged into -mm yet.  Are we 
-waiting on another iteration or is this set ready to go?
+Yeah, I'm in the process of doing so without this set yet.  I'm getting 
+boot failures for numa=fake=128M right now, so I'll need to investigate 
+and diagnose that issue before adding more patches.
