@@ -1,79 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1BTLsm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 06:48:42 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:40021 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab1BTLsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 06:48:41 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: 2.6.37.1 s2disk regression (TPM)
-Date: Sun, 20 Feb 2011 12:48:10 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: stefanb@linux.vnet.ibm.com,
-        "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        srajiv@linux.vnet.ibm.com, stable@kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        debora@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl>
-In-Reply-To: <201102201151.11635.rjw@sisk.pl>
+	id S1753591Ab1BTMKO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 07:10:14 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42247 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab1BTMKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 07:10:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=cfq0+QOfnUUixvJ9VLAloR8nJ88MKnV9StDoY5z45xFieR5fTYw4MuVc4YfMkCbRSI
+         XUy7wDuzUwl07Q2rNTOgeF47P2S1qfvAI4VZL2VmabnHfkuJ0IgzGLCwUjJVDER98n3W
+         s0zBSPL9pPWwiPSzotGIePIdLCLvu8G6HHNiQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102201248.10779.rjw@sisk.pl>
+Date: Sun, 20 Feb 2011 13:10:03 +0100
+Message-ID: <AANLkTikuvTqn4Yrc_LUS-zpE3qB0Yvc-vM+dUstQ+kex@mail.gmail.com>
+Subject: DVB flexcop-pci sanitize driver name to avoid warning on load
+From: =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
+To: linux-kernel@vger.kernel.org, video4linux-list@redhat.com,
+        mchehab@infradead.org,
+        =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
+Content-Type: multipart/mixed; boundary=bcaec53f901f87f8b2049cb5a0a6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, February 20, 2011, Rafael J. Wysocki wrote:
-> On Sunday, February 20, 2011, Jiri Slaby wrote:
-> > On 02/20/2011 11:44 AM, Rafael J. Wysocki wrote:
-> > > On Sunday, February 20, 2011, Jiri Slaby wrote:
-> > >> Hi,
-> > >>
-> > >> I'm unable to hibernate 2.6.37.1 unless I rmmod tpm_tis:
-> > >> [10974.074587] Suspending console(s) (use no_console_suspend to debug)
-> > >> [10974.103073] tpm_tis 00:0c: Operation Timed out
-> > >> [10974.103089] legacy_suspend(): pnp_bus_suspend+0x0/0xa0 returns -62
-> > >> [10974.103095] PM: Device 00:0c failed to freeze: error -62
-> > >>
-> > >> 2.6.37 worked fine. Going to revert 9b29050f8f7 (tpm_tis: Use timeouts
-> > >> returned from TPM) for testing.
-> > > 
-> > > Yes, this has been confirmed to cause suspend regressions to happen
-> > 
-> > OK, the revert works for me too... Are there any fixes?
-> 
-> No, and the author and maintainer have not been responding.  If that contiunes,
-> I'll simply ask Linus to revert it.
+--bcaec53f901f87f8b2049cb5a0a6
+Content-Type: text/plain; charset=ISO-8859-1
 
-BTW, the first hunk from that commit in drivers/char/tpm/tpm.c seems to be
-completely broken:
+Hi,
 
-@@ -577,9 +577,11 @@ duration:
-        if (rc)
-                return;
- 
--       if (be32_to_cpu(tpm_cmd.header.out.return_code)
--           != 3 * sizeof(u32))
-+       if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
-+           be32_to_cpu(tpm_cmd.header.out.length)
-+           != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 * sizeof(u32))
-                return;
-+
-        duration_cap = &tpm_cmd.params.getcap_out.cap.duration;
-        chip->vendor.duration[TPM_SHORT] =
-            usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
+I posted this patch once, but this issue has been sort of mitigated by
+a fix in the procfs layer. However, it's back in 2.6.38-rc5. Because
+the b2c2 driver name contains slashes, procfs issues a warning, being
+unable to create a directory with such name.
 
-Namely, either the old code always returned as a result of the conditional
-being removed, or the new code will always return as a result of
-the (... != 0) check.  I wonder if there's supposed to be (... == 0) instead?
-[And why not to simply use 4*sizeof(u32) FWIW?]
+This patch changes the driver name to b2c2_flexcop_pci and leaves the
+verbose text in MODULE_DESCRIPTION.
 
-Anyway, it looks like a good revert candidate to me.
+Signed-off-by: Jindrich Makovicka <makovick@gmail.com>
 
-Thanks,
-Rafael
+Regards,
+-- 
+Jindrich Makovicka
+
+--bcaec53f901f87f8b2049cb5a0a6
+Content-Type: text/plain; charset=US-ASCII; name="log.txt"
+Content-Disposition: attachment; filename="log.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gkdwxp4a0
+
+RmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogQmx1ZXRvb3RoOiBIQ0kgc29ja2V0IGxheWVy
+IGluaXRpYWxpemVkCkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJuZWw6IGIyYzItZmxleGNvcDog
+QjJDMiBGbGV4Y29wSUkvSUkoYikvSUlJIGRpZ2l0YWwgVFYgcmVjZWl2ZXIgY2hpcCBsb2FkZWQg
+c3VjY2Vzc2Z1bGx5CkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJuZWw6IGZsZXhjb3AtcGNpOiB3
+aWxsIHVzZSB0aGUgSFcgUElEIGZpbHRlci4KRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDog
+ZmxleGNvcC1wY2k6IGNhcmQgcmV2aXNpb24gMgpGZWIgMTkgMTI6NDg6NDQgaG9sbHkga2VybmVs
+OiBiMmMyX2ZsZXhjb3BfcGNpIDAwMDA6MDU6MDEuMDogUENJIElOVCBBIC0+IEdTSSAxOSAobGV2
+ZWwsIGxvdykgLT4gSVJRIDE5CkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJuZWw6IC0tLS0tLS0t
+LS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0tLS0tLQpGZWIgMTkgMTI6NDg6NDQgaG9sbHkga2VybmVs
+OiBXQVJOSU5HOiBhdCBmcy9wcm9jL2dlbmVyaWMuYzozMjMgX194bGF0ZV9wcm9jX25hbWUrMHhi
+Ni8weGJkKCkKRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogSGFyZHdhcmUgbmFtZTogUDU1
+TS1VRDQKRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogbmFtZSAnVGVjaG5pc2F0L0IyQzIg
+RmxleENvcCBJSS9JSWIvSUlJIERpZ2l0YWwgVFYgUENJIERyaXZlcicKRmViIDE5IDEyOjQ4OjQ0
+IGhvbGx5IGtlcm5lbDogTW9kdWxlcyBsaW5rZWQgaW46IGIyYzJfZmxleGNvcF9wY2koKykgYjJj
+Ml9mbGV4Y29wIGR2Yl9jb3JlIGJsdWV0b290aCBzbmRfaGRhX2NvZGVjX3JlYWx0ZWsgdXNiX3N0
+b3JhZ2Ugc25kX2hkYV9pbnRlbCgrKSBzbmRfdXNiX2F1ZGlvIHNuZF9oZGFfY29kZWMgc25kX2h3
+ZGVwIHNuZF91c2JtaWRpX2xpYiBzbmRfcGNtX29zcyBzbmRfbWl4ZXJfb3NzIHNuZF9wY20gc25k
+X3NlcV9kdW1teSBzbmRfc2VxX29zcyBzbmRfc2VxX21pZGkgc25kX3NlcV9taWRpX2V2ZW50IHNu
+ZF9zZXEgc25kX3Jhd21pZGkgdXNiaGlkIHNuZF90aW1lciBzbmRfc2VxX2RldmljZSBzbmQgaTJj
+X2k4MDEgaTJjX2NvcmUgc25kX3BhZ2VfYWxsb2MgdWhjaV9oY2QgZmlyZXdpcmVfb2hjaSBmaXJl
+d2lyZV9jb3JlIHI4MTY5IGVoY2lfaGNkIG1paSB1c2Jjb3JlIFtsYXN0IHVubG9hZGVkOiBzY3Np
+X3dhaXRfc2Nhbl0KRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogUGlkOiAxMzE4LCBjb21t
+OiBtb2Rwcm9iZSBOb3QgdGFpbnRlZCAyLjYuMzgtcmM1ICMyCkZlYiAxOSAxMjo0ODo0NCBob2xs
+eSBrZXJuZWw6IENhbGwgVHJhY2U6CkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJuZWw6ICBbPGZm
+ZmZmZmZmODEwMzZhOTk+XSA/IHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4NzgvMHg4YwpGZWIgMTkg
+MTI6NDg6NDQgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMDM2YjRjPl0gPyB3YXJuX3Nsb3dw
+YXRoX2ZtdCsweDQ1LzB4NGEKRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZm
+ZmY4MTBmMzQ0Yz5dID8gX194bGF0ZV9wcm9jX25hbWUrMHhiNi8weGJkCkZlYiAxOSAxMjo0ODo0
+NCBob2xseSBrZXJuZWw6ICBbPGZmZmZmZmZmODEwZjM4Y2U+XSA/IF9fcHJvY19jcmVhdGUrMHg0
+YS8weDEyOApGZWIgMTkgMTI6NDg6NDQgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMGY0MDgy
+Pl0gPyBwcm9jX21rZGlyX21vZGUrMHgyNy8weDUxCkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJu
+ZWw6ICBbPGZmZmZmZmZmODEwNmM3OWI+XSA/IHJlZ2lzdGVyX2hhbmRsZXJfcHJvYysweGNhLzB4
+ZGIKRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmY4MTA2YTZiNT5dID8g
+X19zZXR1cF9pcnErMHgyM2MvMHgyYWIKRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogIFs8
+ZmZmZmZmZmZhMDA0YzExOD5dID8gZmxleGNvcF9wY2lfaXNyKzB4MC8weDEzMSBbYjJjMl9mbGV4
+Y29wX3BjaV0KRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmY4MTA2YTdm
+ZT5dID8gcmVxdWVzdF90aHJlYWRlZF9pcnErMHhkYS8weDEyMQpGZWIgMTkgMTI6NDg6NDQgaG9s
+bHkga2VybmVsOiAgWzxmZmZmZmZmZmEwMDRjM2UwPl0gPyBmbGV4Y29wX3BjaV9wcm9iZSsweDE5
+Ny8weDJlOSBbYjJjMl9mbGV4Y29wX3BjaV0KRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDog
+IFs8ZmZmZmZmZmY4MTFlZWZmOT5dID8gbG9jYWxfcGNpX3Byb2JlKzB4MTIvMHgxNgpGZWIgMTkg
+MTI6NDg6NDQgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMWVmNzg1Pl0gPyBwY2lfZGV2aWNl
+X3Byb2JlKzB4NWIvMHg4NwpGZWIgMTkgMTI6NDg6NDQgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZm
+ZjgxMjYyZjIxPl0gPyBkcml2ZXJfc3lzZnNfYWRkKzB4NjYvMHg4ZApGZWIgMTkgMTI6NDg6NDQg
+aG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMjYzMDU0Pl0gPyBkcml2ZXJfcHJvYmVfZGV2aWNl
+KzB4OWEvMHgxMjMKRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmY4MTI2
+MzEyYz5dID8gX19kcml2ZXJfYXR0YWNoKzB4NGYvMHg2ZgpGZWIgMTkgMTI6NDg6NDQgaG9sbHkg
+a2VybmVsOiAgWzxmZmZmZmZmZjgxMjYzMGRkPl0gPyBfX2RyaXZlcl9hdHRhY2grMHgwLzB4NmYK
+RmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmY4MTI2MjhlOD5dID8gYnVz
+X2Zvcl9lYWNoX2RldisweDQ0LzB4NzgKRmViIDE5IDEyOjQ4OjQ0IGhvbGx5IGtlcm5lbDogIFs8
+ZmZmZmZmZmY4MTI2MjI5Nj5dID8gYnVzX2FkZF9kcml2ZXIrMHhiOS8weDIwMQpGZWIgMTkgMTI6
+NDg6NDQgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMjYzM2M1Pl0gPyBkcml2ZXJfcmVnaXN0
+ZXIrMHg5MC8weGY4CkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJuZWw6ICBbPGZmZmZmZmZmODEx
+ZWY5ZDY+XSA/IF9fcGNpX3JlZ2lzdGVyX2RyaXZlcisweDRlLzB4YmUKRmViIDE5IDEyOjQ4OjQ0
+IGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmZhMDA2YjAwMD5dID8gZmxleGNvcF9wY2lfbW9kdWxl
+X2luaXQrMHgwLzB4MjAgW2IyYzJfZmxleGNvcF9wY2ldCkZlYiAxOSAxMjo0ODo0NCBob2xseSBr
+ZXJuZWw6ICBbPGZmZmZmZmZmODEwMDAyMDk+XSA/IGRvX29uZV9pbml0Y2FsbCsweDc4LzB4MTI2
+CkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJuZWw6ICBbPGZmZmZmZmZmODEwNjAxMWM+XSA/IHN5
+c19pbml0X21vZHVsZSsweDk3LzB4MWQzCkZlYiAxOSAxMjo0ODo0NCBob2xseSBrZXJuZWw6ICBb
+PGZmZmZmZmZmODEwMDFmM2I+XSA/IHN5c3RlbV9jYWxsX2Zhc3RwYXRoKzB4MTYvMHgxYgpGZWIg
+MTkgMTI6NDg6NDQgaG9sbHkga2VybmVsOiAtLS1bIGVuZCB0cmFjZSA3NDMyZmJmZjA1ZGQ3Yzcw
+IF0tLS0K
+--bcaec53f901f87f8b2049cb5a0a6
+Content-Type: text/x-patch; charset=US-ASCII; name="b2c2.diff"
+Content-Disposition: attachment; filename="b2c2.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gkdwxzd21
+
+LS0tIGZsZXhjb3AtcGNpLmN+CTIwMTAtMDUtMTYgMjM6MTc6MzYuMDAwMDAwMDAwICswMjAwCisr
+KyBmbGV4Y29wLXBjaS5jCTIwMTAtMDYtMDEgMTI6MTA6MDUuOTgyNzc2ODM2ICswMjAwCkBAIC0z
+OCw3ICszOCw3IEBACiAJREVCU1RBVFVTKTsKIAogI2RlZmluZSBEUklWRVJfVkVSU0lPTiAiMC4x
+IgotI2RlZmluZSBEUklWRVJfTkFNRSAiVGVjaG5pc2F0L0IyQzIgRmxleENvcCBJSS9JSWIvSUlJ
+IERpZ2l0YWwgVFYgUENJIERyaXZlciIKKyNkZWZpbmUgRFJJVkVSX05BTUUgImIyYzJfZmxleGNv
+cF9wY2kiCiAjZGVmaW5lIERSSVZFUl9BVVRIT1IgIlBhdHJpY2sgQm9ldHRjaGVyIDxwYXRyaWNr
+LmJvZXR0Y2hlckBkZXN5LmRlPiIKIAogc3RydWN0IGZsZXhjb3BfcGNpIHsKQEAgLTQ0OCw1ICs0
+NDgsNSBAQAogbW9kdWxlX2V4aXQoZmxleGNvcF9wY2lfbW9kdWxlX2V4aXQpOwogCiBNT0RVTEVf
+QVVUSE9SKERSSVZFUl9BVVRIT1IpOwotTU9EVUxFX0RFU0NSSVBUSU9OKERSSVZFUl9OQU1FKTsK
+K01PRFVMRV9ERVNDUklQVElPTigiVGVjaG5pc2F0L0IyQzIgRmxleENvcCBJSS9JSWIvSUlJIERp
+Z2l0YWwgVFYgUENJIERyaXZlciIpOwogTU9EVUxFX0xJQ0VOU0UoIkdQTCIpOwoK
+--bcaec53f901f87f8b2049cb5a0a6--
