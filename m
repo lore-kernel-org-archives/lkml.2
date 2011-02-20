@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab1BTM6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 07:58:14 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51271 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892Ab1BTM6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 07:58:09 -0500
-Date: Sun, 20 Feb 2011 12:57:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: vfp: Always save VFP state in vfp_pm_suspend
-Message-ID: <20110220125745.GC14495@n2100.arm.linux.org.uk>
-References: <AANLkTik_Jey_PtRmr530FVckA6RXHESeX+CyoJC=ZTkR@mail.gmail.com> <1297724147-6320-1-git-send-email-ccross@android.com> <20110215170336.GP4152@n2100.arm.linux.org.uk> <AANLkTim4ANuErvT4c5mBnu+Yg5m9sz6N8xugryXRJeN7@mail.gmail.com>
+	id S1753119Ab1BTNAJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 08:00:09 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39874 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752434Ab1BTNAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 08:00:08 -0500
+Date: Sun, 20 Feb 2011 13:59:48 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        ananth@in.ibm.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+Subject: Re: [PATCH] kprobes - do not allow optimized kprobes in entry code
+Message-ID: <20110220125948.GC25700@elte.hu>
+References: <1297696354-6990-1-git-send-email-jolsa@redhat.com>
+ <4D5A4A66.4010503@hitachi.com>
+ <20110215123058.GB3135@jolsa.brq.redhat.com>
+ <4D5AA209.7070309@hitachi.com>
+ <20110215170507.GD3135@jolsa.brq.redhat.com>
+ <4D5B4654.30407@hitachi.com>
+ <20110217151103.GA11156@elte.hu>
+ <20110218162619.GA9425@jolsa.brq.redhat.com>
+ <4D5FD04D.8020209@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim4ANuErvT4c5mBnu+Yg5m9sz6N8xugryXRJeN7@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4D5FD04D.8020209@hitachi.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 16, 2011 at 11:36:45AM -0800, Colin Cross wrote:
-> On Tue, Feb 15, 2011 at 9:03 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Mon, Feb 14, 2011 at 02:55:47PM -0800, Colin Cross wrote:
-> >> diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
-> >> index 66bf8d1..7231d18 100644
-> >> --- a/arch/arm/vfp/vfpmodule.c
-> >> +++ b/arch/arm/vfp/vfpmodule.c
-> >> @@ -415,13 +415,13 @@ static int vfp_pm_suspend(struct sys_device *dev, pm_message_t state)
-> >>       struct thread_info *ti = current_thread_info();
-> >>       u32 fpexc = fmrx(FPEXC);
-> >>
-> >> -     /* if vfp is on, then save state for resumption */
-> >> -     if (fpexc & FPEXC_EN) {
-> >> +     /* save state for resume */
-> >> +     if (last_VFP_context[ti->cpu]) {
-> >
-> > I'm not entirely happy with this.
-> >
-> > It is true that last_VFP_context[] when non-NULL indicates who owns the
-> > hardware VFP state, so saving it would seem logical.  However, this new
-> > code now saves the state with the saved fpexc indicating that it's disabled.
-> >
-> > This will cause a VFP exception to misbehave by reloading the state, and
-> > then disabling the VFP unit.  That will cause another VFP exception which
-> > will find the VFP unit disabled, and re-enable it.  All in all, this is
-> > rather wasteful.
-> >
-> > So...
-> >        /* If lazy disable, re-enable the VFP ready for it to be saved */
-> >        if (last_VFP_context[ti->cpu] != &ti->vfpstate) {
-> >                fpexc |= FPEXC_EN;
-> >                fmxr(FPEXC, fpexc);
-> >        }
-> >        /* If VFP is on, then save state for resumption */
-> >        if (fpexc & FPEXC_EN) {
-> >                ...
-> 
-> I think v2 of the patch handles this case correctly:
-> 	/* save state for resume */
-> 	if (last_VFP_context[ti->cpu]) {
-> 		printk(KERN_DEBUG "%s: saving vfp state\n", __func__);
-> 		fmxr(FPEXC, fpexc | FPEXC_EN);
-> 		vfp_save_state(last_VFP_context[ti->cpu], fpexc);
 
-This saves fpexc with the enable flag possibly clear.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> 		last_VFP_context[ti->cpu] = NULL;
-> 		fmxr(FPEXC, fpexc & ~FPEXC_EN);
-> 	}
-> 
-> This version enables the VFP if it was not enabled, but saves the
-> original fpexc value.
+> Thanks, I've also tested. (But my machine has no L1-icache-prefetches* support) 
+> What I can tell is both of L1-icache-load and L1-icache-load-misses is reduced by 
+> the patch. ;-)
 
-Which is wrong as I said above.
+That's actually a pretty interesting result: it means that compressing entry code 
+into a single section compresses the icache footprint in a measurable way. The 
+icache miss rate went down by about 6%:
+
+>          1,234,272 L1-icache-load-misses      ( +-   0.105% )
+>          1,155,816 L1-icache-load-misses      ( +-   0.113% )
+
+Which, assuming that there's no kernel build and bootup related skew effect that is 
+larger than 2-3% means that this is an improvement.
+
+perf feature request: would be nice if it was able to do:
+
+	perf stat --record ...
+	perf diff
+
+and it would show a comparison of the two runs.
+
+In hindsight it makes sense: the patch probably reduced the fragmentation of the 
+icache for this workload.
+
+But it's still surprising :-)
+
+Mind splitting the patch up into two parts, the first one that does the performance 
+optimization intentionally (with numbers, explanation, etc.), the second one that 
+uses the new section for kprobes exclusion?
+
+Thanks,
+
+	Ingo
