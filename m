@@ -1,108 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab1BTTlF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 14:41:05 -0500
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:46512 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750832Ab1BTTlD (ORCPT
+	id S1753032Ab1BTTxU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 14:53:20 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50204
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751268Ab1BTTxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 14:41:03 -0500
-To: Ondrej Zajicek <santiago@crfreenet.org>
-Subject: [PATCH] s3fb: add support for 86C365 Trio3D
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Sun, 20 Feb 2011 20:40:44 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Sun, 20 Feb 2011 14:53:19 -0500
+Date: Sun, 20 Feb 2011 11:53:55 -0800 (PST)
+Message-Id: <20110220.115355.59672016.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: ebiederm@xmission.com, mhocko@suse.cz, mingo@elte.hu, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
+ 2.6.38-rc4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTik8kjt1TZ5vOoAm_y0f7toGtOSpxOsgCXO-bey9@mail.gmail.com>
+References: <AANLkTincrnq1kMcAYEWYLf5vdbQ4DYbYObbg=0cLfHnm@mail.gmail.com>
+	<m1oc67zcov.fsf@fess.ebiederm.org>
+	<AANLkTik8kjt1TZ5vOoAm_y0f7toGtOSpxOsgCXO-bey9@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102202040.48219.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for S3 Trio3D (86C365) cards to s3fb driver. Tested with one 4MB card.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 19 Feb 2011 22:15:23 -0800
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> So unregister_netdevice_many() should always return with the list
+> empty and destroyed. There is no valid use of a list of netdevices
+> after you've unregistered them.
+> 
+> Now, dev_deactivate_many() actually has uses of that list after
+> they've been de-activated (__dev_close_many will deactivate them, and
+> then after that do the whole ndo_stop dance too, so I guess all (two)
+> callers of that function need to get rid of their list manually. So I
+> think your patch to sch_generic.c is good, but I really think the
+> semantics of unregister_netdevice_many() should just be changed.
 
---- linux-2.6.38-rc4-/drivers/video/s3fb.c	2011-02-20 20:11:18.000000000 +0100
-+++ linux-2.6.38-rc4/drivers/video/s3fb.c	2011-02-20 20:31:34.000000000 +0100
-@@ -64,6 +64,8 @@ static const struct svga_fb_format s3fb_
- 
- static const struct svga_pll s3_pll = {3, 129, 3, 33, 0, 3,
- 	35000, 240000, 14318};
-+static const struct svga_pll s3_trio3d_pll = {3, 129, 3, 31, 0, 4,
-+	230000, 460000, 14318};
- 
- static const int s3_memsizes[] = {4096, 0, 3072, 8192, 2048, 6144, 1024, 512};
- 
-@@ -72,7 +74,8 @@ static const char * const s3_names[] = {
- 			"S3 Plato/PX", "S3 Aurora64VP", "S3 Virge",
- 			"S3 Virge/VX", "S3 Virge/DX", "S3 Virge/GX",
- 			"S3 Virge/GX2", "S3 Virge/GX2P", "S3 Virge/GX2P",
--			"S3 Trio3D/1X", "S3 Trio3D/2X", "S3 Trio3D/2X"};
-+			"S3 Trio3D/1X", "S3 Trio3D/2X", "S3 Trio3D/2X",
-+			"S3 Trio3D"};
- 
- #define CHIP_UNKNOWN		0x00
- #define CHIP_732_TRIO32		0x01
-@@ -93,6 +96,7 @@ static const char * const s3_names[] = {
- #define CHIP_360_TRIO3D_1X	0x10
- #define CHIP_362_TRIO3D_2X	0x11
- #define CHIP_368_TRIO3D_2X	0x12
-+#define CHIP_365_TRIO3D		0x13
- 
- #define CHIP_XXX_TRIO		0x80
- #define CHIP_XXX_TRIO64V2_DXGX	0x81
-@@ -341,7 +345,8 @@ static void s3_set_pixclock(struct fb_in
- 	u8 regval;
- 	int rv;
- 
--	rv = svga_compute_pll(&s3_pll, 1000000000 / pixclock, &m, &n, &r, info->node);
-+	rv = svga_compute_pll((par->chip == CHIP_365_TRIO3D) ? &s3_trio3d_pll : &s3_pll,
-+			      1000000000 / pixclock, &m, &n, &r, info->node);
- 	if (rv < 0) {
- 		printk(KERN_ERR "fb%d: cannot set requested pixclock, keeping old value\n", info->node);
- 		return;
-@@ -598,7 +603,8 @@ static int s3fb_set_par(struct fb_info *
- 
- 	if (par->chip == CHIP_360_TRIO3D_1X ||
- 	    par->chip == CHIP_362_TRIO3D_2X ||
--	    par->chip == CHIP_368_TRIO3D_2X) {
-+	    par->chip == CHIP_368_TRIO3D_2X ||
-+	    par->chip == CHIP_365_TRIO3D) {
- 		dbytes = info->var.xres * ((bpp+7)/8);
- 		vga_wcrt(par->state.vgabase, 0x91, (dbytes + 7) / 8);
- 		vga_wcrt(par->state.vgabase, 0x90, (((dbytes + 7) / 8) >> 8) | 0x80);
-@@ -1012,13 +1018,15 @@ static int __devinit s3_pci_probe(struct
- 	regval = vga_rcrt(par->state.vgabase, 0x36);
- 	if (par->chip == CHIP_360_TRIO3D_1X ||
- 	    par->chip == CHIP_362_TRIO3D_2X ||
--	    par->chip == CHIP_368_TRIO3D_2X) {
-+	    par->chip == CHIP_368_TRIO3D_2X ||
-+	    par->chip == CHIP_365_TRIO3D) {
- 		switch ((regval & 0xE0) >> 5) {
- 		case 0: /* 8MB -- only 4MB usable for display */
- 		case 1: /* 4MB with 32-bit bus */
- 		case 2:	/* 4MB */
- 			info->screen_size = 4 << 20;
- 			break;
-+		case 4: /* 2MB on 365 Trio3D */
- 		case 6: /* 2MB */
- 			info->screen_size = 2 << 20;
- 			break;
-@@ -1233,6 +1241,7 @@ static struct pci_device_id s3_devices[]
- 	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8A11), .driver_data = CHIP_357_VIRGE_GX2P},
- 	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8A12), .driver_data = CHIP_359_VIRGE_GX2P},
- 	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8A13), .driver_data = CHIP_36X_TRIO3D_1X_2X},
-+	{PCI_DEVICE(PCI_VENDOR_ID_S3, 0x8904), .driver_data = CHIP_365_TRIO3D},
- 
- 	{0, 0, 0, 0, 0, 0, 0}
- };
+The key, as Eric D. mentioned, is the moment we changed the "scope" of
+this list.
 
+Previously all manipulations and use were guareded entirely inside of
+holding the RTNL mutex.
 
--- 
-Ondrej Zary
+The commit that introduced this regression allowed the list to be
+"live" across RTNL mutex drop/re-grab.
+
+Anyways, Eric B.'s patch (which I've just added to net-2.6) should
+handle the known remaining cases, and as Eric D. said we should do one
+more audit to make sure we got them all now.
