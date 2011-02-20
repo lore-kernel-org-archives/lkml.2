@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab1BTC0d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 21:26:33 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:43394 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab1BTC0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 21:26:32 -0500
-Message-ID: <ba62d2fe7456cc6b7aa5cfa0f0c0be1b.squirrel@webmail.greenhost.nl>
-In-Reply-To: <92f5b87a3559ed7f1b7c46b7497c1ad5.squirrel@webmail.greenhost.nl>
-References: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl>
-    <20110219182511.GA3977@viiv.ffwll.ch>
-    <92f5b87a3559ed7f1b7c46b7497c1ad5.squirrel@webmail.greenhost.nl>
-Date: Sun, 20 Feb 2011 03:26:30 +0100 (CET)
-Subject: Re: [BUG] drm/i915 Screen corruption introduced by 
-     a00b10c360b35d6431a94cb
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Daniel Vetter" <daniel@ffwll.ch>
-Cc: "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "LKML" <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 66f4fda096222dd2b2010deb1ce817c5
+	id S1754911Ab1BTChT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 21:37:19 -0500
+Received: from fifo99.com ([67.223.236.141]:46387 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754732Ab1BTChS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Feb 2011 21:37:18 -0500
+X-Greylist: delayed 617 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Feb 2011 21:37:17 EST
+Subject: Re: [PATCH] msm: headsmp.S: Fix section mismatch
+From: Daniel Walker <dwalker@fifo99.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1298085249-10518-1-git-send-email-sboyd@codeaurora.org>
+References: <1298085249-10518-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 19 Feb 2011 18:26:57 -0800
+Message-ID: <1298168817.17118.2.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Huh, no idea why it didn't go to Daniel the first time, Squirrelmail never
-did that before.
+On Fri, 2011-02-18 at 19:14 -0800, Stephen Boyd wrote:
+> WARNING: vmlinux.o(.cpuinit.text+0xc80): Section mismatch in
+> reference from the function boot_secondary() to the variable
+> .init.text:msm_secondary_startup
+> The function __cpuinit boot_secondary() references a variable
+> __init msm_secondary_startup.  If msm_secondary_startup is only
+> used by boot_secondary then annotate msm_secondary_startup with
+> a matching annotation.
 
-On Sun, February 20, 2011 03:20, Indan Zupancic wrote:
-> Hi,
->
-> On Sat, February 19, 2011 19:25, Daniel Vetter wrote:
->> Hi Indan,
->>
->> Please provide the usual details about your system (especially what gpu
->> this is on). Also, screenshots of what typical corruptions look like can
->> help a lot in tracking down such things.
->
-> Sorry, I plainly forgot to mention that. I'm on my Thinkpad X40 with gen 2
-> hardware, 855GM.
->
-> I uploaded a screenshot of Firefox to:
-> http://img406.imageshack.us/img406/9159/31827167.png
->
-> It happens a lot when scrolling in FF on pages with images, pageup or pagedown
-> don't exhibit it. Text gets corrupted as well, but in a less predictable way.
-> It must be something that FF does that triggers it easily, I haven't managed
-> to get it with other programs yet, though I do see some corruption in the
-> window decoration too sometimes (which is Fluxbox). Scrolling horizontally
-> doesn't show the same behaviour. The corruptions seems to be happening on
-> the right side of a surface/window.
->
-> Forcing a refresh makes it go away again (e.g. switching to another window or
-> opening another window on top of it. Moving a window doesn't though). I get
-> it with and without xcompmgr running.
->
-> Okay, interesting titbit: For text corruption, the stripes are one pixel high
-> for the default font size, no corruption for smaller sizes than the default,
-> two pixel lines for 1 ctrl+ bigger than the default, 3 pixels for +2 etc.
-> With bigger sizes (>=5) I get less corruption to the left of the text, but
-> more in the text itself. The distance between the lines continues to increase,
-> but the stripes thickness goes back to 1 pixel.
->
-> Perhaps an off-by-one error somewhere?
->
->> I've created two quick patches to check a few theories, please test them
->> (both patches independently and both together). Patches attached.
->
-> Tried with both applied, doesn't change anything.
->
-> Greetings,
->
-> Indan
->
+Description is pretty gross.. Can you just explain how the section
+mismatch is happening.
 
+Daniel
 
