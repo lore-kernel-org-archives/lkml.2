@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab1BTMoO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 07:44:14 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36849 "EHLO mx2.mail.elte.hu"
+	id S1752631Ab1BTMts (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 07:49:48 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43265 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab1BTMoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 07:44:13 -0500
-Date: Sun, 20 Feb 2011 13:43:58 +0100
+	id S1751447Ab1BTMtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 07:49:47 -0500
+Date: Sun, 20 Feb 2011 13:49:34 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
- 2.6.38-rc4
-Message-ID: <20110220124358.GA26666@elte.hu>
-References: <20110216185234.GA11636@tiehlicka.suse.cz>
- <20110216193700.GA6377@elte.hu>
- <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
- <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
- <20110217090910.GA3781@tiehlicka.suse.cz>
- <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
- <20110217163531.GF14168@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        paulus@samba.org
+Subject: Re: [PATCH 2/3] perf events: Introduce realtime clock event
+Message-ID: <20110220124934.GB25700@elte.hu>
+References: <1298008433-22911-1-git-send-email-daahern@cisco.com>
+ <1298008433-22911-3-git-send-email-daahern@cisco.com>
+ <1298027641.5226.666.camel@laptop>
+ <4D5E84AC.4040104@cisco.com>
+ <1298041106.5226.775.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110217163531.GF14168@elte.hu>
+In-Reply-To: <1298041106.5226.775.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,14 +36,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> [...] Anything atypical in your setup or usage that doesnt match a bog-standard 
-> whitebox PC with LAN? [...]
+> > Programs that generate time-of-day output are using gettimeofday which is tied 
+> > to CLOCK_REALTIME. We want to be able to correlate a perf sample to an entry in 
+> > an applications log file.
+> 
+> Well, you can argue those programs are broken :-), [...]
 
-Just to answer that question: the odd thumb out was 'namespaces'. Eric has been 
-stressing the namespace code heavily so this is why most other folks never saw
-these problem.
+Then 99% of the world is broken as daylight saving time jumps are part of our lives.
+
+> [...] Imagine the joys of trying to figure out wth happens when DST jumps the 
+> clock back an hour and you have an hour of duplicate data.
+
+DST means twice a year the clock jumps back and forth by exactly one hour, on a 
+given Saturday night. People debugging logs on Saturday nights and not realizing 
+that there's a (always highly publicized) DST switch going on *deserve* to be 
+surprised twice a year! :-)
+
+Really, i dont think it's a big issue - and timestamping in *real* time has very 
+obvious advantages as its name already suggests.
 
 Thanks,
 
