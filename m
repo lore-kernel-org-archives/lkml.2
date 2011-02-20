@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab1BTTKm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 14:10:42 -0500
-Received: from host1.dyn.jankratochvil.net ([89.250.240.48]:49071 "EHLO
-	host1.dyn.jankratochvil.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754713Ab1BTTKl (ORCPT
+	id S1754887Ab1BTTLv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 14:11:51 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50418 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752991Ab1BTTLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 14:10:41 -0500
-Date: Sun, 20 Feb 2011 20:10:26 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: torvalds@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
- PTRACE_ATTACH
-Message-ID: <20110220191026.GA16288@host1.dyn.jankratochvil.net>
-References: <20110220094050.GA7714@host1.dyn.jankratochvil.net>
- <201102201806.30273.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102201806.30273.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 20 Feb 2011 14:11:50 -0500
+Date: Sun, 20 Feb 2011 19:13:07 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging/et131x: fix et131x_rx_dma_disable halt_status
+ usage
+Message-ID: <20110220191307.07faacda@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110220190334.GA3825@joi.lan>
+References: <20110220190334.GA3825@joi.lan>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Feb 2011 18:06:30 +0100, Denys Vlasenko wrote:
-> On Sunday 20 February 2011 10:40, Jan Kratochvil wrote:
-> > Sure by default GDB does not do anything special, it will respawn (using
-> > PTRACE_CONT(SIGSTOP)) any SIGSTOP it sees due to the default setting of:
-> > 	(gdb) handle SIGSTOP
-> > 	Signal        Stop  Print Pass to program Description
-> > 	SIGSTOP       Yes Yes Yes   Stopped (signal)
-> > 
-> > Therefore there happens the double SIGSTOP reporting as discussed before:
-> > 	(gdb) run
-> > 	Starting program: /bin/sleep 1h
-> > 	# external kill -STOP <inferior pid>
-> > 	Program received signal SIGSTOP, Stopped (signal).
-> > 	# State:	t (tracing stop)
-> > 	(gdb) continue 
-> > 	Continuing.
-> > 	Program received signal SIGSTOP, Stopped (signal).
-> > 	# State:	t (tracing stop)
-> > 	(gdb) continue 
-> > 	Continuing.
-> > 	# State:	S (sleeping)
-> > 
-> > Your proposal is I expect:
-> > 	(gdb) run
-> > 	Starting program: /bin/sleep 1h
-> > 	# external kill -STOP <inferior pid>
-> > 	Program received signal SIGSTOP, Stopped (signal).
-> > 	# State:	t (tracing stop)
-> > 	(gdb) continue 
-> > 	Continuing.
-> > 	# State:	T (stopped)
+On Sun, 20 Feb 2011 20:03:34 +0100
+Marcin Slusarz <marcin.slusarz@gmail.com> wrote:
+
+> Commit 1bd751c1abc1029e8a0ae63ef4f19357c735a2a3
+> ("Staging: et131x: Clean up rxdma_csr") changed csr from bitfield to
+> u32, but failed to convert 2 uses of halt_status bit. It did:
 > 
-> Not exactly. Even after we fix kernel so that it properly preserves
-> group-stop across ptrace-stops, gdb will still see TWO 
-> waitpid:SIGSTOP events, not one.
+> - if (csr.bits.halt_status != 1)
+> + if ((csr & 0x00020000) != 1)
 > 
-> First one says "the tracee has received SIGSTOP", and after PTRACE_CONT(SIGSTOP),
-> second one says "the tracee has stopped because of SIGSTOP".
-> Currently, neither strace nor gdb understands that second one
-> is different from first.
+> which is wrong, because second version is always true.
+> Fix it.
+> 
+> This bug was found by coccinelle (http://coccinelle.lip6.fr/).
+> 
+> Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
-I thought the kernel change being discussed should be the second SIGSTOP will
-receive the process's original parent, so that CTRL-Z on a debugged process
-from shell works the normal way, as without a debugger.
-
-
-Thanks,
-Jan
+Acked-by: Alan Cox <alan@linux.intel.com>
