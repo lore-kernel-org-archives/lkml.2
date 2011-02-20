@@ -1,161 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab1BTNoi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 08:44:38 -0500
-Received: from mail-ey0-f180.google.com ([209.85.215.180]:61630 "EHLO
-	mail-ey0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab1BTNog (ORCPT
+	id S1752949Ab1BTN4E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 08:56:04 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:32652 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751977Ab1BTN4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 08:44:36 -0500
-X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Feb 2011 08:44:35 EST
-Message-ID: <4D6118DC.80505@ru.mvista.com>
-Date: Sun, 20 Feb 2011 16:36:28 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 20 Feb 2011 08:56:02 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAAKsYE1Ld/sX/2dsb2JhbAAMhBTLUo9GgSeDQXYEhQ2MW4Yy
+X-IronPort-AV: E=Sophos;i="4.62,194,1297054800"; 
+   d="scan'208";a="92565575"
+Message-ID: <4D611D62.2030703@teksavvy.com>
+Date: Sun, 20 Feb 2011 08:55:46 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/20] ata_piix: unify code for programming PIO and MWDMA
- timings
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site> <20110208122346.19110.8441.sendpatchset@linux-mhg7.site>
-In-Reply-To: <20110208122346.19110.8441.sendpatchset@linux-mhg7.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4 crash on 2.6.37: NULL ptr in ext4_discard_preallocations
+References: <4D604620.9060204@teksavvy.com> <20110220000550.GA8765@thunk.org> <4D609E87.5000903@teksavvy.com> <4D60A117.8090604@teksavvy.com> <20110220061552.GB8765@thunk.org>
+In-Reply-To: <20110220061552.GB8765@thunk.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.02.2011 15:23, Bartlomiej Zolnierkiewicz wrote:
+On 11-02-20 01:15 AM, Ted Ts'o wrote:
+> On Sun, Feb 20, 2011 at 12:05:27AM -0500, Mark Lord wrote:
+>> I suppose it must be, as there's no other 0x3c offset in that function.
+>> Which means it's probably this line that's crashing:
+>>
+>>              BUG_ON(pa->pa_obj_lock != &ei->i_prealloc_lock);
+>>
+>> ...which could only happen if "pa" was NULL there.
+>> I wonder how that happened ?
+> 
+> Which could only happen if ei->i_prealloc_list were not properly
+> initialized (i..e, it was still NULL).  Which shouldn't ever
+> happen...., since all ext4_inodes are initialized in
+> ext4_alloc_inode().
+> 
+> Hmm, can you replicate the crash?
 
->  From ca6c1fbc7d853829524b87a3bcbbb1f67796281c Mon Sep 17 00:00:00 2001
-> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-> Date: Tue, 8 Feb 2011 12:39:24 +0100
-> Subject: [PATCH 02/20] ata_piix: unify code for programming PIO and MWDMA timings
+So far it has been a one time deal here,
+but stuff like this is pretty serious nonetheless.
 
-> Besides making things noticably simpler it results in ~2% decrease in
-> the driver LOC count and also ~2% decrease in the driver binary size
-> (as measured on x86-32).
+I suppose it could also happen if another thread did a list-delete
+at the same time as that function was running.  Which would require
+that there be a locking bug/confusion somewhere.
 
-> Fix piix_set_piomode() documentation while at it.
+Looking over the code, most places use rcu to protect accesses,
+except for the fragment that crashed.  That's probably just fine,
+but something to reexamine just out of paranoia.
 
-> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-[...]
+Also, the spinlock pointer appears to be dynamic, one of two
+possible spinlocks.  Maybe something got confused there
+(well, obviously *something* got confused, so..).
 
-> diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-> index 0f4856d..c954f91 100644
-> --- a/drivers/ata/ata_piix.c
-> +++ b/drivers/ata/ata_piix.c
-> @@ -696,22 +696,11 @@ static int piix_pata_prereset(struct ata_link *link, unsigned long deadline)
->
->   static DEFINE_SPINLOCK(piix_lock);
->
-> -/**
-> - *	piix_set_piomode - Initialize host controller PATA PIO timings
-> - *	@ap: Port whose timings we are configuring
-> - *	@adev: um
-> - *
-> - *	Set PIO mode for device, in host controller PCI config space.
-> - *
-> - *	LOCKING:
-> - *	None (inherited from caller).
-> - */
-> -
-> -static void piix_set_piomode(struct ata_port *ap, struct ata_device *adev)
-> +static void piix_set_timings(struct ata_port *ap, struct ata_device *adev,
-> +			     u8 pio, bool use_mwdma)
->   {
->   	struct pci_dev *dev	= to_pci_dev(ap->host->dev);
->   	unsigned long flags;
-> -	unsigned int pio	= adev->pio_mode - XFER_PIO_0;
->   	unsigned int is_slave	= (adev->devno != 0);
->   	unsigned int master_port= ap->port_no ? 0x42 : 0x40;
->   	unsigned int slave_port	= 0x44;
-> @@ -732,14 +721,18 @@ static void piix_set_piomode(struct ata_port *ap, struct ata_device *adev)
->   			    { 2, 1 },
->   			    { 2, 3 }, };
->
-> -	if (pio >= 2)
-> +	if (pio >= 2 || use_mwdma)
+Tough nut to crack, but if I saw strangeness like this again
+I'd get really concerned about the state of our top grade filesystems
+(had an XFS crash recently on a totally different machine).
 
-    The 'use_mwdma' check is actually superfluous...
+I'll poke a bit more, looking specifically at recent ext4 changes.
 
->   		control |= 1;	/* TIME1 enable */
-> -	if (ata_pio_need_iordy(adev))
-> +	if (ata_pio_need_iordy(adev) || use_mwdma)
->   		control |= 2;	/* IE enable */
-
-    Why IORDY is enabled for MWDMA has always been beyond me... I understand 
-that the stupid Intel docs are to be blamed here.
-
-> -
->   	/* Intel specifies that the PPE functionality is for disk only */
->   	if (adev->class == ATA_DEV_ATA)
->   		control |= 4;	/* PPE enable */
-> +	/* If the drive MWDMA is faster than it can do PIO then
-> +	   we must force PIO into PIO0 */
-
-    It's not the preferred multi-line comment style:
-
-/*
-  * bla
-  * bla
-  */
-
-> +	if (use_mwdma && adev->pio_mode < (XFER_PIO_0 + pio))
-
-    Parens not needed around +.
-
-> @@ -803,31 +812,20 @@ static void do_pata_set_dmamode(struct ata_port *ap, struct ata_device *adev, in
->   {
->   	struct pci_dev *dev	= to_pci_dev(ap->host->dev);
->   	unsigned long flags;
-> -	u8 master_port		= ap->port_no ? 0x42 : 0x40;
-> -	u16 master_data;
->   	u8 speed		= adev->dma_mode;
->   	int devid		= adev->devno + 2 * ap->port_no;
->   	u8 udma_enable		= 0;
->
-> -	static const	 /* ISP  RTC */
-> -	u8 timings[][2]	= { { 0, 0 },
-> -			    { 0, 0 },
-> -			    { 1, 0 },
-> -			    { 2, 1 },
-> -			    { 2, 3 }, };
-> -
-> -	spin_lock_irqsave(&piix_lock, flags);
-> -
-> -	pci_read_config_word(dev, master_port, &master_data);
-> -	if (ap->udma_mask)
-> -		pci_read_config_byte(dev, 0x48, &udma_enable);
-
-    I don't think you should have removed that...
-
-> @@ -860,56 +858,20 @@ static void do_pata_set_dmamode(struct ata_port *ap, struct ata_device *adev, in
->   			   performance (WR_PingPong_En) */
->   			pci_write_config_word(dev, 0x54, ideconf);
->   		}
-> +
-> +		pci_write_config_byte(dev, 0x48, udma_enable);
-> +
-> +		spin_unlock_irqrestore(&piix_lock, flags);
->   	} else {
-[...]
-> -		if (ap->udma_mask)
-> -			udma_enable &= ~(1 << devid);
-
-    This does not seem correct -- you must disable UDMA when programming MWDMA.
-
-> -
-> -		pci_write_config_word(dev, master_port, master_data);
-> +		piix_set_timings(ap, adev, pio, 1);
->   	}
-> -	/* Don't scribble on 0x48 if the controller does not support UDMA */
-> -	if (ap->udma_mask)
-> -		pci_write_config_byte(dev, 0x48, udma_enable);
-> -
-> -	spin_unlock_irqrestore(&piix_lock, flags);
->   }
->
->   /**
-
-WBR, Sergei
+Thanks Ted.
