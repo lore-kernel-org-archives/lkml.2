@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab1BTGQQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 01:16:16 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51282 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751217Ab1BTGQO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 01:16:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <m1oc67zcov.fsf@fess.ebiederm.org>
-References: <20110216185234.GA11636@tiehlicka.suse.cz> <20110216193700.GA6377@elte.hu>
- <AANLkTinDxxbVjrUViCs=UaMD9Wg9PR7b0ShNud5zKE3w@mail.gmail.com>
- <AANLkTi=xnbcs5BKj3cNE_aLtBO7W5m+2uaUacu7M8g_S@mail.gmail.com>
- <20110217090910.GA3781@tiehlicka.suse.cz> <AANLkTikPKpNHxDQAYBd3fiQsmVozLtCVDsNn=+eF_q2r@mail.gmail.com>
- <20110217163531.GF14168@elte.hu> <m1pqqqfpzh.fsf@fess.ebiederm.org>
- <AANLkTinB=EgDGNv-v-qD-MvHVAmstfP_CyyLNhhotkZx@mail.gmail.com>
- <20110218122938.GB26779@tiehlicka.suse.cz> <20110218162623.GD4862@tiehlicka.suse.cz>
- <AANLkTimO=M5xG_mnDBSxPKwSOTrp3JhHVBa8=wHsiVHY@mail.gmail.com>
- <m1oc68ilw7.fsf@fess.ebiederm.org> <AANLkTincrnq1kMcAYEWYLf5vdbQ4DYbYObbg=0cLfHnm@mail.gmail.com>
- <m1oc67zcov.fsf@fess.ebiederm.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 19 Feb 2011 22:15:23 -0800
-Message-ID: <AANLkTik8kjt1TZ5vOoAm_y0f7toGtOSpxOsgCXO-bey9@mail.gmail.com>
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in 2.6.38-rc4
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@elte.hu>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751977Ab1BTHIX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 02:08:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48039 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab1BTHIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 02:08:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=n8WaOBlQysdZHQ4PEJD3R8+7F+Oeyz8t/88ywO319b+E/K0/8BMdryOP+7QUeUyRnN
+         9ZzjVCPEN+tug0OKhd8gfowmsQjBMeXv00zWoeVum5lY1Kybo/ThhBpBPhIVFKQspyNS
+         YwFtth424dgets2/VJj9lSa0c1btF4yg2BfNQ=
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] autogroup runtime enable/disable tuning fix
+Date: Sun, 20 Feb 2011 15:08:11 +0800
+Message-Id: <1298185696-4403-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 19, 2011 at 6:01 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->
-> So I think the change below to fix dev_deactivate which Eric D. missed
-> will fix this problem.  Now to go test that.
+This patchset focus on autogroup runtime enable/disable tuning
+issue.
 
-You know what? I think the whole thing is crap. I did a simple grep
-for 'unregister_netdevice_many()', and they are all buggy.
+Below is my test when disable autogroup at runtime:
 
-Look in net/ipv4/ip_gre.c, net/ipv4/ipip.c,net/ipv4/ipmr.c,
-net/ipv6/sit.c, look in net/ipv6/ip6mr.c, just just about anywhere.
-Those people *all* do basically a list-head on the stack, and then
-they do unregister_netdevice_many() on those things, and they clearly
-expect the list to be gone.
+vanilla:
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND            
+ 1046 test1     20   0 25544  844  276 R 50.0  0.0   0:23.30 bash               
+ 1044 test2     20   0 25544  860  280 R 25.2  0.0   0:20.55 bash               
+ 1045 test2     20   0 25544  864  284 R 24.8  0.0   0:17.48 bash
 
-I suspect that the right thing to do really is to change the semantics
-of those functions that take that kill-list *entirely*. Namely that
-they will literall ykill the list too, not just the entries on the
-list.
+patched:
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND            
+  991 test1     20   0 25544  844  276 R 31.7  0.0   2:05.93 bash               
+  992 test2     20   0 25544  848  276 R 31.7  0.0   1:16.84 bash               
+  994 test2     20   0 25544  856  284 R 29.8  0.0   1:02.67 bash 
 
-So unregister_netdevice_many() should always return with the list
-empty and destroyed. There is no valid use of a list of netdevices
-after you've unregistered them.
 
-Now, dev_deactivate_many() actually has uses of that list after
-they've been de-activated (__dev_close_many will deactivate them, and
-then after that do the whole ndo_stop dance too, so I guess all (two)
-callers of that function need to get rid of their list manually. So I
-think your patch to sch_generic.c is good, but I really think the
-semantics of unregister_netdevice_many() should just be changed.
+---
+Yong Zhang (5):
+      sched, autogroup, sysctl: use proc_dointvec_minmax instead.
+      sched: hide cfs_rq of autogroup if autogroup is disabled
+      sched, autogroup: stop going ahead if autogroup is disabled
+      sched: refactor task_group()
+      sched, autogroup: runtime enable/disable tuning fix
 
-And I think the networking people need to do some serious code review
-of this whole thing. The whole "let's build a list on the stack, then
-leave it around, and later use it randomly when the stack head pointer
-is long gone" thing is just incredible crapola. We shouldn't be
-finding these things one-by-one as a list debugging thing fires.
-People need tolook at their code and fix it before the bugs start
-triggering.
-
-                           Linus
+ include/linux/sched.h    |    3 +++
+ kernel/sched.c           |   10 +++++++++-
+ kernel/sched_autogroup.c |   38 ++++++++++++++++++++++++++++++++++++++
+ kernel/sched_autogroup.h |    5 +++++
+ kernel/sched_debug.c     |    6 ++++++
+ kernel/sysctl.c          |    2 +-
+ 6 files changed, 62 insertions(+), 2 deletions(-)
