@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407Ab1BTGOH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 01:14:07 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:36496 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab1BTGOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 01:14:06 -0500
-Message-ID: <bf012806f2016262399d27c911a8514d.squirrel@webmail.greenhost.nl>
-In-Reply-To: <20110220035143.15480.qmail@stuge.se>
-References: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl>
-    <20110219182511.GA3977@viiv.ffwll.ch>
-    <20110220035143.15480.qmail@stuge.se>
-Date: Sun, 20 Feb 2011 07:13:56 +0100 (CET)
-Subject: Re: [BUG] drm/i915 Screen corruption introduced by 
-     a00b10c360b35d6431a94cb
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Peter Stuge" <peter@stuge.se>
-Cc: "Indan Zupancic" <indan@nul.nu>, "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "LKML" <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-User-Agent: SquirrelMail/1.4.17
+	id S1751608Ab1BTGP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 01:15:56 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:42879 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760Ab1BTGPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 01:15:55 -0500
+Date: Sun, 20 Feb 2011 01:15:52 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: ext4 crash on 2.6.37: NULL ptr in ext4_discard_preallocations
+Message-ID: <20110220061552.GB8765@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mark Lord <kernel@teksavvy.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <4D604620.9060204@teksavvy.com>
+ <20110220000550.GA8765@thunk.org>
+ <4D609E87.5000903@teksavvy.com>
+ <4D60A117.8090604@teksavvy.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: a350ae07b5350cdad28cef237d2e7179
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D60A117.8090604@teksavvy.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Sun, Feb 20, 2011 at 12:05:27AM -0500, Mark Lord wrote:
+> I suppose it must be, as there's no other 0x3c offset in that function.
+> Which means it's probably this line that's crashing:
+> 
+>              BUG_ON(pa->pa_obj_lock != &ei->i_prealloc_lock);
+> 
+> ...which could only happen if "pa" was NULL there.
+> I wonder how that happened ?
 
-On Sun, February 20, 2011 04:51, Peter Stuge wrote:
-> Confirm I also have this issue on my X40, but there are other bugs
-> that are much more significant so I haven't bothered mentioning this.
+Which could only happen if ei->i_prealloc_list were not properly
+initialized (i..e, it was still NULL).  Which shouldn't ever
+happen...., since all ext4_inodes are initialized in
+ext4_alloc_inode().
 
-What issues? If it's backlight related, try my patch at:
-http://lkml.org/lkml/2011/2/16/447
+Hmm, can you replicate the crash?
 
-Or if the screen is black after suspend/screen blank then just try a
-newer kernel, that got recently fixed. Actually, a lot of bugs were
-recently introduced and fixed, with two months ago you're probably
-in the new-bugs-only period, so I can recommend trying 2.6.38-rc5.
-
-This screen corruption is the only problem for me, but I don't do anything
-fancy with my laptop. The ipw2200 wireless driver is quite crappy, but it
-has always been as far as I know. (Though not too long ago the USB got
-burnt out, which probably took one RAM module with it, so now I'm running
-with 512MB instead of 1GB, which is really noticeable when doing kernel
-git stuff or compiles with this very very slow HD.)
-
-Good luck,
-
-Indan
-
-P.S. Anyone any idea where that "Mail-Followup-To" header comes from?
-Or is everyone subscribed to dri-devel automatically excluded from
-Mail-Followup-To? If that's the case, pardon for the dubplicate mails.
-
-
+					- Ted
