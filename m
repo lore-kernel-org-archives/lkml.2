@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab1BTRLn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 12:11:43 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41514 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393Ab1BTRLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 12:11:42 -0500
-Date: Sun, 20 Feb 2011 18:11:22 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>, torvalds@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Add extra gcc checks
-Message-ID: <20110220171122.GA7050@elte.hu>
-References: <1298219710-9846-1-git-send-email-bp@alien8.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298219710-9846-1-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754648Ab1BTRWV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 12:22:21 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:41153 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751928Ab1BTRWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 12:22:20 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18UBXMp/MIUTZQIcEg6KC+gRWJHxPDbFjfphYYB0B
+	qXHClsPEKiXiY4
+Subject: Re: [PATCH 5/5] sched, autogroup: runtime enable/disable tuning fix
+From: Mike Galbraith <efault@gmx.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20110220141003.GA6006@zhy>
+References: <1298185696-4403-1-git-send-email-yong.zhang0@gmail.com>
+	 <1298185696-4403-6-git-send-email-yong.zhang0@gmail.com>
+	 <1298207379.7998.11.camel@marge.simson.net>  <20110220141003.GA6006@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 20 Feb 2011 18:22:13 +0100
+Message-ID: <1298222533.7881.15.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@alien8.de> wrote:
-
-> Add a 'W=1' Makefile switch which adds additional checking per build
-> object.
+On Sun, 2011-02-20 at 22:10 +0800, Yong Zhang wrote:
+> On Sun, Feb 20, 2011 at 02:09:39PM +0100, Mike Galbraith wrote:
+> > On Sun, 2011-02-20 at 15:08 +0800, Yong Zhang wrote:
+> > > Now enable/disable autogroup at runtime is just a flag,
+> > > it doesn't take effect on current process of the system.
+> > 
+> > Yup, they only move upon migration, which can take up to forever.
 > 
-> The idea behind this option is targeted at developers who, in the
-> process of writing their code, want to do the occasional
-> 
-> make W=1 [target.o]
-> 
-> and let gcc do more extensive code checking for them. Then, they
-> could eyeball the output for valid gcc warnings about various
-> bugs/discrepancies which are not reported during the normal build
-> process.
-> 
-> For more background information and a use case, read through this
-> thread: http://marc.info/?i=20110218091716.GA4384@bicker
-> 
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: linux-kbuild@vger.kernel.org
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
+> Yeah. so on UP, the user can have autogroup forever or not, and
+> sched_autogroup_enable is a nop.
 
-Nice.
+Yup, and that's the best argument for doing the active switch.
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+> Apart from runtime enable/disable issue, I think patch1~3 could
+> still be applied beause they really fix some problem or bring
+> some improvement.
 
-We enable a lot of GCC warnings in tools/perf/ as well, and while there are false 
-positives occasionally, the general effect on code quality is positive. We combine 
-it with -Werror to make sure warnings do not accumulate.
+Yeah.
 
-Thanks,
+Your whole series looked fine to me at a glance (sunday;), with the
+exception of #2, that one is maybe iffy, depending on point of view.
 
-	Ingo
+It's iffy only in that the proc interface is there to show the group
+(whether used or not, it's not about tasks really, just group), so the
+user can easily twiddle it if he so desires, which has nada to do with
+the group being active or not.
+
+That said, I'd agree to whacking the proc interface wholesale in a
+heartbeat.  It's really a wart.  If it were frequently used, it'd be
+indicative of failure for the whole concept.
+
+	-Mike
+
