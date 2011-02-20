@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab1BTTxU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 14:53:20 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50204
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751268Ab1BTTxT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 14:53:19 -0500
-Date: Sun, 20 Feb 2011 11:53:55 -0800 (PST)
-Message-Id: <20110220.115355.59672016.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: ebiederm@xmission.com, mhocko@suse.cz, mingo@elte.hu, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: BUG: Bad page map in process udevd (anon_vma: (null)) in
- 2.6.38-rc4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTik8kjt1TZ5vOoAm_y0f7toGtOSpxOsgCXO-bey9@mail.gmail.com>
-References: <AANLkTincrnq1kMcAYEWYLf5vdbQ4DYbYObbg=0cLfHnm@mail.gmail.com>
-	<m1oc67zcov.fsf@fess.ebiederm.org>
-	<AANLkTik8kjt1TZ5vOoAm_y0f7toGtOSpxOsgCXO-bey9@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753368Ab1BTUAu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 15:00:50 -0500
+Received: from mail.perches.com ([173.55.12.10]:3816 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958Ab1BTUAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 15:00:49 -0500
+Subject: Re: [PATCH] kbuild: Add extra gcc checks
+From: Joe Perches <joe@perches.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        torvalds@linux-foundation.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        linux-kbuild@vger.kernel.org
+In-Reply-To: <20110220193906.GC6713@liondog.tnic>
+References: <1298219710-9846-1-git-send-email-bp@alien8.de>
+	 <20110220175709.GA5178@merkur.ravnborg.org>
+	 <20110220193906.GC6713@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 20 Feb 2011 12:00:47 -0800
+Message-ID: <1298232047.1284.14.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 19 Feb 2011 22:15:23 -0800
+On Sun, 2011-02-20 at 20:39 +0100, Borislav Petkov wrote:
+> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+> +# make W=1 settings
+> +ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
 
-> So unregister_netdevice_many() should always return with the list
-> empty and destroyed. There is no valid use of a list of netdevices
-> after you've unregistered them.
-> 
-> Now, dev_deactivate_many() actually has uses of that list after
-> they've been de-activated (__dev_close_many will deactivate them, and
-> then after that do the whole ndo_stop dance too, so I guess all (two)
-> callers of that function need to get rid of their list manually. So I
-> think your patch to sch_generic.c is good, but I really think the
-> semantics of unregister_netdevice_many() should just be changed.
+ifeq ($(KBUILD_ENABLE_EXTRA_GCC_CHECKS),1)
 
-The key, as Eric D. mentioned, is the moment we changed the "scope" of
-this list.
+> +EXTRA_CFLAGS += -Wextra -Wno-unused
 
-Previously all manipulations and use were guareded entirely inside of
-holding the RTNL mutex.
+Why add -Wno-unused ?
 
-The commit that introduced this regression allowed the list to be
-"live" across RTNL mutex drop/re-grab.
+If it's because of verbosity, maybe
 
-Anyways, Eric B.'s patch (which I've just added to net-2.6) should
-handle the known remaining cases, and as Eric D. said we should do one
-more audit to make sure we got them all now.
+ifeq ($(KBUILD_ENABLE_EXTRA_GCC_CHECKS),2)
+EXTRA_CFLAGS += -Wunused
+endif
+
