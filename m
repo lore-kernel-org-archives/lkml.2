@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab1BTNHh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 08:07:37 -0500
-Received: from hera.kernel.org ([140.211.167.34]:52622 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab1BTNHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 08:07:35 -0500
-Date: Sun, 20 Feb 2011 13:07:09 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, mingo@elte.hu, borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, borislav.petkov@amd.com, mingo@elte.hu
-In-Reply-To: <1298044056-31104-1-git-send-email-bp@amd64.org>
-References: <1298044056-31104-1-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86, system.h: Drop unused __SAVE/__RESTORE macros
-Message-ID: <tip-2b15cd96e5e93f9aa4f7041c91c1e7c344a62cbb@git.kernel.org>
-Git-Commit-ID: 2b15cd96e5e93f9aa4f7041c91c1e7c344a62cbb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753501Ab1BTNIY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 08:08:24 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36512 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab1BTNIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 08:08:23 -0500
+Date: Sun, 20 Feb 2011 13:07:37 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
+Message-ID: <20110220130737.GE14495@n2100.arm.linux.org.uk>
+References: <1297233693.242364.862698430999.1.gpush@pororo> <201102151526.54280.jeremy.kerr@canonical.com> <20110215083759.GA4152@n2100.arm.linux.org.uk> <201102151733.30332.jeremy.kerr@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 20 Feb 2011 13:07:10 +0000 (UTC)
+In-Reply-To: <201102151733.30332.jeremy.kerr@canonical.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b15cd96e5e93f9aa4f7041c91c1e7c344a62cbb
-Gitweb:     http://git.kernel.org/tip/2b15cd96e5e93f9aa4f7041c91c1e7c344a62cbb
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Fri, 18 Feb 2011 16:47:36 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 20 Feb 2011 13:38:47 +0100
+On Tue, Feb 15, 2011 at 05:33:29PM +0800, Jeremy Kerr wrote:
+> Hi Russell,
+> 
+> > > Why is that? Consider two devices using one clock; one does some
+> > > initialisation based on the return value of clk_get_rate(), the other
+> > > calls clk_set_rate() some time later. Now the first device is
+> > > incorrectly initialised.
+> > 
+> > What about a clock sourced from a PLL which provides the dotclock for a
+> > framebuffer device?  On every mode set, should the clk have to be disabled,
+> > unprepared, rate set, re-prepared and re-enabled?
+> 
+> Sounds heavy-handed, but I honestly have no idea if that's reasonable or not.
+> 
+> Other options are:
+> 
+>  * Require that the driver has called clk_prepare, and that prepare_count
+>    is 1 during the set_rate call (indicating that this is the only user); or
+> 
+>  * Leave the set_rate and set_parent semantics as-is and assume that anything
+>    calling either knows what it's doing (and that it won't affect other
+>    devices)
+> 
+> Are you OK if we address this separately to the API unification though?
 
-x86, system.h: Drop unused __SAVE/__RESTORE macros
-
-Those are unused since at least the beginning of git history.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1298044056-31104-1-git-send-email-bp@amd64.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/system.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index 33ecc3e..12569e6 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -98,8 +98,6 @@ do {									\
-  */
- #define HAVE_DISABLE_HLT
- #else
--#define __SAVE(reg, offset) "movq %%" #reg ",(14-" #offset ")*8(%%rsp)\n\t"
--#define __RESTORE(reg, offset) "movq (14-" #offset ")*8(%%rsp),%%" #reg "\n\t"
- 
- /* frame pointer must be last for get_wchan */
- #define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
+Absolutely.  I think there's enough issues already without adding new
+changes on top.  The unification step should do just that - unify.  It
+should not introduce new restrictions that are not absolutely necessary
+for the unification step.
