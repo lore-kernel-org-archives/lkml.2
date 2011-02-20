@@ -1,135 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab1BTOOd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 09:14:33 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36271 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab1BTOOb (ORCPT
+	id S1753641Ab1BTOd2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 09:33:28 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35277 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab1BTOd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 09:14:31 -0500
-Date: Sun, 20 Feb 2011 15:14:52 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Dan Carpenter <error27@gmail.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        "open list:AMD MICROCODE UPD..." <amd64-microcode@amd64.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch -next] x86, microcode, AMD: signedness bug in
- generic_load_microcode()
-Message-ID: <20110220141452.GA12127@aftab>
-References: <20110218091716.GA4384@bicker>
- <20110220130214.GD25700@elte.hu>
+	Sun, 20 Feb 2011 09:33:27 -0500
+Message-ID: <4D6125E7.2090706@ru.mvista.com>
+Date: Sun, 20 Feb 2011 17:32:07 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110220130214.GD25700@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/20] pata_efar: unify code for programming PIO and MWDMA
+ timings
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site> <20110208122401.19110.20615.sendpatchset@linux-mhg7.site>
+In-Reply-To: <20110208122401.19110.20615.sendpatchset@linux-mhg7.site>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 08:02:14AM -0500, Ingo Molnar wrote:
-> 
-> * Dan Carpenter <error27@gmail.com> wrote:
-> 
-> > install_equiv_cpu_table() returns type int.  It uses negative error
-> > codes so using an unsigned type breaks the error handling.
-> 
-> How did you notice this btw - did GCC throw a warning?
+Hello.
 
-Was wondering about the same thing too, I didn't see any warning during
-my testing. Can GCC even check whether return types of functions are
-"compatible" when assigned to variables?
+On 08-02-2011 15:24, Bartlomiej Zolnierkiewicz wrote:
 
---
-#include <stdio.h>
+>  From 2de7db4bcc16b7e95cca9ceb5921a6f620be76b7 Mon Sep 17 00:00:00 2001
+> From: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+> Date: Tue, 8 Feb 2011 12:39:25 +0100
+> Subject: [PATCH 04/20] pata_efar: unify code for programming PIO and MWDMA timings
 
-int f() {
-        return 0xa5a5a5a5;
-}
+> Besides making things noticably simpler it results in ~10% decrease in
+> the driver LOC count and also ~8% decrease in the driver binary size
+> (as measured on x86-32).
 
-int main()
-{
+> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+[...]
 
-        char ret = f();
+> diff --git a/drivers/ata/pata_efar.c b/drivers/ata/pata_efar.c
+> index afe92b7..1e2ff7d 100644
+> --- a/drivers/ata/pata_efar.c
+> +++ b/drivers/ata/pata_efar.c
+[...]
+> @@ -103,13 +92,18 @@ static void efar_set_piomode (struct ata_port *ap, struct ata_device *adev)
+>   			    { 2, 1 },
+>   			    { 2, 3 }, };
+>
+> -	if (pio>  1)
+> +	if (pio>  1 || use_mwdma)
+>   		control |= 1;	/* TIME */
+> -	if (ata_pio_need_iordy(adev))	/* PIO 3/4 require IORDY */
+> +	if (ata_pio_need_iordy(adev) || use_mwdma)
+>   		control |= 2;	/* IE */
 
-        printf("ret = 0x%016x\n", ret);
+    Same comments as for ata_piix for these two bits...
 
-        return 0;
-} 
---
+>   	/* Intel specifies that the prefetch/posting is for disk only */
+>   	if (adev->class == ATA_DEV_ATA)
+>   		control |= 4;	/* PPE */
+> +	/* If the drive MWDMA is faster than it can do PIO then
+> +	   we must force PIO into PIO0 */
 
-doesn't cause a warning and prints a sign extended 0x00000000ffffffa5
-which is cast to the return type of the function. If ret is an unsigned
-char, then we return a 0x00000000000000a5.
+    Fix comment style, like in ata_piix.
 
-I found something about it in the C99 standard¹, section "6.5.16.1 Simple
-assignment":
+> +	if (use_mwdma && adev->pio_mode < (XFER_PIO_0 + pio))
 
-4.  EXAMPLE 1       In the program fragment
+    Parens not needed around +.
 
-           int f(void);
-           char c;
-           /* ... */
-           if ((c = f()) == -1)
-                    /* ... */
+> @@ -145,6 +139,22 @@ static void efar_set_piomode (struct ata_port *ap, struct ata_device *adev)
+>   }
+>
+>   /**
+> + *	efar_set_piomode - Initialize host controller PATA PIO timings
+> + *	@ap: Port whose timings we are configuring
+> + *	@adev: Device to program
+> + *
+> + *	Set PIO mode for device, in host controller PCI config space.
+> + *
+> + *	LOCKING:
+> + *	None (inherited from caller).
+> + */
+> +
+> +static void efar_set_piomode(struct ata_port *ap, struct ata_device *adev)
+> +{
+> +	efar_set_timings(ap, adev, adev->pio_mode - XFER_PIO_0, 0);
 
-the int value returned by the function may be truncated when stored in
-the char, and then converted back to int width prior to the comparison.
-In an implementation in which ‘‘plain’’ char has the same range
-of values as unsigned char (and char is narrower than int), the result
-of the conversion cannot be negative, so the operands of the comparison
-can never compare equal. Therefore, for full portability, the variable c
-should be declared as int."
+    s/0/false/? Likewise in ata_piix...
 
-so the whole "... may be truncated.. " could mean a lot of things. From
-my example above, gcc does truncate the int return type to a byte-sized
-char only when they differ in signedness.
+> @@ -158,29 +168,19 @@ static void efar_set_piomode (struct ata_port *ap, struct ata_device *adev)
+>   static void efar_set_dmamode (struct ata_port *ap, struct ata_device *adev)
+>   {
+>   	struct pci_dev *dev	= to_pci_dev(ap->host->dev);
+> -	u8 master_port		= ap->port_no ? 0x42 : 0x40;
+> -	u16 master_data;
+>   	u8 speed		= adev->dma_mode;
+>   	int devid		= adev->devno + 2 * ap->port_no;
+>   	unsigned long flags;
+>   	u8 udma_enable;
+>
+> -	static const	 /* ISP  RTC */
+> -	u8 timings[][2]	= { { 0, 0 },
+> -			    { 0, 0 },
+> -			    { 1, 0 },
+> -			    { 2, 1 },
+> -			    { 2, 3 }, };
+> -
+> -	spin_lock_irqsave(&efar_lock, flags);
+> -
+> -	pci_read_config_word(dev, master_port, &master_data);
+> -	pci_read_config_byte(dev, 0x48, &udma_enable);
+> -
+>   	if (speed>= XFER_UDMA_0) {
+> -		unsigned int udma	= adev->dma_mode - XFER_UDMA_0;
+> +		unsigned int udma = speed - XFER_UDMA_0;
+>   		u16 udma_timing;
+>
+> +		spin_lock_irqsave(&efar_lock, flags);
+> +
+> +		pci_read_config_byte(dev, 0x48, &udma_enable);
 
-In the original case where we assign an int return type of a function
-(smaller size) to an unsigned long (greater size), the first gets
-converted to an unsigned long without a warning because the unsigned
-long is large enough to contain the int and so it is assumed the user
-knows what he/she's doing.
+    Don't think you should have moved this...
 
-However, the unsigned long type is later checked for < 0 which could
-never hit so I guess this could be warned for but I'm not sure whether
-this would make sense in all cases.
+> +
+>   		udma_enable |= (1 << devid);
+>
+>   		/* Load the UDMA mode number */
+> @@ -188,50 +188,20 @@ static void efar_set_dmamode (struct ata_port *ap, struct ata_device *adev)
+[...]
+> -		udma_enable &= ~(1 << devid);
+> -		pci_write_config_word(dev, master_port, master_data);
 
-Wait a minute, there _actually_ is a gcc '-Wconversion' option which is
-_very_ noisy but does catch it:
+    No, you should disable UDMA when programming MWDMA.
 
-arch/x86/kernel/microcode_amd.c: In function ‘generic_load_microcode’:
-arch/x86/kernel/microcode_amd.c:255: warning: conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result
+> +		efar_set_timings(ap, adev, pio, 1);
 
-Come to think of it, it might make sense to be able to enable it when doing
-debug builds as a way to do some more checking on your code when prepping
-patches, maybe something like this:
+    s/1/true/? Likewise in ata_piix...
 
-make W=1 arch/x86/kernel/microcode_amd.o
-
-which enables all gcc warnings for that specific file only so that
-you could verify whether the warnings are valid and fix them if so.
-Something similar to perf's EXTRA_WARNINGS.
-
-Let me see whether this can be easily done...
-
-Thanks.
-
-¹ http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1336.pdf
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+WBR, Sergei
