@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1BTEsz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Feb 2011 23:48:55 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44604 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1BTEsx (ORCPT
+	id S1752827Ab1BTEyj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Feb 2011 23:54:39 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:34474 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751187Ab1BTEyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Feb 2011 23:48:53 -0500
-Date: Sat, 19 Feb 2011 20:47:50 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dustan Bower <dustan.bower@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Chou <thomas@wytron.com.tw>
-Subject: Re: [PATCH] Input: serio: Compile error fix (altera_ps2.c)
-Message-Id: <20110219204750.88014cd8.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTinaVspNwHZFMUnbp=8F+K-=PRw95a1es+zyeCA+@mail.gmail.com>
-References: <1298145859-10892-1-git-send-email-dustan.bower@gmail.com>
-	<20110219214549.GA4933@core.coreip.homeip.net>
-	<AANLkTinaVspNwHZFMUnbp=8F+K-=PRw95a1es+zyeCA+@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	Sat, 19 Feb 2011 23:54:38 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBADYtYE1Ld/sX/2dsb2JhbAAMhBTLVo9LgSeDQXYEhQ2MW4Yy
+X-IronPort-AV: E=Sophos;i="4.62,194,1297054800"; 
+   d="scan'208";a="92402285"
+Message-ID: <4D609E87.5000903@teksavvy.com>
+Date: Sat, 19 Feb 2011 23:54:31 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4 crash on 2.6.37: NULL ptr in ext4_discard_preallocations
+References: <4D604620.9060204@teksavvy.com> <20110220000550.GA8765@thunk.org>
+In-Reply-To: <20110220000550.GA8765@thunk.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D609D30.0086:SCFMA4539814,ss=1,fgs=0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Feb 2011 20:04:49 -0700 Grant Likely wrote:
-
-> On Sat, Feb 19, 2011 at 2:45 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Sat, Feb 19, 2011 at 03:04:19PM -0500, Dustan Bower wrote:
-> >> Fixed compile error, today's linux-next tree:
-> >>
-> >>   CC [M]  drivers/input/serio/altera_ps2.o
-> >> drivers/input/serio/altera_ps2.c:182:1: error: expected ‘,’ or ‘;’ before ‘extern’
-> >> make[1]: *** [drivers/input/serio/altera_ps2.o] Error 1
-> >> make: *** [_module_drivers/input/serio] Error 2
-> >>
-> >> Signed-off-by: Dustan Bower <dustan.bower@gmail.com>
-> >
-> > Thanks Dustan.
-> >
-> > Grant, maybe you could amend the original patch so that we do not
-> > introduce bisection failure point?
+On 11-02-19 07:05 PM, Ted Ts'o wrote:
+> On Sat, Feb 19, 2011 at 05:37:20PM -0500, Mark Lord wrote:
+>> 32-bit x86 system, 2.6.37 SMP kernel, Core2duo, 3.3GB RAM, no swap.
+>>
+>> The system just suddenly switched to fbconsole and dumped a traceback.
+>> Here's the screen-shot photo:  http://rtr.ca/ext4_crash.jpg
+>>
+>> Is this a known bug that got fixed in 2.6.37.1 ?
 > 
-> done, thanks.
+> No, this looks like a new one.
+> 
+> And I can't make the Code: line make sense.  Can you send me the
+> fs/ext4/mballoc.s file after running the command "make
+> fs/ext4/mballoc.s" in your build tree where you built this kernel?
 
-Hi Grant,
+Sent.  And here's an extract:
 
-Did you also fix drivers/spi/spi_oc_tiny.c and
-drivers/spi/spi_altera.c ?  I hit those build errors when
-CONFIG_OF=y.  Could there be others?
+.globl ext4_discard_preallocations
+        .type   ext4_discard_preallocations, @function
+ext4_discard_preallocations:
+        pushl   %ebp    #
+        pushl   %edi    #
+        leal    -136(%eax), %edi        #, ei
+        pushl   %esi    #
+        pushl   %ebx    #
+        subl    $80, %esp       #,
+        movl    172(%eax), %esi # <variable>.i_sb, sb
+        movl    $0, 76(%esp)    #, group
+        movzwl  122(%eax), %edx # <variable>.i_mode, tmp85
+        andl    $61440, %edx    #, tmp85
+        cmpl    $32768, %edx    #, tmp85
+        jne     .L875   #,
+        leal    68(%esp), %edx  #, tmp86
+        leal    380(%eax), %ebx #, D.45176
+        movl    %edx, 68(%esp)  # tmp86, list.next
+        addl    $372, %eax      #,
+        movl    %edx, 72(%esp)  # tmp86, list.prev
+        movl    %eax, 28(%esp)  #, %sfp
+.L876:
+        movl    %ebx, %eax      # D.45176,
+        call    _raw_spin_lock  #
+        jmp     .L861   #
+.L867:
+        cmpl    %ebx, 60(%ebp)  # D.45176, <variable>.pa_obj_lock
+        je      .L862   #,
+#APP
+# 3810 "fs/ext4/mballoc.c" 1
+        1:      ud2
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I wonder if the 003c offset is that "cmpl %ebx, 60(%ebp)" line?
+
