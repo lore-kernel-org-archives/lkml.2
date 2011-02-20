@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751187Ab1BTFFi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 00:05:38 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:39237 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750718Ab1BTFFh (ORCPT
+	id S1751407Ab1BTGOH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 01:14:07 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:36496 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab1BTGOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 00:05:37 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAI8vYE1Ld/sX/2dsb2JhbAAMhBTLXI9JgSeDQXYEhQ2MW4Yy
-X-IronPort-AV: E=Sophos;i="4.62,194,1297054800"; 
-   d="scan'208";a="92404511"
-Message-ID: <4D60A117.8090604@teksavvy.com>
-Date: Sun, 20 Feb 2011 00:05:27 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 20 Feb 2011 01:14:06 -0500
+Message-ID: <bf012806f2016262399d27c911a8514d.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20110220035143.15480.qmail@stuge.se>
+References: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl>
+    <20110219182511.GA3977@viiv.ffwll.ch>
+    <20110220035143.15480.qmail@stuge.se>
+Date: Sun, 20 Feb 2011 07:13:56 +0100 (CET)
+Subject: Re: [BUG] drm/i915 Screen corruption introduced by 
+     a00b10c360b35d6431a94cb
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Peter Stuge" <peter@stuge.se>
+Cc: "Indan Zupancic" <indan@nul.nu>, "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "LKML" <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4 crash on 2.6.37: NULL ptr in ext4_discard_preallocations
-References: <4D604620.9060204@teksavvy.com> <20110220000550.GA8765@thunk.org> <4D609E87.5000903@teksavvy.com>
-In-Reply-To: <4D609E87.5000903@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: a350ae07b5350cdad28cef237d2e7179
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-02-19 11:54 PM, Mark Lord wrote:
-> On 11-02-19 07:05 PM, Ted Ts'o wrote:
->> On Sat, Feb 19, 2011 at 05:37:20PM -0500, Mark Lord wrote:
->>> 32-bit x86 system, 2.6.37 SMP kernel, Core2duo, 3.3GB RAM, no swap.
->>>
->>> The system just suddenly switched to fbconsole and dumped a traceback.
->>> Here's the screen-shot photo:  http://rtr.ca/ext4_crash.jpg
->>>
->>> Is this a known bug that got fixed in 2.6.37.1 ?
->>
->> No, this looks like a new one.
->>
->> And I can't make the Code: line make sense.  Can you send me the
->> fs/ext4/mballoc.s file after running the command "make
->> fs/ext4/mballoc.s" in your build tree where you built this kernel?
-> 
-> Sent.  And here's an extract:
-> 
-> .globl ext4_discard_preallocations
->         .type   ext4_discard_preallocations, @function
-> ext4_discard_preallocations:
->         pushl   %ebp    #
->         pushl   %edi    #
->         leal    -136(%eax), %edi        #, ei
->         pushl   %esi    #
->         pushl   %ebx    #
->         subl    $80, %esp       #,
->         movl    172(%eax), %esi # <variable>.i_sb, sb
->         movl    $0, 76(%esp)    #, group
->         movzwl  122(%eax), %edx # <variable>.i_mode, tmp85
->         andl    $61440, %edx    #, tmp85
->         cmpl    $32768, %edx    #, tmp85
->         jne     .L875   #,
->         leal    68(%esp), %edx  #, tmp86
->         leal    380(%eax), %ebx #, D.45176
->         movl    %edx, 68(%esp)  # tmp86, list.next
->         addl    $372, %eax      #,
->         movl    %edx, 72(%esp)  # tmp86, list.prev
->         movl    %eax, 28(%esp)  #, %sfp
-> .L876:
->         movl    %ebx, %eax      # D.45176,
->         call    _raw_spin_lock  #
->         jmp     .L861   #
-> .L867:
->         cmpl    %ebx, 60(%ebp)  # D.45176, <variable>.pa_obj_lock
->         je      .L862   #,
-> #APP
-> # 3810 "fs/ext4/mballoc.c" 1
->         1:      ud2
-> 
-> I wonder if the 003c offset is that "cmpl %ebx, 60(%ebp)" line?
+Hi Peter,
 
-I suppose it must be, as there's no other 0x3c offset in that function.
-Which means it's probably this line that's crashing:
+On Sun, February 20, 2011 04:51, Peter Stuge wrote:
+> Confirm I also have this issue on my X40, but there are other bugs
+> that are much more significant so I haven't bothered mentioning this.
 
-             BUG_ON(pa->pa_obj_lock != &ei->i_prealloc_lock);
+What issues? If it's backlight related, try my patch at:
+http://lkml.org/lkml/2011/2/16/447
 
-...which could only happen if "pa" was NULL there.
-I wonder how that happened ?
+Or if the screen is black after suspend/screen blank then just try a
+newer kernel, that got recently fixed. Actually, a lot of bugs were
+recently introduced and fixed, with two months ago you're probably
+in the new-bugs-only period, so I can recommend trying 2.6.38-rc5.
+
+This screen corruption is the only problem for me, but I don't do anything
+fancy with my laptop. The ipw2200 wireless driver is quite crappy, but it
+has always been as far as I know. (Though not too long ago the USB got
+burnt out, which probably took one RAM module with it, so now I'm running
+with 512MB instead of 1GB, which is really noticeable when doing kernel
+git stuff or compiles with this very very slow HD.)
+
+Good luck,
+
+Indan
+
+P.S. Anyone any idea where that "Mail-Followup-To" header comes from?
+Or is everyone subscribed to dri-devel automatically excluded from
+Mail-Followup-To? If that's the case, pardon for the dubplicate mails.
+
 
