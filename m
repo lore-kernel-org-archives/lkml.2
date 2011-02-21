@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab1BUFzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 00:55:08 -0500
+	id S932186Ab1BUFzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 00:55:07 -0500
 Received: from mga11.intel.com ([192.55.52.93]:60137 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932141Ab1BUFy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 00:54:59 -0500
+	id S1754098Ab1BUFzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 00:55:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,198,1297065600"; 
-   d="scan'208";a="889598843"
+   d="scan'208";a="889598847"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Subject: [PATCH 5/7] ACPI, APEI, Add PCIe AER error information printing support
-Date: Mon, 21 Feb 2011 13:54:43 +0800
-Message-Id: <1298267685-7357-6-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 6/7] lib, Make gen_pool memory allocator lockless
+Date: Mon, 21 Feb 2011 13:54:44 +0800
+Message-Id: <1298267685-7357-7-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
 References: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
@@ -26,290 +24,466 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AER error information printing support is implemented in
-drivers/pci/pcie/aer/aer_print.c.  So some string constants, functions
-and macros definitions can be re-used without being exported.
+This version of the gen_pool memory allocator supports lockless
+operation.
 
-The original PCIe AER error information printing function is not
-re-used directly because the overall format is quite different.  And
-changing the original printing format may make some original users'
-scripts broken.
+This makes it safe to use in NMI handlers and other special
+unblockable contexts that could otherwise deadlock on locks.  This is
+implemented by using atomic operations and retries on any conflicts.
+The disadvantage is that there may be livelocks in extreme cases.  For
+better scalability, one gen_pool allocator can be used for each CPU.
+
+The lockless operation only works if there is enough memory available.
+If new memory is added to the pool a lock has to be still taken.  So
+any user relying on locklessness has to ensure that sufficient memory
+is preallocated.
+
+The basic atomic operation of this allocator is cmpxchg on long.  On
+architectures that don't have NMI-safe cmpxchg implementation, the
+allocator can NOT be used in NMI handler.  So code uses the allocator
+in NMI handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Zhang Yanmin <yanmin.zhang@intel.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 ---
- Documentation/acpi/apei/output_format.txt |   25 ++++++++++++
- drivers/acpi/apei/Kconfig                 |    7 +++
- drivers/acpi/apei/cper.c                  |   18 +++++++--
- drivers/pci/pcie/aer/aerdrv.h             |    9 ----
- drivers/pci/pcie/aer/aerdrv_errprint.c    |   59 ++++++++++++++++++++++++++++++
- include/linux/aer.h                       |   24 ++++++++++++
- include/linux/cper.h                      |    2 +
- 7 files changed, 132 insertions(+), 12 deletions(-)
+ include/linux/bitmap.h   |    1 
+ include/linux/genalloc.h |   46 +++++++-
+ lib/bitmap.c             |    2 
+ lib/genalloc.c           |  256 ++++++++++++++++++++++++++++++++++++++---------
+ 4 files changed, 250 insertions(+), 55 deletions(-)
 
---- a/Documentation/acpi/apei/output_format.txt
-+++ b/Documentation/acpi/apei/output_format.txt
-@@ -92,6 +92,11 @@ vendor_id: <integer>, device_id: <intege
- class_code: <integer>]
- [serial number: <integer>, <integer>]
- [bridge: secondary_status: <integer>, control: <integer>]
-+[aer_status: <integer>, aer_mask: <integer>
-+<aer status string>
-+[aer_uncor_severity: <integer>]
-+aer_layer=<aer layer string>, aer_agent=<aer agent string>
-+aer_tlp_header: <integer> <integer> <integer> <integer>]
+--- a/include/linux/bitmap.h
++++ b/include/linux/bitmap.h
+@@ -142,6 +142,7 @@ extern void bitmap_release_region(unsign
+ extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
+ extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
  
- <pcie port type string>* := PCIe end point | legacy PCI end point | \
- unknown | unknown | root port | upstream switch port | \
-@@ -99,6 +104,26 @@ downstream switch port | PCIe to PCI/PCI
- PCI/PCI-X to PCIe bridge | root complex integrated endpoint device | \
- root complex event collector
- 
-+if section severity is fatal or recoverable
-+<aer status string># :=
-+unknown | unknown | unknown | unknown | Data Link Protocol | \
-+unknown | unknown | unknown | unknown | unknown | unknown | unknown | \
-+Poisoned TLP | Flow Control Protocol | Completion Timeout | \
-+Completer Abort | Unexpected Completion | Receiver Overflow | \
-+Malformed TLP | ECRC | Unsupported Request
-+else
-+<aer status string># :=
-+Receiver Error | unknown | unknown | unknown | unknown | unknown | \
-+Bad TLP | Bad DLLP | RELAY_NUM Rollover | unknown | unknown | unknown | \
-+Replay Timer Timeout | Advisory Non-Fatal
-+fi
-+
-+<aer layer string> :=
-+Physical Layer | Data Link Layer | Transaction Layer
-+
-+<aer agent string> :=
-+Receiver ID | Requester ID | Completer ID | Transmitter ID
-+
- Where, [] designate corresponding content is optional
- 
- All <field string> description with * has the following format:
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -21,6 +21,13 @@ config ACPI_APEI_GHES
- 	  by firmware to produce more valuable hardware error
- 	  information for Linux.
- 
-+config ACPI_APEI_PCIEAER
-+	bool "APEI PCIe AER logging/recovering support"
-+	depends on ACPI_APEI && PCIEAER
-+	help
-+	  PCIe AER errors may be reported via APEI firmware first mode.
-+	  Turn on this option to enable the corresponding support.
-+
- config ACPI_APEI_EINJ
- 	tristate "APEI Error INJection (EINJ)"
- 	depends on ACPI_APEI && DEBUG_FS
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -29,6 +29,7 @@
- #include <linux/time.h>
- #include <linux/cper.h>
- #include <linux/acpi.h>
-+#include <linux/aer.h>
- 
++#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
+ #define BITMAP_LAST_WORD_MASK(nbits)					\
+ (									\
+ 	((nbits) % BITS_PER_LONG) ?					\
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -1,8 +1,28 @@
++#ifndef GENALLOC_H
++#define GENALLOC_H
  /*
-  * CPER record ID need to be unique even after reboot, because record
-@@ -70,8 +71,8 @@ static const char *cper_severity_str(uns
-  * If the output length is longer than 80, multiple line will be
-  * printed, with @pfx is printed at the beginning of each line.
+- * Basic general purpose allocator for managing special purpose memory
+- * not managed by the regular kmalloc/kfree interface.
+- * Uses for this includes on-device special memory, uncached memory
+- * etc.
++ * Basic general purpose allocator for managing special purpose
++ * memory, for example, memory that is not managed by the regular
++ * kmalloc/kfree interface.  Uses for this includes on-device special
++ * memory, uncached memory etc.
++ *
++ * It is safe to use the allocator in NMI handlers and other special
++ * unblockable contexts that could otherwise deadlock on locks.  This
++ * is implemented by using atomic operations and retries on any
++ * conflicts.  The disadvantage is that there may be livelocks in
++ * extreme cases.  For better scalability, one allocator can be used
++ * for each CPU.
++ *
++ * The lockless operation only works if there is enough memory
++ * available.  If new memory is added to the pool a lock has to be
++ * still taken.  So any user relying on locklessness has to ensure
++ * that sufficient memory is preallocated.
++ *
++ * The basic atomic operation of this allocator is cmpxchg on long.
++ * On architectures that don't have NMI-safe cmpxchg implementation,
++ * the allocator can NOT be used in NMI handler.  So code uses the
++ * allocator in NMI handler should depend on
++ * CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+  *
+  * This source code is licensed under the GNU General Public License,
+  * Version 2.  See the file COPYING for more details.
+@@ -13,7 +33,7 @@
+  *  General purpose special memory pool descriptor.
   */
--static void cper_print_bits(const char *pfx, unsigned int bits,
--			    const char *strs[], unsigned int strs_size)
-+void cper_print_bits(const char *pfx, unsigned int bits,
-+		     const char *strs[], unsigned int strs_size)
- {
- 	int i, len = 0;
- 	const char *str;
-@@ -81,6 +82,8 @@ static void cper_print_bits(const char *
- 		if (!(bits & (1U << i)))
- 			continue;
- 		str = strs[i];
-+		if (!str)
-+			continue;
- 		if (len && len + strlen(str) + 2 > 80) {
- 			printk("%s\n", buf);
- 			len = 0;
-@@ -243,7 +246,8 @@ static const char *cper_pcie_port_type_s
- 	"root complex event collector",
+ struct gen_pool {
+-	rwlock_t lock;
++	spinlock_t lock;
+ 	struct list_head chunks;	/* list of chunks in this pool */
+ 	int min_alloc_order;		/* minimum allocation order */
+ };
+@@ -22,15 +42,29 @@ struct gen_pool {
+  *  General purpose special memory pool chunk descriptor.
+  */
+ struct gen_pool_chunk {
+-	spinlock_t lock;
+ 	struct list_head next_chunk;	/* next chunk in pool */
++	atomic_t avail;
+ 	unsigned long start_addr;	/* starting address of memory chunk */
+ 	unsigned long end_addr;		/* ending address of memory chunk */
+ 	unsigned long bits[0];		/* bitmap for allocating memory chunk */
  };
  
--static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie)
-+static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
-+			    const struct acpi_hest_generic_data *gdata)
- {
- 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
- 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
-@@ -276,6 +280,12 @@ static void cper_print_pcie(const char *
- 		printk(
- 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
- 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
-+#ifdef CONFIG_ACPI_APEI_PCIEAER
-+	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
-+		struct aer_capability_regs *aer_regs = (void *)pcie->aer_info;
-+		cper_print_aer(pfx, gdata->error_severity, aer_regs);
-+	}
-+#endif
++/**
++ * gen_pool_for_each_chunk - iterate over chunks of generic memory pool
++ * @chunk:	the struct gen_pool_chunk * to use as a loop cursor
++ * @pool:	the generic memory pool
++ *
++ * Not lockless, proper mutual exclusion is needed to use this macro
++ * with other gen_pool function simultaneously.
++ */
++#define gen_pool_for_each_chunk(chunk, pool)			\
++	list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk)
++
+ extern struct gen_pool *gen_pool_create(int, int);
+ extern int gen_pool_add(struct gen_pool *, unsigned long, size_t, int);
+ extern void gen_pool_destroy(struct gen_pool *);
+ extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
+ extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
++extern size_t gen_pool_avail(struct gen_pool *);
++extern size_t gen_pool_size(struct gen_pool *);
++#endif /* GENALLOC_H */
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -271,8 +271,6 @@ int __bitmap_weight(const unsigned long
  }
+ EXPORT_SYMBOL(__bitmap_weight);
  
- static const char *apei_estatus_section_flag_strs[] = {
-@@ -322,7 +332,7 @@ static void apei_estatus_print_section(
- 		struct cper_sec_pcie *pcie = (void *)(gdata + 1);
- 		printk("%s""section_type: PCIe error\n", pfx);
- 		if (gdata->error_data_length >= sizeof(*pcie))
--			cper_print_pcie(pfx, pcie);
-+			cper_print_pcie(pfx, pcie, gdata);
- 		else
- 			goto err_section_too_small;
- 	} else
---- a/drivers/pci/pcie/aer/aerdrv.h
-+++ b/drivers/pci/pcie/aer/aerdrv.h
-@@ -35,13 +35,6 @@
- 					PCI_ERR_UNC_UNX_COMP|		\
- 					PCI_ERR_UNC_MALF_TLP)
- 
--struct header_log_regs {
--	unsigned int dw0;
--	unsigned int dw1;
--	unsigned int dw2;
--	unsigned int dw3;
--};
+-#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
 -
- #define AER_MAX_MULTI_ERR_DEVICES	5	/* Not likely to have more */
- struct aer_err_info {
- 	struct pci_dev *dev[AER_MAX_MULTI_ERR_DEVICES];
-@@ -59,7 +52,7 @@ struct aer_err_info {
+ void bitmap_set(unsigned long *map, int start, int nr)
+ {
+ 	unsigned long *p = map + BIT_WORD(start);
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -1,8 +1,33 @@
+ /*
+- * Basic general purpose allocator for managing special purpose memory
+- * not managed by the regular kmalloc/kfree interface.
+- * Uses for this includes on-device special memory, uncached memory
+- * etc.
++ * Basic general purpose allocator for managing special purpose
++ * memory, for example, memory that is not managed by the regular
++ * kmalloc/kfree interface.  Uses for this includes on-device special
++ * memory, uncached memory etc.
++ *
++ * It is safe to use the allocator in NMI handlers and other special
++ * unblockable contexts that could otherwise deadlock on locks.  This
++ * is implemented by using atomic operations and retries on any
++ * conflicts.  The disadvantage is that there may be livelocks in
++ * extreme cases.  For better scalability, one allocator can be used
++ * for each CPU.
++ *
++ * The lockless operation only works if there is enough memory
++ * available.  If new memory is added to the pool a lock has to be
++ * still taken.  So any user relying on locklessness has to ensure
++ * that sufficient memory is preallocated.
++ *
++ * The basic atomic operation of this allocator is cmpxchg on long.
++ * On architectures that don't have NMI-safe cmpxchg implementation,
++ * the allocator can NOT be used in NMI handler.  So code uses the
++ * allocator in NMI handler should depend on
++ * CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
++ *
++ * rcu_read_lock and rcu_read_unlock is not used int gen_pool_alloc,
++ * gen_pool_free, gen_pool_avail and gen_pool_size etc, because chunks
++ * are only added into pool, not deleted from pool unless the pool
++ * itself is destroyed.  If chunk will be deleted from pool,
++ * rcu_read_lock and rcu_read_unlock should be uses in these
++ * functions.
+  *
+  * Copyright 2005 (C) Jes Sorensen <jes@trained-monkey.org>
+  *
+@@ -13,8 +38,109 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/bitmap.h>
++#include <linux/rculist.h>
++#include <linux/interrupt.h>
+ #include <linux/genalloc.h>
  
- 	unsigned int status;		/* COR/UNCOR Error Status */
- 	unsigned int mask;		/* COR/UNCOR Error Mask */
--	struct header_log_regs tlp;	/* TLP Header */
-+	struct aer_header_log_regs tlp;	/* TLP Header */
- };
++static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
++{
++	unsigned long val, nval;
++
++	nval = *addr;
++	do {
++		val = nval;
++		if (val & mask_to_set)
++			return -EBUSY;
++		cpu_relax();
++	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
++
++	return 0;
++}
++
++static int clear_bits_ll(unsigned long *addr, unsigned long mask_to_clear)
++{
++	unsigned long val, nval;
++
++	nval = *addr;
++	do {
++		val = nval;
++		if ((val & mask_to_clear) != mask_to_clear)
++			return -EBUSY;
++		cpu_relax();
++	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
++
++	return 0;
++}
++
++/*
++ * bitmap_set_ll - set the specified number of bits at the specified position
++ * @map: pointer to a bitmap
++ * @start: a bit position in @map
++ * @nr: number of bits to set
++ *
++ * Set @nr bits start from @start in @map lock-lessly. Several users
++ * can set/clear the same bitmap simultaneously without lock. If two
++ * users set the same bit, one user will return remain bits, otherwise
++ * return 0.
++ */
++static int bitmap_set_ll(unsigned long *map, int start, int nr)
++{
++	unsigned long *p = map + BIT_WORD(start);
++	const int size = start + nr;
++	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
++	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
++
++	while (nr - bits_to_set >= 0) {
++		if (set_bits_ll(p, mask_to_set))
++			return nr;
++		nr -= bits_to_set;
++		bits_to_set = BITS_PER_LONG;
++		mask_to_set = ~0UL;
++		p++;
++	}
++	if (nr) {
++		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
++		if (set_bits_ll(p, mask_to_set))
++			return nr;
++	}
++
++	return 0;
++}
++
++/*
++ * bitmap_clear_ll - clear the specified number of bits at the specified position
++ * @map: pointer to a bitmap
++ * @start: a bit position in @map
++ * @nr: number of bits to set
++ *
++ * Clear @nr bits start from @start in @map lock-lessly. Several users
++ * can set/clear the same bitmap simultaneously without lock. If two
++ * users clear the same bit, one user will return remain bits,
++ * otherwise return 0.
++ */
++static int bitmap_clear_ll(unsigned long *map, int start, int nr)
++{
++	unsigned long *p = map + BIT_WORD(start);
++	const int size = start + nr;
++	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
++	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
++
++	while (nr - bits_to_clear >= 0) {
++		if (clear_bits_ll(p, mask_to_clear))
++			return nr;
++		nr -= bits_to_clear;
++		bits_to_clear = BITS_PER_LONG;
++		mask_to_clear = ~0UL;
++		p++;
++	}
++	if (nr) {
++		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
++		if (clear_bits_ll(p, mask_to_clear))
++			return nr;
++	}
++
++	return 0;
++}
  
- struct aer_err_source {
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -19,6 +19,7 @@
- #include <linux/errno.h>
- #include <linux/pm.h>
- #include <linux/suspend.h>
-+#include <linux/cper.h>
+ /**
+  * gen_pool_create - create a new special memory pool
+@@ -30,7 +156,7 @@ struct gen_pool *gen_pool_create(int min
  
- #include "aerdrv.h"
+ 	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
+ 	if (pool != NULL) {
+-		rwlock_init(&pool->lock);
++		spin_lock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+ 		pool->min_alloc_order = min_alloc_order;
+ 	}
+@@ -58,15 +184,15 @@ int gen_pool_add(struct gen_pool *pool,
  
-@@ -201,3 +202,61 @@ void aer_print_port_info(struct pci_dev
- 		info->multi_error_valid ? "Multiple " : "",
- 		aer_error_severity_string[info->severity], info->id);
+ 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+ 	if (unlikely(chunk == NULL))
+-		return -1;
++		return -ENOMEM;
+ 
+-	spin_lock_init(&chunk->lock);
+ 	chunk->start_addr = addr;
+ 	chunk->end_addr = addr + size;
++	atomic_set(&chunk->avail, size);
+ 
+-	write_lock(&pool->lock);
+-	list_add(&chunk->next_chunk, &pool->chunks);
+-	write_unlock(&pool->lock);
++	spin_lock(&pool->lock);
++	list_add_rcu(&chunk->next_chunk, &pool->chunks);
++	spin_unlock(&pool->lock);
+ 
+ 	return 0;
  }
+@@ -86,7 +212,6 @@ void gen_pool_destroy(struct gen_pool *p
+ 	int order = pool->min_alloc_order;
+ 	int bit, end_bit;
+ 
+-
+ 	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
+ 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+ 		list_del(&chunk->next_chunk);
+@@ -108,43 +233,47 @@ EXPORT_SYMBOL(gen_pool_destroy);
+  * @size: number of bytes to allocate from the pool
+  *
+  * Allocate the requested number of bytes from the specified pool.
+- * Uses a first-fit algorithm.
++ * Uses a first-fit algorithm. Can not be used in NMI handler on
++ * architectures without NMI-safe cmpxchg implementation.
+  */
+ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+ {
+-	struct list_head *_chunk;
+ 	struct gen_pool_chunk *chunk;
+-	unsigned long addr, flags;
++	unsigned long addr;
+ 	int order = pool->min_alloc_order;
+-	int nbits, start_bit, end_bit;
++	int nbits, start_bit = 0, end_bit, remain;
 +
-+#ifdef CONFIG_ACPI_APEI_PCIEAER
-+static int cper_severity_to_aer(int cper_severity)
-+{
-+	switch (cper_severity) {
-+	case CPER_SEV_RECOVERABLE:
-+		return AER_NONFATAL;
-+	case CPER_SEV_FATAL:
-+		return AER_FATAL;
-+	default:
-+		return AER_CORRECTABLE;
-+	}
-+}
-+
-+void cper_print_aer(const char *prefix, int cper_severity,
-+		    struct aer_capability_regs *aer)
-+{
-+	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
-+	u32 status, mask;
-+	const char **status_strs;
-+
-+	aer_severity = cper_severity_to_aer(cper_severity);
-+	if (aer_severity == AER_CORRECTABLE) {
-+		status = aer->cor_status;
-+		mask = aer->cor_mask;
-+		status_strs = aer_correctable_error_string;
-+		status_strs_size = ARRAY_SIZE(aer_correctable_error_string);
-+	} else {
-+		status = aer->uncor_status;
-+		mask = aer->uncor_mask;
-+		status_strs = aer_uncorrectable_error_string;
-+		status_strs_size = ARRAY_SIZE(aer_uncorrectable_error_string);
-+		tlp_header_valid = status & AER_LOG_TLP_MASKS;
-+	}
-+	layer = AER_GET_LAYER_ERROR(aer_severity, status);
-+	agent = AER_GET_AGENT(aer_severity, status);
-+	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
-+	       prefix, status, mask);
-+	cper_print_bits(prefix, status, status_strs, status_strs_size);
-+	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
-+	       aer_error_layer[layer], aer_agent_string[agent]);
-+	if (aer_severity != AER_CORRECTABLE)
-+		printk("%s""aer_uncor_severity: 0x%08x\n",
-+		       prefix, aer->uncor_severity);
-+	if (tlp_header_valid) {
-+		const unsigned char *tlp;
-+		tlp = (const unsigned char *)&aer->header_log;
-+		printk("%s""aer_tlp_header:"
-+			" %02x%02x%02x%02x %02x%02x%02x%02x"
-+			" %02x%02x%02x%02x %02x%02x%02x%02x\n",
-+			prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
-+			*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
-+			*(tlp + 11), *(tlp + 10), *(tlp + 9),
-+			*(tlp + 8), *(tlp + 15), *(tlp + 14),
-+			*(tlp + 13), *(tlp + 12));
-+	}
-+}
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
 +#endif
---- a/include/linux/aer.h
-+++ b/include/linux/aer.h
-@@ -7,6 +7,28 @@
- #ifndef _AER_H_
- #define _AER_H_
  
-+struct aer_header_log_regs {
-+	unsigned int dw0;
-+	unsigned int dw1;
-+	unsigned int dw2;
-+	unsigned int dw3;
-+};
-+
-+struct aer_capability_regs {
-+	u32 header;
-+	u32 uncor_status;
-+	u32 uncor_mask;
-+	u32 uncor_severity;
-+	u32 cor_status;
-+	u32 cor_mask;
-+	u32 cap_control;
-+	struct aer_header_log_regs header_log;
-+	u32 root_command;
-+	u32 root_status;
-+	u16 cor_err_source;
-+	u16 uncor_err_source;
-+};
-+
- #if defined(CONFIG_PCIEAER)
- /* pci-e port driver needs this function to enable aer */
- extern int pci_enable_pcie_error_reporting(struct pci_dev *dev);
-@@ -27,5 +49,7 @@ static inline int pci_cleanup_aer_uncorr
+ 	if (size == 0)
+ 		return 0;
+ 
+ 	nbits = (size + (1UL << order) - 1) >> order;
+-
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
++		if (size > atomic_read(&chunk->avail))
++			continue;
+ 
+ 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+-
+-		spin_lock_irqsave(&chunk->lock, flags);
+-		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
+-						nbits, 0);
+-		if (start_bit >= end_bit) {
+-			spin_unlock_irqrestore(&chunk->lock, flags);
++retry:
++		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
++						       start_bit, nbits, 0);
++		if (start_bit >= end_bit)
+ 			continue;
++		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
++		if (remain) {
++			remain = bitmap_clear_ll(chunk->bits, start_bit,
++						 nbits - remain);
++			BUG_ON(remain);
++			goto retry;
+ 		}
+ 
+ 		addr = chunk->start_addr + ((unsigned long)start_bit << order);
+-
+-		bitmap_set(chunk->bits, start_bit, nbits);
+-		spin_unlock_irqrestore(&chunk->lock, flags);
+-		read_unlock(&pool->lock);
++		size = nbits << order;
++		atomic_sub(size, &chunk->avail);
+ 		return addr;
+ 	}
+-	read_unlock(&pool->lock);
+ 	return 0;
  }
- #endif
+ EXPORT_SYMBOL(gen_pool_alloc);
+@@ -155,33 +284,66 @@ EXPORT_SYMBOL(gen_pool_alloc);
+  * @addr: starting address of memory to free back to pool
+  * @size: size in bytes of memory to free
+  *
+- * Free previously allocated special memory back to the specified pool.
++ * Free previously allocated special memory back to the specified
++ * pool.  Can not be used in NMI handler on architectures without
++ * NMI-safe cmpxchg implementation.
+  */
+ void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
+ {
+-	struct list_head *_chunk;
+ 	struct gen_pool_chunk *chunk;
+-	unsigned long flags;
+ 	int order = pool->min_alloc_order;
+-	int bit, nbits;
+-
+-	nbits = (size + (1UL << order) - 1) >> order;
++	int start_bit, nbits, remain;
  
-+extern void cper_print_aer(const char *prefix, int cper_severity,
-+			   struct aer_capability_regs *aer);
- #endif //_AER_H_
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
  
---- a/include/linux/cper.h
-+++ b/include/linux/cper.h
-@@ -388,5 +388,7 @@ struct cper_sec_pcie {
- #pragma pack()
- 
- u64 cper_next_record_id(void);
-+void cper_print_bits(const char *prefix, unsigned int bits,
-+		     const char *strs[], unsigned int strs_size);
- 
- #endif
++	nbits = (size + (1UL << order) - 1) >> order;
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
+ 		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
+ 			BUG_ON(addr + size > chunk->end_addr);
+-			spin_lock_irqsave(&chunk->lock, flags);
+-			bit = (addr - chunk->start_addr) >> order;
+-			while (nbits--)
+-				__clear_bit(bit++, chunk->bits);
+-			spin_unlock_irqrestore(&chunk->lock, flags);
+-			break;
++			start_bit = (addr - chunk->start_addr) >> order;
++			remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
++			BUG_ON(remain);
++			size = nbits << order;
++			atomic_add(size, &chunk->avail);
++			return;
+ 		}
+ 	}
+-	BUG_ON(nbits > 0);
+-	read_unlock(&pool->lock);
++	BUG();
+ }
+ EXPORT_SYMBOL(gen_pool_free);
++
++/**
++ * gen_pool_avail - get available free space of the pool
++ * @pool: pool to get available free space
++ *
++ * Return available free space of the specified pool.
++ */
++size_t gen_pool_avail(struct gen_pool *pool)
++{
++	struct gen_pool_chunk *chunk;
++	size_t avail = 0;
++
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
++		avail += atomic_read(&chunk->avail);
++	return avail;
++}
++EXPORT_SYMBOL_GPL(gen_pool_avail);
++
++/**
++ * gen_pool_size - get size in bytes of memory managed by the pool
++ * @pool: pool to get size
++ *
++ * Return size in bytes of memory managed by the pool.
++ */
++size_t gen_pool_size(struct gen_pool *pool)
++{
++	struct gen_pool_chunk *chunk;
++	size_t size = 0;
++
++	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
++		size += chunk->end_addr - chunk->start_addr;
++	return size;
++}
++EXPORT_SYMBOL_GPL(gen_pool_size);
