@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1BUJJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 04:09:36 -0500
-Received: from webbox687.server-home.net ([195.149.74.151]:38683 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab1BUJJe (ORCPT
+	id S1754594Ab1BUJKQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 04:10:16 -0500
+Received: from mail-bw0-f52.google.com ([209.85.214.52]:48080 "EHLO
+	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752234Ab1BUJKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 04:09:34 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: "Lars-Peter Clausen" <lars@metafoo.de>
-Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
-Date: Mon, 21 Feb 2011 10:09:30 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; x86_64; ; )
-Cc: Eric Miao <eric.y.miao@gmail.com>, Peter Tyser <ptyser@xes-inc.com>,
-        linux-kernel@vger.kernel.org, Alek Du <alek.du@intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Uwe Kleine-K?nig" <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com> <201102171321.47704.alexander.stein@systec-electronic.com> <4D5D1D3E.2020107@metafoo.de>
-In-Reply-To: <4D5D1D3E.2020107@metafoo.de>
+	Mon, 21 Feb 2011 04:10:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Bb0gll7xTSQI9KLcKMESuEEkSQ8STxufxAifBOdlehhYg5jLGCvMaj278TTJ6UwjTx
+         6TK31gbd3cHOIfDRFJvVk5WEg4Y3RDSv6Hw2CSA2L4bFi0aWXPRVU9+m+QCip3fs7OmU
+         MWOfeN7ciHlB/hzZmvP6tyeJ4YkNX3mbB3tLk=
+Date: Mon, 21 Feb 2011 10:10:09 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH wq#for-2.6.39] workqueue: fix build failure introduced
+ by s/freezeable/freezable/
+Message-ID: <20110221091009.GF31267@htj.dyndns.org>
+References: <20110221090354.GE31267@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102211009.31381.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110221090354.GE31267@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 February 2011, 14:06:06 Lars-Peter Clausen wrote:
-> > Well, ownership is a bit misleading here. You must request a GPIO to
-> > change its direction. But to set or get a value this isn't required.
+On Mon, Feb 21, 2011 at 10:03:54AM +0100, Tejun Heo wrote:
+> new usage of the flag.  The combination of the two creates a build
+> failure after merge.  Fix it by renaming all freezeables to
+> freezables.
 > 
-> Well, it is not enforced in the actual code, but the GPIO API is based on
-> convention and I would consider it a misusage of the API to call
-> gpio_{set,get}_value without requesting the pin and having configured its
-> direction prior to it.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+> I pulled mainline into wq#for-2.6.39 and applied the build fix.
+> #for-next updated accordingly.  Dmitry, please feel free to pull in
+> the following branch for system_wq_freezable.  The branch is stable.
+> HEAD is 6c9e293a1f (workqueue: fix build failure introduced by
+> s/freezeable/freezable/).
 > 
-> > In general one could expect if you requested a GPIO you are the only one
-> > to call any function on it. On the other hand, this may be bad in some
-> > situations where you want to read a GPIO value from different places.
-> 
-> Sharing GPIOs in read-only mode, is indeed something that is not covered by
-> the GPIO API. It might be worth adding a gpio_request_shared, which would
-> only permit setting the direction to input. Futher gpio_request_shared
-> calls would be allowed but gpio_request calls would fail.
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-2.6.39
 
-gpio_request_shared sounds interesting, but in this case an implicit 
-gpio_direction_input call has to be done in the first shared request. But the 
-user must/should not call gpio_direction_input himself which is quite a bit 
-different than using a normal gpio_requested gpio.
+Updated commit message (the first line went missing because it started
+with #fixes-2.6.38), the new HEAD is 24d51add74.
 
-Alexander
+Thanks.
+
+-- 
+tejun
