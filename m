@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1BUHna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 02:43:30 -0500
-Received: from hera.kernel.org ([140.211.167.34]:47042 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751Ab1BUHn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 02:43:29 -0500
-Date: Mon, 21 Feb 2011 07:43:05 GMT
-From: tip-bot for Kushal Koolwal <kushalkoolwal@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        kushalkoolwal@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, kushalkoolwal@gmail.com, mingo@elte.hu
-In-Reply-To: <1298152563-21594-1-git-send-email-kushalkoolwal@gmail.com>
-References: <1298152563-21594-1-git-send-email-kushalkoolwal@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix reboot problem on VersaLogic Menlow boards
-Message-ID: <tip-e19e074b1525d11a66c8e3386fec7db248ad3005@git.kernel.org>
-Git-Commit-ID: e19e074b1525d11a66c8e3386fec7db248ad3005
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754256Ab1BUHtu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 02:49:50 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:59034 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751486Ab1BUHtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 02:49:47 -0500
+Date: Sun, 20 Feb 2011 23:49:47 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in
+ module versions
+Message-ID: <20110221074947.GA31152@dtor-ws.eng.vmware.com>
+References: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
+ <20110217.140119.39175251.davem@davemloft.net>
+ <20110217221957.GA11244@dtor-ws.eng.vmware.com>
+ <20110217.142320.102554706.davem@davemloft.net>
+ <AANLkTinMfTss+9K7fPQbxoMD7d-U_AyCc29_RRPRija3@mail.gmail.com>
+ <AANLkTikd-OBhe6-wK7-Xvv-asNSeVKs+0-a0d3FF2KVu@mail.gmail.com>
+ <1298074455.2460.85.camel@pasglop>
+ <87pqqmrq9q.fsf@rustcorp.com.au>
+ <AANLkTinFgma3F7ETwC8Mho7wdDK4V2b+Ao__npJNAW8j@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 21 Feb 2011 07:43:07 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinFgma3F7ETwC8Mho7wdDK4V2b+Ao__npJNAW8j@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e19e074b1525d11a66c8e3386fec7db248ad3005
-Gitweb:     http://git.kernel.org/tip/e19e074b1525d11a66c8e3386fec7db248ad3005
-Author:     Kushal Koolwal <kushalkoolwal@gmail.com>
-AuthorDate: Sat, 19 Feb 2011 13:56:03 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 21 Feb 2011 08:41:26 +0100
+On Mon, Feb 21, 2011 at 08:38:46AM +0100, Geert Uytterhoeven wrote:
+> On Mon, Feb 21, 2011 at 05:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >> Except that .long is 32-bit on ppc64 :-( You need .llong for 64-bit.
+> >
+> > OK, all options suck.  Do we want the workaround or not?
+> 
+> We can discuss about that until someone gets bitten by that.
+> 
+> But please fix the "aligned(sizeof(void *))"-in-one-place-only issue.
+> 
 
-x86: Fix reboot problem on VersaLogic Menlow boards
+How about this one then?
 
-VersaLogic Menlow based boards hang on reboot unless reboot=bios
-is used. Add quirk to reboot through the BIOS.
+Thanks.
 
-Tested on at least four boards.
+-- 
+Dmitry
 
-Signed-off-by: Kushal Koolwal <kushalkoolwal@gmail.com>
-LKML-Reference: <1298152563-21594-1-git-send-email-kushalkoolwal@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>From f0e0e10b58b22047e36e21a022abf5e86b5819c2 Mon Sep 17 00:00:00 2001
+From: Dmitry Torokhov <dtor@vmware.com>
+Date: Fri, 4 Feb 2011 13:30:10 -0800
+Subject: [PATCH] module: explicitly align module_version_attribute structure
+
+We force particular alignment when we generate attribute structures
+when generation MODULE_VERSION() data and we need to make sure that
+this alignment is followed when we iterate over these structures,
+otherwise we may crash on platforms whose natural alignment is not
+sizeof(void *), such as m68k.
+
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
 ---
- arch/x86/kernel/reboot.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ include/linux/module.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index fc7aae1..715037c 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -285,6 +285,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "P4S800"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on VersaLogic Menlow boards */
-+		.callback = set_bios_reboot,
-+		.ident = "VersaLogic Menlow based board",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "VersaLogic Corporation"),
-+			DMI_MATCH(DMI_BOARD_NAME, "VersaLogic Menlow board"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/include/linux/module.h b/include/linux/module.h
+index e7c6385..de5cd21 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -62,7 +62,7 @@ struct module_version_attribute {
+ 	struct module_attribute mattr;
+ 	const char *module_name;
+ 	const char *version;
+-};
++} __attribute__ ((__aligned__(sizeof(void *))));
  
+ struct module_kobject
+ {
+-- 
+1.7.3.2
+
