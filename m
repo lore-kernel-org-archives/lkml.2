@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab1BUDvH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 22:51:07 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58525 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755703Ab1BUDvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 22:51:05 -0500
-Message-ID: <4D61E147.8050602@cn.fujitsu.com>
-Date: Mon, 21 Feb 2011 11:51:35 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S932146Ab1BUDww (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 22:52:52 -0500
+Received: from kroah.org ([198.145.64.141]:41407 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753262Ab1BUDwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 22:52:50 -0500
+Date: Sun, 20 Feb 2011 19:50:30 -0800
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Message-ID: <20110221035030.GB29051@kroah.com>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
+ <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH] kvm: better readability of efer_reserved_bits
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 11:50:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 11:50:03,
-	Serialize complete at 2011-02-21 11:50:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 21, 2011 at 03:43:58AM +0000, KY Srinivasan wrote:
+> I am not claiming that what I have done here is the best possible solution.
+> However, I will submit to you that it is better than what we had here
+> prior to this patch.  I will address this and a  whole lot of other issues 
+> in future patches. 
 
-use EFER_SCE, EFER_LME and EFER_LMA instead of magic numbers.
+Care to document it in the TODO file so it doesn't get forgotten?
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index bcc0efc..9d1d3f2 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -81,9 +81,10 @@
-  * - enable LME and LMA per default on 64 bit KVM
-  */
- #ifdef CONFIG_X86_64
--static u64 __read_mostly efer_reserved_bits = 0xfffffffffffffafeULL;
-+static
-+u64 __read_mostly efer_reserved_bits = ~((u64)(EFER_SCE | EFER_LME | EFER_LMA));
- #else
--static u64 __read_mostly efer_reserved_bits = 0xfffffffffffffffeULL;
-+static u64 __read_mostly efer_reserved_bits = ~((u64)EFER_SCE);
- #endif
- 
- #define VM_STAT(x) offsetof(struct kvm, stat.x), KVM_STAT_VM
+thanks,
+
+greg k-h
