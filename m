@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab1BUEyq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:54:46 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51083 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810Ab1BUEyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:54:43 -0500
-Date: Mon, 21 Feb 2011 05:54:39 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>, torvalds@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Add extra gcc checks
-Message-ID: <20110221045439.GB31194@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Arnaud Lacombe <lacombar@gmail.com>, Joe Perches <joe@perches.com>,
-	Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-	torvalds@linux-foundation.org, x86@kernel.org,
-	linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-	linux-kbuild@vger.kernel.org
-References: <1298219710-9846-1-git-send-email-bp@alien8.de>
- <20110220175709.GA5178@merkur.ravnborg.org>
- <20110220193906.GC6713@liondog.tnic>
- <1298232047.1284.14.camel@Joe-Laptop>
- <20110221022707.GB18332@liondog.tnic>
- <AANLkTikGb7_1sv8zthkt_5qp4ciGbWHQVupx3MmOjfWJ@mail.gmail.com>
+	id S1755896Ab1BUEzY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:55:24 -0500
+Received: from nm24.bullet.mail.ne1.yahoo.com ([98.138.90.87]:32070 "HELO
+	nm24.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755810Ab1BUEzU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 23:55:20 -0500
+X-Yahoo-Newman-Id: 587927.51500.bm@omp1012.mail.ne1.yahoo.com
+X-Yahoo-SMTP: YjlSqMaswBCZSlyinCC4VZuUK9gO1Ih_zo3hHzIUbJw5fu0S
+X-YMail-OSG: uXUOdq4VM1nqI9Jv4pmIgs.q5O27K7Y27tWf00IXwyz_Pty
+ nEHGseFLBLqSX0goUg17TOXHHekNyMlwg.5yX3CPL2xepCxRwvmtOS.594zQ
+ 2F70C1l6YL69R7ZLIpnYdoAMaIQbjUEJsIRk3cNPpzpkn3vGoj_vJD6Rbw8i
+ yulj975WBXU_5YxzFq8D1D3uQ5mWvQhMiA.LMdJYQ8MCKt393NuzOOWJieRw
+ uMQ--
+X-Yahoo-Newman-Property: ymail-3
+From: "MICHAEL CHONG" <barr_michchong9@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: michealchong10kk@gmail.com
+Date: Mon, 21 Feb 2011 12:24:23 +0800
+Subject: Get Back To Me ASAP
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTikGb7_1sv8zthkt_5qp4ciGbWHQVupx3MmOjfWJ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-ID: <PCPCcf5f9639c8944ff79b2a43c6a39dd59d@PCPC>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 10:34:57PM -0500, Arnaud Lacombe wrote:
-> Hi,
-> 
-> On Sun, Feb 20, 2011 at 9:27 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > On Sun, Feb 20, 2011 at 12:00:47PM -0800, Joe Perches wrote:
-> >> > +EXTRA_CFLAGS += -Wextra -Wno-unused
-> >>
-> >> Why add -Wno-unused ?
-> >>
-> >> If it's because of verbosity, maybe
-> >
-> > Nah, it's because it is too noisy and spits too many false positives.
-> >
-> "too noisy" is a subjective point of view.
+Greetings,
 
-Ok, does "too many false positives" objectify it a bit more to your
-taste?
+I am Michael Chong, Attorney at law. A deceased client of mine, that shares
+the same last name as yours,who died as the result of a heart-related
+condition in March 12th 2005.
+I have contacted you to assist in distributing the money left behind by my
+client($19,500million dollars) is lodged in the bank.
 
-> > For example, it reports the arguments of all those stubs from the
-> > headers which are provided for the else-branch of a CONFIG_* option,
-> > etc.
-> >
-> and by the same way, you silence function marked with
-> `warn_unused_result', unless I misread the manpage.
+Regards
+Michael Chong
 
-Can you point me to that passage, I cannot find it in my gcc manpage.
 
-> If you want to silence something specific, why not just the `no'
-> variant of the thing you do not want ?
-
-Yes, '-Wunused -Wno-unused-parameter' looks better.
-
-> Btw, could you not take the same approach as the one taken by the BSD,
-> which is 3 or 4 different level of new warnings. That way, you keep
-> the noisy stuff for the highest warning level.
-
-Nope, because there's no reason for it. I want to have one switch that
-craps out all the possible warnings gcc can spit, I catch the build
-output, fix the bugs and that's it.
-
--- 
-Regards/Gruss,
-    Boris.
