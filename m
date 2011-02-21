@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab1BUX5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 18:57:43 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:49179 "EHLO e4.ny.us.ibm.com"
+	id S1752305Ab1BUX5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 18:57:41 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:53865 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab1BUXzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751397Ab1BUXzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Feb 2011 18:55:55 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
@@ -12,9 +12,9 @@ Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
         Thomas Gleixner <tglx@linutronix.de>,
         Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 08/10] RTC: Fix the cross interrupt issue on rtc-test.
-Date: Mon, 21 Feb 2011 15:55:36 -0800
-Message-Id: <1298332538-31216-9-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 09/10] RTC: sa1100: Update the sa1100 RTC driver.
+Date: Mon, 21 Feb 2011 15:55:37 -0800
+Message-Id: <1298332538-31216-10-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
 References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
@@ -24,21 +24,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
 
-The rtc-test driver is meant to provide a test/debug code for the RTC
-subsystem.
+Since PIE interrupts are now emulated, this patch removes the previous
+code that used the hardware counters.
 
-The rtc-test driver simulates specific interrupts by echoing to the
-sys interface. Those were the update, alarm and periodic interrupts.
+The removal of read_callback() also fixes a wrong user space behaviour
+of this driver, which was not returning the right value to read().
 
-As a side effect of the new implementation, any interrupt generated in
-the rtc-test driver would trigger the same code path in the generic
-code, and thus the distinction among interrupts gets lost.
-
-This patch preserves the previous behaviour of the rtc-test driver,
-where e.g. an update interrupt would not trigger an alarm or periodic
-interrupt, and vice-versa. In real world RTC drivers, this is not an
-issue, but in the rtc-test driver it may be interesting to distinguish
-these interrupts for testing purposes.
+[john.stultz: Merge fixups]
 
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Alessandro Zummo <a.zummo@towertech.it>
@@ -47,34 +39,184 @@ CC: rtc-linux@googlegroups.com
 Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/rtc/rtc-test.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+ drivers/rtc/rtc-sa1100.c |  111 +--------------------------------------------
+ 1 files changed, 3 insertions(+), 108 deletions(-)
 
-diff --git a/drivers/rtc/rtc-test.c b/drivers/rtc/rtc-test.c
-index 61ad5ab..34d5631 100644
---- a/drivers/rtc/rtc-test.c
-+++ b/drivers/rtc/rtc-test.c
-@@ -71,11 +71,16 @@ static ssize_t test_irq_store(struct device *dev,
- 	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
+diff --git a/drivers/rtc/rtc-sa1100.c b/drivers/rtc/rtc-sa1100.c
+index 9ece7be..febde00 100644
+--- a/drivers/rtc/rtc-sa1100.c
++++ b/drivers/rtc/rtc-sa1100.c
+@@ -43,7 +43,6 @@
+ #define RTC_DEF_TRIM		0
  
- 	retval = count;
--	if (strncmp(buf, "tick", 4) == 0)
-+	if (strncmp(buf, "tick", 4) == 0 && rtc->pie_enabled)
- 		rtc_update_irq(rtc, 1, RTC_PF | RTC_IRQF);
--	else if (strncmp(buf, "alarm", 5) == 0)
--		rtc_update_irq(rtc, 1, RTC_AF | RTC_IRQF);
--	else if (strncmp(buf, "update", 6) == 0)
-+	else if (strncmp(buf, "alarm", 5) == 0) {
-+		struct rtc_wkalrm alrm;
-+		int err = rtc_read_alarm(rtc, &alrm);
-+
-+		if (!err && alrm.enabled)
-+			rtc_update_irq(rtc, 1, RTC_AF | RTC_IRQF);
-+
-+	} else if (strncmp(buf, "update", 6) == 0 && rtc->uie_rtctimer.enabled)
- 		rtc_update_irq(rtc, 1, RTC_UF | RTC_IRQF);
- 	else
- 		retval = -EINVAL;
+ static const unsigned long RTC_FREQ = 1024;
+-static unsigned long timer_freq;
+ static struct rtc_time rtc_alarm;
+ static DEFINE_SPINLOCK(sa1100_rtc_lock);
+ 
+@@ -156,97 +155,11 @@ static irqreturn_t sa1100_rtc_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int sa1100_irq_set_freq(struct device *dev, int freq)
+-{
+-	if (freq < 1 || freq > timer_freq) {
+-		return -EINVAL;
+-	} else {
+-		struct rtc_device *rtc = (struct rtc_device *)dev;
+-
+-		rtc->irq_freq = freq;
+-
+-		return 0;
+-	}
+-}
+-
+-static int rtc_timer1_count;
+-
+-static inline int sa1100_timer1_retrigger(struct rtc_device *rtc)
+-{
+-	unsigned long diff;
+-	unsigned long period = timer_freq / rtc->irq_freq;
+-
+-	spin_lock_irq(&sa1100_rtc_lock);
+-
+-	do {
+-		OSMR1 += period;
+-		diff = OSMR1 - OSCR;
+-		/* If OSCR > OSMR1, diff is a very large number (unsigned
+-		 * math). This means we have a lost interrupt. */
+-	} while (diff > period);
+-	OIER |= OIER_E1;
+-
+-	spin_unlock_irq(&sa1100_rtc_lock);
+-
+-	return 0;
+-}
+-
+-static irqreturn_t timer1_interrupt(int irq, void *dev_id)
+-{
+-	struct platform_device *pdev = to_platform_device(dev_id);
+-	struct rtc_device *rtc = platform_get_drvdata(pdev);
+-
+-	/*
+-	 * If we match for the first time, rtc_timer1_count will be 1.
+-	 * Otherwise, we wrapped around (very unlikely but
+-	 * still possible) so compute the amount of missed periods.
+-	 * The match reg is updated only when the data is actually retrieved
+-	 * to avoid unnecessary interrupts.
+-	 */
+-	OSSR = OSSR_M1;	/* clear match on timer1 */
+-
+-	rtc_update_irq(rtc, rtc_timer1_count, RTC_PF | RTC_IRQF);
+-
+-	if (rtc_timer1_count == 1)
+-		rtc_timer1_count =
+-			(rtc->irq_freq * ((1 << 30) / (timer_freq >> 2)));
+-
+-	/* retrigger. */
+-	sa1100_timer1_retrigger(rtc);
+-
+-	return IRQ_HANDLED;
+-}
+-
+-static int sa1100_rtc_read_callback(struct device *dev, int data)
+-{
+-	if (data & RTC_PF) {
+-		struct rtc_device *rtc = (struct rtc_device *)dev;
+-
+-		/* interpolate missed periods and set match for the next */
+-		unsigned long period = timer_freq / rtc->irq_freq;
+-		unsigned long oscr = OSCR;
+-		unsigned long osmr1 = OSMR1;
+-		unsigned long missed = (oscr - osmr1)/period;
+-		data += missed << 8;
+-		OSSR = OSSR_M1;	/* clear match on timer 1 */
+-		OSMR1 = osmr1 + (missed + 1)*period;
+-		/* Ensure we didn't miss another match in the mean time.
+-		 * Here we compare (match - OSCR) 8 instead of 0 --
+-		 * see comment in pxa_timer_interrupt() for explanation.
+-		 */
+-		while ((signed long)((osmr1 = OSMR1) - OSCR) <= 8) {
+-			data += 0x100;
+-			OSSR = OSSR_M1;	/* clear match on timer 1 */
+-			OSMR1 = osmr1 + period;
+-		}
+-	}
+-	return data;
+-}
+-
+ static int sa1100_rtc_open(struct device *dev)
+ {
+ 	int ret;
+-	struct rtc_device *rtc = (struct rtc_device *)dev;
++	struct platform_device *plat_dev = to_platform_device(dev);
++	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
+ 
+ 	ret = request_irq(IRQ_RTC1Hz, sa1100_rtc_interrupt, IRQF_DISABLED,
+ 		"rtc 1Hz", dev);
+@@ -260,19 +173,11 @@ static int sa1100_rtc_open(struct device *dev)
+ 		dev_err(dev, "IRQ %d already in use.\n", IRQ_RTCAlrm);
+ 		goto fail_ai;
+ 	}
+-	ret = request_irq(IRQ_OST1, timer1_interrupt, IRQF_DISABLED,
+-		"rtc timer", dev);
+-	if (ret) {
+-		dev_err(dev, "IRQ %d already in use.\n", IRQ_OST1);
+-		goto fail_pi;
+-	}
+ 	rtc->max_user_freq = RTC_FREQ;
+-	sa1100_irq_set_freq(dev, RTC_FREQ);
++	rtc_irq_set_freq(rtc, NULL, RTC_FREQ);
+ 
+ 	return 0;
+ 
+- fail_pi:
+-	free_irq(IRQ_RTCAlrm, dev);
+  fail_ai:
+ 	free_irq(IRQ_RTC1Hz, dev);
+  fail_ui:
+@@ -287,12 +192,10 @@ static void sa1100_rtc_release(struct device *dev)
+ 	OSSR = OSSR_M1;
+ 	spin_unlock_irq(&sa1100_rtc_lock);
+ 
+-	free_irq(IRQ_OST1, dev);
+ 	free_irq(IRQ_RTCAlrm, dev);
+ 	free_irq(IRQ_RTC1Hz, dev);
+ }
+ 
+-
+ static int sa1100_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	spin_lock_irq(&sa1100_rtc_lock);
+@@ -348,7 +251,6 @@ static int sa1100_rtc_proc(struct device *dev, struct seq_file *seq)
+ 
+ static const struct rtc_class_ops sa1100_rtc_ops = {
+ 	.open = sa1100_rtc_open,
+-	.read_callback = sa1100_rtc_read_callback,
+ 	.release = sa1100_rtc_release,
+ 	.read_time = sa1100_rtc_read_time,
+ 	.set_time = sa1100_rtc_set_time,
+@@ -361,8 +263,6 @@ static int sa1100_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct rtc_device *rtc;
+ 
+-	timer_freq = get_clock_tick_rate();
+-
+ 	/*
+ 	 * According to the manual we should be able to let RTTR be zero
+ 	 * and then a default diviser for a 32.768KHz clock is used.
+@@ -388,11 +288,6 @@ static int sa1100_rtc_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, rtc);
+ 
+-	/* Set the irq_freq */
+-	/*TODO: Find out who is messing with this value after we initialize
+-	 * it here.*/
+-	rtc->irq_freq = RTC_FREQ;
+-
+ 	/* Fix for a nasty initialization problem the in SA11xx RTSR register.
+ 	 * See also the comments in sa1100_rtc_interrupt().
+ 	 *
 -- 
 1.7.3.2.146.gca209
 
