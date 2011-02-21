@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab1BUECn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:02:43 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:60485
-	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755768Ab1BUECl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:02:41 -0500
-Date: Mon, 21 Feb 2011 04:02:47 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Andrew Morton <akpm@osdl.org>, Oleg Nesterov <oleg@redhat.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com, Daniel Lezcano <daniel.lezcano@free.fr>
-Subject: [PATCH 3/4] Add the required user_ns parameter to security_capable
-Message-ID: <20110221040247.GC12580@mail.hallyn.com>
-References: <20110221040156.GA12580@mail.hallyn.com>
+	id S932221Ab1BUEDY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:03:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48584 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932152Ab1BUEDW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 23:03:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110221040156.GA12580@mail.hallyn.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <AANLkTin_4AfAgfWu=Qq_rO2T6o=u=JX9YKHquX85HrWe@mail.gmail.com>
+References: <1298154371-5641-1-git-send-email-ccross@android.com>
+	<1298154371-5641-7-git-send-email-ccross@android.com>
+	<AANLkTim8i5vvizBViqFCyq9i+7Uo2E1BrNRf_gtnMb-v@mail.gmail.com>
+	<AANLkTin_4AfAgfWu=Qq_rO2T6o=u=JX9YKHquX85HrWe@mail.gmail.com>
+Date: Sun, 20 Feb 2011 20:03:20 -0800
+Message-ID: <AANLkTimOwZdCrgpMgTFQLmVaKOZF51xC5AspJkxS9+7Z@mail.gmail.com>
+Subject: Re: [PATCH v2 05/21] ARM: tegra: clock: Disable clocks left on by bootloader
+From: Olof Johansson <olof@lixom.net>
+To: Colin Cross <ccross@android.com>
+Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        konkers@android.com, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes a compile failure.
+On Sun, Feb 20, 2011 at 7:43 PM, Colin Cross <ccross@android.com> wrote:
+> On Sun, Feb 20, 2011 at 4:40 PM, Olof Johansson <olof@lixom.net> wrote:
+>> Hi,
+>>
+>> On Sat, Feb 19, 2011 at 2:25 PM, Colin Cross <ccross@android.com> wrote:
+>>> Adds CONFIG_TEGRA_DISABLE_BOOTLOADER_CLOCKS that iterates
+>>> through all clocks, disabling any for which the refcount
+>>> is 0 but the clock init detected the bootloader left the
+>>> clock on.
+>>
+>>
+>> I would argue that any kernel functionality that relies on clocks
+>> being left on my bootloader is buggy, and/or should at least have
+>> those clocks enabled in the static clock tables for the boards in
+>> question, since it creates an undocumented dependency on firmware.
+>>
+>> I would prefer if it disabled the clocks by default (after warning),
+>> but that there was a runtime way to override while debugging (i.e. add
+>> a bootarg 'keep_fwclocks' or similar to keep the firmware-enabled
+>> clocks running and just warn about them).
+>
+> That was the plan, but since many of the drivers are missing I didn't
+> want to enable it by default yet.  However, it turns out the problems
+> I was seeing at boot from this patch were actually due to a bug in the
+> clock code causing the cpu clock to be disabled for clocks that have
+> no disable.  I will drop this patch, and post a separate series after
+> these that fixes the bug and turns off clocks by default, with a
+> runtime argument like you suggested.
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
----
- drivers/pci/pci-sysfs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index ea25e5b..90a6b04 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -369,7 +369,7 @@ pci_read_config(struct file *filp, struct kobject *kobj,
- 	u8 *data = (u8*) buf;
- 
- 	/* Several chips lock up trying to read undefined config space */
--	if (security_capable(filp->f_cred, CAP_SYS_ADMIN) == 0) {
-+	if (security_capable(&init_user_ns, filp->f_cred, CAP_SYS_ADMIN) == 0) {
- 		size = dev->cfg_size;
- 	} else if (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
- 		size = 128;
--- 
-1.7.0.4
+Sounds good. Alternatively, this can go in and be revisited with the
+above proposed changes; both approaches would be OK with me.
 
+
+-Olof
