@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab1BUTJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:09:51 -0500
+	id S1751944Ab1BUTIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:08:11 -0500
 Received: from mga09.intel.com ([134.134.136.24]:8560 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752082Ab1BUTIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:08:12 -0500
+	id S1751250Ab1BUTIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:08:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,201,1297065600"; 
-   d="scan'208";a="711415552"
+   d="scan'208";a="711415550"
 From: Andi Kleen <andi@firstfloor.org>
-To: Jack Steiner <steiner@sgi.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] - Improve drain pages performance on large systems
-References: <20110215223840.GA27420@sgi.com>
-Date: Tue, 15 Feb 2011 16:17:44 -0800
-In-Reply-To: <20110215223840.GA27420@sgi.com> (Jack Steiner's message of "Tue,
-	15 Feb 2011 16:38:40 -0600")
-Message-ID: <m262skx26v.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, aarcange@redhat.com,
+        lwoodman@redhat.com
+Subject: Fix NUMA problems in transparent hugepages and KSM
+Date: Mon, 21 Feb 2011 11:07:42 -0800
+Message-Id: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jack Steiner <steiner@sgi.com> writes:
+The current transparent hugepages daemon can mess up local
+memory affinity on NUMA systems. When it copies memory to a 
+huge page it does not necessarily keep it on the same
+node as the local allocations.
 
-> Heavy swapping within a cpuset causes frequent calls to drain_all_pages().
+While fixing this I also found some more related issues:
+- The NUMA policy interleaving for THP was using the small
+page size, not the large parse size.
+- KSM and THP copies also did not preserve the local node
+- The accounting for local/remote allocations in the daemon
+was misleading.
+- There were no VM statistics counters for THP, which made it 
+impossible to analyze.
+ 
+At least some of the bug fixes are 2.6.38 candidates IMHO
+because some of the NUMA problems are pretty bad. In some workloads
+this can cause performance problems. 
 
-I suspect drain_all_pages should be really made more zone aware in the
-first place and only drain what is actually needed (e.g.
-work off a zonelist). I was fighting with this for hwpoison too.
+What can be delayed are GFP_OTHERNODE and the statistics changes.
 
-That said your patch looks reasonable.
+Git tree:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc-2.6.git thp-numa
+
+Andi Kleen (8):
+      Fix interleaving for transparent hugepages
+      Change alloc_pages_vma to pass down the policy node for local policy
+      Preserve local node for KSM copies
+      Preserve original node for transparent huge page copies
+      Use correct numa policy node for transparent hugepages
+      Add __GFP_OTHER_NODE flag
+      Use GFP_OTHER_NODE for transparent huge pages
+      Add VM counters for transparent hugepages
+
+ include/linux/gfp.h    |   13 ++++++++---
+ include/linux/vmstat.h |   11 ++++++++-
+ mm/huge_memory.c       |   49 +++++++++++++++++++++++++++++++++--------------
+ mm/ksm.c               |    3 +-
+ mm/mempolicy.c         |   16 +++++++-------
+ mm/page_alloc.c        |    2 +-
+ mm/vmstat.c            |   17 ++++++++++++++-
+ 7 files changed, 78 insertions(+), 33 deletions(-)
 
 -Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
