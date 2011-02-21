@@ -1,43 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab1BUEEO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:04:14 -0500
-Received: from nm21.bullet.mail.ac4.yahoo.com ([98.139.52.218]:26068 "HELO
-	nm21.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755764Ab1BUEEI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:04:08 -0500
-X-Greylist: delayed 319 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Feb 2011 23:04:08 EST
-X-Yahoo-Newman-Id: 81758.35669.bm@omp1050.mail.ac4.yahoo.com
-X-Yahoo-SMTP: YjlSqMaswBCZSlyinCC4VZuUK9gO1Ih_zo3hHzIUbJw5fu0S
-X-YMail-OSG: u4RdF.EVM1nfDxeKcNZ_uJYLVfZfg3BDSLL0076WdSO6W22
- 3Ecmfv7RQaF_kEQIHgzidXlzNO1o3PD1jpr1n62TuqJWW0gLH8WcDg1ntc0U
- lW1uXpCZSf7Jn.Hlcb_0CDDYnjPWHNvbDTZ9Mi40m4jTFWMeMgWJl5_m1cS6
- dKVFROKArhZdaYnYeArGuYKd7SRua1LoaWrX997fGJjOTbqBYa3T_y5I9_Uq
- 8OQ--
-X-Yahoo-Newman-Property: ymail-3
-From: "MICHAEL CHONG" <barr_michchong9@att.net>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: michealchong10kk@gmail.com
-Date: Mon, 21 Feb 2011 10:39:56 +0800
-Subject: Get Back To Me ASAP
+	id S932217Ab1BUEFX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:05:23 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:33035
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754983Ab1BUEFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 23:05:20 -0500
+Date: Mon, 21 Feb 2011 04:05:27 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Andrew Morton <akpm@osdl.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, serge@hallyn.com,
+        LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
+        dhowells@redhat.com, Daniel Lezcano <daniel.lezcano@free.fr>
+Subject: [PATCH 4/4] userns: uts and ipc: fix checkpatch warning
+Message-ID: <20110221040527.GD12580@mail.hallyn.com>
+References: <20110221040156.GA12580@mail.hallyn.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-ID: <PCPCa48cbd6906c14753b4881d0ef2e4ba3f@PCPC>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110221040156.GA12580@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+As pointed out by Andrew Morton (and checkpatch), init/version.c
+(and ipc/msgutil.c) should not have an extern declaration for
+init_user_ns.  Instead, move those to ipc_namespace.h and utsname.h.
 
-I am Michael Chong, Attorney at law. A deceased client of mine, that shares
-the same last name as yours,who died as the result of a heart-related
-condition in March 12th 2005.
-I have contacted you to assist in distributing the money left behind by my
-client($19,500million dollars) is lodged in the bank.
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+---
+ include/linux/ipc_namespace.h |    3 ++-
+ include/linux/utsname.h       |    1 +
+ init/version.c                |    1 -
+ ipc/msgutil.c                 |    2 --
+ 4 files changed, 3 insertions(+), 4 deletions(-)
 
-Regards
-Michael Chong
-
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index 9974429..ebd4a93 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -15,6 +15,8 @@
+ 
+ #define IPCNS_CALLBACK_PRI 0
+ 
++struct user_namespace;
++extern struct user_namespace init_user_ns;
+ 
+ struct ipc_ids {
+ 	int in_use;
+@@ -24,7 +26,6 @@ struct ipc_ids {
+ 	struct idr ipcs_idr;
+ };
+ 
+-struct user_namespace;
+ struct ipc_namespace {
+ 	atomic_t	count;
+ 	struct ipc_ids	ids[3];
+diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+index 165b17b..69957ca 100644
+--- a/include/linux/utsname.h
++++ b/include/linux/utsname.h
+@@ -38,6 +38,7 @@ struct new_utsname {
+ #include <linux/err.h>
+ 
+ struct user_namespace;
++extern struct user_namespace init_user_ns;
+ 
+ struct uts_namespace {
+ 	struct kref kref;
+diff --git a/init/version.c b/init/version.c
+index 97bb86f..86fe0cc 100644
+--- a/init/version.c
++++ b/init/version.c
+@@ -21,7 +21,6 @@ extern int version_string(LINUX_VERSION_CODE);
+ int version_string(LINUX_VERSION_CODE);
+ #endif
+ 
+-extern struct user_namespace init_user_ns;
+ struct uts_namespace init_uts_ns = {
+ 	.kref = {
+ 		.refcount	= ATOMIC_INIT(2),
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index d91ff4b..8b5ce5d 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -20,8 +20,6 @@
+ 
+ DEFINE_SPINLOCK(mq_lock);
+ 
+-extern struct user_namespace init_user_ns;
+-
+ /*
+  * The next 2 defines are here bc this is the only file
+  * compiled when either CONFIG_SYSVIPC and CONFIG_POSIX_MQUEUE
+-- 
+1.7.0.4
 
