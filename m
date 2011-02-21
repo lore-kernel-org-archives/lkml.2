@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab1BUWRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:17:10 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:45208 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab1BUWRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 17:17:09 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: 2.6.37.1 s2disk regression (TPM)
-Date: Mon, 21 Feb 2011 23:17:07 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        "linux-pm" <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        debora@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
-References: <4D60E93D.1050205@gmail.com> <4D62E221.7010104@linux.vnet.ibm.com> <4D62E2F2.4060406@gmail.com>
-In-Reply-To: <4D62E2F2.4060406@gmail.com>
+	id S1752252Ab1BUW3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:29:08 -0500
+Received: from mail-bw0-f51.google.com ([209.85.214.51]:62035 "EHLO
+	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab1BUW3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 17:29:06 -0500
+X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 17:29:05 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sIvXL4fbjsiv8jwBQfPRmI1Zn+D1BmJUN2c8UUfEyeVmfwo7XOBDMWwEirmHDOZ909
+         QX+DgIVK01kxgkfzLOJMQphWkuArZAKTTl8rf2htM00lNRVHCV/CuIQlp8184TivB+J8
+         7Yx6oZ8mHQNOB6pPK+bepDEk3c0e45uYo3mh0=
+Date: Mon, 21 Feb 2011 23:21:06 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Ahern <daahern@cisco.com>
+Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 0/4] perf events: Add realtime clock event and timehist
+ option -v2
+Message-ID: <20110221222104.GE3583@nowhere>
+References: <1298322150-15505-1-git-send-email-daahern@cisco.com>
+ <20110221213740.GC3583@nowhere>
+ <4D62DC21.4070407@cisco.com>
+ <20110221215533.GD3583@nowhere>
+ <4D62E2B0.1070607@cisco.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102212317.07295.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D62E2B0.1070607@cisco.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 21, 2011, Jiri Slaby wrote:
-> On 02/21/2011 11:07 PM, Rajiv Andrade wrote:
-> > On 02/21/2011 06:44 PM, Jiri Slaby wrote:
-> >> On 02/21/2011 10:29 PM, Stefan Berger wrote:
-> >>> On 02/21/2011 03:39 PM, Jiri Slaby wrote:
-> >>>> On 02/21/2011 06:12 PM, Rajiv Andrade wrote:
-> >>>>> On 02/21/2011 01:34 PM, Jiri Slaby wrote:
-> >>>>>> There has to be another problem which caused my regression. And
-> >>>>>> since it
-> >>>>>> reports "Operation Timed out", the former default timeout values
-> >>>>>> worked
-> >>>>>> for me, the ones read from TPM do not.
-> >>>>> Yes, it's highly due inconsistent timeout values reported by the
-> >>>>> TPM as
-> >>>>> I mentioned, my working timeouts are:
-> >>>>> 3020000 4510000 181000000
-> >>>> 1000000 2000 150000
-> >>>>
-> >>>> Actually the first one from HW is 1. This is one is HZ after correction
-> >>>> in get_timeout. So perhaps it is in ms, yes.
-> >>> Following the specs, the timeouts are supposed to be in microseconds and
-> >>> ascending order for short, medium and long duration. Of course, if the
-> >>> device returns wrong timeouts, the command isn't going to succeed,
-> >>> failing the suspend in this case. Nevertheless, I think we need the
-> >>> patch I put in but at the same time we'll need a work-around for devices
-> >>> like this.
-> >> Yes, the patch is correct per se. But as it breaks bunch of machines it
-> >> cannot go in now. The rule is no regressions.
-> >>
-> >> After you have the workaround it should go into the next rc1 after that.
-> >> Do you plan to add a dmi-based quirk? Or, IOW do you want me to attach
-> >> dmidecode output? Or are you going to base it solely on TPM
-> >> manufacturer/version
-> > It's more reliable to base the workaround on the values themselves,
-> > instead of the TPM's ID, since
-> > we don't know whether other models will behave similarly.
+On Mon, Feb 21, 2011 at 03:09:52PM -0700, David Ahern wrote:
 > 
-> As I wrote, you may base it on dmi data.
+> 
+> On 02/21/11 14:55, Frederic Weisbecker wrote:
+> > On Mon, Feb 21, 2011 at 02:41:53PM -0700, David Ahern wrote:
+> >>
+> >>
+> >> On 02/21/11 14:37, Frederic Weisbecker wrote:
+> >>
+> >>> The goal is actually to extend perf script to handle more than just raw data.
+> >>> So that it can handle the rest of what we can find in an event: time, ip, stacktraces...
+> >>>
+> >>> You've added 200 lines in perf report to add the dump support. It wouldn't
+> >>> require more to extend perf script to do that. And the result is going to be
+> >>> much more powerful.
+> >>>
+> >>> Look at struct scripting_ops::process_event().
+> >>
+> >> I actually have a draft of perf-script - essentially duplicating sample
+> >> processing done in perf-report. When it got to the point of having to
+> >> add a lot of code -- other features essentially -- just to get it to the
+> >> point of being ready for this feature I stopped.
+> > 
+> > 
+> > I don't understand why it's harder to extend print_event() rather than
+> > perf report.
+> 
+> All of the changes to perf-report are related strictly to this feature -
+> generating the timestamp and printing the sample including walking the
+> callchain.
 
-In which case this report will have to be taken into account too:
-http://marc.info/?l=linux-acpi&m=129796038509311&w=4
+This is the actual drawback: it's only useful for your feature. My wish
+is to have something more broadly useful. And support for callchains or
+other things like this in perf script is desired and has been requested
+by the past.
 
-Thanks,
-Rafael
+> perf-script needs to have features added to it:
+>   1. working with all samples,
+
+Why do you need that? You seem to be only interested in tracepoint
+events.
+
+Sure I would appreciate that perf script can support any event as a bonus
+but that doesn't seem mandatory here.
+
+>   2. support for callchains,
+
+What does it take more than what you did in perf report, namely
+calling perf_session_resolve_callchain and walking the cursor?
+
+>   3. more?
+
+?
