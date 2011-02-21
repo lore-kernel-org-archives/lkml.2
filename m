@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab1BUV70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 16:59:26 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:44939 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947Ab1BUV7Y convert rfc822-to-8bit (ORCPT
+	id S1751695Ab1BUWHj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:07:39 -0500
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:45465 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1BUWHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 16:59:24 -0500
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Santosh Shilimkar" <santosh.shilimkar@ti.com>
-References: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera>
-In-Reply-To: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Mon, 21 Feb 2011 17:07:38 -0500
+Message-ID: <4D62E221.7010104@linux.vnet.ibm.com>
+Date: Mon, 21 Feb 2011 19:07:29 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <5HY1m9_-mkI.A.Nk._XtYNB@chimera>
-Subject: [Bug #27022] [REPORT] BUG: spinlock recursion on CPU#0, init/1
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Feb 2011 22:52:52 +0100 (CET)
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        debora@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
+Subject: Re: 2.6.37.1 s2disk regression (TPM)
+References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com> <4D629427.8020500@gmail.com> <4D629D03.90801@linux.vnet.ibm.com> <4D62CD93.3040206@gmail.com> <4D62D930.8060304@linux.vnet.ibm.com> <4D62DCBA.9050609@gmail.com>
+In-Reply-To: <4D62DCBA.9050609@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11022122-5054-0000-0000-00000047EE93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On 02/21/2011 06:44 PM, Jiri Slaby wrote:
+> On 02/21/2011 10:29 PM, Stefan Berger wrote:
+>> On 02/21/2011 03:39 PM, Jiri Slaby wrote:
+>>> On 02/21/2011 06:12 PM, Rajiv Andrade wrote:
+>>>> On 02/21/2011 01:34 PM, Jiri Slaby wrote:
+>>>>> There has to be another problem which caused my regression. And
+>>>>> since it
+>>>>> reports "Operation Timed out", the former default timeout values worked
+>>>>> for me, the ones read from TPM do not.
+>>>> Yes, it's highly due inconsistent timeout values reported by the TPM as
+>>>> I mentioned, my working timeouts are:
+>>>> 3020000 4510000 181000000
+>>> 1000000 2000 150000
+>>>
+>>> Actually the first one from HW is 1. This is one is HZ after correction
+>>> in get_timeout. So perhaps it is in ms, yes.
+>> Following the specs, the timeouts are supposed to be in microseconds and
+>> ascending order for short, medium and long duration. Of course, if the
+>> device returns wrong timeouts, the command isn't going to succeed,
+>> failing the suspend in this case. Nevertheless, I think we need the
+>> patch I put in but at the same time we'll need a work-around for devices
+>> like this.
+> Yes, the patch is correct per se. But as it breaks bunch of machines it
+> cannot go in now. The rule is no regressions.
+>
+> After you have the workaround it should go into the next rc1 after that.
+> Do you plan to add a dmi-based quirk? Or, IOW do you want me to attach
+> dmidecode output? Or are you going to base it solely on TPM
+> manufacturer/version
+It's more reliable to base the workaround on the values themselves, instead of the TPM's ID, since
+we don't know whether other models will behave similarly.
 
-The following bug entry is on the current list of known regressions
-from 2.6.37.  Please verify if it still should be listed and let the tracking team
-know (either way).
+It should be fine then to extend the existing workaround for short timeouts to the medium and long ones.
 
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27022
-Subject		: [REPORT] BUG: spinlock recursion on CPU#0, init/1
-Submitter	: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Date		: 2011-01-10 15:33 (43 days old)
-Message-ID	: <a7a9bdaa5936630925fb7ffd1a1795b1@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=129467294808655&w=2
-
+Rajiv
 
