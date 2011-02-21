@@ -1,60 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab1BUT3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:29:13 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:55368 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab1BUT3K (ORCPT
+	id S1754669Ab1BUTaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:30:12 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:54072 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab1BUTaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:29:10 -0500
+	Mon, 21 Feb 2011 14:30:10 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, aranym@lists.bobek.cz
-Subject: [PATCH v2 0/4] m68k/atari: Add ARAnyM support
-Date: Mon, 21 Feb 2011 20:28:52 +0100
-Message-Id: <1298316536-23053-1-git-send-email-geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, aranym@lists.bobek.cz,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v2 2/4] m68k/atari: ARAnyM - Add support for block access
+Date: Mon, 21 Feb 2011 20:29:58 +0100
+Message-Id: <1298316600-23094-2-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1298316600-23094-1-git-send-email-geert@linux-m68k.org>
+References: <1298316600-23094-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds improved support for running under the ARAnyM emulator
-(Atari Running on Any Machine - http://aranym.org/).
-Without these patches, you can run a Linux/m68k kernel with Atari support
-under ARAnyM (it emulates the IDE interface), but you can't have network and
-console access.
+From: Roman Zippel <zippel@linux-m68k.org>
 
-This support has been in active use for several years. In fact some Debian
-build daemons run under ARAnyM, as it's the fastest m68k platform around.
+[geert: Cleanups and updates]
 
- [1/4] m68k/atari: Initial ARAnyM support
- [2/4] m68k/atari: ARAnyM - Add support for block access
- [3/4] m68k/atari: ARAnyM - Add support for console access
- [4/4] m68k/atari: ARAnyM - Add support for network access
+Signed-off-by: Roman Zippel <zippel@linux-m68k.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Petr Stehlik <pstehlik@sophics.cz>
 
-v2 of this series
-  - updates attributions, based on feedback for the previous round,
-  - incorporates review comments for nfeth.
+---
+v2: No changes
+v1:
+  - Wrap natfeat calls
 
- arch/m68k/Kconfig               |   31 +++++
- arch/m68k/Makefile              |    1 +
- arch/m68k/emu/Makefile          |    9 ++
- arch/m68k/emu/natfeat.c         |   78 +++++++++++
- arch/m68k/emu/nfblock.c         |  195 ++++++++++++++++++++++++++++
- arch/m68k/emu/nfcon.c           |  162 +++++++++++++++++++++++
- arch/m68k/emu/nfeth.c           |  270 +++++++++++++++++++++++++++++++++++++++
- arch/m68k/include/asm/natfeat.h |   22 +++
- arch/m68k/kernel/setup.c        |    5 +
- 9 files changed, 773 insertions(+), 0 deletions(-)
+    Add wrappers with proper prototypes for the natfeat calls in nfblock.
+    This fixes the problem where sector_t was pushed on the stack as a 64-bit
+    value if CONFIG_LBDAF=y, while all parameters of the nf_call() varargs
+    function are 32-bit.
 
-Gr{oetje,eeting}s,
+  - Update for v2.6.31 block layer changes,
+  - nfblock needs <linux/slab.h>,
+  - Make needlessly global functions static,
+  - Make struct block_device_operations const,
+  - Use pr_*(),
+  - Propagate error code from register_blkdev().
 
-						Geert
+ arch/m68k/Kconfig       |    8 ++
+ arch/m68k/emu/Makefile  |    2 +
+ arch/m68k/emu/nfblock.c |  195 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 205 insertions(+), 0 deletions(-)
+ create mode 100644 arch/m68k/emu/nfblock.c
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index f668a58..2c890b5 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -247,6 +247,14 @@ config NATFEAT
+ 	  This option enables support for ARAnyM native features, such as
+ 	  access to a disk image as /dev/hda.
+ 
++config NFBLOCK
++	tristate "NatFeat block device support"
++	depends on BLOCK && NATFEAT
++	help
++	  Say Y to include support for the ARAnyM NatFeat block device
++	  which allows direct access to the hard drives without using
++	  the hardware emulation.
++
+ comment "Processor type"
+ 
+ config M68020
+diff --git a/arch/m68k/emu/Makefile b/arch/m68k/emu/Makefile
+index 34cfa34..fc4f77a 100644
+--- a/arch/m68k/emu/Makefile
++++ b/arch/m68k/emu/Makefile
+@@ -3,3 +3,5 @@
+ #
+ 
+ obj-y			+= natfeat.o
++
++obj-$(CONFIG_NFBLOCK)	+= nfblock.o
+diff --git a/arch/m68k/emu/nfblock.c b/arch/m68k/emu/nfblock.c
+new file mode 100644
+index 0000000..48e50f8
+--- /dev/null
++++ b/arch/m68k/emu/nfblock.c
+@@ -0,0 +1,195 @@
++/*
++ * ARAnyM block device driver
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/types.h>
++#include <linux/genhd.h>
++#include <linux/blkdev.h>
++#include <linux/hdreg.h>
++#include <linux/slab.h>
++
++#include <asm/natfeat.h>
++
++static long nfhd_id;
++
++enum {
++	/* emulation entry points */
++	NFHD_READ_WRITE = 10,
++	NFHD_GET_CAPACITY = 14,
++
++	/* skip ACSI devices */
++	NFHD_DEV_OFFSET = 8,
++};
++
++static inline s32 nfhd_read_write(u32 major, u32 minor, u32 rwflag, u32 recno,
++				  u32 count, u32 buf)
++{
++	return nf_call(nfhd_id + NFHD_READ_WRITE, major, minor, rwflag, recno,
++		       count, buf);
++}
++
++static inline s32 nfhd_get_capacity(u32 major, u32 minor, u32 *blocks,
++				    u32 *blocksize)
++{
++	return nf_call(nfhd_id + NFHD_GET_CAPACITY, major, minor, blocks,
++		       blocksize);
++}
++
++static LIST_HEAD(nfhd_list);
++
++static int major_num;
++module_param(major_num, int, 0);
++
++struct nfhd_device {
++	struct list_head list;
++	int id;
++	u32 blocks, bsize;
++	int bshift;
++	struct request_queue *queue;
++	struct gendisk *disk;
++};
++
++static int nfhd_make_request(struct request_queue *queue, struct bio *bio)
++{
++	struct nfhd_device *dev = queue->queuedata;
++	struct bio_vec *bvec;
++	int i, dir, len, shift;
++	sector_t sec = bio->bi_sector;
++
++	dir = bio_data_dir(bio);
++	shift = dev->bshift;
++	bio_for_each_segment(bvec, bio, i) {
++		len = bvec->bv_len;
++		len >>= 9;
++		nfhd_read_write(dev->id, 0, dir, sec >> shift, len >> shift,
++				bvec_to_phys(bvec));
++		sec += len;
++	}
++	bio_endio(bio, 0);
++	return 0;
++}
++
++static int nfhd_getgeo(struct block_device *bdev, struct hd_geometry *geo)
++{
++	struct nfhd_device *dev = bdev->bd_disk->private_data;
++
++	geo->cylinders = dev->blocks >> (6 - dev->bshift);
++	geo->heads = 4;
++	geo->sectors = 16;
++
++	return 0;
++}
++
++static const struct block_device_operations nfhd_ops = {
++	.owner	= THIS_MODULE,
++	.getgeo	= nfhd_getgeo,
++};
++
++static int __init nfhd_init_one(int id, u32 blocks, u32 bsize)
++{
++	struct nfhd_device *dev;
++	int dev_id = id - NFHD_DEV_OFFSET;
++
++	pr_info("nfhd%u: found device with %u blocks (%u bytes)\n", dev_id,
++		blocks, bsize);
++
++	if (bsize < 512 || (bsize & (bsize - 1))) {
++		pr_warn("nfhd%u: invalid block size\n", dev_id);
++		return -EINVAL;
++	}
++
++	dev = kmalloc(sizeof(struct nfhd_device), GFP_KERNEL);
++	if (!dev)
++		goto out;
++
++	dev->id = id;
++	dev->blocks = blocks;
++	dev->bsize = bsize;
++	dev->bshift = ffs(bsize) - 10;
++
++	dev->queue = blk_alloc_queue(GFP_KERNEL);
++	if (dev->queue == NULL)
++		goto free_dev;
++
++	dev->queue->queuedata = dev;
++	blk_queue_make_request(dev->queue, nfhd_make_request);
++	blk_queue_logical_block_size(dev->queue, bsize);
++
++	dev->disk = alloc_disk(16);
++	if (!dev->disk)
++		goto free_queue;
++
++	dev->disk->major = major_num;
++	dev->disk->first_minor = dev_id * 16;
++	dev->disk->fops = &nfhd_ops;
++	dev->disk->private_data = dev;
++	sprintf(dev->disk->disk_name, "nfhd%u", dev_id);
++	set_capacity(dev->disk, (sector_t)blocks * (bsize / 512));
++	dev->disk->queue = dev->queue;
++
++	add_disk(dev->disk);
++
++	list_add_tail(&dev->list, &nfhd_list);
++
++	return 0;
++
++free_queue:
++	blk_cleanup_queue(dev->queue);
++free_dev:
++	kfree(dev);
++out:
++	return -ENOMEM;
++}
++
++static int __init nfhd_init(void)
++{
++	u32 blocks, bsize;
++	int i;
++
++	nfhd_id = nf_get_id("XHDI");
++	if (!nfhd_id)
++		return -ENODEV;
++
++	major_num = register_blkdev(major_num, "nfhd");
++	if (major_num <= 0) {
++		pr_warn("nfhd: unable to get major number\n");
++		return major_num;
++	}
++
++	for (i = NFHD_DEV_OFFSET; i < 24; i++) {
++		if (nfhd_get_capacity(i, 0, &blocks, &bsize))
++			continue;
++		nfhd_init_one(i, blocks, bsize);
++	}
++
++	return 0;
++}
++
++static void __exit nfhd_exit(void)
++{
++	struct nfhd_device *dev, *next;
++
++	list_for_each_entry_safe(dev, next, &nfhd_list, list) {
++		list_del(&dev->list);
++		del_gendisk(dev->disk);
++		put_disk(dev->disk);
++		blk_cleanup_queue(dev->queue);
++		kfree(dev);
++	}
++	unregister_blkdev(major_num, "nfhd");
++}
++
++module_init(nfhd_init);
++module_exit(nfhd_exit);
++
++MODULE_LICENSE("GPL");
+-- 
+1.7.0.4
 
