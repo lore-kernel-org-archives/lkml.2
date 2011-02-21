@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab1BUKEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 05:04:16 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54484 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab1BUKEO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 05:04:14 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 21 Feb 2011 18:57:57 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: fix dubious code in __count_immobile_pages()
-Message-Id: <20110221185757.85dcaaf1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1297993586-3514-1-git-send-email-namhyung@gmail.com>
-References: <1297993586-3514-1-git-send-email-namhyung@gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755173Ab1BUKFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 05:05:43 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:58003 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754544Ab1BUKFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 05:05:42 -0500
+Message-ID: <4D6238E6.1060402@free.fr>
+Date: Mon, 21 Feb 2011 11:05:26 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: Andrew Morton <akpm@osdl.org>, Oleg Nesterov <oleg@redhat.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
+        dhowells@redhat.com
+Subject: Re: [PATCH 2/4] userns: let copy_ipcs handle setting ipc_ns->user_ns
+References: <20110221040156.GA12580@mail.hallyn.com> <20110221040230.GB12580@mail.hallyn.com>
+In-Reply-To: <20110221040230.GB12580@mail.hallyn.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011 10:46:26 +0900
-Namhyung Kim <namhyung@gmail.com> wrote:
-
-> When pfn_valid_within() failed 'iter' was incremented twice.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-Thank you.
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
+On 02/21/2011 05:02 AM, Serge E. Hallyn wrote:
+> To do that, we have to pass in the task_struct of the task which
+> will own the ipc_ns, so we can assign its user_ns.
+>
+> Signed-off-by: Serge E. Hallyn<serge.hallyn@canonical.com>
 > ---
->  mm/page_alloc.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index e8b02771ccea..bf83d1c1d648 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5380,10 +5380,9 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
->  	for (found = 0, iter = 0; iter < pageblock_nr_pages; iter++) {
->  		unsigned long check = pfn + iter;
->  
-> -		if (!pfn_valid_within(check)) {
-> -			iter++;
-> +		if (!pfn_valid_within(check))
->  			continue;
-> -		}
-> +
->  		page = pfn_to_page(check);
->  		if (!page_count(page)) {
->  			if (PageBuddy(page))
-> -- 
-> 1.7.4
-> 
-> 
+>   include/linux/ipc_namespace.h |    8 +++++---
+>   ipc/namespace.c               |   12 +++++++-----
+>   kernel/nsproxy.c              |    7 +------
+>   3 files changed, 13 insertions(+), 14 deletions(-)
+>
+> diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+> index 46d2eb4..9974429 100644
+> --- a/include/linux/ipc_namespace.h
+> +++ b/include/linux/ipc_namespace.h
+> @@ -92,7 +92,8 @@ static inline int mq_init_ns(struct ipc_namespace *ns) { return 0; }
+>   #endif
+>
+>   #if defined(CONFIG_IPC_NS)
+> -extern struct ipc_namespace *copy_ipcs(unsigned long flags,
+> +extern struct ipc_namespace *copy_ipcs(struct task_struct *tsk,
+> +				       unsigned long flags,
+>   				       struct ipc_namespace *ns);
 
+Same comment than patch 1/4
