@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab1BUX33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 18:29:29 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:59400 "EHLO
+	id S1751460Ab1BUXk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 18:40:27 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:46882 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1BUX31 (ORCPT
+	with ESMTP id S1751006Ab1BUXkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 18:29:27 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Subject: Re: [PATCH 2/2] clk: Generic support for fixed-rate clocks
-Date: Tue, 22 Feb 2011 07:29:11 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dima Zavin <dmitriyz@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-References: <1298256658.862488.956979497586.2.gpush@pororo> <4D62C237.1020803@bluewatersys.com>
-In-Reply-To: <4D62C237.1020803@bluewatersys.com>
+	Mon, 21 Feb 2011 18:40:23 -0500
+Date: Mon, 21 Feb 2011 23:40:15 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG ?] checkpatch.pl rejects as error something I think it
+ ought to be allow
+Message-ID: <20110221234015.GG2809@shadowen.org>
+References: <4D62F502.9040506@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102220729.13708.jeremy.kerr@canonical.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D62F502.9040506@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ryan,
+On Mon, Feb 21, 2011 at 03:28:02PM -0800, Corey Ashford wrote:
+> Hi,
+> 
+> I have a piece of code where I have two constants defined as follows:
+> 
+> 	static const unsigned long polling_interval_sec = 1;
+> 	static const unsigned long polling_interval_ns = 0;
+> 
+> Now, it's clear to me that I want these two values to have the
+> keywords const and static.  I could use a #define here, but const
+> static seemed cleaner to me.
+> 
+> When I run checkpatch.pl across this code, I get this error:
+> 
+> ERROR: do not initialise statics to 0 or NULL.
+> 
+> I think the problem here is that another case is needed for "static
+> const" that does allow 0.
+> 
+> What do you think?
+> 
+> Thanks for your consideration,
 
-> If we never need to dynamically create fixed clocks (which seems
-> unlikely) then rate can be const.
+The warning is intended to tell you that the = 0 is unnecessary.  Any
+static is 0 by default I believe.  At some point the addition of the 0
+would move the value from the bss to the data segment bloating the code.
+This may no longer be true.
 
-There's been a few cases where I've needed to set the rate of a fixed clock 
-during boot - for example when a clock rate varies between boards, it may be 
-defined in a platform-wide file, but have the rate modified early (ie, 
-clk_foo.rate = 32678) in a board file.
-
-Also, if we're parsing clocks from the device tree (or any other discovery 
-mechanism), we'll need to modify rate.
-
-Cheers,
-
-
-Jeremy
+-apw
