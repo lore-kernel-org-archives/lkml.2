@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1BUUvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 15:51:08 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:53097 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab1BUUvF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 15:51:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=TQ1QNyRiHRLaZoUTF8YbOjAxWyHqf+7JaxBv6xh9dz9Z+d2I
-	AMnkuiROpuBP+gXgDo9+gt//kGByRHflbWrSFH1hQftrShH32A54HQ3K7kC5vDH7
-	W6QhkbLrRtduqfVlt642O11/jggL/6u4g3cQvAegGrohtVH8d0WvkTf0aTI=
-Date: Mon, 21 Feb 2011 12:52:35 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for 2.6.38-rc6
-Message-ID: <Pine.LNX.4.64.1102202115490.4468@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752352Ab1BUU4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 15:56:01 -0500
+Received: from xenotime.net ([184.105.210.51]:34445 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751824Ab1BUUz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 15:55:59 -0500
+Date: Mon, 21 Feb 2011 12:55:55 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Rob Landley <rlandley@parallels.com>
+Cc: Mariusz Kozlowski <mk@lab.zgora.pl>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Remove obsolete Documentation/00-INDEX entries
+Message-Id: <20110221125555.4a47424d.rdunlap@xenotime.net>
+In-Reply-To: <4D62CC6B.9070408@parallels.com>
+References: <4D6095E3.2040103@parallels.com>
+	<20110221185205.GA23284@mako-laptop>
+	<4D62C43F.5040302@parallels.com>
+	<20110221120303.48106f6c.rdunlap@xenotime.net>
+	<4D62CC6B.9070408@parallels.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 21 Feb 2011 14:34:51 -0600 Rob Landley wrote:
 
-Please pull the following Ceph fixes from
+> On 02/21/2011 02:03 PM, Randy Dunlap wrote:
+> >> I have a http://kernel.org/doc/make/doclinkcheck.py which finds the
+> >> files it lists which don't exist and the files which exist but aren't
+> >> listed.  The current list of files 00-INDEX says exist, but aren't at
+> >> that location, is:
+> > 
+> > I'll fix some of these (or accept patches to do so).
+> > Thanks.
+> 
+> Let's see...
+> 
+> From: Rob Landley <rlandley@parallels.com>
+> 
+> Time interpolators were removed in git 1f564ad6d41828
+> Voyager support went away in git b6b6e2b112caf
+> 
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
+> ---
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+Thanks, added to my patch queue.
 
-The main item here is a workaround for a regression caused by the dcache 
-RCU stuff.  d_kill now clears d_parent prior to the release dentry op, 
-which causes a NULL pointer dereference in the ceph code.  Nick said this 
-should be easy enough to fix[1], but he's offline and it seems a bit late 
-to futz with the core dcache code.  This patch basically just makes a copy 
-of d_parent in the private d_fsdata struct.  We can revert it once the 
-d_kill/d_parent thing gets fixed up, presumably during the next merge 
-window.
+> 
+>  Documentation/00-INDEX |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+> index 8dfc670..f607367 100644
+> --- a/Documentation/00-INDEX
+> +++ b/Documentation/00-INDEX
+> @@ -328,8 +328,6 @@ sysrq.txt
+>  	- info on the magic SysRq key.
+>  telephony/
+>  	- directory with info on telephony (e.g. voice over IP) support.
+> -time_interpolators.txt
+> -	- info on time interpolators.
+>  uml/
+>  	- directory with information about User Mode Linux.
+>  unicode.txt
+> @@ -346,8 +344,6 @@ vm/
+>  	- directory with info on the Linux vm code.
+>  volatile-considered-harmful.txt
+>  	- Why the "volatile" type class should not be used
+> -voyager.txt
+> -	- guide to running Linux on the Voyager architecture.
+>  w1/
+>  	- directory with documents regarding the 1-wire (w1) subsystem.
+>  watchdog/
 
-There are also some error handling fixes and a fix for an possible 
-infinite loop in the snapshot notification handler.
 
-Thanks-
-sage
-
-[1] http://marc.info/?l=linux-fsdevel&m=129610552517424&w=2
-
-
-Sage Weil (3):
-      libceph: fix socket read error handling
-      libceph: fix socket write error handling
-      ceph: queue cap_snaps once per realm
-
-Yehuda Sadeh (1):
-      ceph: keep reference to parent inode on ceph_dentry
-
- fs/ceph/dir.c        |    5 +++-
- fs/ceph/snap.c       |   14 ++++++++---
- fs/ceph/super.h      |    1 +
- net/ceph/messenger.c |   62 +++++++++++++++++++++++++-------------------------
- 4 files changed, 46 insertions(+), 36 deletions(-)
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
