@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1BUWo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:44:58 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:45325 "EHLO ogre.sisk.pl"
+	id S1752955Ab1BUWpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:45:01 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:45362 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab1BUWo2 convert rfc822-to-8bit (ORCPT
+	id S1752868Ab1BUWo7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 17:44:28 -0500
+	Mon, 21 Feb 2011 17:44:59 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "Pawel Sikora" <pluto@agmk.net>
+        Florian Mickler <florian@mickler.org>, "Takashi Iwai" <tiwai@suse.de>
 References: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
 In-Reply-To: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <f14qsMvj2tF.A.irD.HduYNB@chimera>
-Subject: [Bug #26102] [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
+Message-ID: <f14qsMvj2tF.A.NzC.AcuYNB@chimera>
+Subject: [Bug #27892] SNB: GPU hang with Slip xscreensaver
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Feb 2011 23:37:08 +0100 (CET)
+Date: Mon, 21 Feb 2011 23:37:11 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,9 @@ introduced between 2.6.36 and 2.6.37.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26102
-Subject		: [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
-Submitter	: Pawel Sikora <pluto@agmk.net>
-Date		: 2010-12-30 15:08 (54 days old)
-Message-ID	: <201012301608.40859.pluto@agmk.net>
-References	: http://marc.info/?l=linux-kernel&m=129372388925679&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27892
+Subject		: SNB: GPU hang with Slip xscreensaver
+Submitter	: Takashi Iwai <tiwai@suse.de>
+Date		: 2011-01-31 12:06 (22 days old)
 
 
