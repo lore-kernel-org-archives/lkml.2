@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab1BUKoK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 05:44:10 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45060 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab1BUKoJ (ORCPT
+	id S1755503Ab1BUKot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 05:44:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54582 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab1BUKos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 05:44:09 -0500
-Date: Mon, 21 Feb 2011 02:44:01 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: npiggin@kernel.dk, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: OOPS in configfs when doing d_delete
-Message-ID: <20110221104359.GA18538@noexit>
-Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>, npiggin@kernel.dk,
-	Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Jiri Slaby <jirislaby@gmail.com>
-References: <4D623C62.8030509@suse.cz>
+	Mon, 21 Feb 2011 05:44:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pN1zulRifa/VVtFTyYkXwvk0Q4bV5muB+QMlygQ3Cv+80AoDr9cIfQ8iIJTSxm8GjG
+         uN3XCz3Akydeng0FGTFiBLkVGGePrA+gB9nQ4kBeDuwrgFGq4vfpQgiLgQIiUerRJY//
+         KasalChDAKYhbypyrKkRHP2blyqKPKOZFIYUc=
+Date: Mon, 21 Feb 2011 11:44:43 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [PATCH 2/4] x86, numa: Do not adjust start/end for
+ early_node_mem()
+Message-ID: <20110221104443.GJ31267@htj.dyndns.org>
+References: <4D5EC05A.60103@kernel.org>
+ <4D5EC184.6000505@kernel.org>
+ <alpine.DEB.2.00.1102191944530.32280@chino.kir.corp.google.com>
+ <AANLkTikgR8vEhz3Hsmx96QqZw_gsLZetc3W_9evf3ufb@mail.gmail.com>
+ <20110221094318.GG31267@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D623C62.8030509@suse.cz>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
+In-Reply-To: <20110221094318.GG31267@htj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 11:20:18AM +0100, Jiri Slaby wrote:
-> when configfs_attach_group fails in configfs_register_subsystem:
->         dentry = d_alloc(configfs_sb->s_root, &name);
->         if (dentry) {
->                 d_add(dentry, NULL);
+On Mon, Feb 21, 2011 at 10:43:18AM +0100, Tejun Heo wrote:
+> Hello,
 > 
->                 err = configfs_attach_group(sd->s_element, &group->cg_item,
->                                             dentry);
->                 if (err) {
->                         d_delete(dentry);
->                         dput(dentry);
+> On Sat, Feb 19, 2011 at 08:17:11PM -0800, Yinghai Lu wrote:
+> > > The old code guarantees that the range is from a single zone, and even
+> > > though memblock may be top -> down, it seems like there would be
+> > > configurations where this would still be an issue (perhaps simulating it
+> > > with numa=fake for testing?) if it crosses the boundary.
+> > 
+> > memblock_x86_find_in_range_node() will go over with early_node_map[].
+> > so it will always can get right on node allocation.
 > 
-> 
-> d_delete kills the kernel. I don't know what the actual bug is here, but
-> d_delete looks broken anyway:
->         spin_lock(&dentry->d_lock);
->         inode = dentry->d_inode;
->         isdir = S_ISDIR(inode->i_mode);  <======== dereference
->         if (dentry->d_count == 1) {
->                 if (inode && !spin_trylock(&inode->i_lock)) {
->                     ^^^^^  <============= test
-> 
-> It seems like a superfluous test, not a potential null dereference to
-> me, right?
+> I think always doing top-down allocation should be enough as long as
+> there's no highmem, which we don't have on 64bit.  That said, the
+> patch description should note the behavior difference.  Yinghai, care
+> to add a bit more detail to the patch description?
 
-	I think you're right about the superfluous test, but I need more
-investigation to see what's going on.  Thanks for the report.
-	What was causing attach_group() to fail?  Do you know?
+Hmmm... thinking more about it, there actually is a difference.
+Depending on configuration, the new code allows node_data[] to be
+allocated below DMA boundary.  I think we need to keep the first if().
+Areas crossing the boundaries is okay, in fact, the original code
+already allowed that when the NUMA affine allocation failed; however,
+node_data[] was never allowed below the DMA boundary and I think it
+shouldn't be.
 
-Joel
+Thanks.
 
 -- 
-
-Life's Little Instruction Book #444
-
-	"Never underestimate the power of a kind word or deed."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+tejun
