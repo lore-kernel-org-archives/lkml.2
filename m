@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab1BULkD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 06:40:03 -0500
-Received: from mail-ew0-f42.google.com ([209.85.215.42]:47075 "EHLO
-	mail-ew0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab1BULkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 06:40:00 -0500
-Message-ID: <4D624EBD.4080400@ru.mvista.com>
-Date: Mon, 21 Feb 2011 14:38:37 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1755504Ab1BULmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 06:42:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37391 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755157Ab1BULmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 06:42:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,199,1297065600"; 
+   d="scan'208";a="604931776"
+Date: Mon, 21 Feb 2011 12:42:20 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH 00/20] world-writable files in sysfs and debugfs
+Message-ID: <20110221114219.GB10686@sortiz-mobl>
+References: <cover.1296818921.git.segoon@openwall.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/20] ata_piix: unify code for programming PIO and MWDMA
- timings
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>	<20110208122346.19110.8441.sendpatchset@linux-mhg7.site>	<4D6118DC.80505@ru.mvista.com>	<20110220185958.364df4cc@lxorguk.ukuu.org.uk>	<4D617CC8.3020108@ru.mvista.com> <20110220210731.0c774fa7@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110220210731.0c774fa7@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1296818921.git.segoon@openwall.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Vasiliy,
 
-On 21-02-2011 0:07, Alan Cox wrote:
+On Fri, Feb 04, 2011 at 03:22:29PM +0300, Vasiliy Kulikov wrote:
+>   mfd: ab3100: world-writable debugfs *_priv files
+>   mfd: ab3500: world-writable debugfs register-* files
+>   mfd: ab8500: world-writable debugfs register-* files
+All 3 patches applied, thanks.
 
->>      PIO mode is setup by different code, and it takes care of the IORDY
->> setting according to the PIO rules (and it gets called). DMA mode setup should
->> just ignore the IORDY setting as in all other sane drivers.
+Cheers,
+Samuel.
 
-> Well it can't ignore it - but if you mean just keep the bit as is then
-
-    Yes, I mean this.
-
-> that sounds sensible, have to see what the docs say happens if you ever
-> set MWDMA without IORDY.
-
-    Don't think they say anything on this matter but I can't imagine that 
-IORDY matters for DMA.
-
-WBR, Sergei
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
