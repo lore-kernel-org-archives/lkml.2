@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab1BUThe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:37:34 -0500
-Received: from www.tglx.de ([62.245.132.106]:55610 "EHLO www.tglx.de"
+	id S1751897Ab1BUTl6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:41:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19341 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab1BUThd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:37:33 -0500
-Date: Mon, 21 Feb 2011 20:37:18 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-cc: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] PRUSS UIO driver support
-In-Reply-To: <20110221193316.GC2773@local>
-Message-ID: <alpine.LFD.2.00.1102212035280.2701@localhost6.localdomain6>
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com> <201102181644.17634.arnd@arndb.de> <alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6> <201102181731.05644.arnd@arndb.de> <alpine.LFD.2.00.1102181802580.2701@localhost6.localdomain6>
- <B85A65D85D7EB246BE421B3FB0FBB593024B83C108@dbde02.ent.ti.com> <20110219183427.GG4684@local> <B85A65D85D7EB246BE421B3FB0FBB593024B83C20F@dbde02.ent.ti.com> <20110221193316.GC2773@local>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1750906Ab1BUTl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:41:57 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Andrew Patterson <andrew.patterson@hp.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix over-zealous flush_disk when changing device size.
+References: <20110217165057.5c50e566@notabene.brown>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 21 Feb 2011 14:36:01 -0500
+In-Reply-To: <20110217165057.5c50e566@notabene.brown> (NeilBrown's message of
+	"Thu, 17 Feb 2011 16:50:57 +1100")
+Message-ID: <x49hbbx18pq.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011, Hans J. Koch wrote:
-> On Mon, Feb 21, 2011 at 09:27:47AM +0530, TK, Pratheesh Gangadhar wrote:
-> > and all interrupts except IRQ_TINT1_TINT34 is set to edge trigger mode (line 160).
-> 
-> Is that really needed? Level triggered interrupts should certainly be
-> preferred if possible.
+NeilBrown <neilb@suse.de> writes:
 
-Nonsense. If you have a sane interrupt controller which latches the
-edge transitions even when masked, edge type interrupts are perfectly
-fine.
+> -int __invalidate_device(struct block_device *bdev)
+> +int __invalidate_device2(struct block_device *bdev, bool kill_dirty)
+>  {
+>  	struct super_block *sb = get_super(bdev);
+>  	int res = 0;
+> @@ -1614,7 +1614,7 @@ int __invalidate_device(struct block_device *bdev)
+>  		 * hold).
+>  		 */
+>  		shrink_dcache_sb(sb);
+> -		res = invalidate_inodes(sb);
+> +		res = invalidate_inodes(sb, kill_dirty);
+>  		drop_super(sb);
+>  	}
+>  	invalidate_bdev(bdev);
 
-Thanks,
+Neil, I think you also need to change the EXPORT_SYMBOL from
+__invalidate_device to __invalidate_device2.  The floppy module won't
+build without that change.
 
-	tglx
+Cheers,
+Jeff
