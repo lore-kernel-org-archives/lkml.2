@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1BUWLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:11:08 -0500
-Received: from mail-bw0-f51.google.com ([209.85.214.51]:64207 "EHLO
-	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab1BUWLE (ORCPT
+	id S1753375Ab1BUWLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:11:18 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:37150 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535Ab1BUWLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 17:11:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=dQzZD3ZIKNYu6qslessOAGS+9UBb6nzrgRWGKpAbwsx7ENI04dXcf90BwUb3bBGDgp
-         iKoMhBOgyogLjlPHdx8LnEbYCOR7T82gXvBHpmX0XC2/co2uZl4WMUe0JDmxczU/q5v1
-         5AZN7s9MMPRlxfbVbvotckK/DGMK7fpwJOSvw=
-Message-ID: <4D62E2F2.4060406@gmail.com>
-Date: Mon, 21 Feb 2011 23:10:58 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	Mon, 21 Feb 2011 17:11:14 -0500
+Date: Mon, 21 Feb 2011 22:11:10 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: torvalds@linux-foundation.org
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] x86 platform driver updates
+Message-ID: <20110221221110.GA25537@srcf.ucam.org>
 MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-CC: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        debora@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
-Subject: Re: 2.6.37.1 s2disk regression (TPM)
-References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com> <4D629427.8020500@gmail.com> <4D629D03.90801@linux.vnet.ibm.com> <4D62CD93.3040206@gmail.com> <4D62D930.8060304@linux.vnet.ibm.com> <4D62DCBA.9050609@gmail.com> <4D62E221.7010104@linux.vnet.ibm.com>
-In-Reply-To: <4D62E221.7010104@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2011 11:07 PM, Rajiv Andrade wrote:
-> On 02/21/2011 06:44 PM, Jiri Slaby wrote:
->> On 02/21/2011 10:29 PM, Stefan Berger wrote:
->>> On 02/21/2011 03:39 PM, Jiri Slaby wrote:
->>>> On 02/21/2011 06:12 PM, Rajiv Andrade wrote:
->>>>> On 02/21/2011 01:34 PM, Jiri Slaby wrote:
->>>>>> There has to be another problem which caused my regression. And
->>>>>> since it
->>>>>> reports "Operation Timed out", the former default timeout values
->>>>>> worked
->>>>>> for me, the ones read from TPM do not.
->>>>> Yes, it's highly due inconsistent timeout values reported by the
->>>>> TPM as
->>>>> I mentioned, my working timeouts are:
->>>>> 3020000 4510000 181000000
->>>> 1000000 2000 150000
->>>>
->>>> Actually the first one from HW is 1. This is one is HZ after correction
->>>> in get_timeout. So perhaps it is in ms, yes.
->>> Following the specs, the timeouts are supposed to be in microseconds and
->>> ascending order for short, medium and long duration. Of course, if the
->>> device returns wrong timeouts, the command isn't going to succeed,
->>> failing the suspend in this case. Nevertheless, I think we need the
->>> patch I put in but at the same time we'll need a work-around for devices
->>> like this.
->> Yes, the patch is correct per se. But as it breaks bunch of machines it
->> cannot go in now. The rule is no regressions.
->>
->> After you have the workaround it should go into the next rc1 after that.
->> Do you plan to add a dmi-based quirk? Or, IOW do you want me to attach
->> dmidecode output? Or are you going to base it solely on TPM
->> manufacturer/version
-> It's more reliable to base the workaround on the values themselves,
-> instead of the TPM's ID, since
-> we don't know whether other models will behave similarly.
+Hi Linus,
 
-As I wrote, you may base it on dmi data.
+Small updates to the x86 platform driver tree - fix a trivial bogosity 
+that led to acer-wmi failing to bind on some hardware, some build 
+fixups, some IRQ code rework on the (new for .38) Medfield interrupt 
+driver from Thomas and an attempt to fix up the Dell rfkill handling 
+that's breaking some newer machines. I'm still working on this last one, 
+and we may end up having to just pull the functionality from the driver 
+to make this work well.
 
-> It should be fine then to extend the existing workaround for short
-> timeouts to the medium and long ones.
+The following changes since commit 6f576d57f1fa0d6026b495d8746d56d949989161:
 
-OK, but how will you guess the values?
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6 (2011-02-20 10:15:57 -0800)
 
-regards,
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
+
+Keng-Yu Lin (1):
+      dell-laptop: Toggle the unsupported hardware killswitch
+
+Matthew Garrett (1):
+      acer-wmi: Fix capitalisation of GUID
+
+Randy Dunlap (1):
+      platform/x86: ideapad-laptop depends on INPUT
+
+Seth Forshee (1):
+      thinkpad_acpi: Always report scancodes for hotkeys
+
+Thomas Gleixner (4):
+      platform-drivers: x86: pmic: Fix up bogus irq hackery
+      platform-drivers: x86: Convert pmic to new irq_chip functions
+      platform-drivers: x86: pmic: Use irq_chip buslock mechanism
+      platform-drivers: x86: pmic: Use request_irq instead of chained handler
+
+Vasiliy Kulikov (3):
+      platform: x86: tc1100-wmi: world-writable sysfs wireless and jogdial files
+      platform: x86: asus_acpi: world-writable procfs files
+      platform: x86: acer-wmi: world-writable sysfs threeg file
+
+ drivers/platform/x86/Kconfig           |    2 +-
+ drivers/platform/x86/acer-wmi.c        |    4 +-
+ drivers/platform/x86/asus_acpi.c       |    8 +--
+ drivers/platform/x86/dell-laptop.c     |   24 ++++++-
+ drivers/platform/x86/intel_pmic_gpio.c |  116 +++++++++-----------------------
+ drivers/platform/x86/tc1100-wmi.c      |    2 +-
+ drivers/platform/x86/thinkpad_acpi.c   |    8 +--
+ 7 files changed, 61 insertions(+), 103 deletions(-)
+
 -- 
-js
+Matthew Garrett | mjg59@srcf.ucam.org
