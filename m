@@ -1,126 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab1BUFWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 00:22:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39570 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab1BUFWB convert rfc822-to-8bit (ORCPT
+	id S1751841Ab1BUF0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 00:26:12 -0500
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:38124 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab1BUF0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 00:22:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=qPsxFSW71Zg6svlOy3fRqWqjN6dgd+G74nQjnWzUzermmHdJNkc6ryDeWjpHTPNI+k
-         XzbfhpQ4nmOnyjJ7ggpiCJhYsK390BtBwpuyBSkAz76zUjCSzIGRHAEm62FF1HvkXRKJ
-         9QJvcABT3SZDXEWTJabgcZBVBxpRSY056z+zs=
+	Mon, 21 Feb 2011 00:26:10 -0500
+Message-ID: <05d38af367ef4d312a506855a3c66689.squirrel@webmail.greenhost.nl>
+In-Reply-To: <20110221041011.22543.qmail@stuge.se>
+References: <3f9bbd0924f54f6241cc16293fbcbbb4.squirrel@webmail.greenhost.nl>
+    <20110219182511.GA3977@viiv.ffwll.ch>
+    <20110220035143.15480.qmail@stuge.se>
+    <bf012806f2016262399d27c911a8514d.squirrel@webmail.greenhost.nl>
+    <20110221041011.22543.qmail@stuge.se>
+Date: Mon, 21 Feb 2011 06:26:05 +0100 (CET)
+Subject: Re: [BUG] drm/i915 Screen corruption introduced by 
+     a00b10c360b35d6431a94cb
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Peter Stuge" <peter@stuge.se>
+Cc: "Indan Zupancic" <indan@nul.nu>, "LKML" <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <20110221043714.GA31194@liondog.tnic>
-References: <1298219710-9846-1-git-send-email-bp@alien8.de>
-	<20110220175709.GA5178@merkur.ravnborg.org>
-	<20110220193906.GC6713@liondog.tnic>
-	<20110220195222.GA12915@merkur.ravnborg.org>
-	<20110221022316.GA18332@liondog.tnic>
-	<AANLkTimZhB8Ong=nJ_mjit+VRtb7g+TQhT9_wvojQ0-e@mail.gmail.com>
-	<20110221043714.GA31194@liondog.tnic>
-Date: Mon, 21 Feb 2011 00:22:00 -0500
-Message-ID: <AANLkTinO+3=4OmRq-vKXVbLV_jtMO45vN3LiY-omz21d@mail.gmail.com>
-Subject: Re: [PATCH -v3] kbuild: Add extra gcc checks
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Arnaud Lacombe <lacombar@gmail.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        torvalds@linux-foundation.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 9484ae446d4f83cee8bf28db5146d16c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Peter,
 
-On Sun, Feb 20, 2011 at 11:37 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sun, Feb 20, 2011 at 10:26:13PM -0500, Arnaud Lacombe wrote:
->
->> > The idea behind this option is targeted at developers who, in the
->> > process of writing their code, want to do the occasional
->> >
->> > make W=1 [target.o]
->> >
->> > and let gcc do more extensive code checking for them. Then, they
->> > could eyeball the output for valid gcc warnings about various
->> > bugs/discrepancies which are not reported during the normal build
->> > process.
->> >
->
-> [..]
->
->> > +ifeq ("$(origin W)", "command line")
->> > +  KBUILD_ENABLE_EXTRA_GCC_CHECKS = 1
->> > +  export KBUILD_ENABLE_EXTRA_GCC_CHECKS
->> > +endif
->> > +
->> You never check CC is gcc. How can you assert this ?
->
-> Hmm, I somehow knew that the other compilers are going to come into the
-> discussion :).
->
->> Moreover, can you certify that all the compiler supported to build
->> Linux do support the set of new warnings ?
->
-> Well, as you've probably already read in the commit message, this
-> option is for devs only, in case they want to do a build-check whether
-> the couple of lines they just added to a .c file trigger new compiler
-> warnings. So, no, I cannot certify this and I don't have to - this is
-> not meant for production use anyway.
->
-People _will_ end up using it in production.
+The new corruption is "fixed" with daniel's patch from
+https://lkml.org/lkml/2011/2/20/25
 
->> What about icc ?
+On Mon, February 21, 2011 05:10, Peter Stuge wrote:
+> Indan Zupancic wrote:
+>> > Confirm I also have this issue on my X40, but there are other bugs
+>> > that are much more significant so I haven't bothered mentioning this.
+>>
+>> What issues?
 >
-> I don't know, is anyone using it to build the kernel?
-then what would be the point of, say `include/linux/compiler-intel.h' ?
+> The one I confirmed is corrupted graphics within Gecko. I haven't had
+> Xv working for a long time either. Not sure if I've tried it with
+> this kernel though.
 
-> Even if so, icc
-> might have a completely different set of -W options (totally guessing
-> here) so you shouldn't use 'make W=1' with it.
+Hmm, I recommend upgrading all the graphics userspace too then,
+current stuff works pretty well for me.
+
 >
-
->> old gcc?
+>> If it's backlight related, try my patch at:
+>> http://lkml.org/lkml/2011/2/16/447
 >
-> Yes, cc-option should be used in that case, I'll redo the patch.
+> Yeah also have backlight issue whenever the backlight level changes
+> by other means than Fn+Home/End. (Lid switch, screen blank)
+> I noticed the patch and that it solved the issue for someone. I'm not
+> too inconvenienced by this issue though.
+
+Well, it was for me, because I suspend all the time.
+
 >
->> LLVM/clang ?
+>> Or if the screen is black after suspend/screen blank
 >
-> Can you even build the kernel with it?
+> Oh I've stopped using suspend since using KMS. I get way too angry
+> about all the state that I lose if resume fails so I don't risk it.
+
+I never had a failed resume with this laptop, not even once. But I
+avoided the early days of KMS because of all the instability.
+
 >
-At first sight, partly[0].
-
-> But to make sure we're on the realistic side of things.
-Whose realistic side ? yours ? If not, are you speaking for all the
-Linux community ? I do not think so.
-
-> First of all,
-> the purpose of this is to quickly get gcc scream out while building your
-> changes. Secondly, let's face it, the majority of developers, if not
-> all, use gcc the kernel code is full of gcc-isms so accomodating all
-> the compilers to such a quick-and-dirty test option is just plain too
-> much.
-That's a statement I would not make. Lots of compiler dependent stuff
-is buried in <linux/compiler.h> for a good reason.
-
-> Look at it this way: it is cheaper to upgrade your dev environment
-> than add unnecessary and ugly code to kbuild. Even the argument with
-> older gcc versions cannot weigh in enough in favor of the cc-option -
-> simply upgrade your gcc.
+>> Actually, a lot of bugs were recently introduced and fixed, with
+>> two months ago you're probably in the new-bugs-only period, so I
+>> can recommend trying 2.6.38-rc5.
 >
-Do you speak for users, in the embedded world, of BSP whose supporting
-company either went defunct or is no longer maintaining the toolchain
-for a dark platform, or say an architecture, in kernel, which do not
-have support in mainstream binutils and support's patches are tied
-with a given version of binutils/gcc ?
+> Yeah, I think it's time to pull Linus' git. I've been keeping an eye
+> on things i915 on the list for a good while already.
 
- - Arnaud
+There were coherency bugs for 855, but those seem to be fixed in the
+newer kernel too (2.6.37?), so another reason to upgrade.
 
-[0]: http://lists.cs.uiuc.edu/pipermail/cfe-dev/2010-October/011711.html
+>
+>> This screen corruption is the only problem for me, but I don't do
+>> anything fancy with my laptop. The ipw2200 wireless driver is quite
+>> crappy, but it has always been as far as I know.
+>
+> I've used ipw2200 with great success for many years, but these days
+> I'm having fun (no, not at all) with ath9k where there is some very
+> fundamental hardware issue between laptop and card. I'd need to hook
+> up logic analyzer to say anything concrete, but I have no end of
+> problems with internal ath9k in my machine. It's completely unusable.
+
+My impression is that ipw2200's firmware is crappy. Everything is fine
+with a good signal, but with a bad one things don't work out too well
+after a time.
+
+> The only other annoying issue I have is that as wine enumerates
+> available screen resolutions i915 goes out to the VGA connector,
+> which on 855 always means a 600ms timeout when nothing is connected,
+> but this is a bit tricky because the hardware just can not tell if
+> anything is connected.
+
+I have the impression that got better too, but I haven't followed the
+development. Can't you just lower the timeout in the code, or let it
+cache the VGA status? The latter is what I'd expect the code to do.
+
+Running xrandr to see the modes takes 0.3s here.
+
+> I would be very happy if there was a knob for enabling/disabling the
+> VGA connector though.
+>
+>
+>> Good luck,
+>
+> Thanks, you too!
+
+I can recommend using PHC too, if you don't already: www.linux-phc.org
+With it I almost never have the fan running and it uses a lot less power
+when under load. (But don't use it till you got your system stable.)
+
+Greetings,
+
+Indan
+
+
