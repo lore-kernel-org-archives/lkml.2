@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab1BUTPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:15:53 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49936 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab1BUTPu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:15:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:to:from:cc:date:message-id:user-agent:mime-version
-         :content-type:content-transfer-encoding;
-        b=aZ/P3f914qQtyYgnlHPzkIcO7wqwVU7YIwjIrJSiwjdoMmpNJC8KtFlaYFTwcbTUey
-         uuNtN5N3RwVuWfN/57XRzBGUNyeOVF1bnT6kIPTiWyuzmj3QhHF9rd2aYRog050GcdM9
-         nSUIA1Up0cOxldNLQvitqo7CkEVfWq1yrUpNY=
-Subject: [PATCH] NFS: account direct-io into task io accounting
-To: linux-nfs@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org
-Date: Mon, 21 Feb 2011 22:15:46 +0300
-Message-ID: <20110221191546.5920.96947.stgit@localhost6>
-User-Agent: StGit/0.15
+	id S1753798Ab1BUTR7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:17:59 -0500
+Received: from www.tglx.de ([62.245.132.106]:42994 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753753Ab1BUTR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:17:58 -0500
+Date: Mon, 21 Feb 2011 20:17:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] genirq: Make nr_irqs runtime expandable
+In-Reply-To: <4D628B38.7040105@metafoo.de>
+Message-ID: <alpine.LFD.2.00.1102212016460.2701@localhost6.localdomain6>
+References: <tip-e7bcecb7b1d29b9ad5af939149a945658620ca8f@git.kernel.org> <4D6014F9.8040605@kernel.org> <4D628B38.7040105@metafoo.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Account complete NFS direct-io reads and writes into Task I/O Accounting.
+On Mon, 21 Feb 2011, Lars-Peter Clausen wrote:
+> On 02/19/2011 08:07 PM, Yinghai Lu wrote:
+> > On 02/19/2011 04:15 AM, tip-bot for Thomas Gleixner wrote:
+> > -	if (start >= nr_irqs) {
+> > +	if (start + cnt > nr_irqs) {
+> >  		ret = irq_expand_nr_irqs(cnt);
+> Just a minor thing, but if there are still unused irqs available at the end of
+> the current range, you'll end up expanding the range more then you need to.
+> So either do
+> 	irq_expand_nr_irqs(nr_irqs - start + cnt);
+> or change irq_expand_nr_irqs to let it take the new total number of irqs.
 
-NFS have unusual direct-io implementation,
-thus accounting in generic code does not work.
+Fun, I already changed YH's patch in that way :)
+ 
+> Btw., with this patch in place does it make sense to initialize nr_irqs to
+> anything else then initcnt in early_irq_init?
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- fs/nfs/direct.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+Probably not.
 
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 9943a75..bab4185 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -45,6 +45,7 @@
- #include <linux/pagemap.h>
- #include <linux/kref.h>
- #include <linux/slab.h>
-+#include <linux/task_io_accounting_ops.h>
- 
- #include <linux/nfs_fs.h>
- #include <linux/nfs_page.h>
-@@ -939,8 +940,10 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, const struct iovec *iov,
- 		goto out;
- 
- 	retval = nfs_direct_read(iocb, iov, nr_segs, pos);
--	if (retval > 0)
-+	if (retval > 0) {
- 		iocb->ki_pos = pos + retval;
-+		task_io_account_read(retval);
-+	}
- 
- out:
- 	return retval;
-@@ -1001,8 +1004,10 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
- 
- 	retval = nfs_direct_write(iocb, iov, nr_segs, pos, count);
- 
--	if (retval > 0)
-+	if (retval > 0) {
- 		iocb->ki_pos = pos + retval;
-+		task_io_account_write(retval);
-+	}
- 
- out:
- 	return retval;
+Thanks,
 
+	tglx
