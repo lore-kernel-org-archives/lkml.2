@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1BUTR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:17:59 -0500
-Received: from www.tglx.de ([62.245.132.106]:42994 "EHLO www.tglx.de"
+	id S1754058Ab1BUTTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:19:55 -0500
+Received: from unix.wroclaw.pl ([94.23.28.62]:55368 "EHLO unix.wroclaw.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753753Ab1BUTR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:17:58 -0500
-Date: Mon, 21 Feb 2011 20:17:37 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:irq/core] genirq: Make nr_irqs runtime expandable
-In-Reply-To: <4D628B38.7040105@metafoo.de>
-Message-ID: <alpine.LFD.2.00.1102212016460.2701@localhost6.localdomain6>
-References: <tip-e7bcecb7b1d29b9ad5af939149a945658620ca8f@git.kernel.org> <4D6014F9.8040605@kernel.org> <4D628B38.7040105@metafoo.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752228Ab1BUTTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:19:54 -0500
+X-Greylist: delayed 1664 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 14:19:54 EST
+Date: Mon, 21 Feb 2011 19:52:05 +0100
+From: Mariusz Kozlowski <mk@lab.zgora.pl>
+To: Rob Landley <rlandley@parallels.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: Update to http://kernel.org/doc
+Message-ID: <20110221185205.GA23284@mako-laptop>
+References: <4D6095E3.2040103@parallels.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D6095E3.2040103@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on unix.wroclaw.pl
+	Spam=No score=-1.4 bayes=0.5 autolearn=disabled
+	Spam Tests:
+	* -1.4 ALL_TRUSTED Passed through trusted hosts only via SMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011, Lars-Peter Clausen wrote:
-> On 02/19/2011 08:07 PM, Yinghai Lu wrote:
-> > On 02/19/2011 04:15 AM, tip-bot for Thomas Gleixner wrote:
-> > -	if (start >= nr_irqs) {
-> > +	if (start + cnt > nr_irqs) {
-> >  		ret = irq_expand_nr_irqs(cnt);
-> Just a minor thing, but if there are still unused irqs available at the end of
-> the current range, you'll end up expanding the range more then you need to.
-> So either do
-> 	irq_expand_nr_irqs(nr_irqs - start + cnt);
-> or change irq_expand_nr_irqs to let it take the new total number of irqs.
+On Sat, Feb 19, 2011 at 10:17:39PM -0600, Rob Landley wrote:
+> Now that I'm actually doing kernel development as my day job (containers
+> stuff for Parallels), I've taken some time to brush up the old kernel
+> documentation directory on kernel.org that I theoretically maintain.
+> 
+> It now includes:
+> 
+> 1) Web versions of all the documentation I could find in the kernel
+> source tarball, put on the web where Google can find it.  (You can now
+> link to the help text for menuconfig symbol, or refer to the output of
+> "make htmldocs" via URL instead of telling people to build it themselves.)
+> 
+> 2) Links to a bunch of standards documents applicable to the kernel.
+> 
+> 3) Links to a bunch of other web pages containing kernel documentation
+> (including broken-up copies of all the OLS papers dating back to 2001).
+> 
+> 4) Other stuff.
+> 
+> I'm not saying it's complete.  I'm just saying I exhumed it, gave it a
+> good scrub, applied the interocitor to the bolts on its' neck, and sent
+> it lurching towards the village...
+> 
+> Opinions?
 
-Fun, I already changed YH's patch in that way :)
- 
-> Btw., with this patch in place does it make sense to initialize nr_irqs to
-> anything else then initcnt in early_irq_init?
-
-Probably not.
+Very useful if updated. I can now remove some portion of my kernel related
+bookmarks.
 
 Thanks,
 
-	tglx
+-- 
+Mariusz Kozlowski
