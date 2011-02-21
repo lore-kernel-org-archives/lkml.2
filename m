@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab1BUNRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 08:17:38 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:47019 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755462Ab1BUNRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 08:17:37 -0500
-Message-ID: <4D6265D9.8020406@metafoo.de>
-Date: Mon, 21 Feb 2011 14:17:13 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S932074Ab1BUNSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 08:18:22 -0500
+Received: from www.tglx.de ([62.245.132.106]:49838 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755910Ab1BUNSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 08:18:22 -0500
+Date: Mon, 21 Feb 2011 14:18:04 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] debugobjects: print more data
+In-Reply-To: <20110221112440.GA5140@redhat.com>
+Message-ID: <alpine.LFD.2.00.1102211409480.2701@localhost6.localdomain6>
+References: <20110221112440.GA5140@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        linus.walleij@stericsson.com, tglx@linutronix.de, lars@metafoo.de
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:irq/core] genirq: Add IRQCHIP_SET_TYPE_MASKED flag
-References: <tip-d4d5e08960844a062da8387ee5f16ca7a33200d0@git.kernel.org>
-In-Reply-To: <tip-d4d5e08960844a062da8387ee5f16ca7a33200d0@git.kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > @@ -588,11 +596,13 @@ int __irq_set_trigger(struct irq_desc *desc, unsigned
-int irq,
->  
->  		if (chip != desc->irq_data.chip)
->  			irq_chip_set_defaults(desc->irq_data.chip);
-> -		return 0;
-> +		ret = 0;
+On Mon, 21 Feb 2011, Stanislaw Gruszka wrote:
+> diff --git a/include/linux/debugobjects.h b/include/linux/debugobjects.h
+> index 597692f..c22eebf 100644
+> --- a/include/linux/debugobjects.h
+> +++ b/include/linux/debugobjects.h
+> @@ -31,10 +31,11 @@ struct debug_obj {
+>  	void			*object;
+>  	struct debug_obj_descr	*descr;
+>  };
+> -
 
-I've just tested the patch and noticed that a 'break' is missing here.
+Stray whitespace change
 
-
->  	default:
->  		pr_err("setting trigger mode %lu for irq %u failed (%pF)\n",
->  		       flags, irq, chip->irq_set_type);
->  	}
-> +	if (unmask)
-> +		unmask_irq(desc);
->  	return ret;
->  }
->  
-> @@ -669,7 +679,7 @@ again:
->  
->  #ifdef CONFIG_SMP
->  /*
-> - * Check whether we need to change the affinity of the interrupt thread.
-> + * Check whether we need to chasnge the affinity of the interrupt thread.
+>  /**
+>   * struct debug_obj_descr - object type specific debug description structure
+> + *
+>   * @name:		name of the object typee
+> + * @print:		function printing extra debug data
+>   * @fixup_init:		fixup function, which is called when the init check
+>   *			fails
+>   * @fixup_activate:	fixup function, which is called when the activate check
+> @@ -46,7 +47,7 @@ struct debug_obj {
 >   */
->  static void
->  irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
+>  struct debug_obj_descr {
+>  	const char		*name;
+> -
+> +	void (*print)		(struct debug_obj *obj);
+>  	int (*fixup_init)	(void *addr, enum debug_obj_state state);
+>  	int (*fixup_activate)	(void *addr, enum debug_obj_state state);
+>  	int (*fixup_destroy)	(void *addr, enum debug_obj_state state);
+> @@ -73,6 +74,8 @@ debug_object_active_state(void *addr, struct debug_obj_descr *descr,
+>  
+>  extern void debug_objects_early_init(void);
+>  extern void debug_objects_mem_init(void);
+> +
+> +extern char *debug_func_str(void *func_addr);
 
+Uuurgh.
+
+> +void hrtimer_debug_print(struct debug_obj *obj)
+> +{
+> +	struct hrtimer *hrtimer = obj->object;
+> +
+> +	if (hrtimer == NULL)
+> +		return;
+
+Why should obj->object be NULL. Also why not having the same calling
+convention as all other functions (void *addr) ?
+
+> +
+> +	printk(KERN_ERR "ODEBUG hrtimer: %p function: [<%p>] %s\n",
+> +	       hrtimer, hrtimer->function, debug_func_str(hrtimer->function));
+
+Why do you want to invent a new function for printing the symbol? %ps perhaps?
+
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 2b97418..1e901b0 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -276,6 +276,7 @@ config TIMER_STATS
+>  config DEBUG_OBJECTS
+>  	bool "Debug object operations"
+>  	depends on DEBUG_KERNEL
+> +	select KALLSYMS
+
+No, we don't want to have DEBUG_OBJECTS tied to KALLSYMS.
+
+> +char *debug_func_str(void *func_addr)
+> +{
+> +	static char func_str[KSYM_SYMBOL_LEN];
+> +	sprint_symbol(func_str, (unsigned long) func_addr);
+> +	
+> +	return func_str;
+> +}
+
+See above.
+
+Thanks,
+
+	tglx
