@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab1BUOUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 09:20:39 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33122 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752805Ab1BUOUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 09:20:38 -0500
-Date: Mon, 21 Feb 2011 15:20:36 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sfr@canb.auug.org.au
-Subject: [GIT] kbuild anticipatory fix
-Message-ID: <20110221142036.GA3583@sepie.suse.cz>
+	id S1754468Ab1BUOWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 09:22:06 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65129 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab1BUOWE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 09:22:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=n1AAlLUh6g6Asen+8aVna/wn+rRFjBYRyyipbhQROTIEMzrGjVGBfYcwAcuKzTDqOc
+         BoIVzbspaqhYXnT1wXqjDA/ceuPgbEtIzv8212Pcr5K/k4b2AQoHhHGMXQ1NMTPg+ddu
+         UR7ScsUUpIkGsZLAnMNdPACL81TumBmUYX2Sw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTinDf2odDs2a9Wc0d4T8hxV6sj5GmgOs_p_3VHQP@mail.gmail.com>
+References: <AANLkTinDf2odDs2a9Wc0d4T8hxV6sj5GmgOs_p_3VHQP@mail.gmail.com>
+From: Erlon Cruz <sombrafam@gmail.com>
+Date: Mon, 21 Feb 2011 11:21:25 -0300
+Message-ID: <AANLkTimG7QacpnfC24QH9-QzQVTLT+xEU8Vhk1x6vq2Q@mail.gmail.com>
+Subject: Re: Ftracing in linux kernel
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi folks,
 
-Commit 9599ec0 in the tip tree is going to replace
-arch/x86/lib/memmove_64.c with arch/x86/lib/memmove_64.S, which breaks
-build if one does not run 'make clean' after merging that commit. While
-this is not a regression, the kbuild fix is rather simple and will avoid
-the annoyance in the merge window if merged now. Please consider.
+   I've configured my kernel(2.6.35) to support ftrace*. Everything
+seems to be ok. After I mounted the debugfs folder I can find all
+tracing stuffs there. The problem is not of all functions on my module
+seems to be listed in the funtions supported for tracing. In the file
+available_filter_functions that suppose to list all functions traced,
+only show 4 or 5 functions of my module. Does anyone knows why some
+functions are not listed?
 
-Michal
+Regards,
+Erlon
 
-The following changes since commit 85e2efbb1db9a18d218006706d6e4fbeb0216213:
-
-  Linux 2.6.38-rc5 (2011-02-15 19:23:45 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
-
-Michal Marek (1):
-      fixdep: Do not record dependency on the source file itself
-
- scripts/basic/fixdep.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+ *CONFIG_FUNCTION_TRACER
+ CONFIG_FUNCTION_GRAPH_TRACER
+ CONFIG_STACK_TRACER
+ CONFIG_DYNAMIC_FTRACE
