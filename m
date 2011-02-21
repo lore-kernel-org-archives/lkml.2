@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1BUU4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 15:56:24 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:54869 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751242Ab1BUU4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 15:56:22 -0500
-Message-ID: <4D62D173.8040805@sgi.com>
-Date: Mon, 21 Feb 2011 12:56:19 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] printk: Minimize time zero output
-References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024706.121740209@gulag1.americas.sgi.com> <alpine.DEB.2.00.1102191733220.27722@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1102191733220.27722@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752877Ab1BUVCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 16:02:37 -0500
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:56272 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab1BUVCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 16:02:35 -0500
+X-IronPort-AV: E=Sophos;i="4.62,202,1297036800"; 
+   d="scan'208";a="663558089"
+From: David Ahern <daahern@cisco.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
+        David Ahern <daahern@cisco.com>
+Subject: [PATCH 0/4] perf events: Add realtime clock event and timehist option -v2
+Date: Mon, 21 Feb 2011 14:02:26 -0700
+Message-Id: <1298322150-15505-1-git-send-email-daahern@cisco.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+v1 -> v2:
+- removed change to WARN_ON_ONCE in perf_event.c
+- fixed init of realtime_clock event (needed call to perf_swevent_init_hrtimer)
+- changed userspace event name to clock-realtime with the alias clkr as the 
+  raw events code sucks up all options that start with 'r' followed by a hex
+  character
+- remove RAW sample hack for pushing realtime clock event data to userspace
+- plumbed PERF_SAMPLE_READ to enable retrieving event data during sample
+  generation
+- add patch to perf-stat to recognize realtime-clock as a nsec counter
+- implementation of tiemhist in perf-record was revamped significantly
+  -- to use event data,
+  -- to better handle fallback to synthesized event,
+  -- added feature to force a sample to be generated at startup (to output
+     wall-clock times we need a sample immediately; after that realtime-clock
+     samples are generated periodically)
+  -- change counter creation to be done only on first cpu; we do not need a
+     counter for each cpu 
+
+A request was made to modify perf-trace and perf-script. From what I can see
+perf-trace does not exist yet and perf-script requires raw data which means
+it does not work for the primary use case that motivated this feature
+(perf record -e cs -1 -ag).
 
 
-David Rientjes wrote:
-> On Fri, 18 Feb 2011, Mike Travis wrote:
-> 
->> Reduce the length for time zero messages by only printing "[0] ".
->>
->> v2: updated to apply to x86-tip
->>
->> Signed-off-by: Mike Travis <travis@sgi.com>
->> Reviewed-by: Jack Steiner <steiner@sgi.com>
->> Reviewed-by: Robin Holt <holt@sgi.com>
->> ---
->>  kernel/printk.c |   11 ++++++++---
->>  1 file changed, 8 insertions(+), 3 deletions(-)
->>
->> --- linux.orig/kernel/printk.c
->> +++ linux/kernel/printk.c
->> @@ -735,9 +735,14 @@ static inline int printk_emit_time(void)
->>  	unsigned long microsec_rem;
->>  
->>  	t = cpu_clock(printk_cpu);
->> -	microsec_rem = do_div(t, 1000000000) / 1000;
->> -	tlen = sprintf(tbuf, "[%5lu.%06lu] ", (unsigned long)t, microsec_rem);
->> -
->> +	if (likely(t)) {
->> +		microsec_rem = do_div(t, 1000000000) / 1000;
->> +		tlen = sprintf(tbuf, "[%5lu.%06lu] ",
->> +					(unsigned long)t, microsec_rem);
-> 
-> The definition of microsec_rem can become local to this clause.
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Thomas Gleixner <tglx@linutronix.de>
 
-Ok.
-> 
->> +	} else {
->> +		/* reduce byte count in log when time is zero */
->> +		tlen = sprintf(tbuf, "[0] ");
-> 
-> If we know the padding when cpu_clock() is non-zero, then why not make 
-> sure the kernel log is aligned properly by using the same padding here?
+David Ahern (4):
+  perf events: Introduce realtime clock event
+  perf events: plumbing for PERF_SAMPLE_READ and read_format
+  perf events: add timehist option to record and report
+  perf stat: treat realtime-clock as nsec counter
 
-I'm not sure I understand what you are asking.  The whole point of this
-exercise is to remove bytes from the early log buffer so it does not
-overflow.  What would you like me to change?
+ include/linux/perf_event.h               |    2 +
+ kernel/perf_event.c                      |   85 ++++++++++++
+ tools/perf/Documentation/perf-record.txt |    4 +
+ tools/perf/Documentation/perf-report.txt |    6 +
+ tools/perf/builtin-record.c              |  113 ++++++++++++++++-
+ tools/perf/builtin-report.c              |  208 +++++++++++++++++++++++++++++-
+ tools/perf/builtin-stat.c                |    5 +-
+ tools/perf/builtin-test.c                |    3 +-
+ tools/perf/util/event.c                  |    1 +
+ tools/perf/util/event.h                  |   18 +++-
+ tools/perf/util/evlist.c                 |    2 +-
+ tools/perf/util/evlist.h                 |    2 +
+ tools/perf/util/evsel.c                  |   24 +++-
+ tools/perf/util/header.c                 |   18 +++
+ tools/perf/util/header.h                 |    1 +
+ tools/perf/util/parse-events.c           |    2 +
+ tools/perf/util/python.c                 |    3 +-
+ tools/perf/util/session.c                |   16 +++
+ tools/perf/util/session.h                |    9 +-
+ 19 files changed, 507 insertions(+), 15 deletions(-)
 
-> 
->> +	}
->>  	for (tp = tbuf; tp < tbuf + tlen; tp++)
->>  		emit_log_char(*tp);
->>  
+-- 
+1.7.3.4
+
