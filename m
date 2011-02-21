@@ -1,138 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab1BUPcz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 10:32:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57027 "EHLO mx1.redhat.com"
+	id S1755211Ab1BUPhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 10:37:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755481Ab1BUPcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 10:32:53 -0500
-Date: Mon, 21 Feb 2011 10:32:43 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
-        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] Avoid preferential treatment of groups that aren't
- backlogged
-Message-ID: <20110221153243.GE6428@redhat.com>
-References: <AANLkTi=wM_0cwYDSDcWzA==ZrYxRhumSBw3h-pU-On0Q@mail.gmail.com>
- <20110218221916.18235.88420.stgit@neat.mtv.corp.google.com>
+	id S1751278Ab1BUPhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 10:37:13 -0500
+Date: Mon, 21 Feb 2011 16:28:55 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+Message-ID: <20110221152855.GA20769@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110214173012.GA18742@htj.dyndns.org> <AANLkTinntVGcOdZSS3gWz39eq3EDiMxXgYfc6+M1Z0iE@mail.gmail.com> <20110221151619.GM31267@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110218221916.18235.88420.stgit@neat.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110221151619.GM31267@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 02:19:16PM -0800, Chad Talbott wrote:
-> Problem: If a group isn't backlogged, we remove it from the service
-> tree. When it becomes active again, it gets either the minimum vtime
-> of the tree or gets put at the "back of the line." That is true even
-> when the group was idle for a very small time, and it consumed some IO
-> time right before it became idle.  If group has very small weight, it
-> can end up using more disk time than its fair share. Conversely, if it
-> has a very large weight, being put at the back of the vtime line is a
-> large penalty which prevents it consuming its share.
-> 
-> Solution: We solve the problem by assigning the group its old vtime if
-> it has not been idle long enough. Otherise we assign it the service
-> tree's min vtime.
-> 
-> Complications: When an entire service tree becomes completely idle, we
-> lose the vtime state. All the old vtime values are not relevant any
-> more. For example, consider the case when the service tree is idle and
-> a brand new group sends IO. That group would have an old vtime value
-> of zero, but the service tree's vtime would become closer to zero. In
-> such a case, it would be unfair for the older groups to get a much
-> higher old vtime stored in them.
-> 
-> We solve that issue by keeping a generation number that counts the
-> number of instances when the service tree becomes completely
-> empty. The generation number is stored in each group too. If a group
-> becomes backlogged after a service tree has been empty, we compare its
-> stored generation number with the current service tree generation
-> number, and discard the old vtime if the group generation number is
-> stale.
-> 
-> The preemption specific code is taken care of automatically because we
-> allow preemption checks after inserting a group back into the service
-> tree and assigning it an appropriate vtime.
-> 
-> Signed-off-by: Chad Talbott <ctalbott@google.com>
+On 02/21, Tejun Heo wrote:
+>
+> 1. The distinction between the first SIGSTOP trapping and the second
+>    can only be reliably done by GETSIGINFO which in turn will put the
+>    tracee into TASK_TRACED making the tracee ignore the future SIGCONT
 
-Looks good to me.
+Yes, but please see below.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> 2. Due to reparenting, wait(2) notifications (including the SIGCLDs)
+>    don't get to the real parent at all.
+>
+> #2 just needs fixing.
 
-Vivek
+Yes.
 
-> ---
->  block/cfq-iosched.c |   27 ++++++++++++++-------------
->  1 files changed, 14 insertions(+), 13 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 501ffdf..8a1b82f 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -178,6 +178,7 @@ struct cfq_group {
->  
->  	/* group service_tree key */
->  	u64 vdisktime;
-> +	u64 generation_num;
->  	unsigned int weight;
->  
->  	/* number of cfqq currently on this group */
-> @@ -300,6 +301,9 @@ struct cfq_data {
->  	/* List of cfq groups being managed on this device*/
->  	struct hlist_head cfqg_list;
->  	struct rcu_head rcu;
-> +
-> +	/* Generation number, counts service tree empty events */
-> +	u64 active_generation;
->  };
->  
->  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
-> @@ -866,25 +870,19 @@ static void
->  cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  {
->  	struct cfq_rb_root *st = &cfqd->grp_service_tree;
-> -	struct cfq_group *__cfqg;
-> -	struct rb_node *n;
->  
->  	cfqg->nr_cfqq++;
->  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
->  		return;
->  
-> -	/*
-> -	 * Currently put the group at the end. Later implement something
-> -	 * so that groups get lesser vtime based on their weights, so that
-> -	 * if group does not loose all if it was not continously backlogged.
-> -	 */
-> -	n = rb_last(&st->rb);
-> -	if (n) {
-> -		__cfqg = rb_entry_cfqg(n);
-> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
-> -	} else
-> +	if (cfqd->active_generation > cfqg->generation_num)
->  		cfqg->vdisktime = st->min_vdisktime;
-> -
-> +	else
-> +		/* We assume that vdisktime was not modified when the task
-> +		   was off the service tree.
-> +		 */
-> +		cfqg->vdisktime = max_vdisktime(st->min_vdisktime,
-> +						cfqg->vdisktime);
->  	__cfq_group_service_tree_add(st, cfqg);
->  	st->total_weight += cfqg->weight;
->  }
-> @@ -906,6 +904,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
->  		cfq_rb_erase(&cfqg->rb_node, st);
->  	cfqg->saved_workload_slice = 0;
-> +	cfqg->generation_num = cfqd->active_generation;
-> +	if (RB_EMPTY_ROOT(&st->rb))
-> +		cfqd->active_generation++;
->  	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
->  }
->  
+> That preciesly is what is being discussed.  IIUC, Oleg and Roland are
+> saying that the tracee should enter group stop but not ptrace trap at
+> that point and then transition into ptrace trap on the first PTRACE
+> call.
+
+Actually I am not saying this (at least now, probably I did).
+
+Once again. We have the bug with arch_ptrace_stop_needed(), but lets
+ignore it to simplify the discussion.
+
+Suppose that the tracee calls do_signal_stop() and participates in the
+group stop. To me, it doesn't really matter (in the context of this
+discussion) if it stops in TASK_STOPPED or TASK_TRACED (and where it
+stops).
+
+However, I am starting to agree that TASK_TRACED looks more clean.
+
+What is important, I think ptrace should respect SIGNAL_STOP_STOPPED.
+IOW, when the tracee is group-stopped (TASK_STOPPED or TASK_TRACED,
+doesn't matter), ptrace_resume() should not wake it up, but merely
+do set_task_state(TASK_STATE) and make it resumeable by SIGCONT.
+
+Oleg.
+
