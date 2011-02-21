@@ -1,107 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab1BUR2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 12:28:17 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:56334 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab1BUR2P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 12:28:15 -0500
-X-SpamScore: -32
-X-BigFish: VPS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGZ9UT-02-0ZL-02
-X-M-MSG: 
-Date: Mon, 21 Feb 2011 18:28:07 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 0/6] KVM support for TSC scaling
-Message-ID: <20110221172807.GD16508@amd.com>
-References: <4D57F677.3090004@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4D57F677.3090004@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	id S1755180Ab1BURfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 12:35:45 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:52612 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754402Ab1BURfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 12:35:42 -0500
+From: Pratheesh Gangadhar <pratheesh@ti.com>
+To: davinci-linux-open-source@linux.davincidsp.com
+Cc: hjk@hansjkoch.de, gregkh@suse.de, pratheesh@ti.com, amit.chatterjee@ti.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources used by PRUSS UIO driver
+Date: Mon, 21 Feb 2011 23:05:15 +0530
+Message-Id: <1298309715-21362-3-git-send-email-pratheesh@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+In-Reply-To: <1298309715-21362-2-git-send-email-pratheesh@ti.com>
+References: <1298309715-21362-1-git-send-email-pratheesh@ti.com>
+ <1298309715-21362-2-git-send-email-pratheesh@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 13, 2011 at 10:19:19AM -0500, Avi Kivity wrote:
-> On 02/09/2011 07:29 PM, Joerg Roedel wrote:
-> > Hi Avi, Marcelo,
-> >
-> > here is the patch-set to implement the TSC-scaling feature of upcoming
-> > AMD CPUs. When this feature is supported the CPU provides a new MSR
-> > which holds a multiplier for the hardware TSC which is applied on the
-> > value rdtsc[p] and reads of MSR 0x10. This feature can be used to
-> > emulate a given tsc frequency for the guest.
-> > Patch 1 is not directly related to this patch-set because it only fixes
-> > a bug which prevented me from testing these patches. In fact it fixes
-> > the same bug Andre sent a patch for. But after the discussion about his
-> > patch he told me to just post my patch and thus here it is.
-> >
-> 
-> Questions:
-> - the tsc multiplier really is a multiplier, right?  Not an addend that 
-> is added every cycle.
+This patch defines PRUSS, ECAP clocks, memory and IRQ resources
+used by PRUSS UIO driver in DA850/AM18xx/OMAPL1-38 devices. UIO
+driver exports 64K I/O region of PRUSS, 128KB L3 RAM and 256KB
+DDR buffer to user space. PRUSS has 8 host event interrupt lines
+mapped to IRQ_DA8XX_EVTOUT0..7 of ARM9 INTC.These in conjunction
+with shared memory can be used to implement IPC between ARM9 and
+PRUSS.
 
-Yes, it is a real multiplier. But writes to the TSC-MSR will change the
-unscaled TSC value.
+Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
+---
+ arch/arm/mach-davinci/board-da850-evm.c    |    4 ++
+ arch/arm/mach-davinci/da850.c              |   35 +++++++++++++
+ arch/arm/mach-davinci/devices-da8xx.c      |   73 ++++++++++++++++++++++++++++
+ arch/arm/mach-davinci/include/mach/da8xx.h |    3 +
+ 4 files changed, 115 insertions(+), 0 deletions(-)
 
-> 
-> So
-> 
->      wrmsr(TSC, 1e9)
->      wrmsr(TSC_MULT, 2.0000)
->      t = rdtsc()
-> 
-> will return about 2e9, not 1e9 + 2*(time to execute the code snippet) ?
-
-Right. And if you exchange the two wrmsr calls it will still give you
-the same result.
-
-> - what's the cost of wrmsr(TSC_MULT)?
-
-Hard to tell by now because I only have numbers for pre-production
-hardware. 
-
-> There are really two ways to implement this feature.  One is fully 
-> generic, like you did.  The other is to implement it at the host level - 
-> have a sysfs file and/or kernel parameter for the desired tsc frequency, 
-> write it once, and forget about it.  Trust management to set the host 
-> tsc frequency to the same value on all hosts in a migration cluster.
-
-The motivation here is mostly the flexibility. Scale the TSC for the
-whole migration cluster only makes sense if all hosts there support the
-feature. But the most likely scenario is that existing migration
-clusters will be extended by new machines and guests will be migrated
-there. And these guests should be able to see the same TSC frequency on
-the new host as the had on the old one. The older machines in the
-cluster may even have different TSC frequencys. With this flexible
-implementation those scenarios are possible. A host-wide setting for the
-scaling will make the feature useless in those (common) scenarios.
-
-Regards,
-
-	Joerg
-
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 11f986b..bd85aa3 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -1077,6 +1077,10 @@ static __init void da850_evm_init(void)
+ 		pr_warning("da850_evm_init: i2c0 registration failed: %d\n",
+ 				ret);
+ 
++	ret = da8xx_register_pruss();
++	if (ret)
++		pr_warning("da850_evm_init: pruss registration failed: %d\n",
++				ret);
+ 
+ 	ret = da8xx_register_watchdog();
+ 	if (ret)
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index 3443d97..0096d4f 100644
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -238,6 +238,13 @@ static struct clk tptc2_clk = {
+ 	.flags		= ALWAYS_ENABLED,
+ };
+ 
++static struct clk pruss_clk = {
++	.name		= "pruss",
++	.parent		= &pll0_sysclk2,
++	.lpsc		= DA8XX_LPSC0_DMAX,
++	.flags		= ALWAYS_ENABLED,
++};
++
+ static struct clk uart0_clk = {
+ 	.name		= "uart0",
+ 	.parent		= &pll0_sysclk2,
+@@ -359,6 +366,30 @@ static struct clk usb20_clk = {
+ 	.gpsc		= 1,
+ };
+ 
++static struct clk ecap0_clk = {
++	.name		= "ecap0",
++	.parent		= &pll0_sysclk2,
++	.lpsc		= DA8XX_LPSC1_ECAP,
++	.flags		= DA850_CLK_ASYNC3,
++	.gpsc		= 1,
++};
++
++static struct clk ecap1_clk = {
++	.name		= "ecap1",
++	.parent		= &pll0_sysclk2,
++	.lpsc		= DA8XX_LPSC1_ECAP,
++	.flags		= DA850_CLK_ASYNC3,
++	.gpsc		= 1,
++};
++
++static struct clk ecap2_clk = {
++	.name		= "ecap2",
++	.parent		= &pll0_sysclk2,
++	.lpsc		= DA8XX_LPSC1_ECAP,
++	.flags		= DA850_CLK_ASYNC3,
++	.gpsc		= 1,
++};
++
+ static struct clk_lookup da850_clks[] = {
+ 	CLK(NULL,		"ref",		&ref_clk),
+ 	CLK(NULL,		"pll0",		&pll0_clk),
+@@ -386,6 +417,7 @@ static struct clk_lookup da850_clks[] = {
+ 	CLK(NULL,		"tptc1",	&tptc1_clk),
+ 	CLK(NULL,		"tpcc1",	&tpcc1_clk),
+ 	CLK(NULL,		"tptc2",	&tptc2_clk),
++	CLK(NULL,		"pruss",	&pruss_clk),
+ 	CLK(NULL,		"uart0",	&uart0_clk),
+ 	CLK(NULL,		"uart1",	&uart1_clk),
+ 	CLK(NULL,		"uart2",	&uart2_clk),
+@@ -403,6 +435,9 @@ static struct clk_lookup da850_clks[] = {
+ 	CLK(NULL,		"aemif",	&aemif_clk),
+ 	CLK(NULL,		"usb11",	&usb11_clk),
+ 	CLK(NULL,		"usb20",	&usb20_clk),
++	CLK(NULL,		"ecap0",	&ecap0_clk),
++	CLK(NULL,		"ecap1",	&ecap1_clk),
++	CLK(NULL,		"ecap2",	&ecap2_clk),
+ 	CLK(NULL,		NULL,		NULL),
+ };
+ 
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index beda8a4..4ea3d1f 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -725,3 +725,76 @@ int __init da8xx_register_cpuidle(void)
+ 
+ 	return platform_device_register(&da8xx_cpuidle_device);
+ }
++static struct resource pruss_resources[] = {
++	[0] = {
++		.start  = DA8XX_PRUSS_BASE,
++		.end    = DA8XX_PRUSS_BASE + SZ_64K - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++	[1] = {
++		.start  = DA8XX_L3RAM_BASE,
++		.end    = DA8XX_L3RAM_BASE + SZ_128K - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++	[2] = {
++		.start  = 0,
++		.end    = SZ_256K - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++
++	[3] = {
++		.start  = IRQ_DA8XX_EVTOUT0,
++		.end    = IRQ_DA8XX_EVTOUT0,
++		.flags  = IORESOURCE_IRQ,
++	},
++	[4] = {
++		.start  = IRQ_DA8XX_EVTOUT1,
++		.end    = IRQ_DA8XX_EVTOUT1,
++		.flags  = IORESOURCE_IRQ,
++	},
++	[5] = {
++		.start  = IRQ_DA8XX_EVTOUT2,
++		.end    = IRQ_DA8XX_EVTOUT2,
++		.flags  = IORESOURCE_IRQ,
++	},
++	[6] = {
++		.start  = IRQ_DA8XX_EVTOUT3,
++		.end    = IRQ_DA8XX_EVTOUT3,
++		.flags  = IORESOURCE_IRQ,
++	},
++	[7] = {
++		.start  = IRQ_DA8XX_EVTOUT4,
++		.end    = IRQ_DA8XX_EVTOUT4,
++		.flags  = IORESOURCE_IRQ,
++	},
++	[8] = {
++		.start  = IRQ_DA8XX_EVTOUT5,
++		.end    = IRQ_DA8XX_EVTOUT5,
++		.flags  = IORESOURCE_IRQ,
++	},
++	[9] = {
++		.start  = IRQ_DA8XX_EVTOUT6,
++		.end    = IRQ_DA8XX_EVTOUT6,
++		.flags  = IORESOURCE_IRQ,
++	},
++	[10] = {
++		.start  = IRQ_DA8XX_EVTOUT7,
++		.end    = IRQ_DA8XX_EVTOUT7,
++		.flags  = IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device pruss_device = {
++	.name			= "pruss",
++	.id			= 0,
++	.num_resources		= ARRAY_SIZE(pruss_resources),
++	.resource		= pruss_resources,
++	.dev	 =	{
++		.coherent_dma_mask = 0xffffffff,
++	}
++};
++
++int __init da8xx_register_pruss()
++{
++	return platform_device_register(&pruss_device);
++}
+diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
+index cfcb223..3ed6ee0 100644
+--- a/arch/arm/mach-davinci/include/mach/da8xx.h
++++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+@@ -60,6 +60,7 @@ extern unsigned int da850_max_speed;
+ #define DA8XX_PLL0_BASE		0x01c11000
+ #define DA8XX_TIMER64P0_BASE	0x01c20000
+ #define DA8XX_TIMER64P1_BASE	0x01c21000
++#define DA8XX_PRUSS_BASE	0x01c30000
+ #define DA8XX_GPIO_BASE		0x01e26000
+ #define DA8XX_PSC1_BASE		0x01e27000
+ #define DA8XX_LCD_CNTRL_BASE	0x01e13000
+@@ -68,6 +69,7 @@ extern unsigned int da850_max_speed;
+ #define DA8XX_AEMIF_CS2_BASE	0x60000000
+ #define DA8XX_AEMIF_CS3_BASE	0x62000000
+ #define DA8XX_AEMIF_CTL_BASE	0x68000000
++#define DA8XX_L3RAM_BASE	0x80000000
+ #define DA8XX_DDR2_CTL_BASE	0xb0000000
+ #define DA8XX_ARM_RAM_BASE	0xffff0000
+ 
+@@ -90,6 +92,7 @@ int da850_register_cpufreq(char *async_clk);
+ int da8xx_register_cpuidle(void);
+ void __iomem * __init da8xx_get_mem_ctlr(void);
+ int da850_register_pm(struct platform_device *pdev);
++int da8xx_register_pruss(void);
+ 
+ extern struct platform_device da8xx_serial_device;
+ extern struct emac_platform_data da8xx_emac_pdata;
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+1.6.0.6
 
