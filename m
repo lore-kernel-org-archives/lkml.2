@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1BUIaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 03:30:05 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:59771 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab1BUIaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 03:30:04 -0500
-Date: Mon, 21 Feb 2011 09:29:52 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v6 1/3] deactivate invalidated pages
-Message-ID: <20110221082952.GB25382@cmpxchg.org>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
- <5b1eeca414d39e77afdb9684eab36addd11520a1.1298212517.git.minchan.kim@gmail.com>
+	id S1754091Ab1BUIbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 03:31:33 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53789 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab1BUIba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 03:31:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=Sel2ZBvT5fwGWvXiokj0R3KdY0ji0vZjaeN62+tIlhgOxcrvMPrxCYeMlZdkTL+GmP
+         wa7cD9bsYr7XiPS4IfSZjo1cpkO7Omj95lteLR30wCX7eBrWicleUQsP0lZZxW04moa8
+         Y24eV2c6rJ9amZhPmR2g24O1Ztk4ocBfr/UiI=
+Message-ID: <4D6221B8.9040303@gmail.com>
+Date: Mon, 21 Feb 2011 09:26:32 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5b1eeca414d39e77afdb9684eab36addd11520a1.1298212517.git.minchan.kim@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        cluster-devel@redhat.com, xfs@oss.sgi.com,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] Check for immutable flag in fallocate path
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 11:43:36PM +0900, Minchan Kim wrote:
-> Recently, there are reported problem about thrashing.
-> (http://marc.info/?l=rsync&m=128885034930933&w=2)
-> It happens by backup workloads(ex, nightly rsync).
-> That's because the workload makes just use-once pages
-> and touches pages twice. It promotes the page into
-> active list so that it results in working set page eviction.
-> 
-> Some app developer want to support POSIX_FADV_NOREUSE.
-> But other OSes don't support it, either.
-> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
-> 
-> By other approach, app developers use POSIX_FADV_DONTNEED.
-> But it has a problem. If kernel meets page is writing
-> during invalidate_mapping_pages, it can't work.
-> It makes for application programmer to use it since they always
-> have to sync data before calling fadivse(..POSIX_FADV_DONTNEED) to
-> make sure the pages could be discardable. At last, they can't use
-> deferred write of kernel so that they could see performance loss.
-> (http://insights.oetiker.ch/linux/fadvise.html)
-> 
-> In fact, invalidation is very big hint to reclaimer.
-> It means we don't use the page any more. So let's move
-> the writing page into inactive list's head if we can't truncate
-> it right now.
-> 
-> Why I move page to head of lru on this patch, Dirty/Writeback page
-> would be flushed sooner or later. It can prevent writeout of pageout
-> which is less effective than flusher's writeout.
-> 
-> Originally, I reused lru_demote of Peter with some change so added
-> his Signed-off-by.
-> 
-> Reported-by: Ben Gamari <bgamari.foss@gmail.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Nick Piggin <npiggin@kernel.dk>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+All fs must check for the immutable flag in their fallocate callback.
+It's possible to have a race condition in this scenario: an application
+open a file in read/write and it does something, meanwhile root set the
+immutable flag on the file, the application at that point can call
+fallocate with success. Only Ocfs2 check for the immutable flag at the
+moment.
+
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+Patch is against 2.6.38-rc5
+
+--- linux-2.6.38-rc5-orig/fs/ext4/extents.c	2011-02-16 04:23:45.000000000 +0100
++++ linux-2.6.38-rc5/fs/ext4/extents.c	2011-02-21 08:43:37.000000000 +0100
+@@ -3670,6 +3670,12 @@ long ext4_fallocate(struct file *file, i
+ 	 */
+ 	credits = ext4_chunk_trans_blocks(inode, max_blocks);
+ 	mutex_lock(&inode->i_mutex);
++
++	if (IS_IMMUTABLE(inode)) {
++		mutex_unlock(&inode->i_mutex);
++		return -EPERM;
++	}
++
+ 	ret = inode_newsize_ok(inode, (len + offset));
+ 	if (ret) {
+ 		mutex_unlock(&inode->i_mutex);
+--- linux-2.6.38-rc5-orig/fs/btrfs/file.c	2011-02-16 04:23:45.000000000 +0100
++++ linux-2.6.38-rc5/fs/btrfs/file.c	2011-02-21 08:55:58.000000000 +0100
+@@ -1289,6 +1289,12 @@ static long btrfs_fallocate(struct file
+ 	btrfs_wait_ordered_range(inode, alloc_start, alloc_end - alloc_start);
+ 
+ 	mutex_lock(&inode->i_mutex);
++
++	if (IS_IMMUTABLE(inode)) {
++		ret = -EPERM;
++		goto out;
++	}
++
+ 	ret = inode_newsize_ok(inode, alloc_end);
+ 	if (ret)
+ 		goto out;
+--- linux-2.6.38-rc5-orig/fs/xfs/linux-2.6/xfs_file.c	2011-02-16 04:23:45.000000000 +0100
++++ linux-2.6.38-rc5/fs/xfs/linux-2.6/xfs_file.c	2011-02-21 09:07:46.000000000 +0100
+@@ -909,6 +909,11 @@ xfs_file_fallocate(
+ 	if (mode & FALLOC_FL_PUNCH_HOLE)
+ 		cmd = XFS_IOC_UNRESVSP;
+ 
++	if (IS_IMMUTABLE(inode)) {
++		error = -EPERM;
++		goto out_unlock;
++	}
++
+ 	/* check the new inode size is valid before allocating */
+ 	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+ 	    offset + len > i_size_read(inode)) {
+--- linux-2.6.38-rc5-orig/fs/gfs2/file.c	2011-02-16 04:23:45.000000000 +0100
++++ linux-2.6.38-rc5/fs/gfs2/file.c	2011-02-21 09:09:17.000000000 +0100
+@@ -797,6 +797,11 @@ static long gfs2_fallocate(struct file *
+ 	if (unlikely(error))
+ 		goto out_uninit;
+ 
++	if (IS_IMMUTABLE(inode)) {
++		error = -EPERM;
++		goto out_unlock;
++	}
++
+ 	if (!gfs2_write_alloc_required(ip, offset, len))
+ 		goto out_unlock;
+ 
+
