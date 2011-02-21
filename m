@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1BUWK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:10:29 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:45080 "EHLO ogre.sisk.pl"
+	id S1753046Ab1BUWK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:10:28 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:45084 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab1BUWKW convert rfc822-to-8bit (ORCPT
+	id S1752681Ab1BUWKW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Feb 2011 17:10:22 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "Marc" <marc@osknowledge.org>
+        Florian Mickler <florian@mickler.org>, "xudong" <xudong.hao@intel.com>
 References: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera>
 In-Reply-To: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <5HY1m9_-mkI.A.2gH.gWtYNB@chimera>
-Subject: [Bug #29022] [REGRESSION? 2.6.38-rc4] nouveau NV50 screen freeze
+Message-ID: <5HY1m9_-mkI.A.9cH.YWtYNB@chimera>
+Subject: [Bug #29232] [VT-d] VT-d device passthrough fail to guest
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Mon, 21 Feb 2011 23:03:02 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,9 +33,9 @@ from 2.6.37.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29022
-Subject		: [REGRESSION? 2.6.38-rc4] nouveau NV50 screen freeze
-Submitter	: Marc <marc@osknowledge.org>
-Date		: 2011-02-13 12:29 (9 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29232
+Subject		: [VT-d] VT-d device passthrough fail to guest
+Submitter	: xudong <xudong.hao@intel.com>
+Date		: 2011-02-16 08:56 (6 days old)
 
 
