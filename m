@@ -1,478 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab1BUF4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 00:56:40 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60137 "EHLO mga11.intel.com"
+	id S1754402Ab1BUGCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 01:02:37 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:53441 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754286Ab1BUFy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 00:54:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,198,1297065600"; 
-   d="scan'208";a="889598821"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/7] ACPI, APEI, Add ERST record ID cache
-Date: Mon, 21 Feb 2011 13:54:41 +0800
-Message-Id: <1298267685-7357-4-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
-References: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
+	id S1751528Ab1BUGCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 01:02:36 -0500
+Date: Mon, 21 Feb 2011 17:02:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Kleine-Budde <mkl@pengutronix.de>, Ilya Yanok <yanok@emcraft.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: build warning after merge of the driver-core tree
+Message-Id: <20110221170226.c43175f7.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__21_Feb_2011_17_02_26_+1100_zuUUFtN+lJFISuP."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-APEI ERST firmware interface and implementation has no multiple users
-in mind.  For example, if there is four records in storage with ID: 1,
-2, 3 and 4, if two ERST readers enumerate the records via
-GET_NEXT_RECORD_ID as follow,
+--Signature=_Mon__21_Feb_2011_17_02_26_+1100_zuUUFtN+lJFISuP.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-reader 1		reader 2
-1
-			2
-3
-			4
--1
-			-1
+Hi Greg,
 
-where -1 signals there is no more record ID.
+After merging the driver-core tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-Reader 1 has no chance to check record 2 and 4, while reader 2 has no
-chance to check record 1 and 3.  And any other GET_NEXT_RECORD_ID will
-return -1, that is, other readers will has no chance to check any
-record even they are not cleared by anyone.
+drivers/net/dnet.c: In function 'dnet_mii_init':
+drivers/net/dnet.c:340: warning: passing argument 1 of 'platform_set_drvdat=
+a' from incompatible pointer type
+include/linux/platform_device.h:138: note: expected 'struct platform_device=
+ *' but argument is of type 'struct net_device *'
 
-This makes raw GET_NEXT_RECORD_ID not suitable for used by multiple
-users.
+Revealed by commit 71d642908d4e8e7a2a4a6e0490432e719ff466d5 ("Driver
+core: convert platform_{get,set}_drvdata to static inline functions").
+Introduced by commit 4796417417a62e2ae83d92cb92e1ecf9ec67b5f5 ("dnet:
+Dave DNET ethernet controller driver (updated)").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-To solve the issue, an in-memory ERST record ID cache is designed and
-implemented.  When enumerating record ID, the ID returned by
-GET_NEXT_RECORD_ID is added into cache in addition to be returned to
-caller.  So other readers can check the cache to get all record ID
-available.
+--Signature=_Mon__21_Feb_2011_17_02_26_+1100_zuUUFtN+lJFISuP.
+Content-Type: application/pgp-signature
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce-apei.c |   40 +++--
- drivers/acpi/apei/erst-dbg.c          |   24 +++
- drivers/acpi/apei/erst.c              |  235 +++++++++++++++++++++++++++-------
- include/acpi/apei.h                   |    5 
- 4 files changed, 240 insertions(+), 64 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
---- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
-@@ -106,24 +106,34 @@ int apei_write_mce(struct mce *m)
- ssize_t apei_read_mce(struct mce *m, u64 *record_id)
- {
- 	struct cper_mce_record rcd;
--	ssize_t len;
--
--	len = erst_read_next(&rcd.hdr, sizeof(rcd));
--	if (len <= 0)
--		return len;
--	/* Can not skip other records in storage via ERST unless clear them */
--	else if (len != sizeof(rcd) ||
--		 uuid_le_cmp(rcd.hdr.creator_id, CPER_CREATOR_MCE)) {
--		if (printk_ratelimit())
--			pr_warning(
--			"MCE-APEI: Can not skip the unknown record in ERST");
--		return -EIO;
--	}
-+	int rc, pos;
- 
-+	rc = erst_get_record_id_begin(&pos);
-+	if (rc)
-+		return rc;
-+retry:
-+	rc = erst_get_record_id_next(&pos, record_id);
-+	if (rc)
-+		goto out;
-+	/* no more record */
-+	if (*record_id == APEI_ERST_INVALID_RECORD_ID)
-+		goto out;
-+	rc = erst_read(*record_id, &rcd.hdr, sizeof(rcd));
-+	/* someone else has cleared the record, try next one */
-+	if (rc == -ENOENT)
-+		goto retry;
-+	else if (rc < 0)
-+		goto out;
-+	/* try to skip other type records in storage */
-+	else if (rc != sizeof(rcd) ||
-+		 uuid_le_cmp(rcd.hdr.creator_id, CPER_CREATOR_MCE))
-+		goto retry;
- 	memcpy(m, &rcd.mce, sizeof(*m));
--	*record_id = rcd.hdr.record_id;
-+	rc = sizeof(*m);
-+out:
-+	erst_get_record_id_end();
- 
--	return sizeof(*m);
-+	return rc;
- }
- 
- /* Check whether there is record in ERST */
---- a/drivers/acpi/apei/erst-dbg.c
-+++ b/drivers/acpi/apei/erst-dbg.c
-@@ -43,12 +43,27 @@ static DEFINE_MUTEX(erst_dbg_mutex);
- 
- static int erst_dbg_open(struct inode *inode, struct file *file)
- {
-+	int rc, *pos;
-+
- 	if (erst_disable)
- 		return -ENODEV;
- 
-+	pos = (int *)&file->private_data;
-+
-+	rc = erst_get_record_id_begin(pos);
-+	if (rc)
-+		return rc;
-+
- 	return nonseekable_open(inode, file);
- }
- 
-+static int erst_dbg_release(struct inode *inode, struct file *file)
-+{
-+	erst_get_record_id_end();
-+
-+	return 0;
-+}
-+
- static long erst_dbg_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
- {
- 	int rc;
-@@ -79,18 +94,20 @@ static long erst_dbg_ioctl(struct file *
- static ssize_t erst_dbg_read(struct file *filp, char __user *ubuf,
- 			     size_t usize, loff_t *off)
- {
--	int rc;
-+	int rc, *pos;
- 	ssize_t len = 0;
- 	u64 id;
- 
--	if (*off != 0)
-+	if (*off)
- 		return -EINVAL;
- 
- 	if (mutex_lock_interruptible(&erst_dbg_mutex) != 0)
- 		return -EINTR;
- 
-+	pos = (int *)&filp->private_data;
-+
- retry_next:
--	rc = erst_get_next_record_id(&id);
-+	rc = erst_get_record_id_next(pos, &id);
- 	if (rc)
- 		goto out;
- 	/* no more record */
-@@ -181,6 +198,7 @@ out:
- static const struct file_operations erst_dbg_ops = {
- 	.owner		= THIS_MODULE,
- 	.open		= erst_dbg_open,
-+	.release	= erst_dbg_release,
- 	.read		= erst_dbg_read,
- 	.write		= erst_dbg_write,
- 	.unlocked_ioctl	= erst_dbg_ioctl,
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -429,6 +429,22 @@ ssize_t erst_get_record_count(void)
- }
- EXPORT_SYMBOL_GPL(erst_get_record_count);
- 
-+#define ERST_RECORD_ID_CACHE_SIZE_MIN	16
-+#define ERST_RECORD_ID_CACHE_SIZE_MAX	1024
-+
-+struct erst_record_id_cache {
-+	struct mutex lock;
-+	u64 *entries;
-+	int len;
-+	int size;
-+	int refcount;
-+};
-+
-+static struct erst_record_id_cache erst_record_id_cache = {
-+	.lock = __MUTEX_INITIALIZER(erst_record_id_cache.lock),
-+	.refcount = 0,
-+};
-+
- static int __erst_get_next_record_id(u64 *record_id)
- {
- 	struct apei_exec_context ctx;
-@@ -443,26 +459,179 @@ static int __erst_get_next_record_id(u64
- 	return 0;
- }
- 
-+int erst_get_record_id_begin(int *pos)
-+{
-+	int rc;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	rc = mutex_lock_interruptible(&erst_record_id_cache.lock);
-+	if (rc)
-+		return rc;
-+	erst_record_id_cache.refcount++;
-+	mutex_unlock(&erst_record_id_cache.lock);
-+
-+	*pos = 0;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(erst_get_record_id_begin);
-+
-+/* erst_record_id_cache.lock must be held by caller */
-+static int __erst_record_id_cache_add_one(void)
-+{
-+	u64 id, prev_id, first_id;
-+	int i, rc;
-+	u64 *entries;
-+	unsigned long flags;
-+
-+	id = prev_id = first_id = APEI_ERST_INVALID_RECORD_ID;
-+retry:
-+	raw_spin_lock_irqsave(&erst_lock, flags);
-+	rc = __erst_get_next_record_id(&id);
-+	raw_spin_unlock_irqrestore(&erst_lock, flags);
-+	if (rc == -ENOENT)
-+		return 0;
-+	if (rc)
-+		return rc;
-+	if (id == APEI_ERST_INVALID_RECORD_ID)
-+		return 0;
-+	/* can not skip current ID, or loop back to first ID */
-+	if (id == prev_id || id == first_id)
-+		return 0;
-+	if (first_id == APEI_ERST_INVALID_RECORD_ID)
-+		first_id = id;
-+	prev_id = id;
-+
-+	entries = erst_record_id_cache.entries;
-+	for (i = 0; i < erst_record_id_cache.len; i++) {
-+		if (entries[i] == id)
-+			break;
-+	}
-+	/* record id already in cache, try next */
-+	if (i < erst_record_id_cache.len)
-+		goto retry;
-+	if (erst_record_id_cache.len >= erst_record_id_cache.size) {
-+		int new_size, alloc_size;
-+		u64 *new_entries;
-+
-+		new_size = erst_record_id_cache.size * 2;
-+		new_size = clamp_val(new_size, ERST_RECORD_ID_CACHE_SIZE_MIN,
-+				     ERST_RECORD_ID_CACHE_SIZE_MAX);
-+		if (new_size <= erst_record_id_cache.size) {
-+			if (printk_ratelimit())
-+				pr_warning(FW_WARN ERST_PFX
-+					   "too many record ID!\n");
-+			return 0;
-+		}
-+		alloc_size = new_size * sizeof(entries[0]);
-+		if (alloc_size < PAGE_SIZE)
-+			new_entries = kmalloc(alloc_size, GFP_KERNEL);
-+		else
-+			new_entries = vmalloc(alloc_size);
-+		if (!new_entries)
-+			return -ENOMEM;
-+		memcpy(new_entries, entries,
-+		       erst_record_id_cache.len * sizeof(entries[0]));
-+		if (erst_record_id_cache.size < PAGE_SIZE)
-+			kfree(entries);
-+		else
-+			vfree(entries);
-+		erst_record_id_cache.entries = entries = new_entries;
-+		erst_record_id_cache.size = new_size;
-+	}
-+	entries[i] = id;
-+	erst_record_id_cache.len++;
-+
-+	return 1;
-+}
-+
- /*
-  * Get the record ID of an existing error record on the persistent
-  * storage. If there is no error record on the persistent storage, the
-  * returned record_id is APEI_ERST_INVALID_RECORD_ID.
-  */
--int erst_get_next_record_id(u64 *record_id)
-+int erst_get_record_id_next(int *pos, u64 *record_id)
- {
--	int rc;
--	unsigned long flags;
-+	int rc = 0;
-+	u64 *entries;
- 
- 	if (erst_disable)
- 		return -ENODEV;
- 
--	raw_spin_lock_irqsave(&erst_lock, flags);
--	rc = __erst_get_next_record_id(record_id);
--	raw_spin_unlock_irqrestore(&erst_lock, flags);
-+	/* must be enclosed by erst_get_record_id_begin/end */
-+	BUG_ON(!erst_record_id_cache.refcount);
-+	BUG_ON(*pos < 0 || *pos > erst_record_id_cache.len);
-+
-+	mutex_lock(&erst_record_id_cache.lock);
-+	entries = erst_record_id_cache.entries;
-+	for (; *pos < erst_record_id_cache.len; (*pos)++)
-+		if (entries[*pos] != APEI_ERST_INVALID_RECORD_ID)
-+			break;
-+	/* found next record id in cache */
-+	if (*pos < erst_record_id_cache.len) {
-+		*record_id = entries[*pos];
-+		(*pos)++;
-+		goto out_unlock;
-+	}
-+
-+	/* Try to add one more record ID to cache */
-+	rc = __erst_record_id_cache_add_one();
-+	if (rc < 0)
-+		goto out_unlock;
-+	/* successfully add one new ID */
-+	if (rc == 1) {
-+		*record_id = erst_record_id_cache.entries[*pos];
-+		(*pos)++;
-+		rc = 0;
-+	} else {
-+		*pos = -1;
-+		*record_id = APEI_ERST_INVALID_RECORD_ID;
-+	}
-+out_unlock:
-+	mutex_unlock(&erst_record_id_cache.lock);
- 
- 	return rc;
- }
--EXPORT_SYMBOL_GPL(erst_get_next_record_id);
-+EXPORT_SYMBOL_GPL(erst_get_record_id_next);
-+
-+/* erst_record_id_cache.lock must be held by caller */
-+static void __erst_record_id_cache_compact(void)
-+{
-+	int i, wpos = 0;
-+	u64 *entries;
-+
-+	if (erst_record_id_cache.refcount)
-+		return;
-+
-+	entries = erst_record_id_cache.entries;
-+	for (i = 0; i < erst_record_id_cache.len; i++) {
-+		if (entries[i] == APEI_ERST_INVALID_RECORD_ID)
-+			continue;
-+		if (wpos != i)
-+			memcpy(&entries[wpos], &entries[i], sizeof(entries[i]));
-+		wpos++;
-+	}
-+	erst_record_id_cache.len = wpos;
-+}
-+
-+void erst_get_record_id_end(void)
-+{
-+	/*
-+	 * erst_disable != 0 should be detected by invoker via the
-+	 * return value of erst_get_record_id_begin/next, so this
-+	 * function should not be called for erst_disable != 0.
-+	 */
-+	BUG_ON(erst_disable);
-+
-+	mutex_lock(&erst_record_id_cache.lock);
-+	erst_record_id_cache.refcount--;
-+	BUG_ON(erst_record_id_cache.refcount < 0);
-+	__erst_record_id_cache_compact();
-+	mutex_unlock(&erst_record_id_cache.lock);
-+}
-+EXPORT_SYMBOL_GPL(erst_get_record_id_end);
- 
- static int __erst_write_to_storage(u64 offset)
- {
-@@ -703,56 +872,34 @@ ssize_t erst_read(u64 record_id, struct
- }
- EXPORT_SYMBOL_GPL(erst_read);
- 
--/*
-- * If return value > buflen, the buffer size is not big enough,
-- * else if return value = 0, there is no more record to read,
-- * else if return value < 0, something goes wrong,
-- * else everything is OK, and return value is record length
-- */
--ssize_t erst_read_next(struct cper_record_header *record, size_t buflen)
--{
--	int rc;
--	ssize_t len;
--	unsigned long flags;
--	u64 record_id;
--
--	if (erst_disable)
--		return -ENODEV;
--
--	raw_spin_lock_irqsave(&erst_lock, flags);
--	rc = __erst_get_next_record_id(&record_id);
--	if (rc) {
--		raw_spin_unlock_irqrestore(&erst_lock, flags);
--		return rc;
--	}
--	/* no more record */
--	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
--		raw_spin_unlock_irqrestore(&erst_lock, flags);
--		return 0;
--	}
--
--	len = __erst_read(record_id, record, buflen);
--	raw_spin_unlock_irqrestore(&erst_lock, flags);
--
--	return len;
--}
--EXPORT_SYMBOL_GPL(erst_read_next);
--
- int erst_clear(u64 record_id)
- {
--	int rc;
-+	int rc, i;
- 	unsigned long flags;
-+	u64 *entries;
- 
- 	if (erst_disable)
- 		return -ENODEV;
- 
-+	rc = mutex_lock_interruptible(&erst_record_id_cache.lock);
-+	if (rc)
-+		return rc;
- 	raw_spin_lock_irqsave(&erst_lock, flags);
- 	if (erst_erange.attr & ERST_RANGE_NVRAM)
- 		rc = __erst_clear_from_nvram(record_id);
- 	else
- 		rc = __erst_clear_from_storage(record_id);
- 	raw_spin_unlock_irqrestore(&erst_lock, flags);
--
-+	if (rc)
-+		goto out;
-+	entries = erst_record_id_cache.entries;
-+	for (i = 0; i < erst_record_id_cache.len; i++) {
-+		if (entries[i] == record_id)
-+			entries[i] = APEI_ERST_INVALID_RECORD_ID;
-+	}
-+	__erst_record_id_cache_compact();
-+out:
-+	mutex_unlock(&erst_record_id_cache.lock);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(erst_clear);
---- a/include/acpi/apei.h
-+++ b/include/acpi/apei.h
-@@ -30,10 +30,11 @@ int apei_hest_parse(apei_hest_func_t fun
- 
- int erst_write(const struct cper_record_header *record);
- ssize_t erst_get_record_count(void);
--int erst_get_next_record_id(u64 *record_id);
-+int erst_get_record_id_begin(int *pos);
-+int erst_get_record_id_next(int *pos, u64 *record_id);
-+void erst_get_record_id_end(void);
- ssize_t erst_read(u64 record_id, struct cper_record_header *record,
- 		  size_t buflen);
--ssize_t erst_read_next(struct cper_record_header *record, size_t buflen);
- int erst_clear(u64 record_id);
- 
- #endif
+iQEcBAEBAgAGBQJNYf/yAAoJEDMEi1NhKgbszosH/3TrbJUsYqDikPQFxnk1FuAm
+AfB7gonSdoDfT0kF1Q0c0V3h3sRKiHA175kkV3Hq9olbjsqKgYLbfB6JHznV8iTL
+l/Nd4RXlTTHiUPu2q2x3cI/fNMPE20dAaipuBYHa72qH6rNZ3JFjyqlqToPG4/IX
+Vd5x5hWZ5nyuxZ0vV8ARz4kHpgNZv4cbaLRq3E/t2zqFKEGcrp5rtqkoxhHYP5Ow
++rPg7zLVPXB2r0xegwDvDr2v8VtPJ36h80bveUA1b9xNZh43oqufEZvt5djDlh27
+c4krt+iD9bJbEfsgnc943Q3yYlRD8OPbBqeWoNZxWH1mIJgvrYCSMRdbTmRoGR0=
+=ebad
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_Feb_2011_17_02_26_+1100_zuUUFtN+lJFISuP.--
