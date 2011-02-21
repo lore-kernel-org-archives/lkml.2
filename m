@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1BUN0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 08:26:03 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54471 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690Ab1BUN0A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 08:26:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=BQFNHaUu7HbI7ORfyxiGAKK0nf39IHsmFlL7FIH3k+AhjKrLajDpAZa2+LnuTkX5+X
-         QSe8sx9Pjx4I3fQSL5wkVk2/qd/gz2qP/Y9fvzjkM9uzBY75eDCjpy1lKKEOnfrzCRAd
-         To6Nqpa6zfuSoLQeUQjjNpEKQXoTm6vqOPNu0=
+	id S1756030Ab1BUNhw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 08:37:52 -0500
+Received: from www.tglx.de ([62.245.132.106]:34139 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754192Ab1BUNhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 08:37:50 -0500
+Date: Mon, 21 Feb 2011 14:37:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] genirq: Make nr_irqs runtime expandable
+In-Reply-To: <4D6014F9.8040605@kernel.org>
+Message-ID: <alpine.LFD.2.00.1102211435320.2701@localhost6.localdomain6>
+References: <tip-e7bcecb7b1d29b9ad5af939149a945658620ca8f@git.kernel.org> <4D6014F9.8040605@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110221074947.GA31152@dtor-ws.eng.vmware.com>
-References: <AANLkTi=nQ4c6fgk9_-974QOu=kQkJiGpdzpOa_U6ZZcs@mail.gmail.com>
-	<20110217.140119.39175251.davem@davemloft.net>
-	<20110217221957.GA11244@dtor-ws.eng.vmware.com>
-	<20110217.142320.102554706.davem@davemloft.net>
-	<AANLkTinMfTss+9K7fPQbxoMD7d-U_AyCc29_RRPRija3@mail.gmail.com>
-	<AANLkTikd-OBhe6-wK7-Xvv-asNSeVKs+0-a0d3FF2KVu@mail.gmail.com>
-	<1298074455.2460.85.camel@pasglop>
-	<87pqqmrq9q.fsf@rustcorp.com.au>
-	<AANLkTinFgma3F7ETwC8Mho7wdDK4V2b+Ao__npJNAW8j@mail.gmail.com>
-	<20110221074947.GA31152@dtor-ws.eng.vmware.com>
-Date: Mon, 21 Feb 2011 14:25:58 +0100
-X-Google-Sender-Auth: 5dLnGWVuRygLDJuQSYflEqSIS1k
-Message-ID: <AANLkTin_vp=+G+AMsfRtet9aWFc4MQnRC_bFZOovvFyg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] module: deal with alignment issues in built-in module versions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 08:49, Dmitry Torokhov <dtor@vmware.com> wrote:
-> On Mon, Feb 21, 2011 at 08:38:46AM +0100, Geert Uytterhoeven wrote:
->> On Mon, Feb 21, 2011 at 05:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> >> Except that .long is 32-bit on ppc64 :-( You need .llong for 64-bit.
->> >
->> > OK, all options suck.  Do we want the workaround or not?
->>
->> We can discuss about that until someone gets bitten by that.
->>
->> But please fix the "aligned(sizeof(void *))"-in-one-place-only issue.
->>
->
-> How about this one then?
+On Sat, 19 Feb 2011, Yinghai Lu wrote:
+> On 02/19/2011 04:15 AM, tip-bot for Thomas Gleixner wrote:
+> [PATCH] genirq: use IRQ_BITMAP_BITS as search size
+> 
+> instead of nr_irqs.
+> 
+> Otherwise bitmap_find_next_area could exit with larger start and in extreme
+> case we could fail to get wrong irqs return.
+> 
+> For example:
+> IRQ_BITMAP_BITS=10240
+> nr_irqs=8192
+> cnt=2048
+> 
+> and bit 0 to bit 8190 are set already.
+> 
+> before patch start from bit_find_next_area() will be 8191+2048.
+> later irq_expand_nr_irqs will set nr_irqs 10240.
+> finally irq_alloc_descs will return [8191+2048, 8191+2048+2047] happily..
+> 
+> with this patch, will get correct [8191, 8191+2047]
 
-Works.
-
-> From f0e0e10b58b22047e36e21a022abf5e86b5819c2 Mon Sep 17 00:00:00 2001
-> From: Dmitry Torokhov <dtor@vmware.com>
-> Date: Fri, 4 Feb 2011 13:30:10 -0800
-> Subject: [PATCH] module: explicitly align module_version_attribute structure
->
-> We force particular alignment when we generate attribute structures
-> when generation MODULE_VERSION() data and we need to make sure that
-> this alignment is followed when we iterate over these structures,
-> otherwise we may crash on platforms whose natural alignment is not
-> sizeof(void *), such as m68k.
->
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
+What a horrible changelog.
+ 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
 > ---
->  include/linux/module.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index e7c6385..de5cd21 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -62,7 +62,7 @@ struct module_version_attribute {
->        struct module_attribute mattr;
->        const char *module_name;
->        const char *version;
-> -};
-> +} __attribute__ ((__aligned__(sizeof(void *))));
->
->  struct module_kobject
->  {
-> --
-> 1.7.3.2
+>  kernel/irq/irqdesc.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/kernel/irq/irqdesc.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/irq/irqdesc.c
+> +++ linux-2.6/kernel/irq/irqdesc.c
+> @@ -346,12 +346,13 @@ irq_alloc_descs(int irq, unsigned int fr
+>  
+>  	mutex_lock(&sparse_irq_lock);
+>  
+> -	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
+> +	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
+> +						 from, cnt, 0);
+>  	ret = -EEXIST;
+>  	if (irq >=0 && start != irq)
+>  		goto err;
+>  
+> -	if (start >= nr_irqs) {
+> +	if (start + cnt > nr_irqs) {
 
-Gr{oetje,eeting}s,
+One off. That needs to be  >= nr_irqs. Good catch otherwise.
 
-                        Geert
+Thanks,
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	tglx
