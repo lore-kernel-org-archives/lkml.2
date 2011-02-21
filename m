@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab1BUTI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:08:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29285 "EHLO mga09.intel.com"
+	id S1754071Ab1BUTJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:09:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24278 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753673Ab1BUTI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:08:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,201,1297065600"; 
-   d="scan'208";a="605050285"
-From: Andi Kleen <andi@firstfloor.org>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, aarcange@redhat.com,
-        lwoodman@redhat.com, Andi Kleen <ak@linux.intel.com>,
-        arcange@redhat.com
-Subject: [PATCH 3/8] Preserve local node for KSM copies
-Date: Mon, 21 Feb 2011 11:07:45 -0800
-Message-Id: <1298315270-10434-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
-References: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
+	id S1753990Ab1BUTJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:09:02 -0500
+Date: Mon, 21 Feb 2011 20:07:13 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v6 0/4] fadvise(DONTNEED) support
+Message-ID: <20110221190713.GM13092@random.random>
+References: <cover.1298212517.git.minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1298212517.git.minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hello,
 
-Add a alloc_page_vma_node that allows passing the "local" node in.
-Use it in ksm to allocate copy pages on the same node as
-the original as possible.
+On Sun, Feb 20, 2011 at 11:43:35PM +0900, Minchan Kim wrote:
+> Recently, there was a reported problem about thrashing.
+> (http://marc.info/?l=rsync&m=128885034930933&w=2)
+> It happens by backup workloads(ex, nightly rsync).
+> That's because the workload makes just use-once pages
+> and touches pages twice. It promotes the page into
 
-Cc: arcange@redhat.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/gfp.h |    2 ++
- mm/ksm.c            |    3 ++-
- 2 files changed, 4 insertions(+), 1 deletions(-)
+"recently" and "thrashing horribly" seem to signal a regression. Ok
+that trying to have backup not messing up the VM working set, but by
+any means running rsync in a loop shouldn't lead a server into
+"trashing horribly" (other than for the additional disk I/O, just like
+if rsync would be using O_DIRECT).
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 782e74a..814d50e 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -343,6 +343,8 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
- #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
- #define alloc_page_vma(gfp_mask, vma, addr)			\
- 	alloc_pages_vma(gfp_mask, 0, vma, addr, numa_node_id())
-+#define alloc_page_vma_node(gfp_mask, vma, addr, node)		\
-+	alloc_pages_vma(gfp_mask, 0, vma, addr, node)
- 
- extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
- extern unsigned long get_zeroed_page(gfp_t gfp_mask);
-diff --git a/mm/ksm.c b/mm/ksm.c
-index c2b2a94..fc83335 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1575,7 +1575,8 @@ struct page *ksm_does_need_to_copy(struct page *page,
- {
- 	struct page *new_page;
- 
--	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
-+	new_page = alloc_page_vma_node(GFP_HIGHUSER_MOVABLE, vma, address,
-+				       page_to_nid(page));
- 	if (new_page) {
- 		copy_user_highpage(new_page, page, address, vma);
- 
--- 
-1.7.4
+This effort in teaching rsync to tell the VM it's likely an used-once
+type of access to the cache is good (tar will need it too), but if
+this is a regression like it appears from the words above ("recently"
+and "trashing horribly"), I suspect it's much higher priority to fix a
+VM regression than to add fadvise support in rsync/tar. Likely if the
+system didn't start "trashing horribly", they wouldn't need rsync.
 
+Then fadvise becomes an improvement on top of that.
+
+It'd be nice if at least it was tested if older kernel wouldn't trash
+horribly after being left inactive overnight. If it still trashes
+horribly with 2.6.18 ok... ignore this, otherwise we need a real fix.
+
+I'm quite comfortable that older kernels would do perfectly ok with a
+loop of rsync overnight while the system was idle. I also got people
+asking me privately what to do to avoid the backup to swapout, that
+further make me believe something regressed recently as older VM code
+would never swapout on such a workload, even if you do used twice or 3
+times in a row. If it swapout that's the real bug.
+
+I had questions about limiting the pagecache size to a certain amount,
+that works too, but that's again a band aid like fadvise, and it's
+real minor issue compared to fixing the VM so that at least you can
+tell the kernel "nuke all clean cache first", being able to tell the
+kernel just that (even if some VM clever algorithm thinks swapping is
+better and we want to swap by default) will fix it. We still need a
+way to make the kernel behave perfect with zero swapping without
+fadvise and without limiting the cache. Maybe setting swappiness to 0
+just does that, I suggested that and I heard nothing back.
+
+If you can reproduce I suggest making sure that at least it doesn't
+swap anything during the overnight workload as that would signal a
+definitive problem.
