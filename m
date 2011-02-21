@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab1BUVhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 16:37:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58595 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab1BUVhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 16:37:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fjXWY0sqMgf7R67daHsZQBaNAPwRWlPfytZloB+3lsWir36lMA4BeLnaJum7yKQ3PW
-         t38PyMxppA+zBN/dSnpPQCqEZ12JKCjbGcMGxB6IXe1cz9GDZxHhLh3s0NFWF9WfnGGs
-         rJdfHInRckf9+2sIXtGV5NKnxzHq6iGSE0XzU=
-Date: Mon, 21 Feb 2011 22:37:42 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 0/4] perf events: Add realtime clock event and timehist
- option -v2
-Message-ID: <20110221213740.GC3583@nowhere>
-References: <1298322150-15505-1-git-send-email-daahern@cisco.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298322150-15505-1-git-send-email-daahern@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752041Ab1BUVkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 16:40:07 -0500
+Received: from xenotime.net ([184.105.210.51]:47229 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751034Ab1BUVkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 16:40:06 -0500
+Date: Mon, 21 Feb 2011 13:40:01 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Rob Landley <rlandley@parallels.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Mariusz Kozlowski <mk@lab.zgora.pl>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Remove obsolete Documentation/powerpc/00-INDEX entries
+Message-Id: <20110221134001.f8b66899.rdunlap@xenotime.net>
+In-Reply-To: <4D62DA51.8020108@parallels.com>
+References: <4D6095E3.2040103@parallels.com>
+	<20110221185205.GA23284@mako-laptop>
+	<4D62C43F.5040302@parallels.com>
+	<20110221120303.48106f6c.rdunlap@xenotime.net>
+	<4D62CC6B.9070408@parallels.com>
+	<20110221125555.4a47424d.rdunlap@xenotime.net>
+	<4D62DA51.8020108@parallels.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 02:02:26PM -0700, David Ahern wrote:
-> v1 -> v2:
-> - removed change to WARN_ON_ONCE in perf_event.c
-> - fixed init of realtime_clock event (needed call to perf_swevent_init_hrtimer)
-> - changed userspace event name to clock-realtime with the alias clkr as the 
->   raw events code sucks up all options that start with 'r' followed by a hex
->   character
-> - remove RAW sample hack for pushing realtime clock event data to userspace
-> - plumbed PERF_SAMPLE_READ to enable retrieving event data during sample
->   generation
-> - add patch to perf-stat to recognize realtime-clock as a nsec counter
-> - implementation of tiemhist in perf-record was revamped significantly
->   -- to use event data,
->   -- to better handle fallback to synthesized event,
->   -- added feature to force a sample to be generated at startup (to output
->      wall-clock times we need a sample immediately; after that realtime-clock
->      samples are generated periodically)
->   -- change counter creation to be done only on first cpu; we do not need a
->      counter for each cpu 
+On Mon, 21 Feb 2011 15:34:09 -0600 Rob Landley wrote:
+
+> From: Rob Landley <rlandley@parallels.com>
 > 
-> A request was made to modify perf-trace and perf-script. From what I can see
-> perf-trace does not exist yet and perf-script requires raw data which means
-> it does not work for the primary use case that motivated this feature
-> (perf record -e cs -1 -ag).
+> The device tree infrastructure is being genericized so its documentation
+> moved out of the PowerPC directory.
+> 
+> Signed-off-by: Rob Landley <rlandley@parallels.com>
 
-The goal is actually to extend perf script to handle more than just raw data.
-So that it can handle the rest of what we can find in an event: time, ip, stacktraces...
+Added to my patch queue.  Thanks.
 
-You've added 200 lines in perf report to add the dump support. It wouldn't
-require more to extend perf script to do that. And the result is going to be
-much more powerful.
+> ---
+> 
+>  Documentation/devicetree/00-INDEX |    8 ++++++++
+>  Documentation/powerpc/00-INDEX    |    4 ----
+>  2 files changed, 8 insertions(+), 4 deletions(-)
+> 
+> --- /dev/null	2011-02-13 16:59:19.073990002 -0600
+> +++ b/Documentation/devicetree/00-INDEX	2011-02-21 14:47:12.911544002 -0600
+> @@ -0,0 +1,8 @@
+> +Documentation for device trees, a data structure by which bootloaders pass
+> +hardware layout to Linux in a device-independent manner, simplifying hardware
+> +probing.  This subsystem is maintained by Grant Likely
+> +<grant.likely@secretlab.ca> and has a mailing list at
+> +https://lists.ozlabs.org/listinfo/devicetree-discuss
+> +
+> +booting-without-of.txt
+> +        - Booting Linux without Open Firmware, describes history and format of device trees.
+> diff --git a/Documentation/powerpc/00-INDEX b/Documentation/powerpc/00-INDEX
+> index e3960b8..5620fb5 100644
+> --- a/Documentation/powerpc/00-INDEX
+> +++ b/Documentation/powerpc/00-INDEX
+> @@ -5,8 +5,6 @@ please mail me.
+>  
+>  00-INDEX
+>  	- this file
+> -booting-without-of.txt
+> -	- Booting the Linux/ppc kernel without Open Firmware
+>  cpu_features.txt
+>  	- info on how we support a variety of CPUs with minimal compile-time
+>  	options.
+> @@ -16,8 +14,6 @@ hvcs.txt
+>  	- IBM "Hypervisor Virtual Console Server" Installation Guide
+>  mpc52xx.txt
+>  	- Linux 2.6.x on MPC52xx family
+> -mpc52xx-device-tree-bindings.txt
+> -	- MPC5200 Device Tree Bindings
+>  sound.txt
+>  	- info on sound support under Linux/PPC
+>  zImage_layout.txt
 
-Look at struct scripting_ops::process_event().
 
-What you need is too pass in the whole event instead of only the raw data,
-cpu and so on...
-
-You don't even need to add the support in the scripts themselves, they can
-just cope with the new parameter layout. You only need to handle the rest of
-the event in the print_event() function (the default scripting_ops::process_event())
-to print ip, time and stacktraces.
-
-This probably needs some option in perf script to avoid showing ip and other
-new things. Although we probably want to print stacktraces by default
-if there are present.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
