@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1BUTcr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:32:47 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48126 "EHLO lunge.queued.net"
+	id S1754811Ab1BUTdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:33:25 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:39411 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754360Ab1BUTcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:32:45 -0500
-Date: Mon, 21 Feb 2011 11:32:29 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Timo von Holtz <tvh@informatik.uni-kiel.de>
-Cc: gregkh@suse.de, akpm@linux-foundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: olpc_dcon: fixed some coding style issues
-Message-ID: <20110221113229.31403658@debxo>
-In-Reply-To: <1298315591-11875-1-git-send-email-tvh@informatik.uni-kiel.de>
-References: <1298315591-11875-1-git-send-email-tvh@informatik.uni-kiel.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754352Ab1BUTdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:33:24 -0500
+Date: Mon, 21 Feb 2011 20:33:16 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] PRUSS UIO driver support
+Message-ID: <20110221193316.GC2773@local>
+References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
+ <201102181644.17634.arnd@arndb.de>
+ <alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6>
+ <201102181731.05644.arnd@arndb.de>
+ <alpine.LFD.2.00.1102181802580.2701@localhost6.localdomain6>
+ <B85A65D85D7EB246BE421B3FB0FBB593024B83C108@dbde02.ent.ti.com>
+ <20110219183427.GG4684@local>
+ <B85A65D85D7EB246BE421B3FB0FBB593024B83C20F@dbde02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024B83C20F@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011 20:13:11 +0100
-Timo von Holtz <tvh@informatik.uni-kiel.de> wrote:
-
-> Fixed all coding style issues in the files
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+On Mon, Feb 21, 2011 at 09:27:47AM +0530, TK, Pratheesh Gangadhar wrote:
+> Hi Hans,
 > 
-> Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
-> ---
->  drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |    2 +-
->  drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |   84
-> ++++++++++++++++---------- 2 files changed, 53 insertions(+), 33
-> deletions(-)
+> > -----Original Message-----
+> > From: Hans J. Koch [mailto:hjk@hansjkoch.de]
+> > Sent: Sunday, February 20, 2011 12:04 AM
+> > To: TK, Pratheesh Gangadhar
+> > Cc: Thomas Gleixner; Arnd Bergmann; linux-arm-kernel@lists.infradead.org;
+> > davinci-linux-open-source@linux.davincidsp.com; gregkh@suse.de;
+> > Chatterjee, Amit; Hans J. Koch; LKML
+> > Subject: Re: [PATCH 1/2] PRUSS UIO driver support
+> > 
+> > On Sat, Feb 19, 2011 at 09:10:23PM +0530, TK, Pratheesh Gangadhar wrote:
+> > >
+> > > For my understanding - if the interrupt is not shared and not level
+> > triggered -
+> > > is this okay to have empty handler?
+> > 
+> > Greg already said he won't accept that. And I'm quite sure these
+> > interrupts
+> > are level triggered, since that is the default on arch/omap.
+> > 
+> > E.g. in arch/arm/mach-omap1/irq.c, a loop sets all irqs to level triggered
+> > handling: set_irq_handler(j, handle_level_irq); (line 234)
 > 
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-> b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c index b154be7..ccde215
-> 100644 --- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
-> @@ -152,7 +152,7 @@ static void dcon_wiggle_xo_1(void)
->  	 * According to the cs5536 spec, to set GPIO14 to SMB_CLK we
-> must
->  	 * simultaneously set AUX1 IN/OUT to GPIO14; ditto for
-> SMB_DATA and
->  	 * GPIO15.
-> - 	 */
-> +	 */
->  	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_VAL);
->  	cs5535_gpio_set(OLPC_GPIO_SMB_DATA, GPIO_OUTPUT_VAL);
->  	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_ENABLE);
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-> b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c index e213b63..6381119
-> 100644 --- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
-> @@ -23,9 +23,10 @@
->  #include "olpc_dcon.h"
->  
->  /* Hardware setup on the XO 1.5:
-> - * 	DCONLOAD connects to
-> - *		VX855_GPIO1 (not SMBCK2)
-> - * 	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused
-> in driver
-> + *	DCONLOAD connects to
-> + *		VX855_GPO12 (not nCR_PWOFF)   (rev A)
-> + *		VX855_GPIO1 (not SMBCK2)      (rev B)
-> + *	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused in
-> driver
->   *	DCONSTAT0 connects to VX855_GPI10 (not SSPISDI)
->   *	DCONSTAT1 connects to VX855_GPI11 (not nSSPISS)
->   *	DCONIRQ connects to VX855_GPIO12
-> @@ -33,26 +34,32 @@
->   *	DCONSMBCLK connects to VX855 graphics CRTSPCLK
->   */
->  
-> -#define VX855_GENL_PURPOSE_OUTPUT 0x44c // PMIO_Rx4c-4f
-> -#define VX855_GPI_STATUS_CHG 0x450  // PMIO_Rx50
-> -#define VX855_GPI_SCI_SMI 0x452  // PMIO_Rx52
-> +#define TEST_B2 0   /* define to test B3 paths on a modded B2 board
-> */ +
+> You should be looking at arch/arm/mach-davinci/irq.c
 
-Nack.  Why are you re-adding TEST_B2 (as well as other stuff that was
-removed)?
+Hmpf. I alway get lost in the directory structure of TI SoCs...
+At least I learned that OMAP3 is in the omap2 directory :)
 
-	
+> and all interrupts except IRQ_TINT1_TINT34 is set to edge trigger mode (line 160).
+
+Is that really needed? Level triggered interrupts should certainly be
+preferred if possible.
+
+Thanks,
+Hans
+
