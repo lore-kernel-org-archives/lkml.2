@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab1BUMAa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 07:00:30 -0500
-Received: from mail-ew0-f42.google.com ([209.85.215.42]:62671 "EHLO
-	mail-ew0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab1BUMA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 07:00:28 -0500
-Message-ID: <4D62538C.1010200@ru.mvista.com>
-Date: Mon, 21 Feb 2011 14:59:08 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1755708Ab1BUMDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 07:03:07 -0500
+Received: from mga11.intel.com ([192.55.52.93]:57796 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755446Ab1BUMDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 07:03:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,199,1297065600"; 
+   d="scan'208";a="659886980"
+Date: Mon, 21 Feb 2011 13:03:02 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 2.6.38] mfd: Don't suspend WM8994 if the CODEC is not
+ suspended
+Message-ID: <20110221120301.GC10686@sortiz-mobl>
+References: <1296831463-19643-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/20] ata_piix: unify code for programming PIO and MWDMA
- timings
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>	<20110208122346.19110.8441.sendpatchset@linux-mhg7.site>	<4D6118DC.80505@ru.mvista.com>	<20110220185958.364df4cc@lxorguk.ukuu.org.uk>	<4D617CC8.3020108@ru.mvista.com>	<20110220210731.0c774fa7@lxorguk.ukuu.org.uk>	<4D624EBD.4080400@ru.mvista.com> <20110221115839.2048e8fe@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110221115839.2048e8fe@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296831463-19643-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Mark,
 
-On 21-02-2011 14:58, Alan Cox wrote:
+On Fri, Feb 04, 2011 at 02:57:43PM +0000, Mark Brown wrote:
+> ASoC supports keeping the audio subsysetm active over suspend in order
+> to support use cases such as audio passthrough from a cellular modem
+> with the main CPU suspended. Ensure that we don't power down the CODEC
+> when this is happening by checking to see if VMID is up and skipping
+> suspend and resume when it is. If the CODEC has suspended then it'll
+> turn VMID off before the core suspend() gets called.
+I applied this patch to both for-next and for-linus branch, many thanks.
 
->>>>       PIO mode is setup by different code, and it takes care of the IORDY
->>>> setting according to the PIO rules (and it gets called). DMA mode setup should
->>>> just ignore the IORDY setting as in all other sane drivers.
+Cheers,
+Samuel.
 
->>> Well it can't ignore it - but if you mean just keep the bit as is then
-
->>      Yes, I mean this.
-
->>> that sounds sensible, have to see what the docs say happens if you ever
->>> set MWDMA without IORDY.
-
->>      Don't think they say anything on this matter but I can't imagine that
->> IORDY matters for DMA.
-
-    ... unless the IE bit means something special (and undocumented) for DMA, 
-if Intel so insists on setting it for every DMA mode.
-
-> Sure - but it does matter for an ATAPI transaction with then has a DMA
-> phase because those timings will be used for the command transfer which
-> is PIO.
-
-    So what? We've already setup PIO timings before the DMA ones. Why force 
-the IE bit?
-
-> Alan
-
-WBR, Sergei
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
