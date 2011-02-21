@@ -1,78 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1BUMLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 07:11:45 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51828 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab1BUMLn convert rfc822-to-8bit (ORCPT
+	id S1755807Ab1BUMPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 07:15:32 -0500
+Received: from mail-bw0-f42.google.com ([209.85.214.42]:42733 "EHLO
+	mail-bw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab1BUMPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 07:11:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hRJnf0cCXIauw/LABbQFDTaWgdGPKBJI2TjeOPnwdFFtGd4L5F/3r7Lm1e1zRRqtxd
-         vbd2RN/mHnr2uoNu6eEa+4Gsd4uJDIIiJbwA8WnvAxA/+2XQhYzkvhuo9/EodXlOR2Za
-         bt5/H+zCrEjLhakQZFBrdSlxcN2UWa7d950pc=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimwvgLvpvndCqcd_okA2Kk4cu7z4bD3QXTdgWJW@mail.gmail.com>
-References: <1298283649-24532-1-git-send-email-dacohen@gmail.com>
-	<1298283649-24532-2-git-send-email-dacohen@gmail.com>
-	<AANLkTimwvgLvpvndCqcd_okA2Kk4cu7z4bD3QXTdgWJW@mail.gmail.com>
-Date: Mon, 21 Feb 2011 14:11:42 +0200
-Message-ID: <AANLkTi=kL1+qKys0ZCTRb_9GgzadS8Stbai+cR-KNoAU@mail.gmail.com>
-Subject: Re: [PATCH 1/1] headers: fix circular dependency between
- linux/sched.h and linux/wait.h
-From: David Cohen <dacohen@gmail.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        linux-omap@vger.kernel.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Feb 2011 07:15:31 -0500
+X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 07:15:31 EST
+From: Michal Simek <monstr@monstr.eu>
+To: grant.likely@secretlab.ca
+Cc: devicetree-discuss@lists.ozlabs.org, john.williams@petalogix.com,
+        linux-kernel@vger.kernel.org, John.Linn@xilinx.com,
+        Michal Simek <monstr@monstr.eu>
+Subject: [PATCH] i2c: xiic: Add OF support for Xilinx i2c bus interface
+Date: Mon, 21 Feb 2011 13:07:39 +0100
+Message-Id: <1298290059-9552-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 1:05 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> On Mon, Feb 21, 2011 at 12:20 PM, David Cohen <dacohen@gmail.com> wrote:
->> Currently sched.h and wait.h have circular dependency between both.
->> wait.h defines macros wake_up*() which use macros TASK_* defined by
->> sched.h. But as sched.h indirectly includes wait.h, such wait.h header
->> file can't include sched.h too. The side effect is when some file
->> includes wait.h and tries to use its wake_up*() macros, it's necessary
->> to include sched.h also.
->> This patch moves all TASK_* macros from linux/sched.h to a new header
->> file linux/task_sched.h. This way, both sched.h and wait.h can include
->> task_sched.h and fix the circular dependency. No need to include sched.h
->> anymore when wake_up*() macros are used.
->
-> Just include <linux/sched.h> in your driver.
+Add OF support to Xilinx i2c bus interface.
+It is used on Microblaze systems.
 
-Sounds a reasonable solution for me.
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ drivers/i2c/busses/i2c-xiic.c |  111 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 109 insertions(+), 2 deletions(-)
 
-> This include splitting in small pieces is troublesome as well.
+diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+index a9c419e..22951a3 100644
+--- a/drivers/i2c/busses/i2c-xiic.c
++++ b/drivers/i2c/busses/i2c-xiic.c
+@@ -2,6 +2,8 @@
+  * i2c-xiic.c
+  * Copyright (c) 2002-2007 Xilinx Inc.
+  * Copyright (c) 2009-2010 Intel Corporation
++ * Copyright (c) 2010-2011 Michal Simek <monstr@monstr.eu>
++ * Copyright (c) 2010-2011 PetaLogix
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -41,6 +43,13 @@
+ #include <linux/io.h>
+ #include <linux/slab.h>
+ 
++#ifdef CONFIG_OF
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/of_i2c.h>
++#include <linux/of_address.h>
++#endif
++
+ #define DRIVER_NAME "xiic-i2c"
+ 
+ enum xilinx_i2c_state {
+@@ -426,7 +435,7 @@ static void xiic_process(struct xiic_i2c *i2c)
+ 			xiic_wakeup(i2c, STATE_ERROR);
+ 
+ 	} else if (pend & (XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK)) {
+-		/* Transmit register/FIFO is empty or � empty */
++		/* Transmit register/FIFO is empty or 1/2 empty */
+ 
+ 		clr = pend &
+ 			(XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK);
+@@ -687,7 +696,7 @@ static struct i2c_adapter xiic_adapter = {
+ 	.algo		= &xiic_algorithm,
+ };
+ 
+-
++#ifndef CONFIG_OF
+ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct xiic_i2c *i2c;
+@@ -808,6 +817,104 @@ static struct platform_driver xiic_i2c_driver = {
+ 	},
+ };
+ 
++#else
++static int __devinit xiic_i2c_of_probe(struct platform_device *op)
++{
++	struct xiic_i2c *i2c;
++	int result = 0;
++
++	i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
++	if (!i2c)
++		return -ENOMEM;
++
++	i2c->dev = &op->dev; /* for debug and error output */
++
++	spin_lock_init(&i2c->lock);
++	init_waitqueue_head(&i2c->wait);
++
++	i2c->base = of_iomap(op->dev.of_node, 0);
++	if (!i2c->base) {
++		dev_err(i2c->dev, "failed to map controller\n");
++		result = -ENOMEM;
++		goto fail_map;
++	}
++
++	i2c->irq = irq_of_parse_and_map(op->dev.of_node, 0);
++	if (i2c->irq) { /* no i2c->irq implies polling */
++		result = request_irq(i2c->irq, xiic_isr,
++				     0, op->name, i2c);
++		if (result < 0) {
++			dev_err(i2c->dev, "failed to attach interrupt\n");
++			goto fail_request;
++		}
++	}
++
++	dev_set_drvdata(&op->dev, i2c);
++	i2c->adap = xiic_adapter;
++	i2c_set_adapdata(&i2c->adap, i2c);
++	i2c->adap.dev.parent = &op->dev;
++	i2c->adap.dev.of_node = of_node_get(op->dev.of_node);
++
++	result = i2c_add_adapter(&i2c->adap);
++	if (result < 0) {
++		dev_err(i2c->dev, "failed to add adapter\n");
++		goto fail_add;
++	}
++
++	dev_info(i2c->dev, "mapped to 0x%08X, irq=%d\n",
++					(unsigned int)i2c->base, i2c->irq);
++
++	xiic_reinit(i2c);
++	of_i2c_register_devices(&i2c->adap);
++
++	return result;
++
++fail_add:
++	dev_set_drvdata(&op->dev, NULL);
++	free_irq(i2c->irq, i2c);
++fail_request:
++	irq_dispose_mapping(i2c->irq);
++	iounmap(i2c->base);
++fail_map:
++	kfree(i2c);
++	return result;
++}
++
++static int __devexit xiic_i2c_of_remove(struct platform_device *op)
++{
++	struct xiic_i2c *i2c = dev_get_drvdata(&op->dev);
++
++	i2c_del_adapter(&i2c->adap);
++	xiic_deinit(i2c);
++	dev_set_drvdata(&op->dev, NULL);
++
++	if (i2c->irq)
++		free_irq(i2c->irq, i2c);
++
++	irq_dispose_mapping(i2c->irq);
++	iounmap(i2c->base);
++	kfree(i2c);
++	return 0;
++}
++
++/* Match table for of_platform binding */
++static struct of_device_id __devinitdata xilinx_iic_of_match[] = {
++	{ .compatible = "xlnx,xps-iic-2.00.a", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, xilinx_iic_of_match);
++
++static struct platform_driver xiic_i2c_driver = {
++	.probe   = xiic_i2c_of_probe,
++	.remove  = __devexit_p(xiic_i2c_of_remove),
++	.driver  = {
++		.owner = THIS_MODULE,
++		.name = DRIVER_NAME,
++		.of_match_table = xilinx_iic_of_match,
++	},
++};
++#endif
++
+ static int __init xiic_i2c_init(void)
+ {
+ 	return platform_driver_register(&xiic_i2c_driver);
+-- 
+1.5.5.6
 
-But I disagree it's troublesome. It's transparent to everyone else.
-The only side effect is to not have to include sched.h when using a
-macro define on wait.h.
-
->
-> Why are you moving TASK_COMM_LEN?
-
-This one can be moved back to sched.h.
-
-Br,
-
-David
-
->
->>  include/linux/sched.h      |   61 +-----------------------------------------
->>  include/linux/task_sched.h |   64 ++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/wait.h       |    1 +
->>  3 files changed, 66 insertions(+), 60 deletions(-)
->>  create mode 100644 include/linux/task_sched.h
->
->> --- a/include/linux/sched.h
->> +++ b/include/linux/sched.h
->> +#include <linux/task_sched.h>
->
