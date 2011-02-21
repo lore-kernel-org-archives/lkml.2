@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab1BUHYb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 02:24:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46482 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752228Ab1BUHYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 02:24:30 -0500
-Date: Mon, 21 Feb 2011 18:24:19 +1100
-From: NeilBrown <neilb@suse.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: blk_throtl_exit taking q->queue_lock is problematic
-Message-ID: <20110221182419.3545cdbb@notabene.brown>
-In-Reply-To: <20110218150429.GB26654@redhat.com>
-References: <20110216183114.26a3613b@notabene.brown>
-	<20110216155305.GC14653@redhat.com>
-	<20110217113536.2bbf308e@notabene.brown>
-	<20110217011029.GA6793@redhat.com>
-	<20110217165501.47f3c26f@notabene.brown>
-	<20110217165906.GE9075@redhat.com>
-	<20110218134025.2a2e5bbb@notabene.brown>
-	<AANLkTi=t0vFTTDr9jBZ70UmJ9YYzziA0cRP8t0T9wswW@mail.gmail.com>
-	<20110218143325.5738e127@notabene.brown>
-	<20110218150429.GB26654@redhat.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753902Ab1BUHgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 02:36:48 -0500
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:45164 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752463Ab1BUHgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 02:36:47 -0500
+Date: Mon, 21 Feb 2011 09:36:40 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: David Cohen <dacohen@gmail.com>
+Cc: balbi@ti.com, Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
+        Thomas Weber <weber@corscience.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-omap@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Tejun Heo <tj@kernel.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] video: omap24xxcam: Fix compilation
+Message-ID: <20110221073640.GA3094@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1297068547-10635-1-git-send-email-weber@corscience.de>
+ <4D5A6353.7040907@maxwell.research.nokia.com>
+ <20110215113717.GN2570@legolas.emea.dhcp.ti.com>
+ <4D5A672A.7040000@samsung.com>
+ <4D5A6874.1080705@corscience.de>
+ <20110215115349.GQ2570@legolas.emea.dhcp.ti.com>
+ <4D5A6EEC.5000908@maxwell.research.nokia.com>
+ <AANLkTik+6fguqgH8Bpnpqo7Axmquy3caRMELTZVmuN1j@mail.gmail.com>
+ <20110219150024.GA4487@legolas.emea.dhcp.ti.com>
+ <AANLkTik5dwNZrUxjgjKeAQOsp610d6y_TNGg1b5Vc5Zd@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik5dwNZrUxjgjKeAQOsp610d6y_TNGg1b5Vc5Zd@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011 10:04:29 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+Hi,
 
-> On Fri, Feb 18, 2011 at 02:33:25PM +1100, NeilBrown wrote:
-> > On Thu, 17 Feb 2011 22:19:52 -0500 Mike Snitzer <snitzer@redhat.com> wrote:
-
-> > > Noticed an inconsistency, raid10.c's additional locking also protects
-> > > the bio_list_add() whereas raid1.c's doesn't.  Seems the additional
-> > > protection in raid10 isn't needed?
-> > 
-> > Correct - not needed at all.
-> > I put it there because it felt a little cleaner keeping the two 'lock's
-> > together like the two 'unlock's.  Probably confusing though...
+On Sat, Feb 19, 2011 at 06:04:58PM +0200, David Cohen wrote:
+> > I have to disagree. The fundamental problem is the circular dependency
+> > between those two files:
+> >
+> > sched.h uses wait_queue_head_t defined in wait.h
+> > wait.h uses TASK_* defined in sched.h
+> >
+> > So, IMO the real fix would be clear out the circular dependency. Maybe
+> > introducing <linux/task.h> to define those TASK_* symbols and include
+> > that on sched.h and wait.h
+> >
+> > Just dig a quick and dirty to try it out and works like a charm
 > 
-> I guess you could use blk_plug_device_unlocked() to get rid of ugliness
-> and this routine will take care of taking queue lock.
+> We have 2 problems:
+>  - omap24xxcam compilation broken
+>  - circular dependency between sched.h and wait.h
 > 
+> To fix the broken compilation we can do what the rest of the kernel is
+> doing, which is to include sched.h.
+> Then, the circular dependency is fixed by some different approach
+> which would probably change *all* current usage of TASK_*.
 
-Yep, that gets rid of some ugliness.
-I've made that change and will submit it in due course.
-So blk_throtl doesn't need any change to avoid the problem with md - that
-changes are made in md instead.
+considering that 1 is caused by 2 I would fix 2.
 
-Thanks,
-NeilBrown
+> IMO, there's no need to create a dependency between those issues.
 
+There's no dependency between them, it's just that the root cause for
+this problem is a circular dependency between wait.h and sched.h
+
+-- 
+balbi
