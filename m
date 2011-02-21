@@ -1,117 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab1BUKUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 05:20:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51908 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab1BUKUp (ORCPT
+	id S1755428Ab1BUKVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 05:21:05 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48487 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab1BUKVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 05:20:45 -0500
+	Mon, 21 Feb 2011 05:21:02 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=shK5g5r07lkmIgjKxyW7si+bSZrBsIshPCLGGVYUxP6yySlgX3GVcekjwd83IeYs49
-         CK+TChuzIuTTFO8CkRqfBIlwotkM7YzFviMk/Y+t4jHSKazl/IVz0B/AAu2Vk+aeb2fk
-         +Is8jT6Mv4nQiRAqCflkLstyeokMez5b0B6pk=
-Date: Mon, 21 Feb 2011 11:20:40 +0100
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH] x86-64, NUMA: Do not scan two times for
- setup_node_bootmem()
-Message-ID: <20110221102040.GI31267@htj.dyndns.org>
-References: <4D5EC05A.60103@kernel.org>
- <4D5EC177.7030101@kernel.org>
- <alpine.DEB.2.00.1102191942420.32280@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1102191942420.32280@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=D94nbcmbs+JmWfxrTX59tbAB8sVNSEMnSrjDFwqrOsfgbFS7H4VjK1n8hNLZXjPSby
+         moIEQYdKUtjoR8atTkEV6TVINwqqMcp6p8G525Ugp6zBtJq3yeXvXFpvJAmxOhy9fuVH
+         mWTKTeUIx/U7SK30RjrdYa8AuAF0Nql88Igu8=
+From: David Cohen <dacohen@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, linux-omap@vger.kernel.org,
+        linux-media@vger.kernel.org, David Cohen <dacohen@gmail.com>
+Subject: [PATCH 1/1] headers: fix circular dependency between linux/sched.h and linux/wait.h
+Date: Mon, 21 Feb 2011 12:20:49 +0200
+Message-Id: <1298283649-24532-2-git-send-email-dacohen@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1298283649-24532-1-git-send-email-dacohen@gmail.com>
+References: <1298283649-24532-1-git-send-email-dacohen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 2d389b34c02cbc36c561a309735f69568aa9c3ea Mon Sep 17 00:00:00 2001
-From: Yinghai Lu <yinghai@kernel.org>
-Date: Mon, 21 Feb 2011 10:58:13 +0100
+Currently sched.h and wait.h have circular dependency between both.
+wait.h defines macros wake_up*() which use macros TASK_* defined by
+sched.h. But as sched.h indirectly includes wait.h, such wait.h header
+file can't include sched.h too. The side effect is when some file
+includes wait.h and tries to use its wake_up*() macros, it's necessary
+to include sched.h also.
+This patch moves all TASK_* macros from linux/sched.h to a new header
+file linux/task_sched.h. This way, both sched.h and wait.h can include
+task_sched.h and fix the circular dependency. No need to include sched.h
+anymore when wake_up*() macros are used.
 
-By the time setup_node_bootmem() is called, all the memblocks are
-already registered.  As node_data is allocated from these memblocks,
-calling it more than once doesn't make any difference.  Drop the loop.
-
-tj: Rephrased description.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: David Cohen <dacohen@gmail.com>
 ---
-Applied to x86-numa.  I dropped the comment David pointed out and
-redid the description.  If you are unhappy with me redoing the
-descriptions, please scream.
+ include/linux/sched.h      |   61 +-----------------------------------------
+ include/linux/task_sched.h |   64 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/wait.h       |    1 +
+ 3 files changed, 66 insertions(+), 60 deletions(-)
+ create mode 100644 include/linux/task_sched.h
 
-Thanks.
-
- arch/x86/mm/numa_64.c |   32 ++++++++++++--------------------
- 1 files changed, 12 insertions(+), 20 deletions(-)
-
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index f6d85e3..6e4ee96 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -480,7 +480,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d747f94..c60dcee 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -90,6 +90,7 @@ struct sched_param {
+ #include <linux/task_io_accounting.h>
+ #include <linux/latencytop.h>
+ #include <linux/cred.h>
++#include <linux/task_sched.h>
  
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
--	int i, j, nid;
-+	int i, nid;
+ #include <asm/processor.h>
  
- 	/* Account for nodes with cpus and no memory */
- 	node_possible_map = numa_nodes_parsed;
-@@ -506,28 +506,20 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+@@ -169,63 +170,6 @@ print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ #endif
  
- 	init_memory_mapping_high();
- 
--	/*
--	 * Finally register nodes.  Do it twice in case setup_node_bootmem
--	 * missed one due to missing bootmem.
--	 */
--	for (i = 0; i < 2; i++) {
--		for_each_node_mask(nid, node_possible_map) {
--			u64 start = (u64)max_pfn << PAGE_SHIFT;
--			u64 end = 0;
-+	/* Finally register nodes. */
-+	for_each_node_mask(nid, node_possible_map) {
-+		u64 start = (u64)max_pfn << PAGE_SHIFT;
-+		u64 end = 0;
- 
--			if (node_online(nid))
-+		for (i = 0; i < mi->nr_blks; i++) {
-+			if (nid != mi->blk[i].nid)
- 				continue;
+ /*
+- * Task state bitmask. NOTE! These bits are also
+- * encoded in fs/proc/array.c: get_task_state().
+- *
+- * We have two separate sets of flags: task->state
+- * is about runnability, while task->exit_state are
+- * about the task exiting. Confusing, but this way
+- * modifying one set can't modify the other one by
+- * mistake.
+- */
+-#define TASK_RUNNING		0
+-#define TASK_INTERRUPTIBLE	1
+-#define TASK_UNINTERRUPTIBLE	2
+-#define __TASK_STOPPED		4
+-#define __TASK_TRACED		8
+-/* in tsk->exit_state */
+-#define EXIT_ZOMBIE		16
+-#define EXIT_DEAD		32
+-/* in tsk->state again */
+-#define TASK_DEAD		64
+-#define TASK_WAKEKILL		128
+-#define TASK_WAKING		256
+-#define TASK_STATE_MAX		512
 -
--			for (j = 0; j < mi->nr_blks; j++) {
--				if (nid != mi->blk[j].nid)
--					continue;
--				start = min(mi->blk[j].start, start);
--				end = max(mi->blk[j].end, end);
--			}
+-#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKW"
 -
--			if (start < end)
--				setup_node_bootmem(nid, start, end);
-+			start = min(mi->blk[i].start, start);
-+			end = max(mi->blk[i].end, end);
- 		}
+-extern char ___assert_task_state[1 - 2*!!(
+-		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
+-
+-/* Convenience macros for the sake of set_task_state */
+-#define TASK_KILLABLE		(TASK_WAKEKILL | TASK_UNINTERRUPTIBLE)
+-#define TASK_STOPPED		(TASK_WAKEKILL | __TASK_STOPPED)
+-#define TASK_TRACED		(TASK_WAKEKILL | __TASK_TRACED)
+-
+-/* Convenience macros for the sake of wake_up */
+-#define TASK_NORMAL		(TASK_INTERRUPTIBLE | TASK_UNINTERRUPTIBLE)
+-#define TASK_ALL		(TASK_NORMAL | __TASK_STOPPED | __TASK_TRACED)
+-
+-/* get_task_state() */
+-#define TASK_REPORT		(TASK_RUNNING | TASK_INTERRUPTIBLE | \
+-				 TASK_UNINTERRUPTIBLE | __TASK_STOPPED | \
+-				 __TASK_TRACED)
+-
+-#define task_is_traced(task)	((task->state & __TASK_TRACED) != 0)
+-#define task_is_stopped(task)	((task->state & __TASK_STOPPED) != 0)
+-#define task_is_dead(task)	((task)->exit_state != 0)
+-#define task_is_stopped_or_traced(task)	\
+-			((task->state & (__TASK_STOPPED | __TASK_TRACED)) != 0)
+-#define task_contributes_to_load(task)	\
+-				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
+-				 (task->flags & PF_FREEZING) == 0)
+-
+-#define __set_task_state(tsk, state_value)		\
+-	do { (tsk)->state = (state_value); } while (0)
+-#define set_task_state(tsk, state_value)		\
+-	set_mb((tsk)->state, (state_value))
+-
+-/*
+  * set_current_state() includes a barrier so that the write of current->state
+  * is correctly serialised wrt the caller's subsequent test of whether to
+  * actually sleep:
+@@ -241,9 +185,6 @@ extern char ___assert_task_state[1 - 2*!!(
+ #define set_current_state(state_value)		\
+ 	set_mb(current->state, (state_value))
+ 
+-/* Task command name length */
+-#define TASK_COMM_LEN 16
+-
+ #include <linux/spinlock.h>
+ 
+ /*
+diff --git a/include/linux/task_sched.h b/include/linux/task_sched.h
+new file mode 100644
+index 0000000..3787387
+--- /dev/null
++++ b/include/linux/task_sched.h
+@@ -0,0 +1,64 @@
++#ifndef _LINUX_TASK_H
++#define _LINUX_TASK_H
 +
-+		if (start < end)
-+			setup_node_bootmem(nid, start, end);
- 	}
++/*
++ * Task state bitmask. NOTE! These bits are also
++ * encoded in fs/proc/array.c: get_task_state().
++ *
++ * We have two separate sets of flags: task->state
++ * is about runnability, while task->exit_state are
++ * about the task exiting. Confusing, but this way
++ * modifying one set can't modify the other one by
++ * mistake.
++ */
++#define TASK_RUNNING		0
++#define TASK_INTERRUPTIBLE	1
++#define TASK_UNINTERRUPTIBLE	2
++#define __TASK_STOPPED		4
++#define __TASK_TRACED		8
++/* in tsk->exit_state */
++#define EXIT_ZOMBIE		16
++#define EXIT_DEAD		32
++/* in tsk->state again */
++#define TASK_DEAD		64
++#define TASK_WAKEKILL		128
++#define TASK_WAKING		256
++#define TASK_STATE_MAX		512
++
++#define TASK_STATE_TO_CHAR_STR "RSDTtZXxKW"
++
++extern char ___assert_task_state[1 - 2*!!(
++		sizeof(TASK_STATE_TO_CHAR_STR)-1 != ilog2(TASK_STATE_MAX)+1)];
++
++/* Convenience macros for the sake of set_task_state */
++#define TASK_KILLABLE		(TASK_WAKEKILL | TASK_UNINTERRUPTIBLE)
++#define TASK_STOPPED		(TASK_WAKEKILL | __TASK_STOPPED)
++#define TASK_TRACED		(TASK_WAKEKILL | __TASK_TRACED)
++
++/* Convenience macros for the sake of wake_up */
++#define TASK_NORMAL		(TASK_INTERRUPTIBLE | TASK_UNINTERRUPTIBLE)
++#define TASK_ALL		(TASK_NORMAL | __TASK_STOPPED | __TASK_TRACED)
++
++/* get_task_state() */
++#define TASK_REPORT		(TASK_RUNNING | TASK_INTERRUPTIBLE | \
++				 TASK_UNINTERRUPTIBLE | __TASK_STOPPED | \
++				 __TASK_TRACED)
++
++#define task_is_traced(task)	((task->state & __TASK_TRACED) != 0)
++#define task_is_stopped(task)	((task->state & __TASK_STOPPED) != 0)
++#define task_is_dead(task)	((task)->exit_state != 0)
++#define task_is_stopped_or_traced(task)	\
++			((task->state & (__TASK_STOPPED | __TASK_TRACED)) != 0)
++#define task_contributes_to_load(task)	\
++				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
++				 (task->flags & PF_FREEZING) == 0)
++
++#define __set_task_state(tsk, state_value)		\
++	do { (tsk)->state = (state_value); } while (0)
++#define set_task_state(tsk, state_value)		\
++	set_mb((tsk)->state, (state_value))
++
++/* Task command name length */
++#define TASK_COMM_LEN 16
++
++#endif
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 3efc9f3..cccfdd2 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -22,6 +22,7 @@
+ #include <linux/list.h>
+ #include <linux/stddef.h>
+ #include <linux/spinlock.h>
++#include <linux/task_sched.h>
+ #include <asm/system.h>
+ #include <asm/current.h>
  
- 	return 0;
 -- 
 1.7.1
 
