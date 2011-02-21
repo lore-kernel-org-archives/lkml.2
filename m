@@ -1,122 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab1BUPRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 10:17:07 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46701 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab1BUPRF (ORCPT
+	id S1755312Ab1BUPSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 10:18:10 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45720 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab1BUPSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 10:17:05 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: <x86@kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] x86, amd-nb: Misc correctness fixes
-Date: Mon, 21 Feb 2011 16:17:42 +0100
-Message-Id: <1298301462-20469-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
+	Mon, 21 Feb 2011 10:18:08 -0500
+Date: Mon, 21 Feb 2011 15:17:52 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: John Linn <John.Linn@xilinx.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, catalin.marinas@arm.com,
+        glikely@secretlab.ca, jamie@jamieiles.com
+Subject: Re: [PATCH V4 3/4] ARM: Xilinx: base header files and assembly
+	macros
+Message-ID: <20110221151752.GR14495@n2100.arm.linux.org.uk>
+References: <1298052881-14591-1-git-send-email-john.linn@xilinx.com> <201102210936.42098.arnd@arndb.de> <c3cdf33d-2163-4417-bc64-7637f5c211e0@VA3EHSMHS021.ehs.local> <201102211548.36296.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102211548.36296.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Mon, Feb 21, 2011 at 03:48:36PM +0100, Arnd Bergmann wrote:
+> On Monday 21 February 2011, John Linn wrote:
+> > > It would be better if you could avoid introducing new uses of
+> > > CLOCK_TICK_RATE, because that will have to be removed before we can
+> > > move to a real multi-platform kernel. For instance, you can put
+> > > PERIPHERAL_CLOCK_RATE in a hardware specific header and put a bogus
+> > > definition for CLOCK_TICK_RATE into timex.h
+> > 
+> > Hi Arnd,
+> > 
+> > I can remove the use of it from my timer code, but I still see
+> > CLOCK_TICK_RATE 
+> > being used in linux/jiffies.h.
+> > 
+> > I tried removing it and got build errors.  Am I missing something there?
+> > 
+> 
+> You still need to have some definition for CLOCK_TICK_RATE to make
+> the jiffies code compile, but the actual value no longer matters.
 
-Make functions used strictly in bool context return bool. Also, fixup
-used types and comments, and make a local function static, while at it.
+This is what I said a while back:
+| If you switch to clocksource/clockevents, then I think CLOCK_TICK_RATE
+| is irrelevant as time advances according to the interval measured by
+| the previous and current clocksource read, rather than 1/HZ intervals.
+| 
+| However, I'm never happy to say "just set CLOCK_TICK_RATE to some random
+| value that's a multiple of HZ" because I can't convince myself that these
+| don't have any effect when using clocksources.  The list of symbols which
+| depend on CLOCK_TICK_RATE are:
+| 
+| ACTHZ
+| LATCH
+| TICK_NSEC
+| TICK_USEC_TO_NSEC
+| LOW_RES_NSEC
+| MONOTONIC_RES_NSEC
+| NSEC_PER_JIFFY
+| KTIME_LOW_RES
+| 
+| and if you grep for those outside of arch/, you find them being used in
+| a fair amount of code under kernel/, as well as the odd driver here and
+| there.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/include/asm/amd_nb.h |   12 ++++++------
- arch/x86/kernel/amd_nb.c      |   18 ++++++++++--------
- 2 files changed, 16 insertions(+), 14 deletions(-)
+Eg, LOW_RES_NSEC is exported to userspace via the posix clocks interface.
 
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index 2b33c4d..527fb96 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -13,7 +13,7 @@ extern const struct pci_device_id amd_nb_misc_ids[];
- extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
- struct bootnode;
- 
--extern int early_is_amd_nb(u32 value);
-+extern bool early_is_amd_nb(u32 value);
- extern int amd_cache_northbridges(void);
- extern void amd_flush_garts(void);
- extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
-@@ -38,18 +38,18 @@ struct amd_northbridge_info {
- };
- extern struct amd_northbridge_info amd_northbridges;
- 
--#define AMD_NB_GART			0x1
--#define AMD_NB_L3_INDEX_DISABLE		0x2
--#define AMD_NB_L3_PARTITIONING		0x4
-+#define AMD_NB_GART			BIT(0)
-+#define AMD_NB_L3_INDEX_DISABLE		BIT(1)
-+#define AMD_NB_L3_PARTITIONING		BIT(2)
- 
- #ifdef CONFIG_AMD_NB
- 
--static inline int amd_nb_num(void)
-+static inline u16 amd_nb_num(void)
- {
- 	return amd_northbridges.num;
- }
- 
--static inline int amd_nb_has_feature(int feature)
-+static inline bool amd_nb_has_feature(unsigned feature)
- {
- 	return ((amd_northbridges.flags & feature) == feature);
- }
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index ed3c2e5..b57ade1 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -48,7 +48,7 @@ static struct pci_dev *next_northbridge(struct pci_dev *dev,
- 
- int amd_cache_northbridges(void)
- {
--	int i = 0;
-+	u16 i = 0;
- 	struct amd_northbridge *nb;
- 	struct pci_dev *misc, *link;
- 
-@@ -103,9 +103,11 @@ int amd_cache_northbridges(void)
- }
- EXPORT_SYMBOL_GPL(amd_cache_northbridges);
- 
--/* Ignores subdevice/subvendor but as far as I can figure out
--   they're useless anyways */
--int __init early_is_amd_nb(u32 device)
-+/*
-+ * Ignores subdevice/subvendor but as far as I can figure out
-+ * they're useless anyways
-+ */
-+bool __init early_is_amd_nb(u32 device)
- {
- 	const struct pci_device_id *id;
- 	u32 vendor = device & 0xffff;
-@@ -113,8 +115,8 @@ int __init early_is_amd_nb(u32 device)
- 	device >>= 16;
- 	for (id = amd_nb_misc_ids; id->vendor; id++)
- 		if (vendor == id->vendor && device == id->device)
--			return 1;
--	return 0;
-+			return true;
-+	return false;
- }
- 
- int amd_get_subcaches(int cpu)
-@@ -176,9 +178,9 @@ int amd_set_subcaches(int cpu, int mask)
- 	return 0;
- }
- 
--int amd_cache_gart(void)
-+static int amd_cache_gart(void)
- {
--       int i;
-+       u16 i;
- 
-        if (!amd_nb_has_feature(AMD_NB_GART))
-                return 0;
--- 
-1.7.4.rc2
+NSEC_PER_SEC and TICK_NSEC are used for cmos clock updates, so probably
+don't matter too much there.  TICK_NSEC is also used by the scheduler,
+time conversions (timespec/timeval to/from jiffies) and profiling code.
 
+NSEC_PER_JIFFY is used by the jiffy clocksource code, which only matters
+if you don't have your own clocksource.
+
+So, I feel very uneasy about saying that CLOCK_TICK_RATE doesn't matter
+anymore given all the places which reference something that's derived
+from it.
+
+Here's the result of grepping for the above symbols:
+
+drivers/oprofile/timer_int.c:   hrtimer_forward_now(hrtimer, ns_to_ktime(TICK_NSEC));
+drivers/oprofile/timer_int.c:   hrtimer_start(hrtimer, ns_to_ktime(TICK_NSEC),
+include/linux/acct.h:#if (TICK_NSEC % (NSEC_PER_SEC / AHZ)) == 0
+include/linux/acct.h:        u64 tmp = (u64)x * TICK_NSEC;
+include/linux/hrtimer.h:# define MONOTONIC_RES_NSEC     HIGH_RES_NSEC
+include/linux/hrtimer.h:# define MONOTONIC_RES_NSEC     LOW_RES_NSEC
+include/linux/hrtimer.h:# define KTIME_MONOTONIC_RES    KTIME_LOW_RES
+include/linux/jiffies.h:/* TICK_NSEC is the time between ticks in nsec assuming
+real ACTHZ */
+include/linux/jiffies.h:#define TICK_NSEC (SH_DIV (1000000UL * 1000, ACTHZ, 8))
+include/linux/jiffies.h:/* TICK_USEC_TO_NSEC is the time between ticks in nsec assuming real ACTHZ and  */
+include/linux/jiffies.h:#define TICK_USEC_TO_NSEC(TUSEC) (SH_DIV (TUSEC * USER_HZ * 1000, ACTHZ, 8))
+include/linux/jiffies.h: * is: TICK_NSEC (which is defined in timex.h).  This
+include/linux/jiffies.h:#if !((((NSEC_PER_SEC << 2) / TICK_NSEC) << (SEC_JIFFIE_SC - 2)) & 0x80000000)
+include/linux/jiffies.h:                                TICK_NSEC -1) / (u64)TICK_NSEC))
+include/linux/jiffies.h:                                        TICK_NSEC -1) /
+(u64)TICK_NSEC))
+include/linux/jiffies.h:                                        TICK_NSEC -1) /
+(u64)TICK_NSEC))
+include/linux/jiffies.h:        (long)((u64)((u64)MAX_JIFFY_OFFSET * TICK_NSEC)
+/ NSEC_PER_SEC)
+include/linux/jiffies.h:        (SH_DIV((MAX_JIFFY_OFFSET >> SEC_JIFFIE_SC) * TICK_NSEC, NSEC_PER_SEC, 1) - 1)
+include/linux/ktime.h:#define LOW_RES_NSEC              TICK_NSEC
+include/linux/ktime.h:#define KTIME_LOW_RES             (ktime_t){ .tv64 = LOW_RES_NSEC }
+kernel/hrtimer.c:                       .resolution = KTIME_LOW_RES,
+kernel/hrtimer.c:                       .resolution = KTIME_LOW_RES,
+kernel/perf_event.c:    u64 interval = (u64)cpuctx->jiffies_interval * TICK_NSEC;
+kernel/perf_event.c:            if (delta > 0 && delta < 2*TICK_NSEC)
+kernel/posix-timers.c:  *tp = ktime_to_timespec(KTIME_LOW_RES);
+kernel/sched.c: * scheduler tick (TICK_NSEC). With tickless idle this will not be called
+kernel/sched_clock.c:    *                    scd->tick_gtod + TICK_NSEC);
+kernel/sched_clock.c:   max_clock = wrap_max(old_clock, scd->tick_gtod + TICK_NSEC);
+kernel/time.c: * The TICK_NSEC - 1 rounds up the value to the next resolution.
+Note
+kernel/time.c: * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.kernel/time.c:  long nsec = value->tv_nsec + TICK_NSEC - 1;
+kernel/time.c:  value->tv_sec = div_u64_rem((u64)jiffies * TICK_NSEC,
+kernel/time.c:  value->tv_sec = div_u64_rem((u64)jiffies * TICK_NSEC,
+kernel/time.c:#if (TICK_NSEC % (NSEC_PER_SEC / USER_HZ)) == 0
+kernel/time.c:  return div_u64((u64)x * TICK_NSEC, NSEC_PER_SEC / USER_HZ);
+kernel/time.c:#if (TICK_NSEC % (NSEC_PER_SEC / USER_HZ)) == 0
+kernel/time.c:  x = div_u64(x * TICK_NSEC, (NSEC_PER_SEC / USER_HZ));
+kernel/time/jiffies.c:#define NSEC_PER_JIFFY    ((u32)((((u64)NSEC_PER_SEC)<<8)/ACTHZ))
+kernel/time/jiffies.c:/* Since jiffies uses a simple NSEC_PER_JIFFY multiplier
+kernel/time/jiffies.c: * larger can result in overflows. NSEC_PER_JIFFY grows askernel/time/jiffies.c:  .mult           = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
+kernel/time/ntp.c:      next.tv_nsec = (NSEC_PER_SEC / 2) - now.tv_nsec - (TICK_NSEC / 2);
