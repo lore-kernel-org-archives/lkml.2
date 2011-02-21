@@ -1,253 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab1BUDTK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 22:19:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50537 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab1BUDTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 22:19:06 -0500
-Message-ID: <4D61DA04.4060007@cn.fujitsu.com>
-Date: Mon, 21 Feb 2011 11:20:36 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1755593Ab1BUD0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 22:26:16 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36288 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab1BUD0O convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 22:26:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=SfqpOR9uGl7Z2l+29a8hN0xKuMeniPy2XlC2ah5u8PHoGrDwRDOhZ3CcnIeWUP+/tL
+         MzJt9BmWVnmhnK9DsfLWqn8bn7dvvpLvpFjCBJHi528cISFCM7tJt3nFqMJhFyRLOiAC
+         jPR1tpF42CXx8SmFUbgDQjXaMGunqh5IiKz8A=
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
-        miaox@cn.fujitsu.com, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] cpuset: Fix unchecked calls to NODEMASK_ALLOC()
-References: <4D5C7EA7.1030409@cn.fujitsu.com> <4D5C7ED1.2070601@cn.fujitsu.com> <alpine.DEB.2.00.1102191745180.27722@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1102191745180.27722@chino.kir.corp.google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 11:18:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 11:18:04,
-	Serialize complete at 2011-02-21 11:18:04
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110221022316.GA18332@liondog.tnic>
+References: <1298219710-9846-1-git-send-email-bp@alien8.de>
+	<20110220175709.GA5178@merkur.ravnborg.org>
+	<20110220193906.GC6713@liondog.tnic>
+	<20110220195222.GA12915@merkur.ravnborg.org>
+	<20110221022316.GA18332@liondog.tnic>
+Date: Sun, 20 Feb 2011 22:26:13 -0500
+Message-ID: <AANLkTimZhB8Ong=nJ_mjit+VRtb7g+TQhT9_wvojQ0-e@mail.gmail.com>
+Subject: Re: [PATCH -v3] kbuild: Add extra gcc checks
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Sam Ravnborg <sam@ravnborg.org>,
+        Michal Marek <mmarek@suse.cz>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, linux-kbuild@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Rientjes wrote:
-> On Thu, 17 Feb 2011, Li Zefan wrote:
-> 
->> Those functions that use NODEMASK_ALLOC() can't propogate errno
->> to users, but will fail silently.
->>
->> Since all of them are called with cgroup_mutex held, here we use
->> a global nodemask_t variable.
->>
->> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> 
-> I like the idea and the comment is explicit enough that we don't need any 
-> refcounting to ensure double usage under cgroup_lock.  I think each 
-> function should be modified to use cpuset_mems directly, though, instead 
-> of defining local variables that indirectly access it which only serves to 
-> make this patch smaller.  Then we can ensure that all occurrences of 
-> cpuset_mems appear within the lock without being concerned about other 
-> references.
-> 
+Hi,
 
-Unfortunately, as I looked into the code again I found cpuset_change_nodemask()
-is called by other functions that use the global cpuset_mems, so I
-think we'd better check the refcnt of cpuset_mems.
+On Sun, Feb 20, 2011 at 9:23 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sun, Feb 20, 2011 at 08:52:22PM +0100, Sam Ravnborg wrote:
+>
+> ..
+>
+>> Use of EXTRA_CFLAGS is deprecated - so that is not the right choice.
+>> I suggest to use KBUILD_CFLAGS that is an KBUILD internal variable.
+>
+> Hey Sam,
+>
+> thanks for the suggestions/review, here's hopefully a better version:
+>
+> --
+> From: Borislav Petkov <bp@alien8.de>
+> Date: Sun, 20 Feb 2011 17:18:40 +0100
+> Subject: [PATCH -v3] kbuild: Add extra gcc checks
+>
+> Add a 'W=1' Makefile switch which adds additional checking per build
+> object.
+>
+> The idea behind this option is targeted at developers who, in the
+> process of writing their code, want to do the occasional
+>
+> make W=1 [target.o]
+>
+> and let gcc do more extensive code checking for them. Then, they
+> could eyeball the output for valid gcc warnings about various
+> bugs/discrepancies which are not reported during the normal build
+> process.
+>
+> For more background information and a use case, read through this
+> thread: http://marc.info/?l=kernel-janitors&m=129802065918147&w=2
+>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: Sam Ravnborg <sam@ravnborg.org>
+> Cc: linux-kbuild@vger.kernel.org
+> Acked-by: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
+> ---
+>  Makefile               |    6 ++++++
+>  scripts/Makefile.build |   29 ++++++++++++++++++++++++++++-
+>  2 files changed, 34 insertions(+), 1 deletions(-)
+>
+> diff --git a/Makefile b/Makefile
+> index c9c8c8f..c3bca9c 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -102,6 +102,11 @@ ifeq ("$(origin O)", "command line")
+>   KBUILD_OUTPUT := $(O)
+>  endif
+>
+> +ifeq ("$(origin W)", "command line")
+> +  KBUILD_ENABLE_EXTRA_GCC_CHECKS = 1
+> +  export KBUILD_ENABLE_EXTRA_GCC_CHECKS
+> +endif
+> +
+You never check CC is gcc. How can you assert this ? Moreover, can you
+certify that all the compiler supported to build Linux do support the
+set of new warnings ? What about icc ? old gcc ? LLVM/clang ?
 
-How about this:
+>  # That's our default target when none is given on the command line
+>  PHONY := _all
+>  _all:
+> @@ -1262,6 +1267,7 @@ help:
+>        @echo  '  make O=dir [targets] Locate all output files in "dir", including .config'
+>        @echo  '  make C=1   [targets] Check all c source with $$CHECK (sparse by default)'
+>        @echo  '  make C=2   [targets] Force check of all c source with $$CHECK'
+> +       @echo  '  make W=1   [targets] Enable extra gcc checks'
+same as above.
 
-[PATCH 3/4] cpuset: Fix unchecked calls to NODEMASK_ALLOC()
+>        @echo  ''
+>        @echo  'Execute "make" or "make all" to build all targets marked with [*] '
+>        @echo  'For further info see the ./README file'
+> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+> index 4eb99ab..b4d7661 100644
+> --- a/scripts/Makefile.build
+> +++ b/scripts/Makefile.build
+> @@ -49,6 +49,34 @@ ifeq ($(KBUILD_NOPEDANTIC),)
+>                 $(error CFLAGS was changed in "$(kbuild-file)". Fix it to use EXTRA_CFLAGS)
+>         endif
+>  endif
+> +
+> +# make W=1 settings
+> +ifdef KBUILD_ENABLE_EXTRA_GCC_CHECKS
+> +KBUILD_CFLAGS += -Wextra -Wno-unused
+> +KBUILD_CFLAGS += -Waggregate-return
+> +KBUILD_CFLAGS += -Wbad-function-cast
+> +KBUILD_CFLAGS += -Wcast-qual
+> +KBUILD_CFLAGS += -Wcast-align
+> +KBUILD_CFLAGS += -Wconversion
+> +KBUILD_CFLAGS += -Wdisabled-optimization
+> +KBUILD_CFLAGS += -Wlogical-op
+> +KBUILD_CFLAGS += -Wmissing-declarations
+> +KBUILD_CFLAGS += -Wmissing-format-attribute
+> +KBUILD_CFLAGS += -Wmissing-include-dirs
+> +KBUILD_CFLAGS += -Wmissing-prototypes
+> +KBUILD_CFLAGS += -Wnested-externs
+> +KBUILD_CFLAGS += -Wold-style-definition
+> +KBUILD_CFLAGS += -Woverlength-strings
+> +KBUILD_CFLAGS += -Wpacked
+> +KBUILD_CFLAGS += -Wpacked-bitfield-compat
+> +KBUILD_CFLAGS += -Wpadded
+> +KBUILD_CFLAGS += -Wpointer-arith
+> +KBUILD_CFLAGS += -Wredundant-decls
+> +KBUILD_CFLAGS += -Wshadow
+> +KBUILD_CFLAGS += -Wswitch-default
+> +KBUILD_CFLAGS += -Wvla
+> +endif
+> +
+Why not making it simple at the beginning by:
+ 1) s/GCC/CC/
+ 2) using `cc-option' provided by Kbuild for each new option. As an
+example, for `-Wvla':
 
-Those functions that use NODEMASK_ALLOC() can't propogate errno
-to users, so might fail silently.
+KBUILD_CFLAGS += $(call cc-option, -Wvla)
 
-Based on the fact that all of them are called with cgroup_mutex
-held, we fix this by using a global nodemask.
+so so on.
 
-cpuset_change_nodemask() is an exception, because it's called
-by other functions. Here we declare a static nodemask in the
-function for its own use.
+ - Arnaud
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- kernel/cpuset.c |   82 +++++++++++++++++++++++++++++++++----------------------
- 1 files changed, 49 insertions(+), 33 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 70c9ca2..da620d2 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -79,6 +79,38 @@ int number_of_cpusets __read_mostly;
- struct cgroup_subsys cpuset_subsys;
- struct cpuset;
- 
-+static nodemask_t cpuset_mems;
-+static int cpuset_mems_ref;
-+
-+/*
-+ * In functions that can't propagate errno to users, to avoid declaring a
-+ * nodemask_t variable in stack, and avoid using NODEMASK_ALLOC that can
-+ * return -ENOMEM, we use a global cpuset_mems.
-+ *
-+ * It must be used with cgroup_lock held.
-+ */
-+static nodemask_t *cpuset_static_nodemask(void)
-+{
-+	WARN_ON(!cgroup_lock_is_held());
-+	WARN_ON(cpuset_mems_ref);
-+
-+	cpuset_mems_ref++;
-+	return &cpuset_mems;
-+}
-+
-+/*
-+ * Calling cpuset_static_nodemask() should be paired with this function,
-+ * so we insure the global nodemask won't be used by more than one user
-+ * at the one time.
-+ */
-+static void cpuset_release_static_nodemask(void)
-+{
-+	WARN_ON(!cgroup_lock_is_held());
-+
-+	cpuset_mems_ref--;
-+	WARN_ON(!cpuset_mems_ref);
-+}
-+
- /* See "Frequency meter" comments, below. */
- 
- struct fmeter {
-@@ -1015,17 +1047,12 @@ static void cpuset_change_nodemask(struct task_struct *p,
- 	struct cpuset *cs;
- 	int migrate;
- 	const nodemask_t *oldmem = scan->data;
--	NODEMASK_ALLOC(nodemask_t, newmems, GFP_KERNEL);
--
--	if (!newmems)
--		return;
-+	static nodemask_t newmems;	/* protected by cgroup_mutex */
- 
- 	cs = cgroup_cs(scan->cg);
--	guarantee_online_mems(cs, newmems);
--
--	cpuset_change_task_nodemask(p, newmems);
-+	guarantee_online_mems(cs, &newmems);
- 
--	NODEMASK_FREE(newmems);
-+	cpuset_change_task_nodemask(p, &newmems);
- 
- 	mm = get_task_mm(p);
- 	if (!mm)
-@@ -1096,13 +1123,10 @@ static void update_tasks_nodemask(struct cpuset *cs, const nodemask_t *oldmem,
- static int update_nodemask(struct cpuset *cs, struct cpuset *trialcs,
- 			   const char *buf)
- {
--	NODEMASK_ALLOC(nodemask_t, oldmem, GFP_KERNEL);
-+	nodemask_t *oldmem = cpuset_static_nodemask();
- 	int retval;
- 	struct ptr_heap heap;
- 
--	if (!oldmem)
--		return -ENOMEM;
--
- 	/*
- 	 * top_cpuset.mems_allowed tracks node_stats[N_HIGH_MEMORY];
- 	 * it's read-only
-@@ -1152,7 +1176,7 @@ static int update_nodemask(struct cpuset *cs, struct cpuset *trialcs,
- 
- 	heap_free(&heap);
- done:
--	NODEMASK_FREE(oldmem);
-+	cpuset_release_static_nodemask();
- 	return retval;
- }
- 
-@@ -1438,10 +1462,7 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- 	struct mm_struct *mm;
- 	struct cpuset *cs = cgroup_cs(cont);
- 	struct cpuset *oldcs = cgroup_cs(oldcont);
--	NODEMASK_ALLOC(nodemask_t, to, GFP_KERNEL);
--
--	if (to == NULL)
--		goto alloc_fail;
-+	nodemask_t *to = cpuset_static_nodemask();
- 
- 	if (cs == &top_cpuset) {
- 		cpumask_copy(cpus_attach, cpu_possible_mask);
-@@ -1461,18 +1482,17 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- 		rcu_read_unlock();
- 	}
- 
-+	cpuset_release_static_nodemask();
-+
- 	/* change mm; only needs to be done once even if threadgroup */
--	*to = cs->mems_allowed;
- 	mm = get_task_mm(tsk);
- 	if (mm) {
--		mpol_rebind_mm(mm, to);
-+		mpol_rebind_mm(mm, &cs->mems_allowed);
- 		if (is_memory_migrate(cs))
--			cpuset_migrate_mm(mm, &oldcs->mems_allowed, to);
-+			cpuset_migrate_mm(mm, &oldcs->mems_allowed,
-+					  &cs->mems_allowed);
- 		mmput(mm);
- 	}
--
--alloc_fail:
--	NODEMASK_FREE(to);
- }
- 
- /* The various types of files and directories in a cpuset file system */
-@@ -2051,10 +2071,7 @@ static void scan_for_empty_cpusets(struct cpuset *root)
- 	struct cpuset *cp;	/* scans cpusets being updated */
- 	struct cpuset *child;	/* scans child cpusets of cp */
- 	struct cgroup *cont;
--	NODEMASK_ALLOC(nodemask_t, oldmems, GFP_KERNEL);
--
--	if (oldmems == NULL)
--		return;
-+	nodemask_t *oldmems = cpuset_static_nodemask();
- 
- 	list_add_tail((struct list_head *)&root->stack_list, &queue);
- 
-@@ -2090,7 +2107,8 @@ static void scan_for_empty_cpusets(struct cpuset *root)
- 			update_tasks_nodemask(cp, oldmems, NULL);
- 		}
- 	}
--	NODEMASK_FREE(oldmems);
-+
-+	cpuset_release_static_nodemask();
- }
- 
- /*
-@@ -2132,19 +2150,18 @@ void cpuset_update_active_cpus(void)
- static int cpuset_track_online_nodes(struct notifier_block *self,
- 				unsigned long action, void *arg)
- {
--	NODEMASK_ALLOC(nodemask_t, oldmems, GFP_KERNEL);
--
--	if (oldmems == NULL)
--		return NOTIFY_DONE;
-+	nodemask_t *oldmems;
- 
- 	cgroup_lock();
- 	switch (action) {
- 	case MEM_ONLINE:
-+		oldmems = cpuset_static_nodemask();
- 		*oldmems = top_cpuset.mems_allowed;
- 		mutex_lock(&callback_mutex);
- 		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
- 		mutex_unlock(&callback_mutex);
- 		update_tasks_nodemask(&top_cpuset, oldmems, NULL);
-+		cpuset_release_static_nodemask();
- 		break;
- 	case MEM_OFFLINE:
- 		/*
-@@ -2158,7 +2175,6 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
- 	}
- 	cgroup_unlock();
- 
--	NODEMASK_FREE(oldmems);
- 	return NOTIFY_OK;
- }
- #endif
--- 
-1.7.3.1
+>  include scripts/Makefile.lib
+>
+>  ifdef host-progs
+> @@ -403,7 +431,6 @@ ifneq ($(cmd_files),)
+>   include $(cmd_files)
+>  endif
+>
+> -
+>  # Declare the contents of the .PHONY variable as phony.  We keep that
+>  # information in a variable se we can use it in if_changed and friends.
+>
+> --
+> 1.7.4.1.48.g5673d
+>
+>
+>
+> --
+> Regards/Gruss,
+>    Boris.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
