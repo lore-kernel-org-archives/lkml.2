@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277Ab1BUXsh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 18:48:37 -0500
-Received: from vs1.gondor.com ([78.47.100.202]:45556 "EHLO
-	mail.moria.gondor.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750836Ab1BUXsg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 18:48:36 -0500
-X-Greylist: delayed 1173 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 18:48:36 EST
-Date: Tue, 22 Feb 2011 00:29:02 +0100
-From: Jan Niehusmann <jan@gondor.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Subject: TX VLAN acceleration on bridges broken in 2.6.37?
-Message-ID: <20110221232902.GA3440@x61s.reliablesolutions.de>
+	id S1751208Ab1BUXtu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 18:49:50 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:36063 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860Ab1BUXtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 18:49:49 -0500
+Message-ID: <4D62FA0D.2070102@linux.vnet.ibm.com>
+Date: Mon, 21 Feb 2011 15:49:33 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andy Whitcroft <apw@canonical.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG ?] checkpatch.pl rejects as error something I think it ought
+ to be allow
+References: <4D62F502.9040506@linux.vnet.ibm.com> <20110221234015.GG2809@shadowen.org>
+In-Reply-To: <20110221234015.GG2809@shadowen.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the following configuration, sending vlan tagged traffic from a
-bridged interface doesn't work in 2.6.37.
-The same configuration does work with 2.6.36:
+On 02/21/2011 03:40 PM, Andy Whitcroft wrote:
+> On Mon, Feb 21, 2011 at 03:28:02PM -0800, Corey Ashford wrote:
+>> Hi,
+>>
+>> I have a piece of code where I have two constants defined as follows:
+>>
+>> 	static const unsigned long polling_interval_sec = 1;
+>> 	static const unsigned long polling_interval_ns = 0;
+>>
+>> Now, it's clear to me that I want these two values to have the
+>> keywords const and static.  I could use a #define here, but const
+>> static seemed cleaner to me.
+>>
+>> When I run checkpatch.pl across this code, I get this error:
+>>
+>> ERROR: do not initialise statics to 0 or NULL.
+>>
+>> I think the problem here is that another case is needed for "static
+>> const" that does allow 0.
+>>
+>> What do you think?
+>>
+>> Thanks for your consideration,
+>
+> The warning is intended to tell you that the = 0 is unnecessary.  Any
+> static is 0 by default I believe.  At some point the addition of the 0
+> would move the value from the bss to the data segment bloating the code.
+> This may no longer be true.
 
-- bridge br0 with physical interface eth0
-- eth0 being an e1000e device (don't know if that's important)
-- vlan interface br0.10
-- (on 2.6.37) tx vlan acceleration active on br0 (default)
+OK, but that means I'd have to have a declaration like this, which looks 
+quite odd to me:
 
-Networking on br0.10 doesn't work, and tcpdump on eth0 shows packets
-sent on br0.10 as untagged, instead of vlan 10 tagged.
+	static const poll_interval_ns; /* = 0 */
 
-After turning vlan tx offloading off with 'ethtool -K br0 txvlan off',
-everything works as expected, again.
+I don't think that is preferable to this:
 
-The workaround is made permanent by reverting "bridge: Add support for
-TX vlan offload.", 361ff8a6cf90d62c0071b7e532e37369bfd3ae77, turning
-of the feature on bridges completely.
+	static const poll_interval_ns = 0;
 
-Jan
-
+- Corey
