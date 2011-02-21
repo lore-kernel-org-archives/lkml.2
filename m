@@ -1,149 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab1BUQUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 11:20:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab1BUQUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 11:20:31 -0500
-Date: Mon, 21 Feb 2011 17:11:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: [pseudo patch] ptrace should respect the group stop
-Message-ID: <20110221161140.GA24336@redhat.com>
-References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110214173012.GA18742@htj.dyndns.org> <AANLkTinntVGcOdZSS3gWz39eq3EDiMxXgYfc6+M1Z0iE@mail.gmail.com> <20110221151619.GM31267@htj.dyndns.org> <20110221152855.GA20769@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110221152855.GA20769@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756100Ab1BUQVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 11:21:03 -0500
+Received: from casper.infradead.org ([85.118.1.10]:57644 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950Ab1BUQVB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 11:21:01 -0500
+Subject: Re: [PATCH v2 1/1] headers: fix circular dependency between
+ linux/sched.h and linux/wait.h
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Cohen <dacohen@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, linux-omap@vger.kernel.org,
+        linux-media@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <AANLkTimOT6jNG3=TiRMJR0dgEQ6EHjcBPJ1ivCu3Wj5Q@mail.gmail.com>
+References: <1298299131-17695-1-git-send-email-dacohen@gmail.com>
+	 <1298299131-17695-2-git-send-email-dacohen@gmail.com>
+	 <1298303677.24121.1.camel@twins>
+	 <AANLkTimOT6jNG3=TiRMJR0dgEQ6EHjcBPJ1ivCu3Wj5Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 21 Feb 2011 17:20:45 +0100
+Message-ID: <1298305245.24121.7.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21, Oleg Nesterov wrote:
->
-> On 02/21, Tejun Heo wrote:
+On Mon, 2011-02-21 at 18:03 +0200, David Cohen wrote:
+> On Mon, Feb 21, 2011 at 5:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2011-02-21 at 16:38 +0200, David Cohen wrote:
+> >> Currently sched.h and wait.h have circular dependency between both.
+> >> wait.h defines macros wake_up*() which use macros TASK_* defined by
+> >> sched.h. But as sched.h indirectly includes wait.h, such wait.h header
+> >> file can't include sched.h too. The side effect is when some file
+> >> includes wait.h and tries to use its wake_up*() macros, it's necessary
+> >> to include sched.h also.
+> >> This patch moves all TASK_* macros from linux/sched.h to a new header
+> >> file linux/task_state.h. This way, both sched.h and wait.h can include
+> >> task_state.h and fix the circular dependency. No need to include sched.h
+> >> anymore when wake_up*() macros are used.
 > >
-> > That preciesly is what is being discussed.  IIUC, Oleg and Roland are
-> > saying that the tracee should enter group stop but not ptrace trap at
-> > that point and then transition into ptrace trap on the first PTRACE
-> > call.
->
-> Actually I am not saying this (at least now, probably I did).
->
-> Once again. We have the bug with arch_ptrace_stop_needed(), but lets
-> ignore it to simplify the discussion.
->
-> Suppose that the tracee calls do_signal_stop() and participates in the
-> group stop. To me, it doesn't really matter (in the context of this
-> discussion) if it stops in TASK_STOPPED or TASK_TRACED (and where it
-> stops).
->
-> However, I am starting to agree that TASK_TRACED looks more clean.
->
-> What is important, I think ptrace should respect SIGNAL_STOP_STOPPED.
-> IOW, when the tracee is group-stopped (TASK_STOPPED or TASK_TRACED,
-> doesn't matter), ptrace_resume() should not wake it up, but merely
-> do set_task_state(TASK_STATE) and make it resumeable by SIGCONT.
+> > I think Alexey already told you what you done wrong.
+> >
+> > Also, I really don't like the task_state.h header, it assumes a lot of
+> > things it doesn't include itself and only works because its using macros
+> > and not inlines at it probably should.
+> 
+> Like wait.h I'd say. The main issue is wait.h uses TASK_* macros but
+> cannot properly include sched.h as it would create a circular
+> dependency. So a file including wait.h is able to compile because the
+> dependency of sched.h relies on wake_up*() macros and it's not always
+> used.
+> We can still drop everything else from task_state.h but the TASK_*
+> macros and then the problem you just pointed out won't exist anymore.
+> What do you think about it?
 
-IOW. I mean something like the (uncompiled, incomplete) patch below as
-as the initial approximation.
+I'd much rather see a real cleanup.. eg. remove the need for sched.h to
+include wait.h.
 
-Oleg.
+afaict its needed because struct signal_struct and struct sighand_struct
+include a wait_queue_head_t. The inclusion seems to come through
+completion.h, but afaict we don't actually need to include completion.h
+because all we have is a pointer to a completion, which is perfectly
+fine with an incomplete type.
 
---- x/kernel/ptrace.c
-+++ x/kernel/ptrace.c
-@@ -38,15 +38,15 @@ void __ptrace_link(struct task_struct *c
- }
- 
- /*
-- * Turn a tracing stop into a normal stop now, since with no tracer there
-- * would be no way to wake it up with SIGCONT or SIGKILL.  If there was a
-- * signal sent that would resume the child, but didn't because it was in
-- * TASK_TRACED, resume it now.
-- * Requires that irqs be disabled.
-+ * NEW COMMENT
-  */
--static void ptrace_untrace(struct task_struct *child)
-+static void ptrace_wake_up(struct task_struct *child)
- {
--	spin_lock(&child->sighand->siglock);
-+	unsigned long flags;
-+
-+	if (!lock_task_sighand(child, &flags))
-+		return;
-+
- 	if (task_is_traced(child)) {
- 		/*
- 		 * If the group stop is completed or in progress,
-@@ -56,9 +56,9 @@ static void ptrace_untrace(struct task_s
- 		    child->signal->group_stop_count)
- 			__set_task_state(child, TASK_STOPPED);
- 		else
--			signal_wake_up(child, 1);
-+			wake_up_state(child, TASK_TRACED);
- 	}
--	spin_unlock(&child->sighand->siglock);
-+	unlock_task_sighand(tsk, &flags);
- }
- 
- /*
-@@ -76,7 +76,7 @@ void __ptrace_unlink(struct task_struct 
- 	list_del_init(&child->ptrace_entry);
- 
- 	if (task_is_traced(child))
--		ptrace_untrace(child);
-+		ptrace_wake_up(child);
- }
- 
- /*
-@@ -312,8 +312,6 @@ int ptrace_detach(struct task_struct *ch
- 	if (child->ptrace) {
- 		child->exit_code = data;
- 		dead = __ptrace_detach(current, child);
--		if (!child->exit_state)
--			wake_up_state(child, TASK_TRACED | TASK_STOPPED);
- 	}
- 	write_unlock_irq(&tasklist_lock);
- 
-@@ -514,7 +512,7 @@ static int ptrace_resume(struct task_str
- 	}
- 
- 	child->exit_code = data;
--	wake_up_process(child);
-+	ptrace_wake_up(child);
- 
- 	return 0;
- }
---- x/kernel/signal.c
-+++ x/kernel/signal.c
-@@ -1644,8 +1644,11 @@ static void ptrace_stop(int exit_code, i
- 	 * If there is a group stop in progress,
- 	 * we must participate in the bookkeeping.
- 	 */
--	if (current->signal->group_stop_count > 0)
--		--current->signal->group_stop_count;
-+	if (current->signal->group_stop_count) {
-+		// XXX: this is not enough, we can race with detach
-+		if (!--current->signal->group_stop_count)
-+			current->signal->flags = SIGNAL_STOP_STOPPED;
-+	}
- 
- 	current->last_siginfo = info;
- 	current->exit_code = exit_code;
-@@ -1825,6 +1828,9 @@ static int ptrace_signal(int signr, sigi
- 	if (sigismember(&current->blocked, signr)) {
- 		specific_send_sig_info(signr, info, current);
- 		signr = 0;
-+	} else if (sig_kernel_stop(signr)) {
-+		// XXX: not exactly right but anyway better
-+		current->signal->flags |= SIGNAL_STOP_DEQUEUED;
- 	}
- 
- 	return signr;
+This all would suggest we move the signal bits into their own header
+(include/linux/signal.h already exists and seems inviting).
 
+And then make sched.c include signal.h and completion.h.
+
+But then, there might be a 'good' reason these signal bits live in
+sched.h and not on their own, but I wouldn't know..
