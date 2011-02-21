@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab1BUEmd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:42:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53082 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab1BUEmb convert rfc822-to-8bit (ORCPT
+	id S1755899Ab1BUEoL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:44:11 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:52092 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab1BUEoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:42:31 -0500
+	Sun, 20 Feb 2011 23:44:08 -0500
+X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Feb 2011 23:44:07 EST
+Date: Sun, 20 Feb 2011 22:36:01 -0600
+From: David Fries <david@fries.net>
+To: Andrei Warkentin <andreiw@motorola.com>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] work around for l2cap NULL dereference in l2cap_conn_start
+Message-ID: <20110221043601.GB22204@spacedout.fries.net>
+References: <20110211035309.GA22204@spacedout.fries.net>
+ <20110214145649.GE2597@joana>
+ <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1298250861-27094-1-git-send-email-ccross@android.com>
-References: <AANLkTim0X=gUwYJmR+EAYjGamiJb7tgiVEjwqCEF0-L0@mail.gmail.com>
-	<1298250861-27094-1-git-send-email-ccross@android.com>
-Date: Sun, 20 Feb 2011 20:37:29 -0800
-Message-ID: <AANLkTi=ia1FGur6mrVuE2rOBGjjRYZ3A41mTq3qOowmS@mail.gmail.com>
-Subject: Re: [PATCH v2] i2c: tegra: Add i2c support
-From: Olof Johansson <olof@lixom.net>
-To: Colin Cross <ccross@android.com>
-Cc: Ben Dooks <ben-i2c@fluff.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
-        swarren@nvidia.com, patches@opensource.wolfsonmicro.com,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sun, 20 Feb 2011 22:36:03 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+bt_sk(sk)->parent can be NULL in l2cap_conn_start in state BT_CONNECT2
+at least when a headset device pairs and the play button was pressed
+right before pairing.
 
-Just a couple of minor nits. I wouldn't worry about respinning just
-for these comments, but if you end up doing it for other feedback, see
-below.
+Signed-off-by: David Fries <david@fries.net>
+---
+I removed the printk, can this be merged to the bluetooth next tree?
 
+On Mon, Feb 14, 2011 at 03:40:46PM -0600, Andrei Warkentin wrote:
+> FWIW still need it in 2.6.36.
 
--Olof
+Andrei, I'm curious, what's your hardware hardware and bluetooth
+device that's trigginer the crash?
 
-On Sun, Feb 20, 2011 at 5:14 PM, Colin Cross <ccross@android.com> wrote:
+> On Mon, Feb 14, 2011 at 8:56 AM, Gustavo F. Padovan
+> <padovan@profusion.mobi> wrote:
+> > Hi David,
+> >
+> > * David Fries <david@fries.net> [2011-02-10 21:53:09 -0600]:
+> >
+> >> Here's a patch to avoid a very repeatable crash in the N900.  If I
+> >> take a Motorola S305 bluetooth headset that was previously paried with
+> >> the N900, turn it on, and press the play button before the headphones
+> >> automatically pair with the cell phone, the N900 will crash (and
+> >> reboot) in pairing.  If I wait until after they have paired there
+> >> isn't any problem.  The patch is against the kernel-power
+> >> 2.6.28-maemo46 by Thomas Tanner, the stock Nokia PR1.2 oops looked
+> >> the same, I just haven't gone back to that kernel.
+> >
+> > This is a very old kernel. You need to check this issue against
+> > bluetooth-next-2.6.
 
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> new file mode 100644
-> index 0000000..3921f66
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -0,0 +1,700 @@
-> +/*
-> + * drivers/i2c/busses/i2c-tegra.c
-> + *
-> + * Copyright (C) 2010 Google, Inc.
+ net/bluetooth/l2cap.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-2011?
+diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
+index ed83c1f..a7aa4d9 100644
+--- a/net/bluetooth/l2cap.c
++++ b/net/bluetooth/l2cap.c
+@@ -408,7 +408,8 @@ static void l2cap_conn_start(struct l2cap_conn *conn)
+ 					struct sock *parent = bt_sk(sk)->parent;
+ 					rsp.result = cpu_to_le16(L2CAP_CR_PEND);
+ 					rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
+-					parent->sk_data_ready(parent, 0);
++					if(parent)
++						parent->sk_data_ready(parent,0);
+ 
+ 				} else {
+ 					sk->sk_state = BT_CONFIG;
+-- 
+1.7.2.3
 
-[..]
-
-> +/*
-> + * i2c_writel and i2c_readl will offset the register if necessary to talk
-> + * to the I2C block inside the DVC block
-> + */
-> +static unsigned long tegra_i2c_reg_addr(struct tegra_i2c_dev *i2c_dev,
-> +       unsigned long reg)
-> +{
-> +       if (i2c_dev->is_dvc)
-> +               reg += (reg >= I2C_TX_FIFO) ? 0x10 : 0x40;
-> +       return reg;
-> +}
-> +
-> +static void i2c_writel(struct tegra_i2c_dev *i2c_dev, u32 val,
-> +       unsigned long reg)
-> +{
-> +       writel(val, i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
-> +}
-> +
-> +static u32 i2c_readl(struct tegra_i2c_dev *i2c_dev, unsigned long reg)
-> +{
-> +       return readl(i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg));
-> +}
-> +
-> +static void i2c_writesl(struct tegra_i2c_dev *i2c_dev, void *data,
-> +       unsigned long reg, int len)
-> +{
-> +       writesl(i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg), data, len);
-> +}
-> +
-> +static void i2c_readsl(struct tegra_i2c_dev *i2c_dev, void *data,
-> +       unsigned long reg, int len)
-> +{
-> +       readsl(i2c_dev->base + tegra_i2c_reg_addr(i2c_dev, reg), data, len);
-> +}
-
-
-All of the above pass in i2c_dev to tegra_i2c_reg_addr, might as well
-do the base addition in there.
-
-> diff --git a/include/linux/i2c-tegra.h b/include/linux/i2c-tegra.h
-> new file mode 100644
-> index 0000000..9c85da4
-> --- /dev/null
-> +++ b/include/linux/i2c-tegra.h
-> @@ -0,0 +1,25 @@
-> +/*
-> + * drivers/i2c/busses/i2c-tegra.c
-> + *
-> + * Copyright (C) 2010 Google, Inc.
-
-2011?
