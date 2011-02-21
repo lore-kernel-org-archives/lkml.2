@@ -1,184 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807Ab1BUMPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 07:15:32 -0500
-Received: from mail-bw0-f42.google.com ([209.85.214.42]:42733 "EHLO
-	mail-bw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab1BUMPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 07:15:31 -0500
-X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 07:15:31 EST
-From: Michal Simek <monstr@monstr.eu>
-To: grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, John.Linn@xilinx.com,
-        Michal Simek <monstr@monstr.eu>
-Subject: [PATCH] i2c: xiic: Add OF support for Xilinx i2c bus interface
-Date: Mon, 21 Feb 2011 13:07:39 +0100
-Message-Id: <1298290059-9552-1-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
+	id S1755889Ab1BUMQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 07:16:12 -0500
+Received: from smtpq3.gn.mail.iss.as9143.net ([212.54.34.166]:43393 "EHLO
+	smtpq3.gn.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755752Ab1BUMQK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 07:16:10 -0500
+X-Greylist: delayed 1156 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 07:16:10 EST
+Subject: Re: Mass udp flow reboot linux with RealTek RTL-8169 Gigabit
+From: Hans Nieser <hnsr@xs4all.nl>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Feb 2011 12:56:48 +0100
+Message-ID: <1298289408.13286.53.camel@krikkit>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8BIT
+X-ZiggoSMTP-MailScanner-Information: Please contact the ISP for more information
+X-ZiggoSMTP-MailScanner-ID: 1PrUNk-0005Mm-Kd
+X-ZiggoSMTP-MailScanner: Found to be clean
+X-ZiggoSMTP-MailScanner-SpamCheck: geen spam, SpamAssassin (niet cached,
+	score=-4.464, vereist 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90, PROLO_TRUST_RDNS -3.00, RDNS_DYNAMIC 0.98,
+	SARE_PROLOSTOCK_SYM3 0.30, TW_VV 0.08, TW_VX 0.08)
+X-ZiggoSMTP-MailScanner-From: hnsr@xs4all.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OF support to Xilinx i2c bus interface.
-It is used on Microblaze systems.
+Francois Romieu wrote:
+> Seblu <seblu@seblu.net> :
+> [...]
+> > I've applyed your patch on 2.6.38-rc5. Host have rebooted 2mn after udp start.
+> > After this reboot, host is still on after 2 hour under a 1Gbit/s udp flow.
+> 
+> Thanks for testing.
+> 
+> > I attached a dmesg output before reboot. Do you need anything else?
+> 
+> Mostly :
+> 1. .config
+> 2. the size of the udp packets and the mtu
+> 
+> As an option :
+> 3. a few seconds of 'vmstat 1' from the host under test
+> 4. an 'ethtool -s eth0' from the host under test
+> 5. /proc/interrupts from the host under test
+> 6. lspci -tv 
+> 
+> Can you apply the two attached patches on top of the previous ones and
+> give it a try ? The debug should not be too verbose if things are stationary
+> enough.
+> 
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
----
- drivers/i2c/busses/i2c-xiic.c |  111 ++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 109 insertions(+), 2 deletions(-)
+<...>
 
-diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-index a9c419e..22951a3 100644
---- a/drivers/i2c/busses/i2c-xiic.c
-+++ b/drivers/i2c/busses/i2c-xiic.c
-@@ -2,6 +2,8 @@
-  * i2c-xiic.c
-  * Copyright (c) 2002-2007 Xilinx Inc.
-  * Copyright (c) 2009-2010 Intel Corporation
-+ * Copyright (c) 2010-2011 Michal Simek <monstr@monstr.eu>
-+ * Copyright (c) 2010-2011 PetaLogix
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -41,6 +43,13 @@
- #include <linux/io.h>
- #include <linux/slab.h>
- 
-+#ifdef CONFIG_OF
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_i2c.h>
-+#include <linux/of_address.h>
-+#endif
-+
- #define DRIVER_NAME "xiic-i2c"
- 
- enum xilinx_i2c_state {
-@@ -426,7 +435,7 @@ static void xiic_process(struct xiic_i2c *i2c)
- 			xiic_wakeup(i2c, STATE_ERROR);
- 
- 	} else if (pend & (XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK)) {
--		/* Transmit register/FIFO is empty or � empty */
-+		/* Transmit register/FIFO is empty or 1/2 empty */
- 
- 		clr = pend &
- 			(XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK);
-@@ -687,7 +696,7 @@ static struct i2c_adapter xiic_adapter = {
- 	.algo		= &xiic_algorithm,
- };
- 
--
-+#ifndef CONFIG_OF
- static int __devinit xiic_i2c_probe(struct platform_device *pdev)
- {
- 	struct xiic_i2c *i2c;
-@@ -808,6 +817,104 @@ static struct platform_driver xiic_i2c_driver = {
- 	},
- };
- 
-+#else
-+static int __devinit xiic_i2c_of_probe(struct platform_device *op)
-+{
-+	struct xiic_i2c *i2c;
-+	int result = 0;
-+
-+	i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
-+	if (!i2c)
-+		return -ENOMEM;
-+
-+	i2c->dev = &op->dev; /* for debug and error output */
-+
-+	spin_lock_init(&i2c->lock);
-+	init_waitqueue_head(&i2c->wait);
-+
-+	i2c->base = of_iomap(op->dev.of_node, 0);
-+	if (!i2c->base) {
-+		dev_err(i2c->dev, "failed to map controller\n");
-+		result = -ENOMEM;
-+		goto fail_map;
-+	}
-+
-+	i2c->irq = irq_of_parse_and_map(op->dev.of_node, 0);
-+	if (i2c->irq) { /* no i2c->irq implies polling */
-+		result = request_irq(i2c->irq, xiic_isr,
-+				     0, op->name, i2c);
-+		if (result < 0) {
-+			dev_err(i2c->dev, "failed to attach interrupt\n");
-+			goto fail_request;
-+		}
-+	}
-+
-+	dev_set_drvdata(&op->dev, i2c);
-+	i2c->adap = xiic_adapter;
-+	i2c_set_adapdata(&i2c->adap, i2c);
-+	i2c->adap.dev.parent = &op->dev;
-+	i2c->adap.dev.of_node = of_node_get(op->dev.of_node);
-+
-+	result = i2c_add_adapter(&i2c->adap);
-+	if (result < 0) {
-+		dev_err(i2c->dev, "failed to add adapter\n");
-+		goto fail_add;
-+	}
-+
-+	dev_info(i2c->dev, "mapped to 0x%08X, irq=%d\n",
-+					(unsigned int)i2c->base, i2c->irq);
-+
-+	xiic_reinit(i2c);
-+	of_i2c_register_devices(&i2c->adap);
-+
-+	return result;
-+
-+fail_add:
-+	dev_set_drvdata(&op->dev, NULL);
-+	free_irq(i2c->irq, i2c);
-+fail_request:
-+	irq_dispose_mapping(i2c->irq);
-+	iounmap(i2c->base);
-+fail_map:
-+	kfree(i2c);
-+	return result;
-+}
-+
-+static int __devexit xiic_i2c_of_remove(struct platform_device *op)
-+{
-+	struct xiic_i2c *i2c = dev_get_drvdata(&op->dev);
-+
-+	i2c_del_adapter(&i2c->adap);
-+	xiic_deinit(i2c);
-+	dev_set_drvdata(&op->dev, NULL);
-+
-+	if (i2c->irq)
-+		free_irq(i2c->irq, i2c);
-+
-+	irq_dispose_mapping(i2c->irq);
-+	iounmap(i2c->base);
-+	kfree(i2c);
-+	return 0;
-+}
-+
-+/* Match table for of_platform binding */
-+static struct of_device_id __devinitdata xilinx_iic_of_match[] = {
-+	{ .compatible = "xlnx,xps-iic-2.00.a", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, xilinx_iic_of_match);
-+
-+static struct platform_driver xiic_i2c_driver = {
-+	.probe   = xiic_i2c_of_probe,
-+	.remove  = __devexit_p(xiic_i2c_of_remove),
-+	.driver  = {
-+		.owner = THIS_MODULE,
-+		.name = DRIVER_NAME,
-+		.of_match_table = xilinx_iic_of_match,
-+	},
-+};
-+#endif
-+
- static int __init xiic_i2c_init(void)
- {
- 	return platform_driver_register(&xiic_i2c_driver);
--- 
-1.5.5.6
+Hi there, I just wanted to chime in on the discussion as I've been having similar
+problems with similar hardware; I have a Gigabyte P55-USB3 motherboard
+with an on-board Realtek NIC:
+
+r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+r8169 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+r8169 0000:03:00.0: setting latency timer to 64
+r8169 0000:03:00.0: (unregistered net_device): unknown MAC, using family default
+r8169 0000:03:00.0: irq 46 for MSI/MSI-X
+r8169 0000:03:00.0: eth0: RTL8168b/8111b at 0xffffc9000001a000, 1c:6f:65:28:2f:2a, XID 0c100000 IRQ 46
+
+A few days ago I noticed my machine had locked up while I was copying
+some backup archives over the local gbit LAN over sftp. I then found out
+that any kind of high-speed transfer to my machine would cause it to
+lock up rather quickly (within seconds), wether that was via sftp, samba
+or simply http (wget) from a webserver on my LAN. Slow(ish) transfers of
+at most 120mbps don't seem to cause any issues, as I've been able to
+download packages via my internet connection for updating my Gentoo
+system for months without trouble.
+
+I also found that on dmesg I would get hundreds of "r8169 0000:03:00.0:
+eth0: link up" in the few seconds before my machine locks up (or
+sometimes it just reboots - but never shutdowns unlike Sébastien).
+
+I have managed to reproduce the hangs/reboots with the following
+kernels:
+
+2.6.38-rc5 (also including all three patches you posted in this thread)
+2.6.37
+2.6.36
+
+With 2.6.36 it seems to take a bit longer to reproduce the hang/reboot
+than it does with 2.6.37 and 2.6.38-rc5, and at some point I even got a
+backtrace before it locked up (I suppose some stuff has scrolled off the
+screen though, not sure how useful this is):
+
+  [<ffffffff814a3f8f>] page_fault+0x1f/0x30
+  [<ffffffff812c529a>] ? ahci_interrupt+0xea/0x700
+  [<ffffffff813b6901>] ? skb_checksum+0x51/0x2f0
+  [<ffffffff8108006a>] handle_IRQ_event+0x3a/0xd0
+  [<ffffffff8108211e>] handle_edge_irq+0xbe/0x170
+  [<ffffffff810052cd>] handle_irq+0x1d/0x30
+  [<ffffffff810047e7>] do_IRQ+0x67/0xf0
+  [<ffffffff814a3d53>] ret_from_intr+0x0/0xa
+  [<ffffffff8120110b>] ? memcpy+0xb/0xb0
+  [<ffffffff8120ce7e>] ? swiotlb_bounce+0x1e/0x40
+  [<ffffffff8120cedb>] ? swiotlb_tbl_sync_single+0x3b/0x70
+  [<ffffffff8120cf6b>] ? swiotlb_sync_single+0x5b/0x80
+  [<ffffffff8120d08c>] ? swiotlb_sync_single_for_cpu+0xc/0x10
+  [<ffffffff812c85da>] ? rtl8169_rx_interrupt+0x25a/0x550
+  [<ffffffff81046c9d>] ? update_process_times+0x5d/0x70
+  [<ffffffff812cb828>] ? rtl8169_poll+0x38/0x260
+  [<ffffffff813c0f0e>] ? net_rx_action+0x8e/0x1a0
+  [<ffffffff812caab1>] ? rtl8169_interrupt+0x101/0x350
+  [<ffffffff810404a6>] ? __do_softirq+0xa6/0x130
+  [<ffffffff8100320c>] ? call_softirq+0x1c/0x30
+  [<ffffffff8100527d>] ? do_softirq+0x4d/0x80
+  [<ffffffff8103fdad>] ? irq_exit+0x4d/0x50
+  [<ffffffff810047f0>] ? do_IRQ+0x70/0xf0
+  [<ffffffff814a3d53>] ? ret_from_intr+0x0/0xa
+  <EOI>
+
+  (I had to manually type this over so there may be typos in there)
+
+On all the kernel versions on which I was able to reproduce the problem
+my transer speed was also much slower than expected; somewhere around
+10-20MiB/s (it seems to start out at 20MiB/s, then go down a bit to
+<10MiB/s before the machine finally locks up, or sometimes the reverse
+of this).
+
+I was not able to reproduce the problem on 2.6.35.9, and managed to get
+consistent transfer speeds of around 107MiB/s (using wget) with that
+kernel. While I haven't spent too much time trying to reproduce it (just
+a couple dozen of transfers of a 1GB file), at the very least it is much
+harder to reproduce than on the newer kernels. There were also much less
+'link up' messages on dmesg with this kernel, just one every few seconds
+instead of dozens per second.
+
+I'm not sure if it's worth the effort to try and git bisect between
+2.6.35 and 2.6.36, but let me know if you think it is and I'll give it a
+shot.
+
+One other thing I observed (not sure if it's relevant, but just in case)
+was that for all the kernels that I was able to reproduce the problem
+with, the MSI irq was 46, while with 2.6.35.9 the MSI irq was 50.
+
+I'll spend some more time this evening or tomorrow doing some more
+testing and getting the other things you requested from Sébastien if you
+think that useful to know in my case as well
+
+Here is at least the output of lspci -tv:
+
+  lspci -tv:
+
+    -[0000:00]-+-00.0  Intel Corporation Core Processor DMI
+               +-03.0-[01]--+-00.0  ATI Technologies Inc Cypress [Radeon HD 5800 Series]
+               |            \-00.1  ATI Technologies Inc Cypress HDMI Audio [Radeon HD 5800 Series]
+               +-08.0  Intel Corporation Core Processor System Management Registers
+               +-08.1  Intel Corporation Core Processor Semaphore and Scratchpad Registers
+               +-08.2  Intel Corporation Core Processor System Control and Status Registers
+               +-08.3  Intel Corporation Core Processor Miscellaneous Registers
+               +-10.0  Intel Corporation Core Processor QPI Link
+               +-10.1  Intel Corporation Core Processor QPI Routing and Protocol Registers
+               +-1a.0  Intel Corporation 5 Series/3400 Series Chipset USB Universal Host Controller
+               +-1a.1  Intel Corporation 5 Series/3400 Series Chipset USB Universal Host Controller
+               +-1a.2  Intel Corporation 5 Series/3400 Series Chipset USB Universal Host Controller
+               +-1a.7  Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host Controller
+               +-1b.0  Intel Corporation 5 Series/3400 Series Chipset High Definition Audio
+               +-1c.0-[02]--+-00.0  JMicron Technology Corp. JMB362/JMB363 Serial ATA Controller
+               |            \-00.1  JMicron Technology Corp. JMB362/JMB363 Serial ATA Controller
+               +-1c.1-[03]----00.0  Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller
+               +-1c.2-[04]----00.0  NEC Corporation Device 0194
+               +-1d.0  Intel Corporation 5 Series/3400 Series Chipset USB Universal Host Controller
+               +-1d.1  Intel Corporation 5 Series/3400 Series Chipset USB Universal Host Controller
+               +-1d.2  Intel Corporation 5 Series/3400 Series Chipset USB Universal Host Controller
+               +-1d.3  Intel Corporation 5 Series/3400 Series Chipset USB Universal Host Controller
+               +-1d.7  Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host Controller
+               +-1e.0-[05]----04.0  Texas Instruments TSB12LV23 IEEE-1394 Controller
+               +-1f.0  Intel Corporation 5 Series Chipset LPC Interface Controller
+               +-1f.2  Intel Corporation 5 Series/3400 Series Chipset 6 port SATA AHCI Controller
+               \-1f.3  Intel Corporation 5 Series/3400 Series Chipset SMBus Controller
+
+  and lspci -vvxxx for my device (the motherboard reported is incorrect, it's definitely a GA-P55-USB3):
+
+03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
+        Subsystem: Giga-byte Technology GA-EP45-DS5 Motherboard
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 46
+        Region 0: I/O ports at de00 [size=256]
+        Region 2: Memory at fbeff000 (64-bit, prefetchable) [size=4K]
+        Region 4: Memory at fbef8000 (64-bit, prefetchable) [size=16K]
+        [virtual] Expansion ROM at fbe00000 [disabled] [size=128K]
+        Capabilities: [40] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+                Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000fee0f00c  Data: 4189
+        Capabilities: [70] Express (v2) Endpoint, MSI 01
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                        MaxPayload 128 bytes, MaxReadReq 4096 bytes
+                DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <512ns, L1 <64us
+                        ClockPM+ Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+                DevCap2: Completion Timeout: Not Supported, TimeoutDis+
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -6dB
+        Capabilities: [b0] MSI-X: Enable- Count=4 Masked-
+                Vector table: BAR=4 offset=00000000
+                PBA: BAR=4 offset=00000800
+        Capabilities: [d0] Vital Product Data
+                Unknown small resource type 00, will not decode more.
+        Capabilities: [100 v1] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+        Capabilities: [140 v1] Virtual Channel
+                Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
+                Arb:    Fixed- WRR32- WRR64- WRR128-
+                Ctrl:   ArbSelect=Fixed
+                Status: InProgress-
+                VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+                        Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+                        Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
+                        Status: NegoPending- InProgress-
+        Capabilities: [160 v1] Device Serial Number 12-34-56-78-12-34-56-78
+        Kernel driver in use: r8169
+00: ec 10 68 81 07 04 10 00 06 00 00 02 10 00 00 00
+10: 01 de 00 00 00 00 00 00 0c f0 ef fb 00 00 00 00
+20: 0c 80 ef fb 00 00 00 00 00 00 00 00 58 14 00 e0
+30: 00 00 00 00 40 00 00 00 00 00 00 00 0b 01 00 00
+40: 01 50 c3 ff 08 00 00 00 00 00 00 00 00 00 00 00
+50: 05 70 81 00 0c f0 e0 fe 00 00 00 00 89 41 00 00
+60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+70: 10 b0 02 02 c1 8c 28 00 10 50 11 00 11 3c 07 00
+80: 40 00 11 10 00 00 00 00 00 00 00 00 00 00 00 00
+90: 00 00 00 00 10 00 00 00 00 00 00 00 00 00 00 00
+a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+b0: 11 d0 03 00 04 00 00 00 04 08 00 00 00 00 00 00
+c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+d0: 03 00 00 80 00 00 00 00 00 00 00 00 00 00 00 00
+e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+
 
