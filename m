@@ -1,124 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab1BUF4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 00:56:02 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53192 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442Ab1BUF4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 00:56:00 -0500
-Message-ID: <4D61FE5A.5060402@cn.fujitsu.com>
-Date: Mon, 21 Feb 2011 13:55:38 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
- for CFQ queue
-References: <4D51ED26.8050809@cn.fujitsu.com> <4D539804.9090308@cn.fujitsu.com> <20110214181322.GJ13097@redhat.com> <4D5E0BE2.6020104@cn.fujitsu.com> <20110218145432.GA26654@redhat.com>
-In-Reply-To: <20110218145432.GA26654@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 13:54:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 13:54:53,
-	Serialize complete at 2011-02-21 13:54:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S932119Ab1BUFy6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 00:54:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60137 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754004Ab1BUFyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 00:54:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,198,1297065600"; 
+   d="scan'208";a="889598800"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
+        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Richard Henderson <rth@twiddle.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mikael Starvik <starvik@axis.com>, David Howells <dhowells@redhat.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Chris Zankel <chris@zankel.net>
+Subject: [PATCH 1/7] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+Date: Mon, 21 Feb 2011 13:54:39 +0800
+Message-Id: <1298267685-7357-2-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
+References: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Fri, Feb 18, 2011 at 02:04:18PM +0800, Gui Jianfeng wrote:
->> Vivek Goyal wrote:
->>> On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
->>>
->>> [..]
->>>> +/*
->>>> + * The time when a CFQ queue is put onto a service tree is recoreded in
->>>> + * cfqq->reposition_time. Currently, we check the first priority CFQ queues
->>>> + * on each service tree, and select the workload type that contains the lowest
->>>> + * reposition_time CFQ queue among them.
->>>> + */
->>>>  static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
->>>>  				struct cfq_group *cfqg, enum wl_prio_t prio)
->>>>  {
->>>>  	struct cfq_entity *cfqe;
->>>> +	struct cfq_queue *cfqq;
->>>> +	unsigned long lowest_start_time;
->>>>  	int i;
->>>> -	bool key_valid = false;
->>>> -	unsigned long lowest_key = 0;
->>>> +	bool time_valid = false;
->>>>  	enum wl_type_t cur_best = SYNC_NOIDLE_WORKLOAD;
->>>>  
->>>> +	/*
->>>> +	 * TODO: We may take io priority and io class into account when
->>>> +	 * choosing a workload type. But for the time being just make use of
->>>> +	 * reposition_time only.
->>>> +	 */
->>>>  	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
->>>> -		/* select the one with lowest rb_key */
->>>>  		cfqe = cfq_rb_first(service_tree_for(cfqg, prio, i));
->>>> -		if (cfqe &&
->>>> -		    (!key_valid || time_before(cfqe->rb_key, lowest_key))) {
->>>> -			lowest_key = cfqe->rb_key;
->>>> +		cfqq = cfqq_of_entity(cfqe);
->>>> +		if (cfqe && (!time_valid ||
->>>> +			     time_before(cfqq->reposition_time,
->>>> +					 lowest_start_time))) {
->>>> +			lowest_start_time = cfqq->reposition_time;
->>> Gui,
->>>
->>> Have you had a chance to run some mixed workloads in a group (some sync,
->>> some async and some sync-idle queues), and see how latency and throughput
->>> of sync-idle workload changes due to this "resposition_time" logic. I 
->>> just want to make sure that latency of sync-noidle workload does not
->>> go up as that's the workload that people care and gets noticed first.
->> Hi Vivek,
->>
->> I made a quick test by using fio. It seems the number changes little
->> between vanilla kernel and patched kernel.
->>
->>
->> Vanilla:    SYNC read            SYNC-NOIDLE read      ASYNC write  
->>          1. 23,640KB/s 5.40 ---- 6,696KB/s 19.07 ---- 50,142KB/s 128.00
->>          2. 24,459KB/s 5.22 ---- 6,775KB/s 18.86 ---- 47,349KB/s 129.89
->>          3. 25,929KB/s 4.93 ---- 7,378KB/s 17.32 ---- 32,350KB/s 131.88
->>
->> Patched:   SYNC read            SYNC-NOIDLE read      ASYNC write  
->>         1. 24,000KB/s 5.32 ---- 6,942KB/s 18.39 ---- 30,860KB/s 135.95
->>         2. 23,678KB/s 5.40 ---- 7,274KB/s 17.58 ---- 67,432KB/s 120.44
->>         3. 23,004KB/s 5.55 ---- 6,621KB/s 19.30 ---- 36,536KB/s 148.64
-> 
-> Hi Gui,
-> 
-> Do you also have latency numbers? I am especially interested max completion
-> latencies of SYNC-NOIDLE workload.
+cmpxchg() is widely used by lockless code, including NMI-safe lockless
+code.  But on some architectures, the cmpxchg() implementation is not
+NMI-safe, on these architectures the lockless code may need to a
+spin_trylock_irqsave() based implementation.
 
-Vivek,
+This patch adds a Kconfig option: ARCH_HAVE_NMI_SAFE_CMPXCHG, so that
+NMI-safe lockless code can depend on it or provide different
+implementation according to it.
 
-Here some numbers about latency between vanilla and patched kernel.
-I tested 4 times for each. It seems no latency regression happens.
+On many architectures, cmpxchg is only NMI-safe for several specific
+operand sizes. So, ARCH_HAVE_NMI_SAFE_CMPXCHG define in this patch
+only guarantees cmpxchg is NMI-safe for sizeof(unsigned long).
 
-Vanilla:
-1. clat (msec): min=1, max=302, avg=18.19, stdev=39.80
-2. clat (msec): min=1, max=201, avg=17.76, stdev=31.90
-3. clat (msec): min=1, max=303, avg=18.64, stdev=41.30
-4. clat (msec): min=1, max=370, avg=17.43, stdev=35.09
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+Acked-by: Paul Mundt <lethal@linux-sh.org>
+Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+CC: Richard Henderson <rth@twiddle.net>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Mikael Starvik <starvik@axis.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Yoshinori Sato <ysato@users.sourceforge.jp>
+CC: Tony Luck <tony.luck@intel.com>
+CC: Hirokazu Takata <takata@linux-m32r.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Michal Simek <monstr@monstr.eu>
+CC: Ralf Baechle <ralf@linux-mips.org>
+CC: Kyle McMartin <kyle@mcmartin.ca>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: Chen Liqin <liqin.chen@sunplusct.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Chris Zankel <chris@zankel.net>
+---
+ arch/Kconfig         |    3 +++
+ arch/alpha/Kconfig   |    1 +
+ arch/avr32/Kconfig   |    1 +
+ arch/frv/Kconfig     |    1 +
+ arch/ia64/Kconfig    |    1 +
+ arch/m68k/Kconfig    |    1 +
+ arch/parisc/Kconfig  |    1 +
+ arch/powerpc/Kconfig |    1 +
+ arch/s390/Kconfig    |    1 +
+ arch/sh/Kconfig      |    1 +
+ arch/sparc/Kconfig   |    1 +
+ arch/tile/Kconfig    |    1 +
+ arch/x86/Kconfig     |    1 +
+ 13 files changed, 15 insertions(+)
 
-Patched:
-1. clat (msec): min=1, max=176, avg=19.00, stdev=32.98
-2. clat (msec): min=1, max=175, avg=17.75, stdev=32.41
-3. clat (msec): min=1, max=191, avg=19.11, stdev=33.28
-4. clat (msec): min=1, max=176, avg=17.11, stdev=32.99
-
-Thanks,
-Gui
-
-> 
-> Thanks
-> Vivek
-> 
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -178,4 +178,7 @@ config HAVE_ARCH_JUMP_LABEL
+ config HAVE_ARCH_MUTEX_CPU_RELAX
+ 	bool
+ 
++config ARCH_HAVE_NMI_SAFE_CMPXCHG
++	bool
++
+ source "kernel/gcov/Kconfig"
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@ -11,6 +11,7 @@ config ALPHA
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_PROBE
+ 	select AUTO_IRQ_AFFINITY if SMP
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	help
+ 	  The Alpha is a 64-bit general-purpose processor designed and
+ 	  marketed by the Digital Equipment Corporation of blessed memory,
+--- a/arch/avr32/Kconfig
++++ b/arch/avr32/Kconfig
+@@ -6,6 +6,7 @@ config AVR32
+ 	select HAVE_CLK
+ 	select HAVE_OPROFILE
+ 	select HAVE_KPROBES
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	help
+ 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
+ 	  designed for cost-sensitive embedded applications, with particular
+--- a/arch/frv/Kconfig
++++ b/arch/frv/Kconfig
+@@ -6,6 +6,7 @@ config FRV
+ 	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_GENERIC_HARDIRQS
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 
+ config ZONE_DMA
+ 	bool
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -26,6 +26,7 @@ config IA64
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select IRQ_PER_CPU
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	default y
+ 	help
+ 	  The Itanium Processor Family is Intel's 64-bit successor to
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -4,6 +4,7 @@ config M68K
+ 	select HAVE_AOUT
+ 	select HAVE_IDE
+ 	select GENERIC_ATOMIC64
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+ 
+ config MMU
+ 	bool
+--- a/arch/parisc/Kconfig
++++ b/arch/parisc/Kconfig
+@@ -15,6 +15,7 @@ config PARISC
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_PROBE
+ 	select IRQ_PER_CPU
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 
+ 	help
+ 	  The PA-RISC microprocessor is designed by Hewlett-Packard and used
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -134,6 +134,7 @@ config PPC
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_SPARSE_IRQ
+ 	select IRQ_PER_CPU
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 
+ config EARLY_PRINTK
+ 	bool
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -81,6 +81,7 @@ config S390
+ 	select INIT_ALL_POSSIBLE
+ 	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_LZMA
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -11,6 +11,7 @@ config SUPERH
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG if (GUSA_RB || CPU_SH4A)
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_BZIP2
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -51,6 +51,7 @@ config SPARC64
+ 	select HAVE_PERF_EVENTS
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_GENERIC_HARDIRQS
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 
+ config ARCH_DEFCONFIG
+ 	string
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -11,6 +11,7 @@ config TILE
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG if !M386
+ 
+ # FIXME: investigate whether we need/want these options.
+ #	select HAVE_IOREMAP_PROT
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -67,6 +67,7 @@ config X86
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select USE_GENERIC_SMP_HELPERS if SMP
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
