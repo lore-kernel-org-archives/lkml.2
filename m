@@ -1,147 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab1BUQWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 11:22:14 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60563 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab1BUQWM (ORCPT
+	id S1752901Ab1BUQZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 11:25:18 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:34247 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab1BUQZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 11:22:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=i2WMPxnzzQXjEjM9/A9HordTa7WsJtrju23VmL2dmNWLt1G4yqKho+DGPRXbHgyF7M
-         q6+B4Sq0MaMGGFecYba0STWUEfp/UIr9CiaQGNxvbncMMYmn3Mby3STehcaVc3ABgN9Z
-         iqd13y/3j6sh93sP6PYm68KxsGl//fKs1hhfw=
-Date: Mon, 21 Feb 2011 17:22:06 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
- PTRACE_ATTACH
-Message-ID: <20110221162206.GN31267@htj.dyndns.org>
-References: <20110214175144.GC15847@redhat.com>
- <AANLkTi=VVWVkrqqQyOtsP72S5-nWny=Ukmf_r-m1qMwV@mail.gmail.com>
- <20110214190141.GA19221@redhat.com>
- <AANLkTi=_af8+XKD+d-677JpQZA=AN2EsydscSYxk7z55@mail.gmail.com>
- <20110214200130.GA21559@redhat.com>
- <20110215152448.GL3160@htj.dyndns.org>
- <20110215173149.239601807B7@magilla.sf.frob.com>
- <20110215202747.GA20560@redhat.com>
- <20110218170212.GS21209@htj.dyndns.org>
- <20110218193709.GA9700@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110218193709.GA9700@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 21 Feb 2011 11:25:17 -0500
+Subject: Re: [2.6.38-rc5, patch] fix cfg80211_wext_siwfreq lock ordering...
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTi=OSZhT0OGN_3Jzw=zh1U_QjhB+vR8SxidM5Zge@mail.gmail.com>
+References: <AANLkTi=OSZhT0OGN_3Jzw=zh1U_QjhB+vR8SxidM5Zge@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Feb 2011 17:25:10 +0100
+Message-ID: <1298305510.3836.7.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, :-)
-
-On Fri, Feb 18, 2011 at 08:37:09PM +0100, Oleg Nesterov wrote:
-> > Still trying to follow the new discussion.
+On Tue, 2011-02-22 at 00:11 +0800, Daniel J Blueman wrote:
+> I previously managed to reproduce a hang while scanning wireless
+> channels (reproducible with airodump-ng hopping channels); subsequent
+> lockdep instrumentation revealed a lock ordering issue [1].
 > 
-> And how it goes?
+> Without knowing the design intent, it looks like the locks should be
+> taken in reverse order; please comment.
 > 
-> As for me, I am not sure I can follow it ;)
-
-The issues Denys brought up are okay but I still haven't gotten my
-head wrapped around what Jan and you are talking about.  Urgh... :-)
-
-> > Instead of having simple "a ptracer stops in TASK_TRACED and its
-> > execution is under the control of ptrace",
+> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 > 
-> In fact, I am not sure I really disagree with this part, but see below.
+> --- [1]
+
+Yeah, looks this way, thanks.
+
+Acked-by: Johannes Berg <johannes@sipsolutions.net>
+
+> =======================================================
+> [ INFO: possible circular locking dependency detected ]
+> 2.6.38-rc5-341cd #4
+> -------------------------------------------------------
+> airodump-ng/15445 is trying to acquire lock:
+>  (&rdev->devlist_mtx){+.+.+.}, at: [<ffffffff816b1266>]
+> cfg80211_wext_siwfreq+0xc6/0x100
 > 
-> > The patch which puts the tracee into TASK_TRACED
-> > on ATTACH already fix two problems discussed in this thread without
-> > doing anything wonky.  I think it says a lot.
+> but task is already holding lock:
+>  (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>] cfg80211_wext_siwfreq+0xbc/0x100
 > 
-> Yes. One off-topice note... if we are talking about this patch only,
-> I do not think it makes sense to add the new member into task_struct
-> so that STOPPED/TRACED transition can always report the exactly correct
-> ->exit_code. I think we can just use group_exit_code ?: SIGSTOP.
-> But, again, this is off-topic.
-
-It shares the task->group_stop which is needed for other things
-anyway, but yeah, if we're sure it's either that or SIGSTOP that would
-definitely be better.  Hmmm, but it can be other things.  There are
-many signals which can trigger group stop.  Maybe this is not
-important but then again preserving this doesn't cost us much either.
-
-BTW, I plan on separating out all ptrace related stuff into a separate
-struct as it's not used by most tasks anyway, so I don't think we need
-to be too concerned about several more fields.
-
-> > As it currently stands, SIGSTOP/CONT while ptraced doesn't work
+> which lock already depends on the new lock.
 > 
-> And this is probably where we disagree the most. I think this is bug,
-> and this should be fixed.
-
-I don't think we disagree that it is a bug.  I want to fix it too but
-we definitely seem to disagree on how.  I want to give more control to
-the ptracer so that the tracer has enough information and control to
-follow the group stop semantics if it wants to and you want to give
-more control to group stop so that it overrides the tracer and always
-does the right thing regarding group stop.
-
-> > and even if we bend the rules subtly and provide sneaky ways like
-> > the above, userland needs to be modified to make use of it anyway.
+> the existing dependency chain (in reverse order) is:
 > 
-> Yes. But with the current code we can't modify, say, strace so
-> that SIGSTOP/CONT can work "correctly".
-
-Agreed, not possible.  The kernel needs to be improved one way or the
-other.
-
-> > I think it would be far cleaner to simply make ptracee always stop
-> > in TASK_TRACED and give the ptracer a way to notice what's
-> > happening to the tracee
+> -> #1 (&wdev->mtx){+.+.+.}:
+>        [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
+>        [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
+>        [<ffffffff81696080>] cfg80211_netdev_notifier_call+0x430/0x5f0
+>        [<ffffffff8109351b>] notifier_call_chain+0x8b/0x100
+>        [<ffffffff810935b1>] raw_notifier_call_chain+0x11/0x20
+>        [<ffffffff81576d92>] call_netdevice_notifiers+0x32/0x60
+>        [<ffffffff815771a4>] __dev_notify_flags+0x34/0x80
+>        [<ffffffff81577230>] dev_change_flags+0x40/0x70
+>        [<ffffffff8158587c>] do_setlink+0x1fc/0x8d0
+>        [<ffffffff81586042>] rtnl_setlink+0xf2/0x140
+>        [<ffffffff81586923>] rtnetlink_rcv_msg+0x163/0x270
+>        [<ffffffff8159d741>] netlink_rcv_skb+0xa1/0xd0
+>        [<ffffffff815867b0>] rtnetlink_rcv+0x20/0x30
+>        [<ffffffff8159d39a>] netlink_unicast+0x2ba/0x300
+>        [<ffffffff8159dd57>] netlink_sendmsg+0x267/0x3e0
+>        [<ffffffff8155e364>] sock_sendmsg+0xe4/0x110
+>        [<ffffffff8155f3a3>] sys_sendmsg+0x253/0x3b0
+>        [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
 > 
-> Well. If we accept the proposed PTRACE_CONT-needs-SIGCONT behaviour,
-> then I think this probably makes sense. The tracee stops under ptrace,
-> the possible SIGCONT shouldn't abuse debugger which wants to know, say,
-> the state of registers.
-
-The objections I have against PTRACE_CONT-needs-SIGCONT are,
-
-* It will be very different from the current behavior.
-
-* ptrace, sans the odd SIGSTOP on attach which we should remove, is
-  per-task.  Sending out SIGCONT on PTRACE_CONT would break that.  I
-  really don't think that's a good idea.
-
-* PTRACE_CONT would be behaving completely differently depending on
-  whether it's resuming from group stop or other traps.
-
-> To be honest, I don't understand whether I changed my mind now, or
-> I was never against this particular change in behaviour.
+> -> #0 (&rdev->devlist_mtx){+.+.+.}:
+>        [<ffffffff810a7222>] __lock_acquire+0x1622/0x1d10
+>        [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
+>        [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
+>        [<ffffffff816b1266>] cfg80211_wext_siwfreq+0xc6/0x100
+>        [<ffffffff816b2fad>] ioctl_standard_call+0x5d/0xd0
+>        [<ffffffff816b3223>] T.808+0x163/0x170
+>        [<ffffffff816b326a>] wext_handle_ioctl+0x3a/0x90
+>        [<ffffffff815798d2>] dev_ioctl+0x6f2/0x830
+>        [<ffffffff8155cf3d>] sock_ioctl+0xfd/0x290
+>        [<ffffffff8117dffd>] do_vfs_ioctl+0x9d/0x590
+>        [<ffffffff8117e53a>] sys_ioctl+0x4a/0x80
+>        [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
 > 
-> Once debugger does PTRACE_CONT, the tracee becomes TASK_STOPPED and
-> now it is "visible" to SIGCONT (or the tracee resumes if SIGCONT has
-> come in between).
+> other info that might help us debug this:
 > 
-> But I think you will equally blame this TRACED/STOPPED transition
-> as "behavioral subtleties" and I can understand you even if I disagree.
-> And yes, this leads to other questions. But note that this greatly
-> simplifies things. The tracee can never participate in the same
-> group-stop twice.
+> 2 locks held by airodump-ng/15445:
+>  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81586782>] rtnl_lock+0x12/0x20
+>  #1:  (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>]
+> cfg80211_wext_siwfreq+0xbc/0x100
+> 
+> stack backtrace:
+> Pid: 15445, comm: airodump-ng Not tainted 2.6.38-rc5-341cd #4
+> Call Trace:
+>  [<ffffffff810a3f0a>] ? print_circular_bug+0xfa/0x100
+>  [<ffffffff810a7222>] ? __lock_acquire+0x1622/0x1d10
+>  [<ffffffff810a1f99>] ? trace_hardirqs_off_caller+0x29/0xc0
+>  [<ffffffff810a79d6>] ? lock_acquire+0xc6/0x280
+>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+>  [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
+>  [<ffffffff816d6bce>] ? mutex_lock_nested+0x6e/0x4b0
+>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+>  [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
+>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+>  [<ffffffff816b2fad>] ? ioctl_standard_call+0x5d/0xd0
+>  [<ffffffff8157818b>] ? __dev_get_by_name+0x9b/0xc0
+>  [<ffffffff816b2f50>] ? ioctl_standard_call+0x0/0xd0
+>  [<ffffffff816b3223>] ? T.808+0x163/0x170
+>  [<ffffffff8112ddf2>] ? might_fault+0x72/0xd0
+>  [<ffffffff816b326a>] ? wext_handle_ioctl+0x3a/0x90
+>  [<ffffffff8112de3b>] ? might_fault+0xbb/0xd0
+>  [<ffffffff815798d2>] ? dev_ioctl+0x6f2/0x830
+>  [<ffffffff810a1bae>] ? put_lock_stats+0xe/0x40
+>  [<ffffffff810a1c8c>] ? lock_release_holdtime+0xac/0x150
+>  [<ffffffff8155cf3d>] ? sock_ioctl+0xfd/0x290
+>  [<ffffffff8117dffd>] ? do_vfs_ioctl+0x9d/0x590
+>  [<ffffffff8116c8ff>] ? fget_light+0x1df/0x3c0
+>  [<ffffffff8117e53a>] ? sys_ioctl+0x4a/0x80
+>  [<ffffffff81003192>] ? system_call_fastpath+0x16/0x1b
+> 
+> --- [2]
+> 
+> diff --git a/net/wireless/wext-compat.c b/net/wireless/wext-compat.c
+> index 3e5dbd4..d112f03 100644
+> --- a/net/wireless/wext-compat.c
+> +++ b/net/wireless/wext-compat.c
+> @@ -802,11 +802,11 @@ int cfg80211_wext_siwfreq(struct net_device *dev,
+>  			return freq;
+>  		if (freq == 0)
+>  			return -EINVAL;
+> -		wdev_lock(wdev);
+>  		mutex_lock(&rdev->devlist_mtx);
+> +		wdev_lock(wdev);
+>  		err = cfg80211_set_freq(rdev, wdev, freq, NL80211_CHAN_NO_HT);
+> -		mutex_unlock(&rdev->devlist_mtx);
+>  		wdev_unlock(wdev);
+> +		mutex_unlock(&rdev->devlist_mtx);
+>  		return err;
+>  	default:
+>  		return -EOPNOTSUPP;
 
-But that's not really because the problem is solved.  The problem is
-put out of scope by forcing the tracer to always override group stop.
-That's a rather big departure from the current behavior and capability
-and I frankly think is not a good direction to head to.  It's like
-giving up useful features for conceptual purity.  We can make it work
-without regressing on capabilities.
 
-Thanks.
-
--- 
-tejun
