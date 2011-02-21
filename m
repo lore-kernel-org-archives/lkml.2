@@ -1,34 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab1BUFy6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 00:54:58 -0500
+	id S932180Ab1BUF4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 00:56:24 -0500
 Received: from mga11.intel.com ([192.55.52.93]:60137 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab1BUFyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 00:54:53 -0500
+	id S932083Ab1BUFy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 00:54:57 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,198,1297065600"; 
-   d="scan'208";a="889598800"
+   d="scan'208";a="889598838"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
         linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Richard Henderson <rth@twiddle.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mikael Starvik <starvik@axis.com>, David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Chen Liqin <liqin.chen@sunplusct.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Chris Zankel <chris@zankel.net>
-Subject: [PATCH 1/7] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
-Date: Mon, 21 Feb 2011 13:54:39 +0800
-Message-Id: <1298267685-7357-2-git-send-email-ying.huang@intel.com>
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: [PATCH 4/7] PCIe, AER, use pre-generated prefix in error information printing
+Date: Mon, 21 Feb 2011 13:54:42 +0800
+Message-Id: <1298267685-7357-5-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
 References: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
@@ -36,184 +26,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cmpxchg() is widely used by lockless code, including NMI-safe lockless
-code.  But on some architectures, the cmpxchg() implementation is not
-NMI-safe, on these architectures the lockless code may need to a
-spin_trylock_irqsave() based implementation.
+When printing PCIe AER error information, each line is prefixed with
+PCIe device and driver information.  In original implementation, the
+prefix is generated when each line is printed.  In fact, all lines
+share the same prefix.  So this patch pre-generated the prefix, and
+use that one when each line is printed.
 
-This patch adds a Kconfig option: ARCH_HAVE_NMI_SAFE_CMPXCHG, so that
-NMI-safe lockless code can depend on it or provide different
-implementation according to it.
+In addition to common prefix can be pre-generated, the trailing white
+spaces in string constants and NULLs in char * array constants can be
+removed too.  These can reduce the object file size further.
 
-On many architectures, cmpxchg is only NMI-safe for several specific
-operand sizes. So, ARCH_HAVE_NMI_SAFE_CMPXCHG define in this patch
-only guarantees cmpxchg is NMI-safe for sizeof(unsigned long).
+The size of object file before and after changing is as follow:
+
+           text    data     bss     dec
+before:    3038       0       0    3038
+after:     2118       0       0    2118
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-Acked-by: Paul Mundt <lethal@linux-sh.org>
-Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-CC: Richard Henderson <rth@twiddle.net>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Mikael Starvik <starvik@axis.com>
-CC: David Howells <dhowells@redhat.com>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>
-CC: Tony Luck <tony.luck@intel.com>
-CC: Hirokazu Takata <takata@linux-m32r.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Michal Simek <monstr@monstr.eu>
-CC: Ralf Baechle <ralf@linux-mips.org>
-CC: Kyle McMartin <kyle@mcmartin.ca>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Chen Liqin <liqin.chen@sunplusct.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Chris Zankel <chris@zankel.net>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Zhang Yanmin <yanmin.zhang@intel.com>
 ---
- arch/Kconfig         |    3 +++
- arch/alpha/Kconfig   |    1 +
- arch/avr32/Kconfig   |    1 +
- arch/frv/Kconfig     |    1 +
- arch/ia64/Kconfig    |    1 +
- arch/m68k/Kconfig    |    1 +
- arch/parisc/Kconfig  |    1 +
- arch/powerpc/Kconfig |    1 +
- arch/s390/Kconfig    |    1 +
- arch/sh/Kconfig      |    1 +
- arch/sparc/Kconfig   |    1 +
- arch/tile/Kconfig    |    1 +
- arch/x86/Kconfig     |    1 +
- 13 files changed, 15 insertions(+)
+ drivers/pci/pcie/aer/aerdrv_errprint.c |  123 ++++++++++++---------------------
+ 1 file changed, 48 insertions(+), 75 deletions(-)
 
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -178,4 +178,7 @@ config HAVE_ARCH_JUMP_LABEL
- config HAVE_ARCH_MUTEX_CPU_RELAX
- 	bool
+--- a/drivers/pci/pcie/aer/aerdrv_errprint.c
++++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+@@ -57,86 +57,44 @@
+ 	(e & AER_DATA_LINK_LAYER_ERROR_MASK(t)) ? AER_DATA_LINK_LAYER_ERROR : \
+ 	AER_TRANSACTION_LAYER_ERROR)
  
-+config ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	bool
+-#define AER_PR(info, pdev, fmt, args...)				\
+-	printk("%s%s %s: " fmt, (info->severity == AER_CORRECTABLE) ?	\
+-		KERN_WARNING : KERN_ERR, dev_driver_string(&pdev->dev),	\
+-		dev_name(&pdev->dev), ## args)
+-
+ /*
+  * AER error strings
+  */
+-static char *aer_error_severity_string[] = {
++static const char *aer_error_severity_string[] = {
+ 	"Uncorrected (Non-Fatal)",
+ 	"Uncorrected (Fatal)",
+ 	"Corrected"
+ };
+ 
+-static char *aer_error_layer[] = {
++static const char *aer_error_layer[] = {
+ 	"Physical Layer",
+ 	"Data Link Layer",
+ 	"Transaction Layer"
+ };
+-static char *aer_correctable_error_string[] = {
+-	"Receiver Error        ",	/* Bit Position 0	*/
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	"Bad TLP               ",	/* Bit Position 6	*/
+-	"Bad DLLP              ",	/* Bit Position 7	*/
+-	"RELAY_NUM Rollover    ",	/* Bit Position 8	*/
+-	NULL,
+-	NULL,
+-	NULL,
+-	"Replay Timer Timeout  ",	/* Bit Position 12	*/
+-	"Advisory Non-Fatal    ",	/* Bit Position 13	*/
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
 +
- source "kernel/gcov/Kconfig"
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -11,6 +11,7 @@ config ALPHA
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select AUTO_IRQ_AFFINITY if SMP
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	help
- 	  The Alpha is a 64-bit general-purpose processor designed and
- 	  marketed by the Digital Equipment Corporation of blessed memory,
---- a/arch/avr32/Kconfig
-+++ b/arch/avr32/Kconfig
-@@ -6,6 +6,7 @@ config AVR32
- 	select HAVE_CLK
- 	select HAVE_OPROFILE
- 	select HAVE_KPROBES
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	help
- 	  AVR32 is a high-performance 32-bit RISC microprocessor core,
- 	  designed for cost-sensitive embedded applications, with particular
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -6,6 +6,7 @@ config FRV
- 	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_GENERIC_HARDIRQS
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
++static const char *aer_correctable_error_string[] = {
++	"Receiver Error",		/* Bit Position 0	*/
+ 	NULL,
+ 	NULL,
+ 	NULL,
+ 	NULL,
+ 	NULL,
++	"Bad TLP",			/* Bit Position 6	*/
++	"Bad DLLP",			/* Bit Position 7	*/
++	"RELAY_NUM Rollover",		/* Bit Position 8	*/
+ 	NULL,
+ 	NULL,
+ 	NULL,
++	"Replay Timer Timeout",		/* Bit Position 12	*/
++	"Advisory Non-Fatal",		/* Bit Position 13	*/
+ };
  
- config ZONE_DMA
- 	bool
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -26,6 +26,7 @@ config IA64
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select IRQ_PER_CPU
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	default y
- 	help
- 	  The Itanium Processor Family is Intel's 64-bit successor to
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -4,6 +4,7 @@ config M68K
- 	select HAVE_AOUT
- 	select HAVE_IDE
- 	select GENERIC_ATOMIC64
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+-static char *aer_uncorrectable_error_string[] = {
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	"Data Link Protocol    ",	/* Bit Position 4	*/
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	NULL,
+-	"Poisoned TLP          ",	/* Bit Position 12	*/
+-	"Flow Control Protocol ",	/* Bit Position 13	*/
+-	"Completion Timeout    ",	/* Bit Position 14	*/
+-	"Completer Abort       ",	/* Bit Position 15	*/
+-	"Unexpected Completion ",	/* Bit Position 16	*/
+-	"Receiver Overflow     ",	/* Bit Position 17	*/
+-	"Malformed TLP         ",	/* Bit Position 18	*/
+-	"ECRC                  ",	/* Bit Position 19	*/
+-	"Unsupported Request   ",	/* Bit Position 20	*/
++static const char *aer_uncorrectable_error_string[] = {
+ 	NULL,
+ 	NULL,
+ 	NULL,
+ 	NULL,
++	"Data Link Protocol",		/* Bit Position 4	*/
+ 	NULL,
+ 	NULL,
+ 	NULL,
+@@ -144,19 +102,29 @@ static char *aer_uncorrectable_error_str
+ 	NULL,
+ 	NULL,
+ 	NULL,
++	"Poisoned TLP",			/* Bit Position 12	*/
++	"Flow Control Protocol",	/* Bit Position 13	*/
++	"Completion Timeout",		/* Bit Position 14	*/
++	"Completer Abort",		/* Bit Position 15	*/
++	"Unexpected Completion",	/* Bit Position 16	*/
++	"Receiver Overflow",		/* Bit Position 17	*/
++	"Malformed TLP",		/* Bit Position 18	*/
++	"ECRC",				/* Bit Position 19	*/
++	"Unsupported Request",		/* Bit Position 20	*/
+ };
  
- config MMU
- 	bool
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -15,6 +15,7 @@ config PARISC
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select IRQ_PER_CPU
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+-static char *aer_agent_string[] = {
++static const char *aer_agent_string[] = {
+ 	"Receiver ID",
+ 	"Requester ID",
+ 	"Completer ID",
+ 	"Transmitter ID"
+ };
  
- 	help
- 	  The PA-RISC microprocessor is designed by Hewlett-Packard and used
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -134,6 +134,7 @@ config PPC
- 	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_SPARSE_IRQ
- 	select IRQ_PER_CPU
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+-static void __aer_print_error(struct aer_err_info *info, struct pci_dev *dev)
++static void __aer_print_error(const char *prefix,
++			      struct aer_err_info *info)
+ {
+ 	int i, status;
+-	char *errmsg = NULL;
++	const char *errmsg = NULL;
  
- config EARLY_PRINTK
- 	bool
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -81,6 +81,7 @@ config S390
- 	select INIT_ALL_POSSIBLE
- 	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_BZIP2
- 	select HAVE_KERNEL_LZMA
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -11,6 +11,7 @@ config SUPERH
- 	select HAVE_DMA_ATTRS
- 	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if (GUSA_RB || CPU_SH4A)
- 	select PERF_USE_VMALLOC
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_BZIP2
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -51,6 +51,7 @@ config SPARC64
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_GENERIC_HARDIRQS
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	status = (info->status & ~info->mask);
  
- config ARCH_DEFCONFIG
- 	string
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -11,6 +11,7 @@ config TILE
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG if !M386
+@@ -165,15 +133,17 @@ static void __aer_print_error(struct aer
+ 			continue;
  
- # FIXME: investigate whether we need/want these options.
- #	select HAVE_IOREMAP_PROT
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -67,6 +67,7 @@ config X86
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select USE_GENERIC_SMP_HELPERS if SMP
-+	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 		if (info->severity == AER_CORRECTABLE)
+-			errmsg = aer_correctable_error_string[i];
++			errmsg = i < ARRAY_SIZE(aer_correctable_error_string) ?
++				aer_correctable_error_string[i] : NULL;
+ 		else
+-			errmsg = aer_uncorrectable_error_string[i];
++			errmsg = i < ARRAY_SIZE(aer_uncorrectable_error_string) ?
++				aer_uncorrectable_error_string[i] : NULL;
  
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
+ 		if (errmsg)
+-			AER_PR(info, dev, "   [%2d] %s%s\n", i, errmsg,
++			printk("%s""   [%2d] %-22s%s\n", prefix, i, errmsg,
+ 				info->first_error == i ? " (First)" : "");
+ 		else
+-			AER_PR(info, dev, "   [%2d] Unknown Error Bit%s\n", i,
++			printk("%s""   [%2d] Unknown Error Bit%s\n", prefix, i,
+ 				info->first_error == i ? " (First)" : "");
+ 	}
+ }
+@@ -181,11 +151,15 @@ static void __aer_print_error(struct aer
+ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
+ {
+ 	int id = ((dev->bus->number << 8) | dev->devfn);
++	char prefix[44];
++
++	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
++		 (info->severity == AER_CORRECTABLE) ? KERN_WARNING : KERN_ERR,
++		 dev_driver_string(&dev->dev), dev_name(&dev->dev));
+ 
+ 	if (info->status == 0) {
+-		AER_PR(info, dev,
+-			"PCIe Bus Error: severity=%s, type=Unaccessible, "
+-			"id=%04x(Unregistered Agent ID)\n",
++		printk("%s""PCIe Bus Error: severity=%s, type=Unaccessible, "
++			"id=%04x(Unregistered Agent ID)\n", prefix,
+ 			aer_error_severity_string[info->severity], id);
+ 	} else {
+ 		int layer, agent;
+@@ -193,23 +167,22 @@ void aer_print_error(struct pci_dev *dev
+ 		layer = AER_GET_LAYER_ERROR(info->severity, info->status);
+ 		agent = AER_GET_AGENT(info->severity, info->status);
+ 
+-		AER_PR(info, dev,
+-			"PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
+-			aer_error_severity_string[info->severity],
++		printk("%s""PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
++			prefix, aer_error_severity_string[info->severity],
+ 			aer_error_layer[layer], id, aer_agent_string[agent]);
+ 
+-		AER_PR(info, dev,
+-			"  device [%04x:%04x] error status/mask=%08x/%08x\n",
+-			dev->vendor, dev->device, info->status, info->mask);
++		printk("%s""  device [%04x:%04x] error status/mask=%08x/%08x\n",
++			prefix, dev->vendor, dev->device,
++			info->status, info->mask);
+ 
+-		__aer_print_error(info, dev);
++		__aer_print_error(prefix, info);
+ 
+ 		if (info->tlp_header_valid) {
+ 			unsigned char *tlp = (unsigned char *) &info->tlp;
+-			AER_PR(info, dev, "  TLP Header:"
++			printk("%s""  TLP Header:"
+ 				" %02x%02x%02x%02x %02x%02x%02x%02x"
+ 				" %02x%02x%02x%02x %02x%02x%02x%02x\n",
+-				*(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
++				prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
+ 				*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
+ 				*(tlp + 11), *(tlp + 10), *(tlp + 9),
+ 				*(tlp + 8), *(tlp + 15), *(tlp + 14),
+@@ -218,8 +191,8 @@ void aer_print_error(struct pci_dev *dev
+ 	}
+ 
+ 	if (info->id && info->error_dev_num > 1 && info->id == id)
+-		AER_PR(info, dev,
+-			"  Error of this Agent(%04x) is reported first\n", id);
++		printk("%s""  Error of this Agent(%04x) is reported first\n",
++			prefix, id);
+ }
+ 
+ void aer_print_port_info(struct pci_dev *dev, struct aer_err_info *info)
