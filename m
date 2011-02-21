@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab1BUEDY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:03:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48584 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932152Ab1BUEDW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:03:22 -0500
+	id S932213Ab1BUEEO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:04:14 -0500
+Received: from nm21.bullet.mail.ac4.yahoo.com ([98.139.52.218]:26068 "HELO
+	nm21.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755764Ab1BUEEI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 23:04:08 -0500
+X-Greylist: delayed 319 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Feb 2011 23:04:08 EST
+X-Yahoo-Newman-Id: 81758.35669.bm@omp1050.mail.ac4.yahoo.com
+X-Yahoo-SMTP: YjlSqMaswBCZSlyinCC4VZuUK9gO1Ih_zo3hHzIUbJw5fu0S
+X-YMail-OSG: u4RdF.EVM1nfDxeKcNZ_uJYLVfZfg3BDSLL0076WdSO6W22
+ 3Ecmfv7RQaF_kEQIHgzidXlzNO1o3PD1jpr1n62TuqJWW0gLH8WcDg1ntc0U
+ lW1uXpCZSf7Jn.Hlcb_0CDDYnjPWHNvbDTZ9Mi40m4jTFWMeMgWJl5_m1cS6
+ dKVFROKArhZdaYnYeArGuYKd7SRua1LoaWrX997fGJjOTbqBYa3T_y5I9_Uq
+ 8OQ--
+X-Yahoo-Newman-Property: ymail-3
+From: "MICHAEL CHONG" <barr_michchong9@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: michealchong10kk@gmail.com
+Date: Mon, 21 Feb 2011 10:39:56 +0800
+Subject: Get Back To Me ASAP
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <AANLkTin_4AfAgfWu=Qq_rO2T6o=u=JX9YKHquX85HrWe@mail.gmail.com>
-References: <1298154371-5641-1-git-send-email-ccross@android.com>
-	<1298154371-5641-7-git-send-email-ccross@android.com>
-	<AANLkTim8i5vvizBViqFCyq9i+7Uo2E1BrNRf_gtnMb-v@mail.gmail.com>
-	<AANLkTin_4AfAgfWu=Qq_rO2T6o=u=JX9YKHquX85HrWe@mail.gmail.com>
-Date: Sun, 20 Feb 2011 20:03:20 -0800
-Message-ID: <AANLkTimOwZdCrgpMgTFQLmVaKOZF51xC5AspJkxS9+7Z@mail.gmail.com>
-Subject: Re: [PATCH v2 05/21] ARM: tegra: clock: Disable clocks left on by bootloader
-From: Olof Johansson <olof@lixom.net>
-To: Colin Cross <ccross@android.com>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        konkers@android.com, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-ID: <PCPCa48cbd6906c14753b4881d0ef2e4ba3f@PCPC>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 7:43 PM, Colin Cross <ccross@android.com> wrote:
-> On Sun, Feb 20, 2011 at 4:40 PM, Olof Johansson <olof@lixom.net> wrote:
->> Hi,
->>
->> On Sat, Feb 19, 2011 at 2:25 PM, Colin Cross <ccross@android.com> wrote:
->>> Adds CONFIG_TEGRA_DISABLE_BOOTLOADER_CLOCKS that iterates
->>> through all clocks, disabling any for which the refcount
->>> is 0 but the clock init detected the bootloader left the
->>> clock on.
->>
->>
->> I would argue that any kernel functionality that relies on clocks
->> being left on my bootloader is buggy, and/or should at least have
->> those clocks enabled in the static clock tables for the boards in
->> question, since it creates an undocumented dependency on firmware.
->>
->> I would prefer if it disabled the clocks by default (after warning),
->> but that there was a runtime way to override while debugging (i.e. add
->> a bootarg 'keep_fwclocks' or similar to keep the firmware-enabled
->> clocks running and just warn about them).
->
-> That was the plan, but since many of the drivers are missing I didn't
-> want to enable it by default yet.  However, it turns out the problems
-> I was seeing at boot from this patch were actually due to a bug in the
-> clock code causing the cpu clock to be disabled for clocks that have
-> no disable.  I will drop this patch, and post a separate series after
-> these that fixes the bug and turns off clocks by default, with a
-> runtime argument like you suggested.
+Greetings,
+
+I am Michael Chong, Attorney at law. A deceased client of mine, that shares
+the same last name as yours,who died as the result of a heart-related
+condition in March 12th 2005.
+I have contacted you to assist in distributing the money left behind by my
+client($19,500million dollars) is lodged in the bank.
+
+Regards
+Michael Chong
 
 
-Sounds good. Alternatively, this can go in and be revisited with the
-above proposed changes; both approaches would be OK with me.
-
-
--Olof
