@@ -1,1185 +1,1089 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1BUIVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 03:21:20 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:50592 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752516Ab1BUIVS (ORCPT
+	id S1753660Ab1BUI1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 03:27:08 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56654 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab1BUI1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 03:21:18 -0500
-From: Pratyush Anand <pratyush.anand@st.com>
-To: <akpm@linux-foundation.org>, <rdunlap@xenotime.net>
-Cc: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <gregkh@suse.de>,
-        <jbarnes@virtuousgeek.org>, <viresh.kumar@st.com>,
-        <shiraz.hashim@st.com>, Pratyush Anand <pratyush.anand@st.com>
-Subject: [PATCH V5 Resend] ST SPEAr: PCIE gadget suppport
-Date: Mon, 21 Feb 2011 13:50:55 +0530
-Message-ID: <1298276455-23989-1-git-send-email-pratyush.anand@st.com>
-X-Mailer: git-send-email 1.6.0.2
+	Mon, 21 Feb 2011 03:27:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CDc024NlLZp3Nq/q/TFI7GI4Qut/x+HAfDIl+WrhIU6YCQbHkmHOr9Ez0qWOmaAIfe
+         bo2FDMsILoBhy+JavtQiRqvGZQoXrptE9hz8O8riD3QJh7qokPYJkxJKILifv9OqIEI/
+         eHggExNQikM18V9kZT2YTA7mfTpqjM8P3C0js=
+Date: Mon, 21 Feb 2011 09:26:57 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: [PATCH UPDATED 2/3 tip:x86/mm] x86-64, NUMA: Move NUMA emulation
+ into numa_emulation.c
+Message-ID: <20110221082657.GA31267@htj.dyndns.org>
+References: <20110218135836.GG21209@htj.dyndns.org>
+ <20110218135939.GH21209@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110218135939.GH21209@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a configurable gadget. can be configured by configfs interface. Any
-IP available at PCIE bus can be programmed to be used by host
-controller.It supoorts both INTX and MSI.
-By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
-with size 0x1000
+Create numa_emulation.c and move all NUMA emulation code there.  The
+definitions of struct numa_memblk and numa_meminfo are moved to
+numa_64.h.  Also, numa_remove_memblk_from(), numa_cleanup_meminfo(),
+numa_reset_distance() along with numa_emulation() are made global.
 
-Changes since V4:
-- All documentation related comments incorporated
+- v2: Internal declarations moved to numa_internal.h as suggested by
+      Yinghai.
 
-Changes since V3:
-- support for multiple instances of such device
-- changes to minimzie portability issue on 64 bit machine
-- unnecessary typecast removed
-- sysfs_streq used in place of complex code
-
-Changes since V2:
-- driver has been moved from sysfs to configfs
-- Documentation/ABI directory has also been updated
-- typo error in documenation has been corrected
-- clk value is checked after encapsulating by IS_ERR
-
-Changes since V1:
-- __iomem added for register addresses
-- kerneldoc comment removed whereever not required.
-- help node moved from sysfs to documentation/misc-devices
-- strict_strtoul used instead of sscanf
-
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 ---
- .../ABI/testing/configfs-spear-pcie-gadget         |   30 +
- Documentation/misc-devices/spear-pcie-gadget.txt   |  129 +++
- drivers/misc/Kconfig                               |   10 +
- drivers/misc/Makefile                              |    1 +
- drivers/misc/spear13xx_pcie_gadget.c               |  908 ++++++++++++++++++++
- 5 files changed, 1078 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/configfs-spear-pcie-gadget
- create mode 100644 Documentation/misc-devices/spear-pcie-gadget.txt
- create mode 100644 drivers/misc/spear13xx_pcie_gadget.c
+Yinghai, does it look okay to you?
 
-diff --git a/Documentation/ABI/testing/configfs-spear-pcie-gadget b/Documentation/ABI/testing/configfs-spear-pcie-gadget
-new file mode 100644
-index 0000000..29593d0
---- /dev/null
-+++ b/Documentation/ABI/testing/configfs-spear-pcie-gadget
-@@ -0,0 +1,30 @@
-+What:		/config/pcie-gadget
-+Date:		Feb 2011
-+KernelVersion:	2.6.37
-+Contact:	Pratyush Anand <pratyush.anand@st.com>
-+Description:
-+
-+	Interface is used to configure selected dual mode PCIe controller
-+	as device and then program its various registers to configure it
-+	as a particular device type.
-+	This interfaces can be used to show spear's PCIe device capability.
-+
-+	Nodes are only visible when configfs is mounted. To mount configfs
-+	in /config directory use:
-+	# mount -t configfs none /config/
-+
-+	/config/pcie-gadget/
-+		link ... used to enable ltssm and read its status.
-+		int_type ...used to configure and read type of supported
-+			interrupt
-+		no_of_msi ... used to configure number of MSI vector needed and
-+			to read no of MSI granted.
-+		inta ... write 1 to assert INTA and 0 to de-assert.
-+		send_msi ... write MSI vector to be sent.
-+		vendor_id ... used to write and read vendor id (hex)
-+		device_id ... used to write and read device id (hex)
-+		bar0_size ... used to write and read bar0_size
-+		bar0_address ... used to write and read bar0 mapped area in hex.
-+		bar0_rw_offset ... used to write and read offset of bar0 where
-+			bar0_data will be written or read.
-+		bar0_data ... used to write and read data at bar0_rw_offset.
-diff --git a/Documentation/misc-devices/spear-pcie-gadget.txt b/Documentation/misc-devices/spear-pcie-gadget.txt
-new file mode 100644
-index 0000000..7b86b80
---- /dev/null
-+++ b/Documentation/misc-devices/spear-pcie-gadget.txt
-@@ -0,0 +1,129 @@
-+Spear PCIe Gadget Driver:
-+
-+Author
-+=============
-+Pratyush Anand (pratyush.anand@st.com)
-+
-+Location
-+============
-+driver/misc/spear13xx_pcie_gadget.c
-+
-+Supported Chip:
-+===================
-+SPEAr1300
-+SPEAr1310
-+
-+Menuconfig option:
-+==========================
-+Device Drivers
-+	Misc devices
-+		PCIe gadget support for SPEAr13XX platform
-+purpose
-+===========
-+This driver has several nodes which can be read/written by configfs interface.
-+Its main purpose is to configure selected dual mode PCIe controller as device
-+and then program its various registers to configure it as a particular device
-+type. This driver can be used to show spear's PCIe device capability.
-+
-+Description of different nodes:
-+=================================
-+
-+read behavior of nodes:
-+------------------------------
-+link 		:gives ltssm status.
-+int_type 	:type of supported interrupt
-+no_of_msi 	:zero if MSI is not enabled by host. A positive value is the
-+		number of MSI vector granted.
-+vendor_id	:returns programmed vendor id (hex)
-+device_id	:returns programmed device id(hex)
-+bar0_size:	:returns size of bar0 in hex.
-+bar0_address	:returns address of bar0 mapped area in hex.
-+bar0_rw_offset	:returns offset of bar0 for which bar0_data will return value.
-+bar0_data	:returns data at bar0_rw_offset.
-+
-+write behavior of nodes:
-+------------------------------
-+link 		:write UP to enable ltsmm DOWN to disable
-+int_type	:write interrupt type to be configured and (int_type could be
-+		INTA, MSI or NO_INT). Select MSI only when you have programmed
-+		no_of_msi node.
-+no_of_msi	:number of MSI vector needed.
-+inta		:write 1 to assert INTA and 0 to de-assert.
-+send_msi	:write MSI vector to be sent.
-+vendor_id	:write vendor id(hex) to be programmed.
-+device_id	:write device id(hex) to be programmed.
-+bar0_size	:write size of bar0 in hex. default bar0 size is 1000 (hex)
-+		bytes.
-+bar0_address	:write	address of bar0 mapped area in hex. (default mapping of
-+		bar0 is SYSRAM1(E0800000). Always program bar size before bar
-+		address. Kernel might modify bar size and address for alignment, so
-+		read back bar size and address after writing to cross check.
-+bar0_rw_offset	:write offset of bar0 for which	bar0_data will write value.
-+bar0_data	:write data to be written at bar0_rw_offset.
-+
-+Node programming example
-+===========================
-+Program all PCIe registers in such a way that when this device is connected
-+to the PCIe host, then host sees this device as 1MB RAM.
-+#mount -t configfs none /Config
-+# cd /config/pcie_gadget/
-+Now you have all the nodes in this directory.
-+program vendor id as 0x104a
-+# echo 104A >> vendor_id
-+
-+program device id as 0xCD80
-+# echo CD80 >> device_id
-+
-+program BAR0 size as 1MB
-+# echo 100000 >> bar0_size
-+
-+check for programmed bar0 size
-+# cat bar0_size
-+
-+Program BAR0 Address as DDR (0x2100000). This is the physical address of
-+memory, which is to be made visible to PCIe host. Similarly any other peripheral
-+can also be made visible to PCIe host. E.g., if you program base address of UART
-+as BAR0 address then when this device will be connected to a host, it will be
-+visible as UART.
-+# echo 2100000 >> bar0_address
-+
-+program interrupt type : INTA
-+# echo INTA >> int_type
-+
-+go for link up now.
-+# echo UP >> link
-+
-+It will have to be insured that, once link up is done on gadget, then only host
-+is initialized and start to search PCIe devices on its port.
-+
-+/*wait till link is up*/
-+# cat link
-+wait till it returns UP.
-+
-+To assert INTA
-+# echo 1 >> inta
-+
-+To de-assert INTA
-+# echo 0 >> inta
-+
-+if MSI is to be used as interrupt, program no of msi vector needed (say4)
-+# echo 4 >> no_of_msi
-+
-+select MSI as interrupt type
-+# echo MSI >> int_type
-+
-+go for link up now
-+# echo UP >> link
-+
-+wait till link is up
-+# cat link
-+An application can repetitively read this node till link is found UP. It can
-+sleep between two read.
-+
-+wait till msi is enabled
-+# cat no_of_msi
-+Should return 4 (number of requested MSI vector)
-+
-+to send msi vector 2
-+# echo 2 >> send_msi
-+#cd -
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 4d073f1..dea052d 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -394,6 +394,16 @@ config DS1682
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called ds1682.
+Thanks.
+
+ arch/x86/mm/Makefile         |    1 
+ arch/x86/mm/numa_64.c        |  480 -------------------------------------------
+ arch/x86/mm/numa_emulation.c |  452 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/mm/numa_internal.h  |   31 ++
+ 4 files changed, 488 insertions(+), 476 deletions(-)
+
+Index: work/arch/x86/mm/Makefile
+===================================================================
+--- work.orig/arch/x86/mm/Makefile
++++ work/arch/x86/mm/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_MMIOTRACE_TEST)	+= testmmio
+ obj-$(CONFIG_NUMA)		+= numa.o numa_$(BITS).o
+ obj-$(CONFIG_AMD_NUMA)		+= amdtopology_64.o
+ obj-$(CONFIG_ACPI_NUMA)		+= srat_$(BITS).o
++obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
  
-+config SPEAR13XX_PCIE_GADGET
-+	bool "PCIe gadget support for SPEAr13XX platform"
-+	depends on ARCH_SPEAR13XX
-+	default n
-+	help
-+	 This option enables gadget support for PCIe controller. If
-+	 board file defines any controller as PCIe endpoint then a sysfs
-+	 entry will be created for that controller. User can use these
-+	 sysfs node to configure PCIe EP as per his requirements.
-+
- config TI_DAC7512
- 	tristate "Texas Instruments DAC7512"
- 	depends on SPI && SYSFS
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 98009cc..c489536 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
- obj-$(CONFIG_HMC6352)		+= hmc6352.o
- obj-y				+= eeprom/
- obj-y				+= cb710/
-+obj-$(CONFIG_SPEAR13XX_PCIE_GADGET)	+= spear13xx_pcie_gadget.o
- obj-$(CONFIG_VMWARE_BALLOON)	+= vmw_balloon.o
- obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
- obj-$(CONFIG_PCH_PHUB)		+= pch_phub.o
-diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
-new file mode 100644
-index 0000000..ec3b8c9
+ obj-$(CONFIG_HAVE_MEMBLOCK)		+= memblock.o
+ 
+Index: work/arch/x86/mm/numa_64.c
+===================================================================
+--- work.orig/arch/x86/mm/numa_64.c
++++ work/arch/x86/mm/numa_64.c
+@@ -18,20 +18,10 @@
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+ #include <asm/dma.h>
+-#include <asm/numa.h>
+ #include <asm/acpi.h>
+ #include <asm/amd_nb.h>
+ 
+-struct numa_memblk {
+-	u64			start;
+-	u64			end;
+-	int			nid;
+-};
+-
+-struct numa_meminfo {
+-	int			nr_blks;
+-	struct numa_memblk	blk[NR_NODE_MEMBLKS];
+-};
++#include "numa_internal.h"
+ 
+ struct pglist_data *node_data[MAX_NUMNODES] __read_mostly;
+ EXPORT_SYMBOL(node_data);
+@@ -215,7 +205,7 @@ static int __init numa_add_memblk_to(int
+ 	return 0;
+ }
+ 
+-static void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
++void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
+ {
+ 	mi->nr_blks--;
+ 	memmove(&mi->blk[idx], &mi->blk[idx + 1],
+@@ -273,7 +263,7 @@ setup_node_bootmem(int nodeid, unsigned
+ 	node_set_online(nodeid);
+ }
+ 
+-static int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
++int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
+ {
+ 	const u64 low = 0;
+ 	const u64 high = (u64)max_pfn << PAGE_SHIFT;
+@@ -367,7 +357,7 @@ static void __init numa_nodemask_from_me
+  * Reset distance table.  The current table is freed.  The next
+  * numa_set_distance() call will create a new one.
+  */
+-static void __init numa_reset_distance(void)
++void __init numa_reset_distance(void)
+ {
+ 	size_t size;
+ 
+@@ -533,388 +523,6 @@ static int __init numa_register_memblks(
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_NUMA_EMU
+-/* Numa emulation */
+-static int emu_nid_to_phys[MAX_NUMNODES] __cpuinitdata;
+-static char *emu_cmdline __initdata;
+-
+-void __init numa_emu_cmdline(char *str)
+-{
+-	emu_cmdline = str;
+-}
+-
+-static int __init emu_find_memblk_by_nid(int nid, const struct numa_meminfo *mi)
+-{
+-	int i;
+-
+-	for (i = 0; i < mi->nr_blks; i++)
+-		if (mi->blk[i].nid == nid)
+-			return i;
+-	return -ENOENT;
+-}
+-
+-/*
+- * Sets up nid to range from @start to @end.  The return value is -errno if
+- * something went wrong, 0 otherwise.
+- */
+-static int __init emu_setup_memblk(struct numa_meminfo *ei,
+-				   struct numa_meminfo *pi,
+-				   int nid, int phys_blk, u64 size)
+-{
+-	struct numa_memblk *eb = &ei->blk[ei->nr_blks];
+-	struct numa_memblk *pb = &pi->blk[phys_blk];
+-
+-	if (ei->nr_blks >= NR_NODE_MEMBLKS) {
+-		pr_err("NUMA: Too many emulated memblks, failing emulation\n");
+-		return -EINVAL;
+-	}
+-
+-	ei->nr_blks++;
+-	eb->start = pb->start;
+-	eb->end = pb->start + size;
+-	eb->nid = nid;
+-
+-	if (emu_nid_to_phys[nid] == NUMA_NO_NODE)
+-		emu_nid_to_phys[nid] = pb->nid;
+-
+-	pb->start += size;
+-	if (pb->start >= pb->end) {
+-		WARN_ON_ONCE(pb->start > pb->end);
+-		numa_remove_memblk_from(phys_blk, pi);
+-	}
+-
+-	printk(KERN_INFO "Faking node %d at %016Lx-%016Lx (%LuMB)\n", nid,
+-	       eb->start, eb->end, (eb->end - eb->start) >> 20);
+-	return 0;
+-}
+-
+-/*
+- * Sets up nr_nodes fake nodes interleaved over physical nodes ranging from addr
+- * to max_addr.  The return value is the number of nodes allocated.
+- */
+-static int __init split_nodes_interleave(struct numa_meminfo *ei,
+-					 struct numa_meminfo *pi,
+-					 u64 addr, u64 max_addr, int nr_nodes)
+-{
+-	nodemask_t physnode_mask = NODE_MASK_NONE;
+-	u64 size;
+-	int big;
+-	int nid = 0;
+-	int i, ret;
+-
+-	if (nr_nodes <= 0)
+-		return -1;
+-	if (nr_nodes > MAX_NUMNODES) {
+-		pr_info("numa=fake=%d too large, reducing to %d\n",
+-			nr_nodes, MAX_NUMNODES);
+-		nr_nodes = MAX_NUMNODES;
+-	}
+-
+-	size = (max_addr - addr - memblock_x86_hole_size(addr, max_addr)) / nr_nodes;
+-	/*
+-	 * Calculate the number of big nodes that can be allocated as a result
+-	 * of consolidating the remainder.
+-	 */
+-	big = ((size & ~FAKE_NODE_MIN_HASH_MASK) * nr_nodes) /
+-		FAKE_NODE_MIN_SIZE;
+-
+-	size &= FAKE_NODE_MIN_HASH_MASK;
+-	if (!size) {
+-		pr_err("Not enough memory for each node.  "
+-			"NUMA emulation disabled.\n");
+-		return -1;
+-	}
+-
+-	for (i = 0; i < pi->nr_blks; i++)
+-		node_set(pi->blk[i].nid, physnode_mask);
+-
+-	/*
+-	 * Continue to fill physical nodes with fake nodes until there is no
+-	 * memory left on any of them.
+-	 */
+-	while (nodes_weight(physnode_mask)) {
+-		for_each_node_mask(i, physnode_mask) {
+-			u64 dma32_end = PFN_PHYS(MAX_DMA32_PFN);
+-			u64 start, limit, end;
+-			int phys_blk;
+-
+-			phys_blk = emu_find_memblk_by_nid(i, pi);
+-			if (phys_blk < 0) {
+-				node_clear(i, physnode_mask);
+-				continue;
+-			}
+-			start = pi->blk[phys_blk].start;
+-			limit = pi->blk[phys_blk].end;
+-			end = start + size;
+-
+-			if (nid < big)
+-				end += FAKE_NODE_MIN_SIZE;
+-
+-			/*
+-			 * Continue to add memory to this fake node if its
+-			 * non-reserved memory is less than the per-node size.
+-			 */
+-			while (end - start -
+-			       memblock_x86_hole_size(start, end) < size) {
+-				end += FAKE_NODE_MIN_SIZE;
+-				if (end > limit) {
+-					end = limit;
+-					break;
+-				}
+-			}
+-
+-			/*
+-			 * If there won't be at least FAKE_NODE_MIN_SIZE of
+-			 * non-reserved memory in ZONE_DMA32 for the next node,
+-			 * this one must extend to the boundary.
+-			 */
+-			if (end < dma32_end && dma32_end - end -
+-			    memblock_x86_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
+-				end = dma32_end;
+-
+-			/*
+-			 * If there won't be enough non-reserved memory for the
+-			 * next node, this one must extend to the end of the
+-			 * physical node.
+-			 */
+-			if (limit - end -
+-			    memblock_x86_hole_size(end, limit) < size)
+-				end = limit;
+-
+-			ret = emu_setup_memblk(ei, pi, nid++ % nr_nodes,
+-					       phys_blk,
+-					       min(end, limit) - start);
+-			if (ret < 0)
+-				return ret;
+-		}
+-	}
+-	return 0;
+-}
+-
+-/*
+- * Returns the end address of a node so that there is at least `size' amount of
+- * non-reserved memory or `max_addr' is reached.
+- */
+-static u64 __init find_end_of_node(u64 start, u64 max_addr, u64 size)
+-{
+-	u64 end = start + size;
+-
+-	while (end - start - memblock_x86_hole_size(start, end) < size) {
+-		end += FAKE_NODE_MIN_SIZE;
+-		if (end > max_addr) {
+-			end = max_addr;
+-			break;
+-		}
+-	}
+-	return end;
+-}
+-
+-/*
+- * Sets up fake nodes of `size' interleaved over physical nodes ranging from
+- * `addr' to `max_addr'.  The return value is the number of nodes allocated.
+- */
+-static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
+-					      struct numa_meminfo *pi,
+-					      u64 addr, u64 max_addr, u64 size)
+-{
+-	nodemask_t physnode_mask = NODE_MASK_NONE;
+-	u64 min_size;
+-	int nid = 0;
+-	int i, ret;
+-
+-	if (!size)
+-		return -1;
+-	/*
+-	 * The limit on emulated nodes is MAX_NUMNODES, so the size per node is
+-	 * increased accordingly if the requested size is too small.  This
+-	 * creates a uniform distribution of node sizes across the entire
+-	 * machine (but not necessarily over physical nodes).
+-	 */
+-	min_size = (max_addr - addr - memblock_x86_hole_size(addr, max_addr)) /
+-						MAX_NUMNODES;
+-	min_size = max(min_size, FAKE_NODE_MIN_SIZE);
+-	if ((min_size & FAKE_NODE_MIN_HASH_MASK) < min_size)
+-		min_size = (min_size + FAKE_NODE_MIN_SIZE) &
+-						FAKE_NODE_MIN_HASH_MASK;
+-	if (size < min_size) {
+-		pr_err("Fake node size %LuMB too small, increasing to %LuMB\n",
+-			size >> 20, min_size >> 20);
+-		size = min_size;
+-	}
+-	size &= FAKE_NODE_MIN_HASH_MASK;
+-
+-	for (i = 0; i < pi->nr_blks; i++)
+-		node_set(pi->blk[i].nid, physnode_mask);
+-
+-	/*
+-	 * Fill physical nodes with fake nodes of size until there is no memory
+-	 * left on any of them.
+-	 */
+-	while (nodes_weight(physnode_mask)) {
+-		for_each_node_mask(i, physnode_mask) {
+-			u64 dma32_end = MAX_DMA32_PFN << PAGE_SHIFT;
+-			u64 start, limit, end;
+-			int phys_blk;
+-
+-			phys_blk = emu_find_memblk_by_nid(i, pi);
+-			if (phys_blk < 0) {
+-				node_clear(i, physnode_mask);
+-				continue;
+-			}
+-			start = pi->blk[phys_blk].start;
+-			limit = pi->blk[phys_blk].end;
+-
+-			end = find_end_of_node(start, limit, size);
+-			/*
+-			 * If there won't be at least FAKE_NODE_MIN_SIZE of
+-			 * non-reserved memory in ZONE_DMA32 for the next node,
+-			 * this one must extend to the boundary.
+-			 */
+-			if (end < dma32_end && dma32_end - end -
+-			    memblock_x86_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
+-				end = dma32_end;
+-
+-			/*
+-			 * If there won't be enough non-reserved memory for the
+-			 * next node, this one must extend to the end of the
+-			 * physical node.
+-			 */
+-			if (limit - end -
+-			    memblock_x86_hole_size(end, limit) < size)
+-				end = limit;
+-
+-			ret = emu_setup_memblk(ei, pi, nid++ % MAX_NUMNODES,
+-					       phys_blk,
+-					       min(end, limit) - start);
+-			if (ret < 0)
+-				return ret;
+-		}
+-	}
+-	return 0;
+-}
+-
+-/*
+- * Sets up the system RAM area from start_pfn to last_pfn according to the
+- * numa=fake command-line option.
+- */
+-static void __init numa_emulation(struct numa_meminfo *numa_meminfo,
+-				  int numa_dist_cnt)
+-{
+-	static struct numa_meminfo ei __initdata;
+-	static struct numa_meminfo pi __initdata;
+-	const u64 max_addr = max_pfn << PAGE_SHIFT;
+-	u8 *phys_dist = NULL;
+-	int i, j, ret;
+-
+-	if (!emu_cmdline)
+-		goto no_emu;
+-
+-	memset(&ei, 0, sizeof(ei));
+-	pi = *numa_meminfo;
+-
+-	for (i = 0; i < MAX_NUMNODES; i++)
+-		emu_nid_to_phys[i] = NUMA_NO_NODE;
+-
+-	/*
+-	 * If the numa=fake command-line contains a 'M' or 'G', it represents
+-	 * the fixed node size.  Otherwise, if it is just a single number N,
+-	 * split the system RAM into N fake nodes.
+-	 */
+-	if (strchr(emu_cmdline, 'M') || strchr(emu_cmdline, 'G')) {
+-		u64 size;
+-
+-		size = memparse(emu_cmdline, &emu_cmdline);
+-		ret = split_nodes_size_interleave(&ei, &pi, 0, max_addr, size);
+-	} else {
+-		unsigned long n;
+-
+-		n = simple_strtoul(emu_cmdline, NULL, 0);
+-		ret = split_nodes_interleave(&ei, &pi, 0, max_addr, n);
+-	}
+-
+-	if (ret < 0)
+-		goto no_emu;
+-
+-	if (numa_cleanup_meminfo(&ei) < 0) {
+-		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
+-		goto no_emu;
+-	}
+-
+-	/*
+-	 * Copy the original distance table.  It's temporary so no need to
+-	 * reserve it.
+-	 */
+-	if (numa_dist_cnt) {
+-		size_t size = numa_dist_cnt * sizeof(phys_dist[0]);
+-		u64 phys;
+-
+-		phys = memblock_find_in_range(0,
+-					      (u64)max_pfn_mapped << PAGE_SHIFT,
+-					      size, PAGE_SIZE);
+-		if (phys == MEMBLOCK_ERROR) {
+-			pr_warning("NUMA: Warning: can't allocate copy of distance table, disabling emulation\n");
+-			goto no_emu;
+-		}
+-		phys_dist = __va(phys);
+-
+-		for (i = 0; i < numa_dist_cnt; i++)
+-			for (j = 0; j < numa_dist_cnt; j++)
+-				phys_dist[i * numa_dist_cnt + j] =
+-					node_distance(i, j);
+-	}
+-
+-	/* commit */
+-	*numa_meminfo = ei;
+-
+-	/*
+-	 * Transform __apicid_to_node table to use emulated nids by
+-	 * reverse-mapping phys_nid.  The maps should always exist but fall
+-	 * back to zero just in case.
+-	 */
+-	for (i = 0; i < ARRAY_SIZE(__apicid_to_node); i++) {
+-		if (__apicid_to_node[i] == NUMA_NO_NODE)
+-			continue;
+-		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
+-			if (__apicid_to_node[i] == emu_nid_to_phys[j])
+-				break;
+-		__apicid_to_node[i] = j < ARRAY_SIZE(emu_nid_to_phys) ? j : 0;
+-	}
+-
+-	/* make sure all emulated nodes are mapped to a physical node */
+-	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
+-		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
+-			emu_nid_to_phys[i] = 0;
+-
+-	/* transform distance table */
+-	numa_reset_distance();
+-	for (i = 0; i < MAX_NUMNODES; i++) {
+-		for (j = 0; j < MAX_NUMNODES; j++) {
+-			int physi = emu_nid_to_phys[i];
+-			int physj = emu_nid_to_phys[j];
+-			int dist;
+-
+-			if (physi >= numa_dist_cnt || physj >= numa_dist_cnt)
+-				dist = physi == physj ?
+-					LOCAL_DISTANCE : REMOTE_DISTANCE;
+-			else
+-				dist = phys_dist[physi * numa_dist_cnt + physj];
+-
+-			numa_set_distance(i, j, dist);
+-		}
+-	}
+-	return;
+-
+-no_emu:
+-	/* No emulation.  Build identity emu_nid_to_phys[] for numa_add_cpu() */
+-	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
+-		emu_nid_to_phys[i] = i;
+-}
+-#else	/* CONFIG_NUMA_EMU */
+-static inline void numa_emulation(struct numa_meminfo *numa_meminfo,
+-				  int numa_dist_cnt)
+-{ }
+-#endif	/* CONFIG_NUMA_EMU */
+-
+ static int __init dummy_numa_init(void)
+ {
+ 	printk(KERN_INFO "%s\n",
+@@ -1002,83 +610,3 @@ int __cpuinit numa_cpu_node(int cpu)
+ 		return __apicid_to_node[apicid];
+ 	return NUMA_NO_NODE;
+ }
+-
+-/*
+- * UGLINESS AHEAD: Currently, CONFIG_NUMA_EMU is 64bit only and makes use
+- * of 64bit specific data structures.  The distinction is artificial and
+- * should be removed.  numa_{add|remove}_cpu() are implemented in numa.c
+- * for both 32 and 64bit when CONFIG_NUMA_EMU is disabled but here when
+- * enabled.
+- *
+- * NUMA emulation is planned to be made generic and the following and other
+- * related code should be moved to numa.c.
+- */
+-#ifdef CONFIG_NUMA_EMU
+-# ifndef CONFIG_DEBUG_PER_CPU_MAPS
+-void __cpuinit numa_add_cpu(int cpu)
+-{
+-	int physnid, nid;
+-
+-	nid = numa_cpu_node(cpu);
+-	if (nid == NUMA_NO_NODE)
+-		nid = early_cpu_to_node(cpu);
+-	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
+-
+-	physnid = emu_nid_to_phys[nid];
+-
+-	/*
+-	 * Map the cpu to each emulated node that is allocated on the physical
+-	 * node of the cpu's apic id.
+-	 */
+-	for_each_online_node(nid)
+-		if (emu_nid_to_phys[nid] == physnid)
+-			cpumask_set_cpu(cpu, node_to_cpumask_map[nid]);
+-}
+-
+-void __cpuinit numa_remove_cpu(int cpu)
+-{
+-	int i;
+-
+-	for_each_online_node(i)
+-		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
+-}
+-# else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+-static void __cpuinit numa_set_cpumask(int cpu, int enable)
+-{
+-	struct cpumask *mask;
+-	int nid, physnid, i;
+-
+-	nid = early_cpu_to_node(cpu);
+-	if (nid == NUMA_NO_NODE) {
+-		/* early_cpu_to_node() already emits a warning and trace */
+-		return;
+-	}
+-
+-	physnid = emu_nid_to_phys[nid];
+-
+-	for_each_online_node(i) {
+-		if (emu_nid_to_phys[nid] != physnid)
+-			continue;
+-
+-		mask = debug_cpumask_set_cpu(cpu, enable);
+-		if (!mask)
+-			return;
+-
+-		if (enable)
+-			cpumask_set_cpu(cpu, mask);
+-		else
+-			cpumask_clear_cpu(cpu, mask);
+-	}
+-}
+-
+-void __cpuinit numa_add_cpu(int cpu)
+-{
+-	numa_set_cpumask(cpu, 1);
+-}
+-
+-void __cpuinit numa_remove_cpu(int cpu)
+-{
+-	numa_set_cpumask(cpu, 0);
+-}
+-# endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+-#endif	/* CONFIG_NUMA_EMU */
+Index: work/arch/x86/mm/numa_emulation.c
+===================================================================
 --- /dev/null
-+++ b/drivers/misc/spear13xx_pcie_gadget.c
-@@ -0,0 +1,908 @@
++++ work/arch/x86/mm/numa_emulation.c
+@@ -0,0 +1,452 @@
 +/*
-+ * drivers/misc/spear13xx_pcie_gadget.c
-+ *
-+ * Copyright (C) 2010 ST Microelectronics
-+ * Pratyush Anand<pratyush.anand@st.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
++ * NUMA emulation
 + */
-+
-+#include <linux/clk.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
 +#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pci_regs.h>
-+#include <linux/configfs.h>
-+#include <mach/pcie.h>
-+#include <mach/misc_regs.h>
++#include <linux/errno.h>
++#include <linux/topology.h>
++#include <linux/memblock.h>
++#include <asm/dma.h>
 +
-+#define IN0_MEM_SIZE	(200 * 1024 * 1024 - 1)
-+/* In current implementation address translation is done using IN0 only.
-+ * So IN1 start address and IN0 end address has been kept same
-+*/
-+#define IN1_MEM_SIZE	(0 * 1024 * 1024 - 1)
-+#define IN_IO_SIZE	(20 * 1024 * 1024 - 1)
-+#define IN_CFG0_SIZE	(12 * 1024 * 1024 - 1)
-+#define IN_CFG1_SIZE	(12 * 1024 * 1024 - 1)
-+#define IN_MSG_SIZE	(12 * 1024 * 1024 - 1)
-+/* Keep default BAR size as 4K*/
-+/* AORAM would be mapped by default*/
-+#define INBOUND_ADDR_MASK	(SPEAR13XX_SYSRAM1_SIZE - 1)
++#include "numa_internal.h"
 +
-+#define INT_TYPE_NO_INT	0
-+#define INT_TYPE_INTX	1
-+#define INT_TYPE_MSI	2
-+struct spear_pcie_gadget_config {
-+	void __iomem *base;
-+	void __iomem *va_app_base;
-+	void __iomem *va_dbi_base;
-+	char int_type[10];
-+	ulong requested_msi;
-+	ulong configured_msi;
-+	ulong bar0_size;
-+	ulong bar0_rw_offset;
-+	void __iomem *va_bar0_address;
-+};
++static int emu_nid_to_phys[MAX_NUMNODES] __cpuinitdata;
++static char *emu_cmdline __initdata;
 +
-+struct pcie_gadget_target {
-+	struct configfs_subsystem subsys;
-+	struct spear_pcie_gadget_config config;
-+};
-+
-+struct pcie_gadget_target_attr {
-+	struct configfs_attribute	attr;
-+	ssize_t		(*show)(struct spear_pcie_gadget_config *config,
-+						char *buf);
-+	ssize_t		(*store)(struct spear_pcie_gadget_config *config,
-+						 const char *buf,
-+						 size_t count);
-+};
-+
-+static void enable_dbi_access(struct pcie_app_reg __iomem *app_reg)
++void __init numa_emu_cmdline(char *str)
 +{
-+	/* Enable DBI access */
-+	writel(readl(&app_reg->slv_armisc) | (1 << AXI_OP_DBI_ACCESS_ID),
-+			&app_reg->slv_armisc);
-+	writel(readl(&app_reg->slv_awmisc) | (1 << AXI_OP_DBI_ACCESS_ID),
-+			&app_reg->slv_awmisc);
-+
++	emu_cmdline = str;
 +}
 +
-+static void disable_dbi_access(struct pcie_app_reg __iomem *app_reg)
++static int __init emu_find_memblk_by_nid(int nid, const struct numa_meminfo *mi)
 +{
-+	/* disable DBI access */
-+	writel(readl(&app_reg->slv_armisc) & ~(1 << AXI_OP_DBI_ACCESS_ID),
-+			&app_reg->slv_armisc);
-+	writel(readl(&app_reg->slv_awmisc) & ~(1 << AXI_OP_DBI_ACCESS_ID),
-+			&app_reg->slv_awmisc);
++	int i;
 +
++	for (i = 0; i < mi->nr_blks; i++)
++		if (mi->blk[i].nid == nid)
++			return i;
++	return -ENOENT;
 +}
 +
-+static void spear_dbi_read_reg(struct spear_pcie_gadget_config *config,
-+		int where, int size, u32 *val)
++/*
++ * Sets up nid to range from @start to @end.  The return value is -errno if
++ * something went wrong, 0 otherwise.
++ */
++static int __init emu_setup_memblk(struct numa_meminfo *ei,
++				   struct numa_meminfo *pi,
++				   int nid, int phys_blk, u64 size)
 +{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+	ulong va_address;
++	struct numa_memblk *eb = &ei->blk[ei->nr_blks];
++	struct numa_memblk *pb = &pi->blk[phys_blk];
 +
-+	/* Enable DBI access */
-+	enable_dbi_access(app_reg);
-+
-+	va_address = (ulong)config->va_dbi_base + (where & ~0x3);
-+
-+	*val = readl(va_address);
-+
-+	if (size == 1)
-+		*val = (*val >> (8 * (where & 3))) & 0xff;
-+	else if (size == 2)
-+		*val = (*val >> (8 * (where & 3))) & 0xffff;
-+
-+	/* Disable DBI access */
-+	disable_dbi_access(app_reg);
-+}
-+
-+static void spear_dbi_write_reg(struct spear_pcie_gadget_config *config,
-+		int where, int size, u32 val)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+	ulong va_address;
-+
-+	/* Enable DBI access */
-+	enable_dbi_access(app_reg);
-+
-+	va_address = (ulong)config->va_dbi_base + (where & ~0x3);
-+
-+	if (size == 4)
-+		writel(val, va_address);
-+	else if (size == 2)
-+		writew(val, va_address + (where & 2));
-+	else if (size == 1)
-+		writeb(val, va_address + (where & 3));
-+
-+	/* Disable DBI access */
-+	disable_dbi_access(app_reg);
-+}
-+
-+#define PCI_FIND_CAP_TTL	48
-+
-+static int pci_find_own_next_cap_ttl(struct spear_pcie_gadget_config *config,
-+		u32 pos, int cap, int *ttl)
-+{
-+	u32 id;
-+
-+	while ((*ttl)--) {
-+		spear_dbi_read_reg(config, pos, 1, &pos);
-+		if (pos < 0x40)
-+			break;
-+		pos &= ~3;
-+		spear_dbi_read_reg(config, pos + PCI_CAP_LIST_ID, 1, &id);
-+		if (id == 0xff)
-+			break;
-+		if (id == cap)
-+			return pos;
-+		pos += PCI_CAP_LIST_NEXT;
-+	}
-+	return 0;
-+}
-+
-+static int pci_find_own_next_cap(struct spear_pcie_gadget_config *config,
-+			u32 pos, int cap)
-+{
-+	int ttl = PCI_FIND_CAP_TTL;
-+
-+	return pci_find_own_next_cap_ttl(config, pos, cap, &ttl);
-+}
-+
-+static int pci_find_own_cap_start(struct spear_pcie_gadget_config *config,
-+				u8 hdr_type)
-+{
-+	u32 status;
-+
-+	spear_dbi_read_reg(config, PCI_STATUS, 2, &status);
-+	if (!(status & PCI_STATUS_CAP_LIST))
-+		return 0;
-+
-+	switch (hdr_type) {
-+	case PCI_HEADER_TYPE_NORMAL:
-+	case PCI_HEADER_TYPE_BRIDGE:
-+		return PCI_CAPABILITY_LIST;
-+	case PCI_HEADER_TYPE_CARDBUS:
-+		return PCI_CB_CAPABILITY_LIST;
-+	default:
-+		return 0;
++	if (ei->nr_blks >= NR_NODE_MEMBLKS) {
++		pr_err("NUMA: Too many emulated memblks, failing emulation\n");
++		return -EINVAL;
 +	}
 +
++	ei->nr_blks++;
++	eb->start = pb->start;
++	eb->end = pb->start + size;
++	eb->nid = nid;
++
++	if (emu_nid_to_phys[nid] == NUMA_NO_NODE)
++		emu_nid_to_phys[nid] = pb->nid;
++
++	pb->start += size;
++	if (pb->start >= pb->end) {
++		WARN_ON_ONCE(pb->start > pb->end);
++		numa_remove_memblk_from(phys_blk, pi);
++	}
++
++	printk(KERN_INFO "Faking node %d at %016Lx-%016Lx (%LuMB)\n", nid,
++	       eb->start, eb->end, (eb->end - eb->start) >> 20);
 +	return 0;
 +}
 +
 +/*
-+ * Tell if a device supports a given PCI capability.
-+ * Returns the address of the requested capability structure within the
-+ * device's PCI configuration space or 0 in case the device does not
-+ * support it. Possible values for @cap:
-+ *
-+ * %PCI_CAP_ID_PM	Power Management
-+ * %PCI_CAP_ID_AGP	Accelerated Graphics Port
-+ * %PCI_CAP_ID_VPD	Vital Product Data
-+ * %PCI_CAP_ID_SLOTID	Slot Identification
-+ * %PCI_CAP_ID_MSI	Message Signalled Interrupts
-+ * %PCI_CAP_ID_CHSWP	CompactPCI HotSwap
-+ * %PCI_CAP_ID_PCIX	PCI-X
-+ * %PCI_CAP_ID_EXP	PCI Express
++ * Sets up nr_nodes fake nodes interleaved over physical nodes ranging from addr
++ * to max_addr.  The return value is the number of nodes allocated.
 + */
-+static int pci_find_own_capability(struct spear_pcie_gadget_config *config,
-+		int cap)
++static int __init split_nodes_interleave(struct numa_meminfo *ei,
++					 struct numa_meminfo *pi,
++					 u64 addr, u64 max_addr, int nr_nodes)
 +{
-+	u32 pos;
-+	u32 hdr_type;
-+
-+	spear_dbi_read_reg(config, PCI_HEADER_TYPE, 1, &hdr_type);
-+
-+	pos = pci_find_own_cap_start(config, hdr_type);
-+	if (pos)
-+		pos = pci_find_own_next_cap(config, pos, cap);
-+
-+	return pos;
-+}
-+
-+static irqreturn_t spear_pcie_gadget_irq(int irq, void *dev_id)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * configfs interfaces show/store functions
-+ */
-+static ssize_t pcie_gadget_show_link(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+
-+	if (readl(&app_reg->app_status_1) & ((u32)1 << XMLH_LINK_UP_ID))
-+		return sprintf(buf, "UP");
-+	else
-+		return sprintf(buf, "DOWN");
-+}
-+
-+static ssize_t pcie_gadget_store_link(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+
-+	if (sysfs_streq(buf, "UP"))
-+		writel(readl(&app_reg->app_ctrl_0) | (1 << APP_LTSSM_ENABLE_ID),
-+			&app_reg->app_ctrl_0);
-+	else if (sysfs_streq(buf, "DOWN"))
-+		writel(readl(&app_reg->app_ctrl_0)
-+				& ~(1 << APP_LTSSM_ENABLE_ID),
-+				&app_reg->app_ctrl_0);
-+	else
-+		return -EINVAL;
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_int_type(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	return sprintf(buf, "%s", config->int_type);
-+}
-+
-+static ssize_t pcie_gadget_store_int_type(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	u32 cap, vec, flags;
-+	ulong vector;
-+
-+	if (sysfs_streq(buf, "INTA"))
-+		spear_dbi_write_reg(config, PCI_INTERRUPT_LINE, 1, 1);
-+
-+	else if (sysfs_streq(buf, "MSI")) {
-+		vector = config->requested_msi;
-+		vec = 0;
-+		while (vector > 1) {
-+			vector /= 2;
-+			vec++;
-+		}
-+		spear_dbi_write_reg(config, PCI_INTERRUPT_LINE, 1, 0);
-+		cap = pci_find_own_capability(config, PCI_CAP_ID_MSI);
-+		spear_dbi_read_reg(config, cap + PCI_MSI_FLAGS, 1, &flags);
-+		flags &= ~PCI_MSI_FLAGS_QMASK;
-+		flags |= vec << 1;
-+		spear_dbi_write_reg(config, cap + PCI_MSI_FLAGS, 1, flags);
-+	} else
-+		return -EINVAL;
-+
-+	strcpy(config->int_type, buf);
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_no_of_msi(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+	u32 cap, vec, flags;
-+	ulong vector;
-+
-+	if ((readl(&app_reg->msg_status) & (1 << CFG_MSI_EN_ID))
-+			!= (1 << CFG_MSI_EN_ID))
-+		vector = 0;
-+	else {
-+		cap = pci_find_own_capability(config, PCI_CAP_ID_MSI);
-+		spear_dbi_read_reg(config, cap + PCI_MSI_FLAGS, 1, &flags);
-+		flags &= ~PCI_MSI_FLAGS_QSIZE;
-+		vec = flags >> 4;
-+		vector = 1;
-+		while (vec--)
-+			vector *= 2;
-+	}
-+	config->configured_msi = vector;
-+
-+	return sprintf(buf, "%lu", vector);
-+}
-+
-+static ssize_t pcie_gadget_store_no_of_msi(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	if (strict_strtoul(buf, 0, &config->requested_msi))
-+		return -EINVAL;
-+	if (config->requested_msi > 32)
-+		config->requested_msi = 32;
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_store_inta(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+	ulong en;
-+
-+	if (strict_strtoul(buf, 0, &en))
-+		return -EINVAL;
-+
-+	if (en)
-+		writel(readl(&app_reg->app_ctrl_0) | (1 << SYS_INT_ID),
-+				&app_reg->app_ctrl_0);
-+	else
-+		writel(readl(&app_reg->app_ctrl_0) & ~(1 << SYS_INT_ID),
-+				&app_reg->app_ctrl_0);
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_store_send_msi(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+	ulong vector;
-+	u32 ven_msi;
-+
-+	if (strict_strtoul(buf, 0, &vector))
-+		return -EINVAL;
-+
-+	if (!config->configured_msi)
-+		return -EINVAL;
-+
-+	if (vector >= config->configured_msi)
-+		return -EINVAL;
-+
-+	ven_msi = readl(&app_reg->ven_msi_1);
-+	ven_msi &= ~VEN_MSI_FUN_NUM_MASK;
-+	ven_msi |= 0 << VEN_MSI_FUN_NUM_ID;
-+	ven_msi &= ~VEN_MSI_TC_MASK;
-+	ven_msi |= 0 << VEN_MSI_TC_ID;
-+	ven_msi &= ~VEN_MSI_VECTOR_MASK;
-+	ven_msi |= vector << VEN_MSI_VECTOR_ID;
-+
-+	/* generating interrupt for msi vector */
-+	ven_msi |= VEN_MSI_REQ_EN;
-+	writel(ven_msi, &app_reg->ven_msi_1);
-+	udelay(1);
-+	ven_msi &= ~VEN_MSI_REQ_EN;
-+	writel(ven_msi, &app_reg->ven_msi_1);
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_vendor_id(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	u32 id;
-+
-+	spear_dbi_read_reg(config, PCI_VENDOR_ID, 2, &id);
-+
-+	return sprintf(buf, "%x", id);
-+}
-+
-+static ssize_t pcie_gadget_store_vendor_id(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	ulong id;
-+
-+	if (strict_strtoul(buf, 0, &id))
-+		return -EINVAL;
-+
-+	spear_dbi_write_reg(config, PCI_VENDOR_ID, 2, id);
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_device_id(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	u32 id;
-+
-+	spear_dbi_read_reg(config, PCI_DEVICE_ID, 2, &id);
-+
-+	return sprintf(buf, "%x", id);
-+}
-+
-+static ssize_t pcie_gadget_store_device_id(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	ulong id;
-+
-+	if (strict_strtoul(buf, 0, &id))
-+		return -EINVAL;
-+
-+	spear_dbi_write_reg(config, PCI_DEVICE_ID, 2, id);
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_bar0_size(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	return sprintf(buf, "%lx", config->bar0_size);
-+}
-+
-+static ssize_t pcie_gadget_store_bar0_size(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	ulong size;
-+	u32 pos, pos1;
-+	u32 no_of_bit = 0;
-+
-+	if (strict_strtoul(buf, 0, &size))
-+		return -EINVAL;
-+	/* min bar size is 256 */
-+	if (size <= 0x100)
-+		size = 0x100;
-+	/* max bar size is 1MB*/
-+	else if (size >= 0x100000)
-+		size = 0x100000;
-+	else {
-+		pos = 0;
-+		pos1 = 0;
-+		while (pos < 21) {
-+			pos = find_next_bit((ulong *)&size, 21, pos);
-+			if (pos != 21)
-+				pos1 = pos + 1;
-+			pos++;
-+			no_of_bit++;
-+		}
-+		if (no_of_bit == 2)
-+			pos1--;
-+
-+		size = 1 << pos1;
-+	}
-+	config->bar0_size = size;
-+	spear_dbi_write_reg(config, PCIE_BAR0_MASK_REG, 4, size - 1);
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_bar0_address(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+
-+	u32 address = readl(&app_reg->pim0_mem_addr_start);
-+
-+	return sprintf(buf, "%x", address);
-+}
-+
-+static ssize_t pcie_gadget_store_bar0_address(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+	ulong address;
-+
-+	if (strict_strtoul(buf, 0, &address))
-+		return -EINVAL;
-+
-+	address &= ~(config->bar0_size - 1);
-+	if (config->va_bar0_address)
-+		iounmap(config->va_bar0_address);
-+	config->va_bar0_address = ioremap(address, config->bar0_size);
-+	if (!config->va_bar0_address)
-+		return -ENOMEM;
-+
-+	writel(address, &app_reg->pim0_mem_addr_start);
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_bar0_rw_offset(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	return sprintf(buf, "%lx", config->bar0_rw_offset);
-+}
-+
-+static ssize_t pcie_gadget_store_bar0_rw_offset(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	ulong offset;
-+
-+	if (strict_strtoul(buf, 0, &offset))
-+		return -EINVAL;
-+
-+	if (offset % 4)
-+		return -EINVAL;
-+
-+	config->bar0_rw_offset = offset;
-+
-+	return count;
-+}
-+
-+static ssize_t pcie_gadget_show_bar0_data(
-+		struct spear_pcie_gadget_config *config,
-+		char *buf)
-+{
-+	ulong data;
-+
-+	if (!config->va_bar0_address)
-+		return -ENOMEM;
-+
-+	data = readl((ulong)config->va_bar0_address + config->bar0_rw_offset);
-+
-+	return sprintf(buf, "%lx", data);
-+}
-+
-+static ssize_t pcie_gadget_store_bar0_data(
-+		struct spear_pcie_gadget_config *config,
-+		const char *buf, size_t count)
-+{
-+	ulong data;
-+
-+	if (strict_strtoul(buf, 0, &data))
-+		return -EINVAL;
-+
-+	if (!config->va_bar0_address)
-+		return -ENOMEM;
-+
-+	writel(data, (ulong)config->va_bar0_address + config->bar0_rw_offset);
-+
-+	return count;
-+}
-+
-+/*
-+ * Attribute definitions.
-+ */
-+
-+#define PCIE_GADGET_TARGET_ATTR_RO(_name)				\
-+static struct pcie_gadget_target_attr pcie_gadget_target_##_name =	\
-+	__CONFIGFS_ATTR(_name, S_IRUGO, pcie_gadget_show_##_name, NULL)
-+
-+#define PCIE_GADGET_TARGET_ATTR_WO(_name)				\
-+static struct pcie_gadget_target_attr pcie_gadget_target_##_name =	\
-+	__CONFIGFS_ATTR(_name, S_IWUSR, NULL, pcie_gadget_store_##_name)
-+
-+#define PCIE_GADGET_TARGET_ATTR_RW(_name)				\
-+static struct pcie_gadget_target_attr pcie_gadget_target_##_name =	\
-+	__CONFIGFS_ATTR(_name, S_IRUGO | S_IWUSR, pcie_gadget_show_##_name, \
-+			pcie_gadget_store_##_name)
-+PCIE_GADGET_TARGET_ATTR_RW(link);
-+PCIE_GADGET_TARGET_ATTR_RW(int_type);
-+PCIE_GADGET_TARGET_ATTR_RW(no_of_msi);
-+PCIE_GADGET_TARGET_ATTR_WO(inta);
-+PCIE_GADGET_TARGET_ATTR_WO(send_msi);
-+PCIE_GADGET_TARGET_ATTR_RW(vendor_id);
-+PCIE_GADGET_TARGET_ATTR_RW(device_id);
-+PCIE_GADGET_TARGET_ATTR_RW(bar0_size);
-+PCIE_GADGET_TARGET_ATTR_RW(bar0_address);
-+PCIE_GADGET_TARGET_ATTR_RW(bar0_rw_offset);
-+PCIE_GADGET_TARGET_ATTR_RW(bar0_data);
-+
-+static struct configfs_attribute *pcie_gadget_target_attrs[] = {
-+	&pcie_gadget_target_link.attr,
-+	&pcie_gadget_target_int_type.attr,
-+	&pcie_gadget_target_no_of_msi.attr,
-+	&pcie_gadget_target_inta.attr,
-+	&pcie_gadget_target_send_msi.attr,
-+	&pcie_gadget_target_vendor_id.attr,
-+	&pcie_gadget_target_device_id.attr,
-+	&pcie_gadget_target_bar0_size.attr,
-+	&pcie_gadget_target_bar0_address.attr,
-+	&pcie_gadget_target_bar0_rw_offset.attr,
-+	&pcie_gadget_target_bar0_data.attr,
-+	NULL,
-+};
-+
-+static struct pcie_gadget_target *to_target(struct config_item *item)
-+{
-+	return item ?
-+		container_of(to_configfs_subsystem(to_config_group(item)),
-+				struct pcie_gadget_target, subsys) : NULL;
-+}
-+
-+/*
-+ * Item operations and type for pcie_gadget_target.
-+ */
-+
-+static ssize_t pcie_gadget_target_attr_show(struct config_item *item,
-+					   struct configfs_attribute *attr,
-+					   char *buf)
-+{
-+	ssize_t ret = -EINVAL;
-+	struct pcie_gadget_target *target = to_target(item);
-+	struct pcie_gadget_target_attr *t_attr =
-+		container_of(attr, struct pcie_gadget_target_attr, attr);
-+
-+	if (t_attr->show)
-+		ret = t_attr->show(&target->config, buf);
-+	return ret;
-+}
-+
-+static ssize_t pcie_gadget_target_attr_store(struct config_item *item,
-+					struct configfs_attribute *attr,
-+					const char *buf,
-+					size_t count)
-+{
-+	ssize_t ret = -EINVAL;
-+	struct pcie_gadget_target *target = to_target(item);
-+	struct pcie_gadget_target_attr *t_attr =
-+		container_of(attr, struct pcie_gadget_target_attr, attr);
-+
-+	if (t_attr->store)
-+		ret = t_attr->store(&target->config, buf, count);
-+	return ret;
-+}
-+
-+static struct configfs_item_operations pcie_gadget_target_item_ops = {
-+	.show_attribute		= pcie_gadget_target_attr_show,
-+	.store_attribute	= pcie_gadget_target_attr_store,
-+};
-+
-+static struct config_item_type pcie_gadget_target_type = {
-+	.ct_attrs		= pcie_gadget_target_attrs,
-+	.ct_item_ops		= &pcie_gadget_target_item_ops,
-+	.ct_owner		= THIS_MODULE,
-+};
-+
-+static void spear13xx_pcie_device_init(struct spear_pcie_gadget_config *config)
-+{
-+	struct pcie_app_reg __iomem *app_reg = config->va_app_base;
-+
-+	/*setup registers for outbound translation */
-+
-+	writel(config->base, &app_reg->in0_mem_addr_start);
-+	writel(app_reg->in0_mem_addr_start + IN0_MEM_SIZE,
-+			&app_reg->in0_mem_addr_limit);
-+	writel(app_reg->in0_mem_addr_limit + 1, &app_reg->in1_mem_addr_start);
-+	writel(app_reg->in1_mem_addr_start + IN1_MEM_SIZE,
-+			&app_reg->in1_mem_addr_limit);
-+	writel(app_reg->in1_mem_addr_limit + 1, &app_reg->in_io_addr_start);
-+	writel(app_reg->in_io_addr_start + IN_IO_SIZE,
-+			&app_reg->in_io_addr_limit);
-+	writel(app_reg->in_io_addr_limit + 1, &app_reg->in_cfg0_addr_start);
-+	writel(app_reg->in_cfg0_addr_start + IN_CFG0_SIZE,
-+			&app_reg->in_cfg0_addr_limit);
-+	writel(app_reg->in_cfg0_addr_limit + 1, &app_reg->in_cfg1_addr_start);
-+	writel(app_reg->in_cfg1_addr_start + IN_CFG1_SIZE,
-+			&app_reg->in_cfg1_addr_limit);
-+	writel(app_reg->in_cfg1_addr_limit + 1, &app_reg->in_msg_addr_start);
-+	writel(app_reg->in_msg_addr_start + IN_MSG_SIZE,
-+			&app_reg->in_msg_addr_limit);
-+
-+	writel(app_reg->in0_mem_addr_start, &app_reg->pom0_mem_addr_start);
-+	writel(app_reg->in1_mem_addr_start, &app_reg->pom1_mem_addr_start);
-+	writel(app_reg->in_io_addr_start, &app_reg->pom_io_addr_start);
-+
-+	/*setup registers for inbound translation */
-+
-+	/* Keep AORAM mapped at BAR0 as default */
-+	config->bar0_size = INBOUND_ADDR_MASK + 1;
-+	spear_dbi_write_reg(config, PCIE_BAR0_MASK_REG, 4, INBOUND_ADDR_MASK);
-+	spear_dbi_write_reg(config, PCI_BASE_ADDRESS_0, 4, 0xC);
-+	config->va_bar0_address = ioremap(SPEAR13XX_SYSRAM1_BASE,
-+			config->bar0_size);
-+
-+	writel(SPEAR13XX_SYSRAM1_BASE, &app_reg->pim0_mem_addr_start);
-+	writel(0, &app_reg->pim1_mem_addr_start);
-+	writel(INBOUND_ADDR_MASK + 1, &app_reg->mem0_addr_offset_limit);
-+
-+	writel(0x0, &app_reg->pim_io_addr_start);
-+	writel(0x0, &app_reg->pim_io_addr_start);
-+	writel(0x0, &app_reg->pim_rom_addr_start);
-+
-+	writel(DEVICE_TYPE_EP | (1 << MISCTRL_EN_ID)
-+			| ((u32)1 << REG_TRANSLATION_ENABLE),
-+			&app_reg->app_ctrl_0);
-+	/* disable all rx interrupts */
-+	writel(0, &app_reg->int_mask);
-+
-+	/* Select INTA as default*/
-+	spear_dbi_write_reg(config, PCI_INTERRUPT_LINE, 1, 1);
-+}
-+
-+static int __devinit spear_pcie_gadget_probe(struct platform_device *pdev)
-+{
-+	struct resource *res0, *res1;
-+	unsigned int status = 0;
-+	int irq;
-+	struct clk *clk;
-+	static struct pcie_gadget_target *target;
-+	struct spear_pcie_gadget_config *config;
-+	struct config_item		*cg_item;
-+	struct configfs_subsystem *subsys;
-+
-+	/* get resource for application registers*/
-+
-+	res0 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res0) {
-+		dev_err(&pdev->dev, "no resource defined\n");
-+		return -EBUSY;
-+	}
-+	if (!request_mem_region(res0->start, resource_size(res0),
-+				pdev->name)) {
-+		dev_err(&pdev->dev, "pcie gadget region already	claimed\n");
-+		return -EBUSY;
-+	}
-+	/* get resource for dbi registers*/
-+
-+	res1 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!res1) {
-+		dev_err(&pdev->dev, "no resource defined\n");
-+		goto err_rel_res0;
-+	}
-+	if (!request_mem_region(res1->start, resource_size(res1),
-+				pdev->name)) {
-+		dev_err(&pdev->dev, "pcie gadget region already	claimed\n");
-+		goto err_rel_res0;
++	nodemask_t physnode_mask = NODE_MASK_NONE;
++	u64 size;
++	int big;
++	int nid = 0;
++	int i, ret;
++
++	if (nr_nodes <= 0)
++		return -1;
++	if (nr_nodes > MAX_NUMNODES) {
++		pr_info("numa=fake=%d too large, reducing to %d\n",
++			nr_nodes, MAX_NUMNODES);
++		nr_nodes = MAX_NUMNODES;
 +	}
 +
-+	target = kzalloc(sizeof(*target), GFP_KERNEL);
-+	if (!target) {
-+		dev_err(&pdev->dev, "out of memory\n");
-+		status = -ENOMEM;
-+		goto err_rel_res;
++	size = (max_addr - addr - memblock_x86_hole_size(addr, max_addr)) / nr_nodes;
++	/*
++	 * Calculate the number of big nodes that can be allocated as a result
++	 * of consolidating the remainder.
++	 */
++	big = ((size & ~FAKE_NODE_MIN_HASH_MASK) * nr_nodes) /
++		FAKE_NODE_MIN_SIZE;
++
++	size &= FAKE_NODE_MIN_HASH_MASK;
++	if (!size) {
++		pr_err("Not enough memory for each node.  "
++			"NUMA emulation disabled.\n");
++		return -1;
 +	}
 +
-+	cg_item = &target->subsys.su_group.cg_item;
-+	sprintf(cg_item->ci_namebuf, "pcie_gadget.%d", pdev->id);
-+	cg_item->ci_type	= &pcie_gadget_target_type;
-+	config = &target->config;
-+	config->va_app_base = (void __iomem *)ioremap(res0->start,
-+			resource_size(res0));
-+	if (!config->va_app_base) {
-+		dev_err(&pdev->dev, "ioremap fail\n");
-+		status = -ENOMEM;
-+		goto err_kzalloc;
-+	}
-+
-+	config->base = (void __iomem *)res1->start;
-+
-+	config->va_dbi_base = (void __iomem *)ioremap(res1->start,
-+			resource_size(res1));
-+	if (!config->va_dbi_base) {
-+		dev_err(&pdev->dev, "ioremap fail\n");
-+		status = -ENOMEM;
-+		goto err_iounmap_app;
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, target);
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "no update irq?\n");
-+		status = irq;
-+		goto err_iounmap;
-+	}
-+
-+	status = request_irq(irq, spear_pcie_gadget_irq, 0, pdev->name, NULL);
-+	if (status) {
-+		dev_err(&pdev->dev, "pcie gadget interrupt IRQ%d already \
-+				claimed\n", irq);
-+		goto err_iounmap;
-+	}
-+
-+	/* Register configfs hooks */
-+	subsys = &target->subsys;
-+	config_group_init(&subsys->su_group);
-+	mutex_init(&subsys->su_mutex);
-+	status = configfs_register_subsystem(subsys);
-+	if (status)
-+		goto err_irq;
++	for (i = 0; i < pi->nr_blks; i++)
++		node_set(pi->blk[i].nid, physnode_mask);
 +
 +	/*
-+	 * init basic pcie application registers
-+	 * do not enable clock if it is PCIE0.Ideally , all controller should
-+	 * have been independent from others with respect to clock. But PCIE1
-+	 * and 2 depends on PCIE0.So PCIE0 clk is provided during board init.
++	 * Continue to fill physical nodes with fake nodes until there is no
++	 * memory left on any of them.
 +	 */
-+	if (pdev->id == 1) {
-+		/*
-+		 * Ideally CFG Clock should have been also enabled here. But
-+		 * it is done currently during board init routne
-+		 */
-+		clk = clk_get_sys("pcie1", NULL);
-+		if (IS_ERR(clk)) {
-+			pr_err("%s:couldn't get clk for pcie1\n", __func__);
-+			goto err_irq;
-+		}
-+		if (clk_enable(clk)) {
-+			pr_err("%s:couldn't enable clk for pcie1\n", __func__);
-+			goto err_irq;
-+		}
-+	} else if (pdev->id == 2) {
-+		/*
-+		 * Ideally CFG Clock should have been also enabled here. But
-+		 * it is done currently during board init routne
-+		 */
-+		clk = clk_get_sys("pcie2", NULL);
-+		if (IS_ERR(clk)) {
-+			pr_err("%s:couldn't get clk for pcie2\n", __func__);
-+			goto err_irq;
-+		}
-+		if (clk_enable(clk)) {
-+			pr_err("%s:couldn't enable clk for pcie2\n", __func__);
-+			goto err_irq;
++	while (nodes_weight(physnode_mask)) {
++		for_each_node_mask(i, physnode_mask) {
++			u64 dma32_end = PFN_PHYS(MAX_DMA32_PFN);
++			u64 start, limit, end;
++			int phys_blk;
++
++			phys_blk = emu_find_memblk_by_nid(i, pi);
++			if (phys_blk < 0) {
++				node_clear(i, physnode_mask);
++				continue;
++			}
++			start = pi->blk[phys_blk].start;
++			limit = pi->blk[phys_blk].end;
++			end = start + size;
++
++			if (nid < big)
++				end += FAKE_NODE_MIN_SIZE;
++
++			/*
++			 * Continue to add memory to this fake node if its
++			 * non-reserved memory is less than the per-node size.
++			 */
++			while (end - start -
++			       memblock_x86_hole_size(start, end) < size) {
++				end += FAKE_NODE_MIN_SIZE;
++				if (end > limit) {
++					end = limit;
++					break;
++				}
++			}
++
++			/*
++			 * If there won't be at least FAKE_NODE_MIN_SIZE of
++			 * non-reserved memory in ZONE_DMA32 for the next node,
++			 * this one must extend to the boundary.
++			 */
++			if (end < dma32_end && dma32_end - end -
++			    memblock_x86_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
++				end = dma32_end;
++
++			/*
++			 * If there won't be enough non-reserved memory for the
++			 * next node, this one must extend to the end of the
++			 * physical node.
++			 */
++			if (limit - end -
++			    memblock_x86_hole_size(end, limit) < size)
++				end = limit;
++
++			ret = emu_setup_memblk(ei, pi, nid++ % nr_nodes,
++					       phys_blk,
++					       min(end, limit) - start);
++			if (ret < 0)
++				return ret;
 +		}
 +	}
-+	spear13xx_pcie_device_init(config);
-+
-+	return 0;
-+err_irq:
-+	free_irq(irq, NULL);
-+err_iounmap:
-+	iounmap(config->va_dbi_base);
-+err_iounmap_app:
-+	iounmap(config->va_app_base);
-+err_kzalloc:
-+	kfree(config);
-+err_rel_res:
-+	release_mem_region(res1->start, resource_size(res1));
-+err_rel_res0:
-+	release_mem_region(res0->start, resource_size(res0));
-+	return status;
-+}
-+
-+static int __devexit spear_pcie_gadget_remove(struct platform_device *pdev)
-+{
-+	struct resource *res0, *res1;
-+	static struct pcie_gadget_target *target;
-+	struct spear_pcie_gadget_config *config;
-+	int irq;
-+
-+	res0 = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	res1 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	irq = platform_get_irq(pdev, 0);
-+	target = dev_get_drvdata(&pdev->dev);
-+	config = &target->config;
-+
-+	free_irq(irq, NULL);
-+	iounmap(config->va_dbi_base);
-+	iounmap(config->va_app_base);
-+	release_mem_region(res1->start, resource_size(res1));
-+	release_mem_region(res0->start, resource_size(res0));
-+	configfs_unregister_subsystem(&target->subsys);
-+	kfree(target);
-+
 +	return 0;
 +}
 +
-+static void spear_pcie_gadget_shutdown(struct platform_device *pdev)
++/*
++ * Returns the end address of a node so that there is at least `size' amount of
++ * non-reserved memory or `max_addr' is reached.
++ */
++static u64 __init find_end_of_node(u64 start, u64 max_addr, u64 size)
 +{
++	u64 end = start + size;
++
++	while (end - start - memblock_x86_hole_size(start, end) < size) {
++		end += FAKE_NODE_MIN_SIZE;
++		if (end > max_addr) {
++			end = max_addr;
++			break;
++		}
++	}
++	return end;
 +}
 +
-+static struct platform_driver spear_pcie_gadget_driver = {
-+	.probe = spear_pcie_gadget_probe,
-+	.remove = spear_pcie_gadget_remove,
-+	.shutdown = spear_pcie_gadget_shutdown,
-+	.driver = {
-+		.name = "pcie-gadget-spear",
-+		.bus = &platform_bus_type
-+	},
++/*
++ * Sets up fake nodes of `size' interleaved over physical nodes ranging from
++ * `addr' to `max_addr'.  The return value is the number of nodes allocated.
++ */
++static int __init split_nodes_size_interleave(struct numa_meminfo *ei,
++					      struct numa_meminfo *pi,
++					      u64 addr, u64 max_addr, u64 size)
++{
++	nodemask_t physnode_mask = NODE_MASK_NONE;
++	u64 min_size;
++	int nid = 0;
++	int i, ret;
++
++	if (!size)
++		return -1;
++	/*
++	 * The limit on emulated nodes is MAX_NUMNODES, so the size per node is
++	 * increased accordingly if the requested size is too small.  This
++	 * creates a uniform distribution of node sizes across the entire
++	 * machine (but not necessarily over physical nodes).
++	 */
++	min_size = (max_addr - addr - memblock_x86_hole_size(addr, max_addr)) /
++						MAX_NUMNODES;
++	min_size = max(min_size, FAKE_NODE_MIN_SIZE);
++	if ((min_size & FAKE_NODE_MIN_HASH_MASK) < min_size)
++		min_size = (min_size + FAKE_NODE_MIN_SIZE) &
++						FAKE_NODE_MIN_HASH_MASK;
++	if (size < min_size) {
++		pr_err("Fake node size %LuMB too small, increasing to %LuMB\n",
++			size >> 20, min_size >> 20);
++		size = min_size;
++	}
++	size &= FAKE_NODE_MIN_HASH_MASK;
++
++	for (i = 0; i < pi->nr_blks; i++)
++		node_set(pi->blk[i].nid, physnode_mask);
++
++	/*
++	 * Fill physical nodes with fake nodes of size until there is no memory
++	 * left on any of them.
++	 */
++	while (nodes_weight(physnode_mask)) {
++		for_each_node_mask(i, physnode_mask) {
++			u64 dma32_end = MAX_DMA32_PFN << PAGE_SHIFT;
++			u64 start, limit, end;
++			int phys_blk;
++
++			phys_blk = emu_find_memblk_by_nid(i, pi);
++			if (phys_blk < 0) {
++				node_clear(i, physnode_mask);
++				continue;
++			}
++			start = pi->blk[phys_blk].start;
++			limit = pi->blk[phys_blk].end;
++
++			end = find_end_of_node(start, limit, size);
++			/*
++			 * If there won't be at least FAKE_NODE_MIN_SIZE of
++			 * non-reserved memory in ZONE_DMA32 for the next node,
++			 * this one must extend to the boundary.
++			 */
++			if (end < dma32_end && dma32_end - end -
++			    memblock_x86_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
++				end = dma32_end;
++
++			/*
++			 * If there won't be enough non-reserved memory for the
++			 * next node, this one must extend to the end of the
++			 * physical node.
++			 */
++			if (limit - end -
++			    memblock_x86_hole_size(end, limit) < size)
++				end = limit;
++
++			ret = emu_setup_memblk(ei, pi, nid++ % MAX_NUMNODES,
++					       phys_blk,
++					       min(end, limit) - start);
++			if (ret < 0)
++				return ret;
++		}
++	}
++	return 0;
++}
++
++/*
++ * Sets up the system RAM area from start_pfn to last_pfn according to the
++ * numa=fake command-line option.
++ */
++void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
++{
++	static struct numa_meminfo ei __initdata;
++	static struct numa_meminfo pi __initdata;
++	const u64 max_addr = max_pfn << PAGE_SHIFT;
++	u8 *phys_dist = NULL;
++	int i, j, ret;
++
++	if (!emu_cmdline)
++		goto no_emu;
++
++	memset(&ei, 0, sizeof(ei));
++	pi = *numa_meminfo;
++
++	for (i = 0; i < MAX_NUMNODES; i++)
++		emu_nid_to_phys[i] = NUMA_NO_NODE;
++
++	/*
++	 * If the numa=fake command-line contains a 'M' or 'G', it represents
++	 * the fixed node size.  Otherwise, if it is just a single number N,
++	 * split the system RAM into N fake nodes.
++	 */
++	if (strchr(emu_cmdline, 'M') || strchr(emu_cmdline, 'G')) {
++		u64 size;
++
++		size = memparse(emu_cmdline, &emu_cmdline);
++		ret = split_nodes_size_interleave(&ei, &pi, 0, max_addr, size);
++	} else {
++		unsigned long n;
++
++		n = simple_strtoul(emu_cmdline, NULL, 0);
++		ret = split_nodes_interleave(&ei, &pi, 0, max_addr, n);
++	}
++
++	if (ret < 0)
++		goto no_emu;
++
++	if (numa_cleanup_meminfo(&ei) < 0) {
++		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
++		goto no_emu;
++	}
++
++	/*
++	 * Copy the original distance table.  It's temporary so no need to
++	 * reserve it.
++	 */
++	if (numa_dist_cnt) {
++		size_t size = numa_dist_cnt * sizeof(phys_dist[0]);
++		u64 phys;
++
++		phys = memblock_find_in_range(0,
++					      (u64)max_pfn_mapped << PAGE_SHIFT,
++					      size, PAGE_SIZE);
++		if (phys == MEMBLOCK_ERROR) {
++			pr_warning("NUMA: Warning: can't allocate copy of distance table, disabling emulation\n");
++			goto no_emu;
++		}
++		phys_dist = __va(phys);
++
++		for (i = 0; i < numa_dist_cnt; i++)
++			for (j = 0; j < numa_dist_cnt; j++)
++				phys_dist[i * numa_dist_cnt + j] =
++					node_distance(i, j);
++	}
++
++	/* commit */
++	*numa_meminfo = ei;
++
++	/*
++	 * Transform __apicid_to_node table to use emulated nids by
++	 * reverse-mapping phys_nid.  The maps should always exist but fall
++	 * back to zero just in case.
++	 */
++	for (i = 0; i < ARRAY_SIZE(__apicid_to_node); i++) {
++		if (__apicid_to_node[i] == NUMA_NO_NODE)
++			continue;
++		for (j = 0; j < ARRAY_SIZE(emu_nid_to_phys); j++)
++			if (__apicid_to_node[i] == emu_nid_to_phys[j])
++				break;
++		__apicid_to_node[i] = j < ARRAY_SIZE(emu_nid_to_phys) ? j : 0;
++	}
++
++	/* make sure all emulated nodes are mapped to a physical node */
++	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
++		if (emu_nid_to_phys[i] == NUMA_NO_NODE)
++			emu_nid_to_phys[i] = 0;
++
++	/* transform distance table */
++	numa_reset_distance();
++	for (i = 0; i < MAX_NUMNODES; i++) {
++		for (j = 0; j < MAX_NUMNODES; j++) {
++			int physi = emu_nid_to_phys[i];
++			int physj = emu_nid_to_phys[j];
++			int dist;
++
++			if (physi >= numa_dist_cnt || physj >= numa_dist_cnt)
++				dist = physi == physj ?
++					LOCAL_DISTANCE : REMOTE_DISTANCE;
++			else
++				dist = phys_dist[physi * numa_dist_cnt + physj];
++
++			numa_set_distance(i, j, dist);
++		}
++	}
++	return;
++
++no_emu:
++	/* No emulation.  Build identity emu_nid_to_phys[] for numa_add_cpu() */
++	for (i = 0; i < ARRAY_SIZE(emu_nid_to_phys); i++)
++		emu_nid_to_phys[i] = i;
++}
++
++#ifndef CONFIG_DEBUG_PER_CPU_MAPS
++void __cpuinit numa_add_cpu(int cpu)
++{
++	int physnid, nid;
++
++	nid = numa_cpu_node(cpu);
++	if (nid == NUMA_NO_NODE)
++		nid = early_cpu_to_node(cpu);
++	BUG_ON(nid == NUMA_NO_NODE || !node_online(nid));
++
++	physnid = emu_nid_to_phys[nid];
++
++	/*
++	 * Map the cpu to each emulated node that is allocated on the physical
++	 * node of the cpu's apic id.
++	 */
++	for_each_online_node(nid)
++		if (emu_nid_to_phys[nid] == physnid)
++			cpumask_set_cpu(cpu, node_to_cpumask_map[nid]);
++}
++
++void __cpuinit numa_remove_cpu(int cpu)
++{
++	int i;
++
++	for_each_online_node(i)
++		cpumask_clear_cpu(cpu, node_to_cpumask_map[i]);
++}
++#else	/* !CONFIG_DEBUG_PER_CPU_MAPS */
++static void __cpuinit numa_set_cpumask(int cpu, int enable)
++{
++	struct cpumask *mask;
++	int nid, physnid, i;
++
++	nid = early_cpu_to_node(cpu);
++	if (nid == NUMA_NO_NODE) {
++		/* early_cpu_to_node() already emits a warning and trace */
++		return;
++	}
++
++	physnid = emu_nid_to_phys[nid];
++
++	for_each_online_node(i) {
++		if (emu_nid_to_phys[nid] != physnid)
++			continue;
++
++		mask = debug_cpumask_set_cpu(cpu, enable);
++		if (!mask)
++			return;
++
++		if (enable)
++			cpumask_set_cpu(cpu, mask);
++		else
++			cpumask_clear_cpu(cpu, mask);
++	}
++}
++
++void __cpuinit numa_add_cpu(int cpu)
++{
++	numa_set_cpumask(cpu, 1);
++}
++
++void __cpuinit numa_remove_cpu(int cpu)
++{
++	numa_set_cpumask(cpu, 0);
++}
++#endif	/* !CONFIG_DEBUG_PER_CPU_MAPS */
+Index: work/arch/x86/mm/numa_internal.h
+===================================================================
+--- /dev/null
++++ work/arch/x86/mm/numa_internal.h
+@@ -0,0 +1,31 @@
++#ifndef __X86_MM_NUMA_INTERNAL_H
++#define __X86_MM_NUMA_INTERNAL_H
++
++#include <linux/types.h>
++#include <asm/numa.h>
++
++struct numa_memblk {
++	u64			start;
++	u64			end;
++	int			nid;
 +};
 +
-+static int __init spear_pcie_gadget_init(void)
-+{
-+	return platform_driver_register(&spear_pcie_gadget_driver);
-+}
-+module_init(spear_pcie_gadget_init);
++struct numa_meminfo {
++	int			nr_blks;
++	struct numa_memblk	blk[NR_NODE_MEMBLKS];
++};
 +
-+static void __exit spear_pcie_gadget_exit(void)
-+{
-+	platform_driver_unregister(&spear_pcie_gadget_driver);
-+}
-+module_exit(spear_pcie_gadget_exit);
++void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi);
++int __init numa_cleanup_meminfo(struct numa_meminfo *mi);
++void __init numa_reset_distance(void);
 +
-+MODULE_ALIAS("pcie-gadget-spear");
-+MODULE_AUTHOR("Pratyush Anand");
-+MODULE_LICENSE("GPL");
--- 
-1.6.0.2
-
++#ifdef CONFIG_NUMA_EMU
++void __init numa_emulation(struct numa_meminfo *numa_meminfo,
++			   int numa_dist_cnt);
++#else
++static inline void numa_emulation(struct numa_meminfo *numa_meminfo,
++				  int numa_dist_cnt)
++{ }
++#endif
++
++#endif	/* __X86_MM_NUMA_INTERNAL_H */
