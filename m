@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab1BVAN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 19:13:29 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:45884 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab1BVANV (ORCPT
+	id S1752019Ab1BVASj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 19:18:39 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:45673 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367Ab1BVASh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 19:13:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=h8U3HFeGATz6OW2HXVt5R3ouYzODxk7pcQh1g2jTRBvfsUGQzQ8eWsqZrYMbSmo/Zp
-         boewSyKdWZxbAMU37YZg==
-Date: Mon, 21 Feb 2011 16:13:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mike Travis <travis@sgi.com>
-cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] printk: Minimize time zero output
-In-Reply-To: <4D62D173.8040805@sgi.com>
-Message-ID: <alpine.DEB.2.00.1102211610300.23557@chino.kir.corp.google.com>
-References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024706.121740209@gulag1.americas.sgi.com> <alpine.DEB.2.00.1102191733220.27722@chino.kir.corp.google.com> <4D62D173.8040805@sgi.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 21 Feb 2011 19:18:37 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "=?utf-8?q?Patrick=20Matth=C3=A4i?=" <patrick@linux-dev.org>
+References: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
+In-Reply-To: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <f14qsMvj2tF.A.wWD.lcuYNB@chimera>
+Subject: [Bug #26802] b43: Suspend failed
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Feb 2011 23:37:09 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011, Mike Travis wrote:
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.36 and 2.6.37.
 
-> > > Reduce the length for time zero messages by only printing "[0] ".
-> > > 
-> > > v2: updated to apply to x86-tip
-> > > 
-> > > Signed-off-by: Mike Travis <travis@sgi.com>
-> > > Reviewed-by: Jack Steiner <steiner@sgi.com>
-> > > Reviewed-by: Robin Holt <holt@sgi.com>
-> > > ---
-> > >  kernel/printk.c |   11 ++++++++---
-> > >  1 file changed, 8 insertions(+), 3 deletions(-)
-> > > 
-> > > --- linux.orig/kernel/printk.c
-> > > +++ linux/kernel/printk.c
-> > > @@ -735,9 +735,14 @@ static inline int printk_emit_time(void)
-> > >  	unsigned long microsec_rem;
-> > >   	t = cpu_clock(printk_cpu);
-> > > -	microsec_rem = do_div(t, 1000000000) / 1000;
-> > > -	tlen = sprintf(tbuf, "[%5lu.%06lu] ", (unsigned long)t, microsec_rem);
-> > > -
-> > > +	if (likely(t)) {
-> > > +		microsec_rem = do_div(t, 1000000000) / 1000;
-> > > +		tlen = sprintf(tbuf, "[%5lu.%06lu] ",
-> > > +					(unsigned long)t, microsec_rem);
-> > 
-> > The definition of microsec_rem can become local to this clause.
-> 
-> Ok.
-> > 
-> > > +	} else {
-> > > +		/* reduce byte count in log when time is zero */
-> > > +		tlen = sprintf(tbuf, "[0] ");
-> > 
-> > If we know the padding when cpu_clock() is non-zero, then why not make sure
-> > the kernel log is aligned properly by using the same padding here?
-> 
-> I'm not sure I understand what you are asking.  The whole point of this
-> exercise is to remove bytes from the early log buffer so it does not
-> overflow.  What would you like me to change?
-> 
+The following bug entry is on the current list of known regressions
+introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
-Based on your changelog, it looks like you're trying to avoid the time 
-spent calculating the time (the divides), not trying to optimize for 
-space, so I recommended "[    0.000000]" so the log is aligned.  If the 
-patchset is reducing the number of lines emitted to the log, then this 
-shouldn't be as significant of an issue?
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26802
+Subject		: b43: Suspend failed
+Submitter	: Patrick Matthäi <patrick@linux-dev.org>
+Date		: 2011-01-15 18:56 (38 days old)
+
+
