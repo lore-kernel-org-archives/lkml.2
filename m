@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab1BUOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 09:37:16 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:48624 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab1BUOhN (ORCPT
+	id S1755708Ab1BUOiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 09:38:20 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52473 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404Ab1BUOiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 09:37:13 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [regression] build failure with staging driver winbond phy
-Date: Mon, 21 Feb 2011 15:36:58 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
-Cc: Greg KH <gregkh@suse.de>
-References: <201102172331.59997.Martin@lichtvoll.de> (sfid-20110218_092554_739326_C143413F)
-In-Reply-To: <201102172331.59997.Martin@lichtvoll.de>
+	Mon, 21 Feb 2011 09:38:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=gtv8gTSUy5oUdlpS5w5RV7wC/PA5I03GqnUdvibeyX1YTyYBbI40HQYlH/tdZikT1+
+         +WsG+6rMXLAKEUeonK3B3BRt9xBE8+ZNbMpsUWA6F8USRvVM3Z5UEHXp7gMAbUMSG7iP
+         VJHEAs6jCZB9sTOTsg5i5N6HHD4hYXhy74qYs=
+Date: Mon, 21 Feb 2011 04:39:02 -0500
+From: Tracey Dent <tdent48227@gmail.com>
+To: dwmw2@infradead.org
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs/jffs2/xattr: Fix coding style
+Message-ID: <20110221093902.GA4759@linux-rdzc.hsd1.mi.comcast.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1659572.NIVFyQkED9";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102211537.10679.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1659572.NIVFyQkED9
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: quoted-printable
+Remove the trailing white space and get rid of the
+unnessary {} on certain statements.
 
-Am Thursday 17 February 2011 schrieb Martin Steigerwald:
-> Hi!
->=20
-> linux-2.6 as of ee715087024b91a6ceb85ba2d02f6c35d354a48c.
->=20
-> martin@shambhala:~/Computer/Shambhala/Kernel/2.6.38/linux-2.6> LANG=3DC
-> make-kpkg --append-to-version -tp42 --revision 1 --initrd --rootcmd
-> fakeroot linux_{image,doc,headers,source}
-> [...]
-> Root device is (253, 0)
-> Setup is 13724 bytes (padded to 13824 bytes).
-> System is 2763 kB
-> CRC 115d526c
-> Kernel: arch/x86/boot/bzImage is ready  (#3)
-> make[1]: Leaving directory
-> `/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
-> /usr/bin/make  EXTRAVERSION=3D-rc5-tp42  ARCH=3Di386 \
->                              modules
-> make[1]: Entering directory
-> `/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CALL    scripts/checksyscalls.sh
->   CC [M]  drivers/staging/winbond/phy_calibration.o
-> drivers/staging/winbond/phy_calibration.c: In function
-> '_tx_iq_calibration_winbond':
-> drivers/staging/winbond/phy_calibration.c:986: error: implicit
-> declaration of function 'msleep'
-> drivers/staging/winbond/phy_calibration.c: In function
-> 'adjust_TXVGA_for_iq_mag':
-> drivers/staging/winbond/phy_calibration.c:1555: error: implicit
-> declaration of function 'udelay'
-> make[4]: *** [drivers/staging/winbond/phy_calibration.o] Error 1
-> make[3]: *** [drivers/staging/winbond] Error 2
-> make[2]: *** [drivers/staging] Error 2
-> make[1]: *** [drivers] Error 2
-> make[1]: Leaving directory
-> `/home/martin/Computer/Shambhala/Kernel/2.6.38/linux-2.6'
-> make: *** [debian/stamp/build/kernel] Error 2
->=20
-> I already disabled CONFIG_IR_WINBOND_CIR, but it doesn't seem to help:
->=20
-> martin@shambhala:~/Computer/Shambhala/Kernel/2.6.38/linux-2.6> grep
-> "WIN.*BOND" .config
-> # CONFIG_PATA_WINBOND is not set
-> # CONFIG_PATA_WINBOND_VLB is not set
-> # CONFIG_IR_WINBOND_CIR is not set
->=20
-> Any advice on which kernel option to disable in order to build this
-> again?
->=20
-> No problem with 2.6.37, but maybe it didn't have this driver.
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ fs/jffs2/xattr.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-Ping. Anyone who has a hint? My only idea for now is to exclude all=20
-stagings drivers from being build
+diff --git a/fs/jffs2/xattr.c b/fs/jffs2/xattr.c
+index 4f9cc04..d66bb03 100644
+--- a/fs/jffs2/xattr.c
++++ b/fs/jffs2/xattr.c
+@@ -31,7 +31,7 @@
+  *   is used to release xattr name/value pair and detach from c->xattrindex.
+  * reclaim_xattr_datum(c)
+  *   is used to reclaim xattr name/value pairs on the xattr name/value pair cache when
+- *   memory usage by cache is over c->xdatum_mem_threshold. Currently, this threshold 
++ *   memory usage by cache is over c->xdatum_mem_threshold. Currently, this threshold
+  *   is hard coded as 32KiB.
+  * do_verify_xattr_datum(c, xd)
+  *   is used to load the xdatum informations without name/value pair from the medium.
+@@ -109,11 +109,11 @@ static void reclaim_xattr_datum(struct jffs2_sb_info *c)
+ 	target = c->xdatum_mem_usage * 4 / 5; /* 20% reduction */
+ 	for (count = 0; count < XATTRINDEX_HASHSIZE; count++) {
+ 		list_for_each_entry_safe(xd, _xd, &c->xattrindex[index], xindex) {
+-			if (xd->flags & JFFS2_XFLAGS_HOT) {
++			if (xd->flags & JFFS2_XFLAGS_HOT)
+ 				xd->flags &= ~JFFS2_XFLAGS_HOT;
+-			} else if (!(xd->flags & JFFS2_XFLAGS_BIND)) {
++			else if (!(xd->flags & JFFS2_XFLAGS_BIND))
+ 				unload_xattr_datum(c, xd);
+-			}
++
+ 			if (c->xdatum_mem_usage <= target)
+ 				goto out;
+ 		}
+@@ -1002,11 +1002,11 @@ ssize_t jffs2_listxattr(struct dentry *dentry, char *buffer, size_t size)
+ 	}
+ 	rc = len;
+  out:
+-	if (!retry) {
++	if (!retry)
+ 		up_read(&c->xattr_sem);
+-	} else {
++	else
+ 		up_write(&c->xattr_sem);
+-	}
++
+ 	return rc;
+ }
+ 
+@@ -1053,22 +1053,22 @@ int do_jffs2_getxattr(struct inode *inode, int xprefix, const char *xname,
+ 		if (!strcmp(xname, xd->xname)) {
+ 			rc = xd->value_len;
+ 			if (buffer) {
+-				if (size < rc) {
++				if (size < rc)
+ 					rc = -ERANGE;
+-				} else {
++				else
+ 					memcpy(buffer, xd->xvalue, rc);
+-				}
++
+ 			}
+ 			goto out;
+ 		}
+ 	}
+ 	rc = -ENODATA;
+  out:
+-	if (!retry) {
++	if (!retry)
+ 		up_read(&c->xattr_sem);
+-	} else {
++	else
+ 		up_write(&c->xattr_sem);
+-	}
++
+ 	return rc;
+ }
+ 
+-- 
+1.7.4.1.48.g5673d
 
-Thanks,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
 
---nextPart1659572.NIVFyQkED9
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAk1ieIsACgkQmRvqrKWZhMeRQgCcCfEv05ptxmuDHVl9PIKWHUU2
-fvMAoLkkksKycykUvrTW1TkBSMr1moRz
-=EWCY
------END PGP SIGNATURE-----
-
---nextPart1659572.NIVFyQkED9--
+-- 
