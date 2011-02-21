@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972Ab1BUF3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 00:29:08 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53142 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab1BUF3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 00:29:06 -0500
-Message-ID: <4D61F876.3040401@cn.fujitsu.com>
-Date: Mon, 21 Feb 2011 13:30:30 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752130Ab1BUFcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 00:32:18 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55645 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab1BUFcQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 00:32:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=wf5KtoR3fKHPs1DATJgFcBScfyIwNGdmcRB30eFzAuhdLV1QWD2UnH+YdbIAsspDpP
+         Ri7wCUXWGFM61QAN9D0Mjyw1y5jvGaXKJUBOCwF36fU2FpGR4Ve4zkqSbwGNCh1I5rsc
+         XflL5tdpyL6e7iMtyPTRXG6ePaw1R3jAMFcXk=
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
-        miaox@cn.fujitsu.com, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] cpuset: Fix unchecked calls to NODEMASK_ALLOC()
-References: <4D5C7EA7.1030409@cn.fujitsu.com> <4D5C7ED1.2070601@cn.fujitsu.com> <alpine.DEB.2.00.1102191745180.27722@chino.kir.corp.google.com> <4D61DA04.4060007@cn.fujitsu.com>
-In-Reply-To: <4D61DA04.4060007@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 13:27:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-21 13:27:58,
-	Serialize complete at 2011-02-21 13:27:58
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110221045439.GB31194@liondog.tnic>
+References: <1298219710-9846-1-git-send-email-bp@alien8.de>
+	<20110220175709.GA5178@merkur.ravnborg.org>
+	<20110220193906.GC6713@liondog.tnic>
+	<1298232047.1284.14.camel@Joe-Laptop>
+	<20110221022707.GB18332@liondog.tnic>
+	<AANLkTikGb7_1sv8zthkt_5qp4ciGbWHQVupx3MmOjfWJ@mail.gmail.com>
+	<20110221045439.GB31194@liondog.tnic>
+Date: Mon, 21 Feb 2011 00:32:15 -0500
+Message-ID: <AANLkTikEzNnRpgkFPa8aL81syPCxj5fWKKM83gxn-cYQ@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: Add extra gcc checks
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Arnaud Lacombe <lacombar@gmail.com>,
+        Joe Perches <joe@perches.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Michal Marek <mmarek@suse.cz>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, linux-kbuild@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/*
-> + * Calling cpuset_static_nodemask() should be paired with this function,
-> + * so we insure the global nodemask won't be used by more than one user
-> + * at the one time.
-> + */
-> +static void cpuset_release_static_nodemask(void)
-> +{
-> +	WARN_ON(!cgroup_lock_is_held());
-> +
-> +	cpuset_mems_ref--;
-> +	WARN_ON(!cpuset_mems_ref);
+Hi,
 
-WARN_ON(cpuset_mems_ref);
+On Sun, Feb 20, 2011 at 11:54 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sun, Feb 20, 2011 at 10:34:57PM -0500, Arnaud Lacombe wrote:
+>> Hi,
+>>
+>> On Sun, Feb 20, 2011 at 9:27 PM, Borislav Petkov <bp@alien8.de> wrote:
+>> > On Sun, Feb 20, 2011 at 12:00:47PM -0800, Joe Perches wrote:
+>> >> > +EXTRA_CFLAGS += -Wextra -Wno-unused
+>> >>
+>> >> Why add -Wno-unused ?
+>> >>
+>> >> If it's because of verbosity, maybe
+>> >
+>> > Nah, it's because it is too noisy and spits too many false positives.
+>> >
+>> "too noisy" is a subjective point of view.
+>
+> Ok, does "too many false positives" objectify it a bit more to your
+> taste?
+>
+The degree of acceptable verbosity should be left to the end user.
 
-> +}
+>> > For example, it reports the arguments of all those stubs from the
+>> > headers which are provided for the else-branch of a CONFIG_* option,
+>> > etc.
+>> >
+>> and by the same way, you silence function marked with
+>> `warn_unused_result', unless I misread the manpage.
+>
+> Can you point me to that passage, I cannot find it in my gcc manpage.
+>
+my mistake, I just checked, `-Wno-unused' does not affect the
+`warn_unused_result' warning. `-Wno-unused-result' is required to
+silent that one.
+
+>> If you want to silence something specific, why not just the `no'
+>> variant of the thing you do not want ?
+>
+> Yes, '-Wunused -Wno-unused-parameter' looks better.
+>
+>> Btw, could you not take the same approach as the one taken by the BSD,
+>> which is 3 or 4 different level of new warnings. That way, you keep
+>> the noisy stuff for the highest warning level.
+>
+> Nope, because there's no reason for it. I want to have one switch that
+> craps out all the possible warnings gcc can spit, I catch the build
+> output, fix the bugs and that's it.
+>
+Looks like I'll submit the patch implementing multiple warnings level then ;-)
+
+ - Arnaud
