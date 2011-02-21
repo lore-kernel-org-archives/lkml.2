@@ -1,82 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab1BUIui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 03:50:38 -0500
-Received: from mail09.linbit.com ([212.69.161.110]:50403 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab1BUIug (ORCPT
+	id S1754476Ab1BUIvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 03:51:06 -0500
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:47949 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab1BUIvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 03:50:36 -0500
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 03:50:36 EST
-Date: Mon, 21 Feb 2011 09:44:19 +0100
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-Subject: Re: [Drbd-dev] [PATCH] lru_cache: Use correct type in sizeof for
- allocation
-Message-ID: <20110221084419.GC20194@barkeeper1-xen.linbit>
-Mail-Followup-To: Ilia Mirkin <imirkin@alum.mit.edu>,
-	drbd-dev@lists.linbit.com, linux-kernel@vger.kernel.org
-References: <1298241914-1400-1-git-send-email-imirkin@alum.mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298241914-1400-1-git-send-email-imirkin@alum.mit.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 21 Feb 2011 03:51:03 -0500
+Date: Mon, 21 Feb 2011 09:51:02 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 2.6.38-rc5
+Message-ID: <20110221095102.0e954a57@mschwide.boeblingen.de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 05:45:14PM -0500, Ilia Mirkin wrote:
-> This has no actual effect, since sizeof(struct hlist_head) ==
-> sizeof(struct hlist_head *), but it's still the wrong type to use.
-> 
-> The semantic match that finds this problem:
-> // <smpl>
-> @@
-> type T;
-> identifier x;
-> @@
-> T *x;
-> ...
-> * x = kzalloc(... * sizeof(T*) * ..., ...);
-> // </smpl>
-> 
-> Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Hi Linus,
 
-  Acked-by: Lars Ellenberg <lars@linbit.com>
+please pull from 'for-linus' branch of
 
-> 
-> ---
->  lib/lru_cache.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> Note that in lc_reset, there is the line
-> 
-> memset(lc->lc_slot, 0, sizeof(struct hlist_head) * lc->nr_elements);
-> 
-> So this seems correct. But otherwise untested.
-> 
-> diff --git a/lib/lru_cache.c b/lib/lru_cache.c
-> index 270de9d..b312c8f 100644
-> --- a/lib/lru_cache.c
-> +++ b/lib/lru_cache.c
-> @@ -84,7 +84,7 @@ struct lru_cache *lc_create(const char *name, struct kmem_cache *cache,
->  	if (e_count > LC_MAX_ACTIVE)
->  		return NULL;
->  
-> -	slot = kzalloc(e_count * sizeof(struct hlist_head*), GFP_KERNEL);
-> +	slot = kzalloc(e_count * sizeof(struct hlist_head), GFP_KERNEL);
+	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
 
-Luckily sizeof(struct hlist_head*) == sizeof(struct hlist_head),
-so this went unnoticed, as it did not have any effect.
+to receive the following updates:
 
-Thanks for having this spotted by semantic matching.
+Heiko Carstens (2):
+      [S390] atomic: use ACCESS_ONCE() for atomic_read()
+      [S390] atomic: use inline asm
 
-	Lars
+Horst Hartmann (1):
+      [S390] net: provide architecture specific NET_SKB_PAD
 
->  	if (!slot)
->  		goto out_fail;
->  	element = kzalloc(e_count * sizeof(struct lc_element *), GFP_KERNEL);
-> -- 
-> 1.7.3.4
+Martin Schwidefsky (1):
+      [S390] correct ipl parameter block safe guard
+
+Stefan Haberland (1):
+      [S390] dasd: correct device table
+
+ arch/s390/boot/compressed/misc.c |    5 +++--
+ arch/s390/include/asm/atomic.h   |   26 ++++++++++++++++++--------
+ arch/s390/include/asm/cache.h    |    1 +
+ drivers/s390/block/dasd_eckd.c   |    2 +-
+ 4 files changed, 23 insertions(+), 11 deletions(-)
+
+diff --git a/arch/s390/boot/compressed/misc.c b/arch/s390/boot/compressed/misc.c
+index 0851eb1..2751b3a 100644
+--- a/arch/s390/boot/compressed/misc.c
++++ b/arch/s390/boot/compressed/misc.c
+@@ -133,11 +133,12 @@ unsigned long decompress_kernel(void)
+ 	unsigned long output_addr;
+ 	unsigned char *output;
+ 
+-	check_ipl_parmblock((void *) 0, (unsigned long) output + SZ__bss_start);
++	output_addr = ((unsigned long) &_end + HEAP_SIZE + 4095UL) & -4096UL;
++	check_ipl_parmblock((void *) 0, output_addr + SZ__bss_start);
+ 	memset(&_bss, 0, &_ebss - &_bss);
+ 	free_mem_ptr = (unsigned long)&_end;
+ 	free_mem_end_ptr = free_mem_ptr + HEAP_SIZE;
+-	output = (unsigned char *) ((free_mem_end_ptr + 4095UL) & -4096UL);
++	output = (unsigned char *) output_addr;
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/*
+diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
+index 76daea1..5c5ba10 100644
+--- a/arch/s390/include/asm/atomic.h
++++ b/arch/s390/include/asm/atomic.h
+@@ -36,14 +36,19 @@
+ 
+ static inline int atomic_read(const atomic_t *v)
+ {
+-	barrier();
+-	return v->counter;
++	int c;
++
++	asm volatile(
++		"	l	%0,%1\n"
++		: "=d" (c) : "Q" (v->counter));
++	return c;
+ }
+ 
+ static inline void atomic_set(atomic_t *v, int i)
+ {
+-	v->counter = i;
+-	barrier();
++	asm volatile(
++		"	st	%1,%0\n"
++		: "=Q" (v->counter) : "d" (i));
+ }
+ 
+ static inline int atomic_add_return(int i, atomic_t *v)
+@@ -128,14 +133,19 @@ static inline int atomic_add_unless(atomic_t *v, int a, int u)
+ 
+ static inline long long atomic64_read(const atomic64_t *v)
+ {
+-	barrier();
+-	return v->counter;
++	long long c;
++
++	asm volatile(
++		"	lg	%0,%1\n"
++		: "=d" (c) : "Q" (v->counter));
++	return c;
+ }
+ 
+ static inline void atomic64_set(atomic64_t *v, long long i)
+ {
+-	v->counter = i;
+-	barrier();
++	asm volatile(
++		"	stg	%1,%0\n"
++		: "=Q" (v->counter) : "d" (i));
+ }
+ 
+ static inline long long atomic64_add_return(long long i, atomic64_t *v)
+diff --git a/arch/s390/include/asm/cache.h b/arch/s390/include/asm/cache.h
+index 24aafa6..2a30d5a 100644
+--- a/arch/s390/include/asm/cache.h
++++ b/arch/s390/include/asm/cache.h
+@@ -13,6 +13,7 @@
+ 
+ #define L1_CACHE_BYTES     256
+ #define L1_CACHE_SHIFT     8
++#define NET_SKB_PAD	   32
+ 
+ #define __read_mostly __attribute__((__section__(".data..read_mostly")))
+ 
+diff --git a/drivers/s390/block/dasd_eckd.c b/drivers/s390/block/dasd_eckd.c
+index 318672d..a9fe23d 100644
+--- a/drivers/s390/block/dasd_eckd.c
++++ b/drivers/s390/block/dasd_eckd.c
+@@ -72,7 +72,7 @@ static struct dasd_discipline dasd_eckd_discipline;
+ static struct ccw_device_id dasd_eckd_ids[] = {
+ 	{ CCW_DEVICE_DEVTYPE (0x3990, 0, 0x3390, 0), .driver_info = 0x1},
+ 	{ CCW_DEVICE_DEVTYPE (0x2105, 0, 0x3390, 0), .driver_info = 0x2},
+-	{ CCW_DEVICE_DEVTYPE (0x3880, 0, 0x3390, 0), .driver_info = 0x3},
++	{ CCW_DEVICE_DEVTYPE (0x3880, 0, 0x3380, 0), .driver_info = 0x3},
+ 	{ CCW_DEVICE_DEVTYPE (0x3990, 0, 0x3380, 0), .driver_info = 0x4},
+ 	{ CCW_DEVICE_DEVTYPE (0x2105, 0, 0x3380, 0), .driver_info = 0x5},
+ 	{ CCW_DEVICE_DEVTYPE (0x9343, 0, 0x9345, 0), .driver_info = 0x6},
