@@ -1,154 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab1BUP7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 10:59:38 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54710 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756072Ab1BUP7h (ORCPT
+	id S1755527Ab1BUQDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 11:03:22 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41822 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab1BUQDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 10:59:37 -0500
+	Mon, 21 Feb 2011 11:03:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rrAq9BvMn70PikTIvgaui+rD+HEGqhqEa0r6Hqj3AP3zwtnp8itUMCe2eQUfIdx860
-         yKLWXH0AYYWTuiVbW06T26H60YPet0HH55eZXnAFAxTuiQPiHTRmts7J8zJ4t4N5W1nz
-         XZLsTw+RTA126qu3xcef/asPgn7xj2+mihOBw=
-Date: Tue, 22 Feb 2011 00:59:25 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v6 2/3] memcg: move memcg reclaimable page into tail of
- inactive list
-Message-ID: <20110221155925.GA5641@barrios-desktop>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
- <c76a1645aac12c3b8ffe2cc5738033f5a6da8d32.1298212517.git.minchan.kim@gmail.com>
- <20110221084014.GC25382@cmpxchg.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=KI3b3MmtpPo/E+ar7w7ATEH3QdJ0Zgh3BLPtncMANOlGfOq2ITu1IwWKLhH13g3Qvu
+         M4kujVN2ZsFFVc+XbiXFAI338FtfVkBWx1lNxL5xHZYRNka2ZtGEfydxKRtn60ha5ACE
+         woRHg/PNMBlzewz2Q+SEltXazvRB1rE+E75oo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110221084014.GC25382@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1298303677.24121.1.camel@twins>
+References: <1298299131-17695-1-git-send-email-dacohen@gmail.com>
+	<1298299131-17695-2-git-send-email-dacohen@gmail.com>
+	<1298303677.24121.1.camel@twins>
+Date: Mon, 21 Feb 2011 18:03:18 +0200
+Message-ID: <AANLkTimOT6jNG3=TiRMJR0dgEQ6EHjcBPJ1ivCu3Wj5Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] headers: fix circular dependency between
+ linux/sched.h and linux/wait.h
+From: David Cohen <dacohen@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, linux-omap@vger.kernel.org,
+        linux-media@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed version.
+On Mon, Feb 21, 2011 at 5:54 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-02-21 at 16:38 +0200, David Cohen wrote:
+>> Currently sched.h and wait.h have circular dependency between both.
+>> wait.h defines macros wake_up*() which use macros TASK_* defined by
+>> sched.h. But as sched.h indirectly includes wait.h, such wait.h header
+>> file can't include sched.h too. The side effect is when some file
+>> includes wait.h and tries to use its wake_up*() macros, it's necessary
+>> to include sched.h also.
+>> This patch moves all TASK_* macros from linux/sched.h to a new header
+>> file linux/task_state.h. This way, both sched.h and wait.h can include
+>> task_state.h and fix the circular dependency. No need to include sched.h
+>> anymore when wake_up*() macros are used.
+>
+> I think Alexey already told you what you done wrong.
+>
+> Also, I really don't like the task_state.h header, it assumes a lot of
+> things it doesn't include itself and only works because its using macros
+> and not inlines at it probably should.
 
->From be7d31f6e539bbad1ebedf52c6a51a4a80f7976a Mon Sep 17 00:00:00 2001
-From: Minchan Kim <minchan.kim@gmail.com>
-Date: Tue, 22 Feb 2011 00:53:05 +0900
-Subject: [PATCH v7 2/3] memcg: move memcg reclaimable page into tail of inactive list
+Like wait.h I'd say. The main issue is wait.h uses TASK_* macros but
+cannot properly include sched.h as it would create a circular
+dependency. So a file including wait.h is able to compile because the
+dependency of sched.h relies on wake_up*() macros and it's not always
+used.
+We can still drop everything else from task_state.h but the TASK_*
+macros and then the problem you just pointed out won't exist anymore.
+What do you think about it?
 
-The rotate_reclaimable_page function moves just written out
-pages, which the VM wanted to reclaim, to the end of the
-inactive list.  That way the VM will find those pages first
-next time it needs to free memory.
-This patch apply the rule in memcg.
-It can help to prevent unnecessary working page eviction of memcg.
+Br,
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
+David
 
-Changelog since v6:
- - adjust smp_rmb - suggested by Johannes
-
- include/linux/memcontrol.h |    6 ++++++
- mm/memcontrol.c            |   26 ++++++++++++++++++++++++++
- mm/swap.c                  |    3 ++-
- 3 files changed, 34 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 3da48ae..5a5ce70 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -62,6 +62,7 @@ extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 					gfp_t gfp_mask);
- extern void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru);
- extern void mem_cgroup_del_lru_list(struct page *page, enum lru_list lru);
-+extern void mem_cgroup_rotate_reclaimable_page(struct page *page);
- extern void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru);
- extern void mem_cgroup_del_lru(struct page *page);
- extern void mem_cgroup_move_lists(struct page *page,
-@@ -215,6 +216,11 @@ static inline void mem_cgroup_del_lru_list(struct page *page, int lru)
- 	return ;
- }
- 
-+static inline inline void mem_cgroup_rotate_reclaimable_page(struct page *page)
-+{
-+	return ;
-+}
-+
- static inline void mem_cgroup_rotate_lru_list(struct page *page, int lru)
- {
- 	return ;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 686f1ce..2fc97fc 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -813,6 +813,32 @@ void mem_cgroup_del_lru(struct page *page)
- 	mem_cgroup_del_lru_list(page, page_lru(page));
- }
- 
-+/*
-+ * Writeback is about to end against a page which has been marked for immediate
-+ * reclaim.  If it still appears to be reclaimable, move it to the tail of the
-+ * inactive list.
-+ */
-+void mem_cgroup_rotate_reclaimable_page(struct page *page)
-+{
-+	struct mem_cgroup_per_zone *mz;
-+	struct page_cgroup *pc;
-+	enum lru_list lru = page_lru(page);
-+
-+	if (mem_cgroup_disabled())
-+		return;
-+
-+	pc = lookup_page_cgroup(page);
-+	/* unused or root page is not rotated. */
-+	if (!PageCgroupUsed(pc))
-+		return;
-+	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-+	smp_rmb();
-+	if (mem_cgroup_is_root(pc->mem_cgroup))
-+		return;
-+	mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
-+	list_move_tail(&pc->lru, &mz->lists[lru]);
-+}
-+
- void mem_cgroup_rotate_lru_list(struct page *page, enum lru_list lru)
- {
- 	struct mem_cgroup_per_zone *mz;
-diff --git a/mm/swap.c b/mm/swap.c
-index 4aea806..1b9e4eb 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -200,8 +200,9 @@ static void pagevec_move_tail(struct pagevec *pvec)
- 			spin_lock(&zone->lru_lock);
- 		}
- 		if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
--			int lru = page_lru_base_type(page);
-+			enum lru_list lru = page_lru_base_type(page);
- 			list_move_tail(&page->lru, &zone->lru[lru].list);
-+			mem_cgroup_rotate_reclaimable_page(page);
- 			pgmoved++;
- 		}
- 	}
--- 
-1.7.1
-
+>
+>
+>
