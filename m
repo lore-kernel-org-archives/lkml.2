@@ -1,45 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab1BUMDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 07:03:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:57796 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755446Ab1BUMDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 07:03:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,199,1297065600"; 
-   d="scan'208";a="659886980"
-Date: Mon, 21 Feb 2011 13:03:02 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2.6.38] mfd: Don't suspend WM8994 if the CODEC is not
- suspended
-Message-ID: <20110221120301.GC10686@sortiz-mobl>
-References: <1296831463-19643-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1755782Ab1BUMJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 07:09:11 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55699 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755590Ab1BUMJJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 07:09:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Qh0hNq6KGLSsbtNUAiDp2UkqsQDLhuN3+pz+zXSN/PXBHXqhXqLwA7JbDZ/oPfn7lR
+         LGqZPLT0+zzwH5nbAQlJGUUWuU6aa5sKtQNH59mh7EYC9L7P2oSgePHuVQNQNg4nKIJa
+         Z65YUeWIyu0ojuFgG5PHF5zk5o1HPgQANW5+4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296831463-19643-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110221073640.GA3094@legolas.emea.dhcp.ti.com>
+References: <1297068547-10635-1-git-send-email-weber@corscience.de>
+	<4D5A6353.7040907@maxwell.research.nokia.com>
+	<20110215113717.GN2570@legolas.emea.dhcp.ti.com>
+	<4D5A672A.7040000@samsung.com>
+	<4D5A6874.1080705@corscience.de>
+	<20110215115349.GQ2570@legolas.emea.dhcp.ti.com>
+	<4D5A6EEC.5000908@maxwell.research.nokia.com>
+	<AANLkTik+6fguqgH8Bpnpqo7Axmquy3caRMELTZVmuN1j@mail.gmail.com>
+	<20110219150024.GA4487@legolas.emea.dhcp.ti.com>
+	<AANLkTik5dwNZrUxjgjKeAQOsp610d6y_TNGg1b5Vc5Zd@mail.gmail.com>
+	<20110221073640.GA3094@legolas.emea.dhcp.ti.com>
+Date: Mon, 21 Feb 2011 14:09:07 +0200
+Message-ID: <AANLkTinf3Wj=nw_2Sx4r-VSsCH+=fzx-25hynH8hB0d9@mail.gmail.com>
+Subject: Re: [PATCH resend] video: omap24xxcam: Fix compilation
+From: David Cohen <dacohen@gmail.com>
+To: balbi@ti.com
+Cc: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
+        Thomas Weber <weber@corscience.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-omap@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Tejun Heo <tj@kernel.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Mon, Feb 21, 2011 at 9:36 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Sat, Feb 19, 2011 at 06:04:58PM +0200, David Cohen wrote:
+>> > I have to disagree. The fundamental problem is the circular dependency
+>> > between those two files:
+>> >
+>> > sched.h uses wait_queue_head_t defined in wait.h
+>> > wait.h uses TASK_* defined in sched.h
+>> >
+>> > So, IMO the real fix would be clear out the circular dependency. Maybe
+>> > introducing <linux/task.h> to define those TASK_* symbols and include
+>> > that on sched.h and wait.h
+>> >
+>> > Just dig a quick and dirty to try it out and works like a charm
+>>
+>> We have 2 problems:
+>>  - omap24xxcam compilation broken
+>>  - circular dependency between sched.h and wait.h
+>>
+>> To fix the broken compilation we can do what the rest of the kernel is
+>> doing, which is to include sched.h.
+>> Then, the circular dependency is fixed by some different approach
+>> which would probably change *all* current usage of TASK_*.
+>
+> considering that 1 is caused by 2 I would fix 2.
+>
+>> IMO, there's no need to create a dependency between those issues.
+>
+> There's no dependency between them, it's just that the root cause for
+> this problem is a circular dependency between wait.h and sched.h
 
-On Fri, Feb 04, 2011 at 02:57:43PM +0000, Mark Brown wrote:
-> ASoC supports keeping the audio subsysetm active over suspend in order
-> to support use cases such as audio passthrough from a cellular modem
-> with the main CPU suspended. Ensure that we don't power down the CODEC
-> when this is happening by checking to see if VMID is up and skipping
-> suspend and resume when it is. If the CODEC has suspended then it'll
-> turn VMID off before the core suspend() gets called.
-I applied this patch to both for-next and for-linus branch, many thanks.
+I did a try to fix this circular dependency and the comment I got was
+to include sched.h in omap24xxcam.c file:
+http://marc.info/?l=linux-omap&m=129828637120270&w=2
 
-Cheers,
-Samuel.
+I'm working to remove v4l2 internal device interface from omap24xxcam
+and then I need this driver's compilation fixed.
+The whole kernel is including sched.h when wake_up*() macro is used,
+so this should be our first solution IMO.
+As I said earlier, no need to make this compilation fix be dependent
+of wait.h fix (if it's really going to be changed).
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+I think we should proceed with this patch.
+
+Br,
+
+David
+
+>
+> --
+> balbi
+>
