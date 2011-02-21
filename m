@@ -1,162 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab1BUP45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 10:56:57 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:60066 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751174Ab1BUP4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 10:56:55 -0500
-Message-ID: <4D628B38.7040105@metafoo.de>
-Date: Mon, 21 Feb 2011 16:56:40 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1755527Ab1BUP5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 10:57:18 -0500
+Received: from cantor.suse.de ([195.135.220.2]:37858 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754954Ab1BUP5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 10:57:17 -0500
+Date: Mon, 21 Feb 2011 07:43:11 -0800
+From: Greg KH <gregkh@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Message-ID: <20110221154311.GA446@suse.de>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
+ <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102211200270.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048013C67@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102211549340.2701@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:irq/core] genirq: Make nr_irqs runtime expandable
-References: <tip-e7bcecb7b1d29b9ad5af939149a945658620ca8f@git.kernel.org> <4D6014F9.8040605@kernel.org>
-In-Reply-To: <4D6014F9.8040605@kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1102211549340.2701@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2011 08:07 PM, Yinghai Lu wrote:
-> On 02/19/2011 04:15 AM, tip-bot for Thomas Gleixner wrote:
->> Commit-ID:  e7bcecb7b1d29b9ad5af939149a945658620ca8f
->> Gitweb:     http://git.kernel.org/tip/e7bcecb7b1d29b9ad5af939149a945658620ca8f
->> Author:     Thomas Gleixner <tglx@linutronix.de>
->> AuthorDate: Wed, 16 Feb 2011 17:12:57 +0100
->> Committer:  Thomas Gleixner <tglx@linutronix.de>
->> CommitDate: Sat, 19 Feb 2011 12:58:06 +0100
->>
->> genirq: Make nr_irqs runtime expandable
->>
->> We face more and more the requirement to expand nr_irqs at
->> runtime. The reason are irq expanders which can not be detected in the
->> early boot stage. So we speculate nr_irqs to have enough room. Further
->> Xen needs extra irq numbers and we really want to avoid adding more
->> "detection" code into the early boot. There is no real good reason why
->> we need to limit nr_irqs at early boot.
->>
->> Allow the allocation code to expand nr_irqs. We have already 8k extra
->> number space in the allocation bitmap, so lets use it.
->>
->> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->> ---
->>  kernel/irq/irqdesc.c |   22 +++++++++++++++++++---
->>  1 files changed, 19 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
->> index a250d3a..6f6644f 100644
->> --- a/kernel/irq/irqdesc.c
->> +++ b/kernel/irq/irqdesc.c
->> @@ -206,6 +206,14 @@ struct irq_desc * __ref irq_to_desc_alloc_node(unsigned int irq, int node)
->>  	return NULL;
->>  }
->>  
->> +static int irq_expand_nr_irqs(unsigned int cnt)
->> +{
->> +	if (nr_irqs + cnt > IRQ_BITMAP_BITS)
->> +		return -ENOMEM;
->> +	nr_irqs += cnt;
->> +	return 0;
->> +}
->> +
->>  int __init early_irq_init(void)
->>  {
->>  	int i, initcnt, node = first_online_node;
->> @@ -287,6 +295,12 @@ static inline int alloc_descs(unsigned int start, unsigned int cnt, int node)
->>  {
->>  	return start;
->>  }
->> +
->> +static int irq_expand_nr_irqs(unsigned int cnt)
->> +{
->> +	return -ENOMEM;
->> +}
->> +
->>  #endif /* !CONFIG_SPARSE_IRQ */
->>  
->>  /* Dynamic interrupt handling */
->> @@ -335,9 +349,11 @@ irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node)
->>  	if (irq >=0 && start != irq)
->>  		goto err;
->>  
->> -	ret = -ENOMEM;
->> -	if (start >= nr_irqs)
->> -		goto err;
->> +	if (start >= nr_irqs) {
->> +		ret = irq_expand_nr_irqs(cnt);
->> +		if (ret)
->> +			goto err;
->> +	}
+On Mon, Feb 21, 2011 at 03:51:56PM +0100, Thomas Gleixner wrote:
+> On Mon, 21 Feb 2011, KY Srinivasan wrote:
+> > > > > There are various ways to solve that proper.
+> > > > >
+> > > > >  - You can provide the interrupt number from ACPI/PCI or whatever your HV
+> > > > >    provides as enumeration.
+> > > > >
+> > > > >  - Use a fixed vector like XEN does for the event channel
+> > > > >
+> > > > >  - Use dynamic allocation in the IOAPIC space like the kernel does for
+> > > > >    MSI(-X)
+> > > > >
+> > > > > Thanks,
+> > > > >
+> > > > > 	tglx
+> > > >
+> > > > I am not claiming that what I have done here is the best possible solution.
+> > > > However, I will submit to you that it is better than what we had here
+> > > > prior to this patch.  I will address this and a  whole lot of other issues
+> > > > in future patches.
+> > > 
+> > > No, it's _NOT_ better in any way. You trade breaking your PV thing
+> > > against breaking random other drivers. Care to explain why you think
+> > > that's better ?
+> > 
+> > The root device for the VM is bound to the PV driver on some distributions.
+> > So, if we cannot load the PV drivers, we do not have a system that boots.
+> > In general, the system performance without these PV drivers is so poor that
+> > for all practical purposes, having the PV drivers is almost a requirement
+> > for having a useable system. While the platform supports configuration of the VM with
+> > some emulated devices, it is not a recommended configuration (because of
+> > performance reasons) for Linux virtual machines on the Hyper-V platform.
 > 
-> may need following patch.
-> 
-> [PATCH] genirq: use IRQ_BITMAP_BITS as search size
-> 
-> instead of nr_irqs.
-> 
-> Otherwise bitmap_find_next_area could exit with larger start and in extreme
-> case we could fail to get wrong irqs return.
-> 
-> For example:
-> IRQ_BITMAP_BITS=10240
-> nr_irqs=8192
-> cnt=2048
-> 
-> and bit 0 to bit 8190 are set already.
-> 
-> before patch start from bit_find_next_area() will be 8191+2048.
-> later irq_expand_nr_irqs will set nr_irqs 10240.
-> finally irq_alloc_descs will return [8191+2048, 8191+2048+2047] happily..
-> 
-> with this patch, will get correct [8191, 8191+2047]
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  kernel/irq/irqdesc.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6/kernel/irq/irqdesc.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/irq/irqdesc.c
-> +++ linux-2.6/kernel/irq/irqdesc.c
-> @@ -346,12 +346,13 @@ irq_alloc_descs(int irq, unsigned int fr
+> It does not matter whether it's recommended or not. If it results in a
+> non usable emulated device it's broken. Just imagine you grab the
+> serial interrupt, which results in not having a debug console. Not at
+> all acceptable.
 >  
->  	mutex_lock(&sparse_irq_lock);
->  
-> -	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
-> +	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
-> +						 from, cnt, 0);
->  	ret = -EEXIST;
->  	if (irq >=0 && start != irq)
->  		goto err;
->  
-> -	if (start >= nr_irqs) {
-> +	if (start + cnt > nr_irqs) {
->  		ret = irq_expand_nr_irqs(cnt);
-Just a minor thing, but if there are still unused irqs available at the end of
-the current range, you'll end up expanding the range more then you need to.
-So either do
-	irq_expand_nr_irqs(nr_irqs - start + cnt);
-or change irq_expand_nr_irqs to let it take the new total number of irqs.
+> > I have spent significantly more time debating this patch than
+> > developing this patch that I still think improves the current
+> > driver. I will leave it to Greg and other powers that be to decide
+> > if this patch will be accepted. Let me know what your verdict is.
+> 
+> As I said, any other clean solution (and I pointed out 3) over this
+> hack.
 
-Btw., with this patch in place does it make sense to initialize nr_irqs to
-anything else then initcnt in early_irq_init?
+Yeah, that sounds like the best solution, let's not cause accidental
+breakage of systems that were working already.
 
+KY, care to fix this up properly now?  There's no rush to take your
+previous patch, as that is working ok for now, right?
 
->  		if (ret)
->  			goto err;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+thanks,
 
+greg k-h
