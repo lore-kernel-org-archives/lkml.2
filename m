@@ -1,55 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab1BUBTu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 20:19:50 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:55719 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab1BUBTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 20:19:48 -0500
-Date: Mon, 21 Feb 2011 12:19:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: linux-next: manual merge of the hwmon-staging tree with the
- jdelvare-hwmon tree
-Message-Id: <20110221121944.57f2ecfb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755480Ab1BUBWh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 20:22:37 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51526 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755421Ab1BUBWf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 20:22:35 -0500
+Message-ID: <4D61BC24.9090006@cn.fujitsu.com>
+Date: Mon, 21 Feb 2011 09:13:08 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH 3/6 v4] cfq-iosched: Introduce vdisktime and io weight
+ for CFQ queue
+References: <4D51ED26.8050809@cn.fujitsu.com> <4D539804.9090308@cn.fujitsu.com> <20110214181322.GJ13097@redhat.com> <4D5E0BE2.6020104@cn.fujitsu.com> <20110218145432.GA26654@redhat.com>
+In-Reply-To: <20110218145432.GA26654@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-21 09:12:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-21 09:21:33
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Vivek Goyal wrote:
+> On Fri, Feb 18, 2011 at 02:04:18PM +0800, Gui Jianfeng wrote:
+>> Vivek Goyal wrote:
+>>> On Thu, Feb 10, 2011 at 03:47:16PM +0800, Gui Jianfeng wrote:
+>>>
+>>> [..]
+>>>> +/*
+>>>> + * The time when a CFQ queue is put onto a service tree is recoreded in
+>>>> + * cfqq->reposition_time. Currently, we check the first priority CFQ queues
+>>>> + * on each service tree, and select the workload type that contains the lowest
+>>>> + * reposition_time CFQ queue among them.
+>>>> + */
+>>>>  static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
+>>>>  				struct cfq_group *cfqg, enum wl_prio_t prio)
+>>>>  {
+>>>>  	struct cfq_entity *cfqe;
+>>>> +	struct cfq_queue *cfqq;
+>>>> +	unsigned long lowest_start_time;
+>>>>  	int i;
+>>>> -	bool key_valid = false;
+>>>> -	unsigned long lowest_key = 0;
+>>>> +	bool time_valid = false;
+>>>>  	enum wl_type_t cur_best = SYNC_NOIDLE_WORKLOAD;
+>>>>  
+>>>> +	/*
+>>>> +	 * TODO: We may take io priority and io class into account when
+>>>> +	 * choosing a workload type. But for the time being just make use of
+>>>> +	 * reposition_time only.
+>>>> +	 */
+>>>>  	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
+>>>> -		/* select the one with lowest rb_key */
+>>>>  		cfqe = cfq_rb_first(service_tree_for(cfqg, prio, i));
+>>>> -		if (cfqe &&
+>>>> -		    (!key_valid || time_before(cfqe->rb_key, lowest_key))) {
+>>>> -			lowest_key = cfqe->rb_key;
+>>>> +		cfqq = cfqq_of_entity(cfqe);
+>>>> +		if (cfqe && (!time_valid ||
+>>>> +			     time_before(cfqq->reposition_time,
+>>>> +					 lowest_start_time))) {
+>>>> +			lowest_start_time = cfqq->reposition_time;
+>>> Gui,
+>>>
+>>> Have you had a chance to run some mixed workloads in a group (some sync,
+>>> some async and some sync-idle queues), and see how latency and throughput
+>>> of sync-idle workload changes due to this "resposition_time" logic. I 
+>>> just want to make sure that latency of sync-noidle workload does not
+>>> go up as that's the workload that people care and gets noticed first.
+>> Hi Vivek,
+>>
+>> I made a quick test by using fio. It seems the number changes little
+>> between vanilla kernel and patched kernel.
+>>
+>>
+>> Vanilla:    SYNC read            SYNC-NOIDLE read      ASYNC write  
+>>          1. 23,640KB/s 5.40 ---- 6,696KB/s 19.07 ---- 50,142KB/s 128.00
+>>          2. 24,459KB/s 5.22 ---- 6,775KB/s 18.86 ---- 47,349KB/s 129.89
+>>          3. 25,929KB/s 4.93 ---- 7,378KB/s 17.32 ---- 32,350KB/s 131.88
+>>
+>> Patched:   SYNC read            SYNC-NOIDLE read      ASYNC write  
+>>         1. 24,000KB/s 5.32 ---- 6,942KB/s 18.39 ---- 30,860KB/s 135.95
+>>         2. 23,678KB/s 5.40 ---- 7,274KB/s 17.58 ---- 67,432KB/s 120.44
+>>         3. 23,004KB/s 5.55 ---- 6,621KB/s 19.30 ---- 36,536KB/s 148.64
+> 
+> Hi Gui,
+> 
+> Do you also have latency numbers? I am especially interested max completion
+> latencies of SYNC-NOIDLE workload.
 
-Today's linux-next merge of the hwmon-staging tree got a conflict in
-drivers/hwmon/Makefile between commits
-bb6cd76e2364b13de54314aeadd9f61b75335caa ("Let Kconfig handle lis3lv02d
-dependencies") and d8f00f1b531b25ac96a39385617ff1718bc8474b ("Move
-lis3lv02d drivers to drivers/misc") from the jdelvare-hwmon tree and
-commit 2c37a4a61ef4efaa7a802e0757d783d9b54ad064 ("hwmon: Add support for
-Lineage Compact Power Line PEM devices") from the hwmon-staging tree.
+Vivek，
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The number behind bandwidth is the average completion latency which is extracted 
+from the fio output.
+For example, 23,640KB/s 5.40, the average completion lantency is 5.40 usec.
+I'll re-test to check *max* completion latencies.
 
-diff --cc drivers/hwmon/Makefile
-index 753117c,4681981..0000000
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@@ -62,6 -62,10 +62,7 @@@ obj-$(CONFIG_SENSORS_JC42)	+= jc42.
-  obj-$(CONFIG_SENSORS_JZ4740)	+= jz4740-hwmon.o
-  obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
-  obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
-+ obj-$(CONFIG_SENSORS_LINEAGE)	+= lineage-pem.o
- -obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
- -obj-$(CONFIG_SENSORS_LIS3_SPI)	+= lis3lv02d.o lis3lv02d_spi.o
- -obj-$(CONFIG_SENSORS_LIS3_I2C)	+= lis3lv02d.o lis3lv02d_i2c.o
-  obj-$(CONFIG_SENSORS_LM63)	+= lm63.o
-  obj-$(CONFIG_SENSORS_LM70)	+= lm70.o
-  obj-$(CONFIG_SENSORS_LM73)	+= lm73.o
+Thanks,
+Gui
+
+> 
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
