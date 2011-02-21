@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab1BUQeF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 11:34:05 -0500
-Received: from xenotime.net ([184.105.210.51]:54357 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751800Ab1BUQeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 11:34:04 -0500
-Date: Mon, 21 Feb 2011 08:33:58 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: David Cohen <dacohen@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        linux-omap@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH v2 0/1] Fix linux/wait.h header file
-Message-Id: <20110221083358.3a941b4e.rdunlap@xenotime.net>
-In-Reply-To: <1298299131-17695-1-git-send-email-dacohen@gmail.com>
-References: <1298299131-17695-1-git-send-email-dacohen@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756122Ab1BUQfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 11:35:01 -0500
+Received: from mail-bw0-f42.google.com ([209.85.214.42]:60131 "EHLO
+	mail-bw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab1BUQex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 11:34:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=rmrhO5MAk880NnGCQhxls3MhqBFqQWK4h/axv5dnOZm+22q0aRZVjVNivDx0mJwO/e
+         NDF19wcBq4ADKC38/4WbUJ1AEZFfFJhefztiL5NXAvWvITFuHx+fFkpm41M+3wlBugbD
+         JvgQWG9i2sH0GOoeiOcXJD23YSPr++NnkCkoc=
+Message-ID: <4D629427.8020500@gmail.com>
+Date: Mon, 21 Feb 2011 17:34:47 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, stefanb@linux.vnet.ibm.com,
+        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        debora@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
+Subject: Re: 2.6.37.1 s2disk regression (TPM)
+References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com>
+In-Reply-To: <4D628521.8000205@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011 16:38:50 +0200 David Cohen wrote:
+Linus, please stop garbling my name. I'm not Sladby (2nd time you
+committed that) and not even Juri.
 
-> Hi,
+On 02/21/2011 04:30 PM, Rajiv Andrade wrote:
+> On 02/20/2011 08:48 AM, Rafael J. Wysocki wrote:
 > 
-> OMAP2 camera driver compilation is broken due to problems on linux/wait.h header
-> file:
+>> On Sunday, February 20, 2011, Rafael J. Wysocki wrote:
+>>> No, and the author and maintainer have not been responding.  If that
+>>> contiunes,I'll simply ask Linus to revert it.
+> Sorry, but you sent the email this Friday, I didn't catch it in time and
+> I wasn't working during the weekend.
 > 
-> drivers/media/video/omap24xxcam.c: In function 'omap24xxcam_vbq_complete':
-> drivers/media/video/omap24xxcam.c:414: error: 'TASK_NORMAL' undeclared (first use in this function)
-> drivers/media/video/omap24xxcam.c:414: error: (Each undeclared identifier is reported only once
-> drivers/media/video/omap24xxcam.c:414: error: for each function it appears in.)
-> make[3]: *** [drivers/media/video/omap24xxcam.o] Error 1
-> make[2]: *** [drivers/media/video] Error 2
-> make[1]: *** [drivers/media] Error 2
-> make: *** [drivers] Error 2
-> 
-> This file defines macros wake_up*() which use TASK_* defined on linux/sched.h.
-> But sched.h cannot be included on wait.h due to a circular dependency between
-> both files. This patch fixes such compilation and the circular dependency
-> problem.
-> 
-> Br,
-> 
-> David
-> ---
-> 
-> David Cohen (1):
->   headers: fix circular dependency between linux/sched.h and
->     linux/wait.h
-> 
->  include/linux/sched.h      |   58 +-----------------------------------------
->  include/linux/task_state.h |   61 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/wait.h       |    1 +
->  3 files changed, 63 insertions(+), 57 deletions(-)
->  create mode 100644 include/linux/task_state.h
-> 
-> -- 
+>> BTW, the first hunk from that commit in drivers/char/tpm/tpm.c seems
+>> to be
+>> completely broken:
+>> @@ -577,9 +577,11 @@ duration:
+>>          if (rc)
+>>                  return;
+>>
+>> -       if (be32_to_cpu(tpm_cmd.header.out.return_code)
+>> -           != 3 * sizeof(u32))
+>> +       if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
+>> +           be32_to_cpu(tpm_cmd.header.out.length)
+>> +           != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 *
+>> sizeof(u32))
+>>                  return;
+>> +
+>>          duration_cap =&tpm_cmd.params.getcap_out.cap.duration;
+>>          chip->vendor.duration[TPM_SHORT] =
+>>              usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
+>>
+>> Namely, either the old code always returned as a result of the
+>> conditional
+>> being removed, or the new code will always return as a result of
+>> the (... != 0) check.  I wonder if there's supposed to be (... == 0)
+>> instead?
+> The previous code was checking the wrong field of the TPM returned
+> buffer, probably
+> due an old commit that incorporated the tpm_cmd strucuture, it should
+> check if the return code
+> is != 0, which if true, means that the command didn't succeed. The
+> output length check should be
+> just a sanity check, so indeed the logical operator should be&& 
+> instead.
 
-and please drop patch 0/1.  All of this info can be included in patch 1/1,
-either above the first "---" line (for commit info) or after it (for
-background info).
+No it should not. You want 'if (wrong_retcode OR wrong_len) die;'. IOW I
+don't see what exactly is wrong on the 'if'. I think it's correct.
+(Given the old test was incorrect.)
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+There has to be another problem which caused my regression. And since it
+reports "Operation Timed out", the former default timeout values worked
+for me, the ones read from TPM do not.
+
+I'm not at that machine now, what are the usual timeouts in usecs? The
+use of conversed jiffies seem bogus. If the usecs are so low (or HZ so
+high on some configs) that the conversion returns 1 jiffie,
+wait_event_interruptible_timeout in wait_for_stat will return 0 when:
+* 1 jiffie passes without change in status (proper timeout)
+* status changed, but also the timer ticked once meanwhile, i.e. we
+scheduled a moment before timer tick
+
+But this is only a theory so far. What about this (wrapped, just dropped
+by mouse), I may try it when I'm back to the machine?
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -201,7 +201,7 @@ static int wait_for_stat(struct tpm_chip *chip, u8
+mask, unsigned long timeout,
+                                                      ((tpm_tis_status
+                                                        (chip) & mask) ==
+                                                       mask), timeout);
+-               if (rc > 0)
++               if (rc > 0 || (tpm_tis_status(chip) & mask) == mask)
+                        return 0;
+        } else {
+                stop = jiffies + timeout;
+
+regards,
+-- 
+js
