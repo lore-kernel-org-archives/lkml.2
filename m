@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab1BUKzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 05:55:22 -0500
-Received: from mail-bw0-f42.google.com ([209.85.214.42]:51041 "EHLO
-	mail-bw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab1BUKzT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 05:55:19 -0500
-X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 05:55:18 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=iguQuC4nKH++TzPnJJU3xQa57DvnOJYIqL98LLbCXGWyMpi3vMZTf84uKjHg702rRC
-         gS0fTylwpiCy2zHzhhBBt22UkE/pzIwtEn6pABtxOLKO5vU5PZZd9VptqobzplzFgZ9R
-         AyqQvKBFj+Ls87/KZEGtmtmZeG91FLg+fL13w=
-Message-ID: <4D6242AD.2090600@suse.cz>
-Date: Mon, 21 Feb 2011 11:47:09 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1754980Ab1BULCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 06:02:50 -0500
+Received: from www.tglx.de ([62.245.132.106]:52054 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab1BULCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 06:02:49 -0500
+Date: Mon, 21 Feb 2011 12:02:33 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: KY Srinivasan <kys@microsoft.com>
+cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+In-Reply-To: <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+Message-ID: <alpine.LFD.2.00.1102211200270.2701@localhost6.localdomain6>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com> <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6> <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com> <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com> <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6> <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: jlbec@evilplan.org
-CC: npiggin@kernel.dk, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: OOPS in configfs when doing d_delete
-References: <4D623C62.8030509@suse.cz> <20110221104359.GA18538@noexit>
-In-Reply-To: <20110221104359.GA18538@noexit>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2011 11:44 AM, Joel Becker wrote:
-> On Mon, Feb 21, 2011 at 11:20:18AM +0100, Jiri Slaby wrote:
->> when configfs_attach_group fails in configfs_register_subsystem:
->>         dentry = d_alloc(configfs_sb->s_root, &name);
->>         if (dentry) {
->>                 d_add(dentry, NULL);
->>
->>                 err = configfs_attach_group(sd->s_element, &group->cg_item,
->>                                             dentry);
->>                 if (err) {
->>                         d_delete(dentry);
->>                         dput(dentry);
->>
->>
->> d_delete kills the kernel. I don't know what the actual bug is here, but
->> d_delete looks broken anyway:
->>         spin_lock(&dentry->d_lock);
->>         inode = dentry->d_inode;
->>         isdir = S_ISDIR(inode->i_mode);  <======== dereference
->>         if (dentry->d_count == 1) {
->>                 if (inode && !spin_trylock(&inode->i_lock)) {
->>                     ^^^^^  <============= test
->>
->> It seems like a superfluous test, not a potential null dereference to
->> me, right?
+On Mon, 21 Feb 2011, KY Srinivasan wrote:
+> > > Like most virtualization platforms, Hyper-V also emulates the full PC
+> > > platform. So, it is possible that the driver of some other emulated
+> > > devices might register for the IRQ line we might have selected. That
+> > > is the race this code addresses. For performance reasons, we want
+> > > both storage and network traffic to go over the PV drivers.
+> > 
+> > So in case your driver gets the interrupt line first, which the other
+> > driver wants to acquire as well, then what? Do you want to do that
+> > probe magic in the other driver as well? What if this is a regular
+> > device driver which gets its irq number from ACPI/PCI or
+> > whatever. Then that driver simply wont work as it's interrupt line is
+> > busy.
+> > 
+> > > >
+> > > > I don't know why the previous reviewer wanted to have that
+> > > > dynamic. That just does not make sense to me.
+> > >
+> > > Prior to this patch, we had a hard coded interrupt line for use by
+> > > this driver. If that line was already in use, the load of this driver
+> > > would fail. This would be a fatal issue especially for distributions
+> > > that have embedded these PV drivers as part of their installation
+> > > media. This patch deals with such collisions in a more graceful way -
+> > > we would not bail until we have scanned all low interrupt lines.
+> > 
+> > So you trade breaking the PV stuff against breaking random other
+> > drivers? That doesn't sound like a brilliant idea.
+> > 
+> > There are various ways to solve that proper.
+> > 
+> >  - You can provide the interrupt number from ACPI/PCI or whatever your HV
+> >    provides as enumeration.
+> > 
+> >  - Use a fixed vector like XEN does for the event channel
+> > 
+> >  - Use dynamic allocation in the IOAPIC space like the kernel does for
+> >    MSI(-X)
+> > 
+> > Thanks,
+> > 
+> > 	tglx
 > 
-> 	I think you're right about the superfluous test, but I need more
-> investigation to see what's going on.  Thanks for the report.
-> 	What was causing attach_group() to fail?  Do you know?
+> I am not claiming that what I have done here is the best possible solution.
+> However, I will submit to you that it is better than what we had here
+> prior to this patch.  I will address this and a  whole lot of other issues 
+> in future patches. 
 
-Dunno, I just modprobe'd the configfs example from Doc dir
-(configfs_example_macros).
+No, it's _NOT_ better in any way. You trade breaking your PV thing
+against breaking random other drivers. Care to explain why you think
+that's better ?
 
-regards,
--- 
-js
-suse labs
+Thanks,
+
+	tglx
+
+
