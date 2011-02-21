@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab1BUDl2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 22:41:28 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:41373 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755692Ab1BUDlZ (ORCPT
+	id S1755647Ab1BUDlM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 22:41:12 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50740 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab1BUDlL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 22:41:25 -0500
-Date: Sun, 20 Feb 2011 22:41:22 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-cc: linux-arm-kernel@lists.infradead.org, Quentin Barnes <qbarnes@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: bug in arm_kprobe_decode_insn
-In-Reply-To: <20110220182437.GA24789@joi.lan>
-Message-ID: <alpine.LFD.2.00.1102202239570.14920@xanadu.home>
-References: <20110220182437.GA24789@joi.lan>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sun, 20 Feb 2011 22:41:11 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110220232808.GL15795@trinity.fluff.org>
+References: <1297306314-11483-1-git-send-email-thomas@wytron.com.tw>
+ <20110216043540.GB11684@angua.secretlab.ca> <20110220232808.GL15795@trinity.fluff.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 20 Feb 2011 20:40:49 -0700
+X-Google-Sender-Auth: 6PUfkQTCM8XUafYlzhWEDiGmH8A
+Message-ID: <AANLkTi=sQ2oS4qbfHtKG52KnDcpqkijQx_YXoAbctNzL@mail.gmail.com>
+Subject: Re: [PATCH] i2c-ocores: register devices on child nodes
+To: Ben Dooks <ben-i2c@fluff.org>
+Cc: Thomas Chou <thomas@wytron.com.tw>, Ben Dooks <ben-linux@fluff.org>,
+        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Feb 2011, Marcin Slusarz wrote:
+On Sun, Feb 20, 2011 at 4:28 PM, Ben Dooks <ben-i2c@fluff.org> wrote:
+> On Tue, Feb 15, 2011 at 09:35:40PM -0700, Grant Likely wrote:
+>> On Thu, Feb 10, 2011 at 10:51:54AM +0800, Thomas Chou wrote:
+>> > This patch registers devices on the devicetree child nodes to the bus.
+>> > Also removes one trailing whitespace.
+>> >
+>> > Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+>>
+>> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> Ben, do you want to pick this one up?  Or should I merge it via my
+>> devicetree branch?
+>
+> If it applies to the mainline kernel, then I'll take it.
 
-> Hi
-> 
-> In arch/arm/kernel/kprobes-decode.c there's a function arm_kprobe_decode_insn
-> which does:
-> 
-> } else if ((insn & 0x0e000000) == 0x0c400000) {
-> ...
-> 
-> This is always false, so code below is dead.
+It should apply to mainline no problem.
 
-Good catch, thanks.
+g.
+
+>
+> --
+> Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+>
+> Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+>
+>
 
 
-Nicolas
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
