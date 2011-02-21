@@ -1,265 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab1BUTaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:30:10 -0500
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:43534 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab1BUTaI (ORCPT
+	id S1754747Ab1BUTac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:30:32 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:34187 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab1BUTaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:30:08 -0500
+	Mon, 21 Feb 2011 14:30:11 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, aranym@lists.bobek.cz,
-        Petr Stehlik <pstehlik@sophics.cz>,
+        Milan Jurik <milan.jurik@xylab.cz>, Petr Stehlik <pstehlik@sophics.cz>,
         Michael Schmitz <schmitz@debian.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2 1/4] m68k/atari: Initial ARAnyM support
-Date: Mon, 21 Feb 2011 20:29:57 +0100
-Message-Id: <1298316600-23094-1-git-send-email-geert@linux-m68k.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>, netdev@vger.kernel.org
+Subject: [PATCH v2 4/4] m68k/atari: ARAnyM - Add support for network access
+Date: Mon, 21 Feb 2011 20:30:00 +0100
+Message-Id: <1298316600-23094-4-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1298316600-23094-1-git-send-email-geert@linux-m68k.org>
+References: <1298316600-23094-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Petr Stehlik <pstehlik@sophics.cz>
+From: Milan Jurik <milan.jurik@xylab.cz>
 
+[petr: Second author]
 [michael, geert: Cleanups and updates]
 
+Signed-off-by: Milan Jurik <milan.jurik@xylab.cz>
 Signed-off-by: Petr Stehlik <pstehlik@sophics.cz>
 Signed-off-by: Michael Schmitz <schmitz@debian.org>
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: netdev@vger.kernel.org
 
 ---
-v2: No changes
+v2:
+  - Review comments from David Miller:
+      - Remove "dev->trans_start = jiffies;",
+      - Set pr_fmt(),
+      - Use netdev_*() for logging.
+  - Review comments from Petr Stehlik:
+     - Update ARAnyM URL.
 v1:
-  - Export native feature API,
-  - Remove bogus line from Kconfig help.
+  - Convert to net_device_ops,
+  - nfeth doesn't need obsolete <net/ieee80211.h>,
+  - Convert print_mac to %pM,
+  - Break too long lines,
+  - Make needlessly global functions static,
+  - Make version[] const,
+  - Use pr_*(),
+  - Use net_device_stats from struct net_device instead of our own,
+  - Propagate error code from request_irq(),
+  - Remove unused variable "handled".
 
- arch/m68k/Kconfig               |    7 ++
- arch/m68k/Makefile              |    1 +
- arch/m68k/emu/Makefile          |    5 ++
- arch/m68k/emu/natfeat.c         |  116 +++++++++++++++++++++++++++++++++++++++
- arch/m68k/include/asm/natfeat.h |   22 +++++++
- arch/m68k/kernel/setup.c        |    5 ++
- 6 files changed, 156 insertions(+), 0 deletions(-)
- create mode 100644 arch/m68k/emu/Makefile
- create mode 100644 arch/m68k/emu/natfeat.c
- create mode 100644 arch/m68k/include/asm/natfeat.h
+ arch/m68k/Kconfig      |    8 ++
+ arch/m68k/emu/Makefile |    1 +
+ arch/m68k/emu/nfeth.c  |  270 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 279 insertions(+), 0 deletions(-)
+ create mode 100644 arch/m68k/emu/nfeth.c
 
 diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index cbe8b18..f668a58 100644
+index 6719c56..80df6ee 100644
 --- a/arch/m68k/Kconfig
 +++ b/arch/m68k/Kconfig
-@@ -240,6 +240,13 @@ config SUN3
+@@ -263,6 +263,14 @@ config NFCON
+ 	  which allows the console output to be redirected to the stderr
+ 	  output of ARAnyM.
  
- 	  If you don't want to compile a kernel exclusively for a Sun 3, say N.
- 
-+config NATFEAT
-+	bool "ARAnyM emulator support"
-+	depends on ATARI
++config NFETH
++	tristate "NatFeat Ethernet support"
++	depends on NET_ETHERNET && NATFEAT
 +	help
-+	  This option enables support for ARAnyM native features, such as
-+	  access to a disk image as /dev/hda.
++	  Say Y to include support for the ARAnyM NatFeat network device
++	  which will emulate a regular ethernet device while presenting an
++	  ethertap device to the host system.
 +
  comment "Processor type"
  
  config M68020
-diff --git a/arch/m68k/Makefile b/arch/m68k/Makefile
-index b06a7e3..b793163 100644
---- a/arch/m68k/Makefile
-+++ b/arch/m68k/Makefile
-@@ -76,6 +76,7 @@ core-$(CONFIG_MVME16x)		+= arch/m68k/mvme16x/
- core-$(CONFIG_BVME6000)		+= arch/m68k/bvme6000/
- core-$(CONFIG_SUN3X)		+= arch/m68k/sun3x/	arch/m68k/sun3/
- core-$(CONFIG_SUN3)		+= arch/m68k/sun3/	arch/m68k/sun3/prom/
-+core-$(CONFIG_NATFEAT)		+= arch/m68k/emu/
- core-$(CONFIG_M68040)		+= arch/m68k/fpsp040/
- core-$(CONFIG_M68060)		+= arch/m68k/ifpsp060/
- core-$(CONFIG_M68KFPU_EMU)	+= arch/m68k/math-emu/
 diff --git a/arch/m68k/emu/Makefile b/arch/m68k/emu/Makefile
-new file mode 100644
-index 0000000..34cfa34
---- /dev/null
+index a83ef1e..7dc2010 100644
+--- a/arch/m68k/emu/Makefile
 +++ b/arch/m68k/emu/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for Linux arch/m68k/emu source directory
-+#
-+
-+obj-y			+= natfeat.o
-diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
+@@ -6,3 +6,4 @@ obj-y			+= natfeat.o
+ 
+ obj-$(CONFIG_NFBLOCK)	+= nfblock.o
+ obj-$(CONFIG_NFCON)	+= nfcon.o
++obj-$(CONFIG_NFETH)	+= nfeth.o
+diff --git a/arch/m68k/emu/nfeth.c b/arch/m68k/emu/nfeth.c
 new file mode 100644
-index 0000000..987d773
+index 0000000..8b6e201
 --- /dev/null
-+++ b/arch/m68k/emu/natfeat.c
-@@ -0,0 +1,116 @@
++++ b/arch/m68k/emu/nfeth.c
+@@ -0,0 +1,270 @@
 +/*
-+ * natfeat.c - ARAnyM hardware support via Native Features (natfeats)
++ * atari_nfeth.c - ARAnyM ethernet card driver for GNU/Linux
 + *
-+ * Copyright (c) 2005 Petr Stehlik of ARAnyM dev team
++ * Copyright (c) 2005 Milan Jurik, Petr Stehlik of ARAnyM dev team
 + *
-+ * Reworked for Linux by Roman Zippel <zippel@linux-m68k.org>
++ * Based on ARAnyM driver for FreeMiNT written by Standa Opichal
 + *
 + * This software may be used and distributed according to the terms of
 + * the GNU General Public License (GPL), incorporated herein by reference.
 + */
 +
-+#include <linux/types.h>
-+#include <linux/console.h>
-+#include <linux/string.h>
-+#include <linux/kernel.h>
++#define DRV_VERSION	"0.3"
++#define DRV_RELDATE	"10/12/2005"
++
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
++
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
 +#include <linux/module.h>
-+#include <linux/io.h>
-+#include <asm/machdep.h>
 +#include <asm/natfeat.h>
++#include <asm/virtconvert.h>
 +
-+asm("\n"
-+"	.global nf_get_id,nf_call\n"
-+"nf_get_id:\n"
-+"	.short	0x7300\n"
-+"	rts\n"
-+"nf_call:\n"
-+"	.short	0x7301\n"
-+"	rts\n"
-+"1:	moveq.l	#0,%d0\n"
-+"	rts\n"
-+"	.section __ex_table,\"a\"\n"
-+"	.long	nf_get_id,1b\n"
-+"	.long	nf_call,1b\n"
-+"	.previous");
-+EXPORT_SYMBOL_GPL(nf_get_id);
-+EXPORT_SYMBOL_GPL(nf_call);
-+
-+static int stderr_id;
-+
-+static void nf_write(struct console *co, const char *str, unsigned int count)
-+{
-+	char buf[68];
-+
-+	buf[64] = 0;
-+	while (count > 64) {
-+		memcpy(buf, str, 64);
-+		nf_call(stderr_id, buf);
-+		str += 64;
-+		count -= 64;
-+	}
-+	memcpy(buf, str, count);
-+	buf[count] = 0;
-+	nf_call(stderr_id, buf);
-+}
-+
-+void nfprint(const char *fmt, ...)
-+{
-+	static char buf[256];
-+	va_list ap;
-+	int n;
-+
-+	va_start(ap, fmt);
-+	n = vsnprintf(buf, 256, fmt, ap);
-+	nf_call(nf_get_id("NF_STDERR"), buf);
-+	va_end(ap);
-+}
-+
-+static struct console nf_console_driver = {
-+	.name	= "debug",
-+	.write	= nf_write,
-+	.flags	= CON_PRINTBUFFER,
-+	.index	= -1,
++enum {
++	GET_VERSION = 0,/* no parameters, return NFAPI_VERSION in d0 */
++	XIF_INTLEVEL,	/* no parameters, return Interrupt Level in d0 */
++	XIF_IRQ,	/* acknowledge interrupt from host */
++	XIF_START,	/* (ethX), called on 'ifup', start receiver thread */
++	XIF_STOP,	/* (ethX), called on 'ifdown', stop the thread */
++	XIF_READLENGTH,	/* (ethX), return size of network data block to read */
++	XIF_READBLOCK,	/* (ethX, buffer, size), read block of network data */
++	XIF_WRITEBLOCK,	/* (ethX, buffer, size), write block of network data */
++	XIF_GET_MAC,	/* (ethX, buffer, size), return MAC HW addr in buffer */
++	XIF_GET_IPHOST,	/* (ethX, buffer, size), return IP address of host */
++	XIF_GET_IPATARI,/* (ethX, buffer, size), return IP address of atari */
++	XIF_GET_NETMASK	/* (ethX, buffer, size), return IP netmask */
 +};
 +
-+static int __init nf_debug_setup(char *arg)
-+{
-+	if (strcmp(arg, "emu"))
-+		return 0;
++#define MAX_UNIT	8
 +
-+	stderr_id = nf_get_id("NF_STDERR");
-+	if (stderr_id)
-+		register_console(&nf_console_driver);
++/* These identify the driver base version and may not be removed. */
++static const char version[] __devinitdata =
++	KERN_INFO KBUILD_MODNAME ".c:v" DRV_VERSION " " DRV_RELDATE
++	" S.Opichal, M.Jurik, P.Stehlik\n"
++	KERN_INFO " http://aranym.org/\n";
++
++MODULE_AUTHOR("Milan Jurik");
++MODULE_DESCRIPTION("Atari NFeth driver");
++MODULE_LICENSE("GPL");
++/*
++MODULE_PARM(nfeth_debug, "i");
++MODULE_PARM_DESC(nfeth_debug, "nfeth_debug level (1-2)");
++*/
++
++
++static long nfEtherID;
++static int nfEtherIRQ;
++
++struct nfeth_private {
++	int ethX;
++};
++
++static struct net_device *nfeth_dev[MAX_UNIT];
++
++static int nfeth_open(struct net_device *dev)
++{
++	struct nfeth_private *priv = netdev_priv(dev);
++	int res;
++
++	res = nf_call(nfEtherID + XIF_START, priv->ethX);
++	netdev_dbg(dev, "%s: %d\n", __func__, res);
++
++	/* Ready for data */
++	netif_start_queue(dev);
++
 +	return 0;
 +}
 +
-+early_param("debug", nf_debug_setup);
-+
-+static void nf_poweroff(void)
++static int nfeth_stop(struct net_device *dev)
 +{
-+	long id = nf_get_id("NF_SHUTDOWN");
++	struct nfeth_private *priv = netdev_priv(dev);
 +
-+	if (id)
-+		nf_call(id);
++	/* No more data */
++	netif_stop_queue(dev);
++
++	nf_call(nfEtherID + XIF_STOP, priv->ethX);
++
++	return 0;
 +}
 +
-+void nf_init(void)
-+{
-+	unsigned long id, version;
-+	char buf[256];
-+
-+	id = nf_get_id("NF_VERSION");
-+	if (!id)
-+		return;
-+	version = nf_call(id);
-+
-+	id = nf_get_id("NF_NAME");
-+	if (!id)
-+		return;
-+	nf_call(id, buf, 256);
-+	buf[255] = 0;
-+
-+	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
-+		version & 0xffff);
-+
-+	mach_power_off = nf_poweroff;
-+}
-diff --git a/arch/m68k/include/asm/natfeat.h b/arch/m68k/include/asm/natfeat.h
-new file mode 100644
-index 0000000..a3521b8
---- /dev/null
-+++ b/arch/m68k/include/asm/natfeat.h
-@@ -0,0 +1,22 @@
 +/*
-+ * ARAnyM hardware support via Native Features (natfeats)
-+ *
-+ * Copyright (c) 2005 Petr Stehlik of ARAnyM dev team
-+ *
-+ * This software may be used and distributed according to the terms of
-+ * the GNU General Public License (GPL), incorporated herein by reference.
++ * Read a packet out of the adapter and pass it to the upper layers
 + */
++static inline void recv_packet(struct net_device *dev)
++{
++	struct nfeth_private *priv = netdev_priv(dev);
++	unsigned short pktlen;
++	struct sk_buff *skb;
 +
-+#ifndef _NATFEAT_H
-+#define _NATFEAT_H
++	/* read packet length (excluding 32 bit crc) */
++	pktlen = nf_call(nfEtherID + XIF_READLENGTH, priv->ethX);
 +
-+long nf_get_id(const char *feature_name);
-+long nf_call(long id, ...);
++	netdev_dbg(dev, "%s: %u\n", __func__, pktlen);
 +
-+void nf_init(void);
-+void nf_shutdown(void);
++	if (!pktlen) {
++		netdev_dbg(dev, "%s: pktlen == 0\n", __func__);
++		dev->stats.rx_errors++;
++		return;
++	}
 +
-+void nfprint(const char *fmt, ...)
-+	__attribute__ ((format (printf, 1, 2)));
++	skb = dev_alloc_skb(pktlen + 2);
++	if (!skb) {
++		netdev_dbg(dev, "%s: out of mem (buf_alloc failed)\n",
++			   __func__);
++		dev->stats.rx_dropped++;
++		return;
++	}
 +
-+# endif /* _NATFEAT_H */
-diff --git a/arch/m68k/kernel/setup.c b/arch/m68k/kernel/setup.c
-index b3963ab..334d836 100644
---- a/arch/m68k/kernel/setup.c
-+++ b/arch/m68k/kernel/setup.c
-@@ -42,6 +42,7 @@
- #ifdef CONFIG_SUN3X
- #include <asm/dvma.h>
- #endif
-+#include <asm/natfeat.h>
- 
- #if !FPSTATESIZE || !NR_IRQS
- #warning No CPU/platform type selected, your kernel will not work!
-@@ -324,6 +325,10 @@ void __init setup_arch(char **cmdline_p)
- 		panic("No configuration setup");
- 	}
- 
-+#ifdef CONFIG_NATFEAT
-+	nf_init();
-+#endif
++	skb->dev = dev;
++	skb_reserve(skb, 2);		/* 16 Byte align  */
++	skb_put(skb, pktlen);		/* make room */
++	nf_call(nfEtherID + XIF_READBLOCK, priv->ethX, virt_to_phys(skb->data),
++		pktlen);
 +
- 	paging_init();
- 
- #ifndef CONFIG_SUN3
++	skb->protocol = eth_type_trans(skb, dev);
++	netif_rx(skb);
++	dev->last_rx = jiffies;
++	dev->stats.rx_packets++;
++	dev->stats.rx_bytes += pktlen;
++
++	/* and enqueue packet */
++	return;
++}
++
++static irqreturn_t nfeth_interrupt(int irq, void *dev_id)
++{
++	int i, m, mask;
++
++	mask = nf_call(nfEtherID + XIF_IRQ, 0);
++	for (i = 0, m = 1; i < MAX_UNIT; m <<= 1, i++) {
++		if (mask & m && nfeth_dev[i]) {
++			recv_packet(nfeth_dev[i]);
++			nf_call(nfEtherID + XIF_IRQ, m);
++		}
++	}
++	return IRQ_HANDLED;
++}
++
++static int nfeth_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	unsigned int len;
++	char *data, shortpkt[ETH_ZLEN];
++	struct nfeth_private *priv = netdev_priv(dev);
++
++	data = skb->data;
++	len = skb->len;
++	if (len < ETH_ZLEN) {
++		memset(shortpkt, 0, ETH_ZLEN);
++		memcpy(shortpkt, data, len);
++		data = shortpkt;
++		len = ETH_ZLEN;
++	}
++
++	netdev_dbg(dev, "%s: send %u bytes\n", __func__, len);
++	nf_call(nfEtherID + XIF_WRITEBLOCK, priv->ethX, virt_to_phys(data),
++		len);
++
++	dev->stats.tx_packets++;
++	dev->stats.tx_bytes += len;
++
++	dev_kfree_skb(skb);
++	return 0;
++}
++
++static void nfeth_tx_timeout(struct net_device *dev)
++{
++	dev->stats.tx_errors++;
++	netif_wake_queue(dev);
++}
++
++static const struct net_device_ops nfeth_netdev_ops = {
++	.ndo_open		= nfeth_open,
++	.ndo_stop		= nfeth_stop,
++	.ndo_start_xmit		= nfeth_xmit,
++	.ndo_tx_timeout		= nfeth_tx_timeout,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_change_mtu		= eth_change_mtu,
++	.ndo_set_mac_address	= eth_mac_addr,
++};
++
++static struct net_device * __init nfeth_probe(int unit)
++{
++	struct net_device *dev;
++	struct nfeth_private *priv;
++	char mac[ETH_ALEN], host_ip[32], local_ip[32];
++	int err;
++
++	if (!nf_call(nfEtherID + XIF_GET_MAC, unit, mac, ETH_ALEN))
++		return NULL;
++
++	dev = alloc_etherdev(sizeof(struct nfeth_private));
++	if (!dev)
++		return NULL;
++
++	dev->irq = nfEtherIRQ;
++	dev->netdev_ops = &nfeth_netdev_ops;
++
++	dev->flags |= NETIF_F_NO_CSUM;
++	memcpy(dev->dev_addr, mac, ETH_ALEN);
++
++	priv = netdev_priv(dev);
++	priv->ethX = unit;
++
++	err = register_netdev(dev);
++	if (err) {
++		free_netdev(dev);
++		return NULL;
++	}
++
++	nf_call(nfEtherID + XIF_GET_IPHOST, unit,
++		host_ip, sizeof(host_ip));
++	nf_call(nfEtherID + XIF_GET_IPATARI, unit,
++		local_ip, sizeof(local_ip));
++
++	netdev_info(dev, KBUILD_MODNAME " addr:%s (%s) HWaddr:%pM\n", host_ip,
++		    local_ip, mac);
++
++	return dev;
++}
++
++static int __init nfeth_init(void)
++{
++	long ver;
++	int error, i;
++
++	nfEtherID = nf_get_id("ETHERNET");
++	if (!nfEtherID)
++		return -ENODEV;
++
++	ver = nf_call(nfEtherID + GET_VERSION);
++	pr_info("API %lu\n", ver);
++
++	nfEtherIRQ = nf_call(nfEtherID + XIF_INTLEVEL);
++	error = request_irq(nfEtherIRQ, nfeth_interrupt, IRQF_SHARED,
++			    "eth emu", nfeth_interrupt);
++	if (error) {
++		pr_err("request for irq %d failed %d", nfEtherIRQ, error);
++		return error;
++	}
++
++	for (i = 0; i < MAX_UNIT; i++)
++		nfeth_dev[i] = nfeth_probe(i);
++
++	return 0;
++}
++
++static void __exit nfeth_cleanup(void)
++{
++	int i;
++
++	for (i = 0; i < MAX_UNIT; i++) {
++		if (nfeth_dev[i]) {
++			unregister_netdev(nfeth_dev[0]);
++			free_netdev(nfeth_dev[0]);
++		}
++	}
++	free_irq(nfEtherIRQ, nfeth_interrupt);
++}
++
++module_init(nfeth_init);
++module_exit(nfeth_cleanup);
 -- 
 1.7.0.4
 
