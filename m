@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab1BUNu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 08:50:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755782Ab1BUNu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 08:50:56 -0500
-Date: Mon, 21 Feb 2011 14:41:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Andrew Morton <akpm@osdl.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
-        containers@lists.linux-foundation.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
-        dhowells@redhat.com
-Subject: Re: [PATCH 1/4] userns: let clone_uts_ns() handle setting
-	uts->user_ns
-Message-ID: <20110221134129.GA15563@redhat.com>
-References: <20110221040156.GA12580@mail.hallyn.com> <4D623886.3010505@free.fr>
+	id S1756078Ab1BUNv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 08:51:28 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41058 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755659Ab1BUNv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 08:51:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=VsNQVwx92Wgdbmc2L3PwqMk+d9FcbSFdik7M3Mn/dLkV4zvruQRAdWutuaIUnRPl3P
+         WpxRo69zIg0lzy5w0wwlwCjbddgWe3dPCaL+GVpd6y9XEfBkBqBAujtBBm65BxUmWpFz
+         Liyvo9Q/OJvtWyzEE6BSbjpm/qtuW6BrlDNgE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D623886.3010505@free.fr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110221123049.GC23087@legolas.emea.dhcp.ti.com>
+References: <1298283649-24532-1-git-send-email-dacohen@gmail.com>
+	<1298283649-24532-2-git-send-email-dacohen@gmail.com>
+	<AANLkTimwvgLvpvndCqcd_okA2Kk4cu7z4bD3QXTdgWJW@mail.gmail.com>
+	<20110221123049.GC23087@legolas.emea.dhcp.ti.com>
+Date: Mon, 21 Feb 2011 15:51:25 +0200
+Message-ID: <AANLkTinc=ye2qZJ1esSta=xEGz_iEr73eg3qEES2S5P7@mail.gmail.com>
+Subject: Re: [PATCH 1/1] headers: fix circular dependency between
+ linux/sched.h and linux/wait.h
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: balbi@ti.com
+Cc: David Cohen <dacohen@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, linux-omap@vger.kernel.org,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21, Daniel Lezcano wrote:
+On Mon, Feb 21, 2011 at 2:30 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Mon, Feb 21, 2011 at 01:05:51PM +0200, Alexey Dobriyan wrote:
+
+>> Just include <linux/sched.h> in your driver.
+>> This include splitting in small pieces is troublesome as well.
 >
-> On 02/21/2011 05:01 AM, Serge E. Hallyn wrote:
->> To do so we need to pass in the task_struct who'll get the utsname,
->> so we can get its user_ns.
->>
->> -extern struct uts_namespace *copy_utsname(unsigned long flags,
->> -					struct uts_namespace *ns);
->> +extern struct uts_namespace *copy_utsname(struct task_struct *tsk,
->> +					  unsigned long flags,
->> +					  struct uts_namespace *ns);
->
-> Why don't we pass 'user_ns' instead of 'tsk' ? that will look
-> semantically clearer for the caller no ?
-> (example below).
-> ...
->
-> new_nsp->uts_ns = copy_utsname(flags, tsk->nsproxy->uts_ns, task_cred_xxx(tsk, user)->user_ns);
+> so, simply to call wake_up*() we need to know everything there is to
+> know about the scheduler ?
 
-To me tsk looks more readable, I mean
+"know everything" is exaggeration.
+You add sched.h, if someone else haven't added it already via other headers.
 
-	new_nsp->uts_ns = copy_utsname(flags, tsk);
+File is misnamed, BTW. It should be called task-state.h or something.
+And, again, TASK_COMM_LEN should be left alone.
 
-copy_utsname() can find both uts_ns and user_ns looking at task_strcut.
+> I rather have the split done and kill the circular dependency.
 
-But this is cosmetic and up to you and Serge.
-
-
-But. I think it makes sense to pass "tsk" argument to copy_pid_ns() as well.
-This way we can remove some CLONE_PIDNS code in copy_process(), and this
-looks like a nice cleanaup (even if minor) to me.
-
-Oleg.
-
+It's not circular for starters.
