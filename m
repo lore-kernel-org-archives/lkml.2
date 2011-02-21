@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab1BUNLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 08:11:09 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:59979 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755840Ab1BUNLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 08:11:08 -0500
-Date: Mon, 21 Feb 2011 14:10:58 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v2 2/2] memcg: remove charge variable in unmap_and_move
-Message-ID: <20110221131058.GG25382@cmpxchg.org>
-References: <cover.1298214672.git.minchan.kim@gmail.com>
- <c48df61c1186492699f18c4c6b401dcbc0db2b7f.1298214672.git.minchan.kim@gmail.com>
+	id S1755958Ab1BUNRi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 08:17:38 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:47019 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755462Ab1BUNRh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 08:17:37 -0500
+Message-ID: <4D6265D9.8020406@metafoo.de>
+Date: Mon, 21 Feb 2011 14:17:13 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c48df61c1186492699f18c4c6b401dcbc0db2b7f.1298214672.git.minchan.kim@gmail.com>
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        linus.walleij@stericsson.com, tglx@linutronix.de, lars@metafoo.de
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] genirq: Add IRQCHIP_SET_TYPE_MASKED flag
+References: <tip-d4d5e08960844a062da8387ee5f16ca7a33200d0@git.kernel.org>
+In-Reply-To: <tip-d4d5e08960844a062da8387ee5f16ca7a33200d0@git.kernel.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 12:17:18AM +0900, Minchan Kim wrote:
-> memcg charge/uncharge could be handled by mem_cgroup_[prepare/end]
-> migration itself so charge local variable in unmap_and_move lost the role
-> since we introduced 01b1ae63c2.
-> 
-> In addition, the variable name is not good like below.
-> 
-> int unmap_and_move()
-> {
-> 	charge = mem_cgroup_prepare_migration(xxx);
-> 	..
-> 		BUG_ON(charge); <-- BUG if it is charged?
-> 		..
-> uncharge:
-> 		if (!charge)    <-- why do we have to uncharge !charge?
-> 			mem_group_end_migration(xxx);
-> 	..
-> }
-> 
-> So let's remove unnecessary and confusing variable.
-> 
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
-> Suggested-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> ---
->  mm/memcontrol.c |    1 +
->  mm/migrate.c    |    9 +++------
->  2 files changed, 4 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 8a97571..3c91d5c 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2873,6 +2873,7 @@ static inline int mem_cgroup_move_swap_account(swp_entry_t entry,
->  /*
->   * Before starting migration, account PAGE_SIZE to mem_cgroup that the old
->   * page belongs to.
-> + * Note: Should not return -EAGAIN. unmap_and_move depens on it.
->   */
->  int mem_cgroup_prepare_migration(struct page *page,
->  	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask)
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 2abc9c9..37055d0 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -622,7 +622,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  	int *result = NULL;
->  	struct page *newpage = get_new_page(page, private, &result);
->  	int remap_swapcache = 1;
-> -	int charge = 0;
->  	struct mem_cgroup *mem;
->  	struct anon_vma *anon_vma = NULL;
+ > @@ -588,11 +596,13 @@ int __irq_set_trigger(struct irq_desc *desc, unsigned
+int irq,
 >  
-> @@ -637,7 +636,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
->  		if (unlikely(split_huge_page(page)))
->  			goto move_newpage;
->  
-> -	/* prepare cgroup just returns 0 or -ENOMEM */
-> +	/* mem_cgroup_prepage_migration never returns -EAGAIN */
->  	rc = -EAGAIN;
+>  		if (chip != desc->irq_data.chip)
+>  			irq_chip_set_defaults(desc->irq_data.chip);
+> -		return 0;
+> +		ret = 0;
 
-I really don't like this.  Why should we depend on that?
+I've just tested the patch and noticed that a 'break' is missing here.
 
->  	if (!trylock_page(page)) {
-> @@ -678,8 +677,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+
+>  	default:
+>  		pr_err("setting trigger mode %lu for irq %u failed (%pF)\n",
+>  		       flags, irq, chip->irq_set_type);
 >  	}
+> +	if (unmask)
+> +		unmask_irq(desc);
+>  	return ret;
+>  }
 >  
->  	/* charge against new page */
-> -	charge = mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL);
-> -	if (charge == -ENOMEM) {
-> +	if (mem_cgroup_prepare_migration(page, newpage, &mem, GFP_KERNEL)) {
->  		rc = -ENOMEM;
->  		goto unlock;
+> @@ -669,7 +679,7 @@ again:
+>  
+>  #ifdef CONFIG_SMP
+>  /*
+> - * Check whether we need to change the affinity of the interrupt thread.
+> + * Check whether we need to chasnge the affinity of the interrupt thread.
+>   */
+>  static void
+>  irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
 
-Couldn't we make unmap_and_move completely oblivious of the specific
-value and just do
-
-	rc = mem_cgroup_prepare_migration()
-	if (rc)
-		goto unlock;
-
-at this point?  I think mem_cgroup_prepare_migration should be rather
-free to signal pretty much any error and it is up to migrate_pages()
-to handle them correctly.
