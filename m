@@ -1,103 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab1BUCFw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 21:05:52 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:42128 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab1BUCFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 21:05:48 -0500
-From: hayeswang <hayeswang@realtek.com>
-To: "'Alexander Wuerstlein'" <arw@arw.name>
-CC: "'David S. Miller'" <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        "'franois romieu'" <romieu@fr.zoreil.com>
-References: <20110216223438.GZ15516@cip.informatik.uni-erlangen.de> <CDC3F2AD9A574AC4B7DDDB7D64329A79@realtek.com.tw> <20110218173013.GC15516@cip.informatik.uni-erlangen.de>
-Subject: RE: r8169 hangs machine on kernel boot (bisected)
-Date: Mon, 21 Feb 2011 10:05:28 +0800
-X-BOX-Message-Id: p1L25Swo013185
-Message-ID: <0F5FE6E6DCB341F592AF3F0940D99EBB@realtek.com.tw>
+	id S1755496Ab1BUCRc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 21:17:32 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:38120 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752100Ab1BUCRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 21:17:31 -0500
+Date: Sun, 20 Feb 2011 18:17:08 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: linux-next: manual merge of the hwmon-staging tree with the
+ jdelvare-hwmon tree
+Message-ID: <20110221021708.GA7096@ericsson.com>
+References: <20110221121944.57f2ecfb.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcvQ+1zCPJjbfjsKRJmqYJxgsT/gOQAb0eAg
-In-Reply-To: <20110218173013.GC15516@cip.informatik.uni-erlangen.de>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Content-Disposition: inline
+In-Reply-To: <20110221121944.57f2ecfb.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hello,
+On Sun, Feb 20, 2011 at 08:19:44PM -0500, Stephen Rothwell wrote:
+> Hi Guenter,
+> 
+> Today's linux-next merge of the hwmon-staging tree got a conflict in
+> drivers/hwmon/Makefile between commits
+> bb6cd76e2364b13de54314aeadd9f61b75335caa ("Let Kconfig handle lis3lv02d
+> dependencies") and d8f00f1b531b25ac96a39385617ff1718bc8474b ("Move
+> lis3lv02d drivers to drivers/misc") from the jdelvare-hwmon tree and
+> commit 2c37a4a61ef4efaa7a802e0757d783d9b54ad064 ("hwmon: Add support for
+> Lineage Compact Power Line PEM devices") from the hwmon-staging tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-> From: Alexander Wuerstlein [mailto:arw@arw.name] 
-> Sent: Saturday, February 19, 2011 1:30 AM
-> To: Hayeswang
-> Cc: 'David S. Miller'; linux-kernel@vger.kernel.org; 'franois romieu'
-> Subject: Re: r8169 hangs machine on kernel boot (bisected)
-> 
-> Hello,
-> 
-> On 11-02-18 15:01, hayeswang <hayeswang@realtek.com> wrote:
-> > Hello,
-> > > I've just tried to boot a new computer featuring a Realtek r8168 
-> > > onboard (lspci calls it Realtek Semiconductor Co., Ltd. 
-> > > RTL8111/8168B PCI Express Gigabit Ethernet controller [10ec:8168] 
-> > > (rev 04), see [1]) network chip with kernel
-> > > 2.6.38-rc5 and current git. Both hang on boot just after 
-> USB device 
-> > > initialization and just before the kernel usually does DHCP. The 
-> > > previous 2.6.37 didn't hang on boot, but showed strange behaviour 
-> > > (only 10MBit half duplex on autonegotiation, tons of 
-> errors on the 
-> > > switch interface[2]) which is why I tried the newer 
-> kernel in hopes that there would be fixes.
-> > > 
-> > > I bisected the hang-before-dhcp bug down to commit 'r8169: magic.'
-> > > (b646d90053f887c1bc243191e693a9b02d09f2c2, also see [1]). 
-> Since the 
-> > > commit really does its description justice and looks like 
-> some weird 
-> > > hardware magic, I'd like to ask the wizards on how to 
-> proceed with fixing it.
-> > 
-> > I have try the 8168DP and it wouldn't hang. I think I need 
-> more information.
-> > Could you give the information about the motherboard and 
-> the version of BIOS.
-> > Besides, please use the realtek driver, and dump the MAC 
-> information 
-> > by using "ethtool -d eth0". These are helpful to find out 
-> what happens. Thanks.
-> 
-> I'm sorry that it took me so long to answer, I've had some 
-> problems booting the machine today since the PXE-Client 
-> didn't get any DHCP requests through. I'm not sure if its 
-> related, the problem cleared up after I opened up the machine 
-> to get the motherboard data and stuff.
-> 
-> Long story short, new files 'bios', 'hardware' and 'ethtool-d' in
-> http://wwwcip.cs.fau.de/~snalwuer/kernel-r8169
-> Bios revision is the latest available from Fujitsu for that hardware.
-> Hardware numbers and serials are accurate, but the 
-> inscriptions on the chips I suspected to be PHYs were very 
-> hard to read, so expect errors.
-> The 'ethtool-d' is especially curious, since it consists of 
-> only 'FF'-bytes. The ethtool register dump was taken on a 
-> 2.6.37 with r8168 as a module.
+Hi Stephen,
 
-Thanks the information you provide. I would send the information to the related
-people. However, the FF value of all registers is curious. I would try to
-reproduce the issue first.
+yes, it would be great if you can carry the fix if it doesn't make too much trouble.
+I don't see an easy way around it.
 
-> 
-> fujitsu.com also has some (limited, end-user-focused) 
-> hardware documentation if you enter the serial number 
-> 'YL7E003277' on http://ts.fujitsu.com/support/downloads.html
-> 
-> If you need any further information, don't hesitate to ask.
-> 
-
- 
-Best Regards,
-Hayes
-
+Thanks,
+Guenter
