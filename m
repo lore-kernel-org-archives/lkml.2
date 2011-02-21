@@ -1,102 +1,477 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab1BUEhX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:37:23 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37897 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754486Ab1BUEhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:37:20 -0500
-Date: Mon, 21 Feb 2011 05:37:14 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        torvalds@linux-foundation.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH -v3] kbuild: Add extra gcc checks
-Message-ID: <20110221043714.GA31194@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Arnaud Lacombe <lacombar@gmail.com>,
-	Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-	torvalds@linux-foundation.org, x86@kernel.org,
-	linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-	linux-kbuild@vger.kernel.org
-References: <1298219710-9846-1-git-send-email-bp@alien8.de>
- <20110220175709.GA5178@merkur.ravnborg.org>
- <20110220193906.GC6713@liondog.tnic>
- <20110220195222.GA12915@merkur.ravnborg.org>
- <20110221022316.GA18332@liondog.tnic>
- <AANLkTimZhB8Ong=nJ_mjit+VRtb7g+TQhT9_wvojQ0-e@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimZhB8Ong=nJ_mjit+VRtb7g+TQhT9_wvojQ0-e@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755885Ab1BUElY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:41:24 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38494 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab1BUElW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 23:41:22 -0500
+From: pavan_savoy@ti.com
+To: linux-kernel@vger.kernel.org, gregkh@suse.de
+Cc: padovan@profusion.mobi, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH] Bluetooth: btwilink driver
+Date: Sun, 20 Feb 2011 22:41:16 -0600
+Message-Id: <1298263276-17308-1-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 10:26:13PM -0500, Arnaud Lacombe wrote:
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-> > The idea behind this option is targeted at developers who, in the
-> > process of writing their code, want to do the occasional
-> >
-> > make W=1 [target.o]
-> >
-> > and let gcc do more extensive code checking for them. Then, they
-> > could eyeball the output for valid gcc warnings about various
-> > bugs/discrepancies which are not reported during the normal build
-> > process.
-> >
+This is the bluetooth protocol driver for the TI WiLink7 chipsets.
+Texas Instrument's WiLink chipsets combine wireless technologies
+like BT, FM, GPS and WLAN onto a single chip.
 
-[..]
+This Bluetooth driver works on top of the TI_ST shared transport
+line discipline driver which also allows other drivers like
+FM V4L2 and GPS character driver to make use of the same UART interface.
 
-> > +ifeq ("$(origin W)", "command line")
-> > +  KBUILD_ENABLE_EXTRA_GCC_CHECKS = 1
-> > +  export KBUILD_ENABLE_EXTRA_GCC_CHECKS
-> > +endif
-> > +
-> You never check CC is gcc. How can you assert this ?
+Kconfig and Makefile modifications to enable the Bluetooth
+driver for Texas Instrument's WiLink 7 chipset.
 
-Hmm, I somehow knew that the other compilers are going to come into the
-discussion :).
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
+---
+ drivers/bluetooth/Kconfig    |   10 +
+ drivers/bluetooth/Makefile   |    1 +
+ drivers/bluetooth/btwilink.c |  395 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 406 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/bluetooth/btwilink.c
 
-> Moreover, can you certify that all the compiler supported to build
-> Linux do support the set of new warnings ?
-
-Well, as you've probably already read in the commit message, this
-option is for devs only, in case they want to do a build-check whether
-the couple of lines they just added to a .c file trigger new compiler
-warnings. So, no, I cannot certify this and I don't have to - this is
-not meant for production use anyway.
-
-> What about icc ?
-
-I don't know, is anyone using it to build the kernel? Even if so, icc
-might have a completely different set of -W options (totally guessing
-here) so you shouldn't use 'make W=1' with it.
-
-> old gcc?
-
-Yes, cc-option should be used in that case, I'll redo the patch.
-
-> LLVM/clang ?
-
-Can you even build the kernel with it?
-
-But to make sure we're on the realistic side of things. First of all,
-the purpose of this is to quickly get gcc scream out while building your
-changes. Secondly, let's face it, the majority of developers, if not
-all, use gcc, the kernel code is full of gcc-isms so accomodating all
-the compilers to such a quick-and-dirty test option is just plain too
-much. Look at it this way: it is cheaper to upgrade your dev environment
-than add unnecessary and ugly code to kbuild. Even the argument with
-older gcc versions cannot weigh in enough in favor of the cc-option -
-simply upgrade your gcc.
-
-Thanks.
-
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 02deef4..8e0de9a 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -219,4 +219,14 @@ config BT_ATH3K
+ 	  Say Y here to compile support for "Atheros firmware download driver"
+ 	  into the kernel or say M to compile it as module (ath3k).
+ 
++config BT_WILINK
++	tristate "Texas Instruments WiLink7 driver"
++	depends on TI_ST
++	help
++	  This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
++	  combo devices. This makes use of shared transport line discipline
++	  core driver to communicate with the BT core of the combo chip.
++
++	  Say Y here to compile support for Texas Instrument's WiLink7 driver
++	  into the kernel or say M to compile it as module.
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 71bdf13..f4460f4 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
+ obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
+ obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
+ obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
++obj-$(CONFIG_BT_WILINK)		+= btwilink.o
+ 
+ btmrvl-y			:= btmrvl_main.o
+ btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
+diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
+new file mode 100644
+index 0000000..65d27af
+--- /dev/null
++++ b/drivers/bluetooth/btwilink.c
+@@ -0,0 +1,395 @@
++/*
++ *  Texas Instrument's Bluetooth Driver For Shared Transport.
++ *
++ *  Bluetooth Driver acts as interface between HCI core and
++ *  TI Shared Transport Layer.
++ *
++ *  Copyright (C) 2009-2010 Texas Instruments
++ *  Author: Raja Mani <raja_mani@ti.com>
++ *	Pavan Savoy <pavan_savoy@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++#define DEBUG
++#include <linux/platform_device.h>
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++#include <net/bluetooth/hci.h>
++
++#include <linux/ti_wilink_st.h>
++
++/* Bluetooth Driver Version */
++#define VERSION               "1.0"
++#define MAX_BT_CHNL_IDS		3
++
++/* Number of seconds to wait for registration completion
++ * when ST returns PENDING status.
++ */
++#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
++
++/**
++ * struct ti_st - driver operation structure
++ * @hdev: hci device pointer which binds to bt driver
++ * @reg_status: ST registration callback status
++ * @st_write: write function provided by the ST driver
++ *	to be used by the driver during send_frame.
++ * @wait_reg_completion - completion sync between ti_st_open
++ *	and st_reg_completion_cb.
++ */
++struct ti_st {
++	struct hci_dev *hdev;
++	char reg_status;
++	long (*st_write) (struct sk_buff *);
++	struct completion wait_reg_completion;
++};
++
++/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
++static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
++{
++	struct hci_dev *hdev = hst->hdev;
++
++	/* Update HCI stat counters */
++	switch (pkt_type) {
++	case HCI_COMMAND_PKT:
++		hdev->stat.cmd_tx++;
++		break;
++
++	case HCI_ACLDATA_PKT:
++		hdev->stat.acl_tx++;
++		break;
++
++	case HCI_SCODATA_PKT:
++		hdev->stat.sco_tx++;
++		break;
++	}
++}
++
++/* ------- Interfaces to Shared Transport ------ */
++
++/* Called by ST layer to indicate protocol registration completion
++ * status.ti_st_open() function will wait for signal from this
++ * API when st_register() function returns ST_PENDING.
++ */
++static void st_reg_completion_cb(void *priv_data, char data)
++{
++	struct ti_st *lhst = priv_data;
++
++	/* Save registration status for use in ti_st_open() */
++	lhst->reg_status = data;
++	/* complete the wait in ti_st_open() */
++	complete(&lhst->wait_reg_completion);
++}
++
++/* Called by Shared Transport layer when receive data is
++ * available */
++static long st_receive(void *priv_data, struct sk_buff *skb)
++{
++	struct ti_st *lhst = priv_data;
++	int err;
++
++	if (!skb)
++		return -EFAULT;
++
++	if (!lhst) {
++		kfree_skb(skb);
++		return -EFAULT;
++	}
++
++	skb->dev = (void *) lhst->hdev;
++
++	/* Forward skb to HCI core layer */
++	err = hci_recv_frame(skb);
++	if (err < 0) {
++		BT_ERR("Unable to push skb to HCI core(%d)", err);
++		return err;
++	}
++
++	lhst->hdev->stat.byte_rx += skb->len;
++
++	return 0;
++}
++
++/* ------- Interfaces to HCI layer ------ */
++/* protocol structure registered with shared transport */
++static struct st_proto_s ti_st_proto[MAX_BT_CHNL_IDS] = {
++	{
++		.chnl_id = HCI_ACLDATA_PKT, /* ACL */
++		.hdr_len = sizeof(struct hci_acl_hdr),
++		.offset_len_in_hdr = offsetof(struct hci_acl_hdr, dlen),
++		.len_size = 2,	/* sizeof(dlen) in struct hci_acl_hdr */
++		.reserve = 8,
++	},
++	{
++		.chnl_id = HCI_SCODATA_PKT, /* SCO */
++		.hdr_len = sizeof(struct hci_sco_hdr),
++		.offset_len_in_hdr = offsetof(struct hci_sco_hdr, dlen),
++		.len_size = 1, /* sizeof(dlen) in struct hci_sco_hdr */
++		.reserve = 8,
++	},
++	{
++		.chnl_id = HCI_EVENT_PKT, /* HCI Events */
++		.hdr_len = sizeof(struct hci_event_hdr),
++		.offset_len_in_hdr = offsetof(struct hci_event_hdr, plen),
++		.len_size = 1, /* sizeof(plen) in struct hci_event_hdr */
++		.reserve = 8,
++	},
++};
++
++/* Called from HCI core to initialize the device */
++static int ti_st_open(struct hci_dev *hdev)
++{
++	unsigned long timeleft;
++	struct ti_st *hst;
++	int err, i;
++
++	BT_DBG("%s %p", hdev->name, hdev);
++
++	if (test_and_set_bit(HCI_RUNNING, &hdev->flags))
++		return -EBUSY;
++
++	/* provide contexts for callbacks from ST */
++	hst = hdev->driver_data;
++
++	for (i = 0; i < MAX_BT_CHNL_IDS; i++) {
++		ti_st_proto[i].priv_data = hst;
++		ti_st_proto[i].max_frame_size = HCI_MAX_FRAME_SIZE;
++		ti_st_proto[i].recv = st_receive;
++		ti_st_proto[i].reg_complete_cb = st_reg_completion_cb;
++
++		/* Prepare wait-for-completion handler */
++		init_completion(&hst->wait_reg_completion);
++		/* Reset ST registration callback status flag,
++		 * this value will be updated in
++		 * st_reg_completion_cb()
++		 * function whenever it called from ST driver.
++		 */
++		hst->reg_status = -EINPROGRESS;
++
++		err = st_register(&ti_st_proto[i]);
++		if (!err)
++			goto done;
++
++		if (err != -EINPROGRESS) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("st_register failed %d", err);
++			return err;
++		}
++
++		/* ST is busy with either protocol
++		 * registration or firmware download.
++		 */
++		BT_DBG("waiting for registration "
++				"completion signal from ST");
++		timeleft = wait_for_completion_timeout
++			(&hst->wait_reg_completion,
++			 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
++		if (!timeleft) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("Timeout(%d sec),didn't get reg "
++					"completion signal from ST",
++					BT_REGISTER_TIMEOUT / 1000);
++			return -ETIMEDOUT;
++		}
++
++		/* Is ST registration callback
++		 * called with ERROR status? */
++		if (hst->reg_status != 0) {
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			BT_ERR("ST registration completed with invalid "
++					"status %d", hst->reg_status);
++			return -EAGAIN;
++		}
++
++done:
++		hst->st_write = ti_st_proto[i].write;
++		if (!hst->st_write) {
++			BT_ERR("undefined ST write function");
++			clear_bit(HCI_RUNNING, &hdev->flags);
++			for (i = 0; i < MAX_BT_CHNL_IDS; i++) {
++				/* Undo registration with ST */
++				err = st_unregister(&ti_st_proto[i]);
++				if (err)
++					BT_ERR("st_unregister() failed with "
++							"error %d", err);
++				hst->st_write = NULL;
++			}
++			return -EIO;
++		}
++	}
++	return 0;
++}
++
++/* Close device */
++static int ti_st_close(struct hci_dev *hdev)
++{
++	int err, i;
++	struct ti_st *hst = hdev->driver_data;
++
++	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
++		return 0;
++
++	for (i = 0; i < MAX_BT_CHNL_IDS; i++) {
++		err = st_unregister(&ti_st_proto[i]);
++		if (err)
++			BT_ERR("st_unregister(%d) failed with error %d",
++					ti_st_proto[i].chnl_id, err);
++	}
++
++	hst->st_write = NULL;
++
++	return err;
++}
++
++static int ti_st_send_frame(struct sk_buff *skb)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst;
++	long len;
++
++	hdev = (struct hci_dev *)skb->dev;
++
++	if (!test_bit(HCI_RUNNING, &hdev->flags))
++		return -EBUSY;
++
++	hst = hdev->driver_data;
++
++	/* Prepend skb with frame type */
++	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
++
++	BT_DBG("%s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
++			skb->len);
++
++	/* Insert skb to shared transport layer's transmit queue.
++	 * Freeing skb memory is taken care in shared transport layer,
++	 * so don't free skb memory here.
++	 */
++	len = hst->st_write(skb);
++	if (len < 0) {
++		kfree_skb(skb);
++		BT_ERR("ST write failed (%ld)", len);
++		/* Try Again, would only fail if UART has gone bad */
++		return -EAGAIN;
++	}
++
++	/* ST accepted our skb. So, Go ahead and do rest */
++	hdev->stat.byte_tx += len;
++	ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
++
++	return 0;
++}
++
++static void ti_st_destruct(struct hci_dev *hdev)
++{
++	BT_DBG("%s", hdev->name);
++	/* do nothing here, since platform remove
++	 * would free the hdev->driver_data
++	 */
++}
++
++static int bt_ti_probe(struct platform_device *pdev)
++{
++	static struct ti_st *hst;
++	struct hci_dev *hdev;
++	int err;
++
++	hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
++	if (!hst)
++		return -ENOMEM;
++
++	/* Expose "hciX" device to user space */
++	hdev = hci_alloc_dev();
++	if (!hdev) {
++		kfree(hst);
++		return -ENOMEM;
++	}
++
++	BT_DBG("hdev %p", hdev);
++
++	hst->hdev = hdev;
++	hdev->bus = HCI_UART;
++	hdev->driver_data = hst;
++	hdev->open = ti_st_open;
++	hdev->close = ti_st_close;
++	hdev->flush = NULL;
++	hdev->send = ti_st_send_frame;
++	hdev->destruct = ti_st_destruct;
++	hdev->owner = THIS_MODULE;
++
++	err = hci_register_dev(hdev);
++	if (err < 0) {
++		BT_ERR("Can't register HCI device error %d", err);
++		kfree(hst);
++		hci_free_dev(hdev);
++		return err;
++	}
++
++	BT_DBG("HCI device registered (hdev %p)", hdev);
++
++	dev_set_drvdata(&pdev->dev, hst);
++	return err;
++}
++
++static int bt_ti_remove(struct platform_device *pdev)
++{
++	struct hci_dev *hdev;
++	struct ti_st *hst = dev_get_drvdata(&pdev->dev);
++
++	if (!hst)
++		return -EFAULT;
++
++	BT_DBG("%s", hst->hdev->name);
++
++	hdev = hst->hdev;
++	ti_st_close(hdev);
++	hci_unregister_dev(hdev);
++
++	hci_free_dev(hdev);
++	kfree(hst);
++
++	dev_set_drvdata(&pdev->dev, NULL);
++	return 0;
++}
++
++static struct platform_driver btwilink_driver = {
++	.probe = bt_ti_probe,
++	.remove = bt_ti_remove,
++	.driver = {
++		.name = "btwilink",
++		.owner = THIS_MODULE,
++	},
++};
++
++/* ------- Module Init/Exit interfaces ------ */
++static int __init btwilink_init(void)
++{
++	BT_INFO("Bluetooth Driver for TI WiLink - Version %s", VERSION);
++
++	return platform_driver_register(&btwilink_driver);
++}
++
++static void __exit btwilink_exit(void)
++{
++	platform_driver_unregister(&btwilink_driver);
++}
++
++module_init(btwilink_init);
++module_exit(btwilink_exit);
++
++/* ------ Module Info ------ */
++
++MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
++MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
++MODULE_VERSION(VERSION);
++MODULE_LICENSE("GPL");
 -- 
-Regards/Gruss,
-    Boris.
+1.6.3.3
+
