@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab1BUOkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 09:40:55 -0500
-Received: from mailb.microsoft.com ([131.107.115.215]:26870 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754634Ab1BUOkx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 09:40:53 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QJKYYA//++VECAAJKGgP//jS1QgAIW1ACAADc3wIABA5+A//+vqhA=
-Date: Mon, 21 Feb 2011 14:40:52 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048013C67@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
- <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
- <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <alpine.LFD.2.00.1102211200270.2701@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102211200270.2701@localhost6.localdomain6>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755911Ab1BUOlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 09:41:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32913 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755290Ab1BUOls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 09:41:48 -0500
+Date: Mon, 21 Feb 2011 15:41:46 +0100
+From: David Sterba <dsterba@suse.cz>
+To: mchehab@redhat.com
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Sterba <dsterba@suse.cz>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH][RESEND] i7core_edac: fix misuse of logical operation in
+ place of bitop
+Message-ID: <20110221144146.GE5766@ds.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mailer: git-send-email 1.7.3.4.578.g6068a
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: David Sterba <dsterba@suse.cz>
+---
 
-> -----Original Message-----
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Sent: Monday, February 21, 2011 6:03 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
-> Janssen
-> Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
-> 
-> On Mon, 21 Feb 2011, KY Srinivasan wrote:
-> > > > Like most virtualization platforms, Hyper-V also emulates the full PC
-> > > > platform. So, it is possible that the driver of some other emulated
-> > > > devices might register for the IRQ line we might have selected. That
-> > > > is the race this code addresses. For performance reasons, we want
-> > > > both storage and network traffic to go over the PV drivers.
-> > >
-> > > So in case your driver gets the interrupt line first, which the other
-> > > driver wants to acquire as well, then what? Do you want to do that
-> > > probe magic in the other driver as well? What if this is a regular
-> > > device driver which gets its irq number from ACPI/PCI or
-> > > whatever. Then that driver simply wont work as it's interrupt line is
-> > > busy.
-> > >
-> > > > >
-> > > > > I don't know why the previous reviewer wanted to have that
-> > > > > dynamic. That just does not make sense to me.
-> > > >
-> > > > Prior to this patch, we had a hard coded interrupt line for use by
-> > > > this driver. If that line was already in use, the load of this driver
-> > > > would fail. This would be a fatal issue especially for distributions
-> > > > that have embedded these PV drivers as part of their installation
-> > > > media. This patch deals with such collisions in a more graceful way -
-> > > > we would not bail until we have scanned all low interrupt lines.
-> > >
-> > > So you trade breaking the PV stuff against breaking random other
-> > > drivers? That doesn't sound like a brilliant idea.
-> > >
-> > > There are various ways to solve that proper.
-> > >
-> > >  - You can provide the interrupt number from ACPI/PCI or whatever your HV
-> > >    provides as enumeration.
-> > >
-> > >  - Use a fixed vector like XEN does for the event channel
-> > >
-> > >  - Use dynamic allocation in the IOAPIC space like the kernel does for
-> > >    MSI(-X)
-> > >
-> > > Thanks,
-> > >
-> > > 	tglx
-> >
-> > I am not claiming that what I have done here is the best possible solution.
-> > However, I will submit to you that it is better than what we had here
-> > prior to this patch.  I will address this and a  whole lot of other issues
-> > in future patches.
-> 
-> No, it's _NOT_ better in any way. You trade breaking your PV thing
-> against breaking random other drivers. Care to explain why you think
-> that's better ?
+Hi Mauro, this fix has not been applied yet, can you please pick it up?
 
-The root device for the VM is bound to the PV driver on some distributions.
-So, if we cannot load the PV drivers, we do not have a system that boots.
-In general, the system performance without these PV drivers is so poor that
-for all practical purposes, having the PV drivers is almost a requirement
-for having a useable system. While the platform supports configuration of the VM with
-some emulated devices, it is not a recommended configuration (because of
-performance reasons) for Linux virtual machines on the Hyper-V platform.
+Thanks,
+dave
 
-I have spent significantly more time debating this patch than developing this patch
-that I still think improves the current driver. I will leave it to  Greg and other powers 
-that be to decide if this patch will be accepted. Let me know what your verdict is. 
+ drivers/edac/i7core_edac.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Regards,
-
-K. Y 
-
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 362861c..f41a34e 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -731,7 +731,7 @@ static int get_dimm_config(const struct mem_ctl_info *mci)
+ 			debugf1("\t\t%#x\t%#x\t%#x\n",
+ 				(value[j] >> 27) & 0x1,
+ 				(value[j] >> 24) & 0x7,
+-				(value[j] && ((1 << 24) - 1)));
++				(value[j] & ((1 << 24) - 1)));
+ 	}
+ 
+ 	return 0;
+@@ -1670,7 +1670,7 @@ static void i7core_mce_output_error(struct mem_ctl_info *mci,
+ 	char *type, *optype, *err, *msg;
+ 	unsigned long error = m->status & 0x1ff0000l;
+ 	u32 optypenum = (m->status >> 4) & 0x07;
+-	u32 core_err_cnt = (m->status >> 38) && 0x7fff;
++	u32 core_err_cnt = (m->status >> 38) & 0x7fff;
+ 	u32 dimm = (m->misc >> 16) & 0x3;
+ 	u32 channel = (m->misc >> 18) & 0x3;
+ 	u32 syndrome = m->misc >> 32;
+-- 
+1.7.3.4.578.g6068a
 
