@@ -1,44 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab1BUPct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 10:32:49 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63318 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab1BUPcr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 10:32:47 -0500
-Message-ID: <4D628543.5090700@mvista.com>
-Date: Mon, 21 Feb 2011 18:31:15 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	id S1755725Ab1BUPcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 10:32:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755481Ab1BUPcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 10:32:53 -0500
+Date: Mon, 21 Feb 2011 10:32:43 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: jaxboe@fusionio.com, guijianfeng@cn.fujitsu.com, mrubin@google.com,
+        teravest@google.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] Avoid preferential treatment of groups that aren't
+ backlogged
+Message-ID: <20110221153243.GE6428@redhat.com>
+References: <AANLkTi=wM_0cwYDSDcWzA==ZrYxRhumSBw3h-pU-On0Q@mail.gmail.com>
+ <20110218221916.18235.88420.stgit@neat.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>, Jeff Garzik <jgarzik@pobox.com>
-CC: kernel-janitors@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Rupjyoti Sarmah <rsarmah@appliedmicro.com>,
-        Prodyut Hazarika <phazarika@appliedmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ata: sata_dwc_460ex: fix error path
-References: <1284317830-5022-1-git-send-email-segooon@gmail.com> <4D5C1326.2010101@ru.mvista.com>
-In-Reply-To: <4D5C1326.2010101@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110218221916.18235.88420.stgit@neat.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Feb 18, 2011 at 02:19:16PM -0800, Chad Talbott wrote:
+> Problem: If a group isn't backlogged, we remove it from the service
+> tree. When it becomes active again, it gets either the minimum vtime
+> of the tree or gets put at the "back of the line." That is true even
+> when the group was idle for a very small time, and it consumed some IO
+> time right before it became idle.  If group has very small weight, it
+> can end up using more disk time than its fair share. Conversely, if it
+> has a very large weight, being put at the back of the vtime line is a
+> large penalty which prevents it consuming its share.
+> 
+> Solution: We solve the problem by assigning the group its old vtime if
+> it has not been idle long enough. Otherise we assign it the service
+> tree's min vtime.
+> 
+> Complications: When an entire service tree becomes completely idle, we
+> lose the vtime state. All the old vtime values are not relevant any
+> more. For example, consider the case when the service tree is idle and
+> a brand new group sends IO. That group would have an old vtime value
+> of zero, but the service tree's vtime would become closer to zero. In
+> such a case, it would be unfair for the older groups to get a much
+> higher old vtime stored in them.
+> 
+> We solve that issue by keeping a generation number that counts the
+> number of instances when the service tree becomes completely
+> empty. The generation number is stored in each group too. If a group
+> becomes backlogged after a service tree has been empty, we compare its
+> stored generation number with the current service tree generation
+> number, and discard the old vtime if the group generation number is
+> stale.
+> 
+> The preemption specific code is taken care of automatically because we
+> allow preemption checks after inserting a group back into the service
+> tree and assigning it an appropriate vtime.
+> 
+> Signed-off-by: Chad Talbott <ctalbott@google.com>
 
-I wrote:
+Looks good to me.
 
->> Free all allocated resources on error path.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
->> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
->> ---
->>  I cannot compile this driver at all, so it is not tested.
+Vivek
 
->    I can at least compile-test the patch...
-
-    No new errors/warnings are added by the patch.
-
-WBR, Sergei
+> ---
+>  block/cfq-iosched.c |   27 ++++++++++++++-------------
+>  1 files changed, 14 insertions(+), 13 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 501ffdf..8a1b82f 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -178,6 +178,7 @@ struct cfq_group {
+>  
+>  	/* group service_tree key */
+>  	u64 vdisktime;
+> +	u64 generation_num;
+>  	unsigned int weight;
+>  
+>  	/* number of cfqq currently on this group */
+> @@ -300,6 +301,9 @@ struct cfq_data {
+>  	/* List of cfq groups being managed on this device*/
+>  	struct hlist_head cfqg_list;
+>  	struct rcu_head rcu;
+> +
+> +	/* Generation number, counts service tree empty events */
+> +	u64 active_generation;
+>  };
+>  
+>  static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
+> @@ -866,25 +870,19 @@ static void
+>  cfq_group_service_tree_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  {
+>  	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+> -	struct cfq_group *__cfqg;
+> -	struct rb_node *n;
+>  
+>  	cfqg->nr_cfqq++;
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		return;
+>  
+> -	/*
+> -	 * Currently put the group at the end. Later implement something
+> -	 * so that groups get lesser vtime based on their weights, so that
+> -	 * if group does not loose all if it was not continously backlogged.
+> -	 */
+> -	n = rb_last(&st->rb);
+> -	if (n) {
+> -		__cfqg = rb_entry_cfqg(n);
+> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+> -	} else
+> +	if (cfqd->active_generation > cfqg->generation_num)
+>  		cfqg->vdisktime = st->min_vdisktime;
+> -
+> +	else
+> +		/* We assume that vdisktime was not modified when the task
+> +		   was off the service tree.
+> +		 */
+> +		cfqg->vdisktime = max_vdisktime(st->min_vdisktime,
+> +						cfqg->vdisktime);
+>  	__cfq_group_service_tree_add(st, cfqg);
+>  	st->total_weight += cfqg->weight;
+>  }
+> @@ -906,6 +904,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		cfq_rb_erase(&cfqg->rb_node, st);
+>  	cfqg->saved_workload_slice = 0;
+> +	cfqg->generation_num = cfqd->active_generation;
+> +	if (RB_EMPTY_ROOT(&st->rb))
+> +		cfqd->active_generation++;
+>  	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+>  }
+>  
