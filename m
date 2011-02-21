@@ -1,340 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab1BUWfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:35:52 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:45244 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860Ab1BUWfu convert rfc822-to-8bit (ORCPT
+	id S1752517Ab1BUWh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:37:57 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55101 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab1BUWhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 17:35:50 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 2.6.38-rc5-git6: Reported regressions 2.6.36 -> 2.6.37
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
+	Mon, 21 Feb 2011 17:37:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=ETevTOJLRkCbwKDn/wLm57yY3BW78vJ4B77JhAAygh5icQ3t2DtQ2iBX9r67F/O85x
+         B0mXTc8SYgvNZae/QJKql49CmLWPke758X5qXY9QWREwhGC6vThhrM++JS9/nrB+162v
+         rm88ouuwkKESDVPBcZJ0jRHtsXghn6ZBett0A=
+Date: Mon, 21 Feb 2011 22:37:43 +0000
+From: Frederick van der Wyck <fvanderwyck@gmail.com>
+To: mjg59@srcf.ucam.org
+Cc: gregkh@suse.de, dmitry.torokhov@gmail.com,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Platform: Samsung Q10 backlight driver
+Message-ID: <20110221223743.GA8548@lat.lan>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
-Date: Mon, 21 Feb 2011 23:29:26 +0100 (CET)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[NOTE: Can maintainers _please_ merge patches listed below, especially those that
- have been known for weeks?]
-
-This message contains a list of some post-2.6.36 regressions introduced before
-2.6.37, for which there are no fixes in the mainline known to the tracking team.
-If any of them have been fixed already, please let us know.
-
-If you know of any other unresolved post-2.6.36 regressions, please let us know
-either and we'll add them to the list.  Also, please let us know if any
-of the entries below are invalid.
-
-Each entry from the list will be sent additionally in an automatic reply to
-this message with CCs to the people involved in reporting and handling the
-issue.
-
-
-Listed regressions statistics:
-
-  Date          Total  Pending  Unresolved
-  ----------------------------------------
-  2011-02-21      128       35          26
-  2011-02-13      126       36          30
-  2011-02-03      118       36          31
-  2010-12-30       85       32          26
-  2010-12-19       73       28          24
-  2010-12-03       55       25          19
-  2010-11-19       39       29          25
-
-
-Unresolved regressions
-----------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29172
-Subject		: releasing loop on top of other loop leads to deadlock
-Submitter	: Petr Uzel <petr.uzel@centrum.cz>
-Date		: 2011-02-15 10:00 (7 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28812
-Subject		: DVI attached monitor is turned off while booting linux 2.6.37 and higher
-Submitter	: Markus Heinz <markus.heinz@uni-dortmund.de>
-Date		: 2011-02-10 19:33 (12 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28772
-Subject		: oops in nfs_revalidate_mapping
-Submitter	: Daniel Poelzleithner <bugzilla.kernel.org@poelzi.org>
-Date		: 2011-02-10 13:59 (12 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28662
-Subject		: i915 in kernel 2.6.38-rc4, high number of wakeups
-Submitter	: Kan-Ru Chen <kanru@kanru.info>
-Date		: 2011-02-09 07:06 (13 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28622
-Subject		: radeon video lockup
-Submitter	: Daniel Poelzleithner <bugzilla.kernel.org@poelzi.org>
-Date		: 2011-02-08 17:48 (14 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28612
-Subject		: regular soft lockup
-Submitter	: Alexandre Demers <alexandre.f.demers@gmail.com>
-Date		: 2011-02-08 16:39 (14 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28582
-Subject		: whole system hang when start X
-Submitter	: Gu Rui <chaos.proton@gmail.com>
-Date		: 2011-02-08 08:33 (14 days old)
-First-Bad-Commit: http://git.kernel.org/linus/d5bb081b027b520f9e59b4fb8faea83a136ec15e
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28332
-Subject		: [RV620] Can not re-enable LVDS after using HDMI only
-Submitter	: Rafał Miłecki <zajec5@gmail.com>
-Date		: 2011-02-05 22:42 (17 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27892
-Subject		: SNB: GPU hang with Slip xscreensaver
-Submitter	: Takashi Iwai <tiwai@suse.de>
-Date		: 2011-01-31 12:06 (22 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27842
-Subject		: [regression?] hang with 2.6.37 on a BTRFS test machine
-Submitter	: Martin Steigerwald <Martin@lichtvoll.de>
-Date		: 2011-01-23 12:06 (30 days old)
-Message-ID	: <<201101231306.23069.Martin@lichtvoll.de>>
-References	: http://marc.info/?l=linux-kernel&m=129578445613283&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27642
-Subject		: 2.6.37 says WARNING: at arch/x86/kernel/apic/apic.c:1287 setup_local_APIC+0x18f/0x263()
-Submitter	: Rob Landley <rlandley@parallels.com>
-Date		: 2011-01-18 13:11 (35 days old)
-Message-ID	: <4D359188.3040408@parallels.com>
-References	: http://marc.info/?l=linux-kernel&m=129535632319892&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27402
-Subject		: Atheros adapter no longer loads firmware
-Submitter	: Michal Vaner <vorner@ucw.cz>
-Date		: 2011-01-23 15:29 (30 days old)
-First-Bad-Commit: http://git.kernel.org/linus/be93112accb42c5586a459683d71975cc70673ca
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27152
-Subject		: VGA output broken at cold boot
-Submitter	: Takashi Iwai <tiwai@suse.de>
-Date		: 2011-01-20 13:26 (33 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27132
-Subject		: flush-btrfs gets into an infinite loop
-Submitter	: Artem Anisimov <aanisimov@inbox.ru>
-Date		: 2011-01-20 11:51 (33 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26802
-Subject		: b43: Suspend failed
-Submitter	: Patrick Matthäi <patrick@linux-dev.org>
-Date		: 2011-01-15 18:56 (38 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26612
-Subject		: BUG in fs/inode.c:429
-Submitter	: Florian Kriener <florian@kriener.org>
-Date		: 2011-01-06 16:35 (47 days old)
-Message-ID	: <201101061735.40060.florian@kriener.org>
-References	: http://marc.info/?l=linux-kernel&m=129433235223735&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26582
-Subject		: NULL pointer dereference on pipe creation
-Submitter	: Ferenc Wágner <wferi@niif.hu>
-Date		: 2011-01-12 13:30 (41 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26112
-Subject		: [LogFS] [2.6.37-rc8+] Kernel BUG at logfs/readwrite.c:297!
-Submitter	: Prasad Joshi <prasadjoshi124@gmail.com>
-Date		: 2011-01-02 21:22 (51 days old)
-Message-ID	: <AANLkTinpoM8FuG8UkF88xs_V37dz_wgE8t-s0JPzaS-w@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=129400335910652&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26102
-Subject		: [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
-Submitter	: Pawel Sikora <pluto@agmk.net>
-Date		: 2010-12-30 15:08 (54 days old)
-Message-ID	: <201012301608.40859.pluto@agmk.net>
-References	: http://marc.info/?l=linux-kernel&m=129372388925679&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25832
-Subject		: kernel crashes upon resume if usb devices are removed when suspended
-Submitter	: rocko <rockorequin@hotmail.com>
-Date		: 2010-12-29 11:47 (55 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25732
-Subject		: i915 turns picture green when display switched off-on
-Submitter	: Tõnu Raitviir <jussuf@linux.ee>
-Date		: 2010-12-27 22:14 (57 days old)
-First-Bad-Commit: http://git.kernel.org/linus/3c17fe4b8f40a112a85758a9ab2aebf772bdd647
-Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24882
-Subject		: PM/Hibernate: Memory corruption patch introduces regression (2.6.36.2)
-Submitter	:  <akwatts@ymail.com>
-Date		: 2010-12-14 04:00 (70 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24822
-Subject		: Embedded DisplayPort is detected wrongly on HP ProBook 5320m
-Submitter	: Takashi Iwai <tiwai@suse.de>
-Date		: 2010-12-13 11:09 (71 days old)
-Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22942
-Subject		: [2.6.37-rc1, OOM] virtblk: OOM in do_virtblk_request()
-Submitter	: Dave Chinner <david@fromorbit.com>
-Date		: 2010-11-05 1:30 (109 days old)
-Message-ID	: <20101105013003.GE13830@dastard>
-References	: http://marc.info/?l=linux-kernel&m=128892062917641&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22642
-Subject		: 2.6.37-rc1: Disk takes 10 seconds to resume - MacBook2,1
-Submitter	: Tobias <devnull@plzk.org>
-Date		: 2010-11-10 19:33 (104 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22542
-Subject		: [2.6.37-rc1] drm:i195 errors
-Submitter	: Paul Rolland <rol@witbe.net>
-Date		: 2010-11-02 14:58 (112 days old)
-Message-ID	: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
-References	: http://marc.info/?l=linux-kernel&m=128870991628970&w=2
-
-
-Regressions with patches
-------------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27532
-Subject		: ath9k prevents CPU from entering lower C-states
-Submitter	: Thomas Bächler <thomas@archlinux.org>
-Date		: 2011-01-24 22:43 (29 days old)
-Handled-By	: Mohammed Shafi Shajakhan <mshajakhan@atheros.com>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=47952
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27202
-Subject		: Remote control of saa7134-based tv card "ASUSTeK P7131 Hybrid" stopped working in 2.6.37
-Submitter	:  <acaizzo@gmail.com>
-Date		: 2011-01-20 17:23 (33 days old)
-First-Bad-Commit: http://git.kernel.org/linus/4651918a4afdd49bdea21d2f919b189ef17a6399
-Handled-By	: Mauro Carvalho Chehab <mchehab@redhat.com>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=44532
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25922
-Subject		: IdeaPad Y530 brightness keys not functioning
-Submitter	: Tomasz <tm.temp@gmx.com>
-Date		: 2010-12-30 12:48 (54 days old)
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=48542
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25822
-Subject		: [BUG] kernel BUG at mm/truncate.c:479! on 2.6.37-rc8
-Submitter	: Gurudas Pai <gurudas.pai@oracle.com>
-Date		: 2010-12-29 6:58 (55 days old)
-Message-ID	: <4D1AD935.1020504@oracle.com>
-References	: http://marc.info/?l=linux-kernel&m=129360511222037&w=2
-Handled-By	: Miklos Szeredi <mszeredi@suse.cz>
-Patch		: https://lkml.org/lkml/2010/12/29/131
-		  https://lkml.org/lkml/2011/1/20/163
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25402
-Subject		: kernel (2.6.37-8-generic_amd64) panic on boot (with message "map_single: bounce buffer is not DMA'ble) - possible regression !!!
-Submitter	: carlos <carlos.palma@ono.com>
-Date		: 2010-12-21 19:58 (63 days old)
-Handled-By	: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Patch		: https://patchwork.kernel.org/patch/522971/
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24982
-Subject		: Inconsistent DPMS handling with 2.6.37 DRM
-Submitter	: Takashi Iwai <tiwai@suse.de>
-Date		: 2010-12-16 16:32 (68 days old)
-Handled-By	: Takashi Iwai <tiwai@suse.de>
-		  Keith Packard <keithp@keithp.com>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=40392
-		  https://patchwork.kernel.org/patch/530921/
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24582
-Subject		: Kernel Oops at tty_buffer_request_room when using pppd program (2.6.37-rc4)
-Submitter	: baoyb <baoyb@avit.org.cn>
-Date		: 2010-12-08 13:55 (76 days old)
-Message-ID	: <EF6DDE218DB34702B1FA84D6CD7EA771@baoyb>
-References	: http://marc.info/?l=linux-kernel&m=129181763525738&w=2
-Handled-By	: Jiri Slaby <jslaby@suse.cz>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=47872
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23472
-Subject		: 2.6.37-rc2 vs. 2.6.36 laptop backlight changes?
-Submitter	: Patrick Schaaf <netdev@bof.de>
-Date		: 2010-11-17 13:41 (97 days old)
-Message-ID	: <1290001262.5727.2.camel@lat1>
-References	: http://marc.info/?l=linux-kernel&m=129000127920912&w=2
-Handled-By	: Indan Zupancic <indan@nul.nu>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=47302
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22882
-Subject		: (2.6.37-rc1) amd64-agp module crashed on second load
-Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-Date		: 2010-11-05 0:13 (109 days old)
-Message-ID	: <20101104171333.fea1f498.randy.dunlap@oracle.com>
-References	: http://marc.info/?l=linux-kernel&m=128891605213447&w=2
-Handled-By	: Florian Mickler <florian@mickler.org>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=46682
-
-
-For details, please visit the bug entries and follow the links given in
-references.
-
-As you can see, there is a Bugzilla entry for each of the listed regressions.
-There also is a Bugzilla entry used for tracking the regressions introduced
-between 2.6.36 and 2.6.37, unresolved as well as resolved, at:
-
-http://bugzilla.kernel.org/show_bug.cgi?id=21782
-
-Please let the tracking team know if there are any Bugzilla entries that
-should be added to the list in there.
-
-Thanks!
-
+This adds backlight control on the Samsung Q10 laptop, which does not support 
+the SABI interface. Also tested successfully on the Dell Latitude X200.
+
+Signed-off-by: Frederick van der Wyck <fvanderwyck@gmail.com>
+---
+ drivers/platform/x86/Kconfig       |    7 ++
+ drivers/platform/x86/Makefile      |    1 +
+ drivers/platform/x86/samsung-q10.c |  185 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 193 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/platform/x86/samsung-q10.c
+
+I've made all the changes suggested by Greg and Dmitry in response to v1. 
+Main changes:
+(1) use i8042_command instead of port IO;
+(2) DMI detect to auto-load and to restrict to supported hardware.
+Description of v1:
+The Samsung Q10 is an old model, which does not support the SABI interface, so
+the samsung-laptop driver does not work. Backlight control is not exposed via
+ACPI either. This driver works in the same way as the SMI handler triggered by 
+pressing the brightness function keys.
+
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index faec777..c390727 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -639,4 +639,11 @@ config XO1_RFKILL
+ 	  Support for enabling/disabling the WLAN interface on the OLPC XO-1
+ 	  laptop.
+ 
++config SAMSUNG_Q10
++	tristate "Samsung Q10 Extras"
++	select BACKLIGHT_CLASS_DEVICE
++	---help---
++          This driver provides support for backlight control on Samsung Q10
++          and some other laptops, including Dell Latitude X200.
++
+ endif # X86_PLATFORM_DEVICES
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 9950ccc..2cd3e52 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -33,3 +33,4 @@ obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
+ obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
+ obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
+ obj-$(CONFIG_IBM_RTL)		+= ibm_rtl.o
++obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
+new file mode 100644
+index 0000000..c2b6647
+--- /dev/null
++++ b/drivers/platform/x86/samsung-q10.c
+@@ -0,0 +1,185 @@
++/*
++ *  Driver for Samsung Q10: controls the backlight
++ *
++ *  Copyright (c) 2011 Frederick van der Wyck <fvanderwyck@gmail.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/backlight.h>
++#include <linux/i8042.h>
++#include <linux/dmi.h>
++
++#define SAMSUNGQ10_BL_MAX_INTENSITY      255
++#define SAMSUNGQ10_BL_DEFAULT_INTENSITY  185
++
++#define SAMSUNGQ10_BL_8042_CMD           0xbe
++#define SAMSUNGQ10_BL_8042_DATA          { 0x89, 0x91 }
++
++static bool samsungq10_suspended;
++static int samsungq10_bl_brightness;
++
++static int force;
++module_param(force, bool, 0);
++MODULE_PARM_DESC(force,
++		"Disable the DMI check and force the driver to be loaded");
++
++static int samsungq10_bl_set_intensity(struct backlight_device *bd)
++{
++
++	int brightness = bd->props.brightness;
++	unsigned char c[3] = SAMSUNGQ10_BL_8042_DATA;
++
++	if (!samsungq10_suspended) {
++		c[2] = (unsigned char)brightness;
++		i8042_lock_chip();
++		i8042_command(c, (0x30 << 8) | SAMSUNGQ10_BL_8042_CMD);
++		i8042_unlock_chip();
++		samsungq10_bl_brightness = brightness;
++	}
++	return 0;
++}
++
++static int samsungq10_bl_get_intensity(struct backlight_device *bd)
++{
++	return samsungq10_bl_brightness;
++}
++
++static const struct backlight_ops samsungq10_bl_ops = {
++	.get_brightness = samsungq10_bl_get_intensity,
++	.update_status	= samsungq10_bl_set_intensity,
++};
++
++#ifdef CONFIG_PM
++static int samsungq10_suspend(struct device *dev)
++{
++	samsungq10_suspended = true;
++	return 0;
++}
++
++static int samsungq10_resume(struct device *dev)
++{
++
++	struct backlight_device *bd = dev_get_drvdata(dev);
++
++	samsungq10_suspended = false;
++	samsungq10_bl_set_intensity(bd);
++	return 0;
++}
++#else
++#define samsungq10_suspend NULL
++#define samsungq10_resume  NULL
++#endif
++
++static const struct dev_pm_ops samsungq10_pm_ops = {
++	.suspend	= samsungq10_suspend,
++	.resume		= samsungq10_resume,
++};
++
++static int __devinit samsungq10_probe(struct platform_device *pdev)
++{
++
++	struct backlight_properties props;
++	struct backlight_device *bd;
++
++	memset(&props, 0, sizeof(struct backlight_properties));
++	props.max_brightness = SAMSUNGQ10_BL_MAX_INTENSITY;
++	bd = backlight_device_register("samsung", &pdev->dev, NULL,
++				       &samsungq10_bl_ops, &props);
++	if (IS_ERR(bd))
++		return PTR_ERR(bd);
++
++	platform_set_drvdata(pdev, bd);
++
++	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
++	samsungq10_bl_set_intensity(bd);
++
++	return 0;
++}
++
++static int __devexit samsungq10_remove(struct platform_device *pdev)
++{
++
++	struct backlight_device *bd = platform_get_drvdata(pdev);
++
++	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
++	samsungq10_bl_set_intensity(bd);
++
++	backlight_device_unregister(bd);
++
++	return 0;
++}
++
++static struct platform_driver samsungq10_driver = {
++	.driver		= {
++		.name	= "samsung",
++		.owner	= THIS_MODULE,
++		.pm	= &samsungq10_pm_ops,
++	},
++	.probe		= samsungq10_probe,
++	.remove		= __devexit_p(samsungq10_remove),
++};
++
++static struct platform_device *samsungq10_device;
++
++static int __init dmi_check_callback(const struct dmi_system_id *id)
++{
++	printk(KERN_INFO KBUILD_MODNAME ": found model '%s'\n", id->ident);
++	return 0;
++}
++
++static struct dmi_system_id __initdata samsungq10_dmi_table[] = {
++	{
++		.ident = "Samsung Q10",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Samsung"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "SQ10"),
++		},
++		.callback = dmi_check_callback,
++	},
++	{
++		.ident = "Dell Latitude X200",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X200"),
++		},
++		.callback = dmi_check_callback,
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(dmi, samsungq10_dmi_table);
++
++static int __init samsungq10_init(void)
++{
++	if (!force && !dmi_check_system(samsungq10_dmi_table))
++		return -ENODEV;
++
++	samsungq10_device = platform_create_bundle(&samsungq10_driver,
++						   samsungq10_probe,
++						   NULL, 0, NULL, 0);
++
++	if (IS_ERR(samsungq10_device))
++		return PTR_ERR(samsungq10_device);
++
++	return 0;
++}
++
++static void __exit samsungq10_exit(void)
++{
++	platform_device_unregister(samsungq10_device);
++	platform_driver_unregister(&samsungq10_driver);
++}
++
++module_init(samsungq10_init);
++module_exit(samsungq10_exit);
++
++MODULE_AUTHOR("Frederick van der Wyck <fvanderwyck@gmail.com>");
++MODULE_DESCRIPTION("Samsung Q10 Driver");
++MODULE_LICENSE("GPL");
+-- 
