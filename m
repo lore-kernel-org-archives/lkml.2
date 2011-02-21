@@ -1,108 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab1BUAEc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 19:04:32 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:33215 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753864Ab1BUAEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 19:04:31 -0500
-Message-ID: <4D61AC33.3070409@bluewatersys.com>
-Date: Mon, 21 Feb 2011 13:05:07 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1755406Ab1BUARi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 19:17:38 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:48291
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753864Ab1BUARh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 19:17:37 -0500
+Date: Mon, 21 Feb 2011 00:17:43 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, xemul@openvz.org
+Subject: Re: [PATCH 1/1][3rd resend] sys_unshare: remove the dead
+ CLONE_THREAD/SIGHAND/VM code
+Message-ID: <20110221001743.GA3627@mail.hallyn.com>
+References: <1297788824-20534-1-git-send-email-daniel.lezcano@free.fr>
+ <1297788824-20534-2-git-send-email-daniel.lezcano@free.fr>
+ <20110215190118.GA16707@redhat.com>
+ <20110215191521.GB16707@redhat.com>
+ <20110215191711.GC16707@redhat.com>
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux kernel <linux-kernel@vger.kernel.org>, hvr@gnu.org
-Subject: Re: [REPOST PATCH] rtc-isl1208: Add alarm support
-References: <4D6183E6.1030706@bluewatersys.com> <alpine.LNX.2.00.1102210043310.20470@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1102210043310.20470@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110215191711.GC16707@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2011 12:52 PM, Jesper Juhl wrote:
-> On Mon, 21 Feb 2011, Ryan Mallon wrote:
+Quoting Oleg Nesterov (oleg@redhat.com):
+> Cleanup: kill the dead code which does nothing but complicates the code
+> and confuses the reader.
 > 
->> Add alarm/wakeup support to rtc isl1208 driver
->>
+> sys_unshare(CLONE_THREAD/SIGHAND/VM) is not really implemented, and I doubt
+> very much it will ever work. At least, nobody even tried since the original
+> "unshare system call -v5: system call handler function" commit
+> 99d1419d96d7df9cfa56bc977810be831bd5ef64 was applied more than 4 years ago.
 > 
-> A few (very minor) comments below.
-
-Hi Jepser. Thanks for the review. See answers below.
-
-I'm unsure where this patch is meant to be applied. There is a list and
-a maintainer (but no git tree?) for the rtc subsystem, but there doesn't
-seem to be much activity from either lately?
-
+> And the code is not consistent. unshare_thread() always fails unconditionally,
+> while unshare_sighand() and unshare_vm() pretend to work if there is nothing
+> to unshare.
 > 
+> Remove unshare_thread(), unshare_sighand(), unshare_vm() helpers and related
+> variables and add a simple CLONE_THREAD | CLONE_SIGHAND| CLONE_VM check into
+> check_unshare_flags().
 > 
->> Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
->> ---
->>
->> diff --git a/drivers/rtc/rtc-isl1208.c b/drivers/rtc/rtc-isl1208.c
->>  static int
->> +isl1208_rtc_toggle_alarm(struct i2c_client *client, int enable)
->> +{
->> +	int icr;
->> +
->> +	icr = i2c_smbus_read_byte_data(client, ISL1208_REG_INT);
+> Also, move the "CLONE_NEWNS needs CLONE_FS" check from check_unshare_flags()
+> to sys_unshare(). This looks more consistent and matches the similar
+> do_sysvsem check in sys_unshare().
 > 
-> int icr = i2c_smbus_read_byte_data(client, ISL1208_REG_INT);
+> Note: with or without this patch "atomic_read(mm->mm_users) > 1" can give
+> a false positive due to get_task_mm().
 > 
-> ??
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Acked-by: Roland McGrath <roland@redhat.com>
+
+Yes, please.
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+
+thanks,
+-serge
+
+
+> ---
 > 
-> No functional change, but cuts down on source size.
-
-Sure, I can change this.
-
->> +static int
->>  isl1208_rtc_proc(struct device *dev, struct seq_file *seq)
->>  {
->>  	struct i2c_client *const client = to_i2c_client(dev);
->> @@ -288,7 +315,7 @@ isl1208_i2c_read_alarm(struct i2c_client *client, struct rtc_wkalrm *alarm)
->>  {
->>  	struct rtc_time *const tm = &alarm->time;
->>  	u8 regs[ISL1208_ALARM_SECTION_LEN] = { 0, };
->> -	int sr;
->> +	int icr, yr, sr;
->>  
->>  	sr = isl1208_i2c_get_sr(client);
+>  kernel/fork.c |  123 +++++++++++-----------------------------------------------
+>  1 file changed, 25 insertions(+), 98 deletions(-)
 > 
-> Maybe it's just me, but I'd have written this as
+> --- 2.6.37/kernel/fork.c~unshare-killcrap	2010-11-05 18:03:28.000000000 +0100
+> +++ 2.6.37/kernel/fork.c	2010-11-05 18:09:52.000000000 +0100
+> @@ -1522,38 +1522,24 @@ void __init proc_caches_init(void)
+>  }
+>  
+>  /*
+> - * Check constraints on flags passed to the unshare system call and
+> - * force unsharing of additional process context as appropriate.
+> + * Check constraints on flags passed to the unshare system call.
+>   */
+> -static void check_unshare_flags(unsigned long *flags_ptr)
+> +static int check_unshare_flags(unsigned long unshare_flags)
+>  {
+> +	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
+> +				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
+> +				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
+> +		return -EINVAL;
+>  	/*
+> -	 * If unsharing a thread from a thread group, must also
+> -	 * unshare vm.
+> -	 */
+> -	if (*flags_ptr & CLONE_THREAD)
+> -		*flags_ptr |= CLONE_VM;
+> -
+> -	/*
+> -	 * If unsharing vm, must also unshare signal handlers.
+> -	 */
+> -	if (*flags_ptr & CLONE_VM)
+> -		*flags_ptr |= CLONE_SIGHAND;
+> -
+> -	/*
+> -	 * If unsharing namespace, must also unshare filesystem information.
+> +	 * Not implemented, but pretend it works if there is nothing to
+> +	 * unshare. Note that unsharing CLONE_THREAD or CLONE_SIGHAND
+> +	 * needs to unshare vm.
+>  	 */
+> -	if (*flags_ptr & CLONE_NEWNS)
+> -		*flags_ptr |= CLONE_FS;
+> -}
+> -
+> -/*
+> - * Unsharing of tasks created with CLONE_THREAD is not supported yet
+> - */
+> -static int unshare_thread(unsigned long unshare_flags)
+> -{
+> -	if (unshare_flags & CLONE_THREAD)
+> -		return -EINVAL;
+> +	if (unshare_flags & (CLONE_THREAD | CLONE_SIGHAND | CLONE_VM)) {
+> +		/* FIXME: get_task_mm() increments ->mm_users */
+> +		if (atomic_read(&current->mm->mm_users) > 1)
+> +			return -EINVAL;
+> +	}
+>  
+>  	return 0;
+>  }
+> @@ -1580,34 +1566,6 @@ static int unshare_fs(unsigned long unsh
+>  }
+>  
+>  /*
+> - * Unsharing of sighand is not supported yet
+> - */
+> -static int unshare_sighand(unsigned long unshare_flags, struct sighand_struct **new_sighp)
+> -{
+> -	struct sighand_struct *sigh = current->sighand;
+> -
+> -	if ((unshare_flags & CLONE_SIGHAND) && atomic_read(&sigh->count) > 1)
+> -		return -EINVAL;
+> -	else
+> -		return 0;
+> -}
+> -
+> -/*
+> - * Unshare vm if it is being shared
+> - */
+> -static int unshare_vm(unsigned long unshare_flags, struct mm_struct **new_mmp)
+> -{
+> -	struct mm_struct *mm = current->mm;
+> -
+> -	if ((unshare_flags & CLONE_VM) &&
+> -	    (mm && atomic_read(&mm->mm_users) > 1)) {
+> -		return -EINVAL;
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+> -/*
+>   * Unshare file descriptor table if it is being shared
+>   */
+>  static int unshare_fd(unsigned long unshare_flags, struct files_struct **new_fdp)
+> @@ -1635,45 +1593,37 @@ static int unshare_fd(unsigned long unsh
+>   */
+>  SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
+>  {
+> -	int err = 0;
+>  	struct fs_struct *fs, *new_fs = NULL;
+> -	struct sighand_struct *new_sigh = NULL;
+> -	struct mm_struct *mm, *new_mm = NULL, *active_mm = NULL;
+>  	struct files_struct *fd, *new_fd = NULL;
+>  	struct nsproxy *new_nsproxy = NULL;
+>  	int do_sysvsem = 0;
+> +	int err;
+>  
+> -	check_unshare_flags(&unshare_flags);
+> -
+> -	/* Return -EINVAL for all unsupported flags */
+> -	err = -EINVAL;
+> -	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
+> -				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
+> -				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
+> +	err = check_unshare_flags(unshare_flags);
+> +	if (err)
+>  		goto bad_unshare_out;
+>  
+>  	/*
+> +	 * If unsharing namespace, must also unshare filesystem information.
+> +	 */
+> +	if (unshare_flags & CLONE_NEWNS)
+> +		unshare_flags |= CLONE_FS;
+> +	/*
+>  	 * CLONE_NEWIPC must also detach from the undolist: after switching
+>  	 * to a new ipc namespace, the semaphore arrays from the old
+>  	 * namespace are unreachable.
+>  	 */
+>  	if (unshare_flags & (CLONE_NEWIPC|CLONE_SYSVSEM))
+>  		do_sysvsem = 1;
+> -	if ((err = unshare_thread(unshare_flags)))
+> -		goto bad_unshare_out;
+>  	if ((err = unshare_fs(unshare_flags, &new_fs)))
+> -		goto bad_unshare_cleanup_thread;
+> -	if ((err = unshare_sighand(unshare_flags, &new_sigh)))
+> -		goto bad_unshare_cleanup_fs;
+> -	if ((err = unshare_vm(unshare_flags, &new_mm)))
+> -		goto bad_unshare_cleanup_sigh;
+> +		goto bad_unshare_out;
+>  	if ((err = unshare_fd(unshare_flags, &new_fd)))
+> -		goto bad_unshare_cleanup_vm;
+> +		goto bad_unshare_cleanup_fs;
+>  	if ((err = unshare_nsproxy_namespaces(unshare_flags, &new_nsproxy,
+>  			new_fs)))
+>  		goto bad_unshare_cleanup_fd;
+>  
+> -	if (new_fs ||  new_mm || new_fd || do_sysvsem || new_nsproxy) {
+> +	if (new_fs || new_fd || do_sysvsem || new_nsproxy) {
+>  		if (do_sysvsem) {
+>  			/*
+>  			 * CLONE_SYSVSEM is equivalent to sys_exit().
+> @@ -1699,19 +1649,6 @@ SYSCALL_DEFINE1(unshare, unsigned long, 
+>  			spin_unlock(&fs->lock);
+>  		}
+>  
+> -		if (new_mm) {
+> -			mm = current->mm;
+> -			active_mm = current->active_mm;
+> -			current->mm = new_mm;
+> -			current->active_mm = new_mm;
+> -			if (current->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
+> -				atomic_dec(&mm->oom_disable_count);
+> -				atomic_inc(&new_mm->oom_disable_count);
+> -			}
+> -			activate_mm(active_mm, new_mm);
+> -			new_mm = mm;
+> -		}
+> -
+>  		if (new_fd) {
+>  			fd = current->files;
+>  			current->files = new_fd;
+> @@ -1728,20 +1665,10 @@ bad_unshare_cleanup_fd:
+>  	if (new_fd)
+>  		put_files_struct(new_fd);
+>  
+> -bad_unshare_cleanup_vm:
+> -	if (new_mm)
+> -		mmput(new_mm);
+> -
+> -bad_unshare_cleanup_sigh:
+> -	if (new_sigh)
+> -		if (atomic_dec_and_test(&new_sigh->count))
+> -			kmem_cache_free(sighand_cachep, new_sigh);
+> -
+>  bad_unshare_cleanup_fs:
+>  	if (new_fs)
+>  		free_fs_struct(new_fs);
+>  
+> -bad_unshare_cleanup_thread:
+>  bad_unshare_out:
+>  	return err;
+>  }
 > 
-> int icr, yr;
-> int sr = isl1208_i2c_get_sr(client);
-
-Same here. I'm not hugely fussed either way.
-
->> @@ -514,6 +677,9 @@ isl1208_probe(struct i2c_client *client, const struct i2c_device_id *id)
->>  
->>  exit_unregister:
->>  	rtc_device_unregister(rtc);
->> +exit_free_irq:
->> +	if (client->irq)
->> +		free_irq(client->irq, client);
-> 
-> I didn't dig deep into this, but from a cursory look it seems that 
-> free_irq() should be fine being handed NULL. If that's right, then the 
-> condifional "if" is not needed here..
-
-I think having the if is a bit clearer, since it will only try and free
-the irq in the case where we have actually allocated it. This is on the
-error exit path so performance is not exactly critical.
-
-~Ryan
-
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
