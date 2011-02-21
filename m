@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab1BUQ5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 11:57:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16191 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752459Ab1BUQ52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 11:57:28 -0500
-Date: Mon, 21 Feb 2011 17:49:08 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110221164908.GA25803@redhat.com>
-References: <AANLkTi=VVWVkrqqQyOtsP72S5-nWny=Ukmf_r-m1qMwV@mail.gmail.com> <20110214190141.GA19221@redhat.com> <AANLkTi=_af8+XKD+d-677JpQZA=AN2EsydscSYxk7z55@mail.gmail.com> <20110214200130.GA21559@redhat.com> <20110215152448.GL3160@htj.dyndns.org> <20110215173149.239601807B7@magilla.sf.frob.com> <20110215202747.GA20560@redhat.com> <20110218170212.GS21209@htj.dyndns.org> <20110218193709.GA9700@redhat.com> <20110221162206.GN31267@htj.dyndns.org>
+	id S1756147Ab1BUQ6u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 11:58:50 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46958 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754227Ab1BUQ6s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 11:58:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110221162206.GN31267@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4D629427.8020500@gmail.com>
+References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com>
+ <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl>
+ <4D628521.8000205@linux.vnet.ibm.com> <4D629427.8020500@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 21 Feb 2011 08:57:53 -0800
+Message-ID: <AANLkTi=itY4+Q8mzn=8EPsT-GMaLPWeFkuzmGLLwO1Pj@mail.gmail.com>
+Subject: Re: 2.6.37.1 s2disk regression (TPM)
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, stefanb@linux.vnet.ibm.com,
+        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        debora@linux.vnet.ibm.com, preining@logic.at
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2011/2/21 Jiri Slaby <jirislaby@gmail.com>:
+> Linus, please stop garbling my name. I'm not Sladby (2nd time you
+> committed that) and not even Juri.
 
-I can't write the full reply right now, just one note...
+I think the Juri was just my fingers being off. The Sladby was real,
+though. I don't know why I think your name has a 'd' in it. Sorry.
 
-On 02/21, Tejun Heo wrote:
->
-> BTW, I plan on separating out all ptrace related stuff into a separate
-> struct as it's not used by most tasks anyway, so I don't think we need
-> to be too concerned about several more fields.
+I tend to try to copy-paste complicated names to avoid typo's, but
+yours is short enough that I think I can write it. I obviously can't.
 
-This is funny.
-
-I already did this change (it even had some review on lkml). And it was
-discussed again (on archer@sourceware.org) a couple of days ago. Yes,
-probably we should finally do this. Unfortunately, this complicates the
-attach-to-all-threads request (new feature), but anyway.
-
-Oleg.
-
+                    Linus
