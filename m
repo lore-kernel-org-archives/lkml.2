@@ -1,322 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab1BUUuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 15:50:11 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:54110 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750995Ab1BUUuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 15:50:09 -0500
-Message-ID: <4D62CFFE.6050803@sgi.com>
-Date: Mon, 21 Feb 2011 12:50:06 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1752271Ab1BUUvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 15:51:08 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:53097 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab1BUUvF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 15:51:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:message-id:mime-version:content-type; q=dns; s=
+	newdream.net; b=TQ1QNyRiHRLaZoUTF8YbOjAxWyHqf+7JaxBv6xh9dz9Z+d2I
+	AMnkuiROpuBP+gXgDo9+gt//kGByRHflbWrSFH1hQftrShH32A54HQ3K7kC5vDH7
+	W6QhkbLrRtduqfVlt642O11/jggL/6u4g3cQvAegGrohtVH8d0WvkTf0aTI=
+Date: Mon, 21 Feb 2011 12:52:35 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 2.6.38-rc6
+Message-ID: <Pine.LNX.4.64.1102202115490.4468@cobra.newdream.net>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] x86: Minimize initial e820 messages
-References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024705.695093866@gulag1.americas.sgi.com> <alpine.DEB.2.00.1102191700030.27722@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1102191700030.27722@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
+
+Please pull the following Ceph fixes from
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+
+The main item here is a workaround for a regression caused by the dcache 
+RCU stuff.  d_kill now clears d_parent prior to the release dentry op, 
+which causes a NULL pointer dereference in the ceph code.  Nick said this 
+should be easy enough to fix[1], but he's offline and it seems a bit late 
+to futz with the core dcache code.  This patch basically just makes a copy 
+of d_parent in the private d_fsdata struct.  We can revert it once the 
+d_kill/d_parent thing gets fixed up, presumably during the next merge 
+window.
+
+There are also some error handling fixes and a fix for an possible 
+infinite loop in the snapshot notification handler.
+
+Thanks-
+sage
+
+[1] http://marc.info/?l=linux-fsdevel&m=129610552517424&w=2
 
 
-David Rientjes wrote:
-> On Fri, 18 Feb 2011, Mike Travis wrote:
-> 
->> Minimize the early e820 messages by printing less characters
->> for the address range as well as abbreviating the type info
->> for each entry.
->>
->> Also the "modified physical RAM map" was mostly a duplicate of
->> the original e820 memory map printout.  Minimize the output
->> by only printing those entries that were actually modified.
->>
->> v1: Added pertinent __init & __initdata specifiers
->>     Changed some inlines to __init functions to avoid the
->>     the compiler un-inlining them into the wrong section.
->>
->> v2: updated to apply to x86-tip
->>
->> Signed-off-by: Mike Travis <travis@sgi.com>
->> Reviewed-by: Jack Steiner <steiner@sgi.com>
->> Reviewed-by: Robin Holt <holt@sgi.com>
->> ---
->>  arch/x86/kernel/e820.c      |  138 +++++++++++++++++++++++++++-----------------
->>  arch/x86/platform/efi/efi.c |   10 +--
->>  2 files changed, 91 insertions(+), 57 deletions(-)
->>
->> --- linux.orig/arch/x86/kernel/e820.c
->> +++ linux/arch/x86/kernel/e820.c
->> @@ -39,6 +39,13 @@
->>  struct e820map e820;
->>  struct e820map e820_saved;
->>  
->> +/*
->> + * Keep track of previous e820 mappings so we can reduce the number
->> + * of messages when printing the "modified" e820 map
->> + */
->> +static struct e820map e820_prev __initdata;
->> +static int e820_prev_saved __initdata;
-> 
-> bool?
-> 
->> +
->>  /* For PCI or other memory-mapped resources */
->>  unsigned long pci_mem_start = 0xaeedbabe;
->>  #ifdef CONFIG_PCI
->> @@ -125,42 +132,85 @@ void __init e820_add_region(u64 start, u
->>  	__e820_add_region(&e820, start, size, type);
->>  }
->>  
->> -static void __init e820_print_type(u32 type)
->> +/* long description */
->> +static const char * __init e820_type_to_string(int e820_type)
->> +{
->> +	switch (e820_type) {
->> +	case E820_RESERVED_KERN:	return "Kernel RAM";
->> +	case E820_RAM:	return "System RAM";
->> +	case E820_ACPI:	return "ACPI Tables";
->> +	case E820_NVS:	return "ACPI Non-Volatile Storage";
->> +	case E820_UNUSABLE:	return "Unusable Memory";
->> +	default:	return "Reserved";
->> +	}
->> +}
-> 
-> All of the callers of this function would probably benefit from 
-> surrounding each return string with ( and ).
+Sage Weil (3):
+      libceph: fix socket read error handling
+      libceph: fix socket write error handling
+      ceph: queue cap_snaps once per realm
 
-Good point, thanks.
-> 
->> +
->> +/* short description, saves log space when there are 100's of e820 entries */
->> +static char * __init e820_types(int e820_type)
->>  {
->> -	switch (type) {
->> -	case E820_RAM:
->> -	case E820_RESERVED_KERN:
->> -		printk(KERN_CONT "(usable)");
->> -		break;
->> -	case E820_RESERVED:
->> -		printk(KERN_CONT "(reserved)");
->> -		break;
->> -	case E820_ACPI:
->> -		printk(KERN_CONT "(ACPI data)");
->> -		break;
->> -	case E820_NVS:
->> -		printk(KERN_CONT "(ACPI NVS)");
->> -		break;
->> -	case E820_UNUSABLE:
->> -		printk(KERN_CONT "(unusable)");
->> -		break;
->> -	default:
->> -		printk(KERN_CONT "type %u", type);
->> -		break;
->> +	switch (e820_type) {
->> +	case E820_RESERVED_KERN:	return "KRAM";
->> +	case E820_RAM:	return "SRAM";
-> 
-> Using the abbreviation "SRAM" for "system RAM" is just going to lead to 
-> confusion.
+Yehuda Sadeh (1):
+      ceph: keep reference to parent inode on ceph_dentry
 
-Suggestions?
-
-> 
->> +	case E820_ACPI:	return "ACPI";
->> +	case E820_NVS:	return "NVS";
->> +	case E820_UNUSABLE:	return "UM";
-> 
-> I know these are intended to be very short, but nobody is going to 
-> conclude that "UM" means unusuable memory.
-
-UM, what do you think it should be?  ;-)
-
-> 
->> +	default:	return "RESVD";
->>  	}
->>  }
->>  
->> +static void __init e820_print_header(void)
->> +{
->> +	pr_info("types: %s=(%s) %s=(%s) %s=(%s) %s=(%s) %s=(%s) %s=(%s)\n",
->> +		e820_types(E820_RESERVED_KERN),
->> +				e820_type_to_string(E820_RESERVED_KERN),
->> +		e820_types(E820_RAM), e820_type_to_string(E820_RAM),
->> +		e820_types(E820_RESERVED), e820_type_to_string(E820_RESERVED),
->> +		e820_types(E820_ACPI), e820_type_to_string(E820_ACPI),
->> +		e820_types(E820_NVS), e820_type_to_string(E820_NVS),
->> +		e820_types(E820_UNUSABLE), e820_type_to_string(E820_UNUSABLE));
->> +}
->> +
->> +/* compare new entry with old so we only print "modified" entries */
->> +static int __init not_modified(int i, int j)
-> 
-> I know it's static, but this needs a better function name.  I hope it's 
-> never passed negative actuals by mistake.
-
-What (!not) doesn't make sense? ;-)
-
-> 
->> +{
->> +	for (; j < e820_prev.nr_map &&
->> +		e820_prev.map[j].addr <= e820.map[i].addr; j++) {
->> +
->> +		if (e820.map[i].addr == e820_prev.map[j].addr &&
->> +		    e820.map[i].size == e820_prev.map[j].size &&
->> +		    e820.map[i].type == e820_prev.map[j].type)
->> +			return j;
->> +	}
->> +	return 0;
->> +}
->> +
->>  void __init e820_print_map(char *who)
->>  {
->> -	int i;
->> +	int i, j = 0;
->> +	int hdr = 0;
->> +	int mod = strcmp(who, "modified") == 0;
-> 
-> bool?
-> 
->>  
->>  	for (i = 0; i < e820.nr_map; i++) {
->> -		printk(KERN_INFO " %s: %016Lx - %016Lx ", who,
->> -		       (unsigned long long) e820.map[i].addr,
->> -		       (unsigned long long)
->> -		       (e820.map[i].addr + e820.map[i].size));
->> -		e820_print_type(e820.map[i].type);
->> -		printk(KERN_CONT "\n");
->> +		/* only print those entries that were really modified */
->> +		if (mod)
->> +			j = not_modified(i, j);
->> +
->> +		if (!j) {
->> +			if (!hdr++)
->> +				e820_print_header();
->> +
->> +			pr_info("%s: %Lx+%Lx (%s)\n", who,
-> 
-> We don't want a space prefix anymore?
-
-Why would we?
-> 
->> +			       (unsigned long long) e820.map[i].addr,
->> +			       (unsigned long long) e820.map[i].size,
->> +			       e820_types(e820.map[i].type));
->> +		}
->> +	}
->> +	if (!hdr)
->> +		pr_info("<none>\n");
->> +
->> +	if (!e820_prev_saved) {
->> +		memcpy(&e820_prev, &e820, sizeof(struct e820map));
->> +		e820_prev_saved = 1;
->>  	}
->>  }
->>  
->> @@ -437,13 +487,11 @@ static u64 __init __e820_update_range(st
->>  		size = ULLONG_MAX - start;
->>  
->>  	end = start + size;
->> -	printk(KERN_DEBUG "e820 update range: %016Lx - %016Lx ",
->> +	pr_debug("e820 update range: %Lx+%Lx %s ==> %s\n",
->>  		       (unsigned long long) start,
->> -		       (unsigned long long) end);
->> -	e820_print_type(old_type);
->> -	printk(KERN_CONT " ==> ");
->> -	e820_print_type(new_type);
->> -	printk(KERN_CONT "\n");
->> +		       (unsigned long long) size,
->> +			e820_type_to_string(old_type),
->> +			e820_type_to_string(new_type));
->>  
->>  	for (i = 0; i < e820x->nr_map; i++) {
->>  		struct e820entry *ei = &e820x->map[i];
->> @@ -518,12 +566,10 @@ u64 __init e820_remove_range(u64 start,
->>  		size = ULLONG_MAX - start;
->>  
->>  	end = start + size;
->> -	printk(KERN_DEBUG "e820 remove range: %016Lx - %016Lx ",
->> +	printk(KERN_DEBUG "e820 remove range: %016Lx - %016Lx %s\n",
->>  		       (unsigned long long) start,
->> -		       (unsigned long long) end);
->> -	if (checktype)
->> -		e820_print_type(old_type);
->> -	printk(KERN_CONT "\n");
->> +		       (unsigned long long) end,
->> +			checktype ? e820_type_to_string(old_type) : "");
->>  
->>  	for (i = 0; i < e820.nr_map; i++) {
->>  		struct e820entry *ei = &e820.map[i];
->> @@ -576,7 +622,7 @@ void __init update_e820(void)
->>  	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
->>  		return;
->>  	e820.nr_map = nr_map;
->> -	printk(KERN_INFO "modified physical RAM map:\n");
->> +	printk(KERN_INFO "physical RAM map entries that were modified:\n");
->>  	e820_print_map("modified");
->>  }
->>  static void __init update_e820_saved(void)
->> @@ -926,18 +972,6 @@ void __init finish_e820_parsing(void)
->>  	}
->>  }
->>  
->> -static inline const char *e820_type_to_string(int e820_type)
->> -{
->> -	switch (e820_type) {
->> -	case E820_RESERVED_KERN:
->> -	case E820_RAM:	return "System RAM";
->> -	case E820_ACPI:	return "ACPI Tables";
->> -	case E820_NVS:	return "ACPI Non-volatile Storage";
->> -	case E820_UNUSABLE:	return "Unusable memory";
->> -	default:	return "reserved";
->> -	}
->> -}
->> -
->>  /*
->>   * Mark e820 reserved areas as busy for the resource manager.
->>   */
->> --- linux.orig/arch/x86/platform/efi/efi.c
->> +++ linux/arch/x86/platform/efi/efi.c
->> @@ -306,11 +306,11 @@ static void __init print_efi_memmap(void
->>  	     p < memmap.map_end;
->>  	     p += memmap.desc_size, i++) {
->>  		md = p;
->> -		printk(KERN_INFO PFX "mem%02u: type=%u, attr=0x%llx, "
->> -			"range=[0x%016llx-0x%016llx) (%lluMB)\n",
->> -			i, md->type, md->attribute, md->phys_addr,
->> -			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
->> -			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
->> +		pr_info(PFX
->> +			"mem%u: range %llx+%llx (%lluMB) type %u attr %llx\n",
-> 
-> The range you're printing is now ambiguous because you're now showing the 
-> length rather than the ending length (implying that what you're displaying 
-> is not a range at all, but it's specified as one).  I typically don't see 
-> "100+12" as describing [100,112), for example.
-
-Again, I'm open for suggestions.  I thought that changing base-end to base+range
-would be coherent?  
-> 
-> This is also the second time in the patchset where you're printing hex 
-> values without a "0x" prefix, that can be confusing and it's not like "0x" 
-> is egregiously long.  I can understand removing the zero padding, but not 
-> the prefix.
-
-The problem comes when there are zillions of them.
-
-> 
->> +			i, md->phys_addr, md->num_pages << EFI_PAGE_SHIFT,
->> +			(md->num_pages >> (20 - EFI_PAGE_SHIFT)),
->> +			md->type, md->attribute);
->>  	}
->>  }
->>  #endif  /*  EFI_DEBUG  */
+ fs/ceph/dir.c        |    5 +++-
+ fs/ceph/snap.c       |   14 ++++++++---
+ fs/ceph/super.h      |    1 +
+ net/ceph/messenger.c |   62 +++++++++++++++++++++++++-------------------------
+ 4 files changed, 46 insertions(+), 36 deletions(-)
