@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab1BUTIL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:08:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8560 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250Ab1BUTIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:08:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,201,1297065600"; 
-   d="scan'208";a="711415550"
-From: Andi Kleen <andi@firstfloor.org>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, aarcange@redhat.com,
-        lwoodman@redhat.com
-Subject: Fix NUMA problems in transparent hugepages and KSM
-Date: Mon, 21 Feb 2011 11:07:42 -0800
-Message-Id: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4
+	id S1752102Ab1BUTLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:11:47 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60785 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab1BUTLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:11:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:to:from:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=K0S/rM5yTHYYzro/mx5bGrw9LiaV8TKYbZTHoLdTS+SDQvZZwxT/Hg6OINEh9gjjpw
+         xkKYQH347t5WnikPiB2nV1PWMEOYN5e1I1WVinve88jVBNaKLRJ73cZsHPUtY1SasTNm
+         /FhGgRbRLHtmcyotf6SjGUxJPVTuWtjFywr1s=
+Subject: [PATCH] proc: hide kernel addresses via %pK in /proc/<pid>/stack
+To: linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Date: Mon, 21 Feb 2011 22:11:21 +0300
+Message-ID: <20110221191121.5764.81241.stgit@localhost6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current transparent hugepages daemon can mess up local
-memory affinity on NUMA systems. When it copies memory to a 
-huge page it does not necessarily keep it on the same
-node as the local allocations.
+This file is readable for the task owner.
+Hide kernel addresses from unprivileged users,
+leave them function names and offsets.
 
-While fixing this I also found some more related issues:
-- The NUMA policy interleaving for THP was using the small
-page size, not the large parse size.
-- KSM and THP copies also did not preserve the local node
-- The accounting for local/remote allocations in the daemon
-was misleading.
-- There were no VM statistics counters for THP, which made it 
-impossible to analyze.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ fs/proc/base.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 9d096e8..4fa8dc6 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -340,7 +340,7 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
+ 	save_stack_trace_tsk(task, &trace);
  
-At least some of the bug fixes are 2.6.38 candidates IMHO
-because some of the NUMA problems are pretty bad. In some workloads
-this can cause performance problems. 
+ 	for (i = 0; i < trace.nr_entries; i++) {
+-		seq_printf(m, "[<%p>] %pS\n",
++		seq_printf(m, "[<%pK>] %pS\n",
+ 			   (void *)entries[i], (void *)entries[i]);
+ 	}
+ 	kfree(entries);
 
-What can be delayed are GFP_OTHERNODE and the statistics changes.
-
-Git tree:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc-2.6.git thp-numa
-
-Andi Kleen (8):
-      Fix interleaving for transparent hugepages
-      Change alloc_pages_vma to pass down the policy node for local policy
-      Preserve local node for KSM copies
-      Preserve original node for transparent huge page copies
-      Use correct numa policy node for transparent hugepages
-      Add __GFP_OTHER_NODE flag
-      Use GFP_OTHER_NODE for transparent huge pages
-      Add VM counters for transparent hugepages
-
- include/linux/gfp.h    |   13 ++++++++---
- include/linux/vmstat.h |   11 ++++++++-
- mm/huge_memory.c       |   49 +++++++++++++++++++++++++++++++++--------------
- mm/ksm.c               |    3 +-
- mm/mempolicy.c         |   16 +++++++-------
- mm/page_alloc.c        |    2 +-
- mm/vmstat.c            |   17 ++++++++++++++-
- 7 files changed, 78 insertions(+), 33 deletions(-)
-
--Andi
