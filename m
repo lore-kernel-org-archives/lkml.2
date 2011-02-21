@@ -1,88 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab1BUOH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 09:07:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63234 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab1BUOH0 convert rfc822-to-8bit (ORCPT
+	id S1756039Ab1BUOIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 09:08:16 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:52012 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751920Ab1BUOIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 09:07:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ODo6Od477Mn3D/djgVYhgxNHgmGxY/QZQ+mCGNWU6tmcbO6wd3LZ5rh+vGG7PCi9RS
-         SXEbQmPU5pyBieBEq8ahr5Ai8wA0Y71Nyi+9+sgOWDo4aqs7LMAwaV9FvQQe+uEVYAZZ
-         6cz2cVkT0dv1xOEBzVvhY7+90ei4N45hh4RWg=
+	Mon, 21 Feb 2011 09:08:15 -0500
+Date: Mon, 21 Feb 2011 16:08:11 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: David Cohen <dacohen@gmail.com>
+Cc: balbi@ti.com, Alexey Dobriyan <adobriyan@gmail.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        linux-omap@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH 1/1] headers: fix circular dependency between
+ linux/sched.h and linux/wait.h
+Message-ID: <20110221140811.GH23087@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1298283649-24532-1-git-send-email-dacohen@gmail.com>
+ <1298283649-24532-2-git-send-email-dacohen@gmail.com>
+ <AANLkTimwvgLvpvndCqcd_okA2Kk4cu7z4bD3QXTdgWJW@mail.gmail.com>
+ <20110221123049.GC23087@legolas.emea.dhcp.ti.com>
+ <AANLkTinc=ye2qZJ1esSta=xEGz_iEr73eg3qEES2S5P7@mail.gmail.com>
+ <20110221135709.GG23087@legolas.emea.dhcp.ti.com>
+ <AANLkTin6SY6oUd8j3dcvjoTrPn4P2XP=hX5S+D8s1J+g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110221084014.GC25382@cmpxchg.org>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
-	<c76a1645aac12c3b8ffe2cc5738033f5a6da8d32.1298212517.git.minchan.kim@gmail.com>
-	<20110221084014.GC25382@cmpxchg.org>
-Date: Mon, 21 Feb 2011 23:07:26 +0900
-Message-ID: <AANLkTikkGGQdxtshsWb8k2Lb89LwWznNjZLBB5i=UQrm@mail.gmail.com>
-Subject: Re: [PATCH v6 2/3] memcg: move memcg reclaimable page into tail of
- inactive list
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin6SY6oUd8j3dcvjoTrPn4P2XP=hX5S+D8s1J+g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 5:40 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Sun, Feb 20, 2011 at 11:43:37PM +0900, Minchan Kim wrote:
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -813,6 +813,33 @@ void mem_cgroup_del_lru(struct page *page)
->>       mem_cgroup_del_lru_list(page, page_lru(page));
->>  }
->>
->> +/*
->> + * Writeback is about to end against a page which has been marked for immediate
->> + * reclaim.  If it still appears to be reclaimable, move it to the tail of the
->> + * inactive list.
->> + */
->> +void mem_cgroup_rotate_reclaimable_page(struct page *page)
->> +{
->> +     struct mem_cgroup_per_zone *mz;
->> +     struct page_cgroup *pc;
->> +     enum lru_list lru = page_lru(page);
->> +
->> +     if (mem_cgroup_disabled())
->> +             return;
->> +
->> +     pc = lookup_page_cgroup(page);
->> +     /*
->> +      * Used bit is set without atomic ops but after smp_wmb().
->> +      * For making pc->mem_cgroup visible, insert smp_rmb() here.
->> +      */
->> +     smp_rmb();
->> +     /* unused or root page is not rotated. */
->> +     if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
->> +             return;
->
-> The placement of this barrier is confused and has been fixed up in the
-> meantime in other places.  It has to be between PageCgroupUsed() and
-> accessing pc->mem_cgroup.  You can look at the other memcg lru
-> functions for reference.
+Hi,
 
-Yes. I saw your patch at that time but forgot it.
-I will resend fixed version.
-Thanks.
+On Mon, Feb 21, 2011 at 04:05:14PM +0200, David Cohen wrote:
+> On Mon, Feb 21, 2011 at 3:57 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > Hi,
+> >
+> > On Mon, Feb 21, 2011 at 03:51:25PM +0200, Alexey Dobriyan wrote:
+> >> > I rather have the split done and kill the circular dependency.
+> >>
+> >> It's not circular for starters.
+> >
+> > how come ? wait.h depends on sched and sched.h depends on wait.h
+> 
+> The tricky thing is wait.h doesn't depend on sched.h, but the file
+> which uses wake_up*() macro defined on wait.h will depend on sched.h
+> (what is still bad). wait.h should provide all dependencies to use a
+
+That's why I say wait.h depends on sched.h because it uses a macro
+defined in sched.h
 
 -- 
-Kind regards,
-Minchan Kim
+balbi
