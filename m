@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1BUEoL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:44:11 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:52092 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab1BUEoI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:44:08 -0500
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Feb 2011 23:44:07 EST
-Date: Sun, 20 Feb 2011 22:36:01 -0600
-From: David Fries <david@fries.net>
-To: Andrei Warkentin <andreiw@motorola.com>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] work around for l2cap NULL dereference in l2cap_conn_start
-Message-ID: <20110221043601.GB22204@spacedout.fries.net>
-References: <20110211035309.GA22204@spacedout.fries.net>
- <20110214145649.GE2597@joana>
- <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
+	id S1755875Ab1BUEyq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:54:46 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51083 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755810Ab1BUEyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Feb 2011 23:54:43 -0500
+Date: Mon, 21 Feb 2011 05:54:39 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Sam Ravnborg <sam@ravnborg.org>,
+        Michal Marek <mmarek@suse.cz>, torvalds@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kbuild: Add extra gcc checks
+Message-ID: <20110221045439.GB31194@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Arnaud Lacombe <lacombar@gmail.com>, Joe Perches <joe@perches.com>,
+	Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+	torvalds@linux-foundation.org, x86@kernel.org,
+	linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+	linux-kbuild@vger.kernel.org
+References: <1298219710-9846-1-git-send-email-bp@alien8.de>
+ <20110220175709.GA5178@merkur.ravnborg.org>
+ <20110220193906.GC6713@liondog.tnic>
+ <1298232047.1284.14.camel@Joe-Laptop>
+ <20110221022707.GB18332@liondog.tnic>
+ <AANLkTikGb7_1sv8zthkt_5qp4ciGbWHQVupx3MmOjfWJ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTi==Sh2yc2JjjY5t-NKxQexKPgPwNyWo4SMju92k@mail.gmail.com>
+In-Reply-To: <AANLkTikGb7_1sv8zthkt_5qp4ciGbWHQVupx3MmOjfWJ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sun, 20 Feb 2011 22:36:03 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bt_sk(sk)->parent can be NULL in l2cap_conn_start in state BT_CONNECT2
-at least when a headset device pairs and the play button was pressed
-right before pairing.
-
-Signed-off-by: David Fries <david@fries.net>
----
-I removed the printk, can this be merged to the bluetooth next tree?
-
-On Mon, Feb 14, 2011 at 03:40:46PM -0600, Andrei Warkentin wrote:
-> FWIW still need it in 2.6.36.
-
-Andrei, I'm curious, what's your hardware hardware and bluetooth
-device that's trigginer the crash?
-
-> On Mon, Feb 14, 2011 at 8:56 AM, Gustavo F. Padovan
-> <padovan@profusion.mobi> wrote:
-> > Hi David,
+On Sun, Feb 20, 2011 at 10:34:57PM -0500, Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Sun, Feb 20, 2011 at 9:27 PM, Borislav Petkov <bp@alien8.de> wrote:
+> > On Sun, Feb 20, 2011 at 12:00:47PM -0800, Joe Perches wrote:
+> >> > +EXTRA_CFLAGS += -Wextra -Wno-unused
+> >>
+> >> Why add -Wno-unused ?
+> >>
+> >> If it's because of verbosity, maybe
 > >
-> > * David Fries <david@fries.net> [2011-02-10 21:53:09 -0600]:
+> > Nah, it's because it is too noisy and spits too many false positives.
 > >
-> >> Here's a patch to avoid a very repeatable crash in the N900.  If I
-> >> take a Motorola S305 bluetooth headset that was previously paried with
-> >> the N900, turn it on, and press the play button before the headphones
-> >> automatically pair with the cell phone, the N900 will crash (and
-> >> reboot) in pairing.  If I wait until after they have paired there
-> >> isn't any problem.  The patch is against the kernel-power
-> >> 2.6.28-maemo46 by Thomas Tanner, the stock Nokia PR1.2 oops looked
-> >> the same, I just haven't gone back to that kernel.
+> "too noisy" is a subjective point of view.
+
+Ok, does "too many false positives" objectify it a bit more to your
+taste?
+
+> > For example, it reports the arguments of all those stubs from the
+> > headers which are provided for the else-branch of a CONFIG_* option,
+> > etc.
 > >
-> > This is a very old kernel. You need to check this issue against
-> > bluetooth-next-2.6.
+> and by the same way, you silence function marked with
+> `warn_unused_result', unless I misread the manpage.
 
- net/bluetooth/l2cap.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Can you point me to that passage, I cannot find it in my gcc manpage.
 
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index ed83c1f..a7aa4d9 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -408,7 +408,8 @@ static void l2cap_conn_start(struct l2cap_conn *conn)
- 					struct sock *parent = bt_sk(sk)->parent;
- 					rsp.result = cpu_to_le16(L2CAP_CR_PEND);
- 					rsp.status = cpu_to_le16(L2CAP_CS_AUTHOR_PEND);
--					parent->sk_data_ready(parent, 0);
-+					if(parent)
-+						parent->sk_data_ready(parent,0);
- 
- 				} else {
- 					sk->sk_state = BT_CONFIG;
+> If you want to silence something specific, why not just the `no'
+> variant of the thing you do not want ?
+
+Yes, '-Wunused -Wno-unused-parameter' looks better.
+
+> Btw, could you not take the same approach as the one taken by the BSD,
+> which is 3 or 4 different level of new warnings. That way, you keep
+> the noisy stuff for the highest warning level.
+
+Nope, because there's no reason for it. I want to have one switch that
+craps out all the possible warnings gcc can spit, I catch the build
+output, fix the bugs and that's it.
+
 -- 
-1.7.2.3
-
+Regards/Gruss,
+    Boris.
