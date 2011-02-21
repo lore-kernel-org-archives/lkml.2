@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab1BULzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 06:55:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57545 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754783Ab1BULzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 06:55:19 -0500
-Date: Mon, 21 Feb 2011 12:54:52 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, ananth@in.ibm.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "2nddept-manager@sdl.hitachi.co.jp" 
-	<2nddept-manager@sdl.hitachi.co.jp>
-Subject: Re: [PATCH] kprobes - do not allow optimized kprobes in entry code
-Message-ID: <20110221115452.GA1919@jolsa.brq.redhat.com>
-References: <1297696354-6990-1-git-send-email-jolsa@redhat.com>
- <4D5A4A66.4010503@hitachi.com>
- <20110215123058.GB3135@jolsa.brq.redhat.com>
- <4D5AA209.7070309@hitachi.com>
- <20110215170507.GD3135@jolsa.brq.redhat.com>
- <4D5B4654.30407@hitachi.com>
- <20110217151103.GA11156@elte.hu>
- <20110218162619.GA9425@jolsa.brq.redhat.com>
- <4D5FD04D.8020209@hitachi.com>
- <20110220125948.GC25700@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110220125948.GC25700@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755577Ab1BUL5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 06:57:10 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59225 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755246Ab1BUL5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 06:57:07 -0500
+Date: Mon, 21 Feb 2011 11:58:39 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/20] ata_piix: unify code for programming PIO and
+ MWDMA timings
+Message-ID: <20110221115839.2048e8fe@lxorguk.ukuu.org.uk>
+In-Reply-To: <4D624EBD.4080400@ru.mvista.com>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122346.19110.8441.sendpatchset@linux-mhg7.site>
+	<4D6118DC.80505@ru.mvista.com>
+	<20110220185958.364df4cc@lxorguk.ukuu.org.uk>
+	<4D617CC8.3020108@ru.mvista.com>
+	<20110220210731.0c774fa7@lxorguk.ukuu.org.uk>
+	<4D624EBD.4080400@ru.mvista.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 01:59:48PM +0100, Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
-> > Thanks, I've also tested. (But my machine has no L1-icache-prefetches* support) 
-> > What I can tell is both of L1-icache-load and L1-icache-load-misses is reduced by 
-> > the patch. ;-)
-> 
-> That's actually a pretty interesting result: it means that compressing entry code 
-> into a single section compresses the icache footprint in a measurable way. The 
-> icache miss rate went down by about 6%:
-> 
-> >          1,234,272 L1-icache-load-misses      ( +-   0.105% )
-> >          1,155,816 L1-icache-load-misses      ( +-   0.113% )
-> 
-> Which, assuming that there's no kernel build and bootup related skew effect that is 
-> larger than 2-3% means that this is an improvement.
-> 
-> perf feature request: would be nice if it was able to do:
-> 
-> 	perf stat --record ...
-> 	perf diff
-> 
-> and it would show a comparison of the two runs.
-> 
-> In hindsight it makes sense: the patch probably reduced the fragmentation of the 
-> icache for this workload.
-> 
-> But it's still surprising :-)
-> 
-> Mind splitting the patch up into two parts, the first one that does the performance 
-> optimization intentionally (with numbers, explanation, etc.), the second one that 
-> uses the new section for kprobes exclusion?
-np, I'll send v2 shortly
+On Mon, 21 Feb 2011 14:38:37 +0300
+Sergei Shtylyov <sshtylyov@mvista.com> wrote:
 
-thanks,
-jirka
+> Hello.
+> 
+> On 21-02-2011 0:07, Alan Cox wrote:
+> 
+> >>      PIO mode is setup by different code, and it takes care of the IORDY
+> >> setting according to the PIO rules (and it gets called). DMA mode setup should
+> >> just ignore the IORDY setting as in all other sane drivers.
+> 
+> > Well it can't ignore it - but if you mean just keep the bit as is then
+> 
+>     Yes, I mean this.
+> 
+> > that sounds sensible, have to see what the docs say happens if you ever
+> > set MWDMA without IORDY.
+> 
+>     Don't think they say anything on this matter but I can't imagine that 
+> IORDY matters for DMA.
 
-> 
-> Thanks,
-> 
-> 	Ingo
+Sure - but it does matter for an ATAPI transaction with then has a DMA
+phase because those timings will be used for the command transfer which
+is PIO.
+
+Alan
