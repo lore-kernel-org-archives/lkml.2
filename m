@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab1BUVeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 16:34:36 -0500
-Received: from mail-ew0-f42.google.com ([209.85.215.42]:59743 "EHLO
-	mail-ew0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab1BUVee (ORCPT
+	id S1752153Ab1BUVev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 16:34:51 -0500
+Received: from relay.parallels.com ([195.214.232.42]:40300 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab1BUVet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 16:34:34 -0500
-X-Greylist: delayed 349 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 16:34:34 EST
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:to:from:cc:date:message-id:in-reply-to:references
-         :user-agent:mime-version:content-type:content-transfer-encoding;
-        b=jUBPGvpb5jL8fE2ZoaaQ5Mt8x06MlOgfL6hmFCke8odFMEJ9jznZAJEftAa/kPBMFz
-         JyCXQMZqwcs5MJH7Q11TTzh8f2bvh6/dCYEMzsy18El1vwX8D6gLB+KvW4JE4KdX7+7A
-         IWPf5i4buOaTRTP7Crn8sddK2xCsMFdX+LprQ=
-Subject: [PATCH v2] NFS: account direct-io into task io accounting
-To: linux-nfs@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 22 Feb 2011 00:28:34 +0300
-Message-ID: <20110221212834.2442.65228.stgit@localhost6>
-In-Reply-To: <20110221191546.5920.96947.stgit@localhost6>
-References: <20110221191546.5920.96947.stgit@localhost6>
-User-Agent: StGit/0.15
+	Mon, 21 Feb 2011 16:34:49 -0500
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 16:34:49 EST
+Message-ID: <4D62D8C4.3030004@parallels.com>
+Date: Tue, 22 Feb 2011 00:27:32 +0300
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101214 SeaMonkey/2.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Chuck Lever <chuck.lever@oracle.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFS: account direct-io into task io accounting
+References: <20110221191546.5920.96947.stgit@localhost6> <CE953B49-D775-4A61-942B-4B2F5DE9D7BF@oracle.com>
+In-Reply-To: <CE953B49-D775-4A61-942B-4B2F5DE9D7BF@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Account NFS direct-io reads and writes into Task I/O Accounting.
-Do it before complition to handle aio.
+Chuck Lever wrote:
+>
+> On Feb 21, 2011, at 11:15 AM, Konstantin Khlebnikov wrote:
+>
+>> Account complete NFS direct-io reads and writes into Task I/O Accounting.
+>>
+>> NFS have unusual direct-io implementation,
+>> thus accounting in generic code does not work.
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>> ---
+>> fs/nfs/direct.c |    9 +++++++--
+>> 1 files changed, 7 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+>> index 9943a75..bab4185 100644
+>> --- a/fs/nfs/direct.c
+>> +++ b/fs/nfs/direct.c
+>> @@ -45,6 +45,7 @@
+>> #include<linux/pagemap.h>
+>> #include<linux/kref.h>
+>> #include<linux/slab.h>
+>> +#include<linux/task_io_accounting_ops.h>
+>>
+>> #include<linux/nfs_fs.h>
+>> #include<linux/nfs_page.h>
+>> @@ -939,8 +940,10 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, const struct iovec *iov,
+>> 		goto out;
+>>
+>> 	retval = nfs_direct_read(iocb, iov, nr_segs, pos);
+>> -	if (retval>  0)
+>> +	if (retval>  0) {
+>> 		iocb->ki_pos = pos + retval;
+>> +		task_io_account_read(retval);
+>> +	}
+>>
+>> out:
+>> 	return retval;
+>> @@ -1001,8 +1004,10 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
+>>
+>> 	retval = nfs_direct_write(iocb, iov, nr_segs, pos, count);
+>>
+>> -	if (retval>  0)
+>> +	if (retval>  0) {
+>> 		iocb->ki_pos = pos + retval;
+>> +		task_io_account_write(retval);
+>> +	}
+>
+> The async path always returns -EIOCBQUEUED.  How are those bytes accounted for?
+>
 
-NFS have unusual direct-io implementation,
-thus accounting in generic code does not work.
+Oh, thanks. I forget about aio.
+So, there only one option -- always account whole requiest before completion.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- fs/nfs/direct.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 9943a75..bd2cb5d 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -45,6 +45,7 @@
- #include <linux/pagemap.h>
- #include <linux/kref.h>
- #include <linux/slab.h>
-+#include <linux/task_io_accounting_ops.h>
- 
- #include <linux/nfs_fs.h>
- #include <linux/nfs_page.h>
-@@ -938,6 +939,8 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, const struct iovec *iov,
- 	if (retval)
- 		goto out;
- 
-+	task_io_account_read(count);
-+
- 	retval = nfs_direct_read(iocb, iov, nr_segs, pos);
- 	if (retval > 0)
- 		iocb->ki_pos = pos + retval;
-@@ -999,6 +1002,8 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
- 	if (retval)
- 		goto out;
- 
-+	task_io_account_write(count);
-+
- 	retval = nfs_direct_write(iocb, iov, nr_segs, pos, count);
- 
- 	if (retval > 0)
+>>
+>> out:
+>> 	return retval;
+>
+> --
+> Chuck Lever
+> chuck[dot]lever[at]oracle[dot]com
+>
+>
+>
 
