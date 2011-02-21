@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1BUJsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 04:48:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57978 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab1BUJsB (ORCPT
+	id S1754185Ab1BUJ6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 04:58:35 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:23397 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab1BUJ6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 04:48:01 -0500
-Date: Mon, 21 Feb 2011 10:47:56 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Eric Miao <eric.y.miao@gmail.com>,
-        Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
-Message-ID: <20110221094756.GC2616@pengutronix.de>
-References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com>
- <201102211009.31381.alexander.stein@systec-electronic.com>
- <20110221091916.GA2616@pengutronix.de>
- <201102211037.19572.alexander.stein@systec-electronic.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jCrbxBqMcLqd4mOl"
-Content-Disposition: inline
-In-Reply-To: <201102211037.19572.alexander.stein@systec-electronic.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 21 Feb 2011 04:58:34 -0500
+Date: Mon, 21 Feb 2011 18:58:25 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 01/09] ARM: s3c2442: gta02: Fix usage gpio bank j pin
+ definitions
+In-reply-to: <4D5E4CC1.1010705@metafoo.de>
+To: "'Lars-Peter Clausen'" <lars@metafoo.de>
+Cc: "'Ben Dooks'" <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-id: <000101cbd1ad$e658d580$b30a8080$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcvPWGd15zwxPrPdTo+/YuTghfp9iwCQphLA
+References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
+ <4D5E4CC1.1010705@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Lasrs-Peter Clausen wrote:
+> 
+> On 02/07/2011 02:51 AM, Lars-Peter Clausen wrote:
+> > The gta02 header file still uses the old S3C2410_GPJx defines instead of
+> the
+> > S3C2410_GPJ(x) macro. Since the S3C2410_GPJx defines have already been
+> removed
+> > this causes the following build failure:
+> >
+> > 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_set_spk':
+> > 	sound/soc/samsung/neo1973_wm8753.c:259: error: 'S3C2440_GPJ2'
+> undeclared (first use in this function)
+> > 	sound/soc/samsung/neo1973_wm8753.c:259: error: (Each undeclared
+> identifier is reported only once
+> > 	sound/soc/samsung/neo1973_wm8753.c:259: error: for each function it
+> appears in.)
+> > 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_get_spk':
+> > 	sound/soc/samsung/neo1973_wm8753.c:267: error: 'S3C2440_GPJ2'
+> undeclared (first use in this function)
+> > 	sound/soc/samsung/neo1973_wm8753.c: In function 'lm4853_event':
+> > 	sound/soc/samsung/neo1973_wm8753.c:276: error: 'S3C2440_GPJ1'
+> undeclared (first use in this function)
+> > 	sound/soc/samsung/neo1973_wm8753.c: At top level:
+> > 	sound/soc/samsung/neo1973_wm8753.c:439: error: 'S3C2440_GPJ2'
+> undeclared here (not in a function)
+> > 	sound/soc/samsung/neo1973_wm8753.c:440: error: 'S3C2440_GPJ1'
+> undeclared here (not in a function)
+> >
+> > This patches fixes the issue by doing a
+> s,S3C2410_GPJ([\d]+),S3C2410_GPJ(\1),g
+> > on the file.
+> >
+> > Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
+> 
+> Hi
+> 
+> Ben or Kukjin could you take a look at this series and merge it, if it is
+ok?
+> 
+Hi Lars-Peter,
 
---jCrbxBqMcLqd4mOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Basically, the maintainer of mach-s3c* is Ben Dooks.
+I think, he will review this series but if he can't soon, I will/can do it.
 
-> We had exported our 5V_enable gpio to sysfs to allow a user-space applica=
-tion=20
-> to enable/disable devices connected to 5V circuit.
-> But on the other hand we had to read the current status of this gpio in t=
-he=20
-> power-fail interrupt handler to distinguish between false-positive (5V=20
-> disabled) and a correct detection.
+Ben, could you please review this patches?
+If you're busy, please let me know :)
 
-What about gpio_export() (description in Documentation/gpio.txt)?
+Thanks.
 
-Regards,
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---jCrbxBqMcLqd4mOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk1iNMwACgkQD27XaX1/VRspJgCfb2SiLkS/Z4fFEAmCogLA45fr
-OPgAn2fbHZKsVMBWxPWKH+jIwoL0NRvv
-=9xrN
------END PGP SIGNATURE-----
-
---jCrbxBqMcLqd4mOl--
