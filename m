@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab1BUWOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:14:21 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:32917 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab1BUWOT (ORCPT
+	id S1752383Ab1BUWQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:16:14 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55959 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab1BUWQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 17:14:19 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: gregkh@suse.de, arnaud.patard@rtp-net.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] staging: xgifb: delete dead code for skipping the video memory sizing
-Date: Tue, 22 Feb 2011 00:14:25 +0200
-Message-Id: <1298326466-22707-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
+	Mon, 21 Feb 2011 17:16:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=wGGRKuiXwpqWOxeKqUOr8mhu+lkjEmJyZOYVqxOQDKO7kAThRSeHS0H2hR0QCn7ayy
+         8fO68yPeBQWTw81Mep7qhMasDbHwEsnSj4hFen64nN9tCRrWraFxOM1IvjgAqyNooVy2
+         +3mEHqCoobtngoIcC/wvPavoq1kPKIHbQgiU8=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #29322] System lockup with 2.6.38-rc4+
+Date: Mon, 21 Feb 2011 22:14:27 +0000
+User-Agent: KMail/1.9.10
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera> <5HY1m9_-mkI.A.tTH.QWtYNB@chimera>
+In-Reply-To: <5HY1m9_-mkI.A.tTH.QWtYNB@chimera>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201102212214.27880.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete dead code for skipping the video memory sizing.
+On Monday 21 February 2011, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.37.  Please verify if it still should be listed and let the
+> tracking team know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=29322
+> Subject		: System lockup with 2.6.38-rc4+
+> Submitter	: Chris Clayton <chris2553@googlemail.com>
+> Date		: 2011-02-14 17:31 (8 days old)
+> Message-ID	: <201102141731.29331.chris2553@googlemail.com>
+> References	: http://marc.info/?l=linux-kernel&m=129770471724602&w=2
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/staging/xgifb/XGI_main_26.c |    1 -
- drivers/staging/xgifb/vb_init.c     |   23 +++--------------------
- drivers/staging/xgifb/vgatypes.h    |    2 --
- 3 files changed, 3 insertions(+), 23 deletions(-)
+Yes, I think this should stay open. I haven't heard anything since I replied to 
+Ben Gamari on 14 February. having said that, I haven't experienced the lock up 
+again since I reported it. Perhaps it's been fixed without me knowing.
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 7f821ae..c6ae792 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -3025,7 +3025,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 		printk(KERN_INFO "XGIfb: Video ROM usage disabled\n");
- 	}
- 	XGIhw_ext.pjCustomizedROMImage = NULL;
--	XGIhw_ext.bSkipDramSizing = 0;
- 	XGIhw_ext.pQueryVGAConfigSpace = &XGIfb_query_VGA_config_space;
- 	/* XGIhw_ext.pQueryNorthBridgeSpace = &XGIfb_query_north_bridge_space; */
- 	strcpy(XGIhw_ext.szVBIOSVer, "0.84");
-diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
-index 8d59182..9a5aa6c 100644
---- a/drivers/staging/xgifb/vb_init.c
-+++ b/drivers/staging/xgifb/vb_init.c
-@@ -120,8 +120,6 @@ unsigned char XGIInitNew(struct xgi_hw_device_info *HwDeviceExtension)
- 
- 	/* unsigned long j, k; */
- 
--	struct XGI_DSReg *pSR;
--
- 	unsigned long Temp;
- 
- 	pVBInfo->ROMAddr = HwDeviceExtension->pjVirtualRomBase;
-@@ -427,24 +425,9 @@ unsigned char XGIInitNew(struct xgi_hw_device_info *HwDeviceExtension)
- 
- 		XGINew_SetDRAMDefaultRegister340(HwDeviceExtension, pVBInfo->P3d4, pVBInfo);
- 
--		if (HwDeviceExtension->bSkipDramSizing == 1) {
--			pSR = HwDeviceExtension->pSR;
--			if (pSR != NULL) {
--				while (pSR->jIdx != 0xFF) {
--					XGINew_SetReg1(pVBInfo->P3c4, pSR->jIdx, pSR->jVal);
--					pSR++;
--				}
--			}
--			/* XGINew_SetDRAMModeRegister340(pVBInfo); */
--		} /* SkipDramSizing */
--		else {
--			{
--				printk("20");
--				XGINew_SetDRAMSize_340(HwDeviceExtension, pVBInfo);
--			}
--			printk("21");
--
--		}
-+		printk("20");
-+		XGINew_SetDRAMSize_340(HwDeviceExtension, pVBInfo);
-+		printk("21");
- 	} /* XG40 */
- 
- 	printk("22");
-diff --git a/drivers/staging/xgifb/vgatypes.h b/drivers/staging/xgifb/vgatypes.h
-index df839ee..92a9ee5 100644
---- a/drivers/staging/xgifb/vgatypes.h
-+++ b/drivers/staging/xgifb/vgatypes.h
-@@ -101,8 +101,6 @@ struct xgi_hw_device_info
- 
-     unsigned char bIntegratedMMEnabled;/* supporting integration MM enable */
- 
--    unsigned char bSkipDramSizing;     /* True: Skip video memory sizing. */
--
-     unsigned char bSkipSense;
- 
-     unsigned char bIsPowerSaving;     /* True: XGIInit() is invoked by power management,
+Chris
+
 -- 
-1.5.6.5
-
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
