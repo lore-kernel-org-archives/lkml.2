@@ -1,269 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab1BUWh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:37:57 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55101 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1BUWhz (ORCPT
+	id S1752436Ab1BUWki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:40:38 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41641 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab1BUWkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 17:37:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ETevTOJLRkCbwKDn/wLm57yY3BW78vJ4B77JhAAygh5icQ3t2DtQ2iBX9r67F/O85x
-         B0mXTc8SYgvNZae/QJKql49CmLWPke758X5qXY9QWREwhGC6vThhrM++JS9/nrB+162v
-         rm88ouuwkKESDVPBcZJ0jRHtsXghn6ZBett0A=
-Date: Mon, 21 Feb 2011 22:37:43 +0000
-From: Frederick van der Wyck <fvanderwyck@gmail.com>
-To: mjg59@srcf.ucam.org
-Cc: gregkh@suse.de, dmitry.torokhov@gmail.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] Platform: Samsung Q10 backlight driver
-Message-ID: <20110221223743.GA8548@lat.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 21 Feb 2011 17:40:36 -0500
+Date: Mon, 21 Feb 2011 14:39:08 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh <greg@kroah.com>,
+        driverdevel <devel@driverdev.osuosl.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: [PATCH -next] staging: fix olpc_dcon kconfig and build errors
+Message-Id: <20110221143908.96e03b3c.randy.dunlap@oracle.com>
+In-Reply-To: <20110221182134.09abd232.sfr@canb.auug.org.au>
+References: <20110221182134.09abd232.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D62E9D4.0056:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds backlight control on the Samsung Q10 laptop, which does not support 
-the SABI interface. Also tested successfully on the Dell Latitude X200.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Signed-off-by: Frederick van der Wyck <fvanderwyck@gmail.com>
+drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c:106: error: 'acpi_gbl_FADT' undeclared (first use in this function)
+
+Fixing that one gives:
+
+ERROR: "backlight_device_register" [drivers/staging/olpc_dcon/olpc-dcon.ko] undefined!
+ERROR: "registered_fb" [drivers/staging/olpc_dcon/olpc-dcon.ko] undefined!
+ERROR: "lock_fb_info" [drivers/staging/olpc_dcon/olpc-dcon.ko] undefined!
+ERROR: "backlight_device_unregister" [drivers/staging/olpc_dcon/olpc-dcon.ko] undefined!
+ERROR: "num_registered_fb" [drivers/staging/olpc_dcon/olpc-dcon.ko] undefined!
+ERROR: "fb_blank" [drivers/staging/olpc_dcon/olpc-dcon.ko] undefined!
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Andres Salomon <dilinger@queued.net>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: Jon Nettleton <jon.nettleton@gmail.com>
 ---
- drivers/platform/x86/Kconfig       |    7 ++
- drivers/platform/x86/Makefile      |    1 +
- drivers/platform/x86/samsung-q10.c |  185 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 193 insertions(+), 0 deletions(-)
- create mode 100644 drivers/platform/x86/samsung-q10.c
+ drivers/staging/olpc_dcon/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I've made all the changes suggested by Greg and Dmitry in response to v1. 
-Main changes:
-(1) use i8042_command instead of port IO;
-(2) DMI detect to auto-load and to restrict to supported hardware.
-Description of v1:
-The Samsung Q10 is an old model, which does not support the SABI interface, so
-the samsung-laptop driver does not work. Backlight control is not exposed via
-ACPI either. This driver works in the same way as the SMI handler triggered by 
-pressing the brightness function keys.
-
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index faec777..c390727 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -639,4 +639,11 @@ config XO1_RFKILL
- 	  Support for enabling/disabling the WLAN interface on the OLPC XO-1
- 	  laptop.
+--- linux-next-20110221.orig/drivers/staging/olpc_dcon/Kconfig
++++ linux-next-20110221/drivers/staging/olpc_dcon/Kconfig
+@@ -1,6 +1,6 @@
+ config FB_OLPC_DCON
+ 	tristate "One Laptop Per Child Display CONtroller support"
+-	depends on OLPC
++	depends on OLPC && FB
+ 	select I2C
+ 	---help---
+ 	  Add support for the OLPC XO DCON controller.  This controller is
+@@ -19,7 +19,7 @@ config FB_OLPC_DCON_1
  
-+config SAMSUNG_Q10
-+	tristate "Samsung Q10 Extras"
-+	select BACKLIGHT_CLASS_DEVICE
-+	---help---
-+          This driver provides support for backlight control on Samsung Q10
-+          and some other laptops, including Dell Latitude X200.
-+
- endif # X86_PLATFORM_DEVICES
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 9950ccc..2cd3e52 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -33,3 +33,4 @@ obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
- obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
- obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
- obj-$(CONFIG_IBM_RTL)		+= ibm_rtl.o
-+obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
-diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
-new file mode 100644
-index 0000000..c2b6647
---- /dev/null
-+++ b/drivers/platform/x86/samsung-q10.c
-@@ -0,0 +1,185 @@
-+/*
-+ *  Driver for Samsung Q10: controls the backlight
-+ *
-+ *  Copyright (c) 2011 Frederick van der Wyck <fvanderwyck@gmail.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/backlight.h>
-+#include <linux/i8042.h>
-+#include <linux/dmi.h>
-+
-+#define SAMSUNGQ10_BL_MAX_INTENSITY      255
-+#define SAMSUNGQ10_BL_DEFAULT_INTENSITY  185
-+
-+#define SAMSUNGQ10_BL_8042_CMD           0xbe
-+#define SAMSUNGQ10_BL_8042_DATA          { 0x89, 0x91 }
-+
-+static bool samsungq10_suspended;
-+static int samsungq10_bl_brightness;
-+
-+static int force;
-+module_param(force, bool, 0);
-+MODULE_PARM_DESC(force,
-+		"Disable the DMI check and force the driver to be loaded");
-+
-+static int samsungq10_bl_set_intensity(struct backlight_device *bd)
-+{
-+
-+	int brightness = bd->props.brightness;
-+	unsigned char c[3] = SAMSUNGQ10_BL_8042_DATA;
-+
-+	if (!samsungq10_suspended) {
-+		c[2] = (unsigned char)brightness;
-+		i8042_lock_chip();
-+		i8042_command(c, (0x30 << 8) | SAMSUNGQ10_BL_8042_CMD);
-+		i8042_unlock_chip();
-+		samsungq10_bl_brightness = brightness;
-+	}
-+	return 0;
-+}
-+
-+static int samsungq10_bl_get_intensity(struct backlight_device *bd)
-+{
-+	return samsungq10_bl_brightness;
-+}
-+
-+static const struct backlight_ops samsungq10_bl_ops = {
-+	.get_brightness = samsungq10_bl_get_intensity,
-+	.update_status	= samsungq10_bl_set_intensity,
-+};
-+
-+#ifdef CONFIG_PM
-+static int samsungq10_suspend(struct device *dev)
-+{
-+	samsungq10_suspended = true;
-+	return 0;
-+}
-+
-+static int samsungq10_resume(struct device *dev)
-+{
-+
-+	struct backlight_device *bd = dev_get_drvdata(dev);
-+
-+	samsungq10_suspended = false;
-+	samsungq10_bl_set_intensity(bd);
-+	return 0;
-+}
-+#else
-+#define samsungq10_suspend NULL
-+#define samsungq10_resume  NULL
-+#endif
-+
-+static const struct dev_pm_ops samsungq10_pm_ops = {
-+	.suspend	= samsungq10_suspend,
-+	.resume		= samsungq10_resume,
-+};
-+
-+static int __devinit samsungq10_probe(struct platform_device *pdev)
-+{
-+
-+	struct backlight_properties props;
-+	struct backlight_device *bd;
-+
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.max_brightness = SAMSUNGQ10_BL_MAX_INTENSITY;
-+	bd = backlight_device_register("samsung", &pdev->dev, NULL,
-+				       &samsungq10_bl_ops, &props);
-+	if (IS_ERR(bd))
-+		return PTR_ERR(bd);
-+
-+	platform_set_drvdata(pdev, bd);
-+
-+	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
-+	samsungq10_bl_set_intensity(bd);
-+
-+	return 0;
-+}
-+
-+static int __devexit samsungq10_remove(struct platform_device *pdev)
-+{
-+
-+	struct backlight_device *bd = platform_get_drvdata(pdev);
-+
-+	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
-+	samsungq10_bl_set_intensity(bd);
-+
-+	backlight_device_unregister(bd);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver samsungq10_driver = {
-+	.driver		= {
-+		.name	= "samsung",
-+		.owner	= THIS_MODULE,
-+		.pm	= &samsungq10_pm_ops,
-+	},
-+	.probe		= samsungq10_probe,
-+	.remove		= __devexit_p(samsungq10_remove),
-+};
-+
-+static struct platform_device *samsungq10_device;
-+
-+static int __init dmi_check_callback(const struct dmi_system_id *id)
-+{
-+	printk(KERN_INFO KBUILD_MODNAME ": found model '%s'\n", id->ident);
-+	return 0;
-+}
-+
-+static struct dmi_system_id __initdata samsungq10_dmi_table[] = {
-+	{
-+		.ident = "Samsung Q10",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Samsung"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "SQ10"),
-+		},
-+		.callback = dmi_check_callback,
-+	},
-+	{
-+		.ident = "Dell Latitude X200",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X200"),
-+		},
-+		.callback = dmi_check_callback,
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(dmi, samsungq10_dmi_table);
-+
-+static int __init samsungq10_init(void)
-+{
-+	if (!force && !dmi_check_system(samsungq10_dmi_table))
-+		return -ENODEV;
-+
-+	samsungq10_device = platform_create_bundle(&samsungq10_driver,
-+						   samsungq10_probe,
-+						   NULL, 0, NULL, 0);
-+
-+	if (IS_ERR(samsungq10_device))
-+		return PTR_ERR(samsungq10_device);
-+
-+	return 0;
-+}
-+
-+static void __exit samsungq10_exit(void)
-+{
-+	platform_device_unregister(samsungq10_device);
-+	platform_driver_unregister(&samsungq10_driver);
-+}
-+
-+module_init(samsungq10_init);
-+module_exit(samsungq10_exit);
-+
-+MODULE_AUTHOR("Frederick van der Wyck <fvanderwyck@gmail.com>");
-+MODULE_DESCRIPTION("Samsung Q10 Driver");
-+MODULE_LICENSE("GPL");
--- 
+ config FB_OLPC_DCON_1_5
+ 	bool "OLPC XO-1.5 DCON support"
+-	depends on FB_OLPC_DCON
++	depends on FB_OLPC_DCON && ACPI
+ 	default y
+ 	---help---
+ 	  Enable support for the DCON in XO-1.5 model laptops.  The kernel
