@@ -1,131 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1BUPSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 10:18:10 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45720 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab1BUPSI (ORCPT
+	id S1755350Ab1BUPU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 10:20:26 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44193 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab1BUPUZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 10:18:08 -0500
-Date: Mon, 21 Feb 2011 15:17:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: John Linn <John.Linn@xilinx.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, catalin.marinas@arm.com,
-        glikely@secretlab.ca, jamie@jamieiles.com
-Subject: Re: [PATCH V4 3/4] ARM: Xilinx: base header files and assembly
-	macros
-Message-ID: <20110221151752.GR14495@n2100.arm.linux.org.uk>
-References: <1298052881-14591-1-git-send-email-john.linn@xilinx.com> <201102210936.42098.arnd@arndb.de> <c3cdf33d-2163-4417-bc64-7637f5c211e0@VA3EHSMHS021.ehs.local> <201102211548.36296.arnd@arndb.de>
+	Mon, 21 Feb 2011 10:20:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TB5D2tF+fSo8otjbB3s1TQKewbq5v1UzDM8FgonnPx+4Vv4Tgg56Yur6AsZdQK3pS6
+         2Q/MyTOvzx3kkicrHsn0GC1kwTL389MSszuJNM2ZB78rI54zLDOjhmwXfQV2BSTtr1VK
+         P23XrfhpoA7gGY6IeF4x/CpTUlxyLkIFCvq14=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102211548.36296.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1298239052.25491.2.camel@t60prh>
+References: <AANLkTi=vkmkhcj3dCCGBDvBqdRpJMQi+FwVhGzFTVOp+@mail.gmail.com>
+	<1298239052.25491.2.camel@t60prh>
+Date: Mon, 21 Feb 2011 16:20:00 +0100
+Message-ID: <AANLkTi=nPXd1MnH=NAxQTDZZ1N38UGNsaKqsgf8TryXf@mail.gmail.com>
+Subject: Re: v2.6.38-rc5: drm-radeon regression
+From: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@googlemail.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?TWFyZWsgT2zFocOhaw==?= <maraeo@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 03:48:36PM +0100, Arnd Bergmann wrote:
-> On Monday 21 February 2011, John Linn wrote:
-> > > It would be better if you could avoid introducing new uses of
-> > > CLOCK_TICK_RATE, because that will have to be removed before we can
-> > > move to a real multi-platform kernel. For instance, you can put
-> > > PERIPHERAL_CLOCK_RATE in a hardware specific header and put a bogus
-> > > definition for CLOCK_TICK_RATE into timex.h
-> > 
-> > Hi Arnd,
-> > 
-> > I can remove the use of it from my timer code, but I still see
-> > CLOCK_TICK_RATE 
-> > being used in linux/jiffies.h.
-> > 
-> > I tried removing it and got build errors.  Am I missing something there?
-> > 
-> 
-> You still need to have some definition for CLOCK_TICK_RATE to make
-> the jiffies code compile, but the actual value no longer matters.
+2011/2/20 Dave Airlie <airlied@redhat.com>:
+> On Sun, 2011-02-20 at 11:24 +0100, Jörg Otte wrote:
+>> Reaching the desktop in v2.6.38-rc5 I only see the background.
+>> No Icon,widgets,windows etc. I am under the impression
+>> that everything is there - but invisible.
+>
+> Does this help?
+>
+> From 9f159e5f1fd56409718e14913f0fef5fedc09fc8 Mon Sep 17 00:00:00 2001
+> From: Dave Airlie <airlied@redhat.com>
+> Date: Mon, 21 Feb 2011 07:56:04 +1000
+> Subject: [PATCH] drm/radeon: fix regression with AA resolve checking
+>
+> Some userspaces can emit a whole packet without disabling AA resolve
+> by the looks of it, so we have to deal with them.
+>
+> Signed-off-by: Dave Airlie <airlied@redhat.com>
+> ---
+>  drivers/gpu/drm/radeon/r100.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/radeon/r100.c
+> b/drivers/gpu/drm/radeon/r100.c
+> index 56deae5..8b0d117 100644
+> --- a/drivers/gpu/drm/radeon/r100.c
+> +++ b/drivers/gpu/drm/radeon/r100.c
+> @@ -3490,7 +3490,7 @@ void r100_cs_track_clear(struct radeon_device
+> *rdev, struct r100_cs_track *track
+>                track->num_texture = 16;
+>                track->maxy = 4096;
+>                track->separate_cube = 0;
+> -               track->aaresolve = true;
+> +               track->aaresolve = false;
+>                track->aa.robj = NULL;
+>        }
+>
 
-This is what I said a while back:
-| If you switch to clocksource/clockevents, then I think CLOCK_TICK_RATE
-| is irrelevant as time advances according to the interval measured by
-| the previous and current clocksource read, rather than 1/HZ intervals.
-| 
-| However, I'm never happy to say "just set CLOCK_TICK_RATE to some random
-| value that's a multiple of HZ" because I can't convince myself that these
-| don't have any effect when using clocksources.  The list of symbols which
-| depend on CLOCK_TICK_RATE are:
-| 
-| ACTHZ
-| LATCH
-| TICK_NSEC
-| TICK_USEC_TO_NSEC
-| LOW_RES_NSEC
-| MONOTONIC_RES_NSEC
-| NSEC_PER_JIFFY
-| KTIME_LOW_RES
-| 
-| and if you grep for those outside of arch/, you find them being used in
-| a fair amount of code under kernel/, as well as the odd driver here and
-| there.
+Yes, this works.
 
-Eg, LOW_RES_NSEC is exported to userspace via the posix clocks interface.
-
-NSEC_PER_SEC and TICK_NSEC are used for cmos clock updates, so probably
-don't matter too much there.  TICK_NSEC is also used by the scheduler,
-time conversions (timespec/timeval to/from jiffies) and profiling code.
-
-NSEC_PER_JIFFY is used by the jiffy clocksource code, which only matters
-if you don't have your own clocksource.
-
-So, I feel very uneasy about saying that CLOCK_TICK_RATE doesn't matter
-anymore given all the places which reference something that's derived
-from it.
-
-Here's the result of grepping for the above symbols:
-
-drivers/oprofile/timer_int.c:   hrtimer_forward_now(hrtimer, ns_to_ktime(TICK_NSEC));
-drivers/oprofile/timer_int.c:   hrtimer_start(hrtimer, ns_to_ktime(TICK_NSEC),
-include/linux/acct.h:#if (TICK_NSEC % (NSEC_PER_SEC / AHZ)) == 0
-include/linux/acct.h:        u64 tmp = (u64)x * TICK_NSEC;
-include/linux/hrtimer.h:# define MONOTONIC_RES_NSEC     HIGH_RES_NSEC
-include/linux/hrtimer.h:# define MONOTONIC_RES_NSEC     LOW_RES_NSEC
-include/linux/hrtimer.h:# define KTIME_MONOTONIC_RES    KTIME_LOW_RES
-include/linux/jiffies.h:/* TICK_NSEC is the time between ticks in nsec assuming
-real ACTHZ */
-include/linux/jiffies.h:#define TICK_NSEC (SH_DIV (1000000UL * 1000, ACTHZ, 8))
-include/linux/jiffies.h:/* TICK_USEC_TO_NSEC is the time between ticks in nsec assuming real ACTHZ and  */
-include/linux/jiffies.h:#define TICK_USEC_TO_NSEC(TUSEC) (SH_DIV (TUSEC * USER_HZ * 1000, ACTHZ, 8))
-include/linux/jiffies.h: * is: TICK_NSEC (which is defined in timex.h).  This
-include/linux/jiffies.h:#if !((((NSEC_PER_SEC << 2) / TICK_NSEC) << (SEC_JIFFIE_SC - 2)) & 0x80000000)
-include/linux/jiffies.h:                                TICK_NSEC -1) / (u64)TICK_NSEC))
-include/linux/jiffies.h:                                        TICK_NSEC -1) /
-(u64)TICK_NSEC))
-include/linux/jiffies.h:                                        TICK_NSEC -1) /
-(u64)TICK_NSEC))
-include/linux/jiffies.h:        (long)((u64)((u64)MAX_JIFFY_OFFSET * TICK_NSEC)
-/ NSEC_PER_SEC)
-include/linux/jiffies.h:        (SH_DIV((MAX_JIFFY_OFFSET >> SEC_JIFFIE_SC) * TICK_NSEC, NSEC_PER_SEC, 1) - 1)
-include/linux/ktime.h:#define LOW_RES_NSEC              TICK_NSEC
-include/linux/ktime.h:#define KTIME_LOW_RES             (ktime_t){ .tv64 = LOW_RES_NSEC }
-kernel/hrtimer.c:                       .resolution = KTIME_LOW_RES,
-kernel/hrtimer.c:                       .resolution = KTIME_LOW_RES,
-kernel/perf_event.c:    u64 interval = (u64)cpuctx->jiffies_interval * TICK_NSEC;
-kernel/perf_event.c:            if (delta > 0 && delta < 2*TICK_NSEC)
-kernel/posix-timers.c:  *tp = ktime_to_timespec(KTIME_LOW_RES);
-kernel/sched.c: * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-kernel/sched_clock.c:    *                    scd->tick_gtod + TICK_NSEC);
-kernel/sched_clock.c:   max_clock = wrap_max(old_clock, scd->tick_gtod + TICK_NSEC);
-kernel/time.c: * The TICK_NSEC - 1 rounds up the value to the next resolution.
-Note
-kernel/time.c: * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.kernel/time.c:  long nsec = value->tv_nsec + TICK_NSEC - 1;
-kernel/time.c:  value->tv_sec = div_u64_rem((u64)jiffies * TICK_NSEC,
-kernel/time.c:  value->tv_sec = div_u64_rem((u64)jiffies * TICK_NSEC,
-kernel/time.c:#if (TICK_NSEC % (NSEC_PER_SEC / USER_HZ)) == 0
-kernel/time.c:  return div_u64((u64)x * TICK_NSEC, NSEC_PER_SEC / USER_HZ);
-kernel/time.c:#if (TICK_NSEC % (NSEC_PER_SEC / USER_HZ)) == 0
-kernel/time.c:  x = div_u64(x * TICK_NSEC, (NSEC_PER_SEC / USER_HZ));
-kernel/time/jiffies.c:#define NSEC_PER_JIFFY    ((u32)((((u64)NSEC_PER_SEC)<<8)/ACTHZ))
-kernel/time/jiffies.c:/* Since jiffies uses a simple NSEC_PER_JIFFY multiplier
-kernel/time/jiffies.c: * larger can result in overflows. NSEC_PER_JIFFY grows askernel/time/jiffies.c:  .mult           = NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
-kernel/time/ntp.c:      next.tv_nsec = (NSEC_PER_SEC / 2) - now.tv_nsec - (TICK_NSEC / 2);
+Thanks!
