@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab1BUNp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 08:45:26 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:52808 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019Ab1BUNpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 08:45:25 -0500
-Subject: Re: [PATCH repost 4/4] avr32: at32ap700x: specify DMA src and dst
- masters
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
-In-Reply-To: <1295619115-18420-5-git-send-email-jamie@jamieiles.com>
-References: <1295619115-18420-1-git-send-email-jamie@jamieiles.com>
-	 <1295619115-18420-5-git-send-email-jamie@jamieiles.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Mon, 21 Feb 2011 14:45:00 +0100
-Message-ID: <1298295901.24505.68.camel@hcegtvedt>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Feb 2011 13:45:04.0199 (UTC) FILETIME=[8B134D70:01CBD1CD]
+	id S1756068Ab1BUNu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 08:50:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755782Ab1BUNu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 08:50:56 -0500
+Date: Mon, 21 Feb 2011 14:41:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Andrew Morton <akpm@osdl.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, Kees Cook <kees.cook@canonical.com>,
+        containers@lists.linux-foundation.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, xemul@parallels.com,
+        dhowells@redhat.com
+Subject: Re: [PATCH 1/4] userns: let clone_uts_ns() handle setting
+	uts->user_ns
+Message-ID: <20110221134129.GA15563@redhat.com>
+References: <20110221040156.GA12580@mail.hallyn.com> <4D623886.3010505@free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D623886.3010505@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 14:11 +0000, Jamie Iles wrote: 
-> Now that the dw_dmac DMA driver supports configurable source and
-> destination masters we need to specify which ones to use. This was
-> previously hardcoded to 0 and 1 respectively in the driver.
-> 
-> Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Signed-off-by: Jamie Iles <jamie@jamieiles.com>
-> ---
->  arch/avr32/mach-at32ap/at32ap700x.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-> index e67c999..2747cde 100644
-> --- a/arch/avr32/mach-at32ap/at32ap700x.c
-> +++ b/arch/avr32/mach-at32ap/at32ap700x.c
-> @@ -2048,6 +2048,8 @@ at32_add_device_ac97c(unsigned int id, struct ac97c_platform_data *data,
->  		rx_dws->reg_width = DW_DMA_SLAVE_WIDTH_16BIT;
->  		rx_dws->cfg_hi = DWC_CFGH_SRC_PER(3);
->  		rx_dws->cfg_lo &= ~(DWC_CFGL_HS_DST_POL | DWC_CFGL_HS_SRC_POL);
-> +		rx_dws->src_master = 0;
-> +		rx_dws->dst_master = 1;
->  	}
->  
->  	/* Check if DMA slave interface for playback should be configured. */
-> @@ -2056,6 +2058,8 @@ at32_add_device_ac97c(unsigned int id, struct ac97c_platform_data *data,
->  		tx_dws->reg_width = DW_DMA_SLAVE_WIDTH_16BIT;
->  		tx_dws->cfg_hi = DWC_CFGH_DST_PER(4);
->  		tx_dws->cfg_lo &= ~(DWC_CFGL_HS_DST_POL | DWC_CFGL_HS_SRC_POL);
-> +		rx_dws->src_master = 0;
-> +		rx_dws->dst_master = 1;
+On 02/21, Daniel Lezcano wrote:
+>
+> On 02/21/2011 05:01 AM, Serge E. Hallyn wrote:
+>> To do so we need to pass in the task_struct who'll get the utsname,
+>> so we can get its user_ns.
+>>
+>> -extern struct uts_namespace *copy_utsname(unsigned long flags,
+>> -					struct uts_namespace *ns);
+>> +extern struct uts_namespace *copy_utsname(struct task_struct *tsk,
+>> +					  unsigned long flags,
+>> +					  struct uts_namespace *ns);
+>
+> Why don't we pass 'user_ns' instead of 'tsk' ? that will look
+> semantically clearer for the caller no ?
+> (example below).
+> ...
+>
+> new_nsp->uts_ns = copy_utsname(flags, tsk->nsproxy->uts_ns, task_cred_xxx(tsk, user)->user_ns);
 
-Spotted by Nicolas Ferre, you use the wrong struct here, should be
-tx_dws, not rx_dws.
+To me tsk looks more readable, I mean
 
-<snipp>
+	new_nsp->uts_ns = copy_utsname(flags, tsk);
 
--- 
-Hans-Christian Egtvedt
+copy_utsname() can find both uts_ns and user_ns looking at task_strcut.
+
+But this is cosmetic and up to you and Serge.
+
+
+But. I think it makes sense to pass "tsk" argument to copy_pid_ns() as well.
+This way we can remove some CLONE_PIDNS code in copy_process(), and this
+looks like a nice cleanaup (even if minor) to me.
+
+Oleg.
 
