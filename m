@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1BUO1i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 09:27:38 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33443 "EHLO mx1.suse.de"
+	id S1755211Ab1BUObP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 09:31:15 -0500
+Received: from www.tglx.de ([62.245.132.106]:41801 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754212Ab1BUO1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 09:27:37 -0500
-From: David Sterba <dsterba@suse.cz>
-To: linux-crypto@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Sterba <dsterba@suse.cz>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH] crypto: do not attempt to write to readonly variable
-Date: Mon, 21 Feb 2011 15:27:22 +0100
-Message-Id: <1298298442-24697-1-git-send-email-dsterba@suse.cz>
-X-Mailer: git-send-email 1.7.4
+	id S1751135Ab1BUObN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 09:31:13 -0500
+Date: Mon, 21 Feb 2011 15:30:56 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] debugobjects: print more data
+In-Reply-To: <20110221142329.GA6105@redhat.com>
+Message-ID: <alpine.LFD.2.00.1102211530090.2701@localhost6.localdomain6>
+References: <20110221142329.GA6105@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit da7f033ddc9fdeb (”crypto: cryptomgr - Add test infrastructure”) added a
-const to variable which is later used as target buffer of memcpy.
+On Mon, 21 Feb 2011, Stanislaw Gruszka wrote:
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -276,6 +276,7 @@ config TIMER_STATS
+>  config DEBUG_OBJECTS
+>  	bool "Debug object operations"
+>  	depends on DEBUG_KERNEL
+> +	select KALLSYMS
 
-crypto/tcrypt.c:217:12: warning: passing 'const char (*)[128]' to parameter of type 'void *' discards qualifiers
-                                memset(&iv, 0xff, iv_len);
+Again, we don't enforce kallsyms with DO
 
+>  	help
+>  	  If you say Y here, additional code will be inserted into the
+>  	  kernel to track the life time of various objects and validate
+> diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+> index deebcc5..d5fcdeb 100644
+> --- a/lib/debugobjects.c
+> +++ b/lib/debugobjects.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/debugfs.h>
+>  #include <linux/slab.h>
+>  #include <linux/hash.h>
+> +#include <linux/kallsyms.h>
 
-crypto/tcrypt.c:test_cipher_speed()
+Please remove.
 
--       unsigned char *key, iv[128];
-+       const char *key, iv[128];
-...
-        memset(&iv, 0xff, iv_len);
-
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David Sterba <dsterba@suse.cz>
----
- crypto/tcrypt.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
-index 9aac5e5..e912ea5 100644
---- a/crypto/tcrypt.c
-+++ b/crypto/tcrypt.c
-@@ -146,7 +146,8 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int sec,
- 			      unsigned int tcount, u8 *keysize)
- {
- 	unsigned int ret, i, j, iv_len;
--	const char *key, iv[128];
-+	const char *key;
-+	char iv[128];
- 	struct crypto_blkcipher *tfm;
- 	struct blkcipher_desc desc;
- 	const char *e;
--- 
-1.7.4
-
+>  
+>  #define ODEBUG_HASH_BITS	14
+>  #define ODEBUG_HASH_SIZE	(1 << ODEBUG_HASH_BITS)
+> @@ -253,10 +254,13 @@ static void debug_print_object(struct debug_obj *obj, char *msg)
+>  
+>  	if (limit < 5 && obj->descr != descr_test) {
+>  		limit++;
+> -		WARN(1, KERN_ERR "ODEBUG: %s %s (active state %u) "
+> -				 "object type: %s\n",
+> +		printk(KERN_ERR "ODEBUG: %s %s (active state %u) "
+> +				"object type: %s\n",
+>  			msg, obj_states[obj->state], obj->astate,
+>  			obj->descr->name);
+> +		dump_stack();
+> +		if (obj->descr->print)
+> +			obj->descr->print(obj->object);
+>  	}
+>  	debug_objects_warnings++;
+>  }
+> -- 
+> 1.7.1
+> 
