@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab1BUVnX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 16:43:23 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:65486 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab1BUVnV (ORCPT
+	id S1751828Ab1BUVoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 16:44:32 -0500
+Received: from mail-bw0-f51.google.com ([209.85.214.51]:49351 "EHLO
+	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab1BUVob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 16:43:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg Ungerer <gerg@snapgear.com>
-Subject: Re: merge of m68knommu and m68k arch branches?
-Date: Mon, 21 Feb 2011 22:43:15 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.5.1; x86_64; ; )
-Cc: Sam Ravnborg <sam@ravnborg.org>, "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Steven King <sfking00@yahoo.com>,
-        uClinux development list <uclinux-dev@uclinux.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Greg Ungerer <gregungerer@westnet.com.au>
-References: <4D5DB83D.80205@snapgear.com> <20110218074401.GA26836@merkur.ravnborg.org> <4D5E5FB1.1000404@snapgear.com>
-In-Reply-To: <4D5E5FB1.1000404@snapgear.com>
+	Mon, 21 Feb 2011 16:44:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=t6Y9PT3Vk5HomRS1ps6Oyk+bYNCu0URf1NDCH2ooWU4yosYGuJhPRUWkXKOGoMVPnx
+         IxCQA2mmTlnWsgEErEombXEE7DR2UBNSQCs46TuU3vfm9Da4PqPbk8a33e8SMlHs7HhX
+         6VwLUfaxIXU2DCpT3Rlws9MoV4RDOXFWjhy0k=
+Message-ID: <4D62DCBA.9050609@gmail.com>
+Date: Mon, 21 Feb 2011 22:44:26 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        debora@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
+Subject: Re: 2.6.37.1 s2disk regression (TPM)
+References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com> <4D629427.8020500@gmail.com> <4D629D03.90801@linux.vnet.ibm.com> <4D62CD93.3040206@gmail.com> <4D62D930.8060304@linux.vnet.ibm.com>
+In-Reply-To: <4D62D930.8060304@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102212243.15867.arnd@arndb.de>
-X-Provags-ID: V02:K0:R/ZTgl1Mq2xkFBotoFmhuhPrygqrpOTc86N9KYPsDY6
- 1GsiS1fMFf2DoxC+nNWBH1MV3GrQ0V/boNxWs1HZVcL0NIeF/r
- 2XDNKXwNDAuj02NmCV07s7iIsZoxy5YfaUIqylJQnd4TX8TPZ6
- kTvyOxtXb3sOF0mHRUO6iRv2dLIW9lBebqDrWf5eeRqUff5azB
- fuuoXcaa5hzwbBwPiOxCQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 February 2011 13:01:53 Greg Ungerer wrote:
-> >> Attached is a script and patch that does a kind of brute force
-> >> simplistic merge of the directories and files. (Thanks to Stephen King
-> >> <sfking@fdwdc.com>  for the initial version of this script, and to
-> >> Sam Ravnborg for the m68k includes merge script this was based on).
-> >> Nothing outside of the arch/m68k and arch/m68knommu directories is
-> >> touched, and in the end there is no more arch/m68knommu. To apply you
-> >> simply run the script from the top of a current kernel git tree (I used
-> >> 2.6.38-rc5 for testing) and then apply the patch.
-> >
-> > The initial version of said script was created by Arnd IIRC.
+On 02/21/2011 10:29 PM, Stefan Berger wrote:
+> On 02/21/2011 03:39 PM, Jiri Slaby wrote:
+>> On 02/21/2011 06:12 PM, Rajiv Andrade wrote:
+>>> On 02/21/2011 01:34 PM, Jiri Slaby wrote:
+>>>> There has to be another problem which caused my regression. And
+>>>> since it
+>>>> reports "Operation Timed out", the former default timeout values worked
+>>>> for me, the ones read from TPM do not.
+>>> Yes, it's highly due inconsistent timeout values reported by the TPM as
+>>> I mentioned, my working timeouts are:
+>>> 3020000 4510000 181000000
+>> 1000000 2000 150000
+>>
+>> Actually the first one from HW is 1. This is one is HZ after correction
+>> in get_timeout. So perhaps it is in ms, yes.
 > 
-> Apologies to Arnd then :-)
+> Following the specs, the timeouts are supposed to be in microseconds and
+> ascending order for short, medium and long duration. Of course, if the
+> device returns wrong timeouts, the command isn't going to succeed,
+> failing the suspend in this case. Nevertheless, I think we need the
+> patch I put in but at the same time we'll need a work-around for devices
+> like this.
 
-I had absolutely no memory of having done said script, but if Sam
-says wrote it did, that's probably true.
+Yes, the patch is correct per se. But as it breaks bunch of machines it
+cannot go in now. The rule is no regressions.
 
-I was just about to say how much I like your script when I read
-that it was my idea...
+After you have the workaround it should go into the next rc1 after that.
+Do you plan to add a dmi-based quirk? Or, IOW do you want me to attach
+dmidecode output? Or are you going to base it solely on TPM
+manufacturer/version?
 
-	Arnd
+> There was one person stating that this patch fixed are
+> problem on his machine. 
+
+Yes, I can see that. But we have to live with our mistakes.
+
+> Can you find the 'caps' entry in /sys
+> (/sys/devices/pnp0/00:06) and let us know its content?
+
+TPM is at 00:0c:
+Manufacturer: 0x49465800
+TCG version: 1.2
+Firmware version: 1.0
+
+regards,
+-- 
+js
