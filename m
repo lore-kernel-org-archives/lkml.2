@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab1BUVzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 16:55:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53292 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1BUVzj (ORCPT
+	id S1751908Ab1BUV5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 16:57:24 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:37623 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab1BUV5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 16:55:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mbI/5P/t9PULPruVBe6GzQdfodjMBx1BC/2uV28noaObpJG83hp+fotgnf4Dkyee1n
-         RJQkdm4TWicxrJ0krYhvCh7JMKN4j6bDDeAEDF1rs3aAJVvdECh09lmNA1ZAUNvs/DWK
-         fhEBwZvPKmJ2T+aODXaD9aeHL5c53X5wSDtH0=
-Date: Mon, 21 Feb 2011 22:55:35 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 0/4] perf events: Add realtime clock event and timehist
- option -v2
-Message-ID: <20110221215533.GD3583@nowhere>
-References: <1298322150-15505-1-git-send-email-daahern@cisco.com>
- <20110221213740.GC3583@nowhere>
- <4D62DC21.4070407@cisco.com>
+	Mon, 21 Feb 2011 16:57:22 -0500
+Date: Mon, 21 Feb 2011 22:57:19 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Ungerer <gerg@snapgear.com>, Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Steven King <sfking00@yahoo.com>,
+        uClinux development list <uclinux-dev@uclinux.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Greg Ungerer <gregungerer@westnet.com.au>
+Subject: Re: merge of m68knommu and m68k arch branches?
+Message-ID: <20110221215719.GA24535@merkur.ravnborg.org>
+References: <4D5DB83D.80205@snapgear.com> <20110218074401.GA26836@merkur.ravnborg.org> <4D5E5FB1.1000404@snapgear.com> <201102212243.15867.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D62DC21.4070407@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201102212243.15867.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 02:41:53PM -0700, David Ahern wrote:
-> 
-> 
-> On 02/21/11 14:37, Frederic Weisbecker wrote:
-> 
-> > The goal is actually to extend perf script to handle more than just raw data.
-> > So that it can handle the rest of what we can find in an event: time, ip, stacktraces...
+On Mon, Feb 21, 2011 at 10:43:15PM +0100, Arnd Bergmann wrote:
+> On Friday 18 February 2011 13:01:53 Greg Ungerer wrote:
+> > >> Attached is a script and patch that does a kind of brute force
+> > >> simplistic merge of the directories and files. (Thanks to Stephen King
+> > >> <sfking@fdwdc.com>  for the initial version of this script, and to
+> > >> Sam Ravnborg for the m68k includes merge script this was based on).
+> > >> Nothing outside of the arch/m68k and arch/m68knommu directories is
+> > >> touched, and in the end there is no more arch/m68knommu. To apply you
+> > >> simply run the script from the top of a current kernel git tree (I used
+> > >> 2.6.38-rc5 for testing) and then apply the patch.
+> > >
+> > > The initial version of said script was created by Arnd IIRC.
 > > 
-> > You've added 200 lines in perf report to add the dump support. It wouldn't
-> > require more to extend perf script to do that. And the result is going to be
-> > much more powerful.
-> > 
-> > Look at struct scripting_ops::process_event().
+> > Apologies to Arnd then :-)
 > 
-> I actually have a draft of perf-script - essentially duplicating sample
-> processing done in perf-report. When it got to the point of having to
-> add a lot of code -- other features essentially -- just to get it to the
-> point of being ready for this feature I stopped.
+> I had absolutely no memory of having done said script, but if Sam
+> says wrote it did, that's probably true.
+> 
+> I was just about to say how much I like your script when I read
+> that it was my idea...
 
+See semi original version in: 49148020bcb6910ce71417bd990a5ce7017f9bd3
 
-I don't understand why it's harder to extend print_event() rather than
-perf report.
+	Sam
