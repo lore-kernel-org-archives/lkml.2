@@ -1,175 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab1BURL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 12:11:59 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44874 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab1BURL6 (ORCPT
+	id S1755543Ab1BURMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 12:12:48 -0500
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:34153 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273Ab1BURMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 12:11:58 -0500
-Message-ID: <4D629C82.3080906@mvista.com>
-Date: Mon, 21 Feb 2011 20:10:26 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Mon, 21 Feb 2011 12:12:46 -0500
+Message-ID: <4D629D03.90801@linux.vnet.ibm.com>
+Date: Mon, 21 Feb 2011 14:12:35 -0300
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Pratheesh Gangadhar <pratheesh@ti.com>
-CC: davinci-linux-open-source@linux.davincidsp.com, gregkh@suse.de,
-        amit.chatterjee@ti.com, hjk@linutronix.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources used
- by PRUSS UIO driver
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>	<1298041530-26855-2-git-send-email-pratheesh@ti.com> <1298041530-26855-3-git-send-email-pratheesh@ti.com>
-In-Reply-To: <1298041530-26855-3-git-send-email-pratheesh@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, stefanb@linux.vnet.ibm.com,
+        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        debora@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
+Subject: Re: 2.6.37.1 s2disk regression (TPM)
+References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com> <4D629427.8020500@gmail.com>
+In-Reply-To: <4D629427.8020500@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 11022117-6842-0000-0000-000000624A51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 02/21/2011 01:34 PM, Jiri Slaby wrote:
 
-Pratheesh Gangadhar wrote:
+>>> BTW, the first hunk from that commit in drivers/char/tpm/tpm.c seems
+>>> to be
+>>> completely broken:
+>>> @@ -577,9 +577,11 @@ duration:
+>>>           if (rc)
+>>>                   return;
+>>>
+>>> -       if (be32_to_cpu(tpm_cmd.header.out.return_code)
+>>> -           != 3 * sizeof(u32))
+>>> +       if (be32_to_cpu(tpm_cmd.header.out.return_code) != 0 ||
+>>> +           be32_to_cpu(tpm_cmd.header.out.length)
+>>> +           != sizeof(tpm_cmd.header.out) + sizeof(u32) + 3 *
+>>> sizeof(u32))
+>>>                   return;
+>>> +
+>>>           duration_cap =&tpm_cmd.params.getcap_out.cap.duration;
+>>>           chip->vendor.duration[TPM_SHORT] =
+>>>               usecs_to_jiffies(be32_to_cpu(duration_cap->tpm_short));
+>>>
+>>> Namely, either the old code always returned as a result of the
+>>> conditional
+>>> being removed, or the new code will always return as a result of
+>>> the (... != 0) check.  I wonder if there's supposed to be (... == 0)
+>>> instead?
+>> The previous code was checking the wrong field of the TPM returned
+>> buffer, probably
+>> due an old commit that incorporated the tpm_cmd strucuture, it should
+>> check if the return code
+>> is != 0, which if true, means that the command didn't succeed. The
+>> output length check should be
+>> just a sanity check, so indeed the logical operator should be&&
+>> instead.
+> No it should not. You want 'if (wrong_retcode OR wrong_len) die;'. IOW I
+> don't see what exactly is wrong on the 'if'. I think it's correct.
+> (Given the old test was incorrect.)
+Exactly, I read it too fast and inverted the logic while writing the response, missing De Morgan's.
 
-> Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
+> There has to be another problem which caused my regression. And since it
+> reports "Operation Timed out", the former default timeout values worked
+> for me, the ones read from TPM do not.
+Yes, it's highly due inconsistent timeout values reported by the TPM as I mentioned, my working timeouts are:
+3020000 4510000 181000000
 
-    Signoff should follow the change log, not precede it. "From:" line may 
-precede the change log.
+> I'm not at that machine now, what are the usual timeouts in usecs? The
+> use of conversed jiffies seem bogus. If the usecs are so low (or HZ so
+> high on some configs) that the conversion returns 1 jiffie,
+> wait_event_interruptible_timeout in wait_for_stat will return 0 when:
+> * 1 jiffie passes without change in status (proper timeout)
+> * status changed, but also the timer ticked once meanwhile, i.e. we
+> scheduled a moment before timer tick
+>
+> But this is only a theory so far. What about this (wrapped, just dropped
+> by mouse), I may try it when I'm back to the machine?
+> --- a/drivers/char/tpm/tpm_tis.c
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -201,7 +201,7 @@ static int wait_for_stat(struct tpm_chip *chip, u8
+> mask, unsigned long timeout,
+>                                                        ((tpm_tis_status
+>                                                          (chip)&  mask) ==
+>                                                         mask), timeout);
+> -               if (rc>  0)
+> +               if (rc>  0 || (tpm_tis_status(chip)&  mask) == mask)
+>                          return 0;
+>          } else {
+>                  stop = jiffies + timeout;
+>
+This will work for small timeout values discrepancies, but not if, for example,
+the TPM is returning the values in msecs instead of usecs, which should affect the
+result when issuing commands that last longer. That's why I'd like to see
+the failing timeout values first.
 
-> This patch defines PRUSS, ECAP clocks, memory and IRQ resources
-> used by PRUSS UIO driver in DA850/AM18xx/OMAPL1-38 devices. UIO
-> driver exports 64K I/O region of PRUSS, 128KB L3 RAM and 256KB
-> DDR buffer to user space. PRUSS has 8 host event interrupt lines
-> mapped to IRQ_DA8XX_EVTOUT0..7 of ARM9 INTC.These in conjunction
-> with shared memory can be used to implement IPC between ARM9 and
-> PRUSS.
+Rajiv
 
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-> index 11f986b..ddcbac8 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@ -1077,6 +1077,10 @@ static __init void da850_evm_init(void)
->  		pr_warning("da850_evm_init: i2c0 registration failed: %d\n",
->  				ret);
->  
-> +	ret = da8xx_register_pruss();
-> +       if (ret)
-> +                pr_warning("da850_evm_init: pruss registration failed: %d\n",
-> +                                 ret);
->  
->  	ret = da8xx_register_watchdog();
->  	if (ret)
-
-    I'd put this into a pacth of its own, to have the SoC level changes 
-separated from board-level changes...
-
-> diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-> index 3443d97..0096d4f 100644
-> --- a/arch/arm/mach-davinci/da850.c
-> +++ b/arch/arm/mach-davinci/da850.c
-> @@ -238,6 +238,13 @@ static struct clk tptc2_clk = {
->  	.flags		= ALWAYS_ENABLED,
->  };
->  
-> +static struct clk pruss_clk = {
-> +	.name		= "pruss",
-> +	.parent		= &pll0_sysclk2,
-> +	.lpsc		= DA8XX_LPSC0_DMAX,
-
-    We have patch submitted by TI that renames this #define to DA8XX_LPSC0_PRUSS...
-
-> +	.flags		= ALWAYS_ENABLED,
-> +};
-> +
-
-    We already have patch submitted by TI that defines this clock. It would be 
-nice if you coordinated your efforts to avoid such conflicts.
-    Again, I'd put the part adding the clocks into a patch of its own.
-
-> diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-> index beda8a4..4ea3d1f 100644
-> --- a/arch/arm/mach-davinci/devices-da8xx.c
-> +++ b/arch/arm/mach-davinci/devices-da8xx.c
-> @@ -725,3 +725,76 @@ int __init da8xx_register_cpuidle(void)
->  
->  	return platform_device_register(&da8xx_cpuidle_device);
->  }
-> +static struct resource pruss_resources[] = {
-> +	[0] = {
-> +		.start  = DA8XX_PRUSS_BASE,
-> +		.end    = DA8XX_PRUSS_BASE + SZ_64K - 1,
-> +		.flags  = IORESOURCE_MEM,
-> +	},
-> +	[1] = {
-> +		.start  = DA8XX_L3RAM_BASE,
-> +		.end    = DA8XX_L3RAM_BASE + SZ_128K - 1,
-> +		.flags  = IORESOURCE_MEM,
-
-    Are you going to use all SRAM?
-
-> +	},
-> +	[2] = {
-> +		.start  = 0,
-> +		.end    = SZ_256K - 1,
-> +		.flags  = IORESOURCE_MEM,
-> +	},
-> +
-> +	[3] = {
-> +		.start  = IRQ_DA8XX_EVTOUT0,
-> +		.end    = IRQ_DA8XX_EVTOUT0,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	[4] = {
-> +		.start  = IRQ_DA8XX_EVTOUT1,
-> +		.end    = IRQ_DA8XX_EVTOUT1,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	[5] = {
-> +		.start  = IRQ_DA8XX_EVTOUT2,
-> +		.end    = IRQ_DA8XX_EVTOUT2,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	[6] = {
-> +		.start  = IRQ_DA8XX_EVTOUT3,
-> +		.end    = IRQ_DA8XX_EVTOUT3,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	[7] = {
-> +		.start  = IRQ_DA8XX_EVTOUT4,
-> +		.end    = IRQ_DA8XX_EVTOUT4,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	[8] = {
-> +		.start  = IRQ_DA8XX_EVTOUT5,
-> +		.end    = IRQ_DA8XX_EVTOUT5,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	[9] = {
-> +		.start  = IRQ_DA8XX_EVTOUT6,
-> +		.end    = IRQ_DA8XX_EVTOUT6,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +	[10] = {
-> +		.start  = IRQ_DA8XX_EVTOUT7,
-> +		.end    = IRQ_DA8XX_EVTOUT7,
-> +		.flags  = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct platform_device pruss_device = {
-> +	.name			= "pruss",
-> +	.id			= 0,
-> +	.num_resources		= ARRAY_SIZE(pruss_resources),
-> +	.resource		= pruss_resources,
-> +	.dev	 =	{
-> +		.coherent_dma_mask = 0xffffffff,
-> +	}
-> +};
-> +
-> +int __init da8xx_register_pruss()
-> +{
-> +	return platform_device_register(&pruss_device);
-> +}
-
-    Again, there's TI patch that adds this device already...
-
-WBR, Sergei
