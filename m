@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1BUVkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 16:40:07 -0500
-Received: from xenotime.net ([184.105.210.51]:47229 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751034Ab1BUVkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 16:40:06 -0500
-Date: Mon, 21 Feb 2011 13:40:01 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Rob Landley <rlandley@parallels.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Mariusz Kozlowski <mk@lab.zgora.pl>, LKML <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Remove obsolete Documentation/powerpc/00-INDEX entries
-Message-Id: <20110221134001.f8b66899.rdunlap@xenotime.net>
-In-Reply-To: <4D62DA51.8020108@parallels.com>
-References: <4D6095E3.2040103@parallels.com>
-	<20110221185205.GA23284@mako-laptop>
-	<4D62C43F.5040302@parallels.com>
-	<20110221120303.48106f6c.rdunlap@xenotime.net>
-	<4D62CC6B.9070408@parallels.com>
-	<20110221125555.4a47424d.rdunlap@xenotime.net>
-	<4D62DA51.8020108@parallels.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752186Ab1BUVl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 16:41:57 -0500
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:7434 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab1BUVl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 16:41:56 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAENqYk2rRN+K/2dsb2JhbACmP3OfPZtYhV4EhQ2HBoM7
+X-IronPort-AV: E=Sophos;i="4.62,202,1297036800"; 
+   d="scan'208";a="333073316"
+Message-ID: <4D62DC21.4070407@cisco.com>
+Date: Mon, 21 Feb 2011 14:41:53 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 0/4] perf events: Add realtime clock event and timehist
+ option -v2
+References: <1298322150-15505-1-git-send-email-daahern@cisco.com> <20110221213740.GC3583@nowhere>
+In-Reply-To: <20110221213740.GC3583@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011 15:34:09 -0600 Rob Landley wrote:
 
-> From: Rob Landley <rlandley@parallels.com>
+
+On 02/21/11 14:37, Frederic Weisbecker wrote:
+
+> The goal is actually to extend perf script to handle more than just raw data.
+> So that it can handle the rest of what we can find in an event: time, ip, stacktraces...
 > 
-> The device tree infrastructure is being genericized so its documentation
-> moved out of the PowerPC directory.
+> You've added 200 lines in perf report to add the dump support. It wouldn't
+> require more to extend perf script to do that. And the result is going to be
+> much more powerful.
 > 
-> Signed-off-by: Rob Landley <rlandley@parallels.com>
+> Look at struct scripting_ops::process_event().
 
-Added to my patch queue.  Thanks.
+I actually have a draft of perf-script - essentially duplicating sample
+processing done in perf-report. When it got to the point of having to
+add a lot of code -- other features essentially -- just to get it to the
+point of being ready for this feature I stopped.
 
-> ---
+David
+
+
 > 
->  Documentation/devicetree/00-INDEX |    8 ++++++++
->  Documentation/powerpc/00-INDEX    |    4 ----
->  2 files changed, 8 insertions(+), 4 deletions(-)
+> What you need is too pass in the whole event instead of only the raw data,
+> cpu and so on...
 > 
-> --- /dev/null	2011-02-13 16:59:19.073990002 -0600
-> +++ b/Documentation/devicetree/00-INDEX	2011-02-21 14:47:12.911544002 -0600
-> @@ -0,0 +1,8 @@
-> +Documentation for device trees, a data structure by which bootloaders pass
-> +hardware layout to Linux in a device-independent manner, simplifying hardware
-> +probing.  This subsystem is maintained by Grant Likely
-> +<grant.likely@secretlab.ca> and has a mailing list at
-> +https://lists.ozlabs.org/listinfo/devicetree-discuss
-> +
-> +booting-without-of.txt
-> +        - Booting Linux without Open Firmware, describes history and format of device trees.
-> diff --git a/Documentation/powerpc/00-INDEX b/Documentation/powerpc/00-INDEX
-> index e3960b8..5620fb5 100644
-> --- a/Documentation/powerpc/00-INDEX
-> +++ b/Documentation/powerpc/00-INDEX
-> @@ -5,8 +5,6 @@ please mail me.
->  
->  00-INDEX
->  	- this file
-> -booting-without-of.txt
-> -	- Booting the Linux/ppc kernel without Open Firmware
->  cpu_features.txt
->  	- info on how we support a variety of CPUs with minimal compile-time
->  	options.
-> @@ -16,8 +14,6 @@ hvcs.txt
->  	- IBM "Hypervisor Virtual Console Server" Installation Guide
->  mpc52xx.txt
->  	- Linux 2.6.x on MPC52xx family
-> -mpc52xx-device-tree-bindings.txt
-> -	- MPC5200 Device Tree Bindings
->  sound.txt
->  	- info on sound support under Linux/PPC
->  zImage_layout.txt
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> You don't even need to add the support in the scripts themselves, they can
+> just cope with the new parameter layout. You only need to handle the rest of
+> the event in the print_event() function (the default scripting_ops::process_event())
+> to print ip, time and stacktraces.
+> 
+> This probably needs some option in perf script to avoid showing ip and other
+> new things. Although we probably want to print stacktraces by default
+> if there are present.
