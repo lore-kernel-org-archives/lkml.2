@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab1BUOIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 09:08:16 -0500
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:52012 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751920Ab1BUOIP (ORCPT
+	id S1754414Ab1BUOOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 09:14:42 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41940 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab1BUOOl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 09:08:15 -0500
-Date: Mon, 21 Feb 2011 16:08:11 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <dacohen@gmail.com>
-Cc: balbi@ti.com, Alexey Dobriyan <adobriyan@gmail.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        linux-omap@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/1] headers: fix circular dependency between
- linux/sched.h and linux/wait.h
-Message-ID: <20110221140811.GH23087@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1298283649-24532-1-git-send-email-dacohen@gmail.com>
- <1298283649-24532-2-git-send-email-dacohen@gmail.com>
- <AANLkTimwvgLvpvndCqcd_okA2Kk4cu7z4bD3QXTdgWJW@mail.gmail.com>
- <20110221123049.GC23087@legolas.emea.dhcp.ti.com>
- <AANLkTinc=ye2qZJ1esSta=xEGz_iEr73eg3qEES2S5P7@mail.gmail.com>
- <20110221135709.GG23087@legolas.emea.dhcp.ti.com>
- <AANLkTin6SY6oUd8j3dcvjoTrPn4P2XP=hX5S+D8s1J+g@mail.gmail.com>
+	Mon, 21 Feb 2011 09:14:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=B7Nyy9t7MftiuFAkAtsg0b02L/AkOV/YeCO23BPtPPpVVyDqkH7gCxKZkuhc2P18cu
+         wMsugZZ0uHqSNT7Zkqh1EouLDT6InZAMMB2c3xQAIppmn3t7VIE+eiFskZukE/vDMjRK
+         NFxDQFyYpuoYXoYpvnM/V4Y6X1zUWbUFFU1y8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin6SY6oUd8j3dcvjoTrPn4P2XP=hX5S+D8s1J+g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110221130431.GF25382@cmpxchg.org>
+References: <cover.1298214672.git.minchan.kim@gmail.com>
+	<b691a7be970d6aafcd12ccc32ba812ce39fcf027.1298214672.git.minchan.kim@gmail.com>
+	<20110221130431.GF25382@cmpxchg.org>
+Date: Mon, 21 Feb 2011 23:14:40 +0900
+Message-ID: <AANLkTintsg+5wm7EOr40zUqcmhO3Qend=KeYV09zeOAE@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] memcg: remove unnecessary BUG_ON
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 21, 2011 at 10:04 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Mon, Feb 21, 2011 at 12:17:17AM +0900, Minchan Kim wrote:
+>> Now memcg in unmap_and_move checks BUG_ON of charge.
+>> But mem_cgroup_prepare_migration returns either 0 or -ENOMEM.
+>> If it returns -ENOMEM, it jumps out unlock without the check.
+>> If it returns 0, it can pass BUG_ON. So it's meaningless.
+>> Let's remove it.
+>>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+>> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+>> ---
+>>  mm/migrate.c |    1 -
+>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/migrate.c b/mm/migrate.c
+>> index eb083a6..2abc9c9 100644
+>> --- a/mm/migrate.c
+>> +++ b/mm/migrate.c
+>> @@ -683,7 +683,6 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+>>               rc = -ENOMEM;
+>>               goto unlock;
+>>       }
+>> -     BUG_ON(charge);
+>
+> You remove this assertion of the mem_cgroup_prepare_migration() return
+> value but only add a comment about the expectations in the next patch.
+>
+> Could you write a full-blown kerneldoc on mem_cgroup_prepare_migration
+> and remove this BUG_ON() in the same patch?
+>
 
-On Mon, Feb 21, 2011 at 04:05:14PM +0200, David Cohen wrote:
-> On Mon, Feb 21, 2011 at 3:57 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Mon, Feb 21, 2011 at 03:51:25PM +0200, Alexey Dobriyan wrote:
-> >> > I rather have the split done and kill the circular dependency.
-> >>
-> >> It's not circular for starters.
-> >
-> > how come ? wait.h depends on sched and sched.h depends on wait.h
-> 
-> The tricky thing is wait.h doesn't depend on sched.h, but the file
-> which uses wake_up*() macro defined on wait.h will depend on sched.h
-> (what is still bad). wait.h should provide all dependencies to use a
+Okay. I could.
 
-That's why I say wait.h depends on sched.h because it uses a macro
-defined in sched.h
+
+
 
 -- 
-balbi
+Kind regards,
+Minchan Kim
