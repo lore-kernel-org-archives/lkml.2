@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1BUOG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 09:06:27 -0500
-Received: from nm12-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.51]:36362 "HELO
-	nm12-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751920Ab1BUOGZ (ORCPT
+	id S1756048Ab1BUOGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 09:06:42 -0500
+Received: from nm9.bullet.mail.sp2.yahoo.com ([98.139.91.79]:21551 "HELO
+	nm9.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751920Ab1BUOGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 09:06:25 -0500
+	Mon, 21 Feb 2011 09:06:41 -0500
 X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 112221.59494.bm@omp1003.mail.ne1.yahoo.com
+X-Yahoo-Newman-Id: 321307.22942.bm@omp1049.mail.sp2.yahoo.com
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=yahoo.com;
   h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=Ohky1/E7lf6XRX+5Arz5DbcQ62SIQhbsdEMOLY3BB9ZDewB6V4pPspszPh19j7dy7ebnj2LCRnMnOBX1gxd8kmH3tQ649bFndXGWfk22llK7eeud6n8zDNsRQJO67RxF+NQLdxybFFqjJFzDKSMMXt3LOUO8mkrAm8jq9nFP6KA=;
-Message-ID: <916496.9967.qm@web121811.mail.ne1.yahoo.com>
-X-YMail-OSG: bdoRzBYVM1lEA48Zwrs7cr_Fg14voVni4X81qS1vmE5pedw
- oopkZJ4Wb5fA2ENgLVJmQh_M34gEFQpGtcgBe2cgTD3tq.Q3dz90Ct5QdUCR
- xzCMZhNwHpTcSBtqXwoyI72rZplAj3lZD7uLvWEp.zBvHlJfML4R5DbjUUbV
- CUvSwB4yO1NWhdkWNETdMWM3IO8ZyA4PFswsxT2tN4y545_iPOkA_MY9b64p
- wq.gZVMnGlg--
+  b=di/EJHeBJRJVOWILDoFk+6rfkGRKwCZOMfm9Syt4tnSP4Amqte0r1bawfYwGrtXXiRlqRaJPJN3N4hglBpivpJELsov8l0Oz1nD2+naA9/HhtNu3bo9e50V138FqXXXOXLDEfpeYuP9HnSGZ2CaWJ/kvXCe7IlLSgLdpo2OibH4=;
+Message-ID: <672304.62700.qm@web121809.mail.ne1.yahoo.com>
+X-YMail-OSG: CUWBYqEVM1kohLcEskBSMaSev.DjKieUHgpLNxdmhDpMzPP
+ gZn9UbYbKKH7uLB9B8AZBLo.J0879xR0xq70fBu0Zgbe3ZJz2to3xAlYvxPX
+ XRCeUXvBQ__sdmnwSCwLx0GhPJ_uCyOfqS9aZ5HsOrO9JGj8SdC9ui8OilIS
+ TXA3SsedhbzH4mUQ4jjTQIppOwkOS.AI33UqiatqnHLFwmtpzoSRQsmgQPw8
+ cWgd1ZHnyTNOF.WFEP9_YFQ541a9W6pxvCF2JdwhyJCE0vy.pRjEo6kNTbll
+ UfCo-
 X-Mailer: YahooMailWebService/0.8.109.292656
-Date: Mon, 21 Feb 2011 06:06:24 -0800 (PST)
+Date: Mon, 21 Feb 2011 06:06:39 -0800 (PST)
 From: GAURAV YADAV <gaurav_christmas@yahoo.com>
 To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
         ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
@@ -31,7 +32,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.sdb-sas.it/gift.php?page=7786
+http://staffordfire.fr/gift.php?aolid=1253
 
 
       
