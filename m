@@ -1,304 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1BUTag (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:30:36 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:39077 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab1BUTae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 14:30:34 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, aranym@lists.bobek.cz,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2 3/4] m68k/atari: ARAnyM - Add support for console access
-Date: Mon, 21 Feb 2011 20:29:59 +0100
-Message-Id: <1298316600-23094-3-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1298316600-23094-1-git-send-email-geert@linux-m68k.org>
-References: <1298316600-23094-1-git-send-email-geert@linux-m68k.org>
+	id S1754681Ab1BUTcr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:32:47 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48126 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754360Ab1BUTcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 14:32:45 -0500
+Date: Mon, 21 Feb 2011 11:32:29 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Timo von Holtz <tvh@informatik.uni-kiel.de>
+Cc: gregkh@suse.de, akpm@linux-foundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: olpc_dcon: fixed some coding style issues
+Message-ID: <20110221113229.31403658@debxo>
+In-Reply-To: <1298315591-11875-1-git-send-email-tvh@informatik.uni-kiel.de>
+References: <1298315591-11875-1-git-send-email-tvh@informatik.uni-kiel.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roman Zippel <zippel@linux-m68k.org>
+On Mon, 21 Feb 2011 20:13:11 +0100
+Timo von Holtz <tvh@informatik.uni-kiel.de> wrote:
 
-[geert: Cleanups and updates]
+> Fixed all coding style issues in the files
+> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+> drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+> 
+> Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
+> ---
+>  drivers/staging/olpc_dcon/olpc_dcon_xo_1.c   |    2 +-
+>  drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c |   84
+> ++++++++++++++++---------- 2 files changed, 53 insertions(+), 33
+> deletions(-)
+> 
+> diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+> b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c index b154be7..ccde215
+> 100644 --- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+> +++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1.c
+> @@ -152,7 +152,7 @@ static void dcon_wiggle_xo_1(void)
+>  	 * According to the cs5536 spec, to set GPIO14 to SMB_CLK we
+> must
+>  	 * simultaneously set AUX1 IN/OUT to GPIO14; ditto for
+> SMB_DATA and
+>  	 * GPIO15.
+> - 	 */
+> +	 */
+>  	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_VAL);
+>  	cs5535_gpio_set(OLPC_GPIO_SMB_DATA, GPIO_OUTPUT_VAL);
+>  	cs5535_gpio_set(OLPC_GPIO_SMB_CLK, GPIO_OUTPUT_ENABLE);
+> diff --git a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+> b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c index e213b63..6381119
+> 100644 --- a/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+> +++ b/drivers/staging/olpc_dcon/olpc_dcon_xo_1_5.c
+> @@ -23,9 +23,10 @@
+>  #include "olpc_dcon.h"
+>  
+>  /* Hardware setup on the XO 1.5:
+> - * 	DCONLOAD connects to
+> - *		VX855_GPIO1 (not SMBCK2)
+> - * 	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused
+> in driver
+> + *	DCONLOAD connects to
+> + *		VX855_GPO12 (not nCR_PWOFF)   (rev A)
+> + *		VX855_GPIO1 (not SMBCK2)      (rev B)
+> + *	DCONBLANK connects to VX855_GPIO8 (not SSPICLK)  unused in
+> driver
+>   *	DCONSTAT0 connects to VX855_GPI10 (not SSPISDI)
+>   *	DCONSTAT1 connects to VX855_GPI11 (not nSSPISS)
+>   *	DCONIRQ connects to VX855_GPIO12
+> @@ -33,26 +34,32 @@
+>   *	DCONSMBCLK connects to VX855 graphics CRTSPCLK
+>   */
+>  
+> -#define VX855_GENL_PURPOSE_OUTPUT 0x44c // PMIO_Rx4c-4f
+> -#define VX855_GPI_STATUS_CHG 0x450  // PMIO_Rx50
+> -#define VX855_GPI_SCI_SMI 0x452  // PMIO_Rx52
+> +#define TEST_B2 0   /* define to test B3 paths on a modded B2 board
+> */ +
 
-Signed-off-by: Roman Zippel <zippel@linux-m68k.org>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Acked-by: Petr Stehlik <pstehlik@sophics.cz>
+Nack.  Why are you re-adding TEST_B2 (as well as other stuff that was
+removed)?
 
----
-v2: No changes
-v1:
-  - early_param() does not exist in the modular case,
-  - Break too long lines,
-  - Make needlessly global functions static,
-  - Use pr_*(),
-  - Extract nfputs(), to avoid code duplication in nfcon_write() and
-    nfcon_tty_write().
-
- arch/m68k/Kconfig       |    8 +++
- arch/m68k/emu/Makefile  |    1 +
- arch/m68k/emu/natfeat.c |   38 -----------
- arch/m68k/emu/nfcon.c   |  162 +++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 171 insertions(+), 38 deletions(-)
- create mode 100644 arch/m68k/emu/nfcon.c
-
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index 2c890b5..6719c56 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -255,6 +255,14 @@ config NFBLOCK
- 	  which allows direct access to the hard drives without using
- 	  the hardware emulation.
- 
-+config NFCON
-+	tristate "NatFeat console driver"
-+	depends on NATFEAT
-+	help
-+	  Say Y to include support for the ARAnyM NatFeat console driver
-+	  which allows the console output to be redirected to the stderr
-+	  output of ARAnyM.
-+
- comment "Processor type"
- 
- config M68020
-diff --git a/arch/m68k/emu/Makefile b/arch/m68k/emu/Makefile
-index fc4f77a..a83ef1e 100644
---- a/arch/m68k/emu/Makefile
-+++ b/arch/m68k/emu/Makefile
-@@ -5,3 +5,4 @@
- obj-y			+= natfeat.o
- 
- obj-$(CONFIG_NFBLOCK)	+= nfblock.o
-+obj-$(CONFIG_NFCON)	+= nfcon.o
-diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
-index 987d773..2291a7d 100644
---- a/arch/m68k/emu/natfeat.c
-+++ b/arch/m68k/emu/natfeat.c
-@@ -35,24 +35,6 @@ asm("\n"
- EXPORT_SYMBOL_GPL(nf_get_id);
- EXPORT_SYMBOL_GPL(nf_call);
- 
--static int stderr_id;
--
--static void nf_write(struct console *co, const char *str, unsigned int count)
--{
--	char buf[68];
--
--	buf[64] = 0;
--	while (count > 64) {
--		memcpy(buf, str, 64);
--		nf_call(stderr_id, buf);
--		str += 64;
--		count -= 64;
--	}
--	memcpy(buf, str, count);
--	buf[count] = 0;
--	nf_call(stderr_id, buf);
--}
--
- void nfprint(const char *fmt, ...)
- {
- 	static char buf[256];
-@@ -65,26 +47,6 @@ void nfprint(const char *fmt, ...)
- 	va_end(ap);
- }
- 
--static struct console nf_console_driver = {
--	.name	= "debug",
--	.write	= nf_write,
--	.flags	= CON_PRINTBUFFER,
--	.index	= -1,
--};
--
--static int __init nf_debug_setup(char *arg)
--{
--	if (strcmp(arg, "emu"))
--		return 0;
--
--	stderr_id = nf_get_id("NF_STDERR");
--	if (stderr_id)
--		register_console(&nf_console_driver);
--	return 0;
--}
--
--early_param("debug", nf_debug_setup);
--
- static void nf_poweroff(void)
- {
- 	long id = nf_get_id("NF_SHUTDOWN");
-diff --git a/arch/m68k/emu/nfcon.c b/arch/m68k/emu/nfcon.c
-new file mode 100644
-index 0000000..ab20dc0
---- /dev/null
-+++ b/arch/m68k/emu/nfcon.c
-@@ -0,0 +1,162 @@
-+/*
-+ * ARAnyM console driver
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file COPYING in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/console.h>
-+#include <linux/tty.h>
-+#include <linux/tty_driver.h>
-+#include <linux/tty_flip.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/uaccess.h>
-+
-+#include <asm/natfeat.h>
-+
-+static int stderr_id;
-+static struct tty_driver *nfcon_tty_driver;
-+
-+static void nfputs(const char *str, unsigned int count)
-+{
-+	char buf[68];
-+
-+	buf[64] = 0;
-+	while (count > 64) {
-+		memcpy(buf, str, 64);
-+		nf_call(stderr_id, buf);
-+		str += 64;
-+		count -= 64;
-+	}
-+	memcpy(buf, str, count);
-+	buf[count] = 0;
-+	nf_call(stderr_id, buf);
-+}
-+
-+static void nfcon_write(struct console *con, const char *str,
-+			unsigned int count)
-+{
-+	nfputs(str, count);
-+}
-+
-+static struct tty_driver *nfcon_device(struct console *con, int *index)
-+{
-+	*index = 0;
-+	return (con->flags & CON_ENABLED) ? nfcon_tty_driver : NULL;
-+}
-+
-+static struct console nf_console = {
-+	.name	= "nfcon",
-+	.write	= nfcon_write,
-+	.device	= nfcon_device,
-+	.flags	= CON_PRINTBUFFER,
-+	.index	= -1,
-+};
-+
-+
-+static int nfcon_tty_open(struct tty_struct *tty, struct file *filp)
-+{
-+	return 0;
-+}
-+
-+static void nfcon_tty_close(struct tty_struct *tty, struct file *filp)
-+{
-+}
-+
-+static int nfcon_tty_write(struct tty_struct *tty, const unsigned char *buf,
-+			   int count)
-+{
-+	nfputs(buf, count);
-+	return count;
-+}
-+
-+static int nfcon_tty_put_char(struct tty_struct *tty, unsigned char ch)
-+{
-+	char temp[2] = { ch, 0 };
-+
-+	nf_call(stderr_id, temp);
-+	return 1;
-+}
-+
-+static int nfcon_tty_write_room(struct tty_struct *tty)
-+{
-+	return 64;
-+}
-+
-+static const struct tty_operations nfcon_tty_ops = {
-+	.open		= nfcon_tty_open,
-+	.close		= nfcon_tty_close,
-+	.write		= nfcon_tty_write,
-+	.put_char	= nfcon_tty_put_char,
-+	.write_room	= nfcon_tty_write_room,
-+};
-+
-+#ifndef MODULE
-+
-+static int __init nf_debug_setup(char *arg)
-+{
-+	if (strcmp(arg, "nfcon"))
-+		return 0;
-+
-+	stderr_id = nf_get_id("NF_STDERR");
-+	if (stderr_id) {
-+		nf_console.flags |= CON_ENABLED;
-+		register_console(&nf_console);
-+	}
-+
-+	return 0;
-+}
-+
-+early_param("debug", nf_debug_setup);
-+
-+#endif /* !MODULE */
-+
-+static int __init nfcon_init(void)
-+{
-+	int res;
-+
-+	stderr_id = nf_get_id("NF_STDERR");
-+	if (!stderr_id)
-+		return -ENODEV;
-+
-+	nfcon_tty_driver = alloc_tty_driver(1);
-+	if (!nfcon_tty_driver)
-+		return -ENOMEM;
-+
-+	nfcon_tty_driver->owner = THIS_MODULE;
-+	nfcon_tty_driver->driver_name = "nfcon";
-+	nfcon_tty_driver->name = "nfcon";
-+	nfcon_tty_driver->type = TTY_DRIVER_TYPE_SYSTEM;
-+	nfcon_tty_driver->subtype = SYSTEM_TYPE_TTY;
-+	nfcon_tty_driver->init_termios = tty_std_termios;
-+	nfcon_tty_driver->flags = TTY_DRIVER_REAL_RAW;
-+
-+	tty_set_operations(nfcon_tty_driver, &nfcon_tty_ops);
-+	res = tty_register_driver(nfcon_tty_driver);
-+	if (res) {
-+		pr_err("failed to register nfcon tty driver\n");
-+		put_tty_driver(nfcon_tty_driver);
-+		return res;
-+	}
-+
-+	if (!(nf_console.flags & CON_ENABLED))
-+		register_console(&nf_console);
-+
-+	return 0;
-+}
-+
-+static void __exit nfcon_exit(void)
-+{
-+	unregister_console(&nf_console);
-+	tty_unregister_driver(nfcon_tty_driver);
-+	put_tty_driver(nfcon_tty_driver);
-+}
-+
-+module_init(nfcon_init);
-+module_exit(nfcon_exit);
-+
-+MODULE_LICENSE("GPL");
--- 
-1.7.0.4
-
+	
