@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab1BUDnk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 22:43:40 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:49602 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755453Ab1BUDnj (ORCPT
+	id S1755779Ab1BUDoB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 22:44:01 -0500
+Received: from mail3.microsoft.com ([131.107.115.214]:52700 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755618Ab1BUDoA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 22:43:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=jIl6ubRZ0PFLq/Bahyucl1O54+vYoHNtlkW4HLcMVBN4+B6YiaiO5TNKV7/uxXVtB7
-         RYyApFx/pKR9mK2w6msA==
+	Sun, 20 Feb 2011 22:44:00 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Topic: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+Thread-Index: AQHLzUkvKd3MYDWV20OaBRjCSuUWD5QJKYYA//++VECAAJKGgP//jS1QgAIW1ACAADc3wA==
+Date: Mon, 21 Feb 2011 03:43:58 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E04801191C@TK5EX14MBXC124.redmond.corp.microsoft.com>
+References: <1297799735-25917-1-git-send-email-kys@microsoft.com>
+ <alpine.LFD.2.00.1102191046220.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011738@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102191540290.2701@localhost6.localdomain6>
+ <6E21E5352C11B742B20C142EB499E048011787@TK5EX14MBXC124.redmond.corp.microsoft.com>
+ <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1102201705380.2701@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <AANLkTim8i5vvizBViqFCyq9i+7Uo2E1BrNRf_gtnMb-v@mail.gmail.com>
-References: <1298154371-5641-1-git-send-email-ccross@android.com>
-	<1298154371-5641-7-git-send-email-ccross@android.com>
-	<AANLkTim8i5vvizBViqFCyq9i+7Uo2E1BrNRf_gtnMb-v@mail.gmail.com>
-Date: Sun, 20 Feb 2011 19:43:35 -0800
-X-Google-Sender-Auth: cpLdDp-1ar44YGTjn41cS6sXZ4Q
-Message-ID: <AANLkTin_4AfAgfWu=Qq_rO2T6o=u=JX9YKHquX85HrWe@mail.gmail.com>
-Subject: Re: [PATCH v2 05/21] ARM: tegra: clock: Disable clocks left on by bootloader
-From: Colin Cross <ccross@android.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        konkers@android.com, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 20, 2011 at 4:40 PM, Olof Johansson <olof@lixom.net> wrote:
-> Hi,
->
-> On Sat, Feb 19, 2011 at 2:25 PM, Colin Cross <ccross@android.com> wrote:
->> Adds CONFIG_TEGRA_DISABLE_BOOTLOADER_CLOCKS that iterates
->> through all clocks, disabling any for which the refcount
->> is 0 but the clock init detected the bootloader left the
->> clock on.
->
->
-> I would argue that any kernel functionality that relies on clocks
-> being left on my bootloader is buggy, and/or should at least have
-> those clocks enabled in the static clock tables for the boards in
-> question, since it creates an undocumented dependency on firmware.
->
-> I would prefer if it disabled the clocks by default (after warning),
-> but that there was a runtime way to override while debugging (i.e. add
-> a bootarg 'keep_fwclocks' or similar to keep the firmware-enabled
-> clocks running and just warn about them).
 
-That was the plan, but since many of the drivers are missing I didn't
-want to enable it by default yet.  However, it turns out the problems
-I was seeing at boot from this patch were actually due to a bug in the
-clock code causing the cpu clock to be disabled for clocks that have
-no disable.  I will drop this patch, and post a separate series after
-these that fixes the bug and turns off clocks by default, with a
-runtime argument like you suggested.
+
+> -----Original Message-----
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Sent: Sunday, February 20, 2011 11:16 AM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
+> Janssen
+> Subject: RE: [PATCH]: Staging: hv: Allocate the vmbus irq dynamically
+> 
+> On Sat, 19 Feb 2011, KY Srinivasan wrote:
+> > > When grabbing some random irq from the PIC is not an issue, then
+> > > what's the point of this probing, retry loop and the comments about
+> > > racing ? What races here? That does not make sense at all.
+> >
+> > Like most virtualization platforms, Hyper-V also emulates the full PC
+> > platform. So, it is possible that the driver of some other emulated
+> > devices might register for the IRQ line we might have selected. That
+> > is the race this code addresses. For performance reasons, we want
+> > both storage and network traffic to go over the PV drivers.
+> 
+> So in case your driver gets the interrupt line first, which the other
+> driver wants to acquire as well, then what? Do you want to do that
+> probe magic in the other driver as well? What if this is a regular
+> device driver which gets its irq number from ACPI/PCI or
+> whatever. Then that driver simply wont work as it's interrupt line is
+> busy.
+> 
+> > >
+> > > I don't know why the previous reviewer wanted to have that
+> > > dynamic. That just does not make sense to me.
+> >
+> > Prior to this patch, we had a hard coded interrupt line for use by
+> > this driver. If that line was already in use, the load of this driver
+> > would fail. This would be a fatal issue especially for distributions
+> > that have embedded these PV drivers as part of their installation
+> > media. This patch deals with such collisions in a more graceful way -
+> > we would not bail until we have scanned all low interrupt lines.
+> 
+> So you trade breaking the PV stuff against breaking random other
+> drivers? That doesn't sound like a brilliant idea.
+> 
+> There are various ways to solve that proper.
+> 
+>  - You can provide the interrupt number from ACPI/PCI or whatever your HV
+>    provides as enumeration.
+> 
+>  - Use a fixed vector like XEN does for the event channel
+> 
+>  - Use dynamic allocation in the IOAPIC space like the kernel does for
+>    MSI(-X)
+> 
+> Thanks,
+> 
+> 	tglx
+
+I am not claiming that what I have done here is the best possible solution.
+However, I will submit to you that it is better than what we had here
+prior to this patch.  I will address this and a  whole lot of other issues 
+in future patches. 
+
+Regards,
+
+K. Y
+
