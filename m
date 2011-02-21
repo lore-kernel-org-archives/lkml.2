@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1BUHgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 02:36:48 -0500
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:45164 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752463Ab1BUHgr (ORCPT
+	id S1754286Ab1BUHhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 02:37:11 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:53851 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754124Ab1BUHhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 02:36:47 -0500
-Date: Mon, 21 Feb 2011 09:36:40 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <dacohen@gmail.com>
-Cc: balbi@ti.com, Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
-        Thomas Weber <weber@corscience.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-omap@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Tejun Heo <tj@kernel.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] video: omap24xxcam: Fix compilation
-Message-ID: <20110221073640.GA3094@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1297068547-10635-1-git-send-email-weber@corscience.de>
- <4D5A6353.7040907@maxwell.research.nokia.com>
- <20110215113717.GN2570@legolas.emea.dhcp.ti.com>
- <4D5A672A.7040000@samsung.com>
- <4D5A6874.1080705@corscience.de>
- <20110215115349.GQ2570@legolas.emea.dhcp.ti.com>
- <4D5A6EEC.5000908@maxwell.research.nokia.com>
- <AANLkTik+6fguqgH8Bpnpqo7Axmquy3caRMELTZVmuN1j@mail.gmail.com>
- <20110219150024.GA4487@legolas.emea.dhcp.ti.com>
- <AANLkTik5dwNZrUxjgjKeAQOsp610d6y_TNGg1b5Vc5Zd@mail.gmail.com>
-MIME-Version: 1.0
+	Mon, 21 Feb 2011 02:37:07 -0500
+Date: Mon, 21 Feb 2011 08:33:28 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] r8169: Support RTL8105E
+Message-ID: <20110221073328.GA12326@electric-eye.fr.zoreil.com>
+References: <1298018085-1370-1-git-send-email-hayeswang@realtek.com> <1298018085-1370-2-git-send-email-hayeswang@realtek.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik5dwNZrUxjgjKeAQOsp610d6y_TNGg1b5Vc5Zd@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1298018085-1370-2-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, Feb 19, 2011 at 06:04:58PM +0200, David Cohen wrote:
-> > I have to disagree. The fundamental problem is the circular dependency
-> > between those two files:
-> >
-> > sched.h uses wait_queue_head_t defined in wait.h
-> > wait.h uses TASK_* defined in sched.h
-> >
-> > So, IMO the real fix would be clear out the circular dependency. Maybe
-> > introducing <linux/task.h> to define those TASK_* symbols and include
-> > that on sched.h and wait.h
-> >
-> > Just dig a quick and dirty to try it out and works like a charm
+Hayes Wang <hayeswang@realtek.com> :
+> Support the new chips for RTL8105E
 > 
-> We have 2 problems:
->  - omap24xxcam compilation broken
->  - circular dependency between sched.h and wait.h
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>  drivers/net/r8169.c |   92 +++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 90 insertions(+), 2 deletions(-)
 > 
-> To fix the broken compilation we can do what the rest of the kernel is
-> doing, which is to include sched.h.
-> Then, the circular dependency is fixed by some different approach
-> which would probably change *all* current usage of TASK_*.
+> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+> index 9eaf78f..ffe6b00 100644
+> --- a/drivers/net/r8169.c
+> +++ b/drivers/net/r8169.c
+[...]
+> @@ -267,6 +272,12 @@ enum rtl8168_8101_registers {
+>  #define	EPHYAR_REG_MASK			0x1f
+>  #define	EPHYAR_REG_SHIFT		16
+>  #define	EPHYAR_DATA_MASK		0xffff
+> +	DLLPR			= 0xd0,
+> +#define	PM_SWITCH			(1 << 6)
+> +	TWSI			= 0xd2,
+> +	MCU			= 0xd3,
+> +#define	EN_NDP				(1 << 3)
+> +#define	EN_OOB_RESET			(1 << 2)
+>  	DBG_REG			= 0xd1,
+>  #define	FIX_NAK_1			(1 << 4)
+>  #define	FIX_NAK_2			(1 << 3)
 
-considering that 1 is caused by 2 I would fix 2.
+Please pack them in increasing order and it will be perfect
+(i.e. 0xd0, 0xd1, 0xd2, 0xd3 instead of current 0xd0, 0xd2 (?), 0xd3, 0xd1).
 
-> IMO, there's no need to create a dependency between those issues.
+[...]
+> @@ -2435,6 +2452,33 @@ static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+>  	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+>  }
+>  
+> +static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
+> +{
+> +	static const struct phy_reg phy_reg_init[] = {
+> +		{0x1f, 0x0005},
+> +		{0x1a, 0x0000},
+> +		{0x1f, 0x0000},
+> +
+> +		{0x1f, 0x0004},
+> +		{0x1c, 0x0000},
+> +		{0x1f, 0x0000},
+> +
+> +		{0x1f, 0x0001},
+> +		{0x15, 0x7701},
+> +		{0x1f, 0x0000}
+                ^^          ^^
+Minor nit: please insert spaces (as in similar declarations).
 
-There's no dependency between them, it's just that the root cause for
-this problem is a circular dependency between wait.h and sched.h
+> +	};
+> +
+> +	/* Diable ALDPS before ram code */
+            ^^ Missing "b".
+
+> +	rtl_writephy(tp, 0x1f, 0x0000);
+> +	rtl_writephy(tp, 0x18, 0x0310);
+> +	msleep(100);
+> +
+> +	if (rtl_apply_firmware(tp, FIRMWARE_8105E_1) < 0)
+> +		netif_warn(tp, probe, tp->dev, "unable to apply firmware patch\n");
+> +
+> +	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+> +}
+
+The "if (RTL_R8(0xef) & 0x08)" and "if (RTL_R8(0xef) & 0x010)" conditionals
+from the previous iteration have been removed. If it is done on purpose, a
+short explanation or notification in the description of the patch is always
+welcome.
 
 -- 
-balbi
+Ueimor
