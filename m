@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab1BUJKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 04:10:16 -0500
-Received: from mail-bw0-f52.google.com ([209.85.214.52]:48080 "EHLO
-	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab1BUJKO (ORCPT
+	id S1754642Ab1BUJR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 04:17:28 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:53017 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab1BUJR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 04:10:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Bb0gll7xTSQI9KLcKMESuEEkSQ8STxufxAifBOdlehhYg5jLGCvMaj278TTJ6UwjTx
-         6TK31gbd3cHOIfDRFJvVk5WEg4Y3RDSv6Hw2CSA2L4bFi0aWXPRVU9+m+QCip3fs7OmU
-         MWOfeN7ciHlB/hzZmvP6tyeJ4YkNX3mbB3tLk=
-Date: Mon, 21 Feb 2011 10:10:09 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH wq#for-2.6.39] workqueue: fix build failure introduced
- by s/freezeable/freezable/
-Message-ID: <20110221091009.GF31267@htj.dyndns.org>
-References: <20110221090354.GE31267@htj.dyndns.org>
+	Mon, 21 Feb 2011 04:17:27 -0500
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1298018085-1370-1-git-send-email-hayeswang@realtek.com> <1298018085-1370-2-git-send-email-hayeswang@realtek.com> <20110221073328.GA12326@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH v2 2/2] r8169: Support RTL8105E
+Date: Mon, 21 Feb 2011 17:17:20 +0800
+X-BOX-Message-Id: p1L9HKFX017455
+Message-ID: <417606D3EB3A4B72AA3BEDC38D45C2B6@realtek.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110221090354.GE31267@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcvRmiL40JuIhai9RFmLs8zz9a9n8QADAPeQ
+In-Reply-To: <20110221073328.GA12326@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 10:03:54AM +0100, Tejun Heo wrote:
-> new usage of the flag.  The combination of the two creates a build
-> failure after merge.  Fix it by renaming all freezeables to
-> freezables.
+ 
+
+> -----Original Message-----
+> From: Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Monday, February 21, 2011 3:33 PM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2 2/2] r8169: Support RTL8105E
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
-> I pulled mainline into wq#for-2.6.39 and applied the build fix.
-> #for-next updated accordingly.  Dmitry, please feel free to pull in
-> the following branch for system_wq_freezable.  The branch is stable.
-> HEAD is 6c9e293a1f (workqueue: fix build failure introduced by
-> s/freezeable/freezable/).
+> > @@ -267,6 +272,12 @@ enum rtl8168_8101_registers {
+> >  #define	EPHYAR_REG_MASK			0x1f
+> >  #define	EPHYAR_REG_SHIFT		16
+> >  #define	EPHYAR_DATA_MASK		0xffff
+> > +	DLLPR			= 0xd0,
+> > +#define	PM_SWITCH			(1 << 6)
+> > +	TWSI			= 0xd2,
+> > +	MCU			= 0xd3,
+> > +#define	EN_NDP				(1 << 3)
+> > +#define	EN_OOB_RESET			(1 << 2)
+> >  	DBG_REG			= 0xd1,
+> >  #define	FIX_NAK_1			(1 << 4)
+> >  #define	FIX_NAK_2			(1 << 3)
 > 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-2.6.39
+> Please pack them in increasing order and it will be perfect 
+> (i.e. 0xd0, 0xd1, 0xd2, 0xd3 instead of current 0xd0, 0xd2 
+> (?), 0xd3, 0xd1).
 
-Updated commit message (the first line went missing because it started
-with #fixes-2.6.38), the new HEAD is 24d51add74.
+It's my mistake. I would fix that.
 
-Thanks.
+> 
+> > +	rtl_writephy(tp, 0x1f, 0x0000);
+> > +	rtl_writephy(tp, 0x18, 0x0310);
+> > +	msleep(100);
+> > +
+> > +	if (rtl_apply_firmware(tp, FIRMWARE_8105E_1) < 0)
+> > +		netif_warn(tp, probe, tp->dev, "unable to apply 
+> firmware patch\n");
+> > +
+> > +	rtl_writephy_batch(tp, phy_reg_init, 
+> ARRAY_SIZE(phy_reg_init)); }
+> 
+> The "if (RTL_R8(0xef) & 0x08)" and "if (RTL_R8(0xef) & 
+> 0x010)" conditionals from the previous iteration have been 
+> removed. If it is done on purpose, a short explanation or 
+> notification in the description of the patch is always welcome.
+> 
 
--- 
-tejun
+These two conditions are using for customization. I remove them and use the
+default settings.
+ 
+Best Regards,
+Hayes
+
