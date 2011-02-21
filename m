@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab1BUEXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Feb 2011 23:23:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54290 "EHLO
+	id S1755831Ab1BUE0x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Feb 2011 23:26:53 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33822 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963Ab1BUEXW convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755541Ab1BUE0u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Feb 2011 23:23:22 -0500
+	Sun, 20 Feb 2011 23:26:50 -0500
 MIME-Version: 1.0
 X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1298154371-5641-20-git-send-email-ccross@android.com>
+In-Reply-To: <1298154371-5641-21-git-send-email-ccross@android.com>
 References: <1298154371-5641-1-git-send-email-ccross@android.com>
-	<1298154371-5641-20-git-send-email-ccross@android.com>
-Date: Sun, 20 Feb 2011 20:23:20 -0800
-Message-ID: <AANLkTikbOQZ2jW+mfN41dXwuKVVJ3vCVKRZLezxbj61o@mail.gmail.com>
-Subject: Re: [PATCH v2 18/21] ARM: tegra: cpufreq: Adjust memory frequency
- with cpu frequency
+	<1298154371-5641-21-git-send-email-ccross@android.com>
+Date: Sun, 20 Feb 2011 20:26:49 -0800
+Message-ID: <AANLkTin_eZemFBP5NirvHV8fDUemRHX3tSkb21=gZVme@mail.gmail.com>
+Subject: Re: [PATCH v2 19/21] ARM: tegra: clock: Add function to set SDMMC tap delay
 From: Olof Johansson <olof@lixom.net>
 To: Colin Cross <ccross@android.com>
 Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -27,32 +26,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+
 On Sat, Feb 19, 2011 at 2:26 PM, Colin Cross <ccross@android.com> wrote:
+> The SDMMC controllers have extra bits in the clock source
+> register that adjust the delay between the clock and data
+> to compenstate for delays on the PCB.  The values need to
+> be set from the clock code so the clock can be locked
+> during the read-modify-write on the clock source register.
+>
 > Signed-off-by: Colin Cross <ccross@android.com>
 
-Patch description please. Besides that:
+This is going in without any in-tree consumers of the functions.
+Still, it'll likely be added shortly, so:
 
 Acked-by: Olof Johansson <olof@lixom.net>
 
-But note for future work:
+(If they don't show up, it'll be easy to drop it again if need be).
 
-
-> +       /*
-> +        * Vote on memory bus frequency based on cpu frequency
-> +        * This sets the minimum frequency, display or avp may request higher
-> +        */
-> +       if (rate >= 816000)
-> +               clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
-> +       else if (rate >= 456000)
-> +               clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
-> +       else
-> +               clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
-> +
-
-
-This hardcodes frequencies that might or might not be used on some
-systems and some parts. So it'll need to be revisited when enabling
-other configurations.
 
 
 -Olof
