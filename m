@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab1BUVoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 16:44:32 -0500
-Received: from mail-bw0-f51.google.com ([209.85.214.51]:49351 "EHLO
-	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1BUVob (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 16:44:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=t6Y9PT3Vk5HomRS1ps6Oyk+bYNCu0URf1NDCH2ooWU4yosYGuJhPRUWkXKOGoMVPnx
-         IxCQA2mmTlnWsgEErEombXEE7DR2UBNSQCs46TuU3vfm9Da4PqPbk8a33e8SMlHs7HhX
-         6VwLUfaxIXU2DCpT3Rlws9MoV4RDOXFWjhy0k=
-Message-ID: <4D62DCBA.9050609@gmail.com>
-Date: Mon, 21 Feb 2011 22:44:26 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	id S1751517Ab1BUVv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 16:51:29 -0500
+Received: from www.tglx.de ([62.245.132.106]:45494 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab1BUVv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 16:51:27 -0500
+Date: Mon, 21 Feb 2011 22:51:00 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        John Linn <John.Linn@xilinx.com>, linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, catalin.marinas@arm.com,
+        glikely@secretlab.ca, jamie@jamieiles.com, linux-arch@vger.kernel.org,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: CLOCK_TICK_RATE, was: Re: [PATCH V4 3/4] ARM: Xilinx: base header
+ files and assembly macros
+In-Reply-To: <201102212208.10231.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.00.1102212250290.2701@localhost6.localdomain6>
+References: <1298052881-14591-1-git-send-email-john.linn@xilinx.com> <201102211548.36296.arnd@arndb.de> <20110221151752.GR14495@n2100.arm.linux.org.uk> <201102212208.10231.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        debora@linux.vnet.ibm.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
-Subject: Re: 2.6.37.1 s2disk regression (TPM)
-References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com> <4D629427.8020500@gmail.com> <4D629D03.90801@linux.vnet.ibm.com> <4D62CD93.3040206@gmail.com> <4D62D930.8060304@linux.vnet.ibm.com>
-In-Reply-To: <4D62D930.8060304@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2011 10:29 PM, Stefan Berger wrote:
-> On 02/21/2011 03:39 PM, Jiri Slaby wrote:
->> On 02/21/2011 06:12 PM, Rajiv Andrade wrote:
->>> On 02/21/2011 01:34 PM, Jiri Slaby wrote:
->>>> There has to be another problem which caused my regression. And
->>>> since it
->>>> reports "Operation Timed out", the former default timeout values worked
->>>> for me, the ones read from TPM do not.
->>> Yes, it's highly due inconsistent timeout values reported by the TPM as
->>> I mentioned, my working timeouts are:
->>> 3020000 4510000 181000000
->> 1000000 2000 150000
->>
->> Actually the first one from HW is 1. This is one is HZ after correction
->> in get_timeout. So perhaps it is in ms, yes.
+On Mon, 21 Feb 2011, Arnd Bergmann wrote:
+
+> On Monday 21 February 2011, Russell King - ARM Linux wrote:
+> > Eg, LOW_RES_NSEC is exported to userspace via the posix clocks interface.
+> > 
+> > NSEC_PER_SEC and TICK_NSEC are used for cmos clock updates, so probably
+> > don't matter too much there.  TICK_NSEC is also used by the scheduler,
+> > time conversions (timespec/timeval to/from jiffies) and profiling code.
+> > 
+> > NSEC_PER_JIFFY is used by the jiffy clocksource code, which only matters
+> > if you don't have your own clocksource.
+> > 
+> > So, I feel very uneasy about saying that CLOCK_TICK_RATE doesn't matter
+> > anymore given all the places which reference something that's derived
+> > from it.
 > 
-> Following the specs, the timeouts are supposed to be in microseconds and
-> ascending order for short, medium and long duration. Of course, if the
-> device returns wrong timeouts, the command isn't going to succeed,
-> failing the suspend in this case. Nevertheless, I think we need the
-> patch I put in but at the same time we'll need a work-around for devices
-> like this.
+> All the calculations based off of CLOCK_TICK_RATE are derived from ACTHZ,
+> which is either the correct value based on the underlying HW timer tick,
+> or slightly off, when either the HW tick or the value of CLOCK_TICK_RATE
+> is not a true multiple of HZ.
+> 
+> In fact, I'm pretty sure that it's off on a lot of machines:
+> 
+> arch/frv/include/asm/timex.h:#define CLOCK_TICK_RATE            1193180 /* Underlying HZ */
+> arch/m68k/include/asm/timex.h:#define CLOCK_TICK_RATE   1193180 /* Underlying HZ */
+> arch/mips/include/asm/timex.h:#define CLOCK_TICK_RATE 1193182
+> arch/parisc/include/asm/timex.h:#define CLOCK_TICK_RATE 1193180 /* Underlying HZ */
+> arch/s390/include/asm/timex.h:#define CLOCK_TICK_RATE   1193180 /* Underlying HZ */
+> arch/sh/include/asm/timex.h:#define CLOCK_TICK_RATE             1193180
+> arch/x86/include/asm/timex.h:#define CLOCK_TICK_RATE            PIT_TICK_RATE
+> arch/xtensa/include/asm/timex.h:#define CLOCK_TICK_RATE         1193180 /* (everyone is using this value) */
+> 
+> None of these is actually using a PC-style PIT these days, the just copied the
+> definition blindly from old i386. I think a simple
+> 
+> #define ACTHZ (HZ << 8)
+> 
+> would fix more than it can break, and most likely nobody would ever notice
+> the difference. If we do that, CLOCK_TICK_RATE becomes unused.
 
-Yes, the patch is correct per se. But as it breaks bunch of machines it
-cannot go in now. The rule is no regressions.
+Indeed.
 
-After you have the workaround it should go into the next rc1 after that.
-Do you plan to add a dmi-based quirk? Or, IOW do you want me to attach
-dmidecode output? Or are you going to base it solely on TPM
-manufacturer/version?
-
-> There was one person stating that this patch fixed are
-> problem on his machine. 
-
-Yes, I can see that. But we have to live with our mistakes.
-
-> Can you find the 'caps' entry in /sys
-> (/sys/devices/pnp0/00:06) and let us know its content?
-
-TPM is at 00:0c:
-Manufacturer: 0x49465800
-TCG version: 1.2
-Firmware version: 1.0
-
-regards,
--- 
-js
+	tglx
