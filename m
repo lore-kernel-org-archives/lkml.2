@@ -1,146 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1BUQLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 11:11:10 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63030 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab1BUQLH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 11:11:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=uJcN0SehYlSs1QrWsVlQNqib04SzLTtffMQn/9TLfzAKJHhM4U5MygL0tfSQHekeG0
-         DE/vk6ogtMWPO1QVe1D47BJqPevnd6wlp4Z5O2GDsmjxINGZ8CsWs2TBXaPWV3TMbwGz
-         xTNDA/8YTLGoRb3W6f/S4imFaBtHEkOSXIjmI=
+	id S1755527Ab1BUQUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 11:20:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63577 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751208Ab1BUQUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 11:20:31 -0500
+Date: Mon, 21 Feb 2011 17:11:40 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: [pseudo patch] ptrace should respect the group stop
+Message-ID: <20110221161140.GA24336@redhat.com>
+References: <20110204105343.GA12133@htj.dyndns.org> <20110207174821.GA1237@redhat.com> <20110209141803.GH3770@htj.dyndns.org> <201102132325.55353.vda.linux@googlemail.com> <20110214151340.GP18742@htj.dyndns.org> <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com> <20110214173012.GA18742@htj.dyndns.org> <AANLkTinntVGcOdZSS3gWz39eq3EDiMxXgYfc6+M1Z0iE@mail.gmail.com> <20110221151619.GM31267@htj.dyndns.org> <20110221152855.GA20769@redhat.com>
 MIME-Version: 1.0
-Date: Tue, 22 Feb 2011 00:11:06 +0800
-Message-ID: <AANLkTi=OSZhT0OGN_3Jzw=zh1U_QjhB+vR8SxidM5Zge@mail.gmail.com>
-Subject: [2.6.38-rc5, patch] fix cfg80211_wext_siwfreq lock ordering...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110221152855.GA20769@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I previously managed to reproduce a hang while scanning wireless
-channels (reproducible with airodump-ng hopping channels); subsequent
-lockdep instrumentation revealed a lock ordering issue [1].
+On 02/21, Oleg Nesterov wrote:
+>
+> On 02/21, Tejun Heo wrote:
+> >
+> > That preciesly is what is being discussed.  IIUC, Oleg and Roland are
+> > saying that the tracee should enter group stop but not ptrace trap at
+> > that point and then transition into ptrace trap on the first PTRACE
+> > call.
+>
+> Actually I am not saying this (at least now, probably I did).
+>
+> Once again. We have the bug with arch_ptrace_stop_needed(), but lets
+> ignore it to simplify the discussion.
+>
+> Suppose that the tracee calls do_signal_stop() and participates in the
+> group stop. To me, it doesn't really matter (in the context of this
+> discussion) if it stops in TASK_STOPPED or TASK_TRACED (and where it
+> stops).
+>
+> However, I am starting to agree that TASK_TRACED looks more clean.
+>
+> What is important, I think ptrace should respect SIGNAL_STOP_STOPPED.
+> IOW, when the tracee is group-stopped (TASK_STOPPED or TASK_TRACED,
+> doesn't matter), ptrace_resume() should not wake it up, but merely
+> do set_task_state(TASK_STATE) and make it resumeable by SIGCONT.
 
-Without knowing the design intent, it looks like the locks should be
-taken in reverse order; please comment.
+IOW. I mean something like the (uncompiled, incomplete) patch below as
+as the initial approximation.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Oleg.
 
---- [1]
+--- x/kernel/ptrace.c
++++ x/kernel/ptrace.c
+@@ -38,15 +38,15 @@ void __ptrace_link(struct task_struct *c
+ }
+ 
+ /*
+- * Turn a tracing stop into a normal stop now, since with no tracer there
+- * would be no way to wake it up with SIGCONT or SIGKILL.  If there was a
+- * signal sent that would resume the child, but didn't because it was in
+- * TASK_TRACED, resume it now.
+- * Requires that irqs be disabled.
++ * NEW COMMENT
+  */
+-static void ptrace_untrace(struct task_struct *child)
++static void ptrace_wake_up(struct task_struct *child)
+ {
+-	spin_lock(&child->sighand->siglock);
++	unsigned long flags;
++
++	if (!lock_task_sighand(child, &flags))
++		return;
++
+ 	if (task_is_traced(child)) {
+ 		/*
+ 		 * If the group stop is completed or in progress,
+@@ -56,9 +56,9 @@ static void ptrace_untrace(struct task_s
+ 		    child->signal->group_stop_count)
+ 			__set_task_state(child, TASK_STOPPED);
+ 		else
+-			signal_wake_up(child, 1);
++			wake_up_state(child, TASK_TRACED);
+ 	}
+-	spin_unlock(&child->sighand->siglock);
++	unlock_task_sighand(tsk, &flags);
+ }
+ 
+ /*
+@@ -76,7 +76,7 @@ void __ptrace_unlink(struct task_struct 
+ 	list_del_init(&child->ptrace_entry);
+ 
+ 	if (task_is_traced(child))
+-		ptrace_untrace(child);
++		ptrace_wake_up(child);
+ }
+ 
+ /*
+@@ -312,8 +312,6 @@ int ptrace_detach(struct task_struct *ch
+ 	if (child->ptrace) {
+ 		child->exit_code = data;
+ 		dead = __ptrace_detach(current, child);
+-		if (!child->exit_state)
+-			wake_up_state(child, TASK_TRACED | TASK_STOPPED);
+ 	}
+ 	write_unlock_irq(&tasklist_lock);
+ 
+@@ -514,7 +512,7 @@ static int ptrace_resume(struct task_str
+ 	}
+ 
+ 	child->exit_code = data;
+-	wake_up_process(child);
++	ptrace_wake_up(child);
+ 
+ 	return 0;
+ }
+--- x/kernel/signal.c
++++ x/kernel/signal.c
+@@ -1644,8 +1644,11 @@ static void ptrace_stop(int exit_code, i
+ 	 * If there is a group stop in progress,
+ 	 * we must participate in the bookkeeping.
+ 	 */
+-	if (current->signal->group_stop_count > 0)
+-		--current->signal->group_stop_count;
++	if (current->signal->group_stop_count) {
++		// XXX: this is not enough, we can race with detach
++		if (!--current->signal->group_stop_count)
++			current->signal->flags = SIGNAL_STOP_STOPPED;
++	}
+ 
+ 	current->last_siginfo = info;
+ 	current->exit_code = exit_code;
+@@ -1825,6 +1828,9 @@ static int ptrace_signal(int signr, sigi
+ 	if (sigismember(&current->blocked, signr)) {
+ 		specific_send_sig_info(signr, info, current);
+ 		signr = 0;
++	} else if (sig_kernel_stop(signr)) {
++		// XXX: not exactly right but anyway better
++		current->signal->flags |= SIGNAL_STOP_DEQUEUED;
+ 	}
+ 
+ 	return signr;
 
-=======================================================
-[ INFO: possible circular locking dependency detected ]
-2.6.38-rc5-341cd #4
--------------------------------------------------------
-airodump-ng/15445 is trying to acquire lock:
- (&rdev->devlist_mtx){+.+.+.}, at: [<ffffffff816b1266>]
-cfg80211_wext_siwfreq+0xc6/0x100
-
-but task is already holding lock:
- (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>] cfg80211_wext_siwfreq+0xbc/0x100
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (&wdev->mtx){+.+.+.}:
-       [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
-       [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
-       [<ffffffff81696080>] cfg80211_netdev_notifier_call+0x430/0x5f0
-       [<ffffffff8109351b>] notifier_call_chain+0x8b/0x100
-       [<ffffffff810935b1>] raw_notifier_call_chain+0x11/0x20
-       [<ffffffff81576d92>] call_netdevice_notifiers+0x32/0x60
-       [<ffffffff815771a4>] __dev_notify_flags+0x34/0x80
-       [<ffffffff81577230>] dev_change_flags+0x40/0x70
-       [<ffffffff8158587c>] do_setlink+0x1fc/0x8d0
-       [<ffffffff81586042>] rtnl_setlink+0xf2/0x140
-       [<ffffffff81586923>] rtnetlink_rcv_msg+0x163/0x270
-       [<ffffffff8159d741>] netlink_rcv_skb+0xa1/0xd0
-       [<ffffffff815867b0>] rtnetlink_rcv+0x20/0x30
-       [<ffffffff8159d39a>] netlink_unicast+0x2ba/0x300
-       [<ffffffff8159dd57>] netlink_sendmsg+0x267/0x3e0
-       [<ffffffff8155e364>] sock_sendmsg+0xe4/0x110
-       [<ffffffff8155f3a3>] sys_sendmsg+0x253/0x3b0
-       [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
-
--> #0 (&rdev->devlist_mtx){+.+.+.}:
-       [<ffffffff810a7222>] __lock_acquire+0x1622/0x1d10
-       [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
-       [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
-       [<ffffffff816b1266>] cfg80211_wext_siwfreq+0xc6/0x100
-       [<ffffffff816b2fad>] ioctl_standard_call+0x5d/0xd0
-       [<ffffffff816b3223>] T.808+0x163/0x170
-       [<ffffffff816b326a>] wext_handle_ioctl+0x3a/0x90
-       [<ffffffff815798d2>] dev_ioctl+0x6f2/0x830
-       [<ffffffff8155cf3d>] sock_ioctl+0xfd/0x290
-       [<ffffffff8117dffd>] do_vfs_ioctl+0x9d/0x590
-       [<ffffffff8117e53a>] sys_ioctl+0x4a/0x80
-       [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
-2 locks held by airodump-ng/15445:
- #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81586782>] rtnl_lock+0x12/0x20
- #1:  (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>]
-cfg80211_wext_siwfreq+0xbc/0x100
-
-stack backtrace:
-Pid: 15445, comm: airodump-ng Not tainted 2.6.38-rc5-341cd #4
-Call Trace:
- [<ffffffff810a3f0a>] ? print_circular_bug+0xfa/0x100
- [<ffffffff810a7222>] ? __lock_acquire+0x1622/0x1d10
- [<ffffffff810a1f99>] ? trace_hardirqs_off_caller+0x29/0xc0
- [<ffffffff810a79d6>] ? lock_acquire+0xc6/0x280
- [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
- [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
- [<ffffffff816d6bce>] ? mutex_lock_nested+0x6e/0x4b0
- [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
- [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
- [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
- [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
- [<ffffffff816b2fad>] ? ioctl_standard_call+0x5d/0xd0
- [<ffffffff8157818b>] ? __dev_get_by_name+0x9b/0xc0
- [<ffffffff816b2f50>] ? ioctl_standard_call+0x0/0xd0
- [<ffffffff816b3223>] ? T.808+0x163/0x170
- [<ffffffff8112ddf2>] ? might_fault+0x72/0xd0
- [<ffffffff816b326a>] ? wext_handle_ioctl+0x3a/0x90
- [<ffffffff8112de3b>] ? might_fault+0xbb/0xd0
- [<ffffffff815798d2>] ? dev_ioctl+0x6f2/0x830
- [<ffffffff810a1bae>] ? put_lock_stats+0xe/0x40
- [<ffffffff810a1c8c>] ? lock_release_holdtime+0xac/0x150
- [<ffffffff8155cf3d>] ? sock_ioctl+0xfd/0x290
- [<ffffffff8117dffd>] ? do_vfs_ioctl+0x9d/0x590
- [<ffffffff8116c8ff>] ? fget_light+0x1df/0x3c0
- [<ffffffff8117e53a>] ? sys_ioctl+0x4a/0x80
- [<ffffffff81003192>] ? system_call_fastpath+0x16/0x1b
-
---- [2]
-
-diff --git a/net/wireless/wext-compat.c b/net/wireless/wext-compat.c
-index 3e5dbd4..d112f03 100644
---- a/net/wireless/wext-compat.c
-+++ b/net/wireless/wext-compat.c
-@@ -802,11 +802,11 @@ int cfg80211_wext_siwfreq(struct net_device *dev,
- 			return freq;
- 		if (freq == 0)
- 			return -EINVAL;
--		wdev_lock(wdev);
- 		mutex_lock(&rdev->devlist_mtx);
-+		wdev_lock(wdev);
- 		err = cfg80211_set_freq(rdev, wdev, freq, NL80211_CHAN_NO_HT);
--		mutex_unlock(&rdev->devlist_mtx);
- 		wdev_unlock(wdev);
-+		mutex_unlock(&rdev->devlist_mtx);
- 		return err;
- 	default:
- 		return -EOPNOTSUPP;
--- 
-Daniel J Blueman
