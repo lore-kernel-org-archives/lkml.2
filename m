@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab1BUFy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 00:54:59 -0500
+	id S932219Ab1BUFzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 00:55:08 -0500
 Received: from mga11.intel.com ([192.55.52.93]:60137 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab1BUFyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 00:54:54 -0500
+	id S932141Ab1BUFy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 00:54:59 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,198,1297065600"; 
-   d="scan'208";a="889598817"
+   d="scan'208";a="889598843"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/7] lib, Add lock-less NULL terminated single list
-Date: Mon, 21 Feb 2011 13:54:40 +0800
-Message-Id: <1298267685-7357-3-git-send-email-ying.huang@intel.com>
+        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Subject: [PATCH 5/7] ACPI, APEI, Add PCIe AER error information printing support
+Date: Mon, 21 Feb 2011 13:54:43 +0800
+Message-Id: <1298267685-7357-6-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
 References: <1298267685-7357-1-git-send-email-ying.huang@intel.com>
@@ -24,285 +26,290 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cmpxchg is used to implement adding new entry to the list, deleting
-all entries from the list, deleting first entry of the list and some
-other operations.
+The AER error information printing support is implemented in
+drivers/pci/pcie/aer/aer_print.c.  So some string constants, functions
+and macros definitions can be re-used without being exported.
 
-Because this is a single list, so the tail can not be accessed in O(1).
-
-If there are multiple producers and multiple consumers, llist_add can
-be used in producers and llist_del_all can be used in consumers.  They
-can work simultaneously without lock.  But llist_del_first can not be
-used here.  Because llist_del_first depends on list->first->next does
-not changed if list->first is not changed during its operation, but
-llist_del_first, llist_add, llist_add sequence in another consumer may
-violate that.
-
-If there are multiple producers and one consumer, llist_add can be
-used in producers and llist_del_all or llist_del_first can be used in
-the consumer.
-
-The list entries deleted via llist_del_all can be traversed with
-traversing function such as llist_for_each etc.  But the list entries
-can not be traversed safely before deleted from the list.
-
-The basic atomic operation of this list is cmpxchg on long.  On
-architectures that don't have NMI-safe cmpxchg implementation, the
-list can NOT be used in NMI handler.  So code uses the list in NMI
-handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+The original PCIe AER error information printing function is not
+re-used directly because the overall format is quite different.  And
+changing the original printing format may make some original users'
+scripts broken.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Zhang Yanmin <yanmin.zhang@intel.com>
 ---
- include/linux/llist.h |   98 +++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig           |    3 +
- lib/Makefile          |    2 
- lib/llist.c           |  119 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 222 insertions(+)
- create mode 100644 include/linux/llist.h
- create mode 100644 lib/llist.c
+ Documentation/acpi/apei/output_format.txt |   25 ++++++++++++
+ drivers/acpi/apei/Kconfig                 |    7 +++
+ drivers/acpi/apei/cper.c                  |   18 +++++++--
+ drivers/pci/pcie/aer/aerdrv.h             |    9 ----
+ drivers/pci/pcie/aer/aerdrv_errprint.c    |   59 ++++++++++++++++++++++++++++++
+ include/linux/aer.h                       |   24 ++++++++++++
+ include/linux/cper.h                      |    2 +
+ 7 files changed, 132 insertions(+), 12 deletions(-)
 
---- /dev/null
-+++ b/include/linux/llist.h
-@@ -0,0 +1,98 @@
-+#ifndef LLIST_H
-+#define LLIST_H
-+/*
-+ * Lock-less NULL terminated single linked list
-+ *
-+ * If there are multiple producers and multiple consumers, llist_add
-+ * can be used in producers and llist_del_all can be used in
-+ * consumers.  They can work simultaneously without lock.  But
-+ * llist_del_first can not be used here.  Because llist_del_first
-+ * depends on list->first->next does not changed if list->first is not
-+ * changed during its operation, but llist_del_first, llist_add,
-+ * llist_add sequence in another consumer may violate that.
-+ *
-+ * If there are multiple producers and one consumer, llist_add can be
-+ * used in producers and llist_del_all or llist_del_first can be used
-+ * in the consumer.
-+ *
-+ * The list entries deleted via llist_del_all can be traversed with
-+ * traversing function such as llist_for_each etc.  But the list
-+ * entries can not be traversed safely before deleted from the list.
-+ *
-+ * The basic atomic operation of this list is cmpxchg on long.  On
-+ * architectures that don't have NMI-safe cmpxchg implementation, the
-+ * list can NOT be used in NMI handler.  So code uses the list in NMI
-+ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-+ */
+--- a/Documentation/acpi/apei/output_format.txt
++++ b/Documentation/acpi/apei/output_format.txt
+@@ -92,6 +92,11 @@ vendor_id: <integer>, device_id: <intege
+ class_code: <integer>]
+ [serial number: <integer>, <integer>]
+ [bridge: secondary_status: <integer>, control: <integer>]
++[aer_status: <integer>, aer_mask: <integer>
++<aer status string>
++[aer_uncor_severity: <integer>]
++aer_layer=<aer layer string>, aer_agent=<aer agent string>
++aer_tlp_header: <integer> <integer> <integer> <integer>]
+ 
+ <pcie port type string>* := PCIe end point | legacy PCI end point | \
+ unknown | unknown | root port | upstream switch port | \
+@@ -99,6 +104,26 @@ downstream switch port | PCIe to PCI/PCI
+ PCI/PCI-X to PCIe bridge | root complex integrated endpoint device | \
+ root complex event collector
+ 
++if section severity is fatal or recoverable
++<aer status string># :=
++unknown | unknown | unknown | unknown | Data Link Protocol | \
++unknown | unknown | unknown | unknown | unknown | unknown | unknown | \
++Poisoned TLP | Flow Control Protocol | Completion Timeout | \
++Completer Abort | Unexpected Completion | Receiver Overflow | \
++Malformed TLP | ECRC | Unsupported Request
++else
++<aer status string># :=
++Receiver Error | unknown | unknown | unknown | unknown | unknown | \
++Bad TLP | Bad DLLP | RELAY_NUM Rollover | unknown | unknown | unknown | \
++Replay Timer Timeout | Advisory Non-Fatal
++fi
 +
-+struct llist_head {
-+	struct llist_node *first;
++<aer layer string> :=
++Physical Layer | Data Link Layer | Transaction Layer
++
++<aer agent string> :=
++Receiver ID | Requester ID | Completer ID | Transmitter ID
++
+ Where, [] designate corresponding content is optional
+ 
+ All <field string> description with * has the following format:
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -21,6 +21,13 @@ config ACPI_APEI_GHES
+ 	  by firmware to produce more valuable hardware error
+ 	  information for Linux.
+ 
++config ACPI_APEI_PCIEAER
++	bool "APEI PCIe AER logging/recovering support"
++	depends on ACPI_APEI && PCIEAER
++	help
++	  PCIe AER errors may be reported via APEI firmware first mode.
++	  Turn on this option to enable the corresponding support.
++
+ config ACPI_APEI_EINJ
+ 	tristate "APEI Error INJection (EINJ)"
+ 	depends on ACPI_APEI && DEBUG_FS
+--- a/drivers/acpi/apei/cper.c
++++ b/drivers/acpi/apei/cper.c
+@@ -29,6 +29,7 @@
+ #include <linux/time.h>
+ #include <linux/cper.h>
+ #include <linux/acpi.h>
++#include <linux/aer.h>
+ 
+ /*
+  * CPER record ID need to be unique even after reboot, because record
+@@ -70,8 +71,8 @@ static const char *cper_severity_str(uns
+  * If the output length is longer than 80, multiple line will be
+  * printed, with @pfx is printed at the beginning of each line.
+  */
+-static void cper_print_bits(const char *pfx, unsigned int bits,
+-			    const char *strs[], unsigned int strs_size)
++void cper_print_bits(const char *pfx, unsigned int bits,
++		     const char *strs[], unsigned int strs_size)
+ {
+ 	int i, len = 0;
+ 	const char *str;
+@@ -81,6 +82,8 @@ static void cper_print_bits(const char *
+ 		if (!(bits & (1U << i)))
+ 			continue;
+ 		str = strs[i];
++		if (!str)
++			continue;
+ 		if (len && len + strlen(str) + 2 > 80) {
+ 			printk("%s\n", buf);
+ 			len = 0;
+@@ -243,7 +246,8 @@ static const char *cper_pcie_port_type_s
+ 	"root complex event collector",
+ };
+ 
+-static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie)
++static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
++			    const struct acpi_hest_generic_data *gdata)
+ {
+ 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
+ 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
+@@ -276,6 +280,12 @@ static void cper_print_pcie(const char *
+ 		printk(
+ 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
+ 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
++#ifdef CONFIG_ACPI_APEI_PCIEAER
++	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
++		struct aer_capability_regs *aer_regs = (void *)pcie->aer_info;
++		cper_print_aer(pfx, gdata->error_severity, aer_regs);
++	}
++#endif
+ }
+ 
+ static const char *apei_estatus_section_flag_strs[] = {
+@@ -322,7 +332,7 @@ static void apei_estatus_print_section(
+ 		struct cper_sec_pcie *pcie = (void *)(gdata + 1);
+ 		printk("%s""section_type: PCIe error\n", pfx);
+ 		if (gdata->error_data_length >= sizeof(*pcie))
+-			cper_print_pcie(pfx, pcie);
++			cper_print_pcie(pfx, pcie, gdata);
+ 		else
+ 			goto err_section_too_small;
+ 	} else
+--- a/drivers/pci/pcie/aer/aerdrv.h
++++ b/drivers/pci/pcie/aer/aerdrv.h
+@@ -35,13 +35,6 @@
+ 					PCI_ERR_UNC_UNX_COMP|		\
+ 					PCI_ERR_UNC_MALF_TLP)
+ 
+-struct header_log_regs {
+-	unsigned int dw0;
+-	unsigned int dw1;
+-	unsigned int dw2;
+-	unsigned int dw3;
+-};
+-
+ #define AER_MAX_MULTI_ERR_DEVICES	5	/* Not likely to have more */
+ struct aer_err_info {
+ 	struct pci_dev *dev[AER_MAX_MULTI_ERR_DEVICES];
+@@ -59,7 +52,7 @@ struct aer_err_info {
+ 
+ 	unsigned int status;		/* COR/UNCOR Error Status */
+ 	unsigned int mask;		/* COR/UNCOR Error Mask */
+-	struct header_log_regs tlp;	/* TLP Header */
++	struct aer_header_log_regs tlp;	/* TLP Header */
+ };
+ 
+ struct aer_err_source {
+--- a/drivers/pci/pcie/aer/aerdrv_errprint.c
++++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+@@ -19,6 +19,7 @@
+ #include <linux/errno.h>
+ #include <linux/pm.h>
+ #include <linux/suspend.h>
++#include <linux/cper.h>
+ 
+ #include "aerdrv.h"
+ 
+@@ -201,3 +202,61 @@ void aer_print_port_info(struct pci_dev
+ 		info->multi_error_valid ? "Multiple " : "",
+ 		aer_error_severity_string[info->severity], info->id);
+ }
++
++#ifdef CONFIG_ACPI_APEI_PCIEAER
++static int cper_severity_to_aer(int cper_severity)
++{
++	switch (cper_severity) {
++	case CPER_SEV_RECOVERABLE:
++		return AER_NONFATAL;
++	case CPER_SEV_FATAL:
++		return AER_FATAL;
++	default:
++		return AER_CORRECTABLE;
++	}
++}
++
++void cper_print_aer(const char *prefix, int cper_severity,
++		    struct aer_capability_regs *aer)
++{
++	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
++	u32 status, mask;
++	const char **status_strs;
++
++	aer_severity = cper_severity_to_aer(cper_severity);
++	if (aer_severity == AER_CORRECTABLE) {
++		status = aer->cor_status;
++		mask = aer->cor_mask;
++		status_strs = aer_correctable_error_string;
++		status_strs_size = ARRAY_SIZE(aer_correctable_error_string);
++	} else {
++		status = aer->uncor_status;
++		mask = aer->uncor_mask;
++		status_strs = aer_uncorrectable_error_string;
++		status_strs_size = ARRAY_SIZE(aer_uncorrectable_error_string);
++		tlp_header_valid = status & AER_LOG_TLP_MASKS;
++	}
++	layer = AER_GET_LAYER_ERROR(aer_severity, status);
++	agent = AER_GET_AGENT(aer_severity, status);
++	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
++	       prefix, status, mask);
++	cper_print_bits(prefix, status, status_strs, status_strs_size);
++	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
++	       aer_error_layer[layer], aer_agent_string[agent]);
++	if (aer_severity != AER_CORRECTABLE)
++		printk("%s""aer_uncor_severity: 0x%08x\n",
++		       prefix, aer->uncor_severity);
++	if (tlp_header_valid) {
++		const unsigned char *tlp;
++		tlp = (const unsigned char *)&aer->header_log;
++		printk("%s""aer_tlp_header:"
++			" %02x%02x%02x%02x %02x%02x%02x%02x"
++			" %02x%02x%02x%02x %02x%02x%02x%02x\n",
++			prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
++			*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
++			*(tlp + 11), *(tlp + 10), *(tlp + 9),
++			*(tlp + 8), *(tlp + 15), *(tlp + 14),
++			*(tlp + 13), *(tlp + 12));
++	}
++}
++#endif
+--- a/include/linux/aer.h
++++ b/include/linux/aer.h
+@@ -7,6 +7,28 @@
+ #ifndef _AER_H_
+ #define _AER_H_
+ 
++struct aer_header_log_regs {
++	unsigned int dw0;
++	unsigned int dw1;
++	unsigned int dw2;
++	unsigned int dw3;
 +};
 +
-+struct llist_node {
-+	struct llist_node *next;
++struct aer_capability_regs {
++	u32 header;
++	u32 uncor_status;
++	u32 uncor_mask;
++	u32 uncor_severity;
++	u32 cor_status;
++	u32 cor_mask;
++	u32 cap_control;
++	struct aer_header_log_regs header_log;
++	u32 root_command;
++	u32 root_status;
++	u16 cor_err_source;
++	u16 uncor_err_source;
 +};
 +
-+#define LLIST_HEAD_INIT(name)	{ NULL }
-+#define LLIST_HEAD(name)	struct llist_head name = LLIST_HEAD_INIT(name)
-+
-+/**
-+ * init_llist_head - initialize lock-less list head
-+ * @head:	the head for your lock-less list
-+ */
-+static inline void init_llist_head(struct llist_head *list)
-+{
-+	list->first = NULL;
-+}
-+
-+/**
-+ * llist_entry - get the struct of this entry
-+ * @ptr:	the &struct llist_node pointer.
-+ * @type:	the type of the struct this is embedded in.
-+ * @member:	the name of the llist_node within the struct.
-+ */
-+#define llist_entry(ptr, type, member)		\
-+	container_of(ptr, type, member)
-+
-+/**
-+ * llist_for_each - iterate over some deleted entries of a lock-less list
-+ * @pos:	the &struct llist_node to use as a loop cursor
-+ * @node:	the first entry of deleted list entries
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being deleted from list, so start with an entry
-+ * instead of list head.
-+ */
-+#define llist_for_each(pos, node)			\
-+	for (pos = (node); pos; pos = pos->next)
-+
-+/**
-+ * llist_for_each_entry - iterate over some deleted entries of lock-less list of given type
-+ * @pos:	the type * to use as a loop cursor.
-+ * @node:	the fist entry of deleted list entries.
-+ * @member:	the name of the llist_node with the struct.
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being removed from list, so start with an entry
-+ * instead of list head.
-+ */
-+#define llist_for_each_entry(pos, node, member)				\
-+	for (pos = llist_entry((node), typeof(*pos), member);		\
-+	     &pos->member != NULL;					\
-+	     pos = llist_entry(pos->member.next, typeof(*pos), member))
-+
-+/**
-+ * llist_empty - tests whether a lock-less list is empty
-+ * @head:	the list to test
-+ */
-+static inline int llist_empty(const struct llist_head *head)
-+{
-+	return head->first == NULL;
-+}
-+
-+void llist_add(struct llist_node *new, struct llist_head *head);
-+void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
-+		     struct llist_head *head);
-+struct llist_node *llist_del_first(struct llist_head *head);
-+struct llist_node *llist_del_all(struct llist_head *head);
-+#endif /* LLIST_H */
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -219,4 +219,7 @@ config LRU_CACHE
- config AVERAGE
- 	bool
+ #if defined(CONFIG_PCIEAER)
+ /* pci-e port driver needs this function to enable aer */
+ extern int pci_enable_pcie_error_reporting(struct pci_dev *dev);
+@@ -27,5 +49,7 @@ static inline int pci_cleanup_aer_uncorr
+ }
+ #endif
  
-+config LLIST
-+	bool
-+
- endmenu
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -110,6 +110,8 @@ obj-$(CONFIG_ATOMIC64_SELFTEST) += atomi
++extern void cper_print_aer(const char *prefix, int cper_severity,
++			   struct aer_capability_regs *aer);
+ #endif //_AER_H_
  
- obj-$(CONFIG_AVERAGE) += average.o
+--- a/include/linux/cper.h
++++ b/include/linux/cper.h
+@@ -388,5 +388,7 @@ struct cper_sec_pcie {
+ #pragma pack()
  
-+obj-$(CONFIG_LLIST) += llist.o
-+
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
+ u64 cper_next_record_id(void);
++void cper_print_bits(const char *prefix, unsigned int bits,
++		     const char *strs[], unsigned int strs_size);
  
---- /dev/null
-+++ b/lib/llist.c
-@@ -0,0 +1,119 @@
-+/*
-+ * Lock-less NULL terminated single linked list
-+ *
-+ * The basic atomic operation of this list is cmpxchg on long.  On
-+ * architectures that don't have NMI-safe cmpxchg implementation, the
-+ * list can NOT be used in NMI handler.  So code uses the list in NMI
-+ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-+ *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation;
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/interrupt.h>
-+#include <linux/llist.h>
-+
-+#include <asm/system.h>
-+
-+/**
-+ * llist_add - add a new entry
-+ * @new:	new entry to be added
-+ * @head:	the head for your lock-less list
-+ */
-+void llist_add(struct llist_node *new, struct llist_head *head)
-+{
-+	struct llist_node *entry;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	do {
-+		entry = head->first;
-+		new->next = entry;
-+	} while (cmpxchg(&head->first, entry, new) != entry);
-+}
-+EXPORT_SYMBOL_GPL(llist_add);
-+
-+/**
-+ * llist_add_batch - add several linked entries in batch
-+ * @new_first:	first entry in batch to be added
-+ * @new_last:	last entry in batch to be added
-+ * @head:	the head for your lock-less list
-+ */
-+void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
-+		     struct llist_head *head)
-+{
-+	struct llist_node *entry;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	do {
-+		entry = head->first;
-+		new_last->next = entry;
-+	} while (cmpxchg(&head->first, entry, new_first) != entry);
-+}
-+EXPORT_SYMBOL_GPL(llist_add_batch);
-+
-+/**
-+ * llist_del_first - delete the first entry of lock-less list
-+ * @head:	the head for your lock-less list
-+ *
-+ * If list is empty, return NULL, otherwise, return the first entry deleted.
-+ *
-+ * Only one llist_del_first user can be used simultaneously with
-+ * multiple llist_add users without lock. Because otherwise
-+ * llist_del_first, llist_add, llist_add sequence in another user may
-+ * change @head->first->next, but keep @head->first. If multiple
-+ * consumers are needed, please use llist_del_all.
-+ */
-+struct llist_node *llist_del_first(struct llist_head *head)
-+{
-+	struct llist_node *entry;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	do {
-+		entry = head->first;
-+		if (entry == NULL)
-+			return NULL;
-+	} while (cmpxchg(&head->first, entry, entry->next) != entry);
-+
-+	return entry;
-+}
-+EXPORT_SYMBOL_GPL(llist_del_first);
-+
-+/**
-+ * llist_del_all - delete all entries from lock-less list
-+ * @head:	the head of lock-less list to delete all entries
-+ *
-+ * If list is empty, return NULL, otherwise, delete all entries and
-+ * return the pointer to the first entry.
-+ */
-+struct llist_node *llist_del_all(struct llist_head *head)
-+{
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	return xchg(&head->first, NULL);
-+}
-+EXPORT_SYMBOL_GPL(llist_del_all);
+ #endif
