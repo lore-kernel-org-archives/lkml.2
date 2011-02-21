@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab1BUWo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 17:44:28 -0500
+	id S1753517Ab1BUWo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 17:44:58 -0500
 Received: from ogre.sisk.pl ([217.79.144.158]:45325 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752962Ab1BUWoY convert rfc822-to-8bit (ORCPT
+	id S1752994Ab1BUWo2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 17:44:24 -0500
+	Mon, 21 Feb 2011 17:44:28 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Prasad Joshi" <prasadjoshi124@gmail.com>
+        Florian Mickler <florian@mickler.org>, "Pawel Sikora" <pluto@agmk.net>
 References: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
 In-Reply-To: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <f14qsMvj2tF.A.hlD.FduYNB@chimera>
-Subject: [Bug #26112] [LogFS] [2.6.37-rc8+] Kernel BUG at logfs/readwrite.c:297!
+Message-ID: <f14qsMvj2tF.A.irD.HduYNB@chimera>
+Subject: [Bug #26102] [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Mon, 21 Feb 2011 23:37:08 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +33,11 @@ introduced between 2.6.36 and 2.6.37.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26112
-Subject		: [LogFS] [2.6.37-rc8+] Kernel BUG at logfs/readwrite.c:297!
-Submitter	: Prasad Joshi <prasadjoshi124@gmail.com>
-Date		: 2011-01-02 21:22 (51 days old)
-Message-ID	: <AANLkTinpoM8FuG8UkF88xs_V37dz_wgE8t-s0JPzaS-w@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=129400335910652&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26102
+Subject		: [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
+Submitter	: Pawel Sikora <pluto@agmk.net>
+Date		: 2010-12-30 15:08 (54 days old)
+Message-ID	: <201012301608.40859.pluto@agmk.net>
+References	: http://marc.info/?l=linux-kernel&m=129372388925679&w=2
 
 
