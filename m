@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab1BUTIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 14:08:14 -0500
-Received: from mga14.intel.com ([143.182.124.37]:23365 "EHLO mga14.intel.com"
+	id S1752568Ab1BUTIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 14:08:12 -0500
+Received: from mga01.intel.com ([192.55.52.88]:65424 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab1BUTIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751608Ab1BUTIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Feb 2011 14:08:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.62,201,1297065600"; 
-   d="scan'208";a="391932086"
+   d="scan'208";a="659993231"
 From: Andi Kleen <andi@firstfloor.org>
 To: akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, aarcange@redhat.com,
         lwoodman@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/8] Change alloc_pages_vma to pass down the policy node for local policy
-Date: Mon, 21 Feb 2011 11:07:44 -0800
-Message-Id: <1298315270-10434-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 6/8] Add __GFP_OTHER_NODE flag
+Date: Mon, 21 Feb 2011 11:07:48 -0800
+Message-Id: <1298315270-10434-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
 References: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
@@ -25,102 +25,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Currently alloc_pages_vma always uses the local node as policy node
-for the LOCAL policy. Pass this node down as an argument instead.
+Add a new __GFP_OTHER_NODE flag to tell the low level numa statistics
+in zone_statistics() that an allocation is on behalf of another thread.
+This way the local and remote counters can be still correct, even
+when background daemons like khugepaged are changing memory
+mappings.
 
-No behaviour change from this patch, but will be needed for followons.
+This only affects the accounting, but I think it's worth doing that
+right to avoid confusing users.
+
+I first tried to just pass down the right node, but this required
+a lot of changes to pass down this parameter and at least one
+addition of a 10th argument to a 9 argument function. Using
+the flag is a lot less intrusive.
+
+Open: should be also used for migration?
 
 Cc: aarcange@redhat.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/gfp.h |    9 +++++----
- mm/huge_memory.c    |    2 +-
- mm/mempolicy.c      |   11 +++++------
- 3 files changed, 11 insertions(+), 11 deletions(-)
+ include/linux/gfp.h    |    2 ++
+ include/linux/vmstat.h |    4 ++--
+ mm/page_alloc.c        |    2 +-
+ mm/vmstat.c            |    9 +++++++--
+ 4 files changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 0b84c61..782e74a 100644
+index 814d50e..a064724 100644
 --- a/include/linux/gfp.h
 +++ b/include/linux/gfp.h
-@@ -332,16 +332,17 @@ alloc_pages(gfp_t gfp_mask, unsigned int order)
- 	return alloc_pages_current(gfp_mask, order);
- }
- extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
--			struct vm_area_struct *vma, unsigned long addr);
-+		    	struct vm_area_struct *vma, unsigned long addr,
-+			int node);
- #else
- #define alloc_pages(gfp_mask, order) \
- 		alloc_pages_node(numa_node_id(), gfp_mask, order)
--#define alloc_pages_vma(gfp_mask, order, vma, addr)	\
-+#define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
- 	alloc_pages(gfp_mask, order)
+@@ -35,6 +35,7 @@ struct vm_area_struct;
+ #define ___GFP_NOTRACK		0
  #endif
- #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
--#define alloc_page_vma(gfp_mask, vma, addr)	\
--	alloc_pages_vma(gfp_mask, 0, vma, addr)
-+#define alloc_page_vma(gfp_mask, vma, addr)			\
-+	alloc_pages_vma(gfp_mask, 0, vma, addr, numa_node_id())
+ #define ___GFP_NO_KSWAPD	0x400000u
++#define ___GFP_OTHER_NODE	0x800000u
  
- extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
- extern unsigned long get_zeroed_page(gfp_t gfp_mask);
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e62ddb8..73ecca5 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -653,7 +653,7 @@ static inline struct page *alloc_hugepage_vma(int defrag,
- 					      unsigned long haddr)
- {
- 	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag),
--			       HPAGE_PMD_ORDER, vma, haddr);
-+			       HPAGE_PMD_ORDER, vma, haddr, numa_node_id());
+ /*
+  * GFP bitmasks..
+@@ -83,6 +84,7 @@ struct vm_area_struct;
+ #define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
+ 
+ #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
++#define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+ 
+ /*
+  * This may seem redundant, but it's a way of annotating false positives vs.
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 833e676..9b5c63d 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -220,12 +220,12 @@ static inline unsigned long node_page_state(int node,
+ 		zone_page_state(&zones[ZONE_MOVABLE], item);
  }
  
- #ifndef CONFIG_NUMA
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 76c51b7..d3d1e747 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1524,10 +1524,9 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
- }
+-extern void zone_statistics(struct zone *, struct zone *);
++extern void zone_statistics(struct zone *, struct zone *, gfp_t gfp);
  
- /* Return a zonelist indicated by gfp for node representing a mempolicy */
--static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy)
-+static struct zonelist *policy_zonelist(gfp_t gfp, struct mempolicy *policy,
-+	int nd)
- {
--	int nd = numa_node_id();
--
- 	switch (policy->mode) {
- 	case MPOL_PREFERRED:
- 		if (!(policy->flags & MPOL_F_LOCAL))
-@@ -1679,7 +1678,7 @@ struct zonelist *huge_zonelist(struct vm_area_struct *vma, unsigned long addr,
- 		zl = node_zonelist(interleave_nid(*mpol, vma, addr,
- 				huge_page_shift(hstate_vma(vma))), gfp_flags);
- 	} else {
--		zl = policy_zonelist(gfp_flags, *mpol);
-+		zl = policy_zonelist(gfp_flags, *mpol, numa_node_id());
- 		if ((*mpol)->mode == MPOL_BIND)
- 			*nodemask = &(*mpol)->v.nodes;
+ #else
+ 
+ #define node_page_state(node, item) global_page_state(item)
+-#define zone_statistics(_zl,_z) do { } while (0)
++#define zone_statistics(_zl,_z, gfp) do { } while (0)
+ 
+ #endif /* CONFIG_NUMA */
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a873e61..4ce06a6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1333,7 +1333,7 @@ again:
  	}
-@@ -1820,7 +1819,7 @@ static struct page *alloc_page_interleave(gfp_t gfp, unsigned order,
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+-	zone_statistics(preferred_zone, zone);
++	zone_statistics(preferred_zone, zone, gfp_flags);
+ 	local_irq_restore(flags);
+ 
+ 	VM_BUG_ON(bad_range(zone, page));
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 0c3b504..2b461ed 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -500,8 +500,12 @@ void refresh_cpu_vm_stats(int cpu)
+  * z 	    = the zone from which the allocation occurred.
+  *
+  * Must be called with interrupts disabled.
++ * 
++ * When __GFP_OTHER_NODE is set assume the node of the preferred
++ * zone is the local node. This is useful for daemons who allocate
++ * memory on behalf of other processes.
   */
- struct page *
- alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
--		unsigned long addr)
-+		unsigned long addr, int node)
+-void zone_statistics(struct zone *preferred_zone, struct zone *z)
++void zone_statistics(struct zone *preferred_zone, struct zone *z, gfp_t flags)
  {
- 	struct mempolicy *pol = get_vma_policy(current, vma, addr);
- 	struct zonelist *zl;
-@@ -1836,7 +1835,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
- 		put_mems_allowed();
- 		return page;
+ 	if (z->zone_pgdat == preferred_zone->zone_pgdat) {
+ 		__inc_zone_state(z, NUMA_HIT);
+@@ -509,7 +513,8 @@ void zone_statistics(struct zone *preferred_zone, struct zone *z)
+ 		__inc_zone_state(z, NUMA_MISS);
+ 		__inc_zone_state(preferred_zone, NUMA_FOREIGN);
  	}
--	zl = policy_zonelist(gfp, pol);
-+	zl = policy_zonelist(gfp, pol, node);
- 	if (unlikely(mpol_needs_cond_ref(pol))) {
- 		/*
- 		 * slow path: ref counted shared policy
+-	if (z->node == numa_node_id())
++	if (z->node == ((flags & __GFP_OTHER_NODE) ? 
++			preferred_zone->node : numa_node_id()))
+ 		__inc_zone_state(z, NUMA_LOCAL);
+ 	else
+ 		__inc_zone_state(z, NUMA_OTHER);
 -- 
 1.7.4
 
