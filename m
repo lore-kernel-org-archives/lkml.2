@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1BUJhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 04:37:23 -0500
-Received: from webbox687.server-home.net ([195.149.74.151]:59633 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab1BUJhW (ORCPT
+	id S1754544Ab1BUJnY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 04:43:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60826 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab1BUJnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 04:37:22 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2 1/4] gpiolib: Add "unknown" direction support
-Date: Mon, 21 Feb 2011 10:37:18 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r5; KDE/4.4.5; x86_64; ; )
-Cc: "Lars-Peter Clausen" <lars@metafoo.de>, Eric Miao <eric.y.miao@gmail.com>,
-        Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org,
-        Alek Du <alek.du@intel.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        "Uwe Kleine-K?nig" <u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <1297904216-15219-1-git-send-email-ptyser@xes-inc.com> <201102211009.31381.alexander.stein@systec-electronic.com> <20110221091916.GA2616@pengutronix.de>
-In-Reply-To: <20110221091916.GA2616@pengutronix.de>
+	Mon, 21 Feb 2011 04:43:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Eh8hi336E79Chk1O8c4QZAB1J0vRxbeA3ZAhqfNWucn0Su4cY6cA4NwEwbxR1B7zf4
+         hPRDqurCXpZQLNCX8N1iM6BBbmPFW9ffShYOL9XClqcm9+wftwJL0qwHoU3PT7z8uwgA
+         /WKZAVfVxQouiqgikIiznI57jZDdJgjJY9WZw=
+Date: Mon, 21 Feb 2011 10:43:18 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [PATCH 2/4] x86, numa: Do not adjust start/end for
+ early_node_mem()
+Message-ID: <20110221094318.GG31267@htj.dyndns.org>
+References: <4D5EC05A.60103@kernel.org>
+ <4D5EC184.6000505@kernel.org>
+ <alpine.DEB.2.00.1102191944530.32280@chino.kir.corp.google.com>
+ <AANLkTikgR8vEhz3Hsmx96QqZw_gsLZetc3W_9evf3ufb@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102211037.19572.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikgR8vEhz3Hsmx96QqZw_gsLZetc3W_9evf3ufb@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 February 2011, 10:19:16 Wolfram Sang wrote:
-> > > Sharing GPIOs in read-only mode, is indeed something that is not
-> > > covered by the GPIO API. It might be worth adding a
-> > > gpio_request_shared, which would only permit setting the direction to
-> > > input. Futher gpio_request_shared calls would be allowed but
-> > > gpio_request calls would fail.
-> > 
-> > gpio_request_shared sounds interesting, but in this case an implicit
+Hello,
+
+On Sat, Feb 19, 2011 at 08:17:11PM -0800, Yinghai Lu wrote:
+> > The old code guarantees that the range is from a single zone, and even
+> > though memblock may be top -> down, it seems like there would be
+> > configurations where this would still be an issue (perhaps simulating it
+> > with numa=fake for testing?) if it crosses the boundary.
 > 
-> Can you name a use-case? One reason is that we won't need to implement
-> it if there is no user, another one is that it could potentially weaken
-> abstractions?
+> memblock_x86_find_in_range_node() will go over with early_node_map[].
+> so it will always can get right on node allocation.
 
-We had exported our 5V_enable gpio to sysfs to allow a user-space application 
-to enable/disable devices connected to 5V circuit.
-But on the other hand we had to read the current status of this gpio in the 
-power-fail interrupt handler to distinguish between false-positive (5V 
-disabled) and a correct detection.
-As the sysfs export requests the gpio we cannot gpio_request it in the power-
-fail driver and just used gpio_get_value without request.
-We set the direction already in the machine startup code and never touched it 
-again.
+I think always doing top-down allocation should be enough as long as
+there's no highmem, which we don't have on 64bit.  That said, the
+patch description should note the behavior difference.  Yinghai, care
+to add a bit more detail to the patch description?
 
-Alexander
+Thanks.
+
+-- 
+tejun
