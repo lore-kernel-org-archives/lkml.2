@@ -1,346 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1BVMwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 07:52:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924Ab1BVMwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 07:52:38 -0500
-Date: Tue, 22 Feb 2011 13:52:01 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        masami.hiramatsu.pt@hitachi.com, hpa@zytor.com, ananth@in.ibm.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        eric.dumazet@gmail.com, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] x86: separating entry text section
-Message-ID: <20110222125201.GB1884@jolsa.brq.redhat.com>
-References: <20110220125948.GC25700@elte.hu>
- <1298298313-5980-1-git-send-email-jolsa@redhat.com>
- <1298298313-5980-2-git-send-email-jolsa@redhat.com>
- <20110222080934.GB7001@elte.hu>
+	id S1752165Ab1BVMwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 07:52:36 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43484 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab1BVMwf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 07:52:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222080934.GB7001@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1298362178.4222.57.camel@work-vm>
+References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
+ <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
+ <20110222023452.GB18299@sirena.org.uk> <1298343333.4222.36.camel@work-vm> <1298362178.4222.57.camel@work-vm>
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Date: Tue, 22 Feb 2011 09:51:44 -0300
+Message-ID: <AANLkTinMPnJj+ca+=ujU=5rhK3Nh0qrFGe955zZWjYaf@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup rtc_class_ops->read_alarm()
+To: john stultz <johnstul@us.ibm.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 09:09:34AM +0100, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > Putting x86 entry code to the separate section: .entry.text.
-> 
-> Trying to apply your patch i noticed one detail:
-> 
-> > before patch:
-> >      26282174  L1-icache-load-misses      ( +-   0.099% )  (scaled from 81.00%)
-> >   0.206651959  seconds time elapsed   ( +-   0.152% )
-> > 
-> > after patch:
-> >      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
-> >   0.210509948  seconds time elapsed   ( +-   0.140% )
-> 
-> So time elapsed actually went up.
-> 
-> hackbench is notoriously unstable when it comes to runtime - and increasing the 
-> --repeat value only has limited effects on that.
-> 
-> Dropping all system caches:
-> 
->    echo 1 > /proc/sys/vm/drop_caches
-> 
-> Seems to do a better job of 'resetting' system state, but if we put that into the 
-> measured workload then the results are all over the place (as we now depend on IO 
-> being done):
-> 
->  # cat hb10
-> 
->  echo 1 > /proc/sys/vm/drop_caches
->  ./hackbench 10
-> 
->  # perf stat --repeat 3 ./hb10
-> 
->  Time: 0.097
->  Time: 0.095
->  Time: 0.101
-> 
->  Performance counter stats for './hb10' (3 runs):
-> 
->          21.351257 task-clock-msecs         #      0.044 CPUs    ( +-  27.165% )
->                  6 context-switches         #      0.000 M/sec   ( +-  34.694% )
->                  1 CPU-migrations           #      0.000 M/sec   ( +-  25.000% )
->                410 page-faults              #      0.019 M/sec   ( +-   0.081% )
->         25,407,650 cycles                   #   1189.984 M/sec   ( +-  49.154% )
->         25,407,650 instructions             #      1.000 IPC     ( +-  49.154% )
->          5,126,580 branches                 #    240.107 M/sec   ( +-  46.012% )
->            192,272 branch-misses            #      3.750 %       ( +-  44.911% )
->            901,701 cache-references         #     42.232 M/sec   ( +-  12.857% )
->            802,767 cache-misses             #     37.598 M/sec   ( +-   9.282% )
-> 
->         0.483297792  seconds time elapsed   ( +-  31.152% )
-> 
-> So here's a perf stat feature suggestion to solve such measurement problems: a new 
-> 'pre-run' 'dry' command could be specified that is executed before the real 'hot' 
-> run is executed. Something like this:
-> 
->   perf stat --pre-run-script ./hb10 --repeat 10 ./hackbench 10
-> 
-> Would do the cache-clearing before each run, it would run hackbench once (dry run) 
-> and then would run hackbench 10 for real - and would repeat the whole thing 10 
-> times. Only the 'hot' portion of the run would be measured and displayed in the perf 
-> stat output event counts.
-> 
-> Another observation:
-> 
-> >      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
-> 
-> Could you please do runs that do not display 'scaled from' messages? Since we are 
-> measuring a relatively small effect here, and scaling adds noise, it would be nice 
-> to ensure that the effect persists with non-scaled events as well:
-> 
-> You can do that by reducing the number of events that are measured. The PMU can not 
-> measure all those L1 cache events you listed - so only use the most important one 
-> and add cycles and instructions to make sure the measurements are comparable:
-> 
->   -e L1-icache-load-misses -e instructions -e cycles
-> 
-> Btw., there's another 'perf stat' feature suggestion: it would be nice if it was 
-> possible to 'record' a perf stat run, and do a 'perf diff' over it. That would 
-> compare the two runs all automatically, without you having to do the comparison 
-> manually.
+Hi Folks,
 
-hi,
+On Tue, Feb 22, 2011 at 05:09, john stultz <johnstul@us.ibm.com> wrote:
+> On Mon, 2011-02-21 at 18:55 -0800, John Stultz wrote:
+>> On Tue, 2011-02-22 at 02:34 +0000, Mark Brown wrote:
+>> > Can you go into more detail on the rationale behind this virtualised
+>> > functionality and how it works?  I'd really expect the RTC alarm to be
+>> > preserved over system reboots (on some systems it can be used to
+>> > initiate a boot) and that would mean that we need to go to the hardware
+>> > for at least the initial configuration.
+> [snip]
+>> Now, to your point about persistence across reboots:
+>>
+>> It is an interesting point to consider.
+>>
+>> So currently, if the hardware supports it, then the behavior should
+>> remain the same: As long as no application sets a new alarm, the
+>> previous alarm should persist in the RTC hardware.
+>>
+>> However, an application's ability to notice that such an alarm is set,
+>> is currently limited.  So your point about reading the hardware to
+>> initialize the state is quite valid, and shows a good reason to preserve
+>> the read_alarm() method.
 
-I made another test with "reseting" the system state as suggested and
-only for cache-misses together with instructions and cycles events.
+Does it matter to application 1 that application 2 has set an alarm
+before or after the time it has previously set it? With multiplexed
+events, what is the semantic of read_alarm()? Should it return only
+the closest alarm to trigger of the application that calls it or
+should it return the closest alarm of the system?
 
-I can see even bigger drop of icache load misses than before
-from 19359739 to 16448709 (about 15%).
+> So I've been working on a fix for the issue described here, but have run
+> into a few complications:
+>
+> 1) Prior to my rework landing, on the rtc-cmos driver, after a reboot,
+> calls to rtc_read_alarm() do return the alarm time from hardware.
+> However, the AIE mode bit is off (even if it was left on). So the alarm
+> does not seem like it would persist across reboots, and the value
+> returned form rtc_read_alarm is technically invalid as the code to fill
+> in the -1 fields doesn't run.
+>
+> I realize that the cmos is fairly simplistic, but do you have examples
+> of hardware where the AIE mode does persist on bootup?
 
-The instruction/cycles count is slightly bigger in the patched
-kernel run though..
+Seems like cmos can't handle it. I don't know if strongarm will wake
+up with the timer sane after a hardware reset, there used to be an
+issue with the timer AIE and UIE interrupt bits waking up with a
+random value.
 
-perf stat --repeat 100  -e L1-icache-load-misses -e instructions -e cycles ./hackbench/hackbench 10
+> 2) One larger complication I see coming down the road with this is how
+> do we handle persistence with multiplexed events? If we have two
+> rtc_timers set to fire, one at 1pm and the other at 3pm. If we reboot
+> the box at noon, only the 1pm timer will persist.
+>
+> This could cause some additional confusion if the first timer was a
+> posix-alarm-timer and the second was the classic wake alarm set
+> by /dev/rtc0. In that case, after a reboot at noon, the system will show
+> a 1pm wake alarm via /dev/rtc0.
+>
+> I need to think more about #2. I suspect we could claim that soonest
+> alarm should be preserved regardless of what its source was.
 
--------------------------------------------------------------------------------
-before patch:
+Upon a reboot, I believe its a valid assumption that the system has
+been completely reinitialized, as opposed to a suspend. In this case,
+none of the original applications that have set alarms will be running
+on the system. Setting the alarm to do anything more than waking up
+the system seems odd in this scenario. An application that will keep
+information across reboots must have other means to persist its
+information, most likely keeping it in a file so that it can decide
+what to do upon initialization. Then it could check what alarms it
+would need to set.
 
- Performance counter stats for './hackbench/hackbench 10' (100 runs):
+> Just so I can better get a grip of the cases your considering, could you
+> maybe give me some more detailed examples of where you'd like to see the
+> alarm timer be set and then persist across multiple power cycles before
+> firing? And how is that persistent value managed by the application
+> setting it?
 
-           19359739  L1-icache-load-misses      ( +-   0.313% )
-         2667528936  instructions             #      0.498 IPC     ( +- 0.165% )
-         5352849800  cycles                     ( +-   0.303% )
+I am curious about this too.
 
-        0.205402048  seconds time elapsed   ( +-   0.299% )
+> thanks
+> -john
 
- Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-           19417627  L1-icache-load-misses      ( +-   0.147% )
-         2676914223  instructions             #      0.497 IPC     ( +- 0.079% )
-         5389516026  cycles                     ( +-   0.144% )
-
-        0.206267711  seconds time elapsed   ( +-   0.138% )
-
-
--------------------------------------------------------------------------------
-after patch:
-
- Performance counter stats for './hackbench/hackbench 10' (100 runs):
-
-           16448709  L1-icache-load-misses      ( +-   0.426% )
-         2698406306  instructions             #      0.500 IPC     ( +- 0.177% )
-         5393976267  cycles                     ( +-   0.321% )
-
-        0.206072845  seconds time elapsed   ( +-   0.276% )
-
- Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-           16490788  L1-icache-load-misses      ( +-   0.180% )
-         2717734941  instructions             #      0.502 IPC     ( +- 0.079% )
-         5414756975  cycles                     ( +-   0.148% )
-
-        0.206747566  seconds time elapsed   ( +-   0.137% )
-
-
-Attaching patch with above numbers in comment.
-
-thanks,
-jirka
-
-
----
-Putting x86 entry code to the separate section: .entry.text.
-
-Separating the entry text section seems to have performance
-benefits with regards to the instruction cache usage.
-
-Running hackbench showed that the change compresses the icache
-footprint. The icache load miss rate went down by about 15%:
-
-before patch:
-         19417627  L1-icache-load-misses      ( +-   0.147% )
-
-after patch:
-         16490788  L1-icache-load-misses      ( +-   0.180% )
-
-
-Whole perf output follows.
-
-- results for current tip tree:
-  Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-         19417627  L1-icache-load-misses      ( +-   0.147% )
-       2676914223  instructions             #      0.497 IPC     ( +- 0.079% )
-       5389516026  cycles                     ( +-   0.144% )
-
-      0.206267711  seconds time elapsed   ( +-   0.138% )
-
-- results for current tip tree with the patch applied are:
-  Performance counter stats for './hackbench/hackbench 10' (500 runs):
-
-         16490788  L1-icache-load-misses      ( +-   0.180% )
-       2717734941  instructions             #      0.502 IPC     ( +- 0.079% )
-       5414756975  cycles                     ( +-   0.148% )
-
-      0.206747566  seconds time elapsed   ( +-   0.137% )
-
-
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/ia32/ia32entry.S         |    2 ++
- arch/x86/kernel/entry_32.S        |    6 ++++--
- arch/x86/kernel/entry_64.S        |    6 ++++--
- arch/x86/kernel/vmlinux.lds.S     |    1 +
- include/asm-generic/sections.h    |    1 +
- include/asm-generic/vmlinux.lds.h |    6 ++++++
- 6 files changed, 18 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 0ed7896..50f1630 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -25,6 +25,8 @@
- #define sysretl_audit ia32_ret_from_sys_call
- #endif
- 
-+	.section .entry.text, "ax"
-+
- #define IA32_NR_syscalls ((ia32_syscall_end - ia32_sys_call_table)/8)
- 
- 	.macro IA32_ARG_FIXUP noebp=0
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index c8b4efa..f5accf8 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -65,6 +65,8 @@
- #define sysexit_audit	syscall_exit_work
- #endif
- 
-+	.section .entry.text, "ax"
-+
- /*
-  * We use macros for low-level operations which need to be overridden
-  * for paravirtualization.  The following will never clobber any registers:
-@@ -788,7 +790,7 @@ ENDPROC(ptregs_clone)
-  */
- .section .init.rodata,"a"
- ENTRY(interrupt)
--.text
-+.section .entry.text, "ax"
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -807,7 +809,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.long 1b
--      .text
-+      .section .entry.text, "ax"
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 891268c..39f8d21 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -61,6 +61,8 @@
- #define __AUDIT_ARCH_LE	   0x40000000
- 
- 	.code64
-+	.section .entry.text, "ax"
-+
- #ifdef CONFIG_FUNCTION_TRACER
- #ifdef CONFIG_DYNAMIC_FTRACE
- ENTRY(mcount)
-@@ -744,7 +746,7 @@ END(stub_rt_sigreturn)
-  */
- 	.section .init.rodata,"a"
- ENTRY(interrupt)
--	.text
-+	.section .entry.text
- 	.p2align 5
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- ENTRY(irq_entries_start)
-@@ -763,7 +765,7 @@ vector=FIRST_EXTERNAL_VECTOR
-       .endif
-       .previous
- 	.quad 1b
--      .text
-+      .section .entry.text
- vector=vector+1
-     .endif
-   .endr
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index e70cc3d..459dce2 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -105,6 +105,7 @@ SECTIONS
- 		SCHED_TEXT
- 		LOCK_TEXT
- 		KPROBES_TEXT
-+		ENTRY_TEXT
- 		IRQENTRY_TEXT
- 		*(.fixup)
- 		*(.gnu.warning)
-diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
-index b3bfabc..c1a1216 100644
---- a/include/asm-generic/sections.h
-+++ b/include/asm-generic/sections.h
-@@ -11,6 +11,7 @@ extern char _sinittext[], _einittext[];
- extern char _end[];
- extern char __per_cpu_load[], __per_cpu_start[], __per_cpu_end[];
- extern char __kprobes_text_start[], __kprobes_text_end[];
-+extern char __entry_text_start[], __entry_text_end[];
- extern char __initdata_begin[], __initdata_end[];
- extern char __start_rodata[], __end_rodata[];
- 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index fe77e33..906c3ce 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -424,6 +424,12 @@
- 		*(.kprobes.text)					\
- 		VMLINUX_SYMBOL(__kprobes_text_end) = .;
- 
-+#define ENTRY_TEXT							\
-+		ALIGN_FUNCTION();					\
-+		VMLINUX_SYMBOL(__entry_text_start) = .;			\
-+		*(.entry.text)						\
-+		VMLINUX_SYMBOL(__entry_text_end) = .;
-+
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- #define IRQENTRY_TEXT							\
- 		ALIGN_FUNCTION();					\
--- 
-1.7.1
-
+Regards,
+Marcelo.
