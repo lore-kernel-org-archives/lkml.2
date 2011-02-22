@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab1BVA2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 19:28:06 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:50025 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab1BVA2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 19:28:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=kIK9zmiP4EFivQeOfU/yGaAsl3iOuoCg7lAm8btlYMGFKBR0jxysViAPWqZn0Dj/4e
-         5bvVZbsFhbuNBUnGDvjg==
-Date: Mon, 21 Feb 2011 16:27:57 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: [PATCH 2/4] x86, numa: Do not adjust start/end for
- early_node_mem()
-In-Reply-To: <4D629F17.5030006@kernel.org>
-Message-ID: <alpine.DEB.2.00.1102211627450.23557@chino.kir.corp.google.com>
-References: <4D5EC05A.60103@kernel.org> <4D5EC184.6000505@kernel.org> <alpine.DEB.2.00.1102191944530.32280@chino.kir.corp.google.com> <AANLkTikgR8vEhz3Hsmx96QqZw_gsLZetc3W_9evf3ufb@mail.gmail.com> <20110221094318.GG31267@htj.dyndns.org>
- <4D629F17.5030006@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1752567Ab1BVAaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 19:30:00 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:59737 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab1BVA37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 19:29:59 -0500
+Subject: [GIT PULL] 2.6.39 clocksource cleanups for tip/timers/clocksource
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Feb 2011 16:29:55 -0800
+Message-ID: <1298334595.4222.19.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011, Yinghai Lu wrote:
+Hey Thomas,
+	Here's my current 2.6.39 clocksource queue for testing in -tip. Let me
+know if there's any tweaks you need.
 
-> [PATCH] x86, numa, 64bit: Do not adjust start/end at first for early_node_mem()
-> 
-> We have top-down allocation  with memblock way now.
-> So do not need to adjust start/end to make them above DMA region.
-> memblock allocation always get high address for us.
-> 
-> Just remove those lines.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+thanks
+-john
 
-Acked-by: David Rientjes <rientjes@google.com>
+  git://git.linaro.org/people/jstultz/linux.git fortglx/39/tip/timers/clocksource
+
+John Stultz (7):
+      x86: Convert remaining x86 clocksources to clocksource_register_hz/khz
+      ia64: convert to clocksource_register_hz/khz
+      microblaze: convert to clocksource_register_hz/khz
+      alpha: convert to clocksource_register_hz
+      sparc: convert to clocksource_register_hz/khz
+      mips: convert to clocksource_register_hz/khz
+      blackfin: convert to clocksource_register_hz
+
+Russell King - ARM Linux (1):
+      Make clocksource name const
+
+ arch/alpha/kernel/time.c                        |    3 +-
+ arch/blackfin/kernel/time-ts.c                  |   35 +---------------------
+ arch/ia64/kernel/cyclone.c                      |    6 +---
+ arch/ia64/kernel/time.c                         |    9 +----
+ arch/ia64/sn/kernel/sn2/timer.c                 |    6 +---
+ arch/microblaze/kernel/timer.c                  |    6 +---
+ arch/mips/alchemy/common/time.c                 |    3 +-
+ arch/mips/cavium-octeon/csrc-octeon.c           |    3 +-
+ arch/mips/include/asm/time.h                    |    6 ----
+ arch/mips/jz4740/time.c                         |    3 +-
+ arch/mips/kernel/cevt-txx9.c                    |    3 +-
+ arch/mips/kernel/csrc-bcm1480.c                 |    3 +-
+ arch/mips/kernel/csrc-ioasic.c                  |    4 +--
+ arch/mips/kernel/csrc-powertv.c                 |   35 ++---------------------
+ arch/mips/kernel/csrc-r4k.c                     |    4 +--
+ arch/mips/kernel/csrc-sb1250.c                  |    3 +-
+ arch/mips/kernel/i8253.c                        |    5 +--
+ arch/mips/loongson/common/cs5536/cs5536_mfgpt.c |    5 +--
+ arch/mips/sgi-ip27/ip27-timer.c                 |    3 +-
+ arch/sparc/kernel/time_64.c                     |    4 +--
+ arch/x86/kernel/apb_timer.c                     |   10 +------
+ arch/x86/kernel/i8253.c                         |    6 +---
+ arch/x86/kernel/kvmclock.c                      |    6 +---
+ arch/x86/lguest/boot.c                          |    4 +--
+ arch/x86/platform/uv/uv_time.c                  |    6 +---
+ arch/x86/xen/time.c                             |    6 +---
+ drivers/char/hpet.c                             |    6 +---
+ drivers/clocksource/cyclone.c                   |   10 +-----
+ include/linux/clocksource.h                     |    2 +-
+ 29 files changed, 33 insertions(+), 172 deletions(-)
+
+
