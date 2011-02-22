@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab1BVTMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:12:53 -0500
-Received: from trinity.develer.com ([83.149.158.210]:33197 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1BVTMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:12:51 -0500
-Date: Tue, 22 Feb 2011 20:12:47 +0100
-From: Andrea Righi <arighi@develer.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
-Message-ID: <20110222191247.GA1657@linux.develer.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
- <1298394776-9957-5-git-send-email-arighi@develer.com>
- <AANLkTinD2ZH3hw_iqVpvMjMRbUkXMBgttjd2NevvYq9x@mail.gmail.com>
+	id S1754865Ab1BVTOB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:14:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33026 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754285Ab1BVTOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:14:00 -0500
+Date: Tue, 22 Feb 2011 11:13:33 -0800
+From: Greg KH <gregkh@suse.de>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
+ interfaces
+Message-ID: <20110222191333.GA9991@suse.de>
+References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
+ <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
+ <20110222181613.GU4000@outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinD2ZH3hw_iqVpvMjMRbUkXMBgttjd2NevvYq9x@mail.gmail.com>
+In-Reply-To: <20110222181613.GU4000@outflux.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 10:42:41AM -0800, Chad Talbott wrote:
-> On Tue, Feb 22, 2011 at 9:12 AM, Andrea Righi <arighi@develer.com> wrote:
-> > Add the tracking of buffered (writeback) and anonymous pages.
-> ...
-> > ---
-> >  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
-> >  include/linux/blkdev.h |   26 ++++++++++++++-
-> >  2 files changed, 111 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> > index 9ad3d1e..a50ee04 100644
-> > --- a/block/blk-throttle.c
-> > +++ b/block/blk-throttle.c
-> ...
-> > +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
-> > +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
-> > +int blk_throtl_copy_page_owner(struct page *npage, struct page *opage)
+On Tue, Feb 22, 2011 at 10:16:13AM -0800, Kees Cook wrote:
+> Har har, I forgot --compose to "git send-email".
 > 
-> It would be nice if these were named blk_cgroup_*.  This is arguably
-> more correct as the id comes from the blkio subsystem, and isn't
-> specific to blk-throttle.  This will be more important very shortly,
-> as CFQ will be using this same cgroup id for async IO tracking soon.
+> Anyway, with the continuing deluge of bugs in the "debug" filesystem, I
+> would like to make that filesystem's root directory mode 0700 by default
+> since it's filled with crazy stuff that regular users do not need to see.
 
-Sounds reasonable. Will do in the next version.
+But that will break existing users of this interface, right?
 
-> 
-> is_kernel_io() is a good idea, it avoids a bug that we've run into
-> with CFQ async IO tracking.  Why isn't PF_KTHREAD sufficient to cover
-> all kernel threads, including kswapd and those marked PF_MEMALLOC?
+> Better to try to just close the door completely on all the stuff in there.
+> It is, after all, supposed to only be used for debugging, right?
 
-With PF_MEMALLOC we're sure we don't add the page tracking overhead also
-to non-kernel threads when memory gets low.
+No, not really, people use it for all sorts of crazy things.
 
-PF_KSWAPD is not probably needed, AFAICS it is only used by kswapd, that
-is created by kthread_create() and so it has the PF_KTHREAD flag set.
+Remember, the only rule in debugfs is:
+	There are no rules in debugfs.
 
-Let's see if someone can give more deatils about that. In the while I'll
-investigate and try to do some tests only with PF_KTHREAD.
+thanks,
 
-Thanks,
--Andrea
+greg k-h
