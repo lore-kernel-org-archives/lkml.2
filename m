@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab1BVCGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 21:06:12 -0500
-Received: from mail001.aei.ca ([206.123.6.130]:43971 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab1BVCGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 21:06:11 -0500
-From: Ed Tomlinson <edt@aei.ca>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bug #28562] [BUG] usb problems in .38-rc3+
-Date: Mon, 21 Feb 2011 21:06:06 -0500
-User-Agent: KMail/1.13.6 (Linux/2.6.38-rc5-crc+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera> <5HY1m9_-mkI.A.VxH.8WtYNB@chimera>
-In-Reply-To: <5HY1m9_-mkI.A.VxH.8WtYNB@chimera>
+	id S1753103Ab1BVCGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 21:06:25 -0500
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:49902 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab1BVCGX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 21:06:23 -0500
+Message-ID: <4D6319E0.9080907@snapgear.com>
+Date: Tue, 22 Feb 2011 12:05:20 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Steven King <sfking00@yahoo.com>,
+        uClinux development list <uclinux-dev@uclinux.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Greg Ungerer <gregungerer@westnet.com.au>
+Subject: Re: merge of m68knommu and m68k arch branches?
+References: <4D5DB83D.80205@snapgear.com> <alpine.LFD.2.00.1102212216540.2701@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1102212216540.2701@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102212106.07392.edt@aei.ca>
+X-OriginalArrivalTime: 22 Feb 2011 02:05:41.0713 (UTC) FILETIME=[01E5D410:01CBD235]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 February 2011 17:03:00 Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.37.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28562
-> Subject		: [BUG] usb problems in .38-rc3+
-> Submitter	: Ed Tomlinson <edt@aei.ca>
-> Date		: 2011-02-05 19:17 (17 days old)
-> Message-ID	: <201102051417.58953.edt@aei.ca>
-> References	: http://marc.info/?l=linux-kernel&m=129693391417607&w=2
- 
-I figured out a work around for this.  Once the bluetooth adaptor has been detected and udev
-had done its stuff run: 
+Hi Thomas,
 
-hciconfig -a
+On 22/02/11 07:18, Thomas Gleixner wrote:
+> On Fri, 18 Feb 2011, Greg Ungerer wrote:
+>> Inside of the new arch/m68k is a little messy in the kernel and mm
+>> directories. There is plenty of scope for cleanup and merge on the
+>> files in here - but I want to leave that for follow up patches after
+>> this initial directory merge. As a data point, when we merged the
+>> m68k and m68knommu include files we had something like 70 or 80
+>> duplicate but separate files, after some cleanups that is now down to
+>> 10. Ongoing cleanup will merge some of these remaining ones as well.
+>>
+>> Thoughts?
+>
+> Hmm, how are you going to deal with the fact, that m68knommu uses
+> genirq, m68k not? I guess there are some more points like this
+> (clockevents, clocksource ...)
 
-With this user space change it works.  I have no idea why the 'hciconfig -a' query fixes things.
-I run gentoo and bluez-4.87 is installed.
+Initially it has no impact. This first step pretty much just
+combines the 2 directories, it doesn't attempt to do a fine
+grained merge of each file. (It does factor out identical
+files - quite a few in arch/m68k/lib for example).
 
-Ed Tomlinson
+
+> Is there a plan to move m68k to the generic facilities as well ?
+
+I'll look at doing what I can as I work through merging all the
+underlying pieces :-)
+
+Regards
+Greg
+
+
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
