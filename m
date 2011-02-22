@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1BVMyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 07:54:22 -0500
-Received: from sputnik.urmx.de ([88.198.51.18]:58406 "EHLO sputnik.urmx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab1BVMyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 07:54:20 -0500
-X-Spam-Processed: srv201.gdsys.de, Tue, 22 Feb 2011 13:54:17 +0100
-	(not processed: message from trusted or authenticated source)
-X-Return-Path: Eibach@gdsys.de
-X-Envelope-From: Eibach@gdsys.de
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
-Date: Tue, 22 Feb 2011 13:52:58 +0100
-Message-ID: <48D3D52125C49B43AE880038E2E5314BB5BE5E@SRV101.gdsys.de>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-index: AcvSjaUu+1r5UGtPQFSGGAtYvbpAkwAAX3Gw
-References: <1298365010-22951-1-git-send-email-eibach@gdsys.de> <20110222123601.GA1966@bicker>
-From: "Eibach, Dirk" <Eibach@gdsys.de>
-To: <linux-kernel@vger.kernel.org>
-X-SafeGuard_MailGateway: Version: 5.60.3.10058 SGMG Date: 20110222125420Z
-Subject: RE: [PATCH] gpio: Fix wrong pointer type in pca953x
-Thread-Topic: RE: [PATCH] gpio: Fix wrong pointer type in pca953x
-Content-Class: urn:content-classes:message
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.4.170; VDF: 7.11.3.178; host: mailrelay)
+	id S1752098Ab1BVNEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 08:04:06 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51401 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015Ab1BVNEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 08:04:04 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, djwong <djwong@us.ibm.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
+References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <4D634D8F.4070401@panasas.com> <20110222114222.GA24728@quack.suse.cz>
+In-reply-to: <20110222114222.GA24728@quack.suse.cz>
+Date: Tue, 22 Feb 2011 08:02:10 -0500
+Message-Id: <1298379714-sup-3015@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D63B3D6.008E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+[ resend sorry if you get this twice ]
 
-> >  	struct pca953x_platform_data *pdata;
-> >  	struct device_node *node;
-> > -	const uint16_t *val;
-> > +	const u32 *val;
-> >  
+Excerpts from Jan Kara's message of 2011-02-22 06:42:22 -0500:
+>   Hi Boaz,
 > 
-> This should probably be signed?  We compare it against zero later on.
+> On Mon 21-02-11 21:45:51, Boaz Harrosh wrote:
+> > On 02/21/2011 06:00 PM, Darrick J. Wong wrote:
+> > > Last summer there was a long thread entitled "Wrong DIF guard tag on ext2
+> > > write" (http://marc.info/?l=linux-scsi&m=127530531808556&w=2) that started a
+> > > discussion about how to deal with the situation where one program tells the
+> > > kernel to write a block to disk, the kernel computes the checksum of that data,
+> > > and then a second program begins writing to that same block before the disk HBA
+> > > can DMA the memory block, thereby causing the disk to complain about being sent
+> > > invalid checksums.
+> > 
+> > The brokenness is in ext2/3 if you'll use btrfs, xfs and I think late versions
+> > of ext4 it should work much better. (If you still have problems please report
+> > them, those FSs advertise stable pages write-out)
+>   Do they? I've just checked ext4 and xfs and they don't seem to enforce
+> stable pages. They do lock the page (which implicitely happens in mm code
+> for any filesystem BTW) but this is not enough. You have to wait for
+> PageWriteback to get cleared and only btrfs does that.
+>  
+> > This problem is easily fixed at the FS layer or even at VFS, by overriding mk_write
+> > and syncing with write-out for example by taking the page-lock. Currently each
+> > FS is to itself because in VFS it would force the behaviour on FSs that it does
+> > not make sense to.
+>   Yes, it's easy to fix but at a performance cost for any application doing
+> frequent rewrites regardless whether integrity features are used or not.
+> And I don't think that's a good thing. I even remember someone measured the
+> hit last time this came up and it was rather noticeable.
+
+Do you remember which workload this was?  I do remember someone
+mentioning a specific workload, but can't recall which one now.  fsx is
+definitely slower when we wait for writeback, but that's because it's
+all evil inside.
+
 > 
->                 if (*val < 0)
->                         dev_warn(&client->dev,
->                                  "invalid gpio-base in device 
-> tree\n");
+> > Note that the proper solution does not copy any data, just forces the app to
+> > wait before changing write-out pages.
+>   I think that's up for discussion. In fact what is going to be faster
+> depends pretty much on your system config. If you have enough CPU/RAM
+> bandwidth compared to storage speed, you're better of doing copying. If
+> you can barely saturate storage with your CPU/RAM, waiting is probably
+> better for you. 
+> 
+> Moreover if you do data copyout, you push the performance cost only on
+> users of the integrity feature which is nice. But on the other hand users
+> of integrity take the cost even if they are not doing rewrites.
+> 
+> A solution which is technically plausible and penalizing only rewrites
+> of data-integrity protected pages would be a use of shadow pages as Darrick
+> describes below. So I'd lean towards that long term. But for now I think
+> Darrick's solution is OK to make the integrity feature actually useful and
+> later someone can try something more clever.
 
-Good catch.
-of property values are generally unsigned. The whole check is bogus
-here. Will supply updated patch later.
+Rewrites in flight should be very rare though, and I think the bouncing
+is going to have a big impact on the intended workloads.  It's not just
+the cost of the copy, it's also the increased time as we beat on the
+page allocator.
 
-> regards,
-> dan carpenter
+We're working on adding stable pages to ext34 and other filesystems
+missing it.  When the work is done we can benchmark and decide on the
+tradeoffs.
 
-Cheers
-Dirk
-
-
+-chris
