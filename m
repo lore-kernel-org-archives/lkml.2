@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1BVUI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:08:27 -0500
-Received: from www.tglx.de ([62.245.132.106]:38555 "EHLO www.tglx.de"
+	id S1755580Ab1BVUId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:08:33 -0500
+Received: from www.tglx.de ([62.245.132.106]:38615 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533Ab1BVUIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:08:24 -0500
+	id S1755563Ab1BVUIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:08:31 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: sodaville@linutronix.de, devicetree-discuss@lists.ozlabs.org,
-        x86@kernel.org, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 07/11] x86/dtb: add support for PCI devices backed by dtb nodes
-Date: Tue, 22 Feb 2011 21:07:42 +0100
-Message-Id: <1298405266-1624-8-git-send-email-bigeasy@linutronix.de>
+        x86@kernel.org, Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 09/11] x86/ioapic: Add OF bindings for IO-APIC
+Date: Tue, 22 Feb 2011 21:07:44 +0100
+Message-Id: <1298405266-1624-10-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.4
 In-Reply-To: <1298405266-1624-1-git-send-email-bigeasy@linutronix.de>
 References: <1298405266-1624-1-git-send-email-bigeasy@linutronix.de>
@@ -20,192 +21,234 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_of_pci_init() does two things:
-- it provides a generic irq enable and disable function. enable queries
-  the device tree for the interrupt information, calls ->xlate on the
-  irq host and updates the pci->irq information for the device.
+ioapic_xlate provides a translation from the information in device tree
+to ioapic related informations. This includes
+- obtaining hw irq which is the vector number "=> pin number + gsi"
+- obtaining type (level/edge/..)
+- programming this information into ioapic
 
-- it walks through PCI buss(es) in the device tree and adds its children
-  (devices) nodes to appropriate pci_dev nodes in kernel. So the dtb
-  node information is available at probe time of the PCI device.
-
-Adding a PCI bus based on the information in the device tree is
-currently not supported. Right now direct access via ioports is used.
+ioapic_add_ofnode adds an irq_domain based on informations from the device
+tree. This information (irq_domain) is required in order to map a device to
+its proper interrupt controller.
 
 Cc: devicetree-discuss@lists.ozlabs.org
-Tested-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- arch/x86/include/asm/prom.h  |   14 +++++++
- arch/x86/kernel/devicetree.c |   83 ++++++++++++++++++++++++++++++++++++++++++
- drivers/of/Kconfig           |    2 +-
- drivers/of/of_pci.c          |    1 +
- 4 files changed, 99 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/io_apic.h |    7 +++
+ arch/x86/include/asm/prom.h    |    2 +
+ arch/x86/kernel/apic/io_apic.c |   99 ++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/devicetree.c   |   13 +++++
+ arch/x86/kernel/irqinit.c      |    6 ++
+ 5 files changed, 127 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index f327d38..fe88a73 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -177,6 +177,13 @@ struct mp_ioapic_gsi{
+ 	u32 gsi_base;
+ 	u32 gsi_end;
+ };
++#ifdef CONFIG_OF
++struct mp_of_ioapic {
++	struct device_node *node;
++};
++extern struct mp_of_ioapic mp_of_ioapic[MAX_IO_APICS];
++void __init ioapic_add_ofnode(struct device_node *np);
++#endif
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+ extern u32 gsi_top;
+ int mp_find_ioapic(u32 gsi);
 diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-index 5aa2c32..3e441b3 100644
+index 3e441b3..98b9a73 100644
 --- a/arch/x86/include/asm/prom.h
 +++ b/arch/x86/include/asm/prom.h
-@@ -16,6 +16,7 @@
- 
- #include <linux/of.h>
- #include <linux/types.h>
-+#include <linux/pci.h>
- #include <asm/irq.h>
- #include <asm/atomic.h>
- #include <asm/setup.h>
-@@ -28,8 +29,21 @@ extern void add_dtb(u64 data);
+@@ -26,6 +26,7 @@
+ extern int of_ioapic;
+ extern u64 initial_dtb;
+ extern void add_dtb(u64 data);
++extern void x86_add_irq_domains(void);
  void x86_dtb_find_config(void);
  void x86_dtb_get_config(unsigned int unused);
  void add_interrupt_host(struct irq_domain *ih);
-+void __cpuinit x86_of_pci_init(void);
-+
-+static inline struct device_node *pci_device_to_OF_node(struct pci_dev *pdev)
-+{
-+	return pdev ? pdev->dev.of_node : NULL;
-+}
-+
-+static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
-+{
-+	return pci_device_to_OF_node(bus->self);
-+}
-+
+@@ -43,6 +44,7 @@ static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
+ 
  #else
  static inline void add_dtb(u64 data) { }
-+static inline void x86_of_pci_init(void) { }
++static inline void x86_add_irq_domains(void) { }
+ static inline void x86_of_pci_init(void) { }
  #define x86_dtb_find_config x86_init_noop
  #define x86_dtb_get_config x86_init_uint_noop
- #define of_ioapic 0
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index 8d7a2eb..b778ae5 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -9,11 +9,15 @@
- #include <linux/of_fdt.h>
- #include <linux/of_address.h>
- #include <linux/of_platform.h>
-+#include <linux/of_irq.h>
- #include <linux/slab.h>
-+#include <linux/pci.h>
-+#include <linux/of_pci.h>
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ca9e2a3..c172452 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -43,6 +43,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/dmar.h>
+ #include <linux/hpet.h>
++#include <linux/of_address.h>
  
+ #include <asm/idle.h>
+ #include <asm/io.h>
+@@ -60,6 +61,7 @@
+ #include <asm/irq_remapping.h>
  #include <asm/hpet.h>
- #include <asm/irq_controller.h>
- #include <asm/apic.h>
-+#include <asm/pci_x86.h>
+ #include <asm/hw_irq.h>
++#include <asm/irq_controller.h>
  
- __initdata u64 initial_dtb;
- char __initdata cmd_line[COMMAND_LINE_SIZE];
-@@ -100,6 +104,85 @@ void __init add_dtb(u64 data)
- 	initial_dtb = data + offsetof(struct setup_data, data);
+ #include <asm/apic.h>
+ 
+@@ -88,6 +90,10 @@ int nr_ioapics;
+ /* IO APIC gsi routing info */
+ struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
+ 
++#ifdef CONFIG_OF
++/* OF -> IO APIC lookup */
++struct mp_of_ioapic mp_of_ioapic[MAX_IO_APICS];
++#endif
+ /* The one past the highest gsi number used */
+ u32 gsi_top;
+ 
+@@ -4083,6 +4089,99 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	nr_ioapics++;
  }
  
-+#ifdef CONFIG_PCI
-+static int x86_of_pci_irq_enable(struct pci_dev *dev)
++#ifdef CONFIG_OF
++static int ioapic_xlate(struct irq_domain *id, const u32 *intspec, u32 intsize,
++		u32 *out_hwirq, u32 *out_type)
 +{
-+	struct of_irq oirq;
-+	u32 virq;
-+	int ret;
-+	u8 pin;
++	u32 line;
++	u32 idx;
++	u32 type;
++	u32 trigger;
++	u32 polarity;
++	struct irq_cfg *cfg;
++	struct irq_desc *desc;
 +
-+	ret = pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
-+	if (ret)
-+		return ret;
-+	if (!pin)
-+		return 0;
-+
-+	ret = of_irq_map_pci(dev, &oirq);
-+	if (ret)
-+		return ret;
-+
-+	virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
-+			oirq.size);
-+	if (virq == 0)
++	if (intsize < 1)
 +		return -EINVAL;
-+	dev->irq = virq;
++
++	line = *intspec;
++	idx = (u32) id->priv;
++	*out_hwirq = line + mp_gsi_routing[idx].gsi_base;
++	if (intsize > 1) {
++		intspec++;
++		type = *intspec;
++		switch (type) {
++		case 0:
++			*out_type = IRQ_TYPE_EDGE_RISING;
++			trigger = IOAPIC_EDGE;
++			polarity = 1;
++			break;
++		case 1:
++			*out_type = IRQ_TYPE_LEVEL_LOW;
++			trigger = IOAPIC_LEVEL;
++			polarity = 0;
++			break;
++		case 2:
++			*out_type = IRQ_TYPE_LEVEL_HIGH;
++			trigger = IOAPIC_LEVEL;
++			polarity = 1;
++			break;
++		case 3:
++			*out_type = IRQ_TYPE_EDGE_FALLING;
++			trigger = IOAPIC_EDGE;
++			polarity = 0;
++			break;
++		default:
++			*out_type = IRQ_TYPE_NONE;
++			trigger = IOAPIC_AUTO;
++			polarity = 0;
++			break;
++		};
++	} else {
++		*out_type = IRQ_TYPE_NONE;
++		trigger = IOAPIC_AUTO;
++		polarity = 0;
++	}
++	/* And now tell the IO APIC to make the line ready */
++	desc = irq_to_desc_alloc_node(*out_hwirq, 0);
++	cfg = irq_cfg(*out_hwirq);
++	add_pin_to_irq_node(cfg, 0, idx, line);
++	/* make it edge by default, settype will update it */
++	setup_ioapic_irq(idx, line, *out_hwirq, cfg, trigger, polarity);
 +	return 0;
 +}
 +
-+static void x86_of_pci_irq_disable(struct pci_dev *dev)
++void __init ioapic_add_ofnode(struct device_node *np)
 +{
-+}
++	int i;
++	int ret;
++	struct resource r;
 +
-+void __cpuinit x86_of_pci_init(void)
-+{
-+	struct device_node *np;
++	ret = of_address_to_resource(np, 0, &r);
++	if (ret) {
++		printk(KERN_ERR "Failed to obtain address for %s\n",
++				np->full_name);
++		return;
++	}
 +
-+	pcibios_enable_irq = x86_of_pci_irq_enable;
-+	pcibios_disable_irq = x86_of_pci_irq_disable;
++	for (i = 0; i < nr_ioapics; i++) {
++		if (r.start == mp_ioapics[i].apicaddr) {
++			struct irq_domain *id;
 +
-+	for_each_node_by_type(np, "pci") {
-+		const void *prop;
-+		struct pci_bus *bus;
-+		unsigned int bus_min;
-+		struct device_node *child;
-+
-+		prop = of_get_property(np, "bus-range", NULL);
-+		if (!prop)
-+			continue;
-+		bus_min = be32_to_cpup(prop);
-+
-+		bus = pci_find_bus(0, bus_min);
-+		if (!bus) {
-+			printk(KERN_ERR "Can't find a node for bus %s.\n",
-+					np->full_name);
-+			continue;
-+		}
-+
-+		if (bus->self)
-+			bus->self->dev.of_node = np;
-+		else
-+			bus->dev.of_node = np;
-+
-+		for_each_child_of_node(np, child) {
-+			struct pci_dev *dev;
-+			u32 devfn;
-+
-+			prop = of_get_property(child, "reg", NULL);
-+			if (!prop)
-+				continue;
-+
-+			devfn = (be32_to_cpup(prop) >> 8) & 0xff;
-+			dev = pci_get_slot(bus, devfn);
-+			if (!dev)
-+				continue;
-+			dev->dev.of_node = child;
-+			pci_dev_put(dev);
++			mp_of_ioapic[i].node = np;
++			id = kzalloc(sizeof(*id), GFP_KERNEL);
++			BUG_ON(!id);
++			id->controller = np;
++			id->xlate = ioapic_xlate;
++			id->priv = (void *)i;
++			add_interrupt_host(id);
++			return;
 +		}
 +	}
++	printk(KERN_ERR "IOxAPIC at %s is not registered.\n", np->full_name);
 +}
 +#endif
 +
- static void __init dtb_setup_hpet(void)
+ /* Enable IOAPIC early just for system timer */
+ void __init pre_init_apic_IRQ0(void)
  {
- 	struct device_node *dn;
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index efabbf9..d06a637 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -71,7 +71,7 @@ config OF_MDIO
+diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
+index 179833f..62d0072 100644
+--- a/arch/x86/kernel/devicetree.c
++++ b/arch/x86/kernel/devicetree.c
+@@ -322,3 +322,16 @@ void __init x86_dtb_get_config(unsigned int unused)
+ 	dtb_setup_hpet();
+ 	dtb_apic_setup();
+ }
++
++void __init x86_add_irq_domains(void)
++{
++	struct device_node *dp;
++
++	if (!initial_boot_params)
++		return;
++
++	for_each_node_with_property(dp, "interrupt-controller") {
++		if (of_device_is_compatible(dp, "intel,ce4100-ioapic"))
++			ioapic_add_ofnode(dp);
++	}
++}
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index 4cadf86..9f76f89 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -119,6 +119,12 @@ void __init init_IRQ(void)
+ 	int i;
  
- config OF_PCI
- 	def_tristate PCI
--	depends on PCI && (PPC || MICROBLAZE)
-+	depends on PCI && (PPC || MICROBLAZE || X86)
- 	help
- 	  OpenFirmware PCI bus accessors
- 
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index 314535f..ac1ec54 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -1,5 +1,6 @@
- #include <linux/kernel.h>
- #include <linux/of_pci.h>
-+#include <linux/of_irq.h>
- #include <asm/prom.h>
- 
- /**
+ 	/*
++	 * We probably need a better place for this, but it works for
++	 * now ...
++	 */
++	x86_add_irq_domains();
++
++	/*
+ 	 * On cpu 0, Assign IRQ0_VECTOR..IRQ15_VECTOR's to IRQ 0..15.
+ 	 * If these IRQ's are handled by legacy interrupt-controllers like PIC,
+ 	 * then this configuration will likely be static after the boot. If
 -- 
 1.7.4
 
