@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab1BVTbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:31:18 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16408 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755167Ab1BVTbP (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 22 Feb 2011 14:31:15 -0500
-Date: Tue, 22 Feb 2011 14:31:04 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: stefano.stabellini@eu.citrix.com
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Jeremy.Fitzhardinge@citrix.com
-Subject: Re: [PATCH 5/7] xen: PV on HVM: support PV spinlocks
-Message-ID: <20110222193104.GC17866@dumpdata.com>
-References: <alpine.DEB.2.00.1102161739370.2826@kaball-desktop>
- <1297878787-378-5-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1755162Ab1BVTcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:32:41 -0500
+Received: from mail03do.versatel.de ([89.245.129.23]:33259 "EHLO
+	mail03do.versatel.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab1BVTck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:32:40 -0500
+Message-ID: <4D640F67.3040109@versanet.de>
+Date: Tue, 22 Feb 2011 20:32:55 +0100
+From: "pantherchen@versanet.de" <pantherchen@versanet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.14) Gecko/20110208 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297878787-378-5-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D640EFD.0099:SCFMA4539814,ss=1,fgs=0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Boot time regression in 2.6.38 after initial wq merge
+References: <4D62CE9C.7090806@versanet.de> <20110222081752.GP31267@htj.dyndns.org> <20110222085223.GC11681@core.coreip.homeip.net> <20110222090255.GR31267@htj.dyndns.org> <B04A0050-5AE7-4072-BE6F-279E24B0DA64@gmail.com> <4D63D062.3040404@versanet.de> <20110222172254.GA13114@core.coreip.homeip.net> <20110222175955.GA27991@core.coreip.homeip.net>
+In-Reply-To: <20110222175955.GA27991@core.coreip.homeip.net>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static void xen_hvm_spinlock_init(void)
-> +{
-> +	if (!xen_have_vector_callback)
-> +		return;
-> +	xen_init_lock_cpu(0);
-> +	xen_init_spinlocks();
-> +}
-> +
-> +static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
-> +{
-> +	native_smp_prepare_cpus(max_cpus);
-> +	xen_hvm_spinlock_init();
-> +}
+On 02/22/2011 06:59 PM, Dmitry Torokhov wrote:
+> On Tue, Feb 22, 2011 at 09:22:54AM -0800, Dmitry Torokhov wrote:
+>> Just to confirm, if you revert commit
+>>
+>> 	8ee294cd9def0004887da7f44b80563493b0a097
+>>
+>> from 2.6.38-rc6, does this restore boot time?
 
-You could squash those two together. Ah, next patch does something interesting.
+Yes, it's booting fine with that commit reverted.
+
+> And if that indeed fixes the issue I wonder if the reason for the stall
+> is that we trip on flush_scheduled_work() somewhere. If you could stick
+> dump_stack() into flush_scheduled_work() that might give us some clues.
+
+I wasn't sure where to put the dump_stack() call, so I placed one before 
+and one after the flush_workqueue() call.
+
+Here's the part that turned up in dmesg: http://paste.ubuntu.com/570729/
+
+Regards,
+
+Hernando Torque
