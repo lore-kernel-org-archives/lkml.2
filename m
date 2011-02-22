@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab1BVXYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:24:11 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:53727
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1753116Ab1BVXYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:24:13 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:53731
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752037Ab1BVXYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752067Ab1BVXYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Feb 2011 18:24:09 -0500
 From: Hank Janssen <hjanssen@microsoft.com>
 To: hjanssen@microsoft.com, haiyangz@microsoft.com, gregkh@suse.de,
         linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3/6] Staging: hv: channel.c Removed debug DPRINTS use pr_err for errors
-Date: Tue, 22 Feb 2011 15:32:42 -0800
-Message-Id: <1298417565-12356-3-git-send-email-hjanssen@microsoft.com>
+Subject: [PATCH 2/6] Staging: hv: hv.c Removed all DPRINT and debug - using pr_err now
+Date: Tue, 22 Feb 2011 15:32:41 -0800
+Message-Id: <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
 X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
+In-Reply-To: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
 References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
- <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,212 +29,232 @@ All DPRINT calls have been removed, and where needed have been
 replaced with pr_XX native calls. Many debug DPRINT calls have
 been removed outright.
 
-The amount of clutter this driver prints has been 
+The amount of clutter this driver prints has been
 significantly reduced.
-
-Several DPRINT calls remain in this file, they will be removed
-in a subsequent patch. They are designed to print out a common
-debug stream that will be implemented differently.
 
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
 ---
- drivers/staging/hv/channel.c |   71 ++++++-----------------------------------
- 1 files changed, 11 insertions(+), 60 deletions(-)
+ drivers/staging/hv/hv.c |   88 +++++++++++-----------------------------------
+ 1 files changed, 21 insertions(+), 67 deletions(-)
 
-diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
-index 775a52a..654e80c 100644
---- a/drivers/staging/hv/channel.c
-+++ b/drivers/staging/hv/channel.c
-@@ -213,9 +213,6 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+diff --git a/drivers/staging/hv/hv.c b/drivers/staging/hv/hv.c
+index 2d492ad..e3ce26d 100644
+--- a/drivers/staging/hv/hv.c
++++ b/drivers/staging/hv/hv.c
+@@ -80,20 +80,6 @@ static int query_hypervisor_info(void)
+ 	op = HVCPUID_VENDOR_MAXFUNCTION;
+ 	cpuid(op, &eax, &ebx, &ecx, &edx);
  
- 
- 	/* Establish the gpadl for the ring buffer */
--	DPRINT_DBG(VMBUS, "Establishing ring buffer's gpadl for channel %p...",
--		   newchannel);
+-	DPRINT_INFO(VMBUS, "Vendor ID: %c%c%c%c%c%c%c%c%c%c%c%c",
+-		    (ebx & 0xFF),
+-		    ((ebx >> 8) & 0xFF),
+-		    ((ebx >> 16) & 0xFF),
+-		    ((ebx >> 24) & 0xFF),
+-		    (ecx & 0xFF),
+-		    ((ecx >> 8) & 0xFF),
+-		    ((ecx >> 16) & 0xFF),
+-		    ((ecx >> 24) & 0xFF),
+-		    (edx & 0xFF),
+-		    ((edx >> 8) & 0xFF),
+-		    ((edx >> 16) & 0xFF),
+-		    ((edx >> 24) & 0xFF));
 -
- 	newchannel->ringbuffer_gpadlhandle = 0;
+ 	max_leaf = eax;
+ 	eax = 0;
+ 	ebx = 0;
+@@ -102,12 +88,6 @@ static int query_hypervisor_info(void)
+ 	op = HVCPUID_INTERFACE;
+ 	cpuid(op, &eax, &ebx, &ecx, &edx);
  
- 	ret = vmbus_establish_gpadl(newchannel,
-@@ -229,16 +226,6 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
- 		goto errorout;
+-	DPRINT_INFO(VMBUS, "Interface ID: %c%c%c%c",
+-		    (eax & 0xFF),
+-		    ((eax >> 8) & 0xFF),
+-		    ((eax >> 16) & 0xFF),
+-		    ((eax >> 24) & 0xFF));
+-
+ 	if (max_leaf >= HVCPUID_VERSION) {
+ 		eax = 0;
+ 		ebx = 0;
+@@ -115,14 +95,17 @@ static int query_hypervisor_info(void)
+ 		edx = 0;
+ 		op = HVCPUID_VERSION;
+ 		cpuid(op, &eax, &ebx, &ecx, &edx);
+-		DPRINT_INFO(VMBUS, "OS Build:%d-%d.%d-%d-%d.%d",\
+-			    eax,
+-			    ebx >> 16,
+-			    ebx & 0xFFFF,
+-			    ecx,
+-			    edx >> 24,
+-			    edx & 0xFFFFFF);
++
++		pr_info("%s: Hyper-V Host OS Build:%d-%d.%d-%d-%d.%d",
++			VMBUS_MOD,
++			eax,
++			ebx >> 16,
++			ebx & 0xFFFF,
++			ecx,
++			edx >> 24,
++			edx & 0xFFFFFF);
  	}
- 
--	DPRINT_DBG(VMBUS, "channel %p <relid %d gpadl 0x%x send ring %p "
--		   "size %d recv ring %p size %d, downstreamoffset %d>",
--		   newchannel, newchannel->offermsg.child_relid,
--		   newchannel->ringbuffer_gpadlhandle,
--		   newchannel->outbound.ring_buffer,
--		   newchannel->outbound.ring_size,
--		   newchannel->inbound.ring_buffer,
--		   newchannel->inbound.ring_size,
--		   send_ringbuffer_size);
--
- 	/* Create and init the channel open message */
- 	openInfo = kmalloc(sizeof(*openInfo) +
- 			   sizeof(struct vmbus_channel_open_channel),
-@@ -272,12 +259,11 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
- 		      &vmbus_connection.chn_msg_list);
- 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
- 
--	DPRINT_DBG(VMBUS, "Sending channel open msg...");
--
- 	ret = vmbus_post_msg(openMsg,
- 			       sizeof(struct vmbus_channel_open_channel));
- 	if (ret != 0) {
--		DPRINT_ERR(VMBUS, "unable to open channel - %d", ret);
-+		pr_err("%s: %s Unable to open channel - %d",
-+		       VMBUS_MOD, __func__, ret);
- 		goto Cleanup;
- 	}
- 
-@@ -291,10 +277,9 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
- 	}
- 
- 
--	if (openInfo->response.open_result.status == 0)
--		DPRINT_INFO(VMBUS, "channel <%p> open success!!", newchannel);
--	else
--		DPRINT_INFO(VMBUS, "channel <%p> open failed - %d!!",
-+	if (openInfo->response.open_result.status)
-+		pr_err("%s: %s Channel <%p> open failed - %d!!",
-+		       VMBUS_MOD, __func__,
- 			    newchannel, openInfo->response.open_result.status);
- 
- Cleanup:
-@@ -530,17 +515,13 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
- 		      &vmbus_connection.chn_msg_list);
- 
- 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
--	DPRINT_DBG(VMBUS, "buffer %p, size %d msg cnt %d",
--		   kbuffer, size, msgcount);
--
--	DPRINT_DBG(VMBUS, "Sending GPADL Header - len %zd",
--		   msginfo->msgsize - sizeof(*msginfo));
- 
- 	msginfo->wait_condition = 0;
- 	ret = vmbus_post_msg(gpadlmsg, msginfo->msgsize -
- 			       sizeof(*msginfo));
- 	if (ret != 0) {
--		DPRINT_ERR(VMBUS, "Unable to open channel - %d", ret);
-+		pr_err("%s: %s Unable to open channel - %d",
-+		       VMBUS_MOD, __func__, ret);
- 		goto Cleanup;
- 	}
- 
-@@ -556,10 +537,6 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
- 				CHANNELMSG_GPADL_BODY;
- 			gpadl_body->gpadl = next_gpadl_handle;
- 
--			DPRINT_DBG(VMBUS, "Sending GPADL Body - len %zd",
--				   submsginfo->msgsize -
--				   sizeof(*submsginfo));
--
- 			dump_gpadl_body(gpadl_body, submsginfo->msgsize -
- 				      sizeof(*submsginfo));
- 			ret = vmbus_post_msg(gpadl_body,
-@@ -577,12 +554,6 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
- 
- 
- 	/* At this point, we received the gpadl created msg */
--	DPRINT_DBG(VMBUS, "Received GPADL created "
--		   "(relid %d, status %d handle %x)",
--		   channel->offermsg.child_relid,
--		   msginfo->response.gpadl_created.creation_status,
--		   gpadlmsg->gpadl);
--
- 	*gpadl_handle = gpadlmsg->gpadl;
- 
- Cleanup:
-@@ -730,9 +701,6 @@ int vmbus_sendpacket(struct vmbus_channel *channel, const void *buffer,
- 	u64 aligned_data = 0;
- 	int ret;
- 
--	DPRINT_DBG(VMBUS, "channel %p buffer %p len %d",
--		   channel, buffer, bufferlen);
--
- 	dump_vmbus_channel(channel);
- 
- 	/* ASSERT((packetLenAligned - packetLen) < sizeof(u64)); */
-@@ -846,10 +814,6 @@ int vmbus_sendpacket_multipagebuffer(struct vmbus_channel *channel,
- 
- 	dump_vmbus_channel(channel);
- 
--	DPRINT_DBG(VMBUS, "data buffer - offset %u len %u pfn count %u",
--		multi_pagebuffer->offset,
--		multi_pagebuffer->len, pfncount);
--
- 	if ((pfncount < 0) || (pfncount > MAX_MULTIPAGE_BUFFER_COUNT))
- 		return -EINVAL;
- 
-@@ -927,7 +891,6 @@ int vmbus_recvpacket(struct vmbus_channel *channel, void *buffer,
- 	if (ret != 0) {
- 		spin_unlock_irqrestore(&channel->inbound_lock, flags);
- 
--		/* DPRINT_DBG(VMBUS, "nothing to read!!"); */
- 		return 0;
- 	}
- 
-@@ -937,18 +900,13 @@ int vmbus_recvpacket(struct vmbus_channel *channel, void *buffer,
- 	userlen = packetlen - (desc.offset8 << 3);
- 	/* ASSERT(userLen > 0); */
- 
--	DPRINT_DBG(VMBUS, "packet received on channel %p relid %d <type %d "
--		   "flag %d tid %llx pktlen %d datalen %d> ",
--		   channel, channel->offermsg.child_relid, desc.type,
--		   desc.flags, desc.trans_id, packetlen, userlen);
--
- 	*buffer_actual_len = userlen;
- 
- 	if (userlen > bufferlen) {
- 		spin_unlock_irqrestore(&channel->inbound_lock, flags);
- 
--		DPRINT_ERR(VMBUS, "buffer too small - got %d needs %d",
--			   bufferlen, userlen);
-+		pr_err("%s: %s Buffer too small - got %d need %d",
-+		       VMBUS_MOD, __func__, bufferlen, userlen);
- 		return -1;
- 	}
- 
-@@ -987,7 +945,6 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
- 	if (ret != 0) {
- 		spin_unlock_irqrestore(&channel->inbound_lock, flags);
- 
--		/* DPRINT_DBG(VMBUS, "nothing to read!!"); */
- 		return 0;
- 	}
- 
-@@ -996,18 +953,13 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
- 	packetlen = desc.len8 << 3;
- 	userlen = packetlen - (desc.offset8 << 3);
- 
--	DPRINT_DBG(VMBUS, "packet received on channel %p relid %d <type %d "
--		   "flag %d tid %llx pktlen %d datalen %d> ",
--		   channel, channel->offermsg.child_relid, desc.type,
--		   desc.flags, desc.trans_id, packetlen, userlen);
--
- 	*buffer_actual_len = packetlen;
- 
- 	if (packetlen > bufferlen) {
- 		spin_unlock_irqrestore(&channel->inbound_lock, flags);
- 
--		DPRINT_ERR(VMBUS, "buffer too small - needed %d bytes but "
--			   "got space for only %d bytes", packetlen, bufferlen);
-+		pr_err("%s: %s Buffer too small - needed %d bytes got "
-+		       "%d bytes", VMBUS_MOD, __func__, packetlen, bufferlen);
- 		return -2;
- 	}
- 
-@@ -1050,7 +1002,6 @@ void vmbus_ontimer(unsigned long data)
-  */
- static void dump_vmbus_channel(struct vmbus_channel *channel)
- {
--	DPRINT_DBG(VMBUS, "Channel (%d)", channel->offermsg.child_relid);
- 	dump_ring_info(&channel->outbound, "Outbound ");
- 	dump_ring_info(&channel->inbound, "Inbound ");
++
+ 	return max_leaf;
  }
+ 
+@@ -137,20 +120,12 @@ static u64 do_hypercall(u64 control, void *input, void *output)
+ 	u64 output_address = (output) ? virt_to_phys(output) : 0;
+ 	volatile void *hypercall_page = hv_context.hypercall_page;
+ 
+-	DPRINT_DBG(VMBUS, "Hypercall <control %llx input phys %llx virt %p "
+-		   "output phys %llx virt %p hypercall %p>",
+-		   control, input_address, input,
+-		   output_address, output, hypercall_page);
+-
+ 	__asm__ __volatile__("mov %0, %%r8" : : "r" (output_address) : "r8");
+ 	__asm__ __volatile__("call *%3" : "=a" (hv_status) :
+ 			     "c" (control), "d" (input_address),
+ 			     "m" (hypercall_page));
+ 
+-	DPRINT_DBG(VMBUS, "Hypercall <return %llx>",  hv_status);
+-
+ 	return hv_status;
+-
+ #else
+ 
+ 	u32 control_hi = control >> 32;
+@@ -165,18 +140,12 @@ static u64 do_hypercall(u64 control, void *input, void *output)
+ 	u32 output_address_lo = output_address & 0xFFFFFFFF;
+ 	volatile void *hypercall_page = hv_context.hypercall_page;
+ 
+-	DPRINT_DBG(VMBUS, "Hypercall <control %llx input %p output %p>",
+-		   control, input, output);
+-
+ 	__asm__ __volatile__ ("call *%8" : "=d"(hv_status_hi),
+ 			      "=a"(hv_status_lo) : "d" (control_hi),
+ 			      "a" (control_lo), "b" (input_address_hi),
+ 			      "c" (input_address_lo), "D"(output_address_hi),
+ 			      "S"(output_address_lo), "m" (hypercall_page));
+ 
+-	DPRINT_DBG(VMBUS, "Hypercall <return %llx>",
+-		   hv_status_lo | ((u64)hv_status_hi << 32));
+-
+ 	return hv_status_lo | ((u64)hv_status_hi << 32);
+ #endif /* !x86_64 */
+ }
+@@ -198,13 +167,10 @@ int hv_init(void)
+ 	       sizeof(void *) * MAX_NUM_CPUS);
+ 
+ 	if (!query_hypervisor_presence()) {
+-		DPRINT_ERR(VMBUS, "No Windows hypervisor detected!!");
++		pr_err("%s: %s No Hyper-V detected", VMBUS_MOD, __func__);
+ 		goto Cleanup;
+ 	}
+ 
+-	DPRINT_INFO(VMBUS,
+-		    "Windows hypervisor detected! Retrieving more info...");
+-
+ 	max_leaf = query_hypervisor_info();
+ 	/* HvQueryHypervisorFeatures(maxLeaf); */
+ 
+@@ -214,8 +180,8 @@ int hv_init(void)
+ 	rdmsrl(HV_X64_MSR_GUEST_OS_ID, hv_context.guestid);
+ 
+ 	if (hv_context.guestid != 0) {
+-		DPRINT_ERR(VMBUS, "Unknown guest id (0x%llx)!!",
+-				hv_context.guestid);
++		pr_err("%s: %s Unknown guest id (0x%llx)",
++		       VMBUS_MOD, __func__, hv_context.guestid);
+ 		goto Cleanup;
+ 	}
+ 
+@@ -233,8 +199,8 @@ int hv_init(void)
+ 	virtaddr = __vmalloc(PAGE_SIZE, GFP_KERNEL, PAGE_KERNEL_EXEC);
+ 
+ 	if (!virtaddr) {
+-		DPRINT_ERR(VMBUS,
+-			   "unable to allocate hypercall page!!");
++		pr_err("%s: %s unable to allocate hypercall page",
++		       VMBUS_MOD, __func__);
+ 		goto Cleanup;
+ 	}
+ 
+@@ -248,16 +214,13 @@ int hv_init(void)
+ 	rdmsrl(HV_X64_MSR_HYPERCALL, hypercall_msr.as_uint64);
+ 
+ 	if (!hypercall_msr.enable) {
+-		DPRINT_ERR(VMBUS, "unable to set hypercall page!!");
++		pr_err("%s: %s Unable to set hypercall page",
++			VMBUS_MOD, __func__);
+ 		goto Cleanup;
+ 	}
+ 
+ 	hv_context.hypercall_page = virtaddr;
+ 
+-	DPRINT_INFO(VMBUS, "Hypercall page VA=%p, PA=0x%0llx",
+-		    hv_context.hypercall_page,
+-		    (u64)hypercall_msr.guest_physical_address << PAGE_SHIFT);
+-
+ 	/* Setup the global signal event param for the signal event hypercall */
+ 	hv_context.signal_event_buffer =
+ 			kmalloc(sizeof(struct hv_input_signal_event_buffer),
+@@ -394,14 +357,12 @@ void hv_synic_init(void *irqarg)
+ 	/* Check the version */
+ 	rdmsrl(HV_X64_MSR_SVERSION, version);
+ 
+-	DPRINT_INFO(VMBUS, "SynIC version: %llx", version);
+-
+ 	hv_context.synic_message_page[cpu] =
+ 		(void *)get_zeroed_page(GFP_ATOMIC);
+ 
+ 	if (hv_context.synic_message_page[cpu] == NULL) {
+-		DPRINT_ERR(VMBUS,
+-			   "unable to allocate SYNIC message page!!");
++		pr_err("%s: %s Unable to allocate SYNIC message page",
++		       VMBUS_MOD, __func__);
+ 		goto Cleanup;
+ 	}
+ 
+@@ -409,8 +370,8 @@ void hv_synic_init(void *irqarg)
+ 		(void *)get_zeroed_page(GFP_ATOMIC);
+ 
+ 	if (hv_context.synic_event_page[cpu] == NULL) {
+-		DPRINT_ERR(VMBUS,
+-			   "unable to allocate SYNIC event page!!");
++		pr_err("%s: %s Unable to allocate SYNIC event page",
++		       VMBUS_MOD, __func__);
+ 		goto Cleanup;
+ 	}
+ 
+@@ -420,8 +381,6 @@ void hv_synic_init(void *irqarg)
+ 	simp.base_simp_gpa = virt_to_phys(hv_context.synic_message_page[cpu])
+ 		>> PAGE_SHIFT;
+ 
+-	DPRINT_DBG(VMBUS, "HV_X64_MSR_SIMP msr set to: %llx", simp.as_uint64);
+-
+ 	wrmsrl(HV_X64_MSR_SIMP, simp.as_uint64);
+ 
+ 	/* Setup the Synic's event page */
+@@ -430,8 +389,6 @@ void hv_synic_init(void *irqarg)
+ 	siefp.base_siefp_gpa = virt_to_phys(hv_context.synic_event_page[cpu])
+ 		>> PAGE_SHIFT;
+ 
+-	DPRINT_DBG(VMBUS, "HV_X64_MSR_SIEFP msr set to: %llx", siefp.as_uint64);
+-
+ 	wrmsrl(HV_X64_MSR_SIEFP, siefp.as_uint64);
+ 
+ 	/* Setup the interception SINT. */
+@@ -446,9 +403,6 @@ void hv_synic_init(void *irqarg)
+ 	shared_sint.masked = false;
+ 	shared_sint.auto_eoi = true;
+ 
+-	DPRINT_DBG(VMBUS, "HV_X64_MSR_SINT1 msr set to: %llx",
+-		   shared_sint.as_uint64);
+-
+ 	wrmsrl(HV_X64_MSR_SINT0 + VMBUS_MESSAGE_SINT, shared_sint.as_uint64);
+ 
+ 	/* Enable the global synic bit */
 -- 
 1.6.0.2
 
