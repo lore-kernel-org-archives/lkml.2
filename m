@@ -1,127 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab1BVUyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:54:53 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:33559 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182Ab1BVUyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:54:51 -0500
-Date: Tue, 22 Feb 2011 12:54:13 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110222205413.GH4000@outflux.net>
-References: <20110222181613.GU4000@outflux.net>
- <4D640133.9020901@caviumnetworks.com>
- <20110222184726.GV4000@outflux.net>
- <20110222191454.GB9991@suse.de>
- <20110222192532.GY4000@outflux.net>
- <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
- <20110222195018.GA4000@outflux.net>
- <20110222201610.GA29787@suse.de>
- <20110222202856.GE4000@outflux.net>
- <20110222203704.GA7224@suse.de>
+	id S1752902Ab1BVUzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:55:42 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45145 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab1BVUzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:55:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vh0zCo33fUeNPetJKa7rutr5lr8izr7UZV9OibP0Rv5ZVoGreWNMqcfa5qMnFKLcMM
+         gHQaX1FrThrBhWOaHX/XF1/iw6hTPoh+OZEDcL64iAK/Ks2Q8zVP+4w2j4P4tQRNOTwm
+         QH5sV0Fw1MYqoQvdbWzk0UEyD6BnzNICsIuEQ=
+Date: Tue, 22 Feb 2011 21:53:12 +0100
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf lock: show valid sort keys in usage
+Message-ID: <20110222205312.GA18474@joi.lan>
+References: <20110222174557.GB9687@joi.lan>
+ <20110222180110.GG27070@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110222203704.GA7224@suse.de>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <20110222180110.GG27070@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 12:37:04PM -0800, Greg KH wrote:
-> On Tue, Feb 22, 2011 at 12:28:56PM -0800, Kees Cook wrote:
-> > On Tue, Feb 22, 2011 at 12:16:10PM -0800, Greg KH wrote:
-> > > On Tue, Feb 22, 2011 at 11:50:18AM -0800, Kees Cook wrote:
-> > > > On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
-> > > > > > What system do you proposed to keep these "stupid mistakes" from
-> > > > > > continuing to happen? If debugfs had already been mode 0700, we could have
-> > > > > > avoided all of these CVEs, including the full-blown local root escalation.
-> > > > > 
-> > > > > And all sorts of features would have put themselves in sysfs instead and
-> > > > > broken no doubt.
-> > > > > 
-> > > > > > The "no rules" approach to debugfs is not a good idea, IMO.
-> > > > > 
-> > > > > It's a debugging fs, it needs to be "no rules" other than the obvious
-> > > > > "don't mount it on production systems"
-> > > > 
-> > > > Okay, so the debugfs is not supposed to be mounted on a production system.
-> > > 
-> > > No, not true at all, the "enterprise" distros all mount debugfs for good
-> > > reason on their systems.
+On Tue, Feb 22, 2011 at 03:01:10PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Feb 22, 2011 at 06:45:57PM +0100, Marcin Slusarz escreveu:
+> > Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+> > ---
+> >  tools/perf/builtin-lock.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
 > > 
-> > What reasons are those? Or better yet, why do you and Alan Cox disagree on
-> > this point?
+> > diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+> > index 2b36def..0305a40 100644
+> > --- a/tools/perf/builtin-lock.c
+> > +++ b/tools/perf/builtin-lock.c
+> > @@ -893,7 +893,7 @@ static const char * const report_usage[] = {
+> >  
+> >  static const struct option report_options[] = {
+> >  	OPT_STRING('k', "key", &sort_key, "acquired",
+> > -		    "key for sorting"),
+> > +		    "key for sorting (acquired / contended / wait_total / wait_max / wait_min)"),
+> >  	/* TODO: type */
+> >  	OPT_END()
+> >  };
 > 
-> These distros have made the decision to support the perf interface,
-> which lives in debugfs, for their customers.  I'm not saying that I
-> disagree with Alan about this, just pointing out the reality of the
-> situation here.
+> Can you please add to tools/perf/Documentation/perf-lock.txt too?
 
-A tool used only by the root user, so the proposed mount mode of 0700
-wouldn't break anything.
+Sure. 
 
-> > > > This seems to be news to a lot of developers trying to use the interfaces
-> > > > exposed there. It would be nice to say this more loudly.  Basically,
-> > > > a normal system should not depend on anything in the debugfs. I can get
-> > > > behind that.
-> > > 
-> > > Again, not true.  Mostly all due to the perf interface, fix that to move
-> > > out of debugfs (patches have been proposed) and this problem will go
-> > > away.
-> > 
-> > You can't have "no rules" and "all distros mount debugfs for good reason".
-> > This is asking for (even more) trouble. If there is something universally
-> > useful in debugfs (I do not count perf as universally useful -- my parents
-> > do not use perf), then why is it living in a filesystem with no rules
-> > (where "no rules" seems to also include "don't break interfaces").
-> 
-> Again, "don't break interfaces" is just me saying "don't break the
-> interfaces I have created in debugfs as they are to be used by all
-> users."  Don't take that as a set-in-stone rule of debugfs at all, it
-> isn't.
-> 
-> Again, you are trying to exclude a whole range of useful and valid files
-> from being used, when there was only a very very very small percentage
-> created incorrectly.  They have now been fixed, and we have the
-> infrastructure to prevent future ones from being created as well, so I
-> don't see the issue here anymore.
+---
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+Subject: [PATCH] perf lock: document valid sort keys
 
-I'm trying to minimize exposure. So far, debugfs has proven itself to be
-repeatedly dangerous/flawed. I would like to take preventative measures to
-contain it. Everyone seems to agree that debugfs is useful for debugging,
-and I don't doubt that. It may also be riddled with potential holes, so why
-expose an entire tree of debugging interfaces to non-root users?
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+---
+ tools/perf/Documentation/perf-lock.txt |   12 ++++++++++--
+ tools/perf/builtin-lock.c              |    2 +-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-We have %pK to keep kernel addresses out of the hands of non-root users
-when reading the debugging interfaces, and we have either my patchset or
-Dan Carpenter's to keep non-root users from writing to these debugging
-interfaces. There needs to be a way for system owners to be able to protect
-themselves proactively from debugfs.
-
--Kees
-
+diff --git a/tools/perf/Documentation/perf-lock.txt b/tools/perf/Documentation/perf-lock.txt
+index 921de25..4d3314b 100644
+--- a/tools/perf/Documentation/perf-lock.txt
++++ b/tools/perf/Documentation/perf-lock.txt
+@@ -24,8 +24,8 @@ and statistics with this 'perf lock' command.
+ 
+   'perf lock report' reports statistical data.
+ 
+-OPTIONS
+--------
++COMMON OPTIONS
++--------------
+ 
+ -i::
+ --input=<file>::
+@@ -39,6 +39,14 @@ OPTIONS
+ --dump-raw-trace::
+         Dump raw trace in ASCII.
+ 
++REPORT OPTIONS
++--------------
++
++-k::
++--key=<value>::
++        Sorting key. Possible values: acquired (default), contended,
++        wait_total, wait_max, wait_min.
++
+ SEE ALSO
+ --------
+ linkperf:perf[1]
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 2b7eb18..812ad26 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -904,7 +904,7 @@ static const char * const report_usage[] = {
+ 
+ static const struct option report_options[] = {
+ 	OPT_STRING('k', "key", &sort_key, "acquired",
+-		    "key for sorting"),
++		    "key for sorting (acquired / contended / wait_total / wait_max / wait_min)"),
+ 	/* TODO: type */
+ 	OPT_END()
+ };
 -- 
-Kees Cook
-Ubuntu Security Team
+1.7.4.rc3
