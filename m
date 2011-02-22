@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab1BVHet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 02:34:49 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50282 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab1BVHer convert rfc822-to-8bit (ORCPT
+	id S1753862Ab1BVHgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 02:36:36 -0500
+Received: from mail-bw0-f51.google.com ([209.85.214.51]:51907 "EHLO
+	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab1BVHgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 02:34:47 -0500
+	Tue, 22 Feb 2011 02:36:35 -0500
+X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Feb 2011 02:36:35 EST
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tXpM8G4uDy2vWPTQpbXeKRv9R8AdHkq3Hl1UTxBduCfi+WKNFdiP/hDUCzvCHS4Ocq
-         Ro0thSRCj78loHBV1R3PYvTrPuEbVdSR4tTLk3nwoYvGR+wsViSFrhoC/z7qrchchU31
-         hp1IHDIesnqnCjMtd7Uq1kPRJukKEo5M19wFM=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Y70NAFIsc+2gxyrBRvCddsEA0fMWSbgpyEQ8Vc2T6eiCgGHIii4PK3eFyUB8b9ULTp
+         x+DdbUSrpwZDMXA3/i17D2Q/48WEK754/aq58gNrNSiMtn2UEr2+0TDMHHQmhmn9mUcH
+         jWW39b4u8vYOOxNnTY/LZsQ7kUFS4KiPlzbsI=
+Date: Tue, 22 Feb 2011 09:30:32 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, neilb@suse.de,
+        sergey.senozhatsky@gmail.com, tj@kernel.org, jmoyer@redhat.com,
+        snitzer@redhat.com
+Subject: Re: [PATCH 2/3] loop: No need to initialize ->queue_lock explicitly
+ before calling blk_cleanup_queue()
+Message-ID: <20110222073032.GA4555@swordfish.minsk.epam.com>
+References: <1298346817-26144-1-git-send-email-vgoyal@redhat.com>
+ <1298346817-26144-3-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <4D635EEF.2060102@parallels.com>
-References: <4D6095E3.2040103@parallels.com>
-	<20110221185205.GA23284@mako-laptop>
-	<4D62C43F.5040302@parallels.com>
-	<20110221120303.48106f6c.rdunlap@xenotime.net>
-	<4D62CC6B.9070408@parallels.com>
-	<20110221125555.4a47424d.rdunlap@xenotime.net>
-	<AANLkTi=Uhvz9VfQeXNMH+_-OLp--VdZswAUeU6dz4PQd@mail.gmail.com>
-	<4D635EEF.2060102@parallels.com>
-Date: Tue, 22 Feb 2011 15:34:46 +0800
-Message-ID: <AANLkTimLAMZoysa8-wE2M2vMPChTzqfDc4U3zz8j9+MX@mail.gmail.com>
-Subject: Re: [PATCH] Remove obsolete Documentation/00-INDEX entries
-From: Jovi Zhang <bookjovi@gmail.com>
-To: Rob Landley <rlandley@parallels.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Mariusz Kozlowski <mk@lab.zgora.pl>,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
+Content-Disposition: inline
+In-Reply-To: <1298346817-26144-3-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 2:59 PM, Rob Landley <rlandley@parallels.com> wrote:
-> On 02/21/2011 11:43 PM, Jovi Zhang wrote:
->> There also have many doc located in Documentation directory, but not
->> in 00-INDEX file, like
->> apparmor.txt
->> bad_memory.txt
->> braille-console.txt
->> bt8xxgpio.txt
->> circular-buffers.txt
->> coccinelle.txt
->> credentials.txt
->> debugging-via-ohci1394.txt
->> devicetree/
->> dmaengine.txt
->> dynamic-debug-howto.txt
->> email-clients.txt
->> flexible-arrays.txt
->> futex-requeue-pi.txt
->> gcov.txt
->> ...
->>
->> Also there have some entry not list as alphabetical order.
->
-> My script lists those as well: it finds a little over 1100 of them,
-> which is why I didn't post the list.  (Here it is gzipped and attached.)
->  But that's also listing files for directories that have no 00-INDEX, so
-> I should probably filter that better...
->
-> Is alphabetical order a requirement?
->
-> Rob
->
 
-Hmm, not sure..., The header of 00-INDEX is like this:
->>>>
-This is a brief list of all the files in ./linux/Documentation and what
-they contain. If you add a documentation file, please list it here in
-alphabetical order as well, or risk being hunted down like a rabid dog.
-Please try and keep the descriptions small enough to fit on one line.
-                                                        Thanks -- Paul G.
-<<<
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On (02/21/11 22:53), Vivek Goyal wrote:
+> o Now we initialize ->queue_lock at queue allocation time so driver does
+>   not have to worry about initializing it before calling blk_cleanup_queu=
+e().
+>=20
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  drivers/block/loop.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+> index 49e6a54..44e18c0 100644
+> --- a/drivers/block/loop.c
+> +++ b/drivers/block/loop.c
+> @@ -1641,9 +1641,6 @@ out:
+> =20
+>  static void loop_free(struct loop_device *lo)
+>  {
+> -	if (!lo->lo_queue->queue_lock)
+> -		lo->lo_queue->queue_lock =3D &lo->lo_queue->__queue_lock;
+> -
+>  	blk_cleanup_queue(lo->lo_queue);
+>  	put_disk(lo->lo_disk);
+>  	list_del(&lo->lo_list);
+
+Hi,
+
+(just for note)=20
+There is an incremental patch fixing this case in Andrew's mm tree:=20
+https://lkml.org/lkml/2011/2/11/165
+                                  =20
+(block-fix-queue_lock-null-pointer-derefence-in-blk_throtl_exit-v4.patch
+added to -mm tree).
+
+
+        Sergey
+
+--pWyiEgJYm5f9v55/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk1jZhgACgkQfKHnntdSXjRTGQP/bxoaekP/dFMheWFtLB2bWbao
+twIXyRXK3/k260fY9jvb13nJ+KZo4u1/qlm0OCW/NOrim1IeB52GEOdpfmNHcWr4
+dWopMOCGDceGNXzf5jFWs471yx2dOVBsZaqwHF+IzBJJ3fDd5GMfBj5IRsdtYR52
+9xF2W2KX3qJAdLGms8Q=
+=rwsR
+-----END PGP SIGNATURE-----
+
+--pWyiEgJYm5f9v55/--
