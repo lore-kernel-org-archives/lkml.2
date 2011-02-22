@@ -1,51 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1BVOZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:25:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10770 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab1BVOZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:25:31 -0500
-Message-ID: <4D63C753.3030906@redhat.com>
-Date: Tue, 22 Feb 2011 16:25:23 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1753614Ab1BVO0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:26:23 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59912 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab1BVO0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:26:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=v9jH3ewMDBmvPijSbOwek4+lWzwbca71PQE5wfvyVrPUJDVsp6IbU2RBoxbjDV4ATz
+         Lh7UbLTYh8lwXbPRY+d4EaWZ+Y/CaHNuguB5qCVeguWYno5VDTuAqE9bpDFVSMwD9U1k
+         pq8QJp2WKkm13HDVoGZNp22F01keQlDJ9WIKY=
+Date: Tue, 22 Feb 2011 23:26:10 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Barrett <damentz@liquorix.net>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v6 0/4] fadvise(DONTNEED) support
+Message-ID: <20110222142610.GA6093@barrios-desktop>
+References: <cover.1298212517.git.minchan.kim@gmail.com>
+ <20110221190713.GM13092@random.random>
+ <AANLkTimOhgK953rmOw4PqnoFq_e7y6j1m+NBDYJehkds@mail.gmail.com>
+ <20110222132804.GQ13092@random.random>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH 4/7] KVM: sort memslots and use binary search to search
- the right slot
-References: <4D636EF8.60800@cn.fujitsu.com> <4D636FE8.8000505@cn.fujitsu.com>
-In-Reply-To: <4D636FE8.8000505@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222132804.GQ13092@random.random>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 10:12 AM, Xiao Guangrong wrote:
-> Sort memslots then search the slot with binary search to speed up the
-> slot searching
->
+On Tue, Feb 22, 2011 at 02:28:04PM +0100, Andrea Arcangeli wrote:
+> Hi Minchan,
+> 
+> On Tue, Feb 22, 2011 at 07:59:51AM +0900, Minchan Kim wrote:
+> > I don't have a reproducible experiment.
+> > I started the series with Ben's complain.
+> > http://marc.info/?l=rsync&m=128885034930933&w=2
+> 
+> Yes I've noticed.
+> 
+> > I don't know Ben could test it with older kernel since recently he got silent.
+> 
+> That's my point, we should check if the "thrashing horribly" is really
+> a "recently" or if it has always happened before with 2.6.18 and previous.
+> 
+> > I am not sure older kernel worked well such as workload.
+> > That's because Rik had been pointed out rsync's two touch
+> > problem(http://linux-mm.org/PageReplacementRequirements) and solved
+> > part of the problem with remaining half of the active file pages(look
+> > at inactive_file_is_low) on 2.6.28's big change reclaim.
+> > So I think the problem about such workload have been in there.
+> 
+> It's possible it's an old problem, but frankly I doubt that any
+> swapping would have ever happened before, no matter how much rsync you
+> would run in a loop. As said I also got PM from users asking what they
+> can do to limit the pagecache because their systems are swapping
+> overnight because of backup loads, that's definitely not ok. Or at
+> least there must be a tweak to tell the VM "stop doing the swapping
+> thing with backup". I didn't yet try to reproduce or debug this as I'm
+> busy with other compaction/THP related bits.
+> 
+> > And this patch's benefit is not only for preventing working set.
+> > Before this patch, application should sync the data before fadvise to
+> > take a effect but it's very inefficient by slow sync operation. If the
+> > invalidation meet dirty page, it can skip the page. But after this
+> > patch, application could fdavise without sync because we could move
+> > the page of head/or tail of inactive list.
+> 
+> I agree, the objective of the patch definitely looks good. Before the
+> fadvise would be ignored without a fdatasync before it as the pages
+> were dirty and couldn't be discarded.
+> 
+> > So I think the patch is valuable enough to merge?
+> 
+> The objective looks good, I didn't have time to review all details of
+> the patches but I'll try to review it later.
+> 
+> > And as I said, I need Ben's help but I am not sure he can.
+> > Thanks for the review, Andrea.
+> 
+> Thanks for the effort in improving fadvise.
+> 
+> I'd like to try to find the time to check if we've a regression
+> without fadvise too. It's perfectly ok to use fadvise in rsync but my
+> point is that the kernel should not lead to trashing of running apps
+> regardless of fadvise or not, and I think that is higher priority to
+> fix than the fadvise improvement. But still the fadvise improvement is
+> very valuable to increase overall performance and hopefully to avoid
+> wasting most of filesystem cache because of backups (but wasting cache
+> shouldn't lead to trashing horribly, just more I/O from apps after the
+> backup run, like after starting the app the first time, trashing
+> usually means we swapped out or discarded mapped pages too and that's
+> wrong).
 
-I'm not sure if a binary search is the right algorithm here.  It 
-introduces a lot of branches which may be mispredicted.
+I agree your opinion but I hope the patch is going on 2.6.38 or 39.
+That's because if we find regression's root cause, how could this series be changed?
+I think it's no difference before and after.
+Of course, if rsync like applicatoin start to use fadvise agressively, the problem
+could be buried on toe but we still have a older kernel and older rsync so we can
+reproduce it then we can find the root cause.
+What's the problem if the series is merged?
+If it is reasonable, it's no problem to pend the series.
 
-Options we've discussed are:
+I _totally_ agree your opinion and I want to find root cause of the regression, too.
+But unfortunatly, I don't have any time and enviroment to reproduce it. ;(
+I hope clever people like you would have a time to find it and report it to linux-mm
+in future.
 
-- Sort slots by size, use linear search (so the largest slots are found 
-quickly)
-- Weighted balanced tree 
-http://en.wikipedia.org/wiki/Weight-balanced_tree, use weight == slot size
+Ben. Could you test your workload on older 2.6.18 kernel if you see the thread?
+It could help us very much.
+Thanks.
 
-Both options still make the miss case (mmio) slow.  We could cache the 
-result of a miss in an spte by using a reserved bit, and checking the 
-page fault error code (or seeing if we get an ept violation or ept 
-misconfiguration), so if we get repeated mmio on a page, we don't need 
-to search the slot list/tree.
+> 
+> Thanks,
+> Andrea
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Kind regards,
+Minchan Kim
