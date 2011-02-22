@@ -1,216 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab1BVPwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 10:52:55 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40624 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab1BVPwz convert rfc822-to-8bit (ORCPT
+	id S1754620Ab1BVPxC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 10:53:02 -0500
+Received: from xenotime.net ([184.105.210.51]:37874 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754472Ab1BVPw5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 10:52:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <1298384530-14994-1-git-send-email-monstr@monstr.eu>
-References: <1298384530-14994-1-git-send-email-monstr@monstr.eu>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 22 Feb 2011 08:52:34 -0700
-X-Google-Sender-Auth: H_dk_9CoEXkdXh7T5z1XDa9C8oU
-Message-ID: <AANLkTi=FvafUgqMCF29cX7egviDwrfB=sViudLr+4Fsx@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] i2c: xiic: Add OF support for Xilinx i2c bus interface
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-i2c@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
-        John.Linn@xilinx.com
+	Tue, 22 Feb 2011 10:52:57 -0500
+Date: Tue, 22 Feb 2011 07:52:53 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: Rob Landley <rlandley@parallels.com>, Mariusz Kozlowski <mk@lab.zgora.pl>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Remove obsolete Documentation/00-INDEX entries
+Message-Id: <20110222075253.f4b82cc6.rdunlap@xenotime.net>
+In-Reply-To: <AANLkTimLAMZoysa8-wE2M2vMPChTzqfDc4U3zz8j9+MX@mail.gmail.com>
+References: <4D6095E3.2040103@parallels.com>
+	<20110221185205.GA23284@mako-laptop>
+	<4D62C43F.5040302@parallels.com>
+	<20110221120303.48106f6c.rdunlap@xenotime.net>
+	<4D62CC6B.9070408@parallels.com>
+	<20110221125555.4a47424d.rdunlap@xenotime.net>
+	<AANLkTi=Uhvz9VfQeXNMH+_-OLp--VdZswAUeU6dz4PQd@mail.gmail.com>
+	<4D635EEF.2060102@parallels.com>
+	<AANLkTimLAMZoysa8-wE2M2vMPChTzqfDc4U3zz8j9+MX@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 7:22 AM, Michal Simek <monstr@monstr.eu> wrote:
-> Add OF support to Xilinx i2c bus interface.
-> It is used on Microblaze systems.
->
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
+On Tue, 22 Feb 2011 15:34:46 +0800 Jovi Zhang wrote:
 
-Hi Michal, comments below...
+> On Tue, Feb 22, 2011 at 2:59 PM, Rob Landley <rlandley@parallels.com> wrote:
+> > On 02/21/2011 11:43 PM, Jovi Zhang wrote:
+> >> There also have many doc located in Documentation directory, but not
+> >> in 00-INDEX file, like
+> >> apparmor.txt
+> >> bad_memory.txt
+> >> braille-console.txt
+> >> bt8xxgpio.txt
+> >> circular-buffers.txt
+> >> coccinelle.txt
+> >> credentials.txt
+> >> debugging-via-ohci1394.txt
+> >> devicetree/
+> >> dmaengine.txt
+> >> dynamic-debug-howto.txt
+> >> email-clients.txt
+> >> flexible-arrays.txt
+> >> futex-requeue-pi.txt
+> >> gcov.txt
+> >> ...
+> >>
+> >> Also there have some entry not list as alphabetical order.
+> >
+> > My script lists those as well: it finds a little over 1100 of them,
+> > which is why I didn't post the list.  (Here it is gzipped and attached.)
+> >  But that's also listing files for directories that have no 00-INDEX, so
+> > I should probably filter that better...
+> >
+> > Is alphabetical order a requirement?
+> >
+> > Rob
+> >
+> 
+> Hmm, not sure..., The header of 00-INDEX is like this:
+> >>>>
+> This is a brief list of all the files in ./linux/Documentation and what
+> they contain. If you add a documentation file, please list it here in
+> alphabetical order as well, or risk being hunted down like a rabid dog.
+> Please try and keep the descriptions small enough to fit on one line.
+>                                                         Thanks -- Paul G.
+> <<<
 
-> ---
->  drivers/i2c/busses/i2c-xiic.c |   46 ++++++++++++++++++++++++++++++++++------
->  1 files changed, 39 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
-> index a9c419e..4166570 100644
-> --- a/drivers/i2c/busses/i2c-xiic.c
-> +++ b/drivers/i2c/busses/i2c-xiic.c
-> @@ -2,6 +2,8 @@
->  * i2c-xiic.c
->  * Copyright (c) 2002-2007 Xilinx Inc.
->  * Copyright (c) 2009-2010 Intel Corporation
-> + * Copyright (c) 2010-2011 Michal Simek <monstr@monstr.eu>
-> + * Copyright (c) 2010-2011 PetaLogix
+so Yes, alpha order, please.
 
-This change is going to end up being pretty trivial.  It would be a
-little odd to claim copyright on such a tiny change; particularly when
-it just follows the pattern already established by other drivers.
-
->  *
->  * This program is free software; you can redistribute it and/or modify
->  * it under the terms of the GNU General Public License version 2 as
-> @@ -41,6 +43,13 @@
->  #include <linux/io.h>
->  #include <linux/slab.h>
->
-> +#ifdef CONFIG_OF
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_i2c.h>
-> +#include <linux/of_address.h>
-> +#endif
-
-As previously mentioned; drop the #ifdef protection around these
-includes. It should be safe to include them unconditionally, and if it
-isn't then it is a bug in the headers which should be fixed.  These
-includes should be part of the regular block of includes.
-
-> +
->  #define DRIVER_NAME "xiic-i2c"
->
->  enum xilinx_i2c_state {
-> @@ -426,7 +435,7 @@ static void xiic_process(struct xiic_i2c *i2c)
->                        xiic_wakeup(i2c, STATE_ERROR);
->
->        } else if (pend & (XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK)) {
-> -               /* Transmit register/FIFO is empty or ½ empty */
-> +               /* Transmit register/FIFO is empty or 1/2 empty */
->
->                clr = pend &
->                        (XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK);
-> @@ -691,10 +700,12 @@ static struct i2c_adapter xiic_adapter = {
->  static int __devinit xiic_i2c_probe(struct platform_device *pdev)
->  {
->        struct xiic_i2c *i2c;
-> +#ifndef CONFIG_OF
->        struct xiic_i2c_platform_data *pdata;
-> +       u8 i;
-> +#endif
->        struct resource *res;
->        int ret, irq;
-> -       u8 i;
-
-You can drop this hunk (see below).
-
->
->        res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->        if (!res)
-> @@ -704,10 +715,6 @@ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
->        if (irq < 0)
->                goto resource_missing;
->
-> -       pdata = (struct xiic_i2c_platform_data *) pdev->dev.platform_data;
-> -       if (!pdata)
-> -               return -EINVAL;
-> -
->        i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
->        if (!i2c)
->                return -ENOMEM;
-> @@ -730,7 +737,9 @@ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
->        i2c->adap = xiic_adapter;
->        i2c_set_adapdata(&i2c->adap, i2c);
->        i2c->adap.dev.parent = &pdev->dev;
-> -
-> +#ifdef CONFIG_OF
-> +       i2c->adap.dev.of_node = of_node_get(pdev->dev.of_node);
-> +#endif
-
-Drop the #ifdef here.  In devicetree/next of_node is no longer
-protected by a #ifdef.
-
->        xiic_reinit(i2c);
->
->        spin_lock_init(&i2c->lock);
-> @@ -748,9 +757,20 @@ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
->                goto add_adapter_failed;
->        }
->
-> +       dev_info(&pdev->dev, "mapped to 0x%08X, irq=%d\n",
-> +                                       (unsigned int)i2c->base, irq);
-> +
-> +#ifndef CONFIG_OF
-> +       pdata = (struct xiic_i2c_platform_data *) pdev->dev.platform_data;
-> +       if (!pdata)
-> +               return -EINVAL;
-> +
->        /* add in known devices to the bus */
->        for (i = 0; i < pdata->num_devices; i++)
->                i2c_new_device(&i2c->adap, pdata->devices + i);
-> +#else
-> +       of_i2c_register_devices(&i2c->adap);
-> +#endif
-
-Do it this way instead:
-
-	pdata = (struct xiic_i2c_platform_data *) pdev->dev.platform_data;
-	if (pdata) {
-		/* add in known devices to the bus */
-		for (i = 0; i < pdata->num_devices; i++)
-		       i2c_new_device(&i2c->adap, pdata->devices + i);
-	}
-
-	of_i2c_register_devices(&i2c->adap);
-
-of_i2c_register_devices() is safe to call regardless of if CONFIG_OF
-is selected or not.  This driver should be written to handle both
-device tree and platform_data use cases at run time.
-
->
->        return 0;
->
-> @@ -799,12 +819,24 @@ static int __devexit xiic_i2c_remove(struct platform_device* pdev)
->  /* work with hotplug and coldplug */
->  MODULE_ALIAS("platform:"DRIVER_NAME);
->
-> +#ifdef CONFIG_OF
-> +/* Match table for of_platform binding */
-> +static struct of_device_id __devinitdata xilinx_iic_of_match[] = {
-> +       { .compatible = "xlnx,xps-iic-2.00.a", },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, xilinx_iic_of_match);
-
-If you add the following, then you can drop the #ifdef around
-.of_match_table below...
-
-#else
-#define xilinx_iic_of_match NULL
-
-> +#endif
-> +
->  static struct platform_driver xiic_i2c_driver = {
->        .probe   = xiic_i2c_probe,
->        .remove  = __devexit_p(xiic_i2c_remove),
->        .driver  = {
->                .owner = THIS_MODULE,
->                .name = DRIVER_NAME,
-> +#ifdef CONFIG_OF
-> +               .of_match_table = xilinx_iic_of_match,
-> +#endif
-
-Drop the #ifdef and base this patch on devicetree/next
-
->        },
->  };
->
-> --
-> 1.5.5.6
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
