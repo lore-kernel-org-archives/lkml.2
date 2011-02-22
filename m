@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab1BVTyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:54:54 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50974
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751507Ab1BVTyw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:54:52 -0500
-Date: Tue, 22 Feb 2011 11:55:28 -0800 (PST)
-Message-Id: <20110222.115528.245390295.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2011-02-22
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110222193757.GF12153@tuxdriver.com>
-References: <20110222193757.GF12153@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755290Ab1BVTzR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:55:17 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:59406 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751613Ab1BVTzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:55:15 -0500
+Date: Tue, 22 Feb 2011 11:54:32 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@suse.de>, David Daney <ddaney@caviumnetworks.com>,
+        linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
+ interfaces
+Message-ID: <20110222195432.GB4000@outflux.net>
+References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
+ <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
+ <20110222181613.GU4000@outflux.net>
+ <4D640133.9020901@caviumnetworks.com>
+ <20110222184726.GV4000@outflux.net>
+ <20110222191454.GB9991@suse.de>
+ <20110222192532.GY4000@outflux.net>
+ <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 22 Feb 2011 14:37:57 -0500
+On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
+> Anyway - we don't mostly have a "root/non-root" model - it went out
+> around Linux 1.2. So any model for dealing with should be respecting of
+> capabilities, SELinux and the like.
 
-> Here is the latest round of wireless fixes intended for 2.6.38.
-> Included are a DMA API fix for p54, an ath5k channel setting fix
-> for AR2317 hardware, a WARNING fix related to conn_mon_timer, a lock
-> order fix in cfg80211_wext_siwfreq, a bluetooth locking fix, and a
-> few simple hardware-enablement patches.
-> 
-> There are a couple of other notables.  There is an ath9k patch that
-> reverts some earlier patches that cause a regression in power usage.
-> Also, there is a fairly large ath5k patch to address a regression
-> related to fast channel switching.  The patch seems bigger than it
-> really is because it moves some code around.  Both of these cite the
-> related bugzilla entry.
-> 
-> Please let me know if there are problems!
+That reminds me; in this line of reasoning, would a patchset to update all
+the /proc/sys, /sys, etc writing functions to take capability lists and check
+them be accepted? Because right now, almost everything in /proc/sys uses
+DAC instead of checking caps. I think the same is true of /sys and debugfs.
 
-Pulled, thanks a lot John.
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
