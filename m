@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab1BVLJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 06:09:31 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41469 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753551Ab1BVLJb (ORCPT
+	id S1754012Ab1BVLL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 06:11:26 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:23450
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753551Ab1BVLLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 06:09:31 -0500
-Date: Tue, 22 Feb 2011 11:11:03 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Subhasish" <subhasish@mistralsolutions.com>
-Cc: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <m-watkins@ti.com>,
-        <nsekhar@ti.com>, <sachi@mistralsolutions.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "open list" <linux-kernel@vger.kernel.org>,
-        "Stalin Srinivasan" <stalin.s@mistralsolutions.com>
-Subject: Re: [PATCH v2 13/13] tty: pruss SUART driver
-Message-ID: <20110222111103.5d0dd0a7@lxorguk.ukuu.org.uk>
-In-Reply-To: <A6D1CF0E941748448610BE8874FC586F@subhasishg>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
-	<1297435892-28278-14-git-send-email-subhasish@mistralsolutions.com>
-	<20110211162814.6ff274f1@lxorguk.ukuu.org.uk>
-	<A6D1CF0E941748448610BE8874FC586F@subhasishg>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Feb 2011 06:11:24 -0500
+X-SpamScore: -32
+X-BigFish: VPS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i637h668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LH0N2N-01-HMN-02
+X-M-MSG: 
+Date: Tue, 22 Feb 2011 12:11:11 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 0/6] KVM support for TSC scaling
+Message-ID: <20110222111111.GG16508@amd.com>
+References: <4D57F677.3090004@redhat.com>
+ <20110221172807.GD16508@amd.com>
+ <4D638BDE.70602@redhat.com>
+ <20110222103513.GF16508@amd.com>
+ <4D6392F1.1030601@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4D6392F1.1030601@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> we used separate files and hence we decided to keep the code in a separate
-> directory so that the related files can be identified easily.
-
-Fair enough but I would have thought you could drop the two files in the
-serial directory if they have obviously related names- trivial item/
+On Tue, Feb 22, 2011 at 05:41:53AM -0500, Avi Kivity wrote:
+> On 02/22/2011 12:35 PM, Roedel, Joerg wrote:
+> > >  This doesn't really work, since we don't know on what host the TSC
+> > >  calibration loop ran:
+> > >
+> > >  - start guest on host H1
+> > >  - migrate it around, now it's on host H2
+> > >  - guest reboots, reruns calibration loop
+> > >  - migrate it around some more, now it's on host H3
+> > >  - migrate to host with tsc multiplier Hnew
+> > >
+> > >  So, what should we set the multiplier to? H1, H2, or H3's tsc rate?
+> >
+> > This scenario doesn't matter. If the guest already detected its TSC to
+> > be unstable there is nothing we can do and it doesn't really matter what
+> > we set the tsc frequency to. Therefore software will always set the
+> > guest tsc frequency to the same value it had on the last host.
 > 
-> >
-> >
-> >
-> >> +#ifdef __SUART_DEBUG
-> >> +#define __suart_debug(fmt, args...) \
-> >> + printk(KERN_DEBUG "suart_debug: " fmt, ## args)
-> >> +#else
-> >> +#define __suart_debug(fmt, args...)
-> >> +#endif
-> >> +
-> >> +#define  __suart_err(fmt, args...) printk(KERN_ERR "suart_err: " fmt, ##
-> >> args)
-> >
-> > Use dev_dbg/dev_err/pr_debug/pr_err
+> Ok, so your scenario is
 > 
-> SG - did you mean replace the printks above with dev_dgb/err or the 
-> suart_dbg/err.
-
-Ideally all the messages shopuld use dev_dbg/dev_err etc. That allows you
-to configure debug levels and the like nicely as well as producing
-clearer printk info. In some cases with tty code you may not know the
-device so have to use pr_err/pr_debug etc.
-
-Ok
-
-> > Which is never checked. Far better to use WARN_ON and the like for such
-> > cases - or if like this one they don't appear to be possible to simply
-> > delete them
+> - boot on host H1
+> - no intervening migrations
+> - migrate to host Hnew
+> - all succeeding migrations are only to new hosts or back to H1
 > 
-> SG -- OK, does this look ok ?
-> =================================
-> if (h_uart == NULL) {
-> +WARN_ON(1);
-> - return PRU_SUART_ERR_HANDLE_INVALID;
-> +return -EINVAL;
-> }
+> This is somewhat artificial, and not very different from an all-new cluster.
 
-Yep - the user will now get a backtrace, and in addition kerneloops.org
-can capture it if that is set up in the distro in use.
+This is at least the scenario where the new hardware feature will make
+sense. Its clear that if you migrate a guest between hosts without
+tsc-scaling will make the tsc appear unstable for the guest. This is
+basically the same situation as we have today.
+In fact, for older hosts the feature can be emulated in software by
+trapping tsc accesses from the guest. Isn't this what Zachary has been
+working on? During my implementation I understood tsc-scaling as a
+hardware supported way to do this. And thats the reason I implemented it
+the way it is.
 
-Alan
+> [the whole thing is kind of sad; we went through a huge effort to make 
+> clocks work on virtual machines in spite of the tsc issues; then we have 
+> a hardware solution, but can't use it because of old hardware.  Same 
+> thing happens with the effort put into shadow in the pre-npt days]
+
+The shadow code has a revivial as it is required for emulating
+nested-npt and nested-ept, so the effort still has value :)
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
