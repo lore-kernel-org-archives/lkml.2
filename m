@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab1BVPTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 10:19:08 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:52181 "EHLO
+	id S1754436Ab1BVPVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 10:21:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57241 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab1BVPTH (ORCPT
+	with ESMTP id S1753871Ab1BVPVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 10:19:07 -0500
+	Tue, 22 Feb 2011 10:21:11 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCHv2 06/11] unicore32 core architecture: mm related: generic codes
-Date: Tue, 22 Feb 2011 16:18:56 +0100
+Subject: Re: [PATCHv2 09/11] unicore32 core architecture: timer and time handling
+Date: Tue, 22 Feb 2011 16:21:07 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         "'Greg KH'" <greg@kroah.com>
-References: <02ed01cbcb48$3e3781a0$baa684e0$@mprc.pku.edu.cn> <201102171828.15482.arnd@arndb.de> <018a01cbd29b$1ff4c590$5fde50b0$@mprc.pku.edu.cn>
-In-Reply-To: <018a01cbd29b$1ff4c590$5fde50b0$@mprc.pku.edu.cn>
+References: <02f301cbcb48$bebea4c0$3c3bee40$@mprc.pku.edu.cn> <201102171831.16713.arnd@arndb.de> <018c01cbd29b$759a4740$60ced5c0$@mprc.pku.edu.cn>
+In-Reply-To: <018c01cbd29b$759a4740$60ced5c0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102221618.56779.arnd@arndb.de>
-X-Provags-ID: V02:K0:1+6c+6LUYNJnhZYtyC1BqdEs7ME1GcPuk3+KTaAtomR
- nuwwTiajXOvsCOEN8eXMnwJZN9sVjdfg4vCNoKoIDVjM34b+ij
- cM7YFC5Ta9A5IxOuW8R5Fal2vmsJvQzfcSC7uNYGJW+gSDySwX
- JtlRE8cJGPbS0cFZXsUfL13u80tMahBHJfbOPo6GEW+6LLh7wk
- rBhJvocx5hImElq6qLhvw==
+Message-Id: <201102221621.07655.arnd@arndb.de>
+X-Provags-ID: V02:K0:pQKrvdzmuNMNpri/iZ8Cjm1mPacuN2hc36kHaAeSg1g
+ E8+sPgvrdhGo3w01STGkY9f9XLPjIy4OZadkuTlHhimNuq7hLa
+ eJcPUs4o/NtqnDNRmPwPNrOkaBKLG260zRKQKzHTWMlgfMdgOu
+ MSJzQLf0XSWLXuMrQpxnpPAbmojGSFzjYAFrgA8CPu0UwCKt1q
+ pVqj6/QYJkYhtxXfIcoPQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tuesday 22 February 2011, Guan Xuetao wrote:
-> > > +#ifdef __io
-> > > +void __iomem *ioport_map(unsigned long port, unsigned int nr)
-> > > +{
-> > > +       /* we map PC lagcy 64K IO port to PCI IO space 0x80030000 */
-> > > +       return (void __iomem *) (unsigned long)
-> > > +                       io_p2v((port & 0xffff) + PKUNITY_PCILIO_BASE);
-> > > +}
+> > > +#if defined(CONFIG_PUV3_DB0913)                \
+> > > +       || defined(CONFIG_PUV3_NB0916)  \
+> > > +       || defined(CONFIG_PUV3_SMW0919)
+> > > +
+> > > +#define  CLOCK_TICK_RATE         (14318000)
+> > > +
+> > > +#endif
 > > 
-> > Interestingly, this function looks completely correct, but I don't see
-> > the definition for __io, so I suspect that the function is not actually
-> > getting used.
-> When I want to use pci device driver,  I will define __io and use ioport_map for drivers.
-> It is obviously a trick.
+> > I believe that we don't use CLOCK_TICK_RATE in the kernel any more,
+> > so there is no reason to define it.
+> CLOCK_TICK_RATE is an important value for the kernel.
+> And perhaps I misunderstanding your meaning...
 
-Ok, I see.
+We just discussed the same thing for a new ARM platform. You are
+right that CLOCK_TICK_RATE is currently still being used, but
+we are trying to get rid of it.
 
-> And with your patch for asm-generic/io.h, these codes could be removed.
+Most importantly, it should not be configuration specific any more.
+If you use CLOCK_TICK_RATE in unicore32 specific code, it would
+be best to rename that variable and device it in a board specific
+file.
 
-You'd still need to define ioport_map, but the definition could simply
-become
+The definition in timex.h can basically contain any value that is
+a multiple of CONFIG_HZ. Don't worry about this one, we will fix
+it for good for the entire kernel.
 
-static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
-{
-	return PCIO_BASE + port;
-}
-
-	ARnd
+	Arnd
