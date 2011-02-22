@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab1BVWVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:14 -0500
-Received: from kroah.org ([198.145.64.141]:46562 "EHLO coco.kroah.org"
+	id S1753473Ab1BVWVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:15 -0500
+Received: from kroah.org ([198.145.64.141]:46570 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752797Ab1BVWVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:06 -0500
+	id S1752807Ab1BVWVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:37 2011
-Message-Id: <20110222221837.651481879@clark.kroah.org>
+Message-Id: <20110222221837.745295087@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:45 -0800
+Date: Tue, 22 Feb 2011 14:16:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@redhat.com>
-Subject: [06/70] drm/radeon: fix memory debugging since d961db75ce86a84f1f04e91ad1014653ed7d9f46
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [07/70] drm/radeon/kms: add connector table for mac g5 9600
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 16f9fdcbcce74102bed9a4b7ccc1fb05b5dd6ca3 upstream.
+commit 9fad321ac6bedd96f449754a1a25289ea1789a49 upstream.
 
-The old code dereferenced a value, the new code just needs to pass
-the ptr.
+PPC Mac cards do not provide connector tables in
+their vbios.  Their connector/encoder configurations
+must be hardcoded in the driver.
 
-fixes an oops looking at files in debugfs.
+verified by nyef on #radeon
 
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_ttm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c |   47 ++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_mode.h    |    1 
+ 2 files changed, 48 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_ttm.c
-+++ b/drivers/gpu/drm/radeon/radeon_ttm.c
-@@ -787,9 +787,9 @@ static int radeon_ttm_debugfs_init(struc
- 		radeon_mem_types_list[i].show = &radeon_mm_dump_table;
- 		radeon_mem_types_list[i].driver_features = 0;
- 		if (i == 0)
--			radeon_mem_types_list[i].data = &rdev->mman.bdev.man[TTM_PL_VRAM].priv;
-+			radeon_mem_types_list[i].data = rdev->mman.bdev.man[TTM_PL_VRAM].priv;
- 		else
--			radeon_mem_types_list[i].data = &rdev->mman.bdev.man[TTM_PL_TT].priv;
-+			radeon_mem_types_list[i].data = rdev->mman.bdev.man[TTM_PL_TT].priv;
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -1503,6 +1503,11 @@ bool radeon_get_legacy_connector_info_fr
+ 			   (rdev->pdev->subsystem_device == 0x4a48)) {
+ 			/* Mac X800 */
+ 			rdev->mode_info.connector_table = CT_MAC_X800;
++		} else if ((rdev->pdev->device == 0x4150) &&
++			   (rdev->pdev->subsystem_vendor == 0x1002) &&
++			   (rdev->pdev->subsystem_device == 0x4150)) {
++			/* Mac G5 9600 */
++			rdev->mode_info.connector_table = CT_MAC_G5_9600;
+ 		} else
+ #endif /* CONFIG_PPC_PMAC */
+ #ifdef CONFIG_PPC64
+@@ -2021,6 +2026,48 @@ bool radeon_get_legacy_connector_info_fr
+ 					    CONNECTOR_OBJECT_ID_DUAL_LINK_DVI_I,
+ 					    &hpd);
+ 		break;
++	case CT_MAC_G5_9600:
++		DRM_INFO("Connector Table: %d (mac g5 9600)\n",
++			 rdev->mode_info.connector_table);
++		/* DVI - tv dac, dvo */
++		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_DVI, 0, 0);
++		hpd.hpd = RADEON_HPD_1; /* ??? */
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								  ATOM_DEVICE_DFP2_SUPPORT,
++								  0),
++					  ATOM_DEVICE_DFP2_SUPPORT);
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								  ATOM_DEVICE_CRT2_SUPPORT,
++								  2),
++					  ATOM_DEVICE_CRT2_SUPPORT);
++		radeon_add_legacy_connector(dev, 0,
++					    ATOM_DEVICE_DFP2_SUPPORT |
++					    ATOM_DEVICE_CRT2_SUPPORT,
++					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
++					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
++					    &hpd);
++		/* ADC - primary dac, internal tmds */
++		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_VGA, 0, 0);
++		hpd.hpd = RADEON_HPD_2; /* ??? */
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								  ATOM_DEVICE_DFP1_SUPPORT,
++								  0),
++					  ATOM_DEVICE_DFP1_SUPPORT);
++		radeon_add_legacy_encoder(dev,
++					  radeon_get_encoder_enum(dev,
++								  ATOM_DEVICE_CRT1_SUPPORT,
++								  1),
++					  ATOM_DEVICE_CRT1_SUPPORT);
++		radeon_add_legacy_connector(dev, 1,
++					    ATOM_DEVICE_DFP1_SUPPORT |
++					    ATOM_DEVICE_CRT1_SUPPORT,
++					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
++					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
++					    &hpd);
++		break;
+ 	default:
+ 		DRM_INFO("Connector table: %d (invalid)\n",
+ 			 rdev->mode_info.connector_table);
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -209,6 +209,7 @@ enum radeon_connector_table {
+ 	CT_EMAC,
+ 	CT_RN50_POWER,
+ 	CT_MAC_X800,
++	CT_MAC_G5_9600,
+ };
  
- 	}
- 	/* Add ttm page pool to debugfs */
+ enum radeon_dvo_chip {
 
 
