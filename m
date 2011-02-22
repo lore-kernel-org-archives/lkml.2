@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab1BVVEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:04:47 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:41423 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750915Ab1BVVEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:04:46 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=YBbPIruOXYUgUhsrIwC59H2Y5IuZVpZp8+JK/aYtQwekVCGX9DjTrTlQPDyVQYu7aExR2ZiOZe09GjHlPJiOSgy/ai4KIosDKasqvU8+gGfhlFla5V43fydh3L2CqwVk;
-Date: Tue, 22 Feb 2011 13:04:40 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alex Riesen <raa.lkml@gmail.com>, Indan Zupancic <indan@nul.nu>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix backlight brightness on intel LVDS panel after
- reopening lid
-Message-ID: <20110222130440.21a27714@jbarnes-desktop>
-In-Reply-To: <AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-References: <AANLkTi=Mc8O8cNWYOKgD0cESQhfa2jiHor11DBuagJDF@mail.gmail.com>
-	<20110216192658.GA7225@blimp.localdomain>
-	<20110217221329.GA3332@x61.home>
-	<3f792aaf90cf0b3d49be21baa2682d5d.squirrel@webmail.greenhost.nl>
-	<AANLkTik20vCMhXqjxkoebZ1cWFb0zQLP5OZvVx4GWMPb@mail.gmail.com>
-	<AANLkTik3ECs5z5td6GYuDExrc74_18mC-bk-hsq4e1+i@mail.gmail.com>
-	<AANLkTik9XHcDUbPTPh6t--TwQompeQBY9TNuuBRk++-6@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S1753640Ab1BVVFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:05:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752276Ab1BVVFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:05:47 -0500
+Date: Tue, 22 Feb 2011 16:00:30 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
+Message-ID: <20110222210030.GI28269@redhat.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <1298394776-9957-5-git-send-email-arighi@develer.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298394776-9957-5-git-send-email-arighi@develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Feb 2011 15:07:49 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Sat, Feb 19, 2011 at 4:26 AM, Alex Riesen <raa.lkml@gmail.com> wrote:
-> > On Sat, Feb 19, 2011 at 13:11, Alex Riesen <raa.lkml@gmail.com> wrote:
-> >>> Lastly, could you verify that my patch at https://lkml.org/lkml/2011/2/16/447 fixes
-> >>> it for you too? (Make sure you're at max brightness before rebooting.)
-> >>
-> >> I'll try it now.
-> >>
-> >
-> > I can confirm that it does fix backlight in my case (Dell XPS 1330,
-> > LVDS panel, GM965/GL960).
-> >
-> > Tested-by: Alex Riesen <raa.lkml@gmail.com>
+On Tue, Feb 22, 2011 at 06:12:55PM +0100, Andrea Righi wrote:
+> Add the tracking of buffered (writeback) and anonymous pages.
 > 
-> Guys, should I apply this, or will I get it through somebody's pull?
+> Dirty pages in the page cache can be processed asynchronously by the
+> per-bdi flusher kernel threads or by any other thread in the system,
+> according to the writeback policy.
+> 
+> For this reason the real writes to the underlying block devices may
+> occur in a different IO context respect to the task that originally
+> generated the dirty pages involved in the IO operation. This makes
+> the tracking and throttling of writeback IO more complicate respect to
+> the synchronous IO from the blkio controller's point of view.
+> 
+> The idea is to save the cgroup owner of each anonymous page and dirty
+> page in page cache. A page is associated to a cgroup the first time it
+> is dirtied in memory (for file cache pages) or when it is set as
+> swap-backed (for anonymous pages). This information is stored using the
+> page_cgroup functionality.
+> 
+> Then, at the block layer, it is possible to retrieve the throttle group
+> looking at the bio_page(bio). If the page was not explicitly associated
+> to any cgroup the IO operation is charged to the current task/cgroup, as
+> it was done by the previous implementation.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> ---
+>  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/blkdev.h |   26 ++++++++++++++-
+>  2 files changed, 111 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 9ad3d1e..a50ee04 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -8,6 +8,10 @@
+>  #include <linux/slab.h>
+>  #include <linux/blkdev.h>
+>  #include <linux/bio.h>
+> +#include <linux/memcontrol.h>
+> +#include <linux/mm_inline.h>
+> +#include <linux/pagemap.h>
+> +#include <linux/page_cgroup.h>
+>  #include <linux/blktrace_api.h>
+>  #include <linux/blk-cgroup.h>
+>  
+> @@ -221,6 +225,85 @@ done:
+>  	return tg;
+>  }
+>  
+> +static inline bool is_kernel_io(void)
+> +{
+> +	return !!(current->flags & (PF_KTHREAD | PF_KSWAPD | PF_MEMALLOC));
+> +}
+> +
+> +static int throtl_set_page_owner(struct page *page, struct mm_struct *mm)
+> +{
+> +	struct blkio_cgroup *blkcg;
+> +	unsigned short id = 0;
+> +
+> +	if (blkio_cgroup_disabled())
+> +		return 0;
+> +	if (!mm)
+> +		goto out;
+> +	rcu_read_lock();
+> +	blkcg = task_to_blkio_cgroup(rcu_dereference(mm->owner));
+> +	if (likely(blkcg))
+> +		id = css_id(&blkcg->css);
+> +	rcu_read_unlock();
+> +out:
+> +	return page_cgroup_set_owner(page, id);
+> +}
+> +
+> +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
+> +{
+> +	return throtl_set_page_owner(page, mm);
+> +}
+> +EXPORT_SYMBOL(blk_throtl_set_anonpage_owner);
+> +
+> +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
+> +{
+> +	if (is_kernel_io() || !page_is_file_cache(page))
+> +		return 0;
+> +	return throtl_set_page_owner(page, mm);
+> +}
+> +EXPORT_SYMBOL(blk_throtl_set_filepage_owner);
 
-I'm worried that removing combo mode will break some working setups,
-but if it's seen a lot of testing and is ok, then I'm fine with it, as
-it definitely simplifies things.
+Why are we exporting all these symbols?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Thanks
+Vivek
