@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab1BVJ6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 04:58:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38939 "EHLO mx2.suse.de"
+	id S1753024Ab1BVKDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 05:03:06 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:34105 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab1BVJ6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 04:58:34 -0500
-Date: Tue, 22 Feb 2011 10:58:31 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
-        Tao Ma <boyu.mt@taobao.com>
-Subject: Re: [PATCH] ext4/trivial: Fix comment typo "especiially".
-In-Reply-To: <20110222015346.GC2924@thunk.org>
-Message-ID: <alpine.LNX.2.00.1102221056580.2160@pobox.suse.cz>
-References: <1295623291-10909-1-git-send-email-tm@tao.ma> <alpine.LNX.2.00.1101211627070.5725@pobox.suse.cz> <20110222015346.GC2924@thunk.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751335Ab1BVKDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 05:03:04 -0500
+Date: Tue, 22 Feb 2011 10:02:36 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] hugetlbfs: correct handling of negative input to
+	/proc/sys/vm/nr_hugepages
+Message-ID: <20110222100235.GA15652@csn.ul.ie>
+References: <1298303270-3184-1-git-send-email-pholasek@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1298303270-3184-1-git-send-email-pholasek@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011, Ted Ts'o wrote:
+On Mon, Feb 21, 2011 at 04:47:49PM +0100, Petr Holasek wrote:
+> When user insert negative value into /proc/sys/vm/nr_hugepages it will result
+> in the setting a random number of HugePages in system (can be easily showed
+> at /proc/meminfo output).
 
-> > > From: Tao Ma <boyu.mt@taobao.com>
-> > > 
-> > > Change "especiially" to "especially".
-> > > 
-> > > Cc: Jiri Kosina <jkosina@suse.cz>
-> > > Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-> > 
-> > Applied.
+I bet you a shiny penny that the value of HugePages becomes the maximum
+number that could be allocated by the system at the time rather than a
+random value.
+
+> This patch fixes the wrong behavior so that the
+> negative input will result in nr_hugepages value unchanged.
 > 
-> I'm happy for this to go through the trivial git tree, but I didn't
-> see it in your git tree.  Am I missing something?
 
-It should be there -- 'for-next' branch, commit b8d6568a122 -- see 
-http://git.kernel.org/?p=linux/kernel/git/jikos/trivial.git;a=commitdiff;h=b8d6568a122
+As pointed out elsewhere, nr_overcommit_hugepages also needs fixing but
+the fix is essentially the same.
 
-I guess you were looking somewhere else ... ?
-
-Thanks,
+> Signed-off-by: Petr Holasek <pholasek@redhat.com>
+> ---
+>  mm/hugetlb.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index bb0b7c1..f99d7a8 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1872,8 +1872,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+>  	unsigned long tmp;
+>  	int ret;
+>  
+> -	if (!write)
+> -		tmp = h->max_huge_pages;
+> +	tmp = h->max_huge_pages;
+>  
+>  	if (write && h->order >= MAX_ORDER)
+>  		return -EINVAL;
+> -- 
+> 1.7.1
+> 
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Mel Gorman
+SUSE Labs
