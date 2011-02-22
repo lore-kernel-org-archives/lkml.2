@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab1BVRru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 12:47:50 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:29430 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750784Ab1BVRrt (ORCPT
+	id S1754765Ab1BVRsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 12:48:09 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58148 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681Ab1BVRsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 12:47:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAM6CY0120uZw/2dsb2JhbACEIKF2dK1PkFyBJ4NBdgSRaA
-Message-ID: <4D63F6C0.7060204@internode.on.net>
-Date: Wed, 23 Feb 2011 04:17:44 +1030
-From: Arthur Marsh <arthur.marsh@internode.on.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-AU; rv:1.9.2.13) Gecko/20101213 Icedove/3.1.7
+	Tue, 22 Feb 2011 12:48:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=QprTJTFH9/yKQVRDVqi968yidX/ajk+IWghEkfV80frTDL8feG9djBrxxotyPFmYr5
+         5Zk6tUpgKRulHcqqsELTqPU7oedmQRNsEHSZ+QWjY2zOgpnP0EFTTrVlk9pUuM8VrAKK
+         X9FfokKyCzALEqS60ygQSVAJ6C6uNxOoq5Tis=
+Date: Tue, 22 Feb 2011 18:45:57 +0100
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] perf lock: show valid sort keys in usage
+Message-ID: <20110222174557.GB9687@joi.lan>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified
- - 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd
- for GFP_ATOMIC order > 0
-References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net> <4D6367B3.9050306@googlemail.com> <20110222134047.GT13092@random.random> <20110222161513.GC13092@random.random>
-In-Reply-To: <20110222161513.GC13092@random.random>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+---
+ tools/perf/builtin-lock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 2b36def..0305a40 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -893,7 +893,7 @@ static const char * const report_usage[] = {
+ 
+ static const struct option report_options[] = {
+ 	OPT_STRING('k', "key", &sort_key, "acquired",
+-		    "key for sorting"),
++		    "key for sorting (acquired / contended / wait_total / wait_max / wait_min)"),
+ 	/* TODO: type */
+ 	OPT_END()
+ };
+-- 
+1.7.4.rc3
 
-Andrea Arcangeli wrote, on 23/02/11 02:45:
-> On Tue, Feb 22, 2011 at 02:40:47PM +0100, Andrea Arcangeli wrote:
->>   	spin_lock_irq(&zone->lru_lock);
->>   	for (; low_pfn<  end_pfn; low_pfn++) {
->>   		struct page *page;
->> +
->> +		cond_resched();
->> +
->
-> my bad, see the above spin_lock_irq oops...
->
-> I attached two replacement patches to apply in order (both of them
-> should be applied at the same time on top of git upstream, and they
-> shouldn't lockup this time).
-
-OK, these patches applied together against upstream didn't cause a crash 
-but I did observe:
-
-significant slowdowns of MIDI playback (moreso than in previous cases, 
-and with less than 20 Meg of swap file in use);
-
-kswapd0 sharing equal top place in CPU usage at times (e.g. 20 percent).
-
-If I should try only one of the patches or something else entirely, 
-please let me know.
-
-Regards,
-
-Arthur.
