@@ -1,92 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab1BVT0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:26:04 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:45911 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754776Ab1BVT0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:26:01 -0500
-Date: Tue, 22 Feb 2011 11:25:33 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Greg KH <gregkh@suse.de>
-Cc: David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110222192532.GY4000@outflux.net>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
- <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
- <20110222181613.GU4000@outflux.net>
- <4D640133.9020901@caviumnetworks.com>
- <20110222184726.GV4000@outflux.net>
- <20110222191454.GB9991@suse.de>
+	id S1755165Ab1BVTbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:31:13 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:65505 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107Ab1BVTbM (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 22 Feb 2011 14:31:12 -0500
+Date: Tue, 22 Feb 2011 14:30:52 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: stefano.stabellini@eu.citrix.com
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Jeremy.Fitzhardinge@citrix.com
+Subject: Re: [PATCH 6/7] xen: enable event channels to send and receive
+ IPIs for PV on HVM guests
+Message-ID: <20110222193052.GB17866@dumpdata.com>
+References: <alpine.DEB.2.00.1102161739370.2826@kaball-desktop>
+ <1297878787-378-6-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110222191454.GB9991@suse.de>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <1297878787-378-6-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D640EFA.0072:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Tue, Feb 22, 2011 at 11:14:54AM -0800, Greg KH wrote:
-> On Tue, Feb 22, 2011 at 10:47:26AM -0800, Kees Cook wrote:
-> > On Tue, Feb 22, 2011 at 10:32:19AM -0800, David Daney wrote:
-> > > On 02/22/2011 10:16 AM, Kees Cook wrote:
-> > > >Har har, I forgot --compose to "git send-email".
-> > > >
-> > > >Anyway, with the continuing deluge of bugs in the "debug" filesystem, I
-> > > >would like to make that filesystem's root directory mode 0700 by default
-> > > >since it's filled with crazy stuff that regular users do not need to see.
-> > > >
-> > > >Better to try to just close the door completely on all the stuff in there.
-> > > >It is, after all, supposed to only be used for debugging, right?
-> > > >
-> > > 
-> > > It depends if you consider use of ftrace and kprobes 'debugging'.
-> > > In any event, you really have to be root to be able to manipulate
-> > > them.
-> > > 
-> > > I can currently do 'cat /sys/kernel/debug/tracing/trace' as a normal
-> > > user.  With your change I don't think it would be possible.  This is
-> > > not something I often (ever) do, but it is a change.
-> > 
-> > Right, my thinking is that all the manipulations on this tree should be
-> > root-only (non-root stuff shouldn't live in something named "debug"),
-> > so we might as well lock it down a bit more so we can avoid all the CVEs[1]
-> > being assigned for glitches in this tree.
+On Wed, Feb 16, 2011 at 05:53:06PM +0000, stefano.stabellini@eu.citrix.com wrote:
+> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > 
-> The CVEs are for non-root writes to debugfs, same thing for sysfs.  It's
-> just stupid mistakes being made here, don't try to lock down the whole
-> filesystem for just a handfull of bugs.
+> Enable the usage of event channels to send and receive IPIs when
+> running as a PV on HVM guest.
+
+Why not squash this with the other patch? After this, the only thing
+that the other patch had done was to add in the 'xen_hvm_cpu_notify' function
+a call to setup the spinlocks..
+
 > 
-> So I really can't accept these patches, sorry.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/xen/enlighten.c |   16 +---------------
+>  arch/x86/xen/smp.c       |   42 ++++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/xen/xen-ops.h   |    2 ++
+>  3 files changed, 45 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 9c1628b..fe02574 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1343,20 +1343,6 @@ static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
+>  	.notifier_call	= xen_hvm_cpu_notify,
+>  };
+>  
+> -static void xen_hvm_spinlock_init(void)
+> -{
+> -	if (!xen_have_vector_callback)
+> -		return;
+> -	xen_init_lock_cpu(0);
+> -	xen_init_spinlocks();
+> -}
+> -
+> -static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
+> -{
+> -	native_smp_prepare_cpus(max_cpus);
+> -	xen_hvm_spinlock_init();
+> -}
+> -
+>  static void __init xen_hvm_guest_init(void)
+>  {
+>  	int r;
+> @@ -1370,13 +1356,13 @@ static void __init xen_hvm_guest_init(void)
+>  
+>  	if (xen_feature(XENFEAT_hvm_callback_vector))
+>  		xen_have_vector_callback = 1;
+> +	xen_hvm_smp_init();
+>  	register_cpu_notifier(&xen_hvm_cpu_notifier);
+>  	xen_unplug_emulated_devices();
+>  	have_vcpu_info_placement = 0;
+>  	x86_init.irqs.intr_init = xen_init_IRQ;
+>  	xen_hvm_init_time_ops();
+>  	xen_hvm_init_mmu_ops();
+> -	smp_ops.smp_prepare_cpus = xen_hvm_smp_prepare_cpus;
+>  }
+>  
+>  static bool __init xen_hvm_platform(void)
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 72a4c79..2300d4b 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -509,3 +509,45 @@ void __init xen_smp_init(void)
+>  	xen_fill_possible_map();
+>  	xen_init_spinlocks();
+>  }
+> +
+> +static void xen_hvm_spinlock_init(void)
+> +{
+> +	if (!xen_have_vector_callback)
+> +		return;
+> +	xen_init_lock_cpu(0);
+> +	xen_init_spinlocks();
+> +}
+> +
+> +static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
+> +{
+> +	native_smp_prepare_cpus(max_cpus);
+> +	WARN_ON(xen_smp_intr_init(0));
+> +	xen_hvm_spinlock_init();
 
-What system do you proposed to keep these "stupid mistakes" from
-continuing to happen? If debugfs had already been mode 0700, we could have
-avoided all of these CVEs, including the full-blown local root escalation.
+Why not merge 'xen_hvm_spinlock_init' in here?
 
-The "no rules" approach to debugfs is not a good idea, IMO.
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+> +}
+> +
+> +static int __cpuinit xen_hvm_cpu_up(unsigned int cpu)
+> +{
+> +	int rc;
+> +	rc = native_cpu_up(cpu);
+> +	WARN_ON (xen_smp_intr_init(cpu));
+> +	return rc;
+> +}
+> +
+> +static void xen_hvm_cpu_die(unsigned int cpu)
+> +{
+> +	unbind_from_irqhandler(per_cpu(xen_resched_irq, cpu), NULL);
+> +	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+> +	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+> +	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+> +	native_cpu_die(cpu);
+> +}
+> +
+> +void __init xen_hvm_smp_init(void)
+> +{
+> +	smp_ops.smp_prepare_cpus = xen_hvm_smp_prepare_cpus;
+> +	smp_ops.smp_send_reschedule = xen_smp_send_reschedule;
+> +	smp_ops.cpu_up = xen_hvm_cpu_up;
+> +	smp_ops.cpu_die = xen_hvm_cpu_die;
+> +	smp_ops.send_call_func_ipi = xen_smp_send_call_function_ipi;
+> +	smp_ops.send_call_func_single_ipi = xen_smp_send_call_function_single_ipi;
+> +}
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index 9d41bf9..3112f55 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -64,10 +64,12 @@ void xen_setup_vcpu_info_placement(void);
+>  
+>  #ifdef CONFIG_SMP
+>  void xen_smp_init(void);
+> +void __init xen_hvm_smp_init(void);
+>  
+>  extern cpumask_var_t xen_cpu_initialized_map;
+>  #else
+>  static inline void xen_smp_init(void) {}
+> +static inline void xen_hvm_smp_init(void) {}
+>  #endif
+>  
+>  #ifdef CONFIG_PARAVIRT_SPINLOCKS
+> -- 
+> 1.5.6.5
