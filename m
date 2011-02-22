@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab1BVRMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 12:12:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:61561 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab1BVRMI (ORCPT
+	id S1754434Ab1BVRNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 12:13:25 -0500
+Received: from trinity.develer.com ([83.149.158.210]:42514 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab1BVRNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 12:12:08 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH 11/12] unicore32 machine related files: ps2 driver
-Date: Tue, 22 Feb 2011 18:11:58 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, "'Greg KH'" <greg@kroah.com>
-References: <015701cbcdae$7d5f43f0$781dcbd0$@mprc.pku.edu.cn> <201102181133.26675.arnd@arndb.de> <019001cbd29c$7cee6340$76cb29c0$@mprc.pku.edu.cn>
-In-Reply-To: <019001cbd29c$7cee6340$76cb29c0$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102221811.58441.arnd@arndb.de>
-X-Provags-ID: V02:K0:l6Ux3v07Gh9XhmdF+TN5qjlHWvbYE5yI6uhV+G8lVUD
- Wg1KnPpmStLCIx7COqrjq3AFX9ZWiZ87G0rX5BWVd8wpFAZfs/
- o+HY9I410ZiL1Z2mQjhdvKyjwxwPxXEAyc/GUN+7XSHSNwclkP
- SuAfIUa6h8JH/nRiTHtQmG9RrPzS/MIVgNpkv5ocv4zcvHzu0X
- 9LD869KGhhF6bB8xs4XLA==
+	Tue, 22 Feb 2011 12:13:24 -0500
+From: Andrea Righi <arighi@develer.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] blk-throttle: writeback and swap IO control
+Date: Tue, 22 Feb 2011 18:12:51 +0100
+Message-Id: <1298394776-9957-1-git-send-email-arighi@develer.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 February 2011, Guan Xuetao wrote:
-> diff --git a/drivers/input/serio/i8042-unicore32io.h b/drivers/input/serio/i8042-unicore32io.h
-> index 2cdd872..9350843 100644
-> --- a/drivers/input/serio/i8042-unicore32io.h
-> +++ b/drivers/input/serio/i8042-unicore32io.h
-> @@ -29,11 +29,11 @@
->  /*
->   * Register numbers.
->   */
-> -#define I8042_COMMAND_REG      ((volatile void __iomem *)&PS2_COMMAND)
-> -#define I8042_STATUS_REG       ((volatile void __iomem *)&PS2_STATUS)
-> -#define I8042_DATA_REG         ((volatile void __iomem *)&PS2_DATA)
-> +#define I8042_COMMAND_REG      PS2_COMMAND
-> +#define I8042_STATUS_REG       PS2_STATUS
-> +#define I8042_DATA_REG         PS2_DATA
+Currently the blkio.throttle controller only support synchronous IO requests.
+This means that we always look at the current task to identify the "owner" of
+each IO request.
 
-I wouldn't bother defining two sets of macros then. Either use PS2_COMMAND
-in the driver, or define I8042_COMMAND_REG in the place where you currently
-define PS2_COMMAND.
+However dirty pages in the page cache can be wrote to disk asynchronously by
+the per-bdi flusher kernel threads or by any other thread in the system,
+according to the writeback policy.
 
-Aside from this, it looks good.
+For this reason the real writes to the underlying block devices may
+occur in a different IO context respect to the task that originally
+generated the dirty pages involved in the IO operation. This makes the
+tracking and throttling of writeback IO more complicate respect to the
+synchronous IO from the blkio controller's perspective.
 
-	Arnd
+The same concept is also valid for anonymous pages involed in IO operations
+(swap).
+
+This patch allow to track the cgroup that originally dirtied each page in page
+cache and each anonymous page and pass these informations to the blk-throttle
+controller. These informations can be used to provide a better service level
+differentiation of buffered writes swap IO between different cgroups.
+
+Testcase
+========
+- create a cgroup with 1MiB/s write limit:
+  # mount -t cgroup -o blkio none /mnt/cgroup
+  # mkdir /mnt/cgroup/foo
+  # echo 8:0 $((1024 * 1024)) > /mnt/cgroup/foo/blkio.throttle.write_bps_device
+
+- move a task into the cgroup and run a dd to generate some writeback IO
+
+Results:
+  - 2.6.38-rc6 vanilla:
+  $ cat /proc/$$/cgroup
+  1:blkio:/foo
+  $ dd if=/dev/zero of=zero bs=1M count=1024 &
+  $ dstat -df
+  --dsk/sda--
+   read  writ
+     0    19M
+     0    19M
+     0     0
+     0     0
+     0    19M
+  ...
+
+  - 2.6.38-rc6 + blk-throttle writeback IO control:
+  $ cat /proc/$$/cgroup
+  1:blkio:/foo
+  $ dd if=/dev/zero of=zero bs=1M count=1024 &
+  $ dstat -df
+  --dsk/sda--
+   read  writ
+     0  1024
+     0  1024
+     0  1024
+     0  1024
+     0  1024
+  ...
+
+TODO
+====
+ - lots of testing
+
+Any feedback is welcome.
+-Andrea
+
+[PATCH 1/5] blk-cgroup: move blk-cgroup.h in include/linux/blk-cgroup.h
+[PATCH 2/5] blk-cgroup: introduce task_to_blkio_cgroup()
+[PATCH 3/5] page_cgroup: make page tracking available for blkio
+[PATCH 4/5] blk-throttle: track buffered and anonymous pages
+[PATCH 5/5] blk-throttle: buffered and anonymous page tracking instrumentation
+
+ block/Kconfig               |    2 +
+ block/blk-cgroup.c          |   15 ++-
+ block/blk-cgroup.h          |  335 ------------------------------------------
+ block/blk-throttle.c        |   89 +++++++++++-
+ block/cfq.h                 |    2 +-
+ fs/buffer.c                 |    1 +
+ include/linux/blk-cgroup.h  |  341 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/blkdev.h      |   26 +++-
+ include/linux/memcontrol.h  |    6 +
+ include/linux/mmzone.h      |    4 +-
+ include/linux/page_cgroup.h |   33 ++++-
+ init/Kconfig                |    4 +
+ mm/Makefile                 |    3 +-
+ mm/bounce.c                 |    1 +
+ mm/filemap.c                |    1 +
+ mm/memcontrol.c             |    6 +
+ mm/memory.c                 |    5 +
+ mm/page-writeback.c         |    1 +
+ mm/page_cgroup.c            |  129 +++++++++++++++--
+ mm/swap_state.c             |    2 +
+ 20 files changed, 649 insertions(+), 357 deletions(-)
