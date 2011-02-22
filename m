@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1BVW14 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:27:56 -0500
-Received: from kroah.org ([198.145.64.141]:46838 "EHLO coco.kroah.org"
+	id S1754960Ab1BVW21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:28:27 -0500
+Received: from kroah.org ([198.145.64.141]:46812 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754884Ab1BVWWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:12 -0500
+	id S1754824Ab1BVWWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:41 2011
-Message-Id: <20110222221841.812997951@clark.kroah.org>
+Message-Id: <20110222221841.479159371@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:27 -0800
+Date: Tue, 22 Feb 2011 14:17:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [48/70] hwmon: (k10temp) add support for AMD Family 12h/14h CPUs
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [45/70] ALSA: HDA: Do not announce false surround in Conexant auto
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,102 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit aa4790a6287818078ca968164a5f0d0870326602 upstream.
+commit 89724958e5d596bb91328644c97dd80399443e87 upstream.
 
-Add the PCI ID to support the internal temperature sensor of the
-AMD "Llano" and "Brazos" processor families.
+Without this patch, one line-out and one speaker and
+Conexant's auto parser would announce (non-working) surround
+capabilities.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+BugLink: http://bugs.launchpad.net/bugs/721126
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/hwmon/k10temp |    8 +++++++-
- drivers/hwmon/Kconfig       |    6 +++---
- drivers/hwmon/k10temp.c     |    5 +++--
- 3 files changed, 13 insertions(+), 6 deletions(-)
+ sound/pci/hda/patch_conexant.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/hwmon/k10temp
-+++ b/Documentation/hwmon/k10temp
-@@ -9,6 +9,8 @@ Supported chips:
-   Socket S1G3: Athlon II, Sempron, Turion II
- * AMD Family 11h processors:
-   Socket S1G2: Athlon (X2), Sempron (X2), Turion X2 (Ultra)
-+* AMD Family 12h processors: "Llano"
-+* AMD Family 14h processors: "Brazos" (C/E/G-Series)
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3401,7 +3401,7 @@ static void cx_auto_parse_output(struct
+ 		}
+ 	}
+ 	spec->multiout.dac_nids = spec->private_dac_nids;
+-	spec->multiout.max_channels = nums * 2;
++	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
  
-   Prefix: 'k10temp'
-   Addresses scanned: PCI space
-@@ -17,10 +19,14 @@ Supported chips:
-     http://support.amd.com/us/Processor_TechDocs/31116.pdf
-   BIOS and Kernel Developer's Guide (BKDG) for AMD Family 11h Processors:
-     http://support.amd.com/us/Processor_TechDocs/41256.pdf
-+  BIOS and Kernel Developer's Guide (BKDG) for AMD Family 14h Models 00h-0Fh Processors:
-+    http://support.amd.com/us/Processor_TechDocs/43170.pdf
-   Revision Guide for AMD Family 10h Processors:
-     http://support.amd.com/us/Processor_TechDocs/41322.pdf
-   Revision Guide for AMD Family 11h Processors:
-     http://support.amd.com/us/Processor_TechDocs/41788.pdf
-+  Revision Guide for AMD Family 14h Models 00h-0Fh Processors:
-+    http://support.amd.com/us/Processor_TechDocs/47534.pdf
-   AMD Family 11h Processor Power and Thermal Data Sheet for Notebooks:
-     http://support.amd.com/us/Processor_TechDocs/43373.pdf
-   AMD Family 10h Server and Workstation Processor Power and Thermal Data Sheet:
-@@ -34,7 +40,7 @@ Description
- -----------
- 
- This driver permits reading of the internal temperature sensor of AMD
--Family 10h and 11h processors.
-+Family 10h/11h/12h/14h processors.
- 
- All these processors have a sensor, but on those for Socket F or AM2+,
- the sensor may return inconsistent values (erratum 319).  The driver
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -238,13 +238,13 @@ config SENSORS_K8TEMP
- 	  will be called k8temp.
- 
- config SENSORS_K10TEMP
--	tristate "AMD Phenom/Sempron/Turion/Opteron temperature sensor"
-+	tristate "AMD Family 10h/11h/12h/14h temperature sensor"
- 	depends on X86 && PCI
- 	help
- 	  If you say yes here you get support for the temperature
- 	  sensor(s) inside your CPU. Supported are later revisions of
--	  the AMD Family 10h and all revisions of the AMD Family 11h
--	  microarchitectures.
-+	  the AMD Family 10h and all revisions of the AMD Family 11h,
-+	  12h (Llano), and 14h (Brazos) microarchitectures.
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called k10temp.
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -1,5 +1,5 @@
- /*
-- * k10temp.c - AMD Family 10h/11h processor hardware monitoring
-+ * k10temp.c - AMD Family 10h/11h/12h/14h processor hardware monitoring
-  *
-  * Copyright (c) 2009 Clemens Ladisch <clemens@ladisch.de>
-  *
-@@ -25,7 +25,7 @@
- #include <linux/pci.h>
- #include <asm/processor.h>
- 
--MODULE_DESCRIPTION("AMD Family 10h/11h CPU core temperature monitor");
-+MODULE_DESCRIPTION("AMD Family 10h/11h/12h/14h CPU core temperature monitor");
- MODULE_AUTHOR("Clemens Ladisch <clemens@ladisch.de>");
- MODULE_LICENSE("GPL");
- 
-@@ -208,6 +208,7 @@ static void __devexit k10temp_remove(str
- static const struct pci_device_id k10temp_id_table[] = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_11H_NB_MISC) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, k10temp_id_table);
+ 	if (cfg->hp_outs > 0)
+ 		spec->auto_mute = 1;
 
 
