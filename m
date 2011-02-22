@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1BVWWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:22:22 -0500
-Received: from kroah.org ([198.145.64.141]:32942 "EHLO coco.kroah.org"
+	id S1754157Ab1BVWV2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:28 -0500
+Received: from kroah.org ([198.145.64.141]:46638 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754924Ab1BVWWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:18 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:42 2011
-Message-Id: <20110222221842.225850338@clark.kroah.org>
+	id S1753814Ab1BVWVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:38 2011
+Message-Id: <20110222221838.757859280@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:31 -0800
+Date: Tue, 22 Feb 2011 14:16:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [52/70] netfilter: fix race in conntrack between dump_table and destroy
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [17/70] drm/i915: make DP training try a little harder
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,82 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Hemminger <shemminger@vyatta.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit 13ee6ac579574a2a95e982b19920fd2495dce8cd upstream.
+commit 37f809755845cc3e18e8216c04525bdb885fa13b upstream.
 
-The netlink interface to dump the connection tracking table has a race
-when entries are deleted at the same time. A customer reported a crash
-and the backtrace showed thatctnetlink_dump_table was running while a
-conntrack entry was being destroyed.
-(see https://bugzilla.vyatta.com/show_bug.cgi?id=6402).
+When trying to do channel equalization, we need to make sure we still
+have clock recovery on all lanes while training.  We also need to try
+clock recovery again if we lose the clock or if channel eq fails 5
+times.  We'll try clock recovery up to 5 more times before giving up
+entirely.
 
-According to RCU documentation, when using hlist_nulls the reader
-must handle the case of seeing a deleted entry and not proceed
-further down the linked list.  The old code would continue
-which caused the scan to walk into the free list.
+Gets suspend/resume working on my Vaio again and brings us back into
+compliance with the DP training sequence spec.
 
-This patch uses locking (rather than RCU) for this operation which
-is guaranteed safe, and no longer requires getting reference while
-doing dump operation.
-
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/nf_conntrack_netlink.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c |   27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
 
---- a/net/netfilter/nf_conntrack_netlink.c
-+++ b/net/netfilter/nf_conntrack_netlink.c
-@@ -642,25 +642,23 @@ ctnetlink_dump_table(struct sk_buff *skb
- 	struct nfgenmsg *nfmsg = nlmsg_data(cb->nlh);
- 	u_int8_t l3proto = nfmsg->nfgen_family;
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1343,17 +1343,24 @@ intel_dp_complete_link_train(struct inte
+ 	struct drm_device *dev = intel_dp->base.base.dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	bool channel_eq = false;
+-	int tries;
++	int tries, cr_tries;
+ 	u32 reg;
+ 	uint32_t DP = intel_dp->DP;
  
--	rcu_read_lock();
-+	spin_lock_bh(&nf_conntrack_lock);
- 	last = (struct nf_conn *)cb->args[1];
- 	for (; cb->args[0] < net->ct.htable_size; cb->args[0]++) {
- restart:
--		hlist_nulls_for_each_entry_rcu(h, n, &net->ct.hash[cb->args[0]],
-+		hlist_nulls_for_each_entry(h, n, &net->ct.hash[cb->args[0]],
- 					 hnnode) {
- 			if (NF_CT_DIRECTION(h) != IP_CT_DIR_ORIGINAL)
- 				continue;
- 			ct = nf_ct_tuplehash_to_ctrack(h);
--			if (!atomic_inc_not_zero(&ct->ct_general.use))
--				continue;
- 			/* Dump entries of a given L3 protocol number.
- 			 * If it is not specified, ie. l3proto == 0,
- 			 * then dump everything. */
- 			if (l3proto && nf_ct_l3num(ct) != l3proto)
--				goto releasect;
-+				continue;
- 			if (cb->args[1]) {
- 				if (ct != last)
--					goto releasect;
-+					continue;
- 				cb->args[1] = 0;
- 			}
- 			if (ctnetlink_fill_info(skb, NETLINK_CB(cb->skb).pid,
-@@ -678,8 +676,6 @@ restart:
- 				if (acct)
- 					memset(acct, 0, sizeof(struct nf_conn_counter[IP_CT_DIR_MAX]));
- 			}
--releasect:
--		nf_ct_put(ct);
- 		}
- 		if (cb->args[1]) {
- 			cb->args[1] = 0;
-@@ -687,7 +683,7 @@ releasect:
- 		}
- 	}
- out:
--	rcu_read_unlock();
-+	spin_unlock_bh(&nf_conntrack_lock);
- 	if (last)
- 		nf_ct_put(last);
+ 	/* channel equalization */
+ 	tries = 0;
++	cr_tries = 0;
+ 	channel_eq = false;
+ 	for (;;) {
+ 		/* Use intel_dp->train_set[0] to set the voltage and pre emphasis values */
+ 		uint32_t    signal_levels;
  
++		if (cr_tries > 5) {
++			DRM_ERROR("failed to train DP, aborting\n");
++			intel_dp_link_down(intel_dp);
++			break;
++		}
++
+ 		if (IS_GEN6(dev) && is_edp(intel_dp)) {
+ 			signal_levels = intel_gen6_edp_signal_levels(intel_dp->train_set[0]);
+ 			DP = (DP & ~EDP_LINK_TRAIN_VOL_EMP_MASK_SNB) | signal_levels;
+@@ -1376,14 +1383,26 @@ intel_dp_complete_link_train(struct inte
+ 		if (!intel_dp_get_link_status(intel_dp))
+ 			break;
+ 
++		/* Make sure clock is still ok */
++		if (!intel_clock_recovery_ok(intel_dp->link_status, intel_dp->lane_count)) {
++			intel_dp_start_link_train(intel_dp);
++			cr_tries++;
++			continue;
++		}
++
+ 		if (intel_channel_eq_ok(intel_dp)) {
+ 			channel_eq = true;
+ 			break;
+ 		}
+ 
+-		/* Try 5 times */
+-		if (tries > 5)
+-			break;
++		/* Try 5 times, then try clock recovery if that fails */
++		if (tries > 5) {
++			intel_dp_link_down(intel_dp);
++			intel_dp_start_link_train(intel_dp);
++			tries = 0;
++			cr_tries++;
++			continue;
++		}
+ 
+ 		/* Compute new intel_dp->train_set as requested by target */
+ 		intel_get_adjust_train(intel_dp);
 
 
