@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab1BVXuH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:50:07 -0500
-Received: from prod-mail-xrelay01.akamai.com ([72.246.2.12]:37912 "EHLO
-	prod-mail-xrelay01.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755835Ab1BVXuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 18:50:02 -0500
-X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Feb 2011 18:50:01 EST
-From: Josh Hunt <johunt@akamai.com>
-To: linux-ext4@vger.kernel.org
-Cc: sandeen@redhat.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: [RFC][PATCH] ext2: Resolve i_nlink race in ext2_rename
-Date: Tue, 22 Feb 2011 15:42:18 -0800
-Message-Id: <1298418138-28797-1-git-send-email-johunt@akamai.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755056Ab1BVXwv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:52:51 -0500
+Received: from kroah.org ([198.145.64.141]:33274 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752629Ab1BVXwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 18:52:50 -0500
+Date: Tue, 22 Feb 2011 15:51:33 -0800
+From: Greg KH <greg@kroah.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com,
+        toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH 1/8] pch_uart: add multi-scatter processing
+Message-ID: <20110222235133.GA31831@kroah.com>
+References: <1297995844-11282-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297995844-11282-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a multi-threaded workload which is currently "losing" files in the form
-of unattached inodes. The workload is link, rename, unlink intensive. This is
-happening on an ext2 filesystem and have reproduced the issue in kernel
-2.6.37.  Here's a sample strace:
+On Fri, Feb 18, 2011 at 11:23:57AM +0900, Tomoya MORINAGA wrote:
+> Currently, this driver can handle only single scatterlist.
+> Thus, it can't send data beyond FIFO size.
+> 
+> This patch enables this driver can handle multiple scatter list.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> ---
+>  drivers/serial/pch_uart.c |  117 ++++++++++++++++++++++++++++++++++-----------
 
-    open("/a/tmp/tmpfile.1296184058", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE, 0666) = 9
-    link("/a/tmp/tmpfile.1296184058", "/a/tmp/tmpfile.28117.1296184059") = 0
-    rename("/a/tmp/tmpfile.28117.1296184059", "/a/tmp/tmpfile") = 0
-    stat64("/a/tmp/tmpfile", {st_mode=S_IFREG|0644, st_size=24248267, ...}) = 0
-    link("/a/tmp/tmpfile", "/a/tmp/submit/tmpfile")        = 0
-    open("/a/tmp/tmpfile.1296184058", O_RDONLY) = 13
-    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDWR|O_CREAT|O_EXCL, 0600) = 824
-    rename("/a/tmp/submit/tmpfile", "/a/tmp/submit/tmpfile.send.q9SNoL")                = 0
-    unlink("/a/tmp/tmpfile.1296184058") = 0
-    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 827
-    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 828
-    open("/a/tmp/submit/tmpfile.send.q9SNoL", O_RDONLY) = 829
-    unlink("/a/tmp/submit/tmpfile.send.q9SNoL") = 0
+What kernel tree did you make this against?  the pch_uart.c file is not
+in this location anymore.
 
-The application behavior shown above repeats indefinitely with most filenames
-changing during each iteration except for 'tmpfile'. Looking into this issue I
-see that vfs_rename_other() only takes i_mutex for the new inode and the new
-inode's directory as well as the old directory's mutex. This works for
-modifying the dir entry and appears to be fine for most filesystems, but
-ext2 and a few others (exofs, minix, nilfs2, omfs, sysv, ufs) modify i_nlink
-inside of their respective rename functions without grabbing the i_mutex. The
-modifications are done through calls to inode_inc_link_count(old_inode) and
-inode_dec_link_count(old_inode), etc.
+Care to redo this series against the linux-next tree so that I can apply
+it properly?
 
-Taking the mutex for the old inode appears to resolve the issue of the
-lost files/unattached inodes that I am seeing with this workload. I've attached
-a patch below doing what I've described above. If this is an accepted solution
-I believe other filesystems may also be affected by this and I could provide
-a patch for those as well.
+thanks,
 
-Thanks
-Josh
-
-ext2_rename modifies old_inode's nlink values through inode_inc_link_count(old_inode) and inode_dec_link_count(old_inode) without holding old_inode's mutex. vfs_rename_other() only takes the mutex of the new inode and directory and old inode's directory. This causes old inode's nlink values to become incorrect and results in an unattached inode.
-
-CC: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Josh Hunt <johunt@akamai.com>
----
- fs/ext2/namei.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index 2e1d834..827839a 100644
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -321,6 +321,8 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
- 	dquot_initialize(old_dir);
- 	dquot_initialize(new_dir);
- 
-+	mutex_lock(&old_inode->i_mutex);
-+
- 	old_de = ext2_find_entry (old_dir, &old_dentry->d_name, &old_page);
- 	if (!old_de)
- 		goto out;
-@@ -375,6 +377,7 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
- 
- 	ext2_delete_entry (old_de, old_page);
- 	inode_dec_link_count(old_inode);
-+	mutex_unlock(&old_inode->i_mutex);
- 
- 	if (dir_de) {
- 		if (old_dir != new_dir)
-@@ -397,6 +400,7 @@ out_old:
- 	kunmap(old_page);
- 	page_cache_release(old_page);
- out:
-+	mutex_unlock(&old_inode->i_mutex);
- 	return err;
- }
- 
--- 
-1.7.0.4
-
+greg k-h
