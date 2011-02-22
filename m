@@ -1,179 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab1BVQPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 11:15:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16545 "EHLO mx1.redhat.com"
+	id S1754665Ab1BVQTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 11:19:35 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41747 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754665Ab1BVQPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 11:15:50 -0500
-Date: Tue, 22 Feb 2011 17:15:13 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Clemens Ladisch <cladisch@googlemail.com>
-Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
-        alsa-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
- 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
- GFP_ATOMIC order > 0
-Message-ID: <20110222161513.GC13092@random.random>
-References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
- <4D6367B3.9050306@googlemail.com>
- <20110222134047.GT13092@random.random>
+	id S1754079Ab1BVQTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 11:19:34 -0500
+Date: Tue, 22 Feb 2011 17:19:27 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] irq fixes
+Message-ID: <20110222161927.GA19980@elte.hu>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="uxuisgdDHaNETlh8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110222134047.GT13092@random.random>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
---uxuisgdDHaNETlh8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please pull the latest irq-fixes-for-linus git tree from:
 
-On Tue, Feb 22, 2011 at 02:40:47PM +0100, Andrea Arcangeli wrote:
->  	spin_lock_irq(&zone->lru_lock);
->  	for (; low_pfn < end_pfn; low_pfn++) {
->  		struct page *page;
-> +
-> +		cond_resched();
-> +
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq-fixes-for-linus
 
-my bad, see the above spin_lock_irq oops...
+ Thanks,
 
-I attached two replacement patches to apply in order (both of them
-should be applied at the same time on top of git upstream, and they
-shouldn't lockup this time).
+	Ingo
 
---uxuisgdDHaNETlh8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=kswapd-high_wmark
+------------------>
+Thomas Gleixner (2):
+      genirq: Prevent access beyond allocated_irqs bitmap
+      genirq: Disable the SHIRQ_DEBUG call in request_threaded_irq for now
 
-Subject: vmscan: kswapd must not free more than high_wmark pages
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+ kernel/irq/internals.h |    6 ++++++
+ kernel/irq/irqdesc.c   |   11 ++++++++++-
+ kernel/irq/manage.c    |    2 +-
+ kernel/irq/resend.c    |    2 +-
+ 4 files changed, 18 insertions(+), 3 deletions(-)
 
-When the min_free_kbytes is set with `hugeadm
---set-recommended-min_free_kbytes" or with THP enabled (which runs the
-equivalent of "hugeadm --set-recommended-min_free_kbytes" to activate
-anti-frag at full effectiveness automatically at boot) the high wmark
-of some zone is as high as ~88M. 88M free on a 4G system isn't
-horrible, but 88M*8 = 704M free on a 4G system is definitely
-unbearable. This only tends to be visible on 4G systems with tiny
-over-4g zone where kswapd insists to reach the high wmark on the
-over-4g zone but doing so it shrunk up to 704M from the normal zone by
-mistake.
-
-For the trivial case where kswapd isn't waken until all zones hit the low wmark
-and there is no concurrency between allocator and kswapd freeing, rotating more
-the tiny above4g lru than "high-low" despite we only allocated "high-low" cache
-into it doesn't sound obviously right either. Bigger gap to me looks like will
-do more harm than good and if we need a real guarantee of balancing we should
-rotate the allocations across the zones (bigger lru in a zone will require it
-to be hit more frequently because it'll rotate slower than the other zones, the
-bias should not even dependent on the zone size but on the lru size).
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2408,7 +2408,7 @@ loop_again:
- 			 * zone has way too many pages free already.
- 			 */
- 			if (!zone_watermark_ok_safe(zone, order,
--					8*high_wmark_pages(zone), end_zone, 0))
-+					high_wmark_pages(zone), end_zone, 0))
- 				shrink_zone(priority, zone, &sc);
- 			reclaim_state->reclaimed_slab = 0;
- 			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
-
---uxuisgdDHaNETlh8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=compaction-kswapd
-
----
- mm/compaction.c |   19 ++++++++++---------
- mm/vmscan.c     |    8 ++------
- 2 files changed, 12 insertions(+), 15 deletions(-)
-
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -271,9 +271,19 @@ static unsigned long isolate_migratepage
- 	}
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index 4571ae7..99c3bc8 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -3,6 +3,12 @@
+  */
+ #include <linux/irqdesc.h>
  
- 	/* Time to isolate some pages for migration */
-+	cond_resched();
- 	spin_lock_irq(&zone->lru_lock);
- 	for (; low_pfn < end_pfn; low_pfn++) {
- 		struct page *page;
++#ifdef CONFIG_SPARSE_IRQ
++# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
++#else
++# define IRQ_BITMAP_BITS	NR_IRQS
++#endif
 +
-+		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
-+			if (fatal_signal_pending(current))
-+				break;
-+			spin_unlock_irq(&zone->lru_lock);
-+			cond_resched();
-+			spin_lock_irq(&zone->lru_lock);
-+		}
+ extern int noirqdebug;
+ 
+ #define irq_data_to_desc(data)	container_of(data, struct irq_desc, irq_data)
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 282f202..2039bea 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -94,7 +94,7 @@ int nr_irqs = NR_IRQS;
+ EXPORT_SYMBOL_GPL(nr_irqs);
+ 
+ static DEFINE_MUTEX(sparse_irq_lock);
+-static DECLARE_BITMAP(allocated_irqs, NR_IRQS);
++static DECLARE_BITMAP(allocated_irqs, IRQ_BITMAP_BITS);
+ 
+ #ifdef CONFIG_SPARSE_IRQ
+ 
+@@ -217,6 +217,15 @@ int __init early_irq_init(void)
+ 	initcnt = arch_probe_nr_irqs();
+ 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
+ 
++	if (WARN_ON(nr_irqs > IRQ_BITMAP_BITS))
++		nr_irqs = IRQ_BITMAP_BITS;
 +
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
- 		nr_scanned++;
-@@ -413,15 +423,6 @@ static int compact_finished(struct zone 
- 	if (cc->order == -1)
- 		return COMPACT_CONTINUE;
++	if (WARN_ON(initcnt > IRQ_BITMAP_BITS))
++		initcnt = IRQ_BITMAP_BITS;
++
++	if (initcnt > nr_irqs)
++		nr_irqs = initcnt;
++
+ 	for (i = 0; i < initcnt; i++) {
+ 		desc = alloc_desc(i, node);
+ 		set_bit(i, allocated_irqs);
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0caa59f..9033c1c 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1100,7 +1100,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+ 	if (retval)
+ 		kfree(action);
  
--	/*
--	 * Generating only one page of the right order is not enough
--	 * for kswapd, we must continue until we're above the high
--	 * watermark as a pool for high order GFP_ATOMIC allocations
--	 * too.
--	 */
--	if (cc->compact_mode == COMPACT_MODE_KSWAPD)
--		return COMPACT_CONTINUE;
--
- 	/* Direct compactor: Is a suitable page free? */
- 	for (order = cc->order; order < MAX_ORDER; order++) {
- 		/* Job done if page is free of the right migratetype */
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2385,7 +2385,6 @@ loop_again:
- 		 * cause too much scanning of the lower zones.
- 		 */
- 		for (i = 0; i <= end_zone; i++) {
--			int compaction;
- 			struct zone *zone = pgdat->node_zones + i;
- 			int nr_slab;
+-#ifdef CONFIG_DEBUG_SHIRQ
++#ifdef CONFIG_DEBUG_SHIRQ_FIXME
+ 	if (!retval && (irqflags & IRQF_SHARED)) {
+ 		/*
+ 		 * It's a shared IRQ -- the driver ought to be prepared for it
+diff --git a/kernel/irq/resend.c b/kernel/irq/resend.c
+index 891115a..dc49358 100644
+--- a/kernel/irq/resend.c
++++ b/kernel/irq/resend.c
+@@ -23,7 +23,7 @@
+ #ifdef CONFIG_HARDIRQS_SW_RESEND
  
-@@ -2416,24 +2415,21 @@ loop_again:
- 			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
- 			total_scanned += sc.nr_scanned;
+ /* Bitmap to handle software resend of interrupts: */
+-static DECLARE_BITMAP(irqs_resend, NR_IRQS);
++static DECLARE_BITMAP(irqs_resend, IRQ_BITMAP_BITS);
  
--			compaction = 0;
- 			if (order &&
- 			    zone_watermark_ok(zone, 0,
- 					       high_wmark_pages(zone),
- 					      end_zone, 0) &&
- 			    !zone_watermark_ok(zone, order,
- 					       high_wmark_pages(zone),
--					       end_zone, 0)) {
-+					       end_zone, 0))
- 				compact_zone_order(zone,
- 						   order,
- 						   sc.gfp_mask, false,
- 						   COMPACT_MODE_KSWAPD);
--				compaction = 1;
--			}
- 
- 			if (zone->all_unreclaimable)
- 				continue;
--			if (!compaction && nr_slab == 0 &&
-+			if (nr_slab == 0 &&
- 			    !zone_reclaimable(zone))
- 				zone->all_unreclaimable = 1;
- 			/*
-
---uxuisgdDHaNETlh8--
+ /*
+  * Run software resends of IRQ's
