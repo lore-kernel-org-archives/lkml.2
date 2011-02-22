@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab1BVVVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:21:34 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58424 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab1BVVVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:21:33 -0500
-Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
- rtc_class_ops->read_alarm()
-From: john stultz <johnstul@us.ibm.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-In-Reply-To: <20110222210522.GG31611@opensource.wolfsonmicro.com>
-References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
-	 <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
-	 <20110222023452.GB18299@sirena.org.uk> <1298343333.4222.36.camel@work-vm>
-	 <1298362178.4222.57.camel@work-vm>
-	 <20110222181647.GA25569@opensource.wolfsonmicro.com>
-	 <1298404268.9215.39.camel@work-vm>
-	 <20110222200046.GD31611@opensource.wolfsonmicro.com>
-	 <1298406174.9215.71.camel@work-vm>
-	 <20110222210522.GG31611@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Feb 2011 13:21:13 -0800
-Message-ID: <1298409673.9215.84.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753938Ab1BVVV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:21:58 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:33898 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab1BVVV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:21:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=LY/9YT+g9rGAvlQgNnwQ+wCtsle2Aq82QJBx3+bD+VYu1L5/xnO9YHH2d2sTnnQT1O
+         gIevnNJT3OTZlfAqYK/g==
+Date: Tue, 22 Feb 2011 13:21:48 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 1/5] pagewalk: only split huge pages when necessary
+In-Reply-To: <20110222015339.0C9A2212@kernel>
+Message-ID: <alpine.DEB.2.00.1102221316400.5929@chino.kir.corp.google.com>
+References: <20110222015338.309727CA@kernel> <20110222015339.0C9A2212@kernel>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 21:05 +0000, Mark Brown wrote:
-> On Tue, Feb 22, 2011 at 12:22:54PM -0800, john stultz wrote:
+On Mon, 21 Feb 2011, Dave Hansen wrote:
+
 > 
-> > In some ways it does complicate things, but in others it greatly
-> > simplifies it. You don't have to have 80 drivers each implementing their
-> > own code to set a mode that isn't used. Everyone is using the common
-> > kernel code, so bugs are shared and thus found and fixed faster.
-> > Features can be more easily added, as the limitations of specific
-> > hardware have to be more formally expressed, rather then having to
-> > change 80 drivers that opaquely work around their specific hardware
-> > issues. Also, applications are easier to port, since there are less
-> > platform specific differences.
+> v2 - rework if() block, and remove  now redundant split_huge_page()
 > 
-> I agree that it's a win for things like UIE - the reason it worries me
-> for alarms (and the RTC time itself) is that full emulation requires us
-> to do things over reboots, including the support for having multiple
-> alarms scheduled which isn't available on most hardware at all.
+> Right now, if a mm_walk has either ->pte_entry or ->pmd_entry
+> set, it will unconditionally split any transparent huge pages
+> it runs in to.  In practice, that means that anyone doing a
+> 
+> 	cat /proc/$pid/smaps
+> 
+> will unconditionally break down every huge page in the process
+> and depend on khugepaged to re-collapse it later.  This is
+> fairly suboptimal.
+> 
+> This patch changes that behavior.  It teaches each ->pmd_entry
+> handler (there are five) that they must break down the THPs
+> themselves.  Also, the _generic_ code will never break down
+> a THP unless a ->pte_entry handler is actually set.
+> 
+> This means that the ->pmd_entry handlers can now choose to
+> deal with THPs without breaking them down.
+> 
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 
-Hmm. Maybe I'm missing what you mean again. If the RTC doesn't support
-alarms, we don't emulate them (or RTC time).
+Acked-by: David Rientjes <rientjes@google.com>
 
-But if you just mean trying to keep multiple alarms scheduled across
-resets, I don't think that is something we can emulate (since the kernel
-doesn't have any other persistent storage). But due to the lack of
-consistency in RTC hardware, I don't think its a reasonable expectation
-for applications to have.
-
-We can preserve what hardware state we can at boot, but applications
-should not expect alarms set multiple reboot cycles ago to be valid.
-After all, other applications might have jumped in and grabbed the rtc
-device and set it to something else before the application was able to.
-Or a user might change the value from something like a bios menu.
-
-thanks
--john
-
-
+Thanks for adding the comment about ->pmd_entry() being required to split 
+the pages in include/linux/mm.h!
