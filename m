@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab1BVWZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:25:19 -0500
-Received: from kroah.org ([198.145.64.141]:32995 "EHLO coco.kroah.org"
+	id S1755421Ab1BVWZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:25:59 -0500
+Received: from kroah.org ([198.145.64.141]:32976 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755106Ab1BVWWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:43 2011
-Message-Id: <20110222221843.109824673@clark.kroah.org>
+	id S1755056Ab1BVWW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:42 2011
+Message-Id: <20110222221842.721525715@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:40 -0800
+Date: Tue, 22 Feb 2011 14:17:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [61/70] eCryptfs: Copy up lower inode attrs in getattr
+        David Howells <dhowells@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [57/70] cifs: fix handling of scopeid in cifs_convert_address
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 55f9cf6bbaa682958a7dd2755f883b768270c3ce upstream.
+commit 9616125611ee47693186533d76e403856a36b3c8 upstream.
 
-The lower filesystem may do some type of inode revalidation during a
-getattr call. eCryptfs should take advantage of that by copying the
-lower inode attributes to the eCryptfs inode after a call to
-vfs_getattr() on the lower inode.
+The code finds, the '%' sign in an ipv6 address and copies that to a
+buffer allocated on the stack. It then ignores that buffer, and passes
+'pct' to simple_strtoul(), which doesn't work right because we're
+comparing 'endp' against a completely different string.
 
-I originally wrote this fix while working on eCryptfs on nfsv3 support,
-but discovered it also fixed an eCryptfs on ext4 nanosecond timestamp
-bug that was reported.
+Fix it by passing the correct pointer. While we're at it, this is a
+good candidate for conversion to strict_strtoul as well.
 
-https://bugs.launchpad.net/bugs/613873
-
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Reported-by: BjÃ¶rn JACKE <bj@sernet.de>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/inode.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/cifs/netmisc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -1095,6 +1095,8 @@ int ecryptfs_getattr(struct vfsmount *mn
- 	rc = vfs_getattr(ecryptfs_dentry_to_lower_mnt(dentry),
- 			 ecryptfs_dentry_to_lower(dentry), &lower_stat);
- 	if (!rc) {
-+		fsstack_copy_attr_all(dentry->d_inode,
-+				      ecryptfs_inode_to_lower(dentry->d_inode));
- 		generic_fillattr(dentry->d_inode, stat);
- 		stat->blocks = lower_stat.blocks;
+--- a/fs/cifs/netmisc.c
++++ b/fs/cifs/netmisc.c
+@@ -170,7 +170,7 @@ cifs_convert_address(struct sockaddr *ds
+ {
+ 	int rc, alen, slen;
+ 	const char *pct;
+-	char *endp, scope_id[13];
++	char scope_id[13];
+ 	struct sockaddr_in *s4 = (struct sockaddr_in *) dst;
+ 	struct sockaddr_in6 *s6 = (struct sockaddr_in6 *) dst;
+ 
+@@ -197,9 +197,9 @@ cifs_convert_address(struct sockaddr *ds
+ 		memcpy(scope_id, pct + 1, slen);
+ 		scope_id[slen] = '\0';
+ 
+-		s6->sin6_scope_id = (u32) simple_strtoul(pct, &endp, 0);
+-		if (endp != scope_id + slen)
+-			return 0;
++		rc = strict_strtoul(scope_id, 0,
++					(unsigned long *)&s6->sin6_scope_id);
++		rc = (rc == 0) ? 1 : 0;
  	}
+ 
+ 	return rc;
 
 
