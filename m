@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab1BVKj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 05:39:26 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56899 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab1BVKjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 05:39:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Efu9lev0/CWTjNvifcHD3C5ypPRieI5UPnmRZcCRvn+h+UAdiU882Yqpmk22xiXhUL
-         vYIyjjRMvGh7zlG1NWrmYDngHioN5oFzodRMB649K/6/1sBUS+S7A9nGuvjoGfOnSBCl
-         +s6vyE/p2Fh0PffAEWjorEpU0y4KBL/tvywvQ=
-Date: Tue, 22 Feb 2011 11:39:20 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: [PATCH 2/4] x86, numa: Do not adjust start/end for
- early_node_mem()
-Message-ID: <20110222103920.GY31267@htj.dyndns.org>
-References: <4D5EC05A.60103@kernel.org>
- <4D5EC184.6000505@kernel.org>
- <alpine.DEB.2.00.1102191944530.32280@chino.kir.corp.google.com>
- <AANLkTikgR8vEhz3Hsmx96QqZw_gsLZetc3W_9evf3ufb@mail.gmail.com>
- <20110221094318.GG31267@htj.dyndns.org>
- <20110221104443.GJ31267@htj.dyndns.org>
- <4D62CAE4.4040207@kernel.org>
- <20110222103653.GX31267@htj.dyndns.org>
+	id S1753977Ab1BVKl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 05:41:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab1BVKl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 05:41:58 -0500
+Message-ID: <4D6392F1.1030601@redhat.com>
+Date: Tue, 22 Feb 2011 12:41:53 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222103653.GX31267@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 0/6] KVM support for TSC scaling
+References: <4D57F677.3090004@redhat.com> <20110221172807.GD16508@amd.com> <4D638BDE.70602@redhat.com> <20110222103513.GF16508@amd.com>
+In-Reply-To: <20110222103513.GF16508@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:36:53AM +0100, Tejun Heo wrote:
-> So, don't remove the DMA boundary limit.  Even if the current code
-> wouldn't result in that (and the current code CAN), it is a good
-> sanity check to have because you don't want memory map under 16MiB no
-> matter what.
+On 02/22/2011 12:35 PM, Roedel, Joerg wrote:
+> >  This doesn't really work, since we don't know on what host the TSC
+> >  calibration loop ran:
+> >
+> >  - start guest on host H1
+> >  - migrate it around, now it's on host H2
+> >  - guest reboots, reruns calibration loop
+> >  - migrate it around some more, now it's on host H3
+> >  - migrate to host with tsc multiplier Hnew
+> >
+> >  So, what should we set the multiplier to? H1, H2, or H3's tsc rate?
+>
+> This scenario doesn't matter. If the guest already detected its TSC to
+> be unstable there is nothing we can do and it doesn't really matter what
+> we set the tsc frequency to. Therefore software will always set the
+> guest tsc frequency to the same value it had on the last host.
 
-Oh, if you're genuinely concerned about machines which wouldn't be
-able to allocate memory map because it doesn't have enough memory
-above 16MiB, the correct thing to do is removing the boundary limit
-from the fallback generic allocation, NOT from the NUMA aware
-allocation.
+Ok, so your scenario is
+
+- boot on host H1
+- no intervening migrations
+- migrate to host Hnew
+- all succeeding migrations are only to new hosts or back to H1
+
+This is somewhat artificial, and not very different from an all-new cluster.
+
+[the whole thing is kind of sad; we went through a huge effort to make 
+clocks work on virtual machines in spite of the tsc issues; then we have 
+a hardware solution, but can't use it because of old hardware.  Same 
+thing happens with the effort put into shadow in the pre-npt days]
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
+
