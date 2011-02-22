@@ -1,162 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1BVRN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 12:13:57 -0500
-Received: from trinity.develer.com ([83.149.158.210]:42581 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab1BVRNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 12:13:45 -0500
-From: Andrea Righi <arighi@develer.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+	id S1754769Ab1BVROB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 12:14:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23196 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754756Ab1BVRN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 12:13:59 -0500
+Date: Tue, 22 Feb 2011 18:13:41 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Jan Beulich <JBeulich@novell.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andrea Righi <arighi@develer.com>
-Subject: [PATCH 5/5] blk-throttle: buffered and anonymous page tracking instrumentation
-Date: Tue, 22 Feb 2011 18:12:56 +0100
-Message-Id: <1298394776-9957-6-git-send-email-arighi@develer.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1298394776-9957-1-git-send-email-arighi@develer.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] fix pgd_lock deadlock
+Message-ID: <20110222171341.GD31195@random.random>
+References: <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
+ <20110216183304.GD5935@random.random>
+ <20110217101941.GH2380@redhat.com>
+ <20110221143023.GF13092@random.random>
+ <20110221145350.GH25382@redhat.com>
+ <4D6378760200007800033104@vpn.id2.novell.com>
+ <20110222134956.GU13092@random.random>
+ <4D63D4CD020000780003320A@vpn.id2.novell.com>
+ <20110222143421.GX13092@random.random>
+ <4D63EDA6.2070302@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D63EDA6.2070302@goop.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply the buffered and anonymous page tracking hooks to the opportune
-kernel functions.
+On Tue, Feb 22, 2011 at 09:08:54AM -0800, Jeremy Fitzhardinge wrote:
+> On 02/22/2011 06:34 AM, Andrea Arcangeli wrote:
+> > On Tue, Feb 22, 2011 at 02:22:53PM +0000, Jan Beulich wrote:
+> >> If everyone's okay with putting a couple of "if (xen_pv_domain())"
+> >> into mm/fault.c - sure. I would have thought that this wouldn't be
+> >> liked, hence the suggestion to make this depend on seeing the
+> >> backlink be non-NULL.
+> > I prefer the if (xen_pv_domain) so it also gets optimized away
+> > at build time when CONFIG_XEN=n. I think it's also more self
+> > explanatory to read.
+> 
+> Eh, very not keen about that.  I'd only consider it as a last resort.
+> 
+> In practice CONFIG_XEN is always enabled in distros, so the conditional
+> would always be done at runtime.
 
-Signed-off-by: Ryo Tsuruta <ryov@valinux.co.jp>
-Signed-off-by: Hirokazu Takahashi <taka@valinux.co.jp>
-Signed-off-by: Andrea Righi <arighi@develer.com>
----
- fs/buffer.c         |    1 +
- mm/bounce.c         |    1 +
- mm/filemap.c        |    1 +
- mm/memory.c         |    5 +++++
- mm/page-writeback.c |    1 +
- mm/swap_state.c     |    2 ++
- 6 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 2219a76..6e473e6 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -667,6 +667,7 @@ static void __set_page_dirty(struct page *page,
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(warn && !PageUptodate(page));
- 		account_page_dirtied(page, mapping);
-+		blk_throtl_set_filepage_owner(page, current->mm);
- 		radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 	}
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 1481de6..f85cafa 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -211,6 +211,7 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- 		to->bv_len = from->bv_len;
- 		to->bv_offset = from->bv_offset;
- 		inc_zone_page_state(to->bv_page, NR_BOUNCE);
-+		blk_throtl_copy_page_owner(to->bv_page, page);
- 
- 		if (rw == WRITE) {
- 			char *vto, *vfrom;
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83a45d3..7fca2b8 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -407,6 +407,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 					gfp_mask & GFP_RECLAIM_MASK);
- 	if (error)
- 		goto out;
-+	blk_throtl_set_filepage_owner(page, current->mm);
- 
- 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (error == 0) {
-diff --git a/mm/memory.c b/mm/memory.c
-index 8e8c183..ad5906b 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -52,6 +52,7 @@
- #include <linux/init.h>
- #include <linux/writeback.h>
- #include <linux/memcontrol.h>
-+#include <linux/blkdev.h>
- #include <linux/mmu_notifier.h>
- #include <linux/kallsyms.h>
- #include <linux/swapops.h>
-@@ -2391,6 +2392,7 @@ gotten:
- 		 */
- 		ptep_clear_flush(vma, address, page_table);
- 		page_add_new_anon_rmap(new_page, vma, address);
-+		blk_throtl_set_anonpage_owner(new_page, mm);
- 		/*
- 		 * We call the notify macro here because, when using secondary
- 		 * mmu page tables (such as kvm shadow page tables), we want the
-@@ -2826,6 +2828,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	flush_icache_page(vma, page);
- 	set_pte_at(mm, address, page_table, pte);
- 	do_page_add_anon_rmap(page, vma, address, exclusive);
-+	blk_throtl_set_anonpage_owner(page, mm);
- 	/* It's better to call commit-charge after rmap is established */
- 	mem_cgroup_commit_charge_swapin(page, ptr);
- 
-@@ -2957,6 +2960,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	inc_mm_counter_fast(mm, MM_ANONPAGES);
- 	page_add_new_anon_rmap(page, vma, address);
-+	blk_throtl_set_anonpage_owner(page, mm);
- setpte:
- 	set_pte_at(mm, address, page_table, entry);
- 
-@@ -3106,6 +3110,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (anon) {
- 			inc_mm_counter_fast(mm, MM_ANONPAGES);
- 			page_add_new_anon_rmap(page, vma, address);
-+			blk_throtl_set_anonpage_owner(page, mm);
- 		} else {
- 			inc_mm_counter_fast(mm, MM_FILEPAGES);
- 			page_add_file_rmap(page);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 2cb01f6..277c323 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1168,6 +1168,7 @@ int __set_page_dirty_nobuffers(struct page *page)
- 			BUG_ON(mapping2 != mapping);
- 			WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
- 			account_page_dirtied(page, mapping);
-+			blk_throtl_set_filepage_owner(page, current->mm);
- 			radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 		}
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 5c8cfab..bc3a138 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -16,6 +16,7 @@
- #include <linux/pagemap.h>
- #include <linux/buffer_head.h>
- #include <linux/backing-dev.h>
-+#include <linux/blkdev.h>
- #include <linux/pagevec.h>
- #include <linux/migrate.h>
- #include <linux/page_cgroup.h>
-@@ -330,6 +331,7 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- 		/* May fail (-ENOMEM) if radix-tree node allocation failed. */
- 		__set_page_locked(new_page);
- 		SetPageSwapBacked(new_page);
-+		blk_throtl_set_anonpage_owner(new_page, current->mm);
- 		err = __add_to_swap_cache(new_page, entry);
- 		if (likely(!err)) {
- 			radix_tree_preload_end();
--- 
-1.7.1
-
+That's ok, it's still better than setting a page filed IMHO. As the
+page flag would be set conditional to xen_pv_domain() anyway. I
+wouldn't like to make things more complicated than they already are,
+this will make it more explicit why that spinlock is needed too.
+Unless we foresee other hypervisors using a generic functionality we
+don't need one.
