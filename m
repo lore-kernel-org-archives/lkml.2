@@ -1,75 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab1BVUeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:34:18 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:50044 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab1BVUeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:34:17 -0500
-Date: Tue, 22 Feb 2011 12:33:45 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Dan Carpenter <error27@gmail.com>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110222203345.GG4000@outflux.net>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
- <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
- <20110222181613.GU4000@outflux.net>
- <20110222191333.GA9991@suse.de>
- <20110222192248.GX4000@outflux.net>
- <20110222193314.GA11033@suse.de>
- <20110222202915.GC1966@bicker>
+	id S1752651Ab1BVUjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:39:16 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:43373 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab1BVUjP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:39:15 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: extremely slow resume with 2.6.37
+Date: Tue, 22 Feb 2011 21:39:11 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222202915.GC1966@bicker>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201102222139.12599.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:29:15PM +0300, Dan Carpenter wrote:
-> On Tue, Feb 22, 2011 at 11:33:14AM -0800, Greg KH wrote:
-> > Again, let's fix the real problems here, world-writable debugfs files.
-> 
-> We could just ban them?
+Hi!
 
-That would be nice. This would be much better than relying on
-check_patch.pl. Perhaps do this for /sys and /proc/sys too?
+A moment ago I had an extremely slow resume with 2.6.37. So slow that I 
+aborted it.
 
-Acked-by: Kees Cook <kees.cook@canonical.com>
+It was at 37% as I looked and then took a minute or more for each percent. 
+I am using in kernel suspend to disk via hibernate 1.99 which uses sysfs 
+power state disk.
 
-> 
-> diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-> index e7a7a2f..03ae095 100644
-> --- a/fs/debugfs/inode.c
-> +++ b/fs/debugfs/inode.c
-> @@ -223,6 +223,9 @@ struct dentry *debugfs_create_file(const char *name, mode_t mode,
->  
->  	pr_debug("debugfs: creating file '%s'\n",name);
->  
-> +	/* don't allow world writable files */
-> +	mode &= ~S_IWOTH;
-> +
->  	error = simple_pin_fs(&debug_fs_type, &debugfs_mount,
->  			      &debugfs_mount_count);
->  	if (error)
+Anyone have seen something like this? This was the first occurence, and I 
+am using 2.6.37 for quite a while.
+
+I am calling hibernate-disk from this script:
+
+shambhala:~> cat /etc/acpi/hibernate-extra.sh 
+#!/bin/sh
+
+# Zur Sicherheit gleich am Anfang alle ausstehenden Änderungen schreiben
+sync
+
+# Versuchen, möglichst viele LowMem Pages freizubekommen
+# Dir Entries legt Ext4 offenbar auch ins LowMem
+# Und mit zu wenig LowMem Pages klappt der Tiefschlaf mit
+# Radeon DRM KMS nicht.
+echo 3 > /proc/sys/vm/drop_caches
+
+# Network Manager schlafen legen
+# siehe /usr/lib/pm-utils/sleep.d/55NetworkManager
+dbus-send --print-reply --system                        \
+        --dest=org.freedesktop.NetworkManager \
+        /org/freedesktop/NetworkManager       \
+        org.freedesktop.NetworkManager.sleep
+
+# Systemzeit in Hardware-Uhr speichern
+/etc/init.d/hwclock.sh stop
+
+# Uptimed stoppen, damit er die Rekorde schreibt
+/etc/init.d/uptimed stop
+
+# Zur Sicherheit hier nochmal alle ausstehenden Änderungen schreiben
+sync
+
+# Gutnacht
+# /etc/acpi/hibernate.sh
+#echo 1 > /sys/power/tuxonice/do_hibernate
+#pm-suspend-hybrid
+#pm-hibernate
+hibernate-disk
+
+# Uptimed wieder starten. Dabei schreibt er erneut die Rekorde
+/etc/init.d/uptimed start
+
+# Rekorde gleich schreiben
+sync
+
+# Festplatten-Parameter wieder setzen
+/etc/init.d/hdparm start
+
+# Systemzeit anhand Hardware-Uhr wieder setzen
+/etc/init.d/hwclock.sh start
+
+# Network Manager aufwecken
+dbus-send --print-reply --system                        \
+        --dest=org.freedesktop.NetworkManager \
+        /org/freedesktop/NetworkManager       \
+        org.freedesktop.NetworkManager.wake
+
+
+I am echoing 3 onto drop_caches cause often in kernel suspend - as well as 
+TuxOnIce as I used it back then - was not able to free lowmem pages in 
+order for the image to be allocated after I switched to radeon kms which 
+seems to require quite some lowmem pages of its own, but I will post a 
+different mail about this one.
+
+I am using
+
+shambhala:~> cat /proc/version
+Linux version 2.6.37-tp42-rtime-00004-g9eb63ce (martin@shambhala) (gcc 
+version 4.4.5 (Debian 4.4.5-8) ) #1 PREEMPT Thu Jan 13 10:59:19 CET 2011
+
+which is 2.6.37 + some recursive mtime changes from Jan Kara, which should 
+only affect Ext3 and Ext4.
+
+Ciao,
 -- 
-Kees Cook
-Ubuntu Security Team
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
