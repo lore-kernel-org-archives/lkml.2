@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab1BVWXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:23:22 -0500
-Received: from kroah.org ([198.145.64.141]:33037 "EHLO coco.kroah.org"
+	id S1755280Ab1BVWXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:23:37 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:37623 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755244Ab1BVWWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:45 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:44 2011
-Message-Id: <20110222221843.933540438@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:48 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [69/70] platform: x86: tc1100-wmi: world-writable sysfs wireless and jogdial files
-In-Reply-To: <20110222222003.GA15831@kroah.com>
+	id S1755228Ab1BVWWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:44 -0500
+Date: Wed, 23 Feb 2011 09:22:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Mattia Dongili <malattia@linux.it>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the drivers-x86 tree
+Message-Id: <20110223092237.d3d183c3.sfr@canb.auug.org.au>
+In-Reply-To: <20110222143434.GA9720@srcf.ucam.org>
+References: <20110222162206.c3fb0636.sfr@canb.auug.org.au>
+	<a8c6f32c-ccb5-4f65-b537-8bd1c11f7336@email.android.com>
+	<20110222114601.GA936@kamineko.org>
+	<20110222143434.GA9720@srcf.ucam.org>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+--Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+On Tue, 22 Feb 2011 14:34:34 +0000 Matthew Garrett <mjg59@srcf.ucam.org> wr=
+ote:
+>
+> On Tue, Feb 22, 2011 at 08:46:01PM +0900, Mattia Dongili wrote:
+>=20
+> > how does linux-next work? should this patch be a separate commit or can
+> > it be folded into the offending one?
+>=20
+> I'll fold it into the offending one and repush. Sorry about the=20
+> breakage, Stephen - I don't have DEBUG_ALLOC enabled so didn't see the=20
+> failure. Do you build with a defined configuration I can test against?
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+As the original report said, this was an x86_64 allmodconfig build.
 
-commit 8a6a142c1286797978e4db266d22875a5f424897 upstream.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Don't allow everybody to change WMI settings.
+--Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8
+Content-Type: application/pgp-signature
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
----
- drivers/platform/x86/tc1100-wmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+iQEcBAEBAgAGBQJNZDctAAoJEDMEi1NhKgbschgIAJJH3vAIr3/jlbh6qEwEE1da
+4FC+st5xXcPmGZB+w9mbZAQ6CSBK34jmmL3F7okeSzd5JOnBElTQaWLJ8/eDhzB6
+bWYHXnQmLoDdG1/XW3rbp7yzK5/IJ2BNANDHdt8CKHWZBxnggbfqwlYZ01dOugRp
+VlHkptugbnh3H5xkHuui76eafHX+SIFTPyK2s4VmvzYs0EVzKNIL9ptVxSt7IzZd
++/C+93x75jvpyVw2lpFNkHCL/Oun0pnFBbzcRh3Nl+pteC0WbvF0sMOs1HBIyKuK
+Fz2ne69Lgk6GgmU+6cVEvfR7FjzSg5tof3H66Helps3eFdKwkVoz+wglX+8mbHg=
+=XIV+
+-----END PGP SIGNATURE-----
 
---- a/drivers/platform/x86/tc1100-wmi.c
-+++ b/drivers/platform/x86/tc1100-wmi.c
-@@ -162,7 +162,7 @@ set_bool_##value(struct device *dev, str
- 			return -EINVAL; \
- 	return count; \
- } \
--static DEVICE_ATTR(value, S_IWUGO | S_IRUGO | S_IWUSR, \
-+static DEVICE_ATTR(value, S_IRUGO | S_IWUSR, \
- 	show_bool_##value, set_bool_##value);
- 
- show_set_bool(wireless, TC1100_INSTANCE_WIRELESS);
-
-
+--Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8--
