@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab1BVPVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 10:21:12 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57241 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab1BVPVL (ORCPT
+	id S1754475Ab1BVPVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 10:21:15 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:59874 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754412Ab1BVPVM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 10:21:11 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCHv2 09/11] unicore32 core architecture: timer and time handling
-Date: Tue, 22 Feb 2011 16:21:07 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        "'Greg KH'" <greg@kroah.com>
-References: <02f301cbcb48$bebea4c0$3c3bee40$@mprc.pku.edu.cn> <201102171831.16713.arnd@arndb.de> <018c01cbd29b$759a4740$60ced5c0$@mprc.pku.edu.cn>
-In-Reply-To: <018c01cbd29b$759a4740$60ced5c0$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102221621.07655.arnd@arndb.de>
-X-Provags-ID: V02:K0:pQKrvdzmuNMNpri/iZ8Cjm1mPacuN2hc36kHaAeSg1g
- E8+sPgvrdhGo3w01STGkY9f9XLPjIy4OZadkuTlHhimNuq7hLa
- eJcPUs4o/NtqnDNRmPwPNrOkaBKLG260zRKQKzHTWMlgfMdgOu
- MSJzQLf0XSWLXuMrQpxnpPAbmojGSFzjYAFrgA8CPu0UwCKt1q
- pVqj6/QYJkYhtxXfIcoPQ==
+	Tue, 22 Feb 2011 10:21:12 -0500
+Subject: Re: [PATCH 1/6] perf-events: Add support for supplementary event
+ registers v5
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <1298221019.2318.62.camel@localhost>
+References: <1298221019.2318.62.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 22 Feb 2011 16:20:53 +0100
+Message-ID: <1298388053.2217.204.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 February 2011, Guan Xuetao wrote:
-> > > +#if defined(CONFIG_PUV3_DB0913)                \
-> > > +       || defined(CONFIG_PUV3_NB0916)  \
-> > > +       || defined(CONFIG_PUV3_SMW0919)
-> > > +
-> > > +#define  CLOCK_TICK_RATE         (14318000)
-> > > +
-> > > +#endif
-> > 
-> > I believe that we don't use CLOCK_TICK_RATE in the kernel any more,
-> > so there is no reason to define it.
-> CLOCK_TICK_RATE is an important value for the kernel.
-> And perhaps I misunderstanding your meaning...
+On Mon, 2011-02-21 at 00:56 +0800, Lin Ming wrote:
+> @@ -225,7 +225,10 @@ struct perf_event_attr {
+>         };
+>  
+>         __u32                   bp_type;
+> -       __u64                   bp_addr;
+> +       union {
+> +               __u64           bp_addr;
+> +               __u64           event_extra; /* Extra for some events */
+> +       };
+>         __u64                   bp_len;
+>  }; 
 
-We just discussed the same thing for a new ARM platform. You are
-right that CLOCK_TICK_RATE is currently still being used, but
-we are trying to get rid of it.
+I did s/event_extra/config1/g and:
 
-Most importantly, it should not be configuration specific any more.
-If you use CLOCK_TICK_RATE in unicore32 specific code, it would
-be best to rename that variable and device it in a board specific
-file.
+Index: linux-2.6/include/linux/perf_event.h
+===================================================================
+--- linux-2.6.orig/include/linux/perf_event.h
++++ linux-2.6/include/linux/perf_event.h
+@@ -227,9 +230,12 @@ struct perf_event_attr {
+ 	__u32			bp_type;
+ 	union {
+ 		__u64		bp_addr;
+-		__u64		config1; /* Extra for some events */
++		__u64		config1;	/* extension of config0 */
++	};
++	union {
++		__u64		bp_len;
++		__u64		config2;	/* extension of config1 */
+ 	};
+-	__u64			bp_len;
+ };
+ 
+ /*
 
-The definition in timex.h can basically contain any value that is
-a multiple of CONFIG_HZ. Don't worry about this one, we will fix
-it for good for the entire kernel.
-
-	Arnd
+Giving us basically 192 bits of config{,1,2} space and the possibility
+of eventually deprecating the bp_ stuff.
