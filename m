@@ -1,150 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1BVLdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 06:33:36 -0500
-Received: from mga11.intel.com ([192.55.52.93]:47022 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071Ab1BVLdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 06:33:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,206,1297065600"; 
-   d="scan'208";a="890015382"
-Date: Tue, 22 Feb 2011 12:33:11 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Subhasish Ghosh <subhasish@mistralsolutions.com>,
-        sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 01/13] mfd: pruss mfd driver.
-Message-ID: <20110222113310.GD30279@sortiz-mobl>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com>
- <1297435892-28278-2-git-send-email-subhasish@mistralsolutions.com>
- <20110221163027.GF10686@sortiz-mobl>
- <37B3755C4AE64BAA805DFBAEBDC3D9E4@subhasishg>
- <20110222103127.GC30279@sortiz-mobl>
- <4D639493.1060601@grandegger.com>
+	id S1754136Ab1BVLiq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 06:38:46 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49275 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab1BVLip convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 06:38:45 -0500
+From: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
+        "hjk@linutronix.de" <hjk@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 22 Feb 2011 17:08:26 +0530
+Subject: RE: [PATCH 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources used
+ by PRUSS UIO driver
+Thread-Topic: [PATCH 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources used
+ by PRUSS UIO driver
+Thread-Index: AcvR6nTp9F2lwVIeRSKbocXiKzTQ7wAmMedg
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BD49121@dbde02.ent.ti.com>
+References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
+	<1298041530-26855-2-git-send-email-pratheesh@ti.com>
+ <1298041530-26855-3-git-send-email-pratheesh@ti.com>
+ <4D629C82.3080906@mvista.com>
+In-Reply-To: <4D629C82.3080906@mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D639493.1060601@grandegger.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:48:51AM +0100, Wolfgang Grandegger wrote:
-> On 02/22/2011 11:31 AM, Samuel Ortiz wrote:
-> > Hi Subhasish,
-> > 
-> > On Tue, Feb 22, 2011 at 11:13:38AM +0530, Subhasish Ghosh wrote:
-> >> Thank you for your comments.
-> > No problem.
-> > 
-> >>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> >>>> index fd01836..6c437df 100644
-> >>>> --- a/drivers/mfd/Kconfig
-> >>>> +++ b/drivers/mfd/Kconfig
-> >>>> @@ -81,6 +81,16 @@ config MFD_DM355EVM_MSP
-> >>>>   boards.  MSP430 firmware manages resets and power sequencing,
-> >>>>   inputs from buttons and the IR remote, LEDs, an RTC, and more.
-> >>>>
-> >>>> +config MFD_DA8XX_PRUSS
-> >>>> + tristate "Texas Instruments DA8XX PRUSS support"
-> >>>> + depends on ARCH_DAVINCI && ARCH_DAVINCI_DA850
-> >>> Why are we depending on those ?
-> >>
-> >> SG -- The PRUSS core in only available within DA850 and DA830,
-> >>            DA830 support is not yet implemented.
-> > Sure, but if there are no actual code dependencies, I'd like to get rid of
-> > those depends.
-> > 
-> >>>> +u32 pruss_disable(struct device *dev, u8 pruss_num)
-> >>>> +{
-> >>>> + struct da8xx_pruss *pruss = dev_get_drvdata(dev->parent);
-> >>>> + da8xx_prusscore_regs h_pruss;
-> >>>> + u32 temp_reg;
-> >>>> +
-> >>>> + if (pruss_num == DA8XX_PRUCORE_0) {
-> >>>> + /* Disable PRU0  */
-> >>>> + h_pruss = (da8xx_prusscore_regs)
-> >>>> + ((u32) pruss->ioaddr + 0x7000);
-> >>> So it seems you're doing this in several places, and I have a few
-> >>> comments:
-> >>>
-> >>> - You don't need the da8xx_prusscore_regs at all.
-> >>> - Define the register map through a set of #define in your header file.
-> >>> - Use a static routine that takes the core number and returns the
-> >>> register map
-> >>> offset.
-> >>>
-> >>> Then routines like this one will look a lot more readable.
-> >>
-> >> SG -- There are a huge number of PRUSS registers. A lot of them are
-> >> reserved and are expected to change as development on the
-> >>            controller is still ongoing. 
-> > First of all, from what I read in your patch you're only using the CONTROL
-> > offset.
-> > 
-> >> If we use #defines to plot
-> >> all the registers, then first, there are too many array type
-> >> registers which will need to be duplicated.
-> > What I'm expecting is a small set of defines for the register offsets. You
-> > have 13 fields in your da8xx_prusscore_regs, you only need to define 13
-> > register offsets.
-> > 
-> > So, if you have a:
-> > 
-> > static u32 reg_offset(struct device *dev, u8 pru_num)
-> > {
-> > 	struct da8xx_pruss *pru = dev_get_drvdata(dev->parent);
-> > 
-> > 	switch (pru_num) {
-> > 	case DA8XX_PRUCORE_0:
-> > 		return (u32) pru->ioaddr + 0x7000;
-> > 	case DA8XX_PRUCORE_1:
-> > 		return (u32) pru->ioaddr + 0x7800;
-> > 	default:
-> > 		return 0;
-> > }
-> > 
-> > 
-> > then routines like pruss_enable (which should return an int, btw) would look
-> > like:
-> > 
-> > int pruss_enable(struct device *dev, u8 pruss_num)
-> > {
-> > 	u32 offset = reg_offset(dev, pruss_num);
-> > 
-> > 	if (offset == 0)
-> > 		return -EINVAL;
-> > 
-> > 	__raw_writel(DA8XX_PRUCORE_CONTROL_RESETVAL,
-> > 			offset + PRU_CORE_CONTROL);
-> > 
-> > 	return 0;
-> > }
-> 
-> All registers are memory mapped and could nicely be described by
-> structures (and sub-structures). Therefore we asked to considerer
-> structs, at least for the Pruss SocketCAN drivers. 
->
-> That would result in
-> much much clearer and better readable code. The code above would shrink to:
-> 
-> 	__raw_writel(DA8XX_PRUCORE_CONTROL_RESETVAL,
-> 		     &prucore[pruss_num].control);
-This driver seems to exclusively use the control offset, which is why I don't
-see an absolute need for doing this mapping.
-But if both maps are contiguous then doing the mapping would prevent us from
-calling reg_offset() and would bring some advantage. I'd then be fine with it.
-For now, da8xx_prusscore_regs seems to be larger than the 0x800 interval
-between the 2 maps, so I have no idea if both maps are indeed contiguous.
+Hi,
 
-Cheers,
-Samuel.
+> -----Original Message-----
+> From: Sergei Shtylyov [mailto:sshtylyov@mvista.com]
+> Sent: Monday, February 21, 2011 10:40 PM
+> To: TK, Pratheesh Gangadhar
+> Cc: davinci-linux-open-source@linux.davincidsp.com; gregkh@suse.de;
+> Chatterjee, Amit; hjk@linutronix.de; linux-kernel@vger.kernel.org; linux-
+> arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH 2/2] Defines DA850/AM18xx/OMAPL1-38 SOC resources used
+> by PRUSS UIO driver
+> 
+> Hello.
+> 
+> Pratheesh Gangadhar wrote:
+> 
+> > Signed-off-by: Pratheesh Gangadhar <pratheesh@ti.com>
+> 
+>     Signoff should follow the change log, not precede it. "From:" line may
+> precede the change log.
+Fixed this in the new version.
+> 
+> > This patch defines PRUSS, ECAP clocks, memory and IRQ resources
+> > used by PRUSS UIO driver in DA850/AM18xx/OMAPL1-38 devices. UIO
+> > driver exports 64K I/O region of PRUSS, 128KB L3 RAM and 256KB
+> > DDR buffer to user space. PRUSS has 8 host event interrupt lines
+> > mapped to IRQ_DA8XX_EVTOUT0..7 of ARM9 INTC.These in conjunction
+> > with shared memory can be used to implement IPC between ARM9 and
+> > PRUSS.
+> 
+> > diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-
+> davinci/board-da850-evm.c
+> > index 11f986b..ddcbac8 100644
+> > --- a/arch/arm/mach-davinci/board-da850-evm.c
+> > +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> > @@ -1077,6 +1077,10 @@ static __init void da850_evm_init(void)
+> >  		pr_warning("da850_evm_init: i2c0 registration failed: %d\n",
+> >  				ret);
+> >
+> > +	ret = da8xx_register_pruss();
+> > +       if (ret)
+> > +                pr_warning("da850_evm_init: pruss registration failed:
+> %d\n",
+> > +                                 ret);
+> >
+> >  	ret = da8xx_register_watchdog();
+> >  	if (ret)
+> 
+>     I'd put this into a pacth of its own, to have the SoC level changes
+> separated from board-level changes...
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Ok. I will do this; I need to make this change for hawkboard as well.
+> 
+> > diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-
+> davinci/da850.c
+> > index 3443d97..0096d4f 100644
+> > --- a/arch/arm/mach-davinci/da850.c
+> > +++ b/arch/arm/mach-davinci/da850.c
+> > @@ -238,6 +238,13 @@ static struct clk tptc2_clk = {
+> >  	.flags		= ALWAYS_ENABLED,
+> >  };
+> >
+> > +static struct clk pruss_clk = {
+> > +	.name		= "pruss",
+> > +	.parent		= &pll0_sysclk2,
+> > +	.lpsc		= DA8XX_LPSC0_DMAX,
+> 
+>     We have patch submitted by TI that renames this #define to
+> DA8XX_LPSC0_PRUSS...
+> 
+> > +	.flags		= ALWAYS_ENABLED,
+> > +};
+> > +
+> 
+>     We already have patch submitted by TI that defines this clock. It
+> would be
+> nice if you coordinated your efforts to avoid such conflicts.
+>     Again, I'd put the part adding the clocks into a patch of its own.
+
+I will try to sync with that patch. 
+> 
+> > diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-
+> davinci/devices-da8xx.c
+> > index beda8a4..4ea3d1f 100644
+> > --- a/arch/arm/mach-davinci/devices-da8xx.c
+> > +++ b/arch/arm/mach-davinci/devices-da8xx.c
+> > @@ -725,3 +725,76 @@ int __init da8xx_register_cpuidle(void)
+> >
+> >  	return platform_device_register(&da8xx_cpuidle_device);
+> >  }
+> > +static struct resource pruss_resources[] = {
+> > +	[0] = {
+> > +		.start  = DA8XX_PRUSS_BASE,
+> > +		.end    = DA8XX_PRUSS_BASE + SZ_64K - 1,
+> > +		.flags  = IORESOURCE_MEM,
+> > +	},
+> > +	[1] = {
+> > +		.start  = DA8XX_L3RAM_BASE,
+> > +		.end    = DA8XX_L3RAM_BASE + SZ_128K - 1,
+> > +		.flags  = IORESOURCE_MEM,
+> 
+>     Are you going to use all SRAM?
+Its application dependent - we don't use more than 10KB at this point.
+> 
+> > +	},
+> > +	[2] = {
+> > +		.start  = 0,
+> > +		.end    = SZ_256K - 1,
+> > +		.flags  = IORESOURCE_MEM,
+> > +	},
+> > +
+> > +	[3] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT0,
+> > +		.end    = IRQ_DA8XX_EVTOUT0,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +	[4] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT1,
+> > +		.end    = IRQ_DA8XX_EVTOUT1,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +	[5] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT2,
+> > +		.end    = IRQ_DA8XX_EVTOUT2,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +	[6] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT3,
+> > +		.end    = IRQ_DA8XX_EVTOUT3,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +	[7] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT4,
+> > +		.end    = IRQ_DA8XX_EVTOUT4,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +	[8] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT5,
+> > +		.end    = IRQ_DA8XX_EVTOUT5,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +	[9] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT6,
+> > +		.end    = IRQ_DA8XX_EVTOUT6,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +	[10] = {
+> > +		.start  = IRQ_DA8XX_EVTOUT7,
+> > +		.end    = IRQ_DA8XX_EVTOUT7,
+> > +		.flags  = IORESOURCE_IRQ,
+> > +	},
+> > +};
+> > +
+> > +static struct platform_device pruss_device = {
+> > +	.name			= "pruss",
+> > +	.id			= 0,
+> > +	.num_resources		= ARRAY_SIZE(pruss_resources),
+> > +	.resource		= pruss_resources,
+> > +	.dev	 =	{
+> > +		.coherent_dma_mask = 0xffffffff,
+> > +	}
+> > +};
+> > +
+> > +int __init da8xx_register_pruss()
+> > +{
+> > +	return platform_device_register(&pruss_device);
+> > +}
+> 
+>     Again, there's TI patch that adds this device already...
+I will check this.
+
+
+Thanks,
+Pratheesh
+
+
