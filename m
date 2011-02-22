@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1BVLvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 06:51:09 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:58868 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754034Ab1BVLvI (ORCPT
+	id S1754141Ab1BVL5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 06:57:51 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46782 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab1BVL5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 06:51:08 -0500
-Date: Tue, 22 Feb 2011 13:51:03 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: Bug on Latitude E6410 battery
-Message-ID: <20110222115103.GB16596@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110222114710.GA16596@legolas.emea.dhcp.ti.com>
+	Tue, 22 Feb 2011 06:57:50 -0500
+Message-ID: <4D63A4B8.8040106@linux.vnet.ibm.com>
+Date: Tue, 22 Feb 2011 06:57:44 -0500
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222114710.GA16596@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm <linux-pm@lists.linux-foundation.org>, stable@kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        debora@linux.vnet.ibm.com,
+        Linus Torvalds <torvalds@linux-foundation.org>, preining@logic.at
+Subject: Re: 2.6.37.1 s2disk regression (TPM)
+References: <4D60E93D.1050205@gmail.com> <4D60F108.9000106@gmail.com> <201102201151.11635.rjw@sisk.pl> <201102201248.10779.rjw@sisk.pl> <4D628521.8000205@linux.vnet.ibm.com> <4D629427.8020500@gmail.com> <4D629D03.90801@linux.vnet.ibm.com> <4D62CD93.3040206@gmail.com> <4D62D930.8060304@linux.vnet.ibm.com> <4D62DCBA.9050609@gmail.com> <4D62E221.7010104@linux.vnet.ibm.com> <4D62E2F2.4060406@gmail.com> <4D63066D.3080701@linux.vnet.ibm.com> <4D6376A9.5060704@gmail.com>
+In-Reply-To: <4D6376A9.5060704@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again,
+On 02/22/2011 03:41 AM, Jiri Slaby wrote:
+> On 02/22/2011 01:42 AM, Stefan Berger wrote:
+>> On 02/21/2011 05:10 PM, Jiri Slaby wrote:
+>>> On 02/21/2011 11:07 PM, Rajiv Andrade wrote:
+>>>> On 02/21/2011 06:44 PM, Jiri Slaby wrote:
+>>>>> On 02/21/2011 10:29 PM, Stefan Berger wrote:
+>>>>>> On 02/21/2011 03:39 PM, Jiri Slaby wrote:
+>>>>>>> On 02/21/2011 06:12 PM, Rajiv Andrade wrote:
+>>>>>>>> On 02/21/2011 01:34 PM, Jiri Slaby wrote:
+>>>>>>>>> There has to be another problem which caused my regression. And
+>>>>>>>>> since it
+>>>>>>>>> reports "Operation Timed out", the former default timeout values
+>>>>>>>>> worked
+>>>>>>>>> for me, the ones read from TPM do not.
+>>>>>>>> Yes, it's highly due inconsistent timeout values reported by the
+>>>>>>>> TPM as
+>>>>>>>> I mentioned, my working timeouts are:
+>>>>>>>> 3020000 4510000 181000000
+>>>>>>> 1000000 2000 150000
+>>>>>>>
+>>>>>>> Actually the first one from HW is 1. This is one is HZ after
+>>>>>>> correction
+>>>>>>> in get_timeout. So perhaps it is in ms, yes.
+>>>>>> Following the specs, the timeouts are supposed to be in
+>>>>>> microseconds and
+>>>>>> ascending order for short, medium and long duration. Of course, if the
+>>>>>> device returns wrong timeouts, the command isn't going to succeed,
+>>>>>> failing the suspend in this case. Nevertheless, I think we need the
+>>>>>> patch I put in but at the same time we'll need a work-around for
+>>>>>> devices
+>>>>>> like this.
+>>>>> Yes, the patch is correct per se. But as it breaks bunch of machines it
+>>>>> cannot go in now. The rule is no regressions.
+>>>>>
+>>>>> After you have the workaround it should go into the next rc1 after
+>>>>> that.
+>>>>> Do you plan to add a dmi-based quirk? Or, IOW do you want me to attach
+>>>>> dmidecode output? Or are you going to base it solely on TPM
+>>>>> manufacturer/version
+>>>> It's more reliable to base the workaround on the values themselves,
+>>>> instead of the TPM's ID, since
+>>>> we don't know whether other models will behave similarly.
+>>> As I wrote, you may base it on dmi data.
+>>>
+>>>> It should be fine then to extend the existing workaround for short
+>>>> timeouts to the medium and long ones.
+>>> OK, but how will you guess the values?
+>> One way of doing it would be to at least make sure that the timeouts are
+>>
+>> short<  medium<  long
+>>
+>> and if that's not true, as in the case of your TPM, set the timeouts to
+>> 0 and have Rajiv's work-around kick in  OR we assign the same high
+>> values to the timeouts explicily that Rajiv's work-around is using right
+>> now. Of course there could be another type of bad TPM firmware out there
+>> where all values are in ascending order but given in ms and cause
+>> time-outs -- but I would wait for someone to point that out since I am
+>> not aware of such a device.
+> Note that it is in ascending order (1 2000 150000). As I wrote the first
+> timeout (1) is replaced by one HZ in get_timeouts.
+The forthcoming patch will simply also adapt the other 2 values and 
+multiply them by 1000. The reason for the suspend failure is the 2nd 
+timeout with TPM_SaveState command being of medium duration.
 
-On Tue, Feb 22, 2011 at 01:47:10PM +0200, Felipe Balbi wrote:
-> there's some sort of weird bug on Latitude's battery as it shows 5600
-> hours of battery time when it's discharging (gnome-power_manager says
-> that), here are all files' contents from /sys/class/power_supply/BAT0/:
-> 
-> alarm:			0
-> charge_full:		5276000
-> charge_full_design:	5600000
-> charge_now:		5230000
-> current_now:		1606000
-> cycle_count:		0
-> manufacturer:		Samsung SDI
-> model_name:		DELL H139107
-> present:		1
-> serial_number:		1422
-> status:			Discharging
-> technology:		Li-ion
-> type:			Battery
-> uevent:			POWER_SUPPLY_NAME=BAT0
-> 			POWER_SUPPLY_STATUS=Discharging
-> 			POWER_SUPPLY_PRESENT=1
-> 			POWER_SUPPLY_TECHNOLOGY=Li-ion
-> 			POWER_SUPPLY_CYCLE_COUNT=0
-> 			POWER_SUPPLY_VOLTAGE_MIN_DESIGN=11100000
-> 			POWER_SUPPLY_VOLTAGE_NOW=12683000
-> 			POWER_SUPPLY_CURRENT_NOW=1606000
-> 			POWER_SUPPLY_CHARGE_FULL_DESIGN=5600000
-> 			POWER_SUPPLY_CHARGE_FULL=5276000
-> 			POWER_SUPPLY_CHARGE_NOW=5230000
-> 			POWER_SUPPLY_MODEL_NAME=DELL H139107
-> 			POWER_SUPPLY_MANUFACTURER=Samsung SDI
-> 			POWER_SUPPLY_SERIAL_NUMBER=1422
-> voltage_min_design:	11100000
-> voltage_now:		12683000
-> 
-> BTW, I'm using 2.6.38-rc5
+There will be a 2nd patch for re-enabling the TPM's interrupts that the 
+BIOS may (this may be BIOS-dependent) have disabled while sending a 
+command (TPM_Startup) to the TPM upon resume and having used polling 
+mode and leaving it with the interrupts disabled.
 
-Now I just saw that it's maybe a race. Sometimes is shows correctly
-(3 hours and something) and sometimes it shows wrong value (over 5000
-hours).
+I'd appreciate it if you tested both of them.
 
-It looks like the notification that I get when I remove the cable, shows
-the wrong value and if after the notification vanishes, I put my mouse
-pointer over the battery icon, then I get correctly value.
+    Stefan
 
-Maybe a bug on gnome-power-manager.
-
--- 
-balbi
