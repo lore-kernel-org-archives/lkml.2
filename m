@@ -1,60 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1BVSL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 13:11:29 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:47907 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754952Ab1BVSL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 13:11:28 -0500
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eugene Teo <eugeneteo@kernel.sg>, Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: [PATCH 2/2] debugfs: only allow root access to debugging interfaces
-Date: Tue, 22 Feb 2011 10:09:58 -0800
-Message-Id: <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
-X-HELO: www.outflux.net
+	id S1755051Ab1BVSLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 13:11:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43293 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755013Ab1BVSLq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 13:11:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <1298396971-611-1-git-send-email-monstr@monstr.eu>
+References: <1298396971-611-1-git-send-email-monstr@monstr.eu>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 22 Feb 2011 11:11:26 -0700
+X-Google-Sender-Auth: Xk5HQkgkN5xYZkZBCnHgAe5CJdg
+Message-ID: <AANLkTi=NLhAiyznBbKjSf7tpeGrGi7NOK2cHUWhfNzG-@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] i2c: xiic: Add OF support for Xilinx i2c bus interface
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-i2c@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        john.williams@petalogix.com, linux-kernel@vger.kernel.org,
+        John.Linn@xilinx.com, Ben Dooks <ben-linux@fluff.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Block access to the potentially dangerous debugging interfaces in
-the debugfs filesystem.
+[cc'ing Ben Dooks, embedded i2c maintainer]
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- fs/debugfs/inode.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, Feb 22, 2011 at 10:49 AM, Michal Simek <monstr@monstr.eu> wrote:
+> Add OF support to Xilinx i2c bus interface.
+> It is used on Microblaze systems.
+>
+> Signed-off-by: Michal Simek <monstr@monstr.eu>
 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index 3cb33c3..83c61a3 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -133,7 +133,7 @@ static int debug_fill_super(struct super_block *sb, void *data, int silent)
- 	static struct tree_descr debug_files[] = {{""}};
- 
- 	return simple_fill_super(sb, DEBUGFS_MAGIC, debug_files,
--				 S_IWUSR | S_IRUGO | S_IXUGO);
-+				 S_IRWXU);
- }
- 
- static struct dentry *debug_mount(struct file_system_type *fs_type,
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+Ben, since this one depends on a patch in my tree, do you want me to pick it up?
+
+g.
+
+> ---
+>  drivers/i2c/busses/i2c-xiic.c |   37 +++++++++++++++++++++++++++++--------
+>  1 files changed, 29 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-xiic.c b/drivers/i2c/busses/i2c-xiic.c
+> index a9c419e..0b7647b 100644
+> --- a/drivers/i2c/busses/i2c-xiic.c
+> +++ b/drivers/i2c/busses/i2c-xiic.c
+> @@ -41,6 +41,11 @@
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_i2c.h>
+> +#include <linux/of_address.h>
+
+Nit: This should not be separate from the rest of the include block.
+The blank line between slab.h and of.h can be dropped.
+
+> +
+>  #define DRIVER_NAME "xiic-i2c"
+>
+>  enum xilinx_i2c_state {
+> @@ -426,7 +431,7 @@ static void xiic_process(struct xiic_i2c *i2c)
+>                        xiic_wakeup(i2c, STATE_ERROR);
+>
+>        } else if (pend & (XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK)) {
+> -               /* Transmit register/FIFO is empty or ½ empty */
+> +               /* Transmit register/FIFO is empty or 1/2 empty */
+>
+>                clr = pend &
+>                        (XIIC_INTR_TX_EMPTY_MASK | XIIC_INTR_TX_HALF_MASK);
+> @@ -704,10 +709,6 @@ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
+>        if (irq < 0)
+>                goto resource_missing;
+>
+> -       pdata = (struct xiic_i2c_platform_data *) pdev->dev.platform_data;
+> -       if (!pdata)
+> -               return -EINVAL;
+> -
+>        i2c = kzalloc(sizeof(*i2c), GFP_KERNEL);
+>        if (!i2c)
+>                return -ENOMEM;
+> @@ -730,6 +731,7 @@ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
+>        i2c->adap = xiic_adapter;
+>        i2c_set_adapdata(&i2c->adap, i2c);
+>        i2c->adap.dev.parent = &pdev->dev;
+> +       i2c->adap.dev.of_node = of_node_get(pdev->dev.of_node);
+>
+>        xiic_reinit(i2c);
+>
+> @@ -748,9 +750,16 @@ static int __devinit xiic_i2c_probe(struct platform_device *pdev)
+>                goto add_adapter_failed;
+>        }
+>
+> -       /* add in known devices to the bus */
+> -       for (i = 0; i < pdata->num_devices; i++)
+> -               i2c_new_device(&i2c->adap, pdata->devices + i);
+> +       dev_info(&pdev->dev, "mapped to 0x%08X, irq=%d\n",
+> +                                       (unsigned int)i2c->base, irq);
+> +
+> +       pdata = (struct xiic_i2c_platform_data *) pdev->dev.platform_data;
+
+While you're touching this code anyway, the cast is unnecessary.
+
+> +       if (pdata) {
+> +               /* add in known devices to the bus */
+> +               for (i = 0; i < pdata->num_devices; i++)
+> +                       i2c_new_device(&i2c->adap, pdata->devices + i);
+> +       }
+> +       of_i2c_register_devices(&i2c->adap);
+>
+>        return 0;
+>
+> @@ -799,12 +808,24 @@ static int __devexit xiic_i2c_remove(struct platform_device* pdev)
+>  /* work with hotplug and coldplug */
+>  MODULE_ALIAS("platform:"DRIVER_NAME);
+>
+> +#ifdef CONFIG_OF
+> +/* Match table for of_platform binding */
+> +static struct of_device_id __devinitdata xilinx_iic_of_match[] = {
+> +       { .compatible = "xlnx,xps-iic-2.00.a", },
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, xilinx_iic_of_match);
+> +#else
+> +# define xilinx_iic_of_match NULL
+> +#endif
+> +
+>  static struct platform_driver xiic_i2c_driver = {
+>        .probe   = xiic_i2c_probe,
+>        .remove  = __devexit_p(xiic_i2c_remove),
+>        .driver  = {
+>                .owner = THIS_MODULE,
+>                .name = DRIVER_NAME,
+> +               .of_match_table = xilinx_iic_of_match,
+>        },
+>  };
+>
+> --
+> 1.5.5.6
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
+
 -- 
-1.7.2.3
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
