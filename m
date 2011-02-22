@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab1BVOes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:34:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64407 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753976Ab1BVOeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:34:46 -0500
-Date: Tue, 22 Feb 2011 15:34:21 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>, Andi Kleen <andi@firstfloor.org>,
-        Hugh Dickins <hughd@google.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] fix pgd_lock deadlock
-Message-ID: <20110222143421.GX13092@random.random>
-References: <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6>
- <20110215195450.GO5935@random.random>
- <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
- <20110216183304.GD5935@random.random>
- <20110217101941.GH2380@redhat.com>
- <20110221143023.GF13092@random.random>
- <20110221145350.GH25382@redhat.com>
- <4D6378760200007800033104@vpn.id2.novell.com>
- <20110222134956.GU13092@random.random>
- <4D63D4CD020000780003320A@vpn.id2.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D63D4CD020000780003320A@vpn.id2.novell.com>
+	id S1753989Ab1BVOiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:38:15 -0500
+Received: from server103.greatnet.de ([83.133.97.6]:58824 "EHLO
+	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550Ab1BVOiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:38:14 -0500
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+To: mingo@elte.hu
+Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Henrik Kretzschmar <henne@nachtwindheim.de>
+Subject: [PATCH 1/5] x86: move ioapic_irq_destination_types to apicdef.h
+Date: Tue, 22 Feb 2011 15:38:03 +0100
+Message-Id: <1298385487-4708-1-git-send-email-henne@nachtwindheim.de>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 02:22:53PM +0000, Jan Beulich wrote:
-> If everyone's okay with putting a couple of "if (xen_pv_domain())"
-> into mm/fault.c - sure. I would have thought that this wouldn't be
-> liked, hence the suggestion to make this depend on seeing the
-> backlink be non-NULL.
+This enum is used by non IOAPIC code, so apicdef.h is
+the best place for it.
 
-I prefer the if (xen_pv_domain) so it also gets optimized away
-at build time when CONFIG_XEN=n. I think it's also more self
-explanatory to read.
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+---
+ arch/x86/include/asm/apicdef.h |   12 ++++++++++++
+ arch/x86/include/asm/io_apic.h |   11 -----------
+ 2 files changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index 47a30ff..d87988b 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -426,4 +426,16 @@ struct local_apic {
+ #else
+  #define BAD_APICID 0xFFFFu
+ #endif
++
++enum ioapic_irq_destination_types {
++	dest_Fixed		= 0,
++	dest_LowestPrio		= 1,
++	dest_SMI		= 2,
++	dest__reserved_1	= 3,
++	dest_NMI		= 4,
++	dest_INIT		= 5,
++	dest__reserved_2	= 6,
++	dest_ExtINT		= 7
++};
++
+ #endif /* _ASM_X86_APICDEF_H */
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index f327d38..e1a9b0e 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -63,17 +63,6 @@ union IO_APIC_reg_03 {
+ 	} __attribute__ ((packed)) bits;
+ };
+ 
+-enum ioapic_irq_destination_types {
+-	dest_Fixed = 0,
+-	dest_LowestPrio = 1,
+-	dest_SMI = 2,
+-	dest__reserved_1 = 3,
+-	dest_NMI = 4,
+-	dest_INIT = 5,
+-	dest__reserved_2 = 6,
+-	dest_ExtINT = 7
+-};
+-
+ struct IO_APIC_route_entry {
+ 	__u32	vector		:  8,
+ 		delivery_mode	:  3,	/* 000: FIXED
+-- 
+1.7.2.3
+
