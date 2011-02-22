@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab1BVWXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:23:51 -0500
-Received: from xenotime.net ([184.105.210.51]:49280 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755381Ab1BVWXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:23:48 -0500
-Date: Tue, 22 Feb 2011 14:23:43 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: netdev <netdev@vger.kernel.org>, davem@davemloft.net
-Cc: Rob Landley <rlandley@parallels.com>, Mariusz Kozlowski <mk@lab.zgora.pl>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>
-Subject: net: update Documentation/networking/00-INDEX
-Message-Id: <20110222142343.f3318134.rdunlap@xenotime.net>
-In-Reply-To: <20110221120303.48106f6c.rdunlap@xenotime.net>
-References: <4D6095E3.2040103@parallels.com>
-	<20110221185205.GA23284@mako-laptop>
-	<4D62C43F.5040302@parallels.com>
-	<20110221120303.48106f6c.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755342Ab1BVWYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:24:36 -0500
+Received: from kroah.org ([198.145.64.141]:33016 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755123Ab1BVWWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:39 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:43 2011
+Message-Id: <20110222221843.531763222@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 22 Feb 2011 14:17:44 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stephen Warren <swarren@nvidia.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [65/70] ASoC: WM8903: Fix mic detection enable logic
+In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-Clean up entries in 00-INDEX: drop files that have been removed.
+------------------
 
-Reported-by: Rob Landley <rlandley@parallels.com>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+From: Stephen Warren <swarren@nvidia.com>
+
+commit 3088e3b4963d26d6f6f54987f595b974ed6d48d8 upstream.
+
+The mic detection HW should be enabled when either mic or short detection
+is required, not when only both are required.
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- Documentation/networking/00-INDEX |    6 ------
- 1 file changed, 6 deletions(-)
+ sound/soc/codecs/wm8903.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-next-20110222.orig/Documentation/networking/00-INDEX
-+++ linux-next-20110222/Documentation/networking/00-INDEX
-@@ -40,8 +40,6 @@ decnet.txt
- 	- info on using the DECnet networking layer in Linux.
- depca.txt
- 	- the Digital DEPCA/EtherWORKS DE1?? and DE2?? LANCE Ethernet driver
--dgrs.txt
--	- the Digi International RightSwitch SE-X Ethernet driver
- dmfe.txt
- 	- info on the Davicom DM9102(A)/DM9132/DM9801 fast ethernet driver.
- e100.txt
-@@ -50,8 +48,6 @@ e1000.txt
- 	- info on Intel's E1000 line of gigabit ethernet boards
- eql.txt
- 	- serial IP load balancing
--ethertap.txt
--	- the Ethertap user space packet reception and transmission driver
- ewrk3.txt
- 	- the Digital EtherWORKS 3 DE203/4/5 Ethernet driver
- filter.txt
-@@ -104,8 +100,6 @@ tuntap.txt
- 	- TUN/TAP device driver, allowing user space Rx/Tx of packets.
- vortex.txt
- 	- info on using 3Com Vortex (3c590, 3c592, 3c595, 3c597) Ethernet cards.
--wavelan.txt
--	- AT&T GIS (nee NCR) WaveLAN card: An Ethernet-like radio transceiver
- x25.txt
- 	- general info on X.25 development.
- x25-iface.txt
+--- a/sound/soc/codecs/wm8903.c
++++ b/sound/soc/codecs/wm8903.c
+@@ -1479,7 +1479,7 @@ int wm8903_mic_detect(struct snd_soc_cod
+ 			    WM8903_MICDET_EINT | WM8903_MICSHRT_EINT,
+ 			    irq_mask);
+ 
+-	if (det && shrt) {
++	if (det || shrt) {
+ 		/* Enable mic detection, this may not have been set through
+ 		 * platform data (eg, if the defaults are OK). */
+ 		snd_soc_update_bits(codec, WM8903_WRITE_SEQUENCER_0,
+
+
