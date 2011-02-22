@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab1BVWXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:23:37 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:37623 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755228Ab1BVWWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:44 -0500
-Date: Wed, 23 Feb 2011 09:22:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Mattia Dongili <malattia@linux.it>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the drivers-x86 tree
-Message-Id: <20110223092237.d3d183c3.sfr@canb.auug.org.au>
-In-Reply-To: <20110222143434.GA9720@srcf.ucam.org>
-References: <20110222162206.c3fb0636.sfr@canb.auug.org.au>
-	<a8c6f32c-ccb5-4f65-b537-8bd1c11f7336@email.android.com>
-	<20110222114601.GA936@kamineko.org>
-	<20110222143434.GA9720@srcf.ucam.org>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755319Ab1BVWXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:23:51 -0500
+Received: from xenotime.net ([184.105.210.51]:49280 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755381Ab1BVWXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:23:48 -0500
+Date: Tue, 22 Feb 2011 14:23:43 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: netdev <netdev@vger.kernel.org>, davem@davemloft.net
+Cc: Rob Landley <rlandley@parallels.com>, Mariusz Kozlowski <mk@lab.zgora.pl>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>
+Subject: net: update Documentation/networking/00-INDEX
+Message-Id: <20110222142343.f3318134.rdunlap@xenotime.net>
+In-Reply-To: <20110221120303.48106f6c.rdunlap@xenotime.net>
+References: <4D6095E3.2040103@parallels.com>
+	<20110221185205.GA23284@mako-laptop>
+	<4D62C43F.5040302@parallels.com>
+	<20110221120303.48106f6c.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-On Tue, 22 Feb 2011 14:34:34 +0000 Matthew Garrett <mjg59@srcf.ucam.org> wr=
-ote:
->
-> On Tue, Feb 22, 2011 at 08:46:01PM +0900, Mattia Dongili wrote:
->=20
-> > how does linux-next work? should this patch be a separate commit or can
-> > it be folded into the offending one?
->=20
-> I'll fold it into the offending one and repush. Sorry about the=20
-> breakage, Stephen - I don't have DEBUG_ALLOC enabled so didn't see the=20
-> failure. Do you build with a defined configuration I can test against?
+Clean up entries in 00-INDEX: drop files that have been removed.
 
-As the original report said, this was an x86_64 allmodconfig build.
+Reported-by: Rob Landley <rlandley@parallels.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ Documentation/networking/00-INDEX |    6 ------
+ 1 file changed, 6 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNZDctAAoJEDMEi1NhKgbschgIAJJH3vAIr3/jlbh6qEwEE1da
-4FC+st5xXcPmGZB+w9mbZAQ6CSBK34jmmL3F7okeSzd5JOnBElTQaWLJ8/eDhzB6
-bWYHXnQmLoDdG1/XW3rbp7yzK5/IJ2BNANDHdt8CKHWZBxnggbfqwlYZ01dOugRp
-VlHkptugbnh3H5xkHuui76eafHX+SIFTPyK2s4VmvzYs0EVzKNIL9ptVxSt7IzZd
-+/C+93x75jvpyVw2lpFNkHCL/Oun0pnFBbzcRh3Nl+pteC0WbvF0sMOs1HBIyKuK
-Fz2ne69Lgk6GgmU+6cVEvfR7FjzSg5tof3H66Helps3eFdKwkVoz+wglX+8mbHg=
-=XIV+
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_Feb_2011_09_22_37_+1100_EYthjVzx.opmGaP8--
+--- linux-next-20110222.orig/Documentation/networking/00-INDEX
++++ linux-next-20110222/Documentation/networking/00-INDEX
+@@ -40,8 +40,6 @@ decnet.txt
+ 	- info on using the DECnet networking layer in Linux.
+ depca.txt
+ 	- the Digital DEPCA/EtherWORKS DE1?? and DE2?? LANCE Ethernet driver
+-dgrs.txt
+-	- the Digi International RightSwitch SE-X Ethernet driver
+ dmfe.txt
+ 	- info on the Davicom DM9102(A)/DM9132/DM9801 fast ethernet driver.
+ e100.txt
+@@ -50,8 +48,6 @@ e1000.txt
+ 	- info on Intel's E1000 line of gigabit ethernet boards
+ eql.txt
+ 	- serial IP load balancing
+-ethertap.txt
+-	- the Ethertap user space packet reception and transmission driver
+ ewrk3.txt
+ 	- the Digital EtherWORKS 3 DE203/4/5 Ethernet driver
+ filter.txt
+@@ -104,8 +100,6 @@ tuntap.txt
+ 	- TUN/TAP device driver, allowing user space Rx/Tx of packets.
+ vortex.txt
+ 	- info on using 3Com Vortex (3c590, 3c592, 3c595, 3c597) Ethernet cards.
+-wavelan.txt
+-	- AT&T GIS (nee NCR) WaveLAN card: An Ethernet-like radio transceiver
+ x25.txt
+ 	- general info on X.25 development.
+ x25-iface.txt
