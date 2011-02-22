@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab1BVBbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 20:31:13 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51993 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab1BVBbM (ORCPT
+	id S1752888Ab1BVBbX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 20:31:23 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48072 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab1BVBbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 20:31:12 -0500
+	Mon, 21 Feb 2011 20:31:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/2] perf evsel: Fix inverted test for fixing up attr.inherit flag
-Date: Mon, 21 Feb 2011 22:31:02 -0300
-Message-Id: <1298338262-26258-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/2] perf probe: Fix error propagation leading to segfault
+Date: Mon, 21 Feb 2011 22:31:01 -0300
+Message-Id: <1298338262-26258-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1298338262-26258-1-git-send-email-acme@infradead.org>
 References: <1298338262-26258-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,21 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The kernel refuses mmapping an event with the inherit flag set for
-something that is systemwide (cpu == -1), and the evsel layer got this
-reversed at some point, fix it.
+There are two hunks in this patch that stops probe processing as soon as one
+error is found, breaking out of loops, the other fix an error propagation that
+should return a negative error number but instead was returning the result of
+"ret < 0", which is 1 and thus made several error checks fail because they test
+agains < 0.
 
-The symtom was that the --pid and --tid parameters for 'perf record' and
-'perf top' returned with -EINVAL, like:
+The problem could be triggered by asking for a variable that was optimized out,
+fact that should stop the whole probe processing but instead was segfaulting
+while installing broken probes:
 
- # /tmp/build-perf/perf record -v -fo/tmp/perf.data -p 1042
-   Warning:  ... trying to fall back to cpu-clock-ticks
+[root@emilia ~]# probe perf_mmap:55 user_lock_limit
+Failed to find the location of user_lock_limit at this address.
+ Perhaps, it has been optimized out.
+Failed to find 'user_lock_limit' in this function.
+Add new events:
+  probe:perf_mmap      (on perf_mmap:55 with user_lock_limit)
+  probe:perf_mmap_1    (on perf_mmap:55 with user_lock_limit)
+Segmentation fault (core dumped)
+[root@emilia ~]# perf probe -l
+  probe:perf_mmap      (on perf_mmap:55@git/linux/kernel/perf_event.c with user_lock_limit)
+  probe:perf_mmap_1    (on perf_mmap:55@git/linux/kernel/perf_event.c with user_lock_limit)
+[root@emilia ~]#
 
-   Fatal: failed to mmap with 22 (Invalid argument)
+After the fix:
 
-Reported-by: David Ahern <dsahern@gmail.com>
+[root@emilia ~]# probe perf_mmap:55 user_lock_limit
+Failed to find the location of user_lock_limit at this address.
+ Perhaps, it has been optimized out.
+Failed to find 'user_lock_limit' in this function.
+  Error: Failed to add events. (-2)
+[root@emilia ~]#
+
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -52,35 +73,50 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c |   15 +++++++++++++--
- 1 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/util/probe-event.c  |    5 ++++-
+ tools/perf/util/probe-finder.c |    4 +++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 63cadaf..8083d51 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -179,8 +179,19 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 0e3ea13..369ddc6 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1832,9 +1832,12 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 	}
  
- 	for (cpu = 0; cpu < cpus->nr; cpu++) {
- 		int group_fd = -1;
--
--		evsel->attr.inherit = (cpus->map[cpu] < 0) && inherit;
-+		/*
-+		 * Don't allow mmap() of inherited per-task counters. This
-+		 * would create a performance issue due to all children writing
-+		 * to the same buffer.
-+		 *
-+		 * FIXME:
-+		 * Proper fix is not to pass 'inherit' to perf_evsel__open*,
-+		 * but a 'flags' parameter, with 'group' folded there as well,
-+		 * then introduce a PERF_O_{MMAP,GROUP,INHERIT} enum, and if
-+		 * O_MMAP is set, emit a warning if cpu < 0 and O_INHERIT is
-+		 * set. Lets go for the minimal fix first tho.
-+		 */
-+		evsel->attr.inherit = (cpus->map[cpu] >= 0) && inherit;
+ 	/* Loop 2: add all events */
+-	for (i = 0; i < npevs && ret >= 0; i++)
++	for (i = 0; i < npevs && ret >= 0; i++) {
+ 		ret = __add_probe_trace_events(pkgs[i].pev, pkgs[i].tevs,
+ 						pkgs[i].ntevs, force_add);
++		if (ret < 0)
++			break;
++	}
+ end:
+ 	/* Loop 3: cleanup and free trace events  */
+ 	for (i = 0; i < npevs; i++) {
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index fe461f6..eecbdca 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1262,7 +1262,7 @@ static int probe_point_line_walker(const char *fname, int lineno,
+ 	ret = call_probe_finder(NULL, pf);
  
- 		for (thread = 0; thread < threads->nr; thread++) {
+ 	/* Continue if no error, because the line will be in inline function */
+-	return ret < 0 ?: 0;
++	return ret < 0 ? ret : 0;
+ }
  
+ /* Find probe point from its line number */
+@@ -1484,6 +1484,8 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 				pf->lno = pp->line;
+ 				ret = find_probe_point_by_line(pf);
+ 			}
++			if (ret != DWARF_CB_OK)
++				break;
+ 		}
+ 		off = noff;
+ 	}
 -- 
 1.6.2.5
 
