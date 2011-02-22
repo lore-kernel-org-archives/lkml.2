@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1BVGms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 01:42:48 -0500
-Received: from smtp-out-090.synserver.de ([212.40.185.90]:1094 "EHLO
+	id S1753293Ab1BVGmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 01:42:50 -0500
+Received: from smtp-out-090.synserver.de ([212.40.185.90]:1077 "EHLO
 	smtp-out-090.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab1BVGmq (ORCPT
+	with ESMTP id S1752691Ab1BVGms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 01:42:46 -0500
+	Tue, 22 Feb 2011 01:42:48 -0500
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 18504
@@ -15,9 +15,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>
 Cc: Pali Rohar <pali.rohar@gmail.com>, Rodolfo Giometti <giometti@linux.it>,
         Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 09/16] bq27x00: Cache battery registers
-Date: Tue, 22 Feb 2011 07:37:54 +0100
-Message-Id: <1298356681-8317-10-git-send-email-lars@metafoo.de>
+Subject: [PATCH v3 08/16] bq27x00: Add bq27000 support
+Date: Tue, 22 Feb 2011 07:37:53 +0100
+Message-Id: <1298356681-8317-9-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1298356681-8317-1-git-send-email-lars@metafoo.de>
 References: <1298356681-8317-1-git-send-email-lars@metafoo.de>
@@ -25,469 +25,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a register cache to the bq27x00 battery driver.
-Usually multiple, if not all, power_supply properties are queried at once,
-for example when an uevent is generated. Since some registers are used by
-multiple properties caching the registers should reduce the number of
-reads.
+This patch adds support for the bq27000 battery to the bq27x00 driver.
+The bq27000 is similar to the bq27200 except that it uses the HDQ bus
+instead of I2C to communicate with the host system.
 
-The cache is valid for 5 seconds this roughly matches the internal update
-interval of the current register for the bq27000/bq27200.
-
-Fast changing properties(*_NOW) which can be obtained by reading a single
-register are not cached.
-
-It will also be used in the follow up patch to check if the battery status
-has been changed since the last update to emit power_supply_changed events.
+The driver is implemented as a platform driver. The driver expects to be
+provided with a read callback function through its platform data. The read
+function is assumed to do the lowlevel HDQ handling and read out the value
+of a certain register.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Tested-by: Grazvydas Ignotas <notasas@gmail.com>
 ---
- drivers/power/bq27x00_battery.c |  271 +++++++++++++++++++++-----------------
- 1 files changed, 150 insertions(+), 121 deletions(-)
+ drivers/power/Kconfig                 |   14 +++
+ drivers/power/bq27x00_battery.c       |  184 ++++++++++++++++++++++++++++++---
+ include/linux/power/bq27x00_battery.h |   19 ++++
+ 3 files changed, 202 insertions(+), 15 deletions(-)
+ create mode 100644 include/linux/power/bq27x00_battery.h
 
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 61bf5d7..52a462f 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -117,10 +117,24 @@ config BATTERY_BQ20Z75
+ 
+ config BATTERY_BQ27x00
+ 	tristate "BQ27x00 battery driver"
++	help
++	  Say Y here to enable support for batteries with BQ27x00 (I2C/HDQ) chips.
++
++config BATTERY_BQ27X00_I2C
++	bool "BQ27200/BQ27500 support"
++	depends on BATTERY_BQ27x00
+ 	depends on I2C
++	default y
+ 	help
+ 	  Say Y here to enable support for batteries with BQ27x00 (I2C) chips.
+ 
++config BATTERY_BQ27X00_PLATFORM
++	bool "BQ27000 support"
++	depends on BATTERY_BQ27x00
++	default y
++	help
++	  Say Y here to enable support for batteries with BQ27000 (HDQ) chips.
++
+ config BATTERY_DA9030
+ 	tristate "DA9030 battery driver"
+ 	depends on PMIC_DA903X
 diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index 44bc76b..dbe3fcb 100644
+index def951d..44bc76b 100644
 --- a/drivers/power/bq27x00_battery.c
 +++ b/drivers/power/bq27x00_battery.c
-@@ -51,17 +51,30 @@
+@@ -3,6 +3,7 @@
+  *
+  * Copyright (C) 2008 Rodolfo Giometti <giometti@linux.it>
+  * Copyright (C) 2008 Eurotech S.p.A. <info@eurotech.it>
++ * Copyright (C) 2010-2011 Lars-Peter Clausen <lars@metafoo.de>
+  *
+  * Based on a previous work by Copyright (C) 2008 Texas Instruments, Inc.
+  *
+@@ -27,6 +28,8 @@
+ #include <linux/slab.h>
+ #include <asm/unaligned.h>
  
++#include <linux/power/bq27x00_battery.h>
++
+ #define DRIVER_VERSION			"1.1.0"
+ 
+ #define BQ27x00_REG_TEMP		0x06
+@@ -46,12 +49,6 @@
+ 
+ #define BQ27000_RS			20 /* Resistor sense */
+ 
+-/* If the system has several batteries we need a different name for each
+- * of them...
+- */
+-static DEFINE_IDR(battery_id);
+-static DEFINE_MUTEX(battery_mutex);
+-
  struct bq27x00_device_info;
  struct bq27x00_access_methods {
--	int (*read)(struct bq27x00_device_info *, u8 reg, int *rt_value,
--			bool single);
-+	int (*read)(struct bq27x00_device_info *di, u8 reg, bool single);
+ 	int (*read)(struct bq27x00_device_info *, u8 reg, int *rt_value,
+@@ -317,9 +314,15 @@ static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
+ 	return 0;
+ }
+ 
+-/*
+- * i2c specific code
++
++/* i2c specific code */
++#ifdef CONFIG_BATTERY_BQ27X00_I2C
++
++/* If the system has several batteries we need a different name for each
++ * of them...
+  */
++static DEFINE_IDR(battery_id);
++static DEFINE_MUTEX(battery_mutex);
+ 
+ static int bq27x00_read_i2c(struct bq27x00_device_info *di, u8 reg,
+ 			int *rt_value, bool single)
+@@ -434,10 +437,6 @@ static int bq27x00_battery_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
+-/*
+- * Module stuff
+- */
+-
+ static const struct i2c_device_id bq27x00_id[] = {
+ 	{ "bq27200", BQ27000 },	/* bq27200 is same as bq27000, but with i2c */
+ 	{ "bq27500", BQ27500 },
+@@ -453,13 +452,167 @@ static struct i2c_driver bq27x00_battery_driver = {
+ 	.id_table = bq27x00_id,
  };
  
- enum bq27x00_chip { BQ27000, BQ27500 };
- 
-+struct bq27x00_reg_cache {
-+	int temperature;
-+	int time_to_empty;
-+	int time_to_empty_avg;
-+	int time_to_full;
-+	int capacity;
-+	int flags;
++static inline int bq27x00_battery_i2c_init(void)
++{
++	int ret = i2c_add_driver(&bq27x00_battery_driver);
++	if (ret)
++		printk(KERN_ERR "Unable to register BQ27x00 i2c driver\n");
 +
-+	int current_now;
++	return ret;
++}
++
++static inline void bq27x00_battery_i2c_exit(void)
++{
++	i2c_del_driver(&bq27x00_battery_driver);
++}
++
++#else
++
++static inline int bq27x00_battery_i2c_init(void) { return 0; }
++static inline void bq27x00_battery_i2c_exit(void) {};
++
++#endif
++
++/* platform specific code */
++#ifdef CONFIG_BATTERY_BQ27X00_PLATFORM
++
++static int bq27000_read_platform(struct bq27x00_device_info *di, u8 reg,
++			int *rt_value, bool single)
++{
++	struct device *dev = di->dev;
++	struct bq27000_platform_data *pdata = dev->platform_data;
++	unsigned int timeout = 3;
++	int upper, lower;
++	int temp;
++
++	if (!single) {
++		/* Make sure the value has not changed in between reading the
++		 * lower and the upper part */
++		upper = pdata->read(dev, reg + 1);
++		do {
++			temp = upper;
++			if (upper < 0)
++				return upper;
++
++			lower = pdata->read(dev, reg);
++			if (lower < 0)
++				return lower;
++
++			upper = pdata->read(dev, reg + 1);
++		} while (temp != upper && --timeout);
++
++		if (timeout == 0)
++			return -EIO;
++
++		*rt_value = (upper << 8) | lower;
++	} else {
++		lower = pdata->read(dev, reg);
++		if (lower < 0)
++			return lower;
++		*rt_value = lower;
++	}
++	return 0;
++}
++
++static int __devinit bq27000_battery_probe(struct platform_device *pdev)
++{
++	struct bq27x00_device_info *di;
++	struct bq27000_platform_data *pdata = pdev->dev.platform_data;
++	int ret;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "no platform_data supplied\n");
++		return -EINVAL;
++	}
++
++	if (!pdata->read) {
++		dev_err(&pdev->dev, "no hdq read callback supplied\n");
++		return -EINVAL;
++	}
++
++	di = kzalloc(sizeof(*di), GFP_KERNEL);
++	if (!di) {
++		dev_err(&pdev->dev, "failed to allocate device info data\n");
++		return -ENOMEM;
++	}
++
++	platform_set_drvdata(pdev, di);
++
++	di->dev = &pdev->dev;
++	di->chip = BQ27000;
++
++	di->bat.name = pdata->name ?: dev_name(&pdev->dev);
++	di->bus.read = &bq27000_read_platform;
++
++	ret = bq27x00_powersupply_init(di);
++	if (ret)
++		goto err_free;
++
++	return 0;
++
++err_free:
++	platform_set_drvdata(pdev, NULL);
++	kfree(di);
++
++	return ret;
++}
++
++static int __devexit bq27000_battery_remove(struct platform_device *pdev)
++{
++	struct bq27x00_device_info *di = platform_get_drvdata(pdev);
++
++	power_supply_unregister(&di->bat);
++	platform_set_drvdata(pdev, NULL);
++	kfree(di);
++
++	return 0;
++}
++
++static struct platform_driver bq27000_battery_driver = {
++	.probe	= bq27000_battery_probe,
++	.remove = __devexit_p(bq27000_battery_remove),
++	.driver = {
++		.name = "bq27000-battery",
++		.owner = THIS_MODULE,
++	},
 +};
 +
- struct bq27x00_device_info {
- 	struct device 		*dev;
- 	int			id;
- 	enum bq27x00_chip	chip;
- 
-+	struct bq27x00_reg_cache cache;
-+	unsigned long last_update;
-+
- 	struct power_supply	bat;
- 
- 	struct bq27x00_access_methods bus;
-@@ -85,48 +98,93 @@ static enum power_supply_property bq27x00_battery_props[] = {
-  */
- 
- static inline int bq27x00_read(struct bq27x00_device_info *di, u8 reg,
--		int *rt_value, bool single)
-+		bool single)
- {
--	return di->bus.read(di, reg, rt_value, single);
-+	return di->bus.read(di, reg, single);
- }
- 
- /*
-- * Return the battery temperature in tenths of degree Celsius
-+ * Return the battery Relative State-of-Charge
-  * Or < 0 if something fails.
-  */
--static int bq27x00_battery_temperature(struct bq27x00_device_info *di)
-+static int bq27x00_battery_read_rsoc(struct bq27x00_device_info *di)
- {
--	int ret;
--	int temp = 0;
--
--	ret = bq27x00_read(di, BQ27x00_REG_TEMP, &temp, false);
--	if (ret) {
--		dev_err(di->dev, "error reading temperature\n");
--		return ret;
--	}
-+	int rsoc;
- 
- 	if (di->chip == BQ27500)
--		return temp - 2731;
-+		rsoc = bq27x00_read(di, BQ27500_REG_SOC, false);
- 	else
--		return ((temp * 5) - 5463) / 2;
-+		rsoc = bq27x00_read(di, BQ27000_REG_RSOC, true);
-+
-+	if (rsoc < 0)
-+		dev_err(di->dev, "error reading relative State-of-Charge\n");
-+
-+	return rsoc;
- }
- 
- /*
-- * Return the battery Voltage in milivolts
-- * Or < 0 if something fails.
-+ * Read a time register.
-+ * Return < 0 if something fails.
-  */
--static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
-+static int bq27x00_battery_read_time(struct bq27x00_device_info *di, u8 reg)
- {
--	int ret;
--	int volt = 0;
-+	int tval;
- 
--	ret = bq27x00_read(di, BQ27x00_REG_VOLT, &volt, false);
--	if (ret) {
--		dev_err(di->dev, "error reading voltage\n");
--		return ret;
-+	tval = bq27x00_read(di, reg, false);
-+	if (tval < 0) {
-+		dev_err(di->dev, "error reading register %02x: %d\n", reg, tval);
-+		return tval;
- 	}
- 
--	return volt * 1000;
-+	if (tval == 65535)
-+		return -ENODATA;
-+
-+	return tval * 60;
-+}
-+
-+static void bq27x00_update(struct bq27x00_device_info *di)
++static inline int bq27x00_battery_platform_init(void)
 +{
-+	struct bq27x00_reg_cache cache = {0, };
-+	bool is_bq27500 = di->chip == BQ27500;
++	int ret = platform_driver_register(&bq27000_battery_driver);
++	if (ret)
++		printk(KERN_ERR "Unable to register BQ27000 platform driver\n");
 +
-+	cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, is_bq27500);
-+	if (cache.flags >= 0) {
-+		cache.capacity = bq27x00_battery_read_rsoc(di);
-+		cache.temperature = bq27x00_read(di, BQ27x00_REG_TEMP, false);
-+		cache.time_to_empty = bq27x00_battery_read_time(di, BQ27x00_REG_TTE);
-+		cache.time_to_empty_avg = bq27x00_battery_read_time(di, BQ27x00_REG_TTECP);
-+		cache.time_to_full = bq27x00_battery_read_time(di, BQ27x00_REG_TTF);
-+
-+		if (!is_bq27500)
-+			cache.current_now = bq27x00_read(di, BQ27x00_REG_AI, false);
-+	}
-+
-+	/* Ignore current_now which is a snapshot of the current battery state
-+	 * and is likely to be different even between two consecutive reads */
-+	if (memcmp(&di->cache, &cache, sizeof(cache) - sizeof(int)) != 0) {
-+		di->cache = cache;
-+		power_supply_changed(&di->bat);
-+	}
-+
-+	di->last_update = jiffies;
++	return ret;
 +}
++
++static inline void bq27x00_battery_platform_exit(void)
++{
++	platform_driver_unregister(&bq27000_battery_driver);
++}
++
++#else
++
++static inline int bq27x00_battery_platform_init(void) { return 0; }
++static inline void bq27x00_battery_platform_exit(void) {};
++
++#endif
 +
 +/*
-+ * Return the battery temperature in tenths of degree Celsius
-+ * Or < 0 if something fails.
++ * Module stuff
 + */
-+static int bq27x00_battery_temperature(struct bq27x00_device_info *di,
-+	union power_supply_propval *val)
-+{
-+	if (di->cache.temperature < 0)
-+		return di->cache.temperature;
 +
-+	if (di->chip == BQ27500)
-+		val->intval = di->cache.temperature - 2731;
-+	else
-+		val->intval = ((di->cache.temperature * 5) - 5463) / 2;
-+
-+	return 0;
- }
- 
- /*
-@@ -134,109 +192,84 @@ static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
-  * Note that current can be negative signed as well
-  * Or 0 if something fails.
-  */
--static int bq27x00_battery_current(struct bq27x00_device_info *di)
-+static int bq27x00_battery_current(struct bq27x00_device_info *di,
-+	union power_supply_propval *val)
+ static int __init bq27x00_battery_init(void)
  {
--	int ret;
--	int curr = 0;
--	int flags = 0;
-+	int curr;
+ 	int ret;
  
--	ret = bq27x00_read(di, BQ27x00_REG_AI, &curr, false);
--	if (ret) {
--		dev_err(di->dev, "error reading current\n");
--		return 0;
--	}
-+	if (di->chip == BQ27500)
-+	    curr = bq27x00_read(di, BQ27x00_REG_AI, false);
-+	else
-+	    curr = di->cache.current_now;
+-	ret = i2c_add_driver(&bq27x00_battery_driver);
++	ret = bq27x00_battery_i2c_init();
++	if (ret)
++		return ret;
 +
-+	if (curr < 0)
-+		return curr;
++	ret = bq27x00_battery_platform_init();
+ 	if (ret)
+-		printk(KERN_ERR "Unable to register BQ27x00 driver\n");
++		bq27x00_battery_i2c_exit();
  
- 	if (di->chip == BQ27500) {
- 		/* bq27500 returns signed value */
--		curr = (int)((s16)curr) * 1000;
-+		val->intval = (int)((s16)curr) * 1000;
- 	} else {
--		ret = bq27x00_read(di, BQ27x00_REG_FLAGS, &flags, false);
--		if (ret < 0) {
--			dev_err(di->dev, "error reading flags\n");
--			return 0;
--		}
--		if (flags & BQ27000_FLAG_CHGS) {
-+		if (di->cache.flags & BQ27000_FLAG_CHGS) {
- 			dev_dbg(di->dev, "negative current!\n");
- 			curr = -curr;
- 		}
--		curr = curr * 3570 / BQ27000_RS;
--	}
--
--	return curr;
--}
--
--/*
-- * Return the battery Relative State-of-Charge
-- * Or < 0 if something fails.
-- */
--static int bq27x00_battery_rsoc(struct bq27x00_device_info *di)
--{
--	int ret;
--	int rsoc = 0;
- 
--	if (di->chip == BQ27500)
--		ret = bq27x00_read(di, BQ27500_REG_SOC, &rsoc, false);
--	else
--		ret = bq27x00_read(di, BQ27000_REG_RSOC, &rsoc, true);
--	if (ret) {
--		dev_err(di->dev, "error reading relative State-of-Charge\n");
--		return ret;
-+		val->intval = curr * 3570 / BQ27000_RS;
- 	}
- 
--	return rsoc;
-+	return 0;
+ 	return ret;
  }
+@@ -467,7 +620,8 @@ module_init(bq27x00_battery_init);
  
- static int bq27x00_battery_status(struct bq27x00_device_info *di,
--				  union power_supply_propval *val)
-+	union power_supply_propval *val)
+ static void __exit bq27x00_battery_exit(void)
  {
--	int flags = 0;
- 	int status;
--	int ret;
--
--	ret = bq27x00_read(di, BQ27x00_REG_FLAGS, &flags, false);
--	if (ret < 0) {
--		dev_err(di->dev, "error reading flags\n");
--		return ret;
--	}
- 
- 	if (di->chip == BQ27500) {
--		if (flags & BQ27500_FLAG_FC)
-+		if (di->cache.flags & BQ27500_FLAG_FC)
- 			status = POWER_SUPPLY_STATUS_FULL;
--		else if (flags & BQ27500_FLAG_DSC)
-+		else if (di->cache.flags & BQ27500_FLAG_DSC)
- 			status = POWER_SUPPLY_STATUS_DISCHARGING;
- 		else
- 			status = POWER_SUPPLY_STATUS_CHARGING;
- 	} else {
--		if (flags & BQ27000_FLAG_CHGS)
-+		if (di->cache.flags & BQ27000_FLAG_CHGS)
- 			status = POWER_SUPPLY_STATUS_CHARGING;
- 		else
- 			status = POWER_SUPPLY_STATUS_DISCHARGING;
- 	}
- 
- 	val->intval = status;
-+
- 	return 0;
+-	i2c_del_driver(&bq27x00_battery_driver);
++	bq27x00_battery_platform_exit();
++	bq27x00_battery_i2c_exit();
  }
+ module_exit(bq27x00_battery_exit);
  
- /*
-- * Read a time register.
-- * Return < 0 if something fails.
-+ * Return the battery Voltage in milivolts
-+ * Or < 0 if something fails.
-  */
--static int bq27x00_battery_time(struct bq27x00_device_info *di, int reg,
--				union power_supply_propval *val)
-+static int bq27x00_battery_voltage(struct bq27x00_device_info *di,
-+	union power_supply_propval *val)
- {
--	int tval = 0;
--	int ret;
-+	int volt;
- 
--	ret = bq27x00_read(di, reg, &tval, false);
--	if (ret) {
--		dev_err(di->dev, "error reading register %02x\n", reg);
--		return ret;
--	}
-+	volt = bq27x00_read(di, BQ27x00_REG_VOLT, false);
-+	if (volt < 0)
-+		return volt;
- 
--	if (tval == 65535)
--		return -ENODATA;
-+	val->intval = volt * 1000;
+diff --git a/include/linux/power/bq27x00_battery.h b/include/linux/power/bq27x00_battery.h
+new file mode 100644
+index 0000000..a857f71
+--- /dev/null
++++ b/include/linux/power/bq27x00_battery.h
+@@ -0,0 +1,19 @@
++#ifndef __LINUX_BQ27X00_BATTERY_H__
++#define __LINUX_BQ27X00_BATTERY_H__
 +
-+	return 0;
-+}
++/**
++ * struct bq27000_plaform_data - Platform data for bq27000 devices
++ * @name: Name of the battery. If NULL the driver will fallback to "bq27000".
++ * @read: HDQ read callback.
++ *	This function should provide access to the HDQ bus the battery is
++ *	connected to.
++ *	The first parameter is a pointer to the battery device, the second the
++ *	register to be read. The return value should either be the content of
++ *	the passed register or an error value.
++ */
++struct bq27000_platform_data {
++	const char *name;
++	int (*read)(struct device *dev, unsigned int);
++};
 +
-+static int bq27x00_simple_value(int value,
-+	union power_supply_propval *val)
-+{
-+	if (value < 0)
-+		return value;
-+
-+	val->intval = value;
- 
--	val->intval = tval * 60;
- 	return 0;
- }
- 
-@@ -249,9 +282,11 @@ static int bq27x00_battery_get_property(struct power_supply *psy,
- {
- 	int ret = 0;
- 	struct bq27x00_device_info *di = to_bq27x00_device_info(psy);
--	int voltage = bq27x00_battery_voltage(di);
- 
--	if (psp != POWER_SUPPLY_PROP_PRESENT && voltage <= 0)
-+	if (time_is_before_jiffies(di->last_update + 5 * HZ))
-+		bq27x00_update(di);
-+
-+	if (psp != POWER_SUPPLY_PROP_PRESENT && di->cache.flags < 0)
- 		return -ENODEV;
- 
- 	switch (psp) {
-@@ -259,29 +294,28 @@ static int bq27x00_battery_get_property(struct power_supply *psy,
- 		ret = bq27x00_battery_status(di, val);
- 		break;
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
--		val->intval = voltage;
-+		ret = bq27x00_battery_voltage(di, val);
- 		break;
- 	case POWER_SUPPLY_PROP_PRESENT:
--		if (psp == POWER_SUPPLY_PROP_PRESENT)
--			val->intval = voltage <= 0 ? 0 : 1;
-+		val->intval = di->cache.flags < 0 ? 0 : 1;
- 		break;
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
--		val->intval = bq27x00_battery_current(di);
-+		ret = bq27x00_battery_current(di, val);
- 		break;
- 	case POWER_SUPPLY_PROP_CAPACITY:
--		val->intval = bq27x00_battery_rsoc(di);
-+		ret = bq27x00_simple_value(di->cache.capacity, val);
- 		break;
- 	case POWER_SUPPLY_PROP_TEMP:
--		val->intval = bq27x00_battery_temperature(di);
-+		ret = bq27x00_battery_temperature(di, val);
- 		break;
- 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
--		ret = bq27x00_battery_time(di, BQ27x00_REG_TTE, val);
-+		ret = bq27x00_simple_value(di->cache.time_to_empty, val);
- 		break;
- 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
--		ret = bq27x00_battery_time(di, BQ27x00_REG_TTECP, val);
-+		ret = bq27x00_simple_value(di->cache.time_to_empty_avg, val);
- 		break;
- 	case POWER_SUPPLY_PROP_TIME_TO_FULL_NOW:
--		ret = bq27x00_battery_time(di, BQ27x00_REG_TTF, val);
-+		ret = bq27x00_simple_value(di->cache.time_to_full, val);
- 		break;
- 	case POWER_SUPPLY_PROP_TECHNOLOGY:
- 		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-@@ -311,6 +345,8 @@ static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
- 
- 	dev_info(di->dev, "support ver. %s enabled\n", DRIVER_VERSION);
- 
-+	bq27x00_update(di);
-+
- 	return 0;
- }
- 
-@@ -324,13 +360,12 @@ static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
- static DEFINE_IDR(battery_id);
- static DEFINE_MUTEX(battery_mutex);
- 
--static int bq27x00_read_i2c(struct bq27x00_device_info *di, u8 reg,
--			int *rt_value, bool single)
-+static int bq27x00_read_i2c(struct bq27x00_device_info *di, u8 reg, bool single)
- {
- 	struct i2c_client *client = to_i2c_client(di->dev);
- 	struct i2c_msg msg[1];
- 	unsigned char data[2];
--	int err;
-+	int ret;
- 
- 	if (!client->adapter)
- 		return -ENODEV;
-@@ -341,26 +376,24 @@ static int bq27x00_read_i2c(struct bq27x00_device_info *di, u8 reg,
- 	msg->buf = data;
- 
- 	data[0] = reg;
--	err = i2c_transfer(client->adapter, msg, 1);
-+	ret = i2c_transfer(client->adapter, msg, 1);
- 
--	if (err >= 0) {
-+	if (ret >= 0) {
- 		if (!single)
- 			msg->len = 2;
- 		else
- 			msg->len = 1;
- 
- 		msg->flags = I2C_M_RD;
--		err = i2c_transfer(client->adapter, msg, 1);
--		if (err >= 0) {
-+		ret = i2c_transfer(client->adapter, msg, 1);
-+		if (ret >= 0) {
- 			if (!single)
--				*rt_value = get_unaligned_le16(data);
-+				ret = get_unaligned_le16(data);
- 			else
--				*rt_value = data[0];
--
--			return 0;
-+				ret = data[0];
- 		}
- 	}
--	return err;
-+	return ret;
- }
- 
- static int bq27x00_battery_probe(struct i2c_client *client,
-@@ -477,7 +510,7 @@ static inline void bq27x00_battery_i2c_exit(void) {};
- #ifdef CONFIG_BATTERY_BQ27X00_PLATFORM
- 
- static int bq27000_read_platform(struct bq27x00_device_info *di, u8 reg,
--			int *rt_value, bool single)
-+			bool single)
- {
- 	struct device *dev = di->dev;
- 	struct bq27000_platform_data *pdata = dev->platform_data;
-@@ -504,14 +537,10 @@ static int bq27000_read_platform(struct bq27x00_device_info *di, u8 reg,
- 		if (timeout == 0)
- 			return -EIO;
- 
--		*rt_value = (upper << 8) | lower;
--	} else {
--		lower = pdata->read(dev, reg);
--		if (lower < 0)
--			return lower;
--		*rt_value = lower;
-+		return (upper << 8) | lower;
- 	}
--	return 0;
-+
-+	return pdata->read(dev, reg);
- }
- 
- static int __devinit bq27000_battery_probe(struct platform_device *pdev)
++#endif
 -- 
 1.7.2.3
 
