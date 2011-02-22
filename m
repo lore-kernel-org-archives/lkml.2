@@ -1,93 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab1BVU6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:58:23 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:13990 "EHLO
+	id S1753530Ab1BVVAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:00:05 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:14001 "EHLO
 	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab1BVU6T (ORCPT
+	with ESMTP id S1753135Ab1BVU6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:58:19 -0500
+	Tue, 22 Feb 2011 15:58:22 -0500
 From: David Daney <ddaney@caviumnetworks.com>
 To: linux-mips@linux-mips.org, ralf@linux-mips.org,
         devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
         linux-kernel@vger.kernel.org
 Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [RFC PATCH 03/10] MIPS: Prune some target specific code out of prom.c
-Date: Tue, 22 Feb 2011 12:57:47 -0800
-Message-Id: <1298408274-20856-4-git-send-email-ddaney@caviumnetworks.com>
+Subject: [RFC PATCH 05/10] MIPS: Octeon: Rearrance CVMX files in preperation for device tree
+Date: Tue, 22 Feb 2011 12:57:49 -0800
+Message-Id: <1298408274-20856-6-git-send-email-ddaney@caviumnetworks.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
 References: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
-X-OriginalArrivalTime: 22 Feb 2011 20:58:18.0691 (UTC) FILETIME=[3B69C130:01CBD2D3]
+X-OriginalArrivalTime: 22 Feb 2011 20:58:21.0754 (UTC) FILETIME=[3D3D21A0:01CBD2D3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code is not common enough to be in a shared file.  It is also not
-used by any existing boards, so just remove it.
-
 Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 ---
- arch/mips/kernel/prom.c |   49 -----------------------------------------------
- 1 files changed, 0 insertions(+), 49 deletions(-)
+ .../cavium-octeon/executive/cvmx-helper-sgmii.c    |    6 +-
+ .../mips/cavium-octeon/executive/cvmx-helper-spi.c |   10 ++
+ .../cavium-octeon/executive/cvmx-helper-xaui.c     |   22 +++--
+ arch/mips/cavium-octeon/executive/cvmx-helper.c    |   93 ++++++++++++++++---
+ arch/mips/include/asm/octeon/cvmx-helper-loop.h    |    1 +
+ arch/mips/include/asm/octeon/cvmx-helper-npi.h     |    1 +
+ arch/mips/include/asm/octeon/cvmx-helper-rgmii.h   |    1 +
+ arch/mips/include/asm/octeon/cvmx-helper-sgmii.h   |    1 +
+ arch/mips/include/asm/octeon/cvmx-helper-spi.h     |    1 +
+ arch/mips/include/asm/octeon/cvmx-helper-xaui.h    |    1 +
+ arch/mips/include/asm/octeon/cvmx-helper.h         |    1 +
+ 11 files changed, 114 insertions(+), 24 deletions(-)
 
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index a19811e9..a07b6f1 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -59,52 +59,3 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
- 	initrd_below_start_ok = 1;
+diff --git a/arch/mips/cavium-octeon/executive/cvmx-helper-sgmii.c b/arch/mips/cavium-octeon/executive/cvmx-helper-sgmii.c
+index 464347f..0c0bf5d 100644
+--- a/arch/mips/cavium-octeon/executive/cvmx-helper-sgmii.c
++++ b/arch/mips/cavium-octeon/executive/cvmx-helper-sgmii.c
+@@ -326,6 +326,10 @@ static int __cvmx_helper_sgmii_hardware_init(int interface, int num_ports)
+ 	return 0;
  }
+ 
++int __cvmx_helper_sgmii_enumerate(int interface)
++{
++	return 4;
++}
+ /**
+  * Probe a SGMII interface and determine the number of ports
+  * connected to it. The SGMII interface should still be down after
+@@ -347,7 +351,7 @@ int __cvmx_helper_sgmii_probe(int interface)
+ 	mode.u64 = cvmx_read_csr(CVMX_GMXX_INF_MODE(interface));
+ 	mode.s.en = 1;
+ 	cvmx_write_csr(CVMX_GMXX_INF_MODE(interface), mode.u64);
+-	return 4;
++	return __cvmx_helper_sgmii_enumerate(interface);
+ }
+ 
+ /**
+diff --git a/arch/mips/cavium-octeon/executive/cvmx-helper-spi.c b/arch/mips/cavium-octeon/executive/cvmx-helper-spi.c
+index 02a4442..2830e4b 100644
+--- a/arch/mips/cavium-octeon/executive/cvmx-helper-spi.c
++++ b/arch/mips/cavium-octeon/executive/cvmx-helper-spi.c
+@@ -51,6 +51,16 @@ void __cvmx_interrupt_stxx_int_msk_enable(int index);
+ #define CVMX_HELPER_SPI_TIMEOUT 10
  #endif
+ 
++int __cvmx_helper_spi_enumerate(int interface)
++{
++	if ((cvmx_sysinfo_get()->board_type != CVMX_BOARD_TYPE_SIM) &&
++	    cvmx_spi4000_is_present(interface)) {
++		return 10;
++	} else {
++		return 16;
++	}
++}
++
+ /**
+  * Probe a SPI interface and determine the number of ports
+  * connected to it. The SPI interface should still be down after
+diff --git a/arch/mips/cavium-octeon/executive/cvmx-helper-xaui.c b/arch/mips/cavium-octeon/executive/cvmx-helper-xaui.c
+index 667a8e3..1723248e 100644
+--- a/arch/mips/cavium-octeon/executive/cvmx-helper-xaui.c
++++ b/arch/mips/cavium-octeon/executive/cvmx-helper-xaui.c
+@@ -44,6 +44,19 @@
+ void __cvmx_interrupt_gmxx_enable(int interface);
+ void __cvmx_interrupt_pcsx_intx_en_reg_enable(int index, int block);
+ void __cvmx_interrupt_pcsxx_int_en_reg_enable(int index);
++
++int __cvmx_helper_xaui_enumerate(int interface)
++{
++	union cvmx_gmxx_hg2_control gmx_hg2_control;
++
++	/* If HiGig2 is enabled return 16 ports, otherwise return 1 port */
++	gmx_hg2_control.u64 = cvmx_read_csr(CVMX_GMXX_HG2_CONTROL(interface));
++	if (gmx_hg2_control.s.hg2tx_en)
++		return 16;
++	else
++		return 1;
++}
++
+ /**
+  * Probe a XAUI interface and determine the number of ports
+  * connected to it. The XAUI interface should still be down
+@@ -56,7 +69,6 @@ void __cvmx_interrupt_pcsxx_int_en_reg_enable(int index);
+ int __cvmx_helper_xaui_probe(int interface)
+ {
+ 	int i;
+-	union cvmx_gmxx_hg2_control gmx_hg2_control;
+ 	union cvmx_gmxx_inf_mode mode;
+ 
+ 	/*
+@@ -90,13 +102,7 @@ int __cvmx_helper_xaui_probe(int interface)
+ 		pko_mem_port_ptrs.s.pid = interface * 16 + i;
+ 		cvmx_write_csr(CVMX_PKO_MEM_PORT_PTRS, pko_mem_port_ptrs.u64);
+ 	}
 -
--/*
-- * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
-- *
-- * Currently the mapping mechanism is trivial; simple flat hwirq numbers are
-- * mapped 1:1 onto Linux irq numbers.  Cascaded irq controllers are not
-- * supported.
-- */
--unsigned int irq_create_of_mapping(struct device_node *controller,
--				   const u32 *intspec, unsigned int intsize)
--{
--	return intspec[0];
--}
--EXPORT_SYMBOL_GPL(irq_create_of_mapping);
--
--void __init early_init_devtree(void *params)
--{
--	/* Setup flat device-tree pointer */
--	initial_boot_params = params;
--
--	/* Retrieve various informations from the /chosen node of the
--	 * device-tree, including the platform type, initrd location and
--	 * size, and more ...
--	 */
--	of_scan_flat_dt(early_init_dt_scan_chosen, NULL);
--
--	/* Scan memory nodes */
--	of_scan_flat_dt(early_init_dt_scan_root, NULL);
--	of_scan_flat_dt(early_init_dt_scan_memory_arch, NULL);
--}
--
--void __init device_tree_init(void)
--{
--	unsigned long base, size;
--
--	if (!initial_boot_params)
--		return;
--
--	base = virt_to_phys((void *)initial_boot_params);
--	size = be32_to_cpu(initial_boot_params->totalsize);
--
--	/* Before we do anything, lets reserve the dt blob */
--	reserve_mem_mach(base, size);
--
--	unflatten_device_tree();
--
--	/* free the space reserved for the dt blob */
--	free_mem_mach(base, size);
--}
+-	/* If HiGig2 is enabled return 16 ports, otherwise return 1 port */
+-	gmx_hg2_control.u64 = cvmx_read_csr(CVMX_GMXX_HG2_CONTROL(interface));
+-	if (gmx_hg2_control.s.hg2tx_en)
+-		return 16;
+-	else
+-		return 1;
++	return __cvmx_helper_xaui_enumerate(interface);
+ }
+ 
+ /**
+diff --git a/arch/mips/cavium-octeon/executive/cvmx-helper.c b/arch/mips/cavium-octeon/executive/cvmx-helper.c
+index 6238a22..bea6ab6 100644
+--- a/arch/mips/cavium-octeon/executive/cvmx-helper.c
++++ b/arch/mips/cavium-octeon/executive/cvmx-helper.c
+@@ -234,21 +234,16 @@ static int __cvmx_helper_port_setup_ipd(int ipd_port)
+ }
+ 
+ /**
+- * This function probes an interface to determine the actual
+- * number of hardware ports connected to it. It doesn't setup the
+- * ports or enable them. The main goal here is to set the global
+- * interface_port_count[interface] correctly. Hardware setup of the
+- * ports will be performed later.
++ * This function sets the interface_port_count[interface] correctly,
++ * without modifying any hardware configuration.  Hardware setup of
++ * the ports will be performed later.
+  *
+  * @interface: Interface to probe
+  *
+  * Returns Zero on success, negative on failure
+  */
+-int cvmx_helper_interface_probe(int interface)
++int cvmx_helper_interface_enumerate(int interface)
+ {
+-	/* At this stage in the game we don't want packets to be moving yet.
+-	   The following probe calls should perform hardware setup
+-	   needed to determine port counts. Receive must still be disabled */
+ 	switch (cvmx_helper_interface_get_mode(interface)) {
+ 		/* These types don't support ports to IPD/PKO */
+ 	case CVMX_HELPER_INTERFACE_MODE_DISABLED:
+@@ -258,7 +253,7 @@ int cvmx_helper_interface_probe(int interface)
+ 		/* XAUI is a single high speed port */
+ 	case CVMX_HELPER_INTERFACE_MODE_XAUI:
+ 		interface_port_count[interface] =
+-		    __cvmx_helper_xaui_probe(interface);
++		    __cvmx_helper_xaui_enumerate(interface);
+ 		break;
+ 		/*
+ 		 * RGMII/GMII/MII are all treated about the same. Most
+@@ -267,7 +262,7 @@ int cvmx_helper_interface_probe(int interface)
+ 	case CVMX_HELPER_INTERFACE_MODE_RGMII:
+ 	case CVMX_HELPER_INTERFACE_MODE_GMII:
+ 		interface_port_count[interface] =
+-		    __cvmx_helper_rgmii_probe(interface);
++		    __cvmx_helper_rgmii_enumerate(interface);
+ 		break;
+ 		/*
+ 		 * SPI4 can have 1-16 ports depending on the device at
+@@ -275,7 +270,7 @@ int cvmx_helper_interface_probe(int interface)
+ 		 */
+ 	case CVMX_HELPER_INTERFACE_MODE_SPI:
+ 		interface_port_count[interface] =
+-		    __cvmx_helper_spi_probe(interface);
++		    __cvmx_helper_spi_enumerate(interface);
+ 		break;
+ 		/*
+ 		 * SGMII can have 1-4 ports depending on how many are
+@@ -284,12 +279,12 @@ int cvmx_helper_interface_probe(int interface)
+ 	case CVMX_HELPER_INTERFACE_MODE_SGMII:
+ 	case CVMX_HELPER_INTERFACE_MODE_PICMG:
+ 		interface_port_count[interface] =
+-		    __cvmx_helper_sgmii_probe(interface);
++		    __cvmx_helper_sgmii_enumerate(interface);
+ 		break;
+ 		/* PCI target Network Packet Interface */
+ 	case CVMX_HELPER_INTERFACE_MODE_NPI:
+ 		interface_port_count[interface] =
+-		    __cvmx_helper_npi_probe(interface);
++		    __cvmx_helper_npi_enumerate(interface);
+ 		break;
+ 		/*
+ 		 * Special loopback only ports. These are not the same
+@@ -297,7 +292,7 @@ int cvmx_helper_interface_probe(int interface)
+ 		 */
+ 	case CVMX_HELPER_INTERFACE_MODE_LOOP:
+ 		interface_port_count[interface] =
+-		    __cvmx_helper_loop_probe(interface);
++		    __cvmx_helper_loop_enumerate(interface);
+ 		break;
+ 	}
+ 
+@@ -313,6 +308,74 @@ int cvmx_helper_interface_probe(int interface)
+ }
+ 
+ /**
++ * This function probes an interface to determine the actual
++ * number of hardware ports connected to it. It doesn't setup the
++ * ports or enable them. The main goal here is to set the global
++ * interface_port_count[interface] correctly. Hardware setup of the
++ * ports will be performed later.
++ *
++ * @interface: Interface to probe
++ *
++ * Returns Zero on success, negative on failure
++ */
++int cvmx_helper_interface_probe(int interface)
++{
++	cvmx_helper_interface_enumerate(interface);
++	/* At this stage in the game we don't want packets to be moving yet.
++	   The following probe calls should perform hardware setup
++	   needed to determine port counts. Receive must still be disabled */
++	switch (cvmx_helper_interface_get_mode(interface)) {
++		/* These types don't support ports to IPD/PKO */
++	case CVMX_HELPER_INTERFACE_MODE_DISABLED:
++	case CVMX_HELPER_INTERFACE_MODE_PCIE:
++		break;
++		/* XAUI is a single high speed port */
++	case CVMX_HELPER_INTERFACE_MODE_XAUI:
++		__cvmx_helper_xaui_probe(interface);
++		break;
++		/*
++		 * RGMII/GMII/MII are all treated about the same. Most
++		 * functions refer to these ports as RGMII.
++		 */
++	case CVMX_HELPER_INTERFACE_MODE_RGMII:
++	case CVMX_HELPER_INTERFACE_MODE_GMII:
++		__cvmx_helper_rgmii_probe(interface);
++		break;
++		/*
++		 * SPI4 can have 1-16 ports depending on the device at
++		 * the other end.
++		 */
++	case CVMX_HELPER_INTERFACE_MODE_SPI:
++		__cvmx_helper_spi_probe(interface);
++		break;
++		/*
++		 * SGMII can have 1-4 ports depending on how many are
++		 * hooked up.
++		 */
++	case CVMX_HELPER_INTERFACE_MODE_SGMII:
++	case CVMX_HELPER_INTERFACE_MODE_PICMG:
++		__cvmx_helper_sgmii_probe(interface);
++		break;
++		/* PCI target Network Packet Interface */
++	case CVMX_HELPER_INTERFACE_MODE_NPI:
++		__cvmx_helper_npi_probe(interface);
++		break;
++		/*
++		 * Special loopback only ports. These are not the same
++		 * as other ports in loopback mode.
++		 */
++	case CVMX_HELPER_INTERFACE_MODE_LOOP:
++		__cvmx_helper_loop_probe(interface);
++		break;
++	}
++
++	/* Make sure all global variables propagate to other cores */
++	CVMX_SYNCWS;
++
++	return 0;
++}
++
++/**
+  * Setup the IPD/PIP for the ports on an interface. Packet
+  * classification and tagging are set for every port on the
+  * interface. The number of ports on the interface must already
+diff --git a/arch/mips/include/asm/octeon/cvmx-helper-loop.h b/arch/mips/include/asm/octeon/cvmx-helper-loop.h
+index e646a6c..0a2488e 100644
+--- a/arch/mips/include/asm/octeon/cvmx-helper-loop.h
++++ b/arch/mips/include/asm/octeon/cvmx-helper-loop.h
+@@ -44,6 +44,7 @@
+  * Returns Number of ports on the interface. Zero to disable.
+  */
+ extern int __cvmx_helper_loop_probe(int interface);
++static inline int __cvmx_helper_loop_enumerate(int interface) {return 4;}
+ 
+ /**
+  * Bringup and enable a LOOP interface. After this call packet
+diff --git a/arch/mips/include/asm/octeon/cvmx-helper-npi.h b/arch/mips/include/asm/octeon/cvmx-helper-npi.h
+index 908e7b0..8df4c7f 100644
+--- a/arch/mips/include/asm/octeon/cvmx-helper-npi.h
++++ b/arch/mips/include/asm/octeon/cvmx-helper-npi.h
+@@ -45,6 +45,7 @@
+  * Returns Number of ports on the interface. Zero to disable.
+  */
+ extern int __cvmx_helper_npi_probe(int interface);
++#define __cvmx_helper_npi_enumerate __cvmx_helper_npi_probe
+ 
+ /**
+  * Bringup and enable a NPI interface. After this call packet
+diff --git a/arch/mips/include/asm/octeon/cvmx-helper-rgmii.h b/arch/mips/include/asm/octeon/cvmx-helper-rgmii.h
+index ea26526..78295ba 100644
+--- a/arch/mips/include/asm/octeon/cvmx-helper-rgmii.h
++++ b/arch/mips/include/asm/octeon/cvmx-helper-rgmii.h
+@@ -43,6 +43,7 @@
+  * Returns Number of RGMII/GMII/MII ports (0-4).
+  */
+ extern int __cvmx_helper_rgmii_probe(int interface);
++#define __cvmx_helper_rgmii_enumerate __cvmx_helper_rgmii_probe
+ 
+ /**
+  * Put an RGMII interface in loopback mode. Internal packets sent
+diff --git a/arch/mips/include/asm/octeon/cvmx-helper-sgmii.h b/arch/mips/include/asm/octeon/cvmx-helper-sgmii.h
+index 19b48d6..9a9b6c1 100644
+--- a/arch/mips/include/asm/octeon/cvmx-helper-sgmii.h
++++ b/arch/mips/include/asm/octeon/cvmx-helper-sgmii.h
+@@ -45,6 +45,7 @@
+  * Returns Number of ports on the interface. Zero to disable.
+  */
+ extern int __cvmx_helper_sgmii_probe(int interface);
++extern int __cvmx_helper_sgmii_enumerate(int interface);
+ 
+ /**
+  * Bringup and enable a SGMII interface. After this call packet
+diff --git a/arch/mips/include/asm/octeon/cvmx-helper-spi.h b/arch/mips/include/asm/octeon/cvmx-helper-spi.h
+index 69bac03..9f1c6b9 100644
+--- a/arch/mips/include/asm/octeon/cvmx-helper-spi.h
++++ b/arch/mips/include/asm/octeon/cvmx-helper-spi.h
+@@ -42,6 +42,7 @@
+  * Returns Number of ports on the interface. Zero to disable.
+  */
+ extern int __cvmx_helper_spi_probe(int interface);
++extern int __cvmx_helper_spi_enumerate(int interface);
+ 
+ /**
+  * Bringup and enable a SPI interface. After this call packet I/O
+diff --git a/arch/mips/include/asm/octeon/cvmx-helper-xaui.h b/arch/mips/include/asm/octeon/cvmx-helper-xaui.h
+index 4b4db2f..f6fbc4f 100644
+--- a/arch/mips/include/asm/octeon/cvmx-helper-xaui.h
++++ b/arch/mips/include/asm/octeon/cvmx-helper-xaui.h
+@@ -45,6 +45,7 @@
+  * Returns Number of ports on the interface. Zero to disable.
+  */
+ extern int __cvmx_helper_xaui_probe(int interface);
++extern int __cvmx_helper_xaui_enumerate(int interface);
+ 
+ /**
+  * Bringup and enable a XAUI interface. After this call packet
+diff --git a/arch/mips/include/asm/octeon/cvmx-helper.h b/arch/mips/include/asm/octeon/cvmx-helper.h
+index 51916f3..3169cd7 100644
+--- a/arch/mips/include/asm/octeon/cvmx-helper.h
++++ b/arch/mips/include/asm/octeon/cvmx-helper.h
+@@ -207,6 +207,7 @@ extern int cvmx_helper_link_set(int ipd_port,
+  * Returns Zero on success, negative on failure
+  */
+ extern int cvmx_helper_interface_probe(int interface);
++extern int cvmx_helper_interface_enumerate(int interface);
+ 
+ /**
+  * Configure a port for internal and/or external loopback. Internal loopback
 -- 
 1.7.2.3
 
