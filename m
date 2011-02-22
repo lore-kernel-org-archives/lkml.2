@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1BVHgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 02:36:36 -0500
-Received: from mail-bw0-f51.google.com ([209.85.214.51]:51907 "EHLO
-	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab1BVHgf (ORCPT
+	id S1753897Ab1BVHk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 02:40:56 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62256 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab1BVHky convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 02:36:35 -0500
-X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Feb 2011 02:36:35 EST
+	Tue, 22 Feb 2011 02:40:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Y70NAFIsc+2gxyrBRvCddsEA0fMWSbgpyEQ8Vc2T6eiCgGHIii4PK3eFyUB8b9ULTp
-         x+DdbUSrpwZDMXA3/i17D2Q/48WEK754/aq58gNrNSiMtn2UEr2+0TDMHHQmhmn9mUcH
-         jWW39b4u8vYOOxNnTY/LZsQ7kUFS4KiPlzbsI=
-Date: Tue, 22 Feb 2011 09:30:32 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, neilb@suse.de,
-        sergey.senozhatsky@gmail.com, tj@kernel.org, jmoyer@redhat.com,
-        snitzer@redhat.com
-Subject: Re: [PATCH 2/3] loop: No need to initialize ->queue_lock explicitly
- before calling blk_cleanup_queue()
-Message-ID: <20110222073032.GA4555@swordfish.minsk.epam.com>
-References: <1298346817-26144-1-git-send-email-vgoyal@redhat.com>
- <1298346817-26144-3-git-send-email-vgoyal@redhat.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=dOxZSFO0JVrCbagpugPSPAhJDlMvcXqUj3dpcllZYh2+bS81+uTeITTsKNcWDu8TSI
+         I6r17/xcYDFvqupinnzydBEA+wDq8ocpRbljJSQKmbCk2oVNPUotoCpT+GshZQRDzqAY
+         qM309OISlU98aFHjdRYhJcbFhcacc1VwNuN+4=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
-Content-Disposition: inline
-In-Reply-To: <1298346817-26144-3-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110222072951.GA24953@merkur.ravnborg.org>
+References: <4D5DB83D.80205@snapgear.com>
+	<alpine.LFD.2.00.1102212216540.2701@localhost6.localdomain6>
+	<4D6319E0.9080907@snapgear.com>
+	<AANLkTi=QkXK7=DQ5H1PFttTk+iug_npCsz112RYXd7BR@mail.gmail.com>
+	<20110222072951.GA24953@merkur.ravnborg.org>
+Date: Tue, 22 Feb 2011 08:40:53 +0100
+X-Google-Sender-Auth: -CBBNR1oS_FvTEXX3rrLnh2otDA
+Message-ID: <AANLkTi=o9hQM1DqbBOAsDpxBW9U1uHsUZ6q3Kw48OBb6@mail.gmail.com>
+Subject: Re: merge of m68knommu and m68k arch branches?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Greg Ungerer <gerg@snapgear.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Steven King <sfking00@yahoo.com>,
+        uClinux development list <uclinux-dev@uclinux.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Greg Ungerer <gregungerer@westnet.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 22, 2011 at 08:29, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> >> Is there a plan to move m68k to the generic facilities as well ?
+>>
+>> Moving m68k to genirq is (the next thing?) on my list...
+>
+> If I succeed migrating sparc32 to genirq I hope to be of a little help here.
+> It looks like a bigger task to migrate m68k than it was/is to migrate sparc32.
+>
+> It would be _very_ nice to get the last two architectures migrated to genirq.
 
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Aren't your forgetting s390?
 
-On (02/21/11 22:53), Vivek Goyal wrote:
-> o Now we initialize ->queue_lock at queue allocation time so driver does
->   not have to worry about initializing it before calling blk_cleanup_queu=
-e().
->=20
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  drivers/block/loop.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-> index 49e6a54..44e18c0 100644
-> --- a/drivers/block/loop.c
-> +++ b/drivers/block/loop.c
-> @@ -1641,9 +1641,6 @@ out:
-> =20
->  static void loop_free(struct loop_device *lo)
->  {
-> -	if (!lo->lo_queue->queue_lock)
-> -		lo->lo_queue->queue_lock =3D &lo->lo_queue->__queue_lock;
-> -
->  	blk_cleanup_queue(lo->lo_queue);
->  	put_disk(lo->lo_disk);
->  	list_del(&lo->lo_list);
+Gr{oetje,eeting}s,
 
-Hi,
+                        Geert
 
-(just for note)=20
-There is an incremental patch fixing this case in Andrew's mm tree:=20
-https://lkml.org/lkml/2011/2/11/165
-                                  =20
-(block-fix-queue_lock-null-pointer-derefence-in-blk_throtl_exit-v4.patch
-added to -mm tree).
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-        Sergey
-
---pWyiEgJYm5f9v55/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iJwEAQECAAYFAk1jZhgACgkQfKHnntdSXjRTGQP/bxoaekP/dFMheWFtLB2bWbao
-twIXyRXK3/k260fY9jvb13nJ+KZo4u1/qlm0OCW/NOrim1IeB52GEOdpfmNHcWr4
-dWopMOCGDceGNXzf5jFWs471yx2dOVBsZaqwHF+IzBJJ3fDd5GMfBj5IRsdtYR52
-9xF2W2KX3qJAdLGms8Q=
-=rwsR
------END PGP SIGNATURE-----
-
---pWyiEgJYm5f9v55/--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
