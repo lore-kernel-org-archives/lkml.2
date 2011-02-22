@@ -1,147 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1BVCuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 21:50:11 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51547 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab1BVCuI (ORCPT
+	id S1753385Ab1BVCzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 21:55:48 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36621 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab1BVCzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 21:50:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=i95tswxTmchFNtU2WfKge23ZzIkjAYtCus63Dej5E+KZAAd0zC5DFWym48SsqALRTP
-         9vXhF5xDS/J9eZGpqfA2mC+uMUgcTZte+4Xnsi9FJMCZfXZ8nOBGy+L7VgSsXIgAycsM
-         vzdTulUStw9a/3z3A1iA52ZKiJ6fMWZS/SHbo=
-Date: Tue, 22 Feb 2011 03:50:04 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <daahern@cisco.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 0/4] perf events: Add realtime clock event and timehist
- option -v2
-Message-ID: <20110222025001.GA5475@nowhere>
-References: <1298322150-15505-1-git-send-email-daahern@cisco.com>
- <20110221213740.GC3583@nowhere>
- <4D62DC21.4070407@cisco.com>
- <20110221215533.GD3583@nowhere>
- <4D62E2B0.1070607@cisco.com>
- <20110221222104.GE3583@nowhere>
- <4D630E79.7030106@cisco.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D630E79.7030106@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 21 Feb 2011 21:55:46 -0500
+Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
+ rtc_class_ops->read_alarm()
+From: John Stultz <john.stultz@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+In-Reply-To: <20110222023452.GB18299@sirena.org.uk>
+References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
+	 <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
+	 <20110222023452.GB18299@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Feb 2011 18:55:33 -0800
+Message-ID: <1298343333.4222.36.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 06:16:41PM -0700, David Ahern wrote:
+On Tue, 2011-02-22 at 02:34 +0000, Mark Brown wrote:
+> On Mon, Feb 21, 2011 at 03:55:32PM -0800, John Stultz wrote:
+> > With the generic rtc code managing the now virtualized alarm timer,
+> > no one actually calls rtc_clas_ops->read_alarm().
 > 
+> > We do check that it exists in rtc_read_alarm(), but that is only
+> > to verify that the hardware supports irqs. The same test can
+> > be done by checking set_alarm instead.
 > 
-> On 02/21/11 15:21, Frederic Weisbecker wrote:
-> >> All of the changes to perf-report are related strictly to this feature -
-> >> generating the timestamp and printing the sample including walking the
-> >> callchain.
-> > 
-> > This is the actual drawback: it's only useful for your feature. My wish
-> > is to have something more broadly useful. And support for callchains or
-> > other things like this in perf script is desired and has been requested
-> > by the past.
+> > This patch changes the the read_alarm check to set_alarm, and then
+> > removes the read_alarm method and its implementations in the rt
+> > drivers.
 > 
-> I don't agree with the conclusion. The ability to take a realtime-clock
-> sample + a perf_clock time stamps and prepend it to a dump of perf
-> samples is not limited to perf-report. To date, it's the only command
-> setup to use it - or maybe a better phrasing is that it is the command I
-> most use today.
+> Can you go into more detail on the rationale behind this virtualised
+> functionality and how it works?  I'd really expect the RTC alarm to be
+> preserved over system reboots (on some systems it can be used to
+> initiate a boot) and that would mean that we need to go to the hardware
+> for at least the initial configuration.
 
-Sure it's useful. But it doesn't integrate well.
+So with respect to the rationale:
 
-With your proposition we have two seperate tools to look at events
-sequentially: perf report to look at wall clock, normal clock, ip and sym.
-And perf script to look at normal clock, pid, cpu and trace.
+The difference with the new code (already in for 2.6.38), is that when
+alarms are set via the userland interface, instead of directly
+manipulating the hardware, it creates a rtc_timer event that is managed
+by the kernel.
 
-This split is simply a mistake. How tracing users are going to join
-both outputs?
+The kernel then looks at the list of rtc_timers and sets the RTC for
+soonest rtc_timer. When the alarm occurs (possibly waking up the
+system), the kernel notifies the waiting userland app and then looks at
+the timer list to see if there are any more events to program into the
+hardware.
 
-This is even more sad if you consider that the events that most need to
-be displayed sequentially are the tracepoints. Sure we want to treat every
-events the same, but if tracepoints traces can't be added up with
-these new features, your thing is just half useful.
+This allows us in the future to multiplex events onto the RTC hardware
+from different sources without breaking compatibility.
 
-I don't see any good reason for that.
+Right now, if two applications want to set a wake alarm on the RTC ,
+they have to coordinate their access to the rtc device (or the machine
+has to have multiple RTC devices).
 
- 
-> perf-script is new. I created this timehist patch back in August and
-> submitted it to linux-perf-users at the end of November. The version I
-> sent today is the 3rd incarnation.
-
-perf-script is not new, it was there in november already, although named
-perf trace at that time.
-
-> 
-> If it is a question of code location then I can move the function
-> additions from builtin-report.c to util/timehist.c. Then as other
-> commands are ready they can pick it up.
-
-It's not a question of file, it's a question on where it integrates
-logically and if it does coherently.
-
-> > 
-> >> perf-script needs to have features added to it:
-> >>   1. working with all samples,
-> > 
-> > Why do you need that? You seem to be only interested in tracepoint
-> > events.
-> 
-> I am *not* interested in tracepoints at all -- at least so far. I have
-> rarely used them, mainly just trying out the options to see what is
-> available and how much data comes pouring in. (tracepoints are not
-> available on the kernel version we use.)
-
-Fine, that doesn't change much anyway. If you follow my idea on passing
-the whole event to the process_event() callback, there is no big things
-to change compared to integrate that to perf report.
-
-For event that don't have raw trace, just don't print raw trace, that's
-the only difference.
-
-I'm not even asking you to handle that for scripts, the python and perf
-part can ignore that. It just needs to be handled for the print_event()
-case.
-
-It's barely a bit more in your diff compared to the perf-report
-case.
+Soon, with my posix alarm timers work, those two applications would be
+able to set standard posix timers against CLOCK_REALTIME_ALARM, and the
+kernel will manage the RTC hardware to wake the system up for both
+application's alarms. No coordination needed.
 
 
-> Rather, I have been focused on the S/W events such as the context-switch
-> event and H/W counters. In fact, one request I have received on my end
-> is for a time history of H/W counters - record periodically during
-> specific tests and dump the samples with timestamps.
+Now, to your point about persistence across reboots:
 
-Fine.
+It is an interesting point to consider. 
 
-> > 
-> > Sure I would appreciate that perf script can support any event as a bonus
-> > but that doesn't seem mandatory here.
-> > 
-> >>   2. support for callchains,
-> > 
-> > What does it take more than what you did in perf report, namely
-> > calling perf_session_resolve_callchain and walking the cursor?
-> 
-> It's not rocket science, nonetheless its code that needs to be brought
-> into perf-script.
+So currently, if the hardware supports it, then the behavior should
+remain the same: As long as no application sets a new alarm, the
+previous alarm should persist in the RTC hardware.
 
-No difference compared to perf report integration then.
+However, an application's ability to notice that such an alarm is set,
+is currently limited.  So your point about reading the hardware to
+initialize the state is quite valid, and shows a good reason to preserve
+the read_alarm() method. 
 
-> >>   3. more?
-> > 
-> > ?
-> 
-> There always seems to be unexpected gotchas that have to be dealt with.
+Thus, I'll drop this patch for my 2.6.39 queue. And I'll try to fix the
+current initialization limitation to ensure applications can detect
+alarm persistence.
 
-Sure, I suspect we are not talking about hundred of lines of code though.
+Thanks for pointing this issue out!
+-john
+
+
