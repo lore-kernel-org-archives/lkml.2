@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab1BVWVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:52 -0500
-Received: from kroah.org ([198.145.64.141]:46738 "EHLO coco.kroah.org"
+	id S1754811Ab1BVWat (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:30:49 -0500
+Received: from kroah.org ([198.145.64.141]:46748 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754590Ab1BVWVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:48 -0500
+	id S1754609Ab1BVWVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:51 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:40 2011
-Message-Id: <20110222221840.344505929@clark.kroah.org>
+Message-Id: <20110222221840.523863067@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:12 -0800
+Date: Tue, 22 Feb 2011 14:17:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "venki@google.com" <venki@google.com>,
-        "a.p.zijlstra@chello.hl" <a.p.zijlstra@chello.hl>,
-        <Andreas.Herrmann3@amd.com>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [33/70] x86, hotplug: Fix powersavings with offlined cores on AMD
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [35/70] x86, mrst: Set correct APB timer IRQ affinity for secondary cpu
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,87 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+This is a backport for 2.6.37 stable. The original commit ID is
+6550904ddbc3c286798a87edf95eeebcc62bc58a
 
-Upstream commits: 93789b32dbf355e70f18b17a82e8661677a7f7fb,
-	 1c9d16e35911090dee3f9313e6af13af623d66ee
+Offlining the secondary CPU causes the timer irq affinity to be set to
+CPU 0. When the secondary CPU is back online again, the wrong irq
+affinity will be used.
 
-ea53069231f9317062910d6e772cca4ce93de8c8 made a CPU use monitor/mwait
-when offline. This is not the optimal choice for AMD wrt to powersavings
-and we'd prefer our cores to halt (i.e. enter C1) instead. For this, the
-same selection whether to use monitor/mwait has to be used as when we
-select the idle routine for the machine.
+This patch ensures secondary per CPU timer always has the correct
+IRQ affinity when enabled.
 
-With this patch, offlining cores 1-5 on a X6 machine allows core0 to
-boost again.
-
-[ hpa: putting this in urgent since it is a (power) regression fix ]
-
-Reported-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.hl>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <1295534572-10730-1-git-send-email-bp@amd64.org>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1294963604-18111-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/cpu.h |    1 +
- arch/x86/kernel/process.c  |    5 +++--
- arch/x86/kernel/smpboot.c  |    3 ++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apb_timer.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -32,5 +32,6 @@ extern void arch_unregister_cpu(int);
- 
- DECLARE_PER_CPU(int, cpu_state);
- 
-+int mwait_usable(const struct cpuinfo_x86 *);
- 
- #endif /* _ASM_X86_CPU_H */
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -14,6 +14,7 @@
- #include <linux/utsname.h>
- #include <trace/events/power.h>
- #include <linux/hw_breakpoint.h>
-+#include <asm/cpu.h>
- #include <asm/system.h>
- #include <asm/apic.h>
- #include <asm/syscalls.h>
-@@ -509,13 +510,13 @@ static void poll_idle(void)
-  *
-  * idle=mwait overrides this decision and forces the usage of mwait.
-  */
--static int __cpuinitdata force_mwait;
-+static int force_mwait;
- 
- #define MWAIT_INFO			0x05
- #define MWAIT_ECX_EXTENDED_INFO		0x01
- #define MWAIT_EDX_C1			0xf0
- 
--static int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
-+int mwait_usable(const struct cpuinfo_x86 *c)
- {
- 	u32 eax, ebx, ecx, edx;
- 
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1396,8 +1396,9 @@ static inline void mwait_play_dead(void)
- 	unsigned int highest_subcstate = 0;
- 	int i;
- 	void *mwait_ptr;
-+	struct cpuinfo_x86 *c = &current_cpu_data;
- 
--	if (!cpu_has(&current_cpu_data, X86_FEATURE_MWAIT))
-+	if (!(cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)))
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -313,10 +313,12 @@ static void apbt_setup_irq(struct apbt_d
+ 	if (adev->irq == 0)
  		return;
- 	if (!cpu_has(&current_cpu_data, X86_FEATURE_CLFLSH))
- 		return;
+ 
++	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
++	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
++	/* APB timer irqs are set up as mp_irqs, timer is edge type */
++	__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
++
+ 	if (system_state == SYSTEM_BOOTING) {
+-		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+-		/* APB timer irqs are set up as mp_irqs, timer is edge type */
+-		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
+ 		if (request_irq(adev->irq, apbt_interrupt_handler,
+ 				IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
+ 				adev->name, adev)) {
 
 
