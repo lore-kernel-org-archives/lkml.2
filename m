@@ -1,164 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab1BVQPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 11:15:41 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41217 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754548Ab1BVQPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 11:15:40 -0500
-Date: Tue, 22 Feb 2011 16:17:09 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: Intel GMA500 staging driver
-Message-ID: <20110222161709.0ca0f76a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110222154002.GB9720@srcf.ucam.org>
-References: <20110222121704.19437.4650.stgit@localhost.localdomain>
-	<20110222154002.GB9720@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754682Ab1BVQPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 11:15:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16545 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754665Ab1BVQPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 11:15:50 -0500
+Date: Tue, 22 Feb 2011 17:15:13 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Clemens Ladisch <cladisch@googlemail.com>
+Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
+        alsa-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified -
+ 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd for
+ GFP_ATOMIC order > 0
+Message-ID: <20110222161513.GC13092@random.random>
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
+ <4D6367B3.9050306@googlemail.com>
+ <20110222134047.GT13092@random.random>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="uxuisgdDHaNETlh8"
+Content-Disposition: inline
+In-Reply-To: <20110222134047.GT13092@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There's a pretty significant amount of code duplication between the 
-> modesetting part of this and i915. In an idea world they'd be abstracted 
-> enough to avoid that, but I suspect that the risk of breaking i915 
-> (which is something people actually care about) in favour of making the 
-> gma500 code (which is something people care about in a very different 
-> way) probably doesn't make it worth it right now.
 
-I was specifically instructed by Keith Packard not to do so.
+--uxuisgdDHaNETlh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > +struct mrst_panel_descriptor_v1{
-> > +	uint32_t Panel_Port_Control; /* 1 dword, Register 0x61180 if LVDS */
-> 
-> Caps *and* underscores? Checkpatch.pl needs a -Wtaste switch.
+On Tue, Feb 22, 2011 at 02:40:47PM +0100, Andrea Arcangeli wrote:
+>  	spin_lock_irq(&zone->lru_lock);
+>  	for (; low_pfn < end_pfn; low_pfn++) {
+>  		struct page *page;
+> +
+> +		cond_resched();
+> +
 
-There is plenty of that - hence staging. I think what we actually need is
-an emacs and vim "C with taste" mode which errors hungarian notation and
-the like ;)
+my bad, see the above spin_lock_irq oops...
 
-[April 1st project for someone maybe or perhaps a masters project in
-runtime enforcement/correction to CodingStyle :  "I'm sorry Dave I
-can't let you save that, it's not passing Checkpatch.pl"]
+I attached two replacement patches to apply in order (both of them
+should be applied at the same time on top of git upstream, and they
+shouldn't lockup this time).
+
+--uxuisgdDHaNETlh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=kswapd-high_wmark
+
+Subject: vmscan: kswapd must not free more than high_wmark pages
+
+From: Andrea Arcangeli <aarcange@redhat.com>
+
+When the min_free_kbytes is set with `hugeadm
+--set-recommended-min_free_kbytes" or with THP enabled (which runs the
+equivalent of "hugeadm --set-recommended-min_free_kbytes" to activate
+anti-frag at full effectiveness automatically at boot) the high wmark
+of some zone is as high as ~88M. 88M free on a 4G system isn't
+horrible, but 88M*8 = 704M free on a 4G system is definitely
+unbearable. This only tends to be visible on 4G systems with tiny
+over-4g zone where kswapd insists to reach the high wmark on the
+over-4g zone but doing so it shrunk up to 704M from the normal zone by
+mistake.
+
+For the trivial case where kswapd isn't waken until all zones hit the low wmark
+and there is no concurrency between allocator and kswapd freeing, rotating more
+the tiny above4g lru than "high-low" despite we only allocated "high-low" cache
+into it doesn't sound obviously right either. Bigger gap to me looks like will
+do more harm than good and if we need a real guarantee of balancing we should
+rotate the allocations across the zones (bigger lru in a zone will require it
+to be hit more frequently because it'll rotate slower than the other zones, the
+bias should not even dependent on the zone size but on the lru size).
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ mm/vmscan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2408,7 +2408,7 @@ loop_again:
+ 			 * zone has way too many pages free already.
+ 			 */
+ 			if (!zone_watermark_ok_safe(zone, order,
+-					8*high_wmark_pages(zone), end_zone, 0))
++					high_wmark_pages(zone), end_zone, 0))
+ 				shrink_zone(priority, zone, &sc);
+ 			reclaim_state->reclaimed_slab = 0;
+ 			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
+
+--uxuisgdDHaNETlh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=compaction-kswapd
+
+---
+ mm/compaction.c |   19 ++++++++++---------
+ mm/vmscan.c     |    8 ++------
+ 2 files changed, 12 insertions(+), 15 deletions(-)
+
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -271,9 +271,19 @@ static unsigned long isolate_migratepage
+ 	}
  
-> > +	uint16_t Panel_MIPI_Display_Descriptor;
-> > +			/*16 bits, Defined as follows: */
-> > +			/* if MIPI, 0x0000 if LVDS */
-> 
-> "Defined as follows if MIPI, 0x000 if LVDS"?
-
-I don't believe MIPI is supported on PSB anyway. There is a fair bit more
-that can come out.
-
-> > +struct gct_ioctl_arg{
-> 
-> This never seems to be used. I'd be kind of terrified if it ever needed 
-> to be. In fact, are any of these vbt structures used at the moment?
-
-Probably not - staging, this is the kind of stuff to get cleaned up with
-many eyes and more expertise
-
-> > +MODULE_PARM_DESC(ospm, "switch for ospm support");
-> 
-> What does OSPM translate as these days?
-
-Basically the management hooks for power. For PSB they don't matter, in
-fact the SCH errata document implies they shouldn't get used on PSB. For
-MRST we need the hook points but to rewrite the functionality underneath
-properly to talk to an alternative power management system - like the one
-the kernel provides us with.
-
-> > +	/**
-> > +	 *  Init lid switch timer.
-> > +	 *  NOTE: must do this after psb_intel_opregion_init
-> > +	 *  and psb_backlight_init
-> > +	 */
-> > +	if (dev_priv->lid_state)
-> > +		psb_lid_timer_init(dev_priv);
-> 
-> Gak. Shouldn't there be an SCI on state change on opregion systems?
-
-Beats me. I try not to touch anything involving or related to ACPI
-
-> You have *got* to be kidding.
-
-You didnt see it before I started !
-
-> I know I said that I wasn't convinced there was a benefit in trying to 
-> use the existing 915 code, but our opregion implementation is 
-
-I'm not fussed on this, but whoever wants to make that call can have a
-kitten throwing contest with KeithP.
-
-> > +++ b/drivers/staging/gma500/psb_intel_sdvo.c
-> 
-> Does PSB really support SDVO? I thought by that period the only thing 
-> it'd be used for was plug-in SDVO cards, which doesn't seem so likely 
-> with PSB.
-
-I don't know - there is lots to prune. There are PSB using deviced with
-dual outputs and I've no idea if internally its done via SDVO (eg some of
-the Dell Mini 10's apparently have an HDMI port hung off something)
+ 	/* Time to isolate some pages for migration */
++	cond_resched();
+ 	spin_lock_irq(&zone->lru_lock);
+ 	for (; low_pfn < end_pfn; low_pfn++) {
+ 		struct page *page;
++
++		if (need_resched() || spin_is_contended(&zone->lru_lock)) {
++			if (fatal_signal_pending(current))
++				break;
++			spin_unlock_irq(&zone->lru_lock);
++			cond_resched();
++			spin_lock_irq(&zone->lru_lock);
++		}
++
+ 		if (!pfn_valid_within(low_pfn))
+ 			continue;
+ 		nr_scanned++;
+@@ -413,15 +423,6 @@ static int compact_finished(struct zone 
+ 	if (cc->order == -1)
+ 		return COMPACT_CONTINUE;
  
-> > +/*
-> > + * It is used to enable VBLANK interrupt
-> > + */
-> > +int psb_enable_vblank(struct drm_device *dev, int pipe)
-> 
-> I was confused until I read the comment. Wait.
-> 
-> > diff --git a/drivers/staging/gma500/psb_powermgmt.c b/drivers/staging/gma500/psb_powermgmt.c
-> 
-> I have to say that the code in here scares me, but we'll see how it 
-> works...
+-	/*
+-	 * Generating only one page of the right order is not enough
+-	 * for kswapd, we must continue until we're above the high
+-	 * watermark as a pool for high order GFP_ATOMIC allocations
+-	 * too.
+-	 */
+-	if (cc->compact_mode == COMPACT_MODE_KSWAPD)
+-		return COMPACT_CONTINUE;
+-
+ 	/* Direct compactor: Is a suitable page free? */
+ 	for (order = cc->order; order < MAX_ORDER; order++) {
+ 		/* Job done if page is free of the right migratetype */
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2385,7 +2385,6 @@ loop_again:
+ 		 * cause too much scanning of the lower zones.
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+-			int compaction;
+ 			struct zone *zone = pgdat->node_zones + i;
+ 			int nr_slab;
+ 
+@@ -2416,24 +2415,21 @@ loop_again:
+ 			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+ 			total_scanned += sc.nr_scanned;
+ 
+-			compaction = 0;
+ 			if (order &&
+ 			    zone_watermark_ok(zone, 0,
+ 					       high_wmark_pages(zone),
+ 					      end_zone, 0) &&
+ 			    !zone_watermark_ok(zone, order,
+ 					       high_wmark_pages(zone),
+-					       end_zone, 0)) {
++					       end_zone, 0))
+ 				compact_zone_order(zone,
+ 						   order,
+ 						   sc.gfp_mask, false,
+ 						   COMPACT_MODE_KSWAPD);
+-				compaction = 1;
+-			}
+ 
+ 			if (zone->all_unreclaimable)
+ 				continue;
+-			if (!compaction && nr_slab == 0 &&
++			if (nr_slab == 0 &&
+ 			    !zone_reclaimable(zone))
+ 				zone->all_unreclaimable = 1;
+ 			/*
 
-The power code needs what is technically know as a rewrite. But the hooks
-are in the right place and to add Moorestown support we need the hooks
-there.
-
-> > +#ifdef CONFIG_MDFD_GL3
-> 
-> Ugh. No way to determine this at runtime? Having to build this 
-> per-device sounds like a recipe for sadness.
-
-It's actually not part of PSB or MRST so that can go.
-
-> > +	lid_timer->data = (unsigned long)dev_priv;
-> > +	lid_timer->function = psb_lid_timer_func;
-> > +	lid_timer->expires = jiffies + PSB_LID_DELAY;
-> 
-> So we're waking up 10 times a second just to check the lid state?
-
-Don't we totally rock
-
-> like there's two directions it can go. If the intention for now is to 
-> provide a kernel-quality unaccelerated 2D driver then there's a *lot* 
-> more code that can just be ripped out. If we want the acceleration to 
-> work then there's an argument that we should be abstracting that into a 
-> more generic SGX layer that other drivers can make use of. Does omapfb 
-> have any acceleration? If so, is there anything we can build on there?
-
-I doubt there is much you can share. The register layout depends on the
-chip version (read the imagination kernel driver "GPL" splat from
-Imagination and weep), the mode setting is device dependant and I don't
-know about the 2D but I believe it's also not quite the same.
-
-I do want to get 2D acceleration working, we have all the open bits for
-that including compositing.
-
-Opregion does look like there should be one only.
-
-> Other than that, I think there's a few bogosities here. The only thing 
-> I'd really ask about in terms of whether it's ready to go in staging is 
-> whether all of those ioctls need to be exposed at the moment.
-
-Staging = no API guarantee, so I'm fairly happy about it - and having it
-for testing is handy.
-
-Alan
+--uxuisgdDHaNETlh8--
