@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab1BVSx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 13:53:27 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:53740 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab1BVSx0 (ORCPT
+	id S1754110Ab1BVSx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 13:53:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43467 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab1BVSx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 13:53:26 -0500
+	Tue, 22 Feb 2011 13:53:27 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/2] perf top: Live TUI Annotation
-Date: Tue, 22 Feb 2011 15:53:10 -0300
-Message-Id: <1298400790-29453-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/2] perf probe: Remove redundant checks
+Date: Tue, 22 Feb 2011 15:53:09 -0300
+Message-Id: <1298400790-29453-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1298400790-29453-1-git-send-email-acme@infradead.org>
 References: <1298400790-29453-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,18 +30,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Now one has just to press the right key, 'a' or Enter on the main 'perf
-top --tui' screen to live annotate the symbol under the cursor.
+While fixing an error propagating problem in f809b25 I added two
+redundant checks.
 
-The annotate window starts centered on the hottest line (the one with
-most samples so far) then TAB and shift+TAB can be used to go to the
-prev/next hot line.
+I did that because I didn't expect the checks to be on the while and for
+loop condition expression, where they are tested before we run the loop,
+where the 'ret' variable is set.
 
-Pressing 'H' at any point will center again the screen on the hottest
-line.
+So remove it from there and leave it just after it is actually set,
+eliminating unneded tests.
 
+Reported-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -49,454 +52,46 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c               |   36 +++++-----
- tools/perf/util/annotate.h             |    6 +-
- tools/perf/util/top.h                  |    1 +
- tools/perf/util/ui/browsers/annotate.c |  126 +++++++++++++++++++++++---------
- tools/perf/util/ui/browsers/top.c      |   45 +++++++++++-
- 5 files changed, 156 insertions(+), 58 deletions(-)
+ tools/perf/util/probe-event.c  |    2 +-
+ tools/perf/util/probe-finder.c |    5 ++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index c9fd66d..f88a263 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -92,7 +92,6 @@ static bool			dump_symtab                     =  false;
- static struct winsize		winsize;
- 
- static const char		*sym_filter			=   NULL;
--struct sym_entry		*sym_filter_entry		=   NULL;
- struct sym_entry		*sym_filter_entry_sched		=   NULL;
- static int			sym_pcnt_filter			=      5;
- 
-@@ -168,18 +167,19 @@ static int parse_source(struct sym_entry *syme)
- 	pthread_mutex_lock(&notes->lock);
- 
- 	if (symbol__alloc_hist(sym, top.evlist->nr_entries) < 0) {
-+		pthread_mutex_unlock(&notes->lock);
- 		pr_err("Not enough memory for annotating '%s' symbol!\n",
- 		       sym->name);
- 		sleep(1);
--		goto out_unlock;
-+		return err;
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 369ddc6..5ddee66 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1832,7 +1832,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
  	}
  
- 	err = symbol__annotate(sym, syme->map, 0);
- 	if (err == 0) {
- out_assign:
--	sym_filter_entry = syme;
-+		top.sym_filter_entry = syme;
- 	}
--out_unlock:
-+
- 	pthread_mutex_unlock(&notes->lock);
- 	return err;
- }
-@@ -195,7 +195,7 @@ static void record_precise_ip(struct sym_entry *syme, int counter, u64 ip)
- 	struct annotation *notes;
- 	struct symbol *sym;
- 
--	if (syme != sym_filter_entry)
-+	if (syme != top.sym_filter_entry)
- 		return;
- 
- 	sym = sym_entry__symbol(syme);
-@@ -275,8 +275,8 @@ static void print_sym_table(struct perf_session *session)
- 		       session->hists.stats.total_lost);
- 	}
- 
--	if (sym_filter_entry) {
--		show_details(sym_filter_entry);
-+	if (top.sym_filter_entry) {
-+		show_details(top.sym_filter_entry);
- 		return;
- 	}
- 
-@@ -417,8 +417,8 @@ static void print_mapped_keys(void)
- {
- 	char *name = NULL;
- 
--	if (sym_filter_entry) {
--		struct symbol *sym = sym_entry__symbol(sym_filter_entry);
-+	if (top.sym_filter_entry) {
-+		struct symbol *sym = sym_entry__symbol(top.sym_filter_entry);
- 		name = sym->name;
- 	}
- 
-@@ -549,15 +549,15 @@ static void handle_keypress(struct perf_session *session, int c)
- 				perf_session__fprintf_dsos(session, stderr);
- 			exit(0);
- 		case 's':
--			prompt_symbol(&sym_filter_entry, "Enter details symbol");
-+			prompt_symbol(&top.sym_filter_entry, "Enter details symbol");
- 			break;
- 		case 'S':
--			if (!sym_filter_entry)
-+			if (!top.sym_filter_entry)
- 				break;
- 			else {
--				struct sym_entry *syme = sym_filter_entry;
-+				struct sym_entry *syme = top.sym_filter_entry;
- 
--				sym_filter_entry = NULL;
-+				top.sym_filter_entry = NULL;
- 				__zero_source_counters(syme);
+ 	/* Loop 2: add all events */
+-	for (i = 0; i < npevs && ret >= 0; i++) {
++	for (i = 0; i < npevs; i++) {
+ 		ret = __add_probe_trace_events(pkgs[i].pev, pkgs[i].tevs,
+ 						pkgs[i].ntevs, force_add);
+ 		if (ret < 0)
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index eecbdca..17f9c4a 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1462,8 +1462,7 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 	off = 0;
+ 	line_list__init(&pf->lcache);
+ 	/* Loop on CUs (Compilation Unit) */
+-	while (!dwarf_nextcu(dbg, off, &noff, &cuhl, NULL, NULL, NULL) &&
+-	       ret >= 0) {
++	while (!dwarf_nextcu(dbg, off, &noff, &cuhl, NULL, NULL, NULL)) {
+ 		/* Get the DIE(Debugging Information Entry) of this CU */
+ 		diep = dwarf_offdie(dbg, off + cuhl, &pf->cu_die);
+ 		if (!diep)
+@@ -1484,7 +1483,7 @@ static int find_probes(int fd, struct probe_finder *pf)
+ 				pf->lno = pp->line;
+ 				ret = find_probe_point_by_line(pf);
  			}
- 			break;
-@@ -656,7 +656,7 @@ static int symbol_filter(struct map *map, struct symbol *sym)
- 	syme->map = map;
- 	symbol__annotate_init(map, sym);
- 
--	if (!sym_filter_entry && sym_filter && !strcmp(name, sym_filter)) {
-+	if (!top.sym_filter_entry && sym_filter && !strcmp(name, sym_filter)) {
- 		/* schedule initial sym_filter_entry setup */
- 		sym_filter_entry_sched = syme;
- 		sym_filter = NULL;
-@@ -750,13 +750,13 @@ static void perf_event__process_sample(const union perf_event *event,
- 
- 	/* let's see, whether we need to install initial sym_filter_entry */
- 	if (sym_filter_entry_sched) {
--		sym_filter_entry = sym_filter_entry_sched;
-+		top.sym_filter_entry = sym_filter_entry_sched;
- 		sym_filter_entry_sched = NULL;
--		if (parse_source(sym_filter_entry) < 0) {
--			struct symbol *sym = sym_entry__symbol(sym_filter_entry);
-+		if (parse_source(top.sym_filter_entry) < 0) {
-+			struct symbol *sym = sym_entry__symbol(top.sym_filter_entry);
- 
- 			pr_err("Can't annotate %s", sym->name);
--			if (sym_filter_entry->map->dso->origin == DSO__ORIG_KERNEL) {
-+			if (top.sym_filter_entry->map->dso->origin == DSO__ORIG_KERNEL) {
- 				pr_err(": No vmlinux file was found in the path:\n");
- 				machine__fprintf_vmlinux_path(machine, stderr);
- 			} else
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index e848803..c2c2868 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -90,12 +90,14 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
- 
- #ifdef NO_NEWT_SUPPORT
- static inline int symbol__tui_annotate(struct symbol *sym __used,
--				       struct map *map __used, int evidx __used)
-+				       struct map *map __used,
-+				       int evidx __used, int refresh __used)
- {
- 	return 0;
- }
- #else
--int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx);
-+int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
-+			 int refresh);
- #endif
- 
- #endif	/* __PERF_ANNOTATE_H */
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 4f769f4..e8d28e2 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -44,6 +44,7 @@ struct perf_top {
- 	pid_t		   target_pid, target_tid;
- 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
- 	const char	   *cpu_list;
-+	struct sym_entry   *sym_filter_entry;
- 	struct perf_evsel  *sym_evsel;
- };
- 
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index cfb5a27..8c17a87 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -6,6 +6,7 @@
- #include "../../sort.h"
- #include "../../symbol.h"
- #include "../../annotate.h"
-+#include <pthread.h>
- 
- static void ui__error_window(const char *fmt, ...)
- {
-@@ -138,46 +139,108 @@ static void annotate_browser__set_top(struct annotate_browser *self,
- 	self->curr_hot = nd;
- }
- 
--static int annotate_browser__run(struct annotate_browser *self)
-+static void annotate_browser__calc_percent(struct annotate_browser *browser,
-+					   int evidx)
- {
--	struct rb_node *nd;
-+	struct symbol *sym = browser->b.priv;
-+	struct annotation *notes = symbol__annotation(sym);
-+	struct objdump_line *pos;
-+
-+	browser->entries = RB_ROOT;
-+
-+	pthread_mutex_lock(&notes->lock);
-+
-+	list_for_each_entry(pos, &notes->src->source, node) {
-+		struct objdump_line_rb_node *rbpos = objdump_line__rb(pos);
-+		rbpos->percent = objdump_line__calc_percent(pos, sym, evidx);
-+		if (rbpos->percent < 0.01) {
-+			RB_CLEAR_NODE(&rbpos->rb_node);
-+			continue;
-+		}
-+		objdump__insert_line(&browser->entries, rbpos);
-+	}
-+	pthread_mutex_unlock(&notes->lock);
-+
-+	browser->curr_hot = rb_last(&browser->entries);
-+}
-+
-+static int annotate_browser__run(struct annotate_browser *self, int evidx,
-+				 int refresh)
-+{
-+	struct rb_node *nd = NULL;
- 	struct symbol *sym = self->b.priv;
-+	/*
-+	 * RIGHT To allow builtin-annotate to cycle thru multiple symbols by
-+	 * examining the exit key for this function.
-+	 */
-+	int exit_keys[] = { 'H', NEWT_KEY_TAB, NEWT_KEY_UNTAB,
-+			    NEWT_KEY_RIGHT, 0 };
- 	int key;
- 
- 	if (ui_browser__show(&self->b, sym->name,
--			     "<-, -> or ESC: exit, TAB/shift+TAB: cycle thru samples") < 0)
-+			     "<-, -> or ESC: exit, TAB/shift+TAB: "
-+			     "cycle hottest lines, H: Hottest") < 0)
- 		return -1;
--	/*
--	 * To allow builtin-annotate to cycle thru multiple symbols by
--	 * examining the exit key for this function.
--	 */
--	ui_browser__add_exit_key(&self->b, NEWT_KEY_RIGHT);
-+
-+	ui_browser__add_exit_keys(&self->b, exit_keys);
-+	annotate_browser__calc_percent(self, evidx);
-+
-+	if (self->curr_hot)
-+		annotate_browser__set_top(self, self->curr_hot);
- 
- 	nd = self->curr_hot;
--	if (nd) {
--		int tabs[] = { NEWT_KEY_TAB, NEWT_KEY_UNTAB, 0 };
--		ui_browser__add_exit_keys(&self->b, tabs);
--	}
-+
-+	if (refresh != 0)
-+		newtFormSetTimer(self->b.form, refresh);
- 
- 	while (1) {
- 		key = ui_browser__run(&self->b);
- 
-+		if (refresh != 0) {
-+			annotate_browser__calc_percent(self, evidx);
-+			/*
-+			 * Current line focus got out of the list of most active
-+			 * lines, NULL it so that if TAB|UNTAB is pressed, we
-+			 * move to curr_hot (current hottest line).
-+			 */
-+			if (nd != NULL && RB_EMPTY_NODE(nd))
-+				nd = NULL;
-+		}
-+
- 		switch (key) {
-+		case -1:
-+			/*
-+ 			 * FIXME we need to check if it was
-+ 			 * es.reason == NEWT_EXIT_TIMER
-+ 			 */
-+			if (refresh != 0)
-+				symbol__annotate_decay_histogram(sym, evidx);
-+			continue;
- 		case NEWT_KEY_TAB:
--			nd = rb_prev(nd);
--			if (nd == NULL)
--				nd = rb_last(&self->entries);
--			annotate_browser__set_top(self, nd);
-+			if (nd != NULL) {
-+				nd = rb_prev(nd);
-+				if (nd == NULL)
-+					nd = rb_last(&self->entries);
-+			} else
-+				nd = self->curr_hot;
- 			break;
- 		case NEWT_KEY_UNTAB:
--			nd = rb_next(nd);
--			if (nd == NULL)
--				nd = rb_first(&self->entries);
--			annotate_browser__set_top(self, nd);
-+			if (nd != NULL)
-+				nd = rb_next(nd);
-+				if (nd == NULL)
-+					nd = rb_first(&self->entries);
-+			else
-+				nd = self->curr_hot;
-+			break;
-+		case 'H':
-+			nd = self->curr_hot;
- 			break;
- 		default:
- 			goto out;
+-			if (ret != DWARF_CB_OK)
++			if (ret < 0)
+ 				break;
  		}
-+
-+		if (nd != NULL)
-+			annotate_browser__set_top(self, nd);
- 	}
- out:
- 	ui_browser__hide(&self->b);
-@@ -186,13 +249,13 @@ out:
- 
- int hist_entry__tui_annotate(struct hist_entry *he, int evidx)
- {
--	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx);
-+	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx, 0);
- }
- 
--int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx)
-+int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
-+			 int refresh)
- {
- 	struct objdump_line *pos, *n;
--	struct objdump_line_rb_node *rbpos;
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct annotate_browser browser = {
- 		.b = {
-@@ -211,7 +274,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx)
- 	if (map->dso->annotate_warned)
- 		return -1;
- 
--	if (symbol__annotate(sym, map, sizeof(*rbpos)) < 0) {
-+	if (symbol__annotate(sym, map, sizeof(struct objdump_line_rb_node)) < 0) {
- 		ui__error_window(ui_helpline__last_msg);
- 		return -1;
- 	}
-@@ -219,26 +282,17 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx)
- 	ui_helpline__push("Press <- or ESC to exit");
- 
- 	list_for_each_entry(pos, &notes->src->source, node) {
-+		struct objdump_line_rb_node *rbpos;
- 		size_t line_len = strlen(pos->line);
-+
- 		if (browser.b.width < line_len)
- 			browser.b.width = line_len;
- 		rbpos = objdump_line__rb(pos);
- 		rbpos->idx = browser.b.nr_entries++;
--		rbpos->percent = objdump_line__calc_percent(pos, sym, evidx);
--		if (rbpos->percent < 0.01)
--			continue;
--		objdump__insert_line(&browser.entries, rbpos);
- 	}
- 
--	/*
--	 * Position the browser at the hottest line.
--	 */
--	browser.curr_hot = rb_last(&browser.entries);
--	if (browser.curr_hot)
--		annotate_browser__set_top(&browser, browser.curr_hot);
--
- 	browser.b.width += 18; /* Percentage */
--	ret = annotate_browser__run(&browser);
-+	ret = annotate_browser__run(&browser, evidx, refresh);
- 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
- 		list_del(&pos->node);
- 		objdump_line__free(pos);
-diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
-index ca60624..377ff58 100644
---- a/tools/perf/util/ui/browsers/top.c
-+++ b/tools/perf/util/ui/browsers/top.c
-@@ -7,6 +7,7 @@
-  * Released under the GPL v2. (and only v2, not any later version)
-  */
- #include "../browser.h"
-+#include "../../annotate.h"
- #include "../helpline.h"
- #include "../libslang.h"
- #include "../../evlist.h"
-@@ -18,6 +19,7 @@
- struct perf_top_browser {
- 	struct ui_browser b;
- 	struct rb_root	  root;
-+	struct sym_entry  *selection;
- 	float		  sum_ksamples;
- 	int		  dso_width;
- 	int		  dso_short_width;
-@@ -60,6 +62,9 @@ static void perf_top_browser__write(struct ui_browser *browser, void *entry, int
- 	slsmg_write_nstring(width >= syme->map->dso->long_name_len ?
- 				syme->map->dso->long_name :
- 				syme->map->dso->short_name, width);
-+
-+	if (current_entry)
-+		top_browser->selection = syme;
- }
- 
- static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
-@@ -80,21 +85,52 @@ static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
- 	browser->b.nr_entries = top->rb_entries;
- }
- 
-+static void perf_top_browser__annotate(struct perf_top_browser *browser)
-+{
-+	struct sym_entry *syme = browser->selection;
-+	struct symbol *sym = sym_entry__symbol(syme);
-+	struct annotation *notes = symbol__annotation(sym);
-+	struct perf_top *top = browser->b.priv;
-+
-+	if (notes->src != NULL)
-+		goto do_annotation;
-+
-+	pthread_mutex_lock(&notes->lock);
-+
-+	top->sym_filter_entry = NULL;
-+
-+	if (symbol__alloc_hist(sym, top->evlist->nr_entries) < 0) {
-+		pr_err("Not enough memory for annotating '%s' symbol!\n",
-+		       sym->name);
-+		pthread_mutex_unlock(&notes->lock);
-+		return;
-+	}
-+
-+	top->sym_filter_entry = syme;
-+
-+	pthread_mutex_unlock(&notes->lock);
-+do_annotation:
-+	symbol__tui_annotate(sym, syme->map, 0, top->delay_secs * 1000);
-+}
-+
- static int perf_top_browser__run(struct perf_top_browser *browser)
- {
- 	int key;
- 	char title[160];
- 	struct perf_top *top = browser->b.priv;
- 	int delay_msecs = top->delay_secs * 1000;
-+	int exit_keys[] = { 'a', NEWT_KEY_ENTER, NEWT_KEY_RIGHT, 0, };
- 
- 	perf_top_browser__update_rb_tree(browser);
-         perf_top__header_snprintf(top, title, sizeof(title));
-         perf_top__reset_sample_counters(top);
- 
--	if (ui_browser__show(&browser->b, title, "ESC: exit") < 0)
-+	if (ui_browser__show(&browser->b, title,
-+			     "ESC: exit, ENTER|->|a: Live Annotate") < 0)
- 		return -1;
- 
- 	newtFormSetTimer(browser->b.form, delay_msecs);
-+	ui_browser__add_exit_keys(&browser->b, exit_keys);
- 
- 	while (1) {
- 		key = ui_browser__run(&browser->b);
-@@ -109,7 +145,12 @@ static int perf_top_browser__run(struct perf_top_browser *browser)
- 			SLsmg_gotorc(0, 0);
- 			slsmg_write_nstring(title, browser->b.width);
- 			break;
--		case NEWT_KEY_TAB:
-+		case 'a':
-+		case NEWT_KEY_RIGHT:
-+		case NEWT_KEY_ENTER:
-+			if (browser->selection)
-+				perf_top_browser__annotate(browser);
-+			break;
- 		default:
- 			goto out;
- 		}
+ 		off = noff;
 -- 
 1.6.2.5
 
