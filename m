@@ -1,151 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab1BVOJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:09:21 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:49992 "EHLO mprc.pku.edu.cn"
+	id S1753141Ab1BVOLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:11:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35838 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab1BVOJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:09:18 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        "'Greg KH'" <greg@kroah.com>
-References: <015301cbcdae$55cdb7e0$016927a0$@mprc.pku.edu.cn> <201102171759.45365.arnd@arndb.de> <00e901cbcf51$8507c290$8f1747b0$@mprc.pku.edu.cn> <201102181142.42614.arnd@arndb.de>
-In-Reply-To: <201102181142.42614.arnd@arndb.de>
-Subject: RE: [PATCH 09/12] unicore32 machine related files: hardware registers
-Date: Tue, 22 Feb 2011 22:09:05 +0800
-Message-ID: <018601cbd29a$118b27c0$34a17740$@mprc.pku.edu.cn>
+	id S1752670Ab1BVOLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:11:37 -0500
+Message-ID: <4D63C413.4020602@redhat.com>
+Date: Tue, 22 Feb 2011 16:11:31 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 0/6] KVM support for TSC scaling
+References: <4D57F677.3090004@redhat.com> <20110221172807.GD16508@amd.com> <4D638BDE.70602@redhat.com> <20110222103513.GF16508@amd.com> <4D6392F1.1030601@redhat.com> <20110222111111.GG16508@amd.com>
+In-Reply-To: <20110222111111.GG16508@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQI7nX5Jqof63rCNDjlwJwGIbqva+gG3KFhgArBYRcsBbmW5qpL/R/tg
-Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Friday, February 18, 2011 6:43 PM
-> To: Guan Xuetao
-> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
-> Subject: Re: [PATCH 09/12] unicore32 machine related files: hardware registers
-> 
-> On Friday 18 February 2011 10:52:12 Guan Xuetao wrote:
-> 
-> > > On Wednesday 16 February 2011, Guan Xuetao wrote:
-> > > > +#define io_p2v(x)      ((x) - PKUNITY_IOSPACE_BASE)
-> > > > +#define io_v2p(x)      ((x) + PKUNITY_IOSPACE_BASE)
-> > > > +
-> > > > +#ifndef __ASSEMBLY__
-> > > > +
-> > > > +# define __REG(x)      (*((volatile unsigned long *)io_p2v(x)))
-> > > > +# define __PREG(x)     (io_v2p((unsigned long)&(x)))
-> > > > +
-> > > > +#else
-> > > > +
-> > > > +# define __REG(x)      io_p2v(x)
-> > > > +# define __PREG(x)     io_v2p(x)
-> > >
-> > > > #define PKUNITY_IOSPACE_BASE            0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
-> > >
-> > > The typecasts look wrong here:
-> > >
-> > > - "volatile unsigned long*" is not the right pointer type to do I/O on. It
-> > >   should instead be "void __iomem *". Please use the "sparse" tool with "make C=1"
-> > >   to get warnings about incorrect pointer type accesses.
-> > __REG() macro could be used in both left and right sides of assignment sentence.
-> > This idea is borrowed from arm/sa1100.
+On 02/22/2011 01:11 PM, Roedel, Joerg wrote:
 > >
-> > When used in left side, __REG is a register port, and when used in right side,
-> > __REG is just the value of the register.
-> > It is a trick, but very useful. I'd like to remain the macros.
-> 
-> Ok, I didn't realize this. However, this is a really bad idea
-> and I would strongly advise removing this throughout the code.
-> 
-> The only way we do MMIO accesses in Linux is through the
-> readl()/writel() functions. On many architectures, these
-> contain more than just a pointer dereference, and if you
-> need that, you can change it in just one place.
-> 
-> Things that can go wrong with volatile pointer dereferences include:
-> 
-> * compiler turns 32 bit access into four 8-bit accesses
-> * I/O bus reorders access and it moves outside of a spinlock
-> * non-volatile accesses to system RAM get reordered around
->   MMIO access, which may break if the MMIO triggers a DMA.
-> 
-> > diff --git a/arch/unicore32/include/mach/PKUnity.h b/arch/unicore32/include/mach/PKUnity.h
-> > index 1e13208..39f27f4 100644
-> > --- a/arch/unicore32/include/mach/PKUnity.h
-> > +++ b/arch/unicore32/include/mach/PKUnity.h
-> > @@ -21,7 +21,7 @@
-> >   * Memory Definitions
-> >   */
-> >  #define PKUNITY_SDRAM_BASE		0x00000000 /* 0x00000000 - 0x7FFFFFFF 2GB */
-> > -#define PKUNITY_IOSPACE_BASE            0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
-> > +#define PKUNITY_MMIO_BASE		0x80000000 /* 0x80000000 - 0xFFFFFFFF 2GB */
-> >  #define PKUNITY_PCI_BASE		0x80000000 /* 0x80000000 - 0xBFFFFFFF 1GB */
-> >  #include "regs-pci.h"
-> >  #define PKUNITY_BOOT_ROM2_BASE		0xF4000000 /* 0xF4000000 - 0xF7FFFFFF 64MB */
-> 
-> This change is ok.
-> 
-> > diff --git a/arch/unicore32/include/mach/hardware.h b/arch/unicore32/include/mach/hardware.h
-> > index 3fb7236..ebce7de 100644
-> > --- a/arch/unicore32/include/mach/hardware.h
-> > +++ b/arch/unicore32/include/mach/hardware.h
-> > @@ -17,19 +17,14 @@
+> >  Ok, so your scenario is
 > >
-> >  #include "PKUnity.h"
+> >  - boot on host H1
+> >  - no intervening migrations
+> >  - migrate to host Hnew
+> >  - all succeeding migrations are only to new hosts or back to H1
 > >
-> > -#define io_p2v(x)	((x) - PKUNITY_IOSPACE_BASE)
-> > -#define io_v2p(x)	((x) + PKUNITY_IOSPACE_BASE)
-> > +#define io_p2v(x)	((x) - PKUNITY_MMIO_BASE)
-> > +#define io_v2p(x)	((x) + PKUNITY_MMIO_BASE)
-> >
-> >  #ifndef __ASSEMBLY__
-> 
-> The result of io_p2v really needs to be a (void __iomem *) pointer, not
-> an integer, so the accesses can work.
-> 
-> >  # define __REG(x)	(*((volatile unsigned long *)io_p2v(x)))
-> >  # define __PREG(x)	(io_v2p((unsigned long)&(x)))
-> 
-> And as explained, these should be removed and all users converted to
-> use readl()/writel().
-I see.
-I apply the patch as following:
-arch/unicore32/include/mach/hardware.h |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> >  This is somewhat artificial, and not very different from an all-new cluster.
+>
+> This is at least the scenario where the new hardware feature will make
+> sense. Its clear that if you migrate a guest between hosts without
+> tsc-scaling will make the tsc appear unstable for the guest. This is
+> basically the same situation as we have today.
+> In fact, for older hosts the feature can be emulated in software by
+> trapping tsc accesses from the guest. Isn't this what Zachary has been
+> working on?
 
-diff --git a/arch/unicore32/include/mach/hardware.h b/arch/unicore32/include/mach/hardware.h
-index ebce7de..b71405a 100644
---- a/arch/unicore32/include/mach/hardware.h
-+++ b/arch/unicore32/include/mach/hardware.h
-@@ -22,8 +22,7 @@
- 
- #ifndef __ASSEMBLY__
- 
--# define __REG(x)	(*((volatile unsigned long *)io_p2v(x)))
--# define __PREG(x)	(io_v2p((unsigned long)&(x)))
-+# define __REG(x)	(void __iomem *)io_p2v(x)
- 
- #endif
+Yes.  It's of dubious value though, you get a stable tsc but it's 
+incredibly slow.
 
----
-__REG reserved only for all registers prefix.
-And all using for __REG converted to readl/writel.
+>   During my implementation I understood tsc-scaling as a
+> hardware supported way to do this. And thats the reason I implemented it
+> the way it is.
 
-> 
-> 	Arnd
+Right.  The only question is what the added guest switch cost.  If it's 
+expensive (say, >= 100 cycles) then we need a mode where we can drop 
+this cost by applying the same multiplier to all guests and the host 
+(can be done as an add-on optimization patch).  If however we end up 
+always recommending that all hosts use the same virtual tsc rate, why 
+should we support individual rates for guests?
 
-Thanks Arnd
+It does make sense from a generality point of view, we provide 
+mechanism, not policy, just make sure that the policies we like are 
+optimized as far as they can go.
 
-Guan Xuetao
+> >  [the whole thing is kind of sad; we went through a huge effort to make
+> >  clocks work on virtual machines in spite of the tsc issues; then we have
+> >  a hardware solution, but can't use it because of old hardware.  Same
+> >  thing happens with the effort put into shadow in the pre-npt days]
+>
+> The shadow code has a revivial as it is required for emulating
+> nested-npt and nested-ept, so the effort still has value :)
+
+Yes.  Some of it though is unused (unsync pages).  And it's hard for me 
+to see nested svm itself used in production due to the huge performance 
+hit for I/O.  Maybe an emulated iommu (so we can do virtio device 
+assignment, or even real device assignment all the way from the host) 
+will help, or even more hardware support a la s390.
+
+-- 
+error compiling committee.c: too many arguments to function
 
