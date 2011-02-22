@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab1BVJ4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 04:56:12 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38961 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab1BVJ4L convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 04:56:11 -0500
-Subject: Re: [PATCH 5/5] sched, autogroup: runtime enable/disable tuning fix
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <AANLkTin_aqBTXUyO4H-p1_4i-9FAvxChBi1QpPFXvqD_@mail.gmail.com>
-References: <1298185696-4403-1-git-send-email-yong.zhang0@gmail.com>
-	 <1298185696-4403-6-git-send-email-yong.zhang0@gmail.com>
-	 <1298207379.7998.11.camel@marge.simson.net> <20110220141003.GA6006@zhy>
-	 <1298222533.7881.15.camel@marge.simson.net>
-	 <1298306175.24121.14.camel@twins>
-	 <AANLkTin_aqBTXUyO4H-p1_4i-9FAvxChBi1QpPFXvqD_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 22 Feb 2011 10:56:06 +0100
-Message-ID: <1298368566.2217.18.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752617Ab1BVJ6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 04:58:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38939 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335Ab1BVJ6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 04:58:34 -0500
+Date: Tue, 22 Feb 2011 10:58:31 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: Re: [PATCH] ext4/trivial: Fix comment typo "especiially".
+In-Reply-To: <20110222015346.GC2924@thunk.org>
+Message-ID: <alpine.LNX.2.00.1102221056580.2160@pobox.suse.cz>
+References: <1295623291-10909-1-git-send-email-tm@tao.ma> <alpine.LNX.2.00.1101211627070.5725@pobox.suse.cz> <20110222015346.GC2924@thunk.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 11:13 +0800, Yong Zhang wrote:
-> So show autogroup name always. But for the root group,
-> its name will dance between "cfs_rq[cpu]:" and
-> "cfs_rq[cpu]:/autogroup-0" according to
-> sysctl_sched_autogroup_enabled. 
+On Mon, 21 Feb 2011, Ted Ts'o wrote:
 
-Would it make sense to force the root group to always be a !autogroup?
+> > > From: Tao Ma <boyu.mt@taobao.com>
+> > > 
+> > > Change "especiially" to "especially".
+> > > 
+> > > Cc: Jiri Kosina <jkosina@suse.cz>
+> > > Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> > 
+> > Applied.
+> 
+> I'm happy for this to go through the trivial git tree, but I didn't
+> see it in your git tree.  Am I missing something?
+
+It should be there -- 'for-next' branch, commit b8d6568a122 -- see 
+http://git.kernel.org/?p=linux/kernel/git/jikos/trivial.git;a=commitdiff;h=b8d6568a122
+
+I guess you were looking somewhere else ... ?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
