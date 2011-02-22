@@ -1,136 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab1BVDyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 22:54:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347Ab1BVDxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 22:53:46 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Cc: neilb@suse.de, sergey.senozhatsky@gmail.com, tj@kernel.org,
-        jmoyer@redhat.com, snitzer@redhat.com
-Subject: [PATCH 1/3] block: Initialize ->queue_lock to internal lock at queue allocation time
-Date: Mon, 21 Feb 2011 22:53:35 -0500
-Message-Id: <1298346817-26144-2-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1298346817-26144-1-git-send-email-vgoyal@redhat.com>
-References: <1298346817-26144-1-git-send-email-vgoyal@redhat.com>
+	id S1753590Ab1BVENS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 23:13:18 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:38736 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab1BVENR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 23:13:17 -0500
+Date: Tue, 22 Feb 2011 09:43:33 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Gautham R Shenoy <ego@in.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Nikhil Rao <ncrao@google.com>
+Subject: Re: [CFS Bandwidth Control v4 5/7] sched: add exports tracking cfs
+ bandwidth control statistics
+Message-ID: <20110222041332.GA2753@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <20110216031831.571628191@google.com>
+ <20110216031841.258879435@google.com>
+ <20110222031420.GI10342@balbir.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222031420.GI10342@balbir.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o There does not seem to be a clear convention whether q->queue_lock is
-  initialized or not when blk_cleanup_queue() is called. In the past
-  it was not necessary but now blk_throtl_exit() takes up queue lock
-  by default and needs queue lock to be available.
+On Tue, Feb 22, 2011 at 08:44:20AM +0530, Balbir Singh wrote:
+> * Paul Turner <pjt@google.com> [2011-02-15 19:18:36]:
+> 
+> > From: Nikhil Rao <ncrao@google.com>
+> > 
+> > This change introduces statistics exports for the cpu sub-system, these are
+> > added through the use of a stat file similar to that exported by other
+> > subsystems.
+> > 
+> > The following exports are included:
+> > 
+> > nr_periods:	number of periods in which execution occurred
+> > nr_throttled:	the number of periods above in which execution was throttle
+> > throttled_time:	cumulative wall-time that any cpus have been throttled for
+> > this group
+> > 
+> > Signed-off-by: Paul Turner <pjt@google.com>
+> > Signed-off-by: Nikhil Rao <ncrao@google.com>
+> > Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+> > ---
+> >  kernel/sched.c      |   26 ++++++++++++++++++++++++++
+> >  kernel/sched_fair.c |   16 +++++++++++++++-
+> >  2 files changed, 41 insertions(+), 1 deletion(-)
+> > 
+> > Index: tip/kernel/sched.c
+> > ===================================================================
+> > --- tip.orig/kernel/sched.c
+> > +++ tip/kernel/sched.c
+> > @@ -254,6 +254,11 @@ struct cfs_bandwidth {
+> >  	ktime_t			period;
+> >  	u64			runtime, quota;
+> >  	struct hrtimer		period_timer;
+> > +
+> > +	/* throttle statistics */
+> > +	u64			nr_periods;
+> > +	u64			nr_throttled;
+> > +	u64			throttled_time;
+> >  };
+> >  #endif
+> > 
+> > @@ -389,6 +394,7 @@ struct cfs_rq {
+> >  #ifdef CONFIG_CFS_BANDWIDTH
+> >  	u64 quota_assigned, quota_used;
+> >  	int throttled;
+> > +	u64 throttled_timestamp;
+> >  #endif
+> >  #endif
+> >  };
+> > @@ -426,6 +432,10 @@ void init_cfs_bandwidth(struct cfs_bandw
+> > 
+> >  	hrtimer_init(&cfs_b->period_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+> >  	cfs_b->period_timer.function = sched_cfs_period_timer;
+> > +
+> > +	cfs_b->nr_periods = 0;
+> > +	cfs_b->nr_throttled = 0;
+> > +	cfs_b->throttled_time = 0;
+> >  }
+> > 
+> >  static
+> > @@ -9332,6 +9342,18 @@ static int cpu_cfs_period_write_u64(stru
+> >  	return tg_set_cfs_period(cgroup_tg(cgrp), cfs_period_us);
+> >  }
+> > 
+> > +static int cpu_stats_show(struct cgroup *cgrp, struct cftype *cft,
+> > +		struct cgroup_map_cb *cb)
+> > +{
+> > +	struct task_group *tg = cgroup_tg(cgrp);
+> > +	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+> > +
+> > +	cb->fill(cb, "nr_periods", cfs_b->nr_periods);
+> > +	cb->fill(cb, "nr_throttled", cfs_b->nr_throttled);
+> > +	cb->fill(cb, "throttled_time", cfs_b->throttled_time);
+> > +
+> > +	return 0;
+> > +}
+> >  #endif /* CONFIG_CFS_BANDWIDTH */
+> >  #endif /* CONFIG_FAIR_GROUP_SCHED */
+> > 
+> > @@ -9378,6 +9400,10 @@ static struct cftype cpu_files[] = {
+> >  		.read_u64 = cpu_cfs_period_read_u64,
+> >  		.write_u64 = cpu_cfs_period_write_u64,
+> >  	},
+> > +	{
+> > +		.name = "stat",
+> > +		.read_map = cpu_stats_show,
+> > +	},
+> >  #endif
+> >  #ifdef CONFIG_RT_GROUP_SCHED
+> >  	{
+> > Index: tip/kernel/sched_fair.c
+> > ===================================================================
+> > --- tip.orig/kernel/sched_fair.c
+> > +++ tip/kernel/sched_fair.c
+> > @@ -1519,17 +1519,25 @@ static void throttle_cfs_rq(struct cfs_r
+> > 
+> >  out_throttled:
+> >  	cfs_rq->throttled = 1;
+> > +	cfs_rq->throttled_timestamp = rq_of(cfs_rq)->clock;
+> >  	update_cfs_rq_load_contribution(cfs_rq, 1);
+> >  }
+> > 
+> >  static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+> >  {
+> >  	struct rq *rq = rq_of(cfs_rq);
+> > +	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
+> >  	struct sched_entity *se;
+> > 
+> >  	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
+> > 
+> >  	update_rq_clock(rq);
+> > +	/* update stats */
+> > +	raw_spin_lock(&cfs_b->lock);
+> > +	cfs_b->throttled_time += (rq->clock - cfs_rq->throttled_timestamp);
+> > +	raw_spin_unlock(&cfs_b->lock);
+> > +	cfs_rq->throttled_timestamp = 0;
+> > +
+> >  	/* (Try to) avoid maintaining share statistics for idle time */
+> >  	cfs_rq->load_stamp = cfs_rq->load_last = rq->clock_task;
+> > 
+> > @@ -1571,7 +1579,7 @@ static void account_cfs_rq_quota(struct 
+> > 
+> >  static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+> >  {
+> > -	int i, idle = 1;
+> > +	int i, idle = 1, num_throttled = 0;
+> >  	u64 delta;
+> >  	const struct cpumask *span;
+> > 
+> > @@ -1593,6 +1601,7 @@ static int do_sched_cfs_period_timer(str
+> > 
+> >  		if (!cfs_rq_throttled(cfs_rq))
+> >  			continue;
+> > +		num_throttled++;
+> > 
+> >  		delta = tg_request_cfs_quota(cfs_rq->tg);
+> > 
+> > @@ -1608,6 +1617,11 @@ static int do_sched_cfs_period_timer(str
+> >  		}
+> >  	}
+> > 
+> > +	/* update throttled stats */
+> > +	cfs_b->nr_periods++;
+> > +	if (num_throttled)
+> > +		cfs_b->nr_throttled++;
+> > +
+> >  	return idle;
+> >  }
+> >
+> 
+> Should we consider integrating this in cpuacct, it would be difficult
+> if we spill over stats between controllers. 
 
-  In fact elevator_exit() code also has similar requirement just that
-  it is less stringent in the sense that elevator_exit() is called only
-  if elevator is initialized.
+Given that cpuacct controller can be mounted independently, I am not sure
+if we should integrate these stats. These stats come from cpu controller.
 
-o Two problems have been noticed because of ambiguity about spin lock
-  status.
+I initially had similar stats as part of /proc/sched_debug since there
+are a bunch of other group specific stats (including rt throttle stats)
+in /proc/sched_debug.
 
-	- If a driver calls blk_alloc_queue() and then soon calls
-	  blk_cleanup_queue() almost immediately, (because some other driver
-	  structure allocation failed or some other error happened) then
-	  blk_throtl_exit() will run into issues as queue lock is not
-	  initialized. Loop driver ran into this issue recently and I noticed
-	  error paths in md driver too. Similar error paths should exist in
-	  other drivers too.
-
-	- If some driver provided external spin lock and zapped the lock
-	  before blk_cleanup_queue(), then it can lead to issues.
-
-o So this patch does two things.
-
-	- Initialize the default queue lock at queue allocation time.
-	  block throttling code is one of the users of queue lock and
-	  it is initialized at the queue allocation time, so it makes
-	  sense to initialize ->queue_lock also to internal lock. A
-	  driver can overide that lock later. This will take care of
-	  first issue where a driver does not have to worry about
-	  initializing the queue lock to default before calling
-	  blk_cleanup_queue()
-
-	- Put a WARN_ON() in blk_cleanup_queue() to make sure ->queue_lock
-	  is initialized and it will catch the cases if there is a bad
-	  driver which provides an external queue lock but zaps it
-	  unexpectedly. So this WARN_ON() will catch that and we can
-	  fix the driver.
-
-	  Recently NeilBrown noted that md is doing something similar and
-	  he has queued a fix in this tree. This patch relies on that
-	  patch otherwise it might WARN and then crash in blk_throtl_exit().
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-core.c     |   19 ++++++++++++++++++-
- block/blk-settings.c |    7 -------
- 2 files changed, 18 insertions(+), 8 deletions(-)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 2f4002f..9a8e256 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -459,6 +459,14 @@ void blk_put_queue(struct request_queue *q)
- void blk_cleanup_queue(struct request_queue *q)
- {
- 	/*
-+	 * If a driver supplied the queue lock, it should not zap that
-+	 * unexpectedly as some queue cleanup components like
-+	 * elevator_exit() and blk_throtl_exit() need queue lock. Hence
-+	 * warn if queue lock is NULL
-+	 */
-+	WARN_ON(!q->queue_lock);
-+
-+	/*
- 	 * We know we have process context here, so we can be a little
- 	 * cautious and ensure that pending block actions on this device
- 	 * are done before moving on. Going into this function, we should
-@@ -548,6 +556,12 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 	mutex_init(&q->sysfs_lock);
- 	spin_lock_init(&q->__queue_lock);
- 
-+	/*
-+	 * By default initialize queue_lock to internal lock and driver can
-+	 * override it later if need be.
-+	 */
-+	q->queue_lock = &q->__queue_lock;
-+
- 	return q;
- }
- EXPORT_SYMBOL(blk_alloc_queue_node);
-@@ -632,7 +646,10 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
- 	q->unprep_rq_fn		= NULL;
- 	q->unplug_fn		= generic_unplug_device;
- 	q->queue_flags		= QUEUE_FLAG_DEFAULT;
--	q->queue_lock		= lock;
-+
-+	/* Override internal queue lock with supplied lock pointer */
-+	if (lock)
-+		q->queue_lock		= lock;
- 
- 	/*
- 	 * This also sets hw/phys segments, boundary and size
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index 36c8c1f..df649fa 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -176,13 +176,6 @@ void blk_queue_make_request(struct request_queue *q, make_request_fn *mfn)
- 	blk_queue_max_hw_sectors(q, BLK_SAFE_MAX_SECTORS);
- 
- 	/*
--	 * If the caller didn't supply a lock, fall back to our embedded
--	 * per-queue locks
--	 */
--	if (!q->queue_lock)
--		q->queue_lock = &q->__queue_lock;
--
--	/*
- 	 * by default assume old behaviour and bounce for any highmem page
- 	 */
- 	blk_queue_bounce_limit(q, BLK_BOUNCE_HIGH);
--- 
-1.7.1
-
+Regards,
+Bharata.
