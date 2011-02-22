@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab1BVTiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:38:14 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:34333 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab1BVTiN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:38:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=bCti86rSl70QyYTwoGSdCyNCMVSn/9ScxIv4CYA+Tj8SZU+6wCDYzEp41L6beoXRAM
-         2k6/mqOwY2/yt+SgImtg==
+	id S1755226Ab1BVTlf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:41:35 -0500
+Received: from cantor.suse.de ([195.135.220.2]:37064 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752232Ab1BVTle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:41:34 -0500
+Date: Tue, 22 Feb 2011 11:33:14 -0800
+From: Greg KH <gregkh@suse.de>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
+ interfaces
+Message-ID: <20110222193314.GA11033@suse.de>
+References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
+ <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
+ <20110222181613.GU4000@outflux.net>
+ <20110222191333.GA9991@suse.de>
+ <20110222192248.GX4000@outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <1298342392-21236-1-git-send-email-ccross@android.com>
-References: <1298342392-21236-1-git-send-email-ccross@android.com>
-Date: Tue, 22 Feb 2011 11:38:09 -0800
-X-Google-Sender-Auth: RHRmWdnBlWIt-bq_u3-_c0aW7D4
-Message-ID: <AANLkTimHJX4oqyiQ4rNF2YBgb3NyiixjU_wHP5Yd3Kpo@mail.gmail.com>
-Subject: Re: [PATCH 0/7] Second batch of Tegra clock updates for 2.6.39
-From: Colin Cross <ccross@android.com>
-To: linux-tegra@vger.kernel.org
-Cc: konkers@android.com, olof@lixom.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mike@compulab.co.il
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222192248.GX4000@outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I pushed everything except the last patch that disables bootloader
-clocks to for-next.  I'll repost the last change with Olof's comments
-addressed.
+On Tue, Feb 22, 2011 at 11:22:48AM -0800, Kees Cook wrote:
+> On Tue, Feb 22, 2011 at 11:13:33AM -0800, Greg KH wrote:
+> > On Tue, Feb 22, 2011 at 10:16:13AM -0800, Kees Cook wrote:
+> > > Har har, I forgot --compose to "git send-email".
+> > > 
+> > > Anyway, with the continuing deluge of bugs in the "debug" filesystem, I
+> > > would like to make that filesystem's root directory mode 0700 by default
+> > > since it's filled with crazy stuff that regular users do not need to see.
+> > 
+> > But that will break existing users of this interface, right?
+> > 
+> > > Better to try to just close the door completely on all the stuff in there.
+> > > It is, after all, supposed to only be used for debugging, right?
+> > 
+> > No, not really, people use it for all sorts of crazy things.
+> > 
+> > Remember, the only rule in debugfs is:
+> > 	There are no rules in debugfs.
+> 
+> Right, which seems extremely dangerous to me. I think debugfs should either
+> be:
+>  a) used only by the root user (would prefer this was actually CAP_DEBUG or
+>     something)
+> or
+>  b) used by userspace tools
+> 
+> But not both. Creating interfaces with no rules for userspace consumption
+> is going to lead to disaster. You can't disallow "break[ing] existing
+> users of this interface" and say there are no rules at the same time. :)
 
-On Mon, Feb 21, 2011 at 6:39 PM, Colin Cross <ccross@android.com> wrote:
-> This patch series contains two small patches out of the previous
-> series that needed fixes, as well as some new ones to disable
-> unused clocks during boot and related bug fixes.
->
-> Patch 4 converts the Harmony and Trimslice boards to use the new
-> init_early machine handler.  Any boards that go in after this
-> patch will need to be updated to match, and this patch will need
-> to be updated if any boards go in before this patch.
->
-> Tested-bys on Harmony and Trimslice would be appreciated.
->
->
+I'm not going to argue that the wisdom of putting userspace tool
+interfaces in debugfs wasn't a bad idea, but that was not for me to
+decide, it was the creators of that interface's decision.  And even
+then, it was something the evolved over time and I doubt that anyone
+when it was first created, would have imagined the perf interface being
+in debugfs today.
+
+And even then, there's been a proposal to move that to a new filesystem
+which would solve that issue.
+
+I will say that you can not break existing users, as I want all users to
+have access to the debugfs files I have created in there for a wide
+range of valid reasons.
+
+So no, I'm not going to change the whole filesystem to not allow all
+users to access it, that is a per-file/directory decision by the creator
+of that file/directory.
+
+Again, let's fix the real problems here, world-writable debugfs files.
+Nothing different here from sysfs which had the same issues, just that
+no one thought to ask for zillions of CVE entries to panic the world
+with when we resolved all of them...
+
+thanks,
+
+greg k-h
