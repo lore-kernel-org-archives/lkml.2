@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab1BVW0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:26:20 -0500
-Received: from kroah.org ([198.145.64.141]:32971 "EHLO coco.kroah.org"
+	id S1755052Ab1BVWW1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:22:27 -0500
+Received: from kroah.org ([198.145.64.141]:32961 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039Ab1BVWWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:25 -0500
+	id S1754395Ab1BVWWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:23 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:42 2011
-Message-Id: <20110222221842.623602186@clark.kroah.org>
+Message-Id: <20110222221842.521769497@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:35 -0800
+Date: Tue, 22 Feb 2011 14:17:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dave Martin <dave.martin@linaro.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [56/70] ARM: Keep exit text/data around for SMP_ON_UP
+Subject: [55/70] ARM: Ensure predictable endian state on signal handler entry
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,60 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit a9ad21fed09cb95d34af9474be0831525b30c4c6 upstream.
+commit 53399053eb505cf541b2405bd9d9bca5ecfb96fb upstream.
 
-When SMP_ON_UP is used and the spinlocks are inlined, we end up with
-inline spinlocks in the exit code, with references from the SMP
-alternatives section to the exit sections.  This causes link time
-errors.  Avoid this by placing the exit sections in the init-discarded
-region.
+Ensure a predictable endian state when entering signal handlers.  This
+avoids programs which use SETEND to momentarily switch their endian
+state from having their signal handlers entered with an unpredictable
+endian state.
 
-Tested-by: Dave Martin <dave.martin@linaro.org>
+Acked-by: Dave Martin <dave.martin@linaro.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/kernel/vmlinux.lds.S |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/arm/kernel/signal.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -21,6 +21,12 @@
- #define ARM_CPU_KEEP(x)
- #endif
- 
-+#if defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)
-+#define ARM_EXIT_KEEP(x)	x
-+#else
-+#define ARM_EXIT_KEEP(x)
-+#endif
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -474,7 +474,9 @@ setup_return(struct pt_regs *regs, struc
+ 	unsigned long handler = (unsigned long)ka->sa.sa_handler;
+ 	unsigned long retcode;
+ 	int thumb = 0;
+-	unsigned long cpsr = regs->ARM_cpsr & ~PSR_f;
++	unsigned long cpsr = regs->ARM_cpsr & ~(PSR_f | PSR_E_BIT);
 +
- OUTPUT_ARCH(arm)
- ENTRY(stext)
++	cpsr |= PSR_ENDSTATE;
  
-@@ -43,6 +49,7 @@ SECTIONS
- 		_sinittext = .;
- 			HEAD_TEXT
- 			INIT_TEXT
-+			ARM_EXIT_KEEP(EXIT_TEXT)
- 		_einittext = .;
- 		ARM_CPU_DISCARD(PROC_INFO)
- 		__arch_info_begin = .;
-@@ -67,6 +74,7 @@ SECTIONS
- #ifndef CONFIG_XIP_KERNEL
- 		__init_begin = _stext;
- 		INIT_DATA
-+		ARM_EXIT_KEEP(EXIT_DATA)
- #endif
- 	}
- 
-@@ -161,6 +169,7 @@ SECTIONS
- 		. = ALIGN(PAGE_SIZE);
- 		__init_begin = .;
- 		INIT_DATA
-+		ARM_EXIT_KEEP(EXIT_DATA)
- 		. = ALIGN(PAGE_SIZE);
- 		__init_end = .;
- #endif
+ 	/*
+ 	 * Maybe we need to deliver a 32-bit signal to a 26-bit task.
 
 
