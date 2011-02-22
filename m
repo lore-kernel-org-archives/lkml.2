@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751107Ab1BVURl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:17:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46074 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab1BVURk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:17:40 -0500
-Date: Tue, 22 Feb 2011 21:17:25 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenchmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 1/2] Add a common struct clk
-Message-ID: <20110222201725.GF22310@pengutronix.de>
-References: <1298256658.861611.43913489619.0.gpush@pororo>
- <1298256658.862188.178150188637.1.gpush@pororo>
+	id S1751668Ab1BVUR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:17:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab1BVURz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:17:55 -0500
+Message-ID: <4D6419C0.8080804@redhat.com>
+Date: Tue, 22 Feb 2011 21:17:04 +0100
+From: Petr Holasek <pholasek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1298256658.862188.178150188637.1.gpush@pororo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+CC: Petr Holasek <pholasek@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
+Subject: [PATCH v2] hugetlbfs: correct handling of negative input to /proc/sys/vm/nr_hugepages
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
+When user insert negative value into /proc/sys/vm/nr_hugepages it will 
+result
+in the setting a random number of HugePages in system (can be easily showed
+at /proc/meminfo output). This patch fixes the wrong behavior so that the
+negative input will result in nr_hugepages value unchanged.
 
-On Mon, Feb 21, 2011 at 10:50:58AM +0800, Jeremy Kerr wrote:
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index 1d37f42..604be74 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -11,18 +12,168 @@
-> ...
-> +#ifdef CONFIG_USE_COMMON_STRUCT_CLK
-> ...
-> +#else /* !CONFIG_USE_COMMON_STRUCT_CLK */
->  
->  /*
-> - * struct clk - an machine class defined object / cookie.
-> + * Global clock object, actual structure is declared per-machine
->   */
->  struct clk;
->  
-> +static inline void clk_common_init(struct clk *clk) { }
-> +
-> +/*
-> + * For !CONFIG_USE_COMMON_STRUCT_CLK, we don't enforce any atomicity
-> + * requirements for clk_enable/clk_disable, so the prepare and unprepare
-> + * functions are no-ops
-> + */
-> +int clk_prepare(struct clk *clk) { return 0; }
-> +void clk_unprepare(struct clk *clk) { }
-these should be static inline.  Otherwise these functions end up in many
-files and so provoke a build failure.
+v2: same fix was also done in hugetlb_overcommit_handler function
+     as suggested by reviewers.
 
-Best regards
-Uwe
+Signed-off-by: Petr Holasek <pholasek@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+  mm/hugetlb.c |    6 ++----
+  1 files changed, 2 insertions(+), 4 deletions(-)
 
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index bb0b7c1..06de5aa 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1872,8 +1872,7 @@ static int hugetlb_sysctl_handler_common(bool 
+obey_mempolicy,
+      unsigned long tmp;
+      int ret;
+
+-    if (!write)
+-        tmp = h->max_huge_pages;
++    tmp = h->max_huge_pages;
+
+      if (write && h->order >= MAX_ORDER)
+          return -EINVAL;
+@@ -1938,8 +1937,7 @@ int hugetlb_overcommit_handler(struct ctl_table 
+*table, int write,
+      unsigned long tmp;
+      int ret;
+
+-    if (!write)
+-        tmp = h->nr_overcommit_huge_pages;
++    tmp = h->nr_overcommit_huge_pages;
+
+      if (write && h->order >= MAX_ORDER)
+          return -EINVAL;
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.1
