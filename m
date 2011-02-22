@@ -1,65 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1BVTgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:36:24 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37273 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754837Ab1BVTgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:36:23 -0500
-Date: Tue, 22 Feb 2011 19:34:18 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Greg KH <gregkh@suse.de>, David Daney <ddaney@caviumnetworks.com>,
-        linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110222192532.GY4000@outflux.net>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
-	<1298398198-18482-2-git-send-email-kees.cook@canonical.com>
-	<20110222181613.GU4000@outflux.net>
-	<4D640133.9020901@caviumnetworks.com>
-	<20110222184726.GV4000@outflux.net>
-	<20110222191454.GB9991@suse.de>
-	<20110222192532.GY4000@outflux.net>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755248Ab1BVThK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:37:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755133Ab1BVThI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:37:08 -0500
+Date: Tue, 22 Feb 2011 14:34:03 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] blk-throttle: writeback and swap IO control
+Message-ID: <20110222193403.GG28269@redhat.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298394776-9957-1-git-send-email-arighi@develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What system do you proposed to keep these "stupid mistakes" from
-> continuing to happen? If debugfs had already been mode 0700, we could have
-> avoided all of these CVEs, including the full-blown local root escalation.
+On Tue, Feb 22, 2011 at 06:12:51PM +0100, Andrea Righi wrote:
+> Currently the blkio.throttle controller only support synchronous IO requests.
+> This means that we always look at the current task to identify the "owner" of
+> each IO request.
+> 
+> However dirty pages in the page cache can be wrote to disk asynchronously by
+> the per-bdi flusher kernel threads or by any other thread in the system,
+> according to the writeback policy.
+> 
+> For this reason the real writes to the underlying block devices may
+> occur in a different IO context respect to the task that originally
+> generated the dirty pages involved in the IO operation. This makes the
+> tracking and throttling of writeback IO more complicate respect to the
+> synchronous IO from the blkio controller's perspective.
+> 
+> The same concept is also valid for anonymous pages involed in IO operations
+> (swap).
+> 
+> This patch allow to track the cgroup that originally dirtied each page in page
+> cache and each anonymous page and pass these informations to the blk-throttle
+> controller. These informations can be used to provide a better service level
+> differentiation of buffered writes swap IO between different cgroups.
+> 
 
-And all sorts of features would have put themselves in sysfs instead and
-broken no doubt.
+Hi Andrea,
 
-> The "no rules" approach to debugfs is not a good idea, IMO.
+Thanks for the patches. Before I look deeper into patches, had few
+general queries/thoughts.
 
-It's a debugging fs, it needs to be "no rules" other than the obvious
-"don't mount it on production systems"
+- So this requires memory controller to be enabled. Does it also require
+  these to be co-mounted?
 
-Anyway - we don't mostly have a "root/non-root" model - it went out
-around Linux 1.2. So any model for dealing with should be respecting of
-capabilities, SELinux and the like.
+- Currently in throttling there is no limit on number of bios queued
+  per group. I think this is not necessarily a very good idea because
+  if throttling limits are low, we will build very long bio queues. So
+  some AIO process can queue up lots of bios, consume lots of memory
+  without getting blocked. I am sure there will be other side affects
+  too. One of the side affects I noticed is that if an AIO process
+  queues up too much of IO, and if I want to kill it now, it just hangs
+  there for a really-2 long time (waiting for all the throttled IO
+  to complete).
 
-Or of course you could just chmod it 0700 in the distro !
+  So I was thinking of implementing either per group limit or per io
+  context limit and after that process will be put to sleep. (something
+  like request descriptor mechanism).
+
+  If that's the case, then comes the question of what do to about kernel
+  threads. Should they be blocked or not. If these are blocked then a
+  fast group will also be indirectly throttled behind a slow group. If
+  they are not then we still have the problem of too many bios queued
+  in throttling layer.
+
+- What to do about other kernel thread like kjournald which is doing
+  IO on behalf of all the filesystem users. If data is also journalled
+  then I think again everything got serialized and a faster group got
+  backlogged behind a slower one.
+
+- Two processes doing IO to same file and slower group will throttle
+  IO for faster group also. (flushing is per inode). 
+
+I am not sure what are other common operations by kernel threads which
+can make IO serialized.
+
+Thanks
+Vivek 
+  
+
+> Testcase
+> ========
+> - create a cgroup with 1MiB/s write limit:
+>   # mount -t cgroup -o blkio none /mnt/cgroup
+>   # mkdir /mnt/cgroup/foo
+>   # echo 8:0 $((1024 * 1024)) > /mnt/cgroup/foo/blkio.throttle.write_bps_device
+> 
+> - move a task into the cgroup and run a dd to generate some writeback IO
+> 
+> Results:
+>   - 2.6.38-rc6 vanilla:
+>   $ cat /proc/$$/cgroup
+>   1:blkio:/foo
+>   $ dd if=/dev/zero of=zero bs=1M count=1024 &
+>   $ dstat -df
+>   --dsk/sda--
+>    read  writ
+>      0    19M
+>      0    19M
+>      0     0
+>      0     0
+>      0    19M
+>   ...
+> 
+>   - 2.6.38-rc6 + blk-throttle writeback IO control:
+>   $ cat /proc/$$/cgroup
+>   1:blkio:/foo
+>   $ dd if=/dev/zero of=zero bs=1M count=1024 &
+>   $ dstat -df
+>   --dsk/sda--
+>    read  writ
+>      0  1024
+>      0  1024
+>      0  1024
+>      0  1024
+>      0  1024
+>   ...
+> 
+> TODO
+> ====
+>  - lots of testing
+> 
+> Any feedback is welcome.
+> -Andrea
+> 
+> [PATCH 1/5] blk-cgroup: move blk-cgroup.h in include/linux/blk-cgroup.h
+> [PATCH 2/5] blk-cgroup: introduce task_to_blkio_cgroup()
+> [PATCH 3/5] page_cgroup: make page tracking available for blkio
+> [PATCH 4/5] blk-throttle: track buffered and anonymous pages
+> [PATCH 5/5] blk-throttle: buffered and anonymous page tracking instrumentation
+> 
+>  block/Kconfig               |    2 +
+>  block/blk-cgroup.c          |   15 ++-
+>  block/blk-cgroup.h          |  335 ------------------------------------------
+>  block/blk-throttle.c        |   89 +++++++++++-
+>  block/cfq.h                 |    2 +-
+>  fs/buffer.c                 |    1 +
+>  include/linux/blk-cgroup.h  |  341 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/blkdev.h      |   26 +++-
+>  include/linux/memcontrol.h  |    6 +
+>  include/linux/mmzone.h      |    4 +-
+>  include/linux/page_cgroup.h |   33 ++++-
+>  init/Kconfig                |    4 +
+>  mm/Makefile                 |    3 +-
+>  mm/bounce.c                 |    1 +
+>  mm/filemap.c                |    1 +
+>  mm/memcontrol.c             |    6 +
+>  mm/memory.c                 |    5 +
+>  mm/page-writeback.c         |    1 +
+>  mm/page_cgroup.c            |  129 +++++++++++++++--
+>  mm/swap_state.c             |    2 +
+>  20 files changed, 649 insertions(+), 357 deletions(-)
