@@ -1,126 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1BVIJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 03:09:54 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42545 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab1BVIJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752048Ab1BVIJw (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Feb 2011 03:09:52 -0500
-Date: Tue, 22 Feb 2011 09:09:34 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: masami.hiramatsu.pt@hitachi.com, acme@redhat.com, fweisbec@gmail.com,
-        hpa@zytor.com, ananth@in.ibm.com, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        a.p.zijlstra@chello.nl, eric.dumazet@gmail.com,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] x86: separating entry text section
-Message-ID: <20110222080934.GB7001@elte.hu>
-References: <20110220125948.GC25700@elte.hu>
- <1298298313-5980-1-git-send-email-jolsa@redhat.com>
- <1298298313-5980-2-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298298313-5980-2-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57856 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab1BVIJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 03:09:50 -0500
+Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
+ rtc_class_ops->read_alarm()
+From: john stultz <johnstul@us.ibm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+In-Reply-To: <1298343333.4222.36.camel@work-vm>
+References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
+	 <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
+	 <20110222023452.GB18299@sirena.org.uk>  <1298343333.4222.36.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Feb 2011 00:09:38 -0800
+Message-ID: <1298362178.4222.57.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jiri Olsa <jolsa@redhat.com> wrote:
-
-> Putting x86 entry code to the separate section: .entry.text.
-
-Trying to apply your patch i noticed one detail:
-
-> before patch:
->      26282174  L1-icache-load-misses      ( +-   0.099% )  (scaled from 81.00%)
->   0.206651959  seconds time elapsed   ( +-   0.152% )
+On Mon, 2011-02-21 at 18:55 -0800, John Stultz wrote:
+> On Tue, 2011-02-22 at 02:34 +0000, Mark Brown wrote:
+> > Can you go into more detail on the rationale behind this virtualised
+> > functionality and how it works?  I'd really expect the RTC alarm to be
+> > preserved over system reboots (on some systems it can be used to
+> > initiate a boot) and that would mean that we need to go to the hardware
+> > for at least the initial configuration.
+[snip]
+> Now, to your point about persistence across reboots:
 > 
-> after patch:
->      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
->   0.210509948  seconds time elapsed   ( +-   0.140% )
+> It is an interesting point to consider. 
+> 
+> So currently, if the hardware supports it, then the behavior should
+> remain the same: As long as no application sets a new alarm, the
+> previous alarm should persist in the RTC hardware.
+> 
+> However, an application's ability to notice that such an alarm is set,
+> is currently limited.  So your point about reading the hardware to
+> initialize the state is quite valid, and shows a good reason to preserve
+> the read_alarm() method. 
 
-So time elapsed actually went up.
+So I've been working on a fix for the issue described here, but have run
+into a few complications:
 
-hackbench is notoriously unstable when it comes to runtime - and increasing the 
---repeat value only has limited effects on that.
+1) Prior to my rework landing, on the rtc-cmos driver, after a reboot,
+calls to rtc_read_alarm() do return the alarm time from hardware.
+However, the AIE mode bit is off (even if it was left on). So the alarm
+does not seem like it would persist across reboots, and the value
+returned form rtc_read_alarm is technically invalid as the code to fill
+in the -1 fields doesn't run.
 
-Dropping all system caches:
+I realize that the cmos is fairly simplistic, but do you have examples
+of hardware where the AIE mode does persist on bootup?
 
-   echo 1 > /proc/sys/vm/drop_caches
 
-Seems to do a better job of 'resetting' system state, but if we put that into the 
-measured workload then the results are all over the place (as we now depend on IO 
-being done):
+2) One larger complication I see coming down the road with this is how
+do we handle persistence with multiplexed events? If we have two
+rtc_timers set to fire, one at 1pm and the other at 3pm. If we reboot
+the box at noon, only the 1pm timer will persist. 
 
- # cat hb10
+This could cause some additional confusion if the first timer was a
+posix-alarm-timer and the second was the classic wake alarm set
+by /dev/rtc0. In that case, after a reboot at noon, the system will show
+a 1pm wake alarm via /dev/rtc0.
 
- echo 1 > /proc/sys/vm/drop_caches
- ./hackbench 10
+I need to think more about #2. I suspect we could claim that soonest
+alarm should be preserved regardless of what its source was.
 
- # perf stat --repeat 3 ./hb10
+Just so I can better get a grip of the cases your considering, could you
+maybe give me some more detailed examples of where you'd like to see the
+alarm timer be set and then persist across multiple power cycles before
+firing? And how is that persistent value managed by the application
+setting it?
 
- Time: 0.097
- Time: 0.095
- Time: 0.101
+thanks
+-john
 
- Performance counter stats for './hb10' (3 runs):
 
-         21.351257 task-clock-msecs         #      0.044 CPUs    ( +-  27.165% )
-                 6 context-switches         #      0.000 M/sec   ( +-  34.694% )
-                 1 CPU-migrations           #      0.000 M/sec   ( +-  25.000% )
-               410 page-faults              #      0.019 M/sec   ( +-   0.081% )
-        25,407,650 cycles                   #   1189.984 M/sec   ( +-  49.154% )
-        25,407,650 instructions             #      1.000 IPC     ( +-  49.154% )
-         5,126,580 branches                 #    240.107 M/sec   ( +-  46.012% )
-           192,272 branch-misses            #      3.750 %       ( +-  44.911% )
-           901,701 cache-references         #     42.232 M/sec   ( +-  12.857% )
-           802,767 cache-misses             #     37.598 M/sec   ( +-   9.282% )
-
-        0.483297792  seconds time elapsed   ( +-  31.152% )
-
-So here's a perf stat feature suggestion to solve such measurement problems: a new 
-'pre-run' 'dry' command could be specified that is executed before the real 'hot' 
-run is executed. Something like this:
-
-  perf stat --pre-run-script ./hb10 --repeat 10 ./hackbench 10
-
-Would do the cache-clearing before each run, it would run hackbench once (dry run) 
-and then would run hackbench 10 for real - and would repeat the whole thing 10 
-times. Only the 'hot' portion of the run would be measured and displayed in the perf 
-stat output event counts.
-
-Another observation:
-
->      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
-
-Could you please do runs that do not display 'scaled from' messages? Since we are 
-measuring a relatively small effect here, and scaling adds noise, it would be nice 
-to ensure that the effect persists with non-scaled events as well:
-
-You can do that by reducing the number of events that are measured. The PMU can not 
-measure all those L1 cache events you listed - so only use the most important one 
-and add cycles and instructions to make sure the measurements are comparable:
-
-  -e L1-icache-load-misses -e instructions -e cycles
-
-Btw., there's another 'perf stat' feature suggestion: it would be nice if it was 
-possible to 'record' a perf stat run, and do a 'perf diff' over it. That would 
-compare the two runs all automatically, without you having to do the comparison 
-manually.
-
-Thanks,
-
-	Ingo
