@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab1BVLL0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 06:11:26 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:23450
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753551Ab1BVLLY (ORCPT
+	id S1754034Ab1BVLNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 06:13:01 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59721 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752260Ab1BVLNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 06:11:24 -0500
-X-SpamScore: -32
-X-BigFish: VPS-32(zzbb2dK1432N98dN9371Pzz1202hzz15d4Rz32i637h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LH0N2N-01-HMN-02
-X-M-MSG: 
-Date: Tue, 22 Feb 2011 12:11:11 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH 0/6] KVM support for TSC scaling
-Message-ID: <20110222111111.GG16508@amd.com>
-References: <4D57F677.3090004@redhat.com>
- <20110221172807.GD16508@amd.com>
- <4D638BDE.70602@redhat.com>
- <20110222103513.GF16508@amd.com>
- <4D6392F1.1030601@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4D6392F1.1030601@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: amd.com
+	Tue, 22 Feb 2011 06:13:00 -0500
+Date: Tue, 22 Feb 2011 11:14:00 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
+ slave_data
+Message-ID: <20110222111400.1114e8c5@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTi=NQLxRQ+HAsjtWz5HFu7kaJw9sp50kKyK_ZTDv@mail.gmail.com>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
+	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
+	<AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
+	<20110208132518.300bb098@lxorguk.ukuu.org.uk>
+	<4D514754.30203@ru.mvista.com>
+	<AANLkTinE5x=hmQ6Oykw3Tb38HVeL5eHxjdnPOdMt930q@mail.gmail.com>
+	<4D62C5E1.9070307@pobox.com>
+	<AANLkTi=NQLxRQ+HAsjtWz5HFu7kaJw9sp50kKyK_ZTDv@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 05:41:53AM -0500, Avi Kivity wrote:
-> On 02/22/2011 12:35 PM, Roedel, Joerg wrote:
-> > >  This doesn't really work, since we don't know on what host the TSC
-> > >  calibration loop ran:
-> > >
-> > >  - start guest on host H1
-> > >  - migrate it around, now it's on host H2
-> > >  - guest reboots, reruns calibration loop
-> > >  - migrate it around some more, now it's on host H3
-> > >  - migrate to host with tsc multiplier Hnew
-> > >
-> > >  So, what should we set the multiplier to? H1, H2, or H3's tsc rate?
-> >
-> > This scenario doesn't matter. If the guest already detected its TSC to
-> > be unstable there is nothing we can do and it doesn't really matter what
-> > we set the tsc frequency to. Therefore software will always set the
-> > guest tsc frequency to the same value it had on the last host.
-> 
-> Ok, so your scenario is
-> 
-> - boot on host H1
-> - no intervening migrations
-> - migrate to host Hnew
-> - all succeeding migrations are only to new hosts or back to H1
-> 
-> This is somewhat artificial, and not very different from an all-new cluster.
+> I was thinking about re-doing ata_piix part in a way that we could
+> merge it now by adding support for older PIIX-alikes to ata_piix and
+> making it enabled only if "all_piixalikes" module parameter is
+> specified.   This way older drivers would be left untouched for now
+> and we can easily get in-tree testing for a new code.  Does it sound
+> as a viable alternative?
 
-This is at least the scenario where the new hardware feature will make
-sense. Its clear that if you migrate a guest between hosts without
-tsc-scaling will make the tsc appear unstable for the guest. This is
-basically the same situation as we have today.
-In fact, for older hosts the feature can be emulated in software by
-trapping tsc accesses from the guest. Isn't this what Zachary has been
-working on? During my implementation I understood tsc-scaling as a
-hardware supported way to do this. And thats the reason I implemented it
-the way it is.
+That is the bit to me that makes the least sense. Each of the devices in
+question is found only in the chipset so they can never be in combination
+on a board (except multiple PIIX4 which is already covered)
 
-> [the whole thing is kind of sad; we went through a huge effort to make 
-> clocks work on virtual machines in spite of the tsc issues; then we have 
-> a hardware solution, but can't use it because of old hardware.  Same 
-> thing happens with the effort put into shadow in the pre-npt days]
+Merging them makes it more likely stuff breaks and increases memory usage
+- its a lose/lose situation.
 
-The shadow code has a revivial as it is required for emulating
-nested-npt and nested-ept, so the effort still has value :)
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Alan
