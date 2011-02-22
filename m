@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab1BVOWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:22:55 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:52495 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752939Ab1BVOWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:22:54 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Arnd Bergmann'" <arnd@arndb.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        "'Greg KH'" <greg@kroah.com>
-References: <015101cbcdae$3b4fcc00$b1ef6400$@mprc.pku.edu.cn> <201102171840.16430.arnd@arndb.de>
-In-Reply-To: <201102171840.16430.arnd@arndb.de>
-Subject: RE: [PATCH 08/12] unicore32 machine related files: core files
-Date: Tue, 22 Feb 2011 22:22:46 +0800
-Message-ID: <018e01cbd29b$fa19cdb0$ee4d6910$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQFjPA5SX30r5WoPjFYZ+LMbRYC0WwJFY8qIlMyUA9A=
-Content-Language: zh-cn
+	id S1753625Ab1BVOXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:23:00 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:34082 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab1BVOW6 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:11:1>);
+	Tue, 22 Feb 2011 09:22:58 -0500
+Message-Id: <4D63D4CD020000780003320A@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 22 Feb 2011 14:22:53 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Andrea Arcangeli" <aarcange@redhat.com>
+Cc: "Ian Campbell" <Ian.Campbell@citrix.com>,
+        "Andi Kleen" <andi@firstfloor.org>, "Hugh Dickins" <hughd@google.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Johannes Weiner" <jweiner@redhat.com>,
+        "Larry Woodman" <lwoodman@redhat.com>,
+        "Rik van Riel" <riel@redhat.com>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] fix pgd_lock deadlock
+References: <20110207232045.GJ3347@random.random>
+ <20110215190710.GL5935@random.random>
+ <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6>
+ <20110215195450.GO5935@random.random>
+ <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
+ <20110216183304.GD5935@random.random> <20110217101941.GH2380@redhat.com>
+ <20110221143023.GF13092@random.random> <20110221145350.GH25382@redhat.com>
+ <4D6378760200007800033104@vpn.id2.novell.com>
+ <20110222134956.GU13092@random.random>
+In-Reply-To: <20110222134956.GU13092@random.random>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 22.02.11 at 14:49, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Tue, Feb 22, 2011 at 07:48:54AM +0000, Jan Beulich wrote:
+>> A possible alternative would be to acquire the page table lock
+>> in vmalloc_sync_all() only in the Xen case (perhaps by storing
+>> NULL into page->index in pgd_set_mm() when not running on
+>> Xen). This is utilizing the fact that there aren't (supposed to
+>> be - for non-pvops this is definitely the case) any TLB flush IPIs
+>> under Xen, and hence the race you're trying to fix doesn't
+>> exist there (while non-Xen doesn't need the extra locking).
+> 
+> That's sure ok with me. Can we use a global runtime to check if the
+> guest is running under Xen paravirt, instead of passing that info
+> through page->something?
 
+If everyone's okay with putting a couple of "if (xen_pv_domain())"
+into mm/fault.c - sure. I would have thought that this wouldn't be
+liked, hence the suggestion to make this depend on seeing the
+backlink be non-NULL.
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Friday, February 18, 2011 1:40 AM
-> To: Guan Xuetao
-> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
-> Subject: Re: [PATCH 08/12] unicore32 machine related files: core files
-> 
-> On Wednesday 16 February 2011, Guan Xuetao wrote:
-> > Message-Id: <15f7e89c92883a77c96f5f3288c9a4afbd68f8e3.1297842537.git.gxt@mprc.pku.edu.cn>
-> > In-Reply-To: <cover.1297842537.git.gxt@mprc.pku.edu.cn>
-> > References: <cover.1297842537.git.gxt@mprc.pku.edu.cn>
-> > From: GuanXuetao <gxt@mprc.pku.edu.cn>
-> > Date: Sat, 15 Jan 2011 18:24:16 +0800
-> 
-> These headers should not be here. When using git-send-email, this will be handled
-> automatically, but if you send the patch from a regular email client application,
-> you should remove them manually.
-> 
-> > diff --git a/arch/unicore32/Kconfig.puv3 b/arch/unicore32/Kconfig.puv3
-> > new file mode 100644
-> > index 0000000..2ef10db
-> > --- /dev/null
-> > +++ b/arch/unicore32/Kconfig.puv3
-> > @@ -0,0 +1,125 @@
-> > +#
-> > +# PKUnity v3 Kconfig
-> > +#
-> > +
-> > +if ARCH_PUV3
-> > +
-> > +menu "PKUnity v3 SoC Features"
-> > +
-> > +config PUV3_I2C
-> > +	bool "PKUnity v3 I2C bus support"
-> > +#	default y
-> > +	select I2C
-> > +	select I2C_CHARDEV
-> > +	select I2C_ALGOBIT
-> > +
-> > +config PUV3_UMAL
-> > +	tristate "PKUnity v3 UMAL Gigabit Network Adapter support"
-> > +	select MII
-> > +	select PHYLIB
-> > ...
-> 
-> Generally, everything in this file should be moved to other files.
-> The rule is that the Kconfig entry belongs into the same directory
-> as the Makefile referencing it. E.g. the two above should
-> be in drivers/i2c/busses/Kconfig and drivers/net/Kconfig, and in
-> the same patch as the actual device driver.
-> 
-> > +
-> > +static struct platform_device nb0916_device_gpio_button = {
-> > +	.name	= "gpio-keys",
-> > +	.id	= -1,
-> > +	.dev	= {
-> > +		.platform_data = &nb0916_gpio_button_data,
-> > +	},
-> > +};
-> > +
-> > +static struct platform_device *mach_nb0916_devices[] __initdata = {
-> > +	&puv3_device_i2c,
-> > +	&physmap_flash,
-> > +	&nb0916_device_backlight,
-> > +	&nb0916_device_gpio_button,
-> > +};
-> 
-> Static platform devices are no longer recommended. You can change these
-> to use platform_device_register_simple() or a variant of it.
-> 
-> If you plan to convert the entire architecture to use a flattened
-> device tree as we discussed in an earlier review, you don't need to
-> bother with this now, because the entire platform device registration
-> you have here can then be removed.
-Above two files are no used in new reviewed version, and they were removed.
-
-> 
-> 	Arnd
-Thanks Arnd
-
-Guan Xuetao
+Jan
 
