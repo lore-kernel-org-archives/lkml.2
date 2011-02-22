@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab1BVTuH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:50:07 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46772 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab1BVTuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:50:06 -0500
-Subject: [PATCH] tpm_tis: Re-enable interrupts upon resume
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-To: Jiri Slaby <jirislaby@gmail.com>, preining@logic.at,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        "debora@linux.vnet.ibm.com" <debora@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Feb 2011 14:49:59 -0500
-Message-ID: <1298404199.25819.15.camel@d941e-10>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755320Ab1BVTu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:50:58 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:40936 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752781Ab1BVTu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:50:57 -0500
+Date: Tue, 22 Feb 2011 11:50:18 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@suse.de>, David Daney <ddaney@caviumnetworks.com>,
+        linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
+ interfaces
+Message-ID: <20110222195018.GA4000@outflux.net>
+References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
+ <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
+ <20110222181613.GU4000@outflux.net>
+ <4D640133.9020901@caviumnetworks.com>
+ <20110222184726.GV4000@outflux.net>
+ <20110222191454.GB9991@suse.de>
+ <20110222192532.GY4000@outflux.net>
+ <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below patch applies to the tip of the git tree.
+On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
+> > What system do you proposed to keep these "stupid mistakes" from
+> > continuing to happen? If debugfs had already been mode 0700, we could have
+> > avoided all of these CVEs, including the full-blown local root escalation.
+> 
+> And all sorts of features would have put themselves in sysfs instead and
+> broken no doubt.
+> 
+> > The "no rules" approach to debugfs is not a good idea, IMO.
+> 
+> It's a debugging fs, it needs to be "no rules" other than the obvious
+> "don't mount it on production systems"
 
-This patch makes sure that if the TPM TIS interface is run in interrupt
-mode (rather than polling mode) that the interrupts are enabled in the
-TPM's interrupt enable register which may either have been cleared by
-the TPM's TIS loosing its state during device sleep in ACPI S3 (suspend)
-or by the BIOS, which upon resume sends a TPM_Startup() command to the
-TPM, and may run the TPM in polling mode and leave the TIS interrupts
-disabled once it transfers control to the OS again.
+Okay, so the debugfs is not supposed to be mounted on a production system.
+This seems to be news to a lot of developers trying to use the interfaces
+exposed there. It would be nice to say this more loudly.  Basically,
+a normal system should not depend on anything in the debugfs. I can get
+behind that.
 
-Problem is, I don't currently have a machine running the TPM in
-interrupt mode. I found this through a self-built TPM device model for
-Qemu and SeaBIOS patches, where this does resolve a problem upon resume.
+> Or of course you could just chmod it 0700 in the distro !
 
-You may want to check if your TPM runs with interrupts by doing
+I'm trying to, but that involves a race condition since I can't control it
+during the mount (nor set the default mode like I was trying to with the
+patchset). tmpfs allows "mode=", but debugfs does not...
 
-cat /proc/interrupts | grep -i tpm
+-Kees
 
-and see whether there is an entry.
-
-
-Signed-off-by: Stefan Berger <stefanb@us.ibm.com>
-
-
-Index: linux-2.6/drivers/char/tpm/tpm_tis.c
-===================================================================
---- linux-2.6.orig/drivers/char/tpm/tpm_tis.c
-+++ linux-2.6/drivers/char/tpm/tpm_tis.c
-@@ -651,6 +651,23 @@ static int tpm_tis_pnp_resume(struct pnp
- {
- 	struct tpm_chip *chip = pnp_get_drvdata(dev);
- 	int ret;
-+	u32 intmask;
-+
-+	if (chip->vendor.irq) {
-+		/* reenable interrupts that device may have lost or
-+		   BIOS/firmware may have disabled */
-+		intmask =
-+		    ioread32(chip->vendor.iobase +
-+			     TPM_INT_ENABLE(chip->vendor.locality));
-+
-+		intmask |= TPM_INTF_CMD_READY_INT
-+		    | TPM_INTF_LOCALITY_CHANGE_INT | TPM_INTF_DATA_AVAIL_INT
-+		    | TPM_INTF_STS_VALID_INT | TPM_GLOBAL_INT_ENABLE;
-+
-+		iowrite32(intmask,
-+			  chip->vendor.iobase +
-+			  TPM_INT_ENABLE(chip->vendor.locality));
-+	}
- 
- 	ret = tpm_pm_resume(&dev->dev);
- 	if (!ret)
-
+-- 
+Kees Cook
+Ubuntu Security Team
