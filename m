@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab1BVQZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 11:25:53 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:39968 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab1BVQZw (ORCPT
+	id S1754695Ab1BVQZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 11:25:59 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41125 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275Ab1BVQZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 11:25:52 -0500
-X-Auth-Info: eckJCJX0J5xZn+PN1pi6luAPeh5lFn8jIrvkn27YQnI=
-Message-ID: <4D63E407.3010801@grandegger.com>
-Date: Tue, 22 Feb 2011 17:27:51 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Tue, 22 Feb 2011 11:25:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eicwU2a31wuSW9BNXjtChquhwtgKMEvC52DgaaISov1bnTdc4seOHw9yMViB9JlPFU
+         uJeVnPNFoDejOJAfa0DYYV4WCj7x8j0CB13r5Oidm6QNOyKRhXJqo38BEsLMjjxSZaUS
+         0Dl7f7Z3dfbaR0/6d1z4wpBfeWD7f9B+OuJGI=
+Date: Tue, 22 Feb 2011 17:24:54 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110222162454.GB31267@htj.dyndns.org>
+References: <20110204105343.GA12133@htj.dyndns.org>
+ <20110207174821.GA1237@redhat.com>
+ <20110209141803.GH3770@htj.dyndns.org>
+ <201102132325.55353.vda.linux@googlemail.com>
+ <20110214151340.GP18742@htj.dyndns.org>
+ <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
+ <20110214173012.GA18742@htj.dyndns.org>
+ <AANLkTinntVGcOdZSS3gWz39eq3EDiMxXgYfc6+M1Z0iE@mail.gmail.com>
+ <20110221151619.GM31267@htj.dyndns.org>
+ <20110221152855.GA20769@redhat.com>
 MIME-Version: 1.0
-To: Subhasish Ghosh <subhasish@mistralsolutions.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, sachi@mistralsolutions.com,
-        davinci-linux-open-source@linux.davincidsp.com, nsekhar@ti.com,
-        open list <linux-kernel@vger.kernel.org>, m-watkins@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 01/13] mfd: pruss mfd driver.
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-2-git-send-email-subhasish@mistralsolutions.com> <20110221163027.GF10686@sortiz-mobl> <37B3755C4AE64BAA805DFBAEBDC3D9E4@subhasishg> <20110222103127.GC30279@sortiz-mobl> <4D639493.1060601@grandegger.com> <20110222113310.GD30279@sortiz-mobl> <C73EA0C998A34C709A8130A50A1C443F@subhasishg>
-In-Reply-To: <C73EA0C998A34C709A8130A50A1C443F@subhasishg>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110221152855.GA20769@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 01:49 PM, Subhasish Ghosh wrote:
-> I am not sure if I understood you correctly, but the current sizeof the
-> structure da8xx_prusscore_regs  is 0x500.
+Okay, I think I finally caught up with the discussion (hopefully).
+
+On Mon, Feb 21, 2011 at 04:28:55PM +0100, Oleg Nesterov wrote:
+> However, I am starting to agree that TASK_TRACED looks more clean.
 > 
-> Here is a link to the PRUSS memory map:
-> http://processors.wiki.ti.com/index.php/PRUSS_Memory_Map
-> 
-> The offset 0x00007000 is the PRU0 reg offset and 0x00007800 is the PRU1
-> reg offset.
-> We cannot have a register file larger than this, but lot of space is
-> left out, possibly for future development.
+> What is important, I think ptrace should respect SIGNAL_STOP_STOPPED.
+> IOW, when the tracee is group-stopped (TASK_STOPPED or TASK_TRACED,
+> doesn't matter), ptrace_resume() should not wake it up, but merely
+> do set_task_state(TASK_STATE) and make it resumeable by SIGCONT.
 
-What do you mean with "larger than this"? You ioremap the whole space
-and unsued space could be filled with padding bytes:
+I don't think that's gonna fly.  It first is a very user-visible
+change to how ptrace_resume() works and it removes a lot of debugging
+capability.  As Jan's examples showed, there are things which the
+debugger does behind group stop's back and some of them are quite
+legitimate and useful things to do like running some code in the
+tracee context for the tracer and adjusting where the task is stopped.
 
-struct pruss_regs {
-	u8 ram0[0x0200];
-	u8 res0[0x1e00];
-	u8 ram1[0x0200];
-	u8 res1[0x1e00];
-	struct pruss_intc_regs intc;
-	struct pruss_core_regs core[2];
-};
+If you mix ptrace trap and group stop and then fix group stop
+notification, not only multithreaded debugging becomes quite
+cumbersome (suddenly ptracing becomes per-process thing instead of
+per-thread), it becomes almost impossible to debug jctl behaviors.
+Jctl becomes completely intertwined with ptracing and the real parent
+would get numerous notifications during the course of debugging.
 
-Then:
+I think they belong to different layers and they should stack instead
+of mix.  I'll try to write up a summary for how I think it can be done
+later but in short I think we just need two more PTRACE calls (one for
+combined SIGSTOPless attach + INTERRUPT and the other for jctl
+monitoring) and there doesn't need to be any fundamental revolt in how
+ptrace and jctl interact with each other.  The current ptrace behavior
+is quirky and rough on the edges but I think the fundamentals are
+correct in that it's something which is fundamentally bound to a task
+(not task group) and operates below jctl.  We just need to iron out
+the interactions so that the outcome makes sense.
 
-  pruss_dev->regs = ioremap(pruss_dev->res->start,
-	   	    resource_size(pruss_dev->res));
+That way, most current users won't notice (e.g. entering TASK_TRACED
+directly on SIGSTOP doesn't make any different to strace or gdb, they
+already issue PTRACE calls immediately afterwards) the difference
+while newer ones can take of new features to show better jctl
+behavior.
 
-  __raw_writel(DA8XX_PRUCORE_CONTROL_RESETVAL,
-               &pruss_dev->regs.core[pruss_num].control);
+Thanks.
 
-That's simple, transparent and save without magic offset handling.
-
-Wolfgang.
+-- 
+tejun
