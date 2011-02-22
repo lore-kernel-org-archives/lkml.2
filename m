@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab1BVVYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:24:42 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:56104 "EHLO lunge.queued.net"
+	id S1754026Ab1BVVZO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:25:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6795 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab1BVVYl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:24:41 -0500
-Date: Tue, 22 Feb 2011 13:24:38 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] spi/spi_oc_tiny: fix build error
-Message-ID: <20110222132438.02d310e0@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753903Ab1BVVZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:25:12 -0500
+Date: Tue, 22 Feb 2011 16:22:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] page_cgroup: make page tracking available for blkio
+Message-ID: <20110222212253.GJ28269@redhat.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <1298394776-9957-4-git-send-email-arighi@develer.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298394776-9957-4-git-send-email-arighi@develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 22, 2011 at 06:12:54PM +0100, Andrea Righi wrote:
+> The page_cgroup infrastructure, currently available only for the memory
+> cgroup controller, can be used to store the owner of each page and
+> opportunely track the writeback IO. This information is encoded in
+> the upper 16-bits of the page_cgroup->flags.
+> 
+> A owner can be identified using a generic ID number and the following
+> interfaces are provided to store a retrieve this information:
+> 
+>   unsigned long page_cgroup_get_owner(struct page *page);
+>   int page_cgroup_set_owner(struct page *page, unsigned long id);
+>   int page_cgroup_copy_owner(struct page *npage, struct page *opage);
+> 
+> The blkio.throttle controller can use the cgroup css_id() as the owner's
+> ID number.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> ---
+>  block/Kconfig               |    2 +
+>  block/blk-cgroup.c          |    6 ++
+>  include/linux/memcontrol.h  |    6 ++
+>  include/linux/mmzone.h      |    4 +-
+>  include/linux/page_cgroup.h |   33 ++++++++++-
+>  init/Kconfig                |    4 +
+>  mm/Makefile                 |    3 +-
+>  mm/memcontrol.c             |    6 ++
+>  mm/page_cgroup.c            |  129 +++++++++++++++++++++++++++++++++++++++----
+>  9 files changed, 176 insertions(+), 17 deletions(-)
+> 
+> diff --git a/block/Kconfig b/block/Kconfig
+> index 60be1e0..1351ea8 100644
+> --- a/block/Kconfig
+> +++ b/block/Kconfig
+> @@ -80,6 +80,8 @@ config BLK_DEV_INTEGRITY
+>  config BLK_DEV_THROTTLING
+>  	bool "Block layer bio throttling support"
+>  	depends on BLK_CGROUP=y && EXPERIMENTAL
+> +	select MM_OWNER
+> +	select PAGE_TRACKING
+>  	default n
+>  	---help---
+>  	Block layer bio throttling support. It can be used to limit
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index f283ae1..5c57f0a 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -107,6 +107,12 @@ blkio_policy_search_node(const struct blkio_cgroup *blkcg, dev_t dev,
+>  	return NULL;
+>  }
+>  
+> +bool blkio_cgroup_disabled(void)
+> +{
+> +	return blkio_subsys.disabled ? true : false;
+> +}
+> +EXPORT_SYMBOL_GPL(blkio_cgroup_disabled);
+> +
 
-Fix the following build error due to a missing semicolon:
+I think there should be option to just disable this asyn feature of
+blkio controller. So those who don't want it (running VMs with cache=none
+option) and don't want to take the memory reservation hit should be
+able to disable just ASYNC facility of blkio controller and not
+the whole blkio controller facility.
 
- CC [M]  drivers/spi/spi_oc_tiny.o
-drivers/spi/spi_oc_tiny.c:394: error: expected ‘,’ or ‘;’ before ‘extern’
-make[2]: *** [drivers/spi/spi_oc_tiny.o] Error 1
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/spi/spi_oc_tiny.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/spi/spi_oc_tiny.c b/drivers/spi/spi_oc_tiny.c
-index e99e545..f1bde66 100644
---- a/drivers/spi/spi_oc_tiny.c
-+++ b/drivers/spi/spi_oc_tiny.c
-@@ -390,7 +390,7 @@ static int __devexit tiny_spi_remove(struct platform_device *pdev)
- static const struct of_device_id tiny_spi_match[] = {
- 	{ .compatible = "opencores,tiny-spi-rtlsvn2", },
- 	{},
--}
-+};
- MODULE_DEVICE_TABLE(of, tiny_spi_match);
- #else /* CONFIG_OF */
- #define tiny_spi_match NULL
--- 
-1.7.2.3
-
+Thanks
+Vivek
