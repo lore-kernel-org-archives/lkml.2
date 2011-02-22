@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab1BVJVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 04:21:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:28766 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753019Ab1BVJVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 04:21:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,206,1297065600"; 
-   d="scan'208";a="605224623"
-Date: Tue, 22 Feb 2011 10:21:15 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arun Murthy <arun.murthy@stericsson.com>
-Subject: Re: linux-next: build failure after merge of the mfd tree
-Message-ID: <20110222092114.GA30279@sortiz-mobl>
-References: <20110222142005.946468ee.sfr@canb.auug.org.au>
+	id S1753302Ab1BVJWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 04:22:45 -0500
+Received: from mail-gw0-f51.google.com ([74.125.83.51]:62163 "EHLO
+	mail-gw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab1BVJWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 04:22:42 -0500
+X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Feb 2011 04:22:42 EST
+Message-ID: <B2D7D72494BB443F80DA08E22323999B@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Sergei Shtylyov" <sshtylyov@mvista.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Russell King" <linux@arm.linux.org.uk>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-13-git-send-email-subhasish@mistralsolutions.com> <4D55860E.3090908@mvista.com>
+In-Reply-To: <4D55860E.3090908@mvista.com>
+Subject: Re: [PATCH v2 12/13] da850: pruss SUART platform specific additions.
+Date: Tue, 22 Feb 2011 14:48:13 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222142005.946468ee.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=response
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hello,
 
-On Tue, Feb 22, 2011 at 02:20:05PM +1100, Stephen Rothwell wrote:
-> Hi Samuel,
-> 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/mfd/ab8500-gpadc.c:20:36: error: linux/mfd/ab8500-gpadc.h: No such file or directory
-> 
-> Caused by commit 38a7f5349d3820b3603384733cd2f35913f923ea ("mfd: Add new
-> ab8500 GPADC driver"). Looks like an include file was forgotten.
-That's my fault, I had to manually merge this one and forgot to git add the
-header file.
-It should be all fixed now, thanks for the notification.
+I could not follow your recommendations clearly, are you suggesting this:
 
-Cheers,
-Samuel.
+int __init da8xx_register_pruss(struct da8xx_pruss_devices *pruss_device)
+{
+#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
+        int ret;
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+        ret = clk_add_alias(NULL, "da8xx_pruss_uart.1",
+                            NULL, &da850_mcasp_device.dev);
+        if (ret < 0)
+                return ret;
+#endif
+        da8xx_pruss_dev.dev.platform_data = pruss_device;
+        return platform_device_register(&da8xx_pruss_dev);
+}
+
+--------------------------------------------------
+From: "Sergei Shtylyov" <sshtylyov@mvista.com>
+Sent: Saturday, February 12, 2011 12:25 AM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>; 
+<sachi@mistralsolutions.com>; "Russell King" <linux@arm.linux.org.uk>; 
+"Kevin Hilman" <khilman@deeprootsystems.com>; <nsekhar@ti.com>; "open list" 
+<linux-kernel@vger.kernel.org>; <m-watkins@ti.com>; 
+<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 12/13] da850: pruss SUART platform specific 
+additions.
+
+> Subhasish Ghosh wrote:
+>
+>> This patch adds the McASP clock alias.
+>> The alias is used by the pruss suart driver
+>> for enabling the McASP PSC.
+>
+>> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+> [...]
+>
+>> diff --git a/arch/arm/mach-davinci/devices-da8xx.c 
+>> b/arch/arm/mach-davinci/devices-da8xx.c
+>> index e15de72..f1cf605 100644
+>> --- a/arch/arm/mach-davinci/devices-da8xx.c
+>> +++ b/arch/arm/mach-davinci/devices-da8xx.c
+>> @@ -560,7 +560,18 @@ struct platform_device da8xx_pruss_dev = {
+>>  int __init da8xx_register_pruss(struct da8xx_pruss_devices 
+>> *pruss_device)
+>>  {
+>> +#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
+>
+>    #ifdef's in the function body are generally fromned upon.
+>
+>> + int ret;
+>> +#endif
+>> +
+>
+>    This line should have been inside #ifdef...
+>
+>>  da8xx_pruss_dev.dev.platform_data = pruss_device;
+>> +
+>> +#ifdef CONFIG_SERIAL_PRUSS_SUART_MODULE
+>
+>    Why not do it before assigning the platform data and avoid extra 
+> #ifdef?
+>
+>> + ret = clk_add_alias(NULL, "da8xx_pruss_uart.1",
+>> + NULL, &da850_mcasp_device.dev);
+>
+>    This line should be indented more to the right.
+>
+>> + if (ret < 0)
+>> + return ret;
+>> +#endif
+>
+> WBR, Sergei 
+
