@@ -1,95 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab1BVIR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 03:17:58 -0500
-Received: from mail-bw0-f51.google.com ([209.85.214.51]:60418 "EHLO
-	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619Ab1BVIR5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 03:17:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=h4B/o+ZjD6P27R1VKqKj36MnTgBTpEfqHaUTg2UVatDXkBP01ZJR7T7gjYVwFID2gX
-         eNjWsr3ngEEb/TwnXkKkDy2PWa5GJsQsw4cL/LR951nhAoxZY6jqI4HbEH9PP2wnHb/8
-         sevTVwELCg+3CHW0NFFMvtAPNJG3epJ8XNkA8=
-Date: Tue, 22 Feb 2011 09:17:52 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "pantherchen@versanet.de" <pantherchen@versanet.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Boot time regression in 2.6.38 after initial wq merge
-Message-ID: <20110222081752.GP31267@htj.dyndns.org>
-References: <4D62CE9C.7090806@versanet.de>
+	id S1752282Ab1BVIXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 03:23:49 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:58973 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751123Ab1BVIXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 03:23:48 -0500
+Message-ID: <4D6372AE.2040104@cn.fujitsu.com>
+Date: Tue, 22 Feb 2011 16:24:14 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D62CE9C.7090806@versanet.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Gleb Natapov <gleb@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH] kvm: allow RO page when atomic && !write_fault
+References: <4D61E058.9080201@cn.fujitsu.com> <20110221094731.GI14984@redhat.com>
+In-Reply-To: <20110221094731.GI14984@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-22 16:22:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-22 16:22:40,
+	Serialize complete at 2011-02-22 16:22:40
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Dmitry and lkml)
+On 02/21/2011 05:47 PM, Gleb Natapov wrote:
+> On Mon, Feb 21, 2011 at 11:47:36AM +0800, Lai Jiangshan wrote:
+>>
+>> Atomic-able hva_to_pfn() patches and allow-read-only-page patches
+>> are merged almost the same time. But hva_to_pfn() does not handle
+>> these two issues well together.
+>>
+>> When @atomic && !@write_fault && host-is-read-only-page-mapped
+>> the code will return fault_page, actually, it will be better
+>> if we return the pfn of the read-only-page.
+>>
+> This patch will conflict with not yet applied https://lkml.org/lkml/2011/2/1/94
+> What it the status of that patch?
 
-Hello,
+I will update/resend this patch after the patch you referred applied.
 
-On Mon, Feb 21, 2011 at 09:44:12PM +0100, pantherchen@versanet.de wrote:
-> I'm experiencing a significant boot time regression (almost +50%)
-> starting with 2.6.38-rc1 (see boot charts before [0], and after [1]
-> - note the long uninterruptible sleep of kworker/0:1).
+Thanks,
+Lai
 
-Comparing the two boot charts, the uninterruptible sleeps in
-kowrker/0:1 seems to be the same one from kseriod.  They're about the
-same duration.  kseriod is replaced with a work item, so that explains
-it.
-
-> After doing some bisecting and thorough testing this merge seems to
-> be the first one showing the regression: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=23d69b09b78c4876e134f104a3814c30747c53f1
-> ("Merge branch 'for-2.6.38' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq").
 > 
-> However, a kernel built from the branch 'for-2.6.38' at
-> git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq doesn't show the
-> behavior.
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> ---
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index 1fa0d29..f49cfc0 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -1060,31 +1060,27 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic,
+>>  	BUG_ON(!write_fault && !writable);
+>>  
+>>  	if (writable)
+>> -		*writable = true;
+>> +		*writable = write_fault;
+>>  
+>>  	if (atomic || async)
+>> -		npages = __get_user_pages_fast(addr, 1, 1, page);
+>> +		npages = __get_user_pages_fast(addr, 1, write_fault, page);
+>>  
+>>  	if (unlikely(npages != 1) && !atomic) {
+>>  		might_sleep();
+>> -
+>> -		if (writable)
+>> -			*writable = write_fault;
+>> -
+>>  		npages = get_user_pages_fast(addr, 1, write_fault, page);
+>> +	}
+>>  
+>> -		/* map read fault as writable if possible */
+>> -		if (unlikely(!write_fault) && npages == 1) {
+>> -			struct page *wpage[1];
+>> +	/* map read fault as writable if possible */
+>> +	if (unlikely(!write_fault) && npages == 1) {
+>> +		struct page *wpage[1];
+>>  
+>> -			npages = __get_user_pages_fast(addr, 1, 1, wpage);
+>> -			if (npages == 1) {
+>> -				*writable = true;
+>> -				put_page(page[0]);
+>> -				page[0] = wpage[0];
+>> -			}
+>> -			npages = 1;
+>> +		npages = __get_user_pages_fast(addr, 1, 1, wpage);
+>> +		if (npages == 1) {
+>> +			*writable = true;
+>> +			put_page(page[0]);
+>> +			page[0] = wpage[0];
+>>  		}
+>> +		npages = 1;
+>>  	}
+>>  
+>>  	if (unlikely(npages != 1)) {
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> I also tried to cherry-pick those 33 commits, applying them to the
-> last good commit from Linus' tree (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4ead36407b41eae942c8c9f70ef963cd369c90e2)
-> and it also doesn't show the regression.
+> --
+> 			Gleb.
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> Do you know what's going on here? I'm just an end user and I've
-> definitely run out of ideas.
-> 
-> Thanks in advance for your help,
-> 
-> Hernando Torque
-> Thanks
-> 
-> [0]: http://launchpadlibrarian.net/64639927/27-12-intel.png
-> [1]: http://launchpadlibrarian.net/64640030/38-4-intel.png
 
->From the boot chart, two things are noticeable.
-
-1. kworker/0:1's uninterruptible sleeps start later than kserio's.
-
-   It could be that cpu 0 was busy running other stuff and thus cmwq
-   delayed executing serio_event_work; however, if we look at the CPU
-   usage, that doesn't seem likely.  The CPU is not busy at all and if
-   the CPU isn't busy, cmwq wouldn't introduce any noticeable delay in
-   work item execution.
-
-   Another possibility is the rescuer concurrency depletion bug is
-   delaying execution of queued work items early during boot.  This
-   was fixed recently.  Can you please give a shot at 2.6.38-rc6 and
-   see whether anything is different?
-
-2. Most of the delay is caused by xorg starting up much later.  xorg
-   seems to start up in parallel with the kseriod sleeps in 2.6.37 but
-   on 2.6.38 it seems to wait for the serio_event_work to finish.
-
-   I have no idea what xorg is waiting for.  Dmitry, any clue?
-
-Thanks.
-
--- 
-tejun
