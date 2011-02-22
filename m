@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab1BVSmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 13:42:47 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:62067 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab1BVSmq convert rfc822-to-8bit (ORCPT
+	id S1752987Ab1BVSnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 13:43:31 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:7532 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab1BVSna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 13:42:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FXO3UzLvdeRKgw7jhTihjEzn1K1FmzZqt9D72wb0KQX94OYQ687tZvoxhxVWF2jwuF
-         yvOEiwqubGTgWZ6FhNMg==
-MIME-Version: 1.0
-In-Reply-To: <1298394776-9957-5-git-send-email-arighi@develer.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
-	<1298394776-9957-5-git-send-email-arighi@develer.com>
-Date: Tue, 22 Feb 2011 10:42:41 -0800
-Message-ID: <AANLkTinD2ZH3hw_iqVpvMjMRbUkXMBgttjd2NevvYq9x@mail.gmail.com>
-Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
-From: Chad Talbott <ctalbott@google.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+	Tue, 22 Feb 2011 13:43:30 -0500
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Mike Travis <travis@sgi.com>
+Subject: Re: [PATCH 2/6] x86: Minimize initial e820 messages
+Date: Tue, 22 Feb 2011 11:43:10 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.32-26-generic; KDE/4.4.5; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
+        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024705.695093866@gulag1.americas.sgi.com>
+In-Reply-To: <20110219024705.695093866@gulag1.americas.sgi.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102221143.10718.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 9:12 AM, Andrea Righi <arighi@develer.com> wrote:
-> Add the tracking of buffered (writeback) and anonymous pages.
-...
-> ---
->  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/blkdev.h |   26 ++++++++++++++-
->  2 files changed, 111 insertions(+), 2 deletions(-)
->
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 9ad3d1e..a50ee04 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-...
-> +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
-> +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
-> +int blk_throtl_copy_page_owner(struct page *npage, struct page *opage)
+On Friday, February 18, 2011 07:47:07 pm Mike Travis wrote:
+> Minimize the early e820 messages by printing less characters
+> for the address range as well as abbreviating the type info
+> for each entry.
 
-It would be nice if these were named blk_cgroup_*.  This is arguably
-more correct as the id comes from the blkio subsystem, and isn't
-specific to blk-throttle.  This will be more important very shortly,
-as CFQ will be using this same cgroup id for async IO tracking soon.
+> +			pr_info("%s: %Lx+%Lx (%s)\n", who,
+> +			       (unsigned long long) e820.map[i].addr,
+> +			       (unsigned long long) e820.map[i].size,
+> +			       e820_types(e820.map[i].type));
 
-is_kernel_io() is a good idea, it avoids a bug that we've run into
-with CFQ async IO tracking.  Why isn't PF_KTHREAD sufficient to cover
-all kernel threads, including kswapd and those marked PF_MEMALLOC?
+If we're going to change the way we print E820 ranges, I think
+we should make them consistent with the way we handle %pR, e.g.,
+use something like this:
 
-Thanks,
-Chad
+    "%s: [mem %#018Lx-%#018Lx]"
+
+This is a little different because %pR wouldn't make the field
+so wide, but when we discussed this earlier, keeping the table
+alignment was thought to be important.  That discussion starts
+here: https://lkml.org/lkml/2010/9/22/248
+
+Same comment applies to the update, remove, PCI gap (which
+your patch currently doesn't touch), and EFI output.
+
+I know this kind of derails the whole "remove characters" point
+of your patch (and I support that in principle), but I do think
+consistency is important, too.  We have too many different ways
+of printing the same information.
+
+Bjorn
