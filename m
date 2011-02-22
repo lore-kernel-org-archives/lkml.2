@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab1BVWVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:11 -0500
-Received: from kroah.org ([198.145.64.141]:46550 "EHLO coco.kroah.org"
+	id S1754655Ab1BVWhI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:37:08 -0500
+Received: from kroah.org ([198.145.64.141]:46571 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab1BVWVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:04 -0500
+	id S1752826Ab1BVWVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:37 2011
-Message-Id: <20110222221837.449687285@clark.kroah.org>
+Message-Id: <20110222221837.854084672@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:43 -0800
+Date: Tue, 22 Feb 2011 14:16:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [04/70] drm/i915/sdvo: If we have an EDID confirm it matches the mode of the connection
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [08/70] drm/radeon/kms: improve 6xx/7xx CS error output
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,90 +25,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 139467433e50926d22338e9dc754feaaf94b9db0 upstream.
+commit c2049b3d29f47ed3750226dc51251a3404c85876 upstream.
 
-If we have an EDID for a digital panel, but we are probing a non-TMDS
-connector then we know that this is a false detection, and vice versa.
-This should reduce the number of bogus outputs on multi-function
-adapters that report the same output on multiple connectors.
+Makes debugging CS rejections much easier.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=34101
-Reported-by: Sebastien Caty <sebastien.caty@mrnf.gouv.qc.ca>
-Tested-by: Sebastien Caty <sebastien.caty@mrnf.gouv.qc.ca>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   32 +++++++++++++++++++++++++++-----
- 1 file changed, 27 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/r600_cs.c |   46 ++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 20 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -46,6 +46,7 @@
-                          SDVO_TV_MASK)
- 
- #define IS_TV(c)	(c->output_flag & SDVO_TV_MASK)
-+#define IS_TMDS(c)	(c->output_flag & SDVO_TMDS_MASK)
- #define IS_LVDS(c)	(c->output_flag & SDVO_LVDS_MASK)
- #define IS_TV_OR_LVDS(c) (c->output_flag & (SDVO_TV_MASK | SDVO_LVDS_MASK))
- 
-@@ -1356,7 +1357,8 @@ intel_sdvo_hdmi_sink_detect(struct drm_c
- 				intel_sdvo->has_hdmi_monitor = drm_detect_hdmi_monitor(edid);
- 				intel_sdvo->has_hdmi_audio = drm_detect_monitor_audio(edid);
- 			}
--		}
-+		} else
-+			status = connector_status_disconnected;
- 		connector->display_info.raw_edid = NULL;
- 		kfree(edid);
+--- a/drivers/gpu/drm/radeon/r600_cs.c
++++ b/drivers/gpu/drm/radeon/r600_cs.c
+@@ -295,17 +295,18 @@ static inline int r600_cs_track_validate
  	}
-@@ -1404,10 +1406,25 @@ intel_sdvo_detect(struct drm_connector *
  
- 	if ((intel_sdvo_connector->output_flag & response) == 0)
- 		ret = connector_status_disconnected;
--	else if (response & SDVO_TMDS_MASK)
-+	else if (IS_TMDS(intel_sdvo_connector))
- 		ret = intel_sdvo_hdmi_sink_detect(connector);
--	else
--		ret = connector_status_connected;
-+	else {
-+		struct edid *edid;
-+
-+		/* if we have an edid check it matches the connection */
-+		edid = intel_sdvo_get_edid(connector);
-+		if (edid == NULL)
-+			edid = intel_sdvo_get_analog_edid(connector);
-+		if (edid != NULL) {
-+			if (edid->input & DRM_EDID_INPUT_DIGITAL)
-+				ret = connector_status_disconnected;
-+			else
-+				ret = connector_status_connected;
-+			connector->display_info.raw_edid = NULL;
-+			kfree(edid);
-+		} else
-+			ret = connector_status_connected;
-+	}
+ 	if (!IS_ALIGNED(pitch, pitch_align)) {
+-		dev_warn(p->dev, "%s:%d cb pitch (%d) invalid\n",
+-			 __func__, __LINE__, pitch);
++		dev_warn(p->dev, "%s:%d cb pitch (%d, 0x%x, %d) invalid\n",
++			 __func__, __LINE__, pitch, pitch_align, array_mode);
+ 		return -EINVAL;
+ 	}
+ 	if (!IS_ALIGNED(height, height_align)) {
+-		dev_warn(p->dev, "%s:%d cb height (%d) invalid\n",
+-			 __func__, __LINE__, height);
++		dev_warn(p->dev, "%s:%d cb height (%d, 0x%x, %d) invalid\n",
++			 __func__, __LINE__, height, height_align, array_mode);
+ 		return -EINVAL;
+ 	}
+ 	if (!IS_ALIGNED(base_offset, base_align)) {
+-		dev_warn(p->dev, "%s offset[%d] 0x%llx not aligned\n", __func__, i, base_offset);
++		dev_warn(p->dev, "%s offset[%d] 0x%llx 0x%llx, %d not aligned\n", __func__, i,
++			 base_offset, base_align, array_mode);
+ 		return -EINVAL;
+ 	}
  
- 	/* May update encoder flag for like clock for SDVO TV, etc.*/
- 	if (ret == connector_status_connected) {
-@@ -1443,10 +1460,15 @@ static void intel_sdvo_get_ddc_modes(str
- 		edid = intel_sdvo_get_analog_edid(connector);
- 
- 	if (edid != NULL) {
--		if (edid->input & DRM_EDID_INPUT_DIGITAL) {
-+		struct intel_sdvo_connector *intel_sdvo_connector = to_intel_sdvo_connector(connector);
-+		bool monitor_is_digital = !!(edid->input & DRM_EDID_INPUT_DIGITAL);
-+		bool connector_is_digital = !!IS_TMDS(intel_sdvo_connector);
-+
-+		if (connector_is_digital == monitor_is_digital) {
- 			drm_mode_connector_update_edid_property(connector, edid);
- 			drm_add_edid_modes(connector, edid);
+@@ -320,7 +321,10 @@ static inline int r600_cs_track_validate
+ 			 * broken userspace.
+ 			 */
+ 		} else {
+-			dev_warn(p->dev, "%s offset[%d] %d %d %lu too big\n", __func__, i, track->cb_color_bo_offset[i], tmp, radeon_bo_size(track->cb_color_bo[i]));
++			dev_warn(p->dev, "%s offset[%d] %d %d %d %lu too big\n", __func__, i,
++				 array_mode,
++				 track->cb_color_bo_offset[i], tmp,
++				 radeon_bo_size(track->cb_color_bo[i]));
+ 			return -EINVAL;
  		}
-+
- 		connector->display_info.raw_edid = NULL;
- 		kfree(edid);
  	}
+@@ -455,17 +459,18 @@ static int r600_cs_track_check(struct ra
+ 			}
+ 
+ 			if (!IS_ALIGNED(pitch, pitch_align)) {
+-				dev_warn(p->dev, "%s:%d db pitch (%d) invalid\n",
+-					 __func__, __LINE__, pitch);
++				dev_warn(p->dev, "%s:%d db pitch (%d, 0x%x, %d) invalid\n",
++					 __func__, __LINE__, pitch, pitch_align, array_mode);
+ 				return -EINVAL;
+ 			}
+ 			if (!IS_ALIGNED(height, height_align)) {
+-				dev_warn(p->dev, "%s:%d db height (%d) invalid\n",
+-					 __func__, __LINE__, height);
++				dev_warn(p->dev, "%s:%d db height (%d, 0x%x, %d) invalid\n",
++					 __func__, __LINE__, height, height_align, array_mode);
+ 				return -EINVAL;
+ 			}
+ 			if (!IS_ALIGNED(base_offset, base_align)) {
+-				dev_warn(p->dev, "%s offset[%d] 0x%llx not aligned\n", __func__, i, base_offset);
++				dev_warn(p->dev, "%s offset[%d] 0x%llx, 0x%llx, %d not aligned\n", __func__, i,
++					 base_offset, base_align, array_mode);
+ 				return -EINVAL;
+ 			}
+ 
+@@ -473,9 +478,10 @@ static int r600_cs_track_check(struct ra
+ 			nviews = G_028004_SLICE_MAX(track->db_depth_view) + 1;
+ 			tmp = ntiles * bpe * 64 * nviews;
+ 			if ((tmp + track->db_offset) > radeon_bo_size(track->db_bo)) {
+-				dev_warn(p->dev, "z/stencil buffer too small (0x%08X %d %d %d -> %u have %lu)\n",
+-						track->db_depth_size, ntiles, nviews, bpe, tmp + track->db_offset,
+-						radeon_bo_size(track->db_bo));
++				dev_warn(p->dev, "z/stencil buffer (%d) too small (0x%08X %d %d %d -> %u have %lu)\n",
++					 array_mode,
++					 track->db_depth_size, ntiles, nviews, bpe, tmp + track->db_offset,
++					 radeon_bo_size(track->db_bo));
+ 				return -EINVAL;
+ 			}
+ 		}
+@@ -1227,18 +1233,18 @@ static inline int r600_check_texture_res
+ 	/* XXX check height as well... */
+ 
+ 	if (!IS_ALIGNED(pitch, pitch_align)) {
+-		dev_warn(p->dev, "%s:%d tex pitch (%d) invalid\n",
+-			 __func__, __LINE__, pitch);
++		dev_warn(p->dev, "%s:%d tex pitch (%d, 0x%x, %d) invalid\n",
++			 __func__, __LINE__, pitch, pitch_align, G_038000_TILE_MODE(word0));
+ 		return -EINVAL;
+ 	}
+ 	if (!IS_ALIGNED(base_offset, base_align)) {
+-		dev_warn(p->dev, "%s:%d tex base offset (0x%llx) invalid\n",
+-			 __func__, __LINE__, base_offset);
++		dev_warn(p->dev, "%s:%d tex base offset (0x%llx, 0x%llx, %d) invalid\n",
++			 __func__, __LINE__, base_offset, base_align, G_038000_TILE_MODE(word0));
+ 		return -EINVAL;
+ 	}
+ 	if (!IS_ALIGNED(mip_offset, base_align)) {
+-		dev_warn(p->dev, "%s:%d tex mip offset (0x%llx) invalid\n",
+-			 __func__, __LINE__, mip_offset);
++		dev_warn(p->dev, "%s:%d tex mip offset (0x%llx, 0x%llx, %d) invalid\n",
++			 __func__, __LINE__, mip_offset, base_align, G_038000_TILE_MODE(word0));
+ 		return -EINVAL;
+ 	}
+ 
 
 
