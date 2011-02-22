@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab1BVUjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:39:16 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:43373 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab1BVUjP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:39:15 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: extremely slow resume with 2.6.37
-Date: Tue, 22 Feb 2011 21:39:11 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
+	id S1752700Ab1BVUkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:40:52 -0500
+Received: from cantor.suse.de ([195.135.220.2]:39024 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752552Ab1BVUkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:40:51 -0500
+Date: Tue, 22 Feb 2011 12:37:04 -0800
+From: Greg KH <gregkh@suse.de>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
+        Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
+ interfaces
+Message-ID: <20110222203704.GA7224@suse.de>
+References: <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
+ <20110222181613.GU4000@outflux.net>
+ <4D640133.9020901@caviumnetworks.com>
+ <20110222184726.GV4000@outflux.net>
+ <20110222191454.GB9991@suse.de>
+ <20110222192532.GY4000@outflux.net>
+ <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
+ <20110222195018.GA4000@outflux.net>
+ <20110222201610.GA29787@suse.de>
+ <20110222202856.GE4000@outflux.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201102222139.12599.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222202856.GE4000@outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, Feb 22, 2011 at 12:28:56PM -0800, Kees Cook wrote:
+> On Tue, Feb 22, 2011 at 12:16:10PM -0800, Greg KH wrote:
+> > On Tue, Feb 22, 2011 at 11:50:18AM -0800, Kees Cook wrote:
+> > > On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
+> > > > > What system do you proposed to keep these "stupid mistakes" from
+> > > > > continuing to happen? If debugfs had already been mode 0700, we could have
+> > > > > avoided all of these CVEs, including the full-blown local root escalation.
+> > > > 
+> > > > And all sorts of features would have put themselves in sysfs instead and
+> > > > broken no doubt.
+> > > > 
+> > > > > The "no rules" approach to debugfs is not a good idea, IMO.
+> > > > 
+> > > > It's a debugging fs, it needs to be "no rules" other than the obvious
+> > > > "don't mount it on production systems"
+> > > 
+> > > Okay, so the debugfs is not supposed to be mounted on a production system.
+> > 
+> > No, not true at all, the "enterprise" distros all mount debugfs for good
+> > reason on their systems.
+> 
+> What reasons are those? Or better yet, why do you and Alan Cox disagree on
+> this point?
 
-A moment ago I had an extremely slow resume with 2.6.37. So slow that I 
-aborted it.
+These distros have made the decision to support the perf interface,
+which lives in debugfs, for their customers.  I'm not saying that I
+disagree with Alan about this, just pointing out the reality of the
+situation here.
 
-It was at 37% as I looked and then took a minute or more for each percent. 
-I am using in kernel suspend to disk via hibernate 1.99 which uses sysfs 
-power state disk.
+> > > This seems to be news to a lot of developers trying to use the interfaces
+> > > exposed there. It would be nice to say this more loudly.  Basically,
+> > > a normal system should not depend on anything in the debugfs. I can get
+> > > behind that.
+> > 
+> > Again, not true.  Mostly all due to the perf interface, fix that to move
+> > out of debugfs (patches have been proposed) and this problem will go
+> > away.
+> 
+> You can't have "no rules" and "all distros mount debugfs for good reason".
+> This is asking for (even more) trouble. If there is something universally
+> useful in debugfs (I do not count perf as universally useful -- my parents
+> do not use perf), then why is it living in a filesystem with no rules
+> (where "no rules" seems to also include "don't break interfaces").
 
-Anyone have seen something like this? This was the first occurence, and I 
-am using 2.6.37 for quite a while.
+Again, "don't break interfaces" is just me saying "don't break the
+interfaces I have created in debugfs as they are to be used by all
+users."  Don't take that as a set-in-stone rule of debugfs at all, it
+isn't.
 
-I am calling hibernate-disk from this script:
+Again, you are trying to exclude a whole range of useful and valid files
+from being used, when there was only a very very very small percentage
+created incorrectly.  They have now been fixed, and we have the
+infrastructure to prevent future ones from being created as well, so I
+don't see the issue here anymore.
 
-shambhala:~> cat /etc/acpi/hibernate-extra.sh 
-#!/bin/sh
+thanks,
 
-# Zur Sicherheit gleich am Anfang alle ausstehenden Änderungen schreiben
-sync
-
-# Versuchen, möglichst viele LowMem Pages freizubekommen
-# Dir Entries legt Ext4 offenbar auch ins LowMem
-# Und mit zu wenig LowMem Pages klappt der Tiefschlaf mit
-# Radeon DRM KMS nicht.
-echo 3 > /proc/sys/vm/drop_caches
-
-# Network Manager schlafen legen
-# siehe /usr/lib/pm-utils/sleep.d/55NetworkManager
-dbus-send --print-reply --system                        \
-        --dest=org.freedesktop.NetworkManager \
-        /org/freedesktop/NetworkManager       \
-        org.freedesktop.NetworkManager.sleep
-
-# Systemzeit in Hardware-Uhr speichern
-/etc/init.d/hwclock.sh stop
-
-# Uptimed stoppen, damit er die Rekorde schreibt
-/etc/init.d/uptimed stop
-
-# Zur Sicherheit hier nochmal alle ausstehenden Änderungen schreiben
-sync
-
-# Gutnacht
-# /etc/acpi/hibernate.sh
-#echo 1 > /sys/power/tuxonice/do_hibernate
-#pm-suspend-hybrid
-#pm-hibernate
-hibernate-disk
-
-# Uptimed wieder starten. Dabei schreibt er erneut die Rekorde
-/etc/init.d/uptimed start
-
-# Rekorde gleich schreiben
-sync
-
-# Festplatten-Parameter wieder setzen
-/etc/init.d/hdparm start
-
-# Systemzeit anhand Hardware-Uhr wieder setzen
-/etc/init.d/hwclock.sh start
-
-# Network Manager aufwecken
-dbus-send --print-reply --system                        \
-        --dest=org.freedesktop.NetworkManager \
-        /org/freedesktop/NetworkManager       \
-        org.freedesktop.NetworkManager.wake
-
-
-I am echoing 3 onto drop_caches cause often in kernel suspend - as well as 
-TuxOnIce as I used it back then - was not able to free lowmem pages in 
-order for the image to be allocated after I switched to radeon kms which 
-seems to require quite some lowmem pages of its own, but I will post a 
-different mail about this one.
-
-I am using
-
-shambhala:~> cat /proc/version
-Linux version 2.6.37-tp42-rtime-00004-g9eb63ce (martin@shambhala) (gcc 
-version 4.4.5 (Debian 4.4.5-8) ) #1 PREEMPT Thu Jan 13 10:59:19 CET 2011
-
-which is 2.6.37 + some recursive mtime changes from Jan Kara, which should 
-only affect Ext3 and Ext4.
-
-Ciao,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+greg k-h
