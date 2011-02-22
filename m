@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1BVOtL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:49:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab1BVOtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:49:08 -0500
-Date: Tue, 22 Feb 2011 15:46:31 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v6 0/4] fadvise(DONTNEED) support
-Message-ID: <20110222144631.GZ13092@random.random>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
- <20110221190713.GM13092@random.random>
- <AANLkTimOhgK953rmOw4PqnoFq_e7y6j1m+NBDYJehkds@mail.gmail.com>
- <20110222132804.GQ13092@random.random>
- <20110222142610.GA6093@barrios-desktop>
+	id S1754324Ab1BVOtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:49:22 -0500
+Received: from nm30.bullet.mail.ne1.yahoo.com ([98.138.90.93]:41100 "HELO
+	nm30.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754304Ab1BVOtU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:49:20 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 868735.84574.bm@omp1041.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
+  b=f0nEu/6qxMTj+4lBs2VFdNaS98XEhelhrkm5z8/93cfvsUjEM+3M7TPHE+gUSyeAU7ROmedBTuAsLjZbsg2zndu5ePd6ZkUQ7TWYWA0IpsV5mV1oFq1Q50LU42nRz1rvJXqgKkvAvbe+V90Q6rSFltUyura9/dg8bocsIMVDTWs=;
+Message-ID: <405353.50250.qm@web121801.mail.ne1.yahoo.com>
+X-YMail-OSG: EnbgTbAVM1kXbxvY9FHErGBpHXZ_S5Rek..ynMkhEktqwZX
+ W.4yGQorHkcT7vyKfmy3yuYaOvLC5NAVb42ALRI3drp5cZRzKcdMeg_LKNZz
+ q3BCmYQEddoF_L1Zyuu4VBj2jVYyHCDgqXdQtT4dhp3gwwgG_pfV5epOdXPu
+ JxVpI936TxLwm0uEz9YKSWOS.ZP8B2TXfx_5VPSpBL.n3guYslIqKZWhsMHr
+ w0D0SwSFS.YzcgRtiJ6dmQxTz7a_2DJ5y55AAiuXMtFkuUN4eUd6ujlKy7XI
+ hEfI-
+X-Mailer: YahooMailWebService/0.8.109.292656
+Date: Tue, 22 Feb 2011 06:49:19 -0800 (PST)
+From: GAURAV YADAV <gaurav_christmas@yahoo.com>
+To: priyapratheeksha@rediffmail.com, pronjal@yahoo.com,
+        ps.shukla@rediffmail.com, puneet.srivastava@tatainfotech.com,
+        preetypuri@usa.net, linux-kernel@vger.kernel.org, rk_gangs73@yahoo.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222142610.GA6093@barrios-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:26:10PM +0900, Minchan Kim wrote:
-> I agree your opinion but I hope the patch is going on 2.6.38 or 39.
-> That's because if we find regression's root cause, how could this series be changed?
-> I think it's no difference before and after.
-> Of course, if rsync like applicatoin start to use fadvise agressively, the problem
-> could be buried on toe but we still have a older kernel and older rsync so we can
-> reproduce it then we can find the root cause.
+http://www.misgroup.ae/gift.php?yahoo=0460
 
-No risk to hide it (I do backups with tar ;). I'm also assuming your
-modification to rsync isn't going to be on by default (for small
-working set, it's ok if rsync holds the cache and doesn't discard it).
 
-> What's the problem if the series is merged?
-> If it is reasonable, it's no problem to pend the series.
-
-I've absolutely no problem with the objective of this series. The
-objective looks very good and it can increase performance (like showed
-by your benchmark saving 2min from your workload under stress and only
-running a few seconds slower without stress).
-
-> I _totally_ agree your opinion and I want to find root cause of the regression, too.
-> But unfortunatly, I don't have any time and enviroment to reproduce it. ;(
-> I hope clever people like you would have a time to find it and report it to linux-mm
-> in future.
-> 
-> Ben. Could you test your workload on older 2.6.18 kernel if you see the thread?
-> It could help us very much.
-
-Exactly, I only wanted to suggest to check what happens with 2.6.18 to
-at least know if it's a regression or not. Because if we have a
-regression, we need more work on this.
+      
