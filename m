@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab1BVT6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:58:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:48580 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751890Ab1BVT6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:58:05 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ed Tomlinson <edt@aei.ca>
-Subject: Re: [Bug #28562] [BUG] usb problems in .38-rc3+
-Date: Tue, 22 Feb 2011 20:57:47 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <xmAo3o4v0VF.A.eLH.HWtYNB@chimera> <5HY1m9_-mkI.A.VxH.8WtYNB@chimera> <201102212106.07392.edt@aei.ca>
-In-Reply-To: <201102212106.07392.edt@aei.ca>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1754933Ab1BVT61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:58:27 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:48931 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab1BVT6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:58:25 -0500
+Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
+ rtc_class_ops->read_alarm()
+From: john stultz <johnstul@us.ibm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>
+In-Reply-To: <20110222195143.GC31611@opensource.wolfsonmicro.com>
+References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
+	 <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
+	 <20110222023452.GB18299@sirena.org.uk> <1298343333.4222.36.camel@work-vm>
+	 <1298362178.4222.57.camel@work-vm>
+	 <AANLkTinMPnJj+ca+=ujU=5rhK3Nh0qrFGe955zZWjYaf@mail.gmail.com>
+	 <1298403310.9215.26.camel@work-vm>
+	 <20110222195143.GC31611@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Feb 2011 11:58:16 -0800
+Message-ID: <1298404696.9215.47.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102222057.47321.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 22, 2011, Ed Tomlinson wrote:
-> On Monday 21 February 2011 17:03:00 Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.37.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28562
-> > Subject		: [BUG] usb problems in .38-rc3+
-> > Submitter	: Ed Tomlinson <edt@aei.ca>
-> > Date		: 2011-02-05 19:17 (17 days old)
-> > Message-ID	: <201102051417.58953.edt@aei.ca>
-> > References	: http://marc.info/?l=linux-kernel&m=129693391417607&w=2
->  
-> I figured out a work around for this.  Once the bluetooth adaptor has been detected and udev
-> had done its stuff run: 
+On Tue, 2011-02-22 at 19:51 +0000, Mark Brown wrote:
+> On Tue, Feb 22, 2011 at 11:35:10AM -0800, john stultz wrote:
 > 
-> hciconfig -a
+> > Yea. The way I thought about it originally was that you can set an alarm
+> > and that alarm will fire if the machine is on, suspended or even in some
+> > cases off.  Then, when the machine is booted (system reset), the state
+> > of the RTC's alarm should not be trusted.
 > 
-> With this user space change it works.  I have no idea why the 'hciconfig -a' query fixes things.
-> I run gentoo and bluez-4.87 is installed.
+> > Your description of the AIE/UIE having random values aligns with that
+> > intuition.
+> 
+> This seems rather worrying - it sounds like it might mean that the
+> device might come up firing spuriously which doesn't seem terribly
+> clever.
 
-OK, thanks for the update.  Do I understand correctly that things used to work
-before without that workaround?
+Well, in those known cases the driver should initalize the irq modes to
+be off. 
 
-Rafael
+> > However, if the expectation is that once set, the alarm should persist
+> > across any number of reboots, this makes it a bit more complicated.
+> 
+> For an embedded device I'd expect that either nothing about the RTC
+> would persist (including the time) or everything would.
+
+But that isn't the reality of the hardware. On reboot the kernel can't
+trust hardware to be in a valid state.
+
+Even so, we can try to preserve what we can, but I think the expectation
+from an application's point of view shouldn't be that rtc device's alarm
+state will be valid upon reset.
+
+thanks
+-john
+
+
