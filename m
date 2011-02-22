@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab1BVHmO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 02:42:14 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49734 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753831Ab1BVHmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 02:42:13 -0500
-Date: Tue, 22 Feb 2011 08:41:58 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <daahern@cisco.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
-        peterz@infradead.org, paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 0/4] perf events: Add realtime clock event and timehist
- option -v2
-Message-ID: <20110222074158.GA32322@elte.hu>
-References: <1298322150-15505-1-git-send-email-daahern@cisco.com>
- <20110221213740.GC3583@nowhere>
- <4D62DC21.4070407@cisco.com>
- <20110221215533.GD3583@nowhere>
- <4D62E2B0.1070607@cisco.com>
- <20110221222104.GE3583@nowhere>
- <4D630E79.7030106@cisco.com>
- <20110222025001.GA5475@nowhere>
+	id S1753919Ab1BVHno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 02:43:44 -0500
+Received: from mail-bw0-f51.google.com ([209.85.214.51]:58205 "EHLO
+	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab1BVHnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 02:43:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=aaZNrQvX27VIe00Hkyl7uHRMr2Soe7By1f/C9MEgiSeuIAolQzM6Fqp8laY/7mfRbI
+         ihqh1hXSkgJZKO7orKK3Bv/AkBEjKtct5ToeQQnluGamkcZi943YXA2fmHOvBlsxwviC
+         EfTrhALbGu1MD8LnqnRPOecp9H4GThltcNNmQ=
+Message-ID: <4D6367B3.9050306@googlemail.com>
+Date: Tue, 22 Feb 2011 08:37:23 +0100
+From: Clemens Ladisch <cladisch@googlemail.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Arthur Marsh <arthur.marsh@internode.on.net>
+CC: Andrea Arcangeli <aarcange@redhat.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified
+ - 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd
+ for GFP_ATOMIC order > 0
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
+In-Reply-To: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222025001.GA5475@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Arthur Marsh wrote:
+> I'm experiencing MIDI playback slow-downs when I'm observing kswapd0 
+> active (a few percent of cpu in top output) in recent kernels.
+> 
+> I git-bisected the problem down to:
+> 
+> commit 5a03b051ed87e72b959f32a86054e1142ac4cf55
+> Author: Andrea Arcangeli <aarcange@redhat.com>
+> Date:   Thu Jan 13 15:47:11 2011 -0800
+> 
+>      thp: use compaction in kswapd for GFP_ATOMIC order > 0
+> 
+>      This takes advantage of memory compaction to properly generate pages of
+>      order > 0 if regular page reclaim fails and priority level becomes more
+>      severe and we don't reach the proper watermarks.
+> 
+>      Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+>      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>      Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> I ran git-bisect over the weekend, building and installing ALSA 1.0.24 
+> with each kernel. After identifying the above commit, I rebuilt the 2.6 
+> head with that commit reverted and verified that the problem was no 
+> longer present.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Apparently, huge page compaction disables interrupts for much too long.
 
-> perf-script is not new, it was there in november already, although named perf 
-> trace at that time.
+> MIDI playback was via aplaymidi -p 17:0 to a Soundblaster Audigy 2 ZS 
+> (SB0350) wavetable.
 
-Yes.
+The ALSA sequencer uses either the system timer or an HR timer at 1 kHz
+to deliver MIDI commands (notes); the wavetable driver requires its own
+interrupts in regular 5.3 ms intervals.
 
-The new 'perf trace' utility - which might be the straightforward 'report a trace' 
-utility that David is looking for is still WIP and can be found at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git tmp.perf/trace
-
-Warning: the code is stale and needs much more work to become mergable. But 
-displaying GTOD timestamps is very much something that looks sensible in the 'perf 
-trace' context as well.
-
-Thanks,
-
-	Ingo
+Regards,
+Clemens
