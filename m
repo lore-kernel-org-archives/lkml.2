@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab1BVXsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:48:38 -0500
-Received: from trinity.develer.com ([83.149.158.210]:33699 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140Ab1BVXsh (ORCPT
+	id S1755846Ab1BVXst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:48:49 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48354 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755830Ab1BVXss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 18:48:37 -0500
-Date: Wed, 23 Feb 2011 00:48:33 +0100
-From: Andrea Righi <arighi@develer.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+	Tue, 22 Feb 2011 18:48:48 -0500
+Date: Tue, 22 Feb 2011 15:48:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] page_cgroup: make page tracking available for blkio
-Message-ID: <20110222234833.GG23723@linux.develer.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
- <1298394776-9957-4-git-send-email-arighi@develer.com>
- <20110222130145.37cb151e@bike.lwn.net>
- <20110222230146.GB23723@linux.develer.com>
- <20110222162729.054fe596@bike.lwn.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222162729.054fe596@bike.lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: Re: [PATCH 10/11] mm: Move contig_page_data define to
+ bootmem.c/nobootmem.c
+Message-Id: <20110222154806.0be18267.akpm@linux-foundation.org>
+In-Reply-To: <1297120632-24933-11-git-send-email-yinghai@kernel.org>
+References: <1297120632-24933-1-git-send-email-yinghai@kernel.org>
+	<1297120632-24933-11-git-send-email-yinghai@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 04:27:29PM -0700, Jonathan Corbet wrote:
-> On Wed, 23 Feb 2011 00:01:47 +0100
-> Andrea Righi <arighi@develer.com> wrote:
+On Mon,  7 Feb 2011 15:17:11 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
+
+> We can remove #ifdef in mm/page_alloc.c
 > 
-> > > My immediate observation is that you're not really tracking the "owner"
-> > > here - you're tracking an opaque 16-bit token known only to the block
-> > > controller in a field which - if changed by anybody other than the block
-> > > controller - will lead to mayhem in the block controller.  I think it
-> > > might be clearer - and safer - to say "blkcg" or some such instead of
-> > > "owner" here.
-> > 
-> > Basically the idea here was to be as generic as possible and make this
-> > feature potentially available also to other subsystems, so that cgroup
-> > subsystems may represent whatever they want with the 16-bit token.
-> > However, no more than a single subsystem may be able to use this feature
-> > at the same time.
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  mm/bootmem.c    |    7 +++++++
+>  mm/nobootmem.c  |    5 +++++
+>  mm/page_alloc.c |    9 ---------
+>  3 files changed, 12 insertions(+), 9 deletions(-)
 > 
-> That makes me nervous; it can't really be used that way unless we want to
-> say that certain controllers are fundamentally incompatible and can't be
-> allowed to play together.  For whatever my $0.02 are worth (given the
-> state of the US dollar, that's not a whole lot), I'd suggest keeping the
-> current mechanism, but make it clear that it belongs to your controller.
-> If and when another controller comes along with a need for similar
-> functionality, somebody can worry about making it more general.
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index 4403e2f..79d9c3c 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -23,6 +23,13 @@
+>  
+>  #include "internal.h"
+>  
+> +#ifndef CONFIG_NEED_MULTIPLE_NODES
+> +struct pglist_data __refdata contig_page_data = {
+> + .bdata = &bootmem_node_data[0]
+> + };
+> +EXPORT_SYMBOL(contig_page_data);
+> +#endif
 
-OK, I understand. I'll use "blkio" instead of "owner". Also because I
-wouldn't like to introduce additional logic and overhead to check if two
-controllers are using this feature at the same time. Better to hard-code
-this information in the name of the functions.
+Please fix the layout when moving this code - it's quite busted and as
+we're touching the code anyway, we might as well fix it up.
 
-Probably the most generic solution is the one that you suggested:
-replace the mem_cgroup with a pointer to css_set. I'll also try to
-investigate this way.
+Patches 9, 10 and 11 look good to me and won't conflict with ther
+pending work - please merge them up via the appropriate ingotree.
 
-Thanks,
--Andrea
