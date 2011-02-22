@@ -1,193 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab1BVGTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 01:19:03 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55639 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab1BVGTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 01:19:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Uq8vAIJ7KXAjf3bU6dqjZs4+J18CTP4uUWP1eTlyGwsk/tO2qAYFhD0aqRXUQ6RZWI
-         9Rl40acpSxRp2WshvZSuzVECesU4fXnKtXRUH1eNvQxf4E18FcZ9vgAFo9bnLaPXnrsi
-         f0mAjHy3ljlmtsR58JfHepfFS0vBUx3rJLRS4=
-From: "Anoop P.A" <anoop.pa@gmail.com>
-To: ralf@linux-mips.org, linux-mips@linux-mips.org,
+	id S1751621Ab1BVGWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 01:22:49 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41337 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750728Ab1BVGWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 01:22:47 -0500
+Message-ID: <4D635618.3@linux.vnet.ibm.com>
+Date: Mon, 21 Feb 2011 22:22:16 -0800
+From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Eric Van Hensbergen <ericvh@gmail.com>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Anoop P A <anoop.pa@gmail.com>
-Subject: [PATCH resend] Make msp7120_reset generic
-Date: Tue, 22 Feb 2011 12:11:45 +0530
-Message-Id: <1298356905-17316-1-git-send-email-anoop.pa@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <4D610B3A.5070705@mvista.com>
-References: <4D610B3A.5070705@mvista.com>
+Subject: Re: linux-next: build failure after merge of the v9fs tree
+References: <20110222115340.da48b908.sfr@canb.auug.org.au> <4D63479F.3060603@linux.vnet.ibm.com> <20110222163016.aac65a7a.sfr@canb.auug.org.au>
+In-Reply-To: <20110222163016.aac65a7a.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anoop P A <anoop.pa@gmail.com>
+On 2/21/2011 9:30 PM, Stephen Rothwell wrote:
+> Hi,
+> 
+> On Mon, 21 Feb 2011 21:20:31 -0800 "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com> wrote:
+>>
+>> On 2/21/2011 4:53 PM, Stephen Rothwell wrote:
+>>>
+>>> After merging the v9fs tree, today's linux-next build (x86_64
+>>> allmodconfig) failed like this:
+>>>
+>>> ERROR: "p9_payload_gup" [net/9p/9pnet_virtio.ko] undefined!
+>>> ERROR: "p9_nr_pages" [net/9p/9pnet_virtio.ko] undefined!
+>>> ERROR: "p9_release_req_pages" [net/9p/9pnet_virtio.ko] undefined!
+>>
+>> These functions are defined by commit 249951bf66816128a7698caa826425e299494c82
+>> ([net/9p] Preparation and helper functions for zero copy)
+> 
+> Yes, they are - but they are not exported to modules.
 
-Remove platform dependency code from msp7120 reset code and make it generic.
-Now the code can be reused for other boards running msp71xx family SoC.
+Thanks; Can you please check if this patch fixes your issue?
 
-Signed-off-by: Anoop P A <anoop.pa@gmail.com>
----
-Fixing comments indentations as suggested by sergei
- arch/mips/pmc-sierra/msp71xx/msp_setup.c |   84 ++++++++++++++++++------------
- 1 files changed, 51 insertions(+), 33 deletions(-)
-
-diff --git a/arch/mips/pmc-sierra/msp71xx/msp_setup.c b/arch/mips/pmc-sierra/msp71xx/msp_setup.c
-index fb37a10..3bf92cd 100644
---- a/arch/mips/pmc-sierra/msp71xx/msp_setup.c
-+++ b/arch/mips/pmc-sierra/msp71xx/msp_setup.c
-@@ -18,30 +18,32 @@
- 
- #include <msp_prom.h>
- #include <msp_regs.h>
-+#include <msp_gpio_macros.h>
- 
- #if defined(CONFIG_PMC_MSP7120_GW)
--#include <msp_regops.h>
-+	/* GPIO 9 is the 4th GPIO of register 3*/
- #define MSP_BOARD_RESET_GPIO	9
-+#else
-+#undef MSP_BOARD_RESET_GPIO
- #endif
- 
- extern void msp_serial_setup(void);
- extern void pmctwiled_setup(void);
- 
--#if defined(CONFIG_PMC_MSP7120_EVAL) || \
--    defined(CONFIG_PMC_MSP7120_GW) || \
--    defined(CONFIG_PMC_MSP7120_FPGA)
- /*
-- * Performs the reset for MSP7120-based boards
-+ * Performs the reset for MSP71xx-based boards
+diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
+index ca705f1..da7c2cd 100644
+--- a/net/9p/trans_common.c
++++ b/net/9p/trans_common.c
+@@ -13,6 +13,7 @@
   */
--void msp7120_reset(void)
-+void msp71xx_reset(void)
- {
- 	void *start, *end, *iptr;
- 	register int i;
-+	register u32 temp __maybe_unused;
- 
- 	/* Diasble all interrupts */
- 	local_irq_disable();
- #ifdef CONFIG_SYS_SUPPORTS_MULTITHREADING
- 	dvpe();
-+	dmt();
- #endif
- 
- 	/* Cache the reset code of this function */
-@@ -78,49 +80,56 @@ void msp7120_reset(void)
- 	/* Wait a bit for the DDRC to settle */
- 	for (i = 0; i < 100000000; i++);
- 
--#if defined(CONFIG_PMC_MSP7120_GW)
-+#if defined(MSP_BOARD_RESET_GPIO)
- 	/*
--	 * Set GPIO 9 HI, (tied to board reset logic)
--	 * GPIO 9 is the 4th GPIO of register 3
-+	 * Set reset GPIO  HI, (tied to board reset logic)
- 	 *
- 	 * NOTE: We cannot use the higher-level msp_gpio_mode()/out()
- 	 * as GPIO char driver may not be enabled and it would look up
- 	 * data inRAM!
- 	 */
--	set_value_reg32(GPIO_CFG3_REG, 0xf000, 0x8000);
--	set_reg32(GPIO_DATA3_REG, 8);
-+	temp = __raw_readl(MSP_GPIO_MODE_REGISTER[MSP_BOARD_RESET_GPIO]) &
-+					~BASIC_MODE_MASK(MSP_BOARD_RESET_GPIO);
-+	__raw_writel(temp | BASIC_MODE(MSP_GPIO_OUTPUT, MSP_BOARD_RESET_GPIO),
-+				MSP_GPIO_MODE_REGISTER[MSP_BOARD_RESET_GPIO]);
-+	/* Now set the reset gpio pin hi */
-+	temp = __raw_readl(MSP_GPIO_DATA_REGISTER[MSP_BOARD_RESET_GPIO]);
-+	__raw_writel(temp | BASIC_DATA_MASK(MSP_BOARD_RESET_GPIO),
-+			MSP_GPIO_DATA_REGISTER[MSP_BOARD_RESET_GPIO]);
- 
- 	/*
--	 * In case GPIO9 doesn't reset the board (jumper configurable!)
-+	 * In case GPIO doesn't reset the board (jumper configurable!)
- 	 * fallback to device reset below.
- 	 */
- #endif
--	/* Set bit 1 of the MSP7120 reset register */
--	*RST_SET_REG = 0x00000001;
-+	/* Set bit 1 of the MSP71xx reset register */
-+	__raw_writel(0x00000001, RST_SET_REG);
- 
- 	__asm__ __volatile__ (
--		"endpoint:					\n"
-+		"endpoint:\n"
- 	);
+
+ #include <linux/slab.h>
++ #include <linux/module.h>
+ #include <net/9p/9p.h>
+ #include <net/9p/client.h>
+ #include <linux/scatterlist.h>
+@@ -32,6 +33,7 @@ p9_release_req_pages(struct trans_rpage_info *rpinfo)
+                i++;
+        }
  }
--#endif
- 
- void msp_restart(char *command)
- {
--	printk(KERN_WARNING "Now rebooting .......\n");
- 
--#if defined(CONFIG_PMC_MSP7120_EVAL) || \
--    defined(CONFIG_PMC_MSP7120_GW) || \
--    defined(CONFIG_PMC_MSP7120_FPGA)
--	msp7120_reset();
--#else
--	/* No chip-specific reset code, just jump to the ROM reset vector */
--	set_c0_status(ST0_BEV | ST0_ERL);
--	change_c0_config(CONF_CM_CMASK, CONF_CM_UNCACHED);
--	flush_cache_all();
--	write_c0_wired(0);
--
--	__asm__ __volatile__("jr\t%0"::"r"(0xbfc00000));
--#endif
-+	unsigned long family = identify_family();
-+	switch (family)	{
-+	case FAMILY_MSP7100:
-+		msp71xx_reset();
-+		break;
-+	default:
-+		/* No chip-specific reset code, just jump
-+		 * to the ROM reset vector
-+		 */
-+		set_c0_status(ST0_BEV | ST0_ERL);
-+		change_c0_config(CONF_CM_CMASK, CONF_CM_UNCACHED);
-+		flush_cache_all();
-+		write_c0_wired(0);
-+
-+		__asm__ __volatile__("jr\t%0" : : "r"(0xbfc00000));
-+		break;
-+	}
++EXPORT_SYMBOL(p9_release_req_pages);
+
+ /**
+  * p9_nr_pages - Return number of pages needed to accomodate the payload.
+@@ -45,6 +47,7 @@ p9_nr_pages(struct p9_req_t *req)
+                        PAGE_SIZE - 1) >> PAGE_SHIFT;
+        return end_page - start_page;
  }
- 
- void msp_halt(void)
-@@ -141,9 +150,7 @@ void msp_power_off(void)
- 
- void __init plat_mem_setup(void)
- {
--	_machine_restart = msp_restart;
--	_machine_halt = msp_halt;
--	pm_power_off = msp_power_off;
-+	/*TODO: Move mem setup here */
++EXPORT_SYMBOL(p9_nr_pages);
+
+ /**
+  * payload_gup - Translates user buffer into kernel pages and
+@@ -91,3 +94,4 @@ p9_payload_gup(struct p9_req_t *req, size_t *pdata_off, int *p
+        }
+        return 0;
  }
- 
- extern struct plat_smp_ops msp_smtc_smp_ops;
-@@ -244,3 +251,14 @@ void __init prom_init(void)
- 	pmctwiled_setup();
- #endif
- }
-+
-+static int __init mips_reboot_setup(void)
-+{
-+	_machine_restart = msp_restart;
-+	_machine_halt = msp_halt;
-+	pm_power_off = msp_power_off;
-+
-+	return 0;
-+}
-+
-+arch_initcall(mips_reboot_setup);
--- 
-1.7.0.4
++EXPORT_SYMBOL(p9_payload_gup);
+
+
 
