@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab1BVW3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:29:36 -0500
-Received: from kroah.org ([198.145.64.141]:46773 "EHLO coco.kroah.org"
+	id S1755249Ab1BVW3s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:29:48 -0500
+Received: from kroah.org ([198.145.64.141]:46768 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754723Ab1BVWV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:58 -0500
+	id S1754706Ab1BVWV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:40 2011
-Message-Id: <20110222221840.910458675@clark.kroah.org>
+Message-Id: <20110222221840.820724319@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:18 -0800
+Date: Tue, 22 Feb 2011 14:17:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>
-Subject: [39/70] workqueue: wake up a worker when a rescuer is leaving a gcwq
+        Timo Warns <warns@pre-sense.de>
+Subject: [38/70] fs/partitions: Validate map_count in Mac partition tables
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Timo Warns <warns@pre-sense.de>
 
-commit 7576958a9d5a4a677ad7dd40901cdbb6c1110c98 upstream.
+commit fa7ea87a057958a8b7926c1a60a3ca6d696328ed upstream.
 
-After executing the matching works, a rescuer leaves the gcwq whether
-there are more pending works or not.  This may decrease the
-concurrency level to zero and stall execution until a new work item is
-queued on the gcwq.
+Validate number of blocks in map and remove redundant variable.
 
-Make rescuer wake up a regular worker when it leaves a gcwq if there
-are more works to execute, so that execution isn't stalled.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Ray Jui <rjui@broadcom.com>
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/workqueue.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/partitions/mac.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2009,6 +2009,15 @@ repeat:
- 				move_linked_works(work, scheduled, &n);
+--- a/fs/partitions/mac.c
++++ b/fs/partitions/mac.c
+@@ -29,10 +29,9 @@ static inline void mac_fix_string(char *
  
- 		process_scheduled_works(rescuer);
-+
-+		/*
-+		 * Leave this gcwq.  If keep_working() is %true, notify a
-+		 * regular worker; otherwise, we end up with 0 concurrency
-+		 * and stalling the execution.
-+		 */
-+		if (keep_working(gcwq))
-+			wake_up_worker(gcwq);
-+
- 		spin_unlock_irq(&gcwq->lock);
+ int mac_partition(struct parsed_partitions *state)
+ {
+-	int slot = 1;
+ 	Sector sect;
+ 	unsigned char *data;
+-	int blk, blocks_in_map;
++	int slot, blocks_in_map;
+ 	unsigned secsize;
+ #ifdef CONFIG_PPC_PMAC
+ 	int found_root = 0;
+@@ -59,10 +58,14 @@ int mac_partition(struct parsed_partitio
+ 		put_dev_sector(sect);
+ 		return 0;		/* not a MacOS disk */
  	}
+-	strlcat(state->pp_buf, " [mac]", PAGE_SIZE);
+ 	blocks_in_map = be32_to_cpu(part->map_count);
+-	for (blk = 1; blk <= blocks_in_map; ++blk) {
+-		int pos = blk * secsize;
++	if (blocks_in_map < 0 || blocks_in_map >= DISK_MAX_PARTS) {
++		put_dev_sector(sect);
++		return 0;
++	}
++	strlcat(state->pp_buf, " [mac]", PAGE_SIZE);
++	for (slot = 1; slot <= blocks_in_map; ++slot) {
++		int pos = slot * secsize;
+ 		put_dev_sector(sect);
+ 		data = read_part_sector(state, pos/512, &sect);
+ 		if (!data)
+@@ -113,13 +116,11 @@ int mac_partition(struct parsed_partitio
+ 			}
  
+ 			if (goodness > found_root_goodness) {
+-				found_root = blk;
++				found_root = slot;
+ 				found_root_goodness = goodness;
+ 			}
+ 		}
+ #endif /* CONFIG_PPC_PMAC */
+-
+-		++slot;
+ 	}
+ #ifdef CONFIG_PPC_PMAC
+ 	if (found_root_goodness)
 
 
