@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab1BVTE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:04:26 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48139 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab1BVTEZ (ORCPT
+	id S1754569Ab1BVTMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:12:53 -0500
+Received: from trinity.develer.com ([83.149.158.210]:33197 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1BVTMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:04:25 -0500
-Date: Tue, 22 Feb 2011 14:04:19 -0500
-From: "George G. Davis" <gdavis@mvista.com>
-To: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] UDF: Fix compiler warning
-Message-ID: <20110222190419.GH1397@mvista.com>
+	Tue, 22 Feb 2011 14:12:51 -0500
+Date: Tue, 22 Feb 2011 20:12:47 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
+Message-ID: <20110222191247.GA1657@linux.develer.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <1298394776-9957-5-git-send-email-arighi@develer.com>
+ <AANLkTinD2ZH3hw_iqVpvMjMRbUkXMBgttjd2NevvYq9x@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinD2ZH3hw_iqVpvMjMRbUkXMBgttjd2NevvYq9x@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Behme <dirk.behme@de.bosch.com>
+On Tue, Feb 22, 2011 at 10:42:41AM -0800, Chad Talbott wrote:
+> On Tue, Feb 22, 2011 at 9:12 AM, Andrea Righi <arighi@develer.com> wrote:
+> > Add the tracking of buffered (writeback) and anonymous pages.
+> ...
+> > ---
+> >  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
+> >  include/linux/blkdev.h |   26 ++++++++++++++-
+> >  2 files changed, 111 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> > index 9ad3d1e..a50ee04 100644
+> > --- a/block/blk-throttle.c
+> > +++ b/block/blk-throttle.c
+> ...
+> > +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
+> > +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
+> > +int blk_throtl_copy_page_owner(struct page *npage, struct page *opage)
+> 
+> It would be nice if these were named blk_cgroup_*.  This is arguably
+> more correct as the id comes from the blkio subsystem, and isn't
+> specific to blk-throttle.  This will be more important very shortly,
+> as CFQ will be using this same cgroup id for async IO tracking soon.
 
-Fix compiler warning
+Sounds reasonable. Will do in the next version.
 
-fs/udf/balloc.c: In function 'udf_bitmap_new_block':
-fs/udf/balloc.c:273: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
-fs/udf/balloc.c:285: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
-fs/udf/balloc.c:311: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
-fs/udf/balloc.c:325: warning: passing argument 1 of '_find_next_bit_le' from incompatible pointer type
+> 
+> is_kernel_io() is a good idea, it avoids a bug that we've run into
+> with CFQ async IO tracking.  Why isn't PF_KTHREAD sufficient to cover
+> all kernel threads, including kswapd and those marked PF_MEMALLOC?
 
-The main fix is to add a cast in ext2_find_next_bit().
+With PF_MEMALLOC we're sure we don't add the page tracking overhead also
+to non-kernel threads when memory gets low.
 
-As all other usage locations of udf_find_next_one_bit()
-directly use bh->b_data (which is a char *), the useless
-(char *) cast in line 311 can be removed, too.
+PF_KSWAPD is not probably needed, AFAICS it is only used by kswapd, that
+is created by kthread_create() and so it has the PF_KTHREAD flag set.
 
-Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
-Signed-off-by: George G. Davis <gdavis@mvista.com>
----
-This fixes a long standing ARM Linux kernel UDF_FS build warning [1].
+Let's see if someone can give more deatils about that. In the while I'll
+investigate and try to do some tests only with PF_KTHREAD.
 
-[1] http://armlinux.simtec.co.uk/kautobuild/2.6.37/warnings.html#modules
-
- fs/udf/balloc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/udf/balloc.c b/fs/udf/balloc.c
-index 306ee39..8994dd0 100644
---- a/fs/udf/balloc.c
-+++ b/fs/udf/balloc.c
-@@ -31,7 +31,7 @@
- #define udf_set_bit(nr, addr) ext2_set_bit(nr, addr)
- #define udf_test_bit(nr, addr) ext2_test_bit(nr, addr)
- #define udf_find_next_one_bit(addr, size, offset) \
--		ext2_find_next_bit(addr, size, offset)
-+		ext2_find_next_bit((unsigned long *)(addr), size, offset)
- 
- static int read_block_bitmap(struct super_block *sb,
- 			     struct udf_bitmap *bitmap, unsigned int block,
-@@ -297,7 +297,7 @@ repeat:
- 				break;
- 			}
- 		} else {
--			bit = udf_find_next_one_bit((char *)bh->b_data,
-+			bit = udf_find_next_one_bit(bh->b_data,
- 						    sb->s_blocksize << 3,
- 						    group_start << 3);
- 			if (bit < sb->s_blocksize << 3)
--- 
-1.7.4
-
+Thanks,
+-Andrea
