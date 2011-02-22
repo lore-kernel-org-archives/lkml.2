@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab1BVWW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:22:27 -0500
-Received: from kroah.org ([198.145.64.141]:32961 "EHLO coco.kroah.org"
+	id S1755154Ab1BVW0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:26:35 -0500
+Received: from kroah.org ([198.145.64.141]:32955 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754395Ab1BVWWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:23 -0500
+	id S1755004Ab1BVWWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:21 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:42 2011
-Message-Id: <20110222221842.521769497@clark.kroah.org>
+Message-Id: <20110222221842.417097992@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:34 -0800
+Date: Tue, 22 Feb 2011 14:17:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Martin <dave.martin@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [55/70] ARM: Ensure predictable endian state on signal handler entry
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        dann frazier <dannf@debian.org>
+Subject: [54/70] [media] radio-aimslab.c needs #include <linux/delay.h>
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 53399053eb505cf541b2405bd9d9bca5ecfb96fb upstream.
+commit 2400982a2e8a8e4e95f0a0e1517bbe63cc88038f upstream.
 
-Ensure a predictable endian state when entering signal handlers.  This
-avoids programs which use SETEND to momentarily switch their endian
-state from having their signal handlers entered with an unpredictable
-endian state.
+Commit e3c92215198cb6aa00ad38db2780faa6b72e0a3f ("[media] radio-aimslab.c: Fix
+gcc 4.5+ bug") removed the include, but introduced new callers of msleep():
 
-Acked-by: Dave Martin <dave.martin@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+| drivers/media/radio/radio-aimslab.c: In function ‘rt_decvol’:
+| drivers/media/radio/radio-aimslab.c:76: error: implicit declaration of function ‘msleep’
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: dann frazier <dannf@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/kernel/signal.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/media/radio/radio-aimslab.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/kernel/signal.c
-+++ b/arch/arm/kernel/signal.c
-@@ -474,7 +474,9 @@ setup_return(struct pt_regs *regs, struc
- 	unsigned long handler = (unsigned long)ka->sa.sa_handler;
- 	unsigned long retcode;
- 	int thumb = 0;
--	unsigned long cpsr = regs->ARM_cpsr & ~PSR_f;
-+	unsigned long cpsr = regs->ARM_cpsr & ~(PSR_f | PSR_E_BIT);
-+
-+	cpsr |= PSR_ENDSTATE;
- 
- 	/*
- 	 * Maybe we need to deliver a 32-bit signal to a 26-bit task.
+--- a/drivers/media/radio/radio-aimslab.c
++++ b/drivers/media/radio/radio-aimslab.c
+@@ -31,6 +31,7 @@
+ #include <linux/module.h>	/* Modules 			*/
+ #include <linux/init.h>		/* Initdata			*/
+ #include <linux/ioport.h>	/* request_region		*/
++#include <linux/delay.h>	/* msleep			*/
+ #include <linux/videodev2.h>	/* kernel radio structs		*/
+ #include <linux/version.h>	/* for KERNEL_VERSION MACRO	*/
+ #include <linux/io.h>		/* outb, outb_p			*/
 
 
