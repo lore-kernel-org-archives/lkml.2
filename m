@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab1BVVtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:49:31 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56695 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab1BVVt3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:49:29 -0500
-Date: Tue, 22 Feb 2011 13:47:35 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg@redhat.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org
-Subject: [PATCH -next] eeepc-wmi: kconfig changes to fix build errors
-Message-Id: <20110222134735.0bfbec8b.randy.dunlap@oracle.com>
-In-Reply-To: <20110222183437.ec2807bf.sfr@canb.auug.org.au>
-References: <20110222183437.ec2807bf.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D642F55.0028:SCFMA4539814,ss=1,fgs=0
+	id S1751573Ab1BVV5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:57:32 -0500
+Received: from mail.lixom.net ([70.86.134.90]:58936 "EHLO mail.lixom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007Ab1BVV5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:57:31 -0500
+X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Feb 2011 16:57:31 EST
+From: Olof Johansson <olof@lixom.net>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] checkpatch: error out on found Change-Id lines
+Date: Tue, 22 Feb 2011 15:50:20 -0600
+Message-Id: <1298411420-1834-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.3.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Some external projects use repo, which uses a special-format Change-Id
+field in the commit message for some internal bookkeeping (to re-associate
+patches back to review entries, etc). Sometimes they sneak into patches
+going upstream, which is embarrassing for the developer, and annoying
+for the maintainer.
 
-Fix eeepc-wmi build when CONFIG_HOTPLUG_PCI is not enabled:
+Add checking for these to checkpatch, to catch them before
+posting. Provide a way to disable the check to keep checkpatch useful
+for intra-project use.
 
-eeepc-wmi.c:(.text+0x3bc5e9): undefined reference to `pci_hp_deregister'
-eeepc-wmi.c:(.text+0x3bcca4): undefined reference to `__pci_hp_register'
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+
 ---
- drivers/platform/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ scripts/checkpatch.pl |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
---- linux-next-20110222.orig/drivers/platform/x86/Kconfig
-+++ linux-next-20110222/drivers/platform/x86/Kconfig
-@@ -447,6 +447,7 @@ config EEEPC_WMI
- 	depends on EXPERIMENTAL
- 	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on RFKILL || RFKILL = n
-+	depends on HOTPLUG_PCI
- 	select INPUT_SPARSEKMAP
- 	select LEDS_CLASS
- 	select NEW_LEDS
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 4c0383d..7233e23 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -18,6 +18,7 @@ my $quiet = 0;
+ my $tree = 1;
+ my $chk_signoff = 1;
+ my $chk_patch = 1;
++my $chk_changeid = 1;
+ my $tst_only;
+ my $emacs = 0;
+ my $terse = 0;
+@@ -41,6 +42,7 @@ Options:
+   -q, --quiet                quiet
+   --no-tree                  run without a kernel tree
+   --no-signoff               do not check for 'Signed-off-by' line
++  --no-change-id             don't complain about 'Change-Id' lines
+   --patch                    treat FILE as patchfile (default)
+   --emacs                    emacs compile window format
+   --terse                    one line per report
+@@ -67,6 +69,7 @@ GetOptions(
+ 	'q|quiet+'	=> \$quiet,
+ 	'tree!'		=> \$tree,
+ 	'signoff!'	=> \$chk_signoff,
++	'change-id!'	=> \$chk_changeid,
+ 	'patch!'	=> \$chk_patch,
+ 	'emacs!'	=> \$emacs,
+ 	'terse!'	=> \$terse,
+@@ -269,6 +272,7 @@ sub build_types {
+ build_types();
+ 
+ $chk_signoff = 0 if ($file);
++$chk_changeid = 0 if ($file);
+ 
+ my @dep_includes = ();
+ my @dep_functions = ();
+@@ -1378,6 +1382,10 @@ sub process {
+ 					$herecurr);
+ 			}
+ 		}
++# Check for Change-Id lines:
++		if ($line =~ /^\s*change-id:/i && $chk_changeid) {
++			ERROR("Found Change-Id line\n", $herecurr);
++		}
+ 
+ # Check for wrappage within a valid hunk of the file
+ 		if ($realcnt != 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
+-- 
+1.7.0.4
+
