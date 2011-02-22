@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab1BVOjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:39:06 -0500
-Received: from server103.greatnet.de ([83.133.97.6]:58831 "EHLO
-	server103.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab1BVOiP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:38:15 -0500
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: mingo@elte.hu
-Cc: tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH 2/5] x86: add dummy mp_save_irq()
-Date: Tue, 22 Feb 2011 15:38:04 +0100
-Message-Id: <1298385487-4708-2-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1298385487-4708-1-git-send-email-henne@nachtwindheim.de>
-References: <1298385487-4708-1-git-send-email-henne@nachtwindheim.de>
+	id S1754222Ab1BVOjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:39:16 -0500
+Received: from www.tglx.de ([62.245.132.106]:38380 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754079Ab1BVOjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:39:13 -0500
+Date: Tue, 22 Feb 2011 15:39:09 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Schaefer Dr, Frank-Rene ()" <fschaef9@visteon.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: Interrupt Latencies
+In-Reply-To: <060E4307CE6CA14BB4F7B4A25ECA052904B73AD1@VEUMBV03.vistcorp.ad.visteon.com>
+Message-ID: <alpine.LFD.2.00.1102221527180.2701@localhost6.localdomain6>
+References: <060E4307CE6CA14BB4F7B4A25ECA052904B73AD1@VEUMBV03.vistcorp.ad.visteon.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a dummy function, used when no IOAPIC is compiled in.
+On Tue, 22 Feb 2011, Schaefer Dr, Frank-Rene () wrote:
+> Having read "Moving interrupts to threads" at
+> 
+>            http://lwn.net/Articles/302043/
+> 
+> I expected to reduce interrupt latency during a SPI 
+> communication by handling the transmit-receive in a 
+> 'quick_check_handler' using 
+> 
+>            request_threaded_irq(...);
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
- arch/x86/include/asm/io_apic.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index e1a9b0e..b24915f 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -188,6 +188,7 @@ static inline int mp_find_ioapic(u32 gsi) { return 0; }
- struct io_apic_irq_attr;
- static inline int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr) { return 0; }
-+static inline void mp_save_irq(struct mpc_intsrc *m) { };
- #endif
+The quick check handler has the same latencies as the normal handler
+of an interrupt requested by request_irq.
  
- #endif /* _ASM_X86_IO_APIC_H */
--- 
-1.7.2.3
+Interrupt latency depends on various factors:
 
+  - Interrupt disabled code regions
+  - Concurrent interrupts and the ordering of handling
+  - Deep idle states
+  - Bus contention
+  - Cache misses
+
+The maximum latency is the worst case of all the above added together.
+
+> or vice versa. We are able to measure the latency precisely
+> as the difference of the time when the interrupt pin 'IN'
+> is raised and we raise our response pin 'OUT' as shown below.
+> 
+>       pin IN        .-------------------------
+>       ______________|
+>                     
+>       pin OUT                     .-----------
+>       ____________________________|
+>                           
+>                     |<- latency ->|
+> 
+> Could anyone point to locations in the kernel so that I can
+> precisely understand the mechanisms that cause the latency? It 
+
+There is no single mechanism.
+
+> is totally incomprehensible to me why the 'quick_check_handler' 
+> must have a latency of 60us at min. (that are many thousand 
+> instructions).
+
+How is that interrupt connected to the CPU/chipset? Which driver(s)
+is/are involved ? How is the pin OUT accessed from the driver?
+
+Thanks,
+
+	tglx
