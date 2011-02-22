@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab1BVW25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:28:57 -0500
-Received: from kroah.org ([198.145.64.141]:46804 "EHLO coco.kroah.org"
+	id S1755447Ab1BVW3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:29:15 -0500
+Received: from kroah.org ([198.145.64.141]:46781 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754783Ab1BVWWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:05 -0500
+	id S1754745Ab1BVWWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:01 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:41 2011
-Message-Id: <20110222221841.390562355@clark.kroah.org>
+Message-Id: <20110222221841.106623698@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:23 -0800
+Date: Tue, 22 Feb 2011 14:17:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [44/70] ALSA: caiaq - Fix possible string-buffer overflow
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Octavian Purdila <opurdila@ixiacom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [41/70] net: deinit automatic LIST_HEAD
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit eaae55dac6b64c0616046436b294e69fc5311581 upstream.
+commit ceaaec98ad99859ac90ac6863ad0a6cd075d8e0e upstream.
 
-Use strlcpy() to assure not to overflow the string array sizes by
-too long USB device name string.
+commit 9b5e383c11b08784 (net: Introduce
+unregister_netdevice_many()) left an active LIST_HEAD() in
+rollback_registered(), with possible memory corruption.
 
-Reported-by: Rafa <rafa@mwrinfosecurity.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Even if device is freed without touching its unreg_list (and therefore
+touching the previous memory location holding LISTE_HEAD(single), better
+close the bug for good, since its really subtle.
+
+(Same fix for default_device_exit_batch() for completeness)
+
+Reported-by: Michal Hocko <mhocko@suse.cz>
+Tested-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Eric W. Biderman <ebiderman@xmission.com>
+Tested-by: Eric W. Biderman <ebiderman@xmission.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Octavian Purdila <opurdila@ixiacom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/usb/caiaq/audio.c |    2 +-
- sound/usb/caiaq/midi.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ net/core/dev.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/usb/caiaq/audio.c
-+++ b/sound/usb/caiaq/audio.c
-@@ -785,7 +785,7 @@ int snd_usb_caiaq_audio_init(struct snd_
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4945,6 +4945,7 @@ static void rollback_registered(struct n
+ 
+ 	list_add(&dev->unreg_list, &single);
+ 	rollback_registered_many(&single);
++	list_del(&single);
+ }
+ 
+ unsigned long netdev_fix_features(unsigned long features, const char *name)
+@@ -6114,6 +6115,7 @@ static void __net_exit default_device_ex
+ 		}
  	}
+ 	unregister_netdevice_many(&dev_kill_list);
++	list_del(&dev_kill_list);
+ 	rtnl_unlock();
+ }
  
- 	dev->pcm->private_data = dev;
--	strcpy(dev->pcm->name, dev->product_name);
-+	strlcpy(dev->pcm->name, dev->product_name, sizeof(dev->pcm->name));
- 
- 	memset(dev->sub_playback, 0, sizeof(dev->sub_playback));
- 	memset(dev->sub_capture, 0, sizeof(dev->sub_capture));
---- a/sound/usb/caiaq/midi.c
-+++ b/sound/usb/caiaq/midi.c
-@@ -136,7 +136,7 @@ int snd_usb_caiaq_midi_init(struct snd_u
- 	if (ret < 0)
- 		return ret;
- 
--	strcpy(rmidi->name, device->product_name);
-+	strlcpy(rmidi->name, device->product_name, sizeof(rmidi->name));
- 
- 	rmidi->info_flags = SNDRV_RAWMIDI_INFO_DUPLEX;
- 	rmidi->private_data = device;
 
 
