@@ -1,95 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab1BVUaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:30:05 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60372 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab1BVUaC (ORCPT
+	id S1752529Ab1BVUaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:30:24 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:6030 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab1BVUaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:30:02 -0500
+	Tue, 22 Feb 2011 15:30:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=HuX2t/QwyzKRBVuKZX6J1qFsEfGv+hGx7sHpAZYd8WHavw/xl/I5BlUzyxLgtysO6q
-         7O9M6/jMNN25aztp0E+ilQYNZmcszYR4PIJ+6mLmxN+qR9BpN4o6TeNgko/+YpFnyWta
-         Ikco3rwQSJiw5u3uYr7XSzSYq+XvzFL438UUc=
-Date: Tue, 22 Feb 2011 23:29:15 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110222202915.GC1966@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Greg KH <gregkh@suse.de>, Kees Cook <kees.cook@canonical.com>,
-	linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
-	Ralph Campbell <infinipath@qlogic.com>,
-	Roland Dreier <roland@kernel.org>,
-	Sean Hefty <sean.hefty@intel.com>,
-	Hal Rosenstock <hal.rosenstock@gmail.com>,
-	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	"J. Bruce Fields" <bfields@fieldses.org>,
-	Neil Brown <neilb@suse.de>, Matthew Wilcox <matthew@wil.cx>,
-	James Morris <jmorris@namei.org>,
-	Stephen Smalley <sds@tycho.nsa.gov>,
-	Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-	Arnd Bergmann <arnd@arndb.de>,
-	Ian Campbell <ian.campbell@citrix.com>,
-	Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-	Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
- <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
- <20110222181613.GU4000@outflux.net>
- <20110222191333.GA9991@suse.de>
- <20110222192248.GX4000@outflux.net>
- <20110222193314.GA11033@suse.de>
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Yc2HaX0eEbXmR1Zz/+X1kMcutZ2lzYG4t9az0yW05V/TW6/049d2qmPvp0OBsFrOB4
+         zsD1ohsuJ9YOTbl+E+Dw==
+Date: Tue, 22 Feb 2011 12:30:14 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Li Zefan <lizf@cn.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
+        miaox@cn.fujitsu.com, linux-mm@kvack.org
+Subject: Re: [PATCH 3/4] cpuset: Fix unchecked calls to NODEMASK_ALLOC()
+In-Reply-To: <4D631C54.1080703@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1102221219101.5929@chino.kir.corp.google.com>
+References: <4D5C7EA7.1030409@cn.fujitsu.com> <4D5C7ED1.2070601@cn.fujitsu.com> <alpine.DEB.2.00.1102191745180.27722@chino.kir.corp.google.com> <4D61DA04.4060007@cn.fujitsu.com> <alpine.DEB.2.00.1102211617510.23557@chino.kir.corp.google.com>
+ <4D631C54.1080703@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222193314.GA11033@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:33:14AM -0800, Greg KH wrote:
-> Again, let's fix the real problems here, world-writable debugfs files.
+On Tue, 22 Feb 2011, Li Zefan wrote:
 
-We could just ban them?
+> [PATCH 3/4] cpuset: Fix unchecked calls to NODEMASK_ALLOC()
+> 
+> Those functions that use NODEMASK_ALLOC() can't propogate errno
+> to users, so might fail silently.
+> 
+> Fix it by using one static nodemask_t variable for each function, and
+> those variables are protected by cgroup_mutex.
+> 
 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index e7a7a2f..03ae095 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -223,6 +223,9 @@ struct dentry *debugfs_create_file(const char *name, mode_t mode,
- 
- 	pr_debug("debugfs: creating file '%s'\n",name);
- 
-+	/* don't allow world writable files */
-+	mode &= ~S_IWOTH;
-+
- 	error = simple_pin_fs(&debug_fs_type, &debugfs_mount,
- 			      &debugfs_mount_count);
- 	if (error)
+I think there would also be incentive to do the same thing for 
+update_nodemask() even though its caller can handle -ENOMEM.  Imagine 
+current being out of memory and the NODEMASK_ALLOC() subsequently failing 
+because it is oom yet it may be trying to give itself more memory.  It's 
+also protected by cgroup_mutex so the only thing we're sacrificing is 8 
+bytes on the defconfig and 256 bytes even with CONFIG_NODES_SHIFT == 10.  
+On machines that large, this seems like an acceptable cost to ensure we 
+can give ourselves more memory :)
 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  kernel/cpuset.c |   50 ++++++++++++++++----------------------------------
+>  1 files changed, 16 insertions(+), 34 deletions(-)
+> 
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 8fef8c6..073ce91 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -1015,17 +1015,12 @@ static void cpuset_change_nodemask(struct task_struct *p,
+>  	struct cpuset *cs;
+>  	int migrate;
+>  	const nodemask_t *oldmem = scan->data;
+> -	NODEMASK_ALLOC(nodemask_t, newmems, GFP_KERNEL);
+> -
+> -	if (!newmems)
+> -		return;
+> +	static nodemask_t newmems;	/* protected by cgroup_mutex */
+>  
+>  	cs = cgroup_cs(scan->cg);
+> -	guarantee_online_mems(cs, newmems);
+> -
+> -	cpuset_change_task_nodemask(p, newmems);
+> +	guarantee_online_mems(cs, &newmems);
 
+The newmems nodemask is going to be persistant across calls since it is 
+static, so we have to be careful that nothing depends on it being 
+NODE_MASK_NONE.  Indeed, NODEMASK_ALLOC() with just GFP_KERNEL doesn't 
+guarantee anything different.  guarantee_online_mems() sets the nodemask, 
+so this looks good.
+
+>  
+> -	NODEMASK_FREE(newmems);
+> +	cpuset_change_task_nodemask(p, &newmems);
+>  
+>  	mm = get_task_mm(p);
+>  	if (!mm)
+> @@ -1438,41 +1433,35 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
+>  	struct mm_struct *mm;
+>  	struct cpuset *cs = cgroup_cs(cont);
+>  	struct cpuset *oldcs = cgroup_cs(oldcont);
+> -	NODEMASK_ALLOC(nodemask_t, to, GFP_KERNEL);
+> -
+> -	if (to == NULL)
+> -		goto alloc_fail;
+> +	static nodemask_t to;		/* protected by cgroup_mutex */
+>  
+>  	if (cs == &top_cpuset) {
+>  		cpumask_copy(cpus_attach, cpu_possible_mask);
+>  	} else {
+>  		guarantee_online_cpus(cs, cpus_attach);
+>  	}
+> -	guarantee_online_mems(cs, to);
+> +	guarantee_online_mems(cs, &to);
+>  
+>  	/* do per-task migration stuff possibly for each in the threadgroup */
+> -	cpuset_attach_task(tsk, to, cs);
+> +	cpuset_attach_task(tsk, &to, cs);
+>  	if (threadgroup) {
+>  		struct task_struct *c;
+>  		rcu_read_lock();
+>  		list_for_each_entry_rcu(c, &tsk->thread_group, thread_group) {
+> -			cpuset_attach_task(c, to, cs);
+> +			cpuset_attach_task(c, &to, cs);
+>  		}
+>  		rcu_read_unlock();
+>  	}
+>  
+>  	/* change mm; only needs to be done once even if threadgroup */
+> -	*to = cs->mems_allowed;
+> +	to = cs->mems_allowed;
+>  	mm = get_task_mm(tsk);
+>  	if (mm) {
+> -		mpol_rebind_mm(mm, to);
+> +		mpol_rebind_mm(mm, &to);
+>  		if (is_memory_migrate(cs))
+> -			cpuset_migrate_mm(mm, &oldcs->mems_allowed, to);
+> +			cpuset_migrate_mm(mm, &oldcs->mems_allowed, &to);
+>  		mmput(mm);
+>  	}
+> -
+> -alloc_fail:
+> -	NODEMASK_FREE(to);
+>  }
+>  
+>  /* The various types of files and directories in a cpuset file system */
+> @@ -2051,10 +2040,7 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+>  	struct cpuset *cp;	/* scans cpusets being updated */
+>  	struct cpuset *child;	/* scans child cpusets of cp */
+>  	struct cgroup *cont;
+> -	NODEMASK_ALLOC(nodemask_t, oldmems, GFP_KERNEL);
+> -
+> -	if (oldmems == NULL)
+> -		return;
+> +	static nodemask_t oldmems;	/* protected by cgroup_mutex */
+>  
+>  	list_add_tail((struct list_head *)&root->stack_list, &queue);
+>  
+> @@ -2071,7 +2057,7 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+>  		    nodes_subset(cp->mems_allowed, node_states[N_HIGH_MEMORY]))
+>  			continue;
+>  
+> -		*oldmems = cp->mems_allowed;
+> +		oldmems = cp->mems_allowed;
+>  
+>  		/* Remove offline cpus and mems from this cpuset. */
+>  		mutex_lock(&callback_mutex);
+> @@ -2087,10 +2073,9 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+>  			remove_tasks_in_empty_cpuset(cp);
+>  		else {
+>  			update_tasks_cpumask(cp, NULL);
+> -			update_tasks_nodemask(cp, oldmems, NULL);
+> +			update_tasks_nodemask(cp, &oldmems, NULL);
+>  		}
+>  	}
+> -	NODEMASK_FREE(oldmems);
+>  }
+>  
+>  /*
+> @@ -2132,19 +2117,16 @@ void cpuset_update_active_cpus(void)
+>  static int cpuset_track_online_nodes(struct notifier_block *self,
+>  				unsigned long action, void *arg)
+>  {
+> -	NODEMASK_ALLOC(nodemask_t, oldmems, GFP_KERNEL);
+> -
+> -	if (oldmems == NULL)
+> -		return NOTIFY_DONE;
+> +	static nodemask_t oldmems;	/* protected by cgroup_mutex */
+>  
+>  	cgroup_lock();
+>  	switch (action) {
+>  	case MEM_ONLINE:
+> -		*oldmems = top_cpuset.mems_allowed;
+> +		oldmems = top_cpuset.mems_allowed;
+>  		mutex_lock(&callback_mutex);
+>  		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
+>  		mutex_unlock(&callback_mutex);
+> -		update_tasks_nodemask(&top_cpuset, oldmems, NULL);
+> +		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
+>  		break;
+>  	case MEM_OFFLINE:
+>  		/*
+
+The NODEMASK_FREE() wasn't removed from cpuset_track_online_nodes().  
+After that's fixed:
+
+Acked-by: David Rientjes <rientjes@google.com>
