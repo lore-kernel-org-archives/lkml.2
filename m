@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1BVAaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 19:30:24 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41330 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752592Ab1BVAaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 19:30:22 -0500
-Subject: [GIT PULL] 2.6.39 CLOCK_BOOTTIME for tip/timers/core
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Feb 2011 16:29:56 -0800
-Message-ID: <1298334596.4222.20.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752445Ab1BVAcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 19:32:06 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47194 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab1BVAcF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 19:32:05 -0500
+Date: Tue, 22 Feb 2011 09:30:22 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] hugetlbfs: correct handling of negative input to
+ /proc/sys/vm/nr_hugepages
+Message-ID: <20110222003022.GA2895@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1298303270-3184-1-git-send-email-pholasek@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <1298303270-3184-1-git-send-email-pholasek@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-	Here are the CLOCK_BOOTTIME changes I've been periodically sending out
-for the last few weeks. It would be great to get them into
-tip/timers/core for testing prior to 2.6.39.
+On Mon, Feb 21, 2011 at 04:47:49PM +0100, Petr Holasek wrote:
+> When user insert negative value into /proc/sys/vm/nr_hugepages it will result
+> in the setting a random number of HugePages in system (can be easily showed
+> at /proc/meminfo output). This patch fixes the wrong behavior so that the
+> negative input will result in nr_hugepages value unchanged.
+> 
+> Signed-off-by: Petr Holasek <pholasek@redhat.com>
+> ---
+>  mm/hugetlb.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index bb0b7c1..f99d7a8 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1872,8 +1872,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+>  	unsigned long tmp;
+>  	int ret;
+>  
+> -	if (!write)
+> -		tmp = h->max_huge_pages;
+> +	tmp = h->max_huge_pages;
 
-thanks
--john
+Looks reasonable.
+hugetlb_overcommit_handler() has the same wrong behavior.
+So how about fixing that too?
 
-  git://git.linaro.org/people/jstultz/linux.git fortglx/39/tip/timers/core
-
-John Stultz (5):
-      hrtimers: extend hrtimer base code to handle more then 2 clockids
-      time: Introduce get_monotonic_boottime and ktime_get_boottime
-      time: Extend get_xtime_and_monotonic_offset() to also return sleep
-      timers: Add CLOCK_BOOTTIME hrtimer base
-      timers: Export CLOCK_BOOTTIME via the posix timers interface
-
- include/linux/hrtimer.h   |    8 +++++-
- include/linux/time.h      |    5 +++-
- kernel/hrtimer.c          |   63 ++++++++++++++++++++++++++++++--------------
- kernel/posix-timers.c     |   21 ++++++++++++++-
- kernel/time/timekeeping.c |   59 ++++++++++++++++++++++++++++++++++++++++--
- 5 files changed, 130 insertions(+), 26 deletions(-)
-
-
+Anyway,
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
