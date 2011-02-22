@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1BVDUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 22:20:46 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42243 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab1BVDUo (ORCPT
+	id S1753561Ab1BVDW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 22:22:26 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:47772 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab1BVDWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 22:20:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=SxSrQuEAaR+wW++N8HVB6atTX4FnKTZTHcy81zYKYpjeiBADMFOg8tn/aNK8BtQ6i3
-         z4VTjTJOfjOEQIGzYHccJedymPWGogvoMQbNtiDxt8hVNXKX2NPiNXglpz8SYcbaHE6H
-         fbM4Kmw1TlQKG227WI4BL1nz/4/Gs2TzP0CJs=
-Subject: [PATCH] davinci: cpufreq: fix section mismatch warning
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain
-Date: Tue, 22 Feb 2011 11:23:53 +0800
-Message-Id: <1298345033.3903.7.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Mon, 21 Feb 2011 22:22:25 -0500
+X-AuditID: b753bd60-a50bbba000004916-39-4d632beeaee8
+X-AuditID: b753bd60-a50bbba000004916-39-4d632beeaee8
+Message-ID: <4D632BE9.6090108@hitachi.com>
+Date: Tue, 22 Feb 2011 12:22:17 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@elte.hu, acme@redhat.com, fweisbec@gmail.com, hpa@zytor.com,
+        ananth@in.ibm.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, a.p.zijlstra@chello.nl, eric.dumazet@gmail.com,
+        2nddept-manager@sdl.hitachi.co.jp,
+        "2nddept-manager@sdl.hitachi.co.jp" 
+	<2nddept-manager@sdl.hitachi.co.jp>
+Subject: Re: [PATCH 2/2] kprobes: disabling optimized kprobes for entry text
+ section
+References: <20110220125948.GC25700@elte.hu> <1298298313-5980-1-git-send-email-jolsa@redhat.com> <1298298313-5980-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1298298313-5980-3-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below section mismatch warning:
-WARNING: vmlinux.o(.data+0x673c): Section mismatch in reference from the variable davinci_driver to the function .init.text:davinci_cpu_init()
-The variable davinci_driver references
-the function __init davinci_cpu_init()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+(2011/02/21 23:25), Jiri Olsa wrote:
+> You can crash the kernel using kprobe tracer by running:
+> 
+> echo "p system_call_after_swapgs" > ./kprobe_events
+> echo 1 > ./events/kprobes/enable
+> 
+> The reason is that at the system_call_after_swapgs label, the kernel
+> stack is not set up. If optimized kprobes are enabled, the user space
+> stack is being used in this case (see optimized kprobe template) and
+> this might result in a crash.
+> 
+> There are several places like this over the entry code (entry_$BIT).
+> As it seems there's no any reasonable/maintainable way to disable only
+> those places where the stack is not ready, I switched off the whole
+> entry code from kprobe optimizing.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- arch/arm/mach-davinci/cpufreq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thank you very much!
 
-diff --git a/arch/arm/mach-davinci/cpufreq.c b/arch/arm/mach-davinci/cpufreq.c
-index 343de73..4a68c2b 100644
---- a/arch/arm/mach-davinci/cpufreq.c
-+++ b/arch/arm/mach-davinci/cpufreq.c
-@@ -132,7 +132,7 @@ out:
- 	return ret;
- }
- 
--static int __init davinci_cpu_init(struct cpufreq_policy *policy)
-+static int davinci_cpu_init(struct cpufreq_policy *policy)
- {
- 	int result = 0;
- 	struct davinci_cpufreq_config *pdata = cpufreq.dev->platform_data;
+> 
+> wbr,
+> jirka
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> ---
+>  arch/x86/kernel/kprobes.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> index d91c477..d03bc1e 100644
+> --- a/arch/x86/kernel/kprobes.c
+> +++ b/arch/x86/kernel/kprobes.c
+> @@ -1276,6 +1276,14 @@ static int __kprobes can_optimize(unsigned long paddr)
+>  	if (!kallsyms_lookup_size_offset(paddr, &size, &offset))
+>  		return 0;
+>  
+> +	/*
+> +	 * Do not optimize in the entry code due to the unstable
+> +	 * stack handling.
+> +	 */
+> +	if ((paddr >= (unsigned long ) __entry_text_start) &&
+> +	    (paddr <  (unsigned long ) __entry_text_end))
+> +		return 0;
+> +
+>  	/* Check there is enough space for a relative jump. */
+>  	if (size - offset < RELATIVEJUMP_SIZE)
+>  		return 0;
+
+
 -- 
-1.7.2
-
-
-
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
