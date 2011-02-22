@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1BVTd2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:33:28 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:59515 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab1BVTdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:33:25 -0500
-Date: Tue, 22 Feb 2011 11:32:50 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH] acpi: create CONFIG item for debugfs custom_method
-Message-ID: <20110222193250.GA23913@outflux.net>
+	id S1755231Ab1BVTds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:33:48 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:62177 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab1BVTdr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:33:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BGN5/o59cJS3wKwhmsNQFRe3T+AjDWXhAlfs/ZTvf7RKr3BSgEj2krYkyJCYFmjw9R
+         iuv1htW0Dnjua2H6MbjYY3wxzJhE5WoPCHYKcGxYfe6Fk7gZsKR23B/Nhpapws+07FoV
+         aflQJ0oUKayOAkueVSxT+ShZD9kddUZCHd03M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <1298382263.6140.1196.camel@gandalf.stny.rr.com>
+References: <1298380368.6140.1193.camel@gandalf.stny.rr.com>
+	<1298381695.2211.486.camel@localhost>
+	<1298382263.6140.1196.camel@gandalf.stny.rr.com>
+Date: Tue, 22 Feb 2011 20:33:45 +0100
+Message-ID: <AANLkTinNUnq7JQDpTzCv24A7T7fMn9iPFisQEBZGkELr@mail.gmail.com>
+Subject: Re: [PATCH] rt2x00: Use ops name instead of device name
+From: Ivo Van Doorn <ivdoorn@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>, abogani@texware.it
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since /sys/kernel/debug/acpi/custom_method can be used to write arbitrary
-kernel memory (http://jon.oberheide.org/files/american-sign-language.c),
-it should be able to be left out of the kernel for system owners that
-want to be as defensive as possible to potential attacks, even from the
-root user. See as examples: CONFIG_DEVKMEM, CONFIG_STRICT_DEVMEM, and
-/proc/sys/kernel/modules_disabled.
+Hi,
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- drivers/acpi/Kconfig   |   10 ++++++++++
- drivers/acpi/debugfs.c |    2 ++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+On Tue, Feb 22, 2011 at 2:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2011-02-22 at 13:34 +0000, Ben Hutchings wrote:
+>
+>> > 19:   73474106          0   IO-APIC-fasteoi   ata_piix, uhci_hcd:usb6, 0000:05:01.0
+>
+>> >     rt2x00dev->irq = pci_dev->irq;
+>> > -   rt2x00dev->name = pci_name(pci_dev);
+>> > +   rt2x00dev->name = ops->name;
+>
+>
+>> But then how can users distinguish the IRQs for multiple devices handled
+>> by the same driver?  (Probably unusual for WLAN devices, but still
+>> possible.)
+>>
+>> I assume you can't use a net device name as there may be multiple net
+>> devices per bus device?
+>
+> Honestly, I do not know this code well enough, but this patch seemed to
+> solve the problem at hand. Hence I sent it out to the experts hoping
+> they either take this patch or come up with a proper solution ;)
+>
+> In any case, just posting the pci address is not a pretty answer.
 
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index 2aa042a..726b7ea 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -381,6 +381,16 @@ config ACPI_HED
- 	  which is used to report some hardware errors notified via
- 	  SCI, mainly the corrected errors.
- 
-+config ACPI_DEBUG_CUSTOM_METHOD
-+	bool "Debugging: Custom Method Insertion"
-+	depends on DEBUG_FS
-+	default n
-+	help
-+	  This creates the debugfs interface file "acpi/custom_method"
-+	  used for loading custom ACPI methods. Note that this allows
-+	  arbitrary kernel memory writing by the root user and is not
-+	  recommended for normal systems.
-+
- source "drivers/acpi/apei/Kconfig"
- 
- endif	# ACPI
-diff --git a/drivers/acpi/debugfs.c b/drivers/acpi/debugfs.c
-index 5df67f1..0240b15 100644
---- a/drivers/acpi/debugfs.c
-+++ b/drivers/acpi/debugfs.c
-@@ -20,6 +20,7 @@ module_param_named(aml_debug_output, acpi_gbl_enable_aml_debug_object,
- MODULE_PARM_DESC(aml_debug_output,
- 		 "To enable/disable the ACPI Debug Object output.");
- 
-+#ifdef CONFIG_ACPI_DEBUG_CUSTOM_METHOD
- /* /sys/kernel/debug/acpi/custom_method */
- 
- static ssize_t cm_write(struct file *file, const char __user * user_buf,
-@@ -92,3 +93,4 @@ err:
- 		debugfs_remove(acpi_dir);
- 	return -EINVAL;
- }
-+#endif
--- 
-1.7.2.3
+I just checked the other wireless drivers, and they all seem to use
+the modulename. So I guess your patch is correct. You can add my:
 
--- 
-Kees Cook
-Ubuntu Security Team
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
