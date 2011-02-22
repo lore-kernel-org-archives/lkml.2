@@ -1,151 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab1BVTyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:54:19 -0500
-Received: from mga14.intel.com ([143.182.124.37]:61429 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211Ab1BVTyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:54:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,207,1297065600"; 
-   d="scan'208";a="392486185"
-Subject: [RFC PATCH] x86: Moving probe_roms_32 to probe_roms
-To: hpa@zytor.com
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Dave Jiang <dave.jiang@intel.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Date: Tue, 22 Feb 2011 12:16:32 -0800
-Message-ID: <20110222201538.15443.81915.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15-7-g9bfb
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754465Ab1BVTyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:54:54 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50974
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751507Ab1BVTyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:54:52 -0500
+Date: Tue, 22 Feb 2011 11:55:28 -0800 (PST)
+Message-Id: <20110222.115528.245390295.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2011-02-22
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110222193757.GF12153@tuxdriver.com>
+References: <20110222193757.GF12153@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Jiang <dave.jiang@intel.com>
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Tue, 22 Feb 2011 14:37:57 -0500
 
-Moving the probe_roms_32 code to probe_roms and make available for all x86. The
-end result adapter roms data structure is made available read-only to drivers.
-The Intel isci SAS driver needs to scan the OROM memory in order to pull OEM
-parameters from the OROM.
+> Here is the latest round of wireless fixes intended for 2.6.38.
+> Included are a DMA API fix for p54, an ath5k channel setting fix
+> for AR2317 hardware, a WARNING fix related to conn_mon_timer, a lock
+> order fix in cfg80211_wext_siwfreq, a bluetooth locking fix, and a
+> few simple hardware-enablement patches.
+> 
+> There are a couple of other notables.  There is an ath9k patch that
+> reverts some earlier patches that cause a regression in power usage.
+> Also, there is a fairly large ath5k patch to address a regression
+> related to fast channel switching.  The patch seems bigger than it
+> really is because it moves some code around.  Both of these cite the
+> related bugzilla entry.
+> 
+> Please let me know if there are problems!
 
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
-
-We could just export adapter_rom_resources directly and be done with it, but
-it seemed reasonable to have a compile time catch for drivers that try to
-modify the resources, and that drivers should not assume the number of
-available adapter roms.
-
---
-Dan
-
- arch/x86/include/asm/probe_roms.h |    7 +++++++
- arch/x86/include/asm/setup.h      |    3 ++-
- arch/x86/kernel/Makefile          |    2 +-
- arch/x86/kernel/head32.c          |    1 -
- arch/x86/kernel/probe_roms.c      |   13 +++++++++++++
- arch/x86/kernel/x86_init.c        |    2 +-
- 6 files changed, 24 insertions(+), 4 deletions(-)
- create mode 100644 arch/x86/include/asm/probe_roms.h
- rename arch/x86/kernel/{probe_roms_32.c => probe_roms.c} (93%)
-
-diff --git a/arch/x86/include/asm/probe_roms.h b/arch/x86/include/asm/probe_roms.h
-new file mode 100644
-index 0000000..3e9ea6d
---- /dev/null
-+++ b/arch/x86/include/asm/probe_roms.h
-@@ -0,0 +1,7 @@
-+#ifndef _PROBE_ROMS_H_
-+#define _PROBE_ROMS_H_
-+
-+extern const struct resource *x86_adapter_rom_resources(void);
-+extern int x86_num_adapter_roms(void);
-+
-+#endif
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index ef292c7..52edb6d 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -93,10 +93,11 @@ void *extend_brk(size_t size, size_t align);
- 			: : "i" (sz));					\
- 	}
- 
-+extern void probe_roms(void);
-+
- #ifdef __i386__
- 
- void __init i386_start_kernel(void);
--extern void probe_roms(void);
- 
- #else
- void __init x86_64_start_kernel(char *real_mode);
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index fedf32a..f31ae9b 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -36,7 +36,7 @@ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
- obj-y			+= time.o ioport.o ldt.o dumpstack.o
- obj-y			+= setup.o x86_init.o i8259.o irqinit.o
- obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
--obj-$(CONFIG_X86_32)	+= probe_roms_32.o
-+obj-y			+= probe_roms.o
- obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
- obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
- obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index 784360c..e7605ed 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -21,7 +21,6 @@
- static void __init i386_default_early_setup(void)
- {
- 	/* Initialize 32bit specific setup functions */
--	x86_init.resources.probe_roms = probe_roms;
- 	x86_init.resources.reserve_resources = i386_reserve_resources;
- 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
- 
-diff --git a/arch/x86/kernel/probe_roms_32.c b/arch/x86/kernel/probe_roms.c
-similarity index 93%
-rename from arch/x86/kernel/probe_roms_32.c
-rename to arch/x86/kernel/probe_roms.c
-index 071e7fe..5dcf53f 100644
---- a/arch/x86/kernel/probe_roms_32.c
-+++ b/arch/x86/kernel/probe_roms.c
-@@ -73,6 +73,19 @@ static struct resource video_rom_resource = {
- 	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
- };
- 
-+/* grant modules read only access to the adapter rom table */
-+const struct resource *x86_adapter_rom_resources(void)
-+{
-+	return adapter_rom_resources;
-+}
-+EXPORT_SYMBOL(x86_adapter_rom_resources);
-+
-+int x86_num_adapter_roms(void)
-+{
-+	return ARRAY_SIZE(adapter_rom_resources);
-+}
-+EXPORT_SYMBOL(x86_num_adapter_roms);
-+
- #define ROMSIGNATURE 0xaa55
- 
- static int __init romsignature(const unsigned char *rom)
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index cd6da6b..1bc104f 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -33,7 +33,7 @@ void iommu_shutdown_noop(void) { }
- struct x86_init_ops x86_init __initdata = {
- 
- 	.resources = {
--		.probe_roms		= x86_init_noop,
-+		.probe_roms		= probe_roms,
- 		.reserve_resources	= reserve_standard_io_resources,
- 		.memory_setup		= default_machine_specific_memory_setup,
- 	},
-
+Pulled, thanks a lot John.
