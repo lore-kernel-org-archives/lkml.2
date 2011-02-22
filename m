@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab1BVUAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:00:38 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55692 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab1BVUAh (ORCPT
+	id S1755379Ab1BVUAt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:00:49 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39702 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755358Ab1BVUAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:00:37 -0500
-Date: Tue, 22 Feb 2011 14:47:25 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Ivo Van Doorn <ivdoorn@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, abogani@texware.it
-Subject: Re: [PATCH] rt2x00: Use ops name instead of device name
-Message-ID: <20110222194724.GG12153@tuxdriver.com>
-References: <1298380368.6140.1193.camel@gandalf.stny.rr.com>
- <1298381695.2211.486.camel@localhost>
- <1298382263.6140.1196.camel@gandalf.stny.rr.com>
- <AANLkTinNUnq7JQDpTzCv24A7T7fMn9iPFisQEBZGkELr@mail.gmail.com>
+	Tue, 22 Feb 2011 15:00:47 -0500
+Date: Tue, 22 Feb 2011 20:00:46 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
+	rtc_class_ops->read_alarm()
+Message-ID: <20110222200046.GD31611@opensource.wolfsonmicro.com>
+References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org> <1298332538-31216-5-git-send-email-john.stultz@linaro.org> <20110222023452.GB18299@sirena.org.uk> <1298343333.4222.36.camel@work-vm> <1298362178.4222.57.camel@work-vm> <20110222181647.GA25569@opensource.wolfsonmicro.com> <1298404268.9215.39.camel@work-vm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinNUnq7JQDpTzCv24A7T7fMn9iPFisQEBZGkELr@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1298404268.9215.39.camel@work-vm>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 08:33:45PM +0100, Ivo Van Doorn wrote:
-> Hi,
-> 
-> On Tue, Feb 22, 2011 at 2:44 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Tue, 2011-02-22 at 13:34 +0000, Ben Hutchings wrote:
-> >
-> >> > 19:   73474106          0   IO-APIC-fasteoi   ata_piix, uhci_hcd:usb6, 0000:05:01.0
-> >
-> >> >     rt2x00dev->irq = pci_dev->irq;
-> >> > -   rt2x00dev->name = pci_name(pci_dev);
-> >> > +   rt2x00dev->name = ops->name;
-> >
-> >
-> >> But then how can users distinguish the IRQs for multiple devices handled
-> >> by the same driver?  (Probably unusual for WLAN devices, but still
-> >> possible.)
-> >>
-> >> I assume you can't use a net device name as there may be multiple net
-> >> devices per bus device?
-> >
-> > Honestly, I do not know this code well enough, but this patch seemed to
-> > solve the problem at hand. Hence I sent it out to the experts hoping
-> > they either take this patch or come up with a proper solution ;)
-> >
-> > In any case, just posting the pci address is not a pretty answer.
-> 
-> I just checked the other wireless drivers, and they all seem to use
-> the modulename. So I guess your patch is correct. You can add my:
-> 
-> Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+On Tue, Feb 22, 2011 at 11:51:08AM -0800, john stultz wrote:
+> On Tue, 2011-02-22 at 10:16 -0800, Mark Brown wrote:
 
-I completely missed this series -- please be sure to Cc:
-linux-wireless@vger.kernel.org if you resend, and/or resend the series
-directly to me?
+> > The WM83xx RTCs can do this (the alarm can be used to initiate a boot)
+> > and I'd expect many embedded RTC controllers can do similar.  The
+> > application would manage this by owning the RTC in the system, usually
+> > with a configuration saying something like "boot every day at 7am" or
+> > something.
 
-Thanks!
+> So since the RTC_ALM_SET doesn't support wildcards, the application
+> would be checking the hardware at least once a day and making sure the
+> alarm was properly set for 7am?
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Probably, yes.  Though some RTCs just ignore the day anyway.
+
+> Does the approach I mentioned in my last mail to Marcelo sound like a
+> reasonable solution?
+
+> Basically: The kernel will try to init the value returned from
+> RTC_ALM_READ to whatever the hardware has stored, but since many (very
+> common) rtc devices don't support persistent values after reset,
+> applications shouldn't trust that alarms will persist across resets.
+
+That'll probably work, yes.
+
+> > Having thought about this a bit I'm thinking that this sort of alarm
+> > handling is probably something I'd expect to see handled in userspace.
+> > I can see us providing a virtual RTC driver that can generate alarms
+> > when there's no actual RTC hardware but adding additional functionality
+> > on top of the hardware feels like an application issue.
+
+> If you're suggesting that the multiplexing of RTC events doesn't belong
+> in the kernel, and instead should be handled through userland
+> coordination, then I disagree. The kernel's job is explicitly to
+> abstract the hardware so that resources can be shared safely. So
+> abstracting the RTC alarms doesn't seem to be overreaching. But maybe
+> I'm misunderstanding what your saying?
+
+I'm saying that for something like this it doesn't seem like the kernel
+should be adding support for features that the hardware doesn't actually
+have, it feels like it's going to be more complicated and error prone to
+implement in kernel space.
