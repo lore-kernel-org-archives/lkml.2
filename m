@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab1BVJ2m (ORCPT <rfc822;w@1wt.eu>);
+	id S1753430Ab1BVJ2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 04:28:52 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:45200 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab1BVJ2m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Feb 2011 04:28:42 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:53654 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752415Ab1BVJ2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 04:28:40 -0500
-Date: Tue, 22 Feb 2011 10:28:20 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        jiaweiwei.xiyou@gmail.com, linux-kernel@vger.kernel.org,
-        greg@kroah.com, rdunlap@xenotime.net, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH]move double quotation marks so that keep MAINTAINERS
- consistent
-Message-ID: <20110222102820.56a49c89@schatten.dmk.lab>
-In-Reply-To: <1298152790.7179.27.camel@Joe-Laptop>
-References: <20110210025133.GA3285@gmail.com>
-	<20110209190631.f29419ef.akpm@linux-foundation.org>
-	<20110209.191752.226762899.davem@davemloft.net>
-	<20110219164839.GA20047@ucw.cz>
-	<1298152790.7179.27.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH 1/2] net/r8169: adjust rtl8169_set_speed_xmii function
+Date: Tue, 22 Feb 2011 17:26:18 +0800
+X-BOX-Message-Id: p1M9SZJC003299
+Message-ID: <1298366782-1508-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Feb 2011 13:59:50 -0800
-Joe Perches <joe@perches.com> wrote:
+Adjust code of rtl8169_set_speed_xmii function and remove part
+codes which have done in rtl_pll_power_up function.
 
-> On Sat, 2011-02-19 at 17:48 +0100, Pavel Machek wrote:
-> > On Wed 2011-02-09 19:17:52, David Miller wrote:
-> > > From: Andrew Morton <akpm@linux-foundation.org>
-> > > > I suspect that some mail clients will explode if you provide them with
-> > > > an unquoted string containing periods.  That would make copy-n-paste
-> > > > rather a hassle.
-> > > It's not clients, it's servers.
-> > > SMTP rules state that characters such as "." cannot appear
-> > > unquoted in email headers.
-> > > vger.kernel.org rejects mail when this violation occurs.
-> > Ok, but should not MUA do this quotation? Quick test shows that mutt does... 
-> 
-> My recollection is that the get_maintainer script
-> cannot parse M: lines with multiple entries with
-> periods without the quotes.
-> 
-> M:	First I. Last <fil@foo.bar>, Last.I.First <lif@foo.bar>
-> 
-> fails and
-> 
-> M:	"First I. Last" <fil@foo.bar>, "Last.I.First" <lif@foo.bar>
-> 
-> succeeds.
-> 
-> You are welcome to improve the parsing in that routine.
-> 
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/r8169.c |   16 ++--------------
+ 1 files changed, 2 insertions(+), 14 deletions(-)
 
-There are perl modules providing full rfc parsing of email addresses
-(with all those weird cases nobody uses) ... but i doubt it's urgent,
-especially as we can more or less control the input to get_maintainer.pl
-by controlling the MAINTAINER file and the git version history ...
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 469ab0b..de94489 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -1124,6 +1124,8 @@ static int rtl8169_set_speed_xmii(struct net_device *dev,
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+ 	int giga_ctrl, bmcr;
+ 
++	rtl_writephy(tp, 0x1f, 0x0000);
++
+ 	if (autoneg == AUTONEG_ENABLE) {
+ 		int auto_nego;
+ 
+@@ -1152,18 +1154,6 @@ static int rtl8169_set_speed_xmii(struct net_device *dev,
+ 
+ 		bmcr = BMCR_ANENABLE | BMCR_ANRESTART;
+ 
+-		if ((tp->mac_version == RTL_GIGA_MAC_VER_11) ||
+-		    (tp->mac_version == RTL_GIGA_MAC_VER_12) ||
+-		    (tp->mac_version >= RTL_GIGA_MAC_VER_17)) {
+-			/*
+-			 * Wake up the PHY.
+-			 * Vendor specific (0x1f) and reserved (0x0e) MII
+-			 * registers.
+-			 */
+-			rtl_writephy(tp, 0x1f, 0x0000);
+-			rtl_writephy(tp, 0x0e, 0x0000);
+-		}
+-
+ 		rtl_writephy(tp, MII_ADVERTISE, auto_nego);
+ 		rtl_writephy(tp, MII_CTRL1000, giga_ctrl);
+ 	} else {
+@@ -1178,8 +1168,6 @@ static int rtl8169_set_speed_xmii(struct net_device *dev,
+ 
+ 		if (duplex == DUPLEX_FULL)
+ 			bmcr |= BMCR_FULLDPLX;
+-
+-		rtl_writephy(tp, 0x1f, 0x0000);
+ 	}
+ 
+ 	tp->phy_1000_ctrl_reg = giga_ctrl;
+-- 
+1.7.3.2
 
