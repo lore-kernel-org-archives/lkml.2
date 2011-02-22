@@ -1,134 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab1BVO0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:26:23 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59912 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab1BVO0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:26:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=v9jH3ewMDBmvPijSbOwek4+lWzwbca71PQE5wfvyVrPUJDVsp6IbU2RBoxbjDV4ATz
-         Lh7UbLTYh8lwXbPRY+d4EaWZ+Y/CaHNuguB5qCVeguWYno5VDTuAqE9bpDFVSMwD9U1k
-         pq8QJp2WKkm13HDVoGZNp22F01keQlDJ9WIKY=
-Date: Tue, 22 Feb 2011 23:26:10 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Barrett <damentz@liquorix.net>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v6 0/4] fadvise(DONTNEED) support
-Message-ID: <20110222142610.GA6093@barrios-desktop>
-References: <cover.1298212517.git.minchan.kim@gmail.com>
- <20110221190713.GM13092@random.random>
- <AANLkTimOhgK953rmOw4PqnoFq_e7y6j1m+NBDYJehkds@mail.gmail.com>
- <20110222132804.GQ13092@random.random>
+	id S1753730Ab1BVO0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:26:41 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:56387 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753103Ab1BVO0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:26:39 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: <dmitry.torokhov@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, "'Greg KH'" <greg@kroah.com>
+References: <015701cbcdae$7d5f43f0$781dcbd0$@mprc.pku.edu.cn> <201102171803.15785.arnd@arndb.de> <00eb01cbcf56$9f372700$dda57500$@mprc.pku.edu.cn> <201102181133.26675.arnd@arndb.de>
+In-Reply-To: <201102181133.26675.arnd@arndb.de>
+Subject: RE: [PATCH 11/12] unicore32 machine related files: ps2 driver
+Date: Tue, 22 Feb 2011 22:26:26 +0800
+Message-ID: <019001cbd29c$7cee6340$76cb29c0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222132804.GQ13092@random.random>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQHwh2GX42xqIG1pSB6ZyMOWdcE4LgJvzZEgAUaPKUACEqlRcZOV4dSA
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 02:28:04PM +0100, Andrea Arcangeli wrote:
-> Hi Minchan,
-> 
-> On Tue, Feb 22, 2011 at 07:59:51AM +0900, Minchan Kim wrote:
-> > I don't have a reproducible experiment.
-> > I started the series with Ben's complain.
-> > http://marc.info/?l=rsync&m=128885034930933&w=2
-> 
-> Yes I've noticed.
-> 
-> > I don't know Ben could test it with older kernel since recently he got silent.
-> 
-> That's my point, we should check if the "thrashing horribly" is really
-> a "recently" or if it has always happened before with 2.6.18 and previous.
-> 
-> > I am not sure older kernel worked well such as workload.
-> > That's because Rik had been pointed out rsync's two touch
-> > problem(http://linux-mm.org/PageReplacementRequirements) and solved
-> > part of the problem with remaining half of the active file pages(look
-> > at inactive_file_is_low) on 2.6.28's big change reclaim.
-> > So I think the problem about such workload have been in there.
-> 
-> It's possible it's an old problem, but frankly I doubt that any
-> swapping would have ever happened before, no matter how much rsync you
-> would run in a loop. As said I also got PM from users asking what they
-> can do to limit the pagecache because their systems are swapping
-> overnight because of backup loads, that's definitely not ok. Or at
-> least there must be a tweak to tell the VM "stop doing the swapping
-> thing with backup". I didn't yet try to reproduce or debug this as I'm
-> busy with other compaction/THP related bits.
-> 
-> > And this patch's benefit is not only for preventing working set.
-> > Before this patch, application should sync the data before fadvise to
-> > take a effect but it's very inefficient by slow sync operation. If the
-> > invalidation meet dirty page, it can skip the page. But after this
-> > patch, application could fdavise without sync because we could move
-> > the page of head/or tail of inactive list.
-> 
-> I agree, the objective of the patch definitely looks good. Before the
-> fadvise would be ignored without a fdatasync before it as the pages
-> were dirty and couldn't be discarded.
-> 
-> > So I think the patch is valuable enough to merge?
-> 
-> The objective looks good, I didn't have time to review all details of
-> the patches but I'll try to review it later.
-> 
-> > And as I said, I need Ben's help but I am not sure he can.
-> > Thanks for the review, Andrea.
-> 
-> Thanks for the effort in improving fadvise.
-> 
-> I'd like to try to find the time to check if we've a regression
-> without fadvise too. It's perfectly ok to use fadvise in rsync but my
-> point is that the kernel should not lead to trashing of running apps
-> regardless of fadvise or not, and I think that is higher priority to
-> fix than the fadvise improvement. But still the fadvise improvement is
-> very valuable to increase overall performance and hopefully to avoid
-> wasting most of filesystem cache because of backups (but wasting cache
-> shouldn't lead to trashing horribly, just more I/O from apps after the
-> backup run, like after starting the app the first time, trashing
-> usually means we swapped out or discarded mapped pages too and that's
-> wrong).
 
-I agree your opinion but I hope the patch is going on 2.6.38 or 39.
-That's because if we find regression's root cause, how could this series be changed?
-I think it's no difference before and after.
-Of course, if rsync like applicatoin start to use fadvise agressively, the problem
-could be buried on toe but we still have a older kernel and older rsync so we can
-reproduce it then we can find the root cause.
-What's the problem if the series is merged?
-If it is reasonable, it's no problem to pend the series.
 
-I _totally_ agree your opinion and I want to find root cause of the regression, too.
-But unfortunatly, I don't have any time and enviroment to reproduce it. ;(
-I hope clever people like you would have a time to find it and report it to linux-mm
-in future.
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Friday, February 18, 2011 6:33 PM
+> To: Guan Xuetao
+> Cc: dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
+> Subject: Re: [PATCH 11/12] unicore32 machine related files: ps2 driver
+> 
+> On Friday 18 February 2011 11:28:45 Guan Xuetao wrote:
+> >   * Register numbers.
+> >   */
+> > -#define I8042_COMMAND_REG      ((unsigned long)&PS2_COMMAND)
+> > -#define I8042_STATUS_REG       ((unsigned long)&PS2_STATUS)
+> > -#define I8042_DATA_REG         ((unsigned long)&PS2_DATA)
+> > +#define I8042_COMMAND_REG      ((volatile void __iomem *)&PS2_COMMAND)
+> > +#define I8042_STATUS_REG       ((volatile void __iomem *)&PS2_STATUS)
+> > +#define I8042_DATA_REG         ((volatile void __iomem *)&PS2_DATA)
+> > +
+> > +#define I8042_REGION_START     (resource_size_t)(&PS2_DATA)
+> > +#define I8042_REGION_SIZE      (resource_size_t)(16)
+> 
+> It would be better to remove the cast and make the PS2_COMMAND
+> etc macros have the correct type. Aside from this, the change
+> looks good.
+With the patch for __REG in unicore32, following patch could be applied:
+drivers/input/serio/i8042-unicore32io.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Ben. Could you test your workload on older 2.6.18 kernel if you see the thread?
-It could help us very much.
-Thanks.
+diff --git a/drivers/input/serio/i8042-unicore32io.h b/drivers/input/serio/i8042-unicore32io.h
+index 2cdd872..9350843 100644
+--- a/drivers/input/serio/i8042-unicore32io.h
++++ b/drivers/input/serio/i8042-unicore32io.h
+@@ -29,11 +29,11 @@
+ /*
+  * Register numbers.
+  */
+-#define I8042_COMMAND_REG	((volatile void __iomem *)&PS2_COMMAND)
+-#define I8042_STATUS_REG	((volatile void __iomem *)&PS2_STATUS)
+-#define I8042_DATA_REG		((volatile void __iomem *)&PS2_DATA)
++#define I8042_COMMAND_REG	PS2_COMMAND
++#define I8042_STATUS_REG	PS2_STATUS
++#define I8042_DATA_REG		PS2_DATA
+ 
+-#define I8042_REGION_START	(resource_size_t)(&PS2_DATA)
++#define I8042_REGION_START	(resource_size_t)(PS2_DATA)
+ #define I8042_REGION_SIZE	(resource_size_t)(16)
+ 
+ static inline int i8042_read_data(void)
 
 > 
-> Thanks,
-> Andrea
+> 	Arnd
+Thanks & Regards.
 
--- 
-Kind regards,
-Minchan Kim
+Guan Xuetao
+
