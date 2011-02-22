@@ -1,99 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1BVXXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:23:49 -0500
-Received: from kroah.org ([198.145.64.141]:47771 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab1BVXXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 18:23:48 -0500
-Date: Tue, 22 Feb 2011 15:15:36 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] tty: add TIOCVHANGUP: time for revoke() in f_ops ?
-Message-ID: <20110222231536.GA18066@kroah.com>
-References: <1297964368.2165.1.camel@yio>
- <20110218095048.4e9f1e1a@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110218095048.4e9f1e1a@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753527Ab1BVXYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:24:15 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42613
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752351Ab1BVXYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 18:24:09 -0500
+From: Hank Janssen <hjanssen@microsoft.com>
+To: hjanssen@microsoft.com, haiyangz@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 6/6] Staging: hv: connection.c Removed DPRINT replaced with pr_XX
+Date: Tue, 22 Feb 2011 15:32:45 -0800
+Message-Id: <1298417565-12356-6-git-send-email-hjanssen@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
+In-Reply-To: <1298417565-12356-5-git-send-email-hjanssen@microsoft.com>
+References: <1298417565-12356-1-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-2-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-3-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-4-git-send-email-hjanssen@microsoft.com>
+ <1298417565-12356-5-git-send-email-hjanssen@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 18, 2011 at 09:50:48AM +0000, Alan Cox wrote:
-> > Without this ioctl it would have to temporarily become the owner of
-> > the tty, then call vhangup() and then give it up again.
-> 
-> This is a hack - it's also unfortunately not actually sufficient or
-> complete which is why we didn't do it years ago. Sorry but if it was easy
-> it would have been in a long time back !
-> 
-> 
-> > +	case TIOCVHANGUP:
-> > +		if (!capable(CAP_SYS_ADMIN))
-> 
-> Is there any reason for not allowing revocation of a tty that you are
-> the owner of (ie one you could anyway take ownership of and hangup ?)
+This group of patches removes all DPRINT from hv_vmbus.ko.
+It is divided in several patches due to size.
 
-You could do that already today with the vhangup() syscall, right?
+All DPRINT calls have been removed, and where needed have been
+replaced with pr_XX native calls. Many debug DPRINT calls have
+been removed outright.
 
-> > +			return -EPERM;
-> > +		tty_vhangup(tty);
-> 
-> That raises a few locking questions. From a brief review of the code I
-> think its directly 1:1 equivalent to allowing a parallel vhangup and
-> carrier drop which we already do. The tty locks appear to cover this
-> correctly for the basic stuff although I further review of the ldisc
-> hangup area from someone with a strong stomache would be good.
-> 
-> You would still need to be very careful how you used it from the admin
-> side because the parallel
-> 
-> 	CPU1					CPU2
-> 	vhangup()				chmod()
-> 	process vhangup
-> 	return
-> 	chown to user1
-> 						chmod to 777
-> 						syscall ends (fd
-> 						revocation takes effect)
-> 
-> 	Oops, 0wned
-> 
-> case is not handled by the paths you are using. So to actually do this
-> you need rather more infrastructure work to ensure the existing calls
-> have completed before returning.
+The amount of clutter this driver prints has been
+significantly reduced.
 
-But wouldn't this race still happen no matter if vhangup() is in the mix
-or not?  I don't see how adding this ioctl changes anything here, what
-am I missing?
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-> At that point you've essentially provided revoke() for the tty layer so
-> it might well be implemented to be called as revoke() as well.
+---
+ drivers/staging/hv/connection.c |   27 ++++++++++++---------------
+ 1 files changed, 12 insertions(+), 15 deletions(-)
 
-It's not a "real" revoke, more like vhangup(file_descriptor) only.
-revoke() involves a lot more than just this.
+diff --git a/drivers/staging/hv/connection.c b/drivers/staging/hv/connection.c
+index f7df479..2e9c0b7 100644
+--- a/drivers/staging/hv/connection.c
++++ b/drivers/staging/hv/connection.c
+@@ -121,11 +121,6 @@ int vmbus_connect(void)
+ 
+ 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+ 
+-	DPRINT_DBG(VMBUS, "Vmbus connection - interrupt pfn %llx, "
+-		   "monitor1 pfn %llx,, monitor2 pfn %llx",
+-		   msg->interrupt_page, msg->monitor_page1, msg->monitor_page2);
+-
+-	DPRINT_DBG(VMBUS, "Sending channel initiate msg...");
+ 	ret = vmbus_post_msg(msg,
+ 			       sizeof(struct vmbus_channel_initiate_contact));
+ 	if (ret != 0) {
+@@ -156,13 +151,12 @@ int vmbus_connect(void)
+ 
+ 	/* Check if successful */
+ 	if (msginfo->response.version_response.version_supported) {
+-		DPRINT_INFO(VMBUS, "Vmbus connected!!");
++		pr_info("%s: Connected to Hyper-V.", VMBUS_MOD);
+ 		vmbus_connection.conn_state = CONNECTED;
+-
+ 	} else {
+-		DPRINT_ERR(VMBUS, "Vmbus connection failed!!..."
+-			   "current version (%d) not supported",
+-			   VMBUS_REVISION_NUMBER);
++		pr_err("%s: %s Unable to connect, "
++		       "Version %d not supported by Hyper-V ",
++		       VMBUS_MOD, __func__, VMBUS_REVISION_NUMBER);
+ 		ret = -1;
+ 		goto Cleanup;
+ 	}
+@@ -225,7 +219,7 @@ int vmbus_disconnect(void)
+ 
+ 	vmbus_connection.conn_state = DISCONNECTED;
+ 
+-	DPRINT_INFO(VMBUS, "Vmbus disconnected!!");
++	pr_info("%s: Vmbus disconnected.", VMBUS_MOD);
+ 
+ Cleanup:
+ 	kfree(msg);
+@@ -278,7 +272,8 @@ static void process_chn_event(void *context)
+ 		 *			  (void*)channel);
+ 		 */
+ 	} else {
+-		DPRINT_ERR(VMBUS, "channel not found for relid - %d.", relid);
++		pr_err("%s: %s channel not found for relid - %d.",
++		       VMBUS_MOD, __func__, relid);
+ 	}
+ }
+ 
+@@ -302,11 +297,13 @@ void vmbus_on_event(void)
+ 						(unsigned long *)
+ 						&recv_int_page[dword])) {
+ 						relid = (dword << 5) + bit;
+-						DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
+ 
+ 						if (relid == 0) {
+-							/* special case - vmbus channel protocol msg */
+-							DPRINT_DBG(VMBUS, "invalid relid - %d", relid);
++							/*
++							 * special case -
++							 * vmbus channel
++							 * protocol msg
++							 */
+ 							continue;
+ 						} else {
+ 							/* QueueWorkItem(VmbusProcessEvent, (void*)relid); */
+-- 
+1.6.0.2
 
-It would be great to have a real revoke() but that seems beyond this
-need at the moment.
-
-> So I don't actually think the patch should be applied in this form,
-> because it simply adds an interface that will cause problems. Fixed to
-> return after the revocation is truely complete would be good though.
-> 
-> I'd guess you need to add a counter to the tty f_ops entry/exit points to
-> know when that occurs, and wake_up the revoke path when ready
-> (remembering two revokes in parallel shouldn't deadlock! so need
-> counting too)
-
-Again, I'm confused, how does the locking differ from vhangup() today?
-
-thanks,
-
-greg k-h
