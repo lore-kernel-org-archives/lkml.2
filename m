@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab1BVJpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 04:45:44 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34924 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab1BVJpm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 04:45:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LAXvppiNpiFjwYjHc5jBYGYDVCJ7MmDCyqYmsBY8nCaaGeiRDUBm2x0KgYKf0Xhl4L
-         QfLsM974V4aPETLPHJGZccUJ10uZj9smGWdrSRx95jv10cGSOWByy4vILXqKi5hQDLjf
-         F2UTde+0f12dEShkJn6BXNfIMHQuHISz6BDpU=
-Date: Tue, 22 Feb 2011 12:45:37 +0300
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Pali Rohar <pali.rohar@gmail.com>, Rodolfo Giometti <giometti@linux.it>,
-        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 00/16] bq27x00: New Properties, fixes, bq27000
- support
-Message-ID: <20110222094537.GA9709@oksana.dev.rtsoft.ru>
-References: <1298356681-8317-1-git-send-email-lars@metafoo.de>
+	id S1753646Ab1BVJsR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 04:48:17 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:54816 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753281Ab1BVJsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 04:48:16 -0500
+From: Romain Francoise <romain@orebokech.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] .gitignore: ignore *.xz files
+Organization: orebokech dot com
+Date: Tue, 22 Feb 2011 10:48:06 +0100
+Message-ID: <87oc648ko9.fsf@silenus.orebokech.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1298356681-8317-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Building with CONFIG_KERNEL_XZ results in the following:
 
-The patches look great!
+ # Untracked files:
+ #   (use "git add <file>..." to include in what will be committed)
+ #
+ #       arch/x86/boot/compressed/vmlinux.bin.xz
 
-On Tue, Feb 22, 2011 at 07:37:45AM +0100, Lars-Peter Clausen wrote:
-[...]
-> Lars-Peter Clausen (11):
->   power_supply: Ignore -ENODATA errors when generating uevents
->   power_suply: Initialize changed_work before calling device_add
+So ignore xz-compressed files at the top level like we already do for
+other compression types.
 
-Just a nit. There is a typo: suply should be supply.
+Signed-off-by: Romain Francoise <romain@orebokech.com>
+---
+ .gitignore |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-No need to resend the patches, could you please just fix it
-in your tree?
-
-Thanks!
-
+diff --git a/.gitignore b/.gitignore
+index 8faa6c0..5d56a3f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -28,6 +28,7 @@ modules.builtin
+ *.gz
+ *.bz2
+ *.lzma
++*.xz
+ *.lzo
+ *.patch
+ *.gcno
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.4.1
+
