@@ -1,125 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab1BVVFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:05:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752276Ab1BVVFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:05:47 -0500
-Date: Tue, 22 Feb 2011 16:00:30 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>,
-        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
-Message-ID: <20110222210030.GI28269@redhat.com>
-References: <1298394776-9957-1-git-send-email-arighi@develer.com>
- <1298394776-9957-5-git-send-email-arighi@develer.com>
+	id S1753690Ab1BVVF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:05:56 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35262 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab1BVVFy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:05:54 -0500
+Message-ID: <4D6424F4.4050208@oracle.com>
+Date: Tue, 22 Feb 2011 13:04:52 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298394776-9957-5-git-send-email-arighi@develer.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: [Bug #22882] (2.6.37-rc1) amd64-agp module crashed on second
+ load
+References: <JwKd6rET8XO.A._ZC.gbuYNB@chimera> <f14qsMvj2tF.A.8BF.ffuYNB@chimera>
+In-Reply-To: <f14qsMvj2tF.A.8BF.ffuYNB@chimera>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D642529.0054:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 06:12:55PM +0100, Andrea Righi wrote:
-> Add the tracking of buffered (writeback) and anonymous pages.
+On 02/21/11 14:37, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.36 and 2.6.37.
 > 
-> Dirty pages in the page cache can be processed asynchronously by the
-> per-bdi flusher kernel threads or by any other thread in the system,
-> according to the writeback policy.
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 > 
-> For this reason the real writes to the underlying block devices may
-> occur in a different IO context respect to the task that originally
-> generated the dirty pages involved in the IO operation. This makes
-> the tracking and throttling of writeback IO more complicate respect to
-> the synchronous IO from the blkio controller's point of view.
 > 
-> The idea is to save the cgroup owner of each anonymous page and dirty
-> page in page cache. A page is associated to a cgroup the first time it
-> is dirtied in memory (for file cache pages) or when it is set as
-> swap-backed (for anonymous pages). This information is stored using the
-> page_cgroup functionality.
-> 
-> Then, at the block layer, it is possible to retrieve the throttle group
-> looking at the bio_page(bio). If the page was not explicitly associated
-> to any cgroup the IO operation is charged to the current task/cgroup, as
-> it was done by the previous implementation.
-> 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> ---
->  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/blkdev.h |   26 ++++++++++++++-
->  2 files changed, 111 insertions(+), 2 deletions(-)
-> 
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 9ad3d1e..a50ee04 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -8,6 +8,10 @@
->  #include <linux/slab.h>
->  #include <linux/blkdev.h>
->  #include <linux/bio.h>
-> +#include <linux/memcontrol.h>
-> +#include <linux/mm_inline.h>
-> +#include <linux/pagemap.h>
-> +#include <linux/page_cgroup.h>
->  #include <linux/blktrace_api.h>
->  #include <linux/blk-cgroup.h>
->  
-> @@ -221,6 +225,85 @@ done:
->  	return tg;
->  }
->  
-> +static inline bool is_kernel_io(void)
-> +{
-> +	return !!(current->flags & (PF_KTHREAD | PF_KSWAPD | PF_MEMALLOC));
-> +}
-> +
-> +static int throtl_set_page_owner(struct page *page, struct mm_struct *mm)
-> +{
-> +	struct blkio_cgroup *blkcg;
-> +	unsigned short id = 0;
-> +
-> +	if (blkio_cgroup_disabled())
-> +		return 0;
-> +	if (!mm)
-> +		goto out;
-> +	rcu_read_lock();
-> +	blkcg = task_to_blkio_cgroup(rcu_dereference(mm->owner));
-> +	if (likely(blkcg))
-> +		id = css_id(&blkcg->css);
-> +	rcu_read_unlock();
-> +out:
-> +	return page_cgroup_set_owner(page, id);
-> +}
-> +
-> +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
-> +{
-> +	return throtl_set_page_owner(page, mm);
-> +}
-> +EXPORT_SYMBOL(blk_throtl_set_anonpage_owner);
-> +
-> +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
-> +{
-> +	if (is_kernel_io() || !page_is_file_cache(page))
-> +		return 0;
-> +	return throtl_set_page_owner(page, mm);
-> +}
-> +EXPORT_SYMBOL(blk_throtl_set_filepage_owner);
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22882
+> Subject		: (2.6.37-rc1) amd64-agp module crashed on second load
+> Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
+> Date		: 2010-11-05 0:13 (109 days old)
+> Message-ID	: <20101104171333.fea1f498.randy.dunlap@oracle.com>
+> References	: http://marc.info/?l=linux-kernel&m=128891605213447&w=2
+> Handled-By	: Florian Mickler <florian@mickler.org>
+> Patch		: https://bugzilla.kernel.org/attachment.cgi?id=46682
 
-Why are we exporting all these symbols?
+  ^^^^^ this patch just needs to be merged into mainline.
 
-Thanks
-Vivek
+thanks.  [resend due to multiple email failures (last attempt)]
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
