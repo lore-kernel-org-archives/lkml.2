@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab1BVW7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:59:46 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61578 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab1BVW7o (ORCPT
+	id S1751999Ab1BVXBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:01:51 -0500
+Received: from trinity.develer.com ([83.149.158.210]:40744 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab1BVXBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:59:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=eO1JYqoopoIrmTnRcvZSzw6YZfd7+UDvU26ndtKO07QZN9+exaDF3wR9babaGk6xlT
-         HGqfXq0wPs5MYiO+MMxvm3SoJGVYtnUIAR5wFhS4UhJrFw45T5NZaeyc/eja39BOHsft
-         EVs8WPyDMZ10a7mNZCQFFJ6Ln7FBzunhlq6I8=
-Message-ID: <4D643FDD.703@gmail.com>
-Date: Tue, 22 Feb 2011 23:59:41 +0100
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Alan Cox <alan@linux.intel.com>, greg@kroah.com,
+	Tue, 22 Feb 2011 18:01:50 -0500
+Date: Wed, 23 Feb 2011 00:01:47 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: Intel GMA500 staging driver
-References: <20110222121704.19437.4650.stgit@localhost.localdomain> <20110222154002.GB9720@srcf.ucam.org>
-In-Reply-To: <20110222154002.GB9720@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 3/5] page_cgroup: make page tracking available for blkio
+Message-ID: <20110222230146.GB23723@linux.develer.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <1298394776-9957-4-git-send-email-arighi@develer.com>
+ <20110222130145.37cb151e@bike.lwn.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222130145.37cb151e@bike.lwn.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 04:40 PM, Matthew Garrett wrote:
-> On Tue, Feb 22, 2011 at 12:17:46PM +0000, Alan Cox wrote:
->> This is an initial staging driver for the GMA500. It's been stripped out
->> of the PVR drivers and crunched together from various bits of code and
->> different kernels.
->>
->> Currently it's unaccelerated but still pretty snappy even compositing with
->> the frame buffer X server.
->>
->> Lots of work is needed to rework the ttm and bo interfaces from being
->> ripped out and then 2D acceleration wants putting back for framebuffer
->> and somehow eventually via DRM.
+On Tue, Feb 22, 2011 at 01:01:45PM -0700, Jonathan Corbet wrote:
+> On Tue, 22 Feb 2011 18:12:54 +0100
+> Andrea Righi <arighi@develer.com> wrote:
+> 
+> > The page_cgroup infrastructure, currently available only for the memory
+> > cgroup controller, can be used to store the owner of each page and
+> > opportunely track the writeback IO. This information is encoded in
+> > the upper 16-bits of the page_cgroup->flags.
+> > 
+> > A owner can be identified using a generic ID number and the following
+> > interfaces are provided to store a retrieve this information:
+> > 
+> >   unsigned long page_cgroup_get_owner(struct page *page);
+> >   int page_cgroup_set_owner(struct page *page, unsigned long id);
+> >   int page_cgroup_copy_owner(struct page *npage, struct page *opage);
+> 
+> My immediate observation is that you're not really tracking the "owner"
+> here - you're tracking an opaque 16-bit token known only to the block
+> controller in a field which - if changed by anybody other than the block
+> controller - will lead to mayhem in the block controller.  I think it
+> might be clearer - and safer - to say "blkcg" or some such instead of
+> "owner" here.
+> 
 
->> +++ b/drivers/staging/gma500/psb_intel_sdvo.c
-> Does PSB really support SDVO? I thought by that period the only thing
-> it'd be used for was plug-in SDVO cards, which doesn't seem so likely
-> with PSB.
->
-The Fit-PC2 needs SDVO for its DVI/HDMI output. The SDVO chip is likely 
-put directly on the PCB.
-I tried to write my own driver for the gma500 (called it i500) which had 
-all the SDVO stuff in place,
-but I never sorted out the TTM stuff so it's been gathering dust for 
-quite some time now.
->> diff --git a/drivers/staging/gma500/psb_ttm_fence.c b/drivers/staging/gma500/psb_ttm_fence.c
-> This really looks like it's intended to be core TTM functionality, so it
-> should probably go past dri-devel.
->
-> This is definitely the best gma500 driver we've seen yet, but it seems
-> like there's two directions it can go. If the intention for now is to
-> provide a kernel-quality unaccelerated 2D driver then there's a *lot*
-> more code that can just be ripped out. If we want the acceleration to
-> work then there's an argument that we should be abstracting that into a
-> more generic SGX layer that other drivers can make use of. Does omapfb
-> have any acceleration? If so, is there anything we can build on there?
- From what I can see, omapfb doesn't have any acceleration,
-and yes, it would be very nice to have a generic SGX layer.
+Basically the idea here was to be as generic as possible and make this
+feature potentially available also to other subsystems, so that cgroup
+subsystems may represent whatever they want with the 16-bit token.
+However, no more than a single subsystem may be able to use this feature
+at the same time.
 
-Cheers
-Patrik Jakobsson
+> I'm tempted to say it might be better to just add a pointer to your
+> throtl_grp structure into struct page_cgroup.  Or maybe replace the
+> mem_cgroup pointer with a single pointer to struct css_set.  Both of
+> those ideas, though, probably just add unwanted extra overhead now to gain
+> generality which may or may not be wanted in the future.
+
+The pointer to css_set sounds good, but it would add additional space to
+the page_cgroup struct. Now, page_cgroup is 40 bytes (in 64-bit arch)
+and all of them are allocated at boot time. Using unused bits in
+page_cgroup->flags is a choice with no overhead from this point of view.
+
+Thanks,
+-Andrea
