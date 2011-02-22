@@ -1,135 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab1BVQDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 11:03:44 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50705 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab1BVQDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 11:03:43 -0500
-Date: Tue, 22 Feb 2011 17:03:18 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20110222160318.GA14165@elte.hu>
+	id S1754633Ab1BVQKI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 11:10:08 -0500
+Received: from mail191.messagelabs.com ([216.82.242.19]:29924 "HELO
+	mail191.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754079Ab1BVQKG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 11:10:06 -0500
+X-VirusChecked: Checked
+X-Env-Sender: fschaef9@visteon.com
+X-Msg-Ref: server-14.tower-191.messagelabs.com!1298390983!59207837!3
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [213.71.174.167]
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: Interrupt Latencies
+Date: Tue, 22 Feb 2011 17:10:20 +0100
+Message-ID: <060E4307CE6CA14BB4F7B4A25ECA052904BB6E98@VEUMBV03.vistcorp.ad.visteon.com>
+In-Reply-To: <alpine.LFD.2.00.1102221527180.2701@localhost6.localdomain6>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Interrupt Latencies
+Thread-Index: AcvSnleoCBo1wb0FQ5ug6+m3gNVMKQADIcRw
+References: <060E4307CE6CA14BB4F7B4A25ECA052904B73AD1@VEUMBV03.vistcorp.ad.visteon.com> <alpine.LFD.2.00.1102221527180.2701@localhost6.localdomain6>
+From: "Schaefer Dr, Frank-Rene ()" <fschaef9@visteon.com>
+To: "Thomas Gleixner" <tglx@linutronix.de>
+Cc: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 22 Feb 2011 16:09:44.0279 (UTC) FILETIME=[EB382670:01CBD2AA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-
-Please pull the latest perf-fixes-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Cyrill Gorcunov (1):
-      perf, x86: P4 PMU: Fix spurious NMI messages
-
-Peter Zijlstra (1):
-      perf: Fix throttle logic
+We are using GPIO pins and map them to IRQ. 
+The underlying driver seems to use message signaled
+interrupts. 
 
 
- arch/x86/include/asm/perf_event_p4.h |    1 +
- arch/x86/kernel/cpu/perf_event_p4.c  |   11 ++++++++---
- kernel/perf_event.c                  |   19 +++++++++++++++----
- 3 files changed, 24 insertions(+), 7 deletions(-)
+-----Original Message-----
+From: Thomas Gleixner [mailto:tglx@linutronix.de] 
+Sent: Tuesday, February 22, 2011 3:39 PM
+To: Schaefer Dr, Frank-Rene ()
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Interrupt Latencies
 
-diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
-index e2f6a99..cc29086 100644
---- a/arch/x86/include/asm/perf_event_p4.h
-+++ b/arch/x86/include/asm/perf_event_p4.h
-@@ -22,6 +22,7 @@
+On Tue, 22 Feb 2011, Schaefer Dr, Frank-Rene () wrote:
+> Having read "Moving interrupts to threads" at
+> 
+>            http://lwn.net/Articles/302043/
+> 
+> I expected to reduce interrupt latency during a SPI 
+> communication by handling the transmit-receive in a 
+> 'quick_check_handler' using 
+> 
+>            request_threaded_irq(...);
+
+The quick check handler has the same latencies as the normal handler
+of an interrupt requested by request_irq.
  
- #define ARCH_P4_CNTRVAL_BITS	(40)
- #define ARCH_P4_CNTRVAL_MASK	((1ULL << ARCH_P4_CNTRVAL_BITS) - 1)
-+#define ARCH_P4_UNFLAGGED_BIT	((1ULL) << (ARCH_P4_CNTRVAL_BITS - 1))
- 
- #define P4_ESCR_EVENT_MASK	0x7e000000U
- #define P4_ESCR_EVENT_SHIFT	25
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index f7a0993..ff751a9 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -770,9 +770,14 @@ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
- 		return 1;
- 	}
- 
--	/* it might be unflagged overflow */
--	rdmsrl(hwc->event_base + hwc->idx, v);
--	if (!(v & ARCH_P4_CNTRVAL_MASK))
-+	/*
-+	 * In some circumstances the overflow might issue an NMI but did
-+	 * not set P4_CCCR_OVF bit. Because a counter holds a negative value
-+	 * we simply check for high bit being set, if it's cleared it means
-+	 * the counter has reached zero value and continued counting before
-+	 * real NMI signal was received:
-+	 */
-+	if (!(v & ARCH_P4_UNFLAGGED_BIT))
- 		return 1;
- 
- 	return 0;
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 999835b..656222f 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -782,6 +782,10 @@ retry:
- 	raw_spin_unlock_irq(&ctx->lock);
- }
- 
-+#define MAX_INTERRUPTS (~0ULL)
-+
-+static void perf_log_throttle(struct perf_event *event, int enable);
-+
- static int
- event_sched_in(struct perf_event *event,
- 		 struct perf_cpu_context *cpuctx,
-@@ -794,6 +798,17 @@ event_sched_in(struct perf_event *event,
- 
- 	event->state = PERF_EVENT_STATE_ACTIVE;
- 	event->oncpu = smp_processor_id();
-+
-+	/*
-+	 * Unthrottle events, since we scheduled we might have missed several
-+	 * ticks already, also for a heavily scheduling task there is little
-+	 * guarantee it'll get a tick in a timely manner.
-+	 */
-+	if (unlikely(event->hw.interrupts == MAX_INTERRUPTS)) {
-+		perf_log_throttle(event, 1);
-+		event->hw.interrupts = 0;
-+	}
-+
- 	/*
- 	 * The new state must be visible before we turn it on in the hardware:
- 	 */
-@@ -1596,10 +1611,6 @@ void __perf_event_task_sched_in(struct task_struct *task)
- 	}
- }
- 
--#define MAX_INTERRUPTS (~0ULL)
--
--static void perf_log_throttle(struct perf_event *event, int enable);
--
- static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
- {
- 	u64 frequency = event->attr.sample_freq;
+Interrupt latency depends on various factors:
+
+  - Interrupt disabled code regions
+  - Concurrent interrupts and the ordering of handling
+  - Deep idle states
+  - Bus contention
+  - Cache misses
+
+The maximum latency is the worst case of all the above added together.
+
+> or vice versa. We are able to measure the latency precisely
+> as the difference of the time when the interrupt pin 'IN'
+> is raised and we raise our response pin 'OUT' as shown below.
+> 
+>       pin IN        .-------------------------
+>       ______________|
+>                     
+>       pin OUT                     .-----------
+>       ____________________________|
+>                           
+>                     |<- latency ->|
+> 
+> Could anyone point to locations in the kernel so that I can
+> precisely understand the mechanisms that cause the latency? It 
+
+There is no single mechanism.
+
+> is totally incomprehensible to me why the 'quick_check_handler' 
+> must have a latency of 60us at min. (that are many thousand 
+> instructions).
+
+How is that interrupt connected to the CPU/chipset? Which driver(s)
+is/are involved ? How is the pin OUT accessed from the driver?
+
+Thanks,
+
+	tglx
