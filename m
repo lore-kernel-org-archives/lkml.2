@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab1BVIIj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 03:08:39 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60787 "EHLO song.cn.fujitsu.com"
+	id S1751870Ab1BVIJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 03:09:36 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54314 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab1BVIIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 03:08:37 -0500
-Message-ID: <4D636F3E.2040007@cn.fujitsu.com>
-Date: Tue, 22 Feb 2011 16:09:34 +0800
+	id S1751295Ab1BVIJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 03:09:35 -0500
+Message-ID: <4D636F71.9000804@cn.fujitsu.com>
+Date: Tue, 22 Feb 2011 16:10:25 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH 1/7] KVM: cleanup memslot_id function
+Subject: [PATCH 2/7] KVM: introduce KVM_MEM_SLOTS_NUM macro
 References: <4D636EF8.60800@cn.fujitsu.com>
 In-Reply-To: <4D636EF8.60800@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-22 16:07:35,
+ 2011-02-22 16:08:26,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-22 16:07:35,
-	Serialize complete at 2011-02-22 16:07:35
+ 2011-02-22 16:08:27,
+	Serialize complete at 2011-02-22 16:08:27
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can get memslot id from memslot->id directly
+Introduce KVM_MEM_SLOTS_NUM macro to instead of
+KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- include/linux/kvm_host.h |    7 ++++++-
- virt/kvm/kvm_main.c      |   17 -----------------
- 2 files changed, 6 insertions(+), 18 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    3 ++-
+ arch/x86/kvm/mmu.c              |    2 +-
+ include/linux/kvm_host.h        |    7 +++++--
+ virt/kvm/kvm_main.c             |    2 +-
+ 4 files changed, 9 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 37bd730..178d658 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -30,6 +30,7 @@
+ #define KVM_MEMORY_SLOTS 32
+ /* memory slots that does not exposed to userspace */
+ #define KVM_PRIVATE_MEM_SLOTS 4
++#define KVM_MEM_SLOTS_NUM (KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
+ 
+ #define KVM_PIO_PAGE_OFFSET 1
+ #define KVM_COALESCED_MMIO_PAGE_OFFSET 2
+@@ -207,7 +208,7 @@ struct kvm_mmu_page {
+ 	 * One bit set per slot which has memory
+ 	 * in this shadow page.
+ 	 */
+-	DECLARE_BITMAP(slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
++	DECLARE_BITMAP(slot_bitmap, KVM_MEM_SLOTS_NUM);
+ 	bool multimapped;         /* More than one parent_pte? */
+ 	bool unsync;
+ 	int root_count;          /* Currently serving as active root */
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b6a9963..268c891 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1056,7 +1056,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
+ 						  PAGE_SIZE);
+ 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
+ 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
+-	bitmap_zero(sp->slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
++	bitmap_zero(sp->slot_bitmap, KVM_MEM_SLOTS_NUM);
+ 	sp->multimapped = 0;
+ 	sp->parent_pte = parent_pte;
+ 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index ab42855..b1a7430 100644
+index b1a7430..865486f 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
-@@ -365,7 +365,6 @@ pfn_t gfn_to_pfn_prot(struct kvm *kvm, gfn_t gfn, bool write_fault,
- 		      bool *writable);
- pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
- 			 struct kvm_memory_slot *slot, gfn_t gfn);
--int memslot_id(struct kvm *kvm, gfn_t gfn);
- void kvm_release_pfn_dirty(pfn_t);
- void kvm_release_pfn_clean(pfn_t pfn);
- void kvm_set_pfn_dirty(pfn_t pfn);
-@@ -388,6 +387,12 @@ int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
- int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
- int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
- struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
+@@ -217,11 +217,14 @@ struct kvm_irq_routing_table {};
+ 
+ #endif
+ 
++#ifndef KVM_MEM_SLOTS_NUM
++#define KVM_MEM_SLOTS_NUM (KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
++#endif
 +
-+static inline int memslot_id(struct kvm *kvm, gfn_t gfn)
-+{
-+	return gfn_to_memslot(kvm, gfn)->id;
-+}
-+
- int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
- unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
- void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
+ struct kvm_memslots {
+ 	int nmemslots;
+ 	u64 generation;
+-	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
+-					KVM_PRIVATE_MEM_SLOTS];
++	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
+ };
+ 
+ struct kvm {
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 1fa0d29..cf90f28 100644
+index cf90f28..e3e744c 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -997,23 +997,6 @@ out:
- 	return size;
- }
- 
--int memslot_id(struct kvm *kvm, gfn_t gfn)
--{
--	int i;
--	struct kvm_memslots *slots = kvm_memslots(kvm);
--	struct kvm_memory_slot *memslot = NULL;
--
--	for (i = 0; i < slots->nmemslots; ++i) {
--		memslot = &slots->memslots[i];
--
--		if (gfn >= memslot->base_gfn
--		    && gfn < memslot->base_gfn + memslot->npages)
--			break;
--	}
--
--	return memslot - slots->memslots;
--}
--
- static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
- 				     gfn_t *nr_pages)
- {
+@@ -651,7 +651,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 		goto out;
+ 	if (user_alloc && (mem->userspace_addr & (PAGE_SIZE - 1)))
+ 		goto out;
+-	if (mem->slot >= KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
++	if (mem->slot >= KVM_MEM_SLOTS_NUM)
+ 		goto out;
+ 	if (mem->guest_phys_addr + mem->memory_size < mem->guest_phys_addr)
+ 		goto out;
 -- 
 1.7.4
 
