@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab1BVPrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 10:47:04 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:44587 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab1BVPrC convert rfc822-to-8bit (ORCPT
+	id S1754615Ab1BVPrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 10:47:31 -0500
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:48855 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754292Ab1BVPra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 10:47:02 -0500
-Subject: Re: [PATCH 3/6] Add support to the perf tool to specify extra
- values for raw events and pass them to the kernel.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Tue, 22 Feb 2011 10:47:30 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: Nus.rfMVM1n6tQlHSPpicMhnuFpgV20fUrOYnehDlWRr_z_
+ fXHB81xxepDSJMyMv5l0SVFGW1mIWhNmCBi.7Kwzkt_fI5aRZ8x52pzgfuCm
+ 6FD5DvMVHWMbQ5T3sIj1kI2ChumAQpGMKECyeCbTBqvImicoErl.LcJtz.s8
+ 2U.PZejZJQcNx5JyJTjM1gg3V1KJNlIx76JFoP1EAUym84aMtt6IeOEHoE2G
+ G
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 22 Feb 2011 09:47:26 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
 To: Andi Kleen <andi@firstfloor.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110220211740.GU5818@one.firstfloor.org>
-References: <1298221040.2318.68.camel@localhost>
-	 <20110220211740.GU5818@one.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 22 Feb 2011 16:46:49 +0100
-Message-ID: <1298389609.2217.250.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, aarcange@redhat.com, lwoodman@redhat.com,
+        Andi Kleen <ak@linux.intel.com>, arcange@redhat.com
+Subject: Re: [PATCH 3/8] Preserve local node for KSM copies
+In-Reply-To: <1298315270-10434-4-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1102220945210.16060@router.home>
+References: <1298315270-10434-1-git-send-email-andi@firstfloor.org> <1298315270-10434-4-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-02-20 at 22:17 +0100, Andi Kleen wrote:
-> On Mon, Feb 21, 2011 at 12:57:20AM +0800, Lin Ming wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > The new format is -e rXXXX[,YYYY]
-> 
-> Need to switch to a different character than , as separate -- 
-> it's already used for multiple events. Perhaps :
+On Mon, 21 Feb 2011, Andi Kleen wrote:
 
-Yeah, I've contemplated writing a proper syntax and parser generator for
-all this, its starting to become somewhat of a mess.
+> Add a alloc_page_vma_node that allows passing the "local" node in.
+> Use it in ksm to allocate copy pages on the same node as
+> the original as possible.
 
-Its just that I've since forgotten everything I ever knew about
-lex/yacc/bison etc.
-
-
+Why would that be useful? The shared page could be on a node that is not
+near the process that maps the page. Would it not be better to allocate on
+the node that is local to the process that maps the page?
