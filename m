@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab1BVHyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 02:54:25 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44426 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753841Ab1BVHyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 02:54:24 -0500
-Date: Tue, 22 Feb 2011 08:54:02 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/2] perf/core fixes
-Message-ID: <20110222075402.GA7001@elte.hu>
-References: <1298338262-26258-1-git-send-email-acme@infradead.org>
+	id S1753534Ab1BVIAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 03:00:33 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:37217 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab1BVIAb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 03:00:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=kgqpyKV79Ifz2F5u7jkxniVLKw2zBZ37bya0A2oxljjZluRMMPZLNSHs0UXGuQo/Ue
+         dQI4lGEG+FcLpWG6JMXA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1298338262-26258-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <AANLkTim=TZaqZFSJwOAN2gntvu=fiHVPQVn12=WyF9Wi@mail.gmail.com>
+References: <1298342392-21236-1-git-send-email-ccross@android.com>
+	<1298342392-21236-6-git-send-email-ccross@android.com>
+	<AANLkTim=TZaqZFSJwOAN2gntvu=fiHVPQVn12=WyF9Wi@mail.gmail.com>
+Date: Tue, 22 Feb 2011 00:00:25 -0800
+X-Google-Sender-Auth: hMis9uTpOgBa8b6vqrOG3zdSdBY
+Message-ID: <AANLkTi=pJw7oTUY2jmaSB=chds0fXFaA3+jrT=y8Jpzv@mail.gmail.com>
+Subject: Re: [PATCH 5/7] ARM: tegra: timer: Enable timer and rtc clocks
+From: Colin Cross <ccross@android.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-tegra@vger.kernel.org, konkers@android.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mike@compulab.co.il, Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 21, 2011 at 9:32 PM, Olof Johansson <olof@lixom.net> wrote:
+> Hi,
+>
+>
+> On Mon, Feb 21, 2011 at 6:39 PM, Colin Cross <ccross@android.com> wrote:
+>> Enable the timer and rtc clocks to prevent them being
+>> turned off by the bootloader clock disabling code.
+>>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>> ---
+>>  arch/arm/mach-tegra/timer.c |   14 ++++++++++++--
+>>  1 files changed, 12 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-tegra/timer.c b/arch/arm/mach-tegra/timer.c
+>> index ffa6a68..31b4f56 100644
+>> --- a/arch/arm/mach-tegra/timer.c
+>> +++ b/arch/arm/mach-tegra/timer.c
+>> @@ -18,6 +18,7 @@
+>>  */
+>>
+>>  #include <linux/init.h>
+>> +#include <linux/err.h>
+>>  #include <linux/sched.h>
+>>  #include <linux/time.h>
+>>  #include <linux/interrupt.h>
+>> @@ -193,9 +194,20 @@ static struct irqaction tegra_timer_irq = {
+>>
+>>  static void __init tegra_init_timer(void)
+>>  {
+>> +       struct clk *clk;
+>>        unsigned long rate = clk_measure_input_freq();
+>>        int ret;
+>>
+>> +       clk = clk_get_sys("timer", NULL);
+>> +       BUG_ON(IS_ERR(clk));
+>> +       clk_enable(clk);
+>> +       clk_put(clk);
+>> +
+>> +       clk = clk_get_sys("rtc-tegra", NULL);
+>> +       BUG_ON(IS_ERR(clk));
+>> +       clk_enable(clk);
+>> +       clk_put(clk);
+>
+> Why initialize the rtc clock here? Not all boards use it and instead
+> use the rtc on the pmic. Seems wasteful to clock it unless the driver
+> for it is probed and configured.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (2):
->   perf probe: Fix error propagation leading to segfault
->   perf evsel: Fix inverted test for fixing up attr.inherit flag
-> 
->  tools/perf/util/evsel.c        |   15 +++++++++++++--
->  tools/perf/util/probe-event.c  |    5 ++++-
->  tools/perf/util/probe-finder.c |    4 +++-
->  3 files changed, 20 insertions(+), 4 deletions(-)
-
-Pulled, thanks a lot Arnaldo!
-
-Thanks,
-
-	Ingo
+timekeeping_suspend uses read_persistent_clock and not the RTC driver
+to track time in suspend.  The Tegra implementation of
+read_persistent_clock reads from the internal RTC registers.  Its a 32
+kHz clock, so it's power usage is negligible, and it is required on
+all Tegra boards.
