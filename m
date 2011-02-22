@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab1BVUQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:16:03 -0500
-Received: from kroah.org ([198.145.64.141]:47887 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885Ab1BVUOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:14:14 -0500
-Date: Tue, 22 Feb 2011 12:07:24 -0800
-From: Greg KH <greg@kroah.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [stable] 2.6.38-rc5-git6: Reported regressions 2.6.36 -> 2.6.37
-Message-ID: <20110222200724.GB11679@kroah.com>
-References: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
+	id S1751107Ab1BVURl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:17:41 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46074 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1BVURk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:17:40 -0500
+Date: Tue, 22 Feb 2011 21:17:25 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenchmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/2] Add a common struct clk
+Message-ID: <20110222201725.GF22310@pengutronix.de>
+References: <1298256658.861611.43913489619.0.gpush@pororo>
+ <1298256658.862188.178150188637.1.gpush@pororo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <JwKd6rET8XO.A._ZC.gbuYNB@chimera>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1298256658.862188.178150188637.1.gpush@pororo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 11:29:26PM +0100, Rafael J. Wysocki wrote:
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24582
-> Subject		: Kernel Oops at tty_buffer_request_room when using pppd program (2.6.37-rc4)
-> Submitter	: baoyb <baoyb@avit.org.cn>
-> Date		: 2010-12-08 13:55 (76 days old)
-> Message-ID	: <EF6DDE218DB34702B1FA84D6CD7EA771@baoyb>
-> References	: http://marc.info/?l=linux-kernel&m=129181763525738&w=2
-> Handled-By	: Jiri Slaby <jslaby@suse.cz>
-> Patch		: https://bugzilla.kernel.org/attachment.cgi?id=47872
+Hi Jeremy,
 
-This is queued up already for sending to Linus soon.
+On Mon, Feb 21, 2011 at 10:50:58AM +0800, Jeremy Kerr wrote:
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index 1d37f42..604be74 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -11,18 +12,168 @@
+> ...
+> +#ifdef CONFIG_USE_COMMON_STRUCT_CLK
+> ...
+> +#else /* !CONFIG_USE_COMMON_STRUCT_CLK */
+>  
+>  /*
+> - * struct clk - an machine class defined object / cookie.
+> + * Global clock object, actual structure is declared per-machine
+>   */
+>  struct clk;
+>  
+> +static inline void clk_common_init(struct clk *clk) { }
+> +
+> +/*
+> + * For !CONFIG_USE_COMMON_STRUCT_CLK, we don't enforce any atomicity
+> + * requirements for clk_enable/clk_disable, so the prepare and unprepare
+> + * functions are no-ops
+> + */
+> +int clk_prepare(struct clk *clk) { return 0; }
+> +void clk_unprepare(struct clk *clk) { }
+these should be static inline.  Otherwise these functions end up in many
+files and so provoke a build failure.
 
-thanks,
+Best regards
+Uwe
 
-greg k-h
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
