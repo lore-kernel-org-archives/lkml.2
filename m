@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab1BVIJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 03:09:52 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57856 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab1BVIJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 03:09:50 -0500
-Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
- rtc_class_ops->read_alarm()
-From: john stultz <johnstul@us.ibm.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-In-Reply-To: <1298343333.4222.36.camel@work-vm>
-References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
-	 <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
-	 <20110222023452.GB18299@sirena.org.uk>  <1298343333.4222.36.camel@work-vm>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Feb 2011 00:09:38 -0800
-Message-ID: <1298362178.4222.57.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752153Ab1BVIKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 03:10:23 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51555 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab1BVIKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 03:10:21 -0500
+Message-ID: <4D636FA4.4000602@cn.fujitsu.com>
+Date: Tue, 22 Feb 2011 16:11:16 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 1/3] KVM: introduce memslots_updated function
+References: <4D636EF8.60800@cn.fujitsu.com>
+In-Reply-To: <4D636EF8.60800@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-22 16:09:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-02-22 16:09:18,
+	Serialize complete at 2011-02-22 16:09:18
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-21 at 18:55 -0800, John Stultz wrote:
-> On Tue, 2011-02-22 at 02:34 +0000, Mark Brown wrote:
-> > Can you go into more detail on the rationale behind this virtualised
-> > functionality and how it works?  I'd really expect the RTC alarm to be
-> > preserved over system reboots (on some systems it can be used to
-> > initiate a boot) and that would mean that we need to go to the hardware
-> > for at least the initial configuration.
-[snip]
-> Now, to your point about persistence across reboots:
-> 
-> It is an interesting point to consider. 
-> 
-> So currently, if the hardware supports it, then the behavior should
-> remain the same: As long as no application sets a new alarm, the
-> previous alarm should persist in the RTC hardware.
-> 
-> However, an application's ability to notice that such an alarm is set,
-> is currently limited.  So your point about reading the hardware to
-> initialize the state is quite valid, and shows a good reason to preserve
-> the read_alarm() method. 
+Introduce memslots_updated function which is called after memslots updated
 
-So I've been working on a fix for the issue described here, but have run
-into a few complications:
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/x86.c       |    2 +-
+ include/linux/kvm_host.h |    1 +
+ virt/kvm/kvm_main.c      |   15 +++++++++------
+ 3 files changed, 11 insertions(+), 7 deletions(-)
 
-1) Prior to my rework landing, on the rtc-cmos driver, after a reboot,
-calls to rtc_read_alarm() do return the alarm time from hardware.
-However, the AIE mode bit is off (even if it was left on). So the alarm
-does not seem like it would persist across reboots, and the value
-returned form rtc_read_alarm is technically invalid as the code to fill
-in the -1 fields doesn't run.
-
-I realize that the cmos is fairly simplistic, but do you have examples
-of hardware where the AIE mode does persist on bootup?
-
-
-2) One larger complication I see coming down the road with this is how
-do we handle persistence with multiplexed events? If we have two
-rtc_timers set to fire, one at 1pm and the other at 3pm. If we reboot
-the box at noon, only the 1pm timer will persist. 
-
-This could cause some additional confusion if the first timer was a
-posix-alarm-timer and the second was the classic wake alarm set
-by /dev/rtc0. In that case, after a reboot at noon, the system will show
-a 1pm wake alarm via /dev/rtc0.
-
-I need to think more about #2. I suspect we could claim that soonest
-alarm should be preserved regardless of what its source was.
-
-Just so I can better get a grip of the cases your considering, could you
-maybe give me some more detailed examples of where you'd like to see the
-alarm timer be set and then persist across multiple power cycles before
-firing? And how is that persistent value managed by the application
-setting it?
-
-thanks
--john
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 17af71d..888f0b0 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3252,7 +3252,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 			goto out;
+ 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+ 		slots->memslots[log->slot].dirty_bitmap = dirty_bitmap;
+-		slots->generation++;
++		memslots_updated(slots, log->slot);
+ 
+ 		old_slots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 865486f..15ff818 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -331,6 +331,7 @@ int is_error_pfn(pfn_t pfn);
+ int is_hwpoison_pfn(pfn_t pfn);
+ int is_fault_pfn(pfn_t pfn);
+ int kvm_is_error_hva(unsigned long addr);
++void memslots_updated(struct kvm_memslots *slots, int slot_id);
+ int kvm_set_memory_region(struct kvm *kvm,
+ 			  struct kvm_userspace_memory_region *mem,
+ 			  int user_alloc);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index e3e744c..e1c6e24 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -623,6 +623,13 @@ static int kvm_create_dirty_bitmap(struct kvm_memory_slot *memslot)
+ }
+ #endif /* !CONFIG_S390 */
+ 
++void memslots_updated(struct kvm_memslots *slots, int slot_id)
++{
++	if (slot_id >= slots->nmemslots)
++		slots->nmemslots = slot_id + 1;
++	slots->generation++;
++}
++
+ /*
+  * Allocate some memory and give it an address in the guest physical address
+  * space.
+@@ -768,10 +775,8 @@ skip_lpage:
+ 		if (!slots)
+ 			goto out_free;
+ 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+-		if (mem->slot >= slots->nmemslots)
+-			slots->nmemslots = mem->slot + 1;
+-		slots->generation++;
+ 		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
++		memslots_updated(slots, mem->slot);
+ 
+ 		old_memslots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+@@ -803,9 +808,6 @@ skip_lpage:
+ 	if (!slots)
+ 		goto out_free;
+ 	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+-	if (mem->slot >= slots->nmemslots)
+-		slots->nmemslots = mem->slot + 1;
+-	slots->generation++;
+ 
+ 	/* actual memory is freed via old in kvm_free_physmem_slot below */
+ 	if (!npages) {
+@@ -816,6 +818,7 @@ skip_lpage:
+ 	}
+ 
+ 	slots->memslots[mem->slot] = new;
++	memslots_updated(slots, mem->slot);
+ 	old_memslots = kvm->memslots;
+ 	rcu_assign_pointer(kvm->memslots, slots);
+ 	synchronize_srcu_expedited(&kvm->srcu);
+-- 
+1.7.4
 
