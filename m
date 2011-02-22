@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1BVGmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 01:42:36 -0500
-Received: from smtp-out-090.synserver.de ([212.40.185.90]:1064 "EHLO
+	id S1753804Ab1BVGqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 01:46:48 -0500
+Received: from smtp-out-090.synserver.de ([212.40.185.90]:1079 "EHLO
 	smtp-out-090.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab1BVGma (ORCPT
+	with ESMTP id S1752246Ab1BVGmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 01:42:30 -0500
+	Tue, 22 Feb 2011 01:42:36 -0500
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 18504
@@ -15,9 +15,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>
 Cc: Pali Rohar <pali.rohar@gmail.com>, Rodolfo Giometti <giometti@linux.it>,
         Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 01/16] power_supply: Ignore -ENODATA errors when generating uevents
-Date: Tue, 22 Feb 2011 07:37:46 +0100
-Message-Id: <1298356681-8317-2-git-send-email-lars@metafoo.de>
+Subject: [PATCH v3 04/16] bq27x00: Improve temperature property precession
+Date: Tue, 22 Feb 2011 07:37:49 +0100
+Message-Id: <1298356681-8317-5-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1298356681-8317-1-git-send-email-lars@metafoo.de>
 References: <1298356681-8317-1-git-send-email-lars@metafoo.de>
@@ -25,35 +25,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes a driver can not report a meaningful value for a certain property
-and returns -ENODATA.
-
-Currently when generating a uevent and a property return -ENODATA it is
-treated as an error an no uevent is generated at all. This is not an
-desirable behavior.
-
-This patch adds a special case for -ENODATA and ignores properties which
-return this error code when generating the uevent.
+This patch improves the precession of the temperature property of the
+bq27x00 driver.
+By dividing before multiplying the current code effectively cuts of the
+last decimal digit. This patch fixes it by multiplying before dividing.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Rodolfo Giometti <giometti@linux.it>
 Tested-by: Grazvydas Ignotas <notasas@gmail.com>
 ---
- drivers/power/power_supply_sysfs.c |    2 +-
+ drivers/power/bq27x00_battery.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index cd1f907..605514a 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -270,7 +270,7 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
- 		attr = &power_supply_attrs[psy->properties[j]];
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index bb043f9..4f74659 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -109,7 +109,7 @@ static int bq27x00_battery_temperature(struct bq27x00_device_info *di)
+ 	if (di->chip == BQ27500)
+ 		return temp - 2731;
+ 	else
+-		return ((temp >> 2) - 273) * 10;
++		return ((temp * 5) - 5463) / 2;
+ }
  
- 		ret = power_supply_show_property(dev, attr, prop_buf);
--		if (ret == -ENODEV) {
-+		if (ret == -ENODEV || ret == -ENODATA) {
- 			/* When a battery is absent, we expect -ENODEV. Don't abort;
- 			   send the uevent with at least the the PRESENT=0 property */
- 			ret = 0;
+ /*
 -- 
 1.7.2.3
 
