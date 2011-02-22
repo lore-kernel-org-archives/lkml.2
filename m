@@ -1,84 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab1BVGWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 01:22:49 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41337 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750728Ab1BVGWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 01:22:47 -0500
-Message-ID: <4D635618.3@linux.vnet.ibm.com>
-Date: Mon, 21 Feb 2011 22:22:16 -0800
-From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1751703Ab1BVG0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 01:26:20 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48237 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab1BVG0T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 01:26:19 -0500
+Message-ID: <66FC4FA6F0A146B68ED19D473735C15D@subhasishg>
+From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+To: "Sergei Shtylyov" <sshtylyov@mvista.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>,
+        <sachi@mistralsolutions.com>, "Russell King" <linux@arm.linux.org.uk>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>, <nsekhar@ti.com>,
+        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-12-git-send-email-subhasish@mistralsolutions.com> <4D5584EC.4070506@mvista.com>
+In-Reply-To: <4D5584EC.4070506@mvista.com>
+Subject: Re: [PATCH v2 11/13] da850: pruss SUART board specific additions.
+Date: Tue, 22 Feb 2011 11:52:08 +0530
+Organization: Mistral Solutions
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Eric Van Hensbergen <ericvh@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v9fs tree
-References: <20110222115340.da48b908.sfr@canb.auug.org.au> <4D63479F.3060603@linux.vnet.ibm.com> <20110222163016.aac65a7a.sfr@canb.auug.org.au>
-In-Reply-To: <20110222163016.aac65a7a.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=response
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+Importance: Normal
+X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
+X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/21/2011 9:30 PM, Stephen Rothwell wrote:
-> Hi,
-> 
-> On Mon, 21 Feb 2011 21:20:31 -0800 "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com> wrote:
->>
->> On 2/21/2011 4:53 PM, Stephen Rothwell wrote:
->>>
->>> After merging the v9fs tree, today's linux-next build (x86_64
->>> allmodconfig) failed like this:
->>>
->>> ERROR: "p9_payload_gup" [net/9p/9pnet_virtio.ko] undefined!
->>> ERROR: "p9_nr_pages" [net/9p/9pnet_virtio.ko] undefined!
->>> ERROR: "p9_release_req_pages" [net/9p/9pnet_virtio.ko] undefined!
->>
->> These functions are defined by commit 249951bf66816128a7698caa826425e299494c82
->> ([net/9p] Preparation and helper functions for zero copy)
-> 
-> Yes, they are - but they are not exported to modules.
+Hello,
 
-Thanks; Can you please check if this patch fixes your issue?
+Have modified this as shown below:
+Please let me know if this looks ok.
 
-diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
-index ca705f1..da7c2cd 100644
---- a/net/9p/trans_common.c
-+++ b/net/9p/trans_common.c
-@@ -13,6 +13,7 @@
-  */
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c 
+b/arch/arm/mach-davinci/board-da850-evm.c
++static struct da850_evm_pruss_can_data can_data = {
+        .version        = 1,
+ };
 
- #include <linux/slab.h>
-+ #include <linux/module.h>
- #include <net/9p/9p.h>
- #include <net/9p/client.h>
- #include <linux/scatterlist.h>
-@@ -32,6 +33,7 @@ p9_release_req_pages(struct trans_rpage_info *rpinfo)
-                i++;
-        }
- }
-+EXPORT_SYMBOL(p9_release_req_pages);
-
- /**
-  * p9_nr_pages - Return number of pages needed to accomodate the payload.
-@@ -45,6 +47,7 @@ p9_nr_pages(struct p9_req_t *req)
-                        PAGE_SIZE - 1) >> PAGE_SHIFT;
-        return end_page - start_page;
- }
-+EXPORT_SYMBOL(p9_nr_pages);
-
- /**
-  * payload_gup - Translates user buffer into kernel pages and
-@@ -91,3 +94,4 @@ p9_payload_gup(struct p9_req_t *req, size_t *pdata_off, int *p
-        }
-        return 0;
- }
-+EXPORT_SYMBOL(p9_payload_gup);
++static struct resource da850_evm_suart_resource[] = 
+  ------------------------->>> Added a separate resource structure for 
+suart.
++       {
++               .name   = "da8xx_mcasp0_iomem",
++               .start  = DAVINCI_DA8XX_MCASP0_REG_BASE,
++               .end    = DAVINCI_DA8XX_MCASP0_REG_BASE +
++                               (SZ_1K * 12) - 1,
++               .flags  = IORESOURCE_MEM,
++       },
++};
++
+ static struct da8xx_pruss_devices pruss_devices[] = {
+        {
+                .dev_name       = "da8xx_pruss_can",
+                .pdata          = &can_data,
+                .pdata_size     = sizeof(can_data),
+                .setup          = da850_evm_setup_pruss_can,
++               .num_resources  = 0,
++               .resources      = NULL,
+        },
+        {
+                .dev_name       = "da8xx_pruss_uart",
+                .pdata          = &suart_data,
+                .pdata_size     = sizeof(suart_data),
+                .setup          = da850_evm_setup_pruss_suart,
++               .num_resources  = ARRAY_SIZE(da850_evm_suart_resource),
++               .resources      = 
+a850_evm_suart_resource,  ---------------------------- >>>>> Initialized it 
+here
+        },
+        {
+                .dev_name       = NULL,
 
 
+diff --git a/drivers/mfd/da8xx_pru.c b/drivers/mfd/da8xx_pru.c
+index f7868a4..140bf14 100644
+--- a/drivers/mfd/da8xx_pru.c
++++ b/drivers/mfd/da8xx_pru.c
+@@ -332,6 +332,8 @@ static int pruss_mfd_add_devices(struct platform_device 
+*pdev)
+                cell.name               = (dev_data + count)->dev_name;
+                cell.platform_data      = (dev_data + count)->pdata;
+                cell.data_size          = (dev_data + count)->pdata_size;
++               cell.resources          = (dev_data + 
+ount)->resources;  ---------------------->>>Modified the MFD driver to add 
+the resources.
++               cell.num_resources      = (dev_data + count)->num_resources;
+
+
+diff --git a/drivers/tty/serial/da8xx_pruss/pruss_suart.c 
+b/drivers/tty/serial/da8xx_pruss/pruss_suart.c
+
++       res = platform_get_resource(pdev, IORESOURCE_MEM, 
+0); ------------------>> Used platform infrastructure to get the data.
++       if (!res) {
++               dev_err(&pdev->dev, "Failed to get resource");
++               return -ENOMEM;
++       }
++
++       if (!request_mem_region(res->start,
++                       resource_size(res),
+
+
+
+--------------------------------------------------
+From: "Sergei Shtylyov" <sshtylyov@mvista.com>
+Sent: Saturday, February 12, 2011 12:20 AM
+To: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
+Cc: <davinci-linux-open-source@linux.davincidsp.com>; 
+<sachi@mistralsolutions.com>; "Russell King" <linux@arm.linux.org.uk>; 
+"Kevin Hilman" <khilman@deeprootsystems.com>; <nsekhar@ti.com>; "open list" 
+<linux-kernel@vger.kernel.org>; <m-watkins@ti.com>; 
+<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 11/13] da850: pruss SUART board specific additions.
+
+> Subhasish Ghosh wrote:
+>
+>> This patch adds the pruss SUART pin mux and registers the device
+>> with the pruss mfd driver.
+>
+>> Signed-off-by: Subhasish Ghosh <subhasish@mistralsolutions.com>
+>> ---
+>>  arch/arm/mach-davinci/board-da850-evm.c |   36 
+>> +++++++++++++++++++++++++++++++
+>>  1 files changed, 36 insertions(+), 0 deletions(-)
+>
+>> diff --git a/arch/arm/mach-davinci/board-da850-evm.c 
+>> b/arch/arm/mach-davinci/board-da850-evm.c
+>> index f9c38f8..3858516 100644
+>> --- a/arch/arm/mach-davinci/board-da850-evm.c
+>> +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> [...]
+>> @@ -1085,6 +1104,17 @@ static int __init da850_evm_setup_pruss_can(void)
+>>  return ret;
+>>  }
+>>  +static struct da850_evm_pruss_suart_data suart_data = {
+>> + .version = 1,
+>> + .resource = {
+>> + .name = "da8xx_mcasp0_iomem",
+>> + .start = DAVINCI_DA8XX_MCASP0_REG_BASE,
+>> + .end = DAVINCI_DA8XX_MCASP0_REG_BASE +
+>> + (SZ_1K * 12) - 1,
+>> + .flags = IORESOURCE_MEM,
+>> + },
+>> +};
+>> +
+>
+>    I don't think passing a resource thru platform data is good idea... 
+> Resources should be bound to the platform device.
+>
+> WBR, Sergei 
 
