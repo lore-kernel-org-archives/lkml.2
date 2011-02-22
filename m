@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1BVWCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:02:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57378 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab1BVWCb convert rfc822-to-8bit (ORCPT
+	id S1751818Ab1BVWHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:07:44 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:45737 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab1BVWHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:02:31 -0500
+	Tue, 22 Feb 2011 17:07:43 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: does hibernate to disk try hard enough to free memory?
+Date: Tue, 22 Feb 2011 23:07:33 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201102222159.58546.Martin@lichtvoll.de> <201102222209.15647.rjw@sisk.pl> (sfid-20110222_230528_360254_A6598DE5)
+In-Reply-To: <201102222209.15647.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <20110222133529.56b02ebb.randy.dunlap@oracle.com>
-References: <20110222132438.02d310e0@queued.net> <20110222133529.56b02ebb.randy.dunlap@oracle.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 22 Feb 2011 15:02:11 -0700
-X-Google-Sender-Auth: QrYP7E6TWBkHoFFHAd7bXssldNY
-Message-ID: <AANLkTikBhnQkjd1-5XX=fnFDGcJ+eQT4SUZkV6Rp2rJN@mail.gmail.com>
-Subject: Re: [PATCH] spi/spi_oc_tiny and spi_altera.c: fix build errors
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Andres Salomon <dilinger@queued.net>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed;
+  boundary="nextPart5176909.d92r2dqokB";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102222307.41499.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 2:35 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On Tue, 22 Feb 2011 13:24:38 -0800 Andres Salomon wrote:
->
->> Fix the following build error due to a missing semicolon:
->>
->>  CC [M]  drivers/spi/spi_oc_tiny.o
->> drivers/spi/spi_oc_tiny.c:394: error: expected ‘,’ or ‘;’ before ‘extern’
->> make[2]: *** [drivers/spi/spi_oc_tiny.o] Error 1
->>
->> Signed-off-by: Andres Salomon <dilinger@queued.net>
->
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Same fix is needed for drivers/spi/spi_altera.c.
-> I already had this patch ready to send.  Grant, can you extract
-> the spi_altera.c patch...?
+--nextPart5176909.d92r2dqokB
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: quoted-printable
 
-done.  Will be pushed out when I finish testing.
+Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
+> On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> > Hi!
+> >=20
+> > Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB of
+> > RAM is not able to allocate memory for the hibernation image. Before
+> > KMS hibernation only very rarely failed for that reason.
+> >=20
+> > Often I run without compositing at all as I believe this might spare
+> > some pages as well. But this doesn't always help.
+> >=20
+> > It complains that to less pages could be freed. For example with
+> > kernel 2.6.37:
+> >=20
+> > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
+> > Feb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
+> > Feb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411 +
+> > 1024, available pages: 112767
+> > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
+> > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating hibernation
+> > image Feb 16 00:15:00 shambhala kernel: Extended CMOS year: 2000
+> > Feb 16 00:15:00 shambhala kernel: ACPI: Waking up from system sleep
+> > state S4
+> > Feb 16 00:15:00 shambhala kernel: PM: early recover of devices
+> > complete after 0.376 msecs
+>=20
+> What's the value in /sys/power/image_size?
 
-g.
+shambhala:~> cat /sys/power/image_size
+844206080
 
+Should I try with less?
 
->
->
-> ---
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Fix build error due to missing semi-colon:
->
-> drivers/spi/spi_altera.c:308: error: expected ',' or ';' before 'extern'
-> drivers/spi/spi_oc_tiny.c:394: error: expected ',' or ';' before 'extern'
->
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  drivers/spi/spi_altera.c  |    2 +-
->  drivers/spi/spi_oc_tiny.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> --- linux-next-20110222.orig/drivers/spi/spi_oc_tiny.c
-> +++ linux-next-20110222/drivers/spi/spi_oc_tiny.c
-> @@ -390,7 +390,7 @@ static int __devexit tiny_spi_remove(str
->  static const struct of_device_id tiny_spi_match[] = {
->        { .compatible = "opencores,tiny-spi-rtlsvn2", },
->        {},
-> -}
-> +};
->  MODULE_DEVICE_TABLE(of, tiny_spi_match);
->  #else /* CONFIG_OF */
->  #define tiny_spi_match NULL
-> --- linux-next-20110222.orig/drivers/spi/spi_altera.c
-> +++ linux-next-20110222/drivers/spi/spi_altera.c
-> @@ -304,7 +304,7 @@ static int __devexit altera_spi_remove(s
->  static const struct of_device_id altera_spi_match[] = {
->        { .compatible = "ALTR,spi-1.0", },
->        {},
-> -}
-> +};
->  MODULE_DEVICE_TABLE(of, altera_spi_match);
->  #else /* CONFIG_OF */
->  #define altera_spi_match NULL
->
->
+Thanks,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
 
+--nextPart5176909.d92r2dqokB
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+iEYEABECAAYFAk1kM6YACgkQmRvqrKWZhMeoWwCgiqbO01HcFYpp6067sQEOkrzM
+NKEAn0aFZWP8g0qPGbtRur+o0MUDGZFW
+=XgYH
+-----END PGP SIGNATURE-----
+
+--nextPart5176909.d92r2dqokB--
