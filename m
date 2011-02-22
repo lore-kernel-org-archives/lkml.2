@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab1BVQmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 11:42:46 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16650 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab1BVQmo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 11:42:44 -0500
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "djwong\@us.ibm.com" <djwong@us.ibm.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20110222020022.GH32261@tux1.beaverton.ibm.com>
-	<180713DB-114C-454B-A91E-063AB0116251@dilger.ca>
-Date: Tue, 22 Feb 2011 11:40:51 -0500
-In-Reply-To: <180713DB-114C-454B-A91E-063AB0116251@dilger.ca> (Andreas
-	Dilger's message of "Tue, 22 Feb 2011 09:13:49 -0700")
-Message-ID: <yq1zkpof2ek.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110013 (No Gnus v0.13) Emacs/23.2 (gnu/linux)
+	id S1754592Ab1BVQpD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 11:45:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25992 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754524Ab1BVQpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 11:45:01 -0500
+Date: Tue, 22 Feb 2011 17:43:31 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, lwoodman@redhat.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 8/8] Add VM counters for transparent hugepages
+Message-ID: <20110222164331.GA31195@random.random>
+References: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
+ <1298315270-10434-9-git-send-email-andi@firstfloor.org>
+ <1298392586.9829.22566.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4D63E726.00BD:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298392586.9829.22566.camel@nimitz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Andreas" == Andreas Dilger <adilger@dilger.ca> writes:
+On Tue, Feb 22, 2011 at 08:36:26AM -0800, Dave Hansen wrote:
+> On Mon, 2011-02-21 at 11:07 -0800, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > I found it difficult to make sense of transparent huge pages without
+> > having any counters for its actions. Add some counters to vmstat
+> > for allocation of transparent hugepages and fallback to smaller
+> > pages.
+> > 
+> > Optional patch, but useful for development and understanding the system.
+> 
+> Very nice.  I did the same thing, splits-only.  I also found this stuff
+> a must-have for trying to do any work with transparent hugepages.  It's
+> just impossible otherwise.
 
-Andreas> I don't like adding a data copy in the IO path at all. 
+This patch is good too. 1 and 8 I think can go in, patch 1 is high
+priority.
 
-No thanks!
+Patches 2-5 I've an hard time to see how they're not hurting
+performance instead of improving it, especially patch 3 looks dead
+wrong and has no chance by the very design of KSM and by the random
+(vma-ignoring) NUMA affinity of PageKSM, patch 3 is most certainly a
+regression.
 
+Patch 6-7 I didn't evaluate those yet, they look good, even if low
+priority.
 
-Andreas> I'd definitely prefer that the filesystem be in charge of
-Andreas> deciding whether this is needed or not. 
+Acked-by: Andrea Arcangeli <aarcange@redhat.com>
 
-Absolutely. At the block layer we obviously have no idea whether the
-filesystem is safe or not. So in my current tree the protection is only
-generated if the relevant bio flag is set (unless the application
-already added it, obviously).
-
-
-Andreas> If the use of the data copy can be constrained to only the
-Andreas> minimum required cases (e.g. if fs checks for rewrite on page
-Andreas> that is marked as Writeback and either copies or blocks until
-Andreas> writeback is complete, as a mount option) that would be
-Andreas> better. At that point we can compare on different hardware
-Andreas> whether copying or blocking should be the default.
-
-Agreed.
-
-As Chris mentioned we've got somebody on our team working through the
-filesystem issues now. I'm hoping we can provide a status update at
-LSF2011.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
