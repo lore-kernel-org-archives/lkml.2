@@ -1,112 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870Ab1BVIJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 03:09:36 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54314 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab1BVIJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 03:09:35 -0500
-Message-ID: <4D636F71.9000804@cn.fujitsu.com>
-Date: Tue, 22 Feb 2011 16:10:25 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752129Ab1BVIJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 03:09:54 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42545 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab1BVIJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 03:09:52 -0500
+Date: Tue, 22 Feb 2011 09:09:34 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: masami.hiramatsu.pt@hitachi.com, acme@redhat.com, fweisbec@gmail.com,
+        hpa@zytor.com, ananth@in.ibm.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        a.p.zijlstra@chello.nl, eric.dumazet@gmail.com,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] x86: separating entry text section
+Message-ID: <20110222080934.GB7001@elte.hu>
+References: <20110220125948.GC25700@elte.hu>
+ <1298298313-5980-1-git-send-email-jolsa@redhat.com>
+ <1298298313-5980-2-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 2/7] KVM: introduce KVM_MEM_SLOTS_NUM macro
-References: <4D636EF8.60800@cn.fujitsu.com>
-In-Reply-To: <4D636EF8.60800@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-22 16:08:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-02-22 16:08:27,
-	Serialize complete at 2011-02-22 16:08:27
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298298313-5980-2-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce KVM_MEM_SLOTS_NUM macro to instead of
-KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/include/asm/kvm_host.h |    3 ++-
- arch/x86/kvm/mmu.c              |    2 +-
- include/linux/kvm_host.h        |    7 +++++--
- virt/kvm/kvm_main.c             |    2 +-
- 4 files changed, 9 insertions(+), 5 deletions(-)
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 37bd730..178d658 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -30,6 +30,7 @@
- #define KVM_MEMORY_SLOTS 32
- /* memory slots that does not exposed to userspace */
- #define KVM_PRIVATE_MEM_SLOTS 4
-+#define KVM_MEM_SLOTS_NUM (KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
- 
- #define KVM_PIO_PAGE_OFFSET 1
- #define KVM_COALESCED_MMIO_PAGE_OFFSET 2
-@@ -207,7 +208,7 @@ struct kvm_mmu_page {
- 	 * One bit set per slot which has memory
- 	 * in this shadow page.
- 	 */
--	DECLARE_BITMAP(slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
-+	DECLARE_BITMAP(slot_bitmap, KVM_MEM_SLOTS_NUM);
- 	bool multimapped;         /* More than one parent_pte? */
- 	bool unsync;
- 	int root_count;          /* Currently serving as active root */
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index b6a9963..268c891 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1056,7 +1056,7 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
- 						  PAGE_SIZE);
- 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
- 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
--	bitmap_zero(sp->slot_bitmap, KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS);
-+	bitmap_zero(sp->slot_bitmap, KVM_MEM_SLOTS_NUM);
- 	sp->multimapped = 0;
- 	sp->parent_pte = parent_pte;
- 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index b1a7430..865486f 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -217,11 +217,14 @@ struct kvm_irq_routing_table {};
- 
- #endif
- 
-+#ifndef KVM_MEM_SLOTS_NUM
-+#define KVM_MEM_SLOTS_NUM (KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
-+#endif
-+
- struct kvm_memslots {
- 	int nmemslots;
- 	u64 generation;
--	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
--					KVM_PRIVATE_MEM_SLOTS];
-+	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
- };
- 
- struct kvm {
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index cf90f28..e3e744c 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -651,7 +651,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 		goto out;
- 	if (user_alloc && (mem->userspace_addr & (PAGE_SIZE - 1)))
- 		goto out;
--	if (mem->slot >= KVM_MEMORY_SLOTS + KVM_PRIVATE_MEM_SLOTS)
-+	if (mem->slot >= KVM_MEM_SLOTS_NUM)
- 		goto out;
- 	if (mem->guest_phys_addr + mem->memory_size < mem->guest_phys_addr)
- 		goto out;
--- 
-1.7.4
+> Putting x86 entry code to the separate section: .entry.text.
 
+Trying to apply your patch i noticed one detail:
+
+> before patch:
+>      26282174  L1-icache-load-misses      ( +-   0.099% )  (scaled from 81.00%)
+>   0.206651959  seconds time elapsed   ( +-   0.152% )
+> 
+> after patch:
+>      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
+>   0.210509948  seconds time elapsed   ( +-   0.140% )
+
+So time elapsed actually went up.
+
+hackbench is notoriously unstable when it comes to runtime - and increasing the 
+--repeat value only has limited effects on that.
+
+Dropping all system caches:
+
+   echo 1 > /proc/sys/vm/drop_caches
+
+Seems to do a better job of 'resetting' system state, but if we put that into the 
+measured workload then the results are all over the place (as we now depend on IO 
+being done):
+
+ # cat hb10
+
+ echo 1 > /proc/sys/vm/drop_caches
+ ./hackbench 10
+
+ # perf stat --repeat 3 ./hb10
+
+ Time: 0.097
+ Time: 0.095
+ Time: 0.101
+
+ Performance counter stats for './hb10' (3 runs):
+
+         21.351257 task-clock-msecs         #      0.044 CPUs    ( +-  27.165% )
+                 6 context-switches         #      0.000 M/sec   ( +-  34.694% )
+                 1 CPU-migrations           #      0.000 M/sec   ( +-  25.000% )
+               410 page-faults              #      0.019 M/sec   ( +-   0.081% )
+        25,407,650 cycles                   #   1189.984 M/sec   ( +-  49.154% )
+        25,407,650 instructions             #      1.000 IPC     ( +-  49.154% )
+         5,126,580 branches                 #    240.107 M/sec   ( +-  46.012% )
+           192,272 branch-misses            #      3.750 %       ( +-  44.911% )
+           901,701 cache-references         #     42.232 M/sec   ( +-  12.857% )
+           802,767 cache-misses             #     37.598 M/sec   ( +-   9.282% )
+
+        0.483297792  seconds time elapsed   ( +-  31.152% )
+
+So here's a perf stat feature suggestion to solve such measurement problems: a new 
+'pre-run' 'dry' command could be specified that is executed before the real 'hot' 
+run is executed. Something like this:
+
+  perf stat --pre-run-script ./hb10 --repeat 10 ./hackbench 10
+
+Would do the cache-clearing before each run, it would run hackbench once (dry run) 
+and then would run hackbench 10 for real - and would repeat the whole thing 10 
+times. Only the 'hot' portion of the run would be measured and displayed in the perf 
+stat output event counts.
+
+Another observation:
+
+>      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
+
+Could you please do runs that do not display 'scaled from' messages? Since we are 
+measuring a relatively small effect here, and scaling adds noise, it would be nice 
+to ensure that the effect persists with non-scaled events as well:
+
+You can do that by reducing the number of events that are measured. The PMU can not 
+measure all those L1 cache events you listed - so only use the most important one 
+and add cycles and instructions to make sure the measurements are comparable:
+
+  -e L1-icache-load-misses -e instructions -e cycles
+
+Btw., there's another 'perf stat' feature suggestion: it would be nice if it was 
+possible to 'record' a perf stat run, and do a 'perf diff' over it. That would 
+compare the two runs all automatically, without you having to do the comparison 
+manually.
+
+Thanks,
+
+	Ingo
