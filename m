@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1BVWf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:35:56 -0500
-Received: from kroah.org ([198.145.64.141]:46586 "EHLO coco.kroah.org"
+	id S1753183Ab1BVWVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:12 -0500
+Received: from kroah.org ([198.145.64.141]:46559 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab1BVWVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:14 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:38 2011
-Message-Id: <20110222221838.074402339@clark.kroah.org>
+	id S1752795Ab1BVWVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:05 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:37 2011
+Message-Id: <20110222221837.550287183@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:49 -0800
+Date: Tue, 22 Feb 2011 14:16:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [10/70] drm/radeon/kms: hopefully fix pll issues for real (v3)
+Subject: [05/70] drm/radeon/kms: fix interlaced modes on dce4+
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,91 +27,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 5b40ddf888398ce4cccbf3b9d0a18d90149ed7ff upstream.
+commit c9417bdd4c6b1b92a21608c07e83afa419c7bb62 upstream.
 
-The problematic boards have a recommended reference divider
-to be used when spread spectrum is enabled on the laptop panel.
-Enable the use of the recommended reference divider along with
-the new pll algo.
-
-v2: testing options
-
-v3: When using the fixed reference divider with LVDS, prefer
-min m to max p and use fractional feedback dividers.
+- set scaler table clears the interleave bit, need to
+reset it in encoder quirks, this was already done for
+pre-dce4.
+- remove the interleave settings from set_base() functions
+this is now handled in the encoder quirks functions, and
+isn't technically part of the display base setup.
+- rename evergreen_do_set_base() to dce4_do_set_base() since
+it's used on both evergreen and NI asics.
 
 Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=28852
-https://bugzilla.kernel.org/show_bug.cgi?id=24462
-https://bugzilla.kernel.org/show_bug.cgi?id=26552
-MacbookPro issues reported by Justin Mattock <justinmattock@gmail.com>
+https://bugzilla.kernel.org/show_bug.cgi?id=28182
 
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c   |   22 +++++-----------------
+ drivers/gpu/drm/radeon/radeon_encoders.c |   20 +++++++++++++++-----
+ 2 files changed, 20 insertions(+), 22 deletions(-)
 
 --- a/drivers/gpu/drm/radeon/atombios_crtc.c
 +++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -514,7 +514,6 @@ static u32 atombios_adjust_pll(struct dr
- 			pll->flags |= RADEON_PLL_PREFER_HIGH_FB_DIV;
- 		else
- 			pll->flags |= RADEON_PLL_PREFER_LOW_REF_DIV;
+@@ -959,9 +959,9 @@ static void atombios_crtc_set_pll(struct
+ 	}
+ }
+ 
+-static int evergreen_crtc_do_set_base(struct drm_crtc *crtc,
+-				      struct drm_framebuffer *fb,
+-				      int x, int y, int atomic)
++static int dce4_crtc_do_set_base(struct drm_crtc *crtc,
++				 struct drm_framebuffer *fb,
++				 int x, int y, int atomic)
+ {
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+ 	struct drm_device *dev = crtc->dev;
+@@ -1093,12 +1093,6 @@ static int evergreen_crtc_do_set_base(st
+ 	WREG32(EVERGREEN_VIEWPORT_SIZE + radeon_crtc->crtc_offset,
+ 	       (crtc->mode.hdisplay << 16) | crtc->mode.vdisplay);
+ 
+-	if (crtc->mode.flags & DRM_MODE_FLAG_INTERLACE)
+-		WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset,
+-		       EVERGREEN_INTERLEAVE_EN);
+-	else
+-		WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
 -
+ 	if (!atomic && fb && fb != crtc->fb) {
+ 		radeon_fb = to_radeon_framebuffer(fb);
+ 		rbo = radeon_fb->obj->driver_private;
+@@ -1247,12 +1241,6 @@ static int avivo_crtc_do_set_base(struct
+ 	WREG32(AVIVO_D1MODE_VIEWPORT_SIZE + radeon_crtc->crtc_offset,
+ 	       (crtc->mode.hdisplay << 16) | crtc->mode.vdisplay);
+ 
+-	if (crtc->mode.flags & DRM_MODE_FLAG_INTERLACE)
+-		WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset,
+-		       AVIVO_D1MODE_INTERLEAVE_EN);
+-	else
+-		WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
+-
+ 	if (!atomic && fb && fb != crtc->fb) {
+ 		radeon_fb = to_radeon_framebuffer(fb);
+ 		rbo = radeon_fb->obj->driver_private;
+@@ -1276,7 +1264,7 @@ int atombios_crtc_set_base(struct drm_cr
+ 	struct radeon_device *rdev = dev->dev_private;
+ 
+ 	if (ASIC_IS_DCE4(rdev))
+-		return evergreen_crtc_do_set_base(crtc, old_fb, x, y, 0);
++		return dce4_crtc_do_set_base(crtc, old_fb, x, y, 0);
+ 	else if (ASIC_IS_AVIVO(rdev))
+ 		return avivo_crtc_do_set_base(crtc, old_fb, x, y, 0);
+ 	else
+@@ -1291,7 +1279,7 @@ int atombios_crtc_set_base_atomic(struct
+        struct radeon_device *rdev = dev->dev_private;
+ 
+ 	if (ASIC_IS_DCE4(rdev))
+-		return evergreen_crtc_do_set_base(crtc, fb, x, y, 1);
++		return dce4_crtc_do_set_base(crtc, fb, x, y, 1);
+ 	else if (ASIC_IS_AVIVO(rdev))
+ 		return avivo_crtc_do_set_base(crtc, fb, x, y, 1);
+ 	else
+--- a/drivers/gpu/drm/radeon/radeon_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_encoders.c
+@@ -1465,11 +1465,21 @@ atombios_apply_encoder_quirks(struct drm
  	}
  
- 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
-@@ -531,29 +530,28 @@ static u32 atombios_adjust_pll(struct dr
- 					dp_clock = dig_connector->dp_clock;
- 				}
- 			}
--/* this might work properly with the new pll algo */
--#if 0 /* doesn't work properly on some laptops */
-+
- 			/* use recommended ref_div for ss */
- 			if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-+				pll->flags |= RADEON_PLL_PREFER_MINM_OVER_MAXP;
- 				if (ss_enabled) {
- 					if (ss->refdiv) {
- 						pll->flags |= RADEON_PLL_USE_REF_DIV;
- 						pll->reference_div = ss->refdiv;
-+						if (ASIC_IS_AVIVO(rdev))
-+							pll->flags |= RADEON_PLL_USE_FRAC_FB_DIV;
- 					}
- 				}
- 			}
--#endif
-+
- 			if (ASIC_IS_AVIVO(rdev)) {
- 				/* DVO wants 2x pixel clock if the DVO chip is in 12 bit mode */
- 				if (radeon_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1)
- 					adjusted_clock = mode->clock * 2;
- 				if (radeon_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
- 					pll->flags |= RADEON_PLL_PREFER_CLOSEST_LOWER;
--				/* rv515 needs more testing with this option */
--				if (rdev->family != CHIP_RV515) {
--					if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
--						pll->flags |= RADEON_PLL_IS_LCD;
--				}
-+				if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
-+					pll->flags |= RADEON_PLL_IS_LCD;
- 			} else {
- 				if (encoder->encoder_type != DRM_MODE_ENCODER_DAC)
- 					pll->flags |= RADEON_PLL_NO_ODD_POST_DIV;
-@@ -921,11 +919,7 @@ static void atombios_crtc_set_pll(struct
- 	/* adjust pixel clock as needed */
- 	adjusted_clock = atombios_adjust_pll(crtc, mode, pll, ss_enabled, &ss);
+ 	/* set scaler clears this on some chips */
+-	/* XXX check DCE4 */
+-	if (!(radeon_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))) {
+-		if (ASIC_IS_AVIVO(rdev) && (mode->flags & DRM_MODE_FLAG_INTERLACE))
+-			WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset,
+-			       AVIVO_D1MODE_INTERLEAVE_EN);
++	if (ASIC_IS_AVIVO(rdev) &&
++	    (!(radeon_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT)))) {
++		if (ASIC_IS_DCE4(rdev)) {
++			if (mode->flags & DRM_MODE_FLAG_INTERLACE)
++				WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset,
++				       EVERGREEN_INTERLEAVE_EN);
++			else
++				WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
++		} else {
++			if (mode->flags & DRM_MODE_FLAG_INTERLACE)
++				WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset,
++				       AVIVO_D1MODE_INTERLEAVE_EN);
++			else
++				WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
++		}
+ 	}
+ }
  
--	/* rv515 seems happier with the old algo */
--	if (rdev->family == CHIP_RV515)
--		radeon_compute_pll_legacy(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
--					  &ref_div, &post_div);
--	else if (ASIC_IS_AVIVO(rdev))
-+	if (ASIC_IS_AVIVO(rdev))
- 		radeon_compute_pll_avivo(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
- 					 &ref_div, &post_div);
- 	else
 
 
