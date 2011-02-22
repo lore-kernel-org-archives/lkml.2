@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab1BVUR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:17:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:38166 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab1BVUR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:17:56 -0500
-Date: Tue, 22 Feb 2011 12:16:10 -0800
-From: Greg KH <gregkh@suse.de>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
-        Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
- interfaces
-Message-ID: <20110222201610.GA29787@suse.de>
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
- <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
- <20110222181613.GU4000@outflux.net>
- <4D640133.9020901@caviumnetworks.com>
- <20110222184726.GV4000@outflux.net>
- <20110222191454.GB9991@suse.de>
- <20110222192532.GY4000@outflux.net>
- <20110222193418.773ccd4b@lxorguk.ukuu.org.uk>
- <20110222195018.GA4000@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222195018.GA4000@outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752029Ab1BVUSq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:18:46 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:40938 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751981Ab1BVUSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:18:45 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=hK59OVWDcVzedFwocn0zxIWHWE3PjnlB/PqWLJyHIh229SJn240CAJOQBtvj7Tr5HzzLzGJBrAzfLoX32eZ6mcb1XHWlYBByQiPGufYoU3SfABBB2Oc9rbHxyQUKon6F;
+Date: Tue, 22 Feb 2011 12:18:40 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, alan@linux.intel.com
+Subject: Re: [Intel-gfx] [PATCH 1/2] ACPI/Intel: Rework Opregion support
+Message-ID: <20110222121840.32a6e782@jbarnes-desktop>
+In-Reply-To: <1298404994-2907-1-git-send-email-mjg@redhat.com>
+References: <1298404994-2907-1-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:50:18AM -0800, Kees Cook wrote:
-> On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
-> > > What system do you proposed to keep these "stupid mistakes" from
-> > > continuing to happen? If debugfs had already been mode 0700, we could have
-> > > avoided all of these CVEs, including the full-blown local root escalation.
-> > 
-> > And all sorts of features would have put themselves in sysfs instead and
-> > broken no doubt.
-> > 
-> > > The "no rules" approach to debugfs is not a good idea, IMO.
-> > 
-> > It's a debugging fs, it needs to be "no rules" other than the obvious
-> > "don't mount it on production systems"
-> 
-> Okay, so the debugfs is not supposed to be mounted on a production system.
+On Tue, 22 Feb 2011 15:03:13 -0500
+Matthew Garrett <mjg@redhat.com> wrote:
 
-No, not true at all, the "enterprise" distros all mount debugfs for good
-reason on their systems.
+> The Integrated Graphics Device opregion specification defines a mechanism
+> for the OS and system firmware to collaborate on various graphics-related
+> functionality. This is currently implemented in the i915 driver but isn't
+> strictly limited to these devices. Move it to a more generic location and
+> remove the i915 dependency, while simultaneously reworking i915 to make
+> use of the new driver.
 
-> This seems to be news to a lot of developers trying to use the interfaces
-> exposed there. It would be nice to say this more loudly.  Basically,
-> a normal system should not depend on anything in the debugfs. I can get
-> behind that.
+Nice, having it split out makes sense.  And I like the formalized
+interface between the driver and the OpRegion features.
 
-Again, not true.  Mostly all due to the perf interface, fix that to move
-out of debugfs (patches have been proposed) and this problem will go
-away.
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-thanks,
-
-greg k-h
+-- 
+Jesse Barnes, Intel Open Source Technology Center
