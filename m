@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab1BVANQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 19:13:16 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:45836 "EHLO
+	id S1752330Ab1BVAN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 19:13:27 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:21007 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab1BVANO (ORCPT
+	with ESMTP id S1752113Ab1BVANS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 19:13:14 -0500
+	Mon, 21 Feb 2011 19:13:18 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
          :references:user-agent:mime-version:content-type;
-        b=dXGJOoWBD4Sv3NIuC04CAyVyFsUKve53GiZqsN0IMtQvUJjvJtS0IYU6Ox1Vzr2YHF
-         REz3moGGronhioTwJCjA==
-Date: Mon, 21 Feb 2011 16:13:03 -0800 (PST)
+        b=c5DojtBiJmWHi4NhoKYrcPcCmk8MjNmlGuc474hv+hvKxjZ5IQgy8tU428F4VVeJDJ
+         IZHMEgGbJFM/BZanXeUw==
+Date: Mon, 21 Feb 2011 16:13:09 -0800 (PST)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Mike Travis <travis@sgi.com>
@@ -23,10 +23,10 @@ cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] ACPI: Minimize X2APIC initial messages
-In-Reply-To: <4D62CE23.1030102@sgi.com>
-Message-ID: <alpine.DEB.2.00.1102211555000.23557@chino.kir.corp.google.com>
-References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024705.559950799@gulag1.americas.sgi.com> <alpine.DEB.2.00.1102191637290.27722@chino.kir.corp.google.com> <4D62CE23.1030102@sgi.com>
+Subject: Re: [PATCH 2/6] x86: Minimize initial e820 messages
+In-Reply-To: <4D62CFFE.6050803@sgi.com>
+Message-ID: <alpine.DEB.2.00.1102211559290.23557@chino.kir.corp.google.com>
+References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024705.695093866@gulag1.americas.sgi.com> <alpine.DEB.2.00.1102191700030.27722@chino.kir.corp.google.com> <4D62CFFE.6050803@sgi.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -37,104 +37,266 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 21 Feb 2011, Mike Travis wrote:
 
-> > > Minimize X2APIC messages by printing 8 per line and dropping
-> > > the "enabled" flag since that's assumed.  It will still print
-> > > "disabled" if necessary.
-> > > 
-> > > v2: updated to apply to x86-tip
-> > > 
+> > > --- linux.orig/arch/x86/kernel/e820.c
+> > > +++ linux/arch/x86/kernel/e820.c
+> > > @@ -39,6 +39,13 @@
+> > >  struct e820map e820;
+> > >  struct e820map e820_saved;
+> > >  +/*
+> > > + * Keep track of previous e820 mappings so we can reduce the number
+> > > + * of messages when printing the "modified" e820 map
+> > > + */
+> > > +static struct e820map e820_prev __initdata;
+> > > +static int e820_prev_saved __initdata;
 > > 
-> > For each patch in this series, it would be tremendously helpful to show what
-> > format the current output is in and what the format is after the patch is
-> > applied.
-> 
-> Will do.  I actually did think about this, as seeing a huge amount
-> of console output is a relatively rare occurrence... ;-)
-> 
-> > 
-> > > Signed-off-by: Mike Travis <travis@sgi.com>
-> > > Reviewed-by: Jack Steiner <steiner@sgi.com>
-> > > Reviewed-by: Robin Holt <holt@sgi.com>
-> > > ---
-> > >  arch/x86/kernel/acpi/boot.c |    3 +++
-> > >  drivers/acpi/tables.c       |   16 +++++++++++-----
-> > >  2 files changed, 14 insertions(+), 5 deletions(-)
-> > > 
-> > > --- linux.orig/arch/x86/kernel/acpi/boot.c
-> > > +++ linux/arch/x86/kernel/acpi/boot.c
-> > > @@ -903,6 +903,9 @@ static int __init acpi_parse_madt_lapic_
-> > >  	if (!count) {
-> > >  		x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC,
-> > >  					acpi_parse_x2apic, MAX_LOCAL_APIC);
-> > > +		/* insure trailing newline is output */
-> > 
-> > s/insure/ensure/
-> 
-> Oops. ;-)
-> > 
-> > > +		pr_cont("\n");
-> > 
-> > I know that this is the only code that passes ACPI_MADT_TYPE_LOCAL_X2APIC.
-> > That said, this line really has no place in the caller.
-> 
-> x2apic is probably the only type of system that can grow so large as to
-> need worrying about overflowing the log buffer.  That said, there is
-> logic in printk() to add a missing '\n'.  Should I just rely on that
-> and leave this out?
-> 
-
-It's really a shame that it can't be dealt with in the call to 
-acpi_table_parse_madt() even if it's just for ACPI_MADT_TYPE_LOCAL_X2APIC.  
-The above would be a last resort if there was absolutely no way that you 
-can determine which is the last entry to be printed.  I just thought I'd 
-comment on it in the hope that you'd find some clever way of avoiding the 
-newline in the caller :)
-
+> > bool?
 > > 
 > > > +
-> > >  		count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC,
-> > >  					acpi_parse_lapic, MAX_LOCAL_APIC);
+> > >  /* For PCI or other memory-mapped resources */
+> > >  unsigned long pci_mem_start = 0xaeedbabe;
+> > >  #ifdef CONFIG_PCI
+> > > @@ -125,42 +132,85 @@ void __init e820_add_region(u64 start, u
+> > >  	__e820_add_region(&e820, start, size, type);
+> > >  }
+> > >  -static void __init e820_print_type(u32 type)
+> > > +/* long description */
+> > > +static const char * __init e820_type_to_string(int e820_type)
+> > > +{
+> > > +	switch (e820_type) {
+> > > +	case E820_RESERVED_KERN:	return "Kernel RAM";
+> > > +	case E820_RAM:	return "System RAM";
+> > > +	case E820_ACPI:	return "ACPI Tables";
+> > > +	case E820_NVS:	return "ACPI Non-Volatile Storage";
+> > > +	case E820_UNUSABLE:	return "Unusable Memory";
+> > > +	default:	return "Reserved";
+> > > +	}
+> > > +}
+> > 
+> > All of the callers of this function would probably benefit from surrounding
+> > each return string with ( and ).
+> 
+> Good point, thanks.
+> > 
+> > > +
+> > > +/* short description, saves log space when there are 100's of e820
+> > > entries */
+> > > +static char * __init e820_types(int e820_type)
+> > >  {
+> > > -	switch (type) {
+> > > -	case E820_RAM:
+> > > -	case E820_RESERVED_KERN:
+> > > -		printk(KERN_CONT "(usable)");
+> > > -		break;
+> > > -	case E820_RESERVED:
+> > > -		printk(KERN_CONT "(reserved)");
+> > > -		break;
+> > > -	case E820_ACPI:
+> > > -		printk(KERN_CONT "(ACPI data)");
+> > > -		break;
+> > > -	case E820_NVS:
+> > > -		printk(KERN_CONT "(ACPI NVS)");
+> > > -		break;
+> > > -	case E820_UNUSABLE:
+> > > -		printk(KERN_CONT "(unusable)");
+> > > -		break;
+> > > -	default:
+> > > -		printk(KERN_CONT "type %u", type);
+> > > -		break;
+> > > +	switch (e820_type) {
+> > > +	case E820_RESERVED_KERN:	return "KRAM";
+> > > +	case E820_RAM:	return "SRAM";
+> > 
+> > Using the abbreviation "SRAM" for "system RAM" is just going to lead to
+> > confusion.
+> 
+> Suggestions?
+> 
+
+Well, SRAM is just unacceptable for obvious reasons.  I hope something 
+like "SysRAM" and "KernRAM" isn't too long.
+
+> > 
+> > > +	case E820_ACPI:	return "ACPI";
+> > > +	case E820_NVS:	return "NVS";
+> > > +	case E820_UNUSABLE:	return "UM";
+> > 
+> > I know these are intended to be very short, but nobody is going to conclude
+> > that "UM" means unusuable memory.
+> 
+> UM, what do you think it should be?  ;-)
+> 
+
+lol, probably just "unusable."
+
+> > 
+> > > +	default:	return "RESVD";
 > > >  	}
-> > > --- linux.orig/drivers/acpi/tables.c
-> > > +++ linux/drivers/acpi/tables.c
-> > > @@ -66,11 +66,17 @@ void acpi_table_print_madt_entry(struct
-> > >  		{
-> > >  			struct acpi_madt_local_x2apic *p =
-> > >  			    (struct acpi_madt_local_x2apic *)header;
-> > > -			printk(KERN_INFO PREFIX
-> > > -			       "X2APIC (apic_id[0x%02x] uid[0x%02x] %s)\n",
-> > > -			       p->local_apic_id, p->uid,
-> > > -			       (p->lapic_flags & ACPI_MADT_ENABLED) ?
-> > > -			       "enabled" : "disabled");
+> > >  }
+> > >  +static void __init e820_print_header(void)
+> > > +{
+> > > +	pr_info("types: %s=(%s) %s=(%s) %s=(%s) %s=(%s) %s=(%s) %s=(%s)\n",
+> > > +		e820_types(E820_RESERVED_KERN),
+> > > +				e820_type_to_string(E820_RESERVED_KERN),
+> > > +		e820_types(E820_RAM), e820_type_to_string(E820_RAM),
+> > > +		e820_types(E820_RESERVED), e820_type_to_string(E820_RESERVED),
+> > > +		e820_types(E820_ACPI), e820_type_to_string(E820_ACPI),
+> > > +		e820_types(E820_NVS), e820_type_to_string(E820_NVS),
+> > > +		e820_types(E820_UNUSABLE),
+> > > e820_type_to_string(E820_UNUSABLE));
+> > > +}
 > > > +
-> > > +			if ((p->uid & 7) == 0)
-> > > +				pr_info(PREFIX "X2APIC apic_id=uid:");
-> > > +
-> > > +			pr_cont(" %02x=%02x%s%s",
-> > > +				p->local_apic_id, p->uid,
-> > > +				/* assume "enabled" unless "disabled" */
-> > > +				(p->lapic_flags & ACPI_MADT_ENABLED) ?
-> > > +					"" : " disabled",
+> > > +/* compare new entry with old so we only print "modified" entries */
+> > > +static int __init not_modified(int i, int j)
 > > 
-> > Because you're printing only " disabled" when ACPI_MADT_ENABLED is not set,
-> > this seems like the format of the line would be ambiguous with regard to
-> > which entry it applies to.  I could imagine a line such as
-> > 
-> > 	X2APIC apic_id=uid: 01=01 disabled 02=02
-> > 
-> > and then we're left wondering which entry is actually disabled.  I'd prefer
-> > "01=01(disabled) 02=02" instead.
+> > I know it's static, but this needs a better function name.  I hope it's
+> > never passed negative actuals by mistake.
 > 
-> Yes, thanks.  That does make more sense.
-> > 
-> > Also, why did you drop the "0x" prefixes from the current format?
-> 
-> With 4096 cores that removes 8k bytes from the log buffer.  Do we really
-> need the 0x everywhere?  At what point does the context imply hex?
+> What (!not) doesn't make sense? ;-)
 > 
 
-I personally always prefer the "0x" prefix when you're outputting hex 
-because it may not be clear from the value itself.  The VM sometimes 
-outputs pfns in base-10 and sometimes in base-16 and it's very confusing 
-unless you look at the implementation, for example.  I don't think "0x" is 
-egregious long and is worth adding to remove any ambiguity in the value.
+It's a poor function name because it's way too generic, it should include 
+e820 in some way.  e820_entry_is_unmodified(), for example.
+
+> > >  void __init e820_print_map(char *who)
+> > >  {
+> > > -	int i;
+> > > +	int i, j = 0;
+> > > +	int hdr = 0;
+> > > +	int mod = strcmp(who, "modified") == 0;
+> > 
+> > bool?
+> > 
+> > >   	for (i = 0; i < e820.nr_map; i++) {
+> > > -		printk(KERN_INFO " %s: %016Lx - %016Lx ", who,
+> > > -		       (unsigned long long) e820.map[i].addr,
+> > > -		       (unsigned long long)
+> > > -		       (e820.map[i].addr + e820.map[i].size));
+> > > -		e820_print_type(e820.map[i].type);
+> > > -		printk(KERN_CONT "\n");
+> > > +		/* only print those entries that were really modified */
+> > > +		if (mod)
+> > > +			j = not_modified(i, j);
+> > > +
+> > > +		if (!j) {
+> > > +			if (!hdr++)
+> > > +				e820_print_header();
+> > > +
+> > > +			pr_info("%s: %Lx+%Lx (%s)\n", who,
+> > 
+> > We don't want a space prefix anymore?
+> 
+> Why would we?
+
+To differentiate it from the other messages since we're printing multiple 
+lines that only make sense in relationship to one another (like how we 
+print stacks on x86).
+
+> > 
+> > > +			       (unsigned long long) e820.map[i].addr,
+> > > +			       (unsigned long long) e820.map[i].size,
+> > > +			       e820_types(e820.map[i].type));
+> > > +		}
+> > > +	}
+> > > +	if (!hdr)
+> > > +		pr_info("<none>\n");
+> > > +
+> > > +	if (!e820_prev_saved) {
+> > > +		memcpy(&e820_prev, &e820, sizeof(struct e820map));
+> > > +		e820_prev_saved = 1;
+> > >  	}
+> > >  }
+> > >  @@ -437,13 +487,11 @@ static u64 __init __e820_update_range(st
+> > >  		size = ULLONG_MAX - start;
+> > >   	end = start + size;
+> > > -	printk(KERN_DEBUG "e820 update range: %016Lx - %016Lx ",
+> > > +	pr_debug("e820 update range: %Lx+%Lx %s ==> %s\n",
+> > >  		       (unsigned long long) start,
+> > > -		       (unsigned long long) end);
+> > > -	e820_print_type(old_type);
+> > > -	printk(KERN_CONT " ==> ");
+> > > -	e820_print_type(new_type);
+> > > -	printk(KERN_CONT "\n");
+> > > +		       (unsigned long long) size,
+> > > +			e820_type_to_string(old_type),
+> > > +			e820_type_to_string(new_type));
+> > >   	for (i = 0; i < e820x->nr_map; i++) {
+> > >  		struct e820entry *ei = &e820x->map[i];
+> > > @@ -518,12 +566,10 @@ u64 __init e820_remove_range(u64 start,
+> > >  		size = ULLONG_MAX - start;
+> > >   	end = start + size;
+> > > -	printk(KERN_DEBUG "e820 remove range: %016Lx - %016Lx ",
+> > > +	printk(KERN_DEBUG "e820 remove range: %016Lx - %016Lx %s\n",
+> > >  		       (unsigned long long) start,
+> > > -		       (unsigned long long) end);
+> > > -	if (checktype)
+> > > -		e820_print_type(old_type);
+> > > -	printk(KERN_CONT "\n");
+> > > +		       (unsigned long long) end,
+> > > +			checktype ? e820_type_to_string(old_type) : "");
+> > >   	for (i = 0; i < e820.nr_map; i++) {
+> > >  		struct e820entry *ei = &e820.map[i];
+> > > @@ -576,7 +622,7 @@ void __init update_e820(void)
+> > >  	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
+> > >  		return;
+> > >  	e820.nr_map = nr_map;
+> > > -	printk(KERN_INFO "modified physical RAM map:\n");
+> > > +	printk(KERN_INFO "physical RAM map entries that were modified:\n");
+> > >  	e820_print_map("modified");
+> > >  }
+> > >  static void __init update_e820_saved(void)
+> > > @@ -926,18 +972,6 @@ void __init finish_e820_parsing(void)
+> > >  	}
+> > >  }
+> > >  -static inline const char *e820_type_to_string(int e820_type)
+> > > -{
+> > > -	switch (e820_type) {
+> > > -	case E820_RESERVED_KERN:
+> > > -	case E820_RAM:	return "System RAM";
+> > > -	case E820_ACPI:	return "ACPI Tables";
+> > > -	case E820_NVS:	return "ACPI Non-volatile Storage";
+> > > -	case E820_UNUSABLE:	return "Unusable memory";
+> > > -	default:	return "reserved";
+> > > -	}
+> > > -}
+> > > -
+> > >  /*
+> > >   * Mark e820 reserved areas as busy for the resource manager.
+> > >   */
+> > > --- linux.orig/arch/x86/platform/efi/efi.c
+> > > +++ linux/arch/x86/platform/efi/efi.c
+> > > @@ -306,11 +306,11 @@ static void __init print_efi_memmap(void
+> > >  	     p < memmap.map_end;
+> > >  	     p += memmap.desc_size, i++) {
+> > >  		md = p;
+> > > -		printk(KERN_INFO PFX "mem%02u: type=%u, attr=0x%llx, "
+> > > -			"range=[0x%016llx-0x%016llx) (%lluMB)\n",
+> > > -			i, md->type, md->attribute, md->phys_addr,
+> > > -			md->phys_addr + (md->num_pages << EFI_PAGE_SHIFT),
+> > > -			(md->num_pages >> (20 - EFI_PAGE_SHIFT)));
+> > > +		pr_info(PFX
+> > > +			"mem%u: range %llx+%llx (%lluMB) type %u attr %llx\n",
+> > 
+> > The range you're printing is now ambiguous because you're now showing the
+> > length rather than the ending length (implying that what you're displaying
+> > is not a range at all, but it's specified as one).  I typically don't see
+> > "100+12" as describing [100,112), for example.
+> 
+> Again, I'm open for suggestions.  I thought that changing base-end to
+> base+range
+> would be coherent?  
+
+A range consists of a start and an end, so you changed base-end to 
+base+length, not base+range.  If I see "100+12", I see that as 112 because 
+it seems like it's either arithmetic or an offset from base 100.  The last 
+thing that comes to mind is [100,112), though.  Changing this isn't really 
+a part of the goals of your patchset either.
+
+> > This is also the second time in the patchset where you're printing hex
+> > values without a "0x" prefix, that can be confusing and it's not like "0x"
+> > is egregiously long.  I can understand removing the zero padding, but not
+> > the prefix.
+> 
+> The problem comes when there are zillions of them.
+
+I'd be surprised if you can't spare two characters for a hex value in the 
+kernel log.
