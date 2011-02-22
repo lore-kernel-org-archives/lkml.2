@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab1BVUAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:00:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39702 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755358Ab1BVUAr (ORCPT
+	id S1755388Ab1BVUBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:01:08 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58810 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab1BVUBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:00:47 -0500
-Date: Tue, 22 Feb 2011 20:00:46 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
-	rtc_class_ops->read_alarm()
-Message-ID: <20110222200046.GD31611@opensource.wolfsonmicro.com>
-References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org> <1298332538-31216-5-git-send-email-john.stultz@linaro.org> <20110222023452.GB18299@sirena.org.uk> <1298343333.4222.36.camel@work-vm> <1298362178.4222.57.camel@work-vm> <20110222181647.GA25569@opensource.wolfsonmicro.com> <1298404268.9215.39.camel@work-vm>
+	Tue, 22 Feb 2011 15:01:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SL+PN8/Y+8Jc6ji/INNs1SNZ2SlWIgMvrrcNs/zw/s5Z5J1TieJsukqB+g4G5+Vkv6
+         xr4PCfC9GlaBZuBcmDCz8d9E328HCPdiyI0jDEL2RIWCVaD3K29I8389mpH6OJXthbMv
+         m/PsmW6mCFDqiWVmOC3oJzf1odX/tUzc2t4ro=
+Date: Tue, 22 Feb 2011 11:52:57 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "pantherchen@versanet.de" <pantherchen@versanet.de>
+Cc: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Boot time regression in 2.6.38 after initial wq merge
+Message-ID: <20110222195257.GA13256@core.coreip.homeip.net>
+References: <4D62CE9C.7090806@versanet.de>
+ <20110222081752.GP31267@htj.dyndns.org>
+ <20110222085223.GC11681@core.coreip.homeip.net>
+ <20110222090255.GR31267@htj.dyndns.org>
+ <B04A0050-5AE7-4072-BE6F-279E24B0DA64@gmail.com>
+ <4D63D062.3040404@versanet.de>
+ <20110222172254.GA13114@core.coreip.homeip.net>
+ <20110222175955.GA27991@core.coreip.homeip.net>
+ <4D640F67.3040109@versanet.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298404268.9215.39.camel@work-vm>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4D640F67.3040109@versanet.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 11:51:08AM -0800, john stultz wrote:
-> On Tue, 2011-02-22 at 10:16 -0800, Mark Brown wrote:
+On Tue, Feb 22, 2011 at 08:32:55PM +0100, pantherchen@versanet.de wrote:
+> On 02/22/2011 06:59 PM, Dmitry Torokhov wrote:
+> >On Tue, Feb 22, 2011 at 09:22:54AM -0800, Dmitry Torokhov wrote:
+> >>Just to confirm, if you revert commit
+> >>
+> >>	8ee294cd9def0004887da7f44b80563493b0a097
+> >>
+> >>from 2.6.38-rc6, does this restore boot time?
+> 
+> Yes, it's booting fine with that commit reverted.
+> 
+> >And if that indeed fixes the issue I wonder if the reason for the stall
+> >is that we trip on flush_scheduled_work() somewhere. If you could stick
+> >dump_stack() into flush_scheduled_work() that might give us some clues.
+> 
+> I wasn't sure where to put the dump_stack() call, so I placed one
+> before and one after the flush_workqueue() call.
+> 
+> Here's the part that turned up in dmesg: http://paste.ubuntu.com/570729/
+> 
 
-> > The WM83xx RTCs can do this (the alarm can be used to initiate a boot)
-> > and I'd expect many embedded RTC controllers can do similar.  The
-> > application would manage this by owning the RTC in the system, usually
-> > with a configuration saying something like "boot every day at 7am" or
-> > something.
+Ewww... tty/ldisc...
 
-> So since the RTC_ALM_SET doesn't support wildcards, the application
-> would be checking the hardware at least once a day and making sure the
-> alarm was properly set for 7am?
+Does it help if you change drivers/input/serio/serio.c::serio_queue_event()
+from calling
 
-Probably, yes.  Though some RTCs just ignore the day anyway.
+	schedule_work(&serio_event_work);
 
-> Does the approach I mentioned in my last mail to Marcelo sound like a
-> reasonable solution?
+to call
 
-> Basically: The kernel will try to init the value returned from
-> RTC_ALM_READ to whatever the hardware has stored, but since many (very
-> common) rtc devices don't support persistent values after reset,
-> applications shouldn't trust that alarms will persist across resets.
+	queue_work(system_long_wq, &serio_event_work);
 
-That'll probably work, yes.
+?
 
-> > Having thought about this a bit I'm thinking that this sort of alarm
-> > handling is probably something I'd expect to see handled in userspace.
-> > I can see us providing a virtual RTC driver that can generate alarms
-> > when there's no actual RTC hardware but adding additional functionality
-> > on top of the hardware feels like an application issue.
+Thanks.
 
-> If you're suggesting that the multiplexing of RTC events doesn't belong
-> in the kernel, and instead should be handled through userland
-> coordination, then I disagree. The kernel's job is explicitly to
-> abstract the hardware so that resources can be shared safely. So
-> abstracting the RTC alarms doesn't seem to be overreaching. But maybe
-> I'm misunderstanding what your saying?
-
-I'm saying that for something like this it doesn't seem like the kernel
-should be adding support for features that the hardware doesn't actually
-have, it feels like it's going to be more complicated and error prone to
-implement in kernel space.
+-- 
+Dmitry
