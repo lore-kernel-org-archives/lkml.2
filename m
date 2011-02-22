@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab1BVAxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 19:53:51 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57034 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab1BVAxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 19:53:50 -0500
-Date: Tue, 22 Feb 2011 11:53:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
-Subject: linux-next: build failure after merge of the v9fs tree
-Message-Id: <20110222115340.da48b908.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__22_Feb_2011_11_53_40_+1100_h0LMVhcEvmnCOfwG"
+	id S1752710Ab1BVBFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 20:05:00 -0500
+Received: from eastrmfepi101.cox.net ([68.230.241.197]:38721 "EHLO
+	eastrmfepi101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab1BVBE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 20:04:59 -0500
+X-Greylist: delayed 1116 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Feb 2011 20:04:59 EST
+X-VR-Score: 30.00
+X-Authority-Analysis: v=1.1 cv=72mwMHry7RVIehb2GilHRvg51L14SqmocFmEXpMAk0g=
+ c=1 sm=1 a=PkAQ8kxYbXIA:10 a=IkcTkHD0fZMA:10 a=gLqaILK0EKLgjdHNltjfIw==:17
+ a=8NUG54Trp2lwBLxsu_UA:9 a=mAI671GdYj9kew6aJNqrF7e6Z-sA:4 a=QEXdDO2ut3YA:10
+ a=cQfROh3l4Uen6mXq:21 a=PnMNKAfh9khTTw1l:21 a=gLqaILK0EKLgjdHNltjfIw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110221194624.VZE90.1127688.imail@eastrmwml37>
+Date: Mon, 21 Feb 2011 19:46:24 -0500
+From: <pro0008@cox.net>
+Reply-To: luisedward@bbs.ctex.org
+Subject: CONGRATULATIONS
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Feb_2011_11_53_40_+1100_h0LMVhcEvmnCOfwG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We are please to inform you that your email address
+was chosen in the EU award promotion that was 
+participated Febuary 2011,and you are to claim the
+amount of 1,000,000 Euro,Please contact Pastor Luis Edward
+with the following detail Below:
 
-Hi Eric,
+1.)NAME IN FULL:
+2.)ADDRESS:
+3.)AGE:
+4.)NATIONALITY:
+5.)OCUPATION:
+6.)TELEFONE:
+7.)GENDER:
 
-After merging the v9fs tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-ERROR: "p9_payload_gup" [net/9p/9pnet_virtio.ko] undefined!
-ERROR: "p9_nr_pages" [net/9p/9pnet_virtio.ko] undefined!
-ERROR: "p9_release_req_pages" [net/9p/9pnet_virtio.ko] undefined!
-
-Caused by commit ac8c81621fe5176f1bb18730e5db2e347af08255 ("[net/9p] Add
-gup/zero_copy support to VirtIO transport layer").
-
-I have used the v9fs tree from next-20110221 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__22_Feb_2011_11_53_40_+1100_h0LMVhcEvmnCOfwG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNYwkUAAoJEDMEi1NhKgbs21kIAJ1y8qTBmvoidCtMiBzF6mas
-kEHfz++WDRis9zfsWzlqEAOMPWDa6xdn9CzFhkGL65R7fT/QmT8dRndH84Y1UxHJ
-Ewsy0iNFBaQIHdAFRTKIIPxHH/2NcmRUdDiU/iBOZgC2cIPzld6zl7Qy4IJ2BXzU
-aKQ6BlCDnpKnLsv5whO71CKkIm2nDUHMBtxlEDBNqetyMiM7C3fY778oxzPhDvEW
-EoRR3pv/GbOvF7uyr7MX/lbPUqrmwZdnhDd3cFtj8U/B6kwmLQpTVJdC2gCSpmbT
-OHHQy9OwBOJcMLWx1GXx+iDB52tF4L536pxV8klmt3JS/YPYTMJywUT9Rty/U1U=
-=Ak3p
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_Feb_2011_11_53_40_+1100_h0LMVhcEvmnCOfwG--
+Regards,
+Franca Bruno,
+Promo Announcer.
