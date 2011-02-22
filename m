@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1BVXZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:25:46 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:50338 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751547Ab1BVXZp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 18:25:45 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Zt0KDtdLCC9+A3HQ4vM+pl8qMkllYNRdk8rRyXNH5jarFms7X8Is/JrV3ZmSC+/UhXp7zKSdvyolA8dFvAiCb/9xocBdyPQpwaLEdcN3lC+XffJ+kmH79sDAzMNd27KU;
-Date: Tue, 22 Feb 2011 15:25:40 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Jan Beulich" <JBeulich@novell.com>
-Cc: "Mauro Carvalho Chehab" <mchehab@redhat.com>, <mingo@elte.hu>,
-        <tglx@linutronix.de>, <arozansk@redhat.com>,
-        "Michal Marek" <mmarek@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH, resend] x86/PCI: don't export a __devinit function
-Message-ID: <20110222152540.5023e9f1@jbarnes-desktop>
-In-Reply-To: <4D5E45FB0200007800032A45@vpn.id2.novell.com>
-References: <4D5D562A0200007800032744@vpn.id2.novell.com>
-	<4D5D6517.5060600@redhat.com>
-	<4D5E45FB0200007800032A45@vpn.id2.novell.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S1753300Ab1BVX1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:27:09 -0500
+Received: from kroah.org ([198.145.64.141]:47788 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547Ab1BVX1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 18:27:07 -0500
+Date: Tue, 22 Feb 2011 15:27:03 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for .38
+Message-ID: <20110222232703.GA18987@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Feb 2011 09:12:11 +0000
-"Jan Beulich" <JBeulich@novell.com> wrote:
+Here are some USB fixes for your .38 tree.
 
-> Like this:
-> 
-> --- a/arch/x86/pci/mmconfig-shared.c
-> +++ b/arch/x86/pci/mmconfig-shared.c
-> @@ -606,6 +606,16 @@ static void __init __pci_mmcfg_init(int 
->  	if (list_empty(&pci_mmcfg_list))
->  		return;
->  
-> +	if (pcibios_last_bus < 0) {
-> +		const struct pci_mmcfg_region *cfg;
-> +
-> +		list_for_each_entry(cfg, &pci_mmcfg_list, list) {
-> +			if (cfg->segment)
-> +				break;
-> +			pcibios_last_bus = cfg->end_bus;
-> +		}
-> +	}
-> +
->  	if (pci_mmcfg_arch_init())
->  		pci_probe = (pci_probe & ~PCI_PROBE_MASK) | PCI_PROBE_MMCONF;
->  	else {
-> 
-> I (unsuccessfully so far) tried to find someone at Intel who could
-> confirm that this approach is usable namely on those Xeon 55xx
-> systems that the edac driver tries to deal with, which is why I
-> didn't submit this so far.
+Nothing major, new device ids and bugfixes.  The USB 3.0 fix was
+applied, and then reverted at the request of Sarah, as she will be
+submitting a better fix later on.
 
-What's the actual user of pcibios_last_bus we're concerned about here?
-Presumably pcibios_fixup_peer_bridges(), since that's the only place
-that might be affected by a positive value...
+Another round of tiny musb fixes, and other driver fixes and device ids.
 
-So in that sense, the above seems like a good fix; we should initialize
-pcibios_last_bus to a reasonable value based on the configuration we
-discover in the MCFG table.
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+All of these patches have been in the linux-next and mm trees for a
+while.
+
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
+
+thanks,
+
+greg k-h
+
+------------
+
+ drivers/usb/core/quirks.c     |    8 ++++++++
+ drivers/usb/musb/musb_core.h  |   17 +++++++++--------
+ drivers/usb/musb/omap2430.c   |    1 +
+ drivers/usb/serial/sierra.c   |    3 +++
+ drivers/usb/serial/usb_wwan.c |   15 +++++++++------
+ drivers/usb/serial/visor.c    |   12 ++++++++++++
+ 6 files changed, 42 insertions(+), 14 deletions(-)
+
+---------------
+
+Alan Stern (1):
+      USB: add quirks entry for Keytouch QWERTY Panel
+
+Felipe Balbi (1):
+      usb: musb: fix build breakage
+
+Greg Kroah-Hartman (1):
+      Revert "USB: Reset USB 3.0 devices on (re)discovery"
+
+Jiri Slaby (1):
+      USB: serial/usb_wwan, fix tty NULL dereference
+
+Johan Hovold (2):
+      usb: musb: omap2430: fix kernel panic on reboot
+      USB: musb: omap2430: fix kernel panic on reboot
+
+Jon Thomas (1):
+      sierra: add new ID for Airprime/Sierra USB IP modem
+
+Luben Tuikov (1):
+      USB: Reset USB 3.0 devices on (re)discovery
+
+Maciej Szmigiero (2):
+      USB: Add Samsung SGH-I500/Android modem ID switch to visor driver
+      USB: Add quirk for Samsung Android phone modem
+
