@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab1BVNfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 08:35:00 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:4068 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab1BVNe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 08:34:59 -0500
-Subject: Re: [PATCH] rt2x00: Use ops name instead of device name
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Felix Fietkau <nbd@openwrt.org>, Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>, abogani@texware.it
-In-Reply-To: <1298380368.6140.1193.camel@gandalf.stny.rr.com>
-References: <1298380368.6140.1193.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Tue, 22 Feb 2011 13:34:55 +0000
-Message-ID: <1298381695.2211.486.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Feb 2011 13:34:59.0023 (UTC) FILETIME=[4CC685F0:01CBD295]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17970.004
-X-TM-AS-Result: No--15.032200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1752500Ab1BVNhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 08:37:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20405 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041Ab1BVNhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 08:37:33 -0500
+Date: Tue, 22 Feb 2011 14:35:20 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>, akpm@osdl.org,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 4/5] teach smaps_pte_range() about THP pmds
+Message-ID: <20110222133520.GS13092@random.random>
+References: <20110222015338.309727CA@kernel>
+ <20110222015343.41586948@kernel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222015343.41586948@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 08:12 -0500, Steven Rostedt wrote:
-> Recently, someone complained that they see the PCI address of a device
-> in the interrupts file instead of the device name.
-> 
-> 19:   73474106          0   IO-APIC-fasteoi   ata_piix, uhci_hcd:usb6, 0000:05:01.0
-[...]
-> diff --git a/drivers/net/wireless/rt2x00/rt2x00pci.c b/drivers/net/wireless/rt2x00/rt2x00pci.c
-> index ace0b66..06575dc 100644
-> --- a/drivers/net/wireless/rt2x00/rt2x00pci.c
-> +++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
-> @@ -284,7 +284,7 @@ int rt2x00pci_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
->  	rt2x00dev->ops = ops;
->  	rt2x00dev->hw = hw;
->  	rt2x00dev->irq = pci_dev->irq;
-> -	rt2x00dev->name = pci_name(pci_dev);
-> +	rt2x00dev->name = ops->name;
+On Mon, Feb 21, 2011 at 05:53:43PM -0800, Dave Hansen wrote:
+> @@ -385,8 +387,25 @@ static int smaps_pte_range(pmd_t *pmd, u
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
 >  
->  	if (pci_is_pcie(pci_dev))
->  		rt2x00_set_chip_intf(rt2x00dev, RT2X00_CHIP_INTF_PCIE);
+> -	split_huge_page_pmd(walk->mm, pmd);
+> -
+> +	spin_lock(&walk->mm->page_table_lock);
+> +	if (pmd_trans_huge(*pmd)) {
+> +		if (pmd_trans_splitting(*pmd)) {
+> +			spin_unlock(&walk->mm->page_table_lock);
+> +			wait_split_huge_page(vma->anon_vma, pmd);
+> +		} else {
+> +			smaps_pte_entry(*(pte_t *)pmd, addr,
+> +					HPAGE_PMD_SIZE, walk);
+> +			spin_unlock(&walk->mm->page_table_lock);
+> +			return 0;
+> +		}
+> +	} else {
+> +		spin_unlock(&walk->mm->page_table_lock);
+> +	}
+> +	/*
+> +	 * The mmap_sem held all the way back in m_start() is what
+> +	 * keeps khugepaged out of here and from collapsing things
+> +	 * in here.
+> +	 */
 
-But then how can users distinguish the IRQs for multiple devices handled
-by the same driver?  (Probably unusual for WLAN devices, but still
-possible.)
+This time the locking is right and HPAGE_PMD_SIZE is used instead of
+HPAGE_SIZE, thanks! I think all 5 patches can go in -mm and upstream
+anytime (not mandatory for 2.6.38 but definitely we want this for
+2.6.39).
 
-I assume you can't use a net device name as there may be multiple net
-devices per bus device?
+BTW, Andi in his NUMA THP improvement series added a THP_SPLIT vmstat
+per-cpu counter so that part removed from his series, is taken care by
+him.
 
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Acked-by: Andrea Arcangeli <aarcange@redhat.com>
