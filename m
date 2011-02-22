@@ -1,110 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1BVMGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 07:06:51 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50735 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050Ab1BVMGu convert rfc822-to-8bit (ORCPT
+	id S1754212Ab1BVMKM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 07:10:12 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40800 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050Ab1BVMKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 07:06:50 -0500
-From: "TK, Pratheesh Gangadhar" <pratheesh@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>, "Hans J. Koch" <hjk@hansjkoch.de>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Chatterjee, Amit" <amit.chatterjee@ti.com>,
-        "gregkh@suse.de" <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 22 Feb 2011 17:36:23 +0530
-Subject: RE: [PATCH 1/2] PRUSS UIO driver support
-Thread-Topic: [PATCH 1/2] PRUSS UIO driver support
-Thread-Index: AcvSASxgVASxUIvaQfi0Cwydute6ngAhxfyA
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024BD4916A@dbde02.ent.ti.com>
-References: <1298041530-26855-1-git-send-email-pratheesh@ti.com>
-	<201102181644.17634.arnd@arndb.de>
-	<alpine.LFD.2.00.1102181713480.2701@localhost6.localdomain6>
-	<201102181731.05644.arnd@arndb.de>
-	<alpine.LFD.2.00.1102181802580.2701@localhost6.localdomain6>
-	<B85A65D85D7EB246BE421B3FB0FBB593024B83C108@dbde02.ent.ti.com>
-	<20110219183427.GG4684@local>
-	<B85A65D85D7EB246BE421B3FB0FBB593024B83C20F@dbde02.ent.ti.com>
- <20110221193316.GC2773@local> <4D62C2A0.6060405@mvista.com>
-In-Reply-To: <4D62C2A0.6060405@mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Feb 2011 07:10:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PMQp7XzlEesqJPX1xtK0xHGD4dsPrzRPZpGRqPcg9Yr1n3uglYoqcA1bUKrihVLTJM
+         +mSJi5a0/OSjnkZbjbJsK1+Ix1Ka95UL0UyHLEP0eM54V0Rta2uDm9+C5DOWKUaGNhFW
+         sP5dc8ILWLCENhdjBaBK7RQSnDw3bbGBgHYb8=
+Date: Tue, 22 Feb 2011 20:10:02 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH V2] sched, autogroup: always show autogroup name in
+ sched_debug
+Message-ID: <20110222121002.GA2100@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1298185696-4403-1-git-send-email-yong.zhang0@gmail.com>
+ <1298185696-4403-6-git-send-email-yong.zhang0@gmail.com>
+ <1298207379.7998.11.camel@marge.simson.net>
+ <20110220141003.GA6006@zhy>
+ <1298222533.7881.15.camel@marge.simson.net>
+ <1298306175.24121.14.camel@twins>
+ <AANLkTin_aqBTXUyO4H-p1_4i-9FAvxChBi1QpPFXvqD_@mail.gmail.com>
+ <1298368566.2217.18.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1298368566.2217.18.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Feb 22, 2011 at 10:56:06AM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-02-22 at 11:13 +0800, Yong Zhang wrote:
+> > So show autogroup name always. But for the root group,
+> > its name will dance between "cfs_rq[cpu]:" and
+> > "cfs_rq[cpu]:/autogroup-0" according to
+> > sysctl_sched_autogroup_enabled. 
+> 
+> Would it make sense to force the root group to always be a !autogroup?
 
-> -----Original Message-----
-> From: Sergei Shtylyov [mailto:sshtylyov@mvista.com]
-> Sent: Tuesday, February 22, 2011 1:23 AM
-> To: Hans J. Koch
-> Cc: TK, Pratheesh Gangadhar; davinci-linux-open-
-> source@linux.davincidsp.com; Arnd Bergmann; Chatterjee, Amit;
-> gregkh@suse.de; LKML; Thomas Gleixner; linux-arm-
-> kernel@lists.infradead.org
-> Subject: Re: [PATCH 1/2] PRUSS UIO driver support
-> 
-> Hello.
-> 
-> Hans J. Koch wrote:
-> 
-> >>> -----Original Message-----
-> >>> From: Hans J. Koch [mailto:hjk@hansjkoch.de]
-> >>> Sent: Sunday, February 20, 2011 12:04 AM
-> >>> To: TK, Pratheesh Gangadhar
-> >>> Cc: Thomas Gleixner; Arnd Bergmann; linux-arm-
-> kernel@lists.infradead.org;
-> >>> davinci-linux-open-source@linux.davincidsp.com; gregkh@suse.de;
-> >>> Chatterjee, Amit; Hans J. Koch; LKML
-> >>> Subject: Re: [PATCH 1/2] PRUSS UIO driver support
-> 
-> >>> On Sat, Feb 19, 2011 at 09:10:23PM +0530, TK, Pratheesh Gangadhar
-> wrote:
-> >>>> For my understanding - if the interrupt is not shared and not level
-> triggered -
-> >>>> is this okay to have empty handler?
-> 
-> >>> Greg already said he won't accept that. And I'm quite sure these
-> >>> interrupts
-> >>> are level triggered, since that is the default on arch/omap.
-> 
-> >>> E.g. in arch/arm/mach-omap1/irq.c, a loop sets all irqs to level
-> triggered
-> >>> handling: set_irq_handler(j, handle_level_irq); (line 234)
-> 
-> >> You should be looking at arch/arm/mach-davinci/irq.c
-> 
->     Into arch/arm/mach-davinci/cp_intc.c actually as we're not talking
-> about a
-> "real" DaVincis here, but about OMAP-L138.
-> 
-> > Hmpf. I alway get lost in the directory structure of TI SoCs...
-> > At least I learned that OMAP3 is in the omap2 directory :)
-> 
->     It's probably even more convoluted with DaVinci and friends. :-)
-> 
-> >> and all interrupts except IRQ_TINT1_TINT34 is set to edge trigger mode
-> (line 160).
-> 
-> > Is that really needed? Level triggered interrupts should certainly be
-> > preferred if possible.
-> 
->     Don't look there, this code is for "real" DaVincis only.
-> 
+Hmmm, I think it's ok.
 
-Thanks for correcting. Interrupts are configured as edge triggered here as well.
+---
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH] sched, autogroup: always show autogroup name in sched_debug
 
-Thanks and Regards,
-Pratheesh
+When autogroup is disabled, there will be lots of group
+named "cfs_rq[cpu]:", thus will lead to confusion for
+who read it.
+And for now, autogroup runtime disable/enable will
+not take effect immediately on current live processes,
+so there maybe still have some processes attaching to
+its autogroup.
+So show autogroup name always. But for the root group,
+its name will always be "cfs_rq[cpu]:/".
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>
+---
+ kernel/sched_autogroup.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
+index 9fb6562..5b9a317 100644
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -258,9 +258,7 @@ void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m)
+ #ifdef CONFIG_SCHED_DEBUG
+ static inline int autogroup_path(struct task_group *tg, char *buf, int buflen)
+ {
+-	int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
+-
+-	if (!enabled || !tg->autogroup)
++	if (!tg->autogroup || !tg->autogroup->id)
+ 		return 0;
+ 
+ 	return snprintf(buf, buflen, "%s-%ld", "/autogroup", tg->autogroup->id);
+-- 
+1.7.1
+
