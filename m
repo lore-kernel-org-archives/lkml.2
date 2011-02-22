@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1BVNuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 08:50:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26531 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab1BVNun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 08:50:43 -0500
-Date: Tue, 22 Feb 2011 14:49:56 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Johannes Weiner <jweiner@redhat.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] fix pgd_lock deadlock
-Message-ID: <20110222134956.GU13092@random.random>
-References: <20110207232045.GJ3347@random.random>
- <20110215190710.GL5935@random.random>
- <alpine.LFD.2.00.1102152020590.26192@localhost6.localdomain6>
- <20110215195450.GO5935@random.random>
- <alpine.LFD.2.00.1102152102530.26192@localhost6.localdomain6>
- <20110216183304.GD5935@random.random>
- <20110217101941.GH2380@redhat.com>
- <20110221143023.GF13092@random.random>
- <20110221145350.GH25382@redhat.com>
- <4D6378760200007800033104@vpn.id2.novell.com>
+	id S1752787Ab1BVOAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:00:55 -0500
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:49551 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab1BVOAy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:00:54 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4D63C1B2.1050507@cam.ac.uk>
+Date: Tue, 22 Feb 2011 14:01:22 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110122 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D6378760200007800033104@vpn.id2.novell.com>
+To: "Cai, Cliff" <Cliff.Cai@analog.com>
+CC: Michael Hennerich <michael.hennerich@analog.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Drivers <Drivers@analog.com>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Subject: Re: [Device-drivers-devel] [PATCH] IIO driver for Analog Devices
+ Digital Output Gyroscope ADXRS450
+References: <1297676849-28704-1-git-send-email-test@ten.analog.com> <4D5914A8.9030809@analog.com>
+In-Reply-To: <4D5914A8.9030809@analog.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 07:48:54AM +0000, Jan Beulich wrote:
-> A possible alternative would be to acquire the page table lock
-> in vmalloc_sync_all() only in the Xen case (perhaps by storing
-> NULL into page->index in pgd_set_mm() when not running on
-> Xen). This is utilizing the fact that there aren't (supposed to
-> be - for non-pvops this is definitely the case) any TLB flush IPIs
-> under Xen, and hence the race you're trying to fix doesn't
-> exist there (while non-Xen doesn't need the extra locking).
+On 02/14/11 11:40, Michael Hennerich wrote:
+> Hi Cliff,
+> 
+> Exposing every single register to user space is not an acceptable driver.
+> Ideally a user of this driver doesn't need to read the datasheet, only
+> the IIO ABI Documentation.
+> This driver can also benefit from triggered sampling/ring buffer support.
+At some point.... I wouldn't necessarily advocate this for an initial merge. doing
+it in two steps can make for bite sized reviews which definitely have their
+advantages!
 
-That's sure ok with me. Can we use a global runtime to check if the
-guest is running under Xen paravirt, instead of passing that info
-through page->something?
+Given Michael has done a thorough review (thanks) I'll leave looking at this until
+you've addressed his comments.  Please be careful to avoid dead email addresses (test@analog.com)
+
+Thanks,
+
+Jonathan
