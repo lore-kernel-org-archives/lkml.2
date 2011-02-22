@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab1BVMcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 07:32:48 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:37337 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751833Ab1BVMcp (ORCPT
+	id S1751976Ab1BVMj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 07:39:57 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38534 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab1BVMj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 07:32:45 -0500
+	Tue, 22 Feb 2011 07:39:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=oHxMMqR/kAHiq/BA7bez8Ju5bQwiIS7F5KPutYEl5JC7IU4Qv2FveTMW3X+SWjTBMH
+         9RJUk4cJUhHPpiZQhGbz0cVCf6itjdq8G45dpLGWU2VHJS92ZPXX8+cohiROYh3+OtGP
+         hZGVFLF20vVy6z1RDXXWHBQRdrJmexgXz0aBI=
+Date: Tue, 22 Feb 2011 15:36:01 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Dirk Eibach <eibach@gdsys.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio: Fix wrong pointer type in pca953x
+Message-ID: <20110222123601.GA1966@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Dirk Eibach <eibach@gdsys.de>, linux-kernel@vger.kernel.org
+References: <1298365010-22951-1-git-send-email-eibach@gdsys.de>
 MIME-Version: 1.0
-In-Reply-To: <20110221202538.GK9650@tuxdriver.com>
-References: <20110217162650.092e77c3.sfr@canb.auug.org.au>
-	<20110218172536.970b5b39.randy.dunlap@oracle.com>
-	<20110221202538.GK9650@tuxdriver.com>
-Date: Tue, 22 Feb 2011 14:32:40 +0200
-Message-ID: <AANLkTi=M77+wuEa1Dc-+vA_-caY9p1Ft_5s4aQ7CDSjQ@mail.gmail.com>
-Subject: Re: [PATCH -next] wl12xx: fix sdio_test kconfig/build errors
-From: "Coelho, Luciano" <coelho@ti.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Luciano Coelho <luciano.coelho@nokia.com>,
-        Roger Quadros <roger.quadros@nokia.com>,
-        akpm <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1298365010-22951-1-git-send-email-eibach@gdsys.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 21, 2011 at 10:25 PM, John W. Linville
-<linville@tuxdriver.com> wrote:
-> Luca, I'm merging this one...
+On Tue, Feb 22, 2011 at 09:56:50AM +0100, Dirk Eibach wrote:
+>  	struct pca953x_platform_data *pdata;
+>  	struct device_node *node;
+> -	const uint16_t *val;
+> +	const u32 *val;
+>  
 
-Thanks, John!
+This should probably be signed?  We compare it against zero later on.
 
--- 
-Cheers,
-Luca.
+                if (*val < 0)
+                        dev_warn(&client->dev,
+                                 "invalid gpio-base in device tree\n");
+
+regards,
+dan carpenter
