@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1BVVAz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:00:55 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:13993 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab1BVU6U (ORCPT
+	id S1751800Ab1BVVD0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:03:26 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51123 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab1BVVDZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:58:20 -0500
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [RFC PATCH 04/10] MIPS: Octeon: Add a irq_create_of_mapping() implementation.
-Date: Tue, 22 Feb 2011 12:57:48 -0800
-Message-Id: <1298408274-20856-5-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
-X-OriginalArrivalTime: 22 Feb 2011 20:58:20.0191 (UTC) FILETIME=[3C4EA2F0:01CBD2D3]
+	Tue, 22 Feb 2011 16:03:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <1298405266-1624-4-git-send-email-bigeasy@linutronix.de>
+References: <1298405266-1624-1-git-send-email-bigeasy@linutronix.de> <1298405266-1624-4-git-send-email-bigeasy@linutronix.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 22 Feb 2011 13:59:42 -0700
+X-Google-Sender-Auth: PGPwHbRLl36hnpcDzu3S5DYev1o
+Message-ID: <AANLkTi=t-tN9hopx6quXUWeuGcDEPBguaJfAQJ-UQArW@mail.gmail.com>
+Subject: Re: [PATCH 03/11] x86/dtb: Add a device tree for CE4100
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de,
+        devicetree-discuss@lists.ozlabs.org, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed for Octeon to use the Device Tree.
+On Tue, Feb 22, 2011 at 1:07 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> History:
+> v1..v2:
+> - dropped device_type except for cpu & pci. I have the compatible string
+>  for pci so I can drop the device_type once it is possible
+> - I lowercased all compatible types. I will need to resend some patches
+>  which have upper case intel
+> - The cpu had the same compatible string as the soc node. So I added to
+>  the soc node -immr for internel memory mapped registers.
+> - I added generic names for all parts.
+> - I reworked the i2c bars matching the way you suggested. I added a
+>  compatible node for the PCI device which only the PCI ids in its
+>  compatible string. The bars (each represents a complete i2c
+>  controller) have a "intel,ce4100-i2c-controller" compatible node. It
+>  is not used by the driver.
+>  The driver is probed via PCI ids (by the pci subsystem not OF) and
+>  matches the bar address against the ressource in the child node. Once
+>  there is a hit the node is attached.
+> - The SPI driver is also probed via pci. However I also attached a
+>  compatible property based on PCI ids
+>
+> v2..v3:
+> - intel,ce4100-immr become intel,ce4100-cp. cp stands for core
+>  peripherals. The Atom data sheet talks here about ACPI devices. Since
+>  we don't have ACPI this does not apply here.
+> - The interrupt map is gone. There are now plenty of device nodes.
+> - The "unit address string" got fixed, it uses not DD,V format.
+>
+> v3..v4:
+> - added descriptions for compatible nodes introduced here:
+>  - intel,ce4100-ioapic
+>  - intel,ce4100-lapic
+>  - intel,ce4100-hpet
+>  - intel,ce4100
+>  - intel,ce4100-cp
+>  - intel,ce4100-pci
+> - added a description about I2C controller magic.
+> - Added gpio-controller and gpio-cells property to gpio devices. Those
+>  properties are not (yet) used.
+>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- arch/mips/cavium-octeon/octeon-irq.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
-index b365710..b0a9261 100644
---- a/arch/mips/cavium-octeon/octeon-irq.c
-+++ b/arch/mips/cavium-octeon/octeon-irq.c
-@@ -8,7 +8,9 @@
- 
- #include <linux/interrupt.h>
- #include <linux/bitops.h>
-+#include <linux/module.h>
- #include <linux/percpu.h>
-+#include <linux/of_irq.h>
- #include <linux/irq.h>
- #include <linux/smp.h>
- 
-@@ -64,6 +66,29 @@ static void __init octeon_irq_set_ciu_mapping(int irq, int line, int bit,
- 	octeon_irq_ciu_to_irq[line][bit] = irq;
- }
- 
-+/*
-+ * irq_create_of_mapping - Hook to resolve OF irq specifier into a Linux irq#
-+ *
-+ * Octeon irq maps are a pair of indexes.  The first selects either
-+ * ciu0 or ciu1, the second is the bit within the ciu register.
-+ */
-+unsigned int irq_create_of_mapping(struct device_node *controller,
-+				   const u32 *intspec, unsigned int intsize)
-+{
-+	int ciu, bit;
-+	unsigned int irq = 0;
-+
-+	ciu = be32_to_cpup(intspec);
-+	bit = be32_to_cpup(intspec + 1);
-+
-+	if (ciu < 8 && bit < 64)
-+		irq = octeon_irq_ciu_to_irq[ciu][bit];
-+
-+	return irq;
-+}
-+EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-+
-+
- static int octeon_coreid_for_cpu(int cpu)
- {
- #ifdef CONFIG_SMP
--- 
-1.7.2.3
+plus one note below...
 
+> ---
+>  .../devicetree/bindings/i2c/ce4100-i2c.txt         |   93 +++++
+>  Documentation/devicetree/bindings/x86/ce4100.txt   |   38 ++
+>  .../devicetree/bindings/x86/interrupt.txt          |   29 ++
+>  Documentation/devicetree/bindings/x86/timer.txt    |    6 +
+>  arch/x86/platform/ce4100/falconfalls.dts           |  430 ++++++++++++++++++++
+
+Next step will be to migrate most of the static soc data out of this
+file and into a .dts include file so that multiple boards can use it;
+but that can be done later (it's a relatively new feature to dtc).
