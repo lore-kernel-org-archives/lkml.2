@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab1BVSnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 13:43:31 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:7532 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209Ab1BVSna (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 13:43:30 -0500
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH 2/6] x86: Minimize initial e820 messages
-Date: Tue, 22 Feb 2011 11:43:10 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.32-26-generic; KDE/4.4.5; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, Len Brown <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-References: <20110219024705.308511527@gulag1.americas.sgi.com> <20110219024705.695093866@gulag1.americas.sgi.com>
-In-Reply-To: <20110219024705.695093866@gulag1.americas.sgi.com>
+	id S1753543Ab1BVSsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 13:48:01 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:34679 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751635Ab1BVSsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 13:48:00 -0500
+Date: Tue, 22 Feb 2011 10:47:26 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
+        Ralph Campbell <infinipath@qlogic.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
+        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
+        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging
+ interfaces
+Message-ID: <20110222184726.GV4000@outflux.net>
+References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com>
+ <1298398198-18482-2-git-send-email-kees.cook@canonical.com>
+ <20110222181613.GU4000@outflux.net>
+ <4D640133.9020901@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102221143.10718.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D640133.9020901@caviumnetworks.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 18, 2011 07:47:07 pm Mike Travis wrote:
-> Minimize the early e820 messages by printing less characters
-> for the address range as well as abbreviating the type info
-> for each entry.
+On Tue, Feb 22, 2011 at 10:32:19AM -0800, David Daney wrote:
+> On 02/22/2011 10:16 AM, Kees Cook wrote:
+> >Har har, I forgot --compose to "git send-email".
+> >
+> >Anyway, with the continuing deluge of bugs in the "debug" filesystem, I
+> >would like to make that filesystem's root directory mode 0700 by default
+> >since it's filled with crazy stuff that regular users do not need to see.
+> >
+> >Better to try to just close the door completely on all the stuff in there.
+> >It is, after all, supposed to only be used for debugging, right?
+> >
+> 
+> It depends if you consider use of ftrace and kprobes 'debugging'.
+> In any event, you really have to be root to be able to manipulate
+> them.
+> 
+> I can currently do 'cat /sys/kernel/debug/tracing/trace' as a normal
+> user.  With your change I don't think it would be possible.  This is
+> not something I often (ever) do, but it is a change.
 
-> +			pr_info("%s: %Lx+%Lx (%s)\n", who,
-> +			       (unsigned long long) e820.map[i].addr,
-> +			       (unsigned long long) e820.map[i].size,
-> +			       e820_types(e820.map[i].type));
+Right, my thinking is that all the manipulations on this tree should be
+root-only (non-root stuff shouldn't live in something named "debug"),
+so we might as well lock it down a bit more so we can avoid all the CVEs[1]
+being assigned for glitches in this tree.
 
-If we're going to change the way we print E820 ranges, I think
-we should make them consistent with the way we handle %pR, e.g.,
-use something like this:
+-Kees
 
-    "%s: [mem %#018Lx-%#018Lx]"
+[1] http://seclists.org/oss-sec/2011/q1/229
+    http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2010-4347
+    etc
 
-This is a little different because %pR wouldn't make the field
-so wide, but when we discussed this earlier, keeping the table
-alignment was thought to be important.  That discussion starts
-here: https://lkml.org/lkml/2010/9/22/248
-
-Same comment applies to the update, remove, PCI gap (which
-your patch currently doesn't touch), and EFI output.
-
-I know this kind of derails the whole "remove characters" point
-of your patch (and I support that in principle), but I do think
-consistency is important, too.  We have too many different ways
-of printing the same information.
-
-Bjorn
+-- 
+Kees Cook
+Ubuntu Security Team
