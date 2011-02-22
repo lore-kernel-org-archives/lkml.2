@@ -1,144 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab1BVWhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:37:08 -0500
-Received: from kroah.org ([198.145.64.141]:46571 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826Ab1BVWVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:09 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:37 2011
-Message-Id: <20110222221837.854084672@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:47 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [08/70] drm/radeon/kms: improve 6xx/7xx CS error output
-In-Reply-To: <20110222222003.GA15831@kroah.com>
+	id S1755468Ab1BVWhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:37:06 -0500
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:33039 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754476Ab1BVWhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:37:04 -0500
+To: Ondrej Zajicek <santiago@crfreenet.org>
+Subject: [PATCH] s3fb: fix 15/16bpp modes with over 115MHz pixclocks on 86C365 Trio3D
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Tue, 22 Feb 2011 23:36:45 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102222336.48506.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+Enable pixel multiplexing in 15/16bpp modes when pixclock is over 115MHz
+on Trio3D (86C365) cards to fix artifacts on the left side of screen.
 
-------------------
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-From: Alex Deucher <alexdeucher@gmail.com>
-
-commit c2049b3d29f47ed3750226dc51251a3404c85876 upstream.
-
-Makes debugging CS rejections much easier.
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/gpu/drm/radeon/r600_cs.c |   46 ++++++++++++++++++++++-----------------
- 1 file changed, 26 insertions(+), 20 deletions(-)
-
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -295,17 +295,18 @@ static inline int r600_cs_track_validate
- 	}
- 
- 	if (!IS_ALIGNED(pitch, pitch_align)) {
--		dev_warn(p->dev, "%s:%d cb pitch (%d) invalid\n",
--			 __func__, __LINE__, pitch);
-+		dev_warn(p->dev, "%s:%d cb pitch (%d, 0x%x, %d) invalid\n",
-+			 __func__, __LINE__, pitch, pitch_align, array_mode);
- 		return -EINVAL;
- 	}
- 	if (!IS_ALIGNED(height, height_align)) {
--		dev_warn(p->dev, "%s:%d cb height (%d) invalid\n",
--			 __func__, __LINE__, height);
-+		dev_warn(p->dev, "%s:%d cb height (%d, 0x%x, %d) invalid\n",
-+			 __func__, __LINE__, height, height_align, array_mode);
- 		return -EINVAL;
- 	}
- 	if (!IS_ALIGNED(base_offset, base_align)) {
--		dev_warn(p->dev, "%s offset[%d] 0x%llx not aligned\n", __func__, i, base_offset);
-+		dev_warn(p->dev, "%s offset[%d] 0x%llx 0x%llx, %d not aligned\n", __func__, i,
-+			 base_offset, base_align, array_mode);
- 		return -EINVAL;
- 	}
- 
-@@ -320,7 +321,10 @@ static inline int r600_cs_track_validate
- 			 * broken userspace.
- 			 */
+--- linux-2.6.38-rc4-/drivers/video/s3fb.c	2011-02-20 20:48:41.000000000 +0100
++++ linux-2.6.38-rc4/drivers/video/s3fb.c	2011-02-22 23:31:16.000000000 +0100
+@@ -675,6 +675,15 @@
+ 				svga_wcrt_mask(par->state.vgabase, 0x67, 0x20, 0xF0);
+ 			else
+ 				svga_wcrt_mask(par->state.vgabase, 0x67, 0x30, 0xF0);
++		} else if (par->chip == CHIP_365_TRIO3D) {
++			svga_wcrt_mask(par->state.vgabase, 0x50, 0x10, 0x30);
++			if (info->var.pixclock > 8695) {
++				svga_wcrt_mask(par->state.vgabase, 0x67, 0x30, 0xF0);
++				hmul = 2;
++			} else {
++				svga_wcrt_mask(par->state.vgabase, 0x67, 0x20, 0xF0);
++				multiplex = 1;
++			}
  		} else {
--			dev_warn(p->dev, "%s offset[%d] %d %d %lu too big\n", __func__, i, track->cb_color_bo_offset[i], tmp, radeon_bo_size(track->cb_color_bo[i]));
-+			dev_warn(p->dev, "%s offset[%d] %d %d %d %lu too big\n", __func__, i,
-+				 array_mode,
-+				 track->cb_color_bo_offset[i], tmp,
-+				 radeon_bo_size(track->cb_color_bo[i]));
- 			return -EINVAL;
- 		}
- 	}
-@@ -455,17 +459,18 @@ static int r600_cs_track_check(struct ra
- 			}
- 
- 			if (!IS_ALIGNED(pitch, pitch_align)) {
--				dev_warn(p->dev, "%s:%d db pitch (%d) invalid\n",
--					 __func__, __LINE__, pitch);
-+				dev_warn(p->dev, "%s:%d db pitch (%d, 0x%x, %d) invalid\n",
-+					 __func__, __LINE__, pitch, pitch_align, array_mode);
- 				return -EINVAL;
- 			}
- 			if (!IS_ALIGNED(height, height_align)) {
--				dev_warn(p->dev, "%s:%d db height (%d) invalid\n",
--					 __func__, __LINE__, height);
-+				dev_warn(p->dev, "%s:%d db height (%d, 0x%x, %d) invalid\n",
-+					 __func__, __LINE__, height, height_align, array_mode);
- 				return -EINVAL;
- 			}
- 			if (!IS_ALIGNED(base_offset, base_align)) {
--				dev_warn(p->dev, "%s offset[%d] 0x%llx not aligned\n", __func__, i, base_offset);
-+				dev_warn(p->dev, "%s offset[%d] 0x%llx, 0x%llx, %d not aligned\n", __func__, i,
-+					 base_offset, base_align, array_mode);
- 				return -EINVAL;
- 			}
- 
-@@ -473,9 +478,10 @@ static int r600_cs_track_check(struct ra
- 			nviews = G_028004_SLICE_MAX(track->db_depth_view) + 1;
- 			tmp = ntiles * bpe * 64 * nviews;
- 			if ((tmp + track->db_offset) > radeon_bo_size(track->db_bo)) {
--				dev_warn(p->dev, "z/stencil buffer too small (0x%08X %d %d %d -> %u have %lu)\n",
--						track->db_depth_size, ntiles, nviews, bpe, tmp + track->db_offset,
--						radeon_bo_size(track->db_bo));
-+				dev_warn(p->dev, "z/stencil buffer (%d) too small (0x%08X %d %d %d -> %u have %lu)\n",
-+					 array_mode,
-+					 track->db_depth_size, ntiles, nviews, bpe, tmp + track->db_offset,
-+					 radeon_bo_size(track->db_bo));
- 				return -EINVAL;
- 			}
- 		}
-@@ -1227,18 +1233,18 @@ static inline int r600_check_texture_res
- 	/* XXX check height as well... */
- 
- 	if (!IS_ALIGNED(pitch, pitch_align)) {
--		dev_warn(p->dev, "%s:%d tex pitch (%d) invalid\n",
--			 __func__, __LINE__, pitch);
-+		dev_warn(p->dev, "%s:%d tex pitch (%d, 0x%x, %d) invalid\n",
-+			 __func__, __LINE__, pitch, pitch_align, G_038000_TILE_MODE(word0));
- 		return -EINVAL;
- 	}
- 	if (!IS_ALIGNED(base_offset, base_align)) {
--		dev_warn(p->dev, "%s:%d tex base offset (0x%llx) invalid\n",
--			 __func__, __LINE__, base_offset);
-+		dev_warn(p->dev, "%s:%d tex base offset (0x%llx, 0x%llx, %d) invalid\n",
-+			 __func__, __LINE__, base_offset, base_align, G_038000_TILE_MODE(word0));
- 		return -EINVAL;
- 	}
- 	if (!IS_ALIGNED(mip_offset, base_align)) {
--		dev_warn(p->dev, "%s:%d tex mip offset (0x%llx) invalid\n",
--			 __func__, __LINE__, mip_offset);
-+		dev_warn(p->dev, "%s:%d tex mip offset (0x%llx, 0x%llx, %d) invalid\n",
-+			 __func__, __LINE__, mip_offset, base_align, G_038000_TILE_MODE(word0));
- 		return -EINVAL;
- 	}
- 
+ 			svga_wcrt_mask(par->state.vgabase, 0x50, 0x10, 0x30);
+ 			svga_wcrt_mask(par->state.vgabase, 0x67, 0x30, 0xF0);
+@@ -691,6 +700,15 @@
+ 				svga_wcrt_mask(par->state.vgabase, 0x67, 0x40, 0xF0);
+ 			else
+ 				svga_wcrt_mask(par->state.vgabase, 0x67, 0x50, 0xF0);
++		} else if (par->chip == CHIP_365_TRIO3D) {
++			svga_wcrt_mask(par->state.vgabase, 0x50, 0x10, 0x30);
++			if (info->var.pixclock > 8695) {
++				svga_wcrt_mask(par->state.vgabase, 0x67, 0x50, 0xF0);
++				hmul = 2;
++			} else {
++				svga_wcrt_mask(par->state.vgabase, 0x67, 0x40, 0xF0);
++				multiplex = 1;
++			}
+ 		} else {
+ 			svga_wcrt_mask(par->state.vgabase, 0x50, 0x10, 0x30);
+ 			svga_wcrt_mask(par->state.vgabase, 0x67, 0x50, 0xF0);
 
 
+-- 
+Ondrej Zary
