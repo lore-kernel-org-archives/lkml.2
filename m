@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1BVQZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 11:25:59 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41125 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab1BVQZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 11:25:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eicwU2a31wuSW9BNXjtChquhwtgKMEvC52DgaaISov1bnTdc4seOHw9yMViB9JlPFU
-         uJeVnPNFoDejOJAfa0DYYV4WCj7x8j0CB13r5Oidm6QNOyKRhXJqo38BEsLMjjxSZaUS
-         0Dl7f7Z3dfbaR0/6d1z4wpBfeWD7f9B+OuJGI=
-Date: Tue, 22 Feb 2011 17:24:54 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
- PTRACE_ATTACH
-Message-ID: <20110222162454.GB31267@htj.dyndns.org>
-References: <20110204105343.GA12133@htj.dyndns.org>
- <20110207174821.GA1237@redhat.com>
- <20110209141803.GH3770@htj.dyndns.org>
- <201102132325.55353.vda.linux@googlemail.com>
- <20110214151340.GP18742@htj.dyndns.org>
- <AANLkTi=Djwcf9YoUrGtTEOp8W_YhsefzrNhMxVhtw_Lp@mail.gmail.com>
- <20110214173012.GA18742@htj.dyndns.org>
- <AANLkTinntVGcOdZSS3gWz39eq3EDiMxXgYfc6+M1Z0iE@mail.gmail.com>
- <20110221151619.GM31267@htj.dyndns.org>
- <20110221152855.GA20769@redhat.com>
+	id S1754678Ab1BVQ3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 11:29:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753589Ab1BVQ3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 11:29:48 -0500
+Date: Tue, 22 Feb 2011 17:29:40 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, lwoodman@redhat.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/8] Fix interleaving for transparent hugepages
+Message-ID: <20110222162940.GE13092@random.random>
+References: <1298315270-10434-1-git-send-email-andi@firstfloor.org>
+ <1298315270-10434-2-git-send-email-andi@firstfloor.org>
+ <alpine.DEB.2.00.1102220933500.16060@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110221152855.GA20769@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1102220933500.16060@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, I think I finally caught up with the discussion (hopefully).
-
-On Mon, Feb 21, 2011 at 04:28:55PM +0100, Oleg Nesterov wrote:
-> However, I am starting to agree that TASK_TRACED looks more clean.
+On Tue, Feb 22, 2011 at 09:34:33AM -0600, Christoph Lameter wrote:
 > 
-> What is important, I think ptrace should respect SIGNAL_STOP_STOPPED.
-> IOW, when the tracee is group-stopped (TASK_STOPPED or TASK_TRACED,
-> doesn't matter), ptrace_resume() should not wake it up, but merely
-> do set_task_state(TASK_STATE) and make it resumeable by SIGCONT.
+> On Mon, 21 Feb 2011, Andi Kleen wrote:
+> 
+> > @@ -1830,7 +1830,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+> >  	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+> >  		unsigned nid;
+> >
+> > -		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT);
+> > +		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT << order);
+> 
+> Should be PAGE_SHIFT + order.
 
-I don't think that's gonna fly.  It first is a very user-visible
-change to how ptrace_resume() works and it removes a lot of debugging
-capability.  As Jan's examples showed, there are things which the
-debugger does behind group stop's back and some of them are quite
-legitimate and useful things to do like running some code in the
-tracee context for the tracer and adjusting where the task is stopped.
+This one is very good after changing + order. I updated
+alloc_page_interleave to get an order parameter but I didn't adjust
+the nid accordingly to order. This was my incomplete modification for
+hpage interleaving:
 
-If you mix ptrace trap and group stop and then fix group stop
-notification, not only multithreaded debugging becomes quite
-cumbersome (suddenly ptracing becomes per-process thing instead of
-per-thread), it becomes almost impossible to debug jctl behaviors.
-Jctl becomes completely intertwined with ptracing and the real parent
-would get numerous notifications during the course of debugging.
+@@ -1830,7 +1832,7 @@ alloc_page_vma(gfp_t gfp, struct vm_area_struct
+*vma, unsigned long addr)
+ 
+                nid = interleave_nid(pol, vma, addr, PAGE_SHIFT);
+                mpol_cond_put(pol);
+-               page = alloc_page_interleave(gfp, 0, nid);
++               page = alloc_page_interleave(gfp, order, nid);
+                put_mems_allowed();
+                return page;
+        }
 
-I think they belong to different layers and they should stack instead
-of mix.  I'll try to write up a summary for how I think it can be done
-later but in short I think we just need two more PTRACE calls (one for
-combined SIGSTOPless attach + INTERRUPT and the other for jctl
-monitoring) and there doesn't need to be any fundamental revolt in how
-ptrace and jctl interact with each other.  The current ptrace behavior
-is quirky and rough on the edges but I think the fundamentals are
-correct in that it's something which is fundamentally bound to a task
-(not task group) and operates below jctl.  We just need to iron out
-the interactions so that the outcome makes sense.
 
-That way, most current users won't notice (e.g. entering TASK_TRACED
-directly on SIGSTOP doesn't make any different to strace or gdb, they
-already issue PTRACE calls immediately afterwards) the difference
-while newer ones can take of new features to show better jctl
-behavior.
+Andi, can you resubmit this one fixd with + to Andrew, this one can go
+in 2.6.38. For the rest frankly I've an hard time to see how it cannot
+hurt performance (instead of improving them) especially for KSM. It's
+impossible to improve KSM for NUMA with that change to
+ksm_does_need_to_copy at the very least. But the same reasoning
+applies to the rest. But I'll think more about the others, I just
+would prefer to include the above fix quick, the rest don't seem that
+urgent even if it's really improving performance (instead of hurting
+it as I think).
 
-Thanks.
-
--- 
-tejun
+Acked-by: Andrea Arcangeli <aarcange@redhat.com>
