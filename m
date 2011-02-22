@@ -1,202 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab1BVUaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:30:24 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:6030 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab1BVUaV (ORCPT
+	id S1752617Ab1BVUai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:30:38 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:59917 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab1BVUaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:30:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Yc2HaX0eEbXmR1Zz/+X1kMcutZ2lzYG4t9az0yW05V/TW6/049d2qmPvp0OBsFrOB4
-         zsD1ohsuJ9YOTbl+E+Dw==
-Date: Tue, 22 Feb 2011 12:30:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Li Zefan <lizf@cn.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
-        miaox@cn.fujitsu.com, linux-mm@kvack.org
-Subject: Re: [PATCH 3/4] cpuset: Fix unchecked calls to NODEMASK_ALLOC()
-In-Reply-To: <4D631C54.1080703@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1102221219101.5929@chino.kir.corp.google.com>
-References: <4D5C7EA7.1030409@cn.fujitsu.com> <4D5C7ED1.2070601@cn.fujitsu.com> <alpine.DEB.2.00.1102191745180.27722@chino.kir.corp.google.com> <4D61DA04.4060007@cn.fujitsu.com> <alpine.DEB.2.00.1102211617510.23557@chino.kir.corp.google.com>
- <4D631C54.1080703@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 22 Feb 2011 15:30:35 -0500
+Date: Tue, 22 Feb 2011 15:21:46 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Greg KH <greg@kroah.com>
+Cc: Daniel J Blueman <daniel.blueman@gmail.com>, stable@kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-wireless@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [stable] [2.6.38-rc5, patch] fix cfg80211_wext_siwfreq lock
+ ordering...
+Message-ID: <20110222202146.GI12153@tuxdriver.com>
+References: <AANLkTi=OSZhT0OGN_3Jzw=zh1U_QjhB+vR8SxidM5Zge@mail.gmail.com>
+ <1298305510.3836.7.camel@jlt3.sipsolutions.net>
+ <AANLkTik752Qyy9RTz4h_C=amyjm+EjmUzUc=TGt7S1EM@mail.gmail.com>
+ <20110222200222.GA11679@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110222200222.GA11679@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Feb 2011, Li Zefan wrote:
-
-> [PATCH 3/4] cpuset: Fix unchecked calls to NODEMASK_ALLOC()
+On Tue, Feb 22, 2011 at 12:02:22PM -0800, Greg KH wrote:
+> On Tue, Feb 22, 2011 at 09:15:47AM +0800, Daniel J Blueman wrote:
+> > On 22 February 2011 00:25, Johannes Berg <johannes@sipsolutions.net> wrote:
+> > > On Tue, 2011-02-22 at 00:11 +0800, Daniel J Blueman wrote:
+> > >> I previously managed to reproduce a hang while scanning wireless
+> > >> channels (reproducible with airodump-ng hopping channels); subsequent
+> > >> lockdep instrumentation revealed a lock ordering issue [1].
+> > >>
+> > >> Without knowing the design intent, it looks like the locks should be
+> > >> taken in reverse order; please comment.
+> > >>
+> > >> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> > >>
+> > >> --- [1]
+> > >
+> > > Yeah, looks this way, thanks.
+> > >
+> > > Acked-by: Johannes Berg <johannes@sipsolutions.net>
+> > >
+> > >> =======================================================
+> > >> [ INFO: possible circular locking dependency detected ]
+> > >> 2.6.38-rc5-341cd #4
+> > >> -------------------------------------------------------
+> > >> airodump-ng/15445 is trying to acquire lock:
+> > >>  (&rdev->devlist_mtx){+.+.+.}, at: [<ffffffff816b1266>]
+> > >> cfg80211_wext_siwfreq+0xc6/0x100
+> > >>
+> > >> but task is already holding lock:
+> > >>  (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>] cfg80211_wext_siwfreq+0xbc/0x100
+> > >>
+> > >> which lock already depends on the new lock.
+> > >>
+> > >> the existing dependency chain (in reverse order) is:
+> > >>
+> > >> -> #1 (&wdev->mtx){+.+.+.}:
+> > >>        [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
+> > >>        [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
+> > >>        [<ffffffff81696080>] cfg80211_netdev_notifier_call+0x430/0x5f0
+> > >>        [<ffffffff8109351b>] notifier_call_chain+0x8b/0x100
+> > >>        [<ffffffff810935b1>] raw_notifier_call_chain+0x11/0x20
+> > >>        [<ffffffff81576d92>] call_netdevice_notifiers+0x32/0x60
+> > >>        [<ffffffff815771a4>] __dev_notify_flags+0x34/0x80
+> > >>        [<ffffffff81577230>] dev_change_flags+0x40/0x70
+> > >>        [<ffffffff8158587c>] do_setlink+0x1fc/0x8d0
+> > >>        [<ffffffff81586042>] rtnl_setlink+0xf2/0x140
+> > >>        [<ffffffff81586923>] rtnetlink_rcv_msg+0x163/0x270
+> > >>        [<ffffffff8159d741>] netlink_rcv_skb+0xa1/0xd0
+> > >>        [<ffffffff815867b0>] rtnetlink_rcv+0x20/0x30
+> > >>        [<ffffffff8159d39a>] netlink_unicast+0x2ba/0x300
+> > >>        [<ffffffff8159dd57>] netlink_sendmsg+0x267/0x3e0
+> > >>        [<ffffffff8155e364>] sock_sendmsg+0xe4/0x110
+> > >>        [<ffffffff8155f3a3>] sys_sendmsg+0x253/0x3b0
+> > >>        [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
+> > >>
+> > >> -> #0 (&rdev->devlist_mtx){+.+.+.}:
+> > >>        [<ffffffff810a7222>] __lock_acquire+0x1622/0x1d10
+> > >>        [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
+> > >>        [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
+> > >>        [<ffffffff816b1266>] cfg80211_wext_siwfreq+0xc6/0x100
+> > >>        [<ffffffff816b2fad>] ioctl_standard_call+0x5d/0xd0
+> > >>        [<ffffffff816b3223>] T.808+0x163/0x170
+> > >>        [<ffffffff816b326a>] wext_handle_ioctl+0x3a/0x90
+> > >>        [<ffffffff815798d2>] dev_ioctl+0x6f2/0x830
+> > >>        [<ffffffff8155cf3d>] sock_ioctl+0xfd/0x290
+> > >>        [<ffffffff8117dffd>] do_vfs_ioctl+0x9d/0x590
+> > >>        [<ffffffff8117e53a>] sys_ioctl+0x4a/0x80
+> > >>        [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
+> > >>
+> > >> other info that might help us debug this:
+> > >>
+> > >> 2 locks held by airodump-ng/15445:
+> > >>  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81586782>] rtnl_lock+0x12/0x20
+> > >>  #1:  (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>]
+> > >> cfg80211_wext_siwfreq+0xbc/0x100
+> > >>
+> > >> stack backtrace:
+> > >> Pid: 15445, comm: airodump-ng Not tainted 2.6.38-rc5-341cd #4
+> > >> Call Trace:
+> > >>  [<ffffffff810a3f0a>] ? print_circular_bug+0xfa/0x100
+> > >>  [<ffffffff810a7222>] ? __lock_acquire+0x1622/0x1d10
+> > >>  [<ffffffff810a1f99>] ? trace_hardirqs_off_caller+0x29/0xc0
+> > >>  [<ffffffff810a79d6>] ? lock_acquire+0xc6/0x280
+> > >>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+> > >>  [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
+> > >>  [<ffffffff816d6bce>] ? mutex_lock_nested+0x6e/0x4b0
+> > >>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+> > >>  [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
+> > >>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+> > >>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
+> > >>  [<ffffffff816b2fad>] ? ioctl_standard_call+0x5d/0xd0
+> > >>  [<ffffffff8157818b>] ? __dev_get_by_name+0x9b/0xc0
+> > >>  [<ffffffff816b2f50>] ? ioctl_standard_call+0x0/0xd0
+> > >>  [<ffffffff816b3223>] ? T.808+0x163/0x170
+> > >>  [<ffffffff8112ddf2>] ? might_fault+0x72/0xd0
+> > >>  [<ffffffff816b326a>] ? wext_handle_ioctl+0x3a/0x90
+> > >>  [<ffffffff8112de3b>] ? might_fault+0xbb/0xd0
+> > >>  [<ffffffff815798d2>] ? dev_ioctl+0x6f2/0x830
+> > >>  [<ffffffff810a1bae>] ? put_lock_stats+0xe/0x40
+> > >>  [<ffffffff810a1c8c>] ? lock_release_holdtime+0xac/0x150
+> > >>  [<ffffffff8155cf3d>] ? sock_ioctl+0xfd/0x290
+> > >>  [<ffffffff8117dffd>] ? do_vfs_ioctl+0x9d/0x590
+> > >>  [<ffffffff8116c8ff>] ? fget_light+0x1df/0x3c0
+> > >>  [<ffffffff8117e53a>] ? sys_ioctl+0x4a/0x80
+> > >>  [<ffffffff81003192>] ? system_call_fastpath+0x16/0x1b
+> > >>
+> > >> --- [2]
+> > >>
+> > >> diff --git a/net/wireless/wext-compat.c b/net/wireless/wext-compat.c
+> > >> index 3e5dbd4..d112f03 100644
+> > >> --- a/net/wireless/wext-compat.c
+> > >> +++ b/net/wireless/wext-compat.c
+> > >> @@ -802,11 +802,11 @@ int cfg80211_wext_siwfreq(struct net_device *dev,
+> > >>                       return freq;
+> > >>               if (freq == 0)
+> > >>                       return -EINVAL;
+> > >> -             wdev_lock(wdev);
+> > >>               mutex_lock(&rdev->devlist_mtx);
+> > >> +             wdev_lock(wdev);
+> > >>               err = cfg80211_set_freq(rdev, wdev, freq, NL80211_CHAN_NO_HT);
+> > >> -             mutex_unlock(&rdev->devlist_mtx);
+> > >>               wdev_unlock(wdev);
+> > >> +             mutex_unlock(&rdev->devlist_mtx);
+> > >>               return err;
+> > >>       default:
+> > >>               return -EOPNOTSUPP;
+> > 
+> > Please consider for -stable. This patch resolves the lock ordering
+> > case my test exposed, and passes lockdep and extended testing.
 > 
-> Those functions that use NODEMASK_ALLOC() can't propogate errno
-> to users, so might fail silently.
-> 
-> Fix it by using one static nodemask_t variable for each function, and
-> those variables are protected by cgroup_mutex.
-> 
+> Consider what?  What is the git commit id of this patch in Linus's tree?
 
-I think there would also be incentive to do the same thing for 
-update_nodemask() even though its caller can handle -ENOMEM.  Imagine 
-current being out of memory and the NODEMASK_ALLOC() subsequently failing 
-because it is oom yet it may be trying to give itself more memory.  It's 
-also protected by cgroup_mutex so the only thing we're sacrificing is 8 
-bytes on the defconfig and 256 bytes even with CONFIG_NODES_SHIFT == 10.  
-On machines that large, this seems like an acceptable cost to ensure we 
-can give ourselves more memory :)
+I just sent this to Dave M.  The commit id should be
+4f919a3bc54da01db829c520ce4b1fabfde1c3f7 when it hits Linus' tree.
 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  kernel/cpuset.c |   50 ++++++++++++++++----------------------------------
->  1 files changed, 16 insertions(+), 34 deletions(-)
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 8fef8c6..073ce91 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -1015,17 +1015,12 @@ static void cpuset_change_nodemask(struct task_struct *p,
->  	struct cpuset *cs;
->  	int migrate;
->  	const nodemask_t *oldmem = scan->data;
-> -	NODEMASK_ALLOC(nodemask_t, newmems, GFP_KERNEL);
-> -
-> -	if (!newmems)
-> -		return;
-> +	static nodemask_t newmems;	/* protected by cgroup_mutex */
->  
->  	cs = cgroup_cs(scan->cg);
-> -	guarantee_online_mems(cs, newmems);
-> -
-> -	cpuset_change_task_nodemask(p, newmems);
-> +	guarantee_online_mems(cs, &newmems);
+Hth!
 
-The newmems nodemask is going to be persistant across calls since it is 
-static, so we have to be careful that nothing depends on it being 
-NODE_MASK_NONE.  Indeed, NODEMASK_ALLOC() with just GFP_KERNEL doesn't 
-guarantee anything different.  guarantee_online_mems() sets the nodemask, 
-so this looks good.
-
->  
-> -	NODEMASK_FREE(newmems);
-> +	cpuset_change_task_nodemask(p, &newmems);
->  
->  	mm = get_task_mm(p);
->  	if (!mm)
-> @@ -1438,41 +1433,35 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
->  	struct mm_struct *mm;
->  	struct cpuset *cs = cgroup_cs(cont);
->  	struct cpuset *oldcs = cgroup_cs(oldcont);
-> -	NODEMASK_ALLOC(nodemask_t, to, GFP_KERNEL);
-> -
-> -	if (to == NULL)
-> -		goto alloc_fail;
-> +	static nodemask_t to;		/* protected by cgroup_mutex */
->  
->  	if (cs == &top_cpuset) {
->  		cpumask_copy(cpus_attach, cpu_possible_mask);
->  	} else {
->  		guarantee_online_cpus(cs, cpus_attach);
->  	}
-> -	guarantee_online_mems(cs, to);
-> +	guarantee_online_mems(cs, &to);
->  
->  	/* do per-task migration stuff possibly for each in the threadgroup */
-> -	cpuset_attach_task(tsk, to, cs);
-> +	cpuset_attach_task(tsk, &to, cs);
->  	if (threadgroup) {
->  		struct task_struct *c;
->  		rcu_read_lock();
->  		list_for_each_entry_rcu(c, &tsk->thread_group, thread_group) {
-> -			cpuset_attach_task(c, to, cs);
-> +			cpuset_attach_task(c, &to, cs);
->  		}
->  		rcu_read_unlock();
->  	}
->  
->  	/* change mm; only needs to be done once even if threadgroup */
-> -	*to = cs->mems_allowed;
-> +	to = cs->mems_allowed;
->  	mm = get_task_mm(tsk);
->  	if (mm) {
-> -		mpol_rebind_mm(mm, to);
-> +		mpol_rebind_mm(mm, &to);
->  		if (is_memory_migrate(cs))
-> -			cpuset_migrate_mm(mm, &oldcs->mems_allowed, to);
-> +			cpuset_migrate_mm(mm, &oldcs->mems_allowed, &to);
->  		mmput(mm);
->  	}
-> -
-> -alloc_fail:
-> -	NODEMASK_FREE(to);
->  }
->  
->  /* The various types of files and directories in a cpuset file system */
-> @@ -2051,10 +2040,7 @@ static void scan_for_empty_cpusets(struct cpuset *root)
->  	struct cpuset *cp;	/* scans cpusets being updated */
->  	struct cpuset *child;	/* scans child cpusets of cp */
->  	struct cgroup *cont;
-> -	NODEMASK_ALLOC(nodemask_t, oldmems, GFP_KERNEL);
-> -
-> -	if (oldmems == NULL)
-> -		return;
-> +	static nodemask_t oldmems;	/* protected by cgroup_mutex */
->  
->  	list_add_tail((struct list_head *)&root->stack_list, &queue);
->  
-> @@ -2071,7 +2057,7 @@ static void scan_for_empty_cpusets(struct cpuset *root)
->  		    nodes_subset(cp->mems_allowed, node_states[N_HIGH_MEMORY]))
->  			continue;
->  
-> -		*oldmems = cp->mems_allowed;
-> +		oldmems = cp->mems_allowed;
->  
->  		/* Remove offline cpus and mems from this cpuset. */
->  		mutex_lock(&callback_mutex);
-> @@ -2087,10 +2073,9 @@ static void scan_for_empty_cpusets(struct cpuset *root)
->  			remove_tasks_in_empty_cpuset(cp);
->  		else {
->  			update_tasks_cpumask(cp, NULL);
-> -			update_tasks_nodemask(cp, oldmems, NULL);
-> +			update_tasks_nodemask(cp, &oldmems, NULL);
->  		}
->  	}
-> -	NODEMASK_FREE(oldmems);
->  }
->  
->  /*
-> @@ -2132,19 +2117,16 @@ void cpuset_update_active_cpus(void)
->  static int cpuset_track_online_nodes(struct notifier_block *self,
->  				unsigned long action, void *arg)
->  {
-> -	NODEMASK_ALLOC(nodemask_t, oldmems, GFP_KERNEL);
-> -
-> -	if (oldmems == NULL)
-> -		return NOTIFY_DONE;
-> +	static nodemask_t oldmems;	/* protected by cgroup_mutex */
->  
->  	cgroup_lock();
->  	switch (action) {
->  	case MEM_ONLINE:
-> -		*oldmems = top_cpuset.mems_allowed;
-> +		oldmems = top_cpuset.mems_allowed;
->  		mutex_lock(&callback_mutex);
->  		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
->  		mutex_unlock(&callback_mutex);
-> -		update_tasks_nodemask(&top_cpuset, oldmems, NULL);
-> +		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
->  		break;
->  	case MEM_OFFLINE:
->  		/*
-
-The NODEMASK_FREE() wasn't removed from cpuset_track_online_nodes().  
-After that's fixed:
-
-Acked-by: David Rientjes <rientjes@google.com>
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
