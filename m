@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab1BVXH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:07:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37067 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751165Ab1BVXHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 18:07:25 -0500
-Date: Tue, 22 Feb 2011 23:07:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
-	rtc_class_ops->read_alarm()
-Message-ID: <20110222230724.GK31611@opensource.wolfsonmicro.com>
-References: <1298343333.4222.36.camel@work-vm> <1298362178.4222.57.camel@work-vm> <20110222181647.GA25569@opensource.wolfsonmicro.com> <1298404268.9215.39.camel@work-vm> <20110222200046.GD31611@opensource.wolfsonmicro.com> <1298406174.9215.71.camel@work-vm> <20110222210522.GG31611@opensource.wolfsonmicro.com> <1298409673.9215.84.camel@work-vm> <20110222213319.GI31611@opensource.wolfsonmicro.com> <1298412634.9215.110.camel@work-vm>
+	id S1752687Ab1BVXHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:07:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6768 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab1BVXHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 18:07:48 -0500
+Date: Tue, 22 Feb 2011 18:06:30 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: Jonathan Corbet <corbet@lwn.net>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>,
+        Hirokazu Takahashi <taka@valinux.co.jp>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] page_cgroup: make page tracking available for blkio
+Message-ID: <20110222230630.GL28269@redhat.com>
+References: <1298394776-9957-1-git-send-email-arighi@develer.com>
+ <1298394776-9957-4-git-send-email-arighi@develer.com>
+ <20110222130145.37cb151e@bike.lwn.net>
+ <20110222230146.GB23723@linux.develer.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298412634.9215.110.camel@work-vm>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20110222230146.GB23723@linux.develer.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 02:10:34PM -0800, john stultz wrote:
+On Wed, Feb 23, 2011 at 12:01:47AM +0100, Andrea Righi wrote:
+> On Tue, Feb 22, 2011 at 01:01:45PM -0700, Jonathan Corbet wrote:
+> > On Tue, 22 Feb 2011 18:12:54 +0100
+> > Andrea Righi <arighi@develer.com> wrote:
+> > 
+> > > The page_cgroup infrastructure, currently available only for the memory
+> > > cgroup controller, can be used to store the owner of each page and
+> > > opportunely track the writeback IO. This information is encoded in
+> > > the upper 16-bits of the page_cgroup->flags.
+> > > 
+> > > A owner can be identified using a generic ID number and the following
+> > > interfaces are provided to store a retrieve this information:
+> > > 
+> > >   unsigned long page_cgroup_get_owner(struct page *page);
+> > >   int page_cgroup_set_owner(struct page *page, unsigned long id);
+> > >   int page_cgroup_copy_owner(struct page *npage, struct page *opage);
+> > 
+> > My immediate observation is that you're not really tracking the "owner"
+> > here - you're tracking an opaque 16-bit token known only to the block
+> > controller in a field which - if changed by anybody other than the block
+> > controller - will lead to mayhem in the block controller.  I think it
+> > might be clearer - and safer - to say "blkcg" or some such instead of
+> > "owner" here.
+> > 
+> 
+> Basically the idea here was to be as generic as possible and make this
+> feature potentially available also to other subsystems, so that cgroup
+> subsystems may represent whatever they want with the 16-bit token.
+> However, no more than a single subsystem may be able to use this feature
+> at the same time.
+> 
+> > I'm tempted to say it might be better to just add a pointer to your
+> > throtl_grp structure into struct page_cgroup.  Or maybe replace the
+> > mem_cgroup pointer with a single pointer to struct css_set.  Both of
+> > those ideas, though, probably just add unwanted extra overhead now to gain
+> > generality which may or may not be wanted in the future.
+> 
+> The pointer to css_set sounds good, but it would add additional space to
+> the page_cgroup struct. Now, page_cgroup is 40 bytes (in 64-bit arch)
+> and all of them are allocated at boot time. Using unused bits in
+> page_cgroup->flags is a choice with no overhead from this point of view.
 
-> Although For me, I see multiplexing events becoming too useful a bit of
-> functionality to offload to a userland API. Especially since there might
-> be conflicting approaches to the userland coordination (Want to open a
-> file? There's one call you have to make. Want to draw a on the screen?
-> Well, there's X or fb or maybe wayland, etc).
+I think John suggested replacing mem_cgroup pointer with css_set so that
+size of the strcuture does not increase but it leads extra level of 
+indirection.
 
-Of course one can equally make the argument that this sort of
-multiplexing decision is policy and the multiple independant
-ideas for how it should work suggests we shouldn't be picking something
-for them.  I don't feel *that* strongly about it, though.
-
-> Now, your observation about the behavior of persistence over reboots is
-> a interesting corner-case that I overlooked. And I do want to address
-> that as best we can, but I think it is an unreasonable expectation for
-> applications to have, given that much common hardware doesn't support
-> it.
-
-What would probably help here if we're going to keep this support in
-would be to make the current state and perhaps also the underlying
-hardware features more discoverable.  That way userspace can preserve
-the state when shutting down if it wants to.
+Thanks
+Vivek
