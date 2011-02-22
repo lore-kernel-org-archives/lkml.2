@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab1BVPbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 10:31:14 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55762 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab1BVPbM convert rfc822-to-8bit (ORCPT
+	id S1754502Ab1BVPei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 10:34:38 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:46007 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753177Ab1BVPeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 10:31:12 -0500
+	Tue, 22 Feb 2011 10:34:37 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: z6zLZXYVM1kPPML46_kOW4B0b5rTf84d2KhaEreSmIzOjhY
+ 9ltKEBKsrpqoD566k6Sc6vlYPrQf5_MIFvdkorz9QPxvFQmORYOz4YfsqQ54
+ C00HZgoWiAGUUEHEpFBkfUlyQBDErVYwl4JMeACBX1AECS9UgKKY_kkBvl2F
+ 8L8KIZWr3g371cHUlof7SZHHnVccvNE0LuDN_t.qGpuFeHx3Dnf2gTW27XnD
+ yzCNiv87ax9JO9Kr1gRN1fRL9LRMtPkW7D4EEmIUNl5trRvPHGMkJA4w_PM1
+ q7JzUEyNjjPxW3jLHwZ4LhsTbOcG.fQ6T99yizVOmEqRZ4g--
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 22 Feb 2011 09:34:33 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andi Kleen <andi@firstfloor.org>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, aarcange@redhat.com, lwoodman@redhat.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/8] Fix interleaving for transparent hugepages
+In-Reply-To: <1298315270-10434-2-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1102220933500.16060@router.home>
+References: <1298315270-10434-1-git-send-email-andi@firstfloor.org> <1298315270-10434-2-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Originating-IP: [172.22.72.244]
-In-Reply-To: <AANLkTi==wykFCCjamRNh2ngEaubgeLqmZ7Mv9OsH=0cL@mail.gmail.com>
-References: <1298342392-21236-1-git-send-email-ccross@android.com>
-	<1298342392-21236-8-git-send-email-ccross@android.com>
-	<AANLkTikNSEyjdL0Lchmm-bFxD00omkGLq6Q6Yyjy51Ov@mail.gmail.com>
-	<AANLkTi==wykFCCjamRNh2ngEaubgeLqmZ7Mv9OsH=0cL@mail.gmail.com>
-Date: Tue, 22 Feb 2011 07:30:35 -0800
-Message-ID: <AANLkTinm70LbG8-H7RHndOzkP9vcnu5GhnhKh_LHSzaP@mail.gmail.com>
-Subject: Re: [PATCH 7/7] ARM: tegra: clock: Disable clocks left on by bootloader
-From: Olof Johansson <olof@lixom.net>
-To: Colin Cross <ccross@android.com>
-Cc: linux-tegra@vger.kernel.org, konkers@android.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mike@compulab.co.il, Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tue, Feb 22, 2011 at 12:05 AM, Colin Cross <ccross@android.com> wrote:
+On Mon, 21 Feb 2011, Andi Kleen wrote:
 
-> It doesn't need to be an early_param, I can make it a __setup.
+> @@ -1830,7 +1830,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+>  	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
+>  		unsigned nid;
+>
+> -		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT);
+> +		nid = interleave_nid(pol, vma, addr, PAGE_SHIFT << order);
 
-Sounds good.
-
->> Also, Documentation/kernel-parameters.txt should be updated with it.
-> Is it really worth adding every debug flag on every platform to
-> kernel-parametes.txt?  I could add the flag to the warning message
-> instead.
-
-It looks like most arm sub-archs haven't added theirs, so it's OK to
-leave out. I'm not too bothered either way myself.
-
-
--Olof
+Should be PAGE_SHIFT + order.
+x
