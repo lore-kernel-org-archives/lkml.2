@@ -1,111 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab1BVORn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:17:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44085 "EHLO mx1.redhat.com"
+	id S1753078Ab1BVOTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:19:12 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:43577 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab1BVORm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:17:42 -0500
-Date: Tue, 22 Feb 2011 09:17:32 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        sergey.senozhatsky@gmail.com, tj@kernel.org, jmoyer@redhat.com,
-        snitzer@redhat.com
-Subject: Re: [PATCH 0/3] [RFC] block: Enforce that ->queue_lock is
- initialized during call to blk_cleanup_queue()
-Message-ID: <20110222141732.GA28269@redhat.com>
-References: <1298346817-26144-1-git-send-email-vgoyal@redhat.com>
- <20110222152003.09698a39@notabene.brown>
+	id S1752247Ab1BVOTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:19:10 -0500
+From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        "'Greg KH'" <greg@kroah.com>
+References: <02f301cbcb48$bebea4c0$3c3bee40$@mprc.pku.edu.cn> <201102171831.16713.arnd@arndb.de>
+In-Reply-To: <201102171831.16713.arnd@arndb.de>
+Subject: RE: [PATCHv2 09/11] unicore32 core architecture: timer and time handling
+Date: Tue, 22 Feb 2011 22:19:04 +0800
+Message-ID: <018c01cbd29b$759a4740$60ced5c0$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222152003.09698a39@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQH8AKscRheQ/HHApBgo+X/sOK9QJQIXuRX2k5x3OnA=
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 03:20:03PM +1100, NeilBrown wrote:
-> On Mon, 21 Feb 2011 22:53:34 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
+
+
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Friday, February 18, 2011 1:31 AM
+> To: Guan Xuetao
+> Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org; 'Greg KH'
+> Subject: Re: [PATCHv2 09/11] unicore32 core architecture: timer and time handling
 > 
-> > Hi All,
-> > 
-> > Currently it is not clear what's the status of ->queue_lock when
-> > blk_cleanup_queue() is called. Now block throttle code (blk_throtl_exit())
-> > requires queue lock to be initialized as it takes the spin lock, so we need
-> > some kind of clear convention that when is it safe to assume that queue lock
-> > is initiliazed and blk_throtle_exit() can be called safely.
-> > 
-> > We recently ran into issues with loop driver which was trying to free
-> > up queue almost immediately after block_alloc_queue() due to some internal
-> > errors. Also NeilBrown complained that in current form, md provides its
-> > own spinlock and zaps that before blk_cleanup_queue() call and that will
-> > have issues with throttling code. Neil has not fixed the issue with
-> > md driver and queued up a patch in this tree.
-> > 
-> > So there is a need to make sure blk_throtl_exit() can be called safely
-> > and to also catch any errors if some drivers are not doing so. This
->                                                    ^^^
-> "now" !!  I make that typo all the time too :-(
+> On Sunday 13 February 2011, Guan Xuetao wrote:
 > 
-> > patch series puts a WARN_ON(!q->queue_lock) in blk_cleanup_queue() and
-> > moves the queue lock initialization in queue allocation code. Also it
-> > move blk_throtl_exit() from release_queue() to cleanup_queue().
+> > diff --git a/arch/unicore32/include/asm/timex.h b/arch/unicore32/include/asm/timex.h
+> > new file mode 100644
+> > index 0000000..faf16ba
+> > --- /dev/null
+> > +++ b/arch/unicore32/include/asm/timex.h
+> > +#ifndef __UNICORE_TIMEX_H__
+> > +#define __UNICORE_TIMEX_H__
+> > +
+> > +#ifdef CONFIG_ARCH_FPGA
+> > +
+> > +/* in FPGA, APB clock is 33M, and OST clock is 32K, */
+> > +/* so, 1M is selected for timer interrupt correctly */
+> > +#define        CLOCK_TICK_RATE         (32*1024)
+> > +
+> > +#endif
+> > +
+> > +#if defined(CONFIG_PUV3_DB0913)                \
+> > +       || defined(CONFIG_PUV3_NB0916)  \
+> > +       || defined(CONFIG_PUV3_SMW0919)
+> > +
+> > +#define  CLOCK_TICK_RATE         (14318000)
+> > +
+> > +#endif
 > 
-> I'm not sure there is a lot of point in the WARN_ON.
-> Modules that replace ->queue_lock are unlikely to set it to NULL when
-> done, they will just free the structure that it points into.
-> This will already be caught if you compile with DEBUG_PAGEALLOC and
-> DEBUG_SPINLOCK (I think) and there is not much else you can do to catch
-> these.
+> I believe that we don't use CLOCK_TICK_RATE in the kernel any more,
+> so there is no reason to define it.
+CLOCK_TICK_RATE is an important value for the kernel.
+And perhaps I misunderstanding your meaning...
 > 
+> 	Arnd
 
-Ok, that makes sense. So I will drop the WARN_ON() part.
+Thanks & Regards.
+Guan Xuetao
 
-Patch3 also removes throtl_shutdown_timer_wq() call from blk_sync_queue().
-The only driver user of blk_sync_queue() seems to be md. IIUC, md needs
-it because md provides its own unplug function and it does not want
-that function to be called any more as it accesses some "conf" data
-structures which are going away.
-
-If that's the case, then we don't have to worry about quiescing throtl
-work as it does not call unplug function. It just calls
-generic_make_request(bio) and by that time md queue should be either 
-DEAD or it should be able to handle bios coming in and returning error
-while it is cleaning up its data structures.
-
-In fact cancelling the pending throtl work will hang disptch of throttled
-bios so it is not a good idea. blk_throtl_exit() is the right way to
-cleanup all the throtl related state.
-
-Removing this call from blk_sync_queue() enables me to move
-blk_throtl_exit() in blk_cleanup_queue() and that makes sure ->queue_lock
-is valid hence blk_throtl_exit() can execute safely.
-
-Thanks
-Vivek
-
-
-> Thanks,
-> NeilBrown
-> 
-> 
-> > 
-> > These pathes are only boot tested on one machine. Before I do more
-> > extensive testing, I wanted to throw it out there and figure out
-> > if it makes sense or not.
-> > 
-> > Thanks
-> > Vivek
-> > 
-> > Vivek Goyal (3):
-> >   block: Initialize ->queue_lock to internal lock at queue allocation
-> >     time
-> >   loop: No need to initialize ->queue_lock explicitly before calling
-> >     blk_cleanup_queue()
-> >   block: Move blk_throtl_exit() call to blk_cleanup_queue()
-> > 
-> >  block/blk-core.c       |   26 ++++++++++++++++++++++++--
-> >  block/blk-settings.c   |    7 -------
-> >  block/blk-sysfs.c      |    2 --
