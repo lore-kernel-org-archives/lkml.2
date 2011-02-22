@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab1BVNMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 08:12:54 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45671 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab1BVNMw (ORCPT
+	id S1752209Ab1BVNTW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 08:19:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50585 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab1BVNTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 08:12:52 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Zhu2ZE-XKKUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=H1l2k1CEr8tsP529ZqkA:9 a=yFb-N5SNXuWir0OrBmSHiQXHKvUA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] rt2x00: Use ops name instead of device name
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Cc: Felix Fietkau <nbd@openwrt.org>, Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>, abogani@texware.it
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 22 Feb 2011 08:12:48 -0500
-Message-ID: <1298380368.6140.1193.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Feb 2011 08:19:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=YFPzSc7Iz15ZoaPQZh38fO6DP8d8XfN92jhc0w3tYMtp/MT/x3IFOToB/Xs151316j
+         4tr4VoxrJrQtk8q1ptyrqXAUUDh8+Uh+7Oh2VWQyOdGhD+1MXpPXeaKXKul62sMWUtXy
+         vq7zXSCoqdwLimRuIOU7d4zbsUoG4MDnf2Xc4=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikTHnz+7C-QmXaHwFE0a+pw7U-t2JP11a0qdoyU@mail.gmail.com>
+References: <1297786849.2596.13.camel@phoenix> <4D5AB09C.9000106@compulab.co.il>
+ <AANLkTino2vLisNgKeyXppuHwDyhLMMAcOOZjA0hgmkj6@mail.gmail.com>
+ <4D637557.2070707@compulab.co.il> <AANLkTikTHnz+7C-QmXaHwFE0a+pw7U-t2JP11a0qdoyU@mail.gmail.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 22 Feb 2011 21:19:01 +0800
+Message-ID: <AANLkTin7E9j6Q32JR-t13ekpdveiSrPCqAorT08DdM=6@mail.gmail.com>
+Subject: Re: [PATCH] ARM: pxa: support 806MHz operating points for PXA31x
+ processors A2 stepping
+To: Axel Lin <axel.lin@gmail.com>, Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Igor Grinberg <grinberg@compulab.co.il>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, someone complained that they see the PCI address of a device
-in the interrupts file instead of the device name.
+>> Another thing (which could be related to the patch) is the package marking.
+>> We have PXA3xx SoCs marked A2 stepping, but C624, which means that the
+>> highest running frequency should not exceed 624MHz.
+>
+> This means not all PXA310 A2 stepping supports 806Mhz.
+> Can we differentiate the Cxxx option in software?
+>
+>> What is your PXA3xx A2 marking in respect to Cxxx option?
+>
+> Mine is 88AP310-A2-BGK2C806.
+>
 
-19:   73474106          0   IO-APIC-fasteoi   ata_piix, uhci_hcd:usb6, 0000:05:01.0
+Haojian,
 
->From lspci:
+Can you help check on the stepping/markings on these processors
+to see which of them supports 806MHz, reliably?
 
-05:01.0 Network controller: RaLink RT2561/RT61 rev B 802.11g
-  Subsystem: D-Link System Inc AirPlus G DWL-G510 Wireless Network Adapter (Rev.C)
-  Flags: bus master, slow devsel, latency 32,
-  IRQ 19  Memory at f9100000 (32-bit, non-prefetchable) [size=32K]
-  Capabilities: <access denied>
-  Kernel driver in use: rt61pci
-  Kernel modules: rt61pci
-
-Investigating this, it seems to be the result of the pci_name() used in
-rt2x00pci_probe().
-
-Since the struct rt2x00_ops records the module name for the device as
-well as the ops, it would make more sense to show that in the interrupt
-output instead.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/drivers/net/wireless/rt2x00/rt2x00pci.c b/drivers/net/wireless/rt2x00/rt2x00pci.c
-index ace0b66..06575dc 100644
---- a/drivers/net/wireless/rt2x00/rt2x00pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
-@@ -284,7 +284,7 @@ int rt2x00pci_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
- 	rt2x00dev->ops = ops;
- 	rt2x00dev->hw = hw;
- 	rt2x00dev->irq = pci_dev->irq;
--	rt2x00dev->name = pci_name(pci_dev);
-+	rt2x00dev->name = ops->name;
- 
- 	if (pci_is_pcie(pci_dev))
- 		rt2x00_set_chip_intf(rt2x00dev, RT2X00_CHIP_INTF_PCIE);
-
-
+- eric
