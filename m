@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab1BVWVi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:38 -0500
-Received: from kroah.org ([198.145.64.141]:46650 "EHLO coco.kroah.org"
+	id S1755536Ab1BVWc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:32:58 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49127 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754140Ab1BVWV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:28 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:39 2011
-Message-Id: <20110222221838.961427663@clark.kroah.org>
-User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:58 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: [19/70] xen/p2m: Mark INVALID_P2M_ENTRY the mfn_list past max_pfn.
-In-Reply-To: <20110222222003.GA15831@kroah.com>
+	id S1754575Ab1BVWc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:32:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Subject: Re: does hibernate to disk try hard enough to free memory?
+Date: Tue, 22 Feb 2011 23:32:43 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201102222159.58546.Martin@lichtvoll.de> <201102222209.15647.rjw@sisk.pl> <201102222307.41499.Martin@lichtvoll.de>
+In-Reply-To: <201102222307.41499.Martin@lichtvoll.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102222332.43864.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-stable review patch.  If anyone has any objections, please let us know.
+On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
+> > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> > > Hi!
+> > > 
+> > > Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB of
+> > > RAM is not able to allocate memory for the hibernation image. Before
+> > > KMS hibernation only very rarely failed for that reason.
+> > > 
+> > > Often I run without compositing at all as I believe this might spare
+> > > some pages as well. But this doesn't always help.
+> > > 
+> > > It complains that to less pages could be freed. For example with
+> > > kernel 2.6.37:
+> > > 
+> > > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
+> > > Feb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
+> > > Feb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411 +
+> > > 1024, available pages: 112767
+> > > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
+> > > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating hibernation
+> > > image Feb 16 00:15:00 shambhala kernel: Extended CMOS year: 2000
+> > > Feb 16 00:15:00 shambhala kernel: ACPI: Waking up from system sleep
+> > > state S4
+> > > Feb 16 00:15:00 shambhala kernel: PM: early recover of devices
+> > > complete after 0.376 msecs
+> > 
+> > What's the value in /sys/power/image_size?
+> 
+> shambhala:~> cat /sys/power/image_size
+> 844206080
+>
+> Should I try with less?
 
-------------------
+Yes, please.  Try with 700000000 for example.
 
-From: Stefan Bader <stefan.bader@canonical.com>
-
-commit cf04d120d9413de581437cf9a29f138ec1178f65 upstream.
-
-In case the mfn_list does not have enough entries to fill
-a p2m page we do not want the entries from max_pfn up to
-the boundary to be filled with unknown values. Hence
-set them to INVALID_P2M_ENTRY.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/xen/mmu.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
-
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -399,21 +399,15 @@ void __init xen_build_dynamic_phys_to_ma
- 		 * As long as the mfn_list has enough entries to completely
- 		 * fill a p2m page, pointing into the array is ok. But if
- 		 * not the entries beyond the last pfn will be undefined.
--		 * And guessing that the 'what-ever-there-is' does not take it
--		 * too kindly when changing it to invalid markers, a new page
--		 * is allocated, initialized and filled with the valid part.
- 		 */
- 		if (unlikely(pfn + P2M_PER_PAGE > max_pfn)) {
- 			unsigned long p2midx;
--			unsigned long *p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
--			p2m_init(p2m);
- 
--			for (p2midx = 0; pfn + p2midx < max_pfn; p2midx++) {
--				p2m[p2midx] = mfn_list[pfn + p2midx];
--			}
--			p2m_top[topidx][mididx] = p2m;
--		} else
--			p2m_top[topidx][mididx] = &mfn_list[pfn];
-+			p2midx = max_pfn % P2M_PER_PAGE;
-+			for ( ; p2midx < P2M_PER_PAGE; p2midx++)
-+				mfn_list[pfn + p2midx] = INVALID_P2M_ENTRY;
-+		}
-+		p2m_top[topidx][mididx] = &mfn_list[pfn];
- 	}
- }
- 
-
-
+Thanks,
+Rafael
