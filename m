@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1BVOVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:21:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab1BVOU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:20:59 -0500
-Date: Tue, 22 Feb 2011 09:20:51 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, neilb@suse.de,
-        tj@kernel.org, jmoyer@redhat.com, snitzer@redhat.com
-Subject: Re: [PATCH 2/3] loop: No need to initialize ->queue_lock explicitly
- before calling blk_cleanup_queue()
-Message-ID: <20110222142050.GB28269@redhat.com>
-References: <1298346817-26144-1-git-send-email-vgoyal@redhat.com>
- <1298346817-26144-3-git-send-email-vgoyal@redhat.com>
- <20110222073032.GA4555@swordfish.minsk.epam.com>
+	id S1753469Ab1BVOVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:21:13 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61671 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab1BVOVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 09:21:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=RDyJdemLhvHm//WdGbXo456lvMWJMQ9Pd/bI0gXi4MjxXNSaA48M9cBzc/Vp9a98bN
+         EcsGkn0wMb0CONQwxH1MzByQIi1s+eck1VraXLCrRnpDt1Mqhv8WRhmOONRh8wd3pOnO
+         HIu9sDBaG93F1RUUBimksaY9lAUMR+9tmsAew=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Shahar Havivi <shaharh@redhat.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org
+Subject: Re: [PATCH] USB 10/100 RJ45 Ethernet Network Adapter
+References: <20110222140705.GA6055@redhat.com>
+Date: Tue, 22 Feb 2011 15:21:00 +0100
+In-Reply-To: <20110222140705.GA6055@redhat.com> (Shahar Havivi's message of
+	"Tue, 22 Feb 2011 16:07:10 +0200")
+Message-ID: <87lj18qhf7.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110222073032.GA4555@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 09:30:32AM +0200, Sergey Senozhatsky wrote:
-> On (02/21/11 22:53), Vivek Goyal wrote:
-> > o Now we initialize ->queue_lock at queue allocation time so driver does
-> >   not have to worry about initializing it before calling blk_cleanup_queue().
-> > 
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > ---
-> >  drivers/block/loop.c |    3 ---
-> >  1 files changed, 0 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-> > index 49e6a54..44e18c0 100644
-> > --- a/drivers/block/loop.c
-> > +++ b/drivers/block/loop.c
-> > @@ -1641,9 +1641,6 @@ out:
-> >  
-> >  static void loop_free(struct loop_device *lo)
-> >  {
-> > -	if (!lo->lo_queue->queue_lock)
-> > -		lo->lo_queue->queue_lock = &lo->lo_queue->__queue_lock;
-> > -
-> >  	blk_cleanup_queue(lo->lo_queue);
-> >  	put_disk(lo->lo_disk);
-> >  	list_del(&lo->lo_list);
-> 
-> Hi,
-> 
-> (just for note) 
-> There is an incremental patch fixing this case in Andrew's mm tree: 
-> https://lkml.org/lkml/2011/2/11/165
->                                    
-> (block-fix-queue_lock-null-pointer-derefence-in-blk_throtl_exit-v4.patch
-> added to -mm tree).
+>>>>> "Shahar" == Shahar Havivi <shaharh@redhat.com> writes:
 
-Hi Sergey,
+ Shahar> The device is very similar to (0x0fe6, 0x8101),
+ Shahar> And works well with dm9601 driver.
+ Shahar> ---
+ Shahar>  drivers/net/usb/dm9601.c |    5 +++++
+ Shahar>  1 files changed, 5 insertions(+), 0 deletions(-)
 
-Thinking more about it, initializing queue lock in blk_alloc_queue() seems
-to be even more cleaner to me instead of initializing it to internal lock
-during blk_cleanup_queue(). If others like the idea, then we can either
-ask Andrew to drop the patch or I can generate one on top of it.
+ Shahar> diff --git a/drivers/net/usb/dm9601.c b/drivers/net/usb/dm9601.c
+ Shahar> index 02b622e..2d1c8ae 100644
+ Shahar> --- a/drivers/net/usb/dm9601.c
+ Shahar> +++ b/drivers/net/usb/dm9601.c
+ Shahar> @@ -654,6 +654,11 @@ static const struct usb_device_id products[] = {
+ Shahar>  	 USB_DEVICE(0x0a46, 0x9000),	/* DM9000E */
+ Shahar>  	 .driver_info = (unsigned long)&dm9601_info,
+ Shahar>  	 },
+ Shahar> +	{
+ Shahar> +	 USB_DEVICE(0x0fe6, 0x9700),	/* DM9601 USB to Fast Ethernet Adapter */
+ Shahar> +
+ Shahar> +	 .driver_info = (unsigned long)&dm9601_info,
+ Shahar> +	 },
+ Shahar>  	{},			// END
 
-Thanks
-Vivek
+Please put it after the 0x8100 device and get rid of the empty line
+before .driver_info - Otherwise it looks good.
+
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+
+-- 
+Bye, Peter Korsgaard
