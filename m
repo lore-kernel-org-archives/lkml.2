@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab1BVWVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:12 -0500
-Received: from kroah.org ([198.145.64.141]:46559 "EHLO coco.kroah.org"
+	id S1754311Ab1BVWgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:36:23 -0500
+Received: from kroah.org ([198.145.64.141]:46577 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab1BVWVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:37 2011
-Message-Id: <20110222221837.550287183@clark.kroah.org>
+	id S1753123Ab1BVWVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:12 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:38 2011
+Message-Id: <20110222221837.973296507@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:44 -0800
+Date: Tue, 22 Feb 2011 14:16:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [05/70] drm/radeon/kms: fix interlaced modes on dce4+
+Subject: [09/70] drm/radeon/kms: add bounds checking to avivo pll algo
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,115 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit c9417bdd4c6b1b92a21608c07e83afa419c7bb62 upstream.
+commit a4b40d5d97f5c9ad0b7f4bf2818291ca184bb433 upstream.
 
-- set scaler table clears the interleave bit, need to
-reset it in encoder quirks, this was already done for
-pre-dce4.
-- remove the interleave settings from set_base() functions
-this is now handled in the encoder quirks functions, and
-isn't technically part of the display base setup.
-- rename evergreen_do_set_base() to dce4_do_set_base() since
-it's used on both evergreen and NI asics.
-
+Prevent divider overflow.
 Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=28182
+https://bugzilla.kernel.org/show_bug.cgi?id=28932
 
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c   |   22 +++++-----------------
- drivers/gpu/drm/radeon/radeon_encoders.c |   20 +++++++++++++++-----
- 2 files changed, 20 insertions(+), 22 deletions(-)
+ drivers/gpu/drm/radeon/radeon_display.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -959,9 +959,9 @@ static void atombios_crtc_set_pll(struct
- 	}
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -461,6 +461,11 @@ static void avivo_get_fb_div(struct rade
+ 	tmp *= target_clock;
+ 	*fb_div = tmp / pll->reference_freq;
+ 	*frac_fb_div = tmp % pll->reference_freq;
++
++        if (*fb_div > pll->max_feedback_div)
++		*fb_div = pll->max_feedback_div;
++        else if (*fb_div < pll->min_feedback_div)
++                *fb_div = pll->min_feedback_div;
  }
  
--static int evergreen_crtc_do_set_base(struct drm_crtc *crtc,
--				      struct drm_framebuffer *fb,
--				      int x, int y, int atomic)
-+static int dce4_crtc_do_set_base(struct drm_crtc *crtc,
-+				 struct drm_framebuffer *fb,
-+				 int x, int y, int atomic)
- {
- 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
- 	struct drm_device *dev = crtc->dev;
-@@ -1093,12 +1093,6 @@ static int evergreen_crtc_do_set_base(st
- 	WREG32(EVERGREEN_VIEWPORT_SIZE + radeon_crtc->crtc_offset,
- 	       (crtc->mode.hdisplay << 16) | crtc->mode.vdisplay);
- 
--	if (crtc->mode.flags & DRM_MODE_FLAG_INTERLACE)
--		WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset,
--		       EVERGREEN_INTERLEAVE_EN);
--	else
--		WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
--
- 	if (!atomic && fb && fb != crtc->fb) {
- 		radeon_fb = to_radeon_framebuffer(fb);
- 		rbo = radeon_fb->obj->driver_private;
-@@ -1247,12 +1241,6 @@ static int avivo_crtc_do_set_base(struct
- 	WREG32(AVIVO_D1MODE_VIEWPORT_SIZE + radeon_crtc->crtc_offset,
- 	       (crtc->mode.hdisplay << 16) | crtc->mode.vdisplay);
- 
--	if (crtc->mode.flags & DRM_MODE_FLAG_INTERLACE)
--		WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset,
--		       AVIVO_D1MODE_INTERLEAVE_EN);
--	else
--		WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
--
- 	if (!atomic && fb && fb != crtc->fb) {
- 		radeon_fb = to_radeon_framebuffer(fb);
- 		rbo = radeon_fb->obj->driver_private;
-@@ -1276,7 +1264,7 @@ int atombios_crtc_set_base(struct drm_cr
- 	struct radeon_device *rdev = dev->dev_private;
- 
- 	if (ASIC_IS_DCE4(rdev))
--		return evergreen_crtc_do_set_base(crtc, old_fb, x, y, 0);
-+		return dce4_crtc_do_set_base(crtc, old_fb, x, y, 0);
- 	else if (ASIC_IS_AVIVO(rdev))
- 		return avivo_crtc_do_set_base(crtc, old_fb, x, y, 0);
- 	else
-@@ -1291,7 +1279,7 @@ int atombios_crtc_set_base_atomic(struct
-        struct radeon_device *rdev = dev->dev_private;
- 
- 	if (ASIC_IS_DCE4(rdev))
--		return evergreen_crtc_do_set_base(crtc, fb, x, y, 1);
-+		return dce4_crtc_do_set_base(crtc, fb, x, y, 1);
- 	else if (ASIC_IS_AVIVO(rdev))
- 		return avivo_crtc_do_set_base(crtc, fb, x, y, 1);
- 	else
---- a/drivers/gpu/drm/radeon/radeon_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_encoders.c
-@@ -1465,11 +1465,21 @@ atombios_apply_encoder_quirks(struct drm
+ static u32 avivo_get_post_div(struct radeon_pll *pll,
+@@ -494,6 +499,11 @@ static u32 avivo_get_post_div(struct rad
+ 			post_div--;
  	}
  
- 	/* set scaler clears this on some chips */
--	/* XXX check DCE4 */
--	if (!(radeon_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))) {
--		if (ASIC_IS_AVIVO(rdev) && (mode->flags & DRM_MODE_FLAG_INTERLACE))
--			WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset,
--			       AVIVO_D1MODE_INTERLEAVE_EN);
-+	if (ASIC_IS_AVIVO(rdev) &&
-+	    (!(radeon_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT)))) {
-+		if (ASIC_IS_DCE4(rdev)) {
-+			if (mode->flags & DRM_MODE_FLAG_INTERLACE)
-+				WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset,
-+				       EVERGREEN_INTERLEAVE_EN);
-+			else
-+				WREG32(EVERGREEN_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
-+		} else {
-+			if (mode->flags & DRM_MODE_FLAG_INTERLACE)
-+				WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset,
-+				       AVIVO_D1MODE_INTERLEAVE_EN);
-+			else
-+				WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
-+		}
- 	}
++	if (post_div > pll->max_post_div)
++		post_div = pll->max_post_div;
++	else if (post_div < pll->min_post_div)
++		post_div = pll->min_post_div;
++
+ 	return post_div;
  }
  
 
