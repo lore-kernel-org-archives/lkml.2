@@ -1,183 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab1BVMsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 07:48:13 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:47442 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab1BVMsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 07:48:12 -0500
-Message-ID: <C73EA0C998A34C709A8130A50A1C443F@subhasishg>
-From: "Subhasish Ghosh" <subhasish@mistralsolutions.com>
-To: "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Wolfgang Grandegger" <wg@grandegger.com>
-Cc: <sachi@mistralsolutions.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <nsekhar@ti.com>,
-        "open list" <linux-kernel@vger.kernel.org>, <m-watkins@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>
-References: <1297435892-28278-1-git-send-email-subhasish@mistralsolutions.com> <1297435892-28278-2-git-send-email-subhasish@mistralsolutions.com> <20110221163027.GF10686@sortiz-mobl> <37B3755C4AE64BAA805DFBAEBDC3D9E4@subhasishg> <20110222103127.GC30279@sortiz-mobl> <4D639493.1060601@grandegger.com> <20110222113310.GD30279@sortiz-mobl>
-In-Reply-To: <20110222113310.GD30279@sortiz-mobl>
-Subject: Re: [PATCH v2 01/13] mfd: pruss mfd driver.
-Date: Tue, 22 Feb 2011 18:19:25 +0530
-Organization: Mistral Solutions
+	id S1752271Ab1BVMwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 07:52:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43001 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751924Ab1BVMwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 07:52:38 -0500
+Date: Tue, 22 Feb 2011 13:52:01 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        masami.hiramatsu.pt@hitachi.com, hpa@zytor.com, ananth@in.ibm.com,
+        davem@davemloft.net, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        eric.dumazet@gmail.com, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH 1/2] x86: separating entry text section
+Message-ID: <20110222125201.GB1884@jolsa.brq.redhat.com>
+References: <20110220125948.GC25700@elte.hu>
+ <1298298313-5980-1-git-send-email-jolsa@redhat.com>
+ <1298298313-5980-2-git-send-email-jolsa@redhat.com>
+ <20110222080934.GB7001@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8117.416
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8117.416
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110222080934.GB7001@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am not sure if I understood you correctly, but the current sizeof the 
-structure da8xx_prusscore_regs  is 0x500.
+On Tue, Feb 22, 2011 at 09:09:34AM +0100, Ingo Molnar wrote:
+> 
+> * Jiri Olsa <jolsa@redhat.com> wrote:
+> 
+> > Putting x86 entry code to the separate section: .entry.text.
+> 
+> Trying to apply your patch i noticed one detail:
+> 
+> > before patch:
+> >      26282174  L1-icache-load-misses      ( +-   0.099% )  (scaled from 81.00%)
+> >   0.206651959  seconds time elapsed   ( +-   0.152% )
+> > 
+> > after patch:
+> >      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
+> >   0.210509948  seconds time elapsed   ( +-   0.140% )
+> 
+> So time elapsed actually went up.
+> 
+> hackbench is notoriously unstable when it comes to runtime - and increasing the 
+> --repeat value only has limited effects on that.
+> 
+> Dropping all system caches:
+> 
+>    echo 1 > /proc/sys/vm/drop_caches
+> 
+> Seems to do a better job of 'resetting' system state, but if we put that into the 
+> measured workload then the results are all over the place (as we now depend on IO 
+> being done):
+> 
+>  # cat hb10
+> 
+>  echo 1 > /proc/sys/vm/drop_caches
+>  ./hackbench 10
+> 
+>  # perf stat --repeat 3 ./hb10
+> 
+>  Time: 0.097
+>  Time: 0.095
+>  Time: 0.101
+> 
+>  Performance counter stats for './hb10' (3 runs):
+> 
+>          21.351257 task-clock-msecs         #      0.044 CPUs    ( +-  27.165% )
+>                  6 context-switches         #      0.000 M/sec   ( +-  34.694% )
+>                  1 CPU-migrations           #      0.000 M/sec   ( +-  25.000% )
+>                410 page-faults              #      0.019 M/sec   ( +-   0.081% )
+>         25,407,650 cycles                   #   1189.984 M/sec   ( +-  49.154% )
+>         25,407,650 instructions             #      1.000 IPC     ( +-  49.154% )
+>          5,126,580 branches                 #    240.107 M/sec   ( +-  46.012% )
+>            192,272 branch-misses            #      3.750 %       ( +-  44.911% )
+>            901,701 cache-references         #     42.232 M/sec   ( +-  12.857% )
+>            802,767 cache-misses             #     37.598 M/sec   ( +-   9.282% )
+> 
+>         0.483297792  seconds time elapsed   ( +-  31.152% )
+> 
+> So here's a perf stat feature suggestion to solve such measurement problems: a new 
+> 'pre-run' 'dry' command could be specified that is executed before the real 'hot' 
+> run is executed. Something like this:
+> 
+>   perf stat --pre-run-script ./hb10 --repeat 10 ./hackbench 10
+> 
+> Would do the cache-clearing before each run, it would run hackbench once (dry run) 
+> and then would run hackbench 10 for real - and would repeat the whole thing 10 
+> times. Only the 'hot' portion of the run would be measured and displayed in the perf 
+> stat output event counts.
+> 
+> Another observation:
+> 
+> >      24237651  L1-icache-load-misses      ( +-   0.117% )  (scaled from 80.96%)
+> 
+> Could you please do runs that do not display 'scaled from' messages? Since we are 
+> measuring a relatively small effect here, and scaling adds noise, it would be nice 
+> to ensure that the effect persists with non-scaled events as well:
+> 
+> You can do that by reducing the number of events that are measured. The PMU can not 
+> measure all those L1 cache events you listed - so only use the most important one 
+> and add cycles and instructions to make sure the measurements are comparable:
+> 
+>   -e L1-icache-load-misses -e instructions -e cycles
+> 
+> Btw., there's another 'perf stat' feature suggestion: it would be nice if it was 
+> possible to 'record' a perf stat run, and do a 'perf diff' over it. That would 
+> compare the two runs all automatically, without you having to do the comparison 
+> manually.
 
-Here is a link to the PRUSS memory map:
-http://processors.wiki.ti.com/index.php/PRUSS_Memory_Map
+hi,
 
-The offset 0x00007000 is the PRU0 reg offset and 0x00007800 is the PRU1 reg 
-offset.
-We cannot have a register file larger than this, but lot of space is left 
-out, possibly for future development.
+I made another test with "reseting" the system state as suggested and
+only for cache-misses together with instructions and cycles events.
 
---------------------------------------------------
-From: "Samuel Ortiz" <sameo@linux.intel.com>
-Sent: Tuesday, February 22, 2011 5:03 PM
-To: "Wolfgang Grandegger" <wg@grandegger.com>
-Cc: "Subhasish Ghosh" <subhasish@mistralsolutions.com>; 
-<sachi@mistralsolutions.com>; 
-<davinci-linux-open-source@linux.davincidsp.com>; <nsekhar@ti.com>; "open 
-list" <linux-kernel@vger.kernel.org>; <m-watkins@ti.com>; 
-<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 01/13] mfd: pruss mfd driver.
+I can see even bigger drop of icache load misses than before
+from 19359739 to 16448709 (about 15%).
 
-> On Tue, Feb 22, 2011 at 11:48:51AM +0100, Wolfgang Grandegger wrote:
->> On 02/22/2011 11:31 AM, Samuel Ortiz wrote:
->> > Hi Subhasish,
->> >
->> > On Tue, Feb 22, 2011 at 11:13:38AM +0530, Subhasish Ghosh wrote:
->> >> Thank you for your comments.
->> > No problem.
->> >
->> >>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
->> >>>> index fd01836..6c437df 100644
->> >>>> --- a/drivers/mfd/Kconfig
->> >>>> +++ b/drivers/mfd/Kconfig
->> >>>> @@ -81,6 +81,16 @@ config MFD_DM355EVM_MSP
->> >>>>   boards.  MSP430 firmware manages resets and power sequencing,
->> >>>>   inputs from buttons and the IR remote, LEDs, an RTC, and more.
->> >>>>
->> >>>> +config MFD_DA8XX_PRUSS
->> >>>> + tristate "Texas Instruments DA8XX PRUSS support"
->> >>>> + depends on ARCH_DAVINCI && ARCH_DAVINCI_DA850
->> >>> Why are we depending on those ?
->> >>
->> >> SG -- The PRUSS core in only available within DA850 and DA830,
->> >>            DA830 support is not yet implemented.
->> > Sure, but if there are no actual code dependencies, I'd like to get rid 
->> > of
->> > those depends.
->> >
->> >>>> +u32 pruss_disable(struct device *dev, u8 pruss_num)
->> >>>> +{
->> >>>> + struct da8xx_pruss *pruss = dev_get_drvdata(dev->parent);
->> >>>> + da8xx_prusscore_regs h_pruss;
->> >>>> + u32 temp_reg;
->> >>>> +
->> >>>> + if (pruss_num == DA8XX_PRUCORE_0) {
->> >>>> + /* Disable PRU0  */
->> >>>> + h_pruss = (da8xx_prusscore_regs)
->> >>>> + ((u32) pruss->ioaddr + 0x7000);
->> >>> So it seems you're doing this in several places, and I have a few
->> >>> comments:
->> >>>
->> >>> - You don't need the da8xx_prusscore_regs at all.
->> >>> - Define the register map through a set of #define in your header 
->> >>> file.
->> >>> - Use a static routine that takes the core number and returns the
->> >>> register map
->> >>> offset.
->> >>>
->> >>> Then routines like this one will look a lot more readable.
->> >>
->> >> SG -- There are a huge number of PRUSS registers. A lot of them are
->> >> reserved and are expected to change as development on the
->> >>            controller is still ongoing.
->> > First of all, from what I read in your patch you're only using the 
->> > CONTROL
->> > offset.
->> >
->> >> If we use #defines to plot
->> >> all the registers, then first, there are too many array type
->> >> registers which will need to be duplicated.
->> > What I'm expecting is a small set of defines for the register offsets. 
->> > You
->> > have 13 fields in your da8xx_prusscore_regs, you only need to define 13
->> > register offsets.
->> >
->> > So, if you have a:
->> >
->> > static u32 reg_offset(struct device *dev, u8 pru_num)
->> > {
->> > struct da8xx_pruss *pru = dev_get_drvdata(dev->parent);
->> >
->> > switch (pru_num) {
->> > case DA8XX_PRUCORE_0:
->> > return (u32) pru->ioaddr + 0x7000;
->> > case DA8XX_PRUCORE_1:
->> > return (u32) pru->ioaddr + 0x7800;
->> > default:
->> > return 0;
->> > }
->> >
->> >
->> > then routines like pruss_enable (which should return an int, btw) would 
->> > look
->> > like:
->> >
->> > int pruss_enable(struct device *dev, u8 pruss_num)
->> > {
->> > u32 offset = reg_offset(dev, pruss_num);
->> >
->> > if (offset == 0)
->> > return -EINVAL;
->> >
->> > __raw_writel(DA8XX_PRUCORE_CONTROL_RESETVAL,
->> > offset + PRU_CORE_CONTROL);
->> >
->> > return 0;
->> > }
->>
->> All registers are memory mapped and could nicely be described by
->> structures (and sub-structures). Therefore we asked to considerer
->> structs, at least for the Pruss SocketCAN drivers.
->>
->> That would result in
->> much much clearer and better readable code. The code above would shrink 
->> to:
->>
->> __raw_writel(DA8XX_PRUCORE_CONTROL_RESETVAL,
->>      &prucore[pruss_num].control);
-> This driver seems to exclusively use the control offset, which is why I 
-> don't
-> see an absolute need for doing this mapping.
-> But if both maps are contiguous then doing the mapping would prevent us 
-> from
-> calling reg_offset() and would bring some advantage. I'd then be fine with 
-> it.
-> For now, da8xx_prusscore_regs seems to be larger than the 0x800 interval
-> between the 2 maps, so I have no idea if both maps are indeed contiguous.
->
-> Cheers,
-> Samuel.
->
-> -- 
-> Intel Open Source Technology Centre
-> http://oss.intel.com/ 
+The instruction/cycles count is slightly bigger in the patched
+kernel run though..
+
+perf stat --repeat 100  -e L1-icache-load-misses -e instructions -e cycles ./hackbench/hackbench 10
+
+-------------------------------------------------------------------------------
+before patch:
+
+ Performance counter stats for './hackbench/hackbench 10' (100 runs):
+
+           19359739  L1-icache-load-misses      ( +-   0.313% )
+         2667528936  instructions             #      0.498 IPC     ( +- 0.165% )
+         5352849800  cycles                     ( +-   0.303% )
+
+        0.205402048  seconds time elapsed   ( +-   0.299% )
+
+ Performance counter stats for './hackbench/hackbench 10' (500 runs):
+
+           19417627  L1-icache-load-misses      ( +-   0.147% )
+         2676914223  instructions             #      0.497 IPC     ( +- 0.079% )
+         5389516026  cycles                     ( +-   0.144% )
+
+        0.206267711  seconds time elapsed   ( +-   0.138% )
+
+
+-------------------------------------------------------------------------------
+after patch:
+
+ Performance counter stats for './hackbench/hackbench 10' (100 runs):
+
+           16448709  L1-icache-load-misses      ( +-   0.426% )
+         2698406306  instructions             #      0.500 IPC     ( +- 0.177% )
+         5393976267  cycles                     ( +-   0.321% )
+
+        0.206072845  seconds time elapsed   ( +-   0.276% )
+
+ Performance counter stats for './hackbench/hackbench 10' (500 runs):
+
+           16490788  L1-icache-load-misses      ( +-   0.180% )
+         2717734941  instructions             #      0.502 IPC     ( +- 0.079% )
+         5414756975  cycles                     ( +-   0.148% )
+
+        0.206747566  seconds time elapsed   ( +-   0.137% )
+
+
+Attaching patch with above numbers in comment.
+
+thanks,
+jirka
+
+
+---
+Putting x86 entry code to the separate section: .entry.text.
+
+Separating the entry text section seems to have performance
+benefits with regards to the instruction cache usage.
+
+Running hackbench showed that the change compresses the icache
+footprint. The icache load miss rate went down by about 15%:
+
+before patch:
+         19417627  L1-icache-load-misses      ( +-   0.147% )
+
+after patch:
+         16490788  L1-icache-load-misses      ( +-   0.180% )
+
+
+Whole perf output follows.
+
+- results for current tip tree:
+  Performance counter stats for './hackbench/hackbench 10' (500 runs):
+
+         19417627  L1-icache-load-misses      ( +-   0.147% )
+       2676914223  instructions             #      0.497 IPC     ( +- 0.079% )
+       5389516026  cycles                     ( +-   0.144% )
+
+      0.206267711  seconds time elapsed   ( +-   0.138% )
+
+- results for current tip tree with the patch applied are:
+  Performance counter stats for './hackbench/hackbench 10' (500 runs):
+
+         16490788  L1-icache-load-misses      ( +-   0.180% )
+       2717734941  instructions             #      0.502 IPC     ( +- 0.079% )
+       5414756975  cycles                     ( +-   0.148% )
+
+      0.206747566  seconds time elapsed   ( +-   0.137% )
+
+
+wbr,
+jirka
+
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ arch/x86/ia32/ia32entry.S         |    2 ++
+ arch/x86/kernel/entry_32.S        |    6 ++++--
+ arch/x86/kernel/entry_64.S        |    6 ++++--
+ arch/x86/kernel/vmlinux.lds.S     |    1 +
+ include/asm-generic/sections.h    |    1 +
+ include/asm-generic/vmlinux.lds.h |    6 ++++++
+ 6 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 0ed7896..50f1630 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -25,6 +25,8 @@
+ #define sysretl_audit ia32_ret_from_sys_call
+ #endif
+ 
++	.section .entry.text, "ax"
++
+ #define IA32_NR_syscalls ((ia32_syscall_end - ia32_sys_call_table)/8)
+ 
+ 	.macro IA32_ARG_FIXUP noebp=0
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index c8b4efa..f5accf8 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -65,6 +65,8 @@
+ #define sysexit_audit	syscall_exit_work
+ #endif
+ 
++	.section .entry.text, "ax"
++
+ /*
+  * We use macros for low-level operations which need to be overridden
+  * for paravirtualization.  The following will never clobber any registers:
+@@ -788,7 +790,7 @@ ENDPROC(ptregs_clone)
+  */
+ .section .init.rodata,"a"
+ ENTRY(interrupt)
+-.text
++.section .entry.text, "ax"
+ 	.p2align 5
+ 	.p2align CONFIG_X86_L1_CACHE_SHIFT
+ ENTRY(irq_entries_start)
+@@ -807,7 +809,7 @@ vector=FIRST_EXTERNAL_VECTOR
+       .endif
+       .previous
+ 	.long 1b
+-      .text
++      .section .entry.text, "ax"
+ vector=vector+1
+     .endif
+   .endr
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 891268c..39f8d21 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -61,6 +61,8 @@
+ #define __AUDIT_ARCH_LE	   0x40000000
+ 
+ 	.code64
++	.section .entry.text, "ax"
++
+ #ifdef CONFIG_FUNCTION_TRACER
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ ENTRY(mcount)
+@@ -744,7 +746,7 @@ END(stub_rt_sigreturn)
+  */
+ 	.section .init.rodata,"a"
+ ENTRY(interrupt)
+-	.text
++	.section .entry.text
+ 	.p2align 5
+ 	.p2align CONFIG_X86_L1_CACHE_SHIFT
+ ENTRY(irq_entries_start)
+@@ -763,7 +765,7 @@ vector=FIRST_EXTERNAL_VECTOR
+       .endif
+       .previous
+ 	.quad 1b
+-      .text
++      .section .entry.text
+ vector=vector+1
+     .endif
+   .endr
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index e70cc3d..459dce2 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -105,6 +105,7 @@ SECTIONS
+ 		SCHED_TEXT
+ 		LOCK_TEXT
+ 		KPROBES_TEXT
++		ENTRY_TEXT
+ 		IRQENTRY_TEXT
+ 		*(.fixup)
+ 		*(.gnu.warning)
+diff --git a/include/asm-generic/sections.h b/include/asm-generic/sections.h
+index b3bfabc..c1a1216 100644
+--- a/include/asm-generic/sections.h
++++ b/include/asm-generic/sections.h
+@@ -11,6 +11,7 @@ extern char _sinittext[], _einittext[];
+ extern char _end[];
+ extern char __per_cpu_load[], __per_cpu_start[], __per_cpu_end[];
+ extern char __kprobes_text_start[], __kprobes_text_end[];
++extern char __entry_text_start[], __entry_text_end[];
+ extern char __initdata_begin[], __initdata_end[];
+ extern char __start_rodata[], __end_rodata[];
+ 
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index fe77e33..906c3ce 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -424,6 +424,12 @@
+ 		*(.kprobes.text)					\
+ 		VMLINUX_SYMBOL(__kprobes_text_end) = .;
+ 
++#define ENTRY_TEXT							\
++		ALIGN_FUNCTION();					\
++		VMLINUX_SYMBOL(__entry_text_start) = .;			\
++		*(.entry.text)						\
++		VMLINUX_SYMBOL(__entry_text_end) = .;
++
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ #define IRQENTRY_TEXT							\
+ 		ALIGN_FUNCTION();					\
+-- 
+1.7.1
 
