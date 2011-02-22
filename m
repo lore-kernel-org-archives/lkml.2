@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab1BVO6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 09:58:14 -0500
+	id S1754425Ab1BVO6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 09:58:25 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:64815 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab1BVO6N convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754403Ab1BVO6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 09:58:13 -0500
+	Tue, 22 Feb 2011 09:58:24 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qcDN0taowK6puAOJ7o/Pa4WjgYj2KoAHqA4YNxarcqKunaSTAYlN3WRdmVkmDHw5x0
-         HFcgL8tATez84EJBqKX5FYvBg/Q6h3dg6XfuDfD2Jvo6nFgUW/VglYf2jrDrrM4Fjn5k
-         OkS3cUniKXJ1CvfgsEyJLCG0HJ3xSZH8G2xSk=
-MIME-Version: 1.0
-In-Reply-To: <4D635618.3@linux.vnet.ibm.com>
-References: <20110222115340.da48b908.sfr@canb.auug.org.au>
-	<4D63479F.3060603@linux.vnet.ibm.com>
-	<20110222163016.aac65a7a.sfr@canb.auug.org.au>
-	<4D635618.3@linux.vnet.ibm.com>
-Date: Tue, 22 Feb 2011 08:57:26 -0600
-Message-ID: <AANLkTik1cmehfLENCYb8GYPLbM6PWUCzqtp74xD2YbVR@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the v9fs tree
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ff9rLV+cRMh5lqLOLWcNZSk6RtLXfHMW4zwvIF3ndy+WRpNg9M0ADJd8n6eHYSpH/V
+         AhC/igoBIrLzHo0WHH69X2swWKUYzw/kMR4qbAqtDWEw/OhOWLDAbvIovnXkqC9wJUkw
+         8M1b1RrcBQkOC4rddOrpXgphNY9s7vN3eIDCY=
+From: "Anoop P.A" <anoop.pa@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: Anoop P A <anoop.pa@gmail.com>
+Subject: [PATCH] MSP82XX pci support. Add pci fixup entries for MSP82XX Acadia board.
+Date: Tue, 22 Feb 2011 20:51:28 +0530
+Message-Id: <1298388088-11338-1-git-send-email-anoop.pa@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-JV - you should be able to check this just by building with allmod
-config.  I'll accept a pull immediately if this is the fix.
-
-        -eric
+From: Anoop P A <anoop.pa@gmail.com>
 
 
-On Tue, Feb 22, 2011 at 12:22 AM, Venkateswararao Jujjuri (JV)
-<jvrao@linux.vnet.ibm.com> wrote:
-> On 2/21/2011 9:30 PM, Stephen Rothwell wrote:
->> Hi,
->>
->> On Mon, 21 Feb 2011 21:20:31 -0800 "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com> wrote:
->>>
->>> On 2/21/2011 4:53 PM, Stephen Rothwell wrote:
->>>>
->>>> After merging the v9fs tree, today's linux-next build (x86_64
->>>> allmodconfig) failed like this:
->>>>
->>>> ERROR: "p9_payload_gup" [net/9p/9pnet_virtio.ko] undefined!
->>>> ERROR: "p9_nr_pages" [net/9p/9pnet_virtio.ko] undefined!
->>>> ERROR: "p9_release_req_pages" [net/9p/9pnet_virtio.ko] undefined!
->>>
->>> These functions are defined by commit 249951bf66816128a7698caa826425e299494c82
->>> ([net/9p] Preparation and helper functions for zero copy)
->>
->> Yes, they are - but they are not exported to modules.
->
-> Thanks; Can you please check if this patch fixes your issue?
->
-> diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
-> index ca705f1..da7c2cd 100644
-> --- a/net/9p/trans_common.c
-> +++ b/net/9p/trans_common.c
-> @@ -13,6 +13,7 @@
->  */
->
->  #include <linux/slab.h>
-> + #include <linux/module.h>
->  #include <net/9p/9p.h>
->  #include <net/9p/client.h>
->  #include <linux/scatterlist.h>
-> @@ -32,6 +33,7 @@ p9_release_req_pages(struct trans_rpage_info *rpinfo)
->                i++;
->        }
->  }
-> +EXPORT_SYMBOL(p9_release_req_pages);
->
->  /**
->  * p9_nr_pages - Return number of pages needed to accomodate the payload.
-> @@ -45,6 +47,7 @@ p9_nr_pages(struct p9_req_t *req)
->                        PAGE_SIZE - 1) >> PAGE_SHIFT;
->        return end_page - start_page;
->  }
-> +EXPORT_SYMBOL(p9_nr_pages);
->
->  /**
->  * payload_gup - Translates user buffer into kernel pages and
-> @@ -91,3 +94,4 @@ p9_payload_gup(struct p9_req_t *req, size_t *pdata_off, int *p
->        }
->        return 0;
->  }
-> +EXPORT_SYMBOL(p9_payload_gup);
->
->
->
->
+Signed-off-by: Anoop P A <anoop.pa@gmail.com>
+---
+ arch/mips/pci/fixup-pmcmsp.c |   42 +++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/arch/mips/pci/fixup-pmcmsp.c b/arch/mips/pci/fixup-pmcmsp.c
+index 65735b1..6569e70 100644
+--- a/arch/mips/pci/fixup-pmcmsp.c
++++ b/arch/mips/pci/fixup-pmcmsp.c
+@@ -122,6 +122,45 @@ static char irq_tab[][5] __initdata = {
+ 	{0,     0,      0,      0,      0 }     /* 21 (AD[31]): Unused */
+ };
+ 
++#elif defined(CONFIG_PMC_MSP82XX_ACADIA)
++
++/* Acadia Board IRQ wiring to PCI slots */
++static char irq_tab[][5] __initdata = {
++	/*INTA	INTB	INTC	INTD */
++	{0,	0,	0,	0,	0 },	/*	(AD[0]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[1]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[2]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[3]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[4]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[5]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[6]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[7]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[8]): Unused */
++	{0,	0,	0,	0,	0 },	/*	(AD[9]): Unused */
++	{0,	0,	0,	0,	0 },	/*	0 (AD[10]): Unused */
++	{0,	0,	0,	0,	0 },	/*	1 (AD[11]): Unused */
++	{0,	0,	0,	0,	0 },	/*	2 (AD[12]): Unused */
++	{0,	0,	0,	0,	0 },	/*	3 (AD[13]): Unused */
++	{0,	0,	0,	0,	0 },	/*	4 (AD[14]): Unused */
++	{0,	0,	0,	0,	0 },	/*	5 (AD[15]): Unused */
++	{0,	0,	0,	0,	0 },	/*	6 (AD[16]): Unused */
++	{0,	0,	0,	0,	0 },	/*	7 (AD[17]): Unused */
++	{0,	0,	0,	0,	0 },	/*	8 (AD[18]): Unused */
++	{0,	0,	0,	0,	0 },	/*	9 (AD[19]): Unused */
++	{0,	0,	0,	0,	0 },	/*	10 (AD[20]): Unused */
++	{0,	0,	0,	0,	0 },	/*	11 (AD[21]): Unused */
++	{0,	0,	0,	0,	0 },	/*	12 (AD[22]): Unused */
++	{0,	0,	0,	0,	0 },	/*	13 (AD[23]): Unused */
++	{0,	0,	0,	0,	0 },	/*	14 (AD[24]): Unused */
++	{0,	0,	0,	0,	0 },	/*	15 (AD[25]): Unused */
++	{0,	0,	0,	0,	0 },	/*	16 (AD[26]): Unused */
++	{0,	0,	0,	0,	0 },	/*	17 (AD[27]): Unused */
++	{0,	IRQ5,	IRQ5,	0,	0 },	/*	18 (AD[28]): slot 0 */
++	{0,	0,	0,	0,	0 },	/*	19 (AD[29]): Unused */
++	{0,	IRQ4,	IRQ4,	0,	0 },	/*	20 (AD[30]): slot 1*/
++	{0,	0,	0,	0,	0 },	/*	21 (AD[31]): Unused */
++};
++
+ #else
+ 
+ /* Unknown board -- don't assign any IRQs */
+@@ -204,9 +243,6 @@ int pcibios_plat_dev_init(struct pci_dev *dev)
+  ****************************************************************************/
+ int __init pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+ {
+-#if !defined(CONFIG_PMC_MSP7120_GW) && !defined(CONFIG_PMC_MSP7120_EVAL)
+-	printk(KERN_WARNING "PCI: unknown board, no PCI IRQs assigned.\n");
+-#endif
+ 	printk(KERN_WARNING "PCI: irq_tab returned %d for slot=%d pin=%d\n",
+ 		irq_tab[slot][pin], slot, pin);
+ 
+-- 
+1.7.0.4
+
