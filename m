@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1BVVmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:42:09 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:28141 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab1BVVmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:42:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=uHX8OCPXCjAXxAgXLLVF9tazw/pwBWDQcCRvRysQxwUpKO5Wm+er2fssos7JZVQ68y
-         M7BmrYalIcHxKVl/oqvw==
-Date: Tue, 22 Feb 2011 13:42:00 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andi Kleen <andi@firstfloor.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
-        lwoodman@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 6/8] Add __GFP_OTHER_NODE flag
-In-Reply-To: <1298315270-10434-7-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.DEB.2.00.1102221333100.5929@chino.kir.corp.google.com>
-References: <1298315270-10434-1-git-send-email-andi@firstfloor.org> <1298315270-10434-7-git-send-email-andi@firstfloor.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752329Ab1BVVrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:47:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53119 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751095Ab1BVVrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:47:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,208,1297065600"; 
+   d="scan'208";a="605461674"
+Message-ID: <4D642F03.5040800@linux.intel.com>
+Date: Tue, 22 Feb 2011 13:47:47 -0800
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: David Rientjes <rientjes@google.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
+        lwoodman@redhat.com
+Subject: Re: [PATCH 6/8] Add __GFP_OTHER_NODE flag
+References: <1298315270-10434-1-git-send-email-andi@firstfloor.org> <1298315270-10434-7-git-send-email-andi@firstfloor.org> <alpine.DEB.2.00.1102221333100.5929@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1102221333100.5929@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Feb 2011, Andi Kleen wrote:
+On 2/22/2011 1:42 PM, David Rientjes wrote:
+>
+> This makes the accounting worse, NUMA_LOCAL is defined as "allocation from
+> local node," meaning it's local to the allocating cpu, not local to the
+> node being targeted.
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a new __GFP_OTHER_NODE flag to tell the low level numa statistics
-> in zone_statistics() that an allocation is on behalf of another thread.
-> This way the local and remote counters can be still correct, even
-> when background daemons like khugepaged are changing memory
-> mappings.
-> 
-> This only affects the accounting, but I think it's worth doing that
-> right to avoid confusing users.
-> 
+Local to the process really (and I defined it originally ...)  That is 
+what I'm implementing
 
-This makes the accounting worse, NUMA_LOCAL is defined as "allocation from 
-local node," meaning it's local to the allocating cpu, not local to the 
-node being targeted.
+I don't think "local to some random kernel daemon which changes mappings 
+on behalf of others"
+makes any sense as semantics.
 
-Further, preferred_zone has taken on a much more significant meaning other 
-than just statistics: it impacts the behavior of memory compaction and how 
-long congestion timeouts are, if a timeout is taken at all, depending on 
-the I/O being done on behalf of the zone.
+> Further, preferred_zone has taken on a much more significant meaning other
+> than just statistics: it impacts the behavior of memory compaction and how
+> long congestion timeouts are, if a timeout is taken at all, depending on
+> the I/O being done on behalf of the zone.
+>
+> A better way to address the issue is by making sure preferred_zone is
+> actually correct by using the appropriate zonelist to be passed into the
+> allocator in the first place
 
-A better way to address the issue is by making sure preferred_zone is 
-actually correct by using the appropriate zonelist to be passed into the 
-allocator in the first place.
+That is what is done already (well for THP together with my other patches)
+The problem is just that local_hit/miss still uses numa_node_id() and 
+not the preferred zone
+to do the accounting.  In most cases that's fine and intended, just not 
+for these
+special daemons.
 
-> I first tried to just pass down the right node, but this required
-> a lot of changes to pass down this parameter and at least one
-> addition of a 10th argument to a 9 argument function. Using
-> the flag is a lot less intrusive.
-> 
 
-And adding a branch to every successful page allocation for statistics 
-isn't intrusive?
+-Andi
+
