@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab1BVVrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:47:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53119 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095Ab1BVVrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:47:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,208,1297065600"; 
-   d="scan'208";a="605461674"
-Message-ID: <4D642F03.5040800@linux.intel.com>
-Date: Tue, 22 Feb 2011 13:47:47 -0800
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
-        lwoodman@redhat.com
-Subject: Re: [PATCH 6/8] Add __GFP_OTHER_NODE flag
-References: <1298315270-10434-1-git-send-email-andi@firstfloor.org> <1298315270-10434-7-git-send-email-andi@firstfloor.org> <alpine.DEB.2.00.1102221333100.5929@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1102221333100.5929@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752764Ab1BVVtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:49:31 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56695 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab1BVVt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:49:29 -0500
+Date: Tue, 22 Feb 2011 13:47:35 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg@redhat.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: [PATCH -next] eeepc-wmi: kconfig changes to fix build errors
+Message-Id: <20110222134735.0bfbec8b.randy.dunlap@oracle.com>
+In-Reply-To: <20110222183437.ec2807bf.sfr@canb.auug.org.au>
+References: <20110222183437.ec2807bf.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4D642F55.0028:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/22/2011 1:42 PM, David Rientjes wrote:
->
-> This makes the accounting worse, NUMA_LOCAL is defined as "allocation from
-> local node," meaning it's local to the allocating cpu, not local to the
-> node being targeted.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Local to the process really (and I defined it originally ...)  That is 
-what I'm implementing
+Fix eeepc-wmi build when CONFIG_HOTPLUG_PCI is not enabled:
 
-I don't think "local to some random kernel daemon which changes mappings 
-on behalf of others"
-makes any sense as semantics.
+eeepc-wmi.c:(.text+0x3bc5e9): undefined reference to `pci_hp_deregister'
+eeepc-wmi.c:(.text+0x3bcca4): undefined reference to `__pci_hp_register'
 
-> Further, preferred_zone has taken on a much more significant meaning other
-> than just statistics: it impacts the behavior of memory compaction and how
-> long congestion timeouts are, if a timeout is taken at all, depending on
-> the I/O being done on behalf of the zone.
->
-> A better way to address the issue is by making sure preferred_zone is
-> actually correct by using the appropriate zonelist to be passed into the
-> allocator in the first place
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/platform/x86/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-That is what is done already (well for THP together with my other patches)
-The problem is just that local_hit/miss still uses numa_node_id() and 
-not the preferred zone
-to do the accounting.  In most cases that's fine and intended, just not 
-for these
-special daemons.
-
-
--Andi
-
+--- linux-next-20110222.orig/drivers/platform/x86/Kconfig
++++ linux-next-20110222/drivers/platform/x86/Kconfig
+@@ -447,6 +447,7 @@ config EEEPC_WMI
+ 	depends on EXPERIMENTAL
+ 	depends on BACKLIGHT_CLASS_DEVICE
+ 	depends on RFKILL || RFKILL = n
++	depends on HOTPLUG_PCI
+ 	select INPUT_SPARSEKMAP
+ 	select LEDS_CLASS
+ 	select NEW_LEDS
