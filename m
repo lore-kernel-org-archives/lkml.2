@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab1BVRlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 12:41:18 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49669 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754545Ab1BVRlR (ORCPT
+	id S1754469Ab1BVRru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 12:47:50 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:29430 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750784Ab1BVRrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 12:41:17 -0500
-Date: Tue, 22 Feb 2011 17:43:08 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@linux.intel.com>, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gma500: Intel GMA500 staging driver
-Message-ID: <20110222174308.2469721a@lxorguk.ukuu.org.uk>
-In-Reply-To: <201102221809.50716.arnd@arndb.de>
-References: <20110222121704.19437.4650.stgit@localhost.localdomain>
-	<201102221809.50716.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 22 Feb 2011 12:47:49 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAM6CY0120uZw/2dsb2JhbACEIKF2dK1PkFyBJ4NBdgSRaA
+Message-ID: <4D63F6C0.7060204@internode.on.net>
+Date: Wed, 23 Feb 2011 04:17:44 +1030
+From: Arthur Marsh <arthur.marsh@internode.on.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-AU; rv:1.9.2.13) Gecko/20101213 Icedove/3.1.7
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Clemens Ladisch <cladisch@googlemail.com>, alsa-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Alsa-user] new source of MIDI playback slow-down identified
+ - 5a03b051ed87e72b959f32a86054e1142ac4cf55 thp: use compaction in kswapd
+ for GFP_ATOMIC order > 0
+References: <g0ia38-jj6.ln1@ppp121-45-136-118.lns11.adl6.internode.on.net> <4D6367B3.9050306@googlemail.com> <20110222134047.GT13092@random.random> <20110222161513.GC13092@random.random>
+In-Reply-To: <20110222161513.GC13092@random.random>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Before I start looking at the code, one high-level question: How much of
-> the code in the gma500 driver would be shared with SOCs from other people
-> (ARM based, typically) that use the PowerVR SGX core?
 
-My understanding is none.
 
-> IOW, is this driver only for parts that Intel (or whoever) has put around
-> the licensed 3D core, or is it actually the same code that the others would
-> use for a non-3D SGX driver?
+Andrea Arcangeli wrote, on 23/02/11 02:45:
+> On Tue, Feb 22, 2011 at 02:40:47PM +0100, Andrea Arcangeli wrote:
+>>   	spin_lock_irq(&zone->lru_lock);
+>>   	for (; low_pfn<  end_pfn; low_pfn++) {
+>>   		struct page *page;
+>> +
+>> +		cond_resched();
+>> +
+>
+> my bad, see the above spin_lock_irq oops...
+>
+> I attached two replacement patches to apply in order (both of them
+> should be applied at the same time on top of git upstream, and they
+> shouldn't lockup this time).
 
-The mode setting is all Intel - hence the similarity to i9xx
+OK, these patches applied together against upstream didn't cause a crash 
+but I did observe:
 
-Alan
+significant slowdowns of MIDI playback (moreso than in previous cases, 
+and with less than 20 Meg of swap file in use);
+
+kswapd0 sharing equal top place in CPU usage at times (e.g. 20 percent).
+
+If I should try only one of the patches or something else entirely, 
+please let me know.
+
+Regards,
+
+Arthur.
