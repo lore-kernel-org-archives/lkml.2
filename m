@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab1BVIpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 03:45:50 -0500
-Received: from mail-bw0-f51.google.com ([209.85.214.51]:59596 "EHLO
-	mail-bw0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737Ab1BVIpt (ORCPT
+	id S1752129Ab1BVIqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 03:46:10 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:35300 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab1BVIqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 03:45:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=j8LZF9itg0W7bRMKsnrhhZpqVmzTxWu+MAw623vPzDJsJ23oYa9iqa0Xfz3T6K1iHK
-         RdwDGZNlwLPT0hSWmtkKjK8RJ+6DqFw50Db+ZSMdvPFYU6C1kD+058UagM6bBKWLTSQi
-         P1QW1ocuPD2taFG15nYltXi+7vUn8/39vtnV0=
-Message-ID: <4D6377B8.7080805@gmail.com>
-Date: Tue, 22 Feb 2011 09:45:44 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+	Tue, 22 Feb 2011 03:46:09 -0500
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1298356917-486-1-git-send-email-hayeswang@realtek.com> <1298356917-486-3-git-send-email-hayeswang@realtek.com> <20110222080017.GA12453@electric-eye.fr.zoreil.com> <20110222082153.GA12463@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH 3/5] r8169: fix the wrong parameter of point address
+Date: Tue, 22 Feb 2011 16:46:02 +0800
+X-BOX-Message-Id: p1M8k3hi023431
+Message-ID: <F0C0A9D890424ECAAB19523FCC4A2FCC@realtek.com.tw>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "Rafael J. Wysocki" <rjw@suse.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-References: <Pine.LNX.4.44L0.1102041426380.1877-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1102041426380.1877-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcvSahLlPoQQ920GQnGRCeH1mv+cQwAAcfYg
+In-Reply-To: <20110222082153.GA12463@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2011 08:33 PM, Alan Stern wrote:
-> On Fri, 4 Feb 2011, Jiri Slaby wrote:
+ 
+
+> -----Original Message-----
+> From: Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Tuesday, February 22, 2011 4:22 PM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 3/5] r8169: fix the wrong parameter of 
+> point address
 > 
->>>> It seems to suffice... No hangs still. Should I enable pm_async back
->>>> again to confirm the issue is still present?
->>>
->>> Yes, please, it would be good to know for sure.
->>
->> Ok, confirmed right now :).
->>
->> I disabled pm_async for USB again. What do you suggest next?
+> Francois Romieu <romieu@fr.zoreil.com> :
+> > Hayes Wang <hayeswang@realtek.com> :
+> > > Correct the parameter of rtl8168_oob_notify. It results 
+> in the wrong 
+> > > point address and influences RTL8168DP.
+> > 
+> > Please send this one separately as a patch against current 
+> kernel tree 
+> > as it is clearly a bugfix. The remaining patches are probably more 
+> > -next material.
 > 
-> What happens if you leave pm_async enabled but unplug all the USB 
-> devices before suspending?  If there are any USB devices you can't 
-> unplug, you can get an equivalent result by unconfiguring the root 
-> hubs:
-> 
-> 	for a in /sys/bus/usb/devices/usb* ; do
-> 		echo 0 >$a/bConfigurationValue
-> 	done
+> Correct me if I am wrong:
+> - #3 and #1 are bugfixes
+> - can you specify if #4 and #5 are either bugfixes, 
+> optimizations or cleanups ?
+> - #2 adds support for a new chipset
 
-This doesn't seem to help. The hang happened 3 times during the 2 weeks.
+#1, #3, #4 are bugfixes.
+#2 adds support for a new chipset
+#5 is cleanup.
 
-I have /etc/pm/sleep.d/99usb-debug with:
-#!/bin/bash
+I would separate them and send the patches again.
 
-send() {
-        for a in /sys/bus/usb/devices/usb* ; do
-                echo $1 >$a/bConfigurationValue
-        done
-}
+ 
+Best Regards,
+Hayes
 
-case "$1" in
-        hibernate|suspend)
-                        send 0
-                ;;
-        thaw|resume)
-                        send 1
-                ;;
-        *)
-                ;;
-esac
-
-exit 0
-
-And it indeed properly enable/disable usb before/after suspend.
-
-regards,
--- 
-js
