@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab1BVBxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 20:53:53 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33102 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1BVBxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 20:53:51 -0500
-Subject: [PATCH 3/5] pass pte size argument in to smaps_pte_entry()
+	id S1753229Ab1BVByI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 20:54:08 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48448 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751343Ab1BVByF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 20:54:05 -0500
+Subject: [PATCH 5/5] have smaps show transparent huge pages
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
         Andrea Arcangeli <aarcange@redhat.com>, akpm@osdl.org,
         Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>
+        Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>
 From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 21 Feb 2011 17:53:42 -0800
+Date: Mon, 21 Feb 2011 17:53:45 -0800
 References: <20110222015338.309727CA@kernel>
 In-Reply-To: <20110222015338.309727CA@kernel>
-Message-Id: <20110222015342.5DD9FC72@kernel>
+Message-Id: <20110222015345.BF949720@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This patch adds an argument to the new smaps_pte_entry()
-function to let it account in things other than PAGE_SIZE
-units.  I changed all of the PAGE_SIZE sites, even though
-not all of them can be reached for transparent huge pages,
-just so this will continue to work without changes as THPs
-are improved.
+Now that the mere act of _looking_ at /proc/$pid/smaps will not
+destroy transparent huge pages, tell how much of the VMA is
+actually mapped with them.
+
+This way, we can make sure that we're getting THPs where we
+expect to see them.
+
+v3 - * changed HPAGE_SIZE to HPAGE_PMD_SIZE, probably more correct
+       and also has a nice BUG() in case there was a .config mishap
+     * remove direct reference to ->page_table_lock, and used the
+       passed-in ptl pointer insteadl
 
 Acked-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
 
- linux-2.6.git-dave/fs/proc/task_mmu.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ linux-2.6.git-dave/fs/proc/task_mmu.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff -puN fs/proc/task_mmu.c~give-smaps_pte_range-a-size-arg fs/proc/task_mmu.c
---- linux-2.6.git/fs/proc/task_mmu.c~give-smaps_pte_range-a-size-arg	2011-02-14 09:59:43.530575814 -0800
-+++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-02-14 09:59:43.538576050 -0800
-@@ -335,7 +335,7 @@ struct mem_size_stats {
- 
- 
- static void smaps_pte_entry(pte_t ptent, unsigned long addr,
--		struct mm_walk *walk)
-+		unsigned long ptent_size, struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
- 	struct vm_area_struct *vma = mss->vma;
-@@ -343,7 +343,7 @@ static void smaps_pte_entry(pte_t ptent,
- 	int mapcount;
- 
- 	if (is_swap_pte(ptent)) {
--		mss->swap += PAGE_SIZE;
-+		mss->swap += ptent_size;
- 		return;
- 	}
- 
-@@ -355,25 +355,25 @@ static void smaps_pte_entry(pte_t ptent,
- 		return;
- 
- 	if (PageAnon(page))
--		mss->anonymous += PAGE_SIZE;
-+		mss->anonymous += ptent_size;
- 
--	mss->resident += PAGE_SIZE;
-+	mss->resident += ptent_size;
- 	/* Accumulate the size in pages that have been accessed. */
- 	if (pte_young(ptent) || PageReferenced(page))
--		mss->referenced += PAGE_SIZE;
-+		mss->referenced += ptent_size;
- 	mapcount = page_mapcount(page);
- 	if (mapcount >= 2) {
- 		if (pte_dirty(ptent) || PageDirty(page))
--			mss->shared_dirty += PAGE_SIZE;
-+			mss->shared_dirty += ptent_size;
- 		else
--			mss->shared_clean += PAGE_SIZE;
--		mss->pss += (PAGE_SIZE << PSS_SHIFT) / mapcount;
-+			mss->shared_clean += ptent_size;
-+		mss->pss += (ptent_size << PSS_SHIFT) / mapcount;
+diff -puN fs/proc/task_mmu.c~teach-smaps-thp fs/proc/task_mmu.c
+--- linux-2.6.git/fs/proc/task_mmu.c~teach-smaps-thp	2011-02-21 15:07:55.707591741 -0800
++++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-02-21 15:07:55.803594580 -0800
+@@ -331,6 +331,7 @@ struct mem_size_stats {
+ 	unsigned long private_dirty;
+ 	unsigned long referenced;
+ 	unsigned long anonymous;
++	unsigned long anonymous_thp;
+ 	unsigned long swap;
+ 	u64 pss;
+ };
+@@ -396,6 +397,7 @@ static int smaps_pte_range(pmd_t *pmd, u
+ 			smaps_pte_entry(*(pte_t *)pmd, addr,
+ 					HPAGE_PMD_SIZE, walk);
+ 			spin_unlock(&walk->mm->page_table_lock);
++			mss->anonymous_thp += HPAGE_PMD_SIZE;
+ 			return 0;
+ 		}
  	} else {
- 		if (pte_dirty(ptent) || PageDirty(page))
--			mss->private_dirty += PAGE_SIZE;
-+			mss->private_dirty += ptent_size;
- 		else
--			mss->private_clean += PAGE_SIZE;
--		mss->pss += (PAGE_SIZE << PSS_SHIFT);
-+			mss->private_clean += ptent_size;
-+		mss->pss += (ptent_size << PSS_SHIFT);
- 	}
- }
- 
-@@ -389,7 +389,7 @@ static int smaps_pte_range(pmd_t *pmd, u
- 
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE)
--		smaps_pte_entry(*pte, addr, walk);
-+		smaps_pte_entry(*pte, addr, PAGE_SIZE, walk);
- 	pte_unmap_unlock(pte - 1, ptl);
- 	cond_resched();
- 	return 0;
+@@ -444,6 +446,7 @@ static int show_smap(struct seq_file *m,
+ 		   "Private_Dirty:  %8lu kB\n"
+ 		   "Referenced:     %8lu kB\n"
+ 		   "Anonymous:      %8lu kB\n"
++		   "AnonHugePages:  %8lu kB\n"
+ 		   "Swap:           %8lu kB\n"
+ 		   "KernelPageSize: %8lu kB\n"
+ 		   "MMUPageSize:    %8lu kB\n"
+@@ -457,6 +460,7 @@ static int show_smap(struct seq_file *m,
+ 		   mss.private_dirty >> 10,
+ 		   mss.referenced >> 10,
+ 		   mss.anonymous >> 10,
++		   mss.anonymous_thp >> 10,
+ 		   mss.swap >> 10,
+ 		   vma_kernel_pagesize(vma) >> 10,
+ 		   vma_mmu_pagesize(vma) >> 10,
+diff -puN include/linux/huge_mm.h~teach-smaps-thp include/linux/huge_mm.h
+diff -puN mm/memory-failure.c~teach-smaps-thp mm/memory-failure.c
+diff -puN mm/huge_memory.c~teach-smaps-thp mm/huge_memory.c
 _
