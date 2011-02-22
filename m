@@ -1,168 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab1BVVJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:09:33 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33032 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab1BVVJc convert rfc822-to-8bit (ORCPT
+	id S1753617Ab1BVVNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:13:34 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47894 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751936Ab1BVVNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:09:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1298405266-1624-5-git-send-email-bigeasy@linutronix.de>
-References: <1298405266-1624-1-git-send-email-bigeasy@linutronix.de> <1298405266-1624-5-git-send-email-bigeasy@linutronix.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 22 Feb 2011 14:06:55 -0700
-X-Google-Sender-Auth: hkx6X6kDeu_C1sK_xYKm_IV1HYY
-Message-ID: <AANLkTimr7EnfC=qHkLJ30VniMU0X70dLGRP3-_Fo9qaX@mail.gmail.com>
-Subject: Re: [PATCH 04/11] x86/dtb: add irq domain abstraction
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        devicetree-discuss@lists.ozlabs.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Feb 2011 16:13:33 -0500
+Date: Tue, 22 Feb 2011 21:15:15 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, alan@linux.intel.com
+Subject: Re: [PATCH 2/2] staging: Use generic IGD opregion code for gma500
+Message-ID: <20110222211515.36fc68d5@lxorguk.ukuu.org.uk>
+In-Reply-To: <1298404994-2907-2-git-send-email-mjg@redhat.com>
+References: <1298404994-2907-1-git-send-email-mjg@redhat.com>
+	<1298404994-2907-2-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 1:07 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> The here introduced irq_domain abstraction represents a generic irq
-> controller. It is a subset of powerpc's irq_host which is going to be
-> renamed to irq_domain and then become generic. This implementation will
-> be removed once it is generic.
->
-> The xlate callback is resposible to parse irq informations like irq type
-> and number and returns the hardware irq number which is reported by the
-> hardware as active.
->
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Tested-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+On Tue, 22 Feb 2011 15:03:14 -0500
+Matthew Garrett <mjg@redhat.com> wrote:
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> The gma500 driver currently includes its own IGD opregion implementation.
+> Rework it to use the generic one instead. Note that this is missing a
+> certain level of functionality - the driver does nothing to enable
+> opregion interrupts right now, and so will simply poll for updates rather
+> than doing anything sensible.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-> ---
->  arch/x86/include/asm/irq_controller.h |   12 ++++++++
->  arch/x86/include/asm/prom.h           |    2 +
->  arch/x86/kernel/devicetree.c          |   47 ++++++++++++++++++++++++++++++++-
->  3 files changed, 60 insertions(+), 1 deletions(-)
->  create mode 100644 arch/x86/include/asm/irq_controller.h
->
-> diff --git a/arch/x86/include/asm/irq_controller.h b/arch/x86/include/asm/irq_controller.h
-> new file mode 100644
-> index 0000000..423bbbd
-> --- /dev/null
-> +++ b/arch/x86/include/asm/irq_controller.h
-> @@ -0,0 +1,12 @@
-> +#ifndef __IRQ_CONTROLLER__
-> +#define __IRQ_CONTROLLER__
-> +
-> +struct irq_domain {
-> +       int (*xlate)(struct irq_domain *h, const u32 *intspec, u32 intsize,
-> +                       u32 *out_hwirq, u32 *out_type);
-> +       void *priv;
-> +       struct device_node *controller;
-> +       struct list_head l;
-> +};
-> +
-> +#endif
-> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-> index 841697d..70467d1 100644
-> --- a/arch/x86/include/asm/prom.h
-> +++ b/arch/x86/include/asm/prom.h
-> @@ -19,9 +19,11 @@
->  #include <asm/irq.h>
->  #include <asm/atomic.h>
->  #include <asm/setup.h>
-> +#include <asm/irq_controller.h>
->
->  #ifdef CONFIG_OF
->  extern void add_dtb(u64 data);
-> +void add_interrupt_host(struct irq_domain *ih);
->  #else
->  static inline void add_dtb(u64 data) { }
->  #endif
-> diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-> index b86c65e..f2f159c 100644
-> --- a/arch/x86/kernel/devicetree.c
-> +++ b/arch/x86/kernel/devicetree.c
-> @@ -3,19 +3,64 @@
->  */
->  #include <linux/bootmem.h>
->  #include <linux/io.h>
-> +#include <linux/interrupt.h>
->  #include <linux/list.h>
->  #include <linux/of.h>
->  #include <linux/of_fdt.h>
->  #include <linux/of_platform.h>
->  #include <linux/slab.h>
->
-> +#include <asm/irq_controller.h>
-> +
->  char __initdata cmd_line[COMMAND_LINE_SIZE];
-> +static LIST_HEAD(irq_domains);
-> +static DEFINE_RAW_SPINLOCK(big_irq_lock);
-> +
-> +void add_interrupt_host(struct irq_domain *ih)
-> +{
-> +       unsigned long flags;
-> +
-> +       raw_spin_lock_irqsave(&big_irq_lock, flags);
-> +       list_add(&ih->l, &irq_domains);
-> +       raw_spin_unlock_irqrestore(&big_irq_lock, flags);
-> +}
-> +
-> +static struct irq_domain *get_ih_from_node(struct device_node *controller)
-> +{
-> +       struct irq_domain *ih, *found = NULL;
-> +       unsigned long flags;
-> +
-> +       raw_spin_lock_irqsave(&big_irq_lock, flags);
-> +       list_for_each_entry(ih, &irq_domains, l) {
-> +               if (ih->controller ==  controller) {
-> +                       found = ih;
-> +                       break;
-> +               }
-> +       }
-> +       raw_spin_unlock_irqrestore(&big_irq_lock, flags);
-> +       return found;
-> +}
->
->  unsigned int irq_create_of_mapping(struct device_node *controller,
->                const u32 *intspec, unsigned int intsize)
->  {
-> -       return intspec[0];
-> +       struct irq_domain *ih;
-> +       u32 virq;
-> +       u32 type;
-> +       int ret;
->
-> +       ih = get_ih_from_node(controller);
-> +       if (!ih)
-> +               return 0;
-> +       ret = ih->xlate(ih, intspec, intsize, &virq, &type);
-> +       if (ret)
-> +               return ret;
-> +       if (type == IRQ_TYPE_NONE)
-> +               return virq;
-> +       /* set the mask if it is different from current */
-> +       if (type == (irq_to_desc(virq)->status & IRQF_TRIGGER_MASK))
-> +               set_irq_type(virq, type);
-> +       return virq;
->  }
->  EXPORT_SYMBOL_GPL(irq_create_of_mapping);
->
-> --
-> 1.7.4
->
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Acked-by: Alan Cox <alan@linux.intel.com>
