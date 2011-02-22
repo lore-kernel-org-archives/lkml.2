@@ -1,493 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab1BVU6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:58:22 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:13986 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab1BVU6S (ORCPT
+	id S1753563Ab1BVVAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:00:08 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:43577 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287Ab1BVVAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:58:18 -0500
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [RFC PATCH 02/10] MIPS: Octeon: Add device tree source files.
-Date: Tue, 22 Feb 2011 12:57:46 -0800
-Message-Id: <1298408274-20856-3-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1298408274-20856-1-git-send-email-ddaney@caviumnetworks.com>
-X-OriginalArrivalTime: 22 Feb 2011 20:58:17.0285 (UTC) FILETIME=[3A933750:01CBD2D3]
+	Tue, 22 Feb 2011 16:00:01 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: does hibernate to disk try hard enough to free memory?
+Date: Tue, 22 Feb 2011 21:59:52 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1380842.Q2kA83GQZ3";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102222159.58546.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- arch/mips/cavium-octeon/.gitignore      |    2 +
- arch/mips/cavium-octeon/Makefile        |   13 ++
- arch/mips/cavium-octeon/octeon_3xxx.dts |  314 +++++++++++++++++++++++++++++++
- arch/mips/cavium-octeon/octeon_68xx.dts |   99 ++++++++++
- 4 files changed, 428 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/cavium-octeon/.gitignore
- create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
- create mode 100644 arch/mips/cavium-octeon/octeon_68xx.dts
+--nextPart1380842.Q2kA83GQZ3
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/mips/cavium-octeon/.gitignore b/arch/mips/cavium-octeon/.gitignore
-new file mode 100644
-index 0000000..39c9686
---- /dev/null
-+++ b/arch/mips/cavium-octeon/.gitignore
-@@ -0,0 +1,2 @@
-+*.dtb.S
-+*.dtb
-diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
-index 19eb043..5e25dce 100644
---- a/arch/mips/cavium-octeon/Makefile
-+++ b/arch/mips/cavium-octeon/Makefile
-@@ -15,3 +15,16 @@ obj-y += octeon-memcpy.o
- obj-y += executive/
- 
- obj-$(CONFIG_SMP)                     += smp.o
-+
-+DTS_FILES = octeon_3xxx.dts octeon_68xx.dts
-+DTB_FILES = $(patsubst %.dts, %.dtb, $(DTS_FILES))
-+
-+obj-y += $(patsubst %.dts, %.dtb.o, $(DTS_FILES))
-+
-+$(obj)/%.dtb: $(src)/%.dts
-+	$(call cmd,dtc)
-+
-+# Let's keep the .dtb files around in case we want to look at them.
-+.SECONDARY:  $(addprefix $(obj)/, $(DTB_FILES))
-+
-+clean-files += $(DTB_FILES) $(patsubst %.dtb, %.dtb.S, $(DTB_FILES))
-diff --git a/arch/mips/cavium-octeon/octeon_3xxx.dts b/arch/mips/cavium-octeon/octeon_3xxx.dts
-new file mode 100644
-index 0000000..ad0feaa
---- /dev/null
-+++ b/arch/mips/cavium-octeon/octeon_3xxx.dts
-@@ -0,0 +1,314 @@
-+/dts-v1/;
-+/* OCTEON 3XXX, 5XXX, 63XX device tree skeleton. */
-+/ {
-+  model = "OCTEON";
-+  compatible = "octeon,octeon";
-+  #address-cells = <2>;
-+  #size-cells = <2>;
-+
-+  soc@0 {
-+    device_type = "soc";
-+    compatible = "simple-bus";
-+    #address-cells = <2>;
-+    #size-cells = <2>;
-+    ranges; /* Direct mapping */
-+
-+    ciu: ciu-3xxx@1070000000000 {
-+      compatible = "octeon,ciu-3xxx";
-+      interrupt-controller;
-+      #address-cells = <0>;
-+      #interrupt-cells = <2>;
-+      reg = <0x10700 0x00000000 0x0 0x7000>;
-+    };
-+
-+    /* SMI0 */
-+    mdio0: mdio@1180000001800 {
-+      compatible = "octeon,mdio";
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      reg = <0x11800 0x00001800 0x0 0x40>;
-+      device_type = "mdio";
-+
-+      phy0: ethernet-phy@0 {
-+	reg = <0>;
-+      };
-+
-+      phy1: ethernet-phy@1 {
-+	reg = <1>;
-+      };
-+
-+      phy2: ethernet-phy@2 {
-+	reg = <2>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+      phy3: ethernet-phy@3 {
-+	reg = <3>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+      phy4: ethernet-phy@4 {
-+	reg = <4>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+      phy5: ethernet-phy@5 {
-+	reg = <5>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+
-+      phy6: ethernet-phy@6 {
-+	reg = <6>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+      phy7: ethernet-phy@7 {
-+	reg = <7>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+      phy8: ethernet-phy@8 {
-+	reg = <8>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+      phy9: ethernet-phy@9 {
-+	reg = <9>;
-+	marvell,reg-init = <3 0x10 0 0x5777>,
-+			   <3 0x11 0 0x00aa>,
-+                           <3 0x12 0 0x4105>,
-+                           <3 0x13 0 0x0a60>;
-+      };
-+    };
-+
-+    /* SMI1 */
-+    mdio1: mdio@1180000001900 {
-+      compatible = "octeon,mdio";
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      reg = <0x11800 0x00001900 0x0 0x40>;
-+      device_type = "mdio";
-+    };
-+
-+    mgmt0: ethernet@1070000100000 {
-+      compatible = "octeon,mgmt";
-+      device_type = "network";
-+      model = "mgmt";
-+      reg = <0x10700 0x00100000 0x0 0x100>, /* MIX */
-+            <0x11800 0xE0000000 0x0 0x300>, /* AGL */
-+            <0x11800 0xE0000400 0x0 0x400>, /* AGL_SHARED  */
-+            <0x11800 0xE0002000 0x0 0x8>;   /* AGL_PRT_CTL */
-+      unit-number = <0>;
-+      interrupt-parent = <&ciu>;
-+      interrupts = <0 62>, <1 46>;
-+      local-mac-address = [ 00 00 00 00 00 00 ];
-+      phy-handle = <&phy0>;
-+    };
-+
-+    mgmt1: ethernet@1070000100800 {
-+      compatible = "octeon,mgmt";
-+      device_type = "network";
-+      model = "mgmt";
-+      reg = <0x10700 0x00100800 0x0 0x100>, /* MIX */
-+            <0x11800 0xE0000800 0x0 0x300>, /* AGL */
-+            <0x11800 0xE0000400 0x0 0x400>, /* AGL_SHARED  */
-+            <0x11800 0xE0002008 0x0 0x8>;   /* AGL_PRT_CTL */
-+      unit-number = <1>;
-+      interrupt-parent = <&ciu>;
-+      interrupts = <1 18>, < 1 46>;
-+      local-mac-address = [ 00 00 00 00 00 00 ];
-+      phy-handle = <&phy1>;
-+    };
-+
-+    pip: pip@11800a0000000 {
-+      compatible = "octeon,pip";
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      reg = <0x11800 0xa0000000 0x0 0x2000>;
-+
-+      interface@0 {
-+        #address-cells = <1>;
-+        #size-cells = <0>;
-+        reg = <0>; /* interface */
-+
-+        ethernet@0 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x0>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy2>;
-+        };
-+        ethernet@1 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x1>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy3>;
-+        };
-+        ethernet@2 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x2>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy4>;
-+        };
-+        ethernet@3 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x3>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy5>;
-+        };
-+      };
-+
-+      interface@1 {
-+        #address-cells = <1>;
-+        #size-cells = <0>;
-+        reg = <1>; /* interface */
-+
-+        ethernet@0 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x0>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy6>;
-+        };
-+        ethernet@1 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x1>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy7>;
-+        };
-+        ethernet@2 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x2>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy8>;
-+        };
-+        ethernet@3 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x3>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+          phy-handle = <&phy9>;
-+        };
-+      };
-+
-+      interface@2 { /* DPI interface. */
-+        #address-cells = <1>;
-+        #size-cells = <0>;
-+        reg = <2>; /* interface */
-+
-+        ethernet@0 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x0>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+        ethernet@1 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x1>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+        ethernet@2 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x2>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+        ethernet@3 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x3>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+      };
-+
-+      interface@3 { /* Loop interface. */
-+        #address-cells = <1>;
-+        #size-cells = <0>;
-+        reg = <3>; /* interface */
-+
-+        ethernet@0 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x0>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+        ethernet@1 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x1>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+        ethernet@2 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x2>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+        ethernet@3 {
-+          device_type = "network";
-+          model = "pip";
-+          reg = <0x3>; /* Port */
-+          local-mac-address = [ 00 00 00 00 00 00 ];
-+        };
-+      };
-+    };
-+
-+    /* TWSI 0 */
-+    i2c0: i2c@1180000001000 {
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      compatible = "octeon,twsi";
-+      reg = <0x11800 0x00001000 0x0 0x200>;
-+      interrupt-parent = <&ciu>;
-+      interrupts = <0 45>;
-+      clock-rate = <100000>;
-+
-+      rtc@68 {
-+        compatible = "dallas,ds1337";
-+        reg = <0x68>;
-+      };
-+    };
-+
-+    /* TWSI 1 */
-+    i2c1: i2c@1180000001200 {
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      compatible = "octeon,twsi";
-+      reg = <0x11800 0x00001200 0x0 0x200>;
-+      interrupt-parent = <&ciu>;
-+      interrupts = <0 59>;
-+      clock-rate = <100000>;
-+    };
-+  };
-+
-+  aliases {
-+    ethernet-mgmt0 = &mgmt0;
-+    ethernet-mgmt1 = &mgmt1;
-+    pip = &pip;
-+    mdio0 = &mdio0;
-+    mdio1 = &mdio1;
-+    i2c0 = &i2c0;
-+    i2c1 = &i2c1;
-+  };
-+};
-diff --git a/arch/mips/cavium-octeon/octeon_68xx.dts b/arch/mips/cavium-octeon/octeon_68xx.dts
-new file mode 100644
-index 0000000..31dbd39
---- /dev/null
-+++ b/arch/mips/cavium-octeon/octeon_68xx.dts
-@@ -0,0 +1,99 @@
-+/dts-v1/;
-+/* OCTEON 68XX device tree skeleton. */
-+/ {
-+  model = "OCTEON";
-+  compatible = "octeon,octeon";
-+  #address-cells = <2>;
-+  #size-cells = <2>;
-+
-+  soc@0 {
-+    device_type = "soc";
-+    compatible = "simple-bus";
-+    #address-cells = <2>;
-+    #size-cells = <2>;
-+    ranges; /* Direct mapping */
-+
-+    ciu: ciu-68xx@1070100000000 {
-+      compatible = "octeon,ciu-68xx";
-+      interrupt-controller;
-+      #address-cells = <0>;
-+      #interrupt-cells = <2>;
-+      reg = <0x10701 0x00000000 0x0 0x4000000>;
-+    };
-+
-+    /* SMI0 */
-+    mdio0: mdio@1180000003800 {
-+      compatible = "octeon,mdio";
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      reg = <0x11800 0x00003800 0x0 0x40>;
-+      device_type = "mdio";
-+
-+      phy0: ethernet-phy@0 {
-+	reg = <0>;
-+	device_type = "ethernet-phy";
-+      };
-+
-+      phy1: ethernet-phy@1 {
-+	reg = <1>;
-+	device_type = "ethernet-phy";
-+      };
-+
-+      phy3: ethernet-phy@3 {
-+	reg = <3>;
-+	device_type = "ethernet-phy";
-+      };
-+    };
-+
-+    /* SMI1 */
-+    mdio1: mdio@1180000003880 {
-+      compatible = "octeon,mdio";
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      reg = <0x11800 0x00003880 0x0 0x40>;
-+      device_type = "mdio";
-+    };
-+
-+    /* SMI2 */
-+    mdio2: mdio@1180000003900 {
-+      compatible = "octeon,mdio";
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      reg = <0x11800 0x00003900 0x0 0x40>;
-+      device_type = "mdio";
-+    };
-+
-+    /* SMI3 */
-+    mdio3: mdio@1180000003980 {
-+      compatible = "octeon,mdio";
-+      #address-cells = <1>;
-+      #size-cells = <0>;
-+      reg = <0x11800 0x00003980 0x0 0x40>;
-+      device_type = "mdio";
-+    };
-+
-+    mgmt0: ethernet@1070000100000 {
-+      compatible = "octeon,mgmt";
-+      device_type = "network";
-+      model = "mgmt";
-+      /* Register banks: MIX AGL AGL_SHARED AGL_PRT_CTL*/
-+      reg = <0x10700 0x00100000 0x0 0x100>, /* MIX */
-+            <0x11800 0xE0000000 0x0 0x300>, /* AGL */
-+            <0x11800 0xE0000400 0x0 0x400>, /* AGL_SHARED  */
-+            <0x11800 0xE0002000 0x0 0x8>;   /* AGL_PRT_CTL */
-+      unit-number = <0>;
-+      interrupt-parent = <&ciu>;
-+      interrupts = <6 40>, <6 32>;
-+      local-mac-address = [ 00 00 00 00 00 00 ];
-+      phy-handle = <&phy0>;
-+    };
-+
-+  };
-+  aliases {
-+    ethernet-mgmt0 = &mgmt0;
-+    mdio0 = &mdio0;
-+    mdio1 = &mdio1;
-+    mdio2 = &mdio2;
-+    mdio3 = &mdio3;
-+  };
-+};
--- 
-1.7.2.3
+Hi!
 
+Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB of RAM is=
+=20
+not able to allocate memory for the hibernation image. Before KMS=20
+hibernation only very rarely failed for that reason.
+
+Often I run without compositing at all as I believe this might spare some=20
+pages as well. But this doesn't always help.
+
+It complains that to less pages could be freed. For example with kernel=20
+2.6.37:
+
+=46eb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
+=46eb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
+=46eb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411 + 1024,=
+=20
+available pages: 112767
+=46eb 16 00:15:00 shambhala kernel: PM: Not enough free memory
+=46eb 16 00:15:00 shambhala kernel: PM: Error -12 creating hibernation image
+=46eb 16 00:15:00 shambhala kernel: Extended CMOS year: 2000
+=46eb 16 00:15:00 shambhala kernel: ACPI: Waking up from system sleep state=
+=20
+S4
+=46eb 16 00:15:00 shambhala kernel: PM: early recover of devices complete=20
+after 0.376 msecs
+
+This was with:
+
+martin@shambhala:~> cat /proc/version
+Linux version 2.6.37-tp42-rtime-00004-g9eb63ce (martin@shambhala) (gcc=20
+version 4.4.5 (Debian 4.4.5-8) ) #1 PREEMPT Thu Jan 13 10:59:19 CET 2011
+
+(vanilla with some recursive mtime patches from Jan Kara, but I had this=20
+with unpatched vanilla 2.6.37/ 2.6.36 and 2.6.33 as well)
+
+Often it is just a free thousand pages that are missing.
+
+With TuxOnIce - my current kernels are not having TuxOnIce compiled in -=20
+there was a specific mention of to less lowmem pages.
+
+A usual situation where it might fail is:
+
+  shambhala:~> cat /proc/meminfo
+  MemTotal:        2073668 kB
+  MemFree:          257536 kB
+  Buffers:           26480 kB
+  Cached:           916328 kB
+  SwapCached:        27044 kB
+  Active:           795012 kB
+  Inactive:         660528 kB
+  Active(anon):     289056 kB
+  Inactive(anon):   230280 kB
+  Active(file):     505956 kB
+  Inactive(file):   430248 kB
+  Unevictable:           0 kB
+  Mlocked:               0 kB
+  HighTotal:       1187144 kB
+  HighFree:         158040 kB
+  LowTotal:         886524 kB
+  LowFree:           99496 kB
+  SwapTotal:       4000180 kB
+  SwapFree:        3797720 kB
+  Dirty:             10064 kB
+  Writeback:             0 kB
+  AnonPages:        496044 kB
+  Mapped:            64192 kB
+  Shmem:              6604 kB
+  Slab:              85540 kB
+  SReclaimable:      34572 kB
+  SUnreclaim:        50968 kB
+  KernelStack:        2776 kB
+  PageTables:         7412 kB
+  NFS_Unstable:          0 kB
+  Bounce:                0 kB
+  WritebackTmp:          0 kB
+  CommitLimit:     5037012 kB
+  Committed_AS:    1708672 kB
+  VmallocTotal:     122880 kB
+  VmallocUsed:       17320 kB
+  VmallocChunk:      92856 kB
+  DirectMap4k:      897016 kB
+  DirectMap4M:       12288 kB
+
+
+When I stop Akonadi (with SQlite, not MySQL as backend) - after having=20
+closed all other applications of my KDE 4 desktop - hibernation usually=20
+works.
+
+But I also found that
+
+echo 3 >/proc/sys/vm/drop_caches helps.
+
+echo 1 frees some pages:
+
+  shambhala:~> echo 1 > /proc/sys/vm/drop_caches
+  shambhala:~> cat /proc/meminfo
+  MemTotal:        2073668 kB
+  MemFree:         1135132 kB
+  Buffers:             512 kB
+  Cached:            71544 kB
+  SwapCached:        27044 kB
+  Active:           339008 kB
+  Inactive:         245784 kB
+  Active(anon):     289060 kB
+  Inactive(anon):   230280 kB
+  Active(file):      49948 kB
+  Inactive(file):    15504 kB
+  Unevictable:           0 kB
+  Mlocked:               0 kB
+  HighTotal:       1187144 kB
+  HighFree:         697688 kB
+  LowTotal:         886524 kB
+  LowFree:          437444 kB
+  SwapTotal:       4000180 kB
+  SwapFree:        3797720 kB
+  Dirty:               444 kB
+  Writeback:             0 kB
+  AnonPages:        496048 kB
+  Mapped:            64228 kB
+  Shmem:              6604 kB
+  Slab:              78844 kB
+  SReclaimable:      27888 kB
+  SUnreclaim:        50956 kB
+  KernelStack:        2776 kB
+  PageTables:         7412 kB
+  NFS_Unstable:          0 kB
+  Bounce:                0 kB
+  WritebackTmp:          0 kB
+  CommitLimit:     5037012 kB
+  Committed_AS:    1708672 kB
+  VmallocTotal:     122880 kB
+  VmallocUsed:       17320 kB
+  VmallocChunk:      92856 kB
+  DirectMap4k:      897016 kB
+  DirectMap4M:       12288 kB
+
+echo 2 even more:
+
+  shambhala:~> echo 2 > /proc/sys/vm/drop_caches
+  shambhala:~> cat /proc/meminfo
+  MemTotal:        2073668 kB
+  MemFree:         1209228 kB
+  Buffers:            1204 kB
+  Cached:            71536 kB
+  SwapCached:        27044 kB
+  Active:           339024 kB
+  Inactive:         246456 kB
+  Active(anon):     289064 kB
+  Inactive(anon):   230280 kB
+  Active(file):      49960 kB
+  Inactive(file):    16176 kB
+  Unevictable:           0 kB
+  Mlocked:               0 kB
+  HighTotal:       1187144 kB
+  HighFree:         697688 kB
+  LowTotal:         886524 kB
+  LowFree:          511540 kB
+  SwapTotal:       4000180 kB
+  SwapFree:        3797720 kB
+  Dirty:               380 kB
+  Writeback:             0 kB
+  AnonPages:        496052 kB
+  Mapped:            64228 kB
+  Shmem:              6604 kB
+  Slab:              68036 kB
+  SReclaimable:      17088 kB
+  SUnreclaim:        50948 kB
+  KernelStack:        2776 kB
+  PageTables:         7412 kB
+  NFS_Unstable:          0 kB
+  Bounce:                0 kB
+  WritebackTmp:          0 kB
+  CommitLimit:     5037012 kB
+  Committed_AS:    1708672 kB
+  VmallocTotal:     122880 kB
+  VmallocUsed:       17320 kB
+  VmallocChunk:      92856 kB
+  DirectMap4k:      897016 kB
+  DirectMap4M:       12288 kB
+
+Thus the machine has 500 MB of free lowmem and over 1 GB of free highmem=20
+of 2 GB of total mem and thus surely should be able to hibernate with ease=
+=20
+IMHO. Which it does then too.
+
+After an echo 3 onto drop_caches hibernation for now *always* worked, even=
+=20
+when I left Akregator running - when often with just one open application=20
+the machine would not hibernate.
+
+So if dropping caches *and* dir entries manually helps hibernation going=20
+why doesn't try PM that hard to free pages in order to let the allocation=20
+of the hibernation image be successful?
+
+Are there any other tips? The machine has a whopping 900 MB of caches and=20
+there is a lot of free memory usually so actually I do not get why there=20
+are any memory issues at all that prevent successful hibernation. I guess=20
+that using a 64 bit machine with more memory and without that hysteric=20
+differentiation between lowmem and highmem pages that I never got coming=20
+from the Amiga will help out all those issues, but still I'd like to know=20
+why its failing with 2 GB of RAM of which 1.5 GB are basically fire -=20
+unless I drop caches and dir entries manually.
+
+I will now continue use
+
+echo 3 > /proc/sys/vm/drop_caches
+
+prior to hibernation to check whether it really fixed memory issues during=
+=20
+hibernation.
+
+Ciao,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart1380842.Q2kA83GQZ3
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAk1kI8gACgkQmRvqrKWZhMd7zwCfaAW+GXLyQp4qqcwionWMbaVQ
+ezcAnRrMn+cyCcf/cHjF2iHrDY5ZN++Q
+=xa3n
+-----END PGP SIGNATURE-----
+
+--nextPart1380842.Q2kA83GQZ3--
