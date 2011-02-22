@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab1BVT61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:58:27 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:48931 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab1BVT6Z (ORCPT
+	id S1755336Ab1BVT7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:59:13 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51681 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab1BVT7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:58:25 -0500
-Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
- rtc_class_ops->read_alarm()
-From: john stultz <johnstul@us.ibm.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>
-In-Reply-To: <20110222195143.GC31611@opensource.wolfsonmicro.com>
-References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
-	 <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
-	 <20110222023452.GB18299@sirena.org.uk> <1298343333.4222.36.camel@work-vm>
-	 <1298362178.4222.57.camel@work-vm>
-	 <AANLkTinMPnJj+ca+=ujU=5rhK3Nh0qrFGe955zZWjYaf@mail.gmail.com>
-	 <1298403310.9215.26.camel@work-vm>
-	 <20110222195143.GC31611@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Feb 2011 11:58:16 -0800
-Message-ID: <1298404696.9215.47.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Feb 2011 14:59:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=eE0jBpJN1LeZuvhxV8WPVSwOEH2Y5XD1VgGYz5G6z5ObPrfDumI/wyIeT5T/iEB8I/
+         suoAq4Ug2yPJn4MXeJuTTpCTTH+XqQnMuVcNkWztZMAAk7+eMIkB2vPDpcBRxw1ThGPw
+         FPVtkI3Y0m1j3Xuxnjbe1ye2WDzHoYIzfVoro=
+Message-ID: <4D64158B.6010807@gmail.com>
+Date: Tue, 22 Feb 2011 20:59:07 +0100
+From: =?UTF-8?B?TWFjaWVqIEtvdGxpxYRza2k=?= <makotlinski@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; pl-PL; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7 ThunderBrowse/3.3.4
+MIME-Version: 1.0
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Karsten Keil <kkeil@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: e1000e EEPROM corruption
+References: <20081017135910.GA18206@pingi.kke.suse.de> <4D63CC34.6070807@gmail.com> <20110222180611.GA724@khazad-dum.debian.net>
+In-Reply-To: <20110222180611.GA724@khazad-dum.debian.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-22 at 19:51 +0000, Mark Brown wrote:
-> On Tue, Feb 22, 2011 at 11:35:10AM -0800, john stultz wrote:
-> 
-> > Yea. The way I thought about it originally was that you can set an alarm
-> > and that alarm will fire if the machine is on, suspended or even in some
-> > cases off.  Then, when the machine is booted (system reset), the state
-> > of the RTC's alarm should not be trusted.
-> 
-> > Your description of the AIE/UIE having random values aligns with that
-> > intuition.
-> 
-> This seems rather worrying - it sounds like it might mean that the
-> device might come up firing spuriously which doesn't seem terribly
-> clever.
+I found the way to run my network card without writing anything to EEPROM.
 
-Well, in those known cases the driver should initalize the irq modes to
-be off. 
+I removed NVM and MAC address checks from e1000e driver source.
+The module loads fine. Ethernet adapter have MAC 00:00:00:00:00:00.
+Than I change MAC to correct one by ifconfig eth0 hw ether.
+Network works fine. I could even read correct data by ethtool -e.
+It makes the problem more strange. The correct EEPROM is there but...
 
-> > However, if the expectation is that once set, the alarm should persist
-> > across any number of reboots, this makes it a bit more complicated.
-> 
-> For an embedded device I'd expect that either nothing about the RTC
-> would persist (including the time) or everything would.
 
-But that isn't the reality of the hardware. On reboot the kernel can't
-trust hardware to be in a valid state.
 
-Even so, we can try to preserve what we can, but I think the expectation
-from an application's point of view shouldn't be that rtc device's alarm
-state will be valid upon reset.
-
-thanks
--john
-
+W dniu 22.02.2011 19:06, Henrique de Moraes Holschuh pisze:
+> On Tue, 22 Feb 2011, Maciej Kotliński wrote:
+>> I had such problem few times earlier but it used to disappear after
+>> few hours.
+> Looks like a hardware issue to me. Cold/broken solders (reflowing the board
+> could fix it), for example.
+>
+>> I have access to the same laptop, so I can get correct EPROM contents.
+>> Still I don't know how to put this to my card.
+>>
+>> Could you tell me how to reprogram my card?
+> That would only help if the problem is a "weak programming" of the EEPROM,
+> which is something I have never seen before.  Writing to it with flacky
+> circuitry is probably going to crap it for good.
+>
 
