@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1BVWc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:32:58 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:49127 "EHLO ogre.sisk.pl"
+	id S1754335Ab1BVWVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:34 -0500
+Received: from kroah.org ([198.145.64.141]:46657 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575Ab1BVWc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:32:57 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Subject: Re: does hibernate to disk try hard enough to free memory?
-Date: Tue, 22 Feb 2011 23:32:43 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc6+; KDE/4.4.4; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201102222159.58546.Martin@lichtvoll.de> <201102222209.15647.rjw@sisk.pl> <201102222307.41499.Martin@lichtvoll.de>
-In-Reply-To: <201102222307.41499.Martin@lichtvoll.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102222332.43864.rjw@sisk.pl>
+	id S1753814Ab1BVWV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:21:29 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:39 2011
+Message-Id: <20110222221839.070311817@clark.kroah.org>
+User-Agent: quilt/0.48-11.2
+Date: Tue, 22 Feb 2011 14:16:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dan Carpenter <error27@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [20/70] [media] [v3,media] av7110: check for negative array offset
+In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> Am Tuesday 22 February 2011 schrieb Rafael J. Wysocki:
-> > On Tuesday, February 22, 2011, Martin Steigerwald wrote:
-> > > Hi!
-> > > 
-> > > Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB of
-> > > RAM is not able to allocate memory for the hibernation image. Before
-> > > KMS hibernation only very rarely failed for that reason.
-> > > 
-> > > Often I run without compositing at all as I believe this might spare
-> > > some pages as well. But this doesn't always help.
-> > > 
-> > > It complains that to less pages could be freed. For example with
-> > > kernel 2.6.37:
-> > > 
-> > > Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
-> > > Feb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
-> > > Feb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411 +
-> > > 1024, available pages: 112767
-> > > Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
-> > > Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating hibernation
-> > > image Feb 16 00:15:00 shambhala kernel: Extended CMOS year: 2000
-> > > Feb 16 00:15:00 shambhala kernel: ACPI: Waking up from system sleep
-> > > state S4
-> > > Feb 16 00:15:00 shambhala kernel: PM: early recover of devices
-> > > complete after 0.376 msecs
-> > 
-> > What's the value in /sys/power/image_size?
-> 
-> shambhala:~> cat /sys/power/image_size
-> 844206080
->
-> Should I try with less?
+2.6.37-stable review patch.  If anyone has any objections, please let us know.
 
-Yes, please.  Try with 700000000 for example.
+------------------
 
-Thanks,
-Rafael
+From: Dan Carpenter <error27@gmail.com>
+
+commit cb26a24ee9706473f31d34cc259f4dcf45cd0644 upstream.
+
+info->num comes from the user.  It's type int.  If the user passes
+in a negative value that would cause memory corruption.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/media/dvb/ttpci/av7110_ca.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/media/dvb/ttpci/av7110_ca.c
++++ b/drivers/media/dvb/ttpci/av7110_ca.c
+@@ -277,7 +277,7 @@ static int dvb_ca_ioctl(struct file *fil
+ 	{
+ 		ca_slot_info_t *info=(ca_slot_info_t *)parg;
+ 
+-		if (info->num > 1)
++		if (info->num < 0 || info->num > 1)
+ 			return -EINVAL;
+ 		av7110->ci_slot[info->num].num = info->num;
+ 		av7110->ci_slot[info->num].type = FW_CI_LL_SUPPORT(av7110->arm_app) ?
+
+
