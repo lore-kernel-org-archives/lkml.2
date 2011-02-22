@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab1BVWVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:21:15 -0500
-Received: from kroah.org ([198.145.64.141]:46570 "EHLO coco.kroah.org"
+	id S1752419Ab1BVWVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:21:00 -0500
+Received: from kroah.org ([198.145.64.141]:46530 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807Ab1BVWVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:21:08 -0500
+	id S1751824Ab1BVWU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:20:59 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:37 2011
-Message-Id: <20110222221837.745295087@clark.kroah.org>
+Message-Id: <20110222221837.139656796@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:16:46 -0800
+Date: Tue, 22 Feb 2011 14:16:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [07/70] drm/radeon/kms: add connector table for mac g5 9600
+        Konstantin Khorenko <khorenko@openvz.org>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [01/70] NFSD: memory corruption due to writing beyond the stat array
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Konstantin Khorenko <khorenko@parallels.com>
 
-commit 9fad321ac6bedd96f449754a1a25289ea1789a49 upstream.
+commit 3aa6e0aa8ab3e64bbfba092c64d42fd1d006b124 upstream.
 
-PPC Mac cards do not provide connector tables in
-their vbios.  Their connector/encoder configurations
-must be hardcoded in the driver.
+If nfsd fails to find an exported via NFS file in the readahead cache, it
+should increment corresponding nfsdstats counter (ra_depth[10]), but due to a
+bug it may instead write to ra_depth[11], corrupting the following field.
 
-verified by nyef on #radeon
+In a kernel with NFSDv4 compiled in the corruption takes the form of an
+increment of a counter of the number of NFSv4 operation 0's received; since
+there is no operation 0, this is harmless.
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+In a kernel with NFSDv4 disabled it corrupts whatever happens to be in the
+memory beyond nfsdstats.
+
+Signed-off-by: Konstantin Khorenko <khorenko@openvz.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |   47 ++++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon_mode.h    |    1 
- 2 files changed, 48 insertions(+)
+ fs/nfsd/vfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -1503,6 +1503,11 @@ bool radeon_get_legacy_connector_info_fr
- 			   (rdev->pdev->subsystem_device == 0x4a48)) {
- 			/* Mac X800 */
- 			rdev->mode_info.connector_table = CT_MAC_X800;
-+		} else if ((rdev->pdev->device == 0x4150) &&
-+			   (rdev->pdev->subsystem_vendor == 0x1002) &&
-+			   (rdev->pdev->subsystem_device == 0x4150)) {
-+			/* Mac G5 9600 */
-+			rdev->mode_info.connector_table = CT_MAC_G5_9600;
- 		} else
- #endif /* CONFIG_PPC_PMAC */
- #ifdef CONFIG_PPC64
-@@ -2021,6 +2026,48 @@ bool radeon_get_legacy_connector_info_fr
- 					    CONNECTOR_OBJECT_ID_DUAL_LINK_DVI_I,
- 					    &hpd);
- 		break;
-+	case CT_MAC_G5_9600:
-+		DRM_INFO("Connector Table: %d (mac g5 9600)\n",
-+			 rdev->mode_info.connector_table);
-+		/* DVI - tv dac, dvo */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_DVI, 0, 0);
-+		hpd.hpd = RADEON_HPD_1; /* ??? */
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								  ATOM_DEVICE_DFP2_SUPPORT,
-+								  0),
-+					  ATOM_DEVICE_DFP2_SUPPORT);
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								  ATOM_DEVICE_CRT2_SUPPORT,
-+								  2),
-+					  ATOM_DEVICE_CRT2_SUPPORT);
-+		radeon_add_legacy_connector(dev, 0,
-+					    ATOM_DEVICE_DFP2_SUPPORT |
-+					    ATOM_DEVICE_CRT2_SUPPORT,
-+					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
-+					    &hpd);
-+		/* ADC - primary dac, internal tmds */
-+		ddc_i2c = combios_setup_i2c_bus(rdev, DDC_VGA, 0, 0);
-+		hpd.hpd = RADEON_HPD_2; /* ??? */
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								  ATOM_DEVICE_DFP1_SUPPORT,
-+								  0),
-+					  ATOM_DEVICE_DFP1_SUPPORT);
-+		radeon_add_legacy_encoder(dev,
-+					  radeon_get_encoder_enum(dev,
-+								  ATOM_DEVICE_CRT1_SUPPORT,
-+								  1),
-+					  ATOM_DEVICE_CRT1_SUPPORT);
-+		radeon_add_legacy_connector(dev, 1,
-+					    ATOM_DEVICE_DFP1_SUPPORT |
-+					    ATOM_DEVICE_CRT1_SUPPORT,
-+					    DRM_MODE_CONNECTOR_DVII, &ddc_i2c,
-+					    CONNECTOR_OBJECT_ID_SINGLE_LINK_DVI_I,
-+					    &hpd);
-+		break;
- 	default:
- 		DRM_INFO("Connector table: %d (invalid)\n",
- 			 rdev->mode_info.connector_table);
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -209,6 +209,7 @@ enum radeon_connector_table {
- 	CT_EMAC,
- 	CT_RN50_POWER,
- 	CT_MAC_X800,
-+	CT_MAC_G5_9600,
- };
- 
- enum radeon_dvo_chip {
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -809,7 +809,7 @@ nfsd_get_raparms(dev_t dev, ino_t ino)
+ 		if (ra->p_count == 0)
+ 			frap = rap;
+ 	}
+-	depth = nfsdstats.ra_size*11/10;
++	depth = nfsdstats.ra_size;
+ 	if (!frap) {	
+ 		spin_unlock(&rab->pb_lock);
+ 		return NULL;
 
 
