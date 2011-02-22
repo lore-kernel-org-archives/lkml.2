@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab1BVXD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:03:58 -0500
-Received: from trinity.develer.com ([83.149.158.210]:50823 "EHLO
+	id S1752135Ab1BVXFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:05:40 -0500
+Received: from trinity.develer.com ([83.149.158.210]:50869 "EHLO
 	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab1BVXD5 (ORCPT
+	with ESMTP id S1751165Ab1BVXFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 18:03:57 -0500
-Date: Wed, 23 Feb 2011 00:03:54 +0100
+	Tue, 22 Feb 2011 18:05:39 -0500
+Date: Wed, 23 Feb 2011 00:05:34 +0100
 From: Andrea Righi <arighi@develer.com>
 To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Chad Talbott <ctalbott@google.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
         Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Greg Thelen <gthelen@google.com>,
@@ -23,67 +22,111 @@ Cc: Chad Talbott <ctalbott@google.com>,
         containers@lists.linux-foundation.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 4/5] blk-throttle: track buffered and anonymous pages
-Message-ID: <20110222230353.GC23723@linux.develer.com>
+Message-ID: <20110222230534.GD23723@linux.develer.com>
 References: <1298394776-9957-1-git-send-email-arighi@develer.com>
  <1298394776-9957-5-git-send-email-arighi@develer.com>
- <AANLkTinD2ZH3hw_iqVpvMjMRbUkXMBgttjd2NevvYq9x@mail.gmail.com>
- <20110222204928.GH28269@redhat.com>
+ <20110222210030.GI28269@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110222204928.GH28269@redhat.com>
+In-Reply-To: <20110222210030.GI28269@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 03:49:28PM -0500, Vivek Goyal wrote:
-> On Tue, Feb 22, 2011 at 10:42:41AM -0800, Chad Talbott wrote:
-> > On Tue, Feb 22, 2011 at 9:12 AM, Andrea Righi <arighi@develer.com> wrote:
-> > > Add the tracking of buffered (writeback) and anonymous pages.
-> > ...
-> > > ---
-> > >  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
-> > >  include/linux/blkdev.h |   26 ++++++++++++++-
-> > >  2 files changed, 111 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> > > index 9ad3d1e..a50ee04 100644
-> > > --- a/block/blk-throttle.c
-> > > +++ b/block/blk-throttle.c
-> > ...
-> > > +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
-> > > +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
-> > > +int blk_throtl_copy_page_owner(struct page *npage, struct page *opage)
+On Tue, Feb 22, 2011 at 04:00:30PM -0500, Vivek Goyal wrote:
+> On Tue, Feb 22, 2011 at 06:12:55PM +0100, Andrea Righi wrote:
+> > Add the tracking of buffered (writeback) and anonymous pages.
 > > 
-> > It would be nice if these were named blk_cgroup_*.  This is arguably
-> > more correct as the id comes from the blkio subsystem, and isn't
-> > specific to blk-throttle.  This will be more important very shortly,
-> > as CFQ will be using this same cgroup id for async IO tracking soon.
+> > Dirty pages in the page cache can be processed asynchronously by the
+> > per-bdi flusher kernel threads or by any other thread in the system,
+> > according to the writeback policy.
+> > 
+> > For this reason the real writes to the underlying block devices may
+> > occur in a different IO context respect to the task that originally
+> > generated the dirty pages involved in the IO operation. This makes
+> > the tracking and throttling of writeback IO more complicate respect to
+> > the synchronous IO from the blkio controller's point of view.
+> > 
+> > The idea is to save the cgroup owner of each anonymous page and dirty
+> > page in page cache. A page is associated to a cgroup the first time it
+> > is dirtied in memory (for file cache pages) or when it is set as
+> > swap-backed (for anonymous pages). This information is stored using the
+> > page_cgroup functionality.
+> > 
+> > Then, at the block layer, it is possible to retrieve the throttle group
+> > looking at the bio_page(bio). If the page was not explicitly associated
+> > to any cgroup the IO operation is charged to the current task/cgroup, as
+> > it was done by the previous implementation.
+> > 
+> > Signed-off-by: Andrea Righi <arighi@develer.com>
+> > ---
+> >  block/blk-throttle.c   |   87 +++++++++++++++++++++++++++++++++++++++++++++++-
+> >  include/linux/blkdev.h |   26 ++++++++++++++-
+> >  2 files changed, 111 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> > index 9ad3d1e..a50ee04 100644
+> > --- a/block/blk-throttle.c
+> > +++ b/block/blk-throttle.c
+> > @@ -8,6 +8,10 @@
+> >  #include <linux/slab.h>
+> >  #include <linux/blkdev.h>
+> >  #include <linux/bio.h>
+> > +#include <linux/memcontrol.h>
+> > +#include <linux/mm_inline.h>
+> > +#include <linux/pagemap.h>
+> > +#include <linux/page_cgroup.h>
+> >  #include <linux/blktrace_api.h>
+> >  #include <linux/blk-cgroup.h>
+> >  
+> > @@ -221,6 +225,85 @@ done:
+> >  	return tg;
+> >  }
+> >  
+> > +static inline bool is_kernel_io(void)
+> > +{
+> > +	return !!(current->flags & (PF_KTHREAD | PF_KSWAPD | PF_MEMALLOC));
+> > +}
+> > +
+> > +static int throtl_set_page_owner(struct page *page, struct mm_struct *mm)
+> > +{
+> > +	struct blkio_cgroup *blkcg;
+> > +	unsigned short id = 0;
+> > +
+> > +	if (blkio_cgroup_disabled())
+> > +		return 0;
+> > +	if (!mm)
+> > +		goto out;
+> > +	rcu_read_lock();
+> > +	blkcg = task_to_blkio_cgroup(rcu_dereference(mm->owner));
+> > +	if (likely(blkcg))
+> > +		id = css_id(&blkcg->css);
+> > +	rcu_read_unlock();
+> > +out:
+> > +	return page_cgroup_set_owner(page, id);
+> > +}
+> > +
+> > +int blk_throtl_set_anonpage_owner(struct page *page, struct mm_struct *mm)
+> > +{
+> > +	return throtl_set_page_owner(page, mm);
+> > +}
+> > +EXPORT_SYMBOL(blk_throtl_set_anonpage_owner);
+> > +
+> > +int blk_throtl_set_filepage_owner(struct page *page, struct mm_struct *mm)
+> > +{
+> > +	if (is_kernel_io() || !page_is_file_cache(page))
+> > +		return 0;
+> > +	return throtl_set_page_owner(page, mm);
+> > +}
+> > +EXPORT_SYMBOL(blk_throtl_set_filepage_owner);
 > 
-> Should this really be all part of blk-cgroup.c and not blk-throttle.c
-> so that it can be used by CFQ code also down the line? Anyway all this
-> is not throttle specific as such but blkio controller specific.
+> Why are we exporting all these symbols?
 
-Agreed.
+Right. Probably a single one is enough:
 
-> 
-> Though function naming convetion is not great in blk-cgroup.c But
-> functions either have blkio_ prefix or blkiocg_ prefix.
+ int blk_throtl_set_page_owner(struct page *page,
+			struct mm_struct *mm, bool anon);
 
-ok.
-
-> 
-> Functions which are not directly dealing with cgroups or in general
-> are called by blk-throttle.c and/or cfq-iosched.c I have marked as
-> prefixed with "blkio_". Functions which directly deal with cgroup stuff
-> and register with cgroup subsystem for this controller are generally
-> having "blkiocg_" prefix.
-> 
-> In this case probably we can use probably blkio_ prefix.
-
-ok.
-
-Thanks,
 -Andrea
