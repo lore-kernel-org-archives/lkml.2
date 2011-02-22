@@ -1,232 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab1BVVI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 16:08:29 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59054 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab1BVVI1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 16:08:27 -0500
+	id S1753676Ab1BVVJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 16:09:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48874 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936Ab1BVVJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 16:09:26 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Subject: Re: does hibernate to disk try hard enough to free memory?
+Date: Tue, 22 Feb 2011 22:09:15 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc5+; KDE/4.4.4; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201102222159.58546.Martin@lichtvoll.de>
+In-Reply-To: <201102222159.58546.Martin@lichtvoll.de>
 MIME-Version: 1.0
-In-Reply-To: <1298405266-1624-8-git-send-email-bigeasy@linutronix.de>
-References: <1298405266-1624-1-git-send-email-bigeasy@linutronix.de> <1298405266-1624-8-git-send-email-bigeasy@linutronix.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 22 Feb 2011 14:08:07 -0700
-X-Google-Sender-Auth: eore9ifkTaYHrlmgGGB_NK0pnRA
-Message-ID: <AANLkTikwHjs2Egvq3kq6YZzkGeGWy7U8uiV+6kcjWDve@mail.gmail.com>
-Subject: Re: [PATCH 07/11] x86/dtb: add support for PCI devices backed by dtb nodes
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        devicetree-discuss@lists.ozlabs.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102222209.15647.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 1:07 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> x86_of_pci_init() does two things:
-> - it provides a generic irq enable and disable function. enable queries
->  the device tree for the interrupt information, calls ->xlate on the
->  irq host and updates the pci->irq information for the device.
->
-> - it walks through PCI buss(es) in the device tree and adds its children
->  (devices) nodes to appropriate pci_dev nodes in kernel. So the dtb
->  node information is available at probe time of the PCI device.
->
-> Adding a PCI bus based on the information in the device tree is
-> currently not supported. Right now direct access via ioports is used.
->
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Tested-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+On Tuesday, February 22, 2011, Martin Steigerwald wrote:
+> Hi!
+> 
+> Since Radeon KMS I often have it that my ThinkPad T42 with 2 MiB of RAM is 
+> not able to allocate memory for the hibernation image. Before KMS 
+> hibernation only very rarely failed for that reason.
+> 
+> Often I run without compositing at all as I believe this might spare some 
+> pages as well. But this doesn't always help.
+> 
+> It complains that to less pages could be freed. For example with kernel 
+> 2.6.37:
+> 
+> Feb 16 00:15:00 shambhala kernel: PM: Creating hibernation image:
+> Feb 16 00:15:00 shambhala kernel: PM: Need to copy 186577 pages
+> Feb 16 00:15:00 shambhala kernel: PM: Normal pages needed: 114411 + 1024, 
+> available pages: 112767
+> Feb 16 00:15:00 shambhala kernel: PM: Not enough free memory
+> Feb 16 00:15:00 shambhala kernel: PM: Error -12 creating hibernation image
+> Feb 16 00:15:00 shambhala kernel: Extended CMOS year: 2000
+> Feb 16 00:15:00 shambhala kernel: ACPI: Waking up from system sleep state 
+> S4
+> Feb 16 00:15:00 shambhala kernel: PM: early recover of devices complete 
+> after 0.376 msecs
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+What's the value in /sys/power/image_size?
 
-> ---
->  arch/x86/include/asm/prom.h  |   14 +++++++
->  arch/x86/kernel/devicetree.c |   83 ++++++++++++++++++++++++++++++++++++++++++
->  drivers/of/Kconfig           |    2 +-
->  drivers/of/of_pci.c          |    1 +
->  4 files changed, 99 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-> index 5aa2c32..3e441b3 100644
-> --- a/arch/x86/include/asm/prom.h
-> +++ b/arch/x86/include/asm/prom.h
-> @@ -16,6 +16,7 @@
->
->  #include <linux/of.h>
->  #include <linux/types.h>
-> +#include <linux/pci.h>
->  #include <asm/irq.h>
->  #include <asm/atomic.h>
->  #include <asm/setup.h>
-> @@ -28,8 +29,21 @@ extern void add_dtb(u64 data);
->  void x86_dtb_find_config(void);
->  void x86_dtb_get_config(unsigned int unused);
->  void add_interrupt_host(struct irq_domain *ih);
-> +void __cpuinit x86_of_pci_init(void);
-> +
-> +static inline struct device_node *pci_device_to_OF_node(struct pci_dev *pdev)
-> +{
-> +       return pdev ? pdev->dev.of_node : NULL;
-> +}
-> +
-> +static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
-> +{
-> +       return pci_device_to_OF_node(bus->self);
-> +}
-> +
->  #else
->  static inline void add_dtb(u64 data) { }
-> +static inline void x86_of_pci_init(void) { }
->  #define x86_dtb_find_config x86_init_noop
->  #define x86_dtb_get_config x86_init_uint_noop
->  #define of_ioapic 0
-> diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-> index 8d7a2eb..b778ae5 100644
-> --- a/arch/x86/kernel/devicetree.c
-> +++ b/arch/x86/kernel/devicetree.c
-> @@ -9,11 +9,15 @@
->  #include <linux/of_fdt.h>
->  #include <linux/of_address.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_irq.h>
->  #include <linux/slab.h>
-> +#include <linux/pci.h>
-> +#include <linux/of_pci.h>
->
->  #include <asm/hpet.h>
->  #include <asm/irq_controller.h>
->  #include <asm/apic.h>
-> +#include <asm/pci_x86.h>
->
->  __initdata u64 initial_dtb;
->  char __initdata cmd_line[COMMAND_LINE_SIZE];
-> @@ -100,6 +104,85 @@ void __init add_dtb(u64 data)
->        initial_dtb = data + offsetof(struct setup_data, data);
->  }
->
-> +#ifdef CONFIG_PCI
-> +static int x86_of_pci_irq_enable(struct pci_dev *dev)
-> +{
-> +       struct of_irq oirq;
-> +       u32 virq;
-> +       int ret;
-> +       u8 pin;
-> +
-> +       ret = pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
-> +       if (ret)
-> +               return ret;
-> +       if (!pin)
-> +               return 0;
-> +
-> +       ret = of_irq_map_pci(dev, &oirq);
-> +       if (ret)
-> +               return ret;
-> +
-> +       virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
-> +                       oirq.size);
-> +       if (virq == 0)
-> +               return -EINVAL;
-> +       dev->irq = virq;
-> +       return 0;
-> +}
-> +
-> +static void x86_of_pci_irq_disable(struct pci_dev *dev)
-> +{
-> +}
-> +
-> +void __cpuinit x86_of_pci_init(void)
-> +{
-> +       struct device_node *np;
-> +
-> +       pcibios_enable_irq = x86_of_pci_irq_enable;
-> +       pcibios_disable_irq = x86_of_pci_irq_disable;
-> +
-> +       for_each_node_by_type(np, "pci") {
-> +               const void *prop;
-> +               struct pci_bus *bus;
-> +               unsigned int bus_min;
-> +               struct device_node *child;
-> +
-> +               prop = of_get_property(np, "bus-range", NULL);
-> +               if (!prop)
-> +                       continue;
-> +               bus_min = be32_to_cpup(prop);
-> +
-> +               bus = pci_find_bus(0, bus_min);
-> +               if (!bus) {
-> +                       printk(KERN_ERR "Can't find a node for bus %s.\n",
-> +                                       np->full_name);
-> +                       continue;
-> +               }
-> +
-> +               if (bus->self)
-> +                       bus->self->dev.of_node = np;
-> +               else
-> +                       bus->dev.of_node = np;
-> +
-> +               for_each_child_of_node(np, child) {
-> +                       struct pci_dev *dev;
-> +                       u32 devfn;
-> +
-> +                       prop = of_get_property(child, "reg", NULL);
-> +                       if (!prop)
-> +                               continue;
-> +
-> +                       devfn = (be32_to_cpup(prop) >> 8) & 0xff;
-> +                       dev = pci_get_slot(bus, devfn);
-> +                       if (!dev)
-> +                               continue;
-> +                       dev->dev.of_node = child;
-> +                       pci_dev_put(dev);
-> +               }
-> +       }
-> +}
-> +#endif
-> +
->  static void __init dtb_setup_hpet(void)
->  {
->        struct device_node *dn;
-> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-> index efabbf9..d06a637 100644
-> --- a/drivers/of/Kconfig
-> +++ b/drivers/of/Kconfig
-> @@ -71,7 +71,7 @@ config OF_MDIO
->
->  config OF_PCI
->        def_tristate PCI
-> -       depends on PCI && (PPC || MICROBLAZE)
-> +       depends on PCI && (PPC || MICROBLAZE || X86)
->        help
->          OpenFirmware PCI bus accessors
->
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index 314535f..ac1ec54 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
-> @@ -1,5 +1,6 @@
->  #include <linux/kernel.h>
->  #include <linux/of_pci.h>
-> +#include <linux/of_irq.h>
->  #include <asm/prom.h>
->
->  /**
-> --
-> 1.7.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Rafael
