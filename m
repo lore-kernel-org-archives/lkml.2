@@ -1,63 +1,486 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab1BVXst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 18:48:49 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48354 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755830Ab1BVXss (ORCPT
+	id S1755692Ab1BVXt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 18:49:56 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:53896 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab1BVXtz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 18:48:48 -0500
-Date: Tue, 22 Feb 2011 15:48:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11] mm: Move contig_page_data define to
- bootmem.c/nobootmem.c
-Message-Id: <20110222154806.0be18267.akpm@linux-foundation.org>
-In-Reply-To: <1297120632-24933-11-git-send-email-yinghai@kernel.org>
-References: <1297120632-24933-1-git-send-email-yinghai@kernel.org>
-	<1297120632-24933-11-git-send-email-yinghai@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Feb 2011 18:49:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=mjgki+zkl9NbGeYTgXteNl+YtKOgEX6/jlAnWg/X3K8DbyQvl7s9f4GWKHu1Ruxq5t
+         Xi0ZBPuFNjkwBFBZUXFg==
+MIME-Version: 1.0
+In-Reply-To: <20110217212805.3967.47547.stgit@mike.mtv.corp.google.com>
+References: <20110217212754.3967.98648.stgit@mike.mtv.corp.google.com> <20110217212805.3967.47547.stgit@mike.mtv.corp.google.com>
+From: Rob Lippert <rlippert@google.com>
+Date: Tue, 22 Feb 2011 15:49:30 -0800
+Message-ID: <AANLkTi=wpVRSxY0HTnnJEeEN-VEOBQ7XJM5TrUu9Chqd@mail.gmail.com>
+Subject: Re: [PATCH v1 2/5] firmware: Basic dmi-sysfs support
+To: Mike Waychison <mikew@google.com>
+Cc: Greg KH <greg@kroah.com>, Olof Johansson <olofj@chromium.org>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jon Mayer <jonmayer@google.com>, Duncan Laurie <dlaurie@google.com>,
+        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>, David Hendrix <dhendrix@chromium.org>,
+        linux-api@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  7 Feb 2011 15:17:11 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+On Thu, Feb 17, 2011 at 1:28 PM, Mike Waychison <mikew@google.com> wrote:
+> Introduce a new module "dmi-sysfs" that exports the broken out entries
+> of the DMI table through sysfs.
+>
+> Entries are enumerated via dmi_walk() on module load, and are populated
+> as kobjects rooted at /sys/firmware/dmi/entries.
+>
+> Entries are named "<type>-<instance>", where:
+>   <type>       : is the type of the entry, and
+>   <instance>   : is the ordinal count within the DMI table of that
+>                  entry type.  This instance is used in lieu the DMI
+>                  entry's handle as no assurances are made by the kernel
+>                  that handles are unique.
+>
+> All entries export the following attributes:
 
-> We can remove #ifdef in mm/page_alloc.c
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Can you add an entry here for index/ordinal in the set of all tables?
+This way the user can walk the tables in the original order exported
+by the BIOS.  Some (buggy) BIOSes don't properly set up links between
+things like MEM_ARRAY and MEM_DEVICE tables but depend on the position
+of the table relative to other tables.
+
+>   length       : The length of the formatted portion of the entry
+>   handle       : The handle given to this entry by the firmware
+>   raw          : The raw bytes of the entire entry, including the
+>                  formatted portion, the unformatted (strings) portion,
+>                  and the two terminating nul characters.
+>
+> Entries in dmi-sysfs are kobject backed members called "struct
+> dmi_sysfs_entry" and belong to dmi_kset.  They are threaded through
+> entry_list (protected by entry_list_lock) so that we can find them at
+> cleanup time.
+>
+> Signed-off-by: Mike Waychison <mikew@google.com>
 > ---
->  mm/bootmem.c    |    7 +++++++
->  mm/nobootmem.c  |    5 +++++
->  mm/page_alloc.c |    9 ---------
->  3 files changed, 12 insertions(+), 9 deletions(-)
-> 
-> diff --git a/mm/bootmem.c b/mm/bootmem.c
-> index 4403e2f..79d9c3c 100644
-> --- a/mm/bootmem.c
-> +++ b/mm/bootmem.c
-> @@ -23,6 +23,13 @@
->  
->  #include "internal.h"
->  
-> +#ifndef CONFIG_NEED_MULTIPLE_NODES
-> +struct pglist_data __refdata contig_page_data = {
-> + .bdata = &bootmem_node_data[0]
-> + };
-> +EXPORT_SYMBOL(contig_page_data);
-> +#endif
+>  drivers/firmware/Kconfig     |   11 +
+>  drivers/firmware/Makefile    |    1
+>  drivers/firmware/dmi-sysfs.c |  362 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 374 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/firmware/dmi-sysfs.c
+>
+> diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+> index e710424..959175d 100644
+> --- a/drivers/firmware/Kconfig
+> +++ b/drivers/firmware/Kconfig
+> @@ -113,6 +113,17 @@ config DMIID
+>          information from userspace through /sys/class/dmi/id/ or if you want
+>          DMI-based module auto-loading.
+>
+> +config DMI_SYSFS
+> +       tristate "DMI table support in sysfs"
+> +       depends on SYSFS && DMI
+> +       default X86
+> +       help
+> +         Say Y or M here to enable the exporting of the raw DMI table
+> +         data via sysfs.  This is useful for consuming the data without
+> +         requiring any access to /dev/mem at all.  Tables are found
+> +         under /sys/firmware/dmi when this option is enabled and
+> +         loaded.
+> +
+>  config ISCSI_IBFT_FIND
+>        bool "iSCSI Boot Firmware Table Attributes"
+>        depends on X86
+> diff --git a/drivers/firmware/Makefile b/drivers/firmware/Makefile
+> index 1c3c173..20c17fc 100644
+> --- a/drivers/firmware/Makefile
+> +++ b/drivers/firmware/Makefile
+> @@ -2,6 +2,7 @@
+>  # Makefile for the linux kernel.
+>  #
+>  obj-$(CONFIG_DMI)              += dmi_scan.o
+> +obj-$(CONFIG_DMI_SYSFS)                += dmi-sysfs.o
+>  obj-$(CONFIG_EDD)              += edd.o
+>  obj-$(CONFIG_EFI_VARS)         += efivars.o
+>  obj-$(CONFIG_EFI_PCDP)         += pcdp.o
+> diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+> new file mode 100644
+> index 0000000..adcd604
+> --- /dev/null
+> +++ b/drivers/firmware/dmi-sysfs.c
+> @@ -0,0 +1,362 @@
+> +/*
+> + * dmi-sysfs.c
+> + *
+> + * This module exports the DMI tables read-only to userspace through the
+> + * sysfs file system.
+> + *
+> + * Data is currently found below
+> + *    /sys/firmware/dmi/...
+> + *
+> + * DMI attributes are presented in attribute files with names
+> + * formatted using %d-%d, so that the first integer indicates the
+> + * structure type (0-255), and the second field is the instance of that
+> + * entry.
+> + *
+> + * Copyright 2010 Google, Inc.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/module.h>
+> +#include <linux/types.h>
+> +#include <linux/kobject.h>
+> +#include <linux/dmi.h>
+> +#include <linux/capability.h>
+> +#include <linux/slab.h>
+> +#include <linux/list.h>
+> +#include <linux/io.h>
+> +
+> +#define MAX_ENTRY_TYPE 255 /* Most of these aren't used, but we consider
+> +                             the top entry type is only 8 bits */
+> +
+> +struct dmi_sysfs_entry {
+> +       struct dmi_header dh;
+> +       struct kobject kobj;
+> +       int instance;
+> +       struct list_head list;
+> +};
+> +
+> +/*
+> + * Global list of dmi_sysfs_entry.  Even though this should only be
+> + * manipulated at setup and teardown, the lazy nature of the kobject
+> + * system means we get lazy removes.
+> + */
+> +static LIST_HEAD(entry_list);
+> +static DEFINE_SPINLOCK(entry_list_lock);
+> +
+> +/* dmi_sysfs_attribute - Top level attribute. used by all entries. */
+> +struct dmi_sysfs_attribute {
+> +       struct attribute attr;
+> +       ssize_t (*show)(struct dmi_sysfs_entry *entry, char *buf);
+> +};
+> +
+> +#define DMI_SYSFS_ATTR(_entry, _name) \
+> +struct dmi_sysfs_attribute dmi_sysfs_attr_##_entry##_##_name = { \
+> +       .attr = {.name = __stringify(_name), .mode = 0400}, \
+> +       .show = dmi_sysfs_##_entry##_##_name, \
+> +}
+> +
+> +/*
+> + * dmi_sysfs_mapped_attribute - Attribute where we require the entry be
+> + * mapped in.  Use in conjunction with dmi_sysfs_specialize_attr_ops.
+> + */
+> +struct dmi_sysfs_mapped_attribute {
+> +       struct attribute attr;
+> +       ssize_t (*show)(struct dmi_sysfs_entry *entry,
+> +                       const struct dmi_header *dh,
+> +                       char *buf);
+> +};
+> +
+> +#define DMI_SYSFS_MAPPED_ATTR(_entry, _name) \
+> +struct dmi_sysfs_mapped_attribute dmi_sysfs_attr_##_entry##_##_name = { \
+> +       .attr = {.name = __stringify(_name), .mode = 0400}, \
+> +       .show = dmi_sysfs_##_entry##_##_name, \
+> +}
+> +
+> +/*************************************************
+> + * Generic DMI entry support.
+> + *************************************************/
+> +
+> +static struct dmi_sysfs_entry *to_entry(struct kobject *kobj)
+> +{
+> +       return container_of(kobj, struct dmi_sysfs_entry, kobj);
+> +}
+> +
+> +static struct dmi_sysfs_attribute *to_attr(struct attribute *attr)
+> +{
+> +       return container_of(attr, struct dmi_sysfs_attribute, attr);
+> +}
+> +
+> +static ssize_t dmi_sysfs_attr_show(struct kobject *kobj,
+> +                                  struct attribute *_attr, char *buf)
+> +{
+> +       struct dmi_sysfs_entry *entry = to_entry(kobj);
+> +       struct dmi_sysfs_attribute *attr = to_attr(_attr);
+> +
+> +       /* DMI stuff is only ever admin visible */
+> +       if (!capable(CAP_SYS_ADMIN))
+> +               return -EACCES;
+> +
+> +       return attr->show(entry, buf);
+> +}
+> +
+> +static const struct sysfs_ops dmi_sysfs_attr_ops = {
+> +       .show = dmi_sysfs_attr_show,
+> +};
+> +
+> +typedef ssize_t (*dmi_callback)(struct dmi_sysfs_entry *,
+> +                               const struct dmi_header *dh, void *);
+> +
+> +struct find_dmi_data {
+> +       struct dmi_sysfs_entry  *entry;
+> +       dmi_callback            callback;
+> +       void                    *private;
+> +       int                     instance_countdown;
+> +       ssize_t                 ret;
+> +};
+> +
+> +static void find_dmi_entry_helper(const struct dmi_header *dh,
+> +                                 void *_data)
+> +{
+> +       struct find_dmi_data *data = _data;
+> +       struct dmi_sysfs_entry *entry = data->entry;
+> +
+> +       /* Is this the entry we want? */
+> +       if (dh->type != entry->dh.type)
+> +               return;
+> +
+> +       if (data->instance_countdown != 0) {
+> +               /* try the next instance? */
+> +               data->instance_countdown--;
+> +               return;
+> +       }
+> +
+> +       /* Found the entry */
+> +       data->ret = data->callback(entry, dh, data->private);
+> +}
+> +
+> +/* State for passing the read parameters through dmi_find_entry() */
+> +struct dmi_read_state {
+> +       char *buf;
+> +       loff_t pos;
+> +       size_t count;
+> +};
+> +
+> +static ssize_t find_dmi_entry(struct dmi_sysfs_entry *entry,
+> +                             dmi_callback callback, void *private)
+> +{
+> +       struct find_dmi_data data = {
+> +               .entry = entry,
+> +               .callback = callback,
+> +               .private = private,
+> +               .instance_countdown = entry->instance,
+> +               .ret = -EIO,  /* To signal the entry disappeared */
+> +       };
+> +       int ret;
+> +
+> +       ret = dmi_walk(find_dmi_entry_helper, &data);
+> +       /* This shouldn't happen, but just in case. */
+> +       if (ret)
+> +               return -EINVAL;
+> +       return data.ret;
+> +}
+> +
+> +/*
+> + * Calculate and return the byte length of the dmi entry identified by
+> + * dh.  This includes both the formatted portion as well as the
+> + * unformatted string space, including the two trailing nul characters.
+> + */
+> +static size_t dmi_entry_length(const struct dmi_header *dh)
+> +{
+> +       const char *p = (const char *)dh;
+> +
+> +       p += dh->length;
+> +
+> +       while (p[0] || p[1])
+> +               p++;
+> +
 
-Please fix the layout when moving this code - it's quite busted and as
-we're touching the code anyway, we might as well fix it up.
+Is there any chance this could walk outside of SMBIOS space on a
+corrupted table?  I can point you at some machines with corrupted
+tables to test on if you want.
 
-Patches 9, 10 and 11 look good to me and won't conflict with ther
-pending work - please merge them up via the appropriate ingotree.
-
+> +       return 2 + p - (const char *)dh;
+> +}
+> +
+> +/*************************************************
+> + * Generic DMI entry support.
+> + *************************************************/
+> +
+> +static ssize_t dmi_sysfs_entry_length(struct dmi_sysfs_entry *entry, char *buf)
+> +{
+> +       return sprintf(buf, "%d\n", entry->dh.length);
+> +}
+> +
+> +static ssize_t dmi_sysfs_entry_handle(struct dmi_sysfs_entry *entry, char *buf)
+> +{
+> +       return sprintf(buf, "%d\n", entry->dh.handle);
+> +}
+> +
+> +static DMI_SYSFS_ATTR(entry, length);
+> +static DMI_SYSFS_ATTR(entry, handle);
+> +
+> +static struct attribute *dmi_sysfs_entry_attrs[] = {
+> +       &dmi_sysfs_attr_entry_length.attr,
+> +       &dmi_sysfs_attr_entry_handle.attr,
+> +       NULL,
+> +};
+> +
+> +static ssize_t dmi_entry_raw_read_helper(struct dmi_sysfs_entry *entry,
+> +                                        const struct dmi_header *dh,
+> +                                        void *_state)
+> +{
+> +       struct dmi_read_state *state = _state;
+> +       size_t entry_length;
+> +
+> +       entry_length = dmi_entry_length(dh);
+> +
+> +       return memory_read_from_buffer(state->buf, state->count,
+> +                                      &state->pos, dh, entry_length);
+> +}
+> +
+> +static ssize_t dmi_entry_raw_read(struct file *filp,
+> +                                 struct kobject *kobj,
+> +                                 struct bin_attribute *bin_attr,
+> +                                 char *buf, loff_t pos, size_t count)
+> +{
+> +       struct dmi_sysfs_entry *entry = to_entry(kobj);
+> +       struct dmi_read_state state = {
+> +               .buf = buf,
+> +               .pos = pos,
+> +               .count = count,
+> +       };
+> +
+> +       return find_dmi_entry(entry, dmi_entry_raw_read_helper, &state);
+> +}
+> +
+> +static const struct bin_attribute dmi_entry_raw_attr = {
+> +       .attr = {.name = "raw", .mode = 0400},
+> +       .read = dmi_entry_raw_read,
+> +};
+> +
+> +static void dmi_sysfs_entry_release(struct kobject *kobj)
+> +{
+> +       struct dmi_sysfs_entry *entry = to_entry(kobj);
+> +       sysfs_remove_bin_file(&entry->kobj, &dmi_entry_raw_attr);
+> +       spin_lock(&entry_list_lock);
+> +       list_del(&entry->list);
+> +       spin_unlock(&entry_list_lock);
+> +       kfree(entry);
+> +}
+> +
+> +static struct kobj_type dmi_sysfs_entry_ktype = {
+> +       .release = dmi_sysfs_entry_release,
+> +       .sysfs_ops = &dmi_sysfs_attr_ops,
+> +       .default_attrs = dmi_sysfs_entry_attrs,
+> +};
+> +
+> +static struct kobject *dmi_kobj;
+> +static struct kset *dmi_kset;
+> +
+> +/* Global count of all instances seen.  Only for setup */
+> +static int __initdata instance_counts[MAX_ENTRY_TYPE + 1];
+> +
+> +static void __init dmi_sysfs_register_handle(const struct dmi_header *dh,
+> +                                            void *_ret)
+> +{
+> +       struct dmi_sysfs_entry *entry;
+> +       int *ret = _ret;
+> +
+> +       /* If a previous entry saw an error, short circuit */
+> +       if (*ret)
+> +               return;
+> +
+> +       /* Allocate and register a new entry into the entries set */
+> +       entry = kzalloc(sizeof(*entry), GFP_KERNEL);
+> +       if (!entry) {
+> +               *ret = -ENOMEM;
+> +               return;
+> +       }
+> +
+> +       /* Set the key */
+> +       entry->dh = *dh;
+> +       entry->instance = instance_counts[dh->type]++;
+> +
+> +       entry->kobj.kset = dmi_kset;
+> +       *ret = kobject_init_and_add(&entry->kobj, &dmi_sysfs_entry_ktype, NULL,
+> +                                   "%d-%d", dh->type, entry->instance);
+> +
+> +       if (*ret) {
+> +               kfree(entry);
+> +               return;
+> +       }
+> +
+> +       /* Thread on the global list for cleanup */
+> +       spin_lock(&entry_list_lock);
+> +       list_add_tail(&entry->list, &entry_list);
+> +       spin_unlock(&entry_list_lock);
+> +
+> +       /* Create the raw binary file to access the entry */
+> +       *ret = sysfs_create_bin_file(&entry->kobj, &dmi_entry_raw_attr);
+> +       if (*ret)
+> +               goto out_err;
+> +
+> +       return;
+> +out_err:
+> +       kobject_put(&entry->kobj);
+> +       return;
+> +}
+> +
+> +static void cleanup_entry_list(void)
+> +{
+> +       struct dmi_sysfs_entry *entry, *next;
+> +
+> +       /* No locks, we are on our way out */
+> +       list_for_each_entry_safe(entry, next, &entry_list, list) {
+> +               kobject_put(&entry->kobj);
+> +       }
+> +}
+> +
+> +static int __init dmi_sysfs_init(void)
+> +{
+> +       int error = -ENOMEM;
+> +       int val;
+> +
+> +       /* Set up our directory */
+> +       dmi_kobj = kobject_create_and_add("dmi", firmware_kobj);
+> +       if (!dmi_kobj)
+> +               goto err;
+> +
+> +       dmi_kset = kset_create_and_add("entries", NULL, dmi_kobj);
+> +       if (!dmi_kset)
+> +               goto err;
+> +
+> +       val = 0;
+> +       error = dmi_walk(dmi_sysfs_register_handle, &val);
+> +       if (error)
+> +               goto err;
+> +       if (val) {
+> +               error = val;
+> +               goto err;
+> +       }
+> +
+> +       pr_info("dmi-sysfs: loaded.\n");
+> +
+> +       return 0;
+> +err:
+> +       cleanup_entry_list();
+> +       kset_unregister(dmi_kset);
+> +       kobject_put(dmi_kobj);
+> +       return error;
+> +}
+> +
+> +/* clean up everything. */
+> +static void __exit dmi_sysfs_exit(void)
+> +{
+> +       pr_info("dmi-sysfs: unloading.\n");
+> +       cleanup_entry_list();
+> +       kset_unregister(dmi_kset);
+> +       kobject_put(dmi_kobj);
+> +}
+> +
+> +module_init(dmi_sysfs_init);
+> +module_exit(dmi_sysfs_exit);
+> +
+> +MODULE_AUTHOR("Google, Inc.");
+> +MODULE_DESCRIPTION("DMI sysfs support");
+> +MODULE_LICENSE("GPL");
+>
+>
