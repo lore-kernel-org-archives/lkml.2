@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab1BVPgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 10:36:23 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:59076 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753919Ab1BVPgW (ORCPT
+	id S1754541Ab1BVPid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 10:38:33 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35695 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab1BVPib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 10:36:22 -0500
-Date: Tue, 22 Feb 2011 10:36:20 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jiri Slaby <jirislaby@gmail.com>
-cc: "Rafael J. Wysocki" <rjw@suse.com>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
-In-Reply-To: <4D6377B8.7080805@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1102221029100.1968-100000@iolanthe.rowland.org>
+	Tue, 22 Feb 2011 10:38:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=AyXQsz39i2qLHAnlwzjQ8DNKQwwDCtSQB6xZ4Wu/IpLKCgGML6ehwXexE5E6uOSyZG
+         14tbVTRg7ncgnmH10EWBwPv0LF/j7Gp2QfQ9bBbbPLR+gMlIBnnBpBlCJDAoY9bj+haf
+         9kC8q7oYxcofaIf3WmqM9asAIvgOuQNUU1XTw=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110221172756.GA27664@redhat.com>
+References: <1298299131-17695-1-git-send-email-dacohen@gmail.com>
+	<1298299131-17695-2-git-send-email-dacohen@gmail.com>
+	<1298303677.24121.1.camel@twins>
+	<AANLkTimOT6jNG3=TiRMJR0dgEQ6EHjcBPJ1ivCu3Wj5Q@mail.gmail.com>
+	<1298305245.24121.7.camel@twins>
+	<20110221172103.GA26225@redhat.com>
+	<20110221172756.GA27664@redhat.com>
+Date: Tue, 22 Feb 2011 17:38:29 +0200
+Message-ID: <AANLkTi=f+XMp0r77jbuq44uz9TfaOttm==JXdt-6RXrh@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] headers: fix circular dependency between
+ linux/sched.h and linux/wait.h
+From: David Cohen <dacohen@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, linux-omap@vger.kernel.org, linux-media@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Feb 2011, Jiri Slaby wrote:
+On Mon, Feb 21, 2011 at 7:27 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/21, Oleg Nesterov wrote:
+>>
+>> On 02/21, Peter Zijlstra wrote:
+>> >
+>> > afaict its needed because struct signal_struct and struct sighand_struct
+>> > include a wait_queue_head_t. The inclusion seems to come through
+>> > completion.h, but afaict we don't actually need to include completion.h
+>> > because all we have is a pointer to a completion, which is perfectly
+>> > fine with an incomplete type.
+>> >
+>> > This all would suggest we move the signal bits into their own header
+>> > (include/linux/signal.h already exists and seems inviting).
+>>
+>> Agreed, sched.h contatins a lot of garbage, including the signal bits.
+>>
+>> As for signal_struct in particular I am not really sure, it is just
+>> misnamed. It is in fact "struct process" or "struct thread_group". But
+>> dequeue_signal/etc should go into signal.h.
+>>
+>> The only problem, it is not clear how to test such a change.
+>
+> Ah. sched.h includes signal.h, the testing is not the problem.
 
-> On 02/04/2011 08:33 PM, Alan Stern wrote:
-> > On Fri, 4 Feb 2011, Jiri Slaby wrote:
-> > 
-> >>>> It seems to suffice... No hangs still. Should I enable pm_async back
-> >>>> again to confirm the issue is still present?
-> >>>
-> >>> Yes, please, it would be good to know for sure.
-> >>
-> >> Ok, confirmed right now :).
-> >>
-> >> I disabled pm_async for USB again. What do you suggest next?
-> > 
-> > What happens if you leave pm_async enabled but unplug all the USB 
-> > devices before suspending?  If there are any USB devices you can't 
-> > unplug, you can get an equivalent result by unconfiguring the root 
-> > hubs:
-> > 
-> > 	for a in /sys/bus/usb/devices/usb* ; do
-> > 		echo 0 >$a/bConfigurationValue
-> > 	done
-> 
-> This doesn't seem to help. The hang happened 3 times during the 2 weeks.
-> 
-> I have /etc/pm/sleep.d/99usb-debug with:
-> #!/bin/bash
-> 
-> send() {
->         for a in /sys/bus/usb/devices/usb* ; do
->                 echo $1 >$a/bConfigurationValue
->         done
-> }
-> 
-> case "$1" in
->         hibernate|suspend)
->                         send 0
->                 ;;
->         thaw|resume)
->                         send 1
->                 ;;
->         *)
->                 ;;
-> esac
-> 
-> exit 0
-> 
-> And it indeed properly enable/disable usb before/after suspend.
+If sched.h includes signal.h and we move wait_queue_head_t users to
+signal.h, it means signal.h should include wait.h and then it is a
+problem to include sched.h in wait.h.
 
-Strange indeed.  It's worth noting that the async stuff affects only
-the normal suspend and resume operations, not the late-suspend and
-early-resume operations.  This means that it all likelihood, the system
-crashes either before finishing the suspend or after doing a fair
-amount of the resume.  And yet that's not consistent with what you see
-on the screen.
+>
+> So, we can (at least) safely move some declarations.
 
-By the way, are you booting with no_console_suspend?  And do you do 
-"echo 8 >/proc/sys/kernel/printk" (or equivalently, Alt-SysRq-8) before 
-suspending?
+Safely, yes, but it won't solve the issue for TASK_* in wait.h.
 
-What about if you leave async enabled for all the USB devices _except_ 
-usb[1-N]?
+Br,
 
-Alan Stern
+David
 
+>
+> Oleg.
+>
+>
