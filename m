@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab1BVNEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 08:04:06 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51401 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab1BVNEE (ORCPT
+	id S1752200Ab1BVNMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 08:12:54 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45671 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab1BVNMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 08:04:04 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, djwong <djwong@us.ibm.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [RFC] block integrity: Fix write after checksum calculation problem
-References: <20110222020022.GH32261@tux1.beaverton.ibm.com> <4D634D8F.4070401@panasas.com> <20110222114222.GA24728@quack.suse.cz>
-In-reply-to: <20110222114222.GA24728@quack.suse.cz>
-Date: Tue, 22 Feb 2011 08:02:10 -0500
-Message-Id: <1298379714-sup-3015@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D63B3D6.008E:SCFMA4539814,ss=1,fgs=0
+	Tue, 22 Feb 2011 08:12:52 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Zhu2ZE-XKKUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=H1l2k1CEr8tsP529ZqkA:9 a=yFb-N5SNXuWir0OrBmSHiQXHKvUA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH] rt2x00: Use ops name instead of device name
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Cc: Felix Fietkau <nbd@openwrt.org>, Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>, abogani@texware.it
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 22 Feb 2011 08:12:48 -0500
+Message-ID: <1298380368.6140.1193.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ resend sorry if you get this twice ]
+Recently, someone complained that they see the PCI address of a device
+in the interrupts file instead of the device name.
 
-Excerpts from Jan Kara's message of 2011-02-22 06:42:22 -0500:
->   Hi Boaz,
-> 
-> On Mon 21-02-11 21:45:51, Boaz Harrosh wrote:
-> > On 02/21/2011 06:00 PM, Darrick J. Wong wrote:
-> > > Last summer there was a long thread entitled "Wrong DIF guard tag on ext2
-> > > write" (http://marc.info/?l=linux-scsi&m=127530531808556&w=2) that started a
-> > > discussion about how to deal with the situation where one program tells the
-> > > kernel to write a block to disk, the kernel computes the checksum of that data,
-> > > and then a second program begins writing to that same block before the disk HBA
-> > > can DMA the memory block, thereby causing the disk to complain about being sent
-> > > invalid checksums.
-> > 
-> > The brokenness is in ext2/3 if you'll use btrfs, xfs and I think late versions
-> > of ext4 it should work much better. (If you still have problems please report
-> > them, those FSs advertise stable pages write-out)
->   Do they? I've just checked ext4 and xfs and they don't seem to enforce
-> stable pages. They do lock the page (which implicitely happens in mm code
-> for any filesystem BTW) but this is not enough. You have to wait for
-> PageWriteback to get cleared and only btrfs does that.
->  
-> > This problem is easily fixed at the FS layer or even at VFS, by overriding mk_write
-> > and syncing with write-out for example by taking the page-lock. Currently each
-> > FS is to itself because in VFS it would force the behaviour on FSs that it does
-> > not make sense to.
->   Yes, it's easy to fix but at a performance cost for any application doing
-> frequent rewrites regardless whether integrity features are used or not.
-> And I don't think that's a good thing. I even remember someone measured the
-> hit last time this came up and it was rather noticeable.
+19:   73474106          0   IO-APIC-fasteoi   ata_piix, uhci_hcd:usb6, 0000:05:01.0
 
-Do you remember which workload this was?  I do remember someone
-mentioning a specific workload, but can't recall which one now.  fsx is
-definitely slower when we wait for writeback, but that's because it's
-all evil inside.
+>From lspci:
 
-> 
-> > Note that the proper solution does not copy any data, just forces the app to
-> > wait before changing write-out pages.
->   I think that's up for discussion. In fact what is going to be faster
-> depends pretty much on your system config. If you have enough CPU/RAM
-> bandwidth compared to storage speed, you're better of doing copying. If
-> you can barely saturate storage with your CPU/RAM, waiting is probably
-> better for you. 
-> 
-> Moreover if you do data copyout, you push the performance cost only on
-> users of the integrity feature which is nice. But on the other hand users
-> of integrity take the cost even if they are not doing rewrites.
-> 
-> A solution which is technically plausible and penalizing only rewrites
-> of data-integrity protected pages would be a use of shadow pages as Darrick
-> describes below. So I'd lean towards that long term. But for now I think
-> Darrick's solution is OK to make the integrity feature actually useful and
-> later someone can try something more clever.
+05:01.0 Network controller: RaLink RT2561/RT61 rev B 802.11g
+  Subsystem: D-Link System Inc AirPlus G DWL-G510 Wireless Network Adapter (Rev.C)
+  Flags: bus master, slow devsel, latency 32,
+  IRQ 19  Memory at f9100000 (32-bit, non-prefetchable) [size=32K]
+  Capabilities: <access denied>
+  Kernel driver in use: rt61pci
+  Kernel modules: rt61pci
 
-Rewrites in flight should be very rare though, and I think the bouncing
-is going to have a big impact on the intended workloads.  It's not just
-the cost of the copy, it's also the increased time as we beat on the
-page allocator.
+Investigating this, it seems to be the result of the pci_name() used in
+rt2x00pci_probe().
 
-We're working on adding stable pages to ext34 and other filesystems
-missing it.  When the work is done we can benchmark and decide on the
-tradeoffs.
+Since the struct rt2x00_ops records the module name for the device as
+well as the ops, it would make more sense to show that in the interrupt
+output instead.
 
--chris
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/drivers/net/wireless/rt2x00/rt2x00pci.c b/drivers/net/wireless/rt2x00/rt2x00pci.c
+index ace0b66..06575dc 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00pci.c
++++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
+@@ -284,7 +284,7 @@ int rt2x00pci_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
+ 	rt2x00dev->ops = ops;
+ 	rt2x00dev->hw = hw;
+ 	rt2x00dev->irq = pci_dev->irq;
+-	rt2x00dev->name = pci_name(pci_dev);
++	rt2x00dev->name = ops->name;
+ 
+ 	if (pci_is_pcie(pci_dev))
+ 		rt2x00_set_chip_intf(rt2x00dev, RT2X00_CHIP_INTF_PCIE);
+
+
