@@ -1,165 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab1BVBPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 20:15:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46158 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab1BVBPs convert rfc822-to-8bit (ORCPT
+	id S1752868Ab1BVBQw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 20:16:52 -0500
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:47236 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1BVBQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 20:15:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EL0ioE23vN5VJZ5GfXoJJZpk+44dB4qz07wS5mKQR8QBxqFb1upBd8Pi1uUDuQNjR3
-         0VOMdhSpIg3zH3N99tSxl6gwT8hwY0Rxim3YXOEGKpIt5W6FS4uvj5fmq0cJfopGAJI+
-         ik6H4eMp/1YZafuGDNWMH6kAGXes2KsoXQj+c=
+	Mon, 21 Feb 2011 20:16:51 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJadYk2rRN+J/2dsb2JhbACmQnOfVptshV4EhQ2HBoM7
+X-IronPort-AV: E=Sophos;i="4.62,203,1297036800"; 
+   d="scan'208";a="263353707"
+Message-ID: <4D630E79.7030106@cisco.com>
+Date: Mon, 21 Feb 2011 18:16:41 -0700
+From: David Ahern <daahern@cisco.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1298305510.3836.7.camel@jlt3.sipsolutions.net>
-References: <AANLkTi=OSZhT0OGN_3Jzw=zh1U_QjhB+vR8SxidM5Zge@mail.gmail.com>
-	<1298305510.3836.7.camel@jlt3.sipsolutions.net>
-Date: Tue, 22 Feb 2011 09:15:47 +0800
-Message-ID: <AANLkTik752Qyy9RTz4h_C=amyjm+EjmUzUc=TGt7S1EM@mail.gmail.com>
-Subject: Re: [2.6.38-rc5, patch] fix cfg80211_wext_siwfreq lock ordering...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: stable@kernel.org
-Cc: linux-wireless@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH 0/4] perf events: Add realtime clock event and timehist
+ option -v2
+References: <1298322150-15505-1-git-send-email-daahern@cisco.com> <20110221213740.GC3583@nowhere> <4D62DC21.4070407@cisco.com> <20110221215533.GD3583@nowhere> <4D62E2B0.1070607@cisco.com> <20110221222104.GE3583@nowhere>
+In-Reply-To: <20110221222104.GE3583@nowhere>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 February 2011 00:25, Johannes Berg <johannes@sipsolutions.net> wrote:
-> On Tue, 2011-02-22 at 00:11 +0800, Daniel J Blueman wrote:
->> I previously managed to reproduce a hang while scanning wireless
->> channels (reproducible with airodump-ng hopping channels); subsequent
->> lockdep instrumentation revealed a lock ordering issue [1].
->>
->> Without knowing the design intent, it looks like the locks should be
->> taken in reverse order; please comment.
->>
->> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
->>
->> --- [1]
->
-> Yeah, looks this way, thanks.
->
-> Acked-by: Johannes Berg <johannes@sipsolutions.net>
->
->> =======================================================
->> [ INFO: possible circular locking dependency detected ]
->> 2.6.38-rc5-341cd #4
->> -------------------------------------------------------
->> airodump-ng/15445 is trying to acquire lock:
->>  (&rdev->devlist_mtx){+.+.+.}, at: [<ffffffff816b1266>]
->> cfg80211_wext_siwfreq+0xc6/0x100
->>
->> but task is already holding lock:
->>  (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>] cfg80211_wext_siwfreq+0xbc/0x100
->>
->> which lock already depends on the new lock.
->>
->> the existing dependency chain (in reverse order) is:
->>
->> -> #1 (&wdev->mtx){+.+.+.}:
->>        [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
->>        [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
->>        [<ffffffff81696080>] cfg80211_netdev_notifier_call+0x430/0x5f0
->>        [<ffffffff8109351b>] notifier_call_chain+0x8b/0x100
->>        [<ffffffff810935b1>] raw_notifier_call_chain+0x11/0x20
->>        [<ffffffff81576d92>] call_netdevice_notifiers+0x32/0x60
->>        [<ffffffff815771a4>] __dev_notify_flags+0x34/0x80
->>        [<ffffffff81577230>] dev_change_flags+0x40/0x70
->>        [<ffffffff8158587c>] do_setlink+0x1fc/0x8d0
->>        [<ffffffff81586042>] rtnl_setlink+0xf2/0x140
->>        [<ffffffff81586923>] rtnetlink_rcv_msg+0x163/0x270
->>        [<ffffffff8159d741>] netlink_rcv_skb+0xa1/0xd0
->>        [<ffffffff815867b0>] rtnetlink_rcv+0x20/0x30
->>        [<ffffffff8159d39a>] netlink_unicast+0x2ba/0x300
->>        [<ffffffff8159dd57>] netlink_sendmsg+0x267/0x3e0
->>        [<ffffffff8155e364>] sock_sendmsg+0xe4/0x110
->>        [<ffffffff8155f3a3>] sys_sendmsg+0x253/0x3b0
->>        [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
->>
->> -> #0 (&rdev->devlist_mtx){+.+.+.}:
->>        [<ffffffff810a7222>] __lock_acquire+0x1622/0x1d10
->>        [<ffffffff810a79d6>] lock_acquire+0xc6/0x280
->>        [<ffffffff816d6bce>] mutex_lock_nested+0x6e/0x4b0
->>        [<ffffffff816b1266>] cfg80211_wext_siwfreq+0xc6/0x100
->>        [<ffffffff816b2fad>] ioctl_standard_call+0x5d/0xd0
->>        [<ffffffff816b3223>] T.808+0x163/0x170
->>        [<ffffffff816b326a>] wext_handle_ioctl+0x3a/0x90
->>        [<ffffffff815798d2>] dev_ioctl+0x6f2/0x830
->>        [<ffffffff8155cf3d>] sock_ioctl+0xfd/0x290
->>        [<ffffffff8117dffd>] do_vfs_ioctl+0x9d/0x590
->>        [<ffffffff8117e53a>] sys_ioctl+0x4a/0x80
->>        [<ffffffff81003192>] system_call_fastpath+0x16/0x1b
->>
->> other info that might help us debug this:
->>
->> 2 locks held by airodump-ng/15445:
->>  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81586782>] rtnl_lock+0x12/0x20
->>  #1:  (&wdev->mtx){+.+.+.}, at: [<ffffffff816b125c>]
->> cfg80211_wext_siwfreq+0xbc/0x100
->>
->> stack backtrace:
->> Pid: 15445, comm: airodump-ng Not tainted 2.6.38-rc5-341cd #4
->> Call Trace:
->>  [<ffffffff810a3f0a>] ? print_circular_bug+0xfa/0x100
->>  [<ffffffff810a7222>] ? __lock_acquire+0x1622/0x1d10
->>  [<ffffffff810a1f99>] ? trace_hardirqs_off_caller+0x29/0xc0
->>  [<ffffffff810a79d6>] ? lock_acquire+0xc6/0x280
->>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
->>  [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
->>  [<ffffffff816d6bce>] ? mutex_lock_nested+0x6e/0x4b0
->>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
->>  [<ffffffff810a31d7>] ? mark_held_locks+0x67/0x90
->>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
->>  [<ffffffff816b1266>] ? cfg80211_wext_siwfreq+0xc6/0x100
->>  [<ffffffff816b2fad>] ? ioctl_standard_call+0x5d/0xd0
->>  [<ffffffff8157818b>] ? __dev_get_by_name+0x9b/0xc0
->>  [<ffffffff816b2f50>] ? ioctl_standard_call+0x0/0xd0
->>  [<ffffffff816b3223>] ? T.808+0x163/0x170
->>  [<ffffffff8112ddf2>] ? might_fault+0x72/0xd0
->>  [<ffffffff816b326a>] ? wext_handle_ioctl+0x3a/0x90
->>  [<ffffffff8112de3b>] ? might_fault+0xbb/0xd0
->>  [<ffffffff815798d2>] ? dev_ioctl+0x6f2/0x830
->>  [<ffffffff810a1bae>] ? put_lock_stats+0xe/0x40
->>  [<ffffffff810a1c8c>] ? lock_release_holdtime+0xac/0x150
->>  [<ffffffff8155cf3d>] ? sock_ioctl+0xfd/0x290
->>  [<ffffffff8117dffd>] ? do_vfs_ioctl+0x9d/0x590
->>  [<ffffffff8116c8ff>] ? fget_light+0x1df/0x3c0
->>  [<ffffffff8117e53a>] ? sys_ioctl+0x4a/0x80
->>  [<ffffffff81003192>] ? system_call_fastpath+0x16/0x1b
->>
->> --- [2]
->>
->> diff --git a/net/wireless/wext-compat.c b/net/wireless/wext-compat.c
->> index 3e5dbd4..d112f03 100644
->> --- a/net/wireless/wext-compat.c
->> +++ b/net/wireless/wext-compat.c
->> @@ -802,11 +802,11 @@ int cfg80211_wext_siwfreq(struct net_device *dev,
->>                       return freq;
->>               if (freq == 0)
->>                       return -EINVAL;
->> -             wdev_lock(wdev);
->>               mutex_lock(&rdev->devlist_mtx);
->> +             wdev_lock(wdev);
->>               err = cfg80211_set_freq(rdev, wdev, freq, NL80211_CHAN_NO_HT);
->> -             mutex_unlock(&rdev->devlist_mtx);
->>               wdev_unlock(wdev);
->> +             mutex_unlock(&rdev->devlist_mtx);
->>               return err;
->>       default:
->>               return -EOPNOTSUPP;
 
-Please consider for -stable. This patch resolves the lock ordering
-case my test exposed, and passes lockdep and extended testing.
 
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
+On 02/21/11 15:21, Frederic Weisbecker wrote:
+>> All of the changes to perf-report are related strictly to this feature -
+>> generating the timestamp and printing the sample including walking the
+>> callchain.
+> 
+> This is the actual drawback: it's only useful for your feature. My wish
+> is to have something more broadly useful. And support for callchains or
+> other things like this in perf script is desired and has been requested
+> by the past.
+
+I don't agree with the conclusion. The ability to take a realtime-clock
+sample + a perf_clock time stamps and prepend it to a dump of perf
+samples is not limited to perf-report. To date, it's the only command
+setup to use it - or maybe a better phrasing is that it is the command I
+most use today.
+
+perf-script is new. I created this timehist patch back in August and
+submitted it to linux-perf-users at the end of November. The version I
+sent today is the 3rd incarnation.
+
+If it is a question of code location then I can move the function
+additions from builtin-report.c to util/timehist.c. Then as other
+commands are ready they can pick it up.
+
+> 
+>> perf-script needs to have features added to it:
+>>   1. working with all samples,
+> 
+> Why do you need that? You seem to be only interested in tracepoint
+> events.
+
+I am *not* interested in tracepoints at all -- at least so far. I have
+rarely used them, mainly just trying out the options to see what is
+available and how much data comes pouring in. (tracepoints are not
+available on the kernel version we use.)
+
+Rather, I have been focused on the S/W events such as the context-switch
+event and H/W counters. In fact, one request I have received on my end
+is for a time history of H/W counters - record periodically during
+specific tests and dump the samples with timestamps.
+
+> 
+> Sure I would appreciate that perf script can support any event as a bonus
+> but that doesn't seem mandatory here.
+> 
+>>   2. support for callchains,
+> 
+> What does it take more than what you did in perf report, namely
+> calling perf_session_resolve_callchain and walking the cursor?
+
+It's not rocket science, nonetheless its code that needs to be brought
+into perf-script.
+
+
+> 
+>>   3. more?
+> 
+> ?
+
+There always seems to be unexpected gotchas that have to be dealt with.
+
+
+David
