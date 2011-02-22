@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab1BVMcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 07:32:39 -0500
-Received: from smtprelay05.ispgateway.de ([80.67.31.99]:44050 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab1BVMci (ORCPT
+	id S1752015Ab1BVMcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 07:32:48 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:37337 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751833Ab1BVMcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 07:32:38 -0500
-Message-ID: <4D63AD35.6050808@ladisch.de>
-Date: Tue, 22 Feb 2011 13:33:57 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Tue, 22 Feb 2011 07:32:45 -0500
 MIME-Version: 1.0
-To: "Schaefer Dr, Frank-Rene ()" <fschaef9@visteon.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Interrupt Latencies
-References: <060E4307CE6CA14BB4F7B4A25ECA052904B73AD1@VEUMBV03.vistcorp.ad.visteon.com>
-In-Reply-To: <060E4307CE6CA14BB4F7B4A25ECA052904B73AD1@VEUMBV03.vistcorp.ad.visteon.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+In-Reply-To: <20110221202538.GK9650@tuxdriver.com>
+References: <20110217162650.092e77c3.sfr@canb.auug.org.au>
+	<20110218172536.970b5b39.randy.dunlap@oracle.com>
+	<20110221202538.GK9650@tuxdriver.com>
+Date: Tue, 22 Feb 2011 14:32:40 +0200
+Message-ID: <AANLkTi=M77+wuEa1Dc-+vA_-caY9p1Ft_5s4aQ7CDSjQ@mail.gmail.com>
+Subject: Re: [PATCH -next] wl12xx: fix sdio_test kconfig/build errors
+From: "Coelho, Luciano" <coelho@ti.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Luciano Coelho <luciano.coelho@nokia.com>,
+        Roger Quadros <roger.quadros@nokia.com>,
+        akpm <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Schaefer Dr, Frank-Rene wrote:
-> Having read "Moving interrupts to threads" at
-> 
->            http://lwn.net/Articles/302043/
-> 
-> I expected to reduce interrupt latency during a SPI
-> communication by handling the transmit-receive in a
-> 'quick_check_handler' using
-> 
->            request_threaded_irq(...);
-> 
-> However, the difference in latency to "request_irq(...)"
-> is not measurable.
+On Mon, Feb 21, 2011 at 10:25 PM, John W. Linville
+<linville@tuxdriver.com> wrote:
+> Luca, I'm merging this one...
 
-Threaded interrupts reduce the latency for _other_ interrupts because
-most of the code has been moved into the thread.  Without threaded
-interrupts, the same could would be in the actual interrupt handler
-(the equivalent of the quick check handler).
+Thanks, John!
 
-> It is totally incomprehensible to me why the 'quick_check_handler'
-> must have a latency of 60us at min. (that are many thousand
-> instructions).
-
-The sytem's interrupt handling and the I/O accesses aren't fast.
-Furthermore, waking the CPU up, or changing its frequency, can be quite
-slow (but I don't know how much in the case of your Atom).  You could
-try reducing the interrupt latency by not letting the CPU get idle but
-executing some low-priority busy loop.
-
-
-Regards,
-Clemens
+-- 
+Cheers,
+Luca.
