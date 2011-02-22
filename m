@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab1BVSXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 13:23:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48590 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab1BVSXR (ORCPT
+	id S1755134Ab1BVSYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 13:24:16 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:55239 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755084Ab1BVSYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 13:23:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZPlzq/wo10ItobWBxkkRHUognz7rkgn70TcMotg7gcn6l9M9bZmYt08uVnoGyhUQcn
-         M7i8lBojTWN39VunCnebaAI9s2l02yElk6vfdCfvsdZArbONunAYgZUpb+TQtn7MpH0J
-         X3Y75tDUvtaXwRodjnMNX/iYDOXxAQiH7vZQc=
-Date: Tue, 22 Feb 2011 19:22:09 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf lock: clean the options for perf record
-Message-ID: <20110222182206.GB1799@nowhere>
-References: <1298388507-19774-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
- <4D63D685.2010401@dcl.info.waseda.ac.jp>
- <1298389415.2217.243.camel@twins>
-MIME-Version: 1.0
+	Tue, 22 Feb 2011 13:24:15 -0500
+Date: Tue, 22 Feb 2011 19:24:14 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, aarcange@redhat.com,
+        lwoodman@redhat.com, Andi Kleen <ak@linux.intel.com>,
+        arcange@redhat.com
+Subject: Re: [PATCH 3/8] Preserve local node for KSM copies
+Message-ID: <20110222182414.GA5818@one.firstfloor.org>
+References: <1298315270-10434-1-git-send-email-andi@firstfloor.org> <1298315270-10434-4-git-send-email-andi@firstfloor.org> <alpine.DEB.2.00.1102220945210.16060@router.home>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1298389415.2217.243.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1102220945210.16060@router.home>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 22, 2011 at 04:43:35PM +0100, Peter Zijlstra wrote:
-> On Wed, 2011-02-23 at 00:30 +0900, Hitoshi Mitake wrote:
-> > How do you think about it?
+On Tue, Feb 22, 2011 at 09:47:26AM -0600, Christoph Lameter wrote:
+> On Mon, 21 Feb 2011, Andi Kleen wrote:
 > 
-> Most of the lock code (esp the spinlock stuff) is already way over the
-> threshold of sanity, adding to that for some dubious reasons doesn't
-> seem like a good idea.
+> > Add a alloc_page_vma_node that allows passing the "local" node in.
+> > Use it in ksm to allocate copy pages on the same node as
+> > the original as possible.
 > 
-> I'm still not at all sure why people want all this lock tracing.
+> Why would that be useful? The shared page could be on a node that is not
+> near the process that maps the page. Would it not be better to allocate on
+> the node that is local to the process that maps the page?
 
-Right, well I can imagine many usecases that could make lock
-tracing bring more value than what lockstat already provides,
-through a tool like perf lock if we enhance it.
+Either could be wrong, but not moving the mappings seems most deterministic
+to me. At least one of the processes (whoever allocated the page first) 
+will stay with its local memory.
 
-We should probably first focus on developing the tooling side
-and make it useful enough that optimizations in the kernel
-side become desirable.
+Also the alloc_page_vma_node() call is used for THP too. I guess i should
+split it out.
+
+-Andi
