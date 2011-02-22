@@ -1,154 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab1BVKYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 05:24:20 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59568 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab1BVKYT (ORCPT
+	id S1753165Ab1BVK1x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 05:27:53 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33415 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab1BVK1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 05:24:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AunR+WV6Uro8Uakwi+pwYJDI/EOJa9Ax785zCiZv+YBhWmsaDkFDXV9j1JfTwtRYT/
-         NHvIZIHoXCggjIjqDlDph0t551khC848BY9lfiNnlTAjk//kumi4jV5tT0UUIB2Li/dy
-         iwbZimgnDpWCzpgcrAuzyZLDm1mEraXZ4+qvY=
-Date: Tue, 22 Feb 2011 11:23:57 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH] x86-64, NUMA: Seperate out numa_alloc_distance() from
- numa_set_distance()
-Message-ID: <20110222102357.GW31267@htj.dyndns.org>
-References: <4D5EC05A.60103@kernel.org>
- <4D5EC19A.9030808@kernel.org>
- <20110221104803.GK31267@htj.dyndns.org>
- <4D62A2A4.7060701@kernel.org>
+	Tue, 22 Feb 2011 05:27:52 -0500
+Date: Tue, 22 Feb 2011 15:58:12 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>
+Subject: Re: [CFS Bandwidth Control v4 0/7] Introduction
+Message-ID: <20110222102812.GA9545@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <20110216031831.571628191@google.com>
+ <4D61D230.907@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D62A2A4.7060701@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D61D230.907@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alloc code is much bigger the distance setting.  Separate it out into
-numa_alloc_distance() for readability.
+On Mon, Feb 21, 2011 at 10:47:12AM +0800, Xiao Guangrong wrote:
+> On 02/16/2011 11:18 AM, Paul Turner wrote:
+> > Hi all,
+> > 
+> > Please find attached v4 of CFS bandwidth control; while this rebase against
+> > some of the latest SCHED_NORMAL code is new, the features and methodology are
+> > fairly mature at this point and have proved both effective and stable for
+> > several workloads.
+> > 
+> > As always, all comments/feedback welcome.
+> > 
+> 
+> Hi Paul,
+> 
+> Thanks for the great features!
+> 
+> I applied the patchset to kvm tree, then tested with kvm guest, unfortunately,
+> it seems don't work normally. 
+> 
+> The steps is follow:
+> 
+> # mount -t cgroup -o cpu none /mnt/
+> # qemu-system-x86_64 -enable-kvm  -smp 4 -m 512M -drive file=fc64.img,index=0,media=disk
+> 
+> Don't do any configuration in cgroup, and run the kvm guest directly (don't use libvirt),
+> the guest booted very slowly and i saw some "soft lockup" bugs reported in the guest,
+> i also noticed one CPU usage is 100% for more than 60s and other CPUs is 10%~30% in the host
+> when guest was booting.
+> 
+> And if cgroup is not mounted, the guest runs well.
+> 
 
--v2: Let alloc_numa_distance to return -ENOMEM on failing path,
-     requested by tj.
+Hi Xiao Guangrong,
 
--tj: Description update.  Minor tweaks including function name,
-     location and return value check.
+Thanks for testing the patches. I do see some soft lockups in the
+guest when I mount the cgroup and start VM using qemu-kvm.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Applied to x86-numa with minor tweaks.  Thanks.
+Will get back after further investigation.
 
- arch/x86/mm/numa_64.c |   75 ++++++++++++++++++++++++++-----------------------
- 1 files changed, 40 insertions(+), 35 deletions(-)
-
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 848381b..cccc01d 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -401,6 +401,44 @@ void __init numa_reset_distance(void)
- 	numa_distance = NULL;
- }
- 
-+static int __init numa_alloc_distance(void)
-+{
-+	nodemask_t nodes_parsed;
-+	size_t size;
-+	int i, j, cnt = 0;
-+	u64 phys;
-+
-+	/* size the new table and allocate it */
-+	nodes_parsed = numa_nodes_parsed;
-+	numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
-+
-+	for_each_node_mask(i, nodes_parsed)
-+		cnt = i;
-+	size = ++cnt * sizeof(numa_distance[0]);
-+
-+	phys = memblock_find_in_range(0, (u64)max_pfn_mapped << PAGE_SHIFT,
-+				      size, PAGE_SIZE);
-+	if (phys == MEMBLOCK_ERROR) {
-+		pr_warning("NUMA: Warning: can't allocate distance table!\n");
-+		/* don't retry until explicitly reset */
-+		numa_distance = (void *)1LU;
-+		return -ENOMEM;
-+	}
-+	memblock_x86_reserve_range(phys, phys + size, "NUMA DIST");
-+
-+	numa_distance = __va(phys);
-+	numa_distance_cnt = cnt;
-+
-+	/* fill with the default distances */
-+	for (i = 0; i < cnt; i++)
-+		for (j = 0; j < cnt; j++)
-+			numa_distance[i * cnt + j] = i == j ?
-+				LOCAL_DISTANCE : REMOTE_DISTANCE;
-+	printk(KERN_DEBUG "NUMA: Initialized distance table, cnt=%d\n", cnt);
-+
-+	return 0;
-+}
-+
- /**
-  * numa_set_distance - Set NUMA distance from one NUMA to another
-  * @from: the 'from' node to set distance
-@@ -413,41 +451,8 @@ void __init numa_reset_distance(void)
-  */
- void __init numa_set_distance(int from, int to, int distance)
- {
--	if (!numa_distance) {
--		nodemask_t nodes_parsed;
--		size_t size;
--		int i, j, cnt = 0;
--		u64 phys;
--
--		/* size the new table and allocate it */
--		nodes_parsed = numa_nodes_parsed;
--		numa_nodemask_from_meminfo(&nodes_parsed, &numa_meminfo);
--
--		for_each_node_mask(i, nodes_parsed)
--			cnt = i;
--		size = ++cnt * sizeof(numa_distance[0]);
--
--		phys = memblock_find_in_range(0,
--					      (u64)max_pfn_mapped << PAGE_SHIFT,
--					      size, PAGE_SIZE);
--		if (phys == MEMBLOCK_ERROR) {
--			pr_warning("NUMA: Warning: can't allocate distance table!\n");
--			/* don't retry until explicitly reset */
--			numa_distance = (void *)1LU;
--			return;
--		}
--		memblock_x86_reserve_range(phys, phys + size, "NUMA DIST");
--
--		numa_distance = __va(phys);
--		numa_distance_cnt = cnt;
--
--		/* fill with the default distances */
--		for (i = 0; i < cnt; i++)
--			for (j = 0; j < cnt; j++)
--				numa_distance[i * cnt + j] = i == j ?
--					LOCAL_DISTANCE : REMOTE_DISTANCE;
--		printk(KERN_DEBUG "NUMA: Initialized distance table, cnt=%d\n", cnt);
--	}
-+	if (!numa_distance && numa_alloc_distance() < 0)
-+		return;
- 
- 	if (from >= numa_distance_cnt || to >= numa_distance_cnt) {
- 		printk_once(KERN_DEBUG "NUMA: Debug: distance out of bound, from=%d to=%d distance=%d\n",
--- 
-1.7.1
-
+Regards,
+Bharata.
