@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab1BVDj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Feb 2011 22:39:58 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:59094 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab1BVDj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Feb 2011 22:39:57 -0500
-Message-ID: <96f4040e154c151ce996b4afdaf42d5f.squirrel@webmail.greenhost.nl>
-In-Reply-To: <8a955ec5ebee88511413424fdcaf85c4.squirrel@webmail.greenhost.nl>
-References: <8a955ec5ebee88511413424fdcaf85c4.squirrel@webmail.greenhost.nl>
-Date: Tue, 22 Feb 2011 04:39:55 +0100 (CET)
-Subject: Re: [BUG] drm/i915 Screen corruption introduced by      
-     a00b10c360b35d6431a94cb
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Indan Zupancic" <indan@nul.nu>
-Cc: "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "LKML" <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: 2ecd0b53b7de9511489f92806276a3d7
+	id S1753547Ab1BVDxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Feb 2011 22:53:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31963 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab1BVDxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Feb 2011 22:53:45 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Cc: neilb@suse.de, sergey.senozhatsky@gmail.com, tj@kernel.org,
+        jmoyer@redhat.com, snitzer@redhat.com
+Subject: [PATCH 0/3] [RFC] block: Enforce that ->queue_lock is initialized during call to blk_cleanup_queue()
+Date: Mon, 21 Feb 2011 22:53:34 -0500
+Message-Id: <1298346817-26144-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, February 22, 2011 04:25, Indan Zupancic wrote:
-> Hi,
->
-> On Sun, February 20, 2011 14:21, Daniel Vetter wrote:
->> Well, don't start jumping around, yet. These patches are just to rule out
->> some theories. Now: Is it fixed with just the 2nd patch alone or do you need both
->> patches? This is very important, so please test extensively whether there are really
->> no corruptions with just the 2nd patch.
->
-> I managed to create some corruption with an xterm above xpdf. It looks  different
-> than the original corruption, so I think it's safe to say it's a different bug:
->
-> http://img593.imageshack.us/i/ss1298340823.png
-> http://img203.imageshack.us/i/ss1298340776.png
->
-> This was without xcompmgr running, I don't think I would have seen it otherwise.
-> Actually, it turns out it's really easy to trigger as well, so I can more easily
-> test patches now. Unfortunately I wasn't smart enough to store the bisecting kernels,
-> gah!
->
-> I tried with both your patches, as well as the HIC poking patch, but I still get it.
->
-> I'll try to pinpoint more exactly when this started to happen.
+Hi All,
 
-Okay, I tried older kernels and I get it even with 2.6.34, so I think it's a bug
-in userspace, like intel-dri, or perhaps the intel X driver (though I get the same
-with an older version).
+Currently it is not clear what's the status of ->queue_lock when
+blk_cleanup_queue() is called. Now block throttle code (blk_throtl_exit())
+requires queue lock to be initialized as it takes the spin lock, so we need
+some kind of clear convention that when is it safe to assume that queue lock
+is initiliazed and blk_throtle_exit() can be called safely.
 
-Greetings,
+We recently ran into issues with loop driver which was trying to free
+up queue almost immediately after block_alloc_queue() due to some internal
+errors. Also NeilBrown complained that in current form, md provides its
+own spinlock and zaps that before blk_cleanup_queue() call and that will
+have issues with throttling code. Neil has not fixed the issue with
+md driver and queued up a patch in this tree.
 
-Indan
+So there is a need to make sure blk_throtl_exit() can be called safely
+and to also catch any errors if some drivers are not doing so. This
+patch series puts a WARN_ON(!q->queue_lock) in blk_cleanup_queue() and
+moves the queue lock initialization in queue allocation code. Also it
+move blk_throtl_exit() from release_queue() to cleanup_queue().
 
+These pathes are only boot tested on one machine. Before I do more
+extensive testing, I wanted to throw it out there and figure out
+if it makes sense or not.
+
+Thanks
+Vivek
+
+Vivek Goyal (3):
+  block: Initialize ->queue_lock to internal lock at queue allocation
+    time
+  loop: No need to initialize ->queue_lock explicitly before calling
+    blk_cleanup_queue()
+  block: Move blk_throtl_exit() call to blk_cleanup_queue()
+
+ block/blk-core.c       |   26 ++++++++++++++++++++++++--
+ block/blk-settings.c   |    7 -------
+ block/blk-sysfs.c      |    2 --
+ block/blk-throttle.c   |    2 +-
+ drivers/block/loop.c   |    3 ---
+ include/linux/blkdev.h |    2 --
+ 6 files changed, 25 insertions(+), 17 deletions(-)
 
