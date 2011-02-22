@@ -1,92 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab1BVUXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 15:23:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31177 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab1BVUW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 15:22:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.62,207,1297065600"; 
-   d="scan'208";a="605435592"
-Subject: Re: [PATCH 09/12] n_tracesink header file.
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-Reply-To: james_p_freyensee@linux.intel.com
-To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
-In-Reply-To: <20110217214348.GA2193@kroah.com>
-References: <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-9-git-send-email-james_p_freyensee@linux.intel.com>
-	 <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com>
-	 <20110217192300.GD29448@kroah.com> <1297971915.3038.32.camel@localhost>
-	 <20110217195400.GB12172@kroah.com> <1297973447.3038.36.camel@localhost>
-	 <20110217214348.GA2193@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 22 Feb 2011 12:22:58 -0800
-Message-ID: <1298406178.2315.7.camel@localhost>
+	id S1752306Ab1BVUXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 15:23:08 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:55443 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab1BVUXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 15:23:03 -0500
+Subject: Re: [rtc-linux] [PATCH 04/10] RTC: Cleanup
+ rtc_class_ops->read_alarm()
+From: john stultz <johnstul@us.ibm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+In-Reply-To: <20110222200046.GD31611@opensource.wolfsonmicro.com>
+References: <1298332538-31216-1-git-send-email-john.stultz@linaro.org>
+	 <1298332538-31216-5-git-send-email-john.stultz@linaro.org>
+	 <20110222023452.GB18299@sirena.org.uk> <1298343333.4222.36.camel@work-vm>
+	 <1298362178.4222.57.camel@work-vm>
+	 <20110222181647.GA25569@opensource.wolfsonmicro.com>
+	 <1298404268.9215.39.camel@work-vm>
+	 <20110222200046.GD31611@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Feb 2011 12:22:54 -0800
+Message-ID: <1298406174.9215.71.camel@work-vm>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-17 at 13:43 -0800, Greg KH wrote:
-> On Thu, Feb 17, 2011 at 12:10:47PM -0800, J Freyensee wrote:
-> > On Thu, 2011-02-17 at 11:54 -0800, Greg KH wrote:
-> > > On Thu, Feb 17, 2011 at 11:45:15AM -0800, J Freyensee wrote:
-> > > > On Thu, 2011-02-17 at 11:23 -0800, Greg KH wrote:
-> > > > > On Tue, Feb 08, 2011 at 11:34:54AM -0800, james_p_freyensee@linux.intel.com wrote:
-> > > > > > From: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > > > > 
-> > > > > > This header file allows the n_tracerouter to send it's information
-> > > > > > to the n_tracesink ldisc driver.  It's part of the Intel-Atom
-> > > > > > PTI implementation solution.
-> > > > > > 
-> > > > > > Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
-> > > > > > ---
-> > > > > >  include/linux/n_tracesink.h |   32 ++++++++++++++++++++++++++++++++
-> > > > > 
-> > > > > Why is this in include/linux/ ?
-> > > > > 
-> > > > 
-> > > > I thought this was the best place to stick this .h file.  I'd be happy
-> > > > to change locations based off of your suggestion.
-> > > 
-> > > Why do you need a .h file at all?  Who is using it?
-> > 
-> > The only current module that really uses it is n_tracerouter; however, I
-> > thought sticking this in a .h file made things slightly more modular and
-> > more re-usable, especially for future device driver writers that could
-> > want something like this.
-> > 
-> > If you would like me to remove this though, I can, just let me know.
+On Tue, 2011-02-22 at 20:00 +0000, Mark Brown wrote:
+> On Tue, Feb 22, 2011 at 11:51:08AM -0800, john stultz wrote:
+> > On Tue, 2011-02-22 at 10:16 -0800, Mark Brown wrote:
 > 
-> Yes, please remove it.
+> > > The WM83xx RTCs can do this (the alarm can be used to initiate a boot)
+> > > and I'd expect many embedded RTC controllers can do similar.  The
+> > > application would manage this by owning the RTC in the system, usually
+> > > with a configuration saying something like "boot every day at 7am" or
+> > > something.
 > 
-Greg,
-
-If I remove this file I need to add the function header
-n_tracesink_datadrain() that is in this file to n_tracerouter.c.
-
-If I add that function header to n_tracerouter.c then checkpatch.pl
-complains that extern should be avoided in .c files.
-
-If I don't have this function header in n_tracerouter.c then it won't
-compile at all.
-
-Do you have an alternative suggestion on what I should do here?  It
-appears the best solution is for me to keep this .h file considering the
-constraints.
-
-Thanks,
-Jay
-
-> thanks,
+> > So since the RTC_ALM_SET doesn't support wildcards, the application
+> > would be checking the hardware at least once a day and making sure the
+> > alarm was properly set for 7am?
 > 
-> greg k-h
+> Probably, yes.  Though some RTCs just ignore the day anyway.
+> 
+> > Does the approach I mentioned in my last mail to Marcelo sound like a
+> > reasonable solution?
+> 
+> > Basically: The kernel will try to init the value returned from
+> > RTC_ALM_READ to whatever the hardware has stored, but since many (very
+> > common) rtc devices don't support persistent values after reset,
+> > applications shouldn't trust that alarms will persist across resets.
+> 
+> That'll probably work, yes.
+
+Good to hear!  Thanks again for bringing this issue up. 
+
+
+> > > Having thought about this a bit I'm thinking that this sort of alarm
+> > > handling is probably something I'd expect to see handled in userspace.
+> > > I can see us providing a virtual RTC driver that can generate alarms
+> > > when there's no actual RTC hardware but adding additional functionality
+> > > on top of the hardware feels like an application issue.
+> 
+> > If you're suggesting that the multiplexing of RTC events doesn't belong
+> > in the kernel, and instead should be handled through userland
+> > coordination, then I disagree. The kernel's job is explicitly to
+> > abstract the hardware so that resources can be shared safely. So
+> > abstracting the RTC alarms doesn't seem to be overreaching. But maybe
+> > I'm misunderstanding what your saying?
+> 
+> I'm saying that for something like this it doesn't seem like the kernel
+> should be adding support for features that the hardware doesn't actually
+> have, it feels like it's going to be more complicated and error prone to
+> implement in kernel space.
+
+So yes, its a little split here.  On one hand, if the hardware doesn't
+support alarms, we don't pretend it does. 
+
+On the other, we have to preserve the existing behavior, so some things
+had to be emulated. For example, I wouldn't have exposed the periodic
+irq mode to userland. It simply duplicates existing functionality in the
+kernel (ie: periodic timers). But since it has been exposed, to keep
+compatibility I ended up emulating it using the kernel functionality it
+duplicates.
+
+In some ways it does complicate things, but in others it greatly
+simplifies it. You don't have to have 80 drivers each implementing their
+own code to set a mode that isn't used. Everyone is using the common
+kernel code, so bugs are shared and thus found and fixed faster.
+Features can be more easily added, as the limitations of specific
+hardware have to be more formally expressed, rather then having to
+change 80 drivers that opaquely work around their specific hardware
+issues. Also, applications are easier to port, since there are less
+platform specific differences.
+
+I do agree that its not always optimal, but sometimes it is necessary if
+we want to overcome the limits of earlier design decisions without
+breaking applications.
+
+thanks
+-john
 
 
