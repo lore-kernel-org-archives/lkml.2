@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab1BVPpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 10:45:08 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58802 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754314Ab1BVPpG (ORCPT
+	id S1754600Ab1BVPrE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 10:47:04 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:44587 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754266Ab1BVPrC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 10:45:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=e136HVmBNjDGosJNAb6Ohe/bXTN64Ru7P+vNJjvomZST1kVH2xZlfQRK5YeClSt5Jh
-         1nCiVITN7Y3357vUBoG+CefgkHK8gQOlC8rt80Tccpys0p8wHo+PGesX2963Lpb2iC/F
-         OhfoHNtaIGpeYCCLwh5wGAdWPuBfXEukUgcP8=
-Message-ID: <4D63D9FD.1080101@lwfinger.net>
-Date: Tue, 22 Feb 2011 09:45:01 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, George <george0505@realtek.com>
-Subject: Re: linux-next: build failure after merge of the final tree (wireless
- tree related)
-References: <20110222181519.7a020eb3.sfr@canb.auug.org.au>
-In-Reply-To: <20110222181519.7a020eb3.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Feb 2011 10:47:02 -0500
+Subject: Re: [PATCH 3/6] Add support to the perf tool to specify extra
+ values for raw events and pass them to the kernel.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110220211740.GU5818@one.firstfloor.org>
+References: <1298221040.2318.68.camel@localhost>
+	 <20110220211740.GU5818@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 22 Feb 2011 16:46:49 +0100
+Message-ID: <1298389609.2217.250.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 01:15 AM, Stephen Rothwell wrote:
-> Hi all,
+On Sun, 2011-02-20 at 22:17 +0100, Andi Kleen wrote:
+> On Mon, Feb 21, 2011 at 12:57:20AM +0800, Lin Ming wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > The new format is -e rXXXX[,YYYY]
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/net/wireless/rtlwifi/rtl8192cu/sw.c: In function 'rtl92cu_init_sw_vars':
-> drivers/net/wireless/rtlwifi/rtl8192cu/sw.c:60: error: implicit declaration of function 'vmalloc'
-> drivers/net/wireless/rtlwifi/rtl8192cu/sw.c:60: warning: assignment makes pointer from integer without a cast
-> drivers/net/wireless/rtlwifi/rtl8192cu/sw.c: In function 'rtl92cu_deinit_sw_vars':
-> drivers/net/wireless/rtlwifi/rtl8192cu/sw.c:74: error: implicit declaration of function 'vfree'
-> 
-> Caused by commit 442888c706e90634c4cc3441751b43115a7d8506 ("rtlwifi:
-> rtl8192cu: Add routines dm, fw, led and sw").  Missing an include of
-> linux/vmalloc.h.  See Rule 1 in Documentation/SubmitChecklist.
-> 
-> I added the following patch:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 22 Feb 2011 17:29:04 +1100
-> Subject: [PATCH] rtlwifi: include vmalloc.h for needed routines
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-> index 4e937e0..c69861e 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-> @@ -27,6 +27,8 @@
->   *
->   *****************************************************************************/
->  
-> +#include <linux/vmalloc.h>
-> +
->  #include "../wifi.h"
->  #include "../core.h"
->  #include "../usb.h"
+> Need to switch to a different character than , as separate -- 
+> it's already used for multiple events. Perhaps :
 
-I had gotten private mail yesterday about the missing vmalloc.h include.
+Yeah, I've contemplated writing a proper syntax and parser generator for
+all this, its starting to become somewhat of a mess.
 
-It will take me a while to set up an allyes configuration to find the other
-problems.
+Its just that I've since forgotten everything I ever knew about
+lex/yacc/bison etc.
 
-Larry
+
