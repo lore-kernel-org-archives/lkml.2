@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab1BVWWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 17:22:38 -0500
-Received: from kroah.org ([198.145.64.141]:32999 "EHLO coco.kroah.org"
+	id S1755386Ab1BVWYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 17:24:07 -0500
+Received: from kroah.org ([198.145.64.141]:33032 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755123Ab1BVWWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 17:22:34 -0500
+	id S1755213Ab1BVWWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 17:22:43 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Feb 22 14:18:43 2011
-Message-Id: <20110222221843.211062217@clark.kroah.org>
+Message-Id: <20110222221843.833277707@clark.kroah.org>
 User-Agent: quilt/0.48-11.2
-Date: Tue, 22 Feb 2011 14:17:41 -0800
+Date: Tue, 22 Feb 2011 14:17:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [62/70] genirq: Prevent access beyond allocated_irqs bitmap
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [68/70] platform: x86: asus_acpi: world-writable procfs files
 In-Reply-To: <20110222222003.GA15831@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,107 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
-commit c1ee6264280e740a9d3ff3feef38642cf0a57013 upstream.
+commit 8040835760adf0ef66876c063d47f79f015fb55d upstream.
 
-Lars-Peter Clausen pointed out:
+Don't allow everybody to change ACPI settings.  The comment says that it
+is done deliberatelly, however, the comment before disp_proc_write()
+says that at least one of these setting is experimental.
 
-   I stumbled upon this while looking through the existing archs using
-   SPARSE_IRQ.  Even with SPARSE_IRQ the NR_IRQS is still the upper
-   limit for the number of IRQs.
-
-   Both PXA and MMP set NR_IRQS to IRQ_BOARD_START, with
-   IRQ_BOARD_START being the number of IRQs used by the core.
-
-   In various machine files the nr_irqs field of the ARM machine
-   defintion struct is then set to "IRQ_BOARD_START + NR_BOARD_IRQS".
-
-   As a result "nr_irqs" will greater then NR_IRQS which then again
-   causes the "allocated_irqs" bitmap in the core irq code to be
-   accessed beyond its size overwriting unrelated data.
-
-The core code really misses a sanity check there.
-
-This went unnoticed so far as by chance the compiler/linker places
-data behind that bitmap which gets initialized later on those affected
-platforms.
-
-So the obvious fix would be to add a sanity check in early_irq_init()
-and break all affected platforms. Though that check wants to be
-backported to stable as well, which will require to fix all known
-problematic platforms and probably some more yet not known ones as
-well. Lots of churn.
-
-A way simpler solution is to allocate a slightly larger bitmap and
-avoid the whole churn w/o breaking anything. Add a few warnings when
-an arch returns utter crap.
-
-Reported-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/irq/internals.h |    6 ++++++
- kernel/irq/irqdesc.c   |   11 ++++++++++-
- kernel/irq/resend.c    |    2 +-
- 3 files changed, 17 insertions(+), 2 deletions(-)
+ drivers/platform/x86/asus_acpi.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -3,6 +3,12 @@
-  */
- #include <linux/irqdesc.h>
+--- a/drivers/platform/x86/asus_acpi.c
++++ b/drivers/platform/x86/asus_acpi.c
+@@ -1081,14 +1081,8 @@ static int asus_hotk_add_fs(struct acpi_
+ 	struct proc_dir_entry *proc;
+ 	mode_t mode;
  
-+#ifdef CONFIG_SPARSE_IRQ
-+# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
-+#else
-+# define IRQ_BITMAP_BITS	NR_IRQS
-+#endif
-+
- extern int noirqdebug;
- 
- #define irq_data_to_desc(data)	container_of(data, struct irq_desc, irq_data)
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -91,7 +91,7 @@ int nr_irqs = NR_IRQS;
- EXPORT_SYMBOL_GPL(nr_irqs);
- 
- static DEFINE_MUTEX(sparse_irq_lock);
--static DECLARE_BITMAP(allocated_irqs, NR_IRQS);
-+static DECLARE_BITMAP(allocated_irqs, IRQ_BITMAP_BITS);
- 
- #ifdef CONFIG_SPARSE_IRQ
- 
-@@ -215,6 +215,15 @@ int __init early_irq_init(void)
- 	initcnt = arch_probe_nr_irqs();
- 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d %d\n", NR_IRQS, nr_irqs, initcnt);
- 
-+	if (WARN_ON(nr_irqs > IRQ_BITMAP_BITS))
-+		nr_irqs = IRQ_BITMAP_BITS;
-+
-+	if (WARN_ON(initcnt > IRQ_BITMAP_BITS))
-+		initcnt = IRQ_BITMAP_BITS;
-+
-+	if (initcnt > nr_irqs)
-+		nr_irqs = initcnt;
-+
- 	for (i = 0; i < initcnt; i++) {
- 		desc = alloc_desc(i, node);
- 		set_bit(i, allocated_irqs);
---- a/kernel/irq/resend.c
-+++ b/kernel/irq/resend.c
-@@ -23,7 +23,7 @@
- #ifdef CONFIG_HARDIRQS_SW_RESEND
- 
- /* Bitmap to handle software resend of interrupts: */
--static DECLARE_BITMAP(irqs_resend, NR_IRQS);
-+static DECLARE_BITMAP(irqs_resend, IRQ_BITMAP_BITS);
- 
- /*
-  * Run software resends of IRQ's
+-	/*
+-	 * If parameter uid or gid is not changed, keep the default setting for
+-	 * our proc entries (-rw-rw-rw-) else, it means we care about security,
+-	 * and then set to -rw-rw----
+-	 */
+-
+ 	if ((asus_uid == 0) && (asus_gid == 0)) {
+-		mode = S_IFREG | S_IRUGO | S_IWUGO;
++		mode = S_IFREG | S_IRUGO | S_IWUSR | S_IWGRP;
+ 	} else {
+ 		mode = S_IFREG | S_IRUSR | S_IRGRP | S_IWUSR | S_IWGRP;
+ 		printk(KERN_WARNING "  asus_uid and asus_gid parameters are "
 
 
