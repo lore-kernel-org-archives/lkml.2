@@ -1,56 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1BVTxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 14:53:48 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11899 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab1BVTxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 14:53:47 -0500
-Message-ID: <4D641446.1080400@caviumnetworks.com>
-Date: Tue, 22 Feb 2011 11:53:42 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753801Ab1BVTyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 14:54:19 -0500
+Received: from mga14.intel.com ([143.182.124.37]:61429 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab1BVTyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 14:54:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.62,207,1297065600"; 
+   d="scan'208";a="392486185"
+Subject: [RFC PATCH] x86: Moving probe_roms_32 to probe_roms
+To: hpa@zytor.com
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Date: Tue, 22 Feb 2011 12:16:32 -0800
+Message-ID: <20110222201538.15443.81915.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15-7-g9bfb
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Eugene Teo <eugeneteo@kernel.sg>,
-        Ralph Campbell <infinipath@qlogic.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, James Morris <jmorris@namei.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, Nick Piggin <npiggin@kernel.dk>,
-        Arnd Bergmann <arnd@arndb.de>, Ian Campbell <ian.campbell@citrix.com>,
-        Jarkko Sakkinen <ext-jarkko.2.sakkinen@nokia.com>,
-        Tejun Heo <tj@kernel.org>, Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH 2/2] debugfs: only allow root access to debugging interfaces
-References: <1298398198-18482-1-git-send-email-kees.cook@canonical.com> <1298398198-18482-2-git-send-email-kees.cook@canonical.com> <20110222181613.GU4000@outflux.net> <4D640133.9020901@caviumnetworks.com> <20110222184726.GV4000@outflux.net> <20110222191454.GB9991@suse.de> <20110222192532.GY4000@outflux.net> <20110222193418.773ccd4b@lxorguk.ukuu.org.uk> <20110222195018.GA4000@outflux.net>
-In-Reply-To: <20110222195018.GA4000@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Feb 2011 19:53:42.0529 (UTC) FILETIME=[350A5F10:01CBD2CA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2011 11:50 AM, Kees Cook wrote:
-> On Tue, Feb 22, 2011 at 07:34:18PM +0000, Alan Cox wrote:
-[...]
->
->> Or of course you could just chmod it 0700 in the distro !
->
-> I'm trying to, but that involves a race condition since I can't control it
-> during the mount (nor set the default mode like I was trying to with the
-> patchset). tmpfs allows "mode=", but debugfs does not...
->
+From: Dave Jiang <dave.jiang@intel.com>
 
-Someone skilled in the black arts of kernel programming might be able to 
-add 'mode=' support to debugfs.
+Moving the probe_roms_32 code to probe_roms and make available for all x86. The
+end result adapter roms data structure is made available read-only to drivers.
+The Intel isci SAS driver needs to scan the OROM memory in order to pull OEM
+parameters from the OROM.
 
-David Daney
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+
+We could just export adapter_rom_resources directly and be done with it, but
+it seemed reasonable to have a compile time catch for drivers that try to
+modify the resources, and that drivers should not assume the number of
+available adapter roms.
+
+--
+Dan
+
+ arch/x86/include/asm/probe_roms.h |    7 +++++++
+ arch/x86/include/asm/setup.h      |    3 ++-
+ arch/x86/kernel/Makefile          |    2 +-
+ arch/x86/kernel/head32.c          |    1 -
+ arch/x86/kernel/probe_roms.c      |   13 +++++++++++++
+ arch/x86/kernel/x86_init.c        |    2 +-
+ 6 files changed, 24 insertions(+), 4 deletions(-)
+ create mode 100644 arch/x86/include/asm/probe_roms.h
+ rename arch/x86/kernel/{probe_roms_32.c => probe_roms.c} (93%)
+
+diff --git a/arch/x86/include/asm/probe_roms.h b/arch/x86/include/asm/probe_roms.h
+new file mode 100644
+index 0000000..3e9ea6d
+--- /dev/null
++++ b/arch/x86/include/asm/probe_roms.h
+@@ -0,0 +1,7 @@
++#ifndef _PROBE_ROMS_H_
++#define _PROBE_ROMS_H_
++
++extern const struct resource *x86_adapter_rom_resources(void);
++extern int x86_num_adapter_roms(void);
++
++#endif
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index ef292c7..52edb6d 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -93,10 +93,11 @@ void *extend_brk(size_t size, size_t align);
+ 			: : "i" (sz));					\
+ 	}
+ 
++extern void probe_roms(void);
++
+ #ifdef __i386__
+ 
+ void __init i386_start_kernel(void);
+-extern void probe_roms(void);
+ 
+ #else
+ void __init x86_64_start_kernel(char *real_mode);
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index fedf32a..f31ae9b 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -36,7 +36,7 @@ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+ obj-y			+= time.o ioport.o ldt.o dumpstack.o
+ obj-y			+= setup.o x86_init.o i8259.o irqinit.o
+ obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
+-obj-$(CONFIG_X86_32)	+= probe_roms_32.o
++obj-y			+= probe_roms.o
+ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index 784360c..e7605ed 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -21,7 +21,6 @@
+ static void __init i386_default_early_setup(void)
+ {
+ 	/* Initialize 32bit specific setup functions */
+-	x86_init.resources.probe_roms = probe_roms;
+ 	x86_init.resources.reserve_resources = i386_reserve_resources;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc;
+ 
+diff --git a/arch/x86/kernel/probe_roms_32.c b/arch/x86/kernel/probe_roms.c
+similarity index 93%
+rename from arch/x86/kernel/probe_roms_32.c
+rename to arch/x86/kernel/probe_roms.c
+index 071e7fe..5dcf53f 100644
+--- a/arch/x86/kernel/probe_roms_32.c
++++ b/arch/x86/kernel/probe_roms.c
+@@ -73,6 +73,19 @@ static struct resource video_rom_resource = {
+ 	.flags	= IORESOURCE_BUSY | IORESOURCE_READONLY | IORESOURCE_MEM
+ };
+ 
++/* grant modules read only access to the adapter rom table */
++const struct resource *x86_adapter_rom_resources(void)
++{
++	return adapter_rom_resources;
++}
++EXPORT_SYMBOL(x86_adapter_rom_resources);
++
++int x86_num_adapter_roms(void)
++{
++	return ARRAY_SIZE(adapter_rom_resources);
++}
++EXPORT_SYMBOL(x86_num_adapter_roms);
++
+ #define ROMSIGNATURE 0xaa55
+ 
+ static int __init romsignature(const unsigned char *rom)
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index cd6da6b..1bc104f 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -33,7 +33,7 @@ void iommu_shutdown_noop(void) { }
+ struct x86_init_ops x86_init __initdata = {
+ 
+ 	.resources = {
+-		.probe_roms		= x86_init_noop,
++		.probe_roms		= probe_roms,
+ 		.reserve_resources	= reserve_standard_io_resources,
+ 		.memory_setup		= default_machine_specific_memory_setup,
+ 	},
+
