@@ -1,90 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab1BVGRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 01:17:31 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:45615 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab1BVGR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 01:17:29 -0500
-Date: Tue, 22 Feb 2011 17:17:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warnings after merge of the i2c tree
-Message-Id: <20110222171720.59019382.sfr@canb.auug.org.au>
-In-Reply-To: <20110221105858.197cbf1d@endymion.delvare>
-References: <20110221153522.8a0b29bf.sfr@canb.auug.org.au>
-	<20110221105858.197cbf1d@endymion.delvare>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__22_Feb_2011_17_17_20_+1100__c.eOzT1h_orepO_"
+	id S1751539Ab1BVGTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 01:19:03 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55639 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab1BVGTB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 01:19:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Uq8vAIJ7KXAjf3bU6dqjZs4+J18CTP4uUWP1eTlyGwsk/tO2qAYFhD0aqRXUQ6RZWI
+         9Rl40acpSxRp2WshvZSuzVECesU4fXnKtXRUH1eNvQxf4E18FcZ9vgAFo9bnLaPXnrsi
+         f0mAjHy3ljlmtsR58JfHepfFS0vBUx3rJLRS4=
+From: "Anoop P.A" <anoop.pa@gmail.com>
+To: ralf@linux-mips.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: Anoop P A <anoop.pa@gmail.com>
+Subject: [PATCH resend] Make msp7120_reset generic
+Date: Tue, 22 Feb 2011 12:11:45 +0530
+Message-Id: <1298356905-17316-1-git-send-email-anoop.pa@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <4D610B3A.5070705@mvista.com>
+References: <4D610B3A.5070705@mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Feb_2011_17_17_20_+1100__c.eOzT1h_orepO_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Anoop P A <anoop.pa@gmail.com>
 
-Hi Jean,
+Remove platform dependency code from msp7120 reset code and make it generic.
+Now the code can be reused for other boards running msp71xx family SoC.
 
-On Mon, 21 Feb 2011 10:58:58 +0100 Jean Delvare <khali@linux-fr.org> wrote:
->
-> On Mon, 21 Feb 2011 15:35:22 +1100, Stephen Rothwell wrote:
-> > Hi Jean,
-> >=20
-> > After merging the tip tree, today's linux-next build (powerpc
-> > ppc64_defconfig) produced these warnings:
-> >=20
-> > drivers/i2c/i2c-core.c: In function 'i2c_do_add_adapter':
-> > drivers/i2c/i2c-core.c:799: warning: 'attach_adapter' is deprecated (de=
-clared at include/linux/i2c.h:149)
-> > drivers/i2c/i2c-core.c:804: warning: 'attach_adapter' is deprecated (de=
-clared at include/linux/i2c.h:149)
-> > drivers/i2c/i2c-core.c: In function 'i2c_do_del_adapter':
-> > drivers/i2c/i2c-core.c:985: warning: 'detach_adapter' is deprecated (de=
-clared at include/linux/i2c.h:150)
-> > drivers/i2c/i2c-core.c:988: warning: 'detach_adapter' is deprecated (de=
-clared at include/linux/i2c.h:150)
-> >=20
-> > Introduced by commit 95529c656b97b08c7a92504f98650a229f03ae04 ("i2c:
-> > Deprecate i2c_driver.attach_adapter and .detach_adapter").  We normally
-> > fix up as many uses of an interface as possible before deprecating it .=
-..
->=20
-> These are the core locations where the deprecated callbacks are called.
-> Ideally they would _not_ emit warnings, are these are legitimate and
-> can't be removed before all drivers relying on these callbacks have
-> been fixed. If there is a way to silent these warnings, please let me
-> know, as I don't know of any.
+Signed-off-by: Anoop P A <anoop.pa@gmail.com>
+---
+Fixing comments indentations as suggested by sergei
+ arch/mips/pmc-sierra/msp71xx/msp_setup.c |   84 ++++++++++++++++++------------
+ 1 files changed, 51 insertions(+), 33 deletions(-)
 
-You could build just that file with -Wno-deprecated-declarations, or put
-the deprecated stuff into another file that is built with that flag.
-We did the latter with pci_find_device (see commit e8b553bf4b19c "PCI:
-disable pci_find_device warnings when deprecated pci functions are
-enabled").
+diff --git a/arch/mips/pmc-sierra/msp71xx/msp_setup.c b/arch/mips/pmc-sierra/msp71xx/msp_setup.c
+index fb37a10..3bf92cd 100644
+--- a/arch/mips/pmc-sierra/msp71xx/msp_setup.c
++++ b/arch/mips/pmc-sierra/msp71xx/msp_setup.c
+@@ -18,30 +18,32 @@
+ 
+ #include <msp_prom.h>
+ #include <msp_regs.h>
++#include <msp_gpio_macros.h>
+ 
+ #if defined(CONFIG_PMC_MSP7120_GW)
+-#include <msp_regops.h>
++	/* GPIO 9 is the 4th GPIO of register 3*/
+ #define MSP_BOARD_RESET_GPIO	9
++#else
++#undef MSP_BOARD_RESET_GPIO
+ #endif
+ 
+ extern void msp_serial_setup(void);
+ extern void pmctwiled_setup(void);
+ 
+-#if defined(CONFIG_PMC_MSP7120_EVAL) || \
+-    defined(CONFIG_PMC_MSP7120_GW) || \
+-    defined(CONFIG_PMC_MSP7120_FPGA)
+ /*
+- * Performs the reset for MSP7120-based boards
++ * Performs the reset for MSP71xx-based boards
+  */
+-void msp7120_reset(void)
++void msp71xx_reset(void)
+ {
+ 	void *start, *end, *iptr;
+ 	register int i;
++	register u32 temp __maybe_unused;
+ 
+ 	/* Diasble all interrupts */
+ 	local_irq_disable();
+ #ifdef CONFIG_SYS_SUPPORTS_MULTITHREADING
+ 	dvpe();
++	dmt();
+ #endif
+ 
+ 	/* Cache the reset code of this function */
+@@ -78,49 +80,56 @@ void msp7120_reset(void)
+ 	/* Wait a bit for the DDRC to settle */
+ 	for (i = 0; i < 100000000; i++);
+ 
+-#if defined(CONFIG_PMC_MSP7120_GW)
++#if defined(MSP_BOARD_RESET_GPIO)
+ 	/*
+-	 * Set GPIO 9 HI, (tied to board reset logic)
+-	 * GPIO 9 is the 4th GPIO of register 3
++	 * Set reset GPIO  HI, (tied to board reset logic)
+ 	 *
+ 	 * NOTE: We cannot use the higher-level msp_gpio_mode()/out()
+ 	 * as GPIO char driver may not be enabled and it would look up
+ 	 * data inRAM!
+ 	 */
+-	set_value_reg32(GPIO_CFG3_REG, 0xf000, 0x8000);
+-	set_reg32(GPIO_DATA3_REG, 8);
++	temp = __raw_readl(MSP_GPIO_MODE_REGISTER[MSP_BOARD_RESET_GPIO]) &
++					~BASIC_MODE_MASK(MSP_BOARD_RESET_GPIO);
++	__raw_writel(temp | BASIC_MODE(MSP_GPIO_OUTPUT, MSP_BOARD_RESET_GPIO),
++				MSP_GPIO_MODE_REGISTER[MSP_BOARD_RESET_GPIO]);
++	/* Now set the reset gpio pin hi */
++	temp = __raw_readl(MSP_GPIO_DATA_REGISTER[MSP_BOARD_RESET_GPIO]);
++	__raw_writel(temp | BASIC_DATA_MASK(MSP_BOARD_RESET_GPIO),
++			MSP_GPIO_DATA_REGISTER[MSP_BOARD_RESET_GPIO]);
+ 
+ 	/*
+-	 * In case GPIO9 doesn't reset the board (jumper configurable!)
++	 * In case GPIO doesn't reset the board (jumper configurable!)
+ 	 * fallback to device reset below.
+ 	 */
+ #endif
+-	/* Set bit 1 of the MSP7120 reset register */
+-	*RST_SET_REG = 0x00000001;
++	/* Set bit 1 of the MSP71xx reset register */
++	__raw_writel(0x00000001, RST_SET_REG);
+ 
+ 	__asm__ __volatile__ (
+-		"endpoint:					\n"
++		"endpoint:\n"
+ 	);
+ }
+-#endif
+ 
+ void msp_restart(char *command)
+ {
+-	printk(KERN_WARNING "Now rebooting .......\n");
+ 
+-#if defined(CONFIG_PMC_MSP7120_EVAL) || \
+-    defined(CONFIG_PMC_MSP7120_GW) || \
+-    defined(CONFIG_PMC_MSP7120_FPGA)
+-	msp7120_reset();
+-#else
+-	/* No chip-specific reset code, just jump to the ROM reset vector */
+-	set_c0_status(ST0_BEV | ST0_ERL);
+-	change_c0_config(CONF_CM_CMASK, CONF_CM_UNCACHED);
+-	flush_cache_all();
+-	write_c0_wired(0);
+-
+-	__asm__ __volatile__("jr\t%0"::"r"(0xbfc00000));
+-#endif
++	unsigned long family = identify_family();
++	switch (family)	{
++	case FAMILY_MSP7100:
++		msp71xx_reset();
++		break;
++	default:
++		/* No chip-specific reset code, just jump
++		 * to the ROM reset vector
++		 */
++		set_c0_status(ST0_BEV | ST0_ERL);
++		change_c0_config(CONF_CM_CMASK, CONF_CM_UNCACHED);
++		flush_cache_all();
++		write_c0_wired(0);
++
++		__asm__ __volatile__("jr\t%0" : : "r"(0xbfc00000));
++		break;
++	}
+ }
+ 
+ void msp_halt(void)
+@@ -141,9 +150,7 @@ void msp_power_off(void)
+ 
+ void __init plat_mem_setup(void)
+ {
+-	_machine_restart = msp_restart;
+-	_machine_halt = msp_halt;
+-	pm_power_off = msp_power_off;
++	/*TODO: Move mem setup here */
+ }
+ 
+ extern struct plat_smp_ops msp_smtc_smp_ops;
+@@ -244,3 +251,14 @@ void __init prom_init(void)
+ 	pmctwiled_setup();
+ #endif
+ }
++
++static int __init mips_reboot_setup(void)
++{
++	_machine_restart = msp_restart;
++	_machine_halt = msp_halt;
++	pm_power_off = msp_power_off;
++
++	return 0;
++}
++
++arch_initcall(mips_reboot_setup);
+-- 
+1.7.0.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__22_Feb_2011_17_17_20_+1100__c.eOzT1h_orepO_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNY1TwAAoJEDMEi1NhKgbssBcH/ikDtTGsGtcnY26ln33A+dIY
-jzgNzsPqWniy5CgG7gauR+/SwoTYxxr8tZvStRdRZxcJdSu/Dpbx3H+tUIbG3I6n
-8yJLM52D1+VAOndmjuci3jQPhNV+3MXQJRzYR6lqC12Af0WlfvHS4X50nAQd5QyP
-hhy7S5jo2sAE7vEqBTvNvfridjnBxgzI5GDdBAfiHKAL0vkNba8Gf9T/bkv6pNs9
-+rGg6VVLwH7BRWlX/TDhw3WFhIoq22YV21SrRLpOh9cwzNxItei+I6eZ0syiqN9I
-fZLPujm7eZc3/1G+y6yNeMJTfLnN0TVG4qIemtoEYCYMgI5ablfhWXYVGBqhqjU=
-=OdbM
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_Feb_2011_17_17_20_+1100__c.eOzT1h_orepO_--
