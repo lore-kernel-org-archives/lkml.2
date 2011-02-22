@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab1BVKv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Feb 2011 05:51:27 -0500
-Received: from www.tglx.de ([62.245.132.106]:60606 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753841Ab1BVKv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Feb 2011 05:51:26 -0500
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] omap3: nand: report corrected ecc errors
-From: John Ogness <john.ogness@linutronix.de>
-Date: Tue, 22 Feb 2011 11:50:56 +0100
-Message-ID: <87oc64qr5b.fsf@vostro.fn.ogness.net>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754044Ab1BVKve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Feb 2011 05:51:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38155 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab1BVKvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Feb 2011 05:51:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=rZ+MTUbXRbvTps0rD5i7+TafjS6qXF86iFXJzLZTEu2XI/jovz8De6r3sl9tDABeep
+         SAolTLMAiREyUCLiP3z2PQhwXdyhm+F86RupwOXOlp21l8bQA7m7saSt8R2YlR8g7g8m
+         ectz0uXgiRJgekuVbHsWNEpiPYSGFWsxZ/9TQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Bob Liu <lliubbo@gmail.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: [PATCH] mempolicy: remove redundant check in __mpol_equal()
+Date: Tue, 22 Feb 2011 19:51:17 +0900
+Message-Id: <1298371877-2906-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Ogness <john.ogness@linutronix.de>
+The 'flags' field is already checked, no need to do it again.
 
-The number of corrected ECC errors should be reported since other MTD
-systems make use of this information (such as UBI data scrubbing).
-
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
 ---
-Patch against linux-next-20110221.
+ mm/mempolicy.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
- drivers/mtd/nand/omap2.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index 4e33972..a58465c 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -773,7 +773,7 @@ static int omap_compare_ecc(u8 *ecc_data1,	/* read from NAND memory */
- 
- 		page_data[find_byte] ^= (1 << find_bit);
- 
--		return 0;
-+		return 1;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 368fc9d23610..4244e4988e66 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1979,8 +1979,7 @@ int __mpol_equal(struct mempolicy *a, struct mempolicy *b)
+ 	case MPOL_INTERLEAVE:
+ 		return nodes_equal(a->v.nodes, b->v.nodes);
+ 	case MPOL_PREFERRED:
+-		return a->v.preferred_node == b->v.preferred_node &&
+-			a->flags == b->flags;
++		return a->v.preferred_node == b->v.preferred_node;
  	default:
- 		if (isEccFF) {
- 			if (ecc_data2[0] == 0 &&
-@@ -803,6 +803,7 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
- 	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
- 							mtd);
- 	int blockCnt = 0, i = 0, ret = 0;
-+	int stat = 0;
- 
- 	/* Ex NAND_ECC_HW12_2048 */
- 	if ((info->nand.ecc.mode == NAND_ECC_HW) &&
-@@ -816,12 +817,13 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
- 			ret = omap_compare_ecc(read_ecc, calc_ecc, dat);
- 			if (ret < 0)
- 				return ret;
-+			stat += ret;
- 		}
- 		read_ecc += 3;
- 		calc_ecc += 3;
- 		dat      += 512;
- 	}
--	return 0;
-+	return stat;
- }
- 
- /**
+ 		BUG();
+ 		return 0;
 -- 
-1.5.6.5
+1.7.4
+
